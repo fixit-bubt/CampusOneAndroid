@@ -25,7 +25,7 @@ interface Doctor {
   days: string[];
   start_time: string;
   end_time: string;
-  room_no: string | null;
+  room: string | null;
   active: boolean;
 }
 
@@ -81,11 +81,11 @@ export function DoctorDetailScreen({ route, navigation }: any) {
         Evening: '17:00',
       };
       const { error } = await supabase.from('appointments').insert({
-        doctor_id:        doctor.id,
-        patient_id:       user.id,
-        slot_time:        slotTimeMap[selectedSlot],
-        appointment_date: today,
-        status:           'Pending',
+        doctor_id:  doctor.id,
+        student_id: user.id,
+        slot:       slotTimeMap[selectedSlot],
+        date:       today,
+        status:     'Booked',
       });
       if (error) throw error;
       Alert.alert('Booked', `Your ${selectedSlot} appointment with ${doctor.name} has been booked for today.`);
@@ -160,7 +160,7 @@ export function DoctorDetailScreen({ route, navigation }: any) {
           <View style={[styles.divider, { backgroundColor: C.border }]} />
           <ScheduleRow icon="clock" label="Hours" value={`${doctor.start_time} – ${doctor.end_time}`} C={C} />
           <View style={[styles.divider, { backgroundColor: C.border }]} />
-          <ScheduleRow icon="pin" label="Location" value={doctor.room_no ?? 'Medical Center'} C={C} />
+          <ScheduleRow icon="pin" label="Location" value={doctor.room ?? 'Medical Center'} C={C} />
         </View>
 
         {/* Book Appointment */}

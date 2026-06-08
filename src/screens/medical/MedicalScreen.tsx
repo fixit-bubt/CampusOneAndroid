@@ -21,7 +21,7 @@ interface Doctor {
   days: string[];
   start_time: string;
   end_time: string;
-  room_no: string | null;
+  room: string | null;
   active: boolean;
 }
 
