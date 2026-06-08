@@ -70,7 +70,7 @@ export function JobPostScreen({ navigation }: any) {
   const [requirements, setRequirements] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const canSubmit = company.trim() && role.trim();
+  const canSubmit = company.trim() && role.trim() && desc.trim();
 
   async function handleSubmit() {
     if (!canSubmit || !user) return;

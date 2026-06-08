@@ -28,7 +28,7 @@ const REPORT_REASONS = ['Spam', 'Scam', 'Expired', 'Inappropriate'];
 export function JobDetailScreen({ route, navigation }: any) {
   const { C } = useTheme();
   const { user } = useAuth();
-  const { id } = route.params;
+  const { jobId } = route.params;
   const [job, setJob] = useState<any>(null);
   const [saved, setSaved] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
@@ -37,8 +37,8 @@ export function JobDetailScreen({ route, navigation }: any) {
   useEffect(() => {
     (async () => {
       const [jobRes, saveRes] = await Promise.all([
-        supabase.from('jobs').select('*').eq('id', id).single(),
-        supabase.from('job_bookmarks').select('job_id').eq('job_id', id).eq('user_id', user?.id ?? '').maybeSingle(),
+        supabase.from('jobs').select('*').eq('id', jobId).single(),
+        supabase.from('job_bookmarks').select('job_id').eq('job_id', jobId).eq('user_id', user?.id ?? '').maybeSingle(),
       ]);
       if (jobRes.data) setJob(jobRes.data);
       setSaved(!!saveRes.data);
@@ -48,16 +48,16 @@ export function JobDetailScreen({ route, navigation }: any) {
   async function toggleSave() {
     if (!user || !job) return;
     if (saved) {
-      await supabase.from('job_bookmarks').delete().eq('job_id', id).eq('user_id', user.id);
+      await supabase.from('job_bookmarks').delete().eq('job_id', jobId).eq('user_id', user.id);
     } else {
-      await supabase.from('job_bookmarks').insert({ job_id: id, user_id: user.id });
+      await supabase.from('job_bookmarks').insert({ job_id: jobId, user_id: user.id });
     }
     setSaved(!saved);
   }
 
   async function submitReport() {
     if (!reason || !user || !job) return;
-    await supabase.from('job_reports').insert({ job_id: id, user_id: user.id, reason });
+    await supabase.from('job_reports').insert({ job_id: jobId, user_id: user.id, reason });
     setReportOpen(false);
     setReason('');
   }
@@ -141,10 +141,14 @@ export function JobDetailScreen({ route, navigation }: any) {
         <Text style={[styles.body, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>{job.description}</Text>
 
         {/* Requirements */}
-        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>REQUIREMENTS</Text>
-        <View style={[styles.reqCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <Text style={[styles.reqText, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>{job.requirements}</Text>
-        </View>
+        {job.requirements ? (
+          <>
+            <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>REQUIREMENTS</Text>
+            <View style={[styles.reqCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+              <Text style={[styles.reqText, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>{job.requirements}</Text>
+            </View>
+          </>
+        ) : null}
 
         {/* Actions */}
         {isRemoved ? (
@@ -179,7 +183,7 @@ export function JobDetailScreen({ route, navigation }: any) {
               <TouchableOpacity
                 style={[styles.secondaryBtn, { backgroundColor: C.surface, borderColor: C.border }]}
                 onPress={async () => {
-                  await supabase.from('jobs').update({ status: 'removed' }).eq('id', id);
+                  await supabase.from('jobs').update({ status: 'removed' }).eq('id', jobId);
                   navigation.goBack();
                 }}
                 activeOpacity={0.85}

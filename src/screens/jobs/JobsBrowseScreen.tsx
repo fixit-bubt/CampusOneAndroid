@@ -146,7 +146,7 @@ export function JobsBrowseScreen({ navigation }: any) {
                 <View key={j.id} style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
                   <TouchableOpacity
                     style={styles.cardMain}
-                    onPress={() => navigation.navigate('JobDetail', { id: j.id })}
+                    onPress={() => navigation.navigate('JobDetail', { jobId: j.id })}
                     activeOpacity={0.75}
                   >
                     <View style={[styles.thumb, { backgroundColor: JOB_BG }]}>
