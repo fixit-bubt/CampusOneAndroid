@@ -1,0 +1,398 @@
+// Matches design screens-e.jsx — ReportDetail
+import { useState, useEffect, useCallback } from 'react';
+import {
+  View, Text, TouchableOpacity, ScrollView, StyleSheet,
+  RefreshControl, Alert, type ViewStyle,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTheme } from '../../hooks/useTheme';
+import { useAuth } from '../../store/authStore';
+import { SubBar } from '../../components/layout/TopBar';
+import { Avatar } from '../../components/ui/Avatar';
+import { Icon } from '../../components/ui/Icon';
+import { FontFamily, Layout, Radius } from '../../theme';
+import { supabase } from '../../lib/supabase';
+import type { Report, ReportEvent } from '../../types/database';
+
+const CAT_MAP: Record<string, { icon: string; fg: string }> = {
+  'Electrical':       { icon: 'bolt',    fg: '#f59e0b' },
+  'Plumbing':         { icon: 'droplets',fg: '#3b82f6' },
+  'Cleanliness':      { icon: 'sparkles',fg: '#10b981' },
+  'IT / Network':     { icon: 'wifi',    fg: '#8b5cf6' },
+  'Furniture':        { icon: 'chair',   fg: '#6b7280' },
+  'Safety / Security':{ icon: 'shield',  fg: '#ef4444' },
+  'Other':            { icon: 'wrench',  fg: '#64748b' },
+};
+
+const STATUS_TONE: Record<string, { text: string; bg: string }> = {
+  'Open':        { text: '#e08a2b', bg: '#fef3c7' },
+  'In Progress': { text: '#2b5be3', bg: '#dbeafe' },
+  'Resolved':    { text: '#12915e', bg: '#d1fae5' },
+  'Rejected':    { text: '#d63d35', bg: '#fee2e2' },
+  'Closed':      { text: '#5b6b86', bg: '#f1f5f9' },
+};
+
+function formatDate(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+export function ReportDetailScreen({ route, navigation }: any) {
+  const { report: initReport } = route.params as { report: Report };
+  const { C } = useTheme();
+  const { user } = useAuth();
+
+  const [report, setReport] = useState<Report>(initReport);
+  const [events, setEvents] = useState<ReportEvent[]>([]);
+  const [assigneeName, setAssigneeName] = useState<string | null>(null);
+  const [reporterName, setReporterName] = useState<string>('');
+  const [refreshing, setRefreshing] = useState(false);
+
+  const code = (report as any).code ?? ('RPT-' + report.id.replace(/\D/g, '').padStart(4, '0').slice(-4));
+  const cat = CAT_MAP[report.category] ?? { icon: 'wrench', fg: '#64748b' };
+  const statusStyle = STATUS_TONE[report.status] ?? { text: '#5b6b86', bg: '#f1f5f9' };
+  const isMine = report.reporter_id === user?.id;
+
+  const load = useCallback(async () => {
+    const [evRes, rptRes] = await Promise.all([
+      supabase.from('report_events').select('*').eq('report_id', report.id).order('created_at', { ascending: true }),
+      supabase.from('profiles').select('full_name').eq('id', report.reporter_id).single(),
+    ]);
+    if (evRes.data) setEvents(evRes.data as ReportEvent[]);
+    if (rptRes.data) setReporterName(rptRes.data.full_name);
+
+    if (report.assigned_staff_id) {
+      const { data } = await supabase.from('profiles').select('full_name').eq('id', report.assigned_staff_id).single();
+      if (data) setAssigneeName(data.full_name);
+    }
+  }, [report.id, report.reporter_id, report.assigned_staff_id]);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  }
+
+  async function handleDelete() {
+    Alert.alert('Delete Report', 'Are you sure you want to delete this report?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete', style: 'destructive',
+        onPress: async () => {
+          await supabase.from('reports').update({ deleted_at: new Date().toISOString() }).eq('id', report.id);
+          navigation.goBack();
+        },
+      },
+    ]);
+  }
+
+  // Build timeline steps
+  const timelineSteps: { label: string; sub?: string; done: boolean }[] = [
+    { label: 'Report filed', sub: formatDate(report.created_at), done: true },
+  ];
+  if (assigneeName) {
+    timelineSteps.push({ label: 'Assigned to staff', sub: assigneeName, done: true });
+  }
+  if (report.status === 'Resolved' || report.status === 'Closed') {
+    timelineSteps.push({ label: 'Issue resolved', done: true });
+  } else if (report.status === 'Rejected') {
+    timelineSteps.push({ label: 'Report rejected', done: true });
+  } else {
+    timelineSteps.push({ label: 'Awaiting resolution', done: false });
+  }
+
+  return (
+    <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
+      <SubBar title={code} onBack={() => navigation.goBack()} />
+
+      <ScrollView
+        contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
+      >
+        {/* Header: icon + title + status */}
+        <View style={styles.header}>
+          <View style={[styles.catIcon, { backgroundColor: cat.fg + '1e' }]}>
+            <Icon name={cat.icon} size={26} color={cat.fg} />
+          </View>
+          <View style={styles.headerBody}>
+            <Text style={[styles.title, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]} numberOfLines={3}>
+              {report.description.split('\n')[0]}
+            </Text>
+            <View style={styles.locRow}>
+              <Icon name="pin" size={12} color={C.textMuted} />
+              <Text style={[styles.loc, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                {report.building}{report.room ? ` · Room ${report.room}` : ''}
+              </Text>
+            </View>
+          </View>
+          <View style={[styles.statusPill, { backgroundColor: statusStyle.bg }]}>
+            <Text style={[styles.statusText, { color: statusStyle.text, fontFamily: FontFamily.jakartaBold }]}>
+              {report.status}
+            </Text>
+          </View>
+        </View>
+
+        {/* Description */}
+        {report.description.includes('\n') && (
+          <Text style={[styles.desc, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
+            {report.description}
+          </Text>
+        )}
+
+        {/* Reporter + Assignee */}
+        <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
+          <View style={styles.personRow}>
+            <View style={styles.personCol}>
+              <Text style={[styles.personLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                Reported by
+              </Text>
+              <View style={styles.personInfo}>
+                <Avatar name={reporterName} size="xs" />
+                <Text style={[styles.personName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  {reporterName || 'Student'}
+                </Text>
+              </View>
+            </View>
+            {assigneeName && (
+              <View style={styles.personCol}>
+                <Text style={[styles.personLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                  Assigned to
+                </Text>
+                <View style={styles.personInfo}>
+                  <Avatar name={assigneeName} size="xs" />
+                  <Text style={[styles.personName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    {assigneeName}
+                  </Text>
+                </View>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* Timeline */}
+        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
+          TIMELINE
+        </Text>
+        <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border, paddingVertical: 14, paddingHorizontal: 16 }]}>
+          {timelineSteps.map((step, i) => (
+            <View key={i} style={styles.timelineStep}>
+              <View style={styles.timelineTrack}>
+                <View style={[
+                  styles.timelineDot,
+                  step.done
+                    ? { backgroundColor: '#12915e', borderColor: '#12915e' }
+                    : { backgroundColor: 'transparent', borderColor: C.textMuted, borderStyle: 'dashed' },
+                ]}>
+                  {step.done && <Icon name="check" size={8} color="#fff" />}
+                </View>
+                {i < timelineSteps.length - 1 && (
+                  <View style={[styles.timelineLine, { backgroundColor: step.done ? '#12915e' : C.border }]} />
+                )}
+              </View>
+              <View style={[styles.timelineBody, { paddingBottom: i < timelineSteps.length - 1 ? 14 : 0 }]}>
+                <Text style={[styles.timelineLabel, { color: step.done ? C.text : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                  {step.label}
+                </Text>
+                {step.sub ? (
+                  <Text style={[styles.timelineSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                    {step.sub}
+                  </Text>
+                ) : null}
+              </View>
+            </View>
+          ))}
+        </View>
+
+        {/* Category */}
+        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
+          CATEGORY
+        </Text>
+        <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14 }]}>
+          <View style={[styles.catIcon, { backgroundColor: cat.fg + '1e', width: 36, height: 36, borderRadius: 10 }]}>
+            <Icon name={cat.icon} size={20} color={cat.fg} />
+          </View>
+          <Text style={[{ color: C.text, fontFamily: FontFamily.jakartaBold, fontSize: 14.5 }]}>
+            {report.category}
+          </Text>
+        </View>
+
+        {/* Edit / Delete (only if mine and open) */}
+        {isMine && report.status === 'Open' && (
+          <View style={styles.actions}>
+            <TouchableOpacity
+              style={[styles.actionBtn, { backgroundColor: C.surface, borderColor: C.border }]}
+              onPress={() => navigation.navigate('ReportForm', { reportId: report.id })}
+              activeOpacity={0.75}
+            >
+              <Icon name="sliders" size={17} color={C.text2} />
+              <Text style={[styles.actionText, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>Edit</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionBtn, { backgroundColor: C.surface, borderColor: C.border }]}
+              onPress={handleDelete}
+              activeOpacity={0.75}
+            >
+              <Icon name="trash" size={17} color={C.danger} />
+              <Text style={[styles.actionText, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>Delete</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        <View style={{ height: 28 }} />
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safe: { flex: 1 } as ViewStyle,
+  scroll: { paddingTop: 12, paddingBottom: 20 } as ViewStyle,
+
+  header: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 13,
+    marginBottom: 14,
+  } as ViewStyle,
+
+  catIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  } as ViewStyle,
+
+  headerBody: { flex: 1 } as ViewStyle,
+
+  title: {
+    fontSize: 18,
+    lineHeight: 24,
+    letterSpacing: -0.2,
+  } as any,
+
+  locRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 5,
+  } as ViewStyle,
+
+  loc: { fontSize: 12 } as any,
+
+  statusPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    flexShrink: 0,
+  } as ViewStyle,
+
+  statusText: { fontSize: 12 } as any,
+
+  desc: {
+    fontSize: 14,
+    lineHeight: 22,
+    marginBottom: 16,
+  } as any,
+
+  card: {
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: 'hidden',
+    marginBottom: 10,
+  } as ViewStyle,
+
+  personRow: {
+    flexDirection: 'row',
+    gap: 16,
+    padding: 14,
+  } as ViewStyle,
+
+  personCol: { flex: 1 } as ViewStyle,
+
+  personLabel: {
+    fontSize: 11,
+    letterSpacing: 0.3,
+    marginBottom: 6,
+  } as any,
+
+  personInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+  } as ViewStyle,
+
+  personName: { fontSize: 13 } as any,
+
+  sectionLabel: {
+    fontSize: 11,
+    letterSpacing: 0.8,
+    marginTop: 16,
+    marginBottom: 9,
+    marginLeft: 2,
+  } as any,
+
+  // Timeline
+  timelineStep: {
+    flexDirection: 'row',
+    gap: 13,
+    alignItems: 'flex-start',
+  } as ViewStyle,
+
+  timelineTrack: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    alignSelf: 'stretch',
+  } as ViewStyle,
+
+  timelineDot: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+    flexShrink: 0,
+  } as ViewStyle,
+
+  timelineLine: {
+    width: 2,
+    flex: 1,
+    minHeight: 18,
+    marginVertical: 3,
+  } as ViewStyle,
+
+  timelineBody: { flex: 1 } as ViewStyle,
+
+  timelineLabel: { fontSize: 14 } as any,
+
+  timelineSub: {
+    fontSize: 12,
+    marginTop: 2,
+  } as any,
+
+  // Actions
+  actions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 18,
+  } as ViewStyle,
+
+  actionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    height: 46,
+    borderRadius: 14,
+    borderWidth: 1,
+  } as ViewStyle,
+
+  actionText: { fontSize: 14 } as any,
+});
