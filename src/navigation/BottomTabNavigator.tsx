@@ -1,6 +1,7 @@
-import React from 'react';
-import { Text, View } from 'react-native';
+// Matches design chrome.jsx BottomNav — 4 tabs with Feather icons
+import { View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
 import { FontFamily, FontSize, Layout } from '../theme';
 import type { BottomTabParams } from '../types/navigation';
@@ -12,63 +13,48 @@ import { ProfileScreen } from '../screens/main/ProfileScreen';
 
 const Tab = createBottomTabNavigator<BottomTabParams>();
 
-const TAB_ICONS: Record<keyof BottomTabParams, { active: string; inactive: string }> = {
-  Home: { active: '🏠', inactive: '🏡' },
-  Explore: { active: '🧭', inactive: '🗺️' },
-  Notifications: { active: '🔔', inactive: '🔕' },
-  Profile: { active: '👤', inactive: '👤' },
-};
+type FeatherName = React.ComponentProps<typeof Feather>['name'];
 
-function TabIcon({ name, focused }: { name: keyof BottomTabParams; focused: boolean }) {
-  return (
-    <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.55 }}>
-      {focused ? TAB_ICONS[name].active : TAB_ICONS[name].inactive}
-    </Text>
-  );
-}
+const TAB_CONFIG: Record<keyof BottomTabParams, { icon: FeatherName; label: string }> = {
+  Home:          { icon: 'home',     label: 'Home' },
+  Explore:       { icon: 'grid',     label: 'Explore' },
+  Notifications: { icon: 'bell',     label: 'Alerts' },
+  Profile:       { icon: 'user',     label: 'Profile' },
+};
 
 export function BottomTabNavigator() {
   const { C } = useTheme();
 
   return (
     <Tab.Navigator
-      screenOptions={{
-        headerShown: false,
-        tabBarStyle: {
-          backgroundColor: C.surface,
-          borderTopColor: C.border,
-          height: Layout.bottomNavHeight,
-          paddingBottom: 16,
-          paddingTop: 8,
-        },
-        tabBarActiveTintColor: C.brand,
-        tabBarInactiveTintColor: C.textMuted,
-        tabBarLabelStyle: {
-          fontFamily: FontFamily.jakartaMedium,
-          fontSize: FontSize.xs,
-        },
+      screenOptions={({ route }) => {
+        const cfg = TAB_CONFIG[route.name as keyof BottomTabParams];
+        return {
+          headerShown: false,
+          tabBarStyle: {
+            backgroundColor: C.surface,
+            borderTopColor: C.border,
+            height: Layout.bottomNavHeight,
+            paddingBottom: 14,
+            paddingTop: 6,
+          },
+          tabBarActiveTintColor: C.brand,
+          tabBarInactiveTintColor: C.textMuted,
+          tabBarLabelStyle: {
+            fontFamily: FontFamily.jakartaSemiBold,
+            fontSize: FontSize.xs,
+          },
+          tabBarLabel: cfg?.label ?? route.name,
+          tabBarIcon: ({ color, size }) => (
+            <Feather name={cfg?.icon ?? 'circle'} size={size} color={color} />
+          ),
+        };
       }}
     >
-      <Tab.Screen
-        name="Home"
-        component={HomeScreen}
-        options={{ tabBarIcon: ({ focused }) => <TabIcon name="Home" focused={focused} /> }}
-      />
-      <Tab.Screen
-        name="Explore"
-        component={ExploreScreen}
-        options={{ tabBarIcon: ({ focused }) => <TabIcon name="Explore" focused={focused} /> }}
-      />
-      <Tab.Screen
-        name="Notifications"
-        component={NotificationsScreen}
-        options={{ tabBarIcon: ({ focused }) => <TabIcon name="Notifications" focused={focused} /> }}
-      />
-      <Tab.Screen
-        name="Profile"
-        component={ProfileScreen}
-        options={{ tabBarIcon: ({ focused }) => <TabIcon name="Profile" focused={focused} /> }}
-      />
+      <Tab.Screen name="Home"          component={HomeScreen} />
+      <Tab.Screen name="Explore"       component={ExploreScreen} />
+      <Tab.Screen name="Notifications" component={NotificationsScreen} />
+      <Tab.Screen name="Profile"       component={ProfileScreen} />
     </Tab.Navigator>
   );
 }

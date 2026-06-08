@@ -4,7 +4,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { useAuth } from '../store/authStore';
 import { useTheme } from '../hooks/useTheme';
 import { AuthNavigator } from './AuthNavigator';
-import { BottomTabNavigator } from './BottomTabNavigator';
+import { AppNavigator } from './AppNavigator';
 
 export function RootNavigator() {
   const { session, loading } = useAuth();
@@ -20,7 +20,7 @@ export function RootNavigator() {
 
   return (
     <NavigationContainer>
-      {session ? <BottomTabNavigator /> : <AuthNavigator />}
+      {session ? <AppNavigator /> : <AuthNavigator />}
     </NavigationContainer>
   );
 }
