@@ -32,9 +32,8 @@ interface Listing {
   condition: string;
   negotiable: boolean;
   status: string;
-  user_id: string;
+  seller_id: string;
   description: string;
-  location: string;
   created_at: string;
 }
 
@@ -47,7 +46,7 @@ export function MarketScreen({ navigation }: any) {
 
   const load = useCallback(async () => {
     const { data } = await supabase
-      .from('market_listings')
+      .from('listings')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(60);
@@ -62,7 +61,7 @@ export function MarketScreen({ navigation }: any) {
     setRefreshing(false);
   }
 
-  const list = tab === 'mine' ? listings.filter(l => l.user_id === user?.id) : listings;
+  const list = tab === 'mine' ? listings.filter(l => l.seller_id === user?.id) : listings;
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -95,7 +94,7 @@ export function MarketScreen({ navigation }: any) {
               {t === 'all' ? 'All Listings' : 'My Listings'}
             </Text>
             <Text style={[styles.chipCount, { color: tab === t ? 'rgba(255,255,255,0.7)' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-              {t === 'all' ? listings.length : listings.filter(l => l.user_id === user?.id).length}
+              {t === 'all' ? listings.length : listings.filter(l => l.seller_id === user?.id).length}
             </Text>
           </TouchableOpacity>
         ))}
@@ -170,7 +169,7 @@ const styles = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 11 } as ViewStyle,
   cell: { width: '47.5%', borderRadius: 16, borderWidth: 1, overflow: 'hidden' } as ViewStyle,
   cellThumb: { height: 96, alignItems: 'center', justifyContent: 'center', position: 'relative' } as ViewStyle,
-  soldOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(15,23,42,0.55)', alignItems: 'center', justifyContent: 'center' } as ViewStyle,
+  soldOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15,23,42,0.55)', alignItems: 'center', justifyContent: 'center' } as ViewStyle,
   soldPill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 } as ViewStyle,
   soldTxt: { fontSize: 11 } as any,
   cellBody: { padding: 10, paddingBottom: 13 } as ViewStyle,
