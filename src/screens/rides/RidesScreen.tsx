@@ -19,13 +19,14 @@ const RIDE_BG    = '#6e8b1f1e';
 
 interface Ride {
   id: string;
-  from_location: string;
-  to_location: string;
-  ride_date: string;
-  ride_time: string;
+  origin: string;
+  destination: string;
+  date: string;
+  time: string;
   vehicle: string;
   fare: number;
-  total_seats: number;
+  seats_total: number;
+  direction: string;
   driver_id: string;
   driver_name?: string;
   driver_phone?: string;
@@ -45,11 +46,11 @@ export function RidesScreen({ navigation }: any) {
       supabase
         .from('rides')
         .select('*, profiles:driver_id(full_name, phone)')
-        .gte('ride_date', new Date().toISOString().slice(0, 10))
-        .order('ride_date')
-        .order('ride_time')
+        .gte('date', new Date().toISOString().slice(0, 10))
+        .order('date')
+        .order('time')
         .limit(30),
-      supabase.from('ride_requests').select('ride_id').eq('user_id', user?.id ?? ''),
+      supabase.from('ride_requests').select('ride_id').eq('requester_id', user?.id ?? ''),
     ]);
     if (ridesRes.data) {
       const rows = ridesRes.data.map((r: any) => ({
@@ -64,8 +65,7 @@ export function RidesScreen({ navigation }: any) {
         const { data: counts } = await supabase
           .from('ride_requests')
           .select('ride_id')
-          .in('ride_id', ids)
-          .eq('status', 'accepted');
+          .in('ride_id', ids);
         const map: Record<string, number> = {};
         (counts ?? []).forEach((c: any) => { map[c.ride_id] = (map[c.ride_id] ?? 0) + 1; });
         setTakenCounts(map);
@@ -84,7 +84,7 @@ export function RidesScreen({ navigation }: any) {
 
   async function requestRide(rideId: string) {
     if (!user) return;
-    await supabase.from('ride_requests').insert({ ride_id: rideId, user_id: user.id });
+    await supabase.from('ride_requests').insert({ ride_id: rideId, requester_id: user.id });
     setRequestedIds(prev => new Set([...prev, rideId]));
   }
 
@@ -122,7 +122,7 @@ export function RidesScreen({ navigation }: any) {
             {rides.map(r => {
               const taken = takenCounts[r.id] ?? 0;
               const isRequested = requestedIds.has(r.id);
-              const seatsLeft = r.total_seats - taken - (isRequested ? 1 : 0);
+              const seatsLeft = r.seats_total - taken;
               const isFull = seatsLeft <= 0 && !isRequested;
 
               return (
@@ -134,12 +134,12 @@ export function RidesScreen({ navigation }: any) {
                     </View>
                     <View style={styles.cardBody}>
                       <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                        {r.from_location} → {r.to_location}
+                        {r.origin} → {r.destination}
                       </Text>
                       <View style={styles.cardSub}>
                         <Feather name="clock" size={13} color={C.textMuted} />
                         <Text style={[styles.cardSubTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                          {r.ride_date} · {r.ride_time} · {r.vehicle}
+                          {r.date} · {r.time} · {r.vehicle}
                         </Text>
                       </View>
                     </View>
