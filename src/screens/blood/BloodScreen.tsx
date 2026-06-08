@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
-  Alert, RefreshControl, type ViewStyle,
+  RefreshControl, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
@@ -11,6 +11,7 @@ import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../store/authStore';
 import type { BloodRequest, Donor } from '../../types/database';
 
 type Tab = 'requests' | 'donors';
@@ -32,19 +33,23 @@ function GroupBadge({ group, size = 46 }: { group: string; size?: number }) {
 
 export function BloodScreen({ navigation }: any) {
   const { C } = useTheme();
+  const { user } = useAuth();
   const [tab, setTab] = useState<Tab>('requests');
   const [requests, setRequests] = useState<BloodRequest[]>([]);
   const [donors, setDonors]     = useState<Donor[]>([]);
+  const [pledgedIds, setPledgedIds] = useState<Set<string>>(new Set());
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
-    const [rRes, dRes] = await Promise.all([
+    const [rRes, dRes, pledgeRes] = await Promise.all([
       supabase.from('blood_requests').select('*').order('created_at', { ascending: false }).limit(30),
-      supabase.from('blood_donors').select('*, profiles:user_id(full_name)').limit(50),
+      supabase.from('donors').select('*, profiles:user_id(full_name)').limit(50),
+      supabase.from('blood_pledges').select('request_id').eq('donor_id', user?.id ?? ''),
     ]);
     if (rRes.data) setRequests(rRes.data as BloodRequest[]);
     if (dRes.data) setDonors(dRes.data as any);
-  }, []);
+    if (pledgeRes.data) setPledgedIds(new Set(pledgeRes.data.map((p: any) => p.request_id)));
+  }, [user?.id]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -52,6 +57,12 @@ export function BloodScreen({ navigation }: any) {
     setRefreshing(true);
     await load();
     setRefreshing(false);
+  }
+
+  async function pledge(requestId: string) {
+    if (!user) return;
+    const { error } = await supabase.from('blood_pledges').insert({ request_id: requestId, donor_id: user.id });
+    if (!error) setPledgedIds(prev => new Set([...prev, requestId]));
   }
 
   // Group donors by blood type
@@ -136,10 +147,17 @@ export function BloodScreen({ navigation }: any) {
                       {r.area} · {r.units} unit{r.units !== 1 ? 's' : ''} needed
                     </Text>
                   </View>
-                  <TouchableOpacity style={[styles.pledgeBtn, { backgroundColor: BLOOD_BG }]} onPress={() => Alert.alert('Thank you!', 'Your pledge has been recorded.')} activeOpacity={0.75}>
-                    <Icon name="blood" size={16} color={BLOOD_COLOR} />
-                    <Text style={[styles.pledgeTxt, { color: BLOOD_COLOR, fontFamily: FontFamily.jakartaBold }]}>Pledge to donate</Text>
-                  </TouchableOpacity>
+                  {pledgedIds.has(r.id) ? (
+                    <View style={[styles.pledgeBtn, { backgroundColor: '#e4f5f4' }]}>
+                      <Icon name="check" size={16} color="#0e9c8a" />
+                      <Text style={[styles.pledgeTxt, { color: '#0e9c8a', fontFamily: FontFamily.jakartaBold }]}>Pledged</Text>
+                    </View>
+                  ) : (
+                    <TouchableOpacity style={[styles.pledgeBtn, { backgroundColor: BLOOD_BG }]} onPress={() => pledge(r.id)} activeOpacity={0.75}>
+                      <Icon name="blood" size={16} color={BLOOD_COLOR} />
+                      <Text style={[styles.pledgeTxt, { color: BLOOD_COLOR, fontFamily: FontFamily.jakartaBold }]}>Pledge to donate</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               );
             })}
