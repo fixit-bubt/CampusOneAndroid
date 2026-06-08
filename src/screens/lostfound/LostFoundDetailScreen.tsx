@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
-  TextInput, ActivityIndicator, type ViewStyle,
+  TextInput, ActivityIndicator, Alert, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
@@ -31,7 +31,8 @@ function timeAgo(iso: string): string {
 export function LostFoundDetailScreen({ route, navigation }: any) {
   const { C, isDark } = useTheme();
   const { user } = useAuth();
-  const { id } = route.params;
+  const { itemId } = route.params;
+  const id = itemId;
 
   const [item, setItem] = useState<LostFoundItem | null>(null);
   const [poster, setPoster] = useState<{ full_name: string; avatar_url: string | null } | null>(null);
@@ -57,7 +58,7 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
   async function handleClaim() {
     if (!claimNote.trim() || busy || !item || !user) return;
     setBusy(true);
-    await supabase.from('lf_claims').insert({
+    await supabase.from('claims').insert({
       item_id: item.id,
       claimant_id: user.id,
       kind: item.type === 'Found' ? 'claim' : 'notify',
@@ -200,7 +201,13 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
           ) : (
             <TouchableOpacity
               style={[styles.actionBtn, { backgroundColor: C.brand, marginTop: 18 }]}
-              onPress={() => setShowClaim(true)}
+              onPress={() => {
+                if (!user) {
+                  Alert.alert('Sign in required', 'Please sign in to claim or notify about this item.');
+                  return;
+                }
+                setShowClaim(true);
+              }}
             >
               <View style={styles.btnRow}>
                 <Icon name="handshake" size={17} color="#fff" />

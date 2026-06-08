@@ -168,7 +168,7 @@ export function LostFoundBrowseScreen({ navigation }: any) {
                 item={item}
                 C={C}
                 isDark={isDark}
-                onPress={() => navigation.navigate('LostFoundDetail', { id: item.id })}
+                onPress={() => navigation.navigate('LostFoundDetail', { itemId: item.id })}
               />
             ))}
           </View>

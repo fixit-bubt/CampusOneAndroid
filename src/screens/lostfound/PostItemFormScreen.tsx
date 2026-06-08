@@ -1,5 +1,5 @@
 // Matches design screens-lostfound.jsx — PostItemForm
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
   TextInput, KeyboardAvoidingView, Platform, ActivityIndicator,
@@ -26,9 +26,12 @@ function hexAlpha(hex: string, a: number) {
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
 }
 
-export function PostItemFormScreen({ navigation }: any) {
+export function PostItemFormScreen({ route, navigation }: any) {
   const { C, isDark } = useTheme();
   const { user } = useAuth();
+  const editId: string | undefined = route.params?.itemId;
+  const isEdit = !!editId;
+
   const [type, setType] = useState<'Lost' | 'Found'>('Found');
   const [cat, setCat]   = useState<LostFoundItem['category'] | null>(null);
   const [title, setTitle] = useState('');
@@ -37,21 +40,55 @@ export function PostItemFormScreen({ navigation }: any) {
   const [busy, setBusy]   = useState(false);
   const [err, setErr]     = useState('');
 
+  // Pre-fill fields when editing an existing item
+  useEffect(() => {
+    if (!editId) return;
+    (async () => {
+      const { data } = await supabase
+        .from('lost_found_items')
+        .select('type, category, title, location, description')
+        .eq('id', editId)
+        .single();
+      if (data) {
+        setType(data.type as 'Lost' | 'Found');
+        setCat(data.category as LostFoundItem['category']);
+        setTitle(data.title ?? '');
+        setLoc(data.location ?? '');
+        setDesc(data.description ?? '');
+      }
+    })();
+  }, [editId]);
+
   const ok = !!cat && title.trim().length > 0;
 
   async function handleSubmit() {
     if (!ok || busy || !cat) return;
     setBusy(true);
     setErr('');
-    const { error } = await supabase.from('lost_found_items').insert({
-      type,
-      title:       title.trim(),
-      category:    cat,
-      description: desc.trim() || title.trim(),
-      location:    loc.trim() || 'Campus',
-      item_date:   new Date().toISOString().split('T')[0],
-      poster_id:   user?.id,
-    });
+    let error: any;
+    if (isEdit) {
+      ({ error } = await supabase
+        .from('lost_found_items')
+        .update({
+          type,
+          title:       title.trim(),
+          category:    cat,
+          description: desc.trim() || title.trim(),
+          location:    loc.trim() || 'Campus',
+        })
+        .eq('id', editId));
+    } else {
+      ({ error } = await supabase.from('lost_found_items').insert({
+        type,
+        title:       title.trim(),
+        category:    cat,
+        description: desc.trim() || title.trim(),
+        location:    loc.trim() || 'Campus',
+        item_date:   new Date().toISOString().split('T')[0],
+        status:      'Open',
+        poster_id:   user?.id,
+      }));
+    }
     setBusy(false);
     if (error) {
       setErr(error.message);
@@ -62,7 +99,7 @@ export function PostItemFormScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-      <SubBar title="Post Item" onBack={() => navigation.goBack()} />
+      <SubBar title={isEdit ? 'Edit Item' : 'Post Item'} onBack={() => navigation.goBack()} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView
           contentContainerStyle={[styles.content, { paddingHorizontal: Layout.screenPadding }]}
@@ -168,7 +205,7 @@ export function PostItemFormScreen({ navigation }: any) {
             ) : (
               <View style={styles.btnRow}>
                 <Icon name="check" size={18} color="#fff" />
-                <Text style={[styles.btnTxt, { fontFamily: FontFamily.jakartaBold }]}>Post Item</Text>
+                <Text style={[styles.btnTxt, { fontFamily: FontFamily.jakartaBold }]}>{isEdit ? 'Save Changes' : 'Post Item'}</Text>
               </View>
             )}
           </TouchableOpacity>
