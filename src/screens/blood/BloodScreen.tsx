@@ -44,7 +44,7 @@ export function BloodScreen({ navigation }: any) {
   const load = useCallback(async () => {
     const [rRes, dRes] = await Promise.all([
       supabase.from('blood_requests').select('*').order('created_at', { ascending: false }).limit(30),
-      supabase.from('blood_donors').select('*, profiles:user_id(full_name)').eq('is_available', true).limit(50),
+      supabase.from('donors').select('*, profiles:user_id(full_name)').limit(50),
     ]);
     if (rRes.data) setRequests(rRes.data as BloodRequest[]);
     if (dRes.data) setDonors(dRes.data as any);
@@ -58,30 +58,17 @@ export function BloodScreen({ navigation }: any) {
     setRefreshing(false);
   }
 
-  async function revealContact(donorId: string) {
+  async function revealContact(donorUserId: string) {
     if (!user || contactBusy) return;
     setContactBusy(true);
     try {
-      const { data, error } = await supabase.rpc('contact_reveal', { target_id: donorId });
+      const { data, error } = await supabase.rpc('donor_contact', { p_user_id: donorUserId });
       if (error) {
         Alert.alert('Error', 'Could not reveal contact. Please try again.');
         return;
       }
-      let phone = 'Not available';
-      if (data) {
-        if (typeof data === 'string') {
-          phone = data;
-        } else if (typeof data === 'object') {
-          phone =
-            data.phone ??
-            data.mobile ??
-            data.contact ??
-            data.phone_number ??
-            (Object.values(data as Record<string, unknown>)[0] as string | undefined) ??
-            'Not available';
-        }
-      }
-      Alert.alert('Contact', String(phone));
+      const contact = data?.whatsapp ?? data?.phone ?? (typeof data === 'string' ? data : null) ?? 'Not available';
+      Alert.alert('Contact', String(contact));
     } finally {
       setContactBusy(false);
     }
@@ -106,16 +93,11 @@ export function BloodScreen({ navigation }: any) {
           onPress: async () => {
             // Optimistically mark as responded so the user cannot double-tap
             setRespondedIds(prev => new Set(prev).add(r.id));
-            const { error } = await supabase.from('blood_donors').upsert(
-              {
-                user_id: user.id,
-                blood_group: r.blood_group,
-                is_available: true,
-              },
-              { onConflict: 'user_id' },
-            );
+            const { error } = await supabase.from('blood_pledges').insert({
+              request_id: r.id,
+              donor_id:   user.id,
+            });
             if (error) {
-              // Roll back optimistic update on failure
               setRespondedIds(prev => {
                 const next = new Set(prev);
                 next.delete(r.id);
@@ -123,7 +105,7 @@ export function BloodScreen({ navigation }: any) {
               });
               Alert.alert('Error', 'Could not submit your response. Please try again.');
             } else {
-              Alert.alert('Thank you!', `You have been registered as an available ${r.blood_group} donor. The requester can now find you.`);
+              Alert.alert('Thank you!', `You have pledged to help with this ${r.blood_group} request.`);
             }
           },
         },

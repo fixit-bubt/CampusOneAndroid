@@ -31,15 +31,19 @@ export function DonorRegisterScreen({ navigation }: any) {
     if (!canSubmit || !user) return;
     setLoading(true);
     try {
-      const { error } = await supabase.from('blood_donors').upsert({
-        user_id:      user.id,
-        blood_group:  group,
-        area:         area.trim(),
-        phone:        phone.trim() || null,
-        last_donated: lastDonated.trim() || null,
-        is_available: true,
-      });
-      if (error) throw error;
+      const [donorRes, profileRes] = await Promise.all([
+        supabase.from('donors').upsert({
+          user_id:      user.id,
+          blood_group:  group,
+          area:         area.trim(),
+          last_donated: lastDonated.trim() || null,
+        }, { onConflict: 'user_id' }),
+        phone.trim()
+          ? supabase.from('profiles').update({ whatsapp: phone.trim() }).eq('id', user.id)
+          : Promise.resolve({ error: null }),
+      ]);
+      if (donorRes.error) throw donorRes.error;
+      if (profileRes.error) throw profileRes.error;
       navigation.goBack();
     } catch {
       Alert.alert('Error', 'Could not register. Please try again.');
