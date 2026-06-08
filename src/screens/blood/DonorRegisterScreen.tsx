@@ -21,6 +21,7 @@ export function DonorRegisterScreen({ navigation }: any) {
 
   const [group, setGroup] = useState<BloodRequest['blood_group'] | null>(null);
   const [area, setArea] = useState('');
+  const [phone, setPhone] = useState('');
   const [lastDonated, setLastDonated] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -30,10 +31,11 @@ export function DonorRegisterScreen({ navigation }: any) {
     if (!canSubmit || !user) return;
     setLoading(true);
     try {
-      const { error } = await supabase.from('blood_donors').upsert({
+      const { error } = await supabase.from('donors').upsert({
         user_id:      user.id,
         blood_group:  group,
         area:         area.trim(),
+        phone:        phone.trim() || null,
         last_donated: lastDonated.trim() || null,
       });
       if (error) throw error;
@@ -83,6 +85,16 @@ export function DonorRegisterScreen({ navigation }: any) {
           onChangeText={setArea}
           placeholder="e.g. Mirpur"
           placeholderTextColor={C.textMuted}
+        />
+
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>PHONE / WHATSAPP</Text>
+        <TextInput
+          style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+          value={phone}
+          onChangeText={setPhone}
+          placeholder="+880 1700-000000"
+          placeholderTextColor={C.textMuted}
+          keyboardType="phone-pad"
         />
 
         <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>LAST DONATED (OPTIONAL)</Text>
