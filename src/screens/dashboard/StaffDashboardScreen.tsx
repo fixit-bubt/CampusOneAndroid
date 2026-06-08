@@ -65,13 +65,13 @@ function StatCard({ icon, fg, num, label, C }: any) {
   );
 }
 
-function ReportCard({ r, C, onAdvance }: { r: Report; C: any; onAdvance: (id: string, status: string) => void }) {
+function ReportCard({ r, C, onAdvance, onPress }: { r: Report; C: any; onAdvance: (id: string, status: string) => void; onPress: () => void }) {
   const issueConf = ISSUE_MAP[r.category] ?? ISSUE_MAP.other;
   const statusConf = STATUS_CONFIG[r.status] ?? STATUS_CONFIG['Open'];
   const issueBg = `${issueConf.fg}1e`;
   return (
     <View style={[styles.reportCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-      <View style={styles.reportTop}>
+      <TouchableOpacity style={styles.reportTop} onPress={onPress} activeOpacity={0.75}>
         <View style={[styles.issueIcon, { backgroundColor: issueBg }]}>
           <Icon name={issueConf.icon} size={20} color={issueConf.fg} />
         </View>
@@ -88,19 +88,13 @@ function ReportCard({ r, C, onAdvance }: { r: Report; C: any; onAdvance: (id: st
           <View style={[styles.statusDot, { backgroundColor: statusConf.fg }]} />
           <Text style={[styles.statusTxt, { color: statusConf.fg, fontFamily: FontFamily.jakartaBold }]}>{statusConf.label}</Text>
         </View>
-      </View>
+      </TouchableOpacity>
 
       <View style={styles.reportMeta}>
         {r.reporter_name && (
           <View style={styles.byRow}>
             <Avatar name={r.reporter_name} size="xs" />
             <Text style={[styles.byName, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{r.reporter_name}</Text>
-          </View>
-        )}
-        {r.priority && (
-          <View style={[styles.urgentPill, { backgroundColor: '#fbe7e5' }]}>
-            <Icon name="bolt" size={10} color="#e2483d" />
-            <Text style={[styles.urgentTxt, { color: '#e2483d', fontFamily: FontFamily.jakartaBold }]}>Urgent</Text>
           </View>
         )}
         <Text style={[styles.reportTime, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{timeAgo(r.created_at)}</Text>
@@ -202,7 +196,7 @@ export function StaffDashboardScreen({ navigation }: any) {
         ) : (
           <View style={styles.list}>
             {sorted.map(r => (
-              <ReportCard key={r.id} r={r} C={C} onAdvance={advanceStatus} />
+              <ReportCard key={r.id} r={r} C={C} onAdvance={advanceStatus} onPress={() => navigation.navigate('ReportDetail', { report: r })} />
             ))}
           </View>
         )}
