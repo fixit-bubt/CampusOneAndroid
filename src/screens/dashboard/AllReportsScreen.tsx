@@ -1,0 +1,349 @@
+// Matches design screens-f.jsx — AllReports (Admin)
+import { useState, useEffect, useCallback } from 'react';
+import {
+  View, Text, TouchableOpacity, ScrollView, Modal, StyleSheet,
+  RefreshControl, type ViewStyle,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTheme } from '../../hooks/useTheme';
+import { SubBar } from '../../components/layout/TopBar';
+import { Avatar } from '../../components/ui/Avatar';
+import { Icon } from '../../components/ui/Icon';
+import { FontFamily, Layout } from '../../theme';
+import { supabase } from '../../lib/supabase';
+import type { Report, Profile } from '../../types/database';
+
+type StatusFilter = 'all' | Report['status'];
+
+const STATUS_TABS: { id: StatusFilter; label: string }[] = [
+  { id: 'all',         label: 'All' },
+  { id: 'Open',        label: 'Open' },
+  { id: 'In Progress', label: 'In Progress' },
+  { id: 'Resolved',    label: 'Resolved' },
+];
+
+const STATUS_TONE: Record<string, { text: string; bg: string }> = {
+  'Open':        { text: '#e08a2b', bg: '#fef3c7' },
+  'In Progress': { text: '#2b5be3', bg: '#dbeafe' },
+  'Resolved':    { text: '#12915e', bg: '#d1fae5' },
+  'Rejected':    { text: '#d63d35', bg: '#fee2e2' },
+  'Closed':      { text: '#5b6b86', bg: '#f1f5f9' },
+};
+
+interface ReportWithProfile extends Report {
+  profiles: { full_name: string } | null;
+}
+
+export function AllReportsScreen({ navigation }: any) {
+  const { C } = useTheme();
+  const [reports, setReports] = useState<ReportWithProfile[]>([]);
+  const [filter, setFilter] = useState<StatusFilter>('all');
+  const [staff, setStaff] = useState<Profile[]>([]);
+  const [assignTarget, setAssignTarget] = useState<ReportWithProfile | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const load = useCallback(async () => {
+    const [rRes, sRes] = await Promise.all([
+      supabase
+        .from('reports')
+        .select('*, profiles(full_name)')
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false }),
+      supabase.from('profiles').select('*').eq('role', 'staff'),
+    ]);
+    if (rRes.data) setReports(rRes.data as ReportWithProfile[]);
+    if (sRes.data) setStaff(sRes.data as Profile[]);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  }
+
+  async function assignReport(reportId: string, staffId: string) {
+    await supabase.from('reports').update({
+      assigned_staff_id: staffId,
+      status: 'In Progress',
+    }).eq('id', reportId);
+    setReports(prev => prev.map(r =>
+      r.id === reportId ? { ...r, assigned_staff_id: staffId, status: 'In Progress' } : r
+    ));
+    setAssignTarget(null);
+  }
+
+  const list = filter === 'all' ? reports : reports.filter(r => r.status === filter);
+
+  return (
+    <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
+      <SubBar title="All Reports" onBack={() => navigation.goBack()} />
+
+      {/* Filter chips */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={[styles.chips, { paddingHorizontal: Layout.screenPadding }]}
+      >
+        {STATUS_TABS.map(tab => {
+          const count = tab.id === 'all' ? reports.length : reports.filter(r => r.status === tab.id).length;
+          const on = filter === tab.id;
+          return (
+            <TouchableOpacity
+              key={tab.id}
+              style={[styles.chip, on
+                ? { backgroundColor: C.brand, borderColor: C.brand }
+                : { backgroundColor: C.surface, borderColor: C.border }]}
+              onPress={() => setFilter(tab.id)}
+              activeOpacity={0.75}
+            >
+              <Text style={[styles.chipTxt, { color: on ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                {tab.label}
+              </Text>
+              <Text style={[styles.chipCount, { color: on ? 'rgba(255,255,255,0.75)' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                {count}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+
+      <ScrollView
+        contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
+      >
+        <View style={styles.cardList}>
+          {list.map(r => {
+            const tone = STATUS_TONE[r.status] ?? { text: '#5b6b86', bg: '#f1f5f9' };
+            const code = (r as any).code ?? ('RPT-' + r.id.replace(/\D/g, '').padStart(4, '0').slice(-4));
+            return (
+              <TouchableOpacity
+                key={r.id}
+                style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}
+                onPress={() => navigation.navigate('ReportDetail', { report: r })}
+                activeOpacity={0.75}
+              >
+                <View style={styles.cardTop}>
+                  <View style={styles.cardInfo}>
+                    <Text style={[styles.cardCode, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                      {code}
+                    </Text>
+                    <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={2}>
+                      {r.description.split('\n')[0]}
+                    </Text>
+                    <View style={styles.locRow}>
+                      <Icon name="pin" size={11} color={C.textMuted} />
+                      <Text style={[styles.loc, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                        {r.building}{r.room ? ` · Room ${r.room}` : ''}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={[styles.statusPill, { backgroundColor: tone.bg }]}>
+                    <Text style={[styles.statusTxt, { color: tone.text, fontFamily: FontFamily.jakartaBold }]}>
+                      {r.status}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.cardFooter}>
+                  <View style={styles.byRow}>
+                    <Avatar name={r.profiles?.full_name} size="xs" />
+                    <Text style={[styles.byName, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
+                      {r.profiles?.full_name ?? 'Unknown'}
+                    </Text>
+                  </View>
+                  {!r.assigned_staff_id && r.status === 'Open' && (
+                    <TouchableOpacity
+                      style={[styles.assignBtn, { backgroundColor: C.brand }]}
+                      onPress={() => setAssignTarget(r)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={[styles.assignTxt, { fontFamily: FontFamily.jakartaBold }]}>Assign</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+        <View style={{ height: 20 }} />
+      </ScrollView>
+
+      {/* Assign Modal */}
+      <Modal visible={!!assignTarget} transparent animationType="slide" onRequestClose={() => setAssignTarget(null)}>
+        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setAssignTarget(null)} />
+        <View style={[styles.sheet, { backgroundColor: C.surface }]}>
+          <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+            Assign Staff
+          </Text>
+          <Text style={[styles.sheetSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+            {assignTarget?.description.split('\n')[0]}
+          </Text>
+          {staff.map((s, i) => (
+            <View key={s.id}>
+              {i > 0 && <View style={[styles.divider, { backgroundColor: C.border }]} />}
+              <TouchableOpacity
+                style={styles.staffRow}
+                onPress={() => assignReport(assignTarget!.id, s.id)}
+                activeOpacity={0.75}
+              >
+                <Avatar uri={s.avatar_url} name={s.full_name} size="sm" />
+                <View style={styles.staffBody}>
+                  <Text style={[styles.staffName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{s.full_name}</Text>
+                  <Text style={[styles.staffDept, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                    {s.department ?? 'Staff'}
+                  </Text>
+                </View>
+                <Icon name="chevR" size={18} color={C.textMuted} />
+              </TouchableOpacity>
+            </View>
+          ))}
+          {staff.length === 0 && (
+            <Text style={[{ color: C.textMuted, fontFamily: FontFamily.jakartaMedium, textAlign: 'center', paddingVertical: 20 }]}>
+              No staff members found
+            </Text>
+          )}
+        </View>
+      </Modal>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safe: { flex: 1 } as ViewStyle,
+
+  chips: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingVertical: 10,
+  } as ViewStyle,
+
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+  } as ViewStyle,
+
+  chipTxt: { fontSize: 13 } as any,
+  chipCount: { fontSize: 12 } as any,
+
+  scroll: { paddingTop: 4, paddingBottom: 20 } as ViewStyle,
+
+  cardList: {
+    gap: 10,
+  } as ViewStyle,
+
+  card: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 14,
+    gap: 12,
+  } as ViewStyle,
+
+  cardTop: {
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'flex-start',
+  } as ViewStyle,
+
+  cardInfo: { flex: 1 } as ViewStyle,
+
+  cardCode: {
+    fontSize: 11,
+    letterSpacing: 0.3,
+    marginBottom: 2,
+  } as any,
+
+  cardTitle: {
+    fontSize: 14,
+    lineHeight: 20,
+  } as any,
+
+  locRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 4,
+  } as ViewStyle,
+
+  loc: { fontSize: 11.5 } as any,
+
+  statusPill: {
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 20,
+    flexShrink: 0,
+  } as ViewStyle,
+
+  statusTxt: { fontSize: 11 } as any,
+
+  cardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  } as ViewStyle,
+
+  byRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+  } as ViewStyle,
+
+  byName: { fontSize: 12 } as any,
+
+  assignBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 10,
+  } as ViewStyle,
+
+  assignTxt: {
+    color: '#fff',
+    fontSize: 13,
+  } as any,
+
+  // Sheet
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+  } as ViewStyle,
+
+  sheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: Layout.screenPadding,
+    paddingTop: 20,
+    paddingBottom: 34,
+    maxHeight: '70%',
+  } as ViewStyle,
+
+  sheetTitle: {
+    fontSize: 18,
+    marginBottom: 4,
+  } as any,
+
+  sheetSub: {
+    fontSize: 13,
+    marginBottom: 16,
+  } as any,
+
+  divider: { height: StyleSheet.hairlineWidth } as ViewStyle,
+
+  staffRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 12,
+  } as ViewStyle,
+
+  staffBody: { flex: 1 } as ViewStyle,
+
+  staffName: { fontSize: 14 } as any,
+  staffDept: { fontSize: 12, marginTop: 1 } as any,
+});
