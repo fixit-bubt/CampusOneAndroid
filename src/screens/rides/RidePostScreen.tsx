@@ -88,23 +88,23 @@ export function RidePostScreen({ navigation }: any) {
       Alert.alert('Invalid fare', 'Please enter a valid fare amount.');
       return;
     }
-    // Build ISO departure_time from date + time fields
     const timePart = time.trim() || '08:00';
-    const departureDateStr = date.trim();
-    const departureTime = new Date(`${departureDateStr}T${timePart.length <= 5 ? timePart : '08:00'}`);
-    if (isNaN(departureTime.getTime())) {
+    if (!date.trim().match(/^\d{4}-\d{2}-\d{2}$/)) {
       Alert.alert('Invalid date', 'Please enter a valid date (YYYY-MM-DD).');
       return;
     }
     setLoading(true);
     try {
-      const { error } = await supabase.from('ride_shares').insert({
-        driver_id:       user.id,
-        from_location:   from.trim(),
-        to_location:     to.trim(),
-        departure_time:  departureTime.toISOString(),
-        seats_available: parseInt(seats, 10) || 1,
-        price_per_seat:  parsedFare,
+      const { error } = await supabase.from('rides').insert({
+        driver_id:   user.id,
+        direction:   direction,
+        vehicle:     vehicle,
+        origin:      from.trim(),
+        destination: to.trim(),
+        date:        date.trim(),
+        time:        timePart,
+        seats_total: parseInt(seats, 10) || 1,
+        fare:        parsedFare,
       });
       if (error) throw error;
       navigation.goBack();

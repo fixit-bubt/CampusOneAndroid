@@ -22,7 +22,8 @@ export function RideDetailScreen({ route, navigation }: any) {
   const { user } = useAuth();
   const { rideId } = route.params;
   const [ride, setRide] = useState<any>(null);
-  const [driver, setDriver] = useState<any>(null);
+  const [driverName, setDriverName] = useState<string | null>(null);
+  const [contact, setContact] = useState<{ whatsapp: string } | null>(null);
   const [requested, setRequested] = useState(false);
   const [takenCount, setTakenCount] = useState(0);
 
@@ -30,8 +31,8 @@ export function RideDetailScreen({ route, navigation }: any) {
     (async () => {
       const [rideRes, reqRes, takenRes] = await Promise.all([
         supabase
-          .from('ride_shares')
-          .select('*, profiles:driver_id(full_name, email, whatsapp)')
+          .from('rides')
+          .select('*, profiles:driver_id(full_name)')
           .eq('id', rideId)
           .single(),
         supabase
@@ -47,21 +48,33 @@ export function RideDetailScreen({ route, navigation }: any) {
       ]);
       if (rideRes.data) {
         setRide(rideRes.data);
-        setDriver(rideRes.data.profiles);
+        setDriverName((rideRes.data as any).profiles?.full_name ?? null);
       }
-      setRequested(!!reqRes.data);
+      if (reqRes.data && rideRes.data) {
+        setRequested(true);
+        const { data: c } = await supabase.rpc('ride_contact', {
+          p_code:   rideRes.data.code,
+          p_target: rideRes.data.driver_id,
+        });
+        if (c) setContact(c);
+      }
       setTakenCount(takenRes.data?.length ?? 0);
     })();
   }, [rideId, user?.id]);
 
   async function requestRide() {
-    if (!user || requested) return;
+    if (!user || requested || !ride) return;
     const { error } = await supabase
       .from('ride_requests')
       .insert({ ride_id: rideId, requester_id: user.id });
     if (!error) {
       setRequested(true);
       setTakenCount(c => c + 1);
+      const { data: c } = await supabase.rpc('ride_contact', {
+        p_code:   ride.code,
+        p_target: ride.driver_id,
+      });
+      if (c) setContact(c);
     }
   }
 
@@ -75,14 +88,9 @@ export function RideDetailScreen({ route, navigation }: any) {
   }
 
   const isOwnRide = ride.driver_id === user?.id;
-  const seatsLeft = (ride.seats_available ?? 0) - takenCount;
+  const seatsLeft = (ride.seats_total ?? 0) - takenCount;
   const isFull = seatsLeft <= 0 && !requested;
-  const departureLabel = ride.departure_time
-    ? new Date(ride.departure_time).toLocaleString([], {
-        weekday: 'short', month: 'short', day: 'numeric',
-        hour: '2-digit', minute: '2-digit',
-      })
-    : 'N/A';
+  const departureLabel = ride.date && ride.time ? `${ride.date} ${ride.time}` : ride.date ?? 'N/A';
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -98,14 +106,14 @@ export function RideDetailScreen({ route, navigation }: any) {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[styles.route, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]} numberOfLines={2}>
-              {ride.from_location} → {ride.to_location}
+              {ride.origin} → {ride.destination}
             </Text>
             <Text style={[styles.subTime, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
               {departureLabel}
             </Text>
           </View>
           <Text style={[styles.fare, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-            ৳{ride.price_per_seat}
+            ৳{ride.fare}
           </Text>
         </View>
 
@@ -114,13 +122,13 @@ export function RideDetailScreen({ route, navigation }: any) {
           <View style={styles.infoCell}>
             <Text style={[styles.infoCellLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>Seats left</Text>
             <Text style={[styles.infoCellTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-              {isFull ? 'Full' : `${Math.max(seatsLeft, 0)} / ${ride.seats_available}`}
+              {isFull ? 'Full' : `${Math.max(seatsLeft, 0)} / ${ride.seats_total}`}
             </Text>
           </View>
           <View style={[styles.infoCell, { borderLeftWidth: 1, borderLeftColor: C.border }]}>
             <Text style={[styles.infoCellLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>Fare/seat</Text>
             <Text style={[styles.infoCellTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-              ৳{ride.price_per_seat}
+              ৳{ride.fare}
             </Text>
           </View>
         </View>
@@ -128,26 +136,23 @@ export function RideDetailScreen({ route, navigation }: any) {
         {/* Driver card */}
         <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>DRIVER</Text>
         <View style={[styles.driverCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <Avatar name={driver?.full_name} size="sm" />
+          <Avatar name={driverName ?? undefined} size="sm" />
           <View style={{ flex: 1 }}>
             <Text style={[styles.driverName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-              {driver?.full_name ?? 'Unknown'}
+              {driverName ?? 'Unknown'}
             </Text>
-            {requested && driver?.whatsapp && (
+            {requested && contact?.whatsapp && (
               <View style={styles.contactRow}>
                 <Feather name="phone" size={13} color={C.textMuted} />
                 <Text style={[styles.contactTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                  {driver.whatsapp}
+                  {contact.whatsapp}
                 </Text>
               </View>
             )}
-            {requested && driver?.email && (
-              <View style={styles.contactRow}>
-                <Feather name="mail" size={13} color={C.textMuted} />
-                <Text style={[styles.contactTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                  {driver.email}
-                </Text>
-              </View>
+            {requested && !contact?.whatsapp && (
+              <Text style={[styles.contactTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium, marginTop: 4 }]}>
+                Request sent — driver will be notified
+              </Text>
             )}
           </View>
         </View>

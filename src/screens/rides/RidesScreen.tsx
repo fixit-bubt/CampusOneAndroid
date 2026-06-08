@@ -19,11 +19,13 @@ const RIDE_BG    = '#6e8b1f1e';
 
 interface Ride {
   id: string;
-  from_location: string;
-  to_location: string;
-  departure_time: string;
-  seats_available: number;
-  price_per_seat: number;
+  code: string;
+  origin: string;
+  destination: string;
+  date: string;
+  time: string;
+  seats_total: number;
+  fare: number;
   driver_id: string;
   driver_name?: string;
   created_at: string;
@@ -40,10 +42,11 @@ export function RidesScreen({ navigation }: any) {
   const load = useCallback(async () => {
     const [ridesRes, reqRes] = await Promise.all([
       supabase
-        .from('ride_shares')
+        .from('rides')
         .select('*, profiles:driver_id(full_name)')
-        .gte('departure_time', new Date().toISOString())
-        .order('departure_time')
+        .gte('date', new Date().toISOString().split('T')[0])
+        .order('date')
+        .order('time')
         .limit(30),
       supabase.from('ride_requests').select('ride_id').eq('requester_id', user?.id ?? ''),
     ]);
@@ -118,11 +121,9 @@ export function RidesScreen({ navigation }: any) {
               const taken = takenCounts[r.id] ?? 0;
               const isRequested = requestedIds.has(r.id);
               const isOwnRide = r.driver_id === user?.id;
-              const seatsLeft = r.seats_available - taken;
+              const seatsLeft = r.seats_total - taken;
               const isFull = seatsLeft <= 0 && !isRequested;
-              const departureLabel = r.departure_time
-                ? new Date(r.departure_time).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-                : '';
+              const departureLabel = r.date && r.time ? `${r.date} ${r.time}` : r.date ?? '';
 
               return (
                 <TouchableOpacity
@@ -138,7 +139,7 @@ export function RidesScreen({ navigation }: any) {
                     </View>
                     <View style={styles.cardBody}>
                       <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                        {r.from_location} → {r.to_location}
+                        {r.origin} → {r.destination}
                       </Text>
                       <View style={styles.cardSub}>
                         <Feather name="clock" size={13} color={C.textMuted} />
@@ -148,7 +149,7 @@ export function RidesScreen({ navigation }: any) {
                       </View>
                     </View>
                     <Text style={[styles.fare, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-                      ৳{r.price_per_seat}
+                      ৳{r.fare}
                     </Text>
                   </View>
 
