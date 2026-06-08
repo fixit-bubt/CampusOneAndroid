@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
-  ActivityIndicator, Linking, type ViewStyle,
+  ActivityIndicator, Linking, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -22,30 +22,49 @@ const ACADEMIC_LINK_KEYS: Record<string, string> = {
   'ORCID':          'orcid_url',
 };
 
+interface Faculty {
+  id: string;
+  name: string;
+  designation: string;
+  email: string | null;
+  phone: string | null;
+  room_no: string | null;
+  office_hours: string | null;
+  research_interests: string[] | string | null;
+  on_leave: boolean;
+  photo_url: string | null;
+  scholar_url: string | null;
+  researchgate_url: string | null;
+  linkedin_url: string | null;
+  orcid_url: string | null;
+  departments: { name: string; branch?: string } | null;
+}
+
 export function FacultyProfileScreen({ route, navigation }: any) {
   const { C } = useTheme();
   const { user } = useAuth();
-  const { id } = route.params;
-  const [member, setMember] = useState<any>(null);
+  const facultyId: string = route.params?.facultyId ?? route.params?.id;
+  const [member, setMember] = useState<Faculty | null>(null);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
+    if (!facultyId) return;
     (async () => {
       const [memberRes, saveRes] = await Promise.all([
-        supabase.from('faculty').select('*, departments(name, branch)').eq('id', id).single(),
-        supabase.from('faculty_bookmarks').select('faculty_id').eq('faculty_id', id).eq('user_id', user?.id ?? '').maybeSingle(),
+        supabase.from('faculty').select('*, departments(name, branch)').eq('id', facultyId).single(),
+        supabase.from('faculty_bookmarks').select('faculty_id').eq('faculty_id', facultyId).eq('user_id', user?.id ?? '').maybeSingle(),
       ]);
-      if (memberRes.data) setMember(memberRes.data);
+      if (memberRes.data) setMember(memberRes.data as Faculty);
       setSaved(!!saveRes.data);
     })();
-  }, [id, user?.id]);
+  }, [facultyId, user?.id]);
 
   async function toggleSave() {
     if (!user || !member) return;
     if (saved) {
-      await supabase.from('faculty_bookmarks').delete().eq('faculty_id', id).eq('user_id', user.id);
+      await supabase.from('faculty_bookmarks').delete().eq('faculty_id', facultyId).eq('user_id', user.id);
     } else {
-      await supabase.from('faculty_bookmarks').insert({ faculty_id: id, user_id: user.id });
+      await supabase.from('faculty_bookmarks').insert({ faculty_id: facultyId, user_id: user.id });
     }
     setSaved(!saved);
   }
@@ -82,6 +101,39 @@ export function FacultyProfileScreen({ route, navigation }: any) {
           <Text style={[styles.designation, { color: C.brand, fontFamily: FontFamily.jakartaSemiBold }]}>{member.designation}</Text>
           <Text style={[styles.department, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{member.departments?.name ?? ''}</Text>
         </View>
+
+        {/* Contact Info */}
+        {(member.email || member.phone || member.room_no || member.office_hours) && (
+          <>
+            <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>CONTACT</Text>
+            <View style={[styles.infoGrid, { backgroundColor: C.surface, borderColor: C.border }]}>
+              {member.email ? (
+                <View style={[styles.infoCell, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border }]}>
+                  <Text style={[styles.infoCellLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>Email</Text>
+                  <Text style={[styles.infoCellVal, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>{member.email}</Text>
+                </View>
+              ) : null}
+              {member.phone ? (
+                <View style={[styles.infoCell, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border }]}>
+                  <Text style={[styles.infoCellLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>Phone</Text>
+                  <Text style={[styles.infoCellVal, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>{member.phone}</Text>
+                </View>
+              ) : null}
+              {member.room_no ? (
+                <View style={[styles.infoCell, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border }]}>
+                  <Text style={[styles.infoCellLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>Room</Text>
+                  <Text style={[styles.infoCellVal, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>{member.room_no}</Text>
+                </View>
+              ) : null}
+              {member.office_hours ? (
+                <View style={styles.infoCell}>
+                  <Text style={[styles.infoCellLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>Office Hours</Text>
+                  <Text style={[styles.infoCellVal, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>{member.office_hours}</Text>
+                </View>
+              ) : null}
+            </View>
+          </>
+        )}
 
         {/* Specialization */}
         <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>SPECIALIZATION</Text>

@@ -67,9 +67,17 @@ export function FacultyScreen({ navigation }: any) {
   }
 
   const base = tab === 'saved' ? faculty.filter(f => savedIds.has(f.id)) : faculty;
-  const filtered = base.filter(f =>
-    (f.name + ' ' + (Array.isArray(f.research_interests) ? f.research_interests.join(' ') : '')).toLowerCase().includes(query.toLowerCase().trim())
-  );
+  const filtered = base.filter(f => {
+    const q = query.toLowerCase().trim();
+    if (!q) return true;
+    const haystack = [
+      f.name,
+      f.designation,
+      f.departments?.name ?? '',
+      Array.isArray(f.research_interests) ? f.research_interests.join(' ') : '',
+    ].join(' ').toLowerCase();
+    return haystack.includes(q);
+  });
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -127,7 +135,7 @@ export function FacultyScreen({ navigation }: any) {
               <View key={f.id} style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
                 <TouchableOpacity
                   style={styles.cardMain}
-                  onPress={() => navigation.navigate('FacultyProfile', { id: f.id })}
+                  onPress={() => navigation.navigate('FacultyProfile', { facultyId: f.id })}
                   activeOpacity={0.75}
                 >
                   <Avatar name={f.name} size="md" />
