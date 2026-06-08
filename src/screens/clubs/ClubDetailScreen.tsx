@@ -91,6 +91,19 @@ export function ClubDetailScreen({ route, navigation }: any) {
   const cat = CL_CATS[club.category] ?? CL_CATS.other;
   const tintBg = isDark ? `${cat.fg}2e` : `${cat.fg}18`;
   const canManage = myRole === 'president' || myRole === 'vp';
+  const isMember = !!myRole;
+
+  async function joinClub() {
+    if (!user) return;
+    const { error } = await supabase.from('club_members').insert({ club_id: id, user_id: user.id, role: 'member', added_by: user.id });
+    if (!error) setMyRole('member');
+  }
+
+  async function leaveClub() {
+    if (!user) return;
+    const { error } = await supabase.from('club_members').delete().eq('club_id', id).eq('user_id', user.id);
+    if (!error) { setMyRole(null); setMembers(prev => prev.filter(m => m.user_id !== user.id)); }
+  }
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -133,6 +146,29 @@ export function ClubDetailScreen({ route, navigation }: any) {
         </View>
 
         <Text style={[styles.desc, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>{club.about}</Text>
+
+        {/* Join / Leave */}
+        {!canManage && (
+          isMember ? (
+            <TouchableOpacity
+              style={[styles.joinBtn, { backgroundColor: C.surface2, borderColor: C.border, borderWidth: 1 }]}
+              onPress={leaveClub}
+              activeOpacity={0.75}
+            >
+              <Feather name="log-out" size={15} color={C.text2} />
+              <Text style={[styles.joinBtnTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>Leave club</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={[styles.joinBtn, { backgroundColor: cat.fg }]}
+              onPress={joinClub}
+              activeOpacity={0.75}
+            >
+              <Feather name="user-plus" size={15} color="#fff" />
+              <Text style={[styles.joinBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>Join club</Text>
+            </TouchableOpacity>
+          )
+        )}
 
         {/* Tabs */}
         <View style={styles.chips}>
@@ -252,4 +288,6 @@ const styles = StyleSheet.create({
 
   empty: { alignItems: 'center', padding: 24 } as ViewStyle,
   emptyTxt: { fontSize: 13.5 } as any,
+  joinBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, height: 42, borderRadius: 13, marginTop: 12 } as ViewStyle,
+  joinBtnTxt: { fontSize: 14 } as any,
 });
