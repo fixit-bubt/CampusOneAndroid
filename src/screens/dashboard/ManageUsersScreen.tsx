@@ -10,6 +10,7 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../store/authStore';
 import type { Profile } from '../../types/database';
 
 const ROLE_COLOR = { student: '#2b5be3', staff: '#b9760a', admin: '#12915e' };
@@ -17,6 +18,7 @@ const ROLE_NEXT: Record<string, Profile['role']> = { student: 'staff', staff: 'a
 
 export function ManageUsersScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
+  const { profile } = useAuth();
   const [users, setUsers] = useState<Profile[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [toast, setToast] = useState(false);
@@ -54,6 +56,20 @@ export function ManageUsersScreen({ navigation }: any) {
           },
         },
       ]
+    );
+  }
+
+  if (profile && profile.role !== 'admin' && profile.role !== 'staff') {
+    return (
+      <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
+        <SubBar title="Manage Users" onBack={() => navigation.goBack()} />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 }}>
+          <Text style={{ color: C.text, fontFamily: FontFamily.jakartaExtraBold, fontSize: 18, marginBottom: 8 }}>Access Denied</Text>
+          <Text style={{ color: C.textMuted, fontFamily: FontFamily.jakartaMedium, fontSize: 14, textAlign: 'center' }}>
+            Only admins and staff can manage users.
+          </Text>
+        </View>
+      </SafeAreaView>
     );
   }
 

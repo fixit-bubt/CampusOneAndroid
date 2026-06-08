@@ -11,6 +11,7 @@ import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../store/authStore';
 import type { Report, Profile } from '../../types/database';
 
 type StatusFilter = 'all' | Report['status'];
@@ -36,6 +37,7 @@ interface ReportWithProfile extends Report {
 
 export function AllReportsScreen({ navigation }: any) {
   const { C } = useTheme();
+  const { profile } = useAuth();
   const [reports, setReports] = useState<ReportWithProfile[]>([]);
   const [filter, setFilter] = useState<StatusFilter>('all');
   const [staff, setStaff] = useState<Profile[]>([]);
@@ -75,6 +77,20 @@ export function AllReportsScreen({ navigation }: any) {
   }
 
   const list = filter === 'all' ? reports : reports.filter(r => r.status === filter);
+
+  if (profile && profile.role !== 'admin' && profile.role !== 'staff') {
+    return (
+      <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
+        <SubBar title="All Reports" onBack={() => navigation.goBack()} />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 }}>
+          <Text style={{ color: C.text, fontFamily: FontFamily.jakartaExtraBold, fontSize: 18, marginBottom: 8 }}>Access Denied</Text>
+          <Text style={{ color: C.textMuted, fontFamily: FontFamily.jakartaMedium, fontSize: 14, textAlign: 'center' }}>
+            Only admins and staff can view all reports.
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -122,7 +138,7 @@ export function AllReportsScreen({ navigation }: any) {
               <TouchableOpacity
                 key={r.id}
                 style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}
-                onPress={() => navigation.navigate('ReportDetail', { report: r })}
+                onPress={() => navigation.navigate('ReportDetail', { reportId: r.id })}
                 activeOpacity={0.75}
               >
                 <View style={styles.cardTop}>

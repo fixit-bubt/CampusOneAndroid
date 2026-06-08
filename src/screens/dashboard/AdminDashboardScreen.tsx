@@ -73,7 +73,7 @@ function StatCard({ icon, fg, num, label, C }: any) {
 }
 
 function ReportCard({ r, C, onAssign }: { r: Report; C: any; onAssign: (r: Report) => void }) {
-  const issueConf = ISSUE_MAP[r.category] ?? ISSUE_MAP.other;
+  const issueConf = ISSUE_MAP[r.category?.toLowerCase()] ?? ISSUE_MAP.other;
   const statusConf = STATUS_CONFIG[r.status] ?? STATUS_CONFIG['Open'];
   const issueBg = `${issueConf.fg}1e`;
   return (

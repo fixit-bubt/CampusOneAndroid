@@ -66,7 +66,7 @@ function StatCard({ icon, fg, num, label, C }: any) {
 }
 
 function ReportCard({ r, C, onAdvance, onPress }: { r: Report; C: any; onAdvance: (id: string, status: string) => void; onPress: () => void }) {
-  const issueConf = ISSUE_MAP[r.category] ?? ISSUE_MAP.other;
+  const issueConf = ISSUE_MAP[r.category?.toLowerCase()] ?? ISSUE_MAP.other;
   const statusConf = STATUS_CONFIG[r.status] ?? STATUS_CONFIG['Open'];
   const issueBg = `${issueConf.fg}1e`;
   return (
@@ -196,7 +196,7 @@ export function StaffDashboardScreen({ navigation }: any) {
         ) : (
           <View style={styles.list}>
             {sorted.map(r => (
-              <ReportCard key={r.id} r={r} C={C} onAdvance={advanceStatus} onPress={() => navigation.navigate('ReportDetail', { report: r })} />
+              <ReportCard key={r.id} r={r} C={C} onAdvance={advanceStatus} onPress={() => navigation.navigate('ReportDetail', { reportId: r.id })} />
             ))}
           </View>
         )}
