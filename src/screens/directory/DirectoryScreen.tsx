@@ -34,11 +34,7 @@ export function DirectoryScreen({ navigation }: any) {
 
   const load = useCallback(async () => {
     if (!user?.id) return;
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('id, full_name, department, intake, section, email')
-      .neq('id', user?.id ?? '')
-      .limit(80);
+    const { data: profiles } = await supabase.rpc('student_directory');
 
     const { data: connections } = await supabase
       .from('connections')
