@@ -1,16 +1,21 @@
 // Matches design screens-reportform.jsx — ReportForm
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
   StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
-  type ViewStyle,
+  Alert, Image, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout } from '../../theme';
+import { supabase } from '../../lib/supabase';
 import { createReport } from '../../services/reportsService';
+import { useAuth } from '../../store/authStore';
+import { uploadFile } from '../../utils/storage';
+import { BUCKETS } from '../../constants/app';
 import type { Report } from '../../types/database';
 
 // Issue categories from database schema
@@ -37,40 +42,123 @@ function lightenHex(hex: string): string {
   return `rgb(${r},${g},${b})`;
 }
 
-export function ReportFormScreen({ navigation }: any) {
+export function ReportFormScreen({ route, navigation }: any) {
   const { C, isDark } = useTheme();
+  const { user } = useAuth();
+  const editReportId: string | undefined = route.params?.editReportId;
+  const isEdit = !!editReportId;
 
-  const [cat, setCat]     = useState<Report['category'] | null>(null);
-  const [title, setTitle] = useState('');
-  const [loc, setLoc]     = useState('');
-  const [desc, setDesc]   = useState('');
-  const [busy, setBusy]   = useState(false);
-  const [err, setErr]     = useState('');
+  const [cat, setCat]       = useState<Report['category'] | null>(null);
+  const [title, setTitle]   = useState('');
+  const [loc, setLoc]       = useState('');
+  const [desc, setDesc]     = useState('');
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [busy, setBusy]     = useState(false);
+  const [loading, setLoading] = useState(isEdit);
+  const [err, setErr]       = useState('');
+
+  // Pre-fill when editing
+  useEffect(() => {
+    if (!editReportId) return;
+    (async () => {
+      const { data } = await supabase.from('reports').select('*').eq('id', editReportId).single();
+      if (data) {
+        const lines = (data.description ?? '').split('\n');
+        setTitle(lines[0] ?? '');
+        setDesc(lines.slice(1).join('\n'));
+        setCat(data.category ?? null);
+        setLoc([data.building, data.room].filter(Boolean).join(' · '));
+        if (data.photo_url) setPhotoUri(data.photo_url);
+      }
+      setLoading(false);
+    })();
+  }, [editReportId]);
 
   const ok = !!cat && title.trim().length > 0;
+
+  async function pickPhoto() {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permission required', 'Permission to access the media library is required.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setPhotoUri(result.assets[0].uri);
+    }
+  }
 
   async function handleSubmit() {
     if (!ok || busy || !cat) return;
     setBusy(true);
     setErr('');
+
+    // Upload photo to storage if it's a new local file
+    let finalPhotoUrl: string | undefined = undefined;
+    if (photoUri) {
+      if (photoUri.startsWith('http')) {
+        // Already an uploaded URL (editing existing report)
+        finalPhotoUrl = photoUri;
+      } else {
+        // Local file — upload to storage
+        const ext = photoUri.split('.').pop() ?? 'jpg';
+        const remotePath = `reports/${user?.id ?? 'anon'}/${Date.now()}.${ext}`;
+        const result = await uploadFile(BUCKETS.photos, photoUri, remotePath, `image/${ext}`);
+        if (!result.success) {
+          setBusy(false);
+          setErr('Photo upload failed: ' + result.error);
+          return;
+        }
+        finalPhotoUrl = result.url;
+      }
+    }
+
     const [building, room] = loc.includes('·') ? loc.split('·').map(s => s.trim()) : [loc.trim(), undefined];
-    const res = await createReport({
+    const payload = {
       category: cat,
       description: [title.trim(), desc.trim()].filter(Boolean).join('\n'),
       building: building || 'Unknown',
       room: room,
-    });
-    setBusy(false);
-    if (res.ok) {
-      navigation.goBack();
+      ...(finalPhotoUrl ? { photo_url: finalPhotoUrl } : {}),
+    };
+
+    if (isEdit) {
+      const { error } = await supabase.from('reports').update(payload).eq('id', editReportId!);
+      setBusy(false);
+      if (error) {
+        setErr(error.message ?? 'Failed to update report');
+      } else {
+        navigation.goBack();
+      }
     } else {
-      setErr(res.error ?? 'Failed to submit report');
+      const res = await createReport(payload);
+      setBusy(false);
+      if (res.ok) {
+        navigation.goBack();
+      } else {
+        setErr(res.error ?? 'Failed to submit report');
+      }
     }
+  }
+
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
+        <SubBar title="Edit Report" onBack={() => navigation.goBack()} />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator color={C.brand} />
+        </View>
+      </SafeAreaView>
+    );
   }
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-      <SubBar title="Report an Issue" onBack={() => navigation.goBack()} />
+      <SubBar title={isEdit ? 'Edit Report' : 'Report an Issue'} onBack={() => navigation.goBack()} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView
           contentContainerStyle={[styles.content, { paddingHorizontal: Layout.screenPadding }]}
@@ -151,20 +239,35 @@ export function ReportFormScreen({ navigation }: any) {
             textAlignVertical="top"
           />
 
-          {/* Photo placeholder */}
+          {/* Photo picker */}
           <Text style={[styles.label, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>
             Photo{' '}
             <Text style={[styles.optLabel, { color: C.textMuted }]}>· Optional</Text>
           </Text>
-          <TouchableOpacity
-            style={[styles.photoPicker, { backgroundColor: C.surface, borderColor: C.border }]}
-            activeOpacity={0.75}
-          >
-            <Icon name="found" size={18} color={C.textMuted} />
-            <Text style={[styles.photoTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-              Add photo
-            </Text>
-          </TouchableOpacity>
+          {photoUri ? (
+            <View style={styles.photoPreviewWrap}>
+              <Image source={{ uri: photoUri }} style={styles.photoPreview} resizeMode="cover" />
+              <TouchableOpacity
+                style={[styles.photoRemoveBtn, { backgroundColor: C.surface, borderColor: C.border }]}
+                onPress={() => setPhotoUri(null)}
+                activeOpacity={0.75}
+              >
+                <Icon name="x" size={15} color={C.text2} />
+                <Text style={[styles.photoTxt, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>Remove</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={[styles.photoPicker, { backgroundColor: C.surface, borderColor: C.border }]}
+              onPress={pickPhoto}
+              activeOpacity={0.75}
+            >
+              <Icon name="found" size={18} color={C.textMuted} />
+              <Text style={[styles.photoTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                Add photo
+              </Text>
+            </TouchableOpacity>
+          )}
 
           {/* Error */}
           {!!err && (
@@ -185,7 +288,7 @@ export function ReportFormScreen({ navigation }: any) {
             ) : (
               <View style={styles.btnRow}>
                 <Icon name="check" size={18} color="#fff" />
-                <Text style={[styles.btnTxt, { fontFamily: FontFamily.jakartaBold }]}>Submit Report</Text>
+                <Text style={[styles.btnTxt, { fontFamily: FontFamily.jakartaBold }]}>{isEdit ? 'Update Report' : 'Submit Report'}</Text>
               </View>
             )}
           </TouchableOpacity>
@@ -255,6 +358,18 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1.5,
     borderStyle: 'dashed',
+  } as ViewStyle,
+
+  photoPreviewWrap: { gap: 8 } as ViewStyle,
+  photoPreview: { width: '100%', height: 180, borderRadius: 14 } as any,
+  photoRemoveBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    height: 38,
+    borderRadius: 12,
+    borderWidth: 1,
   } as ViewStyle,
 
   photoTxt: { fontSize: 14 } as any,

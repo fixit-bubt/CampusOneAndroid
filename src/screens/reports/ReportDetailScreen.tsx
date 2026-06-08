@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
-  RefreshControl, Alert, type ViewStyle,
+  RefreshControl, Alert, ActivityIndicator, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
@@ -37,35 +37,49 @@ function formatDate(iso: string): string {
   return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
-export function ReportDetailScreen({ route, navigation }: any) {
-  const { report: initReport } = route.params as { report: Report };
-  const { C } = useTheme();
-  const { user } = useAuth();
+const STATUS_OPTIONS: Report['status'][] = ['Open', 'In Progress', 'Resolved', 'Rejected', 'Closed'];
 
-  const [report, setReport] = useState<Report>(initReport);
+export function ReportDetailScreen({ route, navigation }: any) {
+  const { reportId: paramReportId, report: initReport } = route.params as { reportId?: string; report?: Report };
+  const { C } = useTheme();
+  const { user, profile } = useAuth();
+
+  const [report, setReport] = useState<Report | null>(initReport ?? null);
+  const [loadingReport, setLoadingReport] = useState(!initReport);
   const [events, setEvents] = useState<ReportEvent[]>([]);
   const [assigneeName, setAssigneeName] = useState<string | null>(null);
   const [reporterName, setReporterName] = useState<string>('');
   const [refreshing, setRefreshing] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
 
-  const code = (report as any).code ?? ('RPT-' + report.id.replace(/\D/g, '').padStart(4, '0').slice(-4));
-  const cat = CAT_MAP[report.category] ?? { icon: 'wrench', fg: '#64748b' };
-  const statusStyle = STATUS_TONE[report.status] ?? { text: '#5b6b86', bg: '#f1f5f9' };
-  const isMine = report.reporter_id === user?.id;
+  const reportId = report?.id ?? paramReportId ?? '';
+
+  const code = report ? ((report as any).code ?? ('RPT-' + report.id.replace(/\D/g, '').padStart(4, '0').slice(-4))) : '…';
+  const cat = report ? (CAT_MAP[report.category] ?? { icon: 'wrench', fg: '#64748b' }) : { icon: 'wrench', fg: '#64748b' };
+  const statusStyle = report ? (STATUS_TONE[report.status] ?? { text: '#5b6b86', bg: '#f1f5f9' }) : { text: '#5b6b86', bg: '#f1f5f9' };
+  const isMine = report?.reporter_id === user?.id;
+  const isStaffOrAdmin = profile?.role === 'staff' || profile?.role === 'admin';
 
   const load = useCallback(async () => {
-    const [evRes, rptRes] = await Promise.all([
-      supabase.from('report_events').select('*').eq('report_id', report.id).order('created_at', { ascending: true }),
-      supabase.from('profiles').select('full_name').eq('id', report.reporter_id).single(),
+    if (!reportId) return;
+    const [evRes, rptData] = await Promise.all([
+      supabase.from('report_events').select('*').eq('report_id', reportId).order('created_at', { ascending: true }),
+      supabase.from('reports').select('*').eq('id', reportId).single(),
     ]);
     if (evRes.data) setEvents(evRes.data as ReportEvent[]);
-    if (rptRes.data) setReporterName(rptRes.data.full_name);
+    if (rptData.data) setReport(rptData.data as Report);
+    setLoadingReport(false);
 
-    if (report.assigned_staff_id) {
-      const { data } = await supabase.from('profiles').select('full_name').eq('id', report.assigned_staff_id).single();
+    const currentReport = rptData.data;
+    if (currentReport?.reporter_id) {
+      const { data } = await supabase.from('profiles').select('full_name').eq('id', currentReport.reporter_id).single();
+      if (data) setReporterName((data as any).full_name);
+    }
+    if (currentReport?.assigned_staff_id) {
+      const { data } = await supabase.from('profiles').select('full_name').eq('id', currentReport.assigned_staff_id).single();
       if (data) setAssigneeName(data.full_name);
     }
-  }, [report.id, report.reporter_id, report.assigned_staff_id]);
+  }, [reportId]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -75,7 +89,20 @@ export function ReportDetailScreen({ route, navigation }: any) {
     setRefreshing(false);
   }
 
+  async function handleStatusUpdate(newStatus: Report['status']) {
+    if (!report) return;
+    setUpdatingStatus(true);
+    const { error } = await supabase.from('reports').update({ status: newStatus }).eq('id', report.id);
+    setUpdatingStatus(false);
+    if (error) {
+      Alert.alert('Error', 'Failed to update status: ' + error.message);
+      return;
+    }
+    setReport(prev => prev ? { ...prev, status: newStatus } : prev);
+  }
+
   async function handleDelete() {
+    if (!report) return;
     Alert.alert('Delete Report', 'Are you sure you want to delete this report?', [
       { text: 'Cancel', style: 'cancel' },
       {
@@ -88,13 +115,28 @@ export function ReportDetailScreen({ route, navigation }: any) {
     ]);
   }
 
-  // Build timeline steps
+  if (loadingReport || !report) {
+    return (
+      <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
+        <SubBar title="Report" onBack={() => navigation.goBack()} />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator color={C.brand} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Build timeline steps from fetched events + static steps
   const timelineSteps: { label: string; sub?: string; done: boolean }[] = [
     { label: 'Report filed', sub: formatDate(report.created_at), done: true },
   ];
   if (assigneeName) {
     timelineSteps.push({ label: 'Assigned to staff', sub: assigneeName, done: true });
   }
+  // Render fetched events in timeline
+  events.forEach(ev => {
+    timelineSteps.push({ label: `Status → ${ev.status}`, sub: ev.note ?? formatDate(ev.created_at), done: true });
+  });
   if (report.status === 'Resolved' || report.status === 'Closed') {
     timelineSteps.push({ label: 'Issue resolved', done: true });
   } else if (report.status === 'Rejected') {
@@ -224,7 +266,7 @@ export function ReportDetailScreen({ route, navigation }: any) {
           <View style={styles.actions}>
             <TouchableOpacity
               style={[styles.actionBtn, { backgroundColor: C.surface, borderColor: C.border }]}
-              onPress={() => navigation.navigate('ReportForm', { reportId: report.id })}
+              onPress={() => navigation.navigate('ReportForm', { editReportId: report.id })}
               activeOpacity={0.75}
             >
               <Icon name="sliders" size={17} color={C.text2} />
@@ -238,6 +280,41 @@ export function ReportDetailScreen({ route, navigation }: any) {
               <Icon name="trash" size={17} color={C.danger} />
               <Text style={[styles.actionText, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>Delete</Text>
             </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Staff / Admin status update */}
+        {isStaffOrAdmin && (
+          <View style={styles.statusSection}>
+            <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
+              UPDATE STATUS
+            </Text>
+            <View style={styles.statusBtns}>
+              {STATUS_OPTIONS.map(s => {
+                const tone = STATUS_TONE[s] ?? { text: '#5b6b86', bg: '#f1f5f9' };
+                const isActive = report.status === s;
+                return (
+                  <TouchableOpacity
+                    key={s}
+                    style={[
+                      styles.statusOptBtn,
+                      { backgroundColor: isActive ? tone.bg : C.surface, borderColor: isActive ? tone.text : C.border },
+                    ]}
+                    onPress={() => !isActive && handleStatusUpdate(s)}
+                    activeOpacity={isActive ? 1 : 0.75}
+                    disabled={updatingStatus}
+                  >
+                    {updatingStatus && isActive ? (
+                      <ActivityIndicator size="small" color={tone.text} />
+                    ) : (
+                      <Text style={[styles.statusOptTxt, { color: isActive ? tone.text : C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                        {s}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
         )}
 
@@ -395,4 +472,17 @@ const styles = StyleSheet.create({
   } as ViewStyle,
 
   actionText: { fontSize: 14 } as any,
+
+  statusSection: { marginTop: 18 } as ViewStyle,
+  statusBtns: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 } as ViewStyle,
+  statusOptBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    minWidth: 80,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  statusOptTxt: { fontSize: 13 } as any,
 });
