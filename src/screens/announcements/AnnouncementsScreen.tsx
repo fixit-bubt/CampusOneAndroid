@@ -66,7 +66,7 @@ function AnnouncementCard({ a, C, isDark, onPress }: { a: Announcement; C: any; 
 export function AnnouncementsScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
   const { profile } = useAuth();
-  const canPost = profile?.role === 'admin' || profile?.role === 'staff';
+  const canPost = profile?.role === 'admin';
   const [items, setItems] = useState<Announcement[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
