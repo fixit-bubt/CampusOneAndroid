@@ -310,13 +310,29 @@ const roleStyles = StyleSheet.create({
 // ── ProfileScreen ─────────────────────────────────────────────────────────────
 export function ProfileScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
-  const { profile, user, signOut } = useAuth();
+  const { profile, user, signOut, refreshProfile } = useAuth();
 
   const [role, setRole] = useState<string>(profile?.role ?? 'student');
+  useEffect(() => { if (profile?.role) setRole(profile.role as any); }, [profile?.role]);
+
   const [editMode, setEditMode] = useState(false);
-  const [addOpen, setAddOpen] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editDept, setEditDept] = useState('');
+  const [editIntake, setEditIntake] = useState('');
+  const [editSection, setEditSection] = useState('');
+  const [editWhatsapp, setEditWhatsapp] = useState('');
+
+  useEffect(() => {
+    if (editMode) {
+      setEditName(profile?.full_name ?? '');
+      setEditDept(profile?.department ?? '');
+      setEditIntake(profile?.intake ?? '');
+      setEditSection(profile?.section ?? '');
+      setEditWhatsapp(profile?.whatsapp ?? '');
+    }
+  }, [editMode]);
+
   const [focusBadge, setFocusBadge] = useState<typeof BADGES[0] | null>(null);
-  const [accomplishments, setAccomplishments] = useState<AccomplishmentItem[]>([]);
   const [contrib, setContrib] = useState<Record<string, number>>({});
 
   const isStudent = role === 'student';
@@ -334,25 +350,7 @@ export function ProfileScreen({ navigation }: any) {
     setContrib(counts);
   }, [user]);
 
-  const loadAccomplishments = useCallback(async () => {
-    if (!user) return;
-    const { data } = await supabase
-      .from('accomplishments')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-    if (data) {
-      setAccomplishments(data.map((d: any) => ({
-        id: d.id,
-        cat: d.category,
-        title: d.title,
-        org: d.organization ?? '',
-        year: d.year ?? '—',
-      })));
-    }
-  }, [user]);
-
-  useEffect(() => { loadContrib(); loadAccomplishments(); }, [loadContrib, loadAccomplishments]);
+  useEffect(() => { loadContrib(); }, [loadContrib]);
 
   function handleRoleView(r: string) {
     setRole(r);
@@ -360,23 +358,18 @@ export function ProfileScreen({ navigation }: any) {
     if (r === 'admin')  navigation.navigate('AdminDashboard');
   }
 
-  async function handleAdd(item: AccomplishmentItem) {
+  async function handleSave() {
     if (!user) return;
-    const { data, error } = await supabase.from('accomplishments').insert({
-      user_id: user.id,
-      category: item.cat,
-      title: item.title,
-      organization: item.org || null,
-      year: item.year === '—' ? null : item.year,
-    }).select().single();
-    if (!error && data) {
-      setAccomplishments(prev => [{ id: data.id, cat: data.category, title: data.title, org: data.organization ?? '', year: data.year ?? '—' }, ...prev]);
-    }
-  }
-
-  async function handleDelete(id: string) {
-    await supabase.from('accomplishments').delete().eq('id', id);
-    setAccomplishments(prev => prev.filter(a => a.id !== id));
+    const { error } = await supabase.from('profiles').update({
+      full_name: editName,
+      department: editDept,
+      intake: editIntake,
+      section: editSection,
+      whatsapp: editWhatsapp,
+    }).eq('id', user.id);
+    if (error) { Alert.alert('Error', error.message); return; }
+    await refreshProfile();
+    setEditMode(false);
   }
 
   const roleHex = ROLE_COLOR[role as keyof typeof ROLE_COLOR] ?? '#2b5be3';
@@ -390,12 +383,12 @@ export function ProfileScreen({ navigation }: any) {
         {isStudent && (
           <TouchableOpacity
             style={[styles.editBtn, { backgroundColor: editMode ? C.brand : C.surface, borderColor: editMode ? C.brand : C.border }]}
-            onPress={() => setEditMode(m => !m)}
+            onPress={editMode ? handleSave : () => setEditMode(true)}
             activeOpacity={0.75}
           >
             <Icon name={editMode ? 'check' : 'sliders'} size={16} color={editMode ? '#fff' : C.text2} />
             <Text style={[styles.editTxt, { color: editMode ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-              {editMode ? 'Done' : 'Edit'}
+              {editMode ? 'Save' : 'Edit'}
             </Text>
           </TouchableOpacity>
         )}
@@ -413,24 +406,57 @@ export function ProfileScreen({ navigation }: any) {
               <Avatar uri={profile?.avatar_url} name={profile?.full_name} size="lg" />
             </View>
             <View style={styles.heroInfo}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                <Text style={[styles.heroName, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]} numberOfLines={1}>
-                  {profile?.full_name ?? 'Campus Member'}
-                </Text>
-                <View style={[styles.verifyBadge, { backgroundColor: C.brand }]}>
-                  <Icon name="check" size={9} color="#fff" />
-                </View>
-              </View>
-              <Text style={[styles.heroMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                {profile?.department ?? '—'}{profile?.intake ? ` · Intake ${profile.intake}` : ''}
-                {profile?.section ? ` · Sec ${profile.section}` : ''}
-              </Text>
-              <View style={[styles.rolePill, { backgroundColor: roleBg }]}>
-                <View style={[styles.rolePillDot, { backgroundColor: roleHex }]} />
-                <Text style={[styles.rolePillTxt, { color: roleHex, fontFamily: FontFamily.jakartaBold }]}>
-                  {ROLE_LABEL[role as keyof typeof ROLE_LABEL] ?? role}
-                </Text>
-              </View>
+              {editMode ? (
+                <>
+                  <TextInput
+                    style={[styles.editInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaBold }]}
+                    value={editName} onChangeText={setEditName}
+                    placeholder="Full name" placeholderTextColor={C.textMuted}
+                  />
+                  <TextInput
+                    style={[styles.editInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                    value={editDept} onChangeText={setEditDept}
+                    placeholder="Department" placeholderTextColor={C.textMuted}
+                  />
+                  <TextInput
+                    style={[styles.editInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                    value={editIntake} onChangeText={setEditIntake}
+                    placeholder="Intake" placeholderTextColor={C.textMuted}
+                  />
+                  <TextInput
+                    style={[styles.editInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                    value={editSection} onChangeText={setEditSection}
+                    placeholder="Section" placeholderTextColor={C.textMuted}
+                  />
+                  <TextInput
+                    style={[styles.editInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                    value={editWhatsapp} onChangeText={setEditWhatsapp}
+                    placeholder="WhatsApp number" placeholderTextColor={C.textMuted}
+                    keyboardType="phone-pad"
+                  />
+                </>
+              ) : (
+                <>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                    <Text style={[styles.heroName, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]} numberOfLines={1}>
+                      {profile?.full_name ?? 'Campus Member'}
+                    </Text>
+                    <View style={[styles.verifyBadge, { backgroundColor: C.brand }]}>
+                      <Icon name="check" size={9} color="#fff" />
+                    </View>
+                  </View>
+                  <Text style={[styles.heroMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                    {profile?.department ?? '—'}{profile?.intake ? ` · Intake ${profile.intake}` : ''}
+                    {profile?.section ? ` · Sec ${profile.section}` : ''}
+                  </Text>
+                  <View style={[styles.rolePill, { backgroundColor: roleBg }]}>
+                    <View style={[styles.rolePillDot, { backgroundColor: roleHex }]} />
+                    <Text style={[styles.rolePillTxt, { color: roleHex, fontFamily: FontFamily.jakartaBold }]}>
+                      {ROLE_LABEL[role as keyof typeof ROLE_LABEL] ?? role}
+                    </Text>
+                  </View>
+                </>
+              )}
             </View>
           </View>
         </View>
@@ -460,41 +486,6 @@ export function ProfileScreen({ navigation }: any) {
             {/* Badges */}
             <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>BADGES</Text>
             <BadgesRow badges={BADGES} onPick={setFocusBadge} C={C} />
-
-            {/* Add accomplishment */}
-            <TouchableOpacity
-              style={[styles.addBtn, { backgroundColor: C.surface, borderColor: C.brand }]}
-              onPress={() => setAddOpen(true)}
-              activeOpacity={0.75}
-            >
-              <Icon name="award" size={18} color={C.brand} />
-              <Text style={[styles.addBtnTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>Add accomplishment</Text>
-            </TouchableOpacity>
-
-            {/* Accomplishment sections */}
-            {CATS.map(c => {
-              const items = accomplishments.filter(a => a.cat === c.id);
-              if (!items.length) return null;
-              return (
-                <View key={c.id} style={{ marginTop: 18 }}>
-                  <View style={styles.acSecHead}>
-                    <View style={[styles.acSecIcon, { backgroundColor: hexAlpha(c.fg, isDark ? 0.18 : 0.12) }]}>
-                      <Icon name={c.icon as any} size={16} color={c.fg} />
-                    </View>
-                    <Text style={[styles.acSecLabel, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{c.label}</Text>
-                    <Text style={[styles.acSecCount, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{items.length}</Text>
-                  </View>
-                  <View style={[styles.acCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-                    {items.map((a, i) => (
-                      <View key={a.id}>
-                        {i > 0 && <View style={[styles.divider, { backgroundColor: C.border }]} />}
-                        <AccompCard a={a} editMode={editMode} onDelete={handleDelete} C={C} isDark={isDark} />
-                      </View>
-                    ))}
-                  </View>
-                </View>
-              );
-            })}
           </>
         )}
 
@@ -532,7 +523,6 @@ export function ProfileScreen({ navigation }: any) {
 
       {/* Modals */}
       {focusBadge && <BadgeSheet badge={focusBadge} C={C} onClose={() => setFocusBadge(null)} />}
-      {addOpen && <AddSheet C={C} onClose={() => setAddOpen(false)} onAdd={handleAdd} />}
     </SafeAreaView>
   );
 }
@@ -553,6 +543,7 @@ const styles = StyleSheet.create({
   avatarWrap: { borderRadius: 22, borderWidth: 3 } as ViewStyle,
   heroInfo: { flex: 1, paddingTop: 24 } as ViewStyle,
   heroName: { fontSize: 17, letterSpacing: -0.2 } as any,
+  editInput: { height: 38, borderRadius: 10, borderWidth: 1, paddingHorizontal: 10, fontSize: 13, marginBottom: 6 } as any,
   verifyBadge: { width: 16, height: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
   heroMeta: { fontSize: 12, marginTop: 2 } as any,
   rolePill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, alignSelf: 'flex-start', marginTop: 8 } as ViewStyle,

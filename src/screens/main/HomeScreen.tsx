@@ -82,7 +82,7 @@ function ReportRow({ r, C, onPress }: { r: Report; C: any; onPress: () => void }
       <SectorIcon sector="reports" size="sm" />
       <View style={styles.reportBody}>
         <Text style={[styles.reportTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-          {r.description.split('\n')[0]}
+          {(r.description ?? '').split('\n')[0]}
         </Text>
         <View style={styles.reportMeta}>
           <Icon name="pin" size={11} color={C.textMuted} />
@@ -236,7 +236,7 @@ export function HomeScreen({ navigation }: any) {
             {reports.map((r, i) => (
               <View key={r.id}>
                 {i > 0 && <View style={[styles.divider, { backgroundColor: C.border }]} />}
-                <ReportRow r={r} C={C} onPress={() => navigation.navigate('ReportDetail', { report: r })} />
+                <ReportRow r={r} C={C} onPress={() => navigation.navigate('ReportDetail', { reportId: r.id })} />
               </View>
             ))}
           </View>
