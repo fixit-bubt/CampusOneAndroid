@@ -59,10 +59,10 @@ export function MarketPostScreen({ route, navigation }: any) {
         status:      'Available' as Listing['status'],
       };
       if (isEdit) {
-        const { error } = await supabase.from('market_listings').update(payload).eq('id', listing!.id);
+        const { error } = await supabase.from('listings').update(payload).eq('id', listing!.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from('market_listings').insert(payload);
+        const { error } = await supabase.from('listings').insert(payload);
         if (error) throw error;
       }
       navigation.goBack();
