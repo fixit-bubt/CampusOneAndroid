@@ -13,13 +13,15 @@ import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
 
 export function ClubPostScreen({ route, navigation }: any) {
-  const { club } = (route.params ?? {}) as { club: { id: string; name: string } };
-  if (!club) return null;
   const { C } = useTheme();
   const { user } = useAuth();
 
+  // Hooks must be declared before any early return
   const [body, setBody] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const { club } = (route.params ?? {}) as { club: { id: string; name: string } };
+  if (!club) return null;
 
   const canSubmit = body.trim().length > 0;
 
@@ -28,9 +30,9 @@ export function ClubPostScreen({ route, navigation }: any) {
     setLoading(true);
     try {
       const { error } = await supabase.from('club_posts').insert({
-        club_id:  club.id,
-        author_id: user.id,
-        body:     body.trim(),
+        club_id: club.id,
+        user_id: user.id,
+        body:    body.trim(),
       });
       if (error) throw error;
       navigation.goBack();
@@ -50,12 +52,10 @@ export function ClubPostScreen({ route, navigation }: any) {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Club name hint */}
         <Text style={[styles.clubName, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
           {club.name}
         </Text>
 
-        {/* Body */}
         <TextInput
           style={[styles.textarea, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
           value={body}
@@ -67,7 +67,6 @@ export function ClubPostScreen({ route, navigation }: any) {
           autoFocus
         />
 
-        {/* Submit */}
         <TouchableOpacity
           style={[styles.submitBtn, { backgroundColor: canSubmit ? C.brand : C.surface2, opacity: loading ? 0.6 : 1 }]}
           onPress={handleSubmit}
