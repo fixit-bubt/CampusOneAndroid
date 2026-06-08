@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Modal, Alert, type ViewStyle,
+  ActivityIndicator, Modal, Alert, Linking, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -38,7 +38,7 @@ export function JobDetailScreen({ route, navigation }: any) {
     (async () => {
       const [jobRes, saveRes] = await Promise.all([
         supabase.from('jobs').select('*').eq('id', id).single(),
-        supabase.from('job_saves').select('job_id').eq('job_id', id).eq('user_id', user?.id ?? '').maybeSingle(),
+        supabase.from('job_bookmarks').select('job_id').eq('job_id', id).eq('user_id', user?.id ?? '').maybeSingle(),
       ]);
       if (jobRes.data) setJob(jobRes.data);
       setSaved(!!saveRes.data);
@@ -48,9 +48,9 @@ export function JobDetailScreen({ route, navigation }: any) {
   async function toggleSave() {
     if (!user || !job) return;
     if (saved) {
-      await supabase.from('job_saves').delete().eq('job_id', id).eq('user_id', user.id);
+      await supabase.from('job_bookmarks').delete().eq('job_id', id).eq('user_id', user.id);
     } else {
-      await supabase.from('job_saves').insert({ job_id: id, user_id: user.id });
+      await supabase.from('job_bookmarks').insert({ job_id: id, user_id: user.id });
     }
     setSaved(!saved);
   }
@@ -72,7 +72,7 @@ export function JobDetailScreen({ route, navigation }: any) {
   }
 
   const s = STATUS_CONFIG[job.status] ?? STATUS_CONFIG.open;
-  const isOwn = job.user_id === user?.id;
+  const isOwn = job.posted_by === user?.id;
   const isRemoved = job.status === 'removed';
   const isExpired = job.status === 'expired';
 
@@ -158,7 +158,17 @@ export function JobDetailScreen({ route, navigation }: any) {
             {!isExpired && (
               <TouchableOpacity
                 style={[styles.actionBtn, { backgroundColor: C.brand }]}
-                onPress={() => Alert.alert('Apply', 'Application submission coming soon.')}
+                onPress={() => {
+                  if (job.apply_method === 'link' && job.apply_value) {
+                    Linking.openURL(job.apply_value);
+                  } else if (job.apply_method === 'email' && job.apply_value) {
+                    Linking.openURL(`mailto:${job.apply_value}`);
+                  } else if (job.apply_method === 'file' && job.apply_file_url) {
+                    Linking.openURL(job.apply_file_url);
+                  } else {
+                    Alert.alert('Apply', 'Contact the poster directly to apply.');
+                  }
+                }}
                 activeOpacity={0.85}
               >
                 <Icon name="jobs" size={17} color="#fff" />
