@@ -36,13 +36,16 @@ export function LoginScreen({ navigation }: Props) {
       return;
     }
     setBusy(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(addr);
-    setBusy(false);
-    if (error) {
-      setErr(error.message);
-    } else {
-      setResetSent(true);
-      setErr('');
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(addr);
+      if (error) {
+        setErr(error.message);
+      } else {
+        setResetSent(true);
+        setErr('');
+      }
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -96,7 +99,7 @@ export function LoginScreen({ navigation }: Props) {
           <TextInput
             style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaRegular }]}
             value={email}
-            onChangeText={setEmail}
+            onChangeText={v => { setEmail(v); setResetSent(false); }}
             keyboardType="email-address"
             autoCapitalize="none"
             placeholder="you@std.bubt.edu.bd"
@@ -117,7 +120,7 @@ export function LoginScreen({ navigation }: Props) {
           />
 
           {/* Forgot password */}
-          <TouchableOpacity onPress={handleForgotPassword} activeOpacity={0.7} style={styles.forgotRow}>
+          <TouchableOpacity onPress={handleForgotPassword} activeOpacity={0.7} style={styles.forgotRow} disabled={busy}>
             <Text style={[styles.forgotTxt, { color: C.brand, fontFamily: FontFamily.jakartaSemiBold }]}>
               Forgot password?
             </Text>

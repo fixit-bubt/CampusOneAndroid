@@ -30,10 +30,19 @@ export function RegisterScreen({ navigation }: Props) {
 
   async function handleContinue() {
     if (!ok || busy) return;
+    const emailVal = email.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) {
+      setErr('Enter a valid email address.');
+      return;
+    }
+    if (pass.length < 6) {
+      setErr('Password must be at least 6 characters.');
+      return;
+    }
     setBusy(true);
     setErr('');
     try {
-      await signUp(email.trim(), pass, name.trim());
+      await signUp(emailVal, pass, name.trim());
     } catch (e: any) {
       setErr(e?.message ?? 'Registration failed. Please try again.');
     } finally {
@@ -79,8 +88,9 @@ export function RegisterScreen({ navigation }: Props) {
             style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaRegular }]}
             value={name}
             onChangeText={setName}
-            placeholder="Tahmid Hasan"
+            placeholder="Your full name"
             placeholderTextColor={C.textMuted}
+            autoCapitalize="words"
           />
 
           {/* Email */}
@@ -93,6 +103,7 @@ export function RegisterScreen({ navigation }: Props) {
             onChangeText={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
+            autoCorrect={false}
             placeholder="you@std.bubt.edu.bd"
             placeholderTextColor={C.textMuted}
           />
