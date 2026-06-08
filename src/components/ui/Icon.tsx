@@ -70,6 +70,7 @@ const ICON_MAP: Record<string, React.ComponentProps<typeof Feather>['name']> = {
   blood:    'droplet',
   directory:'users',
   faculty:  'user-check',
+  prayer:   'moon',
 };
 
 interface IconProps {
