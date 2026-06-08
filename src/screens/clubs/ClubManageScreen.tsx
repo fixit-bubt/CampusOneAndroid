@@ -31,12 +31,12 @@ export function ClubManageScreen({ route, navigation }: any) {
   useEffect(() => {
     (async () => {
       const [clubRes, membersRes] = await Promise.all([
-        supabase.from('clubs').select('name, description').eq('id', id).single(),
+        supabase.from('clubs').select('name, about').eq('id', id).single(),
         supabase.from('club_members').select('*, profiles:user_id(full_name)').eq('club_id', id),
       ]);
       if (clubRes.data) {
         setName(clubRes.data.name ?? '');
-        setDesc(clubRes.data.description ?? '');
+        setDesc(clubRes.data.about ?? '');
       }
       if (membersRes.data) setMembers(membersRes.data as any);
       setLoading(false);
@@ -46,13 +46,13 @@ export function ClubManageScreen({ route, navigation }: any) {
   async function saveChanges() {
     if (!name.trim()) return;
     setSaving(true);
-    await supabase.from('clubs').update({ name: name.trim(), description: desc.trim() }).eq('id', id);
+    await supabase.from('clubs').update({ name: name.trim(), about: desc.trim() }).eq('id', id);
     setSaving(false);
     navigation.goBack();
   }
 
   async function transferPresidency(memberId: string) {
-    await supabase.from('club_members').update({ role: 'President' }).eq('club_id', id).eq('user_id', memberId);
+    await supabase.from('club_members').update({ role: 'president' }).eq('club_id', id).eq('user_id', memberId);
     setConfirm(null);
     navigation.goBack();
   }
@@ -112,7 +112,7 @@ export function ClubManageScreen({ route, navigation }: any) {
         <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>TRANSFER PRESIDENCY</Text>
         <View style={[styles.membersCard, { backgroundColor: C.surface, borderColor: C.border }]}>
           {members.map((m, i) => {
-            const isPresident = m.role === 'President';
+            const isPresident = m.role === 'president';
             return (
               <View key={m.user_id}>
                 {i > 0 && <View style={[styles.divider, { backgroundColor: C.border }]} />}
