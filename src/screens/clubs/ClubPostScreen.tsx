@@ -17,22 +17,22 @@ export function ClubPostScreen({ route, navigation }: any) {
   const { user } = useAuth();
 
   // Hooks must be declared before any early return
-  const [body, setBody] = useState('');
+  const [content, setContent] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const { club } = (route.params ?? {}) as { club: { id: string; name: string } };
-  if (!club) return null;
+  const { clubId, clubName } = (route.params ?? {}) as { clubId: string; clubName: string };
+  if (!clubId) return null;
 
-  const canSubmit = body.trim().length > 0;
+  const canSubmit = content.trim().length > 0;
 
   async function handleSubmit() {
     if (!canSubmit || !user) return;
     setLoading(true);
     try {
       const { error } = await supabase.from('club_posts').insert({
-        club_id: club.id,
-        user_id: user.id,
-        body:    body.trim(),
+        club_id:    clubId,
+        created_by: user.id,
+        content:    content.trim(),
       });
       if (error) throw error;
       navigation.goBack();
@@ -53,13 +53,13 @@ export function ClubPostScreen({ route, navigation }: any) {
         keyboardShouldPersistTaps="handled"
       >
         <Text style={[styles.clubName, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
-          {club.name}
+          {clubName}
         </Text>
 
         <TextInput
           style={[styles.textarea, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-          value={body}
-          onChangeText={setBody}
+          value={content}
+          onChangeText={setContent}
           placeholder="Share an update with members…"
           placeholderTextColor={C.textMuted}
           multiline

@@ -37,15 +37,16 @@ export function ClubsScreen({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
-    const { data: clubsData } = await supabase
+    const { data: clubsData, error } = await supabase
       .from('clubs')
       .select('*, club_members!left(role, user_id)')
       .order('name')
       .limit(50);
+    if (error) return;
     if (clubsData) {
       const mapped = clubsData.map((c: any) => ({
         ...c,
-        member_count: c.club_members?.length ?? 0,
+        member_count: c.member_count ?? c.club_members?.length ?? 0,
         user_role: c.club_members?.find((m: any) => m.user_id === user?.id)?.role ?? null,
       }));
       setClubs(mapped as Club[]);

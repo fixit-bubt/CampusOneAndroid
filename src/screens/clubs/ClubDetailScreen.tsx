@@ -29,12 +29,13 @@ interface Club {
   id: string;
   name: string;
   category: string;
-  about: string;
+  description: string;
+  admin_id: string;
 }
 
 interface Post {
   id: string;
-  body: string;
+  content: string;
   created_at: string;
   profiles: { full_name: string };
 }
@@ -66,7 +67,7 @@ export function ClubDetailScreen({ route, navigation }: any) {
     (async () => {
       const [clubRes, postsRes, membersRes] = await Promise.all([
         supabase.from('clubs').select('*').eq('id', id).single(),
-        supabase.from('club_posts').select('*, profiles:user_id(full_name)').eq('club_id', id).order('created_at', { ascending: false }).limit(20),
+        supabase.from('club_posts').select('*, profiles:created_by(full_name)').eq('club_id', id).order('created_at', { ascending: false }).limit(20),
         supabase.from('club_members').select('*, profiles:user_id(full_name)').eq('club_id', id),
       ]);
       if (clubRes.data) setClub(clubRes.data as Club);
@@ -90,13 +91,16 @@ export function ClubDetailScreen({ route, navigation }: any) {
 
   const cat = CL_CATS[club.category] ?? CL_CATS.other;
   const tintBg = isDark ? `${cat.fg}2e` : `${cat.fg}18`;
-  const canManage = myRole === 'president' || myRole === 'vp';
+  const canManage = myRole === 'president' || myRole === 'vp' || club.admin_id === user?.id;
   const isMember = !!myRole;
 
   async function joinClub() {
     if (!user) return;
-    const { error } = await supabase.from('club_members').insert({ club_id: id, user_id: user.id, role: 'member', added_by: user.id });
-    if (!error) setMyRole('member');
+    const { error } = await supabase.from('club_members').insert({ club_id: id, user_id: user.id, role: 'member' });
+    if (!error) {
+      setMyRole('member');
+      setMembers(prev => [...prev, { user_id: user.id, role: 'member', profiles: { full_name: '' } }]);
+    }
   }
 
   async function leaveClub() {
@@ -112,10 +116,10 @@ export function ClubDetailScreen({ route, navigation }: any) {
         onBack={() => navigation.goBack()}
         rightSlot={canManage ? (
           <View style={styles.rightRow}>
-            <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('ClubManage', { id })} activeOpacity={0.75}>
+            <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('ClubManage', { clubId: club.id })} activeOpacity={0.75}>
               <Feather name="sliders" size={21} color={C.text} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('ClubPost', { club: { id, name: club.name } })} activeOpacity={0.75}>
+            <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('ClubPost', { clubId: club.id, clubName: club.name })} activeOpacity={0.75}>
               <Feather name="plus" size={22} color={C.text} />
             </TouchableOpacity>
           </View>
@@ -145,7 +149,7 @@ export function ClubDetailScreen({ route, navigation }: any) {
           )}
         </View>
 
-        <Text style={[styles.desc, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>{club.about}</Text>
+        <Text style={[styles.desc, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>{club.description}</Text>
 
         {/* Join / Leave */}
         {!canManage && (
@@ -213,7 +217,7 @@ export function ClubDetailScreen({ route, navigation }: any) {
                     </Text>
                   </View>
                 </View>
-                <Text style={[styles.postBody, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>{p.body}</Text>
+                <Text style={[styles.postBody, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>{p.content}</Text>
               </View>
             ))}
           </View>

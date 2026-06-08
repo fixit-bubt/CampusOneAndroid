@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
-  Modal, ActivityIndicator, type ViewStyle, type TextStyle,
+  Modal, Alert, ActivityIndicator, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
@@ -11,6 +11,7 @@ import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../store/authStore';
 
 interface Member {
   user_id: string;
@@ -20,7 +21,9 @@ interface Member {
 
 export function ClubManageScreen({ route, navigation }: any) {
   const { C } = useTheme();
-  const { id } = route.params;
+  const { user } = useAuth();
+  const { clubId } = route.params;
+  const id = clubId;
   const [name, setName] = useState('');
   const [desc, setDesc] = useState('');
   const [members, setMembers] = useState<Member[]>([]);
@@ -31,12 +34,12 @@ export function ClubManageScreen({ route, navigation }: any) {
   useEffect(() => {
     (async () => {
       const [clubRes, membersRes] = await Promise.all([
-        supabase.from('clubs').select('name, about').eq('id', id).single(),
+        supabase.from('clubs').select('name, description').eq('id', id).single(),
         supabase.from('club_members').select('*, profiles:user_id(full_name)').eq('club_id', id),
       ]);
       if (clubRes.data) {
         setName(clubRes.data.name ?? '');
-        setDesc(clubRes.data.about ?? '');
+        setDesc(clubRes.data.description ?? '');
       }
       if (membersRes.data) setMembers(membersRes.data as any);
       setLoading(false);
@@ -46,13 +49,30 @@ export function ClubManageScreen({ route, navigation }: any) {
   async function saveChanges() {
     if (!name.trim()) return;
     setSaving(true);
-    await supabase.from('clubs').update({ name: name.trim(), about: desc.trim() }).eq('id', id);
+    await supabase.from('clubs').update({ name: name.trim(), description: desc.trim() }).eq('id', id);
     setSaving(false);
     navigation.goBack();
   }
 
   async function transferPresidency(memberId: string) {
-    await supabase.from('club_members').update({ role: 'president' }).eq('club_id', id).eq('user_id', memberId);
+    setSaving(true);
+    const { error: err1 } = await supabase.from('club_members')
+      .update({ role: 'president' })
+      .eq('club_id', id).eq('user_id', memberId);
+    if (err1) {
+      Alert.alert('Error', 'Transfer failed: ' + err1.message);
+      setSaving(false);
+      return;
+    }
+    const { error: err2 } = await supabase.from('club_members')
+      .update({ role: 'member' })
+      .eq('club_id', id).eq('user_id', user!.id);
+    if (err2) {
+      Alert.alert('Error', 'Transfer partially completed. Please contact support.');
+      setSaving(false);
+      return;
+    }
+    setSaving(false);
     setConfirm(null);
     navigation.goBack();
   }
@@ -156,7 +176,7 @@ export function ClubManageScreen({ route, navigation }: any) {
         <View style={[styles.sheet, { backgroundColor: C.surface }]}>
           <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>Transfer presidency?</Text>
           <Text style={[styles.sheetBody, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
-            Make <Text style={{ fontFamily: FontFamily.jakartaBold }}>{(confirm as any)?.profiles?.full_name}</Text> the club president? You will become Vice President.
+            Make <Text style={{ fontFamily: FontFamily.jakartaBold }}>{(confirm as any)?.profiles?.full_name}</Text> the club president? You will become a regular member.
           </Text>
           <TouchableOpacity
             style={[styles.confirmBtn, { backgroundColor: C.brand }]}
