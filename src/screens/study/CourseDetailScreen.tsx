@@ -124,7 +124,7 @@ export function CourseDetailScreen({ route, navigation }: any) {
                 </View>
                 <TouchableOpacity
                   style={styles.downloadBtn}
-                  onPress={() => Linking.openURL(f.file_url)}
+                  onPress={() => f.file_url && Linking.openURL(f.file_url)}
                   activeOpacity={0.75}
                 >
                   <Feather name="download" size={19} color={C.text2} />
