@@ -1,0 +1,187 @@
+// Matches design screens-g.jsx — AnnouncePost
+import { useState } from 'react';
+import {
+  View, Text, TouchableOpacity, TextInput, ScrollView,
+  StyleSheet, Alert, type ViewStyle,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTheme } from '../../hooks/useTheme';
+import { useAuth } from '../../store/authStore';
+import { SubBar } from '../../components/layout/TopBar';
+import { Icon } from '../../components/ui/Icon';
+import { FontFamily, Layout } from '../../theme';
+import { supabase } from '../../lib/supabase';
+import type { Announcement } from '../../types/database';
+
+const PRIORITIES: { id: Announcement['priority']; label: string; color: string }[] = [
+  { id: 'Urgent',    label: 'Urgent',    color: '#d63d35' },
+  { id: 'Important', label: 'Important', color: '#e08a2b' },
+  { id: 'General',   label: 'General',   color: '#2b5be3' },
+];
+
+export function AnnouncePostScreen({ navigation }: any) {
+  const { C } = useTheme();
+  const { user } = useAuth();
+
+  const [title, setTitle] = useState('');
+  const [dept, setDept] = useState('');
+  const [priority, setPriority] = useState<Announcement['priority']>('General');
+  const [body, setBody] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const canSubmit = title.trim() && body.trim();
+
+  async function handleSubmit() {
+    if (!canSubmit || !user) return;
+    setLoading(true);
+    try {
+      const { error } = await supabase.from('announcements').insert({
+        title:      title.trim(),
+        department: dept.trim() || 'Administration',
+        priority,
+        body:       body.trim(),
+        created_by: user.id,
+        pinned:     priority === 'Urgent',
+      });
+      if (error) throw error;
+      navigation.goBack();
+    } catch {
+      Alert.alert('Error', 'Could not post announcement. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
+      <SubBar title="New Announcement" onBack={() => navigation.goBack()} />
+
+      <ScrollView
+        contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>TITLE</Text>
+        <TextInput
+          style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+          value={title}
+          onChangeText={setTitle}
+          placeholder="e.g. Class suspended Thursday"
+          placeholderTextColor={C.textMuted}
+        />
+
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>DEPARTMENT</Text>
+        <TextInput
+          style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+          value={dept}
+          onChangeText={setDept}
+          placeholder="e.g. Examination Dept"
+          placeholderTextColor={C.textMuted}
+        />
+
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>PRIORITY</Text>
+        <View style={[styles.segRow, { backgroundColor: C.surface2, borderColor: C.border }]}>
+          {PRIORITIES.map(p => {
+            const on = priority === p.id;
+            return (
+              <TouchableOpacity
+                key={p.id}
+                style={[styles.segBtn, on && { backgroundColor: p.color }]}
+                onPress={() => setPriority(p.id)}
+                activeOpacity={0.75}
+              >
+                <Text style={[styles.segTxt, { color: on ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                  {p.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>BODY</Text>
+        <TextInput
+          style={[styles.textarea, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+          value={body}
+          onChangeText={setBody}
+          placeholder="Write the notice…"
+          placeholderTextColor={C.textMuted}
+          multiline
+          textAlignVertical="top"
+        />
+
+        <TouchableOpacity
+          style={[styles.submitBtn, { backgroundColor: canSubmit ? C.brand : C.surface2, opacity: loading ? 0.6 : 1 }]}
+          onPress={handleSubmit}
+          disabled={!canSubmit || loading}
+          activeOpacity={0.8}
+        >
+          <Icon name="check" size={18} color={canSubmit ? '#fff' : C.textMuted} />
+          <Text style={[styles.submitText, { color: canSubmit ? '#fff' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+            Publish
+          </Text>
+        </TouchableOpacity>
+
+        <View style={{ height: 30 }} />
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safe: { flex: 1 } as ViewStyle,
+  scroll: { paddingTop: 12, paddingBottom: 20 } as ViewStyle,
+
+  label: {
+    fontSize: 11,
+    letterSpacing: 0.7,
+    marginBottom: 8,
+    marginTop: 18,
+    marginLeft: 2,
+  } as any,
+
+  input: {
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    fontSize: 14.5,
+  } as any,
+
+  segRow: {
+    flexDirection: 'row',
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 4,
+    gap: 4,
+  } as ViewStyle,
+
+  segBtn: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 9,
+    borderRadius: 9,
+  } as ViewStyle,
+
+  segTxt: { fontSize: 13.5 } as any,
+
+  textarea: {
+    minHeight: 120,
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 13,
+    fontSize: 14.5,
+    lineHeight: 22,
+  } as any,
+
+  submitBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    height: 52,
+    borderRadius: 14,
+    marginTop: 22,
+  } as ViewStyle,
+
+  submitText: { fontSize: 15 } as any,
+});
