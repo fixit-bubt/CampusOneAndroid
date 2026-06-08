@@ -1,0 +1,220 @@
+// Matches design screens-b.jsx — Jobs browse (All / Saved tabs)
+import { useState, useEffect, useCallback } from 'react';
+import {
+  View, Text, TouchableOpacity, ScrollView, StyleSheet,
+  RefreshControl, type ViewStyle,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Feather } from '@expo/vector-icons';
+import { useTheme } from '../../hooks/useTheme';
+import { SubBar } from '../../components/layout/TopBar';
+import { Icon } from '../../components/ui/Icon';
+import { FontFamily, Layout } from '../../theme';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../store/authStore';
+
+const JOB_COLOR = '#0e9c8a';
+const JOB_BG    = '#0e9c8a1e';
+
+const STATUS_CONFIG: Record<string, { label: string; fg: string; bg: string }> = {
+  open:    { label: 'Open',    fg: '#0e9c8a', bg: '#e4f5f4' },
+  closed:  { label: 'Closed', fg: '#5b6b86', bg: '#f0f2f6' },
+  expired: { label: 'Expired',fg: '#b9760a', bg: '#fbefdb' },
+  removed: { label: 'Removed',fg: '#e2483d', bg: '#fbe7e5' },
+};
+
+type Tab = 'all' | 'saved';
+
+interface Job {
+  id: string;
+  role: string;
+  company: string;
+  location: string;
+  type: string;
+  mode: string;
+  status: string;
+  deadline: string;
+  salary: string;
+  description: string;
+  requirements: string;
+  user_id: string;
+  saved?: boolean;
+}
+
+function timeAgo(iso: string): string {
+  const secs = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
+  if (secs < 86400) return `${Math.floor(secs / 3600)}h ago`;
+  return `${Math.floor(secs / 86400)}d ago`;
+}
+
+export function JobsBrowseScreen({ navigation }: any) {
+  const { C } = useTheme();
+  const { user } = useAuth();
+  const [tab, setTab] = useState<Tab>('all');
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const [refreshing, setRefreshing] = useState(false);
+
+  const load = useCallback(async () => {
+    const [jobsRes, savedRes] = await Promise.all([
+      supabase.from('jobs').select('*').order('created_at', { ascending: false }).limit(50),
+      supabase.from('job_saves').select('job_id').eq('user_id', user?.id ?? ''),
+    ]);
+    if (jobsRes.data) setJobs(jobsRes.data as Job[]);
+    if (savedRes.data) setSavedIds(new Set(savedRes.data.map((s: any) => s.job_id)));
+  }, [user?.id]);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  }
+
+  async function toggleSave(jobId: string) {
+    if (!user) return;
+    const isSaved = savedIds.has(jobId);
+    const next = new Set(savedIds);
+    if (isSaved) {
+      next.delete(jobId);
+      await supabase.from('job_saves').delete().eq('job_id', jobId).eq('user_id', user.id);
+    } else {
+      next.add(jobId);
+      await supabase.from('job_saves').insert({ job_id: jobId, user_id: user.id });
+    }
+    setSavedIds(next);
+  }
+
+  const list = tab === 'saved' ? jobs.filter(j => savedIds.has(j.id)) : jobs;
+
+  return (
+    <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
+      <SubBar
+        title="Jobs"
+        onBack={() => navigation.goBack()}
+        rightSlot={
+          <TouchableOpacity
+            style={styles.iconBtn}
+            onPress={() => navigation.navigate('JobPost')}
+            activeOpacity={0.75}
+          >
+            <Feather name="plus" size={22} color={C.text} />
+          </TouchableOpacity>
+        }
+      />
+
+      {/* Tabs */}
+      <View style={[styles.tabs, { paddingHorizontal: Layout.screenPadding }]}>
+        {(['all', 'saved'] as Tab[]).map(t => (
+          <TouchableOpacity
+            key={t}
+            style={[styles.chip, tab === t
+              ? { backgroundColor: C.brand, borderColor: C.brand }
+              : { backgroundColor: C.surface, borderColor: C.border }]}
+            onPress={() => setTab(t)}
+            activeOpacity={0.75}
+          >
+            <Text style={[styles.chipTxt, { color: tab === t ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>
+              {t === 'all' ? 'All' : 'Saved'}
+            </Text>
+            <Text style={[styles.chipCount, { color: tab === t ? 'rgba(255,255,255,0.7)' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+              {t === 'all' ? jobs.length : [...savedIds].length}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <ScrollView
+        contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
+      >
+        {list.length === 0 ? (
+          <View style={styles.empty}>
+            <Icon name="jobs" size={28} color={C.textMuted} />
+            <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              {tab === 'saved' ? 'No saved jobs' : 'No jobs available'}
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.list}>
+            {list.map(j => {
+              const s = STATUS_CONFIG[j.status] ?? STATUS_CONFIG.open;
+              const isSaved = savedIds.has(j.id);
+              return (
+                <View key={j.id} style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
+                  <TouchableOpacity
+                    style={styles.cardMain}
+                    onPress={() => navigation.navigate('JobDetail', { id: j.id })}
+                    activeOpacity={0.75}
+                  >
+                    <View style={[styles.thumb, { backgroundColor: JOB_BG }]}>
+                      <Icon name="jobs" size={22} color={JOB_COLOR} />
+                    </View>
+                    <View style={styles.cardBody}>
+                      <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                        {j.role}
+                      </Text>
+                      <Text style={[styles.cardSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                        {j.company} · {j.location}
+                      </Text>
+                      <View style={styles.cardMeta}>
+                        <View style={[styles.statusPill, { backgroundColor: s.bg }]}>
+                          <View style={[styles.statusDot, { backgroundColor: s.fg }]} />
+                          <Text style={[styles.statusTxt, { color: s.fg, fontFamily: FontFamily.jakartaBold }]}>{s.label}</Text>
+                        </View>
+                        <Text style={[styles.cardType, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                          {j.type} · {j.mode}
+                        </Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.saveBtn}
+                    onPress={() => toggleSave(j.id)}
+                    activeOpacity={0.75}
+                  >
+                    <Feather
+                      name="star"
+                      size={20}
+                      color={isSaved ? '#d9870b' : C.textMuted}
+                      style={{ opacity: 1 } as any}
+                    />
+                  </TouchableOpacity>
+                </View>
+              );
+            })}
+          </View>
+        )}
+        <View style={{ height: 12 }} />
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safe: { flex: 1 } as ViewStyle,
+  tabs: { flexDirection: 'row', gap: 8, paddingVertical: 8 } as ViewStyle,
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1 } as ViewStyle,
+  chipTxt: { fontSize: 12.5 } as any,
+  chipCount: { fontSize: 12 } as any,
+  scroll: { paddingTop: 4, paddingBottom: 20 } as ViewStyle,
+  list: { gap: 10 } as ViewStyle,
+  card: { flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 16, borderWidth: 1 } as ViewStyle,
+  cardMain: { flexDirection: 'row', alignItems: 'center', gap: 13, flex: 1, minWidth: 0 } as ViewStyle,
+  thumb: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center', flexShrink: 0 } as ViewStyle,
+  cardBody: { flex: 1 } as ViewStyle,
+  cardTitle: { fontSize: 14 } as any,
+  cardSub: { fontSize: 12, marginTop: 3 } as any,
+  cardMeta: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 5 } as ViewStyle,
+  statusPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 } as ViewStyle,
+  statusDot: { width: 6, height: 6, borderRadius: 3 } as ViewStyle,
+  statusTxt: { fontSize: 11 } as any,
+  cardType: { fontSize: 11 } as any,
+  saveBtn: { padding: 8, marginLeft: 4 } as ViewStyle,
+  iconBtn: { padding: 8 } as ViewStyle,
+  empty: { alignItems: 'center', paddingTop: 60, gap: 8 } as ViewStyle,
+  emptyTitle: { fontSize: 16 } as any,
+});

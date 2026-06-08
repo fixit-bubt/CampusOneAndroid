@@ -1,0 +1,253 @@
+// Matches design screens-g.jsx — JobPost
+import { useState } from 'react';
+import {
+  View, Text, TouchableOpacity, TextInput, ScrollView,
+  StyleSheet, Alert, type ViewStyle,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTheme } from '../../hooks/useTheme';
+import { useAuth } from '../../store/authStore';
+import { SubBar } from '../../components/layout/TopBar';
+import { Icon } from '../../components/ui/Icon';
+import { FontFamily, Layout } from '../../theme';
+import { supabase } from '../../lib/supabase';
+import type { Job } from '../../types/database';
+
+function SegControl<T extends string>({
+  options, value, onChange, C,
+}: { options: { id: T; label: string }[]; value: T; onChange: (v: T) => void; C: any }) {
+  return (
+    <View style={[segStyles.row, { backgroundColor: C.surface2, borderColor: C.border }]}>
+      {options.map(o => {
+        const on = o.id === value;
+        return (
+          <TouchableOpacity
+            key={o.id}
+            style={[segStyles.btn, on && { backgroundColor: C.brand }]}
+            onPress={() => onChange(o.id)}
+            activeOpacity={0.75}
+          >
+            <Text style={[segStyles.txt, { color: on ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>
+              {o.label}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
+
+const segStyles = StyleSheet.create({
+  row: { flexDirection: 'row' as const, borderRadius: 12, borderWidth: 1, padding: 4, gap: 4 },
+  btn: { flex: 1, alignItems: 'center' as const, paddingVertical: 9, borderRadius: 9 },
+  txt: { fontSize: 13 } as any,
+});
+
+const JOB_TYPES: { id: Job['job_type']; label: string }[] = [
+  { id: 'internship', label: 'Internship' },
+  { id: 'part_time',  label: 'Part-time' },
+  { id: 'full_time',  label: 'Full-time' },
+];
+
+const MODES: { id: Job['work_mode']; label: string }[] = [
+  { id: 'onsite', label: 'On-site' },
+  { id: 'remote', label: 'Remote' },
+  { id: 'hybrid', label: 'Hybrid' },
+];
+
+export function JobPostScreen({ navigation }: any) {
+  const { C } = useTheme();
+  const { user, profile } = useAuth();
+
+  const [company, setCompany] = useState('');
+  const [role, setRole] = useState('');
+  const [jobType, setJobType] = useState<Job['job_type']>('internship');
+  const [workMode, setWorkMode] = useState<Job['work_mode']>('onsite');
+  const [location, setLocation] = useState('');
+  const [salary, setSalary] = useState('');
+  const [deadline, setDeadline] = useState('');
+  const [desc, setDesc] = useState('');
+  const [requirements, setRequirements] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const canSubmit = company.trim() && role.trim();
+
+  async function handleSubmit() {
+    if (!canSubmit || !user) return;
+    setLoading(true);
+    try {
+      const { error } = await supabase.from('jobs').insert({
+        company:      company.trim(),
+        title:        role.trim(),
+        job_type:     jobType,
+        work_mode:    workMode,
+        location:     location.trim() || 'Dhaka',
+        stipend:      salary.trim() || null,
+        deadline:     deadline.trim() || new Date().toISOString().split('T')[0],
+        description:  desc.trim(),
+        requirements: requirements.trim() || null,
+        apply_method: 'email' as Job['apply_method'],
+        posted_by:    user.id,
+        posted_by_name: profile?.full_name ?? '',
+      });
+      if (error) throw error;
+      navigation.goBack();
+    } catch {
+      Alert.alert('Error', 'Could not post job. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
+      <SubBar title="Post a Job" onBack={() => navigation.goBack()} />
+
+      <ScrollView
+        contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>COMPANY</Text>
+        <TextInput
+          style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+          value={company}
+          onChangeText={setCompany}
+          placeholder="e.g. BrainStation-23"
+          placeholderTextColor={C.textMuted}
+        />
+
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>ROLE TITLE</Text>
+        <TextInput
+          style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+          value={role}
+          onChangeText={setRole}
+          placeholder="e.g. Backend Intern"
+          placeholderTextColor={C.textMuted}
+        />
+
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>TYPE</Text>
+        <SegControl options={JOB_TYPES} value={jobType} onChange={setJobType} C={C} />
+
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>WORK MODE</Text>
+        <SegControl options={MODES} value={workMode} onChange={setWorkMode} C={C} />
+
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>LOCATION</Text>
+        <TextInput
+          style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+          value={location}
+          onChangeText={setLocation}
+          placeholder="e.g. Dhaka"
+          placeholderTextColor={C.textMuted}
+        />
+
+        <View style={styles.row}>
+          <View style={styles.halfField}>
+            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>SALARY</Text>
+            <TextInput
+              style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+              value={salary}
+              onChangeText={setSalary}
+              placeholder="৳20,000"
+              placeholderTextColor={C.textMuted}
+            />
+          </View>
+          <View style={styles.halfField}>
+            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>DEADLINE</Text>
+            <TextInput
+              style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+              value={deadline}
+              onChangeText={setDeadline}
+              placeholder="20 Jun"
+              placeholderTextColor={C.textMuted}
+            />
+          </View>
+        </View>
+
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>DESCRIPTION</Text>
+        <TextInput
+          style={[styles.textarea, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+          value={desc}
+          onChangeText={setDesc}
+          placeholder="Describe the role and responsibilities..."
+          placeholderTextColor={C.textMuted}
+          multiline
+          textAlignVertical="top"
+        />
+
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>REQUIREMENTS</Text>
+        <TextInput
+          style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+          value={requirements}
+          onChangeText={setRequirements}
+          placeholder="e.g. React · Node · CGPA 3.0+"
+          placeholderTextColor={C.textMuted}
+        />
+
+        <TouchableOpacity
+          style={[styles.submitBtn, { backgroundColor: canSubmit ? C.brand : C.surface2, opacity: loading ? 0.6 : 1 }]}
+          onPress={handleSubmit}
+          disabled={!canSubmit || loading}
+          activeOpacity={0.8}
+        >
+          <Icon name="check" size={18} color={canSubmit ? '#fff' : C.textMuted} />
+          <Text style={[styles.submitText, { color: canSubmit ? '#fff' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+            Post Listing
+          </Text>
+        </TouchableOpacity>
+
+        <View style={{ height: 30 }} />
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safe: { flex: 1 } as ViewStyle,
+  scroll: { paddingTop: 12, paddingBottom: 20 } as ViewStyle,
+
+  label: {
+    fontSize: 11,
+    letterSpacing: 0.7,
+    marginBottom: 8,
+    marginTop: 18,
+    marginLeft: 2,
+  } as any,
+
+  input: {
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    fontSize: 14.5,
+  } as any,
+
+  row: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 18,
+  } as ViewStyle,
+
+  halfField: { flex: 1 } as ViewStyle,
+
+  textarea: {
+    minHeight: 100,
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 13,
+    fontSize: 14.5,
+    lineHeight: 22,
+  } as any,
+
+  submitBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    height: 52,
+    borderRadius: 14,
+    marginTop: 22,
+  } as ViewStyle,
+
+  submitText: { fontSize: 15 } as any,
+});
