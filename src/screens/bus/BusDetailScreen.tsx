@@ -36,13 +36,13 @@ export function BusDetailScreen({ route, navigation }: any) {
   function nextDeparture(): string {
     const now = new Date();
     const hhmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    const upcoming = busRoute!.to_departures.find(d => d > hhmm);
-    return upcoming ?? busRoute!.to_departures[0] ?? '--:--';
+    const upcoming = (busRoute?.to_departures ?? []).find(d => d > hhmm);
+    return upcoming ?? (busRoute?.to_departures ?? [])[0] ?? '--:--';
   }
 
   const next = nextDeparture();
   const stops = busRoute.stops;
-  const legs = busRoute.leg_mins;
+  const legs = (busRoute?.leg_mins ?? []);
 
   let cumulative = 0;
   const rows = stops.map((s, i) => {

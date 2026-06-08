@@ -40,8 +40,8 @@ export function BusScreen({ navigation }: any) {
   function nextDeparture(route: BusRoute): string {
     const now = new Date();
     const hhmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    const upcoming = route.to_departures.find(d => d > hhmm);
-    return upcoming ?? route.to_departures[0] ?? '--:--';
+    const upcoming = (route.to_departures ?? []).find(d => d > hhmm);
+    return upcoming ?? (route.to_departures ?? [])[0] ?? '--:--';
   }
 
   return (
