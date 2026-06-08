@@ -1,0 +1,244 @@
+// Matches design screens-b.jsx — MarketDetail
+import { useState, useEffect } from 'react';
+import {
+  View, Text, ScrollView, TouchableOpacity, StyleSheet,
+  ActivityIndicator, type ViewStyle,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Feather } from '@expo/vector-icons';
+import { useTheme } from '../../hooks/useTheme';
+import { SubBar } from '../../components/layout/TopBar';
+import { Avatar } from '../../components/ui/Avatar';
+import { Icon } from '../../components/ui/Icon';
+import { FontFamily, Layout } from '../../theme';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../store/authStore';
+
+const MK_CATS: Record<string, { icon: string; fg: string; label: string }> = {
+  books:       { icon: 'book-open', fg: '#2b5be3', label: 'Books'       },
+  electronics: { icon: 'cpu',       fg: '#8b5cf6', label: 'Electronics' },
+  clothing:    { icon: 'scissors',  fg: '#ec4899', label: 'Clothing'    },
+  sports:      { icon: 'activity',  fg: '#0e9c8a', label: 'Sports'      },
+  furniture:   { icon: 'layers',    fg: '#b9760a', label: 'Furniture'   },
+  other:       { icon: 'package',   fg: '#5b6b86', label: 'Other'       },
+};
+
+export function MarketDetailScreen({ route, navigation }: any) {
+  const { C, isDark } = useTheme();
+  const { user } = useAuth();
+  const { id } = route.params;
+  const [listing, setListing] = useState<any>(null);
+  const [seller, setSeller] = useState<any>(null);
+  const [revealed, setRevealed] = useState(false);
+  const [contactInfo, setContactInfo] = useState<{ email: string; phone: string } | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const { data: l } = await supabase
+        .from('market_listings')
+        .select('*, profiles:seller_id(full_name, email, whatsapp)')
+        .eq('id', id)
+        .single();
+      if (l) {
+        setListing(l);
+        setSeller((l as any).profiles);
+      }
+    })();
+  }, [id]);
+
+  async function revealContact() {
+    if (!user || !listing) return;
+    await supabase.from('market_contacts').insert({ listing_id: id, user_id: user.id });
+    setRevealed(true);
+    setContactInfo({
+      email: seller?.email ?? 'contact@std.bubt.edu.bd',
+      phone: seller?.whatsapp ?? '+880 1700-000000',
+    });
+  }
+
+  async function markSold() {
+    await supabase.from('market_listings').update({ status: 'sold' }).eq('id', id);
+    setListing((prev: any) => ({ ...prev, status: 'sold' }));
+  }
+
+  async function deleteListing() {
+    await supabase.from('market_listings').delete().eq('id', id);
+    navigation.goBack();
+  }
+
+  if (!listing) {
+    return (
+      <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
+        <SubBar title="Marketplace" onBack={() => navigation.goBack()} />
+        <View style={styles.center}><ActivityIndicator color={C.brand} /></View>
+      </SafeAreaView>
+    );
+  }
+
+  const cat = MK_CATS[listing.category] ?? MK_CATS.other;
+  const tintBg = isDark ? `${cat.fg}2e` : `${cat.fg}18`;
+  const isOwn = listing.seller_id === user?.id;
+  const isSold = listing.status === 'sold';
+
+  return (
+    <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
+      <SubBar title="Marketplace" onBack={() => navigation.goBack()} />
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingHorizontal: Layout.screenPadding }]}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Large thumb */}
+        <View style={[styles.bigThumb, { backgroundColor: tintBg }]}>
+          <Feather name={cat.icon as any} size={72} color={cat.fg} />
+          {isSold && (
+            <View style={styles.soldOverlay}>
+              <View style={[styles.soldPill, { backgroundColor: '#fff' }]}>
+                <Text style={[styles.soldTxt, { color: '#0f1a2e', fontFamily: FontFamily.jakartaExtraBold }]}>Sold</Text>
+              </View>
+            </View>
+          )}
+        </View>
+
+        {/* Title + price */}
+        <Text style={[styles.title, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{listing.title}</Text>
+        <Text style={[styles.price, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+          ৳{listing.price.toLocaleString('en-US')}
+        </Text>
+
+        {/* Pills */}
+        <View style={styles.pills}>
+          <View style={[styles.pill, { backgroundColor: C.surface2 }]}>
+            <Text style={[styles.pillTxt, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>{cat.label}</Text>
+          </View>
+          <View style={[styles.pill, { backgroundColor: C.surface2 }]}>
+            <Text style={[styles.pillTxt, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>{listing.condition}</Text>
+          </View>
+          {listing.negotiable && (
+            <View style={[styles.pill, { backgroundColor: '#eef3ff' }]}>
+              <Text style={[styles.pillTxt, { color: '#2b5be3', fontFamily: FontFamily.jakartaSemiBold }]}>Negotiable</Text>
+            </View>
+          )}
+          {isSold && (
+            <View style={[styles.pill, { backgroundColor: '#fbe7e5' }]}>
+              <View style={styles.soldDot} />
+              <Text style={[styles.pillTxt, { color: '#e2483d', fontFamily: FontFamily.jakartaSemiBold }]}>Sold</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Description */}
+        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>DETAILS</Text>
+        <Text style={[styles.body, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>{listing.description}</Text>
+
+        {/* Seller card */}
+        <View style={[styles.sellerCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+          <Avatar name={seller?.full_name} size="sm" />
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.sellerName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              {seller?.full_name ?? 'Unknown'}
+            </Text>
+            <Text style={[styles.sellerSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+              {listing.location}
+            </Text>
+          </View>
+        </View>
+
+        {/* Actions */}
+        {isOwn ? (
+          <View style={styles.ownerActions}>
+            <View style={styles.ownerRow}>
+              <TouchableOpacity
+                style={[styles.halfBtn, { backgroundColor: C.surface, borderColor: C.border }]}
+                onPress={() => navigation.navigate('MarketPost', { listing })}
+                activeOpacity={0.85}
+              >
+                <Icon name="sliders" size={16} color={C.text} />
+                <Text style={[styles.halfBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Edit</Text>
+              </TouchableOpacity>
+              {!isSold && (
+                <TouchableOpacity
+                  style={[styles.halfBtn, { backgroundColor: C.surface, borderColor: C.border }]}
+                  onPress={markSold}
+                  activeOpacity={0.85}
+                >
+                  <Feather name="check" size={16} color={C.text} />
+                  <Text style={[styles.halfBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Mark Sold</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            <TouchableOpacity
+              style={[styles.actionBtn, { backgroundColor: '#fbe7e5', marginTop: 0 }]}
+              onPress={deleteListing}
+              activeOpacity={0.85}
+            >
+              <Icon name="trash" size={16} color="#e2483d" />
+              <Text style={[styles.actionTxt, { color: '#e2483d', fontFamily: FontFamily.jakartaBold }]}>Delete listing</Text>
+            </TouchableOpacity>
+          </View>
+        ) : revealed && contactInfo ? (
+          <View style={[styles.contactCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <Text style={[styles.contactLabel, { color: '#0e9c8a', fontFamily: FontFamily.jakartaBold }]}>Contact Info</Text>
+            <View style={styles.contactRow}>
+              <Icon name="mail" size={15} color={C.textMuted} />
+              <Text style={[styles.contactTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>{contactInfo.email}</Text>
+            </View>
+            <View style={styles.contactRow}>
+              <Feather name="phone" size={15} color={C.textMuted} />
+              <Text style={[styles.contactTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>{contactInfo.phone}</Text>
+            </View>
+          </View>
+        ) : !isSold ? (
+          <TouchableOpacity
+            style={[styles.actionBtn, { backgroundColor: C.brand }]}
+            onPress={revealContact}
+            activeOpacity={0.85}
+          >
+            <Icon name="mail" size={17} color="#fff" />
+            <Text style={[styles.actionTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>Contact Seller</Text>
+          </TouchableOpacity>
+        ) : null}
+
+        <View style={{ height: 26 }} />
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safe: { flex: 1 } as ViewStyle,
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
+  content: { paddingTop: 16, paddingBottom: 20 } as ViewStyle,
+
+  bigThumb: { height: 180, borderRadius: 20, alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' } as ViewStyle,
+  soldOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(15,23,42,0.55)', alignItems: 'center', justifyContent: 'center' } as ViewStyle,
+  soldPill: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20 } as ViewStyle,
+  soldTxt: { fontSize: 13 } as any,
+
+  title: { fontSize: 20, letterSpacing: -0.4, lineHeight: 28, marginTop: 16 } as any,
+  price: { fontSize: 24, marginTop: 6 } as any,
+
+  pills: { flexDirection: 'row', gap: 7, flexWrap: 'wrap', marginTop: 10 } as ViewStyle,
+  pill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 9, paddingVertical: 5, borderRadius: 20 } as ViewStyle,
+  pillTxt: { fontSize: 12 } as any,
+  soldDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#e2483d' } as ViewStyle,
+
+  sectionLabel: { fontSize: 11, letterSpacing: 0.8, marginTop: 18, marginBottom: 8 } as any,
+  body: { fontSize: 14.5, lineHeight: 22.5 } as any,
+
+  sellerCard: { flexDirection: 'row', alignItems: 'center', gap: 11, padding: 14, borderRadius: 14, borderWidth: 1, marginTop: 16 } as ViewStyle,
+  sellerName: { fontSize: 14 } as any,
+  sellerSub: { fontSize: 12, marginTop: 2 } as any,
+
+  ownerActions: { gap: 10, marginTop: 18 } as ViewStyle,
+  ownerRow: { flexDirection: 'row', gap: 10 } as ViewStyle,
+  halfBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, height: 44, borderRadius: 14, borderWidth: 1 } as ViewStyle,
+  halfBtnTxt: { fontSize: 14 } as any,
+
+  contactCard: { padding: 14, borderRadius: 14, borderWidth: 1, gap: 8, marginTop: 18 } as ViewStyle,
+  contactLabel: { fontSize: 12, marginBottom: 2 } as any,
+  contactRow: { flexDirection: 'row', alignItems: 'center', gap: 8 } as ViewStyle,
+  contactTxt: { fontSize: 13.5 } as any,
+
+  actionBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 48, borderRadius: 14, marginTop: 18 } as ViewStyle,
+  actionTxt: { fontSize: 15 } as any,
+});
