@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
-  RefreshControl, type ViewStyle,
+  RefreshControl, Alert, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
@@ -37,19 +37,18 @@ export function BloodScreen({ navigation }: any) {
   const [tab, setTab] = useState<Tab>('requests');
   const [requests, setRequests] = useState<BloodRequest[]>([]);
   const [donors, setDonors]     = useState<Donor[]>([]);
-  const [pledgedIds, setPledgedIds] = useState<Set<string>>(new Set());
   const [refreshing, setRefreshing] = useState(false);
+  const [respondedIds, setRespondedIds] = useState<Set<string>>(new Set());
+  const [contactBusy, setContactBusy] = useState(false);
 
   const load = useCallback(async () => {
-    const [rRes, dRes, pledgeRes] = await Promise.all([
+    const [rRes, dRes] = await Promise.all([
       supabase.from('blood_requests').select('*').order('created_at', { ascending: false }).limit(30),
-      supabase.from('donors').select('*, profiles:user_id(full_name)').limit(50),
-      supabase.from('blood_pledges').select('request_id').eq('donor_id', user?.id ?? ''),
+      supabase.from('blood_donors').select('*, profiles:user_id(full_name)').eq('is_available', true).limit(50),
     ]);
     if (rRes.data) setRequests(rRes.data as BloodRequest[]);
     if (dRes.data) setDonors(dRes.data as any);
-    if (pledgeRes.data) setPledgedIds(new Set(pledgeRes.data.map((p: any) => p.request_id)));
-  }, [user?.id]);
+  }, []);
 
   useEffect(() => { load(); }, [load]);
 
@@ -59,16 +58,84 @@ export function BloodScreen({ navigation }: any) {
     setRefreshing(false);
   }
 
-  async function pledge(requestId: string) {
-    if (!user) return;
-    const { error } = await supabase.from('blood_pledges').insert({ request_id: requestId, donor_id: user.id });
-    if (!error) setPledgedIds(prev => new Set([...prev, requestId]));
+  async function revealContact(donorId: string) {
+    if (!user || contactBusy) return;
+    setContactBusy(true);
+    try {
+      const { data, error } = await supabase.rpc('contact_reveal', { target_id: donorId });
+      if (error) {
+        Alert.alert('Error', 'Could not reveal contact. Please try again.');
+        return;
+      }
+      let phone = 'Not available';
+      if (data) {
+        if (typeof data === 'string') {
+          phone = data;
+        } else if (typeof data === 'object') {
+          phone =
+            data.phone ??
+            data.mobile ??
+            data.contact ??
+            data.phone_number ??
+            (Object.values(data as Record<string, unknown>)[0] as string | undefined) ??
+            'Not available';
+        }
+      }
+      Alert.alert('Contact', String(phone));
+    } finally {
+      setContactBusy(false);
+    }
+  }
+
+  function handleHelpPress(r: BloodRequest) {
+    if (!user) {
+      Alert.alert('Sign in required', 'Please sign in to respond to blood requests.');
+      return;
+    }
+    if (respondedIds.has(r.id)) {
+      Alert.alert('Already responded', 'You have already offered to help with this request.');
+      return;
+    }
+    Alert.alert(
+      'Confirm response',
+      `Respond to the ${r.blood_group} request for ${r.patient} at ${r.hospital}?\n\nYou will be registered as an available ${r.blood_group} donor.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Yes, I can help',
+          onPress: async () => {
+            // Optimistically mark as responded so the user cannot double-tap
+            setRespondedIds(prev => new Set(prev).add(r.id));
+            const { error } = await supabase.from('blood_donors').upsert(
+              {
+                user_id: user.id,
+                blood_group: r.blood_group,
+                is_available: true,
+              },
+              { onConflict: 'user_id' },
+            );
+            if (error) {
+              // Roll back optimistic update on failure
+              setRespondedIds(prev => {
+                const next = new Set(prev);
+                next.delete(r.id);
+                return next;
+              });
+              Alert.alert('Error', 'Could not submit your response. Please try again.');
+            } else {
+              Alert.alert('Thank you!', `You have been registered as an available ${r.blood_group} donor. The requester can now find you.`);
+            }
+          },
+        },
+      ],
+    );
   }
 
   // Group donors by blood type
   const donorGroups: Record<string, number> = {};
   donors.forEach(d => { donorGroups[d.blood_group] = (donorGroups[d.blood_group] ?? 0) + 1; });
   const bloodTypes = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
+
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -147,17 +214,17 @@ export function BloodScreen({ navigation }: any) {
                       {r.area} · {r.units} unit{r.units !== 1 ? 's' : ''} needed
                     </Text>
                   </View>
-                  {pledgedIds.has(r.id) ? (
-                    <View style={[styles.pledgeBtn, { backgroundColor: '#e4f5f4' }]}>
-                      <Icon name="check" size={16} color="#0e9c8a" />
-                      <Text style={[styles.pledgeTxt, { color: '#0e9c8a', fontFamily: FontFamily.jakartaBold }]}>Pledged</Text>
-                    </View>
-                  ) : (
-                    <TouchableOpacity style={[styles.pledgeBtn, { backgroundColor: BLOOD_BG }]} onPress={() => pledge(r.id)} activeOpacity={0.75}>
-                      <Icon name="blood" size={16} color={BLOOD_COLOR} />
-                      <Text style={[styles.pledgeTxt, { color: BLOOD_COLOR, fontFamily: FontFamily.jakartaBold }]}>Pledge to donate</Text>
-                    </TouchableOpacity>
-                  )}
+                  <TouchableOpacity
+                    style={[styles.pledgeBtn, { backgroundColor: respondedIds.has(r.id) ? '#e8f5e9' : BLOOD_BG, opacity: respondedIds.has(r.id) ? 0.7 : 1 }]}
+                    onPress={() => handleHelpPress(r)}
+                    activeOpacity={0.75}
+                    disabled={respondedIds.has(r.id)}
+                  >
+                    <Icon name="blood" size={16} color={respondedIds.has(r.id) ? '#388e3c' : BLOOD_COLOR} />
+                    <Text style={[styles.pledgeTxt, { color: respondedIds.has(r.id) ? '#388e3c' : BLOOD_COLOR, fontFamily: FontFamily.jakartaBold }]}>
+                      {respondedIds.has(r.id) ? 'Responded' : 'I can help'}
+                    </Text>
+                  </TouchableOpacity>
                 </View>
               );
             })}
@@ -197,6 +264,16 @@ export function BloodScreen({ navigation }: any) {
                       </Text>
                     </View>
                     <GroupBadge group={d.blood_group} size={34} />
+                    <TouchableOpacity
+                      style={[styles.contactBtn, { backgroundColor: BLOOD_BG, opacity: contactBusy ? 0.5 : 1 }]}
+                      onPress={() => revealContact(d.user_id)}
+                      activeOpacity={0.75}
+                      disabled={contactBusy}
+                    >
+                      <Text style={[styles.contactTxt, { color: BLOOD_COLOR, fontFamily: FontFamily.jakartaBold }]}>
+                        {contactBusy ? '…' : 'Contact'}
+                      </Text>
+                    </TouchableOpacity>
                   </View>
                 </View>
               ))}
@@ -246,4 +323,6 @@ const styles = StyleSheet.create({
   donorRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 13 } as ViewStyle,
   donorName: { fontSize: 14 } as any,
   donorMeta: { fontSize: 12, marginTop: 2 } as any,
+  contactBtn: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 } as ViewStyle,
+  contactTxt: { fontSize: 11 } as any,
 });

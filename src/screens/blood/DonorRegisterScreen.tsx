@@ -31,12 +31,13 @@ export function DonorRegisterScreen({ navigation }: any) {
     if (!canSubmit || !user) return;
     setLoading(true);
     try {
-      const { error } = await supabase.from('donors').upsert({
+      const { error } = await supabase.from('blood_donors').upsert({
         user_id:      user.id,
         blood_group:  group,
         area:         area.trim(),
         phone:        phone.trim() || null,
         last_donated: lastDonated.trim() || null,
+        is_available: true,
       });
       if (error) throw error;
       navigation.goBack();
