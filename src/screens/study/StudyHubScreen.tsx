@@ -34,6 +34,7 @@ interface SectionRow {
 
 interface JoinRequest {
   id: string;
+  user_id: string;
   initials: string;
   full_name: string;
   created_at: string;
@@ -41,6 +42,7 @@ interface JoinRequest {
 
 interface AdminRequest {
   id: string;
+  user_id: string;
   initials: string;
   full_name: string;
   department: string;
@@ -351,6 +353,7 @@ export function StudyHubScreen({ navigation }: any) {
     if (data) {
       setAdminReqs(data.map((r: any) => ({
         id: r.id,
+        user_id: r.user_id,
         full_name: r.profiles?.full_name ?? 'Unknown',
         initials: (r.profiles?.full_name ?? '??').split(' ').slice(0, 2).map((w: string) => w[0]).join(''),
         department: r.department,
@@ -381,6 +384,7 @@ export function StudyHubScreen({ navigation }: any) {
     if (data) {
       setJoinReqs(data.map((r: any) => ({
         id: r.id,
+        user_id: r.user_id,
         full_name: r.profiles?.full_name ?? 'Unknown',
         initials: (r.profiles?.full_name ?? '??').split(' ').slice(0, 2).map((w: string) => w[0]).join(''),
         created_at: r.created_at,
@@ -434,7 +438,11 @@ export function StudyHubScreen({ navigation }: any) {
   }
 
   async function approveJoin(id: string) {
+    const req = joinReqs.find(x => x.id === id);
     await supabase.from('study_join_requests').update({ status: 'approved' }).eq('id', id);
+    if (req && mySection) {
+      await supabase.from('study_members').insert({ section_id: mySection.id, user_id: req.user_id, role: 'member' });
+    }
     setJoinReqs(j => j.filter(x => x.id !== id));
     flash('Member approved');
   }
@@ -458,7 +466,23 @@ export function StudyHubScreen({ navigation }: any) {
   }
 
   async function approveAdminReq(id: string) {
+    const req = adminReqs.find(x => x.id === id);
     await supabase.from('study_section_requests').update({ status: 'approved' }).eq('id', id);
+    if (req) {
+      const join_code = Math.random().toString(36).slice(2, 8).toUpperCase();
+      const { data: sec } = await supabase.from('study_sections').insert({
+        department: req.department,
+        intake: req.intake,
+        label: req.section_label,
+        join_code,
+        is_public: false,
+        intake_public: false,
+        created_by: req.user_id,
+      }).select('id').single();
+      if (sec) {
+        await supabase.from('study_members').insert({ section_id: sec.id, user_id: req.user_id, role: 'cr' });
+      }
+    }
     setAdminReqs(r => r.filter(x => x.id !== id));
     flash('Approved — CR assigned & code generated');
   }
