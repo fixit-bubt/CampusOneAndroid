@@ -1,20 +1,25 @@
 import 'react-native-url-polyfill/auto';
 import React from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { useColorScheme } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { AppProvider, useApp } from './src/store/appStore';
 import { AuthProvider } from './src/store/authStore';
 import { RootNavigator } from './src/navigation/RootNavigator';
 
-export default function App() {
-  const scheme = useColorScheme();
+function ThemedStatusBar() {
+  const { isDark } = useApp();
+  return <StatusBar style={isDark ? 'light' : 'dark'} />;
+}
 
+export default function App() {
   return (
     <SafeAreaProvider>
-      <AuthProvider>
-        <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-        <RootNavigator />
-      </AuthProvider>
+      <AppProvider>
+        <AuthProvider>
+          <ThemedStatusBar />
+          <RootNavigator />
+        </AuthProvider>
+      </AppProvider>
     </SafeAreaProvider>
   );
 }
