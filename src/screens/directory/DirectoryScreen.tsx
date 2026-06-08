@@ -17,7 +17,6 @@ type ConnState = 'none' | 'requested' | 'incoming' | 'connected';
 
 interface Student {
   id: string;
-  user_id: string;
   full_name: string;
   department: string;
   intake: string;
@@ -34,29 +33,29 @@ export function DirectoryScreen({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
+    if (!user?.id) return;
     const { data: profiles } = await supabase
       .from('profiles')
-      .select('user_id, full_name, department, intake, section, email')
-      .neq('user_id', user?.id ?? '')
+      .select('id, full_name, department, intake, section, email')
+      .neq('id', user?.id ?? '')
       .limit(80);
 
     const { data: connections } = await supabase
       .from('connections')
       .select('*')
-      .or(`from_id.eq.${user?.id ?? ''},to_id.eq.${user?.id ?? ''}`);
+      .or(`requester_id.eq.${user?.id ?? ''},addressee_id.eq.${user?.id ?? ''}`);
 
     const map = new Map<string, ConnState>();
     (connections ?? []).forEach((c: any) => {
-      const other = c.from_id === user?.id ? c.to_id : c.from_id;
+      const other = c.requester_id === user?.id ? c.addressee_id : c.requester_id;
       if (c.status === 'accepted') map.set(other, 'connected');
-      else if (c.from_id === user?.id) map.set(other, 'requested');
+      else if (c.requester_id === user?.id) map.set(other, 'requested');
       else map.set(other, 'incoming');
     });
 
     setStudents((profiles ?? []).map((p: any) => ({
       ...p,
-      id: p.user_id,
-      connState: map.get(p.user_id) ?? 'none',
+      connState: map.get(p.id) ?? 'none',
     })));
   }, [user?.id]);
 
@@ -71,15 +70,15 @@ export function DirectoryScreen({ navigation }: any) {
   async function handleConn(studentId: string, action: 'connect' | 'accept' | 'decline') {
     if (!user) return;
     if (action === 'connect') {
-      await supabase.from('connections').insert({ from_id: user.id, to_id: studentId, status: 'pending' });
+      await supabase.from('connections').insert({ requester_id: user.id, addressee_id: studentId, status: 'pending' });
       setStudents(prev => prev.map(s => s.id === studentId ? { ...s, connState: 'requested' } : s));
     } else if (action === 'accept') {
       await supabase.from('connections').update({ status: 'accepted' })
-        .eq('from_id', studentId).eq('to_id', user.id);
+        .eq('requester_id', studentId).eq('addressee_id', user.id);
       setStudents(prev => prev.map(s => s.id === studentId ? { ...s, connState: 'connected' } : s));
     } else {
       await supabase.from('connections').delete()
-        .eq('from_id', studentId).eq('to_id', user.id);
+        .eq('requester_id', studentId).eq('addressee_id', user.id);
       setStudents(prev => prev.map(s => s.id === studentId ? { ...s, connState: 'none' } : s));
     }
   }
