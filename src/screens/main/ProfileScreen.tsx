@@ -509,9 +509,13 @@ export function ProfileScreen({ navigation }: any) {
           </View>
         )}
 
-        {/* View As */}
-        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>VIEW AS</Text>
-        <RoleSwitch role={role} onRole={handleRoleView} C={C} />
+        {/* View As — only visible to staff and admin */}
+        {(profile?.role === 'staff' || profile?.role === 'admin') && (
+          <>
+            <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>VIEW AS</Text>
+            <RoleSwitch role={role} onRole={handleRoleView} C={C} />
+          </>
+        )}
 
         {/* Sign out */}
         <TouchableOpacity
