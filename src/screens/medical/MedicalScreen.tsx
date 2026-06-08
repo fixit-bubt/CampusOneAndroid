@@ -17,11 +17,23 @@ const MED_BG    = '#e2483d1e';
 interface Doctor {
   id: string;
   name: string;
-  specialization: string;
-  duty_days: string;
-  duty_hours: string;
-  on_duty: boolean;
-  next_duty: string;
+  specialty: string;
+  days: string[];
+  start_time: string;
+  end_time: string;
+  room: string | null;
+  active: boolean;
+}
+
+function isOnDuty(doc: Doctor): boolean {
+  if (!doc.active) return false;
+  const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const now = new Date();
+  if (!doc.days?.includes(DAY_NAMES[now.getDay()])) return false;
+  const [sh = 0, sm = 0] = (doc.start_time ?? '').split(':').map(Number);
+  const [eh = 23, em = 59] = (doc.end_time ?? '').split(':').map(Number);
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+  return nowMins >= sh * 60 + sm && nowMins <= eh * 60 + em;
 }
 
 export function MedicalScreen({ navigation }: any) {
@@ -72,10 +84,10 @@ export function MedicalScreen({ navigation }: any) {
                     {d.name}
                   </Text>
                   <Text style={[styles.cardSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                    {d.specialization} · {d.duty_days}
+                    {d.specialty} · {Array.isArray(d.days) ? d.days.join(', ') : ''}
                   </Text>
                   <View style={styles.cardMeta}>
-                    {d.on_duty ? (
+                    {isOnDuty(d) ? (
                       <View style={[styles.dutyPill, { backgroundColor: '#e4f5f4' }]}>
                         <View style={[styles.dutyDot, { backgroundColor: '#0e9c8a' }]} />
                         <Text style={[styles.dutyTxt, { color: '#0e9c8a', fontFamily: FontFamily.jakartaBold }]}>On Duty</Text>
@@ -83,7 +95,7 @@ export function MedicalScreen({ navigation }: any) {
                     ) : (
                       <View style={[styles.dutyPill, { backgroundColor: C.surface2 }]}>
                         <Text style={[styles.dutyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                          Next: {d.next_duty}
+                          {d.start_time} – {d.end_time}
                         </Text>
                       </View>
                     )}
