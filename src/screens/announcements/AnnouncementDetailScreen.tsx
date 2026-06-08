@@ -1,7 +1,8 @@
 // Matches design screens-a.jsx — AnnouncementDetail
 import { useState, useEffect } from 'react';
 import {
-  View, Text, ScrollView, StyleSheet, ActivityIndicator, type ViewStyle,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator,
+  Linking, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
@@ -87,7 +88,11 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
 
         {/* Attachment */}
         {item.attachment_url && (
-          <View style={[styles.attachCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+          <TouchableOpacity
+            style={[styles.attachCard, { backgroundColor: C.surface, borderColor: C.border }]}
+            onPress={() => Linking.openURL(item.attachment_url!)}
+            activeOpacity={0.75}
+          >
             <View style={[styles.attachIcon, { backgroundColor: '#fbe7e5' }]}>
               <Icon name="mail" size={18} color="#d63d35" />
             </View>
@@ -100,7 +105,7 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
               </Text>
             </View>
             <Icon name="chevR" size={18} color={C.textMuted} />
-          </View>
+          </TouchableOpacity>
         )}
 
         <View style={{ height: 26 }} />
