@@ -26,7 +26,7 @@ const CAT_ICON: Record<string, string> = {
 function EventCard({ e, C, onPress }: { e: Event; C: any; onPress: () => void }) {
   const fg = CAT_COLOR[e.category] ?? '#5b6b86';
   const bg = `${fg}1e`;
-  const isUpcoming = new Date(e.event_date) >= new Date();
+  const isUpcoming = new Date(e.date) >= new Date();
   return (
     <TouchableOpacity onPress={onPress} style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]} activeOpacity={0.75}>
       <View style={[styles.thumb, { backgroundColor: bg }]}>
@@ -39,7 +39,7 @@ function EventCard({ e, C, onPress }: { e: Event; C: any; onPress: () => void })
         <View style={styles.cardLoc}>
           <Icon name="events" size={12} color={C.textMuted} />
           <Text style={[styles.cardLocTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
-            {e.event_date} · {e.location}
+            {e.date} · {e.venue}
           </Text>
         </View>
         <View style={styles.cardMeta}>
@@ -73,7 +73,7 @@ export function EventsBrowseScreen({ navigation }: any) {
     const { data, error } = await supabase
       .from('events')
       .select('*')
-      .order('event_date', { ascending: true })
+      .order('date', { ascending: true })
       .limit(50);
     if (error) { console.error('events fetch:', error.message); return; }
     if (data) setEvents(data as Event[]);
@@ -88,8 +88,8 @@ export function EventsBrowseScreen({ navigation }: any) {
   }
 
   const today = new Date().toISOString().split('T')[0];
-  const upcoming = events.filter(e => e.event_date >= today);
-  const past = events.filter(e => e.event_date < today);
+  const upcoming = events.filter(e => e.date >= today);
+  const past = events.filter(e => e.date < today);
   const list = filter === 'past' ? past : upcoming;
 
   return (

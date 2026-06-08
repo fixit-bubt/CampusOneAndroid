@@ -82,7 +82,7 @@ export function EventDetailScreen({ route, navigation }: any) {
 
   const fg = CAT_COLOR[event.category] ?? '#5b6b86';
   const bg = `${fg}1e`;
-  const isUpcoming = event.event_date >= new Date().toISOString().split('T')[0];
+  const isUpcoming = event.date >= new Date().toISOString().split('T')[0];
   const isFull = !!(event.capacity && goingCount >= event.capacity && !going);
 
   return (
@@ -119,7 +119,7 @@ export function EventDetailScreen({ route, navigation }: any) {
             <View style={styles.infoVal}>
               <Icon name="clock" size={13} color={C.textMuted} />
               <Text style={[styles.infoTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>
-                {event.event_date}
+                {event.date}
               </Text>
             </View>
             <Text style={[styles.infoSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
@@ -131,7 +131,7 @@ export function EventDetailScreen({ route, navigation }: any) {
             <View style={styles.infoVal}>
               <Icon name="pin" size={13} color={C.textMuted} />
               <Text style={[styles.infoTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>
-                {event.location}
+                {event.venue}
               </Text>
             </View>
           </View>
