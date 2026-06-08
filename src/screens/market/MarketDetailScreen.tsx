@@ -35,7 +35,7 @@ export function MarketDetailScreen({ route, navigation }: any) {
   useEffect(() => {
     (async () => {
       const { data: l } = await supabase
-        .from('market_listings')
+        .from('listings')
         .select('*, profiles:seller_id(full_name, email, whatsapp)')
         .eq('id', id)
         .single();
@@ -46,9 +46,8 @@ export function MarketDetailScreen({ route, navigation }: any) {
     })();
   }, [id]);
 
-  async function revealContact() {
-    if (!user || !listing) return;
-    await supabase.from('market_contacts').insert({ listing_id: id, user_id: user.id });
+  function revealContact() {
+    if (!listing) return;
     setRevealed(true);
     setContactInfo({
       email: seller?.email ?? 'contact@std.bubt.edu.bd',
@@ -57,12 +56,12 @@ export function MarketDetailScreen({ route, navigation }: any) {
   }
 
   async function markSold() {
-    await supabase.from('market_listings').update({ status: 'sold' }).eq('id', id);
-    setListing((prev: any) => ({ ...prev, status: 'sold' }));
+    await supabase.from('listings').update({ status: 'Sold' }).eq('id', id);
+    setListing((prev: any) => ({ ...prev, status: 'Sold' }));
   }
 
   async function deleteListing() {
-    await supabase.from('market_listings').delete().eq('id', id);
+    await supabase.from('listings').delete().eq('id', id);
     navigation.goBack();
   }
 
@@ -78,7 +77,7 @@ export function MarketDetailScreen({ route, navigation }: any) {
   const cat = MK_CATS[listing.category] ?? MK_CATS.other;
   const tintBg = isDark ? `${cat.fg}2e` : `${cat.fg}18`;
   const isOwn = listing.seller_id === user?.id;
-  const isSold = listing.status === 'sold';
+  const isSold = listing.status?.toLowerCase() === 'sold';
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -210,7 +209,7 @@ const styles = StyleSheet.create({
   content: { paddingTop: 16, paddingBottom: 20 } as ViewStyle,
 
   bigThumb: { height: 180, borderRadius: 20, alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' } as ViewStyle,
-  soldOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(15,23,42,0.55)', alignItems: 'center', justifyContent: 'center' } as ViewStyle,
+  soldOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15,23,42,0.55)', alignItems: 'center', justifyContent: 'center' } as ViewStyle,
   soldPill: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20 } as ViewStyle,
   soldTxt: { fontSize: 13 } as any,
 
