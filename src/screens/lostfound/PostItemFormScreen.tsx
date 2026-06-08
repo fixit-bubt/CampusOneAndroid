@@ -7,6 +7,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
+import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout } from '../../theme';
@@ -27,6 +28,7 @@ function hexAlpha(hex: string, a: number) {
 
 export function PostItemFormScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
+  const { user } = useAuth();
   const [type, setType] = useState<'Lost' | 'Found'>('Found');
   const [cat, setCat]   = useState<LostFoundItem['category'] | null>(null);
   const [title, setTitle] = useState('');
@@ -43,11 +45,12 @@ export function PostItemFormScreen({ navigation }: any) {
     setErr('');
     const { error } = await supabase.from('lost_found_items').insert({
       type,
-      title: title.trim(),
-      category: cat,
+      title:       title.trim(),
+      category:    cat,
       description: desc.trim() || title.trim(),
-      location: loc.trim() || 'Campus',
-      item_date: new Date().toISOString().split('T')[0],
+      location:    loc.trim() || 'Campus',
+      item_date:   new Date().toISOString().split('T')[0],
+      poster_id:   user?.id,
     });
     setBusy(false);
     if (error) {
