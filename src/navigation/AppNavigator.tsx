@@ -1,5 +1,6 @@
 // Main app stack — wraps BottomTabNavigator and all feature screens
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { AppStackParams } from '../types/navigation';
 import { BottomTabNavigator } from './BottomTabNavigator';
 
 // Auth + feature screens
@@ -40,6 +41,7 @@ import { AllReportsScreen }        from '../screens/dashboard/AllReportsScreen';
 import { ReportDetailScreen }      from '../screens/reports/ReportDetailScreen';
 import { MarketPostScreen }        from '../screens/market/MarketPostScreen';
 import { RidePostScreen }          from '../screens/rides/RidePostScreen';
+import { RideDetailScreen }        from '../screens/rides/RideDetailScreen';
 import { EventPostScreen }         from '../screens/events/EventPostScreen';
 import { JobPostScreen }           from '../screens/jobs/JobPostScreen';
 import { AnnouncePostScreen }      from '../screens/announcements/AnnouncePostScreen';
@@ -48,7 +50,7 @@ import { DonorRegisterScreen }     from '../screens/blood/DonorRegisterScreen';
 import { ClubPostScreen }          from '../screens/clubs/ClubPostScreen';
 import { StudyUploadScreen }       from '../screens/study/StudyUploadScreen';
 
-const Stack = createNativeStackNavigator();
+const Stack = createNativeStackNavigator<AppStackParams>();
 
 export function AppNavigator() {
   return (
@@ -63,6 +65,7 @@ export function AppNavigator() {
       <Stack.Screen name="LostFoundBrowse"  component={LostFoundBrowseScreen} />
       <Stack.Screen name="LostFoundDetail"  component={LostFoundDetailScreen} />
       <Stack.Screen name="LostFoundPost"    component={PostItemFormScreen} />
+      <Stack.Screen name="LostFoundEdit"   component={PostItemFormScreen} />
 
       {/* Events */}
       <Stack.Screen name="EventsBrowse"   component={EventsBrowseScreen} />
@@ -89,6 +92,7 @@ export function AppNavigator() {
 
       {/* Rides */}
       <Stack.Screen name="Rides"          component={RidesScreen} />
+      <Stack.Screen name="RideDetail"     component={RideDetailScreen} />
 
       {/* Directory */}
       <Stack.Screen name="Directory"      component={DirectoryScreen} />
