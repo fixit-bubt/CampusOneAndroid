@@ -21,7 +21,7 @@ export function Pill({ label, variant = 'default', customColor, style }: PillPro
     default: C.textSecondary,
     brand: C.brand,
     success: C.success,
-    warning: C.warning,
+    warning: C.warn,
     error: C.error,
     info: C.info,
   };
