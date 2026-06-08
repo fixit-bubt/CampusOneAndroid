@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
+import { useAuth } from '../../store/authStore';
 import { Feather } from '@expo/vector-icons';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
@@ -25,7 +26,7 @@ const CAT_ICON: Record<string, string> = {
 function EventCard({ e, C, onPress }: { e: Event; C: any; onPress: () => void }) {
   const fg = CAT_COLOR[e.category] ?? '#5b6b86';
   const bg = `${fg}1e`;
-  const isUpcoming = new Date(e.date) >= new Date();
+  const isUpcoming = new Date(e.event_date) >= new Date();
   return (
     <TouchableOpacity onPress={onPress} style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]} activeOpacity={0.75}>
       <View style={[styles.thumb, { backgroundColor: bg }]}>
@@ -38,7 +39,7 @@ function EventCard({ e, C, onPress }: { e: Event; C: any; onPress: () => void })
         <View style={styles.cardLoc}>
           <Icon name="events" size={12} color={C.textMuted} />
           <Text style={[styles.cardLocTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
-            {e.date} · {e.venue}
+            {e.event_date} · {e.location}
           </Text>
         </View>
         <View style={styles.cardMeta}>
@@ -62,16 +63,19 @@ function EventCard({ e, C, onPress }: { e: Event; C: any; onPress: () => void })
 
 export function EventsBrowseScreen({ navigation }: any) {
   const { C } = useTheme();
+  const { profile } = useAuth();
+  const canPost = profile?.role === 'admin' || profile?.role === 'staff';
   const [events, setEvents] = useState<Event[]>([]);
   const [filter, setFilter] = useState<'upcoming' | 'past'>('upcoming');
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('events')
       .select('*')
-      .order('date', { ascending: true })
+      .order('event_date', { ascending: true })
       .limit(50);
+    if (error) { console.error('events fetch:', error.message); return; }
     if (data) setEvents(data as Event[]);
   }, []);
 
@@ -84,8 +88,8 @@ export function EventsBrowseScreen({ navigation }: any) {
   }
 
   const today = new Date().toISOString().split('T')[0];
-  const upcoming = events.filter(e => e.date >= today);
-  const past = events.filter(e => e.date < today);
+  const upcoming = events.filter(e => e.event_date >= today);
+  const past = events.filter(e => e.event_date < today);
   const list = filter === 'past' ? past : upcoming;
 
   return (
@@ -93,11 +97,11 @@ export function EventsBrowseScreen({ navigation }: any) {
       <SubBar
         title="Events"
         onBack={() => navigation.goBack()}
-        rightSlot={
+        rightSlot={canPost ? (
           <TouchableOpacity style={{ padding: 4 }} onPress={() => navigation.navigate('EventPost')} activeOpacity={0.75}>
             <Feather name="plus" size={22} color={C.text} />
           </TouchableOpacity>
-        }
+        ) : undefined}
       />
 
       <View style={[styles.chips, { paddingHorizontal: Layout.screenPadding }]}>
@@ -137,7 +141,7 @@ export function EventsBrowseScreen({ navigation }: any) {
                 key={e.id}
                 e={e}
                 C={C}
-                onPress={() => navigation.navigate('EventDetail', { id: e.id })}
+                onPress={() => navigation.navigate('EventDetail', { eventId: e.id })}
               />
             ))}
           </View>

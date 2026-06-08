@@ -26,7 +26,8 @@ const CAT_ICON: Record<string, string> = {
 export function EventDetailScreen({ route, navigation }: any) {
   const { C } = useTheme();
   const { user } = useAuth();
-  const { id } = route.params;
+  const { eventId } = route.params;
+  const id = eventId;
 
   const [event, setEvent] = useState<Event | null>(null);
   const [going, setGoing] = useState(false);
@@ -37,9 +38,10 @@ export function EventDetailScreen({ route, navigation }: any) {
     (async () => {
       const [evRes, rsvpRes, countRes] = await Promise.all([
         supabase.from('events').select('*').eq('id', id).single(),
-        user ? supabase.from('event_rsvps').select('id').eq('event_id', id).eq('user_id', user.id).maybeSingle() : Promise.resolve({ data: null }),
+        user ? supabase.from('event_rsvps').select('id').eq('event_id', id).eq('user_id', user.id).maybeSingle() : Promise.resolve({ data: null, error: null }),
         supabase.from('event_rsvps').select('id', { count: 'exact' }).eq('event_id', id),
       ]);
+      if (evRes.error) { console.error('event detail fetch:', evRes.error.message); return; }
       if (evRes.data) setEvent(evRes.data as Event);
       setGoing(!!rsvpRes.data);
       setGoingCount(countRes.count ?? 0);
@@ -50,13 +52,21 @@ export function EventDetailScreen({ route, navigation }: any) {
     if (!event || !user || busy) return;
     setBusy(true);
     if (going) {
-      await supabase.from('event_rsvps').delete().eq('event_id', id).eq('user_id', user.id);
-      setGoing(false);
-      setGoingCount(c => Math.max(0, c - 1));
+      const { error } = await supabase.from('event_rsvps').delete().eq('event_id', id).eq('user_id', user.id);
+      if (!error) {
+        setGoing(false);
+        setGoingCount(c => Math.max(0, c - 1));
+      } else {
+        console.error('RSVP delete error:', error.message);
+      }
     } else {
-      await supabase.from('event_rsvps').insert({ event_id: id, user_id: user.id });
-      setGoing(true);
-      setGoingCount(c => c + 1);
+      const { error } = await supabase.from('event_rsvps').insert({ event_id: id, user_id: user.id });
+      if (!error) {
+        setGoing(true);
+        setGoingCount(c => c + 1);
+      } else {
+        console.error('RSVP insert error:', error.message);
+      }
     }
     setBusy(false);
   }
@@ -72,7 +82,7 @@ export function EventDetailScreen({ route, navigation }: any) {
 
   const fg = CAT_COLOR[event.category] ?? '#5b6b86';
   const bg = `${fg}1e`;
-  const isUpcoming = event.date >= new Date().toISOString().split('T')[0];
+  const isUpcoming = event.event_date >= new Date().toISOString().split('T')[0];
   const isFull = !!(event.capacity && goingCount >= event.capacity && !going);
 
   return (
@@ -109,7 +119,7 @@ export function EventDetailScreen({ route, navigation }: any) {
             <View style={styles.infoVal}>
               <Icon name="clock" size={13} color={C.textMuted} />
               <Text style={[styles.infoTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>
-                {event.date}
+                {event.event_date}
               </Text>
             </View>
             <Text style={[styles.infoSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
@@ -121,7 +131,7 @@ export function EventDetailScreen({ route, navigation }: any) {
             <View style={styles.infoVal}>
               <Icon name="pin" size={13} color={C.textMuted} />
               <Text style={[styles.infoTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>
-                {event.venue}
+                {event.location}
               </Text>
             </View>
           </View>

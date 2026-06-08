@@ -23,32 +23,51 @@ const EVT_CATS: { id: Event['category']; label: string; color: string; icon: str
 
 export function EventPostScreen({ navigation }: any) {
   const { C } = useTheme();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
 
+  // All hooks must be declared before any early return
   const [cat, setCat] = useState<Event['category']>('Academic');
   const [title, setTitle] = useState('');
   const [organizer, setOrganizer] = useState('');
-  const [venue, setVenue] = useState('');
-  const [date, setDate] = useState('');
+  const [location, setLocation] = useState('');
+  const [eventDate, setEventDate] = useState('');
   const [time, setTime] = useState('');
   const [desc, setDesc] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const canSubmit = title.trim() && venue.trim() && time.trim();
+  if (profile?.role !== 'staff' && profile?.role !== 'admin') {
+    return (
+      <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
+        <SubBar title="Post an Event" onBack={() => navigation.goBack()} />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          <Icon name="events" size={36} color={C.textMuted} />
+          <Text style={{ color: C.text, fontFamily: FontFamily.jakartaBold, fontSize: 16, marginTop: 14 }}>
+            Staff Only
+          </Text>
+          <Text style={{ color: C.textMuted, fontFamily: FontFamily.jakartaMedium, fontSize: 13.5, marginTop: 8, textAlign: 'center' }}>
+            Only staff and admin can post events.
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const canSubmit = title.trim() && location.trim() && time.trim() && eventDate.trim();
 
   async function handleSubmit() {
     if (!canSubmit || !user) return;
     setLoading(true);
     try {
       const { error } = await supabase.from('events').insert({
-        title:      title.trim(),
-        category:   cat,
-        organizer:  organizer.trim() || 'Campus',
-        venue:      venue.trim(),
-        date:       date.trim() || new Date().toISOString().split('T')[0],
-        time:       time.trim(),
+        code:        'EVT-' + String(performance.now()),
+        title:       title.trim(),
+        category:    cat,
+        organizer:   organizer.trim() || 'Campus',
+        location:    location.trim(),
+        event_date:  eventDate.trim(),
+        time:        time.trim(),
         description: desc.trim(),
-        created_by: user.id,
+        created_by:  user.id,
       });
       if (error) throw error;
       navigation.goBack();
@@ -111,12 +130,12 @@ export function EventPostScreen({ navigation }: any) {
           placeholderTextColor={C.textMuted}
         />
 
-        {/* Venue */}
+        {/* Location */}
         <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>VENUE</Text>
         <TextInput
           style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-          value={venue}
-          onChangeText={setVenue}
+          value={location}
+          onChangeText={setLocation}
           placeholder="e.g. Auditorium A"
           placeholderTextColor={C.textMuted}
         />
@@ -127,8 +146,8 @@ export function EventPostScreen({ navigation }: any) {
             <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>DATE</Text>
             <TextInput
               style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-              value={date}
-              onChangeText={setDate}
+              value={eventDate}
+              onChangeText={setEventDate}
               placeholder="e.g. Fri, 14 Jun"
               placeholderTextColor={C.textMuted}
             />
