@@ -12,8 +12,8 @@ import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import type { Announcement } from '../../types/database';
 
-const PRI_COLOR = { Urgent: '#e2483d', Important: '#b9760a', General: '#5b6b86' };
-const PRI_BG    = { Urgent: '#fbe7e5', Important: '#fbefdb', General: '#f0f2f6' };
+const PRI_COLOR: Record<string, string> = { Urgent: '#e2483d', Important: '#b9760a', General: '#5b6b86' };
+const PRI_BG: Record<string, string>    = { Urgent: '#fbe7e5', Important: '#fbefdb', General: '#f0f2f6' };
 
 function timeAgo(iso: string): string {
   const secs = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -24,16 +24,18 @@ function timeAgo(iso: string): string {
 
 export function AnnouncementDetailScreen({ route, navigation }: any) {
   const { C } = useTheme();
-  const { id } = route.params;
+  const { announcementId } = route.params;
+  const id = announcementId;
   const [item, setItem] = useState<Announcement | null>(null);
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('announcements')
         .select('*')
         .eq('id', id)
         .single();
+      if (error) { console.error('announcement detail fetch:', error.message); return; }
       if (data) setItem(data as Announcement);
     })();
   }, [id]);
@@ -47,8 +49,8 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
     );
   }
 
-  const fg = PRI_COLOR[item.priority];
-  const bg = PRI_BG[item.priority];
+  const fg = PRI_COLOR[item.priority] ?? '#888888';
+  const bg = PRI_BG[item.priority] ?? '#f0f2f6';
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>

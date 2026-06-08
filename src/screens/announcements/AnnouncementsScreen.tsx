@@ -14,8 +14,8 @@ import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import type { Announcement } from '../../types/database';
 
-const PRI_COLOR = { Urgent: '#e2483d', Important: '#b9760a', General: '#5b6b86' };
-const PRI_BG    = { Urgent: '#fbe7e5', Important: '#fbefdb', General: '#f0f2f6' };
+const PRI_COLOR: Record<string, string> = { Urgent: '#e2483d', Important: '#b9760a', General: '#5b6b86' };
+const PRI_BG: Record<string, string> = { Urgent: '#fbe7e5', Important: '#fbefdb', General: '#f0f2f6' };
 
 function timeAgo(iso: string): string {
   const secs = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -25,7 +25,7 @@ function timeAgo(iso: string): string {
 }
 
 function AnnouncementCard({ a, C, isDark, onPress }: { a: Announcement; C: any; isDark: boolean; onPress: () => void }) {
-  const fg = PRI_COLOR[a.priority];
+  const fg = PRI_COLOR[a.priority] ?? '#888888';
   const bg = `${fg}1e`;
   return (
     <TouchableOpacity
@@ -44,7 +44,7 @@ function AnnouncementCard({ a, C, isDark, onPress }: { a: Announcement; C: any; 
           {a.title}
         </Text>
         <View style={styles.cardMeta}>
-          <View style={[styles.priPill, { backgroundColor: PRI_BG[a.priority] }]}>
+          <View style={[styles.priPill, { backgroundColor: PRI_BG[a.priority] ?? '#f0f2f6' }]}>
             <View style={[styles.priDot, { backgroundColor: fg }]} />
             <Text style={[styles.priText, { color: fg, fontFamily: FontFamily.jakartaBold }]}>
               {a.priority}
@@ -71,12 +71,13 @@ export function AnnouncementsScreen({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('announcements')
       .select('*')
       .order('pinned', { ascending: false })
       .order('created_at', { ascending: false })
       .limit(50);
+    if (error) { console.error('announcements fetch:', error.message); return; }
     if (data) setItems(data as Announcement[]);
   }, []);
 
@@ -117,7 +118,7 @@ export function AnnouncementsScreen({ navigation }: any) {
                 a={a}
                 C={C}
                 isDark={isDark}
-                onPress={() => navigation.navigate('AnnouncementDetail', { id: a.id })}
+                onPress={() => navigation.navigate('AnnouncementDetail', { announcementId: a.id })}
               />
             ))}
           </View>

@@ -54,6 +54,7 @@ export function AnnouncePostScreen({ navigation }: any) {
     setLoading(true);
     try {
       const { error } = await supabase.from('announcements').insert({
+        code:       'ANN-' + String(performance.now()),
         title:      title.trim(),
         department: dept.trim() || 'Administration',
         priority,
