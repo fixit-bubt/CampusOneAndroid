@@ -162,6 +162,7 @@ export interface Donor {
   user_id: string;
   blood_group: BloodRequest['blood_group'];
   area: string;
+  phone: string | null;
   last_donated: string | null;
   created_at: string;
 }
