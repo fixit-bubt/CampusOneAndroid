@@ -39,11 +39,18 @@ export function ClubsScreen({ navigation }: any) {
   const load = useCallback(async () => {
     const { data: clubsData } = await supabase
       .from('clubs')
-      .select('*, club_members!left(role)')
+      .select('*, club_members!left(role, user_id)')
       .order('name')
       .limit(50);
-    if (clubsData) setClubs(clubsData as Club[]);
-  }, []);
+    if (clubsData) {
+      const mapped = clubsData.map((c: any) => ({
+        ...c,
+        member_count: c.club_members?.length ?? 0,
+        user_role: c.club_members?.find((m: any) => m.user_id === user?.id)?.role ?? null,
+      }));
+      setClubs(mapped as Club[]);
+    }
+  }, [user?.id]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -71,7 +78,7 @@ export function ClubsScreen({ navigation }: any) {
             {clubs.map(c => {
               const cat = CL_CATS[c.category] ?? CL_CATS.other;
               const tintBg = isDark ? `${cat.fg}2e` : `${cat.fg}18`;
-              const role = (c as any).club_members?.[0]?.role;
+              const role = c.user_role;
               return (
                 <TouchableOpacity
                   key={c.id}
