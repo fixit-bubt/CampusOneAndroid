@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
+import * as Clipboard from 'expo-clipboard';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
@@ -53,6 +54,7 @@ interface AdminRequest {
 }
 
 interface Vote {
+  id?: string;
   intake: number;
   dept: string;
   proposal: 'public' | 'private';
@@ -66,7 +68,7 @@ interface Vote {
 interface Course {
   id: string;
   code: string;
-  title: string;
+  name: string;
   department: string;
   material_count: number;
   question_count: number;
@@ -133,7 +135,7 @@ function CourseRow({ c, C, onPress }: { c: Course; C: any; onPress: () => void }
       </View>
       <View style={{ flex: 1 }}>
         <Text style={[rowStyles.code, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-          {c.code} · {c.title}
+          {c.code} · {c.name}
         </Text>
         <Text style={[rowStyles.sub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
           {total} files
@@ -317,11 +319,13 @@ export function StudyHubScreen({ navigation }: any) {
   const load = useCallback(async () => {
     if (!user) return;
     // Fetch my section membership
-    const { data: mem } = await supabase
-      .from('study_members')
+    const { data: mem, error: memErr } = await supabase
+      .from('study_section_members')
       .select('*, study_sections(*)')
       .eq('user_id', user.id)
       .maybeSingle();
+
+    if (memErr) { console.warn('load membership:', memErr.message); }
 
     const rawSec = Array.isArray(mem?.study_sections) ? mem.study_sections[0] : mem?.study_sections;
     if (rawSec) {
@@ -340,7 +344,8 @@ export function StudyHubScreen({ navigation }: any) {
     }
 
     // Fetch courses (based on section or globally)
-    const { data: coursesData } = await supabase.from('study_courses').select('*').order('code');
+    const { data: coursesData, error: coursesErr } = await supabase.from('study_courses').select('*').order('code');
+    if (coursesErr) { console.warn('load courses:', coursesErr.message); }
     if (coursesData) setCourses(coursesData as Course[]);
   }, [user]);
 
@@ -376,11 +381,12 @@ export function StudyHubScreen({ navigation }: any) {
 
   async function loadJoinReqs() {
     if (!mySection) return;
-    const { data } = await supabase
-      .from('study_join_requests')
+    const { data, error } = await supabase
+      .from('study_section_members')
       .select('*, profiles:user_id(full_name)')
       .eq('section_id', mySection.id)
-      .eq('status', 'pending');
+      .eq('status', 'Pending');
+    if (error) { console.warn('loadJoinReqs:', error.message); return; }
     if (data) {
       setJoinReqs(data.map((r: any) => ({
         id: r.id,
@@ -408,8 +414,9 @@ export function StudyHubScreen({ navigation }: any) {
     navigation.goBack();
   }
 
-  function copyCode() {
+  async function copyCode() {
     if (!mySection) return;
+    await Clipboard.setStringAsync(mySection.join_code ?? '');
     setCopied(true);
     setTimeout(() => setCopied(false), 1400);
     flash('Copied!');
@@ -418,31 +425,25 @@ export function StudyHubScreen({ navigation }: any) {
   async function joinByCode() {
     if (codeInput.trim().length < 4 || !user) return;
     const code = codeInput.trim().toUpperCase();
-    const { data: sec } = await supabase
-      .from('study_sections')
-      .select('*')
-      .eq('join_code', code)
-      .maybeSingle();
-    if (!sec) { Alert.alert('Invalid code', 'No section found with that code.'); return; }
-    await supabase.from('study_members').insert({ section_id: sec.id, user_id: user.id, role: 'member' });
-    setMySection({ ...(sec as SectionRow), role: 'member' });
-    setPersona('member');
+    const { data, error } = await supabase.rpc('join_section_by_code', { p_code: code });
+    if (error) { Alert.alert('Could not join', error.message); return; }
     setCodeInput('');
     flash('Joined section!');
+    load();
   }
 
   async function requestJoin(sectionId: string) {
     if (!user) return;
-    await supabase.from('study_join_requests').insert({ section_id: sectionId, user_id: user.id, status: 'pending' });
+    const { error } = await supabase
+      .from('study_section_members')
+      .insert({ section_id: sectionId, user_id: user.id, status: 'Pending' });
+    if (error) { Alert.alert('Error', error.message); return; }
     flash('Join request sent to CR');
   }
 
   async function approveJoin(id: string) {
-    const req = joinReqs.find(x => x.id === id);
-    await supabase.from('study_join_requests').update({ status: 'approved' }).eq('id', id);
-    if (req && mySection) {
-      await supabase.from('study_members').insert({ section_id: mySection.id, user_id: req.user_id, role: 'member' });
-    }
+    const { error } = await supabase.rpc('approve_section_request', { p_request_id: id });
+    if (error) { Alert.alert('Error', error.message); return; }
     setJoinReqs(j => j.filter(x => x.id !== id));
     flash('Member approved');
   }
@@ -467,10 +468,11 @@ export function StudyHubScreen({ navigation }: any) {
 
   async function approveAdminReq(id: string) {
     const req = adminReqs.find(x => x.id === id);
-    await supabase.from('study_section_requests').update({ status: 'approved' }).eq('id', id);
+    const { error: reqErr } = await supabase.from('study_section_requests').update({ status: 'approved' }).eq('id', id);
+    if (reqErr) { Alert.alert('Error', reqErr.message); return; }
     if (req) {
       const join_code = Math.random().toString(36).slice(2, 8).toUpperCase();
-      const { data: sec } = await supabase.from('study_sections').insert({
+      const { data: sec, error: secErr } = await supabase.from('study_sections').insert({
         department: req.department,
         intake: req.intake,
         label: req.section_label,
@@ -479,8 +481,12 @@ export function StudyHubScreen({ navigation }: any) {
         intake_public: false,
         created_by: req.user_id,
       }).select('id').single();
+      if (secErr) { Alert.alert('Error creating section', secErr.message); return; }
       if (sec) {
-        await supabase.from('study_members').insert({ section_id: sec.id, user_id: req.user_id, role: 'cr' });
+        const { error: memErr } = await supabase
+          .from('study_section_members')
+          .insert({ section_id: sec.id, user_id: req.user_id, role: 'cr' });
+        if (memErr) { console.warn('approveAdminReq member insert:', memErr.message); }
       }
     }
     setAdminReqs(r => r.filter(x => x.id !== id));
@@ -489,16 +495,25 @@ export function StudyHubScreen({ navigation }: any) {
 
   async function rejectAdminReq(note: string) {
     if (!rejectId) return;
-    await supabase.from('study_section_requests').update({ status: 'rejected', reject_note: note }).eq('id', rejectId);
+    const { error } = await supabase.rpc('reject_section_request', { p_request_id: rejectId, p_note: note });
+    if (error) { Alert.alert('Error', error.message); return; }
     setAdminReqs(r => r.filter(x => x.id !== rejectId));
     setRejectId(null);
     flash('Request rejected');
   }
 
-  function startVote(proposal: 'public' | 'private') {
+  async function startVote(proposal: 'public' | 'private') {
+    if (!mySection) return;
+    const candidates = [proposal];
+    const { data: voteData, error } = await supabase.rpc('initiate_intake_vote', {
+      p_section_id: mySection.id,
+      p_candidates: candidates,
+    });
+    if (error) { Alert.alert('Error', error.message); return; }
     setVote({
-      intake: mySection?.intake ?? 0,
-      dept: mySection?.department ?? '',
+      id: typeof voteData === 'string' ? voteData : voteData?.id,
+      intake: mySection.intake ?? 0,
+      dept: mySection.department ?? '',
       proposal,
       yes: 0, no: 0, pending: 3,
       closes_in_h: 48,
@@ -508,8 +523,13 @@ export function StudyHubScreen({ navigation }: any) {
     flash('Vote started');
   }
 
-  function castVote(ballot: 'yes' | 'no') {
-    if (!vote) return;
+  async function castVote(ballot: 'yes' | 'no') {
+    if (!vote || !vote.id) return;
+    const { error } = await supabase.rpc('cast_intake_vote', {
+      p_vote_id: vote.id,
+      p_candidate: ballot,
+    });
+    if (error) { Alert.alert('Error', error.message); return; }
     setVote(v => {
       if (!v) return v;
       const yes = v.yes + (ballot === 'yes' ? 1 : 0);
@@ -655,7 +675,7 @@ export function StudyHubScreen({ navigation }: any) {
           ) : courses.map((c, i) => (
             <View key={c.id}>
               {i > 0 && <View style={[s.divider, { backgroundColor: C.border }]} />}
-              <CourseRow c={c} C={C} onPress={() => navigation.navigate('CourseDetail', { id: c.id })} />
+              <CourseRow c={c} C={C} onPress={() => navigation.navigate('CourseDetail', { courseId: c.id })} />
             </View>
           ))}
         </View>

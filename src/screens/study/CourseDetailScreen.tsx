@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
-  ActivityIndicator, Linking, type ViewStyle,
+  ActivityIndicator, Alert, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -25,14 +25,14 @@ const TAB_LABELS: Record<Tab, string> = {
 
 interface CourseFile {
   id: string;
-  file_name: string;
-  file_url: string;
-  file_type: Tab;
+  title: string;
+  storage_path: string;
+  type: Tab;
 }
 
 export function CourseDetailScreen({ route, navigation }: any) {
   const { C, isDark } = useTheme();
-  const { id } = route.params;
+  const { courseId } = route.params;
   const [course, setCourse] = useState<any>(null);
   const [files, setFiles] = useState<CourseFile[]>([]);
   const [tab, setTab] = useState<Tab>('materials');
@@ -40,13 +40,28 @@ export function CourseDetailScreen({ route, navigation }: any) {
   useEffect(() => {
     (async () => {
       const [courseRes, filesRes] = await Promise.all([
-        supabase.from('study_courses').select('*').eq('id', id).single(),
-        supabase.from('study_files').select('*').eq('course_id', id),
+        supabase.from('study_courses').select('*').eq('id', courseId).single(),
+        supabase.from('study_materials').select('*').eq('course_id', courseId),
       ]);
+      if (courseRes.error) { console.warn('CourseDetail course:', courseRes.error.message); }
+      if (filesRes.error) { console.warn('CourseDetail files:', filesRes.error.message); }
       if (courseRes.data) setCourse(courseRes.data);
       if (filesRes.data) setFiles(filesRes.data as CourseFile[]);
     })();
-  }, [id]);
+  }, [courseId]);
+
+  async function openFile(f: CourseFile) {
+    if (!f.storage_path) return;
+    const { data, error } = await supabase.storage
+      .from('study-materials')
+      .createSignedUrl(f.storage_path, 60);
+    if (error || !data?.signedUrl) {
+      Alert.alert('Error', error?.message ?? 'Could not open file');
+      return;
+    }
+    const { Linking } = require('react-native');
+    Linking.openURL(data.signedUrl);
+  }
 
   if (!course) {
     return (
@@ -57,11 +72,11 @@ export function CourseDetailScreen({ route, navigation }: any) {
     );
   }
 
-  const tabFiles = files.filter(f => f.file_type === tab);
+  const tabFiles = files.filter(f => f.type === tab);
   const counts: Record<Tab, number> = {
-    materials: files.filter(f => f.file_type === 'materials').length,
-    questions: files.filter(f => f.file_type === 'questions').length,
-    books:     files.filter(f => f.file_type === 'books').length,
+    materials: files.filter(f => f.type === 'materials').length,
+    questions: files.filter(f => f.type === 'questions').length,
+    books:     files.filter(f => f.type === 'books').length,
   };
   const tintBg = isDark ? `${STUDY_COLOR}2e` : STUDY_BG;
 
@@ -71,7 +86,7 @@ export function CourseDetailScreen({ route, navigation }: any) {
         title={course.code}
         onBack={() => navigation.goBack()}
         rightSlot={
-          <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('StudyUpload', { courseId: id, courseCode: course.code, courseTitle: course.title })} activeOpacity={0.75}>
+          <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('StudyUpload', { courseId, courseCode: course.code, courseTitle: course.name })} activeOpacity={0.75}>
             <Feather name="plus" size={22} color={C.text} />
           </TouchableOpacity>
         }
@@ -81,7 +96,7 @@ export function CourseDetailScreen({ route, navigation }: any) {
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[styles.title, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{course.title}</Text>
+        <Text style={[styles.title, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{course.name}</Text>
 
         {/* Tabs */}
         <View style={styles.chips}>
@@ -119,12 +134,12 @@ export function CourseDetailScreen({ route, navigation }: any) {
                 </View>
                 <View style={styles.fileBody}>
                   <Text style={[styles.fileName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                    {f.file_name}
+                    {f.title}
                   </Text>
                 </View>
                 <TouchableOpacity
                   style={styles.downloadBtn}
-                  onPress={() => f.file_url && Linking.openURL(f.file_url)}
+                  onPress={() => openFile(f)}
                   activeOpacity={0.75}
                 >
                   <Feather name="download" size={19} color={C.text2} />

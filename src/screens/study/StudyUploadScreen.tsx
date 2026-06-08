@@ -5,6 +5,7 @@ import {
   StyleSheet, Alert, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as DocumentPicker from 'expo-document-picker';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
@@ -18,6 +19,13 @@ const FILE_TYPES = [
   { id: 'books',     label: 'Books' },
 ];
 
+interface PickedFile {
+  uri: string;
+  name: string;
+  mimeType?: string;
+  size?: number;
+}
+
 export function StudyUploadScreen({ route, navigation }: any) {
   const { courseId, courseCode, courseTitle } = (route.params ?? {}) as {
     courseId?: string;
@@ -29,25 +37,55 @@ export function StudyUploadScreen({ route, navigation }: any) {
 
   const [fileType, setFileType] = useState('materials');
   const [name, setName] = useState('');
+  const [pickedFile, setPickedFile] = useState<PickedFile | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const canSubmit = name.trim().length > 0;
+  const canSubmit = name.trim().length > 0 && pickedFile !== null;
+
+  async function pickFile() {
+    const result = await DocumentPicker.getDocumentAsync({
+      type: '*/*',
+      copyToCacheDirectory: true,
+    });
+    if (result.canceled || !result.assets || result.assets.length === 0) return;
+    const asset = result.assets[0];
+    setPickedFile({ uri: asset.uri, name: asset.name, mimeType: asset.mimeType, size: asset.size });
+    if (!name.trim()) {
+      // Pre-fill name from filename (strip extension)
+      setName(asset.name.replace(/\.[^.]+$/, ''));
+    }
+  }
 
   async function handleSubmit() {
-    if (!canSubmit || !user || !courseId) return;
+    if (!canSubmit || !user || !courseId || !pickedFile) return;
     setLoading(true);
     try {
-      const { error } = await supabase.from('study_files').insert({
-        course_id:  courseId,
-        file_type:  fileType,
-        file_name:  name.trim(),
-        uploaded_by: user.id,
-        file_url:   '',
+      // Read file as ArrayBuffer via fetch
+      const response = await fetch(pickedFile.uri);
+      const blob = await response.blob();
+      const ext = pickedFile.name.split('.').pop() ?? 'bin';
+      const storagePath = `${courseId}/${Date.now()}_${name.trim().replace(/\s+/g, '_')}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('study-materials')
+        .upload(storagePath, blob, {
+          contentType: pickedFile.mimeType ?? 'application/octet-stream',
+          upsert: false,
+        });
+      if (uploadError) throw uploadError;
+
+      const { error: insertError } = await supabase.from('study_materials').insert({
+        course_id:    courseId,
+        type:         fileType,
+        title:        name.trim(),
+        storage_path: storagePath,
+        uploaded_by:  user.id,
       });
-      if (error) throw error;
+      if (insertError) throw insertError;
+
       navigation.goBack();
-    } catch {
-      Alert.alert('Error', 'Could not upload. Please try again.');
+    } catch (err: any) {
+      Alert.alert('Error', err?.message ?? 'Could not upload. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -89,8 +127,21 @@ export function StudyUploadScreen({ route, navigation }: any) {
           })}
         </View>
 
-        {/* File name */}
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>FILE NAME</Text>
+        {/* File picker */}
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>FILE</Text>
+        <TouchableOpacity
+          style={[styles.filePicker, { backgroundColor: C.surface, borderColor: pickedFile ? C.brand : C.border }]}
+          onPress={pickFile}
+          activeOpacity={0.75}
+        >
+          <Icon name="layers" size={18} color={pickedFile ? C.brand : C.textMuted} />
+          <Text style={[styles.filePickerTxt, { color: pickedFile ? C.brand : C.textMuted, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+            {pickedFile ? pickedFile.name : 'Choose a file (PDF, DOC…)'}
+          </Text>
+        </TouchableOpacity>
+
+        {/* File name / title */}
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>TITLE</Text>
         <TextInput
           style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
           value={name}
@@ -98,17 +149,6 @@ export function StudyUploadScreen({ route, navigation }: any) {
           placeholder="e.g. Lecture 6 notes"
           placeholderTextColor={C.textMuted}
         />
-
-        {/* File picker (mock) */}
-        <TouchableOpacity
-          style={[styles.filePicker, { backgroundColor: C.surface, borderColor: C.brand }]}
-          activeOpacity={0.75}
-        >
-          <Icon name="layers" size={18} color={C.brand} />
-          <Text style={[styles.filePickerTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
-            Choose a file (PDF, DOC…)
-          </Text>
-        </TouchableOpacity>
 
         {/* Submit */}
         <TouchableOpacity
@@ -119,7 +159,7 @@ export function StudyUploadScreen({ route, navigation }: any) {
         >
           <Icon name="check" size={18} color={canSubmit ? '#fff' : C.textMuted} />
           <Text style={[styles.submitText, { color: canSubmit ? '#fff' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-            Upload
+            {loading ? 'Uploading…' : 'Upload'}
           </Text>
         </TouchableOpacity>
 
