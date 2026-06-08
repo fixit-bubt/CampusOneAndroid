@@ -9,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
+import { supabase } from '../../lib/supabase';
 import { Icon } from '../../components/ui/Icon';
 import { Brand } from './LandingScreen';
 import { FontFamily, Layout } from '../../theme';
@@ -24,8 +25,26 @@ export function LoginScreen({ navigation }: Props) {
   const [pass, setPass]   = useState('');
   const [busy, setBusy]   = useState(false);
   const [err, setErr]     = useState('');
+  const [resetSent, setResetSent] = useState(false);
 
   const ok = email.trim().length > 0 && pass.trim().length > 0;
+
+  async function handleForgotPassword() {
+    const addr = email.trim();
+    if (!addr) {
+      setErr('Enter your email above, then tap Forgot password.');
+      return;
+    }
+    setBusy(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(addr);
+    setBusy(false);
+    if (error) {
+      setErr(error.message);
+    } else {
+      setResetSent(true);
+      setErr('');
+    }
+  }
 
   async function handleContinue() {
     if (!ok || busy) return;
@@ -97,8 +116,19 @@ export function LoginScreen({ navigation }: Props) {
             placeholderTextColor={C.textMuted}
           />
 
-          {/* Error */}
-          {!!err && (
+          {/* Forgot password */}
+          <TouchableOpacity onPress={handleForgotPassword} activeOpacity={0.7} style={styles.forgotRow}>
+            <Text style={[styles.forgotTxt, { color: C.brand, fontFamily: FontFamily.jakartaSemiBold }]}>
+              Forgot password?
+            </Text>
+          </TouchableOpacity>
+
+          {/* Error / reset confirmation */}
+          {resetSent ? (
+            <Text style={[styles.errText, { color: '#0e9c8a', fontFamily: FontFamily.jakartaMedium }]}>
+              Reset link sent — check your email.
+            </Text>
+          ) : !!err && (
             <Text style={[styles.errText, { color: C.danger, fontFamily: FontFamily.jakartaMedium }]}>
               {err}
             </Text>
@@ -218,4 +248,6 @@ const styles = StyleSheet.create({
 
   switchText: { fontSize: 13.5 } as any,
   switchLink: { fontSize: 13.5 } as any,
+  forgotRow: { alignSelf: 'flex-end', marginTop: 8 } as ViewStyle,
+  forgotTxt: { fontSize: 13 } as any,
 });
