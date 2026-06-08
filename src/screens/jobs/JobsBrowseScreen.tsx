@@ -13,6 +13,12 @@ import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 
+function computeJobStatus(job: Job): string {
+  if ((job as any).deleted_at) return 'removed';
+  if (job.deadline && new Date(job.deadline) < new Date()) return 'expired';
+  return 'open';
+}
+
 const JOB_COLOR = '#0e9c8a';
 const JOB_BG    = '#0e9c8a1e';
 
@@ -49,7 +55,8 @@ function timeAgo(iso: string): string {
 
 export function JobsBrowseScreen({ navigation }: any) {
   const { C } = useTheme();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const canPost = profile?.role === 'admin' || profile?.role === 'staff';
   const [tab, setTab] = useState<Tab>('all');
   const [jobs, setJobs] = useState<Job[]>([]);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
@@ -57,7 +64,7 @@ export function JobsBrowseScreen({ navigation }: any) {
 
   const load = useCallback(async () => {
     const [jobsRes, savedRes] = await Promise.all([
-      supabase.from('jobs').select('*').order('created_at', { ascending: false }).limit(50),
+      supabase.from('jobs').select('*').is('deleted_at', null).order('created_at', { ascending: false }).limit(50),
       supabase.from('job_bookmarks').select('job_id').eq('user_id', user?.id ?? ''),
     ]);
     if (jobsRes.data) setJobs(jobsRes.data as Job[]);
@@ -94,13 +101,15 @@ export function JobsBrowseScreen({ navigation }: any) {
         title="Jobs"
         onBack={() => navigation.goBack()}
         rightSlot={
-          <TouchableOpacity
-            style={styles.iconBtn}
-            onPress={() => navigation.navigate('JobPost')}
-            activeOpacity={0.75}
-          >
-            <Feather name="plus" size={22} color={C.text} />
-          </TouchableOpacity>
+          canPost ? (
+            <TouchableOpacity
+              style={styles.iconBtn}
+              onPress={() => navigation.navigate('JobPost')}
+              activeOpacity={0.75}
+            >
+              <Feather name="plus" size={22} color={C.text} />
+            </TouchableOpacity>
+          ) : undefined
         }
       />
 
@@ -140,7 +149,7 @@ export function JobsBrowseScreen({ navigation }: any) {
         ) : (
           <View style={styles.list}>
             {list.map(j => {
-              const s = STATUS_CONFIG[j.status] ?? STATUS_CONFIG.open;
+              const s = STATUS_CONFIG[computeJobStatus(j)] ?? STATUS_CONFIG.open;
               const isSaved = savedIds.has(j.id);
               return (
                 <View key={j.id} style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>

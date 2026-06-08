@@ -43,7 +43,7 @@ export function JobDetailScreen({ route, navigation }: any) {
       if (jobRes.data) setJob(jobRes.data);
       setSaved(!!saveRes.data);
     })();
-  }, [id, user?.id]);
+  }, [jobId, user?.id]);
 
   async function toggleSave() {
     if (!user || !job) return;
@@ -71,10 +71,11 @@ export function JobDetailScreen({ route, navigation }: any) {
     );
   }
 
-  const s = STATUS_CONFIG[job.status] ?? STATUS_CONFIG.open;
+  const computedStatus = job.deleted_at ? 'removed' : (job.deadline && new Date(job.deadline) < new Date() ? 'expired' : 'open');
+  const s = STATUS_CONFIG[computedStatus] ?? STATUS_CONFIG.open;
   const isOwn = job.posted_by === user?.id;
-  const isRemoved = job.status === 'removed';
-  const isExpired = job.status === 'expired';
+  const isRemoved = !!job.deleted_at;
+  const isExpired = computedStatus === 'expired';
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -183,7 +184,7 @@ export function JobDetailScreen({ route, navigation }: any) {
               <TouchableOpacity
                 style={[styles.secondaryBtn, { backgroundColor: C.surface, borderColor: C.border }]}
                 onPress={async () => {
-                  await supabase.from('jobs').update({ status: 'removed' }).eq('id', jobId);
+                  await supabase.from('jobs').update({ deleted_at: new Date().toISOString() }).eq('id', jobId);
                   navigation.goBack();
                 }}
                 activeOpacity={0.85}
