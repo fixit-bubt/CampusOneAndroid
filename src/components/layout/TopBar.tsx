@@ -4,6 +4,7 @@ import {
   View, Text, TouchableOpacity, StyleSheet, type ViewStyle,
 } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
+import { useApp } from '../../store/appStore';
 import { Avatar } from '../ui/Avatar';
 import { Icon } from '../ui/Icon';
 import { FontFamily, FontSize, Layout } from '../../theme';
@@ -20,6 +21,7 @@ interface TopBarProps {
 
 export function TopBar({ profile, title, unread = 0, onAvatar, onBell }: TopBarProps) {
   const { C } = useTheme();
+  const { isDark, toggleTheme, lang, toggleLang } = useApp();
   const firstName = profile?.full_name?.split(' ')[0] ?? '';
 
   if (title) {
@@ -30,6 +32,9 @@ export function TopBar({ profile, title, unread = 0, onAvatar, onBell }: TopBarP
     );
   }
 
+  const greeting = lang === 'bn' ? 'গুড সকাল,' : 'Good morning,';
+  const langLabel = lang === 'bn' ? 'বাং' : 'EN';
+
   return (
     <View style={[styles.topbar, { backgroundColor: C.surface, paddingHorizontal: Layout.screenPadding }]}>
       <TouchableOpacity onPress={onAvatar} activeOpacity={0.8}>
@@ -38,12 +43,24 @@ export function TopBar({ profile, title, unread = 0, onAvatar, onBell }: TopBarP
 
       <View style={styles.titleBlock}>
         <Text style={[styles.eyebrow, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-          Good morning,
+          {greeting}
         </Text>
         <Text style={[styles.name, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
           {firstName}
         </Text>
       </View>
+
+      {/* language toggle */}
+      <TouchableOpacity onPress={toggleLang} style={styles.textBtn} activeOpacity={0.7}>
+        <Text style={[styles.langTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+          {langLabel}
+        </Text>
+      </TouchableOpacity>
+
+      {/* theme toggle */}
+      <TouchableOpacity onPress={toggleTheme} style={styles.textBtn} activeOpacity={0.7}>
+        <Icon name={isDark ? 'sun' : 'moon'} size={19} color={C.textMuted} />
+      </TouchableOpacity>
 
       {/* notification bell */}
       <TouchableOpacity onPress={onBell} style={[styles.iconBtn, { backgroundColor: C.surface2, borderColor: C.border }]} activeOpacity={0.75}>
@@ -106,6 +123,13 @@ const styles = StyleSheet.create({
     fontSize: FontSize.md,
     textAlign: 'center',
   } as any,
+  textBtn: {
+    height: 40,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  langTxt: { fontSize: 13 } as any,
   iconBtn: {
     width: 40,
     height: 40,
