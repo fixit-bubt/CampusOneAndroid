@@ -14,12 +14,21 @@ import { supabase } from '../../lib/supabase';
 const PRAYER_GREEN = '#1f8a5b';
 
 interface PrayerTime {
-  id: string;
-  name: string;
+  key: string;
+  en: string;
+  ar: string;
   azan: string;
   jamaat: string;
-  is_next: boolean;
-  sort_order: number;
+  sort: number;
+}
+
+function computeNext(prayers: PrayerTime[]): PrayerTime | undefined {
+  const now = new Date();
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+  return prayers.find(p => {
+    const [h = 0, m = 0] = p.azan.split(':').map(Number);
+    return h * 60 + m > nowMins;
+  });
 }
 
 function timeUntil(timeStr: string): string {
@@ -44,7 +53,7 @@ export function PrayerScreen({ navigation }: any) {
     const { data } = await supabase
       .from('prayer_times')
       .select('*')
-      .order('sort_order');
+      .order('sort');
     if (data) setPrayers(data as PrayerTime[]);
   }, []);
 
@@ -56,7 +65,7 @@ export function PrayerScreen({ navigation }: any) {
     setRefreshing(false);
   }
 
-  const next = prayers.find(p => p.is_next);
+  const next = computeNext(prayers);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -75,7 +84,7 @@ export function PrayerScreen({ navigation }: any) {
           >
             <Text style={[styles.nextLabel, { fontFamily: FontFamily.jakartaSemiBold }]}>Next Prayer</Text>
             <View style={styles.nextRow}>
-              <Text style={[styles.nextName, { fontFamily: FontFamily.jakartaExtraBold }]}>{next.name}</Text>
+              <Text style={[styles.nextName, { fontFamily: FontFamily.jakartaExtraBold }]}>{next.en}</Text>
               <Text style={[styles.nextIn, { fontFamily: FontFamily.jakartaBold }]}>
                 in {timeUntil(next.azan)}
               </Text>
@@ -96,12 +105,12 @@ export function PrayerScreen({ navigation }: any) {
           </View>
 
           {prayers.map((p, i) => {
-            const isNext = p.is_next;
+            const isNext = p === next;
             const rowBg = isNext
               ? (isDark ? `${PRAYER_GREEN}24` : `${PRAYER_GREEN}12`)
               : 'transparent';
             return (
-              <View key={p.id}>
+              <View key={p.key}>
                 {i > 0 && <View style={[styles.divider, { backgroundColor: C.border }]} />}
                 <View style={[styles.tableRow, { backgroundColor: rowBg }]}>
                   <Text style={[
@@ -112,7 +121,7 @@ export function PrayerScreen({ navigation }: any) {
                       flex: 1,
                     },
                   ]}>
-                    {p.name}
+                    {p.en}
                   </Text>
                   <Text style={[styles.timeVal, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>{p.azan}</Text>
                   <Text style={[styles.timeVal, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{p.jamaat}</Text>
