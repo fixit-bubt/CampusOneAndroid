@@ -11,10 +11,11 @@ import { SubBar } from '../../components/layout/TopBar';
 import { SectorIcon } from '../../components/ui/SectorIcon';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout } from '../../theme';
+import type { SectorKey } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 
-const SECTORS = [
+const SECTORS: { id: SectorKey; label: string; desc: string }[] = [
   { id: 'reports',   label: 'Reports',       desc: 'Campus maintenance issues' },
   { id: 'lostfound', label: 'Lost & Found',   desc: 'Lost and found items'      },
   { id: 'clubs',     label: 'Clubs',          desc: 'Club activities and posts' },
@@ -51,7 +52,7 @@ export function NotifSettingsScreen({ navigation }: any) {
 
   const load = useCallback(async () => {
     const { data } = await supabase
-      .from('notification_prefs')
+      .from('notif_prefs')
       .select('*')
       .eq('user_id', user?.id ?? '');
     if (data) {
@@ -68,7 +69,7 @@ export function NotifSettingsScreen({ navigation }: any) {
   async function savePref(sectorId: string, update: Partial<SectorPref>) {
     const next = { ...prefs[sectorId], ...update };
     setPrefs(prev => ({ ...prev, [sectorId]: next }));
-    await supabase.from('notification_prefs').upsert({
+    await supabase.from('notif_prefs').upsert({
       user_id: user?.id,
       sector: sectorId,
       ...next,
@@ -83,7 +84,7 @@ export function NotifSettingsScreen({ navigation }: any) {
     SECTORS.forEach(s => { next[s.id] = { ...prefs[s.id], enabled: on }; });
     setPrefs(next);
     await Promise.all(SECTORS.map(s =>
-      supabase.from('notification_prefs').upsert({ user_id: user?.id, sector: s.id, enabled: on })
+      supabase.from('notif_prefs').upsert({ user_id: user?.id, sector: s.id, enabled: on })
     ));
   }
 
