@@ -19,17 +19,13 @@ const RIDE_BG    = '#6e8b1f1e';
 
 interface Ride {
   id: string;
-  origin: string;
-  destination: string;
-  date: string;
-  time: string;
-  vehicle: string;
-  fare: number;
-  seats_total: number;
-  direction: string;
+  from_location: string;
+  to_location: string;
+  departure_time: string;
+  seats_available: number;
+  price_per_seat: number;
   driver_id: string;
   driver_name?: string;
-  driver_phone?: string;
   created_at: string;
 }
 
@@ -44,11 +40,10 @@ export function RidesScreen({ navigation }: any) {
   const load = useCallback(async () => {
     const [ridesRes, reqRes] = await Promise.all([
       supabase
-        .from('rides')
-        .select('*, profiles:driver_id(full_name, phone)')
-        .gte('date', new Date().toISOString().slice(0, 10))
-        .order('date')
-        .order('time')
+        .from('ride_shares')
+        .select('*, profiles:driver_id(full_name)')
+        .gte('departure_time', new Date().toISOString())
+        .order('departure_time')
         .limit(30),
       supabase.from('ride_requests').select('ride_id').eq('requester_id', user?.id ?? ''),
     ]);
@@ -56,7 +51,6 @@ export function RidesScreen({ navigation }: any) {
       const rows = ridesRes.data.map((r: any) => ({
         ...r,
         driver_name: r.profiles?.full_name,
-        driver_phone: r.profiles?.phone,
       })) as Ride[];
       setRides(rows);
       // fetch taken counts
@@ -84,8 +78,9 @@ export function RidesScreen({ navigation }: any) {
 
   async function requestRide(rideId: string) {
     if (!user) return;
-    await supabase.from('ride_requests').insert({ ride_id: rideId, requester_id: user.id });
-    setRequestedIds(prev => new Set([...prev, rideId]));
+    if (requestedIds.has(rideId)) return;
+    const { error } = await supabase.from('ride_requests').insert({ ride_id: rideId, requester_id: user.id });
+    if (!error) setRequestedIds(prev => new Set([...prev, rideId]));
   }
 
   return (
@@ -122,11 +117,20 @@ export function RidesScreen({ navigation }: any) {
             {rides.map(r => {
               const taken = takenCounts[r.id] ?? 0;
               const isRequested = requestedIds.has(r.id);
-              const seatsLeft = r.seats_total - taken;
+              const isOwnRide = r.driver_id === user?.id;
+              const seatsLeft = r.seats_available - taken;
               const isFull = seatsLeft <= 0 && !isRequested;
+              const departureLabel = r.departure_time
+                ? new Date(r.departure_time).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                : '';
 
               return (
-                <View key={r.id} style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
+                <TouchableOpacity
+                  key={r.id}
+                  style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}
+                  onPress={() => navigation.navigate('RideDetail', { rideId: r.id })}
+                  activeOpacity={0.85}
+                >
                   {/* Top */}
                   <View style={styles.cardTop}>
                     <View style={[styles.thumb, { backgroundColor: RIDE_BG }]}>
@@ -134,17 +138,17 @@ export function RidesScreen({ navigation }: any) {
                     </View>
                     <View style={styles.cardBody}>
                       <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                        {r.origin} → {r.destination}
+                        {r.from_location} → {r.to_location}
                       </Text>
                       <View style={styles.cardSub}>
                         <Feather name="clock" size={13} color={C.textMuted} />
                         <Text style={[styles.cardSubTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                          {r.date} · {r.time} · {r.vehicle}
+                          {departureLabel}
                         </Text>
                       </View>
                     </View>
                     <Text style={[styles.fare, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-                      ৳{r.fare}
+                      ৳{r.price_per_seat}
                     </Text>
                   </View>
 
@@ -161,36 +165,32 @@ export function RidesScreen({ navigation }: any) {
                     </Text>
                   </View>
 
-                  {/* Action */}
-                  {isRequested ? (
-                    <View style={[styles.contactCard, { backgroundColor: C.surface2 }]}>
-                      <Text style={[styles.contactLabel, { color: '#0e9c8a', fontFamily: FontFamily.jakartaBold }]}>
-                        Driver · Contact
-                      </Text>
-                      <View style={styles.contactRow}>
-                        <Feather name="phone" size={15} color={C.textMuted} />
-                        <Text style={[styles.contactTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>
-                          {r.driver_phone ?? 'Contact via profile'}
+                  {/* Action — hide for own ride */}
+                  {!isOwnRide && (
+                    isRequested ? (
+                      <View style={[styles.contactCard, { backgroundColor: C.surface2 }]}>
+                        <Text style={[styles.contactLabel, { color: '#0e9c8a', fontFamily: FontFamily.jakartaBold }]}>
+                          Request sent
                         </Text>
                       </View>
-                    </View>
-                  ) : (
-                    <TouchableOpacity
-                      style={[styles.requestBtn, {
-                        backgroundColor: isFull ? C.surface2 : RIDE_BG,
-                        opacity: isFull ? 0.6 : 1,
-                      }]}
-                      onPress={() => requestRide(r.id)}
-                      disabled={isFull}
-                      activeOpacity={0.75}
-                    >
-                      <Icon name="ride" size={16} color={isFull ? C.textMuted : RIDE_COLOR} />
-                      <Text style={[styles.requestTxt, { color: isFull ? C.textMuted : RIDE_COLOR, fontFamily: FontFamily.jakartaBold }]}>
-                        {isFull ? 'Ride Full' : 'Request Ride'}
-                      </Text>
-                    </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity
+                        style={[styles.requestBtn, {
+                          backgroundColor: isFull ? C.surface2 : RIDE_BG,
+                          opacity: isFull ? 0.6 : 1,
+                        }]}
+                        onPress={(e) => { e.stopPropagation?.(); requestRide(r.id); }}
+                        disabled={isFull}
+                        activeOpacity={0.75}
+                      >
+                        <Icon name="ride" size={16} color={isFull ? C.textMuted : RIDE_COLOR} />
+                        <Text style={[styles.requestTxt, { color: isFull ? C.textMuted : RIDE_COLOR, fontFamily: FontFamily.jakartaBold }]}>
+                          {isFull ? 'Ride Full' : 'Request Ride'}
+                        </Text>
+                      </TouchableOpacity>
+                    )
                   )}
-                </View>
+                </TouchableOpacity>
               );
             })}
           </View>
