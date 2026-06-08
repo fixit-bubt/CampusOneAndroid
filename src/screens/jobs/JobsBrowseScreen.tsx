@@ -27,18 +27,17 @@ type Tab = 'all' | 'saved';
 
 interface Job {
   id: string;
-  role: string;
+  title: string;
   company: string;
   location: string;
-  type: string;
-  mode: string;
+  job_type: string;
+  work_mode: string;
   status: string;
   deadline: string;
-  salary: string;
+  stipend: string | null;
   description: string;
-  requirements: string;
-  user_id: string;
-  saved?: boolean;
+  requirements: string | null;
+  posted_by: string;
 }
 
 function timeAgo(iso: string): string {
@@ -59,7 +58,7 @@ export function JobsBrowseScreen({ navigation }: any) {
   const load = useCallback(async () => {
     const [jobsRes, savedRes] = await Promise.all([
       supabase.from('jobs').select('*').order('created_at', { ascending: false }).limit(50),
-      supabase.from('job_saves').select('job_id').eq('user_id', user?.id ?? ''),
+      supabase.from('job_bookmarks').select('job_id').eq('user_id', user?.id ?? ''),
     ]);
     if (jobsRes.data) setJobs(jobsRes.data as Job[]);
     if (savedRes.data) setSavedIds(new Set(savedRes.data.map((s: any) => s.job_id)));
@@ -79,10 +78,10 @@ export function JobsBrowseScreen({ navigation }: any) {
     const next = new Set(savedIds);
     if (isSaved) {
       next.delete(jobId);
-      await supabase.from('job_saves').delete().eq('job_id', jobId).eq('user_id', user.id);
+      await supabase.from('job_bookmarks').delete().eq('job_id', jobId).eq('user_id', user.id);
     } else {
       next.add(jobId);
-      await supabase.from('job_saves').insert({ job_id: jobId, user_id: user.id });
+      await supabase.from('job_bookmarks').insert({ job_id: jobId, user_id: user.id });
     }
     setSavedIds(next);
   }
@@ -155,7 +154,7 @@ export function JobsBrowseScreen({ navigation }: any) {
                     </View>
                     <View style={styles.cardBody}>
                       <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                        {j.role}
+                        {j.title}
                       </Text>
                       <Text style={[styles.cardSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
                         {j.company} · {j.location}
@@ -166,7 +165,7 @@ export function JobsBrowseScreen({ navigation }: any) {
                           <Text style={[styles.statusTxt, { color: s.fg, fontFamily: FontFamily.jakartaBold }]}>{s.label}</Text>
                         </View>
                         <Text style={[styles.cardType, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                          {j.type} · {j.mode}
+                          {j.job_type} · {j.work_mode}
                         </Text>
                       </View>
                     </View>
