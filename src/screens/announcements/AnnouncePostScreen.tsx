@@ -21,13 +21,31 @@ const PRIORITIES: { id: Announcement['priority']; label: string; color: string }
 
 export function AnnouncePostScreen({ navigation }: any) {
   const { C } = useTheme();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
 
+  // All hooks must be declared before any early return
   const [title, setTitle] = useState('');
   const [dept, setDept] = useState('');
   const [priority, setPriority] = useState<Announcement['priority']>('General');
   const [body, setBody] = useState('');
   const [loading, setLoading] = useState(false);
+
+  if (profile?.role !== 'staff' && profile?.role !== 'admin') {
+    return (
+      <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
+        <SubBar title="New Announcement" onBack={() => navigation.goBack()} />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          <Icon name="announce" size={36} color={C.textMuted} />
+          <Text style={{ color: C.text, fontFamily: FontFamily.jakartaBold, fontSize: 16, marginTop: 14 }}>
+            Staff Only
+          </Text>
+          <Text style={{ color: C.textMuted, fontFamily: FontFamily.jakartaMedium, fontSize: 13.5, marginTop: 8, textAlign: 'center' }}>
+            Only staff and admin can post announcements.
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const canSubmit = title.trim() && body.trim();
 
