@@ -66,7 +66,7 @@ export function MarketPostScreen({ route, navigation }: any) {
       const ext = asset.uri.split('.').pop()?.toLowerCase() ?? 'jpg';
       const fileName = `${user!.id}_${Date.now()}.${ext}`;
       const contentType = ext === 'png' ? 'image/png' : 'image/jpeg';
-      const result2 = await uploadFile('marketplace', asset.uri, fileName, contentType);
+      const result2 = await uploadFile('photos', asset.uri, `marketplace/${user!.id}/${fileName}`, contentType);
       if (!result2.success) throw new Error(result2.error);
       setPhotoUri(result2.url);
     } catch {
@@ -92,10 +92,10 @@ export function MarketPostScreen({ route, navigation }: any) {
         status:      'Available' as Listing['status'],
       };
       if (isEdit) {
-        const { error } = await supabase.from('marketplace').update(payload).eq('id', listing!.id);
+        const { error } = await supabase.from('listings').update(payload).eq('id', listing!.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from('marketplace').insert(payload);
+        const { error } = await supabase.from('listings').insert(payload);
         if (error) throw error;
       }
       navigation.goBack();

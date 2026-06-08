@@ -46,7 +46,7 @@ export function MarketScreen({ navigation }: any) {
 
   const load = useCallback(async () => {
     const { data } = await supabase
-      .from('marketplace')
+      .from('listings')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(60);

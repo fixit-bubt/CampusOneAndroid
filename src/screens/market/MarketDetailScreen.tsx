@@ -28,40 +28,38 @@ export function MarketDetailScreen({ route, navigation }: any) {
   const { user } = useAuth();
   const { listingId } = route.params;
   const [listing, setListing] = useState<any>(null);
-  const [seller, setSeller] = useState<any>(null);
+  const [sellerName, setSellerName] = useState<string | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [contactInfo, setContactInfo] = useState<{ email: string; phone: string } | null>(null);
 
   useEffect(() => {
     (async () => {
       const { data: l } = await supabase
-        .from('marketplace')
-        .select('*, profiles:seller_id(full_name, email, whatsapp)')
+        .from('listings')
+        .select('*, profiles:seller_id(full_name)')
         .eq('id', listingId)
         .single();
       if (l) {
         setListing(l);
-        setSeller((l as any).profiles);
+        setSellerName((l as any).profiles?.full_name ?? null);
       }
     })();
-  }, [id]);
+  }, [listingId]);
 
-  function revealContact() {
+  async function revealContact() {
     if (!listing) return;
+    const { data: c } = await supabase.rpc('listing_contact', { p_code: listing.code });
     setRevealed(true);
-    setContactInfo({
-      email: seller?.email ?? 'contact@std.bubt.edu.bd',
-      phone: seller?.whatsapp ?? '+880 1700-000000',
-    });
+    if (c) setContactInfo(c);
   }
 
   async function markSold() {
-    await supabase.from('marketplace').update({ status: 'Sold' }).eq('id', listingId);
+    await supabase.from('listings').update({ status: 'Sold' }).eq('id', listingId);
     setListing((prev: any) => ({ ...prev, status: 'Sold' }));
   }
 
   async function deleteListing() {
-    await supabase.from('marketplace').delete().eq('id', listingId);
+    await supabase.from('listings').delete().eq('id', listingId);
     navigation.goBack();
   }
 
@@ -77,7 +75,7 @@ export function MarketDetailScreen({ route, navigation }: any) {
   const cat = MK_CATS[listing.category?.toLowerCase()] ?? MK_CATS.other;
   const tintBg = isDark ? `${cat.fg}2e` : `${cat.fg}18`;
   const isOwn = listing.seller_id === user?.id;
-  const isSold = listing.status?.toLowerCase() === 'sold';
+  const isSold = listing.status === 'Sold';
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -131,10 +129,10 @@ export function MarketDetailScreen({ route, navigation }: any) {
 
         {/* Seller card */}
         <View style={[styles.sellerCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <Avatar name={seller?.full_name} size="sm" />
+          <Avatar name={sellerName ?? undefined} size="sm" />
           <View style={{ flex: 1 }}>
             <Text style={[styles.sellerName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-              {seller?.full_name ?? 'Unknown'}
+              {sellerName ?? 'Unknown'}
             </Text>
             <Text style={[styles.sellerSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
               {listing.location}
