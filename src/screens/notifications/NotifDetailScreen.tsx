@@ -4,6 +4,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
+import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { SectorIcon } from '../../components/ui/SectorIcon';
 import { Icon } from '../../components/ui/Icon';
@@ -26,6 +27,7 @@ function timeAgo(iso: string): string {
 
 export function NotifDetailScreen({ route, navigation }: any) {
   const { C } = useTheme();
+  const { user } = useAuth();
   const { notification: n } = route.params;
   const sectorLabel = SECTOR_LABELS[n.sector] ?? n.sector;
 
@@ -35,7 +37,7 @@ export function NotifDetailScreen({ route, navigation }: any) {
   }
 
   async function muteSector() {
-    await supabase.from('notification_prefs').upsert({ sector: n.sector, enabled: false });
+    await supabase.from('notif_prefs').upsert({ user_id: user?.id, sector: n.sector, enabled: false });
     navigation.goBack();
   }
 
