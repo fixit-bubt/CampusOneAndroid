@@ -46,7 +46,7 @@ export function AllReportsScreen({ navigation }: any) {
     const [rRes, sRes] = await Promise.all([
       supabase
         .from('reports')
-        .select('*, profiles(full_name)')
+        .select('*, profiles!reporter_id(full_name)')
         .is('deleted_at', null)
         .order('created_at', { ascending: false }),
       supabase.from('profiles').select('*').eq('role', 'staff'),
