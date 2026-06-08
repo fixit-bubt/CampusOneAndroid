@@ -21,7 +21,7 @@ interface Doctor {
   days: string[];
   start_time: string;
   end_time: string;
-  room: string | null;
+  room_no: string | null;
   active: boolean;
 }
 
@@ -73,7 +73,7 @@ export function MedicalScreen({ navigation }: any) {
               <TouchableOpacity
                 key={d.id}
                 style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}
-                onPress={() => navigation.navigate('DoctorDetail', { id: d.id })}
+                onPress={() => navigation.navigate('DoctorDetail', { doctorId: d.id })}
                 activeOpacity={0.75}
               >
                 <View style={[styles.thumb, { backgroundColor: MED_BG }]}>

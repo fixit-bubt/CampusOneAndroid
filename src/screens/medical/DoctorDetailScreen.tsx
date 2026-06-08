@@ -1,7 +1,8 @@
 // Matches design screens-c.jsx — DoctorDetail
 import { useState, useEffect } from 'react';
 import {
-  View, Text, ScrollView, StyleSheet, ActivityIndicator, type ViewStyle,
+  View, Text, TouchableOpacity, ScrollView, StyleSheet,
+  ActivityIndicator, Alert, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
@@ -9,9 +10,13 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../store/authStore';
 
 const MED_COLOR = '#e2483d';
 const MED_BG    = '#e2483d1e';
+
+const SLOTS = ['Morning', 'Afternoon', 'Evening'] as const;
+type Slot = typeof SLOTS[number];
 
 interface Doctor {
   id: string;
@@ -20,7 +25,7 @@ interface Doctor {
   days: string[];
   start_time: string;
   end_time: string;
-  room: string | null;
+  room_no: string | null;
   active: boolean;
 }
 
@@ -51,16 +56,45 @@ function ScheduleRow({ icon, label, value, C }: any) {
 
 export function DoctorDetailScreen({ route, navigation }: any) {
   const { C } = useTheme();
-  const { id } = route.params;
+  const { user } = useAuth();
+  const { doctorId } = route.params;
   const [doctor, setDoctor] = useState<Doctor | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<Slot>('Morning');
+  const [booking, setBooking] = useState(false);
   const onDuty = doctor ? isOnDuty(doctor) : false;
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.from('doctors').select('*').eq('id', id).single();
+      const { data } = await supabase.from('doctors').select('*').eq('id', doctorId).single();
       if (data) setDoctor(data as Doctor);
     })();
-  }, [id]);
+  }, [doctorId]);
+
+  async function bookAppointment() {
+    if (!doctor || !user) return;
+    setBooking(true);
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const slotTimeMap: Record<Slot, string> = {
+        Morning: '09:00',
+        Afternoon: '13:00',
+        Evening: '17:00',
+      };
+      const { error } = await supabase.from('appointments').insert({
+        doctor_id:        doctor.id,
+        patient_id:       user.id,
+        slot_time:        slotTimeMap[selectedSlot],
+        appointment_date: today,
+        status:           'Pending',
+      });
+      if (error) throw error;
+      Alert.alert('Booked', `Your ${selectedSlot} appointment with ${doctor.name} has been booked for today.`);
+    } catch {
+      Alert.alert('Error', 'Could not book appointment. Please try again.');
+    } finally {
+      setBooking(false);
+    }
+  }
 
   if (!doctor) {
     return (
@@ -126,7 +160,42 @@ export function DoctorDetailScreen({ route, navigation }: any) {
           <View style={[styles.divider, { backgroundColor: C.border }]} />
           <ScheduleRow icon="clock" label="Hours" value={`${doctor.start_time} – ${doctor.end_time}`} C={C} />
           <View style={[styles.divider, { backgroundColor: C.border }]} />
-          <ScheduleRow icon="pin" label="Location" value={doctor.room ?? 'Medical Center'} C={C} />
+          <ScheduleRow icon="pin" label="Location" value={doctor.room_no ?? 'Medical Center'} C={C} />
+        </View>
+
+        {/* Book Appointment */}
+        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>BOOK APPOINTMENT</Text>
+        <View style={[styles.bookCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+          <Text style={[styles.slotLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>Select a slot</Text>
+          <View style={styles.slotRow}>
+            {SLOTS.map(slot => {
+              const active = selectedSlot === slot;
+              return (
+                <TouchableOpacity
+                  key={slot}
+                  style={[
+                    styles.slotBtn,
+                    { backgroundColor: active ? MED_COLOR : C.surface2, borderColor: active ? MED_COLOR : C.border },
+                  ]}
+                  onPress={() => setSelectedSlot(slot)}
+                  activeOpacity={0.75}
+                >
+                  <Text style={[styles.slotTxt, { color: active ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                    {slot}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+          <TouchableOpacity
+            style={[styles.bookBtn, { backgroundColor: MED_COLOR, opacity: booking ? 0.6 : 1 }]}
+            onPress={bookAppointment}
+            disabled={booking}
+            activeOpacity={0.8}
+          >
+            <Icon name="calendar" size={18} color="#fff" />
+            <Text style={[styles.bookBtnTxt, { fontFamily: FontFamily.jakartaBold }]}>Book Appointment</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={{ height: 26 }} />
@@ -158,4 +227,12 @@ const styles = StyleSheet.create({
   schedLabel: { fontSize: 14 } as any,
   schedValue: { fontSize: 13, flexShrink: 0 } as any,
   divider: { height: StyleSheet.hairlineWidth } as ViewStyle,
+
+  bookCard: { borderRadius: 16, borderWidth: 1, padding: 14 } as ViewStyle,
+  slotLabel: { fontSize: 11, letterSpacing: 0.5, marginBottom: 10 } as any,
+  slotRow: { flexDirection: 'row', gap: 8, marginBottom: 14 } as ViewStyle,
+  slotBtn: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 10, borderWidth: 1 } as ViewStyle,
+  slotTxt: { fontSize: 13 } as any,
+  bookBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 48, borderRadius: 13 } as ViewStyle,
+  bookBtnTxt: { fontSize: 14.5, color: '#fff' } as any,
 });
