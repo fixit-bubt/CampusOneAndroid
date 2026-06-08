@@ -46,7 +46,7 @@ export function MarketScreen({ navigation }: any) {
 
   const load = useCallback(async () => {
     const { data } = await supabase
-      .from('listings')
+      .from('marketplace')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(60);
@@ -115,14 +115,14 @@ export function MarketScreen({ navigation }: any) {
         ) : (
           <View style={styles.grid}>
             {list.map(l => {
-              const cat = MK_CATS[l.category] ?? MK_CATS.other;
-              const isSold = l.status === 'sold';
+              const cat = MK_CATS[l.category?.toLowerCase()] ?? MK_CATS.other;
+              const isSold = l.status === 'Sold';
               const tintBg = isDark ? `${cat.fg}2e` : `${cat.fg}18`;
               return (
                 <TouchableOpacity
                   key={l.id}
                   style={[styles.cell, { backgroundColor: C.surface, borderColor: C.border }]}
-                  onPress={() => navigation.navigate('MarketDetail', { id: l.id })}
+                  onPress={() => navigation.navigate('MarketDetail', { listingId: l.id })}
                   activeOpacity={0.75}
                 >
                   {/* Thumb */}
@@ -142,7 +142,7 @@ export function MarketScreen({ navigation }: any) {
                       {l.title}
                     </Text>
                     <Text style={[styles.cellPrice, { color: isSold ? C.textMuted : C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-                      ৳{l.price.toLocaleString('en-US')}
+                      ৳{(l.price ?? 0).toLocaleString('en-US')}
                     </Text>
                     <Text style={[styles.cellMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaSemiBold }]} numberOfLines={1}>
                       {l.condition}{l.negotiable ? ' · Negotiable' : ''}

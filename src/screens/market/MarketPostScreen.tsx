@@ -2,16 +2,18 @@
 import { useState } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView, Switch,
-  StyleSheet, Alert, type ViewStyle,
+  StyleSheet, Alert, Image, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout, Radius } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { uploadFile } from '../../utils/storage';
 import type { Listing } from '../../types/database';
 
 const CATEGORIES: { id: Listing['category']; label: string; icon: string; color: string }[] = [
@@ -39,10 +41,40 @@ export function MarketPostScreen({ route, navigation }: any) {
   const [condition, setCondition] = useState<Listing['condition']>(listing?.condition ?? 'Used');
   const [negotiable, setNegotiable] = useState(listing?.negotiable ?? true);
   const [desc, setDesc] = useState(listing?.description ?? '');
+  const [photoUri, setPhotoUri] = useState<string | null>(listing?.photo_url ?? null);
+  const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const isEdit = !!listing;
   const canSubmit = cat !== null && title.trim() && price.trim();
+
+  async function pickImage() {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission required', 'Please allow photo library access to attach a photo.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: 'images',
+      allowsEditing: true,
+      quality: 0.8,
+    });
+    if (result.canceled || !result.assets?.[0]) return;
+    const asset = result.assets[0];
+    setUploading(true);
+    try {
+      const ext = asset.uri.split('.').pop()?.toLowerCase() ?? 'jpg';
+      const fileName = `${user!.id}_${Date.now()}.${ext}`;
+      const contentType = ext === 'png' ? 'image/png' : 'image/jpeg';
+      const result2 = await uploadFile('marketplace', asset.uri, fileName, contentType);
+      if (!result2.success) throw new Error(result2.error);
+      setPhotoUri(result2.url);
+    } catch {
+      Alert.alert('Upload failed', 'Could not upload image. Please try again.');
+    } finally {
+      setUploading(false);
+    }
+  }
 
   async function handleSubmit() {
     if (!canSubmit || !user) return;
@@ -55,14 +87,15 @@ export function MarketPostScreen({ route, navigation }: any) {
         condition,
         negotiable,
         description: desc.trim(),
+        photo_url:   photoUri ?? null,
         seller_id:   user.id,
         status:      'Available' as Listing['status'],
       };
       if (isEdit) {
-        const { error } = await supabase.from('listings').update(payload).eq('id', listing!.id);
+        const { error } = await supabase.from('marketplace').update(payload).eq('id', listing!.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from('listings').insert(payload);
+        const { error } = await supabase.from('marketplace').insert(payload);
         if (error) throw error;
       }
       navigation.goBack();
@@ -120,6 +153,26 @@ export function MarketPostScreen({ route, navigation }: any) {
           placeholder="e.g. Scientific calculator"
           placeholderTextColor={C.textMuted}
         />
+
+        {/* Photo */}
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>PHOTO (optional)</Text>
+        <TouchableOpacity
+          style={[styles.photoBtn, { backgroundColor: C.surface, borderColor: C.border }]}
+          onPress={pickImage}
+          disabled={uploading}
+          activeOpacity={0.75}
+        >
+          {photoUri ? (
+            <Image source={{ uri: photoUri }} style={styles.photoPreview} resizeMode="cover" />
+          ) : (
+            <View style={styles.photoPlaceholder}>
+              <Feather name="camera" size={22} color={C.textMuted} />
+              <Text style={[styles.photoPlaceholderTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                {uploading ? 'Uploading…' : 'Tap to add photo'}
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
 
         {/* Price */}
         <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>PRICE (৳)</Text>
@@ -289,4 +342,26 @@ const styles = StyleSheet.create({
   } as ViewStyle,
 
   submitText: { fontSize: 15 } as any,
+
+  photoBtn: {
+    borderRadius: 12,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    overflow: 'hidden',
+    height: 120,
+  } as ViewStyle,
+
+  photoPreview: {
+    width: '100%',
+    height: '100%',
+  } as any,
+
+  photoPlaceholder: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  } as ViewStyle,
+
+  photoPlaceholderTxt: { fontSize: 13 } as any,
 });

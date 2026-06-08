@@ -26,7 +26,7 @@ const MK_CATS: Record<string, { icon: string; fg: string; label: string }> = {
 export function MarketDetailScreen({ route, navigation }: any) {
   const { C, isDark } = useTheme();
   const { user } = useAuth();
-  const { id } = route.params;
+  const { listingId } = route.params;
   const [listing, setListing] = useState<any>(null);
   const [seller, setSeller] = useState<any>(null);
   const [revealed, setRevealed] = useState(false);
@@ -35,9 +35,9 @@ export function MarketDetailScreen({ route, navigation }: any) {
   useEffect(() => {
     (async () => {
       const { data: l } = await supabase
-        .from('listings')
+        .from('marketplace')
         .select('*, profiles:seller_id(full_name, email, whatsapp)')
-        .eq('id', id)
+        .eq('id', listingId)
         .single();
       if (l) {
         setListing(l);
@@ -56,12 +56,12 @@ export function MarketDetailScreen({ route, navigation }: any) {
   }
 
   async function markSold() {
-    await supabase.from('listings').update({ status: 'Sold' }).eq('id', id);
+    await supabase.from('marketplace').update({ status: 'Sold' }).eq('id', listingId);
     setListing((prev: any) => ({ ...prev, status: 'Sold' }));
   }
 
   async function deleteListing() {
-    await supabase.from('listings').delete().eq('id', id);
+    await supabase.from('marketplace').delete().eq('id', listingId);
     navigation.goBack();
   }
 
@@ -74,7 +74,7 @@ export function MarketDetailScreen({ route, navigation }: any) {
     );
   }
 
-  const cat = MK_CATS[listing.category] ?? MK_CATS.other;
+  const cat = MK_CATS[listing.category?.toLowerCase()] ?? MK_CATS.other;
   const tintBg = isDark ? `${cat.fg}2e` : `${cat.fg}18`;
   const isOwn = listing.seller_id === user?.id;
   const isSold = listing.status?.toLowerCase() === 'sold';
@@ -101,7 +101,7 @@ export function MarketDetailScreen({ route, navigation }: any) {
         {/* Title + price */}
         <Text style={[styles.title, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{listing.title}</Text>
         <Text style={[styles.price, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-          ৳{listing.price.toLocaleString('en-US')}
+          ৳{(listing.price ?? 0).toLocaleString('en-US')}
         </Text>
 
         {/* Pills */}
