@@ -18,12 +18,12 @@ type Tab = 'all' | 'saved';
 
 interface FacultyMember {
   id: string;
-  user_id: string;
-  full_name: string;
+  name: string;
   designation: string;
-  specialization: string;
-  department: string;
-  office: string;
+  research_interests: string[] | null;
+  on_leave: boolean;
+  photo_url: string | null;
+  departments: { name: string } | null;
 }
 
 export function FacultyScreen({ navigation }: any) {
@@ -37,10 +37,10 @@ export function FacultyScreen({ navigation }: any) {
 
   const load = useCallback(async () => {
     const [facRes, savedRes] = await Promise.all([
-      supabase.from('faculty_members').select('*').order('full_name'),
-      supabase.from('faculty_saves').select('faculty_id').eq('user_id', user?.id ?? ''),
+      supabase.from('faculty').select('id, name, designation, research_interests, on_leave, photo_url, departments(name)').order('name'),
+      supabase.from('faculty_bookmarks').select('faculty_id').eq('user_id', user?.id ?? ''),
     ]);
-    if (facRes.data) setFaculty(facRes.data as FacultyMember[]);
+    if (facRes.data) setFaculty(facRes.data as any as FacultyMember[]);
     if (savedRes.data) setSavedIds(new Set(savedRes.data.map((s: any) => s.faculty_id)));
   }, [user?.id]);
 
@@ -58,17 +58,17 @@ export function FacultyScreen({ navigation }: any) {
     const next = new Set(savedIds);
     if (isSaved) {
       next.delete(facId);
-      await supabase.from('faculty_saves').delete().eq('faculty_id', facId).eq('user_id', user.id);
+      await supabase.from('faculty_bookmarks').delete().eq('faculty_id', facId).eq('user_id', user.id);
     } else {
       next.add(facId);
-      await supabase.from('faculty_saves').insert({ faculty_id: facId, user_id: user.id });
+      await supabase.from('faculty_bookmarks').insert({ faculty_id: facId, user_id: user.id });
     }
     setSavedIds(next);
   }
 
   const base = tab === 'saved' ? faculty.filter(f => savedIds.has(f.id)) : faculty;
   const filtered = base.filter(f =>
-    (f.full_name + f.specialization).toLowerCase().includes(query.toLowerCase().trim())
+    (f.name + ' ' + (Array.isArray(f.research_interests) ? f.research_interests.join(' ') : '')).toLowerCase().includes(query.toLowerCase().trim())
   );
 
   return (
@@ -130,16 +130,16 @@ export function FacultyScreen({ navigation }: any) {
                   onPress={() => navigation.navigate('FacultyProfile', { id: f.id })}
                   activeOpacity={0.75}
                 >
-                  <Avatar name={f.full_name} size="md" />
+                  <Avatar name={f.name} size="md" />
                   <View style={styles.cardBody}>
                     <Text style={[styles.cardName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                      {f.full_name}
+                      {f.name}
                     </Text>
                     <Text style={[styles.cardDesig, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
                       {f.designation}
                     </Text>
                     <Text style={[styles.cardSpec, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                      {f.specialization}
+                      {Array.isArray(f.research_interests) ? f.research_interests.join(', ') : ''}
                     </Text>
                   </View>
                 </TouchableOpacity>
