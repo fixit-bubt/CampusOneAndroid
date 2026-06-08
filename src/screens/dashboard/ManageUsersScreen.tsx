@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
-  RefreshControl, type ViewStyle,
+  RefreshControl, Alert, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
@@ -39,10 +39,22 @@ export function ManageUsersScreen({ navigation }: any) {
 
   async function cycleRole(u: Profile) {
     const next = ROLE_NEXT[u.role] ?? 'student';
-    setUsers(prev => prev.map(x => x.id === u.id ? { ...x, role: next } : x));
-    await supabase.from('profiles').update({ role: next }).eq('id', u.id);
-    setToast(true);
-    setTimeout(() => setToast(false), 1500);
+    Alert.alert(
+      'Change Role',
+      `Change ${u.full_name} from ${u.role} → ${next}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Confirm',
+          onPress: async () => {
+            setUsers(prev => prev.map(x => x.id === u.id ? { ...x, role: next } : x));
+            await supabase.from('profiles').update({ role: next }).eq('id', u.id);
+            setToast(true);
+            setTimeout(() => setToast(false), 1500);
+          },
+        },
+      ]
+    );
   }
 
   return (
