@@ -489,17 +489,6 @@ export function ProfileScreen({ navigation }: any) {
           </>
         )}
 
-        {/* Non-student placeholder */}
-        {!isStudent && (
-          <View style={[styles.emptyCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <Icon name="award" size={28} color={C.textMuted} />
-            <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Accomplishment records</Text>
-            <Text style={[styles.emptyText, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-              Detailed accomplishments live on student profiles.
-            </Text>
-          </View>
-        )}
-
         {/* View As — only visible to staff and admin */}
         {(profile?.role === 'staff' || profile?.role === 'admin') && (
           <>
