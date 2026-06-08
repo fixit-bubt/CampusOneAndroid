@@ -30,9 +30,9 @@ export function ClubPostScreen({ route, navigation }: any) {
     setLoading(true);
     try {
       const { error } = await supabase.from('club_posts').insert({
-        club_id:    clubId,
-        created_by: user.id,
-        content:    content.trim(),
+        club_id:   clubId,
+        author_id: user.id,
+        body:      content.trim(),
       });
       if (error) throw error;
       navigation.goBack();

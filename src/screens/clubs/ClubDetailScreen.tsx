@@ -29,13 +29,13 @@ interface Club {
   id: string;
   name: string;
   category: string;
-  description: string;
+  about: string | null;
   admin_id: string;
 }
 
 interface Post {
   id: string;
-  content: string;
+  body: string;
   created_at: string;
   profiles: { full_name: string };
 }
@@ -67,7 +67,7 @@ export function ClubDetailScreen({ route, navigation }: any) {
     (async () => {
       const [clubRes, postsRes, membersRes] = await Promise.all([
         supabase.from('clubs').select('*').eq('id', id).single(),
-        supabase.from('club_posts').select('*, profiles:created_by(full_name)').eq('club_id', id).order('created_at', { ascending: false }).limit(20),
+        supabase.from('club_posts').select('*, profiles:author_id(full_name)').eq('club_id', id).order('created_at', { ascending: false }).limit(20),
         supabase.from('club_members').select('*, profiles:user_id(full_name)').eq('club_id', id),
       ]);
       if (clubRes.data) setClub(clubRes.data as Club);
@@ -149,7 +149,7 @@ export function ClubDetailScreen({ route, navigation }: any) {
           )}
         </View>
 
-        <Text style={[styles.desc, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>{club.description}</Text>
+        <Text style={[styles.desc, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>{club.about}</Text>
 
         {/* Join / Leave */}
         {!canManage && (
@@ -217,7 +217,7 @@ export function ClubDetailScreen({ route, navigation }: any) {
                     </Text>
                   </View>
                 </View>
-                <Text style={[styles.postBody, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>{p.content}</Text>
+                <Text style={[styles.postBody, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>{p.body}</Text>
               </View>
             ))}
           </View>

@@ -40,6 +40,7 @@ export function ClubsScreen({ navigation }: any) {
     const { data: clubsData, error } = await supabase
       .from('clubs')
       .select('*, club_members!left(role, user_id)')
+      .eq('is_active', true)
       .order('name')
       .limit(50);
     if (error) return;
