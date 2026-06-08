@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
+import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { SectorIcon } from '../../components/ui/SectorIcon';
 import { Icon } from '../../components/ui/Icon';
@@ -85,6 +86,7 @@ function Empty({ C }: { C: any }) {
 // ── NotificationsScreen ───────────────────────────────────────────────────────
 export function NotificationsScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
+  const { user } = useAuth();
   const [notifs, setNotifs]     = useState<Notification[]>([]);
   const [filter, setFilter]     = useState<Filter>('all');
   const [refreshing, setRefreshing] = useState(false);
@@ -103,7 +105,8 @@ export function NotificationsScreen({ navigation }: any) {
   }
 
   async function handleMarkAll() {
-    await markAllRead();
+    if (!user?.id) return;
+    await markAllRead(user.id);
     setNotifs(n => n.map(x => ({ ...x, read: true })));
   }
 

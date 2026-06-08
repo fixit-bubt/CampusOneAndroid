@@ -18,8 +18,20 @@ const SECTOR_LABELS: Record<string, string> = {
   directory: 'Directory', prayer: 'Prayer', faculty: 'Faculty',
 };
 
+const SCREEN_MAP: Record<string, { screen: string; key: string }> = {
+  report:       { screen: 'ReportDetail',       key: 'reportId'       },
+  reports:      { screen: 'ReportDetail',       key: 'reportId'       },
+  event:        { screen: 'EventDetail',        key: 'eventId'        },
+  announcement: { screen: 'AnnouncementDetail', key: 'announcementId' },
+  club:         { screen: 'ClubDetail',         key: 'clubId'         },
+  lost_found:   { screen: 'LostFoundDetail',    key: 'itemId'         },
+  market:       { screen: 'MarketDetail',       key: 'listingId'      },
+  job:          { screen: 'JobDetail',          key: 'jobId'          },
+};
+
 function timeAgo(iso: string): string {
   const secs = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (secs < 60) return 'Just now';
   if (secs < 3600) return `${Math.floor(secs / 60)}m`;
   if (secs < 86400) return `${Math.floor(secs / 3600)}h`;
   return `${Math.floor(secs / 86400)}d`;
@@ -37,7 +49,8 @@ export function NotifDetailScreen({ route, navigation }: any) {
   }
 
   async function muteSector() {
-    await supabase.from('notif_prefs').upsert({ user_id: user?.id, sector: n.sector, enabled: false });
+    if (!user?.id) return;
+    await supabase.from('notif_prefs').upsert({ user_id: user.id, sector: n.sector, enabled: false });
     navigation.goBack();
   }
 
@@ -53,7 +66,7 @@ export function NotifDetailScreen({ route, navigation }: any) {
           <SectorIcon sector={n.sector} size="lg" />
           <View style={{ flex: 1 }}>
             <Text style={[styles.time, { color: C.textMuted, fontFamily: FontFamily.jakartaSemiBold }]}>
-              {timeAgo(n.created_at)} ago
+              {timeAgo(n.created_at) === 'Just now' ? 'Just now' : `${timeAgo(n.created_at)} ago`}
             </Text>
           </View>
         </View>
@@ -66,7 +79,11 @@ export function NotifDetailScreen({ route, navigation }: any) {
         <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>RELATED TO</Text>
         <TouchableOpacity
           style={[styles.relatedCard, { backgroundColor: C.surface, borderColor: C.border }]}
-          onPress={() => navigation.navigate(n.reference_type ?? sectorLabel, { id: n.reference_id })}
+          onPress={() => {
+            if (!n.reference_id) return;
+            const m = SCREEN_MAP[n.reference_type ?? ''];
+            if (m) navigation.navigate(m.screen as any, { [m.key]: n.reference_id });
+          }}
           activeOpacity={0.75}
         >
           <SectorIcon sector={n.sector} size="sm" />
@@ -80,7 +97,11 @@ export function NotifDetailScreen({ route, navigation }: any) {
         {/* Primary action */}
         <TouchableOpacity
           style={[styles.actionBtn, { backgroundColor: C.brand }]}
-          onPress={() => navigation.navigate(n.reference_type ?? sectorLabel, { id: n.reference_id })}
+          onPress={() => {
+            if (!n.reference_id) return;
+            const m = SCREEN_MAP[n.reference_type ?? ''];
+            if (m) navigation.navigate(m.screen as any, { [m.key]: n.reference_id });
+          }}
           activeOpacity={0.85}
         >
           <Text style={[styles.actionTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>View details</Text>

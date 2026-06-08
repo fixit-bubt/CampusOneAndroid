@@ -46,15 +46,21 @@ export function NotifSettingsScreen({ navigation }: any) {
   const [paused, setPaused] = useState(false);
   const [quiet, setQuiet] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [prefs, setPrefs] = useState<Record<string, SectorPref>>(
     Object.fromEntries(SECTORS.map(s => [s.id, defaultPref()]))
   );
 
   const load = useCallback(async () => {
-    const { data } = await supabase
+    setLoadError(null);
+    const { data, error } = await supabase
       .from('notif_prefs')
       .select('*')
       .eq('user_id', user?.id ?? '');
+    if (error) {
+      setLoadError(error.message);
+      return;
+    }
     if (data) {
       const updated: Record<string, SectorPref> = { ...prefs };
       (data as any[]).forEach(p => {
@@ -62,18 +68,18 @@ export function NotifSettingsScreen({ navigation }: any) {
       });
       setPrefs(updated);
     }
-  }, [user?.id]);
+  }, [user?.id, prefs]);
 
   useEffect(() => { load(); }, [load]);
 
   async function savePref(sectorId: string, update: Partial<SectorPref>) {
+    if (!user?.id) return;
     const next = { ...prefs[sectorId], ...update };
     setPrefs(prev => ({ ...prev, [sectorId]: next }));
-    await supabase.from('notif_prefs').upsert({
-      user_id: user?.id,
-      sector: sectorId,
-      ...next,
-    });
+    await supabase.from('notif_prefs').upsert(
+      { user_id: user.id, sector: sectorId, ...next },
+      { onConflict: 'user_id,sector' },
+    );
   }
 
   const onCount = SECTORS.filter(s => prefs[s.id]?.enabled).length;
@@ -91,6 +97,11 @@ export function NotifSettingsScreen({ navigation }: any) {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar title="Notification Settings" onBack={() => navigation.goBack()} />
+      {loadError ? (
+        <Text style={[styles.errorText, { color: '#e2483d', fontFamily: FontFamily.jakartaMedium }]}>
+          Failed to load preferences: {loadError}
+        </Text>
+      ) : null}
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
@@ -213,6 +224,7 @@ export function NotifSettingsScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
   scroll: { paddingTop: 12, paddingBottom: 20 } as ViewStyle,
+  errorText: { fontSize: 13, marginHorizontal: 20, marginTop: 8 } as any,
   settingCard: { borderRadius: 16, borderWidth: 1, overflow: 'hidden', marginBottom: 10 } as ViewStyle,
   settingRow: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 14 } as ViewStyle,
   settingIcon: { width: 44, height: 44, borderRadius: 13, alignItems: 'center', justifyContent: 'center', flexShrink: 0 } as ViewStyle,

@@ -25,10 +25,11 @@ export async function getMyNotifications(
   return { ok: true, data: data as Notification[] };
 }
 
-export async function markAllRead(): Promise<ServiceResult<null>> {
+export async function markAllRead(userId: string): Promise<ServiceResult<null>> {
   const { error } = await supabase
     .from('notifications')
     .update({ read: true })
+    .eq('user_id', userId)
     .eq('read', false);
   if (error) return { ok: false, error: error.message };
   return { ok: true, data: null };
