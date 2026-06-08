@@ -32,8 +32,8 @@ export function FacultyProfileScreen({ route, navigation }: any) {
   useEffect(() => {
     (async () => {
       const [memberRes, saveRes] = await Promise.all([
-        supabase.from('faculty_members').select('*').eq('id', id).single(),
-        supabase.from('faculty_saves').select('faculty_id').eq('faculty_id', id).eq('user_id', user?.id ?? '').maybeSingle(),
+        supabase.from('faculty').select('*, departments(name, branch)').eq('id', id).single(),
+        supabase.from('faculty_bookmarks').select('faculty_id').eq('faculty_id', id).eq('user_id', user?.id ?? '').maybeSingle(),
       ]);
       if (memberRes.data) setMember(memberRes.data);
       setSaved(!!saveRes.data);
@@ -43,9 +43,9 @@ export function FacultyProfileScreen({ route, navigation }: any) {
   async function toggleSave() {
     if (!user || !member) return;
     if (saved) {
-      await supabase.from('faculty_saves').delete().eq('faculty_id', id).eq('user_id', user.id);
+      await supabase.from('faculty_bookmarks').delete().eq('faculty_id', id).eq('user_id', user.id);
     } else {
-      await supabase.from('faculty_saves').insert({ faculty_id: id, user_id: user.id });
+      await supabase.from('faculty_bookmarks').insert({ faculty_id: id, user_id: user.id });
     }
     setSaved(!saved);
   }
@@ -80,7 +80,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
           <Avatar name={member.name} size="xl" />
           <Text style={[styles.name, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{member.name}</Text>
           <Text style={[styles.designation, { color: C.brand, fontFamily: FontFamily.jakartaSemiBold }]}>{member.designation}</Text>
-          <Text style={[styles.department, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{member.department}</Text>
+          <Text style={[styles.department, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{member.departments?.name ?? ''}</Text>
         </View>
 
         {/* Specialization */}
@@ -89,14 +89,6 @@ export function FacultyProfileScreen({ route, navigation }: any) {
           <Text style={[styles.specText, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>
             {Array.isArray(member.research_interests) ? member.research_interests.join(', ') : (member.research_interests ?? '')}
           </Text>
-        </View>
-
-        {/* Office */}
-        <View style={[styles.infoGrid, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <View style={styles.infoCell}>
-            <Text style={[styles.infoCellLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>Office</Text>
-            <Text style={[styles.infoCellVal, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{member.office ?? 'TBD'}</Text>
-          </View>
         </View>
 
         {/* Academic links */}
