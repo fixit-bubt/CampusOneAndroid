@@ -1,0 +1,220 @@
+// Matches design screens-c.jsx — Directory (search + connect)
+import { useState, useEffect, useCallback } from 'react';
+import {
+  View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
+  RefreshControl, type ViewStyle, type TextStyle,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTheme } from '../../hooks/useTheme';
+import { SubBar } from '../../components/layout/TopBar';
+import { Avatar } from '../../components/ui/Avatar';
+import { Icon } from '../../components/ui/Icon';
+import { FontFamily, Layout } from '../../theme';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../store/authStore';
+
+type ConnState = 'none' | 'requested' | 'incoming' | 'connected';
+
+interface Student {
+  id: string;
+  user_id: string;
+  full_name: string;
+  department: string;
+  intake: string;
+  section: string;
+  email?: string;
+  connState: ConnState;
+}
+
+export function DirectoryScreen({ navigation }: any) {
+  const { C } = useTheme();
+  const { user } = useAuth();
+  const [query, setQuery] = useState('');
+  const [students, setStudents] = useState<Student[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const load = useCallback(async () => {
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('user_id, full_name, department, intake, section, email')
+      .neq('user_id', user?.id ?? '')
+      .limit(80);
+
+    const { data: connections } = await supabase
+      .from('connections')
+      .select('*')
+      .or(`from_id.eq.${user?.id ?? ''},to_id.eq.${user?.id ?? ''}`);
+
+    const map = new Map<string, ConnState>();
+    (connections ?? []).forEach((c: any) => {
+      const other = c.from_id === user?.id ? c.to_id : c.from_id;
+      if (c.status === 'accepted') map.set(other, 'connected');
+      else if (c.from_id === user?.id) map.set(other, 'requested');
+      else map.set(other, 'incoming');
+    });
+
+    setStudents((profiles ?? []).map((p: any) => ({
+      ...p,
+      id: p.user_id,
+      connState: map.get(p.user_id) ?? 'none',
+    })));
+  }, [user?.id]);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  }
+
+  async function handleConn(studentId: string, action: 'connect' | 'accept' | 'decline') {
+    if (!user) return;
+    if (action === 'connect') {
+      await supabase.from('connections').insert({ from_id: user.id, to_id: studentId, status: 'pending' });
+      setStudents(prev => prev.map(s => s.id === studentId ? { ...s, connState: 'requested' } : s));
+    } else if (action === 'accept') {
+      await supabase.from('connections').update({ status: 'accepted' })
+        .eq('from_id', studentId).eq('to_id', user.id);
+      setStudents(prev => prev.map(s => s.id === studentId ? { ...s, connState: 'connected' } : s));
+    } else {
+      await supabase.from('connections').delete()
+        .eq('from_id', studentId).eq('to_id', user.id);
+      setStudents(prev => prev.map(s => s.id === studentId ? { ...s, connState: 'none' } : s));
+    }
+  }
+
+  const filtered = students.filter(s =>
+    s.full_name.toLowerCase().includes(query.toLowerCase().trim())
+  );
+
+  return (
+    <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
+      <SubBar title="Directory" onBack={() => navigation.goBack()} />
+
+      <ScrollView
+        contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
+      >
+        {/* Search */}
+        <View style={[styles.searchBar, { backgroundColor: C.surface2 }]}>
+          <Icon name="search" size={17} color={C.textMuted} />
+          <TextInput
+            style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
+            placeholder="Search students..."
+            placeholderTextColor={C.textMuted}
+            value={query}
+            onChangeText={setQuery}
+          />
+        </View>
+
+        {/* List */}
+        <View style={styles.list}>
+          {filtered.map(s => (
+            <View key={s.id} style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
+              <View style={styles.cardTop}>
+                <Avatar name={s.full_name} size="md" />
+                <View style={styles.cardBody}>
+                  <Text style={[styles.cardName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    {s.full_name}
+                  </Text>
+                  <Text style={[styles.cardMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                    {s.department} · {s.intake} · {s.section}
+                  </Text>
+                </View>
+                {s.connState === 'connected' && (
+                  <View style={[styles.connPill, { backgroundColor: '#e4f5f4' }]}>
+                    <View style={[styles.connDot, { backgroundColor: '#0e9c8a' }]} />
+                    <Text style={[styles.connTxt, { color: '#0e9c8a', fontFamily: FontFamily.jakartaBold }]}>Connected</Text>
+                  </View>
+                )}
+                {s.connState === 'requested' && (
+                  <View style={[styles.connPill, { backgroundColor: '#fbefdb' }]}>
+                    <View style={[styles.connDot, { backgroundColor: '#b9760a' }]} />
+                    <Text style={[styles.connTxt, { color: '#b9760a', fontFamily: FontFamily.jakartaBold }]}>Requested</Text>
+                  </View>
+                )}
+                {s.connState === 'none' && (
+                  <TouchableOpacity
+                    style={[styles.connectBtn, { backgroundColor: C.brand }]}
+                    onPress={() => handleConn(s.id, 'connect')}
+                    activeOpacity={0.85}
+                  >
+                    <Icon name="userPlus" size={15} color="#fff" />
+                    <Text style={[styles.connectTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>Connect</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {s.connState === 'incoming' && (
+                <View style={styles.incomingArea}>
+                  <Text style={[styles.wantsToConnect, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+                    Wants to connect
+                  </Text>
+                  <View style={styles.incomingActions}>
+                    <TouchableOpacity
+                      style={[styles.halfActionBtn, { backgroundColor: C.brand }]}
+                      onPress={() => handleConn(s.id, 'accept')}
+                      activeOpacity={0.85}
+                    >
+                      <Icon name="check" size={15} color="#fff" />
+                      <Text style={[styles.halfBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>Accept</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.halfActionBtn, { backgroundColor: C.surface2, borderColor: C.border, borderWidth: 1 }]}
+                      onPress={() => handleConn(s.id, 'decline')}
+                      activeOpacity={0.85}
+                    >
+                      <Icon name="x" size={15} color={C.text} />
+                      <Text style={[styles.halfBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Decline</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
+
+              {s.connState === 'connected' && s.email && (
+                <View style={[styles.contactArea, { backgroundColor: C.surface2 }]}>
+                  <View style={styles.contactRow}>
+                    <Icon name="mail" size={14} color={C.textMuted} />
+                    <Text style={[styles.contactTxt, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
+                      {s.email}
+                    </Text>
+                  </View>
+                </View>
+              )}
+            </View>
+          ))}
+        </View>
+
+        <View style={{ height: 12 }} />
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safe: { flex: 1 } as ViewStyle,
+  scroll: { paddingTop: 8, paddingBottom: 20 } as ViewStyle,
+  searchBar: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 14, borderRadius: 14, marginBottom: 14 } as ViewStyle,
+  searchInput: { flex: 1, fontSize: 15, paddingVertical: 13 } as TextStyle,
+  list: { gap: 10 } as ViewStyle,
+  card: { padding: 13, borderRadius: 16, borderWidth: 1 } as ViewStyle,
+  cardTop: { flexDirection: 'row', alignItems: 'center', gap: 12 } as ViewStyle,
+  cardBody: { flex: 1, minWidth: 0 } as ViewStyle,
+  cardName: { fontSize: 14.5 } as any,
+  cardMeta: { fontSize: 12, marginTop: 2 } as any,
+  connPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 20, flexShrink: 0 } as ViewStyle,
+  connDot: { width: 6, height: 6, borderRadius: 3 } as ViewStyle,
+  connTxt: { fontSize: 11 } as any,
+  connectBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 9, paddingVertical: 6, borderRadius: 10, flexShrink: 0 } as ViewStyle,
+  connectTxt: { fontSize: 12 } as any,
+  incomingArea: { marginTop: 11 } as ViewStyle,
+  wantsToConnect: { fontSize: 12, marginBottom: 8 } as any,
+  incomingActions: { flexDirection: 'row', gap: 8 } as ViewStyle,
+  halfActionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, height: 36, borderRadius: 10 } as ViewStyle,
+  halfBtnTxt: { fontSize: 13 } as any,
+  contactArea: { marginTop: 11, padding: 10, borderRadius: 10 } as ViewStyle,
+  contactRow: { flexDirection: 'row', alignItems: 'center', gap: 7 } as ViewStyle,
+  contactTxt: { fontSize: 12.5 } as any,
+});
