@@ -101,12 +101,6 @@ function ReportCard({ r, C, onAssign }: { r: Report; C: any; onAssign: (r: Repor
             <Text style={[styles.byName, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{r.reporter_name}</Text>
           </View>
         )}
-        {r.priority && (
-          <View style={[styles.urgentPill, { backgroundColor: '#fbe7e5' }]}>
-            <Icon name="bolt" size={10} color="#e2483d" />
-            <Text style={[styles.urgentTxt, { color: '#e2483d', fontFamily: FontFamily.jakartaBold }]}>Urgent</Text>
-          </View>
-        )}
         <Text style={[styles.reportTime, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{timeAgo(r.created_at)}</Text>
       </View>
       <TouchableOpacity
@@ -135,12 +129,13 @@ export function AdminDashboardScreen({ navigation }: any) {
   const [reports, setReports] = useState<Report[]>([]);
   const [staffList, setStaffList] = useState<StaffMember[]>([]);
   const [assignTarget, setAssignTarget] = useState<Report | null>(null);
+  const [resolvedCount, setResolvedCount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     const { data } = await supabase
       .from('reports')
-      .select('*, profiles:reporter_id(full_name), assignee:assigned_staff_id(full_name)')
+      .select('*, profiles!reporter_id(full_name), assignee:profiles!assigned_staff_id(full_name)')
       .in('status', ['Open', 'In Progress'])
       .order('created_at', { ascending: false })
       .limit(40);
@@ -155,6 +150,8 @@ export function AdminDashboardScreen({ navigation }: any) {
     }
     const { data: staff } = await supabase.from('profiles').select('id, full_name, department').eq('role', 'staff');
     if (staff) setStaffList(staff as StaffMember[]);
+    const { count } = await supabase.from('reports').select('id', { count: 'exact', head: true }).in('status', ['Resolved', 'Closed']);
+    setResolvedCount(count ?? 0);
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -174,7 +171,6 @@ export function AdminDashboardScreen({ navigation }: any) {
   const open = reports.filter(r => r.status === 'Open');
   const unassigned = reports.filter(r => !r.assigned_staff_id);
   const inprog = reports.filter(r => r.status === 'In Progress');
-  const resolved: Report[] = [];
 
   const sorted = [...reports].sort((a, b) => {
     const rank = (r: Report) => !r.assigned_staff_id ? 0 : 2;
@@ -198,7 +194,7 @@ export function AdminDashboardScreen({ navigation }: any) {
           <StatCard icon="inbox"    fg="#b9760a" num={open.length}       label="Open"        C={C} />
           <StatCard icon="userPlus" fg="#e2483d" num={unassigned.length} label="Unassigned"  C={C} />
           <StatCard icon="pulse"    fg="#2b5be3" num={inprog.length}     label="In Progress" C={C} />
-          <StatCard icon="check"    fg="#0e9c8a" num={resolved.length}   label="Resolved"    C={C} />
+          <StatCard icon="check"    fg="#0e9c8a" num={resolvedCount}     label="Resolved"    C={C} />
         </View>
 
         {/* Needs assignment */}
