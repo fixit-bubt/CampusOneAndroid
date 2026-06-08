@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme } from '../../hooks/useTheme';
+import { useApp } from '../../store/appStore';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout } from '../../theme';
 import type { AuthStackParams } from '../../types/navigation';
@@ -35,17 +36,29 @@ export function Brand({ size = 56 }: { size?: number }) {
 
 export function LandingScreen({ navigation }: Props) {
   const { C, isDark } = useTheme();
+  const { lang, toggleLang, toggleTheme } = useApp();
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       {/* Top-right: lang toggle + theme btn */}
       <View style={styles.topbar}>
-        <TouchableOpacity style={[styles.langPill, { borderColor: C.border, backgroundColor: C.surface }]}>
-          <Text style={[styles.langItem, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>EN</Text>
-          <Text style={[styles.langItem, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>বাং</Text>
+        <TouchableOpacity
+          style={[styles.langPill, { borderColor: C.border, backgroundColor: C.surface }]}
+          onPress={toggleLang}
+          activeOpacity={0.75}
+        >
+          <Text style={[styles.langItem, {
+            color: lang === 'en' ? C.brand : C.textMuted,
+            fontFamily: lang === 'en' ? FontFamily.jakartaBold : FontFamily.jakartaRegular,
+          }]}>EN</Text>
+          <Text style={[styles.langItem, {
+            color: lang === 'bn' ? C.brand : C.textMuted,
+            fontFamily: lang === 'bn' ? FontFamily.jakartaBold : FontFamily.jakartaRegular,
+          }]}>বাং</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.iconBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+          onPress={toggleTheme}
           activeOpacity={0.75}
         >
           <Icon name={isDark ? 'sun' : 'moon'} size={18} color={C.text2} />
