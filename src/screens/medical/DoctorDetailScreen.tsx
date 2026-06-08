@@ -16,11 +16,23 @@ const MED_BG    = '#e2483d1e';
 interface Doctor {
   id: string;
   name: string;
-  specialization: string;
-  duty_days: string;
-  duty_hours: string;
-  on_duty: boolean;
-  next_duty: string;
+  specialty: string;
+  days: string[];
+  start_time: string;
+  end_time: string;
+  room: string | null;
+  active: boolean;
+}
+
+function isOnDuty(doc: Doctor): boolean {
+  if (!doc.active) return false;
+  const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const now = new Date();
+  if (!doc.days?.includes(DAY_NAMES[now.getDay()])) return false;
+  const [sh = 0, sm = 0] = (doc.start_time ?? '').split(':').map(Number);
+  const [eh = 23, em = 59] = (doc.end_time ?? '').split(':').map(Number);
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+  return nowMins >= sh * 60 + sm && nowMins <= eh * 60 + em;
 }
 
 function ScheduleRow({ icon, label, value, C }: any) {
@@ -41,6 +53,7 @@ export function DoctorDetailScreen({ route, navigation }: any) {
   const { C } = useTheme();
   const { id } = route.params;
   const [doctor, setDoctor] = useState<Doctor | null>(null);
+  const onDuty = doctor ? isOnDuty(doctor) : false;
 
   useEffect(() => {
     (async () => {
@@ -72,36 +85,36 @@ export function DoctorDetailScreen({ route, navigation }: any) {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[styles.docName, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{doctor.name}</Text>
-            <Text style={[styles.docSpec, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{doctor.specialization}</Text>
+            <Text style={[styles.docSpec, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{doctor.specialty}</Text>
           </View>
         </View>
 
         {/* Availability banner */}
         <View style={[
           styles.availBanner,
-          { backgroundColor: doctor.on_duty ? '#e4f5f4' : C.surface2 },
+          { backgroundColor: onDuty ? '#e4f5f4' : C.surface2 },
         ]}>
           <View style={[
             styles.availIcon,
-            { backgroundColor: doctor.on_duty ? '#0e9c8a' : C.border },
+            { backgroundColor: onDuty ? '#0e9c8a' : C.border },
           ]}>
             <Icon
-              name={doctor.on_duty ? 'check' : 'clock'}
+              name={onDuty ? 'check' : 'clock'}
               size={22}
-              color={doctor.on_duty ? '#fff' : C.textMuted}
+              color={onDuty ? '#fff' : C.textMuted}
             />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[
               styles.availTitle,
-              { color: doctor.on_duty ? '#0e9c8a' : C.text, fontFamily: FontFamily.jakartaExtraBold },
+              { color: onDuty ? '#0e9c8a' : C.text, fontFamily: FontFamily.jakartaExtraBold },
             ]}>
-              {doctor.on_duty ? 'Available now' : 'Not available now'}
+              {onDuty ? 'Available now' : 'Not available now'}
             </Text>
             <Text style={[styles.availSub, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
-              {doctor.on_duty
+              {onDuty
                 ? "Walk in during today's hours"
-                : `Next: ${doctor.next_duty}`}
+                : `Hours: ${doctor.start_time} – ${doctor.end_time}`}
             </Text>
           </View>
         </View>
@@ -109,11 +122,11 @@ export function DoctorDetailScreen({ route, navigation }: any) {
         {/* Schedule card */}
         <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>SCHEDULE</Text>
         <View style={[styles.schedCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <ScheduleRow icon="events" label="Duty days" value={doctor.duty_days} C={C} />
+          <ScheduleRow icon="events" label="Duty days" value={Array.isArray(doctor.days) ? doctor.days.join(', ') : ''} C={C} />
           <View style={[styles.divider, { backgroundColor: C.border }]} />
-          <ScheduleRow icon="clock" label="Hours" value={doctor.duty_hours} C={C} />
+          <ScheduleRow icon="clock" label="Hours" value={`${doctor.start_time} – ${doctor.end_time}`} C={C} />
           <View style={[styles.divider, { backgroundColor: C.border }]} />
-          <ScheduleRow icon="pin" label="Location" value="Medical Center, Ground floor" C={C} />
+          <ScheduleRow icon="pin" label="Location" value={doctor.room ?? 'Medical Center'} C={C} />
         </View>
 
         <View style={{ height: 26 }} />
