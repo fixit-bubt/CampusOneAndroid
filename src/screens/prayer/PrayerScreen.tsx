@@ -24,8 +24,10 @@ interface PrayerTime {
 
 function computeNext(prayers: PrayerTime[]): PrayerTime | undefined {
   const now = new Date();
+  const isToday = (p: PrayerTime) => p.key !== 'jumuah' || now.getDay() === 5;
   const nowMins = now.getHours() * 60 + now.getMinutes();
   return prayers.find(p => {
+    if (!isToday(p)) return false;
     const [h = 0, m = 0] = p.azan.split(':').map(Number);
     return h * 60 + m > nowMins;
   });
@@ -75,6 +77,18 @@ export function PrayerScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
+        {/* Empty state */}
+        {prayers.length === 0 && !refreshing && (
+          <View style={styles.empty}>
+            <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              No prayer times available
+            </Text>
+            <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+              Pull down to refresh
+            </Text>
+          </View>
+        )}
+
         {/* Next prayer card */}
         {next && (
           <LinearGradient
@@ -211,4 +225,13 @@ const styles = StyleSheet.create({
   } as any,
 
   divider: { height: StyleSheet.hairlineWidth } as ViewStyle,
+
+  empty: {
+    alignItems: 'center',
+    paddingTop: 60,
+    gap: 8,
+  } as ViewStyle,
+
+  emptyTitle: { fontSize: 16 } as any,
+  emptySub: { fontSize: 13, textAlign: 'center' } as any,
 });
