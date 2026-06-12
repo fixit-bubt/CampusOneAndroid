@@ -69,8 +69,10 @@ export type AppStackParams = {
   StudyUpload:  { courseId: string; courseCode: string; courseTitle: string };
 
   // Medical
-  Medical:      undefined;
-  DoctorDetail: { doctorId: string };
+  Medical:         undefined;
+  DoctorDetail:    { doctorId: string };
+  MyAppointments:  undefined;
+  MedicalQueue:    undefined;
 
   // Notifications
   NotifDetail:    { notifId: string };
