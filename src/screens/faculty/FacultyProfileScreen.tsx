@@ -10,7 +10,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout } from '../../theme';
+import { FontFamily, Layout , Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 
@@ -85,7 +85,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
         onBack={() => navigation.goBack()}
         rightSlot={
           <TouchableOpacity style={styles.iconBtn} onPress={toggleSave} activeOpacity={0.75}>
-            <Feather name="star" size={21} color={saved ? '#d9870b' : C.text2} />
+            <Feather name="star" size={21} color={saved ? Accent.gold : C.text2} />
           </TouchableOpacity>
         }
       />
