@@ -64,11 +64,22 @@ export function NotifSettingsScreen({ navigation }: any) {
     if (data) {
       const updated: Record<string, SectorPref> = { ...prefs };
       (data as any[]).forEach(p => {
+        // Master toggles persisted as special rows
+        if (p.sector === '_paused') { setPaused(p.enabled); return; }
+        if (p.sector === '_quiet')  { setQuiet(p.enabled);  return; }
         updated[p.sector] = { enabled: p.enabled, push: p.push, email: p.email, inapp: p.inapp };
       });
       setPrefs(updated);
     }
   }, [user?.id, prefs]);
+
+  async function saveMaster(sector: '_paused' | '_quiet', on: boolean) {
+    if (!user?.id) return;
+    await supabase.from('notif_prefs').upsert(
+      { user_id: user.id, sector, enabled: on },
+      { onConflict: 'user_id,sector' },
+    );
+  }
 
   useEffect(() => { load(); }, [load]);
 
@@ -120,7 +131,7 @@ export function NotifSettingsScreen({ navigation }: any) {
             </View>
             <Switch
               value={paused}
-              onValueChange={setPaused}
+              onValueChange={v => { setPaused(v); saveMaster('_paused', v); }}
               trackColor={{ false: C.border, true: C.brand }}
               thumbColor="#fff"
             />
@@ -139,7 +150,7 @@ export function NotifSettingsScreen({ navigation }: any) {
             </View>
             <Switch
               value={quiet}
-              onValueChange={setQuiet}
+              onValueChange={v => { setQuiet(v); saveMaster('_quiet', v); }}
               disabled={paused}
               trackColor={{ false: C.border, true: C.brand }}
               thumbColor="#fff"
