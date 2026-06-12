@@ -81,6 +81,27 @@ export const bn: Dict = {
     Closed: 'বন্ধ',
   } as Record<string, string>,
 
+  jobs: {
+    open: 'খোলা',
+    closingSoon: 'শীঘ্রই শেষ',
+    expired: 'মেয়াদোত্তীর্ণ',
+    saved: 'সংরক্ষিত',
+    searchPlaceholder: 'চাকরি খুঁজুন...',
+    moderation: 'চাকরি মডারেশন',
+    reported: 'রিপোর্ট করা',
+    removed: 'সরানো',
+    reportsCount: (n: number) => `${n} টি রিপোর্ট`,
+    restore: 'ফেরান',
+    removeWithReason: 'সরান',
+    noReported: 'কোনো রিপোর্ট করা চাকরি নেই।',
+    noRemoved: 'কোনো সরানো চাকরি নেই।',
+    applyMethod: 'আবেদনের উপায়',
+    applyEmail: 'ইমেইল',
+    applyLink: 'লিংক',
+    applyValueEmail: 'আবেদনের ইমেইল',
+    applyValueLink: 'আবেদনের URL',
+  },
+
   clubs: {
     inviteOnly: 'সদস্যপদ আমন্ত্রণের মাধ্যমে — ক্লাবের কর্মকর্তা আপনাকে যোগ করতে পারেন।',
     leave: 'ক্লাব ছাড়ুন',
