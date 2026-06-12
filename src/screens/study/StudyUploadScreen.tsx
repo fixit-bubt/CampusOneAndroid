@@ -1,5 +1,8 @@
 // Matches design screens-g.jsx — StudyUpload
-import { useState } from 'react';
+// Uploads route to the right table per section (web parity):
+// Materials -> study_materials, Questions -> study_question_bank (exam tag),
+// Books -> study_books (author, optional external URL instead of a file).
+import { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView,
   StyleSheet, Alert, type ViewStyle,
@@ -37,10 +40,29 @@ export function StudyUploadScreen({ route, navigation }: any) {
 
   const [fileType, setFileType] = useState('materials');
   const [name, setName] = useState('');
+  const [exam, setExam] = useState('Midterm');
+  const [author, setAuthor] = useState('');
+  const [bookUrl, setBookUrl] = useState('');
   const [pickedFile, setPickedFile] = useState<PickedFile | null>(null);
+  const [sectionId, setSectionId] = useState<string | null>(null);
+  const [intakeId, setIntakeId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const canSubmit = name.trim().length > 0 && pickedFile !== null;
+  // Questions need the course's section; books are intake-scoped too.
+  useEffect(() => {
+    (async () => {
+      if (!courseId) return;
+      const { data: c } = await supabase.from('study_courses').select('section_id').eq('id', courseId).single();
+      if (c?.section_id) {
+        setSectionId(c.section_id);
+        const { data: s } = await supabase.from('study_sections').select('intake_id').eq('id', c.section_id).single();
+        if (s?.intake_id) setIntakeId(s.intake_id);
+      }
+    })();
+  }, [courseId]);
+
+  const canSubmit = name.trim().length > 0 &&
+    (fileType === 'books' ? (pickedFile !== null || bookUrl.trim().length > 0) : pickedFile !== null);
 
   async function pickFile() {
     const result = await DocumentPicker.getDocumentAsync({
@@ -57,30 +79,54 @@ export function StudyUploadScreen({ route, navigation }: any) {
   }
 
   async function handleSubmit() {
-    if (!canSubmit || !user || !courseId || !pickedFile) return;
+    if (!canSubmit || !user || !courseId) return;
     setLoading(true);
     try {
-      // Read file as ArrayBuffer via fetch
-      const response = await fetch(pickedFile.uri);
-      const blob = await response.blob();
-      const ext = pickedFile.name.split('.').pop() ?? 'bin';
-      const storagePath = `${courseId}/${Date.now()}_${name.trim().replace(/\s+/g, '_')}.${ext}`;
+      let storagePath: string | null = null;
+      if (pickedFile) {
+        const response = await fetch(pickedFile.uri);
+        const blob = await response.blob();
+        const ext = pickedFile.name.split('.').pop() ?? 'bin';
+        storagePath = `${courseId}/${Date.now()}_${name.trim().replace(/\s+/g, '_')}.${ext}`;
+        const { error: uploadError } = await supabase.storage
+          .from('study-materials')
+          .upload(storagePath, blob, {
+            contentType: pickedFile.mimeType ?? 'application/octet-stream',
+            upsert: false,
+          });
+        if (uploadError) throw uploadError;
+      }
 
-      const { error: uploadError } = await supabase.storage
-        .from('study-materials')
-        .upload(storagePath, blob, {
-          contentType: pickedFile.mimeType ?? 'application/octet-stream',
-          upsert: false,
-        });
-      if (uploadError) throw uploadError;
-
-      const { error: insertError } = await supabase.from('study_materials').insert({
-        course_id:    courseId,
-        type:         fileType,
-        title:        name.trim(),
-        storage_path: storagePath,
-        uploaded_by:  user.id,
-      });
+      let insertError = null as any;
+      if (fileType === 'questions') {
+        ({ error: insertError } = await supabase.from('study_question_bank').insert({
+          course_id:    courseId,
+          section_id:   sectionId,
+          exam,
+          title:        name.trim(),
+          storage_path: storagePath,
+          uploaded_by:  user.id,
+        }));
+      } else if (fileType === 'books') {
+        ({ error: insertError } = await supabase.from('study_books').insert({
+          course_id:    courseId,
+          intake_id:    intakeId,
+          title:        name.trim(),
+          author:       author.trim() || null,
+          kind:         storagePath ? 'file' : 'link',
+          storage_path: storagePath,
+          url:          bookUrl.trim() || null,
+          added_by:     user.id,
+        }));
+      } else {
+        ({ error: insertError } = await supabase.from('study_materials').insert({
+          course_id:    courseId,
+          type:         fileType,
+          title:        name.trim(),
+          storage_path: storagePath,
+          uploaded_by:  user.id,
+        }));
+      }
       if (insertError) throw insertError;
 
       navigation.goBack();
@@ -127,8 +173,58 @@ export function StudyUploadScreen({ route, navigation }: any) {
           })}
         </View>
 
+        {/* Exam tag (questions only) */}
+        {fileType === 'questions' && (
+          <>
+            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>EXAM</Text>
+            <View style={styles.examRow}>
+              {['Midterm', 'Final', 'Quiz', 'Assignment'].map(e => {
+                const on = exam === e;
+                return (
+                  <TouchableOpacity
+                    key={e}
+                    style={[styles.examChip, on
+                      ? { backgroundColor: C.brand, borderColor: C.brand }
+                      : { backgroundColor: C.surface, borderColor: C.border }]}
+                    onPress={() => setExam(e)}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={[styles.examTxt, { color: on ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>{e}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </>
+        )}
+
+        {/* Book extras */}
+        {fileType === 'books' && (
+          <>
+            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>AUTHOR (OPTIONAL)</Text>
+            <TextInput
+              style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+              value={author}
+              onChangeText={setAuthor}
+              placeholder="e.g. Thomas H. Cormen"
+              placeholderTextColor={C.textMuted}
+            />
+            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>LINK (INSTEAD OF FILE)</Text>
+            <TextInput
+              style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+              value={bookUrl}
+              onChangeText={setBookUrl}
+              placeholder="https://..."
+              placeholderTextColor={C.textMuted}
+              autoCapitalize="none"
+              keyboardType="url"
+            />
+          </>
+        )}
+
         {/* File picker */}
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>FILE</Text>
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+          {fileType === 'books' ? 'FILE (OPTIONAL IF LINK GIVEN)' : 'FILE'}
+        </Text>
         <TouchableOpacity
           style={[styles.filePicker, { backgroundColor: C.surface, borderColor: pickedFile ? C.brand : C.border }]}
           onPress={pickFile}
@@ -157,8 +253,8 @@ export function StudyUploadScreen({ route, navigation }: any) {
           disabled={!canSubmit || loading}
           activeOpacity={0.8}
         >
-          <Icon name="check" size={18} color={canSubmit ? '#fff' : C.textMuted} />
-          <Text style={[styles.submitText, { color: canSubmit ? '#fff' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+          <Icon name="check" size={18} color={canSubmit ? C.white : C.textMuted} />
+          <Text style={[styles.submitText, { color: canSubmit ? C.white : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
             {loading ? 'Uploading…' : 'Upload'}
           </Text>
         </TouchableOpacity>
@@ -203,6 +299,9 @@ const styles = StyleSheet.create({
   } as ViewStyle,
 
   segTxt: { fontSize: 13.5 } as any,
+  examRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 } as ViewStyle,
+  examChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, borderWidth: 1 } as ViewStyle,
+  examTxt: { fontSize: 12 } as any,
 
   input: {
     height: 48,
