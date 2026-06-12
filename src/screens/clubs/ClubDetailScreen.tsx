@@ -10,17 +10,17 @@ import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout } from '../../theme';
+import { FontFamily, Layout, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 
 const CL_CATS: Record<string, { label: string; fg: string }> = {
-  academic:  { label: 'Academic',  fg: '#2b5be3' },
-  cultural:  { label: 'Cultural',  fg: '#ec4899' },
-  sports:    { label: 'Sports',    fg: '#0e9c8a' },
-  technical: { label: 'Technical', fg: '#8b5cf6' },
-  social:    { label: 'Social',    fg: '#b9760a' },
-  other:     { label: 'Other',     fg: '#5b6b86' },
+  academic:  { label: 'Academic',  fg: Accent.blue },
+  cultural:  { label: 'Cultural',  fg: Accent.pink },
+  sports:    { label: 'Sports',    fg: Accent.teal },
+  technical: { label: 'Technical', fg: Accent.purple },
+  social:    { label: 'Social',    fg: Accent.amber },
+  other:     { label: 'Other',     fg: Accent.slate },
 };
 
 type Tab = 'feed' | 'members';
@@ -142,9 +142,9 @@ export function ClubDetailScreen({ route, navigation }: any) {
             </Text>
           </View>
           {myRole && (
-            <View style={[styles.rolePill, { backgroundColor: '#eef3ff' }]}>
-              <View style={[styles.roleDot, { backgroundColor: '#2b5be3' }]} />
-              <Text style={[styles.roleTxt, { color: '#2b5be3', fontFamily: FontFamily.jakartaBold }]}>{myRole}</Text>
+            <View style={[styles.rolePill, { backgroundColor: C.infoBg }]}>
+              <View style={[styles.roleDot, { backgroundColor: C.info }]} />
+              <Text style={[styles.roleTxt, { color: C.info, fontFamily: FontFamily.jakartaBold }]}>{myRole}</Text>
             </View>
           )}
         </View>
@@ -234,9 +234,9 @@ export function ClubDetailScreen({ route, navigation }: any) {
                       {(m as any).profiles?.full_name ?? 'Member'}
                     </Text>
                     <View style={[styles.memberRolePill,
-                      isLead ? { backgroundColor: '#eef3ff' } : { backgroundColor: C.surface2 }]}>
+                      isLead ? { backgroundColor: C.infoBg } : { backgroundColor: C.surface2 }]}>
                       <Text style={[styles.memberRoleTxt,
-                        { color: isLead ? '#2b5be3' : C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                        { color: isLead ? C.info : C.text2, fontFamily: FontFamily.jakartaBold }]}>
                         {m.role}
                       </Text>
                     </View>
