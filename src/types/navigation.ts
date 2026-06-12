@@ -48,6 +48,8 @@ export type AppStackParams = {
   ClubDetail:  { clubId: string };
   ClubPost:    { clubId: string; clubName: string };
   ClubManage:  { clubId: string };
+  ClubMembers: { clubId: string };
+  ManageClubs: undefined;
 
   // Jobs
   JobsBrowse: undefined;
