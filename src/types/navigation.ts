@@ -52,9 +52,10 @@ export type AppStackParams = {
   ManageClubs: undefined;
 
   // Jobs
-  JobsBrowse: undefined;
-  JobDetail:  { jobId: string };
-  JobPost:    undefined;
+  JobsBrowse:   undefined;
+  JobDetail:    { jobId: string };
+  JobPost:      undefined;
+  JobsModerate: undefined;
 
   // Market
   Market:       undefined;
