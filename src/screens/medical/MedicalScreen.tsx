@@ -8,11 +8,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout } from '../../theme';
+import { FontFamily, Layout , SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 
-const MED_COLOR = '#e2483d';
-const MED_BG    = '#e2483d1e';
+const MED_COLOR = SectorColors.medical;
+const MED_BG    = `${SectorColors.medical}1e`;
 
 interface Doctor {
   id: string;
@@ -88,9 +88,9 @@ export function MedicalScreen({ navigation }: any) {
                   </Text>
                   <View style={styles.cardMeta}>
                     {isOnDuty(d) ? (
-                      <View style={[styles.dutyPill, { backgroundColor: '#e4f5f4' }]}>
-                        <View style={[styles.dutyDot, { backgroundColor: '#0e9c8a' }]} />
-                        <Text style={[styles.dutyTxt, { color: '#0e9c8a', fontFamily: FontFamily.jakartaBold }]}>On Duty</Text>
+                      <View style={[styles.dutyPill, { backgroundColor: C.successBg }]}>
+                        <View style={[styles.dutyDot, { backgroundColor: C.success }]} />
+                        <Text style={[styles.dutyTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>On Duty</Text>
                       </View>
                     ) : (
                       <View style={[styles.dutyPill, { backgroundColor: C.surface2 }]}>
