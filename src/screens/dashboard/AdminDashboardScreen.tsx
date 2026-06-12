@@ -125,6 +125,7 @@ function ReportCard({ r, C, onAssign }: { r: Report; C: any; onAssign: (r: Repor
 
 const MANAGE_TILES = [
   { icon: 'layers',    fg: Accent.blue, label: 'All Reports',   route: 'AllReports',   sub: 'reports'    },
+  { icon: 'userPlus',  fg: Accent.green, label: 'Staff & Admins', route: 'ManageStaff', sub: 'staffadmin' },
   { icon: 'directory', fg: Accent.purple, label: 'Users',         route: 'ManageUsers',  sub: 'users'      },
   { icon: 'announce',  fg: SectorColors.announce, label: 'Announcements', route: 'Announcements',sub: 'announce'   },
   { icon: 'directory', fg: Accent.teal, label: 'Faculty',       route: 'Faculty',      sub: 'faculty'    },
