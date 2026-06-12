@@ -8,13 +8,19 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout } from '../../theme';
+import { FontFamily, Layout, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import type { Announcement } from '../../types/database';
 
-const PRI_COLOR: Record<string, string> = { Urgent: '#e2483d', Important: '#b9760a', General: '#5b6b86' };
-const PRI_BG: Record<string, string>    = { Urgent: '#fbe7e5', Important: '#fbefdb', General: '#f0f2f6' };
+// Priority tones from theme tokens (dark-mode aware via C)
+function priTone(C: any, priority: string): { fg: string; bg: string } {
+  switch (priority) {
+    case 'Urgent':    return { fg: C.danger, bg: C.dangerBg };
+    case 'Important': return { fg: C.warn,   bg: C.warnBg };
+    default:          return { fg: Accent.slate, bg: Accent.grayBg };
+  }
+}
 
 function timeAgo(iso: string): string {
   const secs = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -57,8 +63,7 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
     );
   }
 
-  const fg = PRI_COLOR[item.priority] ?? '#888888';
-  const bg = PRI_BG[item.priority] ?? '#f0f2f6';
+  const { fg, bg } = priTone(C, item.priority);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -74,9 +79,9 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
             <Text style={[styles.priText, { color: fg, fontFamily: FontFamily.jakartaBold }]}>{item.priority}</Text>
           </View>
           {item.pinned && (
-            <View style={[styles.priPill, { backgroundColor: '#eef3ff' }]}>
-              <View style={[styles.priDot, { backgroundColor: '#2b5be3' }]} />
-              <Text style={[styles.priText, { color: '#2b5be3', fontFamily: FontFamily.jakartaBold }]}>Pinned</Text>
+            <View style={[styles.priPill, { backgroundColor: C.infoBg }]}>
+              <View style={[styles.priDot, { backgroundColor: C.info }]} />
+              <Text style={[styles.priText, { color: C.info, fontFamily: FontFamily.jakartaBold }]}>Pinned</Text>
             </View>
           )}
         </View>
@@ -103,8 +108,8 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
             onPress={() => Linking.openURL(item.attachment_url!)}
             activeOpacity={0.75}
           >
-            <View style={[styles.attachIcon, { backgroundColor: '#fbe7e5' }]}>
-              <Icon name="mail" size={18} color="#d63d35" />
+            <View style={[styles.attachIcon, { backgroundColor: C.dangerBg }]}>
+              <Icon name="mail" size={18} color={C.danger} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.attachName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
