@@ -12,10 +12,10 @@ import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { Avatar } from '../../components/ui/Avatar';
-import { FontFamily, Layout } from '../../theme';
+import { FontFamily, Layout , SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 
-const STUDY_COLOR = '#2ba0c9';
+const STUDY_COLOR = SectorColors.study;
 
 type Persona = 'notjoined' | 'pendingcreate' | 'member' | 'cr';
 type Sub = 'home' | 'browse' | 'manage';
@@ -113,7 +113,7 @@ const toastStyles = StyleSheet.create({
 // ── CodeCard ──────────────────────────────────────────────────────────────────
 function CodeCard({ code, copied, onCopy, C }: { code: string; copied: boolean; onCopy: () => void; C: any }) {
   return (
-    <View style={[codeStyles.card, { backgroundColor: C.brand50 ?? '#eef3ff', borderColor: C.brand + '40' }]}>
+    <View style={[codeStyles.card, { backgroundColor: C.brand50, borderColor: C.brand + '40' }]}>
       <Text style={[codeStyles.label, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>Section join code</Text>
       <View style={codeStyles.row}>
         <Text style={[codeStyles.code, { color: C.brand, fontFamily: FontFamily.jakartaExtraBold }]}>{code}</Text>
@@ -268,7 +268,7 @@ function RejectSheet({ visible, C, onClose, onReject }: { visible: boolean; C: a
             multiline numberOfLines={3}
           />
           <TouchableOpacity
-            style={[sheetStyles.submitBtn, { backgroundColor: '#e2483d' }]}
+            style={[sheetStyles.submitBtn, { backgroundColor: C.danger }]}
             onPress={() => { onReject(note); setNote(''); }}
             activeOpacity={0.8}
           >
@@ -793,8 +793,8 @@ export function StudyHubScreen({ navigation }: any) {
   function renderPending() {
     return (
       <View style={[s.card, s.pendingCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-        <View style={[s.pendingIcon, { backgroundColor: '#fbefdb' }]}>
-          <Feather name="clock" size={28} color="#b9760a" />
+        <View style={[s.pendingIcon, { backgroundColor: C.warnBg }]}>
+          <Feather name="clock" size={28} color={C.warn} />
         </View>
         <Text style={[s.pendingTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>Request under review</Text>
         <Text style={[s.pendingSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
@@ -818,17 +818,17 @@ export function StudyHubScreen({ navigation }: any) {
             <Text style={[s.sectionName, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
               {mySection.department} · Intake {mySection.intake} · Sec {mySection.number}
             </Text>
-            <View style={[s.visPill, { backgroundColor: mySection.is_public ? '#e8f8f0' : C.surface2 }]}>
-              <View style={[s.visDot, { backgroundColor: mySection.is_public ? '#12915e' : C.textMuted }]} />
-              <Text style={[s.visTxt, { color: mySection.is_public ? '#12915e' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+            <View style={[s.visPill, { backgroundColor: mySection.is_public ? C.successBg : C.surface2 }]}>
+              <View style={[s.visDot, { backgroundColor: mySection.is_public ? C.success : C.textMuted }]} />
+              <Text style={[s.visTxt, { color: mySection.is_public ? C.success : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
                 {mySection.is_public ? 'Public' : 'Private'}
               </Text>
             </View>
           </View>
           {isCr && (
-            <View style={[s.crPill, { backgroundColor: '#eef3ff' }]}>
-              <View style={[s.crDot, { backgroundColor: '#2b5be3' }]} />
-              <Text style={[s.crTxt, { color: '#2b5be3', fontFamily: FontFamily.jakartaBold }]}>CR</Text>
+            <View style={[s.crPill, { backgroundColor: C.infoBg }]}>
+              <View style={[s.crDot, { backgroundColor: C.info }]} />
+              <Text style={[s.crTxt, { color: C.info, fontFamily: FontFamily.jakartaBold }]}>CR</Text>
             </View>
           )}
         </View>
@@ -846,7 +846,7 @@ export function StudyHubScreen({ navigation }: any) {
             <Icon name="sliders" size={17} color={C.text} />
             <Text style={[s.outlineBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Manage section</Text>
             {joinReqs.length > 0 && (
-              <View style={[s.badge, { backgroundColor: '#e2483d' }]}>
+              <View style={[s.badge, { backgroundColor: C.danger }]}>
                 <Text style={[s.badgeTxt, { fontFamily: FontFamily.jakartaBold }]}>{joinReqs.length}</Text>
               </View>
             )}
@@ -896,8 +896,8 @@ export function StudyHubScreen({ navigation }: any) {
                   </View>
                 </View>
                 {sec.intake_public && (
-                  <View style={[s.intakePill, { backgroundColor: '#eef3ff' }]}>
-                    <Text style={[s.intakeTxt, { color: '#2b5be3', fontFamily: FontFamily.jakartaBold }]}>Open to other intakes</Text>
+                  <View style={[s.intakePill, { backgroundColor: C.infoBg }]}>
+                    <Text style={[s.intakeTxt, { color: C.info, fontFamily: FontFamily.jakartaBold }]}>Open to other intakes</Text>
                   </View>
                 )}
                 <TouchableOpacity
@@ -940,12 +940,12 @@ export function StudyHubScreen({ navigation }: any) {
                       <Text style={[s.reqTime, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{timeAgo(j.created_at)}</Text>
                     </View>
                     <TouchableOpacity
-                      style={[s.approveBtn, { backgroundColor: '#e8f8f0' }]}
+                      style={[s.approveBtn, { backgroundColor: C.successBg }]}
                       onPress={() => approveJoin(j.id)}
                       activeOpacity={0.75}
                     >
-                      <Icon name="check" size={14} color="#12915e" />
-                      <Text style={[s.approveTxt, { color: '#12915e', fontFamily: FontFamily.jakartaBold }]}>Approve</Text>
+                      <Icon name="check" size={14} color={C.success} />
+                      <Text style={[s.approveTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>Approve</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -958,8 +958,8 @@ export function StudyHubScreen({ navigation }: any) {
         <Text style={[s.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>SECTION VISIBILITY</Text>
         <View style={[s.card, { backgroundColor: C.surface, borderColor: C.border }]}>
           <View style={s.settingRow}>
-            <View style={[s.settingIcon, { backgroundColor: mySection.is_public ? '#e8f8f0' : C.surface2 }]}>
-              <Feather name={mySection.is_public ? 'globe' : 'shield'} size={18} color={mySection.is_public ? '#12915e' : C.textMuted} />
+            <View style={[s.settingIcon, { backgroundColor: mySection.is_public ? C.successBg : C.surface2 }]}>
+              <Feather name={mySection.is_public ? 'globe' : 'shield'} size={18} color={mySection.is_public ? C.success : C.textMuted} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[s.settingTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -998,9 +998,9 @@ export function StudyHubScreen({ navigation }: any) {
                 </Text>
               ) : (
                 <View style={s.voteActions}>
-                  <TouchableOpacity style={[s.voteBtn, { backgroundColor: '#e8f8f0' }]} onPress={() => castVote('yes')} activeOpacity={0.75}>
-                    <Icon name="check" size={14} color="#12915e" />
-                    <Text style={[s.voteBtnTxt, { color: '#12915e', fontFamily: FontFamily.jakartaBold }]}>Vote Yes</Text>
+                  <TouchableOpacity style={[s.voteBtn, { backgroundColor: C.successBg }]} onPress={() => castVote('yes')} activeOpacity={0.75}>
+                    <Icon name="check" size={14} color={C.success} />
+                    <Text style={[s.voteBtnTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>Vote Yes</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={[s.voteBtn, { backgroundColor: C.surface }]} onPress={() => castVote('no')} activeOpacity={0.75}>
                     <Feather name="x" size={14} color={C.text2} />
@@ -1056,20 +1056,20 @@ export function StudyHubScreen({ navigation }: any) {
                 )}
                 <View style={s.adminActions}>
                   <TouchableOpacity
-                    style={[s.approveBtn, { backgroundColor: '#e8f8f0', flex: 1 }]}
+                    style={[s.approveBtn, { backgroundColor: C.successBg, flex: 1 }]}
                     onPress={() => approveAdminReq(r.id)}
                     activeOpacity={0.75}
                   >
-                    <Icon name="check" size={14} color="#12915e" />
-                    <Text style={[s.approveTxt, { color: '#12915e', fontFamily: FontFamily.jakartaBold }]}>Approve</Text>
+                    <Icon name="check" size={14} color={C.success} />
+                    <Text style={[s.approveTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>Approve</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[s.approveBtn, { backgroundColor: '#fbe7e5', flex: 1 }]}
+                    style={[s.approveBtn, { backgroundColor: C.dangerBg, flex: 1 }]}
                     onPress={() => setRejectId(r.id)}
                     activeOpacity={0.75}
                   >
-                    <Feather name="x" size={14} color="#e2483d" />
-                    <Text style={[s.approveTxt, { color: '#e2483d', fontFamily: FontFamily.jakartaBold }]}>Reject</Text>
+                    <Feather name="x" size={14} color={C.danger} />
+                    <Text style={[s.approveTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>Reject</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -1149,12 +1149,12 @@ export function StudyHubScreen({ navigation }: any) {
                             </Text>
                           </View>
                           <TouchableOpacity
-                            style={[s.approveBtn, { backgroundColor: '#eef3ff' }]}
+                            style={[s.approveBtn, { backgroundColor: C.infoBg }]}
                             onPress={() => { setCrSearch(''); setSetCrFor(sec.id); }}
                             activeOpacity={0.75}
                           >
-                            <Feather name="user-check" size={13} color="#2b5be3" />
-                            <Text style={[s.approveTxt, { color: '#2b5be3', fontFamily: FontFamily.jakartaBold }]}>Set CR</Text>
+                            <Feather name="user-check" size={13} color={C.info} />
+                            <Text style={[s.approveTxt, { color: C.info, fontFamily: FontFamily.jakartaBold }]}>Set CR</Text>
                           </TouchableOpacity>
                         </View>
                       ))}
