@@ -10,7 +10,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout } from '../../theme';
+import { FontFamily, Layout , SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { createReport } from '../../services/reportsService';
 import { useAuth } from '../../store/authStore';
@@ -20,13 +20,13 @@ import type { Report } from '../../types/database';
 
 // Issue categories from database schema
 const ISSUE_CATS: { id: Report['category']; icon: string; fg: string; en: string }[] = [
-  { id: 'Electrical',       icon: 'bolt',    fg: '#e08a2b', en: 'Electrical' },
-  { id: 'Plumbing',         icon: 'pulse',   fg: '#2ba0c9', en: 'Plumbing' },
-  { id: 'Cleanliness',      icon: 'trash',   fg: '#2e9e63', en: 'Cleanliness' },
-  { id: 'IT / Network',     icon: 'wifi',    fg: '#4f6bed', en: 'IT / Network' },
-  { id: 'Furniture',        icon: 'chair',   fg: '#8b5cf0', en: 'Furniture' },
-  { id: 'Safety / Security',icon: 'shield',  fg: '#d63d35', en: 'Safety' },
-  { id: 'Other',            icon: 'dots',    fg: '#5b6b86', en: 'Other' },
+  { id: 'Electrical',       icon: 'bolt',    fg: SectorColors.bus, en: 'Electrical' },
+  { id: 'Plumbing',         icon: 'pulse',   fg: SectorColors.study, en: 'Plumbing' },
+  { id: 'Cleanliness',      icon: 'trash',   fg: SectorColors.market, en: 'Cleanliness' },
+  { id: 'IT / Network',     icon: 'wifi',    fg: SectorColors.reports, en: 'IT / Network' },
+  { id: 'Furniture',        icon: 'chair',   fg: SectorColors.clubs, en: 'Furniture' },
+  { id: 'Safety / Security',icon: 'shield',  fg: Accent.red, en: 'Safety' },
+  { id: 'Other',            icon: 'dots',    fg: Accent.slate, en: 'Other' },
 ];
 
 function hexAlpha(hex: string, a: number): string {
