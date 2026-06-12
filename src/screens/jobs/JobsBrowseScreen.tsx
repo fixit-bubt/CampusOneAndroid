@@ -1,8 +1,8 @@
 // Matches design screens-b.jsx — Jobs browse (All / Saved tabs)
 import { useState, useEffect, useCallback } from 'react';
 import {
-  View, Text, TouchableOpacity, ScrollView, StyleSheet,
-  RefreshControl, type ViewStyle,
+  View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
+  RefreshControl, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -12,10 +12,15 @@ import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout , SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
+import { useT } from '../../i18n';
 
 function computeJobStatus(job: Job): string {
   if ((job as any).deleted_at) return 'removed';
-  if (job.deadline && new Date(job.deadline) < new Date()) return 'expired';
+  if (job.deadline) {
+    const days = (new Date(job.deadline).getTime() - Date.now()) / 86400000;
+    if (days < 0) return 'expired';
+    if (days <= 3) return 'closing';
+  }
   return 'open';
 }
 
@@ -25,14 +30,15 @@ const JOB_BG    = `${SectorColors.jobs}1e`;
 // Job status tones from theme tokens (dark-mode aware via C)
 function jobStatusTone(C: any, k: string): { label: string; fg: string; bg: string } {
   switch (k) {
+    case 'closing': return { label: 'Closing soon', fg: C.warn,   bg: C.warnBg };
     case 'closed':  return { label: 'Closed',  fg: Accent.slate, bg: Accent.grayBg };
-    case 'expired': return { label: 'Expired', fg: C.warn,       bg: C.warnBg };
+    case 'expired': return { label: 'Expired', fg: Accent.slate, bg: Accent.grayBg };
     case 'removed': return { label: 'Removed', fg: C.danger,     bg: C.dangerBg };
     default:        return { label: 'Open',    fg: Accent.teal,  bg: Accent.tealBg };
   }
 }
 
-type Tab = 'all' | 'saved';
+type Tab = 'open' | 'closing' | 'expired' | 'saved';
 
 interface Job {
   id: string;
@@ -59,8 +65,11 @@ function timeAgo(iso: string): string {
 export function JobsBrowseScreen({ navigation }: any) {
   const { C } = useTheme();
   const { user, profile } = useAuth();
+  const t = useT();
   const canPost = profile?.role === 'admin' || profile?.role === 'staff';
-  const [tab, setTab] = useState<Tab>('all');
+  const isAdmin = profile?.role === 'admin';
+  const [tab, setTab] = useState<Tab>('open');
+  const [query, setQuery] = useState('');
   const [jobs, setJobs] = useState<Job[]>([]);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [refreshing, setRefreshing] = useState(false);
@@ -96,7 +105,24 @@ export function JobsBrowseScreen({ navigation }: any) {
     setSavedIds(next);
   }
 
-  const list = tab === 'saved' ? jobs.filter(j => savedIds.has(j.id)) : jobs;
+  const q = query.trim().toLowerCase();
+  const searched = q
+    ? jobs.filter(j => [j.title, j.company, j.location, j.job_type].filter(Boolean).join(' ').toLowerCase().includes(q))
+    : jobs;
+  const counts: Record<Tab, number> = {
+    open: searched.filter(j => computeJobStatus(j) === 'open').length,
+    closing: searched.filter(j => computeJobStatus(j) === 'closing').length,
+    expired: searched.filter(j => computeJobStatus(j) === 'expired').length,
+    saved: searched.filter(j => savedIds.has(j.id)).length,
+  };
+  const list = tab === 'saved'
+    // Saved sorts by soonest deadline first (web parity)
+    ? searched.filter(j => savedIds.has(j.id)).sort((a, b) => (a.deadline ?? '9999').localeCompare(b.deadline ?? '9999'))
+    : searched.filter(j => computeJobStatus(j) === tab);
+
+  const TAB_LABEL: Record<Tab, string> = {
+    open: t.jobs.open, closing: t.jobs.closingSoon, expired: t.jobs.expired, saved: t.jobs.saved,
+  };
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -104,38 +130,75 @@ export function JobsBrowseScreen({ navigation }: any) {
         title="Jobs"
         onBack={() => navigation.goBack()}
         rightSlot={
-          canPost ? (
-            <TouchableOpacity
-              style={styles.iconBtn}
-              onPress={() => navigation.navigate('JobPost')}
-              activeOpacity={0.75}
-            >
-              <Feather name="plus" size={22} color={C.text} />
-            </TouchableOpacity>
+          (canPost || isAdmin) ? (
+            <View style={{ flexDirection: 'row' }}>
+              {isAdmin && (
+                <TouchableOpacity
+                  style={styles.iconBtn}
+                  onPress={() => navigation.navigate('JobsModerate')}
+                  activeOpacity={0.75}
+                >
+                  <Feather name="shield" size={19} color={C.text} />
+                </TouchableOpacity>
+              )}
+              {canPost && (
+                <TouchableOpacity
+                  style={styles.iconBtn}
+                  onPress={() => navigation.navigate('JobPost')}
+                  activeOpacity={0.75}
+                >
+                  <Feather name="plus" size={22} color={C.text} />
+                </TouchableOpacity>
+              )}
+            </View>
           ) : undefined
         }
       />
 
+      {/* Search */}
+      <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 6 }}>
+        <View style={[styles.searchBar, { backgroundColor: C.surface2 }]}>
+          <Icon name="search" size={17} color={C.textMuted} />
+          <TextInput
+            style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
+            placeholder={t.jobs.searchPlaceholder}
+            placeholderTextColor={C.textMuted}
+            value={query}
+            onChangeText={setQuery}
+          />
+          {query.length > 0 && (
+            <TouchableOpacity onPress={() => setQuery('')} hitSlop={8}>
+              <Feather name="x" size={16} color={C.textMuted} />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
       {/* Tabs */}
-      <View style={[styles.tabs, { paddingHorizontal: Layout.screenPadding }]}>
-        {(['all', 'saved'] as Tab[]).map(t => (
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={{ flexGrow: 0 }}
+        contentContainerStyle={[styles.tabs, { paddingHorizontal: Layout.screenPadding }]}
+      >
+        {(['open', 'closing', 'expired', 'saved'] as Tab[]).map(tb => (
           <TouchableOpacity
-            key={t}
-            style={[styles.chip, tab === t
+            key={tb}
+            style={[styles.chip, tab === tb
               ? { backgroundColor: C.brand, borderColor: C.brand }
               : { backgroundColor: C.surface, borderColor: C.border }]}
-            onPress={() => setTab(t)}
+            onPress={() => setTab(tb)}
             activeOpacity={0.75}
           >
-            <Text style={[styles.chipTxt, { color: tab === t ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-              {t === 'all' ? 'All' : 'Saved'}
+            <Text style={[styles.chipTxt, { color: tab === tb ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>
+              {TAB_LABEL[tb]}
             </Text>
-            <Text style={[styles.chipCount, { color: tab === t ? 'rgba(255,255,255,0.7)' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-              {t === 'all' ? jobs.length : [...savedIds].length}
+            <Text style={[styles.chipCount, { color: tab === tb ? 'rgba(255,255,255,0.7)' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+              {counts[tb]}
             </Text>
           </TouchableOpacity>
         ))}
-      </View>
+      </ScrollView>
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
@@ -146,7 +209,7 @@ export function JobsBrowseScreen({ navigation }: any) {
           <View style={styles.empty}>
             <Icon name="jobs" size={28} color={C.textMuted} />
             <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-              {tab === 'saved' ? 'No saved jobs' : 'No jobs available'}
+              {t.common.noResults}
             </Text>
           </View>
         ) : (
@@ -208,6 +271,8 @@ export function JobsBrowseScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
   tabs: { flexDirection: 'row', gap: 8, paddingVertical: 8 } as ViewStyle,
+  searchBar: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 14, borderRadius: 14 } as ViewStyle,
+  searchInput: { flex: 1, fontSize: 15, paddingVertical: 11 } as TextStyle,
   chip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1 } as ViewStyle,
   chipTxt: { fontSize: 12.5 } as any,
   chipCount: { fontSize: 12 } as any,
