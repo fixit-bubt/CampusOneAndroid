@@ -13,6 +13,7 @@ import { FontFamily, Layout, Accent, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { getMyNotifications } from '../../services/notificationsService';
+import { CampusToday } from '../../components/CampusToday';
 
 const ISSUE_MAP: Record<string, { icon: string; fg: string }> = {
   electrical: { icon: 'bolt',     fg: Accent.gold },
@@ -262,6 +263,8 @@ export function AdminDashboardScreen({ navigation }: any) {
             );
           })}
         </View>
+
+        <CampusToday navigation={navigation} />
 
         <View style={{ height: 12 }} />
       </ScrollView>
