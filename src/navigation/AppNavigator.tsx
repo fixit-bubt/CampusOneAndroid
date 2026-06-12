@@ -6,6 +6,8 @@ import { BottomTabNavigator } from './BottomTabNavigator';
 
 // Auth + feature screens
 import { ReportFormScreen }        from '../screens/reports/ReportFormScreen';
+import { MyReportsScreen }         from '../screens/reports/MyReportsScreen';
+import { AssignedToMeScreen }      from '../screens/reports/AssignedToMeScreen';
 import { LostFoundBrowseScreen }   from '../screens/lostfound/LostFoundBrowseScreen';
 import { LostFoundDetailScreen }   from '../screens/lostfound/LostFoundDetailScreen';
 import { PostItemFormScreen }       from '../screens/lostfound/PostItemFormScreen';
@@ -63,6 +65,8 @@ export function AppNavigator() {
 
       {/* Reports */}
       <Stack.Screen name="ReportForm"     component={ReportFormScreen} />
+      <Stack.Screen name="MyReports"      component={MyReportsScreen} />
+      <Stack.Screen name="AssignedToMe"   component={AssignedToMeScreen} />
 
       {/* Lost & Found */}
       <Stack.Screen name="LostFoundBrowse"  component={LostFoundBrowseScreen} />
