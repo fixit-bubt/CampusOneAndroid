@@ -20,6 +20,7 @@ import { BusScreen }               from '../screens/bus/BusScreen';
 import { BusDetailScreen }         from '../screens/bus/BusDetailScreen';
 import { JobsBrowseScreen }        from '../screens/jobs/JobsBrowseScreen';
 import { JobDetailScreen }         from '../screens/jobs/JobDetailScreen';
+import { JobsModerateScreen }      from '../screens/jobs/JobsModerateScreen';
 import { MarketScreen }            from '../screens/market/MarketScreen';
 import { MarketDetailScreen }      from '../screens/market/MarketDetailScreen';
 import { RidesScreen }             from '../screens/rides/RidesScreen';
@@ -96,6 +97,7 @@ export function AppNavigator() {
       {/* Jobs */}
       <Stack.Screen name="JobsBrowse"     component={JobsBrowseScreen} />
       <Stack.Screen name="JobDetail"      component={JobDetailScreen} />
+      <Stack.Screen name="JobsModerate"   component={JobsModerateScreen} />
 
       {/* Market */}
       <Stack.Screen name="Market"         component={MarketScreen} />
