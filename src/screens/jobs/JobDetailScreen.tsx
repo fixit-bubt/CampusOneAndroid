@@ -57,7 +57,12 @@ export function JobDetailScreen({ route, navigation }: any) {
 
   async function submitReport() {
     if (!reason || !user || !job) return;
-    await supabase.from('job_reports').insert({ job_id: jobId, user_id: user.id, reason });
+    const { error } = await supabase.rpc('job_report', {
+      p_code: job.code,
+      p_reason: reason.toLowerCase(),
+      p_note: null,
+    });
+    if (error) { Alert.alert('Error', error.message); return; }
     setReportOpen(false);
     setReason('');
   }

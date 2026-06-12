@@ -65,14 +65,14 @@ export function EventsBrowseScreen({ navigation }: any) {
   const { C } = useTheme();
   const { user, profile } = useAuth();
   const [isEventOrganizer, setIsEventOrganizer] = useState(false);
-  const canPost = profile?.role === 'admin' || profile?.role === 'staff' || isEventOrganizer;
+  const canPost = profile?.role === 'admin' || isEventOrganizer;
   const [events, setEvents] = useState<Event[]>([]);
 
   useEffect(() => {
     if (!user?.id) return;
     Promise.all([
       supabase.from('event_organizers').select('user_id').eq('user_id', user.id).limit(1),
-      supabase.from('club_memberships').select('role').eq('user_id', user.id).in('role', ['president', 'vice_president']).limit(1),
+      supabase.from('club_members').select('role').eq('user_id', user.id).in('role', ['president', 'vp']).limit(1),
     ]).then(([orgRes, clubRes]) => {
       setIsEventOrganizer((orgRes.data?.length ?? 0) > 0 || (clubRes.data?.length ?? 0) > 0);
     });
