@@ -10,12 +10,12 @@ import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout } from '../../theme';
+import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import type { BusRoute } from '../../types/database';
 
-const BUS_COLOR = '#e08a2b';
-const BUS_BG    = '#e08a2b1e';
+const BUS_COLOR = SectorColors.bus;
+const BUS_BG    = `${SectorColors.bus}1e`;
 
 interface RouteForm {
   id: string | null;       // null = new route
@@ -165,7 +165,7 @@ export function BusScreen({ navigation }: any) {
                       {r.stops.length} stops
                     </Text>
                     <View style={styles.cardMeta}>
-                      <View style={[styles.timePill, { backgroundColor: '#fbefdb' }]}>
+                      <View style={[styles.timePill, { backgroundColor: `${BUS_COLOR}1e` }]}>
                         <View style={[styles.timeDot, { backgroundColor: BUS_COLOR }]} />
                         <Text style={[styles.timeTxt, { color: BUS_COLOR, fontFamily: FontFamily.jakartaBold }]}>
                           Next: {next}
