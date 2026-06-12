@@ -68,6 +68,8 @@ export function JobPostScreen({ navigation }: any) {
   const [deadline, setDeadline] = useState('');
   const [desc, setDesc] = useState('');
   const [requirements, setRequirements] = useState('');
+  const [applyMethod, setApplyMethod] = useState<'email' | 'link'>('email');
+  const [applyValue, setApplyValue] = useState('');
   const [loading, setLoading] = useState(false);
 
   const canSubmit = company.trim() && role.trim() && desc.trim();
@@ -86,7 +88,8 @@ export function JobPostScreen({ navigation }: any) {
         deadline:     deadline.trim() || new Date().toISOString().split('T')[0],
         description:  desc.trim(),
         requirements: requirements.trim() || null,
-        apply_method: 'email' as Job['apply_method'],
+        apply_method: applyMethod as Job['apply_method'],
+        apply_value:  applyValue.trim() || null,
         posted_by:    user.id,
         posted_by_name: profile?.full_name ?? '',
       });
@@ -182,6 +185,23 @@ export function JobPostScreen({ navigation }: any) {
           onChangeText={setRequirements}
           placeholder="e.g. React · Node · CGPA 3.0+"
           placeholderTextColor={C.textMuted}
+        />
+
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>HOW TO APPLY</Text>
+        <SegControl
+          options={[{ id: 'email' as const, label: 'Email' }, { id: 'link' as const, label: 'Link' }]}
+          value={applyMethod}
+          onChange={setApplyMethod}
+          C={C}
+        />
+        <TextInput
+          style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium, marginTop: 10 }]}
+          value={applyValue}
+          onChangeText={setApplyValue}
+          placeholder={applyMethod === 'email' ? 'careers@company.com' : 'https://company.com/apply'}
+          placeholderTextColor={C.textMuted}
+          autoCapitalize="none"
+          keyboardType={applyMethod === 'email' ? 'email-address' : 'url'}
         />
 
         <TouchableOpacity
