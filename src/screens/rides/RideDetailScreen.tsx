@@ -27,6 +27,7 @@ export function RideDetailScreen({ route, navigation }: any) {
   const [contact, setContact] = useState<{ whatsapp: string } | null>(null);
   const [requested, setRequested] = useState(false);
   const [takenCount, setTakenCount] = useState(0);
+  const [requesters, setRequesters] = useState<{ requester_id: string; full_name: string; whatsapp?: string | null }[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -44,12 +45,19 @@ export function RideDetailScreen({ route, navigation }: any) {
           .maybeSingle(),
         supabase
           .from('ride_requests')
-          .select('ride_id')
+          .select('requester_id, profiles:requester_id(full_name)')
           .eq('ride_id', rideId),
       ]);
       if (rideRes.data) {
         setRide(rideRes.data);
         setDriverName((rideRes.data as any).profiles?.full_name ?? null);
+        // Driver sees who requested a seat (web parity).
+        if (rideRes.data.driver_id === user?.id && takenRes.data) {
+          setRequesters((takenRes.data as any[]).map(r => ({
+            requester_id: r.requester_id,
+            full_name: r.profiles?.full_name ?? 'Student',
+          })));
+        }
       }
       if (reqRes.data && rideRes.data) {
         setRequested(true);
@@ -63,6 +71,33 @@ export function RideDetailScreen({ route, navigation }: any) {
       setTakenCount(takenRes.data?.length ?? 0);
     })();
   }, [rideId, user?.id]);
+
+  async function revealRequester(requesterId: string) {
+    const { data } = await supabase.rpc('ride_contact', {
+      p_code:   ride.code,
+      p_target: requesterId,
+    });
+    const row = Array.isArray(data) ? data[0] : data;
+    if (row?.whatsapp) {
+      setRequesters(prev => prev.map(r => (r.requester_id === requesterId ? { ...r, whatsapp: row.whatsapp } : r)));
+    } else {
+      Alert.alert('No contact', 'This student has no WhatsApp number on file.');
+    }
+  }
+
+  function deleteOwnRide() {
+    Alert.alert('Delete this ride?', 'Your seat requests will be discarded.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete', style: 'destructive',
+        onPress: async () => {
+          const { error } = await supabase.from('rides').delete().eq('id', rideId);
+          if (error) { Alert.alert('Error', error.message); return; }
+          navigation.goBack();
+        },
+      },
+    ]);
+  }
 
   async function requestRide() {
     if (!user || requested || !ride) return;
@@ -174,6 +209,81 @@ export function RideDetailScreen({ route, navigation }: any) {
           </View>
         </View>
 
+        {/* Notes + recurring */}
+        {ride.notes ? (
+          <>
+            <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>NOTES</Text>
+            <View style={[styles.driverCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+              <Text style={[styles.contactTxt, { color: C.text2, fontFamily: FontFamily.jakartaMedium, fontSize: 13, lineHeight: 19 }]}>
+                {ride.notes}
+              </Text>
+            </View>
+          </>
+        ) : null}
+        {Array.isArray(ride.recurring) && ride.recurring.length > 0 && (
+          <>
+            <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>REPEATS</Text>
+            <View style={styles.dayRow}>
+              {ride.recurring.map((d: string) => (
+                <View key={d} style={[styles.dayPill, { backgroundColor: RIDE_BG }]}>
+                  <Text style={[styles.dayTxt, { color: RIDE_COLOR, fontFamily: FontFamily.jakartaBold }]}>{d}</Text>
+                </View>
+              ))}
+            </View>
+          </>
+        )}
+
+        {/* Driver-only: seat requests with contact reveal */}
+        {isOwnRide && (
+          <>
+            <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
+              SEAT REQUESTS ({requesters.length})
+            </Text>
+            {requesters.length === 0 ? (
+              <Text style={[styles.contactTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                No requests yet.
+              </Text>
+            ) : (
+              <View style={[styles.reqCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+                {requesters.map((r, i) => (
+                  <View key={r.requester_id}>
+                    {i > 0 && <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: C.border }} />}
+                    <View style={styles.reqRow}>
+                      <Avatar name={r.full_name} size="sm" />
+                      <Text style={[styles.driverName, { color: C.text, fontFamily: FontFamily.jakartaBold, flex: 1 }]} numberOfLines={1}>
+                        {r.full_name}
+                      </Text>
+                      {r.whatsapp ? (
+                        <Text style={[styles.contactTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                          {r.whatsapp}
+                        </Text>
+                      ) : (
+                        <TouchableOpacity
+                          style={[styles.revealBtn, { backgroundColor: C.surface2 }]}
+                          onPress={() => revealRequester(r.requester_id)}
+                          activeOpacity={0.75}
+                        >
+                          <Feather name="phone" size={12} color={C.text2} />
+                          <Text style={[styles.revealTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>Contact</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            <TouchableOpacity
+              style={[styles.actionBtn, { backgroundColor: C.dangerBg, marginTop: 16 }]}
+              onPress={deleteOwnRide}
+              activeOpacity={0.85}
+            >
+              <Icon name="trash" size={16} color={C.danger} />
+              <Text style={[styles.actionTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>Delete my ride</Text>
+            </TouchableOpacity>
+          </>
+        )}
+
         {/* Action */}
         {!isOwnRide && (
           requested ? (
@@ -193,8 +303,8 @@ export function RideDetailScreen({ route, navigation }: any) {
               disabled={isFull}
               activeOpacity={0.85}
             >
-              <Icon name="ride" size={17} color={isFull ? C.textMuted : '#fff'} />
-              <Text style={[styles.actionTxt, { color: isFull ? C.textMuted : '#fff', fontFamily: FontFamily.jakartaBold }]}>
+              <Icon name="ride" size={17} color={isFull ? C.textMuted : C.white} />
+              <Text style={[styles.actionTxt, { color: isFull ? C.textMuted : C.white, fontFamily: FontFamily.jakartaBold }]}>
                 {isFull ? 'Ride Full' : 'Request Ride'}
               </Text>
             </TouchableOpacity>
@@ -247,4 +357,12 @@ const styles = StyleSheet.create({
 
   actionBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: 14, marginTop: 20 } as ViewStyle,
   actionTxt: { fontSize: 15 } as any,
+
+  dayRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 } as ViewStyle,
+  dayPill: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999 } as ViewStyle,
+  dayTxt: { fontSize: 11.5 } as any,
+  reqCard: { borderRadius: 14, borderWidth: 1, overflow: 'hidden' } as ViewStyle,
+  reqRow: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12 } as ViewStyle,
+  revealBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 9 } as ViewStyle,
+  revealTxt: { fontSize: 11.5 } as any,
 });
