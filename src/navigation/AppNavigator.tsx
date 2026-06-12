@@ -31,6 +31,7 @@ import { ClubManageScreen }        from '../screens/clubs/ClubManageScreen';
 import { StudyHubScreen }          from '../screens/study/StudyHubScreen';
 import { CourseDetailScreen }      from '../screens/study/CourseDetailScreen';
 import { FacultyScreen }           from '../screens/faculty/FacultyScreen';
+import { FacultyDeptScreen }       from '../screens/faculty/FacultyDeptScreen';
 import { FacultyProfileScreen }    from '../screens/faculty/FacultyProfileScreen';
 import { FeatureScreen }           from '../screens/feature/FeatureScreen';
 import { NotifDetailScreen }       from '../screens/notifications/NotifDetailScreen';
@@ -118,6 +119,7 @@ export function AppNavigator() {
 
       {/* Faculty */}
       <Stack.Screen name="Faculty"        component={FacultyScreen} />
+      <Stack.Screen name="FacultyDept"    component={FacultyDeptScreen} />
       <Stack.Screen name="FacultyProfile" component={FacultyProfileScreen} />
 
       {/* Generic feature landing */}
