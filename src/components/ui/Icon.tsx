@@ -34,6 +34,8 @@ const ICON_MAP: Record<string, React.ComponentProps<typeof Feather>['name']> = {
   dots:     'more-horizontal',
   clock:    'clock',
   mail:     'mail',
+  image:    'image',
+  chat:     'message-circle',
   phone:    'phone',
   search:   'search',
   pin:      'map-pin',
