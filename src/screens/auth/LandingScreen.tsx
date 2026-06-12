@@ -8,7 +8,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme } from '../../hooks/useTheme';
 import { useApp } from '../../store/appStore';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout } from '../../theme';
+import { FontFamily, Layout, LightColors, darken } from '../../theme';
 import type { AuthStackParams } from '../../types/navigation';
 
 type Props = NativeStackScreenProps<AuthStackParams, 'Landing'>;
@@ -17,7 +17,7 @@ type Props = NativeStackScreenProps<AuthStackParams, 'Landing'>;
 export function Brand({ size = 56 }: { size?: number }) {
   return (
     <LinearGradient
-      colors={['#2b5be3', '#1f47c4']}
+      colors={[LightColors.brand, darken(LightColors.brand)]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={[
@@ -29,7 +29,7 @@ export function Brand({ size = 56 }: { size?: number }) {
         },
       ]}
     >
-      <Icon name="bell" size={size * 0.5} color="#ffffff" />
+      <Icon name="bell" size={size * 0.5} color={LightColors.white} />
     </LinearGradient>
   );
 }
@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     // shadow
-    shadowColor: '#2b5be3',
+    shadowColor: LightColors.brand,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.35,
     shadowRadius: 11,
