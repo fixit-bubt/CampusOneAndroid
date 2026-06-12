@@ -13,8 +13,8 @@ import { TopBar } from '../../components/layout/TopBar';
 import { SectorIcon } from '../../components/ui/SectorIcon';
 import { Icon } from '../../components/ui/Icon';
 import { Avatar } from '../../components/ui/Avatar';
-import { FontFamily, Layout, Spacing, Radius } from '../../theme';
-import { SectorColors, type SectorKey } from '../../theme';
+import { FontFamily, Layout, Spacing, Radius , Accent, darken } from '../../theme';
+import { SectorColors, type SectorKey , Accent, darken } from '../../theme';
 import { getMyReports } from '../../services/reportsService';
 import { getMyNotifications, type Notification } from '../../services/notificationsService';
 import type { Report } from '../../types/database';
@@ -42,8 +42,8 @@ const QUICK_ROUTE: Record<SectorKey, string> = {
 
 // ── status colors ─────────────────────────────────────────────────────────────
 const STATUS_TONE: Record<string, string> = {
-  Open: '#e08a2b', 'In Progress': '#2b5be3', Resolved: '#12915e',
-  Rejected: '#d63d35', Closed: '#5b6b86',
+  Open: Accent.amber, 'In Progress': Accent.blue, Resolved: Accent.green,
+  Rejected: Accent.red, Closed: Accent.slate,
 };
 
 // ── NotifRow ──────────────────────────────────────────────────────────────────
@@ -76,7 +76,7 @@ function NotifRow({ n, C, onPress }: { n: Notification; C: any; onPress: () => v
 
 // ── ReportRow ─────────────────────────────────────────────────────────────────
 function ReportRow({ r, C, onPress }: { r: Report; C: any; onPress: () => void }) {
-  const color = STATUS_TONE[r.status] ?? '#5b6b86';
+  const color = STATUS_TONE[r.status] ?? Accent.slate;
   return (
     <TouchableOpacity onPress={onPress} style={styles.reportRow} activeOpacity={0.75}>
       <SectorIcon sector="reports" size="sm" />
@@ -167,7 +167,7 @@ export function HomeScreen({ navigation }: any) {
       >
         {/* ── Spotlight card ── */}
         <LinearGradient
-          colors={['#2b5be3', '#1f47c4']}
+          colors={[Accent.blue, darken(Accent.blue)]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.spotlight}
@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 18,
     marginTop: 12,
-    shadowColor: '#2b5be3',
+    shadowColor: Accent.blue,
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.32,
     shadowRadius: 14,
