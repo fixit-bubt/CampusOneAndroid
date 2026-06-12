@@ -1,4 +1,6 @@
-// Matches design screens-d.jsx — FacultyProfile (centered avatar + academic links)
+// Faculty profile (web parity) — photo, badges, research interest pills,
+// qualifications, contact (Email / Call / WhatsApp), academic profiles
+// (only links that exist), and the official bubt.edu.bd profile link.
 import { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
@@ -10,51 +12,45 @@ import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout , Accent } from '../../theme';
+import { FontFamily, Layout, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
+import { FACULTY_ACCENT, BRANCH_ICON, shortDept, PersonBadges, type FacultyMember } from './facultyShared';
 
-const ACADEMIC_LINKS = ['Google Scholar', 'ResearchGate', 'LinkedIn', 'ORCID'];
-const ACADEMIC_LINK_KEYS: Record<string, string> = {
-  'Google Scholar': 'scholar_url',
-  'ResearchGate':   'researchgate_url',
-  'LinkedIn':       'linkedin_url',
-  'ORCID':          'orcid_url',
-};
+// Academic link order matches web (no LinkedIn on web profiles).
+const LINK_META: { key: string; label: string; icon: keyof typeof Feather.glyphMap }[] = [
+  { key: 'scholar_url',      label: 'Google Scholar', icon: 'book' },
+  { key: 'researchgate_url', label: 'ResearchGate',   icon: 'book-open' },
+  { key: 'orcid_url',        label: 'ORCID',          icon: 'user-check' },
+  { key: 'website_url',      label: 'Website',        icon: 'globe' },
+];
 
-interface Faculty {
-  id: string;
-  name: string;
-  designation: string;
-  email: string | null;
+interface FacultyFull extends FacultyMember {
   phone: string | null;
-  room_no: string | null;
-  office_hours: string | null;
-  research_interests: string[] | string | null;
-  on_leave: boolean;
-  photo_url: string | null;
+  qualifications: string[] | null;
   scholar_url: string | null;
   researchgate_url: string | null;
-  linkedin_url: string | null;
   orcid_url: string | null;
-  departments: { name: string; branch?: string } | null;
+  website_url: string | null;
+  profile_url: string | null;
+  departments: { id: string; name: string; branch: string } | null;
 }
 
 export function FacultyProfileScreen({ route, navigation }: any) {
   const { C } = useTheme();
   const { user } = useAuth();
   const facultyId: string = route.params?.facultyId ?? route.params?.id;
-  const [member, setMember] = useState<Faculty | null>(null);
+  const [member, setMember] = useState<FacultyFull | null>(null);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     if (!facultyId) return;
     (async () => {
       const [memberRes, saveRes] = await Promise.all([
-        supabase.from('faculty').select('*, departments(name, branch)').eq('id', facultyId).single(),
+        supabase.from('faculty').select('*, departments(id, name, branch)').eq('id', facultyId).single(),
         supabase.from('faculty_bookmarks').select('faculty_id').eq('faculty_id', facultyId).eq('user_id', user?.id ?? '').maybeSingle(),
       ]);
-      if (memberRes.data) setMember(memberRes.data as Faculty);
+      if (memberRes.data) setMember(memberRes.data as FacultyFull);
       setSaved(!!saveRes.data);
     })();
   }, [facultyId, user?.id]);
@@ -78,6 +74,12 @@ export function FacultyProfileScreen({ route, navigation }: any) {
     );
   }
 
+  const interests = Array.isArray(member.research_interests) ? member.research_interests.filter(Boolean) : [];
+  const quals = Array.isArray(member.qualifications) ? member.qualifications.filter(Boolean) : [];
+  const links = LINK_META.filter(l => (member as Record<string, any>)[l.key]);
+  const phoneDigits = (member.phone ?? '').replace(/[^0-9]/g, '');
+  const dept = member.departments;
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar
@@ -94,74 +96,144 @@ export function FacultyProfileScreen({ route, navigation }: any) {
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Centered hero */}
-        <View style={styles.hero}>
-          <Avatar name={member.name} size="xl" />
-          <Text style={[styles.name, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{member.name}</Text>
-          <Text style={[styles.designation, { color: C.brand, fontFamily: FontFamily.jakartaSemiBold }]}>{member.designation}</Text>
-          <Text style={[styles.department, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{member.departments?.name ?? ''}</Text>
+        {/* Header card */}
+        <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
+          <View style={styles.headRow}>
+            <Avatar uri={member.photo_url} name={member.name} size="xl" />
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={[styles.name, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{member.name}</Text>
+              <Text style={[styles.designation, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>{member.designation}</Text>
+              {dept && (
+                <TouchableOpacity
+                  style={styles.deptLink}
+                  onPress={() => navigation.navigate('FacultyDept', { deptId: dept.id })}
+                  activeOpacity={0.7}
+                >
+                  <Feather name={BRANCH_ICON[dept.branch] ?? 'book-open'} size={13} color={FACULTY_ACCENT} />
+                  <Text style={[styles.deptLinkTxt, { color: FACULTY_ACCENT, fontFamily: FontFamily.jakartaSemiBold }]} numberOfLines={1}>
+                    {shortDept(dept.name)}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+          <PersonBadges f={member} C={C} />
         </View>
 
-        {/* Contact Info */}
-        {(member.email || member.phone || member.room_no || member.office_hours) && (
-          <>
-            <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>CONTACT</Text>
-            <View style={[styles.infoGrid, { backgroundColor: C.surface, borderColor: C.border }]}>
-              {member.email ? (
-                <View style={[styles.infoCell, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border }]}>
-                  <Text style={[styles.infoCellLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>Email</Text>
-                  <Text style={[styles.infoCellVal, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>{member.email}</Text>
+        {/* Research interests */}
+        {interests.length > 0 && (
+          <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border, marginTop: 12 }]}>
+            <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Research interests</Text>
+            <View style={styles.pills}>
+              {interests.map(i => (
+                <View key={i} style={[styles.pill, { backgroundColor: `${FACULTY_ACCENT}1a` }]}>
+                  <Text style={[styles.pillTxt, { color: FACULTY_ACCENT, fontFamily: FontFamily.jakartaBold }]}>{i}</Text>
                 </View>
-              ) : null}
-              {member.phone ? (
-                <View style={[styles.infoCell, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border }]}>
-                  <Text style={[styles.infoCellLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>Phone</Text>
-                  <Text style={[styles.infoCellVal, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>{member.phone}</Text>
-                </View>
-              ) : null}
-              {member.room_no ? (
-                <View style={[styles.infoCell, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border }]}>
-                  <Text style={[styles.infoCellLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>Room</Text>
-                  <Text style={[styles.infoCellVal, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>{member.room_no}</Text>
-                </View>
-              ) : null}
-              {member.office_hours ? (
-                <View style={styles.infoCell}>
-                  <Text style={[styles.infoCellLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>Office Hours</Text>
-                  <Text style={[styles.infoCellVal, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>{member.office_hours}</Text>
-                </View>
-              ) : null}
+              ))}
             </View>
-          </>
+          </View>
         )}
 
-        {/* Specialization */}
-        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>SPECIALIZATION</Text>
-        <View style={[styles.specCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <Text style={[styles.specText, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>
-            {Array.isArray(member.research_interests) ? member.research_interests.join(', ') : (member.research_interests ?? '')}
-          </Text>
+        {/* Qualifications */}
+        {quals.length > 0 && (
+          <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border, marginTop: 12 }]}>
+            <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Qualifications</Text>
+            <View style={{ gap: 10, marginTop: 11 }}>
+              {quals.map((qual, i) => (
+                <View key={i} style={styles.qualRow}>
+                  <Feather name="award" size={15} color={C.textMuted} style={{ marginTop: 1.5 }} />
+                  <Text style={[styles.qualTxt, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>{qual}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {interests.length === 0 && quals.length === 0 && (
+          <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border, marginTop: 12 }]}>
+            <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+              No research interests or qualifications are listed for this teacher on BUBT's site yet.
+              Use the contact details to reach out directly.
+            </Text>
+          </View>
+        )}
+
+        {/* Contact */}
+        <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border, marginTop: 12 }]}>
+          <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Contact</Text>
+          {member.email ? (
+            <>
+              <TouchableOpacity
+                style={[styles.emailBtn, { backgroundColor: Accent.blue }]}
+                onPress={() => Linking.openURL(`mailto:${member.email}`)}
+                activeOpacity={0.8}
+              >
+                <Feather name="mail" size={15} color={C.white} />
+                <Text style={[styles.emailBtnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>Email</Text>
+              </TouchableOpacity>
+              <Text style={[styles.emailAddr, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{member.email}</Text>
+            </>
+          ) : (
+            <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium, marginTop: 10 }]}>
+              No email listed.
+            </Text>
+          )}
+          {phoneDigits.length > 0 && (
+            <View style={styles.phoneRow}>
+              <TouchableOpacity
+                style={[styles.phoneBtn, { backgroundColor: C.bg, borderColor: C.border, borderWidth: 1 }]}
+                onPress={() => Linking.openURL(`tel:${member.phone}`)}
+                activeOpacity={0.75}
+              >
+                <Feather name="phone" size={14} color={C.text} />
+                <Text style={[styles.phoneBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Call</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.phoneBtn, { backgroundColor: C.success }]}
+                onPress={() => Linking.openURL(`https://wa.me/${phoneDigits}`)}
+                activeOpacity={0.8}
+              >
+                <Feather name="message-circle" size={14} color={C.white} />
+                <Text style={[styles.phoneBtnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>WhatsApp</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
-        {/* Academic links */}
-        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>ACADEMIC LINKS</Text>
-        <View style={styles.linksList}>
-          {ACADEMIC_LINKS.map(link => {
-            const url = (member as Record<string, any>)[ACADEMIC_LINK_KEYS[link]] ?? null;
-            return (
-              <TouchableOpacity
-                key={link}
-                style={[styles.linkCard, { backgroundColor: C.surface, borderColor: C.border }]}
-                onPress={() => url ? Linking.openURL(url) : null}
-                activeOpacity={url ? 0.75 : 1}
-              >
-                <Feather name="globe" size={18} color={C.brand} />
-                <Text style={[styles.linkName, { color: C.text, fontFamily: FontFamily.jakartaBold, flex: 1 }]}>{link}</Text>
-                <Icon name="chevR" size={17} color={C.textMuted} />
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+        {/* Academic profiles — only the links that exist */}
+        {links.length > 0 && (
+          <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border, marginTop: 12 }]}>
+            <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Academic profiles</Text>
+            <View style={{ gap: 8, marginTop: 11 }}>
+              {links.map(l => (
+                <TouchableOpacity
+                  key={l.key}
+                  style={[styles.linkRow, { backgroundColor: C.bg, borderColor: C.border }]}
+                  onPress={() => Linking.openURL((member as Record<string, any>)[l.key])}
+                  activeOpacity={0.75}
+                >
+                  <Feather name={l.icon} size={16} color={C.textMuted} />
+                  <Text style={[styles.linkTxt, { color: C.text, fontFamily: FontFamily.jakartaBold, flex: 1 }]}>{l.label}</Text>
+                  <Feather name="external-link" size={14} color={C.textMuted} />
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* Official profile */}
+        {member.profile_url && (
+          <TouchableOpacity
+            style={[styles.officialLink, { borderColor: C.border, backgroundColor: C.surface2 }]}
+            onPress={() => Linking.openURL(member.profile_url!)}
+            activeOpacity={0.75}
+          >
+            <Feather name="external-link" size={13} color={C.textMuted} />
+            <Text style={[styles.officialTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaSemiBold }]}>
+              View official profile on bubt.edu.bd
+            </Text>
+          </TouchableOpacity>
+        )}
 
         <View style={{ height: 24 }} />
       </ScrollView>
@@ -175,21 +247,37 @@ const styles = StyleSheet.create({
   scroll: { paddingTop: 10, paddingBottom: 20 } as ViewStyle,
   iconBtn: { padding: 8 } as ViewStyle,
 
-  hero: { alignItems: 'center', paddingTop: 6 } as ViewStyle,
-  name: { fontSize: 19, marginTop: 12, letterSpacing: -0.01 } as any,
-  designation: { fontSize: 13.5, marginTop: 2 } as any,
-  department: { fontSize: 12.5, marginTop: 2 } as any,
+  card: { borderRadius: 16, borderWidth: 1, padding: 15 } as ViewStyle,
+  cardTitle: { fontSize: 14 } as TextStyle,
 
-  sectionLabel: { fontSize: 11, letterSpacing: 0.8, marginTop: 18, marginBottom: 9 } as any,
-  specCard: { padding: 14, borderRadius: 14, borderWidth: 1 } as ViewStyle,
-  specText: { fontSize: 14 } as any,
+  headRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 14 } as ViewStyle,
+  name: { fontSize: 18, letterSpacing: -0.01 } as TextStyle,
+  designation: { fontSize: 13, marginTop: 2 } as TextStyle,
+  deptLink: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 5 } as ViewStyle,
+  deptLinkTxt: { fontSize: 12.5 } as TextStyle,
 
-  infoGrid: { borderRadius: 14, borderWidth: 1, overflow: 'hidden', marginTop: 12 } as ViewStyle,
-  infoCell: { padding: 12 } as ViewStyle,
-  infoCellLabel: { fontSize: 11, marginBottom: 4 } as any,
-  infoCellVal: { fontSize: 12.5 } as any,
+  pills: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 11 } as ViewStyle,
+  pill: { paddingHorizontal: 11, paddingVertical: 5, borderRadius: 999 } as ViewStyle,
+  pillTxt: { fontSize: 12 } as TextStyle,
 
-  linksList: { gap: 8 } as ViewStyle,
-  linkCard: { flexDirection: 'row', alignItems: 'center', gap: 11, padding: 13, paddingHorizontal: 15, borderRadius: 14, borderWidth: 1 } as ViewStyle,
-  linkName: { fontSize: 14 } as any,
+  qualRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 9 } as ViewStyle,
+  qualTxt: { flex: 1, fontSize: 13, lineHeight: 19 } as TextStyle,
+
+  emptyTxt: { fontSize: 12.5, lineHeight: 18 } as TextStyle,
+
+  emailBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, height: 44, borderRadius: 12, marginTop: 11 } as ViewStyle,
+  emailBtnTxt: { fontSize: 13.5 } as TextStyle,
+  emailAddr: { fontSize: 11.5, textAlign: 'center', marginTop: 7 } as TextStyle,
+  phoneRow: { flexDirection: 'row', gap: 8, marginTop: 9 } as ViewStyle,
+  phoneBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, height: 40, borderRadius: 11 } as ViewStyle,
+  phoneBtnTxt: { fontSize: 12.5 } as TextStyle,
+
+  linkRow: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 12, borderWidth: 1 } as ViewStyle,
+  linkTxt: { fontSize: 13 } as TextStyle,
+
+  officialLink: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    borderWidth: 1, borderStyle: 'dashed', borderRadius: 12, paddingVertical: 11, marginTop: 12,
+  } as ViewStyle,
+  officialTxt: { fontSize: 12 } as TextStyle,
 });
