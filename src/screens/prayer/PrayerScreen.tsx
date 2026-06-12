@@ -10,10 +10,10 @@ import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
-import { FontFamily, Layout } from '../../theme';
+import { FontFamily, Layout , SectorColors, darken } from '../../theme';
 import { supabase } from '../../lib/supabase';
 
-const PRAYER_GREEN = '#1f8a5b';
+const PRAYER_GREEN = SectorColors.prayer;
 
 interface PrayerTime {
   key: string;
@@ -152,7 +152,7 @@ export function PrayerScreen({ navigation }: any) {
         {/* Next prayer card */}
         {next && (
           <LinearGradient
-            colors={['#1f8a5b', '#14613f']}
+            colors={[SectorColors.prayer, darken(SectorColors.prayer)]}
             start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
             style={styles.nextCard}
           >
@@ -247,7 +247,7 @@ export function PrayerScreen({ navigation }: any) {
                         <Feather name="edit-2" size={15} color={C.textMuted} />
                       </TouchableOpacity>
                       <TouchableOpacity onPress={() => deleteMusallah(m)} hitSlop={8} activeOpacity={0.7}>
-                        <Feather name="trash-2" size={15} color="#e2483d" />
+                        <Feather name="trash-2" size={15} color={C.danger} />
                       </TouchableOpacity>
                     </>
                   )}
