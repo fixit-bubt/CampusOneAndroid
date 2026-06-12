@@ -10,7 +10,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { SectorIcon } from '../../components/ui/SectorIcon';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout } from '../../theme';
+import { FontFamily, Layout, Accent } from '../../theme';
 import type { SectorKey } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
@@ -109,7 +109,7 @@ export function NotifSettingsScreen({ navigation }: any) {
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar title="Notification Settings" onBack={() => navigation.goBack()} />
       {loadError ? (
-        <Text style={[styles.errorText, { color: '#e2483d', fontFamily: FontFamily.jakartaMedium }]}>
+        <Text style={[styles.errorText, { color: C.danger, fontFamily: FontFamily.jakartaMedium }]}>
           Failed to load preferences: {loadError}
         </Text>
       ) : null}
@@ -121,9 +121,9 @@ export function NotifSettingsScreen({ navigation }: any) {
         <View style={[styles.settingCard, { backgroundColor: C.surface, borderColor: C.border }]}>
           <View style={styles.settingRow}>
             <View style={[styles.settingIcon, {
-              backgroundColor: paused ? '#fbe7e5' : C.surface2,
+              backgroundColor: paused ? C.dangerBg : C.surface2,
             }]}>
-              <Icon name={paused ? 'bellOff' : 'bell'} size={22} color={paused ? '#e2483d' : C.brand} />
+              <Icon name={paused ? 'bellOff' : 'bell'} size={22} color={paused ? C.danger : C.brand} />
             </View>
             <View style={styles.settingBody}>
               <Text style={[styles.settingTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Pause all</Text>
@@ -141,8 +141,8 @@ export function NotifSettingsScreen({ navigation }: any) {
         {/* Quiet hours */}
         <View style={[styles.settingCard, { backgroundColor: C.surface, borderColor: C.border }]}>
           <View style={[styles.settingRow, { opacity: paused ? 0.4 : 1 }]}>
-            <View style={[styles.settingIcon, { backgroundColor: isDark ? '#8b5cf02e' : '#8b5cf012' }]}>
-              <Icon name="clock" size={22} color="#8b5cf6" />
+            <View style={[styles.settingIcon, { backgroundColor: `${Accent.purple}${isDark ? '2e' : '12'}` }]}>
+              <Icon name="clock" size={22} color={Accent.purple} />
             </View>
             <View style={styles.settingBody}>
               <Text style={[styles.settingTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Quiet hours</Text>
