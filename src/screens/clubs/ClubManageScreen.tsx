@@ -147,9 +147,9 @@ export function ClubManageScreen({ route, navigation }: any) {
                     </Text>
                   </View>
                   {isPresident ? (
-                    <View style={[styles.pres, { backgroundColor: '#eef3ff' }]}>
-                      <View style={[styles.presDot, { backgroundColor: '#2b5be3' }]} />
-                      <Text style={[styles.presTxt, { color: '#2b5be3', fontFamily: FontFamily.jakartaBold }]}>President</Text>
+                    <View style={[styles.pres, { backgroundColor: C.infoBg }]}>
+                      <View style={[styles.presDot, { backgroundColor: C.info }]} />
+                      <Text style={[styles.presTxt, { color: C.info, fontFamily: FontFamily.jakartaBold }]}>President</Text>
                     </View>
                   ) : (
                     <TouchableOpacity
