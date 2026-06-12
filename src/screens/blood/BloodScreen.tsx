@@ -9,17 +9,24 @@ import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout } from '../../theme';
+import { FontFamily, Layout, SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import type { BloodRequest, Donor } from '../../types/database';
 
 type Tab = 'requests' | 'donors';
 
-const URGENCY_COLOR = { Urgent: '#e2483d', Today: '#b9760a', 'This week': '#5b6b86' };
-const URGENCY_BG    = { Urgent: '#fbe7e5', Today: '#fbefdb', 'This week': '#f0f2f6' };
-const BLOOD_COLOR   = '#c7344a';
-const BLOOD_BG      = '#c7344a1e';
+const BLOOD_COLOR = SectorColors.blood;
+const BLOOD_BG    = `${SectorColors.blood}1e`;
+
+// Urgency tones from theme tokens (dark-mode aware via C)
+function urgencyTone(C: any, urgency: string): { fg: string; bg: string } {
+  switch (urgency) {
+    case 'Urgent': return { fg: C.danger, bg: C.dangerBg };
+    case 'Today':  return { fg: C.warn,   bg: C.warnBg };
+    default:       return { fg: Accent.slate, bg: Accent.grayBg };
+  }
+}
 
 function GroupBadge({ group, size = 46 }: { group: string; size?: number }) {
   return (
@@ -190,8 +197,7 @@ export function BloodScreen({ navigation }: any) {
         {tab === 'requests' ? (
           <View style={styles.list}>
             {requests.map(r => {
-              const fg = (URGENCY_COLOR as Record<string,string>)[r.urgency] ?? '#5b6b86';
-              const bg = (URGENCY_BG as Record<string,string>)[r.urgency] ?? '#f0f2f6';
+              const { fg, bg } = urgencyTone(C, r.urgency);
               return (
                 <View key={r.id} style={[styles.reqCard, { backgroundColor: C.surface, borderColor: C.border }]}>
                   <View style={styles.reqTop}>
@@ -219,13 +225,13 @@ export function BloodScreen({ navigation }: any) {
                   </View>
                   {respondedIds.has(r.id) ? (
                     <TouchableOpacity
-                      style={[styles.pledgeBtn, { backgroundColor: '#e8f5e9' }]}
+                      style={[styles.pledgeBtn, { backgroundColor: C.successBg }]}
                       onPress={() => revealRequester(r)}
                       activeOpacity={0.75}
                       disabled={contactBusy}
                     >
-                      <Icon name="phone" size={15} color="#388e3c" />
-                      <Text style={[styles.pledgeTxt, { color: '#388e3c', fontFamily: FontFamily.jakartaBold }]}>
+                      <Icon name="phone" size={15} color={C.success} />
+                      <Text style={[styles.pledgeTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
                         {contactBusy ? '…' : 'View requester contact'}
                       </Text>
                     </TouchableOpacity>
