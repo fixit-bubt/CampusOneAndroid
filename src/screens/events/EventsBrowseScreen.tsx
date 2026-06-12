@@ -78,6 +78,7 @@ export function EventsBrowseScreen({ navigation }: any) {
     });
   }, [user?.id]);
   const [filter, setFilter] = useState<'upcoming' | 'past'>('upcoming');
+  const [category, setCategory] = useState('All');
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
@@ -99,8 +100,9 @@ export function EventsBrowseScreen({ navigation }: any) {
   }
 
   const today = new Date().toISOString().split('T')[0];
-  const upcoming = events.filter(e => e.date >= today);
-  const past = events.filter(e => e.date < today);
+  const byCat = category === 'All' ? events : events.filter(e => e.category === category);
+  const upcoming = byCat.filter(e => e.date >= today);
+  const past = byCat.filter(e => e.date < today);
   const list = filter === 'past' ? past : upcoming;
 
   return (
@@ -123,7 +125,7 @@ export function EventsBrowseScreen({ navigation }: any) {
             onPress={() => setFilter(id)}
             activeOpacity={0.75}
           >
-            <Text style={[styles.chipText, { color: filter === id ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>
+            <Text style={[styles.chipText, { color: filter === id ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>
               {label}
             </Text>
             <Text style={[styles.chipCount, { color: filter === id ? 'rgba(255,255,255,0.7)' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
@@ -132,6 +134,32 @@ export function EventsBrowseScreen({ navigation }: any) {
           </TouchableOpacity>
         ))}
       </View>
+
+      {/* Category filter */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={{ flexGrow: 0 }}
+        contentContainerStyle={[styles.catChips, { paddingHorizontal: Layout.screenPadding }]}
+      >
+        {['All', 'Academic', 'Cultural', 'Sports', 'Club', 'Career'].map(c => {
+          const on = category === c;
+          return (
+            <TouchableOpacity
+              key={c}
+              style={[styles.catChip, on
+                ? { backgroundColor: C.surface2, borderColor: C.text2 }
+                : { backgroundColor: C.surface, borderColor: C.border }]}
+              onPress={() => setCategory(c)}
+              activeOpacity={0.75}
+            >
+              <Text style={[styles.catChipTxt, { color: on ? C.text : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                {c}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
@@ -166,6 +194,9 @@ export function EventsBrowseScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
   chips: { flexDirection: 'row', gap: 8, paddingVertical: 10 } as ViewStyle,
+  catChips: { flexDirection: 'row', gap: 7, paddingBottom: 10 } as ViewStyle,
+  catChip: { paddingHorizontal: 11, paddingVertical: 6, borderRadius: 999, borderWidth: 1 } as ViewStyle,
+  catChipTxt: { fontSize: 11.5 } as any,
   chip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1 } as ViewStyle,
   chipText: { fontSize: 12.5 } as any,
   chipCount: { fontSize: 12 } as any,
