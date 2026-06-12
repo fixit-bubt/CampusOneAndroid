@@ -80,6 +80,27 @@ export const en = {
     Closed: 'Closed',
   } as Record<string, string>,
 
+  jobs: {
+    open: 'Open',
+    closingSoon: 'Closing soon',
+    expired: 'Expired',
+    saved: 'Saved',
+    searchPlaceholder: 'Search jobs...',
+    moderation: 'Jobs Moderation',
+    reported: 'Reported',
+    removed: 'Removed',
+    reportsCount: (n: number) => `${n} report${n === 1 ? '' : 's'}`,
+    restore: 'Restore',
+    removeWithReason: 'Remove',
+    noReported: 'No reported jobs.',
+    noRemoved: 'No removed jobs.',
+    applyMethod: 'HOW TO APPLY',
+    applyEmail: 'Email',
+    applyLink: 'Link',
+    applyValueEmail: 'Application email',
+    applyValueLink: 'Application URL',
+  },
+
   clubs: {
     inviteOnly: 'Membership is by invitation — a club officer can add you.',
     leave: 'Leave club',
