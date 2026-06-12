@@ -2,9 +2,10 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
-  ActivityIndicator, type ViewStyle,
+  ActivityIndicator, Alert, Linking, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
@@ -23,9 +24,18 @@ const CAT_ICON: Record<string, string> = {
   Club: 'clubs', Career: 'jobs',
 };
 
+// Build a Google Calendar template link from event fields (web parity).
+function gcalLink(ev: Event): string {
+  const date = (ev.date ?? '').replace(/-/g, '');
+  const details = encodeURIComponent(ev.description ?? '');
+  const text = encodeURIComponent(ev.title ?? 'Campus event');
+  const location = encodeURIComponent(ev.venue ?? '');
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&dates=${date}/${date}&details=${details}&location=${location}`;
+}
+
 export function EventDetailScreen({ route, navigation }: any) {
   const { C } = useTheme();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { eventId } = route.params;
   const id = eventId;
 
@@ -84,10 +94,33 @@ export function EventDetailScreen({ route, navigation }: any) {
   const bg = `${fg}1e`;
   const isUpcoming = event.date >= new Date().toISOString().split('T')[0];
   const isFull = !!(event.capacity && goingCount >= event.capacity && !going);
+  const canDelete = profile?.role === 'admin' || (event as any).created_by === user?.id;
+
+  function deleteEvent() {
+    Alert.alert('Delete event?', event!.title, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete', style: 'destructive',
+        onPress: async () => {
+          const { error } = await supabase.from('events').delete().eq('id', id);
+          if (error) { Alert.alert('Error', error.message); return; }
+          navigation.goBack();
+        },
+      },
+    ]);
+  }
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-      <SubBar title="Events" onBack={() => navigation.goBack()} />
+      <SubBar
+        title="Events"
+        onBack={() => navigation.goBack()}
+        rightSlot={canDelete ? (
+          <TouchableOpacity onPress={deleteEvent} hitSlop={8} activeOpacity={0.7} style={{ padding: 4 }}>
+            <Feather name="trash-2" size={18} color={C.danger} />
+          </TouchableOpacity>
+        ) : undefined}
+      />
       <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: Layout.screenPadding }]} showsVerticalScrollIndicator={false}>
         {/* Large category thumb */}
         <View style={[styles.thumbLg, { backgroundColor: bg }]}>
@@ -176,15 +209,31 @@ export function EventDetailScreen({ route, navigation }: any) {
             activeOpacity={0.85}
           >
             {busy ? (
-              <ActivityIndicator color={going ? C.success : '#fff'} />
+              <ActivityIndicator color={going ? C.success : C.white} />
             ) : (
               <View style={styles.btnRow}>
-                <Icon name={going ? 'check' : 'events'} size={17} color={going ? C.success : '#fff'} />
-                <Text style={[styles.btnTxt, { color: going ? C.success : '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                <Icon name={going ? 'check' : 'events'} size={17} color={going ? C.success : C.white} />
+                <Text style={[styles.btnTxt, { color: going ? C.success : C.white, fontFamily: FontFamily.jakartaBold }]}>
                   {going ? 'Going ✓' : isFull ? 'Event Full' : 'RSVP'}
                 </Text>
               </View>
             )}
+          </TouchableOpacity>
+        )}
+
+        {/* Add to Google Calendar */}
+        {isUpcoming && (
+          <TouchableOpacity
+            style={[styles.rsvpBtn, { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1, marginTop: 10 }]}
+            onPress={() => Linking.openURL(gcalLink(event))}
+            activeOpacity={0.8}
+          >
+            <View style={styles.btnRow}>
+              <Icon name="calendar" size={16} color={C.text2} />
+              <Text style={[styles.btnTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                Add to Google Calendar
+              </Text>
+            </View>
           </TouchableOpacity>
         )}
 
