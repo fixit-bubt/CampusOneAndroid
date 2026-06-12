@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme } from '../../hooks/useTheme';
 import { useApp } from '../../store/appStore';
+import { useT } from '../../i18n';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout, LightColors, darken } from '../../theme';
 import type { AuthStackParams } from '../../types/navigation';
@@ -37,6 +38,7 @@ export function Brand({ size = 56 }: { size?: number }) {
 export function LandingScreen({ navigation }: Props) {
   const { C, isDark } = useTheme();
   const { lang, toggleLang, toggleTheme } = useApp();
+  const t = useT();
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -84,7 +86,7 @@ export function LandingScreen({ navigation }: Props) {
             { color: C.text2, fontFamily: FontFamily.jakartaMedium },
           ]}
         >
-          Your campus, all in one place. Reports, events, clubs, and more.
+          {t.landing.tagline}
         </Text>
 
         <View style={styles.buttons}>
@@ -94,7 +96,7 @@ export function LandingScreen({ navigation }: Props) {
             activeOpacity={0.85}
           >
             <Text style={[styles.btnPrimaryText, { fontFamily: FontFamily.jakartaBold }]}>
-              Get Started
+              {t.landing.getStarted}
             </Text>
           </TouchableOpacity>
 
@@ -104,7 +106,7 @@ export function LandingScreen({ navigation }: Props) {
             activeOpacity={0.85}
           >
             <Text style={[styles.btnSecondaryText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-              I already have an account
+              {t.landing.haveAccount}
             </Text>
           </TouchableOpacity>
         </View>
