@@ -204,16 +204,27 @@ export function HomeScreen({ navigation }: any) {
           <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold, marginTop: 0 }]}>
             {t.home.myReports}
           </Text>
-          <TouchableOpacity
-            style={styles.newBtn}
-            onPress={() => navigation.navigate('ReportForm')}
-            activeOpacity={0.8}
-          >
-            <Icon name="plus" size={15} color={C.brand} />
-            <Text style={[styles.newBtnText, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
-              {t.home.newReport}
-            </Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', gap: 14 }}>
+            <TouchableOpacity
+              style={styles.newBtn}
+              onPress={() => navigation.navigate('MyReports')}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.newBtnText, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+                {t.common.seeAll}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.newBtn}
+              onPress={() => navigation.navigate('ReportForm')}
+              activeOpacity={0.8}
+            >
+              <Icon name="plus" size={15} color={C.brand} />
+              <Text style={[styles.newBtnText, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+                {t.home.newReport}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {reports.length === 0 ? (
