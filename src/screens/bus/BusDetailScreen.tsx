@@ -8,7 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout } from '../../theme';
+import { FontFamily, Layout, SectorColors, darken } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import type { BusRoute } from '../../types/database';
 
@@ -59,7 +59,7 @@ export function BusDetailScreen({ route, navigation }: any) {
       >
         {/* Next departure card */}
         <LinearGradient
-          colors={['#e08a2b', '#c06f12']}
+          colors={[SectorColors.bus, darken(SectorColors.bus)]}
           start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
           style={styles.nextCard}
         >
@@ -84,8 +84,8 @@ export function BusDetailScreen({ route, navigation }: any) {
                 <View style={[
                   styles.trackDot,
                   (i === 0 || i === rows.length - 1)
-                    ? { backgroundColor: '#e08a2b', borderColor: '#e08a2b' }
-                    : { backgroundColor: C.surface, borderColor: '#e08a2b' },
+                    ? { backgroundColor: SectorColors.bus, borderColor: SectorColors.bus }
+                    : { backgroundColor: C.surface, borderColor: SectorColors.bus },
                 ]} />
                 {i < rows.length - 1 && <View style={[styles.trackLine, { backgroundColor: C.border }]} />}
               </View>
