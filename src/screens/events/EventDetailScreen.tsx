@@ -10,13 +10,13 @@ import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout } from '../../theme';
+import { FontFamily, Layout , SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import type { Event } from '../../types/database';
 
 const CAT_COLOR: Record<string, string> = {
-  Academic: '#4f6bed', Cultural: '#e0568a', Sports: '#2e9e63',
-  Club: '#8b5cf0', Career: '#0e9c8a',
+  Academic: SectorColors.reports, Cultural: SectorColors.events, Sports: SectorColors.market,
+  Club: SectorColors.clubs, Career: SectorColors.jobs,
 };
 const CAT_ICON: Record<string, string> = {
   Academic: 'study', Cultural: 'star', Sports: 'pulse',
@@ -80,7 +80,7 @@ export function EventDetailScreen({ route, navigation }: any) {
     );
   }
 
-  const fg = CAT_COLOR[event.category] ?? '#5b6b86';
+  const fg = CAT_COLOR[event.category] ?? Accent.slate;
   const bg = `${fg}1e`;
   const isUpcoming = event.date >= new Date().toISOString().split('T')[0];
   const isFull = !!(event.capacity && goingCount >= event.capacity && !going);
@@ -92,9 +92,9 @@ export function EventDetailScreen({ route, navigation }: any) {
         {/* Large category thumb */}
         <View style={[styles.thumbLg, { backgroundColor: bg }]}>
           <Icon name={CAT_ICON[event.category] ?? 'events'} size={48} color={fg} />
-          <View style={[styles.statusOverlay, isUpcoming ? { backgroundColor: '#eef3ff' } : { backgroundColor: C.surface2 }]}>
-            <View style={[styles.statusDot, { backgroundColor: isUpcoming ? '#2b5be3' : C.textMuted }]} />
-            <Text style={[styles.statusText, { color: isUpcoming ? '#2b5be3' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+          <View style={[styles.statusOverlay, isUpcoming ? { backgroundColor: C.infoBg } : { backgroundColor: C.surface2 }]}>
+            <View style={[styles.statusDot, { backgroundColor: isUpcoming ? C.info : C.textMuted }]} />
+            <Text style={[styles.statusText, { color: isUpcoming ? C.info : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
               {isUpcoming ? 'Upcoming' : 'Past'}
             </Text>
           </View>
