@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView,
-  StyleSheet, Alert, type ViewStyle,
+  StyleSheet, Alert, Switch, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
@@ -33,19 +33,21 @@ export function AnnouncePostScreen({ navigation }: any) {
   const [dept, setDept] = useState('');
   const [priority, setPriority] = useState<Announcement['priority']>('General');
   const [body, setBody] = useState('');
+  const [pinned, setPinned] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  if (profile?.role !== 'staff' && profile?.role !== 'admin') {
+  // Web parity: announcements are admin-only.
+  if (profile?.role !== 'admin') {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
         <SubBar title="New Announcement" onBack={() => navigation.goBack()} />
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
           <Icon name="announce" size={36} color={C.textMuted} />
           <Text style={{ color: C.text, fontFamily: FontFamily.jakartaBold, fontSize: 16, marginTop: 14 }}>
-            Staff Only
+            Admin Only
           </Text>
           <Text style={{ color: C.textMuted, fontFamily: FontFamily.jakartaMedium, fontSize: 13.5, marginTop: 8, textAlign: 'center' }}>
-            Only staff and admin can post announcements.
+            Only admins can post announcements.
           </Text>
         </View>
       </SafeAreaView>
@@ -65,7 +67,7 @@ export function AnnouncePostScreen({ navigation }: any) {
         priority,
         body:       body.trim(),
         created_by: user.id,
-        pinned:     priority === 'Urgent',
+        pinned:     pinned || priority === 'Urgent',
       });
       if (error) throw error;
       navigation.goBack();
@@ -133,14 +135,21 @@ export function AnnouncePostScreen({ navigation }: any) {
           textAlignVertical="top"
         />
 
+        <View style={styles.pinRow}>
+          <Text style={[styles.pinLbl, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>
+            Pin to top
+          </Text>
+          <Switch value={pinned} onValueChange={setPinned} trackColor={{ true: C.brand }} />
+        </View>
+
         <TouchableOpacity
           style={[styles.submitBtn, { backgroundColor: canSubmit ? C.brand : C.surface2, opacity: loading ? 0.6 : 1 }]}
           onPress={handleSubmit}
           disabled={!canSubmit || loading}
           activeOpacity={0.8}
         >
-          <Icon name="check" size={18} color={canSubmit ? '#fff' : C.textMuted} />
-          <Text style={[styles.submitText, { color: canSubmit ? '#fff' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+          <Icon name="check" size={18} color={canSubmit ? C.white : C.textMuted} />
+          <Text style={[styles.submitText, { color: canSubmit ? C.white : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
             Publish
           </Text>
         </TouchableOpacity>
@@ -154,6 +163,8 @@ export function AnnouncePostScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
   scroll: { paddingTop: 12, paddingBottom: 20 } as ViewStyle,
+  pinRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 16 } as ViewStyle,
+  pinLbl: { fontSize: 14 } as any,
 
   label: {
     fontSize: 11,
