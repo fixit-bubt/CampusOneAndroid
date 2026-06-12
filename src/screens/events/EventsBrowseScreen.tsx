@@ -10,13 +10,13 @@ import { useAuth } from '../../store/authStore';
 import { Feather } from '@expo/vector-icons';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout } from '../../theme';
+import { FontFamily, Layout , SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import type { Event } from '../../types/database';
 
 const CAT_COLOR: Record<string, string> = {
-  Academic: '#4f6bed', Cultural: '#e0568a', Sports: '#2e9e63',
-  Club: '#8b5cf0', Career: '#0e9c8a',
+  Academic: SectorColors.reports, Cultural: SectorColors.events, Sports: SectorColors.market,
+  Club: SectorColors.clubs, Career: SectorColors.jobs,
 };
 const CAT_ICON: Record<string, string> = {
   Academic: 'study', Cultural: 'star', Sports: 'pulse',
@@ -24,7 +24,7 @@ const CAT_ICON: Record<string, string> = {
 };
 
 function EventCard({ e, C, onPress }: { e: Event; C: any; onPress: () => void }) {
-  const fg = CAT_COLOR[e.category] ?? '#5b6b86';
+  const fg = CAT_COLOR[e.category] ?? Accent.slate;
   const bg = `${fg}1e`;
   const isUpcoming = new Date(e.date) >= new Date();
   return (
@@ -43,9 +43,9 @@ function EventCard({ e, C, onPress }: { e: Event; C: any; onPress: () => void })
           </Text>
         </View>
         <View style={styles.cardMeta}>
-          <View style={[styles.statusPill, { backgroundColor: isUpcoming ? '#eef3ff' : C.surface2 }]}>
-            <View style={[styles.statusDot, { backgroundColor: isUpcoming ? '#2b5be3' : C.textMuted }]} />
-            <Text style={[styles.statusText, { color: isUpcoming ? '#2b5be3' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+          <View style={[styles.statusPill, { backgroundColor: isUpcoming ? C.infoBg : C.surface2 }]}>
+            <View style={[styles.statusDot, { backgroundColor: isUpcoming ? C.info : C.textMuted }]} />
+            <Text style={[styles.statusText, { color: isUpcoming ? C.info : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
               {isUpcoming ? 'Upcoming' : 'Past'}
             </Text>
           </View>
