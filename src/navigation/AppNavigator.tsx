@@ -1,9 +1,8 @@
-// Main app stack — role-aware: admin/staff get their dashboard stacks,
-// students get the tabbed app. Each role sees ONLY its own navigator.
+// Main app stack — web parity: every role gets the full app. The Home tab
+// inside BottomTabNavigator is what differs per role (dashboard vs feed).
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { AppStackParams } from '../types/navigation';
 import { BottomTabNavigator } from './BottomTabNavigator';
-import { useAuth } from '../store/authStore';
 
 // Auth + feature screens
 import { ReportFormScreen }        from '../screens/reports/ReportFormScreen';
@@ -54,45 +53,10 @@ import { StudyUploadScreen }       from '../screens/study/StudyUploadScreen';
 
 const Stack = createNativeStackNavigator<AppStackParams>();
 
-// ── Admin: dashboard + everything its MANAGE tiles reach ────────────────────
-function AdminNavigator() {
-  return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="AdminDashboard"     component={AdminDashboardScreen} />
-      <Stack.Screen name="ManageUsers"        component={ManageUsersScreen} />
-      <Stack.Screen name="AllReports"         component={AllReportsScreen} />
-      <Stack.Screen name="ReportDetail"       component={ReportDetailScreen} />
-      <Stack.Screen name="Announcements"      component={AnnouncementsScreen} />
-      <Stack.Screen name="AnnouncementDetail" component={AnnouncementDetailScreen} />
-      <Stack.Screen name="AnnouncePost"       component={AnnouncePostScreen} />
-      <Stack.Screen name="Faculty"            component={FacultyScreen} />
-      <Stack.Screen name="FacultyProfile"     component={FacultyProfileScreen} />
-    </Stack.Navigator>
-  );
-}
-
-// ── Staff: assigned-reports dashboard only ──────────────────────────────────
-function StaffNavigator() {
-  return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="StaffDashboard" component={StaffDashboardScreen} />
-      <Stack.Screen name="ReportDetail"   component={ReportDetailScreen} />
-    </Stack.Navigator>
-  );
-}
-
 export function AppNavigator() {
-  const { profile } = useAuth();
-  if (profile?.role === 'admin') return <AdminNavigator />;
-  if (profile?.role === 'staff') return <StaffNavigator />;
-  return <StudentNavigator />;
-}
-
-// ── Student: full tabbed app (no dashboards) ────────────────────────────────
-function StudentNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {/* Main tabs */}
+      {/* Main tabs (Home tab = role dashboard for admin/staff) */}
       <Stack.Screen name="Tabs"           component={BottomTabNavigator} />
 
       {/* Reports */}
@@ -161,6 +125,12 @@ function StudentNavigator() {
       {/* Notifications */}
       <Stack.Screen name="NotifDetail"    component={NotifDetailScreen} />
       <Stack.Screen name="NotifSettings"  component={NotifSettingsScreen} />
+
+      {/* Dashboards (reached from Admin Dashboard tiles / Home tab) */}
+      <Stack.Screen name="StaffDashboard" component={StaffDashboardScreen} />
+      <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
+      <Stack.Screen name="ManageUsers"    component={ManageUsersScreen} />
+      <Stack.Screen name="AllReports"     component={AllReportsScreen} />
 
       {/* Report detail */}
       <Stack.Screen name="ReportDetail"   component={ReportDetailScreen} />
