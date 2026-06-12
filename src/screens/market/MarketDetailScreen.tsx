@@ -10,17 +10,17 @@ import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout } from '../../theme';
+import { FontFamily, Layout , Accent, LightColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 
 const MK_CATS: Record<string, { icon: string; fg: string; label: string }> = {
-  books:       { icon: 'book-open', fg: '#2b5be3', label: 'Books'       },
-  electronics: { icon: 'cpu',       fg: '#8b5cf6', label: 'Electronics' },
-  clothing:    { icon: 'scissors',  fg: '#ec4899', label: 'Clothing'    },
-  sports:      { icon: 'activity',  fg: '#0e9c8a', label: 'Sports'      },
-  furniture:   { icon: 'layers',    fg: '#b9760a', label: 'Furniture'   },
-  other:       { icon: 'package',   fg: '#5b6b86', label: 'Other'       },
+  books:       { icon: 'book-open', fg: Accent.blue, label: 'Books'       },
+  electronics: { icon: 'cpu',       fg: Accent.purple, label: 'Electronics' },
+  clothing:    { icon: 'scissors',  fg: Accent.pink, label: 'Clothing'    },
+  sports:      { icon: 'activity',  fg: Accent.teal, label: 'Sports'      },
+  furniture:   { icon: 'layers',    fg: Accent.amber, label: 'Furniture'   },
+  other:       { icon: 'package',   fg: Accent.slate, label: 'Other'       },
 };
 
 export function MarketDetailScreen({ route, navigation }: any) {
@@ -101,7 +101,7 @@ export function MarketDetailScreen({ route, navigation }: any) {
           {isSold && (
             <View style={styles.soldOverlay}>
               <View style={[styles.soldPill, { backgroundColor: '#fff' }]}>
-                <Text style={[styles.soldTxt, { color: '#0f1a2e', fontFamily: FontFamily.jakartaExtraBold }]}>Sold</Text>
+                <Text style={[styles.soldTxt, { color: LightColors.text, fontFamily: FontFamily.jakartaExtraBold }]}>Sold</Text>
               </View>
             </View>
           )}
@@ -122,14 +122,14 @@ export function MarketDetailScreen({ route, navigation }: any) {
             <Text style={[styles.pillTxt, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>{listing.condition}</Text>
           </View>
           {listing.negotiable && (
-            <View style={[styles.pill, { backgroundColor: '#eef3ff' }]}>
-              <Text style={[styles.pillTxt, { color: '#2b5be3', fontFamily: FontFamily.jakartaSemiBold }]}>Negotiable</Text>
+            <View style={[styles.pill, { backgroundColor: C.infoBg }]}>
+              <Text style={[styles.pillTxt, { color: C.info, fontFamily: FontFamily.jakartaSemiBold }]}>Negotiable</Text>
             </View>
           )}
           {isSold && (
-            <View style={[styles.pill, { backgroundColor: '#fbe7e5' }]}>
-              <View style={styles.soldDot} />
-              <Text style={[styles.pillTxt, { color: '#e2483d', fontFamily: FontFamily.jakartaSemiBold }]}>Sold</Text>
+            <View style={[styles.pill, { backgroundColor: C.dangerBg }]}>
+              <View style={[styles.soldDot, { backgroundColor: C.danger }]} />
+              <Text style={[styles.pillTxt, { color: C.danger, fontFamily: FontFamily.jakartaSemiBold }]}>Sold</Text>
             </View>
           )}
         </View>
@@ -175,17 +175,17 @@ export function MarketDetailScreen({ route, navigation }: any) {
               )}
             </View>
             <TouchableOpacity
-              style={[styles.actionBtn, { backgroundColor: '#fbe7e5', marginTop: 0 }]}
+              style={[styles.actionBtn, { backgroundColor: C.dangerBg, marginTop: 0 }]}
               onPress={deleteListing}
               activeOpacity={0.85}
             >
-              <Icon name="trash" size={16} color="#e2483d" />
-              <Text style={[styles.actionTxt, { color: '#e2483d', fontFamily: FontFamily.jakartaBold }]}>Delete listing</Text>
+              <Icon name="trash" size={16} color={C.danger} />
+              <Text style={[styles.actionTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>Delete listing</Text>
             </TouchableOpacity>
           </View>
         ) : revealed ? (
           <View style={[styles.contactCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <Text style={[styles.contactLabel, { color: '#0e9c8a', fontFamily: FontFamily.jakartaBold }]}>Contact Info</Text>
+            <Text style={[styles.contactLabel, { color: Accent.teal, fontFamily: FontFamily.jakartaBold }]}>Contact Info</Text>
             <View style={styles.contactRow}>
               <Feather name="user" size={15} color={C.textMuted} />
               <Text style={[styles.contactTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>{contactInfo?.name ?? sellerName ?? 'Seller'}</Text>
@@ -209,12 +209,12 @@ export function MarketDetailScreen({ route, navigation }: any) {
         {/* Admin moderation */}
         {!isOwn && isAdmin && (
           <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: '#fbe7e5', marginTop: 10 }]}
+            style={[styles.actionBtn, { backgroundColor: C.dangerBg, marginTop: 10 }]}
             onPress={deleteListing}
             activeOpacity={0.85}
           >
-            <Icon name="trash" size={16} color="#e2483d" />
-            <Text style={[styles.actionTxt, { color: '#e2483d', fontFamily: FontFamily.jakartaBold }]}>Delete listing (admin)</Text>
+            <Icon name="trash" size={16} color={C.danger} />
+            <Text style={[styles.actionTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>Delete listing (admin)</Text>
           </TouchableOpacity>
         )}
 
@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
   pills: { flexDirection: 'row', gap: 7, flexWrap: 'wrap', marginTop: 10 } as ViewStyle,
   pill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 9, paddingVertical: 5, borderRadius: 20 } as ViewStyle,
   pillTxt: { fontSize: 12 } as any,
-  soldDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#e2483d' } as ViewStyle,
+  soldDot: { width: 6, height: 6, borderRadius: 3 } as ViewStyle,
 
   sectionLabel: { fontSize: 11, letterSpacing: 0.8, marginTop: 18, marginBottom: 8 } as any,
   body: { fontSize: 14.5, lineHeight: 22.5 } as any,
