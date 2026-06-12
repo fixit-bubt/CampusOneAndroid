@@ -9,19 +9,19 @@ import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout } from '../../theme';
+import { FontFamily, Layout , Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 
 type Tab = 'all' | 'mine';
 
 const MK_CATS: Record<string, { icon: string; fg: string; label: string }> = {
-  books:       { icon: 'book-open', fg: '#2b5be3', label: 'Books'       },
-  electronics: { icon: 'cpu',       fg: '#8b5cf6', label: 'Electronics' },
-  clothing:    { icon: 'scissors',  fg: '#ec4899', label: 'Clothing'    },
-  sports:      { icon: 'activity',  fg: '#0e9c8a', label: 'Sports'      },
-  furniture:   { icon: 'layers',    fg: '#b9760a', label: 'Furniture'   },
-  other:       { icon: 'package',   fg: '#5b6b86', label: 'Other'       },
+  books:       { icon: 'book-open', fg: Accent.blue, label: 'Books'       },
+  electronics: { icon: 'cpu',       fg: Accent.purple, label: 'Electronics' },
+  clothing:    { icon: 'scissors',  fg: Accent.pink, label: 'Clothing'    },
+  sports:      { icon: 'activity',  fg: Accent.teal, label: 'Sports'      },
+  furniture:   { icon: 'layers',    fg: Accent.amber, label: 'Furniture'   },
+  other:       { icon: 'package',   fg: Accent.slate, label: 'Other'       },
 };
 
 interface Listing {
