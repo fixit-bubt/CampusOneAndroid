@@ -9,7 +9,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout } from '../../theme';
+import { FontFamily, Layout , Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 
@@ -119,15 +119,15 @@ export function DirectoryScreen({ navigation }: any) {
                   </Text>
                 </View>
                 {s.connState === 'connected' && (
-                  <View style={[styles.connPill, { backgroundColor: '#e4f5f4' }]}>
-                    <View style={[styles.connDot, { backgroundColor: '#0e9c8a' }]} />
-                    <Text style={[styles.connTxt, { color: '#0e9c8a', fontFamily: FontFamily.jakartaBold }]}>Connected</Text>
+                  <View style={[styles.connPill, { backgroundColor: Accent.tealBg }]}>
+                    <View style={[styles.connDot, { backgroundColor: Accent.teal }]} />
+                    <Text style={[styles.connTxt, { color: Accent.teal, fontFamily: FontFamily.jakartaBold }]}>Connected</Text>
                   </View>
                 )}
                 {s.connState === 'requested' && (
-                  <View style={[styles.connPill, { backgroundColor: '#fbefdb' }]}>
-                    <View style={[styles.connDot, { backgroundColor: '#b9760a' }]} />
-                    <Text style={[styles.connTxt, { color: '#b9760a', fontFamily: FontFamily.jakartaBold }]}>Requested</Text>
+                  <View style={[styles.connPill, { backgroundColor: C.warnBg }]}>
+                    <View style={[styles.connDot, { backgroundColor: C.warn }]} />
+                    <Text style={[styles.connTxt, { color: C.warn, fontFamily: FontFamily.jakartaBold }]}>Requested</Text>
                   </View>
                 )}
                 {s.connState === 'none' && (
