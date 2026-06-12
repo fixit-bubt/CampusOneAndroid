@@ -101,6 +101,7 @@ export type AppStackParams = {
   StaffDashboard: undefined;
   AdminDashboard: undefined;
   ManageUsers:    undefined;
+  ManageStaff:    undefined;
   AllReports:     undefined;
 };
 
