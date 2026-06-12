@@ -26,6 +26,8 @@ import { RidesScreen }             from '../screens/rides/RidesScreen';
 import { DirectoryScreen }         from '../screens/directory/DirectoryScreen';
 import { MedicalScreen }           from '../screens/medical/MedicalScreen';
 import { DoctorDetailScreen }      from '../screens/medical/DoctorDetailScreen';
+import { MyAppointmentsScreen }    from '../screens/medical/MyAppointmentsScreen';
+import { MedicalQueueScreen }      from '../screens/medical/MedicalQueueScreen';
 import { PrayerScreen }            from '../screens/prayer/PrayerScreen';
 import { ClubsScreen }             from '../screens/clubs/ClubsScreen';
 import { ClubDetailScreen }        from '../screens/clubs/ClubDetailScreen';
@@ -107,6 +109,8 @@ export function AppNavigator() {
       {/* Medical */}
       <Stack.Screen name="Medical"        component={MedicalScreen} />
       <Stack.Screen name="DoctorDetail"   component={DoctorDetailScreen} />
+      <Stack.Screen name="MyAppointments" component={MyAppointmentsScreen} />
+      <Stack.Screen name="MedicalQueue"   component={MedicalQueueScreen} />
 
       {/* Prayer */}
       <Stack.Screen name="Prayer"         component={PrayerScreen} />
