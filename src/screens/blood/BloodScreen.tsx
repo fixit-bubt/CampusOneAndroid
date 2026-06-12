@@ -42,13 +42,15 @@ export function BloodScreen({ navigation }: any) {
   const [contactBusy, setContactBusy] = useState(false);
 
   const load = useCallback(async () => {
-    const [rRes, dRes] = await Promise.all([
+    const [rRes, dRes, pRes] = await Promise.all([
       supabase.from('blood_requests').select('*').order('created_at', { ascending: false }).limit(30),
       supabase.from('donors').select('*, profiles:user_id(full_name)').limit(50),
+      supabase.from('blood_pledges').select('request_id').eq('donor_id', user?.id ?? ''),
     ]);
     if (rRes.data) setRequests(rRes.data as BloodRequest[]);
     if (dRes.data) setDonors(dRes.data as any);
-  }, []);
+    if (pRes.data) setRespondedIds(new Set(pRes.data.map((p: any) => p.request_id)));
+  }, [user?.id]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -67,8 +69,27 @@ export function BloodScreen({ navigation }: any) {
         Alert.alert('Error', 'Could not reveal contact. Please try again.');
         return;
       }
-      const contact = data?.whatsapp ?? data?.phone ?? (typeof data === 'string' ? data : null) ?? 'Not available';
-      Alert.alert('Contact', String(contact));
+      const row = Array.isArray(data) ? data[0] : data;
+      const contact = row?.whatsapp ?? 'Not shared';
+      Alert.alert(row?.name ?? 'Contact', String(contact));
+    } finally {
+      setContactBusy(false);
+    }
+  }
+
+  // Pledged donors may see the requester's contact (consent-by-posting)
+  async function revealRequester(r: BloodRequest) {
+    if (!user || contactBusy) return;
+    setContactBusy(true);
+    try {
+      const { data, error } = await supabase.rpc('blood_requester_contact', { p_code: (r as any).code });
+      if (error) {
+        Alert.alert('Error', 'Could not reveal contact. Please try again.');
+        return;
+      }
+      const row = Array.isArray(data) ? data[0] : data;
+      if (!row) { Alert.alert('Not available', 'Contact is only shared with donors who pledged.'); return; }
+      Alert.alert(row.name ?? 'Requester', row.whatsapp ?? 'No WhatsApp shared');
     } finally {
       setContactBusy(false);
     }
@@ -196,17 +217,30 @@ export function BloodScreen({ navigation }: any) {
                       {r.area} · {r.units} unit{r.units !== 1 ? 's' : ''} needed
                     </Text>
                   </View>
-                  <TouchableOpacity
-                    style={[styles.pledgeBtn, { backgroundColor: respondedIds.has(r.id) ? '#e8f5e9' : BLOOD_BG, opacity: respondedIds.has(r.id) ? 0.7 : 1 }]}
-                    onPress={() => handleHelpPress(r)}
-                    activeOpacity={0.75}
-                    disabled={respondedIds.has(r.id)}
-                  >
-                    <Icon name="blood" size={16} color={respondedIds.has(r.id) ? '#388e3c' : BLOOD_COLOR} />
-                    <Text style={[styles.pledgeTxt, { color: respondedIds.has(r.id) ? '#388e3c' : BLOOD_COLOR, fontFamily: FontFamily.jakartaBold }]}>
-                      {respondedIds.has(r.id) ? 'Responded' : 'I can help'}
-                    </Text>
-                  </TouchableOpacity>
+                  {respondedIds.has(r.id) ? (
+                    <TouchableOpacity
+                      style={[styles.pledgeBtn, { backgroundColor: '#e8f5e9' }]}
+                      onPress={() => revealRequester(r)}
+                      activeOpacity={0.75}
+                      disabled={contactBusy}
+                    >
+                      <Icon name="phone" size={15} color="#388e3c" />
+                      <Text style={[styles.pledgeTxt, { color: '#388e3c', fontFamily: FontFamily.jakartaBold }]}>
+                        {contactBusy ? '…' : 'View requester contact'}
+                      </Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      style={[styles.pledgeBtn, { backgroundColor: BLOOD_BG }]}
+                      onPress={() => handleHelpPress(r)}
+                      activeOpacity={0.75}
+                    >
+                      <Icon name="blood" size={16} color={BLOOD_COLOR} />
+                      <Text style={[styles.pledgeTxt, { color: BLOOD_COLOR, fontFamily: FontFamily.jakartaBold }]}>
+                        I can help
+                      </Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               );
             })}
