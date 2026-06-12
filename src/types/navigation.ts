@@ -76,6 +76,7 @@ export type AppStackParams = {
 
   // Faculty
   Faculty:        undefined;
+  FacultyDept:    { deptId: string };
   FacultyProfile: { facultyId: string };
 
   // Rides
