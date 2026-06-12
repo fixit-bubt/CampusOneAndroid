@@ -132,6 +132,15 @@ export type Colors = typeof LightColors;
 // not theme-dependent (same in light & dark, like SectorColors). Screens must
 // import these instead of hardcoding hexes.
 // ─────────────────────────────────────────────────────────────────────────────
+// Derive a darker shade of a hex token (gradient end stops etc.)
+export function darken(hex: string, factor = 0.22): string {
+  const n = parseInt(hex.slice(1), 16);
+  const r = Math.round(((n >> 16) & 255) * (1 - factor));
+  const g = Math.round(((n >> 8) & 255) * (1 - factor));
+  const b = Math.round((n & 255) * (1 - factor));
+  return `rgb(${r},${g},${b})`;
+}
+
 export const Accent = {
   gold:    '#d9870b',   // bookmark/save stars
   pink:    '#ec4899',   // category: clothing

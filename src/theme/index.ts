@@ -3,7 +3,7 @@
 // Import everything from here: import { Colors, Spacing, Radius } from '@/theme'
 // ─────────────────────────────────────────────────────────────────────────────
 
-export { LightColors, DarkColors, SectorColors, Accent } from './colors';
+export { LightColors, DarkColors, SectorColors, Accent, darken } from './colors';
 export type { SectorKey, Colors } from './colors';
 export { FontFamily, FontSize, LineHeight, LetterSpacing, TextPreset } from './typography';
 export { Spacing, Layout } from './spacing';
