@@ -9,11 +9,11 @@ import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout } from '../../theme';
+import { FontFamily, Layout , SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 
-const STUDY_COLOR = '#2ba0c9';
-const STUDY_BG    = '#2ba0c91e';
+const STUDY_COLOR = SectorColors.study;
+const STUDY_BG    = `${SectorColors.study}1e`;
 
 type Tab = 'materials' | 'questions' | 'books';
 
