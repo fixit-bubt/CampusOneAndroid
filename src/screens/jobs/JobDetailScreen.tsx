@@ -9,19 +9,22 @@ import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout } from '../../theme';
+import { FontFamily, Layout , SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 
-const JOB_COLOR = '#0e9c8a';
-const JOB_BG    = '#0e9c8a1e';
+const JOB_COLOR = SectorColors.jobs;
+const JOB_BG    = `${SectorColors.jobs}1e`;
 
-const STATUS_CONFIG: Record<string, { label: string; fg: string; bg: string }> = {
-  open:    { label: 'Open',    fg: '#0e9c8a', bg: '#e4f5f4' },
-  closed:  { label: 'Closed', fg: '#5b6b86', bg: '#f0f2f6' },
-  expired: { label: 'Expired',fg: '#b9760a', bg: '#fbefdb' },
-  removed: { label: 'Removed',fg: '#e2483d', bg: '#fbe7e5' },
-};
+// Job status tones from theme tokens (dark-mode aware via C)
+function jobStatusTone(C: any, k: string): { label: string; fg: string; bg: string } {
+  switch (k) {
+    case 'closed':  return { label: 'Closed',  fg: Accent.slate, bg: Accent.grayBg };
+    case 'expired': return { label: 'Expired', fg: C.warn,       bg: C.warnBg };
+    case 'removed': return { label: 'Removed', fg: C.danger,     bg: C.dangerBg };
+    default:        return { label: 'Open',    fg: Accent.teal,  bg: Accent.tealBg };
+  }
+}
 
 const REPORT_REASONS = ['Spam', 'Scam', 'Expired', 'Inappropriate'];
 
@@ -109,7 +112,7 @@ export function JobDetailScreen({ route, navigation }: any) {
   }
 
   const computedStatus = job.deleted_at ? 'removed' : (job.deadline && new Date(job.deadline) < new Date() ? 'expired' : 'open');
-  const s = STATUS_CONFIG[computedStatus] ?? STATUS_CONFIG.open;
+  const s = jobStatusTone(C, computedStatus);
   const isOwn = job.posted_by === user?.id;
   const isRemoved = !!job.deleted_at;
   const isExpired = computedStatus === 'expired';
@@ -121,7 +124,7 @@ export function JobDetailScreen({ route, navigation }: any) {
         onBack={() => navigation.goBack()}
         rightSlot={
           <TouchableOpacity style={styles.iconBtn} onPress={toggleSave} activeOpacity={0.75}>
-            <Feather name="star" size={21} color={saved ? '#d9870b' : C.text2} />
+            <Feather name="star" size={21} color={saved ? Accent.gold : C.text2} />
           </TouchableOpacity>
         }
       />
@@ -191,8 +194,8 @@ export function JobDetailScreen({ route, navigation }: any) {
         {/* Actions */}
         {isRemoved ? (
           <>
-            <View style={[styles.removedBanner, { backgroundColor: '#fbe7e5' }]}>
-              <Text style={[styles.removedText, { color: '#e2483d', fontFamily: FontFamily.jakartaBold }]}>
+            <View style={[styles.removedBanner, { backgroundColor: C.dangerBg }]}>
+              <Text style={[styles.removedText, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
                 This listing has been removed{job.removed_reason ? ` — ${job.removed_reason}` : ''}
               </Text>
             </View>
@@ -250,12 +253,12 @@ export function JobDetailScreen({ route, navigation }: any) {
             )}
             {isAdmin && !isOwn && (
               <TouchableOpacity
-                style={[styles.secondaryBtn, { backgroundColor: '#fbe7e5', borderColor: '#fbe7e5' }]}
+                style={[styles.secondaryBtn, { backgroundColor: C.dangerBg, borderColor: C.dangerBg }]}
                 onPress={() => setRemoveOpen(true)}
                 activeOpacity={0.85}
               >
-                <Feather name="slash" size={16} color="#e2483d" />
-                <Text style={[styles.secondaryTxt, { color: '#e2483d', fontFamily: FontFamily.jakartaBold }]}>Remove listing (admin)</Text>
+                <Feather name="slash" size={16} color={C.danger} />
+                <Text style={[styles.secondaryTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>Remove listing (admin)</Text>
               </TouchableOpacity>
             )}
           </>
@@ -278,7 +281,7 @@ export function JobDetailScreen({ route, navigation }: any) {
             multiline
           />
           <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: '#e2483d', opacity: removeReason.trim() ? 1 : 0.5, marginTop: 14 }]}
+            style={[styles.actionBtn, { backgroundColor: C.danger, opacity: removeReason.trim() ? 1 : 0.5, marginTop: 14 }]}
             onPress={adminRemove}
             disabled={!removeReason.trim()}
             activeOpacity={0.85}
