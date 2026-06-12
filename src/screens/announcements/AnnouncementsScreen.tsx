@@ -10,12 +10,18 @@ import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout } from '../../theme';
+import { FontFamily, Layout, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import type { Announcement } from '../../types/database';
 
-const PRI_COLOR: Record<string, string> = { Urgent: '#e2483d', Important: '#b9760a', General: '#5b6b86' };
-const PRI_BG: Record<string, string> = { Urgent: '#fbe7e5', Important: '#fbefdb', General: '#f0f2f6' };
+// Priority tones from theme tokens (dark-mode aware via C)
+function priTone(C: any, priority: string): { fg: string; bg: string } {
+  switch (priority) {
+    case 'Urgent':    return { fg: C.danger, bg: C.dangerBg };
+    case 'Important': return { fg: C.warn,   bg: C.warnBg };
+    default:          return { fg: Accent.slate, bg: Accent.grayBg };
+  }
+}
 
 function timeAgo(iso: string): string {
   const secs = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -25,7 +31,7 @@ function timeAgo(iso: string): string {
 }
 
 function AnnouncementCard({ a, C, isDark, onPress }: { a: Announcement; C: any; isDark: boolean; onPress: () => void }) {
-  const fg = PRI_COLOR[a.priority] ?? '#888888';
+  const { fg, bg: priBg } = priTone(C, a.priority);
   const bg = `${fg}1e`;
   return (
     <TouchableOpacity
@@ -44,7 +50,7 @@ function AnnouncementCard({ a, C, isDark, onPress }: { a: Announcement; C: any; 
           {a.title}
         </Text>
         <View style={styles.cardMeta}>
-          <View style={[styles.priPill, { backgroundColor: PRI_BG[a.priority] ?? '#f0f2f6' }]}>
+          <View style={[styles.priPill, { backgroundColor: priBg }]}>
             <View style={[styles.priDot, { backgroundColor: fg }]} />
             <Text style={[styles.priText, { color: fg, fontFamily: FontFamily.jakartaBold }]}>
               {a.priority}
