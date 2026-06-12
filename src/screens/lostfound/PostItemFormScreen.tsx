@@ -10,15 +10,15 @@ import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout } from '../../theme';
+import { FontFamily, Layout , SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import type { LostFoundItem } from '../../types/database';
 
 const LF_CATS: { id: LostFoundItem['category']; icon: string; fg: string; en: string }[] = [
-  { id: 'Personal',    icon: 'user',   fg: '#4f6bed', en: 'Personal' },
-  { id: 'Electronics', icon: 'phone',  fg: '#e08a2b', en: 'Electronics' },
-  { id: 'Documents',   icon: 'layers', fg: '#12915e', en: 'Documents' },
-  { id: 'Other',       icon: 'inbox',  fg: '#5b6b86', en: 'Other' },
+  { id: 'Personal',    icon: 'user',   fg: Accent.blue, en: 'Personal' },
+  { id: 'Electronics', icon: 'phone',  fg: SectorColors.lostfound, en: 'Electronics' },
+  { id: 'Documents',   icon: 'layers', fg: Accent.green, en: 'Documents' },
+  { id: 'Other',       icon: 'inbox',  fg: Accent.slate, en: 'Other' },
 ];
 
 function hexAlpha(hex: string, a: number) {
@@ -124,7 +124,7 @@ export function PostItemFormScreen({ route, navigation }: any) {
                 onPress={() => setType(t)}
                 activeOpacity={0.75}
               >
-                <View style={[styles.typeDot, { backgroundColor: t === 'Lost' ? '#d63d35' : '#12915e' }]} />
+                <View style={[styles.typeDot, { backgroundColor: t === 'Lost' ? C.danger : C.success }]} />
                 <Text style={[styles.typeTxt, { color: type === t ? C.text : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
                   {t}
                 </Text>
