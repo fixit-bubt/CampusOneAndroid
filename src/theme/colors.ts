@@ -143,9 +143,12 @@ export function darken(hex: string, factor = 0.22): string {
 
 export const Accent = {
   gold:    '#d9870b',   // bookmark/save stars
-  pink:    '#ec4899',   // category: clothing
-  purple:  '#8b5cf6',   // users / IT tiles
+  pink:    '#ec4899',   // category: clothing/cultural
+  purple:  '#8b5cf6',   // users / IT / technical
   slate:   '#5b6b86',   // neutral category fg
+  blue:    '#2b5be3',   // category: academic/books (static, = light brand)
+  teal:    '#0e9c8a',   // category: sports/jobs accents
+  amber:   '#b9760a',   // category: social/furniture (static, = light warn)
   grayBg:  '#f0f2f6',   // neutral pill bg
   tealBg:  '#e4f5f4',   // teal pill bg (resolved/jobs)
   greenBg: '#e8f8f0',   // green pill bg (approve/success chips)
