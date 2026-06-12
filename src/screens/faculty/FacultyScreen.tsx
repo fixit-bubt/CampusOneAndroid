@@ -1,5 +1,5 @@
 // Faculty Directory (web parity) — browse departments grouped by branch,
-// find a supervisor by research area, search everything, view saved teachers.
+// filter by research area, search everything, view saved teachers.
 // Searching / filtering switches to flat teacher cards; otherwise dept cards.
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
@@ -153,7 +153,7 @@ export function FacultyScreen({ navigation }: any) {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
         <Text style={[styles.subtitle, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-          {faculty.length} teachers across {departments.length} departments — browse, search, and find a supervisor.
+          {faculty.length} teachers across {departments.length} departments — browse, search, and explore research areas.
         </Text>
 
         {/* Search */}
@@ -177,7 +177,7 @@ export function FacultyScreen({ navigation }: any) {
         {popularInterests.length > 0 && (
           <>
             <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
-              FIND A SUPERVISOR BY RESEARCH AREA
+              BROWSE BY RESEARCH AREA
             </Text>
             <View style={styles.chips}>
               {popularInterests.map(it => {
