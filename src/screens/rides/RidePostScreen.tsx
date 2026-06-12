@@ -77,7 +77,14 @@ export function RidePostScreen({ navigation }: any) {
   const [time, setTime] = useState('');
   const [seats, setSeats] = useState('3');
   const [fare, setFare] = useState('');
+  const [notes, setNotes] = useState('');
+  const [recurring, setRecurring] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const DOW = ['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+  function toggleDay(d: string) {
+    setRecurring(prev => (prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d]));
+  }
 
   const canSubmit = from.trim() && to.trim() && date.trim() && fare.trim();
 
@@ -105,6 +112,8 @@ export function RidePostScreen({ navigation }: any) {
         time:        timePart,
         seats_total: parseInt(seats, 10) || 1,
         fare:        parsedFare,
+        notes:       notes.trim() || null,
+        recurring:   recurring.length > 0 ? recurring : null,
       });
       if (error) throw error;
       navigation.goBack();
@@ -201,6 +210,38 @@ export function RidePostScreen({ navigation }: any) {
           </View>
         </View>
 
+        {/* Repeats on (optional) */}
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>REPEATS ON (OPTIONAL)</Text>
+        <View style={styles.dayRow}>
+          {DOW.map(d => {
+            const on = recurring.includes(d);
+            return (
+              <TouchableOpacity
+                key={d}
+                style={[styles.dayChip, on
+                  ? { backgroundColor: C.brand, borderColor: C.brand }
+                  : { backgroundColor: C.surface, borderColor: C.border }]}
+                onPress={() => toggleDay(d)}
+                activeOpacity={0.75}
+              >
+                <Text style={[styles.dayTxt, { color: on ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>{d}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {/* Notes (optional) */}
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>NOTES (OPTIONAL)</Text>
+        <TextInput
+          style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium, height: 70, paddingTop: 12 }]}
+          value={notes}
+          onChangeText={setNotes}
+          placeholder="e.g. Meet at the main gate"
+          placeholderTextColor={C.textMuted}
+          multiline
+          textAlignVertical="top"
+        />
+
         {/* Submit */}
         <TouchableOpacity
           style={[styles.submitBtn, { backgroundColor: canSubmit ? C.brand : C.surface2, opacity: loading ? 0.6 : 1 }]}
@@ -208,8 +249,8 @@ export function RidePostScreen({ navigation }: any) {
           disabled={!canSubmit || loading}
           activeOpacity={0.8}
         >
-          <Icon name="check" size={18} color={canSubmit ? '#fff' : C.textMuted} />
-          <Text style={[styles.submitText, { color: canSubmit ? '#fff' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+          <Icon name="check" size={18} color={canSubmit ? C.white : C.textMuted} />
+          <Text style={[styles.submitText, { color: canSubmit ? C.white : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
             Offer Ride
           </Text>
         </TouchableOpacity>
@@ -247,6 +288,9 @@ const styles = StyleSheet.create({
   } as ViewStyle,
 
   halfField: { flex: 1 } as ViewStyle,
+  dayRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 } as ViewStyle,
+  dayChip: { paddingHorizontal: 11, paddingVertical: 7, borderRadius: 999, borderWidth: 1 } as ViewStyle,
+  dayTxt: { fontSize: 12 } as any,
 
   submitBtn: {
     flexDirection: 'row',
