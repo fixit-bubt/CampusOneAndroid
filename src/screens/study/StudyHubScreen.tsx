@@ -335,6 +335,9 @@ export function StudyHubScreen({ navigation }: any) {
   const [mySection, setMySection] = useState<SectionRow | null>(null);
   const [sections, setSections] = useState<SectionRow[]>([]);
   const [joinReqs, setJoinReqs] = useState<JoinRequest[]>([]);
+  const [secMembers, setSecMembers] = useState<{ id: string; user_id: string; role: string; full_name: string }[]>([]);
+  const [pins, setPins] = useState<{ id: string; message: string | null; created_at: string }[]>([]);
+  const [pinText, setPinText] = useState('');
   const [adminReqs, setAdminReqs] = useState<AdminRequest[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [departments, setDepartments] = useState<Dept[]>([]);
@@ -563,8 +566,74 @@ export function StudyHubScreen({ navigation }: any) {
     if (data) setStudents(data as { id: string; full_name: string }[]);
   }
 
+  async function loadSecMembers() {
+    if (!mySection) return;
+    const { data } = await supabase
+      .from('study_section_members')
+      .select('id, user_id, role, profiles:user_id(full_name)')
+      .eq('section_id', mySection.id)
+      .eq('status', 'approved');
+    if (data) {
+      setSecMembers((data as any[]).map(r => ({
+        id: r.id, user_id: r.user_id, role: r.role,
+        full_name: one<any>(r.profiles)?.full_name ?? 'Student',
+      })).sort((a, b) => (a.role === 'cr' ? -1 : 1) - (b.role === 'cr' ? -1 : 1)));
+    }
+  }
+
+  async function loadPins() {
+    if (!mySection) return;
+    const { data } = await supabase
+      .from('study_pins')
+      .select('id, message, created_at')
+      .eq('section_id', mySection.id)
+      .order('created_at', { ascending: false });
+    if (data) setPins(data as any[]);
+  }
+
+  async function addPin() {
+    if (!mySection || !user || pinText.trim().length === 0) return;
+    const { error } = await supabase.from('study_pins').insert({
+      section_id: mySection.id,
+      kind: 'text',
+      message: pinText.trim(),
+      pinned_by: user.id,
+    });
+    if (error) { Alert.alert('Error', error.message); return; }
+    setPinText('');
+    loadPins();
+  }
+
+  async function deletePin(id: string) {
+    const { error } = await supabase.from('study_pins').delete().eq('id', id);
+    if (error) { Alert.alert('Error', error.message); return; }
+    setPins(prev => prev.filter(p => p.id !== id));
+  }
+
+  async function setMemberRole(memberId: string, role: 'editor' | 'member') {
+    const { error } = await supabase.from('study_section_members').update({ role }).eq('id', memberId);
+    if (error) { Alert.alert('Error', error.message); return; }
+    loadSecMembers();
+  }
+
+  function removeMember(m: { id: string; full_name: string }) {
+    Alert.alert('Remove member?', m.full_name, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove', style: 'destructive',
+        onPress: async () => {
+          const { error } = await supabase.from('study_section_members').delete().eq('id', m.id);
+          if (error) { Alert.alert('Error', error.message); return; }
+          loadSecMembers();
+        },
+      },
+    ]);
+  }
+
   // Open intake-visibility vote for my intake (+ ballot counts and my own ballot)
   async function loadVote(intakeId: string) {
+    // Close any expired vote first so results apply (web parity).
+    await supabase.rpc('check_expired_intake_votes', { p_intake_id: intakeId }).then(() => {}, () => {});
     const { data: v } = await supabase
       .from('study_intake_votes')
       .select('*')
@@ -619,8 +688,10 @@ export function StudyHubScreen({ navigation }: any) {
     if (sub === 'browse') loadPublicSections();
     if (sub === 'manage' && mySection) {
       loadJoinReqs();
+      loadSecMembers();
       loadVote(mySection.intake_id);
     }
+    if (sub === 'home' && mySection) loadPins();
   }, [sub, mySection]);
 
   function handleBack() {
@@ -853,6 +924,31 @@ export function StudyHubScreen({ navigation }: any) {
           </TouchableOpacity>
         )}
 
+        {/* Pinboard (CR posts notices for the section) */}
+        {pins.length > 0 && (
+          <>
+            <Text style={[s.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>PINNED</Text>
+            <View style={[s.courseCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+              {pins.map((p, i) => (
+                <View key={p.id}>
+                  {i > 0 && <View style={[s.divider, { backgroundColor: C.border }]} />}
+                  <View style={s.pinRow}>
+                    <Feather name="bookmark" size={14} color={STUDY_COLOR} style={{ marginTop: 2 }} />
+                    <Text style={[s.pinTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>
+                      {p.message}
+                    </Text>
+                    {isCr && (
+                      <TouchableOpacity onPress={() => deletePin(p.id)} hitSlop={8} activeOpacity={0.7}>
+                        <Feather name="x" size={14} color={C.textMuted} />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </View>
+              ))}
+            </View>
+          </>
+        )}
+
         {/* Courses */}
         <Text style={[s.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>COURSES</Text>
         <View style={[s.courseCard, { backgroundColor: C.surface, borderColor: C.border }]}>
@@ -953,6 +1049,71 @@ export function StudyHubScreen({ navigation }: any) {
             </View>
           </>
         )}
+
+        {/* Members — promote to editor, demote, remove */}
+        <Text style={[s.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
+          MEMBERS · {secMembers.length}
+        </Text>
+        <View style={[s.courseCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+          {secMembers.map((m, i) => {
+            const isMe = m.user_id === user?.id;
+            const isCrRow = m.role === 'cr';
+            return (
+              <View key={m.id}>
+                {i > 0 && <View style={[s.divider, { backgroundColor: C.border }]} />}
+                <View style={s.reqRow}>
+                  <Avatar name={m.full_name} size="sm" />
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={[s.reqName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                      {m.full_name}{isMe ? ' (you)' : ''}
+                    </Text>
+                    <Text style={[s.reqTime, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                      {isCrRow ? 'CR' : m.role === 'editor' ? 'Editor' : 'Member'}
+                    </Text>
+                  </View>
+                  {!isCrRow && !isMe && (
+                    <>
+                      <TouchableOpacity
+                        style={[s.approveBtn, { backgroundColor: C.surface2 }]}
+                        onPress={() => setMemberRole(m.id, m.role === 'editor' ? 'member' : 'editor')}
+                        activeOpacity={0.75}
+                      >
+                        <Text style={[s.approveTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                          {m.role === 'editor' ? 'Demote' : 'Make editor'}
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => removeMember(m)} hitSlop={8} activeOpacity={0.7} style={{ marginLeft: 8 }}>
+                        <Feather name="user-minus" size={16} color={C.danger} />
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </View>
+              </View>
+            );
+          })}
+        </View>
+
+        {/* Pinboard composer */}
+        <Text style={[s.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>PIN A NOTICE</Text>
+        <View style={[s.card, { backgroundColor: C.surface, borderColor: C.border }]}>
+          <TextInput
+            style={[s.pinInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+            value={pinText}
+            onChangeText={setPinText}
+            placeholder="e.g. Midterm syllabus posted — check CSE-221"
+            placeholderTextColor={C.textMuted}
+            multiline
+          />
+          <TouchableOpacity
+            style={[s.outlineBtn, { backgroundColor: C.bg, borderColor: C.border, marginTop: 10, opacity: pinText.trim() ? 1 : 0.5 }]}
+            onPress={addPin}
+            disabled={!pinText.trim()}
+            activeOpacity={0.75}
+          >
+            <Feather name="bookmark" size={15} color={C.text} />
+            <Text style={[s.outlineBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Pin to section</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Section visibility */}
         <Text style={[s.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>SECTION VISIBILITY</Text>
@@ -1403,6 +1564,9 @@ const s = StyleSheet.create({
 
   // Manage
   reqRow: { flexDirection: 'row', alignItems: 'center', gap: 11, padding: 12, paddingHorizontal: 14 } as ViewStyle,
+  pinRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 9, padding: 12, paddingHorizontal: 14 } as ViewStyle,
+  pinTxt: { flex: 1, fontSize: 13, lineHeight: 19 } as any,
+  pinInput: { minHeight: 64, borderRadius: 12, borderWidth: 1, paddingHorizontal: 12, paddingTop: 10, fontSize: 13.5, textAlignVertical: 'top' } as any,
   reqName: { fontSize: 13.5 } as any,
   reqTime: { fontSize: 11.5, marginTop: 1 } as any,
   reqAgo: { fontSize: 11.5 } as any,
