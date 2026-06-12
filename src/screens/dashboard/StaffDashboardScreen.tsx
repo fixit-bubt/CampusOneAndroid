@@ -124,7 +124,7 @@ function ReportCard({ r, C, onAdvance, onPress }: { r: Report; C: any; onAdvance
 
 export function StaffDashboardScreen({ navigation }: any) {
   const { C } = useTheme();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -168,7 +168,14 @@ export function StaffDashboardScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-      <TopBar title="Staff Dashboard" />
+      <TopBar
+        title="Staff Dashboard"
+        right={
+          <TouchableOpacity onPress={signOut} hitSlop={8} activeOpacity={0.7}>
+            <Icon name="logout" size={20} color={C.danger ?? '#e2483d'} />
+          </TouchableOpacity>
+        }
+      />
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}

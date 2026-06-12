@@ -449,20 +449,6 @@ export function ProfileScreen({ navigation }: any) {
           </>
         )}
 
-        {/* Dashboard launcher — staff/admin only, gated by real role */}
-        {(profile?.role === 'staff' || profile?.role === 'admin') && (
-          <TouchableOpacity
-            style={[styles.dashBtn, { backgroundColor: C.brand }]}
-            onPress={() => navigation.navigate(profile.role === 'admin' ? 'AdminDashboard' : 'StaffDashboard')}
-            activeOpacity={0.85}
-          >
-            <Icon name="layers" size={17} color="#fff" />
-            <Text style={[styles.dashTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
-              {profile.role === 'admin' ? 'Admin Dashboard' : 'Staff Dashboard'}
-            </Text>
-          </TouchableOpacity>
-        )}
-
         {/* Sign out */}
         <TouchableOpacity
           style={[styles.logoutBtn, { backgroundColor: C.surface, borderColor: C.border }]}

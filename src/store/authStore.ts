@@ -13,6 +13,7 @@ interface AuthState {
   user: User | null;
   profile: Profile | null;
   loading: boolean;
+  profileLoaded: boolean;
 }
 
 type AuthAction =
@@ -31,9 +32,9 @@ function reducer(state: AuthState, action: AuthAction): AuthState {
         loading: false,
       };
     case 'SET_PROFILE':
-      return { ...state, profile: action.profile };
+      return { ...state, profile: action.profile, profileLoaded: true };
     case 'SIGN_OUT':
-      return { session: null, user: null, profile: null, loading: false };
+      return { session: null, user: null, profile: null, loading: false, profileLoaded: false };
     case 'LOADED':
       return { ...state, loading: false };
     default:
@@ -56,6 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user: null,
     profile: null,
     loading: true,
+    profileLoaded: false,
   });
 
   useEffect(() => {

@@ -11,6 +11,7 @@ import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../store/authStore';
 
 const ISSUE_MAP: Record<string, { icon: string; fg: string }> = {
   electrical: { icon: 'bolt',     fg: '#d9870b' },
@@ -131,6 +132,7 @@ const MANAGE_TILES = [
 
 export function AdminDashboardScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
+  const { signOut } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
   const [staffList, setStaffList] = useState<StaffMember[]>([]);
   const [assignTarget, setAssignTarget] = useState<Report | null>(null);
@@ -190,7 +192,14 @@ export function AdminDashboardScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-      <TopBar title="Admin Dashboard" />
+      <TopBar
+        title="Admin Dashboard"
+        right={
+          <TouchableOpacity onPress={signOut} hitSlop={8} activeOpacity={0.7}>
+            <Icon name="logout" size={20} color={C.danger ?? '#e2483d'} />
+          </TouchableOpacity>
+        }
+      />
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}

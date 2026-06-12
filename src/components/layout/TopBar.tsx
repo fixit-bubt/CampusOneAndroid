@@ -17,9 +17,10 @@ interface TopBarProps {
   unread?: number;
   onAvatar?: () => void;
   onBell?: () => void;
+  right?: React.ReactNode;
 }
 
-export function TopBar({ profile, title, unread = 0, onAvatar, onBell }: TopBarProps) {
+export function TopBar({ profile, title, unread = 0, onAvatar, onBell, right }: TopBarProps) {
   const { C } = useTheme();
   const { isDark, toggleTheme, lang, toggleLang } = useApp();
   const firstName = profile?.full_name?.split(' ')[0] ?? '';
@@ -27,7 +28,8 @@ export function TopBar({ profile, title, unread = 0, onAvatar, onBell }: TopBarP
   if (title) {
     return (
       <View style={[styles.topbar, { backgroundColor: C.surface, paddingHorizontal: Layout.screenPadding }]}>
-        <Text style={[styles.dashTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{title}</Text>
+        <Text style={[styles.dashTitle, { flex: 1, color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{title}</Text>
+        {right ?? null}
       </View>
     );
   }
