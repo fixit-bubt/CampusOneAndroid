@@ -10,12 +10,12 @@ import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout } from '../../theme';
+import { FontFamily, Layout , SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 
-const RIDE_COLOR = '#6e8b1f';
-const RIDE_BG    = '#6e8b1f1e';
+const RIDE_COLOR = SectorColors.ride;
+const RIDE_BG    = `${SectorColors.ride}1e`;
 
 interface Ride {
   id: string;
@@ -170,7 +170,7 @@ export function RidesScreen({ navigation }: any) {
                   {!isOwnRide && (
                     isRequested ? (
                       <View style={[styles.contactCard, { backgroundColor: C.surface2 }]}>
-                        <Text style={[styles.contactLabel, { color: '#0e9c8a', fontFamily: FontFamily.jakartaBold }]}>
+                        <Text style={[styles.contactLabel, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
                           Request sent
                         </Text>
                       </View>
