@@ -11,7 +11,7 @@ import { useAuth } from '../../store/authStore';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { SectorIcon } from '../../components/ui/SectorIcon';
-import { FontFamily, Layout } from '../../theme';
+import { FontFamily, Layout, Accent } from '../../theme';
 import type { SectorKey } from '../../theme';
 import { supabase } from '../../lib/supabase';
 
@@ -26,22 +26,22 @@ function hexAlpha(hex: string, a: number): string {
 
 // ── Accomplishment categories ─────────────────────────────────────────────────
 const CATS: { id: string; label: string; icon: string; fg: string }[] = [
-  { id: 'award',      label: 'Award',      icon: 'award',    fg: '#e08a2b' },
-  { id: 'cert',       label: 'Certificate', icon: 'layers',  fg: '#2b5be3' },
-  { id: 'project',    label: 'Project',    icon: 'study',    fg: '#8b5cf6' },
-  { id: 'volunteer',  label: 'Volunteer',  icon: 'clubs',    fg: '#12915e' },
-  { id: 'leadership', label: 'Leadership', icon: 'directory',fg: '#0e9c8a' },
-  { id: 'research',   label: 'Research',   icon: 'study',    fg: '#ec4899' },
+  { id: 'award',      label: 'Award',      icon: 'award',    fg: Accent.amber },
+  { id: 'cert',       label: 'Certificate', icon: 'layers',  fg: Accent.blue },
+  { id: 'project',    label: 'Project',    icon: 'study',    fg: Accent.purple },
+  { id: 'volunteer',  label: 'Volunteer',  icon: 'clubs',    fg: Accent.green },
+  { id: 'leadership', label: 'Leadership', icon: 'directory',fg: Accent.teal },
+  { id: 'research',   label: 'Research',   icon: 'study',    fg: Accent.pink },
 ];
 
 const CAT_MAP = Object.fromEntries(CATS.map(c => [c.id, c]));
 
 // ── Static badge data ─────────────────────────────────────────────────────────
 const BADGES = [
-  { id: 'reporter',  icon: 'layers',   fg: '#2b5be3', en: 'Reporter',   earned: false, progress: { cur: 1, total: 5 } },
-  { id: 'helper',    icon: 'clubs',    fg: '#12915e', en: 'Helper',      earned: true,  progress: null },
-  { id: 'active',    icon: 'bell',     fg: '#e08a2b', en: 'Active',      earned: true,  progress: null },
-  { id: 'studious',  icon: 'study',    fg: '#8b5cf6', en: 'Studious',    earned: false, progress: { cur: 3, total: 10 } },
+  { id: 'reporter',  icon: 'layers',   fg: Accent.blue, en: 'Reporter',   earned: false, progress: { cur: 1, total: 5 } },
+  { id: 'helper',    icon: 'clubs',    fg: Accent.green, en: 'Helper',      earned: true,  progress: null },
+  { id: 'active',    icon: 'bell',     fg: Accent.amber, en: 'Active',      earned: true,  progress: null },
+  { id: 'studious',  icon: 'study',    fg: Accent.purple, en: 'Studious',    earned: false, progress: { cur: 3, total: 10 } },
 ];
 
 // ── Contribution sector config ────────────────────────────────────────────────
@@ -84,7 +84,7 @@ const badgeStyles = StyleSheet.create({
   medal: {
     width: 56, height: 56, borderRadius: 18,
     alignItems: 'center', justifyContent: 'center',
-    backgroundColor: '#f0f2f6',
+    backgroundColor: Accent.grayBg,
     position: 'relative',
   } as ViewStyle,
   prog: {
@@ -112,9 +112,9 @@ function BadgeSheet({ badge, C, onClose }: { badge: typeof BADGES[0] | null; C: 
             <Text style={[sheetStyles.badgeName, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{badge.en}</Text>
             <View style={{ marginTop: 10 }}>
               {badge.earned ? (
-                <View style={[sheetStyles.earnedPill, { backgroundColor: '#e8f8f0' }]}>
-                  <View style={[sheetStyles.earnedDot, { backgroundColor: '#12915e' }]} />
-                  <Text style={[sheetStyles.earnedTxt, { color: '#12915e', fontFamily: FontFamily.jakartaBold }]}>Earned</Text>
+                <View style={[sheetStyles.earnedPill, { backgroundColor: Accent.greenBg }]}>
+                  <View style={[sheetStyles.earnedDot, { backgroundColor: Accent.green }]} />
+                  <Text style={[sheetStyles.earnedTxt, { color: Accent.green, fontFamily: FontFamily.jakartaBold }]}>Earned</Text>
                 </View>
               ) : (
                 badge.progress && (
@@ -224,7 +224,7 @@ const sheetStyles = StyleSheet.create({
     borderWidth: 1, borderColor: '#ddd',
   } as ViewStyle,
   typeChipTxt: { fontSize: 12.5 } as any,
-  bigMedal: { width: 88, height: 88, borderRadius: 28, alignItems: 'center', justifyContent: 'center', backgroundColor: '#f0f2f6' } as ViewStyle,
+  bigMedal: { width: 88, height: 88, borderRadius: 28, alignItems: 'center', justifyContent: 'center', backgroundColor: Accent.grayBg } as ViewStyle,
   badgeName: { fontSize: 20, letterSpacing: -0.4, marginTop: 14 } as any,
   earnedPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 } as ViewStyle,
   earnedDot: { width: 6, height: 6, borderRadius: 3 } as ViewStyle,
@@ -360,7 +360,7 @@ export function ProfileScreen({ navigation }: any) {
       >
         {/* Hero card */}
         <View style={[styles.hero, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <View style={[styles.heroBand, { backgroundColor: C.brand50 ?? '#eef3ff' }]} />
+          <View style={[styles.heroBand, { backgroundColor: C.brand50 }]} />
           <View style={styles.heroRow}>
             <View style={[styles.avatarWrap, { borderColor: C.bg }]}>
               <Avatar uri={profile?.avatar_url} name={profile?.full_name} size="lg" />
@@ -455,8 +455,8 @@ export function ProfileScreen({ navigation }: any) {
           onPress={signOut}
           activeOpacity={0.8}
         >
-          <Icon name="logout" size={17} color={C.danger ?? '#e2483d'} />
-          <Text style={[styles.logoutTxt, { color: C.danger ?? '#e2483d', fontFamily: FontFamily.jakartaBold }]}>Sign Out</Text>
+          <Icon name="logout" size={17} color={C.danger} />
+          <Text style={[styles.logoutTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>Sign Out</Text>
         </TouchableOpacity>
 
         <View style={{ height: 24 }} />
