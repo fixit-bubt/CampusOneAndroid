@@ -151,6 +151,7 @@ export const Accent = {
   amber:   '#b9760a',   // category: social/furniture (static, = light warn)
   sky:     '#2b88d8',   // category: plumbing
   red:     '#e2483d',   // category: safety / static red accents
+  green:   '#12915e',   // category: documents / earned badges (static, = light success)
   grayBg:  '#f0f2f6',   // neutral pill bg
   tealBg:  '#e4f5f4',   // teal pill bg (resolved/jobs)
   greenBg: '#e8f8f0',   // green pill bg (approve/success chips)
