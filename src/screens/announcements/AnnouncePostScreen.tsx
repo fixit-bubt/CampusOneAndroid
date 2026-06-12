@@ -13,11 +13,16 @@ import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import type { Announcement } from '../../types/database';
 
-const PRIORITIES: { id: Announcement['priority']; label: string; color: string }[] = [
-  { id: 'Urgent',    label: 'Urgent',    color: '#d63d35' },
-  { id: 'Important', label: 'Important', color: '#e08a2b' },
-  { id: 'General',   label: 'General',   color: '#2b5be3' },
+const PRIORITIES: { id: Announcement['priority']; label: string }[] = [
+  { id: 'Urgent',    label: 'Urgent'    },
+  { id: 'Important', label: 'Important' },
+  { id: 'General',   label: 'General'   },
 ];
+
+// Priority accent from theme tokens (dark-mode aware via C)
+function priColor(C: any, id: Announcement['priority']): string {
+  return id === 'Urgent' ? C.danger : id === 'Important' ? C.warn : C.brand;
+}
 
 export function AnnouncePostScreen({ navigation }: any) {
   const { C } = useTheme();
@@ -105,7 +110,7 @@ export function AnnouncePostScreen({ navigation }: any) {
             return (
               <TouchableOpacity
                 key={p.id}
-                style={[styles.segBtn, on && { backgroundColor: p.color }]}
+                style={[styles.segBtn, on && { backgroundColor: priColor(C, p.id) }]}
                 onPress={() => setPriority(p.id)}
                 activeOpacity={0.75}
               >
