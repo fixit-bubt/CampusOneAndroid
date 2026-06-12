@@ -128,6 +128,8 @@ const MANAGE_TILES = [
   { icon: 'directory', fg: '#8b5cf6', label: 'Users',         route: 'ManageUsers',  sub: 'users'      },
   { icon: 'announce',  fg: '#3e7de0', label: 'Announcements', route: 'Announcements',sub: 'announce'   },
   { icon: 'directory', fg: '#0e9c8a', label: 'Faculty',       route: 'Faculty',      sub: 'faculty'    },
+  { icon: 'study',     fg: '#2ba0c9', label: 'Study Hub',     route: 'StudyHub',     sub: 'studyhub'   },
+  { icon: 'clubs',     fg: '#b9760a', label: 'Clubs',         route: 'Clubs',        sub: 'clubs'      },
 ];
 
 export function AdminDashboardScreen({ navigation }: any) {
