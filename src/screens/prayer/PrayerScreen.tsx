@@ -15,6 +15,10 @@ import { supabase } from '../../lib/supabase';
 
 const PRAYER_GREEN = SectorColors.prayer;
 
+// Web parity: Sehri/Iftar strip shown during Ramadan (flag kept on for
+// showcase, same as the web app). Sehri ends at Fajr azan; Iftar at Maghrib.
+const SHOW_RAMADAN_STRIP = true;
+
 interface PrayerTime {
   key: string;
   en: string;
@@ -62,6 +66,7 @@ export function PrayerScreen({ navigation }: any) {
   const [prayers, setPrayers] = useState<PrayerTime[]>([]);
   const [musallah, setMusallah] = useState<Musallah[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [view, setView] = useState<'today' | 'month'>('today');
   const [editPrayer, setEditPrayer] = useState<PrayerTime | null>(null);
   const [jamaatInput, setJamaatInput] = useState('');
   const [musEdit, setMusEdit] = useState<{ id: string | null; name: string; floor_desc: string } | null>(null);
@@ -169,8 +174,94 @@ export function PrayerScreen({ navigation }: any) {
           </LinearGradient>
         )}
 
+        {/* Ramadan strip */}
+        {SHOW_RAMADAN_STRIP && prayers.length > 0 && (
+          <View style={[styles.ramadanStrip, { backgroundColor: isDark ? `${PRAYER_GREEN}24` : `${PRAYER_GREEN}14` }]}>
+            <View style={styles.ramadanCell}>
+              <Text style={[styles.ramadanLbl, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>SEHRI ENDS</Text>
+              <Text style={[styles.ramadanVal, { color: PRAYER_GREEN, fontFamily: FontFamily.jakartaExtraBold }]}>
+                {prayers.find(p => p.key === 'fajr')?.azan ?? '—'}
+              </Text>
+            </View>
+            <View style={[styles.ramadanDiv, { backgroundColor: `${PRAYER_GREEN}44` }]} />
+            <View style={styles.ramadanCell}>
+              <Text style={[styles.ramadanLbl, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>IFTAR</Text>
+              <Text style={[styles.ramadanVal, { color: PRAYER_GREEN, fontFamily: FontFamily.jakartaExtraBold }]}>
+                {prayers.find(p => p.key === 'maghrib')?.azan ?? '—'}
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* Today / Month toggle */}
+        <View style={styles.viewToggle}>
+          {([['today', 'Today'], ['month', 'Month']] as const).map(([id, label]) => {
+            const on = view === id;
+            return (
+              <TouchableOpacity
+                key={id}
+                style={[styles.viewChip, on
+                  ? { backgroundColor: PRAYER_GREEN, borderColor: PRAYER_GREEN }
+                  : { backgroundColor: C.surface, borderColor: C.border }]}
+                onPress={() => setView(id)}
+                activeOpacity={0.75}
+              >
+                <Text style={[styles.viewChipTxt, { color: on ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                  {label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {/* Month table — campus runs a fixed timetable, so every day shares
+            the same times; today's row is highlighted (web parity). */}
+        {view === 'month' && (
+          <View style={[styles.tableCard, { backgroundColor: C.surface, borderColor: C.border, marginTop: 0 }]}>
+            <View style={[styles.monthRow, { paddingVertical: 10 }]}>
+              <Text style={[styles.monthDayCol, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold, fontSize: 10.5 }]}>DAY</Text>
+              {prayers.filter(p => p.key !== 'jumuah').map(p => (
+                <Text key={p.key} style={[styles.monthCol, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold, fontSize: 10.5 }]}>
+                  {p.en.slice(0, 3).toUpperCase()}
+                </Text>
+              ))}
+            </View>
+            {(() => {
+              const now = new Date();
+              const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+              const rows = [];
+              for (let d = 1; d <= daysInMonth; d++) {
+                const isToday = d === now.getDate();
+                rows.push(
+                  <View key={d}>
+                    <View style={[styles.divider, { backgroundColor: C.border }]} />
+                    <View style={[styles.monthRow, isToday && { backgroundColor: isDark ? `${PRAYER_GREEN}24` : `${PRAYER_GREEN}12` }]}>
+                      <Text style={[styles.monthDayCol, {
+                        color: isToday ? PRAYER_GREEN : C.text,
+                        fontFamily: isToday ? FontFamily.jakartaExtraBold : FontFamily.jakartaBold,
+                      }]}>
+                        {d}
+                      </Text>
+                      {prayers.filter(p => p.key !== 'jumuah').map(p => (
+                        <Text key={p.key} style={[styles.monthCol, {
+                          color: isToday ? C.text : C.text2,
+                          fontFamily: FontFamily.jakartaMedium,
+                        }]}>
+                          {p.azan}
+                        </Text>
+                      ))}
+                    </View>
+                  </View>
+                );
+              }
+              return rows;
+            })()}
+          </View>
+        )}
+
         {/* Timetable */}
-        <View style={[styles.tableCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+        {view === 'today' && (
+        <View style={[styles.tableCard, { backgroundColor: C.surface, borderColor: C.border, marginTop: 0 }]}>
           {/* Header row */}
           <View style={styles.tableHeader}>
             <View style={{ flex: 1 }} />
@@ -216,6 +307,7 @@ export function PrayerScreen({ navigation }: any) {
             );
           })}
         </View>
+        )}
 
         {/* Musallah locations */}
         <View style={styles.musHeader}>
@@ -354,6 +446,26 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginTop: 14,
   } as ViewStyle,
+
+  ramadanStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 14,
+    paddingVertical: 12,
+    marginTop: 12,
+  } as ViewStyle,
+  ramadanCell: { flex: 1, alignItems: 'center', gap: 2 } as ViewStyle,
+  ramadanDiv: { width: StyleSheet.hairlineWidth, alignSelf: 'stretch' } as ViewStyle,
+  ramadanLbl: { fontSize: 10, letterSpacing: 0.7 } as any,
+  ramadanVal: { fontSize: 17 } as any,
+
+  viewToggle: { flexDirection: 'row', gap: 7, marginTop: 14, marginBottom: 10 } as ViewStyle,
+  viewChip: { flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: 11, borderWidth: 1 } as ViewStyle,
+  viewChipTxt: { fontSize: 12.5 } as any,
+
+  monthRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8 } as ViewStyle,
+  monthDayCol: { width: 36, fontSize: 12 } as any,
+  monthCol: { flex: 1, textAlign: 'right', fontSize: 11 } as any,
 
   tableHeader: {
     flexDirection: 'row',
