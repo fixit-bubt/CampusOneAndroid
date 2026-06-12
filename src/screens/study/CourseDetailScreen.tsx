@@ -1,16 +1,20 @@
-// Matches design screens-d.jsx — CourseDetail (Materials / Questions / Books tabs)
-import { useState, useEffect } from 'react';
+// Course detail (web parity) — Materials / Questions / Books tabs reading the
+// real three tables (study_materials, study_question_bank, study_books).
+// Questions carry an exam tag and a CR-verifiable "Verified" badge; books can
+// be external links or files. CRs can delete entries.
+import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
-  ActivityIndicator, Alert, type ViewStyle,
+  ActivityIndicator, Alert, Linking, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout , SectorColors } from '../../theme';
+import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../store/authStore';
 
 const STUDY_COLOR = SectorColors.study;
 const STUDY_BG    = `${SectorColors.study}1e`;
@@ -23,34 +27,62 @@ const TAB_LABELS: Record<Tab, string> = {
   books:     'Books',
 };
 
-interface CourseFile {
+interface Entry {
   id: string;
   title: string;
-  storage_path: string;
-  type: Tab;
+  storage_path: string | null;
+  url?: string | null;
+  exam?: string | null;
+  verified?: boolean;
+  author?: string | null;
+  table: 'study_materials' | 'study_question_bank' | 'study_books';
 }
 
 export function CourseDetailScreen({ route, navigation }: any) {
   const { C, isDark } = useTheme();
+  const { user, profile } = useAuth();
   const { courseId } = route.params;
   const [course, setCourse] = useState<any>(null);
-  const [files, setFiles] = useState<CourseFile[]>([]);
+  const [materials, setMaterials] = useState<Entry[]>([]);
+  const [questions, setQuestions] = useState<Entry[]>([]);
+  const [books, setBooks] = useState<Entry[]>([]);
+  const [isCR, setIsCR] = useState(false);
   const [tab, setTab] = useState<Tab>('materials');
 
-  useEffect(() => {
-    (async () => {
-      const [courseRes, filesRes] = await Promise.all([
-        supabase.from('study_courses').select('*').eq('id', courseId).single(),
-        supabase.from('study_materials').select('*').eq('course_id', courseId),
-      ]);
-      if (courseRes.error) { console.warn('CourseDetail course:', courseRes.error.message); }
-      if (filesRes.error) { console.warn('CourseDetail files:', filesRes.error.message); }
-      if (courseRes.data) setCourse(courseRes.data);
-      if (filesRes.data) setFiles(filesRes.data as CourseFile[]);
-    })();
-  }, [courseId]);
+  const load = useCallback(async () => {
+    const [courseRes, matRes, qbRes, bookRes] = await Promise.all([
+      supabase.from('study_courses').select('*').eq('id', courseId).single(),
+      supabase.from('study_materials').select('*').eq('course_id', courseId).order('created_at', { ascending: false }),
+      supabase.from('study_question_bank').select('*').eq('course_id', courseId).order('created_at', { ascending: false }),
+      supabase.from('study_books').select('*').eq('course_id', courseId).order('created_at', { ascending: false }),
+    ]);
+    if (courseRes.data) {
+      setCourse(courseRes.data);
+      // CR check on the course's section (admins moderate too).
+      if (user) {
+        const { data: me } = await supabase
+          .from('study_section_members')
+          .select('role')
+          .eq('section_id', courseRes.data.section_id)
+          .eq('user_id', user.id)
+          .eq('status', 'approved')
+          .maybeSingle();
+        setIsCR(me?.role === 'cr' || profile?.role === 'admin');
+      }
+    }
+    if (matRes.data) setMaterials((matRes.data as any[]).map(r => ({ ...r, table: 'study_materials' as const })));
+    if (qbRes.data) setQuestions((qbRes.data as any[]).map(r => ({ ...r, table: 'study_question_bank' as const })));
+    if (bookRes.data) setBooks((bookRes.data as any[]).map(r => ({ ...r, table: 'study_books' as const })));
+  }, [courseId, user, profile?.role]);
 
-  async function openFile(f: CourseFile) {
+  useEffect(() => {
+    const unsub = navigation.addListener('focus', load);
+    load();
+    return unsub;
+  }, [load, navigation]);
+
+  async function openEntry(f: Entry) {
+    if (f.url) { Linking.openURL(f.url); return; }
     if (!f.storage_path) return;
     const { data, error } = await supabase.storage
       .from('study-materials')
@@ -59,8 +91,30 @@ export function CourseDetailScreen({ route, navigation }: any) {
       Alert.alert('Error', error?.message ?? 'Could not open file');
       return;
     }
-    const { Linking } = require('react-native');
     Linking.openURL(data.signedUrl);
+  }
+
+  async function toggleVerified(f: Entry) {
+    const { error } = await supabase
+      .from('study_question_bank')
+      .update({ verified: !f.verified })
+      .eq('id', f.id);
+    if (error) { Alert.alert('Error', error.message); return; }
+    setQuestions(prev => prev.map(x => (x.id === f.id ? { ...x, verified: !f.verified } : x)));
+  }
+
+  function deleteEntry(f: Entry) {
+    Alert.alert('Delete?', f.title, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete', style: 'destructive',
+        onPress: async () => {
+          const { error } = await supabase.from(f.table).delete().eq('id', f.id);
+          if (error) { Alert.alert('Error', error.message); return; }
+          load();
+        },
+      },
+    ]);
   }
 
   if (!course) {
@@ -72,11 +126,10 @@ export function CourseDetailScreen({ route, navigation }: any) {
     );
   }
 
-  const tabFiles = files.filter(f => f.type === tab);
+  const lists: Record<Tab, Entry[]> = { materials, questions, books };
+  const tabFiles = lists[tab];
   const counts: Record<Tab, number> = {
-    materials: files.filter(f => f.type === 'materials').length,
-    questions: files.filter(f => f.type === 'questions').length,
-    books:     files.filter(f => f.type === 'books').length,
+    materials: materials.length, questions: questions.length, books: books.length,
   };
   const tintBg = isDark ? `${STUDY_COLOR}2e` : STUDY_BG;
 
@@ -109,7 +162,7 @@ export function CourseDetailScreen({ route, navigation }: any) {
               onPress={() => setTab(t)}
               activeOpacity={0.75}
             >
-              <Text style={[styles.chipTxt, { color: tab === t ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>
+              <Text style={[styles.chipTxt, { color: tab === t ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>
                 {TAB_LABELS[t]}
               </Text>
               <Text style={[styles.chipCount, { color: tab === t ? 'rgba(255,255,255,0.7)' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
@@ -136,13 +189,41 @@ export function CourseDetailScreen({ route, navigation }: any) {
                   <Text style={[styles.fileName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                     {f.title}
                   </Text>
+                  <View style={styles.metaRow}>
+                    {tab === 'questions' && f.exam ? (
+                      <View style={[styles.tagPill, { backgroundColor: C.surface2 }]}>
+                        <Text style={[styles.tagTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>{f.exam}</Text>
+                      </View>
+                    ) : null}
+                    {tab === 'questions' && f.verified ? (
+                      <View style={[styles.tagPill, { backgroundColor: C.successBg }]}>
+                        <Feather name="check" size={9} color={C.success} />
+                        <Text style={[styles.tagTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>Verified</Text>
+                      </View>
+                    ) : null}
+                    {tab === 'books' && f.author ? (
+                      <Text style={[styles.fileSize, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                        {f.author}
+                      </Text>
+                    ) : null}
+                  </View>
                 </View>
+                {tab === 'questions' && isCR && (
+                  <TouchableOpacity onPress={() => toggleVerified(f)} hitSlop={6} activeOpacity={0.7} style={{ padding: 4 }}>
+                    <Feather name="check-circle" size={17} color={f.verified ? C.success : C.textMuted} />
+                  </TouchableOpacity>
+                )}
+                {isCR && (
+                  <TouchableOpacity onPress={() => deleteEntry(f)} hitSlop={6} activeOpacity={0.7} style={{ padding: 4 }}>
+                    <Feather name="trash-2" size={15} color={C.danger} />
+                  </TouchableOpacity>
+                )}
                 <TouchableOpacity
                   style={styles.downloadBtn}
-                  onPress={() => openFile(f)}
+                  onPress={() => openEntry(f)}
                   activeOpacity={0.75}
                 >
-                  <Feather name="download" size={19} color={C.text2} />
+                  <Feather name={f.url ? 'external-link' : 'download'} size={18} color={C.text2} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -165,12 +246,15 @@ const styles = StyleSheet.create({
   chipTxt: { fontSize: 12.5 } as any,
   chipCount: { fontSize: 12 } as any,
   filesList: { borderRadius: 16, borderWidth: 1, overflow: 'hidden', marginTop: 12 } as ViewStyle,
-  fileRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 13, paddingHorizontal: 15 } as ViewStyle,
+  fileRow: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 13, paddingHorizontal: 15 } as ViewStyle,
   fileIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexShrink: 0 } as ViewStyle,
   fileBody: { flex: 1, minWidth: 0 } as ViewStyle,
   fileName: { fontSize: 14 } as any,
-  fileSize: { fontSize: 11.5, marginTop: 1 } as any,
-  downloadBtn: { padding: 8 } as ViewStyle,
+  fileSize: { fontSize: 11.5 } as any,
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 } as ViewStyle,
+  tagPill: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 999 } as ViewStyle,
+  tagTxt: { fontSize: 10 } as any,
+  downloadBtn: { padding: 6 } as ViewStyle,
   divider: { height: StyleSheet.hairlineWidth } as ViewStyle,
   empty: { padding: 24, alignItems: 'center' } as ViewStyle,
   emptyTxt: { fontSize: 13.5 } as any,
