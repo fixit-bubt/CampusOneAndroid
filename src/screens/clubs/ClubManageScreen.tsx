@@ -19,13 +19,19 @@ interface Member {
   profiles: { full_name: string };
 }
 
+const CATEGORIES = ['academic', 'cultural', 'sports', 'technical', 'social', 'other'];
+
 export function ClubManageScreen({ route, navigation }: any) {
   const { C } = useTheme();
   const { user } = useAuth();
   const { clubId } = route.params;
   const id = clubId;
   const [name, setName] = useState('');
-  const [desc, setDesc] = useState('');
+  const [tagline, setTagline] = useState('');
+  const [about, setAbout] = useState('');
+  const [category, setCategory] = useState('other');
+  const [advisor, setAdvisor] = useState<string | null>(null);
+  const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [confirm, setConfirm] = useState<Member | null>(null);
   const [loading, setLoading] = useState(true);
@@ -34,12 +40,16 @@ export function ClubManageScreen({ route, navigation }: any) {
   useEffect(() => {
     (async () => {
       const [clubRes, membersRes] = await Promise.all([
-        supabase.from('clubs').select('name, description').eq('id', id).single(),
+        supabase.from('clubs').select('name, tagline, about, category, faculty_advisor_id, cover_url').eq('id', id).single(),
         supabase.from('club_members').select('*, profiles:user_id(full_name)').eq('club_id', id),
       ]);
       if (clubRes.data) {
         setName(clubRes.data.name ?? '');
-        setDesc(clubRes.data.description ?? '');
+        setTagline(clubRes.data.tagline ?? '');
+        setAbout(clubRes.data.about ?? '');
+        setCategory(clubRes.data.category ?? 'other');
+        setAdvisor(clubRes.data.faculty_advisor_id ?? null);
+        setCoverUrl(clubRes.data.cover_url ?? null);
       }
       if (membersRes.data) setMembers(membersRes.data as any);
       setLoading(false);
@@ -49,30 +59,29 @@ export function ClubManageScreen({ route, navigation }: any) {
   async function saveChanges() {
     if (!name.trim()) return;
     setSaving(true);
-    await supabase.from('clubs').update({ name: name.trim(), description: desc.trim() }).eq('id', id);
+    // club_update_details RPC — RLS-safe edit path used by the web app too.
+    const { error } = await supabase.rpc('club_update_details', {
+      p_club_id: id,
+      p_name: name.trim(),
+      p_tagline: tagline.trim() || null,
+      p_about: about.trim() || null,
+      p_category: category,
+      p_advisor: advisor,
+      p_cover_url: coverUrl,
+    });
     setSaving(false);
+    if (error) { Alert.alert('Error', error.message); return; }
     navigation.goBack();
   }
 
   async function transferPresidency(memberId: string) {
     setSaving(true);
-    const { error: err1 } = await supabase.from('club_members')
-      .update({ role: 'president' })
-      .eq('club_id', id).eq('user_id', memberId);
-    if (err1) {
-      Alert.alert('Error', 'Transfer failed: ' + err1.message);
-      setSaving(false);
-      return;
-    }
-    const { error: err2 } = await supabase.from('club_members')
-      .update({ role: 'member' })
-      .eq('club_id', id).eq('user_id', user!.id);
-    if (err2) {
-      Alert.alert('Error', 'Transfer partially completed. Please contact support.');
-      setSaving(false);
-      return;
-    }
+    const { error } = await supabase.rpc('club_set_president', {
+      p_club_id: id,
+      p_user_id: memberId,
+    });
     setSaving(false);
+    if (error) { Alert.alert('Error', 'Transfer failed: ' + error.message); return; }
     setConfirm(null);
     navigation.goBack();
   }
@@ -106,17 +115,47 @@ export function ClubManageScreen({ route, navigation }: any) {
           placeholderTextColor={C.textMuted}
         />
 
-        <Text style={[styles.fieldLabel, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>Description</Text>
+        <Text style={[styles.fieldLabel, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>Tagline</Text>
+        <TextInput
+          style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
+          value={tagline}
+          onChangeText={setTagline}
+          placeholder="One-line tagline"
+          placeholderTextColor={C.textMuted}
+        />
+
+        <Text style={[styles.fieldLabel, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>About</Text>
         <TextInput
           style={[styles.textarea, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
-          value={desc}
-          onChangeText={setDesc}
-          placeholder="Club description"
+          value={about}
+          onChangeText={setAbout}
+          placeholder="What this club does"
           placeholderTextColor={C.textMuted}
           multiline
           numberOfLines={4}
           textAlignVertical="top"
         />
+
+        <Text style={[styles.fieldLabel, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold, marginTop: 12 }]}>Category</Text>
+        <View style={styles.catRow}>
+          {CATEGORIES.map(c => {
+            const on = category === c;
+            return (
+              <TouchableOpacity
+                key={c}
+                style={[styles.catChip, on
+                  ? { backgroundColor: C.brand, borderColor: C.brand }
+                  : { backgroundColor: C.surface, borderColor: C.border }]}
+                onPress={() => setCategory(c)}
+                activeOpacity={0.75}
+              >
+                <Text style={[styles.catChipTxt, { color: on ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                  {c.charAt(0).toUpperCase() + c.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
 
         <TouchableOpacity
           style={[styles.saveBtn, { backgroundColor: C.brand, opacity: name.trim() && !saving ? 1 : 0.5 }]}
@@ -124,8 +163,8 @@ export function ClubManageScreen({ route, navigation }: any) {
           disabled={!name.trim() || saving}
           activeOpacity={0.85}
         >
-          <Icon name="check" size={18} color="#fff" />
-          <Text style={[styles.saveBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>Save changes</Text>
+          <Icon name="check" size={18} color={C.white} />
+          <Text style={[styles.saveBtnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>Save changes</Text>
         </TouchableOpacity>
 
         {/* Transfer presidency */}
@@ -183,8 +222,8 @@ export function ClubManageScreen({ route, navigation }: any) {
             onPress={() => confirm && transferPresidency(confirm.user_id)}
             activeOpacity={0.85}
           >
-            <Icon name="check" size={18} color="#fff" />
-            <Text style={[styles.confirmTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>Confirm transfer</Text>
+            <Icon name="check" size={18} color={C.white} />
+            <Text style={[styles.confirmTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>Confirm transfer</Text>
           </TouchableOpacity>
         </View>
       </Modal>
@@ -212,6 +251,9 @@ const styles = StyleSheet.create({
   presTxt: { fontSize: 11 } as any,
   makeBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 9, paddingVertical: 7, borderRadius: 10, borderWidth: 1 } as ViewStyle,
   makeBtnTxt: { fontSize: 12 } as any,
+  catRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 } as ViewStyle,
+  catChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, borderWidth: 1 } as ViewStyle,
+  catChipTxt: { fontSize: 12 } as any,
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' } as ViewStyle,
   sheet: { borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 36 } as ViewStyle,
   sheetTitle: { fontSize: 16, marginBottom: 10 } as any,
