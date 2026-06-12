@@ -42,6 +42,7 @@ export function BloodScreen({ navigation }: any) {
   const { C } = useTheme();
   const { user } = useAuth();
   const [tab, setTab] = useState<Tab>('requests');
+  const [groupFilter, setGroupFilter] = useState('All');
   const [requests, setRequests] = useState<BloodRequest[]>([]);
   const [donors, setDonors]     = useState<Donor[]>([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -189,6 +190,32 @@ export function BloodScreen({ navigation }: any) {
         ))}
       </View>
 
+      {/* Blood group filter */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={{ flexGrow: 0 }}
+        contentContainerStyle={[styles.groupChips, { paddingHorizontal: Layout.screenPadding }]}
+      >
+        {['All', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(g => {
+          const on = groupFilter === g;
+          return (
+            <TouchableOpacity
+              key={g}
+              style={[styles.groupChip, on
+                ? { backgroundColor: C.danger, borderColor: C.danger }
+                : { backgroundColor: C.surface, borderColor: C.border }]}
+              onPress={() => setGroupFilter(g)}
+              activeOpacity={0.75}
+            >
+              <Text style={[styles.groupChipTxt, { color: on ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                {g}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
@@ -196,7 +223,7 @@ export function BloodScreen({ navigation }: any) {
       >
         {tab === 'requests' ? (
           <View style={styles.list}>
-            {requests.map(r => {
+            {requests.filter(r => groupFilter === 'All' || r.blood_group === groupFilter).map(r => {
               const { fg, bg } = urgencyTone(C, r.urgency);
               return (
                 <View key={r.id} style={[styles.reqCard, { backgroundColor: C.surface, borderColor: C.border }]}>
@@ -272,7 +299,11 @@ export function BloodScreen({ navigation }: any) {
 
             {/* Donor list */}
             <View style={[styles.donorList, { backgroundColor: C.surface, borderColor: C.border }]}>
-              {donors.map((d, i) => (
+              {donors.filter(d => groupFilter === 'All' || d.blood_group === groupFilter).map((d, i) => {
+                // 90-day eligibility window (web parity)
+                const eligible = !d.last_donated ||
+                  (Date.now() - new Date(d.last_donated).getTime()) / 86400000 >= 90;
+                return (
                 <View key={d.user_id}>
                   {i > 0 && <View style={[styles.divider, { backgroundColor: C.border }]} />}
                   <View style={styles.donorRow}>
@@ -284,6 +315,11 @@ export function BloodScreen({ navigation }: any) {
                       <Text style={[styles.donorMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
                         {d.area} · Last: {d.last_donated ?? 'Never'}
                       </Text>
+                      <View style={[styles.eligPill, { backgroundColor: eligible ? C.successBg : C.warnBg }]}>
+                        <Text style={[styles.eligTxt, { color: eligible ? C.success : C.warn, fontFamily: FontFamily.jakartaBold }]}>
+                          {eligible ? 'Eligible' : 'Recently donated'}
+                        </Text>
+                      </View>
                     </View>
                     <GroupBadge group={d.blood_group} size={34} />
                     <TouchableOpacity
@@ -298,7 +334,7 @@ export function BloodScreen({ navigation }: any) {
                     </TouchableOpacity>
                   </View>
                 </View>
-              ))}
+              );})}
             </View>
           </View>
         )}
@@ -314,6 +350,11 @@ const styles = StyleSheet.create({
   actBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, height: 38, borderRadius: 12 } as ViewStyle,
   actBtnTxt: { fontSize: 13 } as any,
   chips: { flexDirection: 'row', gap: 8, paddingVertical: 8 } as ViewStyle,
+  groupChips: { flexDirection: 'row', gap: 6, paddingBottom: 8 } as ViewStyle,
+  groupChip: { paddingHorizontal: 11, paddingVertical: 6, borderRadius: 999, borderWidth: 1 } as ViewStyle,
+  groupChipTxt: { fontSize: 11.5 } as any,
+  eligPill: { alignSelf: 'flex-start', paddingHorizontal: 7, paddingVertical: 2.5, borderRadius: 999, marginTop: 4 } as ViewStyle,
+  eligTxt: { fontSize: 10 } as any,
   chip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1 } as ViewStyle,
   chipTxt: { fontSize: 12.5 } as any,
   chipCount: { fontSize: 12 } as any,
