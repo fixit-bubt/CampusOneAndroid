@@ -6,6 +6,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
 import { useAuth } from '../store/authStore';
+import { useT } from '../i18n';
 import { FontFamily, FontSize, Layout } from '../theme';
 import type { BottomTabParams } from '../types/navigation';
 
@@ -20,16 +21,23 @@ const Tab = createBottomTabNavigator<BottomTabParams>();
 
 type FeatherName = React.ComponentProps<typeof Feather>['name'];
 
-const TAB_CONFIG: Record<keyof BottomTabParams, { icon: FeatherName; label: string }> = {
-  Home:          { icon: 'home',     label: 'Home' },
-  Explore:       { icon: 'grid',     label: 'Explore' },
-  Notifications: { icon: 'bell',     label: 'Alerts' },
-  Profile:       { icon: 'user',     label: 'Profile' },
+const TAB_ICON: Record<keyof BottomTabParams, FeatherName> = {
+  Home:          'home',
+  Explore:       'grid',
+  Notifications: 'bell',
+  Profile:       'user',
 };
 
 export function BottomTabNavigator() {
   const { C } = useTheme();
   const { profile } = useAuth();
+  const t = useT();
+  const TAB_LABEL: Record<keyof BottomTabParams, string> = {
+    Home: t.tabs.home,
+    Explore: t.tabs.explore,
+    Notifications: t.tabs.alerts,
+    Profile: t.tabs.profile,
+  };
   const HomeComponent =
     profile?.role === 'admin' ? AdminDashboardScreen :
     profile?.role === 'staff' ? StaffDashboardScreen :
@@ -38,7 +46,7 @@ export function BottomTabNavigator() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => {
-        const cfg = TAB_CONFIG[route.name as keyof BottomTabParams];
+        const key = route.name as keyof BottomTabParams;
         return {
           headerShown: false,
           tabBarStyle: {
@@ -54,9 +62,9 @@ export function BottomTabNavigator() {
             fontFamily: FontFamily.jakartaSemiBold,
             fontSize: FontSize.xs,
           },
-          tabBarLabel: cfg?.label ?? route.name,
+          tabBarLabel: TAB_LABEL[key] ?? route.name,
           tabBarIcon: ({ color, size }) => (
-            <Feather name={cfg?.icon ?? 'circle'} size={size} color={color} />
+            <Feather name={TAB_ICON[key] ?? 'circle'} size={size} color={color} />
           ),
         };
       }}
