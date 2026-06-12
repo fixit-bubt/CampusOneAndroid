@@ -13,13 +13,16 @@ export type UploadResult =
 
 /**
  * Upload a local file URI to a Supabase storage bucket.
- * Returns the public URL on success.
+ * Public buckets get a permanent public URL. Private buckets get the storage
+ * PATH back as `url` — store that in the DB and sign it at view time with
+ * getSignedUrl (a public URL on a private bucket would 403).
  */
 export async function uploadFile(
   bucket: string,
   localUri: string,
   remotePath: string,
   contentType = 'image/jpeg',
+  bucketIsPublic = true,
 ): Promise<UploadResult> {
   try {
     const base64 = await FileSystem.readAsStringAsync(localUri, {
@@ -33,6 +36,8 @@ export async function uploadFile(
       .upload(remotePath, bytes, { contentType, upsert: true });
 
     if (error) return { success: false, error: error.message };
+
+    if (!bucketIsPublic) return { success: true, url: remotePath, path: remotePath };
 
     const { data } = supabase.storage.from(bucket).getPublicUrl(remotePath);
     return { success: true, url: data.publicUrl, path: remotePath };
@@ -56,7 +61,8 @@ export async function uploadPhoto(
 }
 
 /**
- * Upload a proof document (private bucket).
+ * Upload a proof document (private bucket). Returns the storage PATH —
+ * store it and resolve with getSignedUrl(BUCKETS.proofs, path) to view.
  */
 export async function uploadProof(
   localUri: string,
@@ -66,7 +72,7 @@ export async function uploadProof(
   const timestamp = new Date().getTime();
   const ext = contentType === 'application/pdf' ? 'pdf' : 'jpg';
   const path = `${userId}/${timestamp}.${ext}`;
-  return uploadFile(BUCKETS.proofs, localUri, path, contentType);
+  return uploadFile(BUCKETS.proofs, localUri, path, contentType, false);
 }
 
 /**
