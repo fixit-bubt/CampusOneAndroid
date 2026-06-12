@@ -131,7 +131,7 @@ const MANAGE_TILES = [
   { icon: 'announce',  fg: SectorColors.announce, label: 'Announcements', route: 'Announcements',sub: 'announce'   },
   { icon: 'directory', fg: Accent.teal, label: 'Faculty',       route: 'Faculty',      sub: 'faculty'    },
   { icon: 'study',     fg: SectorColors.study, label: 'Study Hub',     route: 'StudyHub',     sub: 'studyhub'   },
-  { icon: 'clubs',     fg: Accent.amber, label: 'Clubs',         route: 'Clubs',        sub: 'clubs'      },
+  { icon: 'clubs',     fg: Accent.amber, label: 'Clubs',         route: 'ManageClubs',  sub: 'clubs'      },
   { icon: 'medical',   fg: SectorColors.medical, label: 'Medical Queue', route: 'MedicalQueue', sub: 'medqueue'   },
 ];
 
