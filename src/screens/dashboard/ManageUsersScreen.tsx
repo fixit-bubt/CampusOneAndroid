@@ -314,8 +314,8 @@ export function ManageUsersScreen({ navigation }: any) {
 
       {/* Toast */}
       {toast && (
-        <View style={styles.toast} pointerEvents="none">
-          <Text style={[styles.toastTxt, { fontFamily: FontFamily.jakartaBold }]}>✓ Saved</Text>
+        <View style={[styles.toast, { backgroundColor: C.text }]} pointerEvents="none">
+          <Text style={[styles.toastTxt, { color: C.bg, fontFamily: FontFamily.jakartaBold }]}>✓ Saved</Text>
         </View>
       )}
     </SafeAreaView>
@@ -401,7 +401,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 36,
     alignSelf: 'center',
-    backgroundColor: '#1a1a2e',
+    
     paddingHorizontal: 18,
     paddingVertical: 11,
     borderRadius: 999,
@@ -412,7 +412,7 @@ const styles = StyleSheet.create({
   } as ViewStyle,
 
   toastTxt: {
-    color: '#fff',
+    
     fontSize: 13.5,
   } as any,
 
