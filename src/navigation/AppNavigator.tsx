@@ -32,6 +32,8 @@ import { PrayerScreen }            from '../screens/prayer/PrayerScreen';
 import { ClubsScreen }             from '../screens/clubs/ClubsScreen';
 import { ClubDetailScreen }        from '../screens/clubs/ClubDetailScreen';
 import { ClubManageScreen }        from '../screens/clubs/ClubManageScreen';
+import { ClubMembersScreen }       from '../screens/clubs/ClubMembersScreen';
+import { ManageClubsScreen }       from '../screens/dashboard/ManageClubsScreen';
 import { StudyHubScreen }          from '../screens/study/StudyHubScreen';
 import { CourseDetailScreen }      from '../screens/study/CourseDetailScreen';
 import { FacultyScreen }           from '../screens/faculty/FacultyScreen';
@@ -119,6 +121,8 @@ export function AppNavigator() {
       <Stack.Screen name="Clubs"          component={ClubsScreen} />
       <Stack.Screen name="ClubDetail"     component={ClubDetailScreen} />
       <Stack.Screen name="ClubManage"     component={ClubManageScreen} />
+      <Stack.Screen name="ClubMembers"    component={ClubMembersScreen} />
+      <Stack.Screen name="ManageClubs"    component={ManageClubsScreen} />
 
       {/* Study */}
       <Stack.Screen name="StudyHub"       component={StudyHubScreen} />
