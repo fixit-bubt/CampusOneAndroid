@@ -10,6 +10,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { TopBar } from '../../components/layout/TopBar';
+import { CampusToday } from '../../components/CampusToday';
 import { SectorIcon } from '../../components/ui/SectorIcon';
 import { Icon } from '../../components/ui/Icon';
 import { Avatar } from '../../components/ui/Avatar';
@@ -269,6 +270,8 @@ export function HomeScreen({ navigation }: any) {
             ))}
           </View>
         )}
+
+        <CampusToday navigation={navigation} />
 
         <View style={{ height: 20 }} />
       </ScrollView>
