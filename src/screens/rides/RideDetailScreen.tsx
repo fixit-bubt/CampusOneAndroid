@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator, type ViewStyle,
+  ActivityIndicator, Alert, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -19,7 +19,8 @@ const RIDE_BG    = '#6e8b1f1e';
 
 export function RideDetailScreen({ route, navigation }: any) {
   const { C } = useTheme();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const isAdmin = profile?.role === 'admin';
   const { rideId } = route.params;
   const [ride, setRide] = useState<any>(null);
   const [driverName, setDriverName] = useState<string | null>(null);
@@ -56,7 +57,8 @@ export function RideDetailScreen({ route, navigation }: any) {
           p_code:   rideRes.data.code,
           p_target: rideRes.data.driver_id,
         });
-        if (c) setContact(c);
+        const row = Array.isArray(c) ? c[0] : c;
+        if (row) setContact(row);
       }
       setTakenCount(takenRes.data?.length ?? 0);
     })();
@@ -74,8 +76,23 @@ export function RideDetailScreen({ route, navigation }: any) {
         p_code:   ride.code,
         p_target: ride.driver_id,
       });
-      if (c) setContact(c);
+      const row = Array.isArray(c) ? c[0] : c;
+      if (row) setContact(row);
     }
+  }
+
+  function adminDelete() {
+    Alert.alert('Delete ride', 'Remove this ride post permanently?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete', style: 'destructive',
+        onPress: async () => {
+          const { error } = await supabase.from('rides').delete().eq('id', rideId);
+          if (error) { Alert.alert('Error', error.message); return; }
+          navigation.goBack();
+        },
+      },
+    ]);
   }
 
   if (!ride) {
@@ -182,6 +199,18 @@ export function RideDetailScreen({ route, navigation }: any) {
               </Text>
             </TouchableOpacity>
           )
+        )}
+
+        {/* Admin moderation */}
+        {!isOwnRide && isAdmin && (
+          <TouchableOpacity
+            style={[styles.actionBtn, { backgroundColor: '#fbe7e5', marginTop: 10 }]}
+            onPress={adminDelete}
+            activeOpacity={0.85}
+          >
+            <Icon name="trash" size={16} color="#e2483d" />
+            <Text style={[styles.actionTxt, { color: '#e2483d', fontFamily: FontFamily.jakartaBold }]}>Delete ride (admin)</Text>
+          </TouchableOpacity>
         )}
 
         <View style={{ height: 26 }} />
