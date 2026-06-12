@@ -11,12 +11,10 @@ import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout , SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
+import { useT } from '../../i18n';
 
 const MED_COLOR = SectorColors.medical;
 const MED_BG    = `${SectorColors.medical}1e`;
-
-const SLOTS = ['Morning', 'Afternoon', 'Evening'] as const;
-type Slot = typeof SLOTS[number];
 
 interface Doctor {
   id: string;
@@ -54,43 +52,93 @@ function ScheduleRow({ icon, label, value, C }: any) {
   );
 }
 
-const SLOT_TIME: Record<Slot, string> = {
-  Morning: '09:00',
-  Afternoon: '13:00',
-  Evening: '17:00',
-};
+// 20-minute slot grid between the doctor's start and end times (web parity).
+function slotsFor(doc: Doctor): string[] {
+  const [sh = 9, sm = 0] = (doc.start_time ?? '09:00').split(':').map(Number);
+  const [eh = 17, em = 0] = (doc.end_time ?? '17:00').split(':').map(Number);
+  const out: string[] = [];
+  for (let m = sh * 60 + sm; m + 20 <= eh * 60 + em; m += 20) {
+    out.push(`${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`);
+  }
+  return out;
+}
+
+function fmtSlot(hhmm: string): string {
+  const [h = 0, m = 0] = hhmm.split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
+}
+
+const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+function localISO(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// Next n calendar dates (starting today) on which the doctor is on duty.
+function nextDutyDates(doc: Doctor, n: number): { iso: string; label: string }[] {
+  const out: { iso: string; label: string }[] = [];
+  const d = new Date();
+  for (let i = 0; i < 21 && out.length < n; i++) {
+    if (doc.days?.includes(DAY_NAMES[d.getDay()])) {
+      out.push({
+        iso: localISO(d),
+        label: `${DAY_NAMES[d.getDay()]} ${d.getDate()}/${d.getMonth() + 1}`,
+      });
+    }
+    d.setDate(d.getDate() + 1);
+  }
+  return out;
+}
 
 export function DoctorDetailScreen({ route, navigation }: any) {
   const { C } = useTheme();
   const { user } = useAuth();
+  const t = useT();
   const { doctorId } = route.params;
   const [doctor, setDoctor] = useState<Doctor | null>(null);
-  const [selectedSlot, setSelectedSlot] = useState<Slot>('Morning');
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [booking, setBooking] = useState(false);
   const [takenSlots, setTakenSlots] = useState<Set<string>>(new Set());
   const onDuty = doctor ? isOnDuty(doctor) : false;
 
-  const today = new Date().toISOString().split('T')[0];
+  const dutyDates = doctor ? nextDutyDates(doctor, 5) : [];
+  const slots = doctor ? slotsFor(doctor) : [];
 
-  async function loadTakenSlots() {
+  const loadTakenSlots = async (date: string) => {
     // Web parity: booked_slots returns the taken HH:MM slots for doctor+date
-    const { data } = await supabase.rpc('booked_slots', { p_doctor_id: doctorId, p_date: today });
+    const { data } = await supabase.rpc('booked_slots', { p_doctor_id: doctorId, p_date: date });
     const rows = Array.isArray(data) ? data : data ? [data] : [];
     setTakenSlots(new Set(rows.map((r: any) => (typeof r === 'string' ? r : r.slot ?? r.booked_slots))));
-  }
+  };
 
   useEffect(() => {
     (async () => {
       const { data } = await supabase.from('doctors').select('*').eq('id', doctorId).single();
-      if (data) setDoctor(data as Doctor);
-      loadTakenSlots();
+      if (data) {
+        const doc = data as Doctor;
+        setDoctor(doc);
+        const first = nextDutyDates(doc, 1)[0];
+        if (first) {
+          setSelectedDate(first.iso);
+          loadTakenSlots(first.iso);
+        }
+      }
     })();
   }, [doctorId]);
 
+  function pickDate(iso: string) {
+    setSelectedDate(iso);
+    setSelectedSlot(null);
+    loadTakenSlots(iso);
+  }
+
   async function bookAppointment() {
-    if (!doctor || !user) return;
-    if (takenSlots.has(SLOT_TIME[selectedSlot])) {
-      Alert.alert('Slot taken', 'That slot is already booked. Pick another.');
+    if (!doctor || !user || !selectedDate || !selectedSlot) return;
+    if (takenSlots.has(selectedSlot)) {
+      Alert.alert(t.common.error, t.medical.slotTaken);
       return;
     }
     setBooking(true);
@@ -98,24 +146,19 @@ export function DoctorDetailScreen({ route, navigation }: any) {
       const { data, error } = await supabase.from('appointments').insert({
         doctor_id:  doctor.id,
         student_id: user.id,
-        slot:       SLOT_TIME[selectedSlot],
-        date:       today,
+        slot:       selectedSlot,
+        date:       selectedDate,
         status:     'Booked',
       }).select('token').single();
       if (error) {
-        const msg = error.code === '23505'
-          ? 'That slot was just taken by someone else. Pick another.'
-          : error.message;
-        Alert.alert('Could not book', msg);
-        loadTakenSlots();
+        const msg = error.code === '23505' ? t.medical.slotTaken : error.message;
+        Alert.alert(t.common.error, msg);
+        loadTakenSlots(selectedDate);
         return;
       }
-      Alert.alert(
-        'Booked',
-        `Your ${selectedSlot} appointment with ${doctor.name} is booked for today.` +
-        (data?.token ? `\n\nYour token: ${data.token}` : ''),
-      );
-      loadTakenSlots();
+      Alert.alert(t.medical.bookedTitle, data?.token ? t.medical.bookedBody(data.token) : '');
+      setSelectedSlot(null);
+      loadTakenSlots(selectedDate);
     } finally {
       setBooking(false);
     }
@@ -160,7 +203,7 @@ export function DoctorDetailScreen({ route, navigation }: any) {
             <Icon
               name={onDuty ? 'check' : 'clock'}
               size={22}
-              color={onDuty ? '#fff' : C.textMuted}
+              color={onDuty ? C.white : C.textMuted}
             />
           </View>
           <View style={{ flex: 1 }}>
@@ -188,19 +231,41 @@ export function DoctorDetailScreen({ route, navigation }: any) {
           <ScheduleRow icon="pin" label="Location" value={doctor.room ?? 'Medical Center'} C={C} />
         </View>
 
-        {/* Book Appointment */}
+        {/* Book Appointment — duty-date picker + 20-min slot grid */}
         <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>BOOK APPOINTMENT</Text>
         <View style={[styles.bookCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <Text style={[styles.slotLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>Select a slot</Text>
-          <View style={styles.slotRow}>
-            {SLOTS.map(slot => {
+          <Text style={[styles.slotLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.medical.pickDate}</Text>
+          <View style={styles.dateRow}>
+            {dutyDates.map(d => {
+              const active = selectedDate === d.iso;
+              return (
+                <TouchableOpacity
+                  key={d.iso}
+                  style={[styles.dateBtn, {
+                    backgroundColor: active ? MED_COLOR : C.surface2,
+                    borderColor: active ? MED_COLOR : C.border,
+                  }]}
+                  onPress={() => pickDate(d.iso)}
+                  activeOpacity={0.75}
+                >
+                  <Text style={[styles.slotTxt, { color: active ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                    {d.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          <Text style={[styles.slotLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 14 }]}>{t.medical.pickSlot}</Text>
+          <View style={styles.slotGrid}>
+            {slots.map(slot => {
               const active = selectedSlot === slot;
-              const taken = takenSlots.has(SLOT_TIME[slot]);
+              const taken = takenSlots.has(slot);
               return (
                 <TouchableOpacity
                   key={slot}
                   style={[
-                    styles.slotBtn,
+                    styles.slotCell,
                     taken
                       ? { backgroundColor: C.surface2, borderColor: C.border, opacity: 0.45 }
                       : { backgroundColor: active ? MED_COLOR : C.surface2, borderColor: active ? MED_COLOR : C.border },
@@ -209,21 +274,26 @@ export function DoctorDetailScreen({ route, navigation }: any) {
                   disabled={taken}
                   activeOpacity={0.75}
                 >
-                  <Text style={[styles.slotTxt, { color: taken ? C.textMuted : active ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                    {taken ? `${slot} · Taken` : slot}
+                  <Text style={[styles.slotTxt, {
+                    color: taken ? C.textMuted : active ? C.white : C.text2,
+                    fontFamily: FontFamily.jakartaBold,
+                    textDecorationLine: taken ? 'line-through' : 'none',
+                  }]}>
+                    {fmtSlot(slot)}
                   </Text>
                 </TouchableOpacity>
               );
             })}
           </View>
+
           <TouchableOpacity
-            style={[styles.bookBtn, { backgroundColor: MED_COLOR, opacity: booking ? 0.6 : 1 }]}
+            style={[styles.bookBtn, { backgroundColor: MED_COLOR, opacity: booking || !selectedSlot ? 0.55 : 1 }]}
             onPress={bookAppointment}
-            disabled={booking}
+            disabled={booking || !selectedSlot}
             activeOpacity={0.8}
           >
-            <Icon name="calendar" size={18} color="#fff" />
-            <Text style={[styles.bookBtnTxt, { fontFamily: FontFamily.jakartaBold }]}>Book Appointment</Text>
+            <Icon name="calendar" size={18} color={C.white} />
+            <Text style={[styles.bookBtnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>{t.medical.book}</Text>
           </TouchableOpacity>
         </View>
 
@@ -259,9 +329,11 @@ const styles = StyleSheet.create({
 
   bookCard: { borderRadius: 16, borderWidth: 1, padding: 14 } as ViewStyle,
   slotLabel: { fontSize: 11, letterSpacing: 0.5, marginBottom: 10 } as any,
-  slotRow: { flexDirection: 'row', gap: 8, marginBottom: 14 } as ViewStyle,
-  slotBtn: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 10, borderWidth: 1 } as ViewStyle,
-  slotTxt: { fontSize: 13 } as any,
+  dateRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 } as ViewStyle,
+  dateBtn: { alignItems: 'center', paddingVertical: 9, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1 } as ViewStyle,
+  slotGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 } as ViewStyle,
+  slotCell: { width: '31%', alignItems: 'center', paddingVertical: 10, borderRadius: 10, borderWidth: 1 } as ViewStyle,
+  slotTxt: { fontSize: 12.5 } as any,
   bookBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 48, borderRadius: 13 } as ViewStyle,
-  bookBtnTxt: { fontSize: 14.5, color: '#fff' } as any,
+  bookBtnTxt: { fontSize: 14.5 } as any,
 });
