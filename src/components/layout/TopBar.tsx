@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { useApp } from '../../store/appStore';
+import { useT } from '../../i18n';
 import { Avatar } from '../ui/Avatar';
 import { Icon } from '../ui/Icon';
 import { FontFamily, FontSize, Layout } from '../../theme';
@@ -22,7 +23,8 @@ interface TopBarProps {
 
 export function TopBar({ profile, title, unread = 0, onAvatar, onBell, right }: TopBarProps) {
   const { C } = useTheme();
-  const { isDark, toggleTheme, lang, toggleLang } = useApp();
+  const { isDark, toggleTheme, toggleLang } = useApp();
+  const t = useT();
   const firstName = profile?.full_name?.split(' ')[0] ?? '';
 
   if (title) {
@@ -34,8 +36,8 @@ export function TopBar({ profile, title, unread = 0, onAvatar, onBell, right }: 
     );
   }
 
-  const greeting = lang === 'bn' ? 'গুড সকাল,' : 'Good morning,';
-  const langLabel = lang === 'bn' ? 'বাং' : 'EN';
+  const greeting = t.topbar.greeting;
+  const langLabel = t.topbar.langLabel;
 
   return (
     <View style={[styles.topbar, { backgroundColor: C.surface, paddingHorizontal: Layout.screenPadding }]}>
