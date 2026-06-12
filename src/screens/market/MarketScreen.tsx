@@ -1,8 +1,8 @@
 // Matches design screens-b.jsx — Marketplace (2-col grid, All/Mine tabs)
 import { useState, useEffect, useCallback } from 'react';
 import {
-  View, Text, TouchableOpacity, ScrollView, StyleSheet,
-  RefreshControl, type ViewStyle,
+  View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
+  RefreshControl, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -41,6 +41,8 @@ export function MarketScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
   const { user } = useAuth();
   const [tab, setTab] = useState<Tab>('all');
+  const [query, setQuery] = useState('');
+  const [category, setCategory] = useState('all');
   const [listings, setListings] = useState<Listing[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -61,7 +63,11 @@ export function MarketScreen({ navigation }: any) {
     setRefreshing(false);
   }
 
-  const list = tab === 'mine' ? listings.filter(l => l.seller_id === user?.id) : listings;
+  const q = query.trim().toLowerCase();
+  const list = listings
+    .filter(l => (tab === 'mine' ? l.seller_id === user?.id : true))
+    .filter(l => category === 'all' || l.category?.toLowerCase() === category)
+    .filter(l => !q || [l.title, l.description, l.category].filter(Boolean).join(' ').toLowerCase().includes(q));
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -90,7 +96,7 @@ export function MarketScreen({ navigation }: any) {
             onPress={() => setTab(t)}
             activeOpacity={0.75}
           >
-            <Text style={[styles.chipTxt, { color: tab === t ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>
+            <Text style={[styles.chipTxt, { color: tab === t ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>
               {t === 'all' ? 'All Listings' : 'My Listings'}
             </Text>
             <Text style={[styles.chipCount, { color: tab === t ? 'rgba(255,255,255,0.7)' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
@@ -99,6 +105,51 @@ export function MarketScreen({ navigation }: any) {
           </TouchableOpacity>
         ))}
       </View>
+
+      {/* Search */}
+      <View style={{ paddingHorizontal: Layout.screenPadding }}>
+        <View style={[styles.searchBar, { backgroundColor: C.surface2 }]}>
+          <Icon name="search" size={16} color={C.textMuted} />
+          <TextInput
+            style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
+            placeholder="Search items..."
+            placeholderTextColor={C.textMuted}
+            value={query}
+            onChangeText={setQuery}
+          />
+          {query.length > 0 && (
+            <TouchableOpacity onPress={() => setQuery('')} hitSlop={8}>
+              <Feather name="x" size={15} color={C.textMuted} />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
+      {/* Category chips */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={{ flexGrow: 0 }}
+        contentContainerStyle={[styles.catChips, { paddingHorizontal: Layout.screenPadding }]}
+      >
+        {['all', ...Object.keys(MK_CATS)].map(c => {
+          const on = category === c;
+          return (
+            <TouchableOpacity
+              key={c}
+              style={[styles.catChip, on
+                ? { backgroundColor: C.surface2, borderColor: C.text2 }
+                : { backgroundColor: C.surface, borderColor: C.border }]}
+              onPress={() => setCategory(c)}
+              activeOpacity={0.75}
+            >
+              <Text style={[styles.catChipTxt, { color: on ? C.text : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                {c === 'all' ? 'All' : (MK_CATS[c]?.label ?? c)}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
@@ -162,6 +213,11 @@ export function MarketScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
   tabs: { flexDirection: 'row', gap: 8, paddingVertical: 8 } as ViewStyle,
+  searchBar: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 13, borderRadius: 13, marginBottom: 8 } as ViewStyle,
+  searchInput: { flex: 1, fontSize: 14.5, paddingVertical: 10 } as TextStyle,
+  catChips: { flexDirection: 'row', gap: 7, paddingBottom: 8 } as ViewStyle,
+  catChip: { paddingHorizontal: 11, paddingVertical: 6, borderRadius: 999, borderWidth: 1 } as ViewStyle,
+  catChipTxt: { fontSize: 11.5 } as any,
   chip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1 } as ViewStyle,
   chipTxt: { fontSize: 12.5 } as any,
   chipCount: { fontSize: 12 } as any,
