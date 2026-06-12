@@ -79,6 +79,19 @@ export const en = {
     Rejected: 'Rejected',
     Closed: 'Closed',
   } as Record<string, string>,
+
+  reports: {
+    myReportsTitle: 'My Reports',
+    assignedTitle: 'Assigned to Me',
+    searchPlaceholder: 'Search reports...',
+    newReport: 'New Report',
+    noReportsTitle: 'No reports',
+    noReportsBody: 'Nothing matches. Try different filters.',
+    deleteTitle: 'Delete report',
+    deleteBody: 'This removes the report permanently. Continue?',
+    view: 'View',
+    resultCount: (n: number) => `${n} report${n === 1 ? '' : 's'}`,
+  },
 };
 
 export type Dict = typeof en;
