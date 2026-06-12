@@ -9,7 +9,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout } from '../../theme';
+import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import type { BloodRequest } from '../../types/database';
 
@@ -69,7 +69,7 @@ export function DonorRegisterScreen({ navigation }: any) {
               <TouchableOpacity
                 key={g}
                 style={[styles.groupBtn, {
-                  backgroundColor: on ? '#c7344a' : 'transparent',
+                  backgroundColor: on ? SectorColors.blood : 'transparent',
                   borderColor: on ? 'transparent' : C.border,
                 }]}
                 onPress={() => setGroup(g)}
@@ -112,7 +112,7 @@ export function DonorRegisterScreen({ navigation }: any) {
         />
 
         <TouchableOpacity
-          style={[styles.submitBtn, { backgroundColor: canSubmit ? '#c7344a' : C.surface2, opacity: loading ? 0.6 : 1 }]}
+          style={[styles.submitBtn, { backgroundColor: canSubmit ? SectorColors.blood : C.surface2, opacity: loading ? 0.6 : 1 }]}
           onPress={handleSubmit}
           disabled={!canSubmit || loading}
           activeOpacity={0.8}
