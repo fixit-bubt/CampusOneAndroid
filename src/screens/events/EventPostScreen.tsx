@@ -9,16 +9,16 @@ import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout } from '../../theme';
+import { FontFamily, Layout , SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import type { Event } from '../../types/database';
 
 const EVT_CATS: { id: Event['category']; label: string; color: string; icon: string }[] = [
-  { id: 'Academic',  label: 'Academic',   color: '#2b5be3', icon: 'study' },
-  { id: 'Cultural',  label: 'Cultural',   color: '#e08a2b', icon: 'sparkle' },
-  { id: 'Sports',    label: 'Sports',     color: '#12915e', icon: 'pulse' },
-  { id: 'Club',      label: 'Club',       color: '#8b5cf6', icon: 'clubs' },
-  { id: 'Career',    label: 'Career',     color: '#0e9c8a', icon: 'jobs' },
+  { id: 'Academic',  label: 'Academic',   color: SectorColors.reports, icon: 'study' },
+  { id: 'Cultural',  label: 'Cultural',   color: SectorColors.events, icon: 'sparkle' },
+  { id: 'Sports',    label: 'Sports',     color: SectorColors.market, icon: 'pulse' },
+  { id: 'Club',      label: 'Club',       color: SectorColors.clubs, icon: 'clubs' },
+  { id: 'Career',    label: 'Career',     color: SectorColors.jobs, icon: 'jobs' },
 ];
 
 export function EventPostScreen({ navigation }: any) {
