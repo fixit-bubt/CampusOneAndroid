@@ -9,18 +9,18 @@ import { useTheme } from '../../hooks/useTheme';
 import { TopBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout } from '../../theme';
+import { FontFamily, Layout, Accent, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 
 const ISSUE_MAP: Record<string, { icon: string; fg: string }> = {
-  electrical: { icon: 'bolt',     fg: '#d9870b' },
-  plumbing:   { icon: 'droplets', fg: '#2b88d8' },
-  cleanliness:{ icon: 'sparkles', fg: '#0e9c8a' },
-  it_network: { icon: 'wifi',     fg: '#8b5cf6' },
-  furniture:  { icon: 'box',      fg: '#b9760a' },
-  safety:     { icon: 'shield',   fg: '#e2483d' },
-  other:      { icon: 'sliders',  fg: '#5b6b86' },
+  electrical: { icon: 'bolt',     fg: Accent.gold },
+  plumbing:   { icon: 'droplets', fg: Accent.sky },
+  cleanliness:{ icon: 'sparkles', fg: Accent.teal },
+  it_network: { icon: 'wifi',     fg: Accent.purple },
+  furniture:  { icon: 'box',      fg: Accent.amber },
+  safety:     { icon: 'shield',   fg: Accent.red },
+  other:      { icon: 'sliders',  fg: Accent.slate },
 };
 
 // Status → theme tokens (light + dark aware via C)
@@ -124,12 +124,12 @@ function ReportCard({ r, C, onAssign }: { r: Report; C: any; onAssign: (r: Repor
 }
 
 const MANAGE_TILES = [
-  { icon: 'layers',    fg: '#2b5be3', label: 'All Reports',   route: 'AllReports',   sub: 'reports'    },
-  { icon: 'directory', fg: '#8b5cf6', label: 'Users',         route: 'ManageUsers',  sub: 'users'      },
-  { icon: 'announce',  fg: '#3e7de0', label: 'Announcements', route: 'Announcements',sub: 'announce'   },
-  { icon: 'directory', fg: '#0e9c8a', label: 'Faculty',       route: 'Faculty',      sub: 'faculty'    },
-  { icon: 'study',     fg: '#2ba0c9', label: 'Study Hub',     route: 'StudyHub',     sub: 'studyhub'   },
-  { icon: 'clubs',     fg: '#b9760a', label: 'Clubs',         route: 'Clubs',        sub: 'clubs'      },
+  { icon: 'layers',    fg: Accent.blue, label: 'All Reports',   route: 'AllReports',   sub: 'reports'    },
+  { icon: 'directory', fg: Accent.purple, label: 'Users',         route: 'ManageUsers',  sub: 'users'      },
+  { icon: 'announce',  fg: SectorColors.announce, label: 'Announcements', route: 'Announcements',sub: 'announce'   },
+  { icon: 'directory', fg: Accent.teal, label: 'Faculty',       route: 'Faculty',      sub: 'faculty'    },
+  { icon: 'study',     fg: SectorColors.study, label: 'Study Hub',     route: 'StudyHub',     sub: 'studyhub'   },
+  { icon: 'clubs',     fg: Accent.amber, label: 'Clubs',         route: 'Clubs',        sub: 'clubs'      },
 ];
 
 export function AdminDashboardScreen({ navigation }: any) {
@@ -198,7 +198,7 @@ export function AdminDashboardScreen({ navigation }: any) {
         title="Admin Dashboard"
         right={
           <TouchableOpacity onPress={signOut} hitSlop={8} activeOpacity={0.7}>
-            <Icon name="logout" size={20} color={C.danger ?? '#e2483d'} />
+            <Icon name="logout" size={20} color={C.danger} />
           </TouchableOpacity>
         }
       />
