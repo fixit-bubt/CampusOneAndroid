@@ -37,9 +37,12 @@ export function RidesScreen({ navigation }: any) {
   const [rides, setRides] = useState<Ride[]>([]);
   const [requestedIds, setRequestedIds] = useState<Set<string>>(new Set());
   const [takenCounts, setTakenCounts] = useState<Record<string, number>>({});
+  const [direction, setDirection] = useState<'all' | 'to' | 'from'>('all');
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
+    // Web parity: prune expired rides server-side before listing.
+    await supabase.rpc('delete_expired_rides').then(() => {}, () => {});
     const [ridesRes, reqRes] = await Promise.all([
       supabase
         .from('rides')
@@ -102,12 +105,35 @@ export function RidesScreen({ navigation }: any) {
         }
       />
 
+      {/* Direction filter */}
+      <View style={[styles.dirRow, { paddingHorizontal: Layout.screenPadding }]}>
+        {([['all', 'All'], ['to', 'To Campus'], ['from', 'From Campus']] as const).map(([id, label]) => {
+          const on = direction === id;
+          return (
+            <TouchableOpacity
+              key={id}
+              style={[styles.dirChip, on
+                ? { backgroundColor: C.brand, borderColor: C.brand }
+                : { backgroundColor: C.surface, borderColor: C.border }]}
+              onPress={() => setDirection(id)}
+              activeOpacity={0.75}
+            >
+              <Text style={[styles.dirTxt, { color: on ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                {label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
-        {rides.length === 0 ? (
+        {(() => {
+          const filteredRides = direction === 'all' ? rides : rides.filter(r => (r as any).direction === direction);
+          return filteredRides.length === 0 ? (
           <View style={styles.empty}>
             <Icon name="ride" size={28} color={C.textMuted} />
             <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>No rides available</Text>
@@ -117,7 +143,7 @@ export function RidesScreen({ navigation }: any) {
           </View>
         ) : (
           <View style={styles.list}>
-            {rides.map(r => {
+            {filteredRides.map(r => {
               const taken = takenCounts[r.id] ?? 0;
               const isRequested = requestedIds.has(r.id);
               const isOwnRide = r.driver_id === user?.id;
@@ -195,7 +221,8 @@ export function RidesScreen({ navigation }: any) {
               );
             })}
           </View>
-        )}
+        );
+        })()}
         <View style={{ height: 12 }} />
       </ScrollView>
     </SafeAreaView>
@@ -205,6 +232,9 @@ export function RidesScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
   scroll: { paddingTop: 8, paddingBottom: 20 } as ViewStyle,
+  dirRow: { flexDirection: 'row', gap: 7, paddingVertical: 8 } as ViewStyle,
+  dirChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, borderWidth: 1 } as ViewStyle,
+  dirTxt: { fontSize: 12 } as any,
   list: { gap: 11 } as ViewStyle,
   card: { padding: 14, borderRadius: 16, borderWidth: 1 } as ViewStyle,
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: 13 } as ViewStyle,
