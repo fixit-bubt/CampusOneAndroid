@@ -9,7 +9,7 @@ import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout , Accent } from '../../theme';
+import { FontFamily, Layout , Accent, LightColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 
@@ -131,7 +131,7 @@ export function MarketScreen({ navigation }: any) {
                     {isSold && (
                       <View style={styles.soldOverlay}>
                         <View style={[styles.soldPill, { backgroundColor: '#fff' }]}>
-                          <Text style={[styles.soldTxt, { color: '#0f1a2e', fontFamily: FontFamily.jakartaExtraBold }]}>Sold</Text>
+                          <Text style={[styles.soldTxt, { color: LightColors.text, fontFamily: FontFamily.jakartaExtraBold }]}>Sold</Text>
                         </View>
                       </View>
                     )}
