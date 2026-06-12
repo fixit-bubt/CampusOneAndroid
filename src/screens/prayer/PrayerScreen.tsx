@@ -1,12 +1,14 @@
 // Matches design screens-c.jsx — Prayer times
 import { useState, useEffect, useCallback } from 'react';
 import {
-  View, Text, ScrollView, StyleSheet,
-  RefreshControl, type ViewStyle,
+  View, Text, ScrollView, TouchableOpacity, TextInput, Modal, Alert,
+  StyleSheet, RefreshControl, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
+import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
@@ -20,6 +22,13 @@ interface PrayerTime {
   azan: string;
   jamaat: string;
   sort: number;
+}
+
+interface Musallah {
+  id: string;
+  name: string;
+  floor_desc: string | null;
+  sort: number | null;
 }
 
 function computeNext(prayers: PrayerTime[]): PrayerTime | undefined {
@@ -48,15 +57,22 @@ function timeUntil(timeStr: string): string {
 
 export function PrayerScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
+  const { profile } = useAuth();
+  const isAdmin = profile?.role === 'admin';
   const [prayers, setPrayers] = useState<PrayerTime[]>([]);
+  const [musallah, setMusallah] = useState<Musallah[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [editPrayer, setEditPrayer] = useState<PrayerTime | null>(null);
+  const [jamaatInput, setJamaatInput] = useState('');
+  const [musEdit, setMusEdit] = useState<{ id: string | null; name: string; floor_desc: string } | null>(null);
 
   const load = useCallback(async () => {
-    const { data } = await supabase
-      .from('prayer_times')
-      .select('*')
-      .order('sort');
+    const [{ data }, { data: mus }] = await Promise.all([
+      supabase.from('prayer_times').select('*').order('sort'),
+      supabase.from('musallah_locations').select('*').order('sort'),
+    ]);
     if (data) setPrayers(data as PrayerTime[]);
+    if (mus) setMusallah(mus as Musallah[]);
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -65,6 +81,50 @@ export function PrayerScreen({ navigation }: any) {
     setRefreshing(true);
     await load();
     setRefreshing(false);
+  }
+
+  async function saveJamaat() {
+    if (!editPrayer) return;
+    if (!/^\d{1,2}:\d{2}$/.test(jamaatInput.trim())) { Alert.alert('Invalid', 'Use HH:MM format, e.g. 13:30'); return; }
+    const { error } = await supabase
+      .from('prayer_times')
+      .update({ jamaat: jamaatInput.trim() })
+      .eq('key', editPrayer.key);
+    if (error) { Alert.alert('Error', error.message); return; }
+    setEditPrayer(null);
+    load();
+  }
+
+  async function saveMusallah() {
+    if (!musEdit || !musEdit.name.trim()) return;
+    if (musEdit.id) {
+      const { error } = await supabase
+        .from('musallah_locations')
+        .update({ name: musEdit.name.trim(), floor_desc: musEdit.floor_desc.trim() || null })
+        .eq('id', musEdit.id);
+      if (error) { Alert.alert('Error', error.message); return; }
+    } else {
+      const { error } = await supabase
+        .from('musallah_locations')
+        .insert({ name: musEdit.name.trim(), floor_desc: musEdit.floor_desc.trim() || null, sort: musallah.length + 1 });
+      if (error) { Alert.alert('Error', error.message); return; }
+    }
+    setMusEdit(null);
+    load();
+  }
+
+  function deleteMusallah(m: Musallah) {
+    Alert.alert('Delete location', `Remove "${m.name}"?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete', style: 'destructive',
+        onPress: async () => {
+          const { error } = await supabase.from('musallah_locations').delete().eq('id', m.id);
+          if (error) { Alert.alert('Error', error.message); return; }
+          load();
+        },
+      },
+    ]);
   }
 
   const next = computeNext(prayers);
@@ -138,15 +198,115 @@ export function PrayerScreen({ navigation }: any) {
                     {p.en}
                   </Text>
                   <Text style={[styles.timeVal, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>{p.azan}</Text>
-                  <Text style={[styles.timeVal, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{p.jamaat}</Text>
+                  {isAdmin ? (
+                    <TouchableOpacity
+                      style={{ width: 70, alignItems: 'flex-end' }}
+                      onPress={() => { setJamaatInput(p.jamaat); setEditPrayer(p); }}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.timeVal, { width: undefined, color: PRAYER_GREEN, fontFamily: FontFamily.jakartaBold, textDecorationLine: 'underline' }]}>
+                        {p.jamaat}
+                      </Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <Text style={[styles.timeVal, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{p.jamaat}</Text>
+                  )}
                 </View>
               </View>
             );
           })}
         </View>
 
+        {/* Musallah locations */}
+        <View style={styles.musHeader}>
+          <Text style={[styles.musTitle, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>MUSALLAH LOCATIONS</Text>
+          {isAdmin && (
+            <TouchableOpacity onPress={() => setMusEdit({ id: null, name: '', floor_desc: '' })} hitSlop={8} activeOpacity={0.7}>
+              <Feather name="plus-circle" size={18} color={PRAYER_GREEN} />
+            </TouchableOpacity>
+          )}
+        </View>
+        {musallah.length === 0 ? (
+          <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>No locations listed</Text>
+        ) : (
+          <View style={[styles.tableCard, { backgroundColor: C.surface, borderColor: C.border, marginTop: 0 }]}>
+            {musallah.map((m, i) => (
+              <View key={m.id}>
+                {i > 0 && <View style={[styles.divider, { backgroundColor: C.border }]} />}
+                <View style={styles.musRow}>
+                  <Feather name="map-pin" size={16} color={PRAYER_GREEN} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.musName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{m.name}</Text>
+                    {m.floor_desc ? (
+                      <Text style={[styles.musFloor, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{m.floor_desc}</Text>
+                    ) : null}
+                  </View>
+                  {isAdmin && (
+                    <>
+                      <TouchableOpacity onPress={() => setMusEdit({ id: m.id, name: m.name, floor_desc: m.floor_desc ?? '' })} hitSlop={8} activeOpacity={0.7}>
+                        <Feather name="edit-2" size={15} color={C.textMuted} />
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => deleteMusallah(m)} hitSlop={8} activeOpacity={0.7}>
+                        <Feather name="trash-2" size={15} color="#e2483d" />
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+
         <View style={{ height: 12 }} />
       </ScrollView>
+
+      {/* Admin: edit jamaat */}
+      <Modal visible={!!editPrayer} transparent animationType="slide" onRequestClose={() => setEditPrayer(null)}>
+        <View style={styles.overlay}>
+          <TouchableOpacity style={{ flex: 1 }} onPress={() => setEditPrayer(null)} />
+          <View style={[styles.sheet, { backgroundColor: C.surface }]}>
+            <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+              {editPrayer?.en} jamaat time
+            </Text>
+            <TextInput
+              style={[styles.sheetInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+              value={jamaatInput} onChangeText={setJamaatInput} placeholder="13:30" placeholderTextColor={C.textMuted}
+              keyboardType="numbers-and-punctuation" autoFocus
+            />
+            <TouchableOpacity style={[styles.sheetBtn, { backgroundColor: PRAYER_GREEN }]} onPress={saveJamaat} activeOpacity={0.8}>
+              <Text style={[styles.sheetBtnTxt, { fontFamily: FontFamily.jakartaBold }]}>Save</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Admin: add/edit musallah */}
+      <Modal visible={!!musEdit} transparent animationType="slide" onRequestClose={() => setMusEdit(null)}>
+        <View style={styles.overlay}>
+          <TouchableOpacity style={{ flex: 1 }} onPress={() => setMusEdit(null)} />
+          <View style={[styles.sheet, { backgroundColor: C.surface }]}>
+            <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+              {musEdit?.id ? 'Edit location' : 'Add location'}
+            </Text>
+            <TextInput
+              style={[styles.sheetInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+              value={musEdit?.name ?? ''} onChangeText={t => setMusEdit(m => m ? { ...m, name: t } : m)}
+              placeholder="Name (e.g. Main Musallah)" placeholderTextColor={C.textMuted}
+            />
+            <TextInput
+              style={[styles.sheetInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+              value={musEdit?.floor_desc ?? ''} onChangeText={t => setMusEdit(m => m ? { ...m, floor_desc: t } : m)}
+              placeholder="Floor / directions" placeholderTextColor={C.textMuted}
+            />
+            <TouchableOpacity
+              style={[styles.sheetBtn, { backgroundColor: PRAYER_GREEN, opacity: musEdit?.name.trim() ? 1 : 0.5 }]}
+              onPress={saveMusallah} disabled={!musEdit?.name.trim()} activeOpacity={0.8}
+            >
+              <Text style={[styles.sheetBtnTxt, { fontFamily: FontFamily.jakartaBold }]}>Save</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -234,4 +394,35 @@ const styles = StyleSheet.create({
 
   emptyTitle: { fontSize: 16 } as any,
   emptySub: { fontSize: 13, textAlign: 'center' } as any,
+
+  musHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 20,
+    marginBottom: 8,
+    paddingHorizontal: 2,
+  } as ViewStyle,
+  musTitle: { fontSize: 11, letterSpacing: 0.7 } as any,
+  musRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 11,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+  } as ViewStyle,
+  musName: { fontSize: 14 } as any,
+  musFloor: { fontSize: 12, marginTop: 1 } as any,
+
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' } as ViewStyle,
+  sheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 22,
+    paddingBottom: 36,
+  } as ViewStyle,
+  sheetTitle: { fontSize: 17, marginBottom: 12 } as any,
+  sheetInput: { height: 46, borderRadius: 12, borderWidth: 1, paddingHorizontal: 13, fontSize: 14, marginBottom: 10 } as any,
+  sheetBtn: { height: 48, borderRadius: 13, alignItems: 'center', justifyContent: 'center', marginTop: 6 } as ViewStyle,
+  sheetBtnTxt: { color: '#fff', fontSize: 15 } as any,
 });
