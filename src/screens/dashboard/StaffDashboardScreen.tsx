@@ -9,27 +9,31 @@ import { useTheme } from '../../hooks/useTheme';
 import { TopBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout } from '../../theme';
+import { FontFamily, Layout, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 
 const ISSUE_MAP: Record<string, { icon: string; fg: string }> = {
-  electrical: { icon: 'bolt',     fg: '#d9870b' },
-  plumbing:   { icon: 'droplets', fg: '#2b88d8' },
-  cleanliness:{ icon: 'sparkles', fg: '#0e9c8a' },
-  it_network: { icon: 'wifi',     fg: '#8b5cf6' },
-  furniture:  { icon: 'box',      fg: '#b9760a' },
-  safety:     { icon: 'shield',   fg: '#e2483d' },
-  other:      { icon: 'sliders',  fg: '#5b6b86' },
+  electrical: { icon: 'bolt',     fg: Accent.gold },
+  plumbing:   { icon: 'droplets', fg: Accent.sky },
+  cleanliness:{ icon: 'sparkles', fg: Accent.teal },
+  it_network: { icon: 'wifi',     fg: Accent.purple },
+  furniture:  { icon: 'box',      fg: Accent.amber },
+  safety:     { icon: 'shield',   fg: Accent.red },
+  other:      { icon: 'sliders',  fg: Accent.slate },
 };
 
-const STATUS_CONFIG: Record<string, { label: string; fg: string; bg: string }> = {
-  'Open':        { label: 'Open',        fg: '#b9760a', bg: '#fbefdb' },
-  'In Progress': { label: 'In Progress', fg: '#2b5be3', bg: '#eef3ff' },
-  'Resolved':    { label: 'Resolved',    fg: '#0e9c8a', bg: '#e4f5f4' },
-  'Closed':      { label: 'Closed',      fg: '#5b6b86', bg: '#f0f2f6' },
-  'Rejected':    { label: 'Rejected',    fg: '#e2483d', bg: '#fbe7e5' },
-};
+// Status → theme tokens (light + dark aware via C)
+function statusTone(C: any, status: string): { fg: string; bg: string } {
+  switch (status) {
+    case 'In Progress': return { fg: C.info,      bg: C.infoBg };
+    case 'Resolved':    return { fg: C.success,   bg: C.successBg };
+    case 'Closed':      return { fg: C.textMuted, bg: C.surface2 };
+    case 'Rejected':    return { fg: C.danger,    bg: C.dangerBg };
+    case 'Open':
+    default:            return { fg: C.warn,      bg: C.warnBg };
+  }
+}
 
 function timeAgo(iso: string): string {
   const secs = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -67,7 +71,7 @@ function StatCard({ icon, fg, num, label, C }: any) {
 
 function ReportCard({ r, C, onAdvance, onPress }: { r: Report; C: any; onAdvance: (id: string, status: string) => void; onPress: () => void }) {
   const issueConf = ISSUE_MAP[r.category?.toLowerCase()] ?? ISSUE_MAP.other;
-  const statusConf = STATUS_CONFIG[r.status] ?? STATUS_CONFIG['Open'];
+  const statusConf = statusTone(C, r.status);
   const issueBg = `${issueConf.fg}1e`;
   return (
     <View style={[styles.reportCard, { backgroundColor: C.surface, borderColor: C.border }]}>
@@ -86,7 +90,7 @@ function ReportCard({ r, C, onAdvance, onPress }: { r: Report; C: any; onAdvance
         </View>
         <View style={[styles.statusPill, { backgroundColor: statusConf.bg }]}>
           <View style={[styles.statusDot, { backgroundColor: statusConf.fg }]} />
-          <Text style={[styles.statusTxt, { color: statusConf.fg, fontFamily: FontFamily.jakartaBold }]}>{statusConf.label}</Text>
+          <Text style={[styles.statusTxt, { color: statusConf.fg, fontFamily: FontFamily.jakartaBold }]}>{r.status}</Text>
         </View>
       </TouchableOpacity>
 
@@ -101,21 +105,21 @@ function ReportCard({ r, C, onAdvance, onPress }: { r: Report; C: any; onAdvance
       </View>
 
       {r.status === 'Open' && (
-        <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#eef3ff' }]} onPress={() => onAdvance(r.id, 'In Progress')} activeOpacity={0.75}>
-          <Icon name="pulse" size={15} color="#2b5be3" />
-          <Text style={[styles.actionTxt, { color: '#2b5be3', fontFamily: FontFamily.jakartaBold }]}>Start Work</Text>
+        <TouchableOpacity style={[styles.actionBtn, { backgroundColor: C.infoBg }]} onPress={() => onAdvance(r.id, 'In Progress')} activeOpacity={0.75}>
+          <Icon name="pulse" size={15} color={C.info} />
+          <Text style={[styles.actionTxt, { color: C.info, fontFamily: FontFamily.jakartaBold }]}>Start Work</Text>
         </TouchableOpacity>
       )}
       {r.status === 'In Progress' && (
-        <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#e4f5f4' }]} onPress={() => onAdvance(r.id, 'Resolved')} activeOpacity={0.75}>
-          <Icon name="check" size={15} color="#0e9c8a" />
-          <Text style={[styles.actionTxt, { color: '#0e9c8a', fontFamily: FontFamily.jakartaBold }]}>Mark Resolved</Text>
+        <TouchableOpacity style={[styles.actionBtn, { backgroundColor: C.successBg }]} onPress={() => onAdvance(r.id, 'Resolved')} activeOpacity={0.75}>
+          <Icon name="check" size={15} color={C.success} />
+          <Text style={[styles.actionTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>Mark Resolved</Text>
         </TouchableOpacity>
       )}
       {r.status === 'Resolved' && (
-        <View style={[styles.actionBtn, { backgroundColor: '#e4f5f4', opacity: 0.7 }]}>
-          <Icon name="check" size={15} color="#0e9c8a" />
-          <Text style={[styles.actionTxt, { color: '#0e9c8a', fontFamily: FontFamily.jakartaBold }]}>Done</Text>
+        <View style={[styles.actionBtn, { backgroundColor: C.successBg, opacity: 0.7 }]}>
+          <Icon name="check" size={15} color={C.success} />
+          <Text style={[styles.actionTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>Done</Text>
         </View>
       )}
     </View>
@@ -172,7 +176,7 @@ export function StaffDashboardScreen({ navigation }: any) {
         title="Staff Dashboard"
         right={
           <TouchableOpacity onPress={signOut} hitSlop={8} activeOpacity={0.7}>
-            <Icon name="logout" size={20} color={C.danger ?? '#e2483d'} />
+            <Icon name="logout" size={20} color={C.danger} />
           </TouchableOpacity>
         }
       />
@@ -187,9 +191,9 @@ export function StaffDashboardScreen({ navigation }: any) {
 
         {/* Stat row */}
         <View style={styles.statRow}>
-          <StatCard icon="inbox"  fg="#2b5be3" num={reports.length} label="Assigned"   C={C} />
-          <StatCard icon="pulse"  fg="#b9760a" num={active.length}  label="In Progress" C={C} />
-          <StatCard icon="check"  fg="#0e9c8a" num={resolved.length} label="Resolved"  C={C} />
+          <StatCard icon="inbox"  fg={C.info} num={reports.length} label="Assigned"   C={C} />
+          <StatCard icon="pulse"  fg={C.warn} num={active.length}  label="In Progress" C={C} />
+          <StatCard icon="check"  fg={C.success} num={resolved.length} label="Resolved"  C={C} />
         </View>
 
         <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>ASSIGNED TO ME</Text>
