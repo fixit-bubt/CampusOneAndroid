@@ -12,7 +12,7 @@ import { useAuth } from '../../store/authStore';
 import { supabase } from '../../lib/supabase';
 import { Icon } from '../../components/ui/Icon';
 import { Brand } from './LandingScreen';
-import { FontFamily, Layout } from '../../theme';
+import { FontFamily, Layout, Accent } from '../../theme';
 import type { AuthStackParams } from '../../types/navigation';
 
 type Props = NativeStackScreenProps<AuthStackParams, 'Login'>;
@@ -128,7 +128,7 @@ export function LoginScreen({ navigation }: Props) {
 
           {/* Error / reset confirmation */}
           {resetSent ? (
-            <Text style={[styles.errText, { color: '#0e9c8a', fontFamily: FontFamily.jakartaMedium }]}>
+            <Text style={[styles.errText, { color: Accent.teal, fontFamily: FontFamily.jakartaMedium }]}>
               Reset link sent — check your email.
             </Text>
           ) : !!err && (
