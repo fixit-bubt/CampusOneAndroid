@@ -44,10 +44,10 @@ export function Button({
   };
 
   const textColor: Record<Variant, string> = {
-    primary: '#ffffff',
+    primary: C.white,
     secondary: C.text,
     ghost: C.brand,
-    danger: '#ffffff',
+    danger: C.white,
   };
 
   const paddingV: Record<Size, number> = { sm: 8, md: 12, lg: 16 };
