@@ -1,8 +1,8 @@
 // Matches design screens-d.jsx — ClubDetail (Feed + Members tabs)
 import { useState, useEffect } from 'react';
 import {
-  View, Text, TouchableOpacity, ScrollView, StyleSheet,
-  ActivityIndicator, type ViewStyle,
+  View, Text, TouchableOpacity, ScrollView, StyleSheet, Image,
+  ActivityIndicator, Alert, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -13,6 +13,7 @@ import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
+import { useT } from '../../i18n';
 
 const CL_CATS: Record<string, { label: string; fg: string }> = {
   academic:  { label: 'Academic',  fg: Accent.blue },
@@ -29,13 +30,19 @@ interface Club {
   id: string;
   name: string;
   category: string;
+  tagline: string | null;
   about: string | null;
-  admin_id: string;
+  is_active: boolean;
+  created_by: string | null;
 }
 
 interface Post {
   id: string;
+  author_id: string;
+  title: string | null;
   body: string;
+  image_url: string | null;
+  is_pinned: boolean;
   created_at: string;
   profiles: { full_name: string };
 }
@@ -46,6 +53,8 @@ interface Member {
   profiles: { full_name: string };
 }
 
+const ROLE_RANK: Record<string, number> = { president: 0, vp: 1, editor: 2, member: 3 };
+
 function timeAgo(iso: string): string {
   const secs = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
   if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
@@ -55,8 +64,9 @@ function timeAgo(iso: string): string {
 
 export function ClubDetailScreen({ route, navigation }: any) {
   const { C, isDark } = useTheme();
-  const { user } = useAuth();
-  const { id } = route.params;
+  const { user, profile } = useAuth();
+  const t = useT();
+  const id = route.params?.clubId ?? route.params?.id;
   const [club, setClub] = useState<Club | null>(null);
   const [tab, setTab] = useState<Tab>('feed');
   const [posts, setPosts] = useState<Post[]>([]);
@@ -64,21 +74,29 @@ export function ClubDetailScreen({ route, navigation }: any) {
   const [myRole, setMyRole] = useState<string | null>(null);
 
   useEffect(() => {
-    (async () => {
-      const [clubRes, postsRes, membersRes] = await Promise.all([
-        supabase.from('clubs').select('*').eq('id', id).single(),
-        supabase.from('club_posts').select('*, profiles:author_id(full_name)').eq('club_id', id).order('created_at', { ascending: false }).limit(20),
-        supabase.from('club_members').select('*, profiles:user_id(full_name)').eq('club_id', id),
-      ]);
-      if (clubRes.data) setClub(clubRes.data as Club);
-      if (postsRes.data) setPosts(postsRes.data as any);
-      if (membersRes.data) {
-        setMembers(membersRes.data as any);
-        const me = (membersRes.data as any[]).find(m => m.user_id === user?.id);
-        if (me) setMyRole(me.role);
-      }
-    })();
+    const unsub = navigation.addListener('focus', load);
+    load();
+    return unsub;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, user?.id]);
+
+  async function load() {
+    const [clubRes, postsRes, membersRes] = await Promise.all([
+      supabase.from('clubs').select('*').eq('id', id).single(),
+      supabase.from('club_posts').select('*, profiles:author_id(full_name)').eq('club_id', id)
+        .order('is_pinned', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(30),
+      supabase.from('club_members').select('*, profiles:user_id(full_name)').eq('club_id', id),
+    ]);
+    if (clubRes.data) setClub(clubRes.data as Club);
+    if (postsRes.data) setPosts(postsRes.data as any);
+    if (membersRes.data) {
+      setMembers((membersRes.data as any[]).sort((a, b) => (ROLE_RANK[a.role] ?? 9) - (ROLE_RANK[b.role] ?? 9)));
+      const me = (membersRes.data as any[]).find(m => m.user_id === user?.id);
+      setMyRole(me ? me.role : null);
+    }
+  }
 
   if (!club) {
     return (
@@ -91,22 +109,45 @@ export function ClubDetailScreen({ route, navigation }: any) {
 
   const cat = CL_CATS[club.category] ?? CL_CATS.other;
   const tintBg = isDark ? `${cat.fg}2e` : `${cat.fg}18`;
-  const canManage = myRole === 'president' || myRole === 'vp' || club.admin_id === user?.id;
+  const isAdmin = profile?.role === 'admin';
+  const canManage = myRole === 'president' || myRole === 'vp' || isAdmin;
+  const canPost = canManage || myRole === 'editor';
   const isMember = !!myRole;
 
-  async function joinClub() {
-    if (!user) return;
-    const { error } = await supabase.from('club_members').insert({ club_id: id, user_id: user.id, role: 'member' });
-    if (!error) {
-      setMyRole('member');
-      setMembers(prev => [...prev, { user_id: user.id, role: 'member', profiles: { full_name: '' } }]);
-    }
+  function leaveClub() {
+    if (!user || myRole === 'president') return;
+    Alert.alert(t.clubs.leaveTitle, t.clubs.leaveBody, [
+      { text: t.common.cancel, style: 'cancel' },
+      {
+        text: t.clubs.leave, style: 'destructive',
+        onPress: async () => {
+          const { error } = await supabase.from('club_members').delete().eq('club_id', id).eq('user_id', user.id);
+          if (error) { Alert.alert(t.common.error, error.message); return; }
+          setMyRole(null);
+          setMembers(prev => prev.filter(m => m.user_id !== user.id));
+        },
+      },
+    ]);
   }
 
-  async function leaveClub() {
-    if (!user) return;
-    const { error } = await supabase.from('club_members').delete().eq('club_id', id).eq('user_id', user.id);
-    if (!error) { setMyRole(null); setMembers(prev => prev.filter(m => m.user_id !== user.id)); }
+  async function togglePin(p: Post) {
+    const { error } = await supabase.from('club_posts').update({ is_pinned: !p.is_pinned }).eq('id', p.id);
+    if (error) { Alert.alert(t.common.error, error.message); return; }
+    load();
+  }
+
+  function deletePost(p: Post) {
+    Alert.alert(t.clubs.deletePostTitle, t.clubs.deletePostBody, [
+      { text: t.common.cancel, style: 'cancel' },
+      {
+        text: t.common.delete, style: 'destructive',
+        onPress: async () => {
+          const { error } = await supabase.from('club_posts').delete().eq('id', p.id);
+          if (error) { Alert.alert(t.common.error, error.message); return; }
+          setPosts(prev => prev.filter(x => x.id !== p.id));
+        },
+      },
+    ]);
   }
 
   return (
@@ -114,14 +155,23 @@ export function ClubDetailScreen({ route, navigation }: any) {
       <SubBar
         title={club.name}
         onBack={() => navigation.goBack()}
-        rightSlot={canManage ? (
+        rightSlot={(canManage || canPost) ? (
           <View style={styles.rightRow}>
-            <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('ClubManage', { clubId: club.id })} activeOpacity={0.75}>
-              <Feather name="sliders" size={21} color={C.text} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('ClubPost', { clubId: club.id, clubName: club.name })} activeOpacity={0.75}>
-              <Feather name="plus" size={22} color={C.text} />
-            </TouchableOpacity>
+            {canManage && (
+              <>
+                <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('ClubMembers', { clubId: club.id })} activeOpacity={0.75}>
+                  <Feather name="users" size={20} color={C.text} />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('ClubManage', { clubId: club.id })} activeOpacity={0.75}>
+                  <Feather name="sliders" size={20} color={C.text} />
+                </TouchableOpacity>
+              </>
+            )}
+            {canPost && (
+              <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('ClubPost', { clubId: club.id, clubName: club.name })} activeOpacity={0.75}>
+                <Feather name="plus" size={22} color={C.text} />
+              </TouchableOpacity>
+            )}
           </View>
         ) : undefined}
       />
@@ -144,52 +194,56 @@ export function ClubDetailScreen({ route, navigation }: any) {
           {myRole && (
             <View style={[styles.rolePill, { backgroundColor: C.infoBg }]}>
               <View style={[styles.roleDot, { backgroundColor: C.info }]} />
-              <Text style={[styles.roleTxt, { color: C.info, fontFamily: FontFamily.jakartaBold }]}>{myRole}</Text>
+              <Text style={[styles.roleTxt, { color: C.info, fontFamily: FontFamily.jakartaBold }]}>
+                {t.clubs.roleLabels[myRole] ?? myRole}
+              </Text>
             </View>
           )}
         </View>
 
-        <Text style={[styles.desc, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>{club.about}</Text>
+        {club.tagline ? (
+          <Text style={[styles.tagline, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>{club.tagline}</Text>
+        ) : null}
+        {club.about ? (
+          <Text style={[styles.desc, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>{club.about}</Text>
+        ) : null}
 
-        {/* Join / Leave */}
-        {!canManage && (
-          isMember ? (
-            <TouchableOpacity
-              style={[styles.joinBtn, { backgroundColor: C.surface2, borderColor: C.border, borderWidth: 1 }]}
-              onPress={leaveClub}
-              activeOpacity={0.75}
-            >
-              <Feather name="log-out" size={15} color={C.text2} />
-              <Text style={[styles.joinBtnTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>Leave club</Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              style={[styles.joinBtn, { backgroundColor: cat.fg }]}
-              onPress={joinClub}
-              activeOpacity={0.75}
-            >
-              <Feather name="user-plus" size={15} color="#fff" />
-              <Text style={[styles.joinBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>Join club</Text>
-            </TouchableOpacity>
-          )
+        {/* Invitation-only (web parity): no self-join. Members can leave. */}
+        {!isMember && !isAdmin && (
+          <View style={[styles.inviteCard, { backgroundColor: C.surface2 }]}>
+            <Feather name="lock" size={14} color={C.textMuted} />
+            <Text style={[styles.inviteTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+              {t.clubs.inviteOnly}
+            </Text>
+          </View>
+        )}
+        {isMember && myRole !== 'president' && (
+          <TouchableOpacity
+            style={[styles.joinBtn, { backgroundColor: C.surface2, borderColor: C.border, borderWidth: 1 }]}
+            onPress={leaveClub}
+            activeOpacity={0.75}
+          >
+            <Feather name="log-out" size={15} color={C.text2} />
+            <Text style={[styles.joinBtnTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>{t.clubs.leave}</Text>
+          </TouchableOpacity>
         )}
 
         {/* Tabs */}
         <View style={styles.chips}>
-          {(['feed', 'members'] as Tab[]).map(t => (
+          {(['feed', 'members'] as Tab[]).map(tb => (
             <TouchableOpacity
-              key={t}
-              style={[styles.chip, tab === t
+              key={tb}
+              style={[styles.chip, tab === tb
                 ? { backgroundColor: C.brand, borderColor: C.brand }
                 : { backgroundColor: C.surface, borderColor: C.border }]}
-              onPress={() => setTab(t)}
+              onPress={() => setTab(tb)}
               activeOpacity={0.75}
             >
-              <Text style={[styles.chipTxt, { color: tab === t ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                {t === 'feed' ? 'Feed' : 'Members'}
+              <Text style={[styles.chipTxt, { color: tab === tb ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                {tb === 'feed' ? t.clubs.feed : t.clubs.members}
               </Text>
-              {t === 'members' && (
-                <Text style={[styles.chipCount, { color: tab === t ? 'rgba(255,255,255,0.7)' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+              {tb === 'members' && (
+                <Text style={[styles.chipCount, { color: tab === tb ? 'rgba(255,255,255,0.7)' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
                   {members.length}
                 </Text>
               )}
@@ -204,22 +258,56 @@ export function ClubDetailScreen({ route, navigation }: any) {
               <View style={styles.empty}>
                 <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>No posts yet</Text>
               </View>
-            ) : posts.map(p => (
-              <View key={p.id} style={[styles.postCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-                <View style={styles.postHeader}>
-                  <Avatar name={(p as any).profiles?.full_name} size="sm" />
-                  <View>
-                    <Text style={[styles.postAuthor, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                      {(p as any).profiles?.full_name ?? 'Member'}
-                    </Text>
-                    <Text style={[styles.postTime, { color: C.textMuted, fontFamily: FontFamily.jakartaSemiBold }]}>
-                      {timeAgo(p.created_at)}
-                    </Text>
+            ) : posts.map(p => {
+              const canModeratePost = canManage;
+              const canDeletePost = canManage || p.author_id === user?.id;
+              return (
+                <View
+                  key={p.id}
+                  style={[styles.postCard, {
+                    backgroundColor: C.surface,
+                    borderColor: p.is_pinned ? Accent.amber : C.border,
+                  }]}
+                >
+                  {p.is_pinned && (
+                    <View style={styles.pinnedRow}>
+                      <Feather name="bookmark" size={11} color={Accent.amber} />
+                      <Text style={[styles.pinnedTxt, { color: Accent.amber, fontFamily: FontFamily.jakartaBold }]}>
+                        {t.clubs.pinned}
+                      </Text>
+                    </View>
+                  )}
+                  <View style={styles.postHeader}>
+                    <Avatar name={(p as any).profiles?.full_name} size="sm" />
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={[styles.postAuthor, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                        {(p as any).profiles?.full_name ?? 'Member'}
+                      </Text>
+                      <Text style={[styles.postTime, { color: C.textMuted, fontFamily: FontFamily.jakartaSemiBold }]}>
+                        {timeAgo(p.created_at)}
+                      </Text>
+                    </View>
+                    {canModeratePost && (
+                      <TouchableOpacity onPress={() => togglePin(p)} hitSlop={8} activeOpacity={0.7}>
+                        <Feather name="bookmark" size={16} color={p.is_pinned ? Accent.amber : C.textMuted} />
+                      </TouchableOpacity>
+                    )}
+                    {canDeletePost && (
+                      <TouchableOpacity onPress={() => deletePost(p)} hitSlop={8} activeOpacity={0.7} style={{ marginLeft: 12 }}>
+                        <Feather name="trash-2" size={15} color={C.danger} />
+                      </TouchableOpacity>
+                    )}
                   </View>
+                  {p.title ? (
+                    <Text style={[styles.postTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{p.title}</Text>
+                  ) : null}
+                  <Text style={[styles.postBody, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>{p.body}</Text>
+                  {p.image_url ? (
+                    <Image source={{ uri: p.image_url }} style={styles.postImage} resizeMode="cover" />
+                  ) : null}
                 </View>
-                <Text style={[styles.postBody, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>{p.body}</Text>
-              </View>
-            ))}
+              );
+            })}
           </View>
         ) : (
           <View style={[styles.membersCard, { backgroundColor: C.surface, borderColor: C.border }]}>
@@ -237,7 +325,7 @@ export function ClubDetailScreen({ route, navigation }: any) {
                       isLead ? { backgroundColor: C.infoBg } : { backgroundColor: C.surface2 }]}>
                       <Text style={[styles.memberRoleTxt,
                         { color: isLead ? C.info : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                        {m.role}
+                        {t.clubs.roleLabels[m.role] ?? m.role}
                       </Text>
                     </View>
                   </View>
@@ -266,7 +354,14 @@ const styles = StyleSheet.create({
   roleDot: { width: 6, height: 6, borderRadius: 3 } as ViewStyle,
   roleTxt: { fontSize: 11 } as any,
 
-  desc: { fontSize: 13.5, lineHeight: 20, marginTop: 12, marginHorizontal: 2 } as any,
+  tagline: { fontSize: 14, lineHeight: 20, marginTop: 12, marginHorizontal: 2 } as any,
+  desc: { fontSize: 13.5, lineHeight: 20, marginTop: 6, marginHorizontal: 2 } as any,
+  inviteCard: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, borderRadius: 12, marginTop: 12 } as ViewStyle,
+  inviteTxt: { flex: 1, fontSize: 12.5, lineHeight: 18 } as any,
+  pinnedRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 8 } as ViewStyle,
+  pinnedTxt: { fontSize: 10.5, letterSpacing: 0.4 } as any,
+  postTitle: { fontSize: 14.5, marginTop: 10 } as any,
+  postImage: { width: '100%', height: 160, borderRadius: 12, marginTop: 10 } as any,
 
   chips: { flexDirection: 'row', gap: 8, marginTop: 14 } as ViewStyle,
   chip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1 } as ViewStyle,
