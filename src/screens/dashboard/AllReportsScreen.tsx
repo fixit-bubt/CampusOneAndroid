@@ -1,8 +1,8 @@
 // Matches design screens-f.jsx — AllReports (Admin)
 import { useState, useEffect, useCallback } from 'react';
 import {
-  View, Text, TouchableOpacity, ScrollView, Modal, StyleSheet,
-  RefreshControl, type ViewStyle,
+  View, Text, TextInput, TouchableOpacity, ScrollView, Modal, StyleSheet,
+  RefreshControl, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
@@ -21,7 +21,11 @@ const STATUS_TABS: { id: StatusFilter; label: string }[] = [
   { id: 'Open',        label: 'Open' },
   { id: 'In Progress', label: 'In Progress' },
   { id: 'Resolved',    label: 'Resolved' },
+  { id: 'Rejected',    label: 'Rejected' },
+  { id: 'Closed',      label: 'Closed' },
 ];
+
+const CATEGORIES = ['All', 'Electrical', 'Plumbing', 'Cleanliness', 'IT / Network', 'Furniture', 'Safety / Security', 'Other'];
 
 // Status → theme tokens (light + dark aware via C)
 function statusTone(C: any, status: string): { text: string; bg: string } {
@@ -44,6 +48,8 @@ export function AllReportsScreen({ navigation }: any) {
   const { profile } = useAuth();
   const [reports, setReports] = useState<ReportWithProfile[]>([]);
   const [filter, setFilter] = useState<StatusFilter>('all');
+  const [category, setCategory] = useState('All');
+  const [query, setQuery] = useState('');
   const [staff, setStaff] = useState<Profile[]>([]);
   const [assignTarget, setAssignTarget] = useState<ReportWithProfile | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -80,7 +86,16 @@ export function AllReportsScreen({ navigation }: any) {
     setAssignTarget(null);
   }
 
-  const list = filter === 'all' ? reports : reports.filter(r => r.status === filter);
+  const q = query.trim().toLowerCase();
+  const list = reports
+    .filter(r => filter === 'all' || r.status === filter)
+    .filter(r => category === 'All' || r.category === category)
+    .filter(r => {
+      if (!q) return true;
+      const code = (r as any).code ?? '';
+      return [r.category, r.description, r.building, code]
+        .filter(Boolean).join(' ').toLowerCase().includes(q);
+    });
 
   // Assign sheet: surface staff whose trade matches the report category first
   const assignCat = assignTarget?.category;
@@ -106,10 +121,30 @@ export function AllReportsScreen({ navigation }: any) {
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar title="All Reports" onBack={() => navigation.goBack()} />
 
-      {/* Filter chips */}
+      {/* Search */}
+      <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 8 }}>
+        <View style={[styles.searchBar, { backgroundColor: C.surface2 }]}>
+          <Icon name="search" size={17} color={C.textMuted} />
+          <TextInput
+            style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
+            placeholder="Search by title, building, code..."
+            placeholderTextColor={C.textMuted}
+            value={query}
+            onChangeText={setQuery}
+          />
+          {query.length > 0 && (
+            <TouchableOpacity onPress={() => setQuery('')} hitSlop={8}>
+              <Icon name="x" size={16} color={C.textMuted} />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
+      {/* Status chips */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
+        style={{ flexGrow: 0 }}
         contentContainerStyle={[styles.chips, { paddingHorizontal: Layout.screenPadding }]}
       >
         {STATUS_TABS.map(tab => {
@@ -124,11 +159,37 @@ export function AllReportsScreen({ navigation }: any) {
               onPress={() => setFilter(tab.id)}
               activeOpacity={0.75}
             >
-              <Text style={[styles.chipTxt, { color: on ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>
+              <Text style={[styles.chipTxt, { color: on ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>
                 {tab.label}
               </Text>
               <Text style={[styles.chipCount, { color: on ? 'rgba(255,255,255,0.75)' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
                 {count}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+
+      {/* Category chips */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={{ flexGrow: 0 }}
+        contentContainerStyle={[styles.catChips, { paddingHorizontal: Layout.screenPadding }]}
+      >
+        {CATEGORIES.map(c => {
+          const on = category === c;
+          return (
+            <TouchableOpacity
+              key={c}
+              style={[styles.catChip, on
+                ? { backgroundColor: C.surface2, borderColor: C.text2 }
+                : { backgroundColor: C.surface, borderColor: C.border }]}
+              onPress={() => setCategory(c)}
+              activeOpacity={0.75}
+            >
+              <Text style={[styles.catChipTxt, { color: on ? C.text : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                {c}
               </Text>
             </TouchableOpacity>
           );
@@ -180,14 +241,24 @@ export function AllReportsScreen({ navigation }: any) {
                       {r.profiles?.full_name ?? 'Unknown'}
                     </Text>
                   </View>
-                  {!r.assigned_staff_id && r.status === 'Open' && (
-                    <TouchableOpacity
-                      style={[styles.assignBtn, { backgroundColor: C.brand }]}
-                      onPress={() => setAssignTarget(r)}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={[styles.assignTxt, { fontFamily: FontFamily.jakartaBold }]}>Assign</Text>
-                    </TouchableOpacity>
+                  {r.status !== 'Rejected' && r.status !== 'Closed' && r.status !== 'Resolved' && (
+                    r.assigned_staff_id ? (
+                      <TouchableOpacity
+                        style={[styles.assignBtn, { backgroundColor: C.surface2 }]}
+                        onPress={() => setAssignTarget(r)}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={[styles.assignTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Reassign</Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity
+                        style={[styles.assignBtn, { backgroundColor: C.brand }]}
+                        onPress={() => setAssignTarget(r)}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={[styles.assignTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>Assign</Text>
+                      </TouchableOpacity>
+                    )
                   )}
                 </View>
               </TouchableOpacity>
@@ -269,6 +340,12 @@ const styles = StyleSheet.create({
   chipTxt: { fontSize: 13 } as any,
   chipCount: { fontSize: 12 } as any,
 
+  searchBar: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 14, borderRadius: 14 } as ViewStyle,
+  searchInput: { flex: 1, fontSize: 15, paddingVertical: 11 } as TextStyle,
+  catChips: { flexDirection: 'row', gap: 7, paddingBottom: 10 } as ViewStyle,
+  catChip: { paddingHorizontal: 11, paddingVertical: 6, borderRadius: 999, borderWidth: 1 } as ViewStyle,
+  catChipTxt: { fontSize: 11.5 } as any,
+
   scroll: { paddingTop: 4, paddingBottom: 20 } as ViewStyle,
 
   cardList: {
@@ -340,7 +417,6 @@ const styles = StyleSheet.create({
   } as ViewStyle,
 
   assignTxt: {
-    color: '#fff',
     fontSize: 13,
   } as any,
 
