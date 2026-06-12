@@ -201,7 +201,12 @@ export function StaffDashboardScreen({ navigation }: any) {
           <StatCard icon="check"  fg={C.success} num={resolved.length} label="Resolved"  C={C} />
         </View>
 
-        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>ASSIGNED TO ME</Text>
+        <View style={styles.sectionRow}>
+          <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold, marginTop: 0, marginBottom: 0 }]}>ASSIGNED TO ME</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('AssignedToMe')} activeOpacity={0.8}>
+            <Text style={[styles.seeAll, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>See All</Text>
+          </TouchableOpacity>
+        </View>
 
         {sorted.length === 0 ? (
           <View style={styles.empty}>
@@ -234,6 +239,8 @@ const styles = StyleSheet.create({
   statNum: { fontSize: 20 } as any,
   statLabel: { fontSize: 11, textAlign: 'center' } as any,
   sectionLabel: { fontSize: 11, letterSpacing: 0.8, marginTop: 18, marginBottom: 10 } as any,
+  sectionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 18, marginBottom: 10 } as ViewStyle,
+  seeAll: { fontSize: 12.5 } as any,
   list: { gap: 11 } as ViewStyle,
   reportCard: { padding: 14, borderRadius: 16, borderWidth: 1 } as ViewStyle,
   reportTop: { flexDirection: 'row', alignItems: 'center', gap: 12 } as ViewStyle,
