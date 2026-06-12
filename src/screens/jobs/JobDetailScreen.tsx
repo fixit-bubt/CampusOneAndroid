@@ -1,7 +1,7 @@
 // Matches design screens-b.jsx — JobDetail
 import { useState, useEffect } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet,
+  View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet,
   ActivityIndicator, Modal, Alert, Linking, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -27,23 +27,26 @@ const REPORT_REASONS = ['Spam', 'Scam', 'Expired', 'Inappropriate'];
 
 export function JobDetailScreen({ route, navigation }: any) {
   const { C } = useTheme();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { jobId } = route.params;
   const [job, setJob] = useState<any>(null);
   const [saved, setSaved] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [reason, setReason] = useState('');
+  const [removeOpen, setRemoveOpen] = useState(false);
+  const [removeReason, setRemoveReason] = useState('');
+  const isAdmin = profile?.role === 'admin';
 
-  useEffect(() => {
-    (async () => {
-      const [jobRes, saveRes] = await Promise.all([
-        supabase.from('jobs').select('*').eq('id', jobId).single(),
-        supabase.from('job_bookmarks').select('job_id').eq('job_id', jobId).eq('user_id', user?.id ?? '').maybeSingle(),
-      ]);
-      if (jobRes.data) setJob(jobRes.data);
-      setSaved(!!saveRes.data);
-    })();
-  }, [jobId, user?.id]);
+  async function loadJob() {
+    const [jobRes, saveRes] = await Promise.all([
+      supabase.from('jobs').select('*').eq('id', jobId).single(),
+      supabase.from('job_bookmarks').select('job_id').eq('job_id', jobId).eq('user_id', user?.id ?? '').maybeSingle(),
+    ]);
+    if (jobRes.data) setJob(jobRes.data);
+    setSaved(!!saveRes.data);
+  }
+
+  useEffect(() => { loadJob(); }, [jobId, user?.id]);
 
   async function toggleSave() {
     if (!user || !job) return;
@@ -65,6 +68,35 @@ export function JobDetailScreen({ route, navigation }: any) {
     if (error) { Alert.alert('Error', error.message); return; }
     setReportOpen(false);
     setReason('');
+  }
+
+  function confirmWithdraw() {
+    Alert.alert('Withdraw listing', 'Remove your job post? You cannot undo this yourself.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Withdraw', style: 'destructive',
+        onPress: async () => {
+          const { error } = await supabase.rpc('job_withdraw', { p_code: job.code });
+          if (error) { Alert.alert('Error', error.message); return; }
+          navigation.goBack();
+        },
+      },
+    ]);
+  }
+
+  async function adminRemove() {
+    if (!removeReason.trim()) { Alert.alert('Reason required', 'Tell the poster why this was removed.'); return; }
+    const { error } = await supabase.rpc('job_admin_remove', { p_code: job.code, p_reason: removeReason.trim() });
+    if (error) { Alert.alert('Error', error.message); return; }
+    setRemoveOpen(false);
+    setRemoveReason('');
+    loadJob();
+  }
+
+  async function adminRestore() {
+    const { error } = await supabase.rpc('job_admin_restore', { p_code: job.code });
+    if (error) { Alert.alert('Error', error.message); return; }
+    loadJob();
   }
 
   if (!job) {
@@ -158,11 +190,23 @@ export function JobDetailScreen({ route, navigation }: any) {
 
         {/* Actions */}
         {isRemoved ? (
-          <View style={[styles.removedBanner, { backgroundColor: '#fbe7e5' }]}>
-            <Text style={[styles.removedText, { color: '#e2483d', fontFamily: FontFamily.jakartaBold }]}>
-              This listing has been removed
-            </Text>
-          </View>
+          <>
+            <View style={[styles.removedBanner, { backgroundColor: '#fbe7e5' }]}>
+              <Text style={[styles.removedText, { color: '#e2483d', fontFamily: FontFamily.jakartaBold }]}>
+                This listing has been removed{job.removed_reason ? ` — ${job.removed_reason}` : ''}
+              </Text>
+            </View>
+            {isAdmin && (
+              <TouchableOpacity
+                style={[styles.secondaryBtn, { backgroundColor: C.surface, borderColor: C.border }]}
+                onPress={adminRestore}
+                activeOpacity={0.85}
+              >
+                <Feather name="rotate-ccw" size={16} color={C.text} />
+                <Text style={[styles.secondaryTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Restore listing (admin)</Text>
+              </TouchableOpacity>
+            )}
+          </>
         ) : (
           <>
             {!isExpired && (
@@ -188,10 +232,7 @@ export function JobDetailScreen({ route, navigation }: any) {
             {isOwn ? (
               <TouchableOpacity
                 style={[styles.secondaryBtn, { backgroundColor: C.surface, borderColor: C.border }]}
-                onPress={async () => {
-                  await supabase.from('jobs').update({ deleted_at: new Date().toISOString() }).eq('id', jobId);
-                  navigation.goBack();
-                }}
+                onPress={confirmWithdraw}
                 activeOpacity={0.85}
               >
                 <Icon name="trash" size={16} color={C.text} />
@@ -207,11 +248,46 @@ export function JobDetailScreen({ route, navigation }: any) {
                 <Text style={[styles.secondaryTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Report listing</Text>
               </TouchableOpacity>
             )}
+            {isAdmin && !isOwn && (
+              <TouchableOpacity
+                style={[styles.secondaryBtn, { backgroundColor: '#fbe7e5', borderColor: '#fbe7e5' }]}
+                onPress={() => setRemoveOpen(true)}
+                activeOpacity={0.85}
+              >
+                <Feather name="slash" size={16} color="#e2483d" />
+                <Text style={[styles.secondaryTxt, { color: '#e2483d', fontFamily: FontFamily.jakartaBold }]}>Remove listing (admin)</Text>
+              </TouchableOpacity>
+            )}
           </>
         )}
 
         <View style={{ height: 26 }} />
       </ScrollView>
+
+      {/* Admin remove sheet */}
+      <Modal visible={removeOpen} transparent animationType="slide" onRequestClose={() => setRemoveOpen(false)}>
+        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setRemoveOpen(false)} />
+        <View style={[styles.sheet, { backgroundColor: C.surface }]}>
+          <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>Remove listing</Text>
+          <TextInput
+            style={[styles.removeInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+            value={removeReason}
+            onChangeText={setRemoveReason}
+            placeholder="Reason (shown to the poster)"
+            placeholderTextColor={C.textMuted}
+            multiline
+          />
+          <TouchableOpacity
+            style={[styles.actionBtn, { backgroundColor: '#e2483d', opacity: removeReason.trim() ? 1 : 0.5, marginTop: 14 }]}
+            onPress={adminRemove}
+            disabled={!removeReason.trim()}
+            activeOpacity={0.85}
+          >
+            <Feather name="slash" size={17} color="#fff" />
+            <Text style={[styles.actionTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>Remove listing</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
 
       {/* Report bottom sheet */}
       <Modal visible={reportOpen} transparent animationType="slide" onRequestClose={() => setReportOpen(false)}>
@@ -276,6 +352,7 @@ const styles = StyleSheet.create({
   body: { fontSize: 14.5, lineHeight: 22.5 } as any,
 
   reqCard: { padding: 14, borderRadius: 14, borderWidth: 1 } as ViewStyle,
+  removeInput: { minHeight: 70, borderRadius: 12, borderWidth: 1, padding: 12, fontSize: 14, textAlignVertical: 'top', marginTop: 12 } as any,
   reqText: { fontSize: 13.5, lineHeight: 22 } as any,
 
   removedBanner: { alignItems: 'center', padding: 14, borderRadius: 14, marginTop: 18 } as ViewStyle,
