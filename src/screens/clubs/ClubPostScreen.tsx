@@ -17,6 +17,7 @@ export function ClubPostScreen({ route, navigation }: any) {
   const { user } = useAuth();
 
   // Hooks must be declared before any early return
+  const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -32,6 +33,7 @@ export function ClubPostScreen({ route, navigation }: any) {
       const { error } = await supabase.from('club_posts').insert({
         club_id:   clubId,
         author_id: user.id,
+        title:     title.trim() || null,
         body:      content.trim(),
       });
       if (error) throw error;
@@ -57,6 +59,14 @@ export function ClubPostScreen({ route, navigation }: any) {
         </Text>
 
         <TextInput
+          style={[styles.titleInput, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaBold }]}
+          value={title}
+          onChangeText={setTitle}
+          placeholder="Title (optional)"
+          placeholderTextColor={C.textMuted}
+        />
+
+        <TextInput
           style={[styles.textarea, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
           value={content}
           onChangeText={setContent}
@@ -73,8 +83,8 @@ export function ClubPostScreen({ route, navigation }: any) {
           disabled={!canSubmit || loading}
           activeOpacity={0.8}
         >
-          <Icon name="check" size={18} color={canSubmit ? '#fff' : C.textMuted} />
-          <Text style={[styles.submitText, { color: canSubmit ? '#fff' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+          <Icon name="check" size={18} color={canSubmit ? C.white : C.textMuted} />
+          <Text style={[styles.submitText, { color: canSubmit ? C.white : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
             Post
           </Text>
         </TouchableOpacity>
@@ -93,6 +103,15 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginBottom: 12,
     marginLeft: 2,
+  } as any,
+
+  titleInput: {
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    marginBottom: 10,
   } as any,
 
   textarea: {
