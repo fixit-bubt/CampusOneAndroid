@@ -8,12 +8,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout } from '../../theme';
+import { FontFamily, Layout , SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 
-const MED_COLOR = '#e2483d';
-const MED_BG    = '#e2483d1e';
+const MED_COLOR = SectorColors.medical;
+const MED_BG    = `${SectorColors.medical}1e`;
 
 const SLOTS = ['Morning', 'Afternoon', 'Evening'] as const;
 type Slot = typeof SLOTS[number];
@@ -151,11 +151,11 @@ export function DoctorDetailScreen({ route, navigation }: any) {
         {/* Availability banner */}
         <View style={[
           styles.availBanner,
-          { backgroundColor: onDuty ? '#e4f5f4' : C.surface2 },
+          { backgroundColor: onDuty ? C.successBg : C.surface2 },
         ]}>
           <View style={[
             styles.availIcon,
-            { backgroundColor: onDuty ? '#0e9c8a' : C.border },
+            { backgroundColor: onDuty ? C.success : C.border },
           ]}>
             <Icon
               name={onDuty ? 'check' : 'clock'}
@@ -166,7 +166,7 @@ export function DoctorDetailScreen({ route, navigation }: any) {
           <View style={{ flex: 1 }}>
             <Text style={[
               styles.availTitle,
-              { color: onDuty ? '#0e9c8a' : C.text, fontFamily: FontFamily.jakartaExtraBold },
+              { color: onDuty ? C.success : C.text, fontFamily: FontFamily.jakartaExtraBold },
             ]}>
               {onDuty ? 'Available now' : 'Not available now'}
             </Text>
