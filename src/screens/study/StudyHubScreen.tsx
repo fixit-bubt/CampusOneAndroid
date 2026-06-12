@@ -78,6 +78,22 @@ interface Dept {
   name: string;
 }
 
+// Admin catalogue rows (web ManageStudyHub parity)
+interface IntakeRow {
+  id: string;
+  number: number;
+  years: string | null;
+  is_public: boolean;
+}
+
+interface CatSection {
+  id: string;
+  number: number;
+  join_code: string | null;
+  is_public: boolean;
+  cr_name: string | null;
+}
+
 // ── Toast ─────────────────────────────────────────────────────────────────────
 function Toast({ msg, C }: { msg: string; C: any }) {
   if (!msg) return null;
@@ -323,6 +339,19 @@ export function StudyHubScreen({ navigation }: any) {
   const [courses, setCourses] = useState<Course[]>([]);
   const [departments, setDepartments] = useState<Dept[]>([]);
   const [vote, setVote] = useState<Vote | null>(null);
+
+  // Admin catalogue state
+  const [catDept, setCatDept] = useState<string | null>(null);
+  const [catIntakes, setCatIntakes] = useState<IntakeRow[]>([]);
+  const [catExpanded, setCatExpanded] = useState<string | null>(null);
+  const [catSections, setCatSections] = useState<Record<string, CatSection[]>>({});
+  const [addIntakeOpen, setAddIntakeOpen] = useState(false);
+  const [addSectionFor, setAddSectionFor] = useState<string | null>(null);
+  const [setCrFor, setSetCrFor] = useState<string | null>(null);
+  const [students, setStudents] = useState<{ id: string; full_name: string }[]>([]);
+  const [crSearch, setCrSearch] = useState('');
+  const [numInput, setNumInput] = useState('');
+  const [yearsInput, setYearsInput] = useState('');
   const [copied, setCopied] = useState(false);
   const [toast, setToast] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
@@ -452,6 +481,88 @@ export function StudyHubScreen({ navigation }: any) {
     }
   }
 
+  // ── Admin catalogue (web ManageStudyHub parity) ───────────────────────────
+  async function loadCatIntakes(deptId: string) {
+    const { data, error } = await supabase
+      .from('study_intakes')
+      .select('id, number, years, is_public')
+      .eq('department_id', deptId)
+      .order('number', { ascending: false });
+    if (error) { Alert.alert('Error', error.message); return; }
+    setCatIntakes((data ?? []) as IntakeRow[]);
+  }
+
+  async function loadCatSections(intakeId: string) {
+    const { data, error } = await supabase
+      .from('study_sections')
+      .select('id, number, join_code, is_public')
+      .eq('intake_id', intakeId)
+      .order('number');
+    if (error) { Alert.alert('Error', error.message); return; }
+    const secs = (data ?? []) as CatSection[];
+    if (secs.length) {
+      const { data: crs } = await supabase
+        .from('study_section_members')
+        .select('section_id, profiles:user_id(full_name)')
+        .in('section_id', secs.map(x => x.id))
+        .eq('role', 'cr')
+        .eq('status', 'approved');
+      const crMap: Record<string, string> = {};
+      (crs ?? []).forEach((r: any) => { crMap[r.section_id] = one<any>(r.profiles)?.full_name ?? null; });
+      secs.forEach(x => { x.cr_name = crMap[x.id] ?? null; });
+    }
+    setCatSections(prev => ({ ...prev, [intakeId]: secs }));
+  }
+
+  async function addIntake() {
+    if (!catDept) return;
+    const n = parseInt(numInput, 10);
+    if (!Number.isInteger(n) || n <= 0) { Alert.alert('Invalid', 'Enter a valid intake number.'); return; }
+    const { error } = await supabase
+      .from('study_intakes')
+      .insert({ department_id: catDept, number: n, years: yearsInput.trim() || null });
+    if (error) { Alert.alert('Error', error.code === '23505' ? 'That intake already exists.' : error.message); return; }
+    setAddIntakeOpen(false); setNumInput(''); setYearsInput('');
+    flash(`Intake ${n} added`);
+    loadCatIntakes(catDept);
+  }
+
+  async function addCatSection() {
+    if (!addSectionFor) return;
+    const n = parseInt(numInput, 10);
+    if (!Number.isInteger(n) || n <= 0) { Alert.alert('Invalid', 'Enter a valid section number.'); return; }
+    const { error } = await supabase
+      .from('study_sections')
+      .insert({ intake_id: addSectionFor, number: n });
+    if (error) { Alert.alert('Error', error.code === '23505' ? 'That section already exists.' : error.message); return; }
+    const intakeId = addSectionFor;
+    setAddSectionFor(null); setNumInput('');
+    flash(`Section ${n} added`);
+    loadCatSections(intakeId);
+  }
+
+  async function assignCR(sectionId: string, userId: string) {
+    const { error } = await supabase
+      .from('study_section_members')
+      .upsert(
+        { section_id: sectionId, user_id: userId, role: 'cr', status: 'approved' },
+        { onConflict: 'section_id,user_id' },
+      );
+    if (error) { Alert.alert('Error', error.message); return; }
+    setSetCrFor(null); setCrSearch('');
+    flash('CR assigned');
+    if (catExpanded) loadCatSections(catExpanded);
+  }
+
+  async function loadStudents() {
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, full_name')
+      .order('full_name')
+      .limit(100);
+    if (data) setStudents(data as { id: string; full_name: string }[]);
+  }
+
   // Open intake-visibility vote for my intake (+ ballot counts and my own ballot)
   async function loadVote(intakeId: string) {
     const { data: v } = await supabase
@@ -490,6 +601,19 @@ export function StudyHubScreen({ navigation }: any) {
   useEffect(() => {
     if (isAdmin && sub === 'home') loadAdminQueue();
   }, [isAdmin, sub]);
+
+  // Admin catalogue: default to first department, load intakes on change
+  useEffect(() => {
+    if (isAdmin && !catDept && departments.length) setCatDept(departments[0].id);
+  }, [isAdmin, departments, catDept]);
+
+  useEffect(() => {
+    if (isAdmin && catDept) { setCatExpanded(null); loadCatIntakes(catDept); }
+  }, [isAdmin, catDept]);
+
+  useEffect(() => {
+    if (setCrFor && students.length === 0) loadStudents();
+  }, [setCrFor]);
 
   useEffect(() => {
     if (sub === 'browse') loadPublicSections();
@@ -952,6 +1076,103 @@ export function StudyHubScreen({ navigation }: any) {
             ))}
           </View>
         )}
+
+        {/* Catalogue: departments → intakes → sections (web ManageStudyHub) */}
+        <Text style={[s.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>CATALOGUE</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 7, paddingBottom: 4 }}>
+          {departments.map(d => {
+            const sel = d.id === catDept;
+            return (
+              <TouchableOpacity
+                key={d.id}
+                style={[s.deptChip, { backgroundColor: sel ? C.brand : C.surface, borderColor: sel ? C.brand : C.border }]}
+                onPress={() => setCatDept(d.id)}
+                activeOpacity={0.75}
+              >
+                <Text style={{ fontSize: 12, color: sel ? '#fff' : C.text, fontFamily: FontFamily.jakartaBold }}>
+                  {d.name.replace(/^Department of\s+/i, '')}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
+        <TouchableOpacity
+          style={[s.outlineBtn, { backgroundColor: C.surface, borderColor: C.border, marginTop: 10 }]}
+          onPress={() => { setNumInput(''); setYearsInput(''); setAddIntakeOpen(true); }}
+          activeOpacity={0.75}
+        >
+          <Icon name="plus" size={16} color={C.text} />
+          <Text style={[s.outlineBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Add intake</Text>
+        </TouchableOpacity>
+
+        {catIntakes.length === 0 ? (
+          <View style={s.empty}>
+            <Text style={[s.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>No intakes for this department</Text>
+          </View>
+        ) : (
+          <View style={{ gap: 9, marginTop: 12 }}>
+            {catIntakes.map(ik => {
+              const open = catExpanded === ik.id;
+              const secs = catSections[ik.id] ?? [];
+              return (
+                <View key={ik.id} style={[s.card, { backgroundColor: C.surface, borderColor: C.border }]}>
+                  <TouchableOpacity
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
+                    onPress={() => {
+                      if (open) { setCatExpanded(null); return; }
+                      setCatExpanded(ik.id);
+                      if (!catSections[ik.id]) loadCatSections(ik.id);
+                    }}
+                    activeOpacity={0.75}
+                  >
+                    <View style={[s.sectionThumb, { backgroundColor: STUDY_COLOR + '20', width: 38, height: 38 }]}>
+                      <Icon name="study" size={17} color={STUDY_COLOR} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[s.reqName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Intake {ik.number}</Text>
+                      <Text style={[s.reqTime, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                        {ik.years ?? '—'} · {ik.is_public ? 'Public' : 'Private'}
+                      </Text>
+                    </View>
+                    <Feather name={open ? 'chevron-up' : 'chevron-down'} size={18} color={C.textMuted} />
+                  </TouchableOpacity>
+
+                  {open && (
+                    <View style={{ marginTop: 10, gap: 8 }}>
+                      {secs.map(sec => (
+                        <View key={sec.id} style={[s.catSecRow, { backgroundColor: C.bg, borderColor: C.border }]}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={[s.reqName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Sec {sec.number}</Text>
+                            <Text style={[s.reqTime, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                              Code {sec.join_code ?? '—'} · CR {sec.cr_name ?? 'none'}
+                            </Text>
+                          </View>
+                          <TouchableOpacity
+                            style={[s.approveBtn, { backgroundColor: '#eef3ff' }]}
+                            onPress={() => { setCrSearch(''); setSetCrFor(sec.id); }}
+                            activeOpacity={0.75}
+                          >
+                            <Feather name="user-check" size={13} color="#2b5be3" />
+                            <Text style={[s.approveTxt, { color: '#2b5be3', fontFamily: FontFamily.jakartaBold }]}>Set CR</Text>
+                          </TouchableOpacity>
+                        </View>
+                      ))}
+                      <TouchableOpacity
+                        style={[s.outlineBtn, { backgroundColor: C.bg, borderColor: C.border }]}
+                        onPress={() => { setNumInput(''); setAddSectionFor(ik.id); }}
+                        activeOpacity={0.75}
+                      >
+                        <Icon name="plus" size={15} color={C.text} />
+                        <Text style={[s.outlineBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Add section</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+              );
+            })}
+          </View>
+        )}
       </View>
     );
   }
@@ -1009,6 +1230,83 @@ export function StudyHubScreen({ navigation }: any) {
         onClose={() => setStartVoteOpen(false)}
         onStart={startVote}
       />
+
+      {/* Admin: add intake */}
+      <Modal visible={addIntakeOpen} animationType="slide" transparent onRequestClose={() => setAddIntakeOpen(false)}>
+        <View style={sheetStyles.overlay}>
+          <TouchableOpacity style={{ flex: 1 }} onPress={() => setAddIntakeOpen(false)} />
+          <View style={[sheetStyles.sheet, { backgroundColor: C.surface }]}>
+            <View style={[sheetStyles.handle, { backgroundColor: C.border }]} />
+            <Text style={[sheetStyles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>Add intake</Text>
+            <Text style={[sheetStyles.flabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>INTAKE NUMBER</Text>
+            <TextInput
+              style={[sheetStyles.input, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+              value={numInput} onChangeText={t => setNumInput(t.replace(/\D/g, ''))} keyboardType="numeric" placeholder="52" placeholderTextColor={C.textMuted}
+            />
+            <Text style={[sheetStyles.flabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>YEARS (OPTIONAL)</Text>
+            <TextInput
+              style={[sheetStyles.input, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+              value={yearsInput} onChangeText={setYearsInput} placeholder="2023–2024" placeholderTextColor={C.textMuted}
+            />
+            <TouchableOpacity style={[sheetStyles.submitBtn, { backgroundColor: C.brand }]} onPress={addIntake} activeOpacity={0.8}>
+              <Icon name="plus" size={17} color="#fff" />
+              <Text style={[sheetStyles.submitTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>Add intake</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Admin: add section */}
+      <Modal visible={!!addSectionFor} animationType="slide" transparent onRequestClose={() => setAddSectionFor(null)}>
+        <View style={sheetStyles.overlay}>
+          <TouchableOpacity style={{ flex: 1 }} onPress={() => setAddSectionFor(null)} />
+          <View style={[sheetStyles.sheet, { backgroundColor: C.surface }]}>
+            <View style={[sheetStyles.handle, { backgroundColor: C.border }]} />
+            <Text style={[sheetStyles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>Add section</Text>
+            <Text style={[sheetStyles.flabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>SECTION NUMBER</Text>
+            <TextInput
+              style={[sheetStyles.input, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+              value={numInput} onChangeText={t => setNumInput(t.replace(/\D/g, ''))} keyboardType="numeric" placeholder="1" placeholderTextColor={C.textMuted}
+            />
+            <TouchableOpacity style={[sheetStyles.submitBtn, { backgroundColor: C.brand }]} onPress={addCatSection} activeOpacity={0.8}>
+              <Icon name="plus" size={17} color="#fff" />
+              <Text style={[sheetStyles.submitTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>Add section</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Admin: assign CR */}
+      <Modal visible={!!setCrFor} animationType="slide" transparent onRequestClose={() => setSetCrFor(null)}>
+        <View style={sheetStyles.overlay}>
+          <TouchableOpacity style={{ flex: 1 }} onPress={() => setSetCrFor(null)} />
+          <View style={[sheetStyles.sheet, { backgroundColor: C.surface, maxHeight: '70%' }]}>
+            <View style={[sheetStyles.handle, { backgroundColor: C.border }]} />
+            <Text style={[sheetStyles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>Assign CR</Text>
+            <TextInput
+              style={[sheetStyles.input, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+              value={crSearch} onChangeText={setCrSearch} placeholder="Search students…" placeholderTextColor={C.textMuted}
+            />
+            <ScrollView style={{ marginTop: 10 }} keyboardShouldPersistTaps="handled">
+              {students
+                .filter(st => st.full_name?.toLowerCase().includes(crSearch.toLowerCase()))
+                .slice(0, 30)
+                .map(st => (
+                  <TouchableOpacity
+                    key={st.id}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 11 }}
+                    onPress={() => setCrFor && assignCR(setCrFor, st.id)}
+                    activeOpacity={0.75}
+                  >
+                    <Avatar name={st.full_name} size="sm" />
+                    <Text style={{ flex: 1, fontSize: 14, color: C.text, fontFamily: FontFamily.jakartaBold }}>{st.full_name}</Text>
+                    <Feather name="user-check" size={16} color={C.brand} />
+                  </TouchableOpacity>
+                ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1032,6 +1330,21 @@ const s = StyleSheet.create({
 
   sectionName: { fontSize: 15 } as any,
   secMeta: { fontSize: 12, marginTop: 2 } as any,
+
+  deptChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+  } as ViewStyle,
+  catSecRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 11,
+    borderRadius: 12,
+    borderWidth: 1,
+  } as ViewStyle,
 
   visPill: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
