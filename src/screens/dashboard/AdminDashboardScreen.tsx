@@ -22,13 +22,17 @@ const ISSUE_MAP: Record<string, { icon: string; fg: string }> = {
   other:      { icon: 'sliders',  fg: '#5b6b86' },
 };
 
-const STATUS_CONFIG: Record<string, { label: string; fg: string; bg: string }> = {
-  'Open':        { label: 'Open',        fg: '#b9760a', bg: '#fbefdb' },
-  'In Progress': { label: 'In Progress', fg: '#2b5be3', bg: '#eef3ff' },
-  'Resolved':    { label: 'Resolved',    fg: '#0e9c8a', bg: '#e4f5f4' },
-  'Closed':      { label: 'Closed',      fg: '#5b6b86', bg: '#f0f2f6' },
-  'Rejected':    { label: 'Rejected',    fg: '#e2483d', bg: '#fbe7e5' },
-};
+// Status → theme tokens (light + dark aware via C)
+function statusTone(C: any, status: string): { fg: string; bg: string } {
+  switch (status) {
+    case 'In Progress': return { fg: C.info,      bg: C.infoBg };
+    case 'Resolved':    return { fg: C.success,   bg: C.successBg };
+    case 'Closed':      return { fg: C.textMuted, bg: C.surface2 };
+    case 'Rejected':    return { fg: C.danger,    bg: C.dangerBg };
+    case 'Open':
+    default:            return { fg: C.warn,      bg: C.warnBg };
+  }
+}
 
 function timeAgo(iso: string): string {
   const secs = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -57,6 +61,7 @@ interface StaffMember {
   full_name: string;
   department: string;
   active_count: number;
+  expertise?: string | null;
 }
 
 function StatCard({ icon, fg, num, label, C }: any) {
@@ -74,7 +79,7 @@ function StatCard({ icon, fg, num, label, C }: any) {
 
 function ReportCard({ r, C, onAssign }: { r: Report; C: any; onAssign: (r: Report) => void }) {
   const issueConf = ISSUE_MAP[r.category?.toLowerCase()] ?? ISSUE_MAP.other;
-  const statusConf = STATUS_CONFIG[r.status] ?? STATUS_CONFIG['Open'];
+  const statusConf = statusTone(C, r.status);
   const issueBg = `${issueConf.fg}1e`;
   return (
     <View style={[styles.reportCard, { backgroundColor: C.surface, borderColor: C.border }]}>
@@ -91,7 +96,7 @@ function ReportCard({ r, C, onAssign }: { r: Report; C: any; onAssign: (r: Repor
         </View>
         <View style={[styles.statusPill, { backgroundColor: statusConf.bg }]}>
           <View style={[styles.statusDot, { backgroundColor: statusConf.fg }]} />
-          <Text style={[styles.statusTxt, { color: statusConf.fg, fontFamily: FontFamily.jakartaBold }]}>{statusConf.label}</Text>
+          <Text style={[styles.statusTxt, { color: statusConf.fg, fontFamily: FontFamily.jakartaBold }]}>{r.status}</Text>
         </View>
       </View>
       <View style={styles.reportMeta}>
@@ -104,12 +109,12 @@ function ReportCard({ r, C, onAssign }: { r: Report; C: any; onAssign: (r: Repor
         <Text style={[styles.reportTime, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{timeAgo(r.created_at)}</Text>
       </View>
       <TouchableOpacity
-        style={[styles.actionBtn, { backgroundColor: '#eef3ff' }]}
+        style={[styles.actionBtn, { backgroundColor: C.infoBg }]}
         onPress={() => onAssign(r)}
         activeOpacity={0.75}
       >
-        <Icon name="userPlus" size={15} color="#2b5be3" />
-        <Text style={[styles.actionTxt, { color: '#2b5be3', fontFamily: FontFamily.jakartaBold }]}>
+        <Icon name="userPlus" size={15} color={C.info} />
+        <Text style={[styles.actionTxt, { color: C.info, fontFamily: FontFamily.jakartaBold }]}>
           {r.assignee_name ? `Reassign · ${r.assignee_name}` : 'Assign'}
         </Text>
       </TouchableOpacity>
@@ -148,7 +153,7 @@ export function AdminDashboardScreen({ navigation }: any) {
         location: [r.building, r.room].filter(Boolean).join(' · '),
       })));
     }
-    const { data: staff } = await supabase.from('profiles').select('id, full_name, department').eq('role', 'staff');
+    const { data: staff } = await supabase.from('profiles').select('id, full_name, department, expertise').eq('role', 'staff');
     if (staff) setStaffList(staff as StaffMember[]);
     const { count } = await supabase.from('reports').select('id', { count: 'exact', head: true }).in('status', ['Resolved', 'Closed']);
     setResolvedCount(count ?? 0);
@@ -177,6 +182,12 @@ export function AdminDashboardScreen({ navigation }: any) {
     return rank(a) - rank(b);
   });
 
+  // Assign sheet: surface staff whose trade matches the report category first
+  const assignCat = assignTarget?.category;
+  const staffRanked = assignCat
+    ? [...staffList].sort((a, b) => Number(b.expertise === assignCat) - Number(a.expertise === assignCat))
+    : staffList;
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <TopBar title="Admin Dashboard" />
@@ -191,18 +202,18 @@ export function AdminDashboardScreen({ navigation }: any) {
 
         {/* Stat grid */}
         <View style={styles.statGrid}>
-          <StatCard icon="inbox"    fg="#b9760a" num={open.length}       label="Open"        C={C} />
-          <StatCard icon="userPlus" fg="#e2483d" num={unassigned.length} label="Unassigned"  C={C} />
-          <StatCard icon="pulse"    fg="#2b5be3" num={inprog.length}     label="In Progress" C={C} />
-          <StatCard icon="check"    fg="#0e9c8a" num={resolvedCount}     label="Resolved"    C={C} />
+          <StatCard icon="inbox"    fg={C.warn}    num={open.length}       label="Open"        C={C} />
+          <StatCard icon="userPlus" fg={C.danger}  num={unassigned.length} label="Unassigned"  C={C} />
+          <StatCard icon="pulse"    fg={C.info}    num={inprog.length}     label="In Progress" C={C} />
+          <StatCard icon="check"    fg={C.success} num={resolvedCount}     label="Resolved"    C={C} />
         </View>
 
         {/* Needs assignment */}
         <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>NEEDS ASSIGNMENT</Text>
         {sorted.filter(r => !r.assigned_staff_id).length === 0 ? (
           <View style={[styles.allClear, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <Icon name="check" size={20} color="#0e9c8a" />
-            <Text style={[styles.allClearTxt, { color: '#0e9c8a', fontFamily: FontFamily.jakartaBold }]}>All reports assigned</Text>
+            <Icon name="check" size={20} color={C.success} />
+            <Text style={[styles.allClearTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>All reports assigned</Text>
           </View>
         ) : (
           <View style={styles.list}>
@@ -245,29 +256,43 @@ export function AdminDashboardScreen({ navigation }: any) {
           {assignTarget && (
             <View style={styles.assignInfo}>
               <Text style={[styles.assignReportTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{assignTarget.title}</Text>
-              <Text style={[styles.assignReportLoc, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{assignTarget.location}</Text>
+              <Text style={[styles.assignReportLoc, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                {assignTarget.location} · Needs: {assignTarget.category}
+              </Text>
             </View>
           )}
           <View style={styles.staffList}>
-            {staffList.map((s, i) => (
-              <View key={s.id}>
-                {i > 0 && <View style={[styles.divider, { backgroundColor: C.border }]} />}
-                <TouchableOpacity
-                  style={styles.staffRow}
-                  onPress={() => assignTarget && assignReport(assignTarget.id, s.id)}
-                  activeOpacity={0.75}
-                >
-                  <Avatar name={s.full_name} size="md" />
-                  <View style={styles.staffInfo}>
-                    <Text style={[styles.staffName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{s.full_name}</Text>
-                    <Text style={[styles.staffDept, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{s.department}</Text>
-                  </View>
-                  <Text style={[styles.staffLoad, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                    {s.active_count ?? 0} active
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            ))}
+            {staffRanked.map((s, i) => {
+              const match = !!assignCat && s.expertise === assignCat;
+              return (
+                <View key={s.id}>
+                  {i > 0 && <View style={[styles.divider, { backgroundColor: C.border }]} />}
+                  <TouchableOpacity
+                    style={styles.staffRow}
+                    onPress={() => assignTarget && assignReport(assignTarget.id, s.id)}
+                    activeOpacity={0.75}
+                  >
+                    <Avatar name={s.full_name} size="md" />
+                    <View style={styles.staffInfo}>
+                      <View style={styles.staffNameRow}>
+                        <Text style={[styles.staffName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{s.full_name}</Text>
+                        {match && (
+                          <View style={[styles.matchPill, { backgroundColor: C.successBg }]}>
+                            <Text style={[styles.matchTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>Match</Text>
+                          </View>
+                        )}
+                      </View>
+                      <Text style={[styles.staffDept, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                        {s.expertise ?? s.department ?? 'No trade set'}
+                      </Text>
+                    </View>
+                    <Text style={[styles.staffLoad, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                      {s.active_count ?? 0} active
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              );
+            })}
           </View>
         </View>
       </Modal>
@@ -321,6 +346,9 @@ const styles = StyleSheet.create({
   staffRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 } as ViewStyle,
   staffInfo: { flex: 1 } as ViewStyle,
   staffName: { fontSize: 14 } as any,
+  staffNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 } as ViewStyle,
+  matchPill: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 20 } as ViewStyle,
+  matchTxt: { fontSize: 10 } as any,
   staffDept: { fontSize: 12, marginTop: 1 } as any,
   staffLoad: { fontSize: 12 } as any,
   divider: { height: StyleSheet.hairlineWidth } as ViewStyle,

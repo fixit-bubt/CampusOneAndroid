@@ -16,7 +16,7 @@ import type { SectorKey } from '../../theme';
 import { supabase } from '../../lib/supabase';
 
 // ── Role helpers ──────────────────────────────────────────────────────────────
-const ROLE_COLOR = { student: '#2b5be3', staff: '#b9760a', admin: '#12915e' };
+const ROLE_TOKEN = { student: 'roleStudent', staff: 'roleStaff', admin: 'roleAdmin' } as const;
 const ROLE_LABEL = { student: 'Student', staff: 'Staff', admin: 'Admin' };
 
 function hexAlpha(hex: string, a: number): string {
@@ -273,40 +273,6 @@ const accompStyles = StyleSheet.create({
   delBtn: { padding: 4 } as ViewStyle,
 });
 
-// ── RoleSwitch ────────────────────────────────────────────────────────────────
-function RoleSwitch({ role, onRole, C }: { role: string; onRole: (r: string) => void; C: any }) {
-  const roles: { id: 'student' | 'staff' | 'admin'; label: string }[] = [
-    { id: 'student', label: 'Student' },
-    { id: 'staff',   label: 'Staff' },
-    { id: 'admin',   label: 'Admin' },
-  ];
-  return (
-    <View style={[roleStyles.sw, { backgroundColor: C.surface2, borderColor: C.border }]}>
-      {roles.map(r => {
-        const active = role === r.id;
-        const color = ROLE_COLOR[r.id];
-        return (
-          <TouchableOpacity
-            key={r.id}
-            style={[roleStyles.btn, active && { backgroundColor: C.surface, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 4, shadowOffset: { width: 0, height: 1 }, elevation: 2 }]}
-            onPress={() => onRole(r.id)}
-            activeOpacity={0.75}
-          >
-            <View style={[roleStyles.dot, { backgroundColor: active ? color : C.border }]} />
-            <Text style={[roleStyles.txt, { color: active ? color : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{r.label}</Text>
-          </TouchableOpacity>
-        );
-      })}
-    </View>
-  );
-}
-const roleStyles = StyleSheet.create({
-  sw: { flexDirection: 'row', borderRadius: 14, borderWidth: 1, padding: 5, gap: 4 } as ViewStyle,
-  btn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 9, borderRadius: 10 } as ViewStyle,
-  dot: { width: 7, height: 7, borderRadius: 4 } as ViewStyle,
-  txt: { fontSize: 13 } as any,
-});
-
 // ── ProfileScreen ─────────────────────────────────────────────────────────────
 export function ProfileScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
@@ -352,12 +318,6 @@ export function ProfileScreen({ navigation }: any) {
 
   useEffect(() => { loadContrib(); }, [loadContrib]);
 
-  function handleRoleView(r: string) {
-    setRole(r);
-    if (r === 'staff')  navigation.navigate('StaffDashboard');
-    if (r === 'admin')  navigation.navigate('AdminDashboard');
-  }
-
   async function handleSave() {
     if (!user) return;
     const { error } = await supabase.from('profiles').update({
@@ -372,7 +332,7 @@ export function ProfileScreen({ navigation }: any) {
     setEditMode(false);
   }
 
-  const roleHex = ROLE_COLOR[role as keyof typeof ROLE_COLOR] ?? '#2b5be3';
+  const roleHex = C[ROLE_TOKEN[role as keyof typeof ROLE_TOKEN] ?? 'roleStudent'];
   const roleBg  = hexAlpha(roleHex, isDark ? 0.2 : 0.12);
 
   return (
@@ -489,12 +449,18 @@ export function ProfileScreen({ navigation }: any) {
           </>
         )}
 
-        {/* View As — only visible to staff and admin */}
+        {/* Dashboard launcher — staff/admin only, gated by real role */}
         {(profile?.role === 'staff' || profile?.role === 'admin') && (
-          <>
-            <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>VIEW AS</Text>
-            <RoleSwitch role={role} onRole={handleRoleView} C={C} />
-          </>
+          <TouchableOpacity
+            style={[styles.dashBtn, { backgroundColor: C.brand }]}
+            onPress={() => navigation.navigate(profile.role === 'admin' ? 'AdminDashboard' : 'StaffDashboard')}
+            activeOpacity={0.85}
+          >
+            <Icon name="layers" size={17} color="#fff" />
+            <Text style={[styles.dashTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+              {profile.role === 'admin' ? 'Admin Dashboard' : 'Staff Dashboard'}
+            </Text>
+          </TouchableOpacity>
         )}
 
         {/* Sign out */}
@@ -559,6 +525,9 @@ const styles = StyleSheet.create({
   emptyCard: { borderRadius: 16, borderWidth: 1, alignItems: 'center', gap: 8, paddingVertical: 32, marginTop: 16 } as ViewStyle,
   emptyTitle: { fontSize: 16 } as any,
   emptyText: { fontSize: 13, textAlign: 'center', maxWidth: 240 } as any,
+
+  dashBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: 14, marginTop: 24 } as ViewStyle,
+  dashTxt: { fontSize: 15 } as any,
 
   logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: 14, borderWidth: 1, marginTop: 16 } as ViewStyle,
   logoutTxt: { fontSize: 15 } as any,

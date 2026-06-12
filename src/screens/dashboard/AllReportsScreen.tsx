@@ -23,13 +23,17 @@ const STATUS_TABS: { id: StatusFilter; label: string }[] = [
   { id: 'Resolved',    label: 'Resolved' },
 ];
 
-const STATUS_TONE: Record<string, { text: string; bg: string }> = {
-  'Open':        { text: '#e08a2b', bg: '#fef3c7' },
-  'In Progress': { text: '#2b5be3', bg: '#dbeafe' },
-  'Resolved':    { text: '#12915e', bg: '#d1fae5' },
-  'Rejected':    { text: '#d63d35', bg: '#fee2e2' },
-  'Closed':      { text: '#5b6b86', bg: '#f1f5f9' },
-};
+// Status → theme tokens (light + dark aware via C)
+function statusTone(C: any, status: string): { text: string; bg: string } {
+  switch (status) {
+    case 'In Progress': return { text: C.info,      bg: C.infoBg };
+    case 'Resolved':    return { text: C.success,   bg: C.successBg };
+    case 'Closed':      return { text: C.textMuted, bg: C.surface2 };
+    case 'Rejected':    return { text: C.danger,    bg: C.dangerBg };
+    case 'Open':
+    default:            return { text: C.warn,      bg: C.warnBg };
+  }
+}
 
 interface ReportWithProfile extends Report {
   profiles: { full_name: string } | null;
@@ -77,6 +81,12 @@ export function AllReportsScreen({ navigation }: any) {
   }
 
   const list = filter === 'all' ? reports : reports.filter(r => r.status === filter);
+
+  // Assign sheet: surface staff whose trade matches the report category first
+  const assignCat = assignTarget?.category;
+  const staffRanked = assignCat
+    ? [...staff].sort((a, b) => Number(b.expertise === assignCat) - Number(a.expertise === assignCat))
+    : staff;
 
   if (profile && profile.role !== 'admin' && profile.role !== 'staff') {
     return (
@@ -132,7 +142,7 @@ export function AllReportsScreen({ navigation }: any) {
       >
         <View style={styles.cardList}>
           {list.map(r => {
-            const tone = STATUS_TONE[r.status] ?? { text: '#5b6b86', bg: '#f1f5f9' };
+            const tone = statusTone(C, r.status);
             const code = (r as any).code ?? ('RPT-' + r.id.replace(/\D/g, '').padStart(4, '0').slice(-4));
             return (
               <TouchableOpacity
@@ -195,27 +205,37 @@ export function AllReportsScreen({ navigation }: any) {
             Assign Staff
           </Text>
           <Text style={[styles.sheetSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-            {assignTarget?.description.split('\n')[0]}
+            {assignTarget?.description.split('\n')[0]}{assignTarget?.category ? ` · Needs: ${assignTarget.category}` : ''}
           </Text>
-          {staff.map((s, i) => (
-            <View key={s.id}>
-              {i > 0 && <View style={[styles.divider, { backgroundColor: C.border }]} />}
-              <TouchableOpacity
-                style={styles.staffRow}
-                onPress={() => assignReport(assignTarget!.id, s.id)}
-                activeOpacity={0.75}
-              >
-                <Avatar uri={s.avatar_url} name={s.full_name} size="sm" />
-                <View style={styles.staffBody}>
-                  <Text style={[styles.staffName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{s.full_name}</Text>
-                  <Text style={[styles.staffDept, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                    {s.department ?? 'Staff'}
-                  </Text>
-                </View>
-                <Icon name="chevR" size={18} color={C.textMuted} />
-              </TouchableOpacity>
-            </View>
-          ))}
+          {staffRanked.map((s, i) => {
+            const match = !!assignCat && s.expertise === assignCat;
+            return (
+              <View key={s.id}>
+                {i > 0 && <View style={[styles.divider, { backgroundColor: C.border }]} />}
+                <TouchableOpacity
+                  style={styles.staffRow}
+                  onPress={() => assignReport(assignTarget!.id, s.id)}
+                  activeOpacity={0.75}
+                >
+                  <Avatar uri={s.avatar_url} name={s.full_name} size="sm" />
+                  <View style={styles.staffBody}>
+                    <View style={styles.staffNameRow}>
+                      <Text style={[styles.staffName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{s.full_name}</Text>
+                      {match && (
+                        <View style={[styles.matchPill, { backgroundColor: C.successBg }]}>
+                          <Text style={[styles.matchTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>Match</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={[styles.staffDept, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                      {s.expertise ?? s.department ?? 'No trade set'}
+                    </Text>
+                  </View>
+                  <Icon name="chevR" size={18} color={C.textMuted} />
+                </TouchableOpacity>
+              </View>
+            );
+          })}
           {staff.length === 0 && (
             <Text style={[{ color: C.textMuted, fontFamily: FontFamily.jakartaMedium, textAlign: 'center', paddingVertical: 20 }]}>
               No staff members found
@@ -361,5 +381,8 @@ const styles = StyleSheet.create({
   staffBody: { flex: 1 } as ViewStyle,
 
   staffName: { fontSize: 14 } as any,
+  staffNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 } as ViewStyle,
+  matchPill: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 20 } as ViewStyle,
+  matchTxt: { fontSize: 10 } as any,
   staffDept: { fontSize: 12, marginTop: 1 } as any,
 });
