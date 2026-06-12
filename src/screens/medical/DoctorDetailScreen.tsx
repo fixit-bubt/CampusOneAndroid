@@ -54,6 +54,12 @@ function ScheduleRow({ icon, label, value, C }: any) {
   );
 }
 
+const SLOT_TIME: Record<Slot, string> = {
+  Morning: '09:00',
+  Afternoon: '13:00',
+  Evening: '17:00',
+};
+
 export function DoctorDetailScreen({ route, navigation }: any) {
   const { C } = useTheme();
   const { user } = useAuth();
@@ -61,36 +67,55 @@ export function DoctorDetailScreen({ route, navigation }: any) {
   const [doctor, setDoctor] = useState<Doctor | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<Slot>('Morning');
   const [booking, setBooking] = useState(false);
+  const [takenSlots, setTakenSlots] = useState<Set<string>>(new Set());
   const onDuty = doctor ? isOnDuty(doctor) : false;
+
+  const today = new Date().toISOString().split('T')[0];
+
+  async function loadTakenSlots() {
+    // Web parity: booked_slots returns the taken HH:MM slots for doctor+date
+    const { data } = await supabase.rpc('booked_slots', { p_doctor_id: doctorId, p_date: today });
+    const rows = Array.isArray(data) ? data : data ? [data] : [];
+    setTakenSlots(new Set(rows.map((r: any) => (typeof r === 'string' ? r : r.slot ?? r.booked_slots))));
+  }
 
   useEffect(() => {
     (async () => {
       const { data } = await supabase.from('doctors').select('*').eq('id', doctorId).single();
       if (data) setDoctor(data as Doctor);
+      loadTakenSlots();
     })();
   }, [doctorId]);
 
   async function bookAppointment() {
     if (!doctor || !user) return;
+    if (takenSlots.has(SLOT_TIME[selectedSlot])) {
+      Alert.alert('Slot taken', 'That slot is already booked. Pick another.');
+      return;
+    }
     setBooking(true);
     try {
-      const today = new Date().toISOString().split('T')[0];
-      const slotTimeMap: Record<Slot, string> = {
-        Morning: '09:00',
-        Afternoon: '13:00',
-        Evening: '17:00',
-      };
-      const { error } = await supabase.from('appointments').insert({
+      const { data, error } = await supabase.from('appointments').insert({
         doctor_id:  doctor.id,
         student_id: user.id,
-        slot:       slotTimeMap[selectedSlot],
+        slot:       SLOT_TIME[selectedSlot],
         date:       today,
         status:     'Booked',
-      });
-      if (error) throw error;
-      Alert.alert('Booked', `Your ${selectedSlot} appointment with ${doctor.name} has been booked for today.`);
-    } catch {
-      Alert.alert('Error', 'Could not book appointment. Please try again.');
+      }).select('token').single();
+      if (error) {
+        const msg = error.code === '23505'
+          ? 'That slot was just taken by someone else. Pick another.'
+          : error.message;
+        Alert.alert('Could not book', msg);
+        loadTakenSlots();
+        return;
+      }
+      Alert.alert(
+        'Booked',
+        `Your ${selectedSlot} appointment with ${doctor.name} is booked for today.` +
+        (data?.token ? `\n\nYour token: ${data.token}` : ''),
+      );
+      loadTakenSlots();
     } finally {
       setBooking(false);
     }
@@ -170,18 +195,22 @@ export function DoctorDetailScreen({ route, navigation }: any) {
           <View style={styles.slotRow}>
             {SLOTS.map(slot => {
               const active = selectedSlot === slot;
+              const taken = takenSlots.has(SLOT_TIME[slot]);
               return (
                 <TouchableOpacity
                   key={slot}
                   style={[
                     styles.slotBtn,
-                    { backgroundColor: active ? MED_COLOR : C.surface2, borderColor: active ? MED_COLOR : C.border },
+                    taken
+                      ? { backgroundColor: C.surface2, borderColor: C.border, opacity: 0.45 }
+                      : { backgroundColor: active ? MED_COLOR : C.surface2, borderColor: active ? MED_COLOR : C.border },
                   ]}
                   onPress={() => setSelectedSlot(slot)}
+                  disabled={taken}
                   activeOpacity={0.75}
                 >
-                  <Text style={[styles.slotTxt, { color: active ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                    {slot}
+                  <Text style={[styles.slotTxt, { color: taken ? C.textMuted : active ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                    {taken ? `${slot} · Taken` : slot}
                   </Text>
                 </TouchableOpacity>
               );
