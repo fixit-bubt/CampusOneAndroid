@@ -9,7 +9,7 @@ import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout } from '../../theme';
+import { FontFamily, Layout , SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 
@@ -19,15 +19,18 @@ function computeJobStatus(job: Job): string {
   return 'open';
 }
 
-const JOB_COLOR = '#0e9c8a';
-const JOB_BG    = '#0e9c8a1e';
+const JOB_COLOR = SectorColors.jobs;
+const JOB_BG    = `${SectorColors.jobs}1e`;
 
-const STATUS_CONFIG: Record<string, { label: string; fg: string; bg: string }> = {
-  open:    { label: 'Open',    fg: '#0e9c8a', bg: '#e4f5f4' },
-  closed:  { label: 'Closed', fg: '#5b6b86', bg: '#f0f2f6' },
-  expired: { label: 'Expired',fg: '#b9760a', bg: '#fbefdb' },
-  removed: { label: 'Removed',fg: '#e2483d', bg: '#fbe7e5' },
-};
+// Job status tones from theme tokens (dark-mode aware via C)
+function jobStatusTone(C: any, k: string): { label: string; fg: string; bg: string } {
+  switch (k) {
+    case 'closed':  return { label: 'Closed',  fg: Accent.slate, bg: Accent.grayBg };
+    case 'expired': return { label: 'Expired', fg: C.warn,       bg: C.warnBg };
+    case 'removed': return { label: 'Removed', fg: C.danger,     bg: C.dangerBg };
+    default:        return { label: 'Open',    fg: Accent.teal,  bg: Accent.tealBg };
+  }
+}
 
 type Tab = 'all' | 'saved';
 
@@ -149,7 +152,7 @@ export function JobsBrowseScreen({ navigation }: any) {
         ) : (
           <View style={styles.list}>
             {list.map(j => {
-              const s = STATUS_CONFIG[computeJobStatus(j)] ?? STATUS_CONFIG.open;
+              const s = jobStatusTone(C, computeJobStatus(j));
               const isSaved = savedIds.has(j.id);
               return (
                 <View key={j.id} style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
@@ -187,7 +190,7 @@ export function JobsBrowseScreen({ navigation }: any) {
                     <Feather
                       name="star"
                       size={20}
-                      color={isSaved ? '#d9870b' : C.textMuted}
+                      color={isSaved ? Accent.gold : C.textMuted}
                       style={{ opacity: 1 } as any}
                     />
                   </TouchableOpacity>
