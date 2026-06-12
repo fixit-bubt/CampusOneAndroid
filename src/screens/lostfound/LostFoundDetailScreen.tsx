@@ -10,12 +10,12 @@ import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout } from '../../theme';
+import { FontFamily, Layout , SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import type { LostFoundItem } from '../../types/database';
 
 const CAT_COLOR: Record<string, string> = {
-  Personal: '#4f6bed', Electronics: '#e08a2b', Documents: '#12915e', Other: '#5b6b86',
+  Personal: Accent.blue, Electronics: SectorColors.lostfound, Documents: Accent.green, Other: Accent.slate,
 };
 const CAT_ICON: Record<string, string> = {
   Personal: 'user', Electronics: 'phone', Documents: 'layers', Other: 'inbox',
@@ -80,7 +80,7 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
     );
   }
 
-  const fg = CAT_COLOR[item.category] ?? '#5b6b86';
+  const fg = CAT_COLOR[item.category] ?? Accent.slate;
   const bg = `${fg}1e`;
   const isLost = item.type === 'Lost';
   const isMine = item.poster_id === user?.id;
@@ -96,9 +96,9 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
         <View style={[styles.thumbLg, { backgroundColor: bg }]}>
           <Icon name={CAT_ICON[item.category] ?? 'inbox'} size={48} color={fg} />
           {/* Type badge overlay */}
-          <View style={[styles.typeOverlay, isLost ? { backgroundColor: '#fbe7e5' } : { backgroundColor: '#e3f5ec' }]}>
-            <View style={[styles.typeDot, { backgroundColor: isLost ? '#d63d35' : '#12915e' }]} />
-            <Text style={[styles.typeText, { color: isLost ? '#d63d35' : '#12915e', fontFamily: FontFamily.jakartaBold }]}>
+          <View style={[styles.typeOverlay, isLost ? { backgroundColor: C.dangerBg } : { backgroundColor: C.successBg }]}>
+            <View style={[styles.typeDot, { backgroundColor: isLost ? C.danger : C.success }]} />
+            <Text style={[styles.typeText, { color: isLost ? C.danger : C.success, fontFamily: FontFamily.jakartaBold }]}>
               {item.type}
             </Text>
           </View>
