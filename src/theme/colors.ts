@@ -149,6 +149,8 @@ export const Accent = {
   blue:    '#2b5be3',   // category: academic/books (static, = light brand)
   teal:    '#0e9c8a',   // category: sports/jobs accents
   amber:   '#b9760a',   // category: social/furniture (static, = light warn)
+  sky:     '#2b88d8',   // category: plumbing
+  red:     '#e2483d',   // category: safety / static red accents
   grayBg:  '#f0f2f6',   // neutral pill bg
   tealBg:  '#e4f5f4',   // teal pill bg (resolved/jobs)
   greenBg: '#e8f8f0',   // green pill bg (approve/success chips)
