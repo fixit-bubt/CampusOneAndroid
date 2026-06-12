@@ -10,7 +10,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout } from '../../theme';
+import { FontFamily, Layout , Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 
@@ -152,7 +152,7 @@ export function FacultyScreen({ navigation }: any) {
                   </View>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.saveBtn} onPress={() => toggleSave(f.id)} activeOpacity={0.75}>
-                  <Feather name="star" size={20} color={savedIds.has(f.id) ? '#d9870b' : C.textMuted} />
+                  <Feather name="star" size={20} color={savedIds.has(f.id) ? Accent.gold : C.textMuted} />
                 </TouchableOpacity>
               </View>
             ))}
