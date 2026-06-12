@@ -80,4 +80,17 @@ export const bn: Dict = {
     Rejected: 'প্রত্যাখ্যাত',
     Closed: 'বন্ধ',
   } as Record<string, string>,
+
+  reports: {
+    myReportsTitle: 'আমার রিপোর্ট',
+    assignedTitle: 'আমার দায়িত্বে',
+    searchPlaceholder: 'রিপোর্ট খুঁজুন...',
+    newReport: 'নতুন রিপোর্ট',
+    noReportsTitle: 'কোনো রিপোর্ট নেই',
+    noReportsBody: 'কিছু মেলেনি। অন্য ফিল্টার চেষ্টা করুন।',
+    deleteTitle: 'রিপোর্ট মুছবেন',
+    deleteBody: 'রিপোর্টটি স্থায়ীভাবে মুছে যাবে। চালিয়ে যাবেন?',
+    view: 'দেখুন',
+    resultCount: (n: number) => `${n} টি রিপোর্ট`,
+  },
 };
