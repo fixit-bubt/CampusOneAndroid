@@ -79,6 +79,8 @@ export function EventsBrowseScreen({ navigation }: any) {
   }, [user?.id]);
   const [filter, setFilter] = useState<'upcoming' | 'past'>('upcoming');
   const [category, setCategory] = useState('All');
+  const [view, setView] = useState<'list' | 'calendar'>('list');
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
@@ -110,11 +112,22 @@ export function EventsBrowseScreen({ navigation }: any) {
       <SubBar
         title="Events"
         onBack={() => navigation.goBack()}
-        rightSlot={canPost ? (
-          <TouchableOpacity style={{ padding: 4 }} onPress={() => navigation.navigate('EventPost')} activeOpacity={0.75}>
-            <Feather name="plus" size={22} color={C.text} />
-          </TouchableOpacity>
-        ) : undefined}
+        rightSlot={
+          <View style={{ flexDirection: 'row' }}>
+            <TouchableOpacity
+              style={{ padding: 4, marginRight: 6 }}
+              onPress={() => setView(v => (v === 'list' ? 'calendar' : 'list'))}
+              activeOpacity={0.75}
+            >
+              <Feather name={view === 'list' ? 'calendar' : 'list'} size={20} color={C.text} />
+            </TouchableOpacity>
+            {canPost && (
+              <TouchableOpacity style={{ padding: 4 }} onPress={() => navigation.navigate('EventPost')} activeOpacity={0.75}>
+                <Feather name="plus" size={22} color={C.text} />
+              </TouchableOpacity>
+            )}
+          </View>
+        }
       />
 
       <View style={[styles.chips, { paddingHorizontal: Layout.screenPadding }]}>
@@ -166,7 +179,71 @@ export function EventsBrowseScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
-        {list.length === 0 ? (
+        {view === 'calendar' ? (() => {
+          // Month grid — dots mark event days; tap a day to list its events.
+          const now = new Date();
+          const year = now.getFullYear();
+          const month = now.getMonth();
+          const daysInMonth = new Date(year, month + 1, 0).getDate();
+          const firstDow = new Date(year, month, 1).getDay();
+          const iso = (d: number) =>
+            `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+          const eventDays = new Set(byCat.map(e => e.date));
+          const cells: (number | null)[] = [
+            ...Array.from({ length: firstDow }, () => null),
+            ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+          ];
+          const dayEvents = selectedDay ? byCat.filter(e => e.date === selectedDay) : [];
+          return (
+            <View>
+              <Text style={[styles.calTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+                {now.toLocaleString('en', { month: 'long' })} {year}
+              </Text>
+              <View style={styles.calGrid}>
+                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+                  <View key={`h${i}`} style={styles.calCell}>
+                    <Text style={[styles.calHead, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{d}</Text>
+                  </View>
+                ))}
+                {cells.map((d, i) => {
+                  if (d === null) return <View key={`e${i}`} style={styles.calCell} />;
+                  const dayISO = iso(d);
+                  const has = eventDays.has(dayISO);
+                  const isToday = dayISO === today;
+                  const isSel = selectedDay === dayISO;
+                  return (
+                    <TouchableOpacity
+                      key={dayISO}
+                      style={[styles.calCell, isSel && { backgroundColor: C.brand, borderRadius: 10 },
+                        !isSel && isToday && { backgroundColor: C.surface2, borderRadius: 10 }]}
+                      onPress={() => setSelectedDay(isSel ? null : dayISO)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.calDay, {
+                        color: isSel ? C.white : isToday ? C.brand : C.text,
+                        fontFamily: has || isToday ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                      }]}>
+                        {d}
+                      </Text>
+                      {has && <View style={[styles.calDot, { backgroundColor: isSel ? C.white : C.brand }]} />}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              {selectedDay && (
+                <View style={[styles.list, { marginTop: 14 }]}>
+                  {dayEvents.length === 0 ? (
+                    <Text style={[styles.emptyTitle, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium, fontSize: 13, textAlign: 'center' }]}>
+                      No events this day
+                    </Text>
+                  ) : dayEvents.map(e => (
+                    <EventCard key={e.id} e={e} C={C} onPress={() => navigation.navigate('EventDetail', { eventId: e.id })} />
+                  ))}
+                </View>
+              )}
+            </View>
+          );
+        })() : list.length === 0 ? (
           <View style={styles.empty}>
             <Icon name="events" size={28} color={C.textMuted} />
             <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -195,6 +272,12 @@ const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
   chips: { flexDirection: 'row', gap: 8, paddingVertical: 10 } as ViewStyle,
   catChips: { flexDirection: 'row', gap: 7, paddingBottom: 10 } as ViewStyle,
+  calTitle: { fontSize: 15, marginBottom: 10 } as any,
+  calGrid: { flexDirection: 'row', flexWrap: 'wrap' } as ViewStyle,
+  calCell: { width: `${100 / 7}%`, alignItems: 'center', paddingVertical: 8, gap: 2 } as ViewStyle,
+  calHead: { fontSize: 10.5 } as any,
+  calDay: { fontSize: 13 } as any,
+  calDot: { width: 5, height: 5, borderRadius: 2.5 } as ViewStyle,
   catChip: { paddingHorizontal: 11, paddingVertical: 6, borderRadius: 999, borderWidth: 1 } as ViewStyle,
   catChipTxt: { fontSize: 11.5 } as any,
   chip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1 } as ViewStyle,
