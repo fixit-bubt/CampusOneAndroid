@@ -20,16 +20,18 @@ const STUDY_COLOR = '#2ba0c9';
 type Persona = 'notjoined' | 'pendingcreate' | 'member' | 'cr';
 type Sub = 'home' | 'browse' | 'manage';
 
+// Mirrors live schema: study_sections(intake_id, number, join_code, is_public)
+// → study_intakes(number, is_public, department_id) → departments(name).
+// department/intake/intake_public are flattened from the joins for display.
 interface SectionRow {
   id: string;
+  intake_id: string;
+  number: number;
+  is_public: boolean;
+  join_code: string | null;
   department: string;
   intake: number;
-  label: string;
-  is_public: boolean;
   intake_public: boolean;
-  join_code: string;
-  member_count: number;
-  course_count: number;
   role?: string;
 }
 
@@ -43,7 +45,6 @@ interface JoinRequest {
 
 interface AdminRequest {
   id: string;
-  user_id: string;
   initials: string;
   full_name: string;
   department: string;
@@ -54,25 +55,27 @@ interface AdminRequest {
 }
 
 interface Vote {
-  id?: string;
-  intake: number;
-  dept: string;
+  id: string;
   proposal: 'public' | 'private';
   yes: number;
   no: number;
-  pending: number;
   closes_in_h: number;
   status: 'open' | 'closed';
+  myBallot: 'yes' | 'no' | null;
 }
 
 interface Course {
   id: string;
   code: string;
   name: string;
-  department: string;
-  material_count: number;
-  question_count: number;
-  book_count: number;
+  material_count?: number;
+  question_count?: number;
+  book_count?: number;
+}
+
+interface Dept {
+  id: string;
+  name: string;
 }
 
 // ── Toast ─────────────────────────────────────────────────────────────────────
@@ -153,14 +156,14 @@ const rowStyles = StyleSheet.create({
 });
 
 // ── CreateSheet (Modal) ───────────────────────────────────────────────────────
-function CreateSheet({ visible, C, onClose, onSubmit }: { visible: boolean; C: any; onClose: () => void; onSubmit: (dept: string, intake: string, label: string, reason: string) => void }) {
-  const [dept, setDept] = useState('CSE');
+function CreateSheet({ visible, C, depts, onClose, onSubmit }: { visible: boolean; C: any; depts: Dept[]; onClose: () => void; onSubmit: (deptId: string, intake: string, section: string, reason: string) => void }) {
+  const [deptId, setDeptId] = useState('');
   const [intake, setIntake] = useState('');
-  const [label, setLabel] = useState('');
+  const [section, setSection] = useState('');
   const [reason, setReason] = useState('');
-  const ok = intake.trim().length > 0 && label.trim().length > 0;
+  const ok = deptId.length > 0 && intake.trim().length > 0 && section.trim().length > 0;
 
-  function reset() { setDept('CSE'); setIntake(''); setLabel(''); setReason(''); }
+  function reset() { setDeptId(''); setIntake(''); setSection(''); setReason(''); }
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -171,10 +174,27 @@ function CreateSheet({ visible, C, onClose, onSubmit }: { visible: boolean; C: a
           <Text style={[sheetStyles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>Request a section</Text>
 
           <Text style={[sheetStyles.flabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>DEPARTMENT</Text>
-          <TextInput
-            style={[sheetStyles.input, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-            value={dept} onChangeText={setDept} placeholder="CSE" placeholderTextColor={C.textMuted}
-          />
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7 }}>
+            {depts.map(d => {
+              const sel = d.id === deptId;
+              return (
+                <TouchableOpacity
+                  key={d.id}
+                  style={{
+                    paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, borderWidth: 1,
+                    backgroundColor: sel ? C.brand : C.bg,
+                    borderColor: sel ? C.brand : C.border,
+                  }}
+                  onPress={() => setDeptId(d.id)}
+                  activeOpacity={0.75}
+                >
+                  <Text style={{ fontSize: 12.5, color: sel ? '#fff' : C.text, fontFamily: FontFamily.jakartaBold }}>
+                    {d.name}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
 
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <View style={{ flex: 1 }}>
@@ -185,10 +205,10 @@ function CreateSheet({ visible, C, onClose, onSubmit }: { visible: boolean; C: a
               />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[sheetStyles.flabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>SECTION</Text>
+              <Text style={[sheetStyles.flabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>SECTION NO.</Text>
               <TextInput
                 style={[sheetStyles.input, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                value={label} onChangeText={t => setLabel(t.toUpperCase().slice(0, 2))} autoCapitalize="characters" placeholder="A" placeholderTextColor={C.textMuted}
+                value={section} onChangeText={t => setSection(t.replace(/\D/g, '').slice(0, 2))} keyboardType="numeric" placeholder="1" placeholderTextColor={C.textMuted}
               />
             </View>
           </View>
@@ -203,7 +223,7 @@ function CreateSheet({ visible, C, onClose, onSubmit }: { visible: boolean; C: a
           <TouchableOpacity
             style={[sheetStyles.submitBtn, { backgroundColor: ok ? C.brand : C.surface2, opacity: ok ? 1 : 0.5 }]}
             disabled={!ok}
-            onPress={() => { onSubmit(dept, intake, label, reason); reset(); }}
+            onPress={() => { onSubmit(deptId, intake, section, reason); reset(); }}
             activeOpacity={0.8}
           >
             <Icon name="check" size={18} color={ok ? '#fff' : C.textMuted} />
@@ -301,6 +321,7 @@ export function StudyHubScreen({ navigation }: any) {
   const [joinReqs, setJoinReqs] = useState<JoinRequest[]>([]);
   const [adminReqs, setAdminReqs] = useState<AdminRequest[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
+  const [departments, setDepartments] = useState<Dept[]>([]);
   const [vote, setVote] = useState<Vote | null>(null);
   const [copied, setCopied] = useState(false);
   const [toast, setToast] = useState('');
@@ -316,67 +337,97 @@ export function StudyHubScreen({ navigation }: any) {
     toastRef.current = setTimeout(() => setToast(''), 1800);
   }
 
+  // Flatten the nested join rows (supabase returns object or 1-elem array).
+  function one<T>(v: T | T[] | null | undefined): T | null {
+    if (!v) return null;
+    return Array.isArray(v) ? (v[0] ?? null) : v;
+  }
+
+  function mapSection(raw: any, role?: string): SectionRow | null {
+    const sec = one<any>(raw);
+    if (!sec) return null;
+    const intake = one<any>(sec.study_intakes);
+    const dept = one<any>(intake?.departments);
+    return {
+      id: sec.id,
+      intake_id: sec.intake_id,
+      number: sec.number,
+      is_public: sec.is_public,
+      join_code: sec.join_code ?? null,
+      department: dept?.name ?? '',
+      intake: intake?.number ?? 0,
+      intake_public: intake?.is_public ?? false,
+      role,
+    };
+  }
+
   const load = useCallback(async () => {
     if (!user) return;
-    // Fetch my section membership
-    const { data: mem, error: memErr } = await supabase
+    // Fetch my approved section membership (joined to intake + department for display)
+    const { data: mems, error: memErr } = await supabase
       .from('study_section_members')
-      .select('*, study_sections(*)')
+      .select('role, study_sections(id, intake_id, number, join_code, is_public, study_intakes(number, is_public, departments(name)))')
       .eq('user_id', user.id)
-      .maybeSingle();
+      .eq('status', 'approved')
+      .limit(1);
 
     if (memErr) { console.warn('load membership:', memErr.message); }
 
-    const rawSec = Array.isArray(mem?.study_sections) ? mem.study_sections[0] : mem?.study_sections;
-    if (rawSec) {
-      const sec = rawSec as SectionRow;
-      setMySection({ ...sec, role: mem.role });
-      setPersona(mem.role === 'cr' ? 'cr' : 'member');
+    const mem = mems?.[0];
+    const sec = mem ? mapSection(mem.study_sections, mem.role) : null;
+    if (sec) {
+      setMySection(sec);
+      setPersona(mem!.role === 'cr' ? 'cr' : 'member');
+      const { data: coursesData, error: coursesErr } = await supabase
+        .from('study_courses').select('*').eq('section_id', sec.id).order('code');
+      if (coursesErr) { console.warn('load courses:', coursesErr.message); }
+      setCourses((coursesData ?? []) as Course[]);
     } else {
-      // check pending request
+      // check pending section-creation request
       const { data: req } = await supabase
         .from('study_section_requests')
         .select('id')
-        .eq('user_id', user.id)
+        .eq('requester_id', user.id)
         .eq('status', 'pending')
         .maybeSingle();
       setPersona(req ? 'pendingcreate' : 'notjoined');
+      setCourses([]);
     }
-
-    // Fetch courses (based on section or globally)
-    const { data: coursesData, error: coursesErr } = await supabase.from('study_courses').select('*').order('code');
-    if (coursesErr) { console.warn('load courses:', coursesErr.message); }
-    if (coursesData) setCourses(coursesData as Course[]);
   }, [user]);
 
   async function loadAdminQueue() {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('study_section_requests')
-      .select('*, profiles:user_id(full_name)')
+      .select('*, profiles:requester_id(full_name), departments:department_id(name)')
       .eq('status', 'pending')
       .order('created_at');
+    if (error) { console.warn('loadAdminQueue:', error.message); return; }
     if (data) {
-      setAdminReqs(data.map((r: any) => ({
-        id: r.id,
-        user_id: r.user_id,
-        full_name: r.profiles?.full_name ?? 'Unknown',
-        initials: (r.profiles?.full_name ?? '??').split(' ').slice(0, 2).map((w: string) => w[0]).join(''),
-        department: r.department,
-        intake: r.intake,
-        section_label: r.section_label,
-        reason: r.reason,
-        created_at: r.created_at,
-      })));
+      setAdminReqs(data.map((r: any) => {
+        const prof = one<any>(r.profiles);
+        const dept = one<any>(r.departments);
+        return {
+          id: r.id,
+          full_name: prof?.full_name ?? 'Unknown',
+          initials: (prof?.full_name ?? '??').split(' ').slice(0, 2).map((w: string) => w[0]).join(''),
+          department: dept?.name ?? '',
+          intake: r.intake_number,
+          section_label: String(r.section_number),
+          reason: r.reason,
+          created_at: r.created_at,
+        };
+      }));
     }
   }
 
   async function loadPublicSections() {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('study_sections')
-      .select('*')
+      .select('id, intake_id, number, join_code, is_public, study_intakes(number, is_public, departments(name))')
       .eq('is_public', true)
       .order('created_at');
-    if (data) setSections(data as SectionRow[]);
+    if (error) { console.warn('loadPublicSections:', error.message); return; }
+    if (data) setSections(data.map((r: any) => mapSection(r)).filter(Boolean) as SectionRow[]);
   }
 
   async function loadJoinReqs() {
@@ -385,20 +436,56 @@ export function StudyHubScreen({ navigation }: any) {
       .from('study_section_members')
       .select('*, profiles:user_id(full_name)')
       .eq('section_id', mySection.id)
-      .eq('status', 'Pending');
+      .eq('status', 'pending');
     if (error) { console.warn('loadJoinReqs:', error.message); return; }
     if (data) {
-      setJoinReqs(data.map((r: any) => ({
-        id: r.id,
-        user_id: r.user_id,
-        full_name: r.profiles?.full_name ?? 'Unknown',
-        initials: (r.profiles?.full_name ?? '??').split(' ').slice(0, 2).map((w: string) => w[0]).join(''),
-        created_at: r.created_at,
-      })));
+      setJoinReqs(data.map((r: any) => {
+        const prof = one<any>(r.profiles);
+        return {
+          id: r.id,
+          user_id: r.user_id,
+          full_name: prof?.full_name ?? 'Unknown',
+          initials: (prof?.full_name ?? '??').split(' ').slice(0, 2).map((w: string) => w[0]).join(''),
+          created_at: r.created_at,
+        };
+      }));
     }
   }
 
+  // Open intake-visibility vote for my intake (+ ballot counts and my own ballot)
+  async function loadVote(intakeId: string) {
+    const { data: v } = await supabase
+      .from('study_intake_votes')
+      .select('*')
+      .eq('intake_id', intakeId)
+      .eq('status', 'open')
+      .maybeSingle();
+    if (!v) { setVote(null); return; }
+    const { data: ballots } = await supabase
+      .from('study_intake_vote_ballots')
+      .select('ballot, cr_id')
+      .eq('vote_id', v.id);
+    const yes = ballots?.filter(b => b.ballot === 'yes').length ?? 0;
+    const no = ballots?.filter(b => b.ballot === 'no').length ?? 0;
+    const mine = ballots?.find(b => b.cr_id === user?.id)?.ballot ?? null;
+    const hoursLeft = Math.max(0, Math.round((new Date(v.closes_at).getTime() - Date.now()) / 3600000));
+    setVote({
+      id: v.id,
+      proposal: v.proposal,
+      yes,
+      no,
+      closes_in_h: hoursLeft,
+      status: v.status,
+      myBallot: mine as Vote['myBallot'],
+    });
+  }
+
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    supabase.from('departments').select('id, name').order('name')
+      .then(({ data }) => { if (data) setDepartments(data as Dept[]); });
+  }, []);
 
   useEffect(() => {
     if (isAdmin && sub === 'home') loadAdminQueue();
@@ -406,7 +493,10 @@ export function StudyHubScreen({ navigation }: any) {
 
   useEffect(() => {
     if (sub === 'browse') loadPublicSections();
-    if (sub === 'manage' && mySection) loadJoinReqs();
+    if (sub === 'manage' && mySection) {
+      loadJoinReqs();
+      loadVote(mySection.intake_id);
+    }
   }, [sub, mySection]);
 
   function handleBack() {
@@ -436,13 +526,17 @@ export function StudyHubScreen({ navigation }: any) {
     if (!user) return;
     const { error } = await supabase
       .from('study_section_members')
-      .insert({ section_id: sectionId, user_id: user.id, status: 'Pending' });
+      .insert({ section_id: sectionId, user_id: user.id, role: 'member', status: 'pending' });
     if (error) { Alert.alert('Error', error.message); return; }
     flash('Join request sent to CR');
   }
 
   async function approveJoin(id: string) {
-    const { error } = await supabase.rpc('approve_section_request', { p_request_id: id });
+    if (!user) return;
+    const { error } = await supabase
+      .from('study_section_members')
+      .update({ status: 'approved', decided_by: user.id, decided_at: new Date().toISOString() })
+      .eq('id', id);
     if (error) { Alert.alert('Error', error.message); return; }
     setJoinReqs(j => j.filter(x => x.id !== id));
     flash('Member approved');
@@ -456,41 +550,28 @@ export function StudyHubScreen({ navigation }: any) {
     flash('Visibility updated');
   }
 
-  async function submitCreateRequest(dept: string, intake: string, label: string, reason: string) {
+  async function submitCreateRequest(deptId: string, intake: string, section: string, reason: string) {
     if (!user) return;
-    await supabase.from('study_section_requests').insert({
-      user_id: user.id, department: dept, intake: parseInt(intake), section_label: label, reason, status: 'pending',
+    const { error } = await supabase.from('study_section_requests').insert({
+      requester_id: user.id,
+      department_id: deptId,
+      intake_number: parseInt(intake),
+      section_number: parseInt(section),
+      reason: reason || null,
     });
+    if (error) { Alert.alert('Error', error.message); return; }
     setCreateOpen(false);
     setPersona('pendingcreate');
     flash('Request submitted');
   }
 
   async function approveAdminReq(id: string) {
-    const req = adminReqs.find(x => x.id === id);
-    const { error: reqErr } = await supabase.from('study_section_requests').update({ status: 'approved' }).eq('id', id);
-    if (reqErr) { Alert.alert('Error', reqErr.message); return; }
-    if (req) {
-      const join_code = Math.random().toString(36).slice(2, 8).toUpperCase();
-      const { data: sec, error: secErr } = await supabase.from('study_sections').insert({
-        department: req.department,
-        intake: req.intake,
-        label: req.section_label,
-        join_code,
-        is_public: false,
-        intake_public: false,
-        created_by: req.user_id,
-      }).select('id').single();
-      if (secErr) { Alert.alert('Error creating section', secErr.message); return; }
-      if (sec) {
-        const { error: memErr } = await supabase
-          .from('study_section_members')
-          .insert({ section_id: sec.id, user_id: req.user_id, role: 'cr' });
-        if (memErr) { console.warn('approveAdminReq member insert:', memErr.message); }
-      }
-    }
+    // RPC creates intake + section, generates join code and assigns requester as CR
+    const { data, error } = await supabase.rpc('approve_section_request', { p_request_id: id });
+    if (error) { Alert.alert('Error', error.message); return; }
+    if (data && data.ok === false) { Alert.alert('Error', data.error ?? 'Could not approve'); return; }
     setAdminReqs(r => r.filter(x => x.id !== id));
-    flash('Approved — CR assigned & code generated');
+    flash(`Approved — join code ${data?.joinCode ?? 'generated'}`);
   }
 
   async function rejectAdminReq(note: string) {
@@ -504,45 +585,28 @@ export function StudyHubScreen({ navigation }: any) {
 
   async function startVote(proposal: 'public' | 'private') {
     if (!mySection) return;
-    const candidates = [proposal];
-    const { data: voteData, error } = await supabase.rpc('initiate_intake_vote', {
-      p_section_id: mySection.id,
-      p_candidates: candidates,
+    const { data, error } = await supabase.rpc('initiate_intake_vote', {
+      p_intake_id: mySection.intake_id,
+      p_proposal: proposal,
     });
     if (error) { Alert.alert('Error', error.message); return; }
-    setVote({
-      id: typeof voteData === 'string' ? voteData : voteData?.id,
-      intake: mySection.intake ?? 0,
-      dept: mySection.department ?? '',
-      proposal,
-      yes: 0, no: 0, pending: 3,
-      closes_in_h: 48,
-      status: 'open',
-    });
+    if (data && data.ok === false) { Alert.alert('Could not start vote', data.error ?? 'Unknown error'); return; }
     setStartVoteOpen(false);
     flash('Vote started');
+    loadVote(mySection.intake_id);
   }
 
   async function castVote(ballot: 'yes' | 'no') {
-    if (!vote || !vote.id) return;
-    const { error } = await supabase.rpc('cast_intake_vote', {
+    if (!vote || !mySection) return;
+    const { data, error } = await supabase.rpc('cast_intake_vote', {
       p_vote_id: vote.id,
-      p_candidate: ballot,
+      p_ballot: ballot,
     });
     if (error) { Alert.alert('Error', error.message); return; }
-    setVote(v => {
-      if (!v) return v;
-      const yes = v.yes + (ballot === 'yes' ? 1 : 0);
-      const no  = v.no  + (ballot === 'no'  ? 1 : 0);
-      const pending = v.pending - 1;
-      if (pending <= 0) {
-        const passed = yes > no;
-        flash(passed ? 'Vote passed — intake updated' : 'Vote failed — no change');
-        return { ...v, yes, no, pending: 0, status: 'closed' };
-      }
-      flash('Vote recorded');
-      return { ...v, yes, no, pending };
-    });
+    if (data && data.ok === false) { Alert.alert('Could not vote', data.error ?? 'Unknown error'); return; }
+    flash('Vote recorded');
+    loadVote(mySection.intake_id);
+    load(); // intake visibility may have flipped if the vote closed
   }
 
   function timeAgo(iso: string): string {
@@ -628,7 +692,7 @@ export function StudyHubScreen({ navigation }: any) {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[s.sectionName, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-              {mySection.department} · Intake {mySection.intake} · Sec {mySection.label}
+              {mySection.department} · Intake {mySection.intake} · Sec {mySection.number}
             </Text>
             <View style={[s.visPill, { backgroundColor: mySection.is_public ? '#e8f8f0' : C.surface2 }]}>
               <View style={[s.visDot, { backgroundColor: mySection.is_public ? '#12915e' : C.textMuted }]} />
@@ -703,10 +767,7 @@ export function StudyHubScreen({ navigation }: any) {
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[s.sectionName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                      {sec.department} · Intake {sec.intake} · Sec {sec.label}
-                    </Text>
-                    <Text style={[s.secMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                      {sec.member_count ?? 0} members · {sec.course_count ?? 0} courses
+                      {sec.department} · Intake {sec.intake} · Sec {sec.number}
                     </Text>
                   </View>
                 </View>
@@ -805,18 +866,24 @@ export function StudyHubScreen({ navigation }: any) {
                 Open vote: make intake {vote.proposal}
               </Text>
               <Text style={[s.voteSub, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
-                {vote.yes} yes · {vote.no} no · {vote.pending} left · closes in {vote.closes_in_h}h
+                {vote.yes} yes · {vote.no} no · closes in {vote.closes_in_h}h
               </Text>
-              <View style={s.voteActions}>
-                <TouchableOpacity style={[s.voteBtn, { backgroundColor: '#e8f8f0' }]} onPress={() => castVote('yes')} activeOpacity={0.75}>
-                  <Icon name="check" size={14} color="#12915e" />
-                  <Text style={[s.voteBtnTxt, { color: '#12915e', fontFamily: FontFamily.jakartaBold }]}>Vote Yes</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[s.voteBtn, { backgroundColor: C.surface }]} onPress={() => castVote('no')} activeOpacity={0.75}>
-                  <Feather name="x" size={14} color={C.text2} />
-                  <Text style={[s.voteBtnTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>Vote No</Text>
-                </TouchableOpacity>
-              </View>
+              {vote.myBallot ? (
+                <Text style={[s.voteSub, { color: C.text, fontFamily: FontFamily.jakartaBold, marginTop: 8 }]}>
+                  You voted {vote.myBallot}
+                </Text>
+              ) : (
+                <View style={s.voteActions}>
+                  <TouchableOpacity style={[s.voteBtn, { backgroundColor: '#e8f8f0' }]} onPress={() => castVote('yes')} activeOpacity={0.75}>
+                    <Icon name="check" size={14} color="#12915e" />
+                    <Text style={[s.voteBtnTxt, { color: '#12915e', fontFamily: FontFamily.jakartaBold }]}>Vote Yes</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[s.voteBtn, { backgroundColor: C.surface }]} onPress={() => castVote('no')} activeOpacity={0.75}>
+                    <Feather name="x" size={14} color={C.text2} />
+                    <Text style={[s.voteBtnTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>Vote No</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
           ) : (
             <TouchableOpacity
@@ -924,6 +991,7 @@ export function StudyHubScreen({ navigation }: any) {
       <CreateSheet
         visible={createOpen}
         C={C}
+        depts={departments}
         onClose={() => setCreateOpen(false)}
         onSubmit={submitCreateRequest}
       />

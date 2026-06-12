@@ -147,7 +147,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
         <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>ACADEMIC LINKS</Text>
         <View style={styles.linksList}>
           {ACADEMIC_LINKS.map(link => {
-            const url = member[ACADEMIC_LINK_KEYS[link]] ?? null;
+            const url = (member as Record<string, any>)[ACADEMIC_LINK_KEYS[link]] ?? null;
             return (
               <TouchableOpacity
                 key={link}
