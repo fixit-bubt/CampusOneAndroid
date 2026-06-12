@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator, type ViewStyle,
+  ActivityIndicator, Alert, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -25,12 +25,13 @@ const MK_CATS: Record<string, { icon: string; fg: string; label: string }> = {
 
 export function MarketDetailScreen({ route, navigation }: any) {
   const { C, isDark } = useTheme();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const isAdmin = profile?.role === 'admin';
   const { listingId } = route.params;
   const [listing, setListing] = useState<any>(null);
   const [sellerName, setSellerName] = useState<string | null>(null);
   const [revealed, setRevealed] = useState(false);
-  const [contactInfo, setContactInfo] = useState<{ email: string; phone: string } | null>(null);
+  const [contactInfo, setContactInfo] = useState<{ name: string | null; whatsapp: string | null } | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -50,7 +51,8 @@ export function MarketDetailScreen({ route, navigation }: any) {
     if (!listing) return;
     const { data: c } = await supabase.rpc('listing_contact', { p_code: listing.code });
     setRevealed(true);
-    if (c) setContactInfo(c);
+    const row = Array.isArray(c) ? c[0] : c;
+    if (row) setContactInfo({ name: row.name ?? null, whatsapp: row.whatsapp ?? null });
   }
 
   async function markSold() {
@@ -58,9 +60,18 @@ export function MarketDetailScreen({ route, navigation }: any) {
     setListing((prev: any) => ({ ...prev, status: 'Sold' }));
   }
 
-  async function deleteListing() {
-    await supabase.from('listings').delete().eq('id', listingId);
-    navigation.goBack();
+  function deleteListing() {
+    Alert.alert('Delete listing', 'Remove this listing permanently?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete', style: 'destructive',
+        onPress: async () => {
+          const { error } = await supabase.from('listings').delete().eq('id', listingId);
+          if (error) { Alert.alert('Error', error.message); return; }
+          navigation.goBack();
+        },
+      },
+    ]);
   }
 
   if (!listing) {
@@ -172,16 +183,16 @@ export function MarketDetailScreen({ route, navigation }: any) {
               <Text style={[styles.actionTxt, { color: '#e2483d', fontFamily: FontFamily.jakartaBold }]}>Delete listing</Text>
             </TouchableOpacity>
           </View>
-        ) : revealed && contactInfo ? (
+        ) : revealed ? (
           <View style={[styles.contactCard, { backgroundColor: C.surface, borderColor: C.border }]}>
             <Text style={[styles.contactLabel, { color: '#0e9c8a', fontFamily: FontFamily.jakartaBold }]}>Contact Info</Text>
             <View style={styles.contactRow}>
-              <Icon name="mail" size={15} color={C.textMuted} />
-              <Text style={[styles.contactTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>{contactInfo.email}</Text>
+              <Feather name="user" size={15} color={C.textMuted} />
+              <Text style={[styles.contactTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>{contactInfo?.name ?? sellerName ?? 'Seller'}</Text>
             </View>
             <View style={styles.contactRow}>
               <Feather name="phone" size={15} color={C.textMuted} />
-              <Text style={[styles.contactTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>{contactInfo.phone}</Text>
+              <Text style={[styles.contactTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>{contactInfo?.whatsapp ?? 'WhatsApp not shared'}</Text>
             </View>
           </View>
         ) : !isSold ? (
@@ -194,6 +205,18 @@ export function MarketDetailScreen({ route, navigation }: any) {
             <Text style={[styles.actionTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>Contact Seller</Text>
           </TouchableOpacity>
         ) : null}
+
+        {/* Admin moderation */}
+        {!isOwn && isAdmin && (
+          <TouchableOpacity
+            style={[styles.actionBtn, { backgroundColor: '#fbe7e5', marginTop: 10 }]}
+            onPress={deleteListing}
+            activeOpacity={0.85}
+          >
+            <Icon name="trash" size={16} color="#e2483d" />
+            <Text style={[styles.actionTxt, { color: '#e2483d', fontFamily: FontFamily.jakartaBold }]}>Delete listing (admin)</Text>
+          </TouchableOpacity>
+        )}
 
         <View style={{ height: 26 }} />
       </ScrollView>
