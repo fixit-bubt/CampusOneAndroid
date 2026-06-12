@@ -2,10 +2,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView, Modal,
-  StyleSheet, Alert, type ViewStyle,
+  StyleSheet, Alert, Switch, ActivityIndicator, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
 import { Avatar } from '../../components/ui/Avatar';
@@ -14,6 +15,7 @@ import { SectorIcon } from '../../components/ui/SectorIcon';
 import { FontFamily, Layout, Accent } from '../../theme';
 import type { SectorKey } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { uploadPhoto } from '../../utils/storage';
 
 // ── Role helpers ──────────────────────────────────────────────────────────────
 const ROLE_TOKEN = { student: 'roleStudent', staff: 'roleStaff', admin: 'roleAdmin' } as const;
@@ -282,11 +284,21 @@ export function ProfileScreen({ navigation }: any) {
   useEffect(() => { if (profile?.role) setRole(profile.role as any); }, [profile?.role]);
 
   const [editMode, setEditMode] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [editName, setEditName] = useState('');
   const [editDept, setEditDept] = useState('');
   const [editIntake, setEditIntake] = useState('');
   const [editSection, setEditSection] = useState('');
   const [editWhatsapp, setEditWhatsapp] = useState('');
+  const [editDirVisible, setEditDirVisible] = useState(true);
+  const [editShowWa, setEditShowWa] = useState(false);
+  const [pickedAvatar, setPickedAvatar] = useState<string | null>(null);
+
+  // Password sheet
+  const [pwOpen, setPwOpen] = useState(false);
+  const [pwNew, setPwNew] = useState('');
+  const [pwConfirm, setPwConfirm] = useState('');
+  const [pwBusy, setPwBusy] = useState(false);
 
   useEffect(() => {
     if (editMode) {
@@ -295,8 +307,39 @@ export function ProfileScreen({ navigation }: any) {
       setEditIntake(profile?.intake ?? '');
       setEditSection(profile?.section ?? '');
       setEditWhatsapp(profile?.whatsapp ?? '');
+      setEditDirVisible(profile?.directory_visible ?? true);
+      setEditShowWa(profile?.show_whatsapp ?? false);
+      setPickedAvatar(null);
     }
   }, [editMode]);
+
+  async function pickAvatar() {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permission required', 'Permission to access the media library is required.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+    if (!result.canceled && result.assets[0]) setPickedAvatar(result.assets[0].uri);
+  }
+
+  async function changePassword() {
+    if (pwBusy) return;
+    if (pwNew.length < 8) { Alert.alert('Error', 'Password must be at least 8 characters.'); return; }
+    if (pwNew !== pwConfirm) { Alert.alert('Error', 'Passwords do not match.'); return; }
+    setPwBusy(true);
+    const { error } = await supabase.auth.updateUser({ password: pwNew });
+    setPwBusy(false);
+    if (error) { Alert.alert('Error', error.message); return; }
+    setPwOpen(false);
+    setPwNew(''); setPwConfirm('');
+    Alert.alert('Done', 'Password updated.');
+  }
 
   const [focusBadge, setFocusBadge] = useState<typeof BADGES[0] | null>(null);
   const [contrib, setContrib] = useState<Record<string, number>>({});
@@ -319,17 +362,34 @@ export function ProfileScreen({ navigation }: any) {
   useEffect(() => { loadContrib(); }, [loadContrib]);
 
   async function handleSave() {
-    if (!user) return;
-    const { error } = await supabase.from('profiles').update({
-      full_name: editName,
-      department: editDept,
-      intake: editIntake,
-      section: editSection,
-      whatsapp: editWhatsapp,
-    }).eq('id', user.id);
-    if (error) { Alert.alert('Error', error.message); return; }
-    await refreshProfile();
-    setEditMode(false);
+    if (!user || saving) return;
+    setSaving(true);
+    try {
+      let avatarUrl: string | undefined;
+      if (pickedAvatar) {
+        const up = await uploadPhoto(pickedAvatar, 'avatars', user.id);
+        if (!up.success) { Alert.alert('Error', up.error); return; }
+        avatarUrl = up.url;
+      }
+      const payload: Record<string, any> = {
+        full_name: editName,
+        department: editDept,
+        whatsapp: editWhatsapp,
+      };
+      if (isStudent) {
+        payload.intake = editIntake;
+        payload.section = editSection;
+        payload.directory_visible = editDirVisible;
+        payload.show_whatsapp = editShowWa;
+      }
+      if (avatarUrl) payload.avatar_url = avatarUrl;
+      const { error } = await supabase.from('profiles').update(payload).eq('id', user.id);
+      if (error) { Alert.alert('Error', error.message); return; }
+      await refreshProfile();
+      setEditMode(false);
+    } finally {
+      setSaving(false);
+    }
   }
 
   const roleHex = C[ROLE_TOKEN[role as keyof typeof ROLE_TOKEN] ?? 'roleStudent'];
@@ -340,18 +400,19 @@ export function ProfileScreen({ navigation }: any) {
       {/* Header row */}
       <View style={[styles.header, { paddingHorizontal: Layout.screenPadding }]}>
         <Text style={[styles.title, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>Profile</Text>
-        {isStudent && (
-          <TouchableOpacity
-            style={[styles.editBtn, { backgroundColor: editMode ? C.brand : C.surface, borderColor: editMode ? C.brand : C.border }]}
-            onPress={editMode ? handleSave : () => setEditMode(true)}
-            activeOpacity={0.75}
-          >
-            <Icon name={editMode ? 'check' : 'sliders'} size={16} color={editMode ? '#fff' : C.text2} />
-            <Text style={[styles.editTxt, { color: editMode ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-              {editMode ? 'Save' : 'Edit'}
-            </Text>
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity
+          style={[styles.editBtn, { backgroundColor: editMode ? C.brand : C.surface, borderColor: editMode ? C.brand : C.border }]}
+          onPress={editMode ? handleSave : () => setEditMode(true)}
+          disabled={saving}
+          activeOpacity={0.75}
+        >
+          {saving
+            ? <ActivityIndicator size="small" color={C.white} />
+            : <Icon name={editMode ? 'check' : 'sliders'} size={16} color={editMode ? C.white : C.text2} />}
+          <Text style={[styles.editTxt, { color: editMode ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>
+            {editMode ? 'Save' : 'Edit'}
+          </Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -362,9 +423,18 @@ export function ProfileScreen({ navigation }: any) {
         <View style={[styles.hero, { backgroundColor: C.surface, borderColor: C.border }]}>
           <View style={[styles.heroBand, { backgroundColor: C.brand50 }]} />
           <View style={styles.heroRow}>
-            <View style={[styles.avatarWrap, { borderColor: C.bg }]}>
-              <Avatar uri={profile?.avatar_url} name={profile?.full_name} size="lg" />
-            </View>
+            <TouchableOpacity
+              style={[styles.avatarWrap, { borderColor: C.bg }]}
+              onPress={editMode ? pickAvatar : undefined}
+              activeOpacity={editMode ? 0.7 : 1}
+            >
+              <Avatar uri={pickedAvatar ?? profile?.avatar_url} name={profile?.full_name} size="lg" />
+              {editMode && (
+                <View style={[styles.avatarEditBadge, { backgroundColor: C.brand, borderColor: C.bg }]}>
+                  <Feather name="camera" size={11} color={C.white} />
+                </View>
+              )}
+            </TouchableOpacity>
             <View style={styles.heroInfo}>
               {editMode ? (
                 <>
@@ -378,22 +448,42 @@ export function ProfileScreen({ navigation }: any) {
                     value={editDept} onChangeText={setEditDept}
                     placeholder="Department" placeholderTextColor={C.textMuted}
                   />
-                  <TextInput
-                    style={[styles.editInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                    value={editIntake} onChangeText={setEditIntake}
-                    placeholder="Intake" placeholderTextColor={C.textMuted}
-                  />
-                  <TextInput
-                    style={[styles.editInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                    value={editSection} onChangeText={setEditSection}
-                    placeholder="Section" placeholderTextColor={C.textMuted}
-                  />
+                  {isStudent && (
+                    <>
+                      <TextInput
+                        style={[styles.editInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                        value={editIntake} onChangeText={setEditIntake}
+                        placeholder="Intake" placeholderTextColor={C.textMuted}
+                      />
+                      <TextInput
+                        style={[styles.editInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                        value={editSection} onChangeText={setEditSection}
+                        placeholder="Section" placeholderTextColor={C.textMuted}
+                      />
+                    </>
+                  )}
                   <TextInput
                     style={[styles.editInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                     value={editWhatsapp} onChangeText={setEditWhatsapp}
                     placeholder="WhatsApp number" placeholderTextColor={C.textMuted}
                     keyboardType="phone-pad"
                   />
+                  {isStudent && (
+                    <>
+                      <View style={styles.toggleRow}>
+                        <Text style={[styles.toggleLbl, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
+                          Show in Student Directory
+                        </Text>
+                        <Switch value={editDirVisible} onValueChange={setEditDirVisible} trackColor={{ true: C.brand }} />
+                      </View>
+                      <View style={styles.toggleRow}>
+                        <Text style={[styles.toggleLbl, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
+                          Show WhatsApp to students
+                        </Text>
+                        <Switch value={editShowWa} onValueChange={setEditShowWa} trackColor={{ true: C.brand }} />
+                      </View>
+                    </>
+                  )}
                 </>
               ) : (
                 <>
@@ -402,7 +492,7 @@ export function ProfileScreen({ navigation }: any) {
                       {profile?.full_name ?? 'Campus Member'}
                     </Text>
                     <View style={[styles.verifyBadge, { backgroundColor: C.brand }]}>
-                      <Icon name="check" size={9} color="#fff" />
+                      <Icon name="check" size={9} color={C.white} />
                     </View>
                   </View>
                   <Text style={[styles.heroMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
@@ -449,6 +539,16 @@ export function ProfileScreen({ navigation }: any) {
           </>
         )}
 
+        {/* Change password */}
+        <TouchableOpacity
+          style={[styles.logoutBtn, { backgroundColor: C.surface, borderColor: C.border, marginTop: 24 }]}
+          onPress={() => setPwOpen(true)}
+          activeOpacity={0.8}
+        >
+          <Icon name="key" size={17} color={C.text2} />
+          <Text style={[styles.logoutTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Change Password</Text>
+        </TouchableOpacity>
+
         {/* Sign out */}
         <TouchableOpacity
           style={[styles.logoutBtn, { backgroundColor: C.surface, borderColor: C.border }]}
@@ -464,6 +564,45 @@ export function ProfileScreen({ navigation }: any) {
 
       {/* Modals */}
       {focusBadge && <BadgeSheet badge={focusBadge} C={C} onClose={() => setFocusBadge(null)} />}
+
+      {/* Change password sheet */}
+      <Modal visible={pwOpen} transparent animationType="slide" onRequestClose={() => setPwOpen(false)}>
+        <TouchableOpacity style={styles.pwOverlay} activeOpacity={1} onPress={() => setPwOpen(false)} />
+        <View style={[styles.pwSheet, { backgroundColor: C.surface }]}>
+          <Text style={[styles.pwTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+            Change Password
+          </Text>
+          <Text style={[styles.pwSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+            At least 8 characters.
+          </Text>
+          <TextInput
+            style={[styles.pwField, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+            value={pwNew} onChangeText={setPwNew}
+            placeholder="New password" placeholderTextColor={C.textMuted}
+            secureTextEntry autoCapitalize="none"
+          />
+          <TextInput
+            style={[styles.pwField, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+            value={pwConfirm} onChangeText={setPwConfirm}
+            placeholder="Confirm new password" placeholderTextColor={C.textMuted}
+            secureTextEntry autoCapitalize="none"
+          />
+          <TouchableOpacity
+            style={[styles.pwBtn, { backgroundColor: C.brand, opacity: pwBusy ? 0.6 : 1 }]}
+            onPress={changePassword}
+            disabled={pwBusy}
+            activeOpacity={0.8}
+          >
+            {pwBusy
+              ? <ActivityIndicator color={C.white} size="small" />
+              : (
+                <Text style={[styles.pwBtnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>
+                  Update Password
+                </Text>
+              )}
+          </TouchableOpacity>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -517,4 +656,32 @@ const styles = StyleSheet.create({
 
   logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: 14, borderWidth: 1, marginTop: 16 } as ViewStyle,
   logoutTxt: { fontSize: 15 } as any,
+
+  avatarEditBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4, marginBottom: 2 } as ViewStyle,
+  toggleLbl: { fontSize: 12.5, flex: 1, marginRight: 8 } as any,
+
+  pwOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' } as ViewStyle,
+  pwSheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: Layout.screenPadding,
+    paddingTop: 20,
+    paddingBottom: 34,
+  } as ViewStyle,
+  pwTitle: { fontSize: 17 } as any,
+  pwSub: { fontSize: 12.5, marginTop: 3, marginBottom: 14 } as any,
+  pwField: { height: 46, borderRadius: 12, borderWidth: 1, paddingHorizontal: 13, fontSize: 14, marginBottom: 10 } as any,
+  pwBtn: { height: 50, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginTop: 8 } as ViewStyle,
+  pwBtnTxt: { fontSize: 15 } as any,
 });
