@@ -10,27 +10,31 @@ import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout, Radius } from '../../theme';
+import { FontFamily, Layout, Radius , Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import type { Report, ReportEvent } from '../../types/database';
 
 const CAT_MAP: Record<string, { icon: string; fg: string }> = {
-  'Electrical':       { icon: 'bolt',    fg: '#f59e0b' },
-  'Plumbing':         { icon: 'droplets',fg: '#3b82f6' },
-  'Cleanliness':      { icon: 'sparkles',fg: '#10b981' },
-  'IT / Network':     { icon: 'wifi',    fg: '#8b5cf6' },
-  'Furniture':        { icon: 'chair',   fg: '#6b7280' },
-  'Safety / Security':{ icon: 'shield',  fg: '#ef4444' },
-  'Other':            { icon: 'wrench',  fg: '#64748b' },
+  'Electrical':       { icon: 'bolt',    fg: Accent.gold },
+  'Plumbing':         { icon: 'droplets',fg: Accent.sky },
+  'Cleanliness':      { icon: 'sparkles',fg: Accent.green },
+  'IT / Network':     { icon: 'wifi',    fg: Accent.purple },
+  'Furniture':        { icon: 'chair',   fg: Accent.amber },
+  'Safety / Security':{ icon: 'shield',  fg: Accent.red },
+  'Other':            { icon: 'wrench',  fg: Accent.slate },
 };
 
-const STATUS_TONE: Record<string, { text: string; bg: string }> = {
-  'Open':        { text: '#e08a2b', bg: '#fef3c7' },
-  'In Progress': { text: '#2b5be3', bg: '#dbeafe' },
-  'Resolved':    { text: '#12915e', bg: '#d1fae5' },
-  'Rejected':    { text: '#d63d35', bg: '#fee2e2' },
-  'Closed':      { text: '#5b6b86', bg: '#f1f5f9' },
-};
+// Status tones from theme tokens (dark-mode aware via C)
+function statusTone(C: any, status: string): { text: string; bg: string } {
+  switch (status) {
+    case 'In Progress': return { text: C.info,      bg: C.infoBg };
+    case 'Resolved':    return { text: C.success,   bg: C.successBg };
+    case 'Rejected':    return { text: C.danger,    bg: C.dangerBg };
+    case 'Closed':      return { text: C.textMuted, bg: C.surface2 };
+    case 'Open':
+    default:            return { text: C.warn,      bg: C.warnBg };
+  }
+}
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -55,8 +59,8 @@ export function ReportDetailScreen({ route, navigation }: any) {
   const reportId = report?.id ?? paramReportId ?? '';
 
   const code = report ? ((report as any).code ?? ('RPT-' + report.id.replace(/\D/g, '').padStart(4, '0').slice(-4))) : '…';
-  const cat = report ? (CAT_MAP[report.category] ?? { icon: 'wrench', fg: '#64748b' }) : { icon: 'wrench', fg: '#64748b' };
-  const statusStyle = report ? (STATUS_TONE[report.status] ?? { text: '#5b6b86', bg: '#f1f5f9' }) : { text: '#5b6b86', bg: '#f1f5f9' };
+  const cat = report ? (CAT_MAP[report.category] ?? { icon: 'wrench', fg: Accent.slate }) : { icon: 'wrench', fg: Accent.slate };
+  const statusStyle = report ? (statusTone(C, report.status)) : { text: Accent.slate, bg: Accent.grayBg };
   const isMine = report?.reporter_id === user?.id;
   const isStaffOrAdmin = profile?.role === 'staff' || profile?.role === 'admin';
 
@@ -225,13 +229,13 @@ export function ReportDetailScreen({ route, navigation }: any) {
                 <View style={[
                   styles.timelineDot,
                   step.done
-                    ? { backgroundColor: '#12915e', borderColor: '#12915e' }
+                    ? { backgroundColor: C.success, borderColor: C.success }
                     : { backgroundColor: 'transparent', borderColor: C.textMuted, borderStyle: 'dashed' },
                 ]}>
                   {step.done && <Icon name="check" size={8} color="#fff" />}
                 </View>
                 {i < timelineSteps.length - 1 && (
-                  <View style={[styles.timelineLine, { backgroundColor: step.done ? '#12915e' : C.border }]} />
+                  <View style={[styles.timelineLine, { backgroundColor: step.done ? C.success : C.border }]} />
                 )}
               </View>
               <View style={[styles.timelineBody, { paddingBottom: i < timelineSteps.length - 1 ? 14 : 0 }]}>
@@ -291,7 +295,7 @@ export function ReportDetailScreen({ route, navigation }: any) {
             </Text>
             <View style={styles.statusBtns}>
               {STATUS_OPTIONS.map(s => {
-                const tone = STATUS_TONE[s] ?? { text: '#5b6b86', bg: '#f1f5f9' };
+                const tone = statusTone(C, s);
                 const isActive = report.status === s;
                 return (
                   <TouchableOpacity
