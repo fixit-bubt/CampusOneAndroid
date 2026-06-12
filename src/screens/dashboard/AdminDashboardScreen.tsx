@@ -12,6 +12,7 @@ import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout, Accent, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
+import { getMyNotifications } from '../../services/notificationsService';
 
 const ISSUE_MAP: Record<string, { icon: string; fg: string }> = {
   electrical: { icon: 'bolt',     fg: Accent.gold },
@@ -135,11 +136,12 @@ const MANAGE_TILES = [
 
 export function AdminDashboardScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
-  const { signOut } = useAuth();
+  const { profile } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
   const [staffList, setStaffList] = useState<StaffMember[]>([]);
   const [assignTarget, setAssignTarget] = useState<Report | null>(null);
   const [resolvedCount, setResolvedCount] = useState(0);
+  const [unread, setUnread] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
@@ -162,6 +164,8 @@ export function AdminDashboardScreen({ navigation }: any) {
     if (staff) setStaffList(staff as StaffMember[]);
     const { count } = await supabase.from('reports').select('id', { count: 'exact', head: true }).in('status', ['Resolved', 'Closed']);
     setResolvedCount(count ?? 0);
+    const nRes = await getMyNotifications(20);
+    if (nRes.ok) setUnread(nRes.data.filter(n => !n.read).length);
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -196,18 +200,19 @@ export function AdminDashboardScreen({ navigation }: any) {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <TopBar
-        title="Admin Dashboard"
-        right={
-          <TouchableOpacity onPress={signOut} hitSlop={8} activeOpacity={0.7}>
-            <Icon name="logout" size={20} color={C.danger} />
-          </TouchableOpacity>
-        }
+        profile={profile}
+        unread={unread}
+        onBell={() => navigation.navigate('Notifications')}
+        onAvatar={() => navigation.navigate('Profile')}
       />
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
+        <Text style={[styles.pageTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+          Admin Dashboard
+        </Text>
         <Text style={[styles.intro, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
           Manage reports and campus operations
         </Text>
@@ -315,7 +320,8 @@ export function AdminDashboardScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
   scroll: { paddingTop: 8, paddingBottom: 20 } as ViewStyle,
-  intro: { fontSize: 13.5, marginBottom: 12 } as any,
+  pageTitle: { fontSize: 19, letterSpacing: -0.3 } as any,
+  intro: { fontSize: 13.5, marginTop: 2, marginBottom: 12 } as any,
   statGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 } as ViewStyle,
   statCard: { width: '47.5%', alignItems: 'center', padding: 12, borderRadius: 14, borderWidth: 1, gap: 4 } as ViewStyle,
   statIcon: { width: 36, height: 36, borderRadius: 11, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
