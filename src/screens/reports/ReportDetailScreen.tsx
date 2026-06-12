@@ -62,7 +62,12 @@ export function ReportDetailScreen({ route, navigation }: any) {
   const cat = report ? (CAT_MAP[report.category] ?? { icon: 'wrench', fg: Accent.slate }) : { icon: 'wrench', fg: Accent.slate };
   const statusStyle = report ? (statusTone(C, report.status)) : { text: Accent.slate, bg: Accent.grayBg };
   const isMine = report?.reporter_id === user?.id;
-  const isStaffOrAdmin = profile?.role === 'staff' || profile?.role === 'admin';
+  // Web parity: admin moderates any report; staff can only work reports
+  // assigned to them, and only advance forward (no reject/close).
+  const isAdmin = profile?.role === 'admin';
+  const isAssignedStaff = profile?.role === 'staff' && !!report?.assigned_staff_id && report.assigned_staff_id === user?.id;
+  const canUpdateStatus = isAdmin || isAssignedStaff;
+  const statusChoices: Report['status'][] = isAdmin ? STATUS_OPTIONS : ['In Progress', 'Resolved'];
 
   const load = useCallback(async () => {
     if (!reportId) return;
@@ -287,14 +292,14 @@ export function ReportDetailScreen({ route, navigation }: any) {
           </View>
         )}
 
-        {/* Staff / Admin status update */}
-        {isStaffOrAdmin && (
+        {/* Status update — admin: any status; staff: forward-only on own assigned */}
+        {canUpdateStatus && (
           <View style={styles.statusSection}>
             <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
               UPDATE STATUS
             </Text>
             <View style={styles.statusBtns}>
-              {STATUS_OPTIONS.map(s => {
+              {statusChoices.map(s => {
                 const tone = statusTone(C, s);
                 const isActive = report.status === s;
                 return (
