@@ -10,6 +10,7 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../store/authStore';
 import type { Announcement } from '../../types/database';
 
 const PRI_COLOR: Record<string, string> = { Urgent: '#e2483d', Important: '#b9760a', General: '#5b6b86' };
@@ -24,6 +25,7 @@ function timeAgo(iso: string): string {
 
 export function AnnouncementDetailScreen({ route, navigation }: any) {
   const { C } = useTheme();
+  const { user } = useAuth();
   const { announcementId } = route.params;
   const id = announcementId;
   const [item, setItem] = useState<Announcement | null>(null);
@@ -37,8 +39,14 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
         .single();
       if (error) { console.error('announcement detail fetch:', error.message); return; }
       if (data) setItem(data as Announcement);
+      // Read tracking (web parity) — opening counts as read
+      if (data && user) {
+        await supabase
+          .from('announcement_reads')
+          .upsert({ announcement_id: id, user_id: user.id }, { onConflict: 'announcement_id,user_id' });
+      }
     })();
-  }, [id]);
+  }, [id, user?.id]);
 
   if (!item) {
     return (
