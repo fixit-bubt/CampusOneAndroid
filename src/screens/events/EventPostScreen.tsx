@@ -1,5 +1,5 @@
 // Matches design screens-g.jsx — EventPost
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView,
   StyleSheet, Alert, type ViewStyle,
@@ -32,20 +32,37 @@ export function EventPostScreen({ navigation }: any) {
   const [location, setLocation] = useState('');
   const [eventDate, setEventDate] = useState('');
   const [time, setTime] = useState('');
+  const [endTime, setEndTime] = useState('');
+  const [capacity, setCapacity] = useState('');
   const [desc, setDesc] = useState('');
   const [loading, setLoading] = useState(false);
+  const [canCreate, setCanCreate] = useState<boolean | null>(null);
 
-  if (profile?.role !== 'staff' && profile?.role !== 'admin') {
+  // Web parity: admins, event_organizers allowlist, and club presidents/VPs
+  // can create events. The DB can_create_events() RLS gate enforces it too.
+  useEffect(() => {
+    (async () => {
+      if (!user) { setCanCreate(false); return; }
+      if (profile?.role === 'admin' || profile?.role === 'staff') { setCanCreate(true); return; }
+      const [orgRes, leadRes] = await Promise.all([
+        supabase.from('event_organizers').select('user_id').eq('user_id', user.id).maybeSingle(),
+        supabase.from('club_members').select('id').eq('user_id', user.id).in('role', ['president', 'vp']).limit(1),
+      ]);
+      setCanCreate(!!orgRes.data || (leadRes.data?.length ?? 0) > 0);
+    })();
+  }, [user, profile?.role]);
+
+  if (canCreate === false) {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
         <SubBar title="Post an Event" onBack={() => navigation.goBack()} />
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
           <Icon name="events" size={36} color={C.textMuted} />
           <Text style={{ color: C.text, fontFamily: FontFamily.jakartaBold, fontSize: 16, marginTop: 14 }}>
-            Staff Only
+            Organizers Only
           </Text>
           <Text style={{ color: C.textMuted, fontFamily: FontFamily.jakartaMedium, fontSize: 13.5, marginTop: 8, textAlign: 'center' }}>
-            Only staff and admin can post events.
+            Only staff, admins, approved organizers, and club leaders can post events.
           </Text>
         </View>
       </SafeAreaView>
@@ -66,6 +83,8 @@ export function EventPostScreen({ navigation }: any) {
         venue:       location.trim(),
         date:        eventDate.trim(),
         time:        time.trim(),
+        end_time:    endTime.trim() || null,
+        capacity:    capacity.trim() ? Number(capacity.trim()) : null,
         description: desc.trim(),
         created_by:  user.id,
       });
@@ -160,6 +179,31 @@ export function EventPostScreen({ navigation }: any) {
               onChangeText={setTime}
               placeholder="3:00 PM"
               placeholderTextColor={C.textMuted}
+            />
+          </View>
+        </View>
+
+        {/* End time + Capacity */}
+        <View style={[styles.row, { marginTop: 14 }]}>
+          <View style={styles.halfField}>
+            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>END TIME (OPTIONAL)</Text>
+            <TextInput
+              style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+              value={endTime}
+              onChangeText={setEndTime}
+              placeholder="5:00 PM"
+              placeholderTextColor={C.textMuted}
+            />
+          </View>
+          <View style={styles.halfField}>
+            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>CAPACITY (OPTIONAL)</Text>
+            <TextInput
+              style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+              value={capacity}
+              onChangeText={setCapacity}
+              placeholder="100"
+              placeholderTextColor={C.textMuted}
+              keyboardType="number-pad"
             />
           </View>
         </View>
