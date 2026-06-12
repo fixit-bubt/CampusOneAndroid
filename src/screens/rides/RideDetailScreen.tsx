@@ -10,12 +10,12 @@ import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout } from '../../theme';
+import { FontFamily, Layout , SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 
-const RIDE_COLOR = '#6e8b1f';
-const RIDE_BG    = '#6e8b1f1e';
+const RIDE_COLOR = SectorColors.ride;
+const RIDE_BG    = `${SectorColors.ride}1e`;
 
 export function RideDetailScreen({ route, navigation }: any) {
   const { C } = useTheme();
@@ -177,9 +177,9 @@ export function RideDetailScreen({ route, navigation }: any) {
         {/* Action */}
         {!isOwnRide && (
           requested ? (
-            <View style={[styles.requestedBanner, { backgroundColor: '#e4f5f4' }]}>
-              <Feather name="check-circle" size={17} color='#0e9c8a' />
-              <Text style={[styles.requestedTxt, { color: '#0e9c8a', fontFamily: FontFamily.jakartaBold }]}>
+            <View style={[styles.requestedBanner, { backgroundColor: C.successBg }]}>
+              <Feather name="check-circle" size={17} color={C.success} />
+              <Text style={[styles.requestedTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
                 Ride requested — contact details shown above
               </Text>
             </View>
@@ -204,12 +204,12 @@ export function RideDetailScreen({ route, navigation }: any) {
         {/* Admin moderation */}
         {!isOwnRide && isAdmin && (
           <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: '#fbe7e5', marginTop: 10 }]}
+            style={[styles.actionBtn, { backgroundColor: C.dangerBg, marginTop: 10 }]}
             onPress={adminDelete}
             activeOpacity={0.85}
           >
-            <Icon name="trash" size={16} color="#e2483d" />
-            <Text style={[styles.actionTxt, { color: '#e2483d', fontFamily: FontFamily.jakartaBold }]}>Delete ride (admin)</Text>
+            <Icon name="trash" size={16} color={C.danger} />
+            <Text style={[styles.actionTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>Delete ride (admin)</Text>
           </TouchableOpacity>
         )}
 
