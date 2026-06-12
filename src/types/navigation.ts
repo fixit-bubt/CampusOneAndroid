@@ -24,6 +24,8 @@ export type AppStackParams = {
   // Reports
   ReportDetail: { reportId: string };
   ReportForm:   { editReportId?: string };
+  MyReports:    undefined;
+  AssignedToMe: undefined;
 
   // Lost & Found
   LostFoundBrowse: undefined;
