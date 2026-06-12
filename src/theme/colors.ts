@@ -126,3 +126,18 @@ export const SectorColors = {
 
 export type SectorKey = keyof typeof SectorColors;
 export type Colors = typeof LightColors;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Accent palette — fixed decorative colors used in chips/pills/tiles that are
+// not theme-dependent (same in light & dark, like SectorColors). Screens must
+// import these instead of hardcoding hexes.
+// ─────────────────────────────────────────────────────────────────────────────
+export const Accent = {
+  gold:    '#d9870b',   // bookmark/save stars
+  pink:    '#ec4899',   // category: clothing
+  purple:  '#8b5cf6',   // users / IT tiles
+  slate:   '#5b6b86',   // neutral category fg
+  grayBg:  '#f0f2f6',   // neutral pill bg
+  tealBg:  '#e4f5f4',   // teal pill bg (resolved/jobs)
+  greenBg: '#e8f8f0',   // green pill bg (approve/success chips)
+} as const;
