@@ -11,17 +11,17 @@ import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout, Radius } from '../../theme';
+import { FontFamily, Layout, Radius , Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { uploadFile } from '../../utils/storage';
 import type { Listing } from '../../types/database';
 
 const CATEGORIES: { id: Listing['category']; label: string; icon: string; color: string }[] = [
-  { id: 'Books',       label: 'Books',       icon: 'book-open', color: '#2b5be3' },
-  { id: 'Electronics', label: 'Electronics', icon: 'cpu',       color: '#8b5cf6' },
-  { id: 'Furniture',   label: 'Furniture',   icon: 'layers',    color: '#b9760a' },
-  { id: 'Notes',       label: 'Notes',       icon: 'file-text', color: '#0e9c8a' },
-  { id: 'Other',       label: 'Other',       icon: 'package',   color: '#64748b' },
+  { id: 'Books',       label: 'Books',       icon: 'book-open', color: Accent.blue },
+  { id: 'Electronics', label: 'Electronics', icon: 'cpu',       color: Accent.purple },
+  { id: 'Furniture',   label: 'Furniture',   icon: 'layers',    color: Accent.amber },
+  { id: 'Notes',       label: 'Notes',       icon: 'file-text', color: Accent.teal },
+  { id: 'Other',       label: 'Other',       icon: 'package',   color: Accent.slate },
 ];
 
 const CONDITIONS: { id: Listing['condition']; label: string }[] = [
