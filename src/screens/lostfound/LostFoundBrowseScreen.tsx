@@ -12,6 +12,7 @@ import { FontFamily, Layout , SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import type { LostFoundItem } from '../../types/database';
+import { useT } from '../../i18n';
 
 type Filter = 'all' | 'Lost' | 'Found' | 'mine';
 
@@ -68,6 +69,7 @@ function LFCard({ item, C, isDark, onPress }: { item: LostFoundItem; C: any; isD
 export function LostFoundBrowseScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
   const { user } = useAuth();
+  const t = useT();
   const [items, setItems] = useState<LostFoundItem[]>([]);
   const [filter, setFilter] = useState<Filter>('all');
   const [refreshing, setRefreshing] = useState(false);
@@ -155,7 +157,7 @@ export function LostFoundBrowseScreen({ navigation }: any) {
         {list.length === 0 ? (
           <View style={styles.empty}>
             <Icon name="found" size={28} color={C.textMuted} />
-            <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>No items yet</Text>
+            <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.lf.noItems}</Text>
             <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
               Tap + to post a lost or found item
             </Text>
