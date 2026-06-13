@@ -15,13 +15,14 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 
+// Keys must match the clubs.category DB CHECK values exactly.
 const CL_CATS: Record<string, { label: string; fg: string }> = {
-  academic:  { label: 'Academic',  fg: Accent.blue },
-  cultural:  { label: 'Cultural',  fg: Accent.pink },
-  sports:    { label: 'Sports',    fg: Accent.teal },
-  technical: { label: 'Technical', fg: Accent.purple },
-  social:    { label: 'Social',    fg: Accent.amber },
-  other:     { label: 'Other',     fg: Accent.slate },
+  Tech:         { label: 'Tech',         fg: Accent.purple },
+  Cultural:     { label: 'Cultural',     fg: Accent.pink },
+  Sports:       { label: 'Sports',       fg: Accent.teal },
+  Professional: { label: 'Professional', fg: Accent.blue },
+  Social:       { label: 'Social',       fg: Accent.amber },
+  other:        { label: 'Other',        fg: Accent.slate }, // display fallback only
 };
 
 type Tab = 'feed' | 'members';
