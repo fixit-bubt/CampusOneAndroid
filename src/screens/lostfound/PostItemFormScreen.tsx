@@ -13,6 +13,7 @@ import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout , SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import type { LostFoundItem } from '../../types/database';
+import { useT } from '../../i18n';
 
 const LF_CATS: { id: LostFoundItem['category']; icon: string; fg: string; en: string }[] = [
   { id: 'Personal',    icon: 'user',   fg: Accent.blue, en: 'Personal' },
@@ -29,6 +30,7 @@ function hexAlpha(hex: string, a: number) {
 export function PostItemFormScreen({ route, navigation }: any) {
   const { C, isDark } = useTheme();
   const { user } = useAuth();
+  const t = useT();
   const editId: string | undefined = route.params?.itemId;
   const isEdit = !!editId;
 
@@ -99,7 +101,7 @@ export function PostItemFormScreen({ route, navigation }: any) {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-      <SubBar title={isEdit ? 'Edit Item' : 'Post Item'} onBack={() => navigation.goBack()} />
+      <SubBar title={isEdit ? t.lf.editItem : t.lf.postItem} onBack={() => navigation.goBack()} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView
           contentContainerStyle={[styles.content, { paddingHorizontal: Layout.screenPadding }]}
@@ -160,32 +162,32 @@ export function PostItemFormScreen({ route, navigation }: any) {
           </View>
 
           {/* Item name */}
-          <Text style={[styles.label, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>Item Name</Text>
+          <Text style={[styles.label, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>{t.lf.itemName}</Text>
           <TextInput
             style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaRegular }]}
             value={title}
             onChangeText={setTitle}
-            placeholder="e.g. Black iPhone 13"
+            placeholder={t.lf.itemNamePlaceholder}
             placeholderTextColor={C.textMuted}
           />
 
           {/* Location */}
-          <Text style={[styles.label, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>Location</Text>
+          <Text style={[styles.label, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>{t.lf.locationLabel}</Text>
           <TextInput
             style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaRegular }]}
             value={loc}
             onChangeText={setLoc}
-            placeholder="e.g. Library · 2nd floor"
+            placeholder={t.lf.locationPlaceholder}
             placeholderTextColor={C.textMuted}
           />
 
           {/* Description */}
-          <Text style={[styles.label, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>Description</Text>
+          <Text style={[styles.label, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>{t.lf.descriptionLabel}</Text>
           <TextInput
             style={[styles.textarea, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaRegular }]}
             value={desc}
             onChangeText={setDesc}
-            placeholder="Describe the item in detail…"
+            placeholder={t.lf.descriptionPlaceholder}
             placeholderTextColor={C.textMuted}
             multiline
             numberOfLines={4}
@@ -205,7 +207,7 @@ export function PostItemFormScreen({ route, navigation }: any) {
             ) : (
               <View style={styles.btnRow}>
                 <Icon name="check" size={18} color="#fff" />
-                <Text style={[styles.btnTxt, { fontFamily: FontFamily.jakartaBold }]}>{isEdit ? 'Save Changes' : 'Post Item'}</Text>
+                <Text style={[styles.btnTxt, { fontFamily: FontFamily.jakartaBold }]}>{isEdit ? t.lf.saveChanges : t.lf.postItem}</Text>
               </View>
             )}
           </TouchableOpacity>
