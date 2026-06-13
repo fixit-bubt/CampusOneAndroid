@@ -6,6 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../hooks/useTheme';
+import { useT } from '../../i18n';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout, SectorColors, darken } from '../../theme';
@@ -14,6 +15,7 @@ import type { BusRoute } from '../../types/database';
 
 export function BusDetailScreen({ route, navigation }: any) {
   const { C } = useTheme();
+  const t = useT();
   const { id } = route.params;
   const [busRoute, setBusRoute] = useState<BusRoute | null>(null);
 
@@ -67,7 +69,7 @@ export function BusDetailScreen({ route, navigation }: any) {
             <Icon name="clock" size={24} color="#fff" />
           </View>
           <View>
-            <Text style={[styles.nextLabel, { fontFamily: FontFamily.jakartaMedium }]}>Next departure</Text>
+            <Text style={[styles.nextLabel, { fontFamily: FontFamily.jakartaMedium }]}>{t.bus2.nextDeparture}</Text>
             <Text style={[styles.nextTime, { fontFamily: FontFamily.jakartaExtraBold }]}>{next}</Text>
           </View>
         </LinearGradient>
