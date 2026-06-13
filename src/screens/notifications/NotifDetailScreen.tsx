@@ -5,6 +5,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
+import { useT } from '../../i18n';
 import { SubBar } from '../../components/layout/TopBar';
 import { SectorIcon } from '../../components/ui/SectorIcon';
 import { Icon } from '../../components/ui/Icon';
@@ -40,6 +41,7 @@ function timeAgo(iso: string): string {
 export function NotifDetailScreen({ route, navigation }: any) {
   const { C } = useTheme();
   const { user } = useAuth();
+  const t = useT();
   const { notification: n } = route.params;
   const sectorLabel = SECTOR_LABELS[n.sector] ?? n.sector;
 
@@ -66,7 +68,7 @@ export function NotifDetailScreen({ route, navigation }: any) {
           <SectorIcon sector={n.sector} size="lg" />
           <View style={{ flex: 1 }}>
             <Text style={[styles.time, { color: C.textMuted, fontFamily: FontFamily.jakartaSemiBold }]}>
-              {timeAgo(n.created_at) === 'Just now' ? 'Just now' : `${timeAgo(n.created_at)} ago`}
+              {timeAgo(n.created_at) === 'Just now' ? t.notif.justNow : t.notif.timeAgo(timeAgo(n.created_at))}
             </Text>
           </View>
         </View>
@@ -76,7 +78,7 @@ export function NotifDetailScreen({ route, navigation }: any) {
         <Text style={[styles.body, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>{n.body}</Text>
 
         {/* Related card */}
-        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>RELATED TO</Text>
+        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>{t.notif.relatedTo}</Text>
         <TouchableOpacity
           style={[styles.relatedCard, { backgroundColor: C.surface, borderColor: C.border }]}
           onPress={() => {
@@ -89,7 +91,7 @@ export function NotifDetailScreen({ route, navigation }: any) {
           <SectorIcon sector={n.sector} size="sm" />
           <View style={{ flex: 1 }}>
             <Text style={[styles.relatedTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{sectorLabel}</Text>
-            <Text style={[styles.relatedSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>View details</Text>
+            <Text style={[styles.relatedSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{t.notif.viewDetails}</Text>
           </View>
           <Icon name="chevR" size={18} color={C.textMuted} />
         </TouchableOpacity>
@@ -104,7 +106,7 @@ export function NotifDetailScreen({ route, navigation }: any) {
           }}
           activeOpacity={0.85}
         >
-          <Text style={[styles.actionTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>View details</Text>
+          <Text style={[styles.actionTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>{t.notif.viewDetails}</Text>
           <Icon name="chevR" size={18} color="#fff" />
         </TouchableOpacity>
 
@@ -116,7 +118,7 @@ export function NotifDetailScreen({ route, navigation }: any) {
             activeOpacity={0.85}
           >
             <Icon name="bell" size={16} color={C.text} />
-            <Text style={[styles.secondaryTxt, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>Mark unread</Text>
+            <Text style={[styles.secondaryTxt, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>{t.notif.markUnread}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.secondaryBtn, { backgroundColor: C.surface, borderColor: C.border }]}
@@ -124,7 +126,7 @@ export function NotifDetailScreen({ route, navigation }: any) {
             activeOpacity={0.85}
           >
             <Icon name="bellOff" size={16} color={C.text} />
-            <Text style={[styles.secondaryTxt, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>Mute {sectorLabel}</Text>
+            <Text style={[styles.secondaryTxt, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>{t.notif.muteSector(sectorLabel)}</Text>
           </TouchableOpacity>
         </View>
 
