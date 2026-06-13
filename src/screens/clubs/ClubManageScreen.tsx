@@ -20,7 +20,7 @@ interface Member {
   profiles: { full_name: string };
 }
 
-const CATEGORIES = ['academic', 'cultural', 'sports', 'technical', 'social', 'other'];
+const CATEGORIES = ['Tech', 'Cultural', 'Sports', 'Professional', 'Social'];
 
 export function ClubManageScreen({ route, navigation }: any) {
   const { C } = useTheme();
@@ -31,7 +31,7 @@ export function ClubManageScreen({ route, navigation }: any) {
   const [name, setName] = useState('');
   const [tagline, setTagline] = useState('');
   const [about, setAbout] = useState('');
-  const [category, setCategory] = useState('other');
+  const [category, setCategory] = useState('Tech');
   const [advisor, setAdvisor] = useState<string | null>(null);
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
