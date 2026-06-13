@@ -89,7 +89,7 @@ export function MedicalQueueScreen({ navigation }: any) {
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
         <SubBar title={t.medical.queueTitle} onBack={() => navigation.goBack()} />
         <View style={styles.empty}>
-          <Text style={{ color: C.text, fontFamily: FontFamily.jakartaExtraBold, fontSize: 18 }}>Access Denied</Text>
+          <Text style={{ color: C.text, fontFamily: FontFamily.jakartaExtraBold, fontSize: 18 }}>{t.medical2.accessDenied}</Text>
         </View>
       </SafeAreaView>
     );
@@ -127,7 +127,7 @@ export function MedicalQueueScreen({ navigation }: any) {
                       <View style={styles.nameRow}>
                         <Avatar uri={a.profiles?.avatar_url} name={a.profiles?.full_name} size="xs" />
                         <Text style={[styles.patient, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                          {a.profiles?.full_name ?? 'Student'}
+                          {a.profiles?.full_name ?? t.medical2.student}
                         </Text>
                       </View>
                       <Text style={[styles.meta, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
