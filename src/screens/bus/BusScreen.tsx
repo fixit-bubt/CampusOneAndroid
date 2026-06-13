@@ -7,6 +7,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
+import { useT } from '../../i18n';
 import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
@@ -34,6 +35,7 @@ const uncsv = (s: string) => s.split(',').map(x => x.trim()).filter(Boolean);
 
 export function BusScreen({ navigation }: any) {
   const { C } = useTheme();
+  const t = useT();
   const { user, profile } = useAuth();
   const isAdmin = profile?.role === 'admin';
   const [routes, setRoutes] = useState<BusRoute[]>([]);
@@ -140,7 +142,7 @@ export function BusScreen({ navigation }: any) {
         {routes.length === 0 ? (
           <View style={styles.empty}>
             <Icon name="bus" size={28} color={C.textMuted} />
-            <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>No routes available</Text>
+            <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.bus2.noRoutes}</Text>
           </View>
         ) : (
           <View style={styles.list}>
@@ -222,7 +224,7 @@ export function BusScreen({ navigation }: any) {
               style={[styles.sheetBtn, { backgroundColor: BUS_COLOR, opacity: form?.name.trim() ? 1 : 0.5 }]}
               onPress={saveRoute} disabled={!form?.name.trim()} activeOpacity={0.8}
             >
-              <Text style={[styles.sheetBtnTxt, { fontFamily: FontFamily.jakartaBold }]}>Save route</Text>
+              <Text style={[styles.sheetBtnTxt, { fontFamily: FontFamily.jakartaBold }]}>{t.bus2.saveRoute}</Text>
             </TouchableOpacity>
           </View>
         </View>
