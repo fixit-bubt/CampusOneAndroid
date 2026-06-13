@@ -47,6 +47,8 @@ export const en = {
     signIn: 'Sign In',
     email: 'Email',
     password: 'Password',
+    showPassword: 'Show password',
+    hidePassword: 'Hide password',
     fullName: 'Full Name',
     fullNamePlaceholder: 'Your full name',
     forgotPassword: 'Forgot password?',

@@ -48,6 +48,8 @@ export const bn: Dict = {
     signIn: 'সাইন ইন',
     email: 'ইমেইল',
     password: 'পাসওয়ার্ড',
+    showPassword: 'পাসওয়ার্ড দেখান',
+    hidePassword: 'পাসওয়ার্ড লুকান',
     fullName: 'পুরো নাম',
     fullNamePlaceholder: 'আপনার পুরো নাম',
     forgotPassword: 'পাসওয়ার্ড ভুলে গেছেন?',

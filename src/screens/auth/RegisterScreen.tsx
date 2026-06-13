@@ -25,6 +25,7 @@ export function RegisterScreen({ navigation }: Props) {
   const [name, setName]   = useState('');
   const [email, setEmail] = useState('');
   const [pass, setPass]   = useState('');
+  const [showPass, setShowPass] = useState(false);
   const [busy, setBusy]   = useState(false);
   const busyRef = useRef(false);
   const [err, setErr]     = useState('');
@@ -74,7 +75,7 @@ export function RegisterScreen({ navigation }: Props) {
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
           contentContainerStyle={[styles.content, { paddingHorizontal: Layout.screenPadding }]}
@@ -117,14 +118,24 @@ export function RegisterScreen({ navigation }: Props) {
           <Text style={[styles.label, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>
             {t.auth.password}
           </Text>
-          <TextInput
-            style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaRegular }]}
-            value={pass}
-            onChangeText={setPass}
-            secureTextEntry
-            placeholder="••••••••"
-            placeholderTextColor={C.textMuted}
-          />
+          <View style={styles.passWrap}>
+            <TextInput
+              style={[styles.input, styles.passInput, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaRegular }]}
+              value={pass}
+              onChangeText={setPass}
+              secureTextEntry={!showPass}
+              placeholder="••••••••"
+              placeholderTextColor={C.textMuted}
+            />
+            <TouchableOpacity
+              onPress={() => setShowPass(s => !s)}
+              style={styles.eyeBtn}
+              hitSlop={8}
+              accessibilityLabel={showPass ? t.auth.hidePassword : t.auth.showPassword}
+            >
+              <Icon name={showPass ? 'eyeOff' : 'eye'} size={20} color={C.textMuted} />
+            </TouchableOpacity>
+          </View>
 
           {/* Error */}
           {!!err && (
@@ -214,6 +225,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     fontSize: 15,
   } as any,
+
+  passWrap: {
+    justifyContent: 'center',
+  } as ViewStyle,
+
+  passInput: {
+    paddingRight: 48,
+  } as any,
+
+  eyeBtn: {
+    position: 'absolute',
+    right: 12,
+    height: 50,
+    width: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
 
   errText: {
     fontSize: 13,

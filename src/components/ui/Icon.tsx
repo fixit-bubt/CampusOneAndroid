@@ -51,6 +51,8 @@ const ICON_MAP: Record<string, React.ComponentProps<typeof Feather>['name']> = {
   pulse:    'activity',
   award:    'award',
   copy:     'copy',
+  eye:      'eye',
+  eyeOff:   'eye-off',
   star:     'star',
   bolt:     'zap',
   wrench:   'tool',
