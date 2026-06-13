@@ -1,5 +1,5 @@
 // Matches design screens-profile.jsx — full Profile screen with accomplishments & badges
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView, Modal,
   StyleSheet, Alert, Switch, ActivityIndicator, type ViewStyle,
@@ -306,6 +306,7 @@ export function ProfileScreen({ navigation }: any) {
 
   const [editMode, setEditMode] = useState(false);
   const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
   const [editName, setEditName] = useState('');
   const [editDept, setEditDept] = useState('');
   const [editIntake, setEditIntake] = useState('');
@@ -383,7 +384,8 @@ export function ProfileScreen({ navigation }: any) {
   useEffect(() => { loadContrib(); }, [loadContrib]);
 
   async function handleSave() {
-    if (!user || saving) return;
+    if (!user || savingRef.current) return;
+    savingRef.current = true;
     setSaving(true);
     try {
       let avatarUrl: string | undefined;
@@ -409,6 +411,7 @@ export function ProfileScreen({ navigation }: any) {
       await refreshProfile();
       setEditMode(false);
     } finally {
+      savingRef.current = false;
       setSaving(false);
     }
   }

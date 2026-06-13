@@ -1,5 +1,5 @@
 // Matches design screens-auth.jsx — Login mode
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, ScrollView,
@@ -26,6 +26,7 @@ export function LoginScreen({ navigation }: Props) {
   const [email, setEmail] = useState('');
   const [pass, setPass]   = useState('');
   const [busy, setBusy]   = useState(false);
+  const busyRef = useRef(false);
   const [err, setErr]     = useState('');
   const [resetSent, setResetSent] = useState(false);
 
@@ -52,7 +53,8 @@ export function LoginScreen({ navigation }: Props) {
   }
 
   async function handleContinue() {
-    if (!ok || busy) return;
+    if (!ok || busyRef.current) return;
+    busyRef.current = true;
     setBusy(true);
     setErr('');
     try {
@@ -60,6 +62,7 @@ export function LoginScreen({ navigation }: Props) {
     } catch (e: any) {
       setErr(e?.message ?? t.auth.loginFailed);
     } finally {
+      busyRef.current = false;
       setBusy(false);
     }
   }

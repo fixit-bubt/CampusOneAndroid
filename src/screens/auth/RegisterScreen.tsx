@@ -1,5 +1,5 @@
 // Matches design screens-auth.jsx — Register mode
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, ScrollView,
@@ -26,12 +26,13 @@ export function RegisterScreen({ navigation }: Props) {
   const [email, setEmail] = useState('');
   const [pass, setPass]   = useState('');
   const [busy, setBusy]   = useState(false);
+  const busyRef = useRef(false);
   const [err, setErr]     = useState('');
 
   const ok = name.trim().length > 0 && email.trim().length > 0 && pass.trim().length > 0;
 
   async function handleContinue() {
-    if (!ok || busy) return;
+    if (!ok || busyRef.current) return;
     const emailVal = email.trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) {
       setErr(t.auth.invalidEmail);
@@ -41,6 +42,7 @@ export function RegisterScreen({ navigation }: Props) {
       setErr(t.auth.passwordTooShort);
       return;
     }
+    busyRef.current = true;
     setBusy(true);
     setErr('');
     try {
@@ -48,6 +50,7 @@ export function RegisterScreen({ navigation }: Props) {
     } catch (e: any) {
       setErr(e?.message ?? t.auth.registerFailed);
     } finally {
+      busyRef.current = false;
       setBusy(false);
     }
   }
