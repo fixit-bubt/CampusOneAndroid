@@ -69,7 +69,12 @@ export function ReportDetailScreen({ route, navigation }: any) {
   const isAdmin = profile?.role === 'admin';
   const isAssignedStaff = profile?.role === 'staff' && !!report?.assigned_staff_id && report.assigned_staff_id === user?.id;
   const canUpdateStatus = isAdmin || isAssignedStaff;
-  const statusChoices: Report['status'][] = isAdmin ? STATUS_OPTIONS : ['In Progress', 'Resolved'];
+  // Staff may only advance forward, one step at a time (DB guard enforces
+  // Open->In Progress and In Progress->Resolved only).
+  const staffChoices: Report['status'][] =
+    report?.status === 'Open' ? ['In Progress'] :
+    report?.status === 'In Progress' ? ['Resolved'] : [];
+  const statusChoices: Report['status'][] = isAdmin ? STATUS_OPTIONS : staffChoices;
 
   const load = useCallback(async () => {
     if (!reportId) return;
@@ -144,8 +149,13 @@ export function ReportDetailScreen({ route, navigation }: any) {
   if (assigneeName) {
     timelineSteps.push({ label: t.reports2.assignedToStaff, sub: assigneeName, done: true });
   }
-  // Render fetched events in timeline
+  // Render fetched events, skipping the ones already shown as static steps:
+  // the initial 'Open' INSERT event ("Report filed") and the terminal event
+  // ("Issue resolved" / "Report rejected") rendered by the tail below.
+  const terminal = report.status === 'Resolved' || report.status === 'Closed' || report.status === 'Rejected';
   events.forEach(ev => {
+    if (ev.status === 'Open') return;
+    if (terminal && ev.status === report.status) return;
     timelineSteps.push({ label: t.reports2.statusChanged(t.status[ev.status] ?? ev.status), sub: ev.note ?? formatDate(ev.created_at), done: true });
   });
   if (report.status === 'Resolved' || report.status === 'Closed') {
