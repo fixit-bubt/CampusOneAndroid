@@ -10,6 +10,7 @@ import { TopBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout, Accent } from '../../theme';
+import { useT } from '../../i18n';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { getMyNotifications } from '../../services/notificationsService';
@@ -72,6 +73,7 @@ function StatCard({ icon, fg, num, label, C }: any) {
 }
 
 function ReportCard({ r, C, onAdvance, onPress }: { r: Report; C: any; onAdvance: (id: string, status: string) => void; onPress: () => void }) {
+  const t = useT();
   const issueConf = ISSUE_MAP[r.category?.toLowerCase()] ?? ISSUE_MAP.other;
   const statusConf = statusTone(C, r.status);
   const issueBg = `${issueConf.fg}1e`;
@@ -92,7 +94,7 @@ function ReportCard({ r, C, onAdvance, onPress }: { r: Report; C: any; onAdvance
         </View>
         <View style={[styles.statusPill, { backgroundColor: statusConf.bg }]}>
           <View style={[styles.statusDot, { backgroundColor: statusConf.fg }]} />
-          <Text style={[styles.statusTxt, { color: statusConf.fg, fontFamily: FontFamily.jakartaBold }]}>{r.status}</Text>
+          <Text style={[styles.statusTxt, { color: statusConf.fg, fontFamily: FontFamily.jakartaBold }]}>{t.status[r.status]}</Text>
         </View>
       </TouchableOpacity>
 
@@ -109,19 +111,19 @@ function ReportCard({ r, C, onAdvance, onPress }: { r: Report; C: any; onAdvance
       {r.status === 'Open' && (
         <TouchableOpacity style={[styles.actionBtn, { backgroundColor: C.infoBg }]} onPress={() => onAdvance(r.id, 'In Progress')} activeOpacity={0.75}>
           <Icon name="pulse" size={15} color={C.info} />
-          <Text style={[styles.actionTxt, { color: C.info, fontFamily: FontFamily.jakartaBold }]}>Start Work</Text>
+          <Text style={[styles.actionTxt, { color: C.info, fontFamily: FontFamily.jakartaBold }]}>{t.dash.startWork}</Text>
         </TouchableOpacity>
       )}
       {r.status === 'In Progress' && (
         <TouchableOpacity style={[styles.actionBtn, { backgroundColor: C.successBg }]} onPress={() => onAdvance(r.id, 'Resolved')} activeOpacity={0.75}>
           <Icon name="check" size={15} color={C.success} />
-          <Text style={[styles.actionTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>Mark Resolved</Text>
+          <Text style={[styles.actionTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>{t.dash.markResolved}</Text>
         </TouchableOpacity>
       )}
       {r.status === 'Resolved' && (
         <View style={[styles.actionBtn, { backgroundColor: C.successBg, opacity: 0.7 }]}>
           <Icon name="check" size={15} color={C.success} />
-          <Text style={[styles.actionTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>Done</Text>
+          <Text style={[styles.actionTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>{t.common.done}</Text>
         </View>
       )}
     </View>
@@ -130,6 +132,7 @@ function ReportCard({ r, C, onAdvance, onPress }: { r: Report; C: any; onAdvance
 
 export function StaffDashboardScreen({ navigation }: any) {
   const { C } = useTheme();
+  const t = useT();
   const { user, profile } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
   const [unread, setUnread] = useState(0);
@@ -203,17 +206,17 @@ export function StaffDashboardScreen({ navigation }: any) {
         </View>
 
         <View style={styles.sectionRow}>
-          <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold, marginTop: 0, marginBottom: 0 }]}>ASSIGNED TO ME</Text>
+          <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold, marginTop: 0, marginBottom: 0 }]}>{t.dash.assignedToMe}</Text>
           <TouchableOpacity onPress={() => navigation.navigate('AssignedToMe')} activeOpacity={0.8}>
-            <Text style={[styles.seeAll, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>See All</Text>
+            <Text style={[styles.seeAll, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>{t.common.seeAll}</Text>
           </TouchableOpacity>
         </View>
 
         {sorted.length === 0 ? (
           <View style={styles.empty}>
             <Icon name="check" size={30} color={C.textMuted} />
-            <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>All clear!</Text>
-            <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>No reports assigned to you</Text>
+            <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.dash.allClear}</Text>
+            <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{t.dash.noReportsAssigned}</Text>
           </View>
         ) : (
           <View style={styles.list}>
