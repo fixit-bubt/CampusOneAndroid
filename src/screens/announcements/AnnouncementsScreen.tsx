@@ -174,7 +174,7 @@ export function AnnouncementsScreen({ navigation }: any) {
               activeOpacity={0.75}
             >
               <Text style={[styles.chipTxt, { color: on ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                {p === 'All' ? t.common.all : p}
+                {p === 'All' ? t.common.all : (t.announce2.priorityLabels[p] ?? p)}
               </Text>
             </TouchableOpacity>
           );
