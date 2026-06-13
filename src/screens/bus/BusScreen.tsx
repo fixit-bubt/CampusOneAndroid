@@ -92,7 +92,7 @@ export function BusScreen({ navigation }: any) {
     if (!form || !form.name.trim()) return;
     const row = {
       name: form.name.trim(),
-      area: form.area.trim() || null,
+      area: form.area.trim() || '',
       bus_no: form.bus_no.trim() || null,
       helper_name: form.helper_name.trim() || null,
       helper_phone: form.helper_phone.trim() || null,
