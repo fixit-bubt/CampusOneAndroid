@@ -3,7 +3,7 @@
 // Real devs never scatter upload code across multiple screens.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import * as FileSystem from 'expo-file-system';
+import { File } from 'expo-file-system';
 import { supabase } from '../lib/supabase';
 import { BUCKETS, IMAGE_QUALITY } from '../constants/app';
 
@@ -25,11 +25,8 @@ export async function uploadFile(
   bucketIsPublic = true,
 ): Promise<UploadResult> {
   try {
-    const base64 = await FileSystem.readAsStringAsync(localUri, {
-      encoding: FileSystem.EncodingType.Base64,
-    });
-
-    const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+    // SDK 56: legacy readAsStringAsync is deprecated — new File API returns bytes directly.
+    const bytes = await new File(localUri).bytes();
 
     const { error } = await supabase.storage
       .from(bucket)
