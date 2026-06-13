@@ -70,7 +70,7 @@ export function JobsModerateScreen({ navigation }: any) {
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
         <SubBar title={t.jobs.moderation} onBack={() => navigation.goBack()} />
         <View style={styles.center}>
-          <Text style={{ color: C.text, fontFamily: FontFamily.jakartaExtraBold, fontSize: 18 }}>Access Denied</Text>
+          <Text style={{ color: C.text, fontFamily: FontFamily.jakartaExtraBold, fontSize: 18 }}>{t.jobs2.accessDenied}</Text>
         </View>
       </SafeAreaView>
     );
