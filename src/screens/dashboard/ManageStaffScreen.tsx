@@ -17,6 +17,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { createUserAsAdmin } from '../../services/adminService';
 import type { Profile } from '../../types/database';
+import { useT } from '../../i18n';
 
 type Tab = 'staff' | 'admin';
 
@@ -26,6 +27,7 @@ const TRADES = ['Electrical', 'Plumbing', 'Cleanliness', 'IT / Network', 'Furnit
 export function ManageStaffScreen({ navigation }: any) {
   const { C } = useTheme();
   const { profile, user } = useAuth();
+  const t = useT();
   const [tab, setTab] = useState<Tab>('staff');
   const [staff, setStaff] = useState<Profile[]>([]);
   const [admins, setAdmins] = useState<Profile[]>([]);
@@ -74,14 +76,14 @@ export function ManageStaffScreen({ navigation }: any) {
       expertise: tab === 'staff' ? trade : null,
     });
     setCreating(false);
-    if (!res.ok) { Alert.alert('Could not create account', res.error); return; }
+    if (!res.ok) { Alert.alert(t.manage.couldNotCreateAccount, res.error); return; }
     setAddOpen(false);
     resetForm();
     await load();
   }
 
   function demote(u: Profile) {
-    if (u.id === user?.id) { Alert.alert('Not allowed', 'You cannot demote yourself here.'); return; }
+    if (u.id === user?.id) { Alert.alert(t.manage.notAllowed, t.manage.cannotDemoteSelf); return; }
     Alert.alert(
       'Remove ' + (tab === 'staff' ? 'staff' : 'admin'),
       `Demote ${u.full_name} back to student?`,
@@ -120,7 +122,7 @@ export function ManageStaffScreen({ navigation }: any) {
 
       {/* Tabs with counts */}
       <View style={[styles.tabs, { paddingHorizontal: Layout.screenPadding }]}>
-        {([['staff', 'Staff', staff.length], ['admin', 'Admins', admins.length]] as const).map(([id, label, count]) => {
+        {([['staff', t.manage.staff, staff.length], ['admin', t.manage.admins, admins.length]] as const).map(([id, label, count]) => {
           const on = tab === id;
           return (
             <TouchableOpacity
@@ -160,7 +162,7 @@ export function ManageStaffScreen({ navigation }: any) {
           <View style={styles.empty}>
             <Feather name="users" size={28} color={C.textMuted} />
             <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-              No {tab === 'staff' ? 'staff' : 'admins'} yet
+              {tab === 'staff' ? t.manage.noStaffYet : t.manage.noAdminsYet}
             </Text>
           </View>
         ) : (
@@ -183,7 +185,7 @@ export function ManageStaffScreen({ navigation }: any) {
                         <View style={[styles.tradePill, { backgroundColor: C.surface2 }]}>
                           <View style={[styles.dot, { backgroundColor: u.expertise ? C.success : C.textMuted }]} />
                           <Text style={[styles.tradeTxt, { color: u.expertise ? C.text2 : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                            {u.expertise ?? 'No trade'}
+                            {u.expertise ?? t.manage.noTrade}
                           </Text>
                         </View>
                       )}
@@ -191,7 +193,7 @@ export function ManageStaffScreen({ navigation }: any) {
                     <View style={[styles.rolePill, { backgroundColor: `${roleHex}1e` }]}>
                       <View style={[styles.dot, { backgroundColor: roleHex }]} />
                       <Text style={[styles.roleTxt, { color: roleHex, fontFamily: FontFamily.jakartaBold }]}>
-                        {tab === 'staff' ? 'Staff' : 'Admin'}
+                        {tab === 'staff' ? t.manage.staff : t.manage.admin}
                       </Text>
                     </View>
                     <TouchableOpacity onPress={() => demote(u)} hitSlop={8} activeOpacity={0.7}>
@@ -220,10 +222,10 @@ export function ManageStaffScreen({ navigation }: any) {
               : 'Creates an admin account with full management access.'}
           </Text>
 
-          <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>FULL NAME</Text>
+          <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.fullNameLabel}</Text>
           <TextInput
             style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-            value={name} onChangeText={setName} placeholder="e.g. Karim Rahman" placeholderTextColor={C.textMuted}
+            value={name} onChangeText={setName} placeholder={t.manage.fullNamePlaceholder} placeholderTextColor={C.textMuted}
           />
 
           <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>EMAIL</Text>
@@ -233,7 +235,7 @@ export function ManageStaffScreen({ navigation }: any) {
             autoCapitalize="none" keyboardType="email-address"
           />
 
-          <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>PASSWORD (MIN 6)</Text>
+          <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.passwordMin6Label}</Text>
           <TextInput
             style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
             value={password} onChangeText={setPassword} placeholder="••••••" placeholderTextColor={C.textMuted}
@@ -242,7 +244,7 @@ export function ManageStaffScreen({ navigation }: any) {
 
           {tab === 'staff' && (
             <>
-              <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>TRADE (OPTIONAL)</Text>
+              <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.tradeOptionalLabel}</Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7 }}>
                 {TRADES.map(t => {
                   const sel = trade === t;
@@ -271,7 +273,7 @@ export function ManageStaffScreen({ navigation }: any) {
               ? <ActivityIndicator color={C.white} size="small" />
               : <Feather name="user-plus" size={16} color={formOk ? C.white : C.textMuted} />}
             <Text style={[styles.createBtnTxt, { color: formOk ? C.white : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-              {tab === 'staff' ? 'Create staff account' : 'Create admin account'}
+              {tab === 'staff' ? t.manage.createStaffAccount : t.manage.createAdminAccount}
             </Text>
           </TouchableOpacity>
         </View>
