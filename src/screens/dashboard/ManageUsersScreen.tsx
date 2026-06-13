@@ -14,6 +14,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { createUserAsAdmin } from '../../services/adminService';
 import type { Profile } from '../../types/database';
+import { useT } from '../../i18n';
 
 const ROLE_TOKEN = { student: 'roleStudent', staff: 'roleStaff', admin: 'roleAdmin' } as const;
 const ROLE_NEXT: Record<string, Profile['role']> = { student: 'staff', staff: 'admin', admin: 'student' };
@@ -24,6 +25,7 @@ const TRADES = ['Electrical', 'Plumbing', 'Cleanliness', 'IT / Network', 'Furnit
 export function ManageUsersScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
   const { profile } = useAuth();
+  const t = useT();
   const [users, setUsers] = useState<Profile[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [toast, setToast] = useState(false);
@@ -78,7 +80,7 @@ export function ManageUsersScreen({ navigation }: any) {
     setUsers(prev => prev.map(x => x.id === u.id ? { ...x, expertise: value } : x));
     setExpertiseTarget(null);
     const { error } = await supabase.from('profiles').update({ expertise: value }).eq('id', u.id);
-    if (error) { Alert.alert('Error', error.message); await load(); return; }
+    if (error) { Alert.alert(t.common.error, error.message); await load(); return; }
     setToast(true);
     setTimeout(() => setToast(false), 1500);
   }
@@ -98,7 +100,7 @@ export function ManageUsersScreen({ navigation }: any) {
       expertise: cRole === 'staff' ? cTrade : null,
     });
     setCreating(false);
-    if (!res.ok) { Alert.alert('Could not create account', res.error); return; }
+    if (!res.ok) { Alert.alert(t.manage.couldNotCreateAccount, res.error); return; }
     setCreateOpen(false);
     resetCreateForm();
     setToast(true);
@@ -134,7 +136,7 @@ export function ManageUsersScreen({ navigation }: any) {
             activeOpacity={0.8}
           >
             <Feather name="plus" size={14} color="#fff" />
-            <Text style={[styles.newBtnTxt, { fontFamily: FontFamily.jakartaBold }]}>New</Text>
+            <Text style={[styles.newBtnTxt, { fontFamily: FontFamily.jakartaBold }]}>{t.manage.newBtn}</Text>
           </TouchableOpacity>
         }
       />
@@ -145,7 +147,7 @@ export function ManageUsersScreen({ navigation }: any) {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
         <Text style={[styles.hint, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-          Tap a role pill to cycle: Student → Staff → Admin. Tap a staff member's trade chip to set their specialty.
+          {t.manage.manageUsersHint}
         </Text>
 
         <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
@@ -161,7 +163,7 @@ export function ManageUsersScreen({ navigation }: any) {
                       {u.full_name}
                     </Text>
                     <Text style={[styles.meta, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                      {u.department ?? '—'}{u.intake ? ` · Intake ${u.intake}` : ''}
+                      {u.department ?? t.manage.emDash}{u.intake ? t.manage.intakeLabel(u.intake) : ''}
                     </Text>
                     {u.role === 'staff' && (
                       <TouchableOpacity
@@ -171,7 +173,7 @@ export function ManageUsersScreen({ navigation }: any) {
                       >
                         <View style={[styles.pilldot, { backgroundColor: u.expertise ? C.success : C.textMuted }]} />
                         <Text style={[styles.tradeChipTxt, { color: u.expertise ? C.text2 : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                          {u.expertise ?? 'Set trade'}
+                          {u.expertise ?? t.manage.setTrade}
                         </Text>
                       </TouchableOpacity>
                     )}
@@ -200,10 +202,10 @@ export function ManageUsersScreen({ navigation }: any) {
         <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setExpertiseTarget(null)} />
         <View style={[styles.sheet, { backgroundColor: C.surface }]}>
           <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-            Set trade · {expertiseTarget?.full_name}
+            {t.manage.setTradeWithName(expertiseTarget?.full_name ?? '')}
           </Text>
           <Text style={[styles.sheetSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-            Reports of the matching category will surface this staff member first when assigning.
+            {t.manage.setTradeSub}
           </Text>
           {TRADES.map((t, i) => {
             const on = expertiseTarget?.expertise === t;
@@ -220,7 +222,7 @@ export function ManageUsersScreen({ navigation }: any) {
           <View style={[styles.divider, { backgroundColor: C.border }]} />
           <TouchableOpacity style={styles.optRow} onPress={() => expertiseTarget && setExpertise(expertiseTarget, null)} activeOpacity={0.75}>
             <View style={[styles.pilldot, { backgroundColor: C.textMuted }]} />
-            <Text style={[styles.optTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>None (no trade)</Text>
+            <Text style={[styles.optTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{t.manage.noTradeOption}</Text>
           </TouchableOpacity>
         </View>
       </Modal>
@@ -233,30 +235,30 @@ export function ManageUsersScreen({ navigation }: any) {
             Create account
           </Text>
           <Text style={[styles.sheetSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-            The account is created with the role you pick — staff and admins sign in with these credentials.
+            {t.manage.createAccountSub}
           </Text>
 
-          <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>FULL NAME</Text>
+          <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.fullNameLabel}</Text>
           <TextInput
             style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-            value={cName} onChangeText={setCName} placeholder="e.g. Karim Rahman" placeholderTextColor={C.textMuted}
+            value={cName} onChangeText={setCName} placeholder={t.manage.fullNamePlaceholder} placeholderTextColor={C.textMuted}
           />
 
-          <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>EMAIL</Text>
+          <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.emailLabel}</Text>
           <TextInput
             style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-            value={cEmail} onChangeText={setCEmail} placeholder="name@university.edu" placeholderTextColor={C.textMuted}
+            value={cEmail} onChangeText={setCEmail} placeholder={t.manage.emailUniversityPlaceholder} placeholderTextColor={C.textMuted}
             autoCapitalize="none" keyboardType="email-address"
           />
 
-          <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>PASSWORD (MIN 6)</Text>
+          <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.passwordMin6Label}</Text>
           <TextInput
             style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
             value={cPassword} onChangeText={setCPassword} placeholder="••••••" placeholderTextColor={C.textMuted}
             secureTextEntry autoCapitalize="none"
           />
 
-          <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>ROLE</Text>
+          <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.roleLabel}</Text>
           <View style={{ flexDirection: 'row', gap: 8 }}>
             {(['student', 'staff', 'admin'] as const).map(r => {
               const sel = cRole === r;
@@ -277,7 +279,7 @@ export function ManageUsersScreen({ navigation }: any) {
 
           {cRole === 'staff' && (
             <>
-              <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>TRADE (OPTIONAL)</Text>
+              <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.tradeOptionalLabel}</Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7 }}>
                 {TRADES.map(t => {
                   const sel = cTrade === t;
@@ -315,7 +317,7 @@ export function ManageUsersScreen({ navigation }: any) {
       {/* Toast */}
       {toast && (
         <View style={[styles.toast, { backgroundColor: C.text }]} pointerEvents="none">
-          <Text style={[styles.toastTxt, { color: C.bg, fontFamily: FontFamily.jakartaBold }]}>✓ Saved</Text>
+          <Text style={[styles.toastTxt, { color: C.bg, fontFamily: FontFamily.jakartaBold }]}>{t.manage.saved}</Text>
         </View>
       )}
     </SafeAreaView>
