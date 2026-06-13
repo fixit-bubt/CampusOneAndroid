@@ -10,6 +10,7 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout } from '../../theme';
+import { useT } from '../../i18n';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import type { Report, Profile } from '../../types/database';
@@ -45,6 +46,7 @@ interface ReportWithProfile extends Report {
 
 export function AllReportsScreen({ navigation }: any) {
   const { C } = useTheme();
+  const t = useT();
   const { profile } = useAuth();
   const [reports, setReports] = useState<ReportWithProfile[]>([]);
   const [filter, setFilter] = useState<StatusFilter>('all');
@@ -127,7 +129,7 @@ export function AllReportsScreen({ navigation }: any) {
           <Icon name="search" size={17} color={C.textMuted} />
           <TextInput
             style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
-            placeholder="Search by title, building, code..."
+            placeholder={t.dash.searchReportsPlaceholder}
             placeholderTextColor={C.textMuted}
             value={query}
             onChangeText={setQuery}
@@ -223,7 +225,7 @@ export function AllReportsScreen({ navigation }: any) {
                     <View style={styles.locRow}>
                       <Icon name="pin" size={11} color={C.textMuted} />
                       <Text style={[styles.loc, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                        {r.building}{r.room ? ` · Room ${r.room}` : ''}
+                        {r.building}{r.room ? ` · ${t.dash.roomLabel(r.room)}` : ''}
                       </Text>
                     </View>
                   </View>
@@ -238,7 +240,7 @@ export function AllReportsScreen({ navigation }: any) {
                   <View style={styles.byRow}>
                     <Avatar name={r.profiles?.full_name} size="xs" />
                     <Text style={[styles.byName, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
-                      {r.profiles?.full_name ?? 'Unknown'}
+                      {r.profiles?.full_name ?? t.dash.unknown}
                     </Text>
                   </View>
                   {r.status !== 'Rejected' && r.status !== 'Closed' && r.status !== 'Resolved' && (
@@ -248,7 +250,7 @@ export function AllReportsScreen({ navigation }: any) {
                         onPress={() => setAssignTarget(r)}
                         activeOpacity={0.8}
                       >
-                        <Text style={[styles.assignTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Reassign</Text>
+                        <Text style={[styles.assignTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.dash.reassign}</Text>
                       </TouchableOpacity>
                     ) : (
                       <TouchableOpacity
@@ -256,7 +258,7 @@ export function AllReportsScreen({ navigation }: any) {
                         onPress={() => setAssignTarget(r)}
                         activeOpacity={0.8}
                       >
-                        <Text style={[styles.assignTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>Assign</Text>
+                        <Text style={[styles.assignTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>{t.dash.assignBtn}</Text>
                       </TouchableOpacity>
                     )
                   )}
@@ -276,7 +278,7 @@ export function AllReportsScreen({ navigation }: any) {
             Assign Staff
           </Text>
           <Text style={[styles.sheetSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-            {assignTarget?.description.split('\n')[0]}{assignTarget?.category ? ` · Needs: ${assignTarget.category}` : ''}
+            {assignTarget?.description.split('\n')[0]}{assignTarget?.category ? ` · ${t.dash.needsOnly(assignTarget.category)}` : ''}
           </Text>
           {staffRanked.map((s, i) => {
             const match = !!assignCat && s.expertise === assignCat;
@@ -294,12 +296,12 @@ export function AllReportsScreen({ navigation }: any) {
                       <Text style={[styles.staffName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{s.full_name}</Text>
                       {match && (
                         <View style={[styles.matchPill, { backgroundColor: C.successBg }]}>
-                          <Text style={[styles.matchTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>Match</Text>
+                          <Text style={[styles.matchTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>{t.dash.match}</Text>
                         </View>
                       )}
                     </View>
                     <Text style={[styles.staffDept, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                      {s.expertise ?? s.department ?? 'No trade set'}
+                      {s.expertise ?? s.department ?? t.dash.noTradeSet}
                     </Text>
                   </View>
                   <Icon name="chevR" size={18} color={C.textMuted} />
