@@ -39,17 +39,24 @@ export function ClubsScreen({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
-    const { data: clubsData, error } = await supabase
-      .from('clubs')
-      .select('*, club_members!left(role, user_id)')
-      .eq('is_active', true)
-      .order('name')
-      .limit(50);
-    if (error) return;
-    if (clubsData) {
-      const mapped = clubsData.map((c: any) => ({
+    const [clubsRes, countsRes] = await Promise.all([
+      supabase
+        .from('clubs')
+        .select('*, club_members!left(role, user_id)')
+        .eq('is_active', true)
+        .order('name')
+        .limit(50),
+      // Accurate counts bypassing per-row RLS (the embedded join only returns
+      // member rows of clubs the current user has joined).
+      supabase.rpc('club_member_counts'),
+    ]);
+    if (clubsRes.error) return;
+    const countMap: Record<string, number> = {};
+    (countsRes.data ?? []).forEach((r: any) => { countMap[r.club_id] = Number(r.members); });
+    if (clubsRes.data) {
+      const mapped = clubsRes.data.map((c: any) => ({
         ...c,
-        member_count: c.member_count ?? c.club_members?.length ?? 0,
+        member_count: countMap[c.id] ?? c.club_members?.length ?? 0,
         user_role: c.club_members?.find((m: any) => m.user_id === user?.id)?.role ?? null,
       }));
       setClubs(mapped as Club[]);
