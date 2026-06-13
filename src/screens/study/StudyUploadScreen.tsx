@@ -216,7 +216,7 @@ export function StudyUploadScreen({ route, navigation }: any) {
           <>
             <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.study2.exam}</Text>
             <View style={styles.examRow}>
-              {['Midterm', 'Final', 'Quiz', 'Assignment'].map(e => {
+              {['CT 1', 'CT 2', 'Midterm', 'Final'].map(e => {
                 const on = exam === e;
                 return (
                   <TouchableOpacity
@@ -227,7 +227,7 @@ export function StudyUploadScreen({ route, navigation }: any) {
                     onPress={() => setExam(e)}
                     activeOpacity={0.75}
                   >
-                    <Text style={[styles.examTxt, { color: on ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>{e === 'Midterm' ? t.study2.midterm : e === 'Final' ? t.study2.final : e === 'Quiz' ? t.study2.quiz : t.study2.assignment}</Text>
+                    <Text style={[styles.examTxt, { color: on ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>{e === 'Midterm' ? t.study2.midterm : e === 'Final' ? t.study2.final : e}</Text>
                   </TouchableOpacity>
                 );
               })}
