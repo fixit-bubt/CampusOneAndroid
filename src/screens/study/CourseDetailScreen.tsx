@@ -15,6 +15,7 @@ import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
+import { useT } from '../../i18n';
 
 const STUDY_COLOR = SectorColors.study;
 const STUDY_BG    = `${SectorColors.study}1e`;
@@ -40,6 +41,7 @@ interface Entry {
 
 export function CourseDetailScreen({ route, navigation }: any) {
   const { C, isDark } = useTheme();
+  const t = useT();
   const { user, profile } = useAuth();
   const { courseId } = route.params;
   const [course, setCourse] = useState<any>(null);
@@ -88,7 +90,7 @@ export function CourseDetailScreen({ route, navigation }: any) {
       .from('study-materials')
       .createSignedUrl(f.storage_path, 60);
     if (error || !data?.signedUrl) {
-      Alert.alert('Error', error?.message ?? 'Could not open file');
+      Alert.alert(t.common.error, error?.message ?? t.study2.couldNotOpenFile);
       return;
     }
     Linking.openURL(data.signedUrl);
@@ -120,7 +122,7 @@ export function CourseDetailScreen({ route, navigation }: any) {
   if (!course) {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-        <SubBar title="Course" onBack={() => navigation.goBack()} />
+        <SubBar title={t.study2.course} onBack={() => navigation.goBack()} />
         <View style={styles.center}><ActivityIndicator color={C.brand} /></View>
       </SafeAreaView>
     );
@@ -198,7 +200,7 @@ export function CourseDetailScreen({ route, navigation }: any) {
                     {tab === 'questions' && f.verified ? (
                       <View style={[styles.tagPill, { backgroundColor: C.successBg }]}>
                         <Feather name="check" size={9} color={C.success} />
-                        <Text style={[styles.tagTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>Verified</Text>
+                        <Text style={[styles.tagTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>{t.study2.verified}</Text>
                       </View>
                     ) : null}
                     {tab === 'books' && f.author ? (
