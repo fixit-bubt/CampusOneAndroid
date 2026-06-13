@@ -131,7 +131,7 @@ export function ManageClubsScreen({ navigation }: any) {
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
         <SubBar title={t.clubs.manageClubs} onBack={() => navigation.goBack()} />
         <View style={styles.center}>
-          <Text style={{ color: C.text, fontFamily: FontFamily.jakartaExtraBold, fontSize: 18 }}>Access Denied</Text>
+          <Text style={{ color: C.text, fontFamily: FontFamily.jakartaExtraBold, fontSize: 18 }}>{t.manage.accessDenied}</Text>
         </View>
       </SafeAreaView>
     );
@@ -237,12 +237,12 @@ export function ManageClubsScreen({ navigation }: any) {
           <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.clubs.clubName}</Text>
           <TextInput
             style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-            value={name} onChangeText={setName} placeholder="e.g. Robotics Club" placeholderTextColor={C.textMuted}
+            value={name} onChangeText={setName} placeholder={t.manage.clubNamePlaceholder} placeholderTextColor={C.textMuted}
           />
           <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.clubs.tagline}</Text>
           <TextInput
             style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-            value={tagline} onChangeText={setTagline} placeholder="One line about the club" placeholderTextColor={C.textMuted}
+            value={tagline} onChangeText={setTagline} placeholder={t.manage.taglinePlaceholder} placeholderTextColor={C.textMuted}
           />
           <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.clubs.category}</Text>
           <View style={styles.catRow}>
