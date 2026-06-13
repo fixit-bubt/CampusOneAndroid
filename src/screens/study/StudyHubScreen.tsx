@@ -364,7 +364,7 @@ export function StudyHubScreen({ navigation }: any) {
   const [numInput, setNumInput] = useState('');
   const [yearsInput, setYearsInput] = useState('');
   const [copied, setCopied] = useState(false);
-  const [toast, setToast] = useState('');
+  const [toastMsg, setToastMsg] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
   const [startVoteOpen, setStartVoteOpen] = useState(false);
   const [rejectId, setRejectId] = useState<string | null>(null);
@@ -372,9 +372,9 @@ export function StudyHubScreen({ navigation }: any) {
   const toastRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function flash(msg: string) {
-    setToast(msg);
+    setToastMsg(msg);
     if (toastRef.current) clearTimeout(toastRef.current);
-    toastRef.current = setTimeout(() => setToast(''), 1800);
+    toastRef.current = setTimeout(() => setToastMsg(''), 1800);
   }
 
   // Flatten the nested join rows (supabase returns object or 1-elem array).
@@ -1376,7 +1376,7 @@ export function StudyHubScreen({ navigation }: any) {
         <View style={{ height: 20 }} />
       </ScrollView>
 
-      <Toast msg={toast} C={C} />
+      <Toast msg={toastMsg} C={C} />
 
       <CreateSheet
         visible={createOpen}
