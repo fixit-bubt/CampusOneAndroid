@@ -11,6 +11,7 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { useT } from '../../i18n';
 import type { Job } from '../../types/database';
 
 function SegControl<T extends string>({
@@ -57,6 +58,7 @@ const MODES: { id: Job['work_mode']; label: string }[] = [
 
 export function JobPostScreen({ navigation }: any) {
   const { C } = useTheme();
+  const t = useT();
   const { user, profile } = useAuth();
 
   const [company, setCompany] = useState('');
@@ -96,7 +98,7 @@ export function JobPostScreen({ navigation }: any) {
       if (error) throw error;
       navigation.goBack();
     } catch {
-      Alert.alert('Error', 'Could not post job. Please try again.');
+      Alert.alert(t.common.error, t.jobs2.postFailed);
     } finally {
       setLoading(false);
     }
@@ -104,86 +106,86 @@ export function JobPostScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-      <SubBar title="Post a Job" onBack={() => navigation.goBack()} />
+      <SubBar title={t.jobs2.postAJob} onBack={() => navigation.goBack()} />
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>COMPANY</Text>
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.jobs2.company}</Text>
         <TextInput
           style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
           value={company}
           onChangeText={setCompany}
-          placeholder="e.g. BrainStation-23"
+          placeholder={t.jobs2.companyPlaceholder}
           placeholderTextColor={C.textMuted}
         />
 
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>ROLE TITLE</Text>
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.jobs2.roleTitle}</Text>
         <TextInput
           style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
           value={role}
           onChangeText={setRole}
-          placeholder="e.g. Backend Intern"
+          placeholder={t.jobs2.roleTitlePlaceholder}
           placeholderTextColor={C.textMuted}
         />
 
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>TYPE</Text>
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.jobs2.type}</Text>
         <SegControl options={JOB_TYPES} value={jobType} onChange={setJobType} C={C} />
 
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>WORK MODE</Text>
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.jobs2.workMode}</Text>
         <SegControl options={MODES} value={workMode} onChange={setWorkMode} C={C} />
 
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>LOCATION</Text>
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.jobs2.location}</Text>
         <TextInput
           style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
           value={location}
           onChangeText={setLocation}
-          placeholder="e.g. Dhaka"
+          placeholder={t.jobs2.locationPlaceholder}
           placeholderTextColor={C.textMuted}
         />
 
         <View style={styles.row}>
           <View style={styles.halfField}>
-            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>SALARY</Text>
+            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>{t.jobs2.salaryLabel}</Text>
             <TextInput
               style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
               value={salary}
               onChangeText={setSalary}
-              placeholder="৳20,000"
+              placeholder={t.jobs2.salaryPlaceholder}
               placeholderTextColor={C.textMuted}
             />
           </View>
           <View style={styles.halfField}>
-            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>DEADLINE</Text>
+            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>{t.jobs2.deadlineLabel}</Text>
             <TextInput
               style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
               value={deadline}
               onChangeText={setDeadline}
-              placeholder="20 Jun"
+              placeholder={t.jobs2.deadlinePlaceholder}
               placeholderTextColor={C.textMuted}
             />
           </View>
         </View>
 
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>DESCRIPTION</Text>
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.jobs2.description}</Text>
         <TextInput
           style={[styles.textarea, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
           value={desc}
           onChangeText={setDesc}
-          placeholder="Describe the role and responsibilities..."
+          placeholder={t.jobs2.descriptionPlaceholder}
           placeholderTextColor={C.textMuted}
           multiline
           textAlignVertical="top"
         />
 
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>REQUIREMENTS</Text>
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.jobs2.requirements}</Text>
         <TextInput
           style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
           value={requirements}
           onChangeText={setRequirements}
-          placeholder="e.g. React · Node · CGPA 3.0+"
+          placeholder={t.jobs2.requirementsPlaceholder}
           placeholderTextColor={C.textMuted}
         />
 
@@ -198,7 +200,7 @@ export function JobPostScreen({ navigation }: any) {
           style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium, marginTop: 10 }]}
           value={applyValue}
           onChangeText={setApplyValue}
-          placeholder={applyMethod === 'email' ? 'careers@company.com' : 'https://company.com/apply'}
+          placeholder={applyMethod === 'email' ? t.jobs2.applyEmailPlaceholder : t.jobs2.applyLinkPlaceholder}
           placeholderTextColor={C.textMuted}
           autoCapitalize="none"
           keyboardType={applyMethod === 'email' ? 'email-address' : 'url'}
