@@ -12,12 +12,13 @@ import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout , SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
+import { useT } from '../../i18n';
 
 const JOB_COLOR = SectorColors.jobs;
 const JOB_BG    = `${SectorColors.jobs}1e`;
 
 // Job status tones from theme tokens (dark-mode aware via C)
-function jobStatusTone(C: any, k: string): { label: string; fg: string; bg: string } {
+function jobStatusTone(C: any, t: any, k: string): { label: string; fg: string; bg: string } {
   switch (k) {
     case 'closed':  return { label: 'Closed',  fg: Accent.slate, bg: Accent.grayBg };
     case 'expired': return { label: 'Expired', fg: C.warn,       bg: C.warnBg };
@@ -30,6 +31,7 @@ const REPORT_REASONS = ['Spam', 'Scam', 'Expired', 'Inappropriate'];
 
 export function JobDetailScreen({ route, navigation }: any) {
   const { C } = useTheme();
+  const t = useT();
   const { user, profile } = useAuth();
   const { jobId } = route.params;
   const [job, setJob] = useState<any>(null);
@@ -112,7 +114,7 @@ export function JobDetailScreen({ route, navigation }: any) {
   }
 
   const computedStatus = job.deleted_at ? 'removed' : (job.deadline && new Date(job.deadline) < new Date() ? 'expired' : 'open');
-  const s = jobStatusTone(C, computedStatus);
+  const s = jobStatusTone(C, t, computedStatus);
   const isOwn = job.posted_by === user?.id;
   const isRemoved = !!job.deleted_at;
   const isExpired = computedStatus === 'expired';
@@ -165,7 +167,7 @@ export function JobDetailScreen({ route, navigation }: any) {
         {/* Info grid */}
         <View style={[styles.infoGrid, { backgroundColor: C.surface, borderColor: C.border }]}>
           <View style={styles.infoCell}>
-            <Text style={[styles.infoCellLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>Deadline</Text>
+            <Text style={[styles.infoCellLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{t.jobs2.deadline}</Text>
             <View style={styles.infoCellVal}>
               <Icon name="clock" size={14} color={C.textMuted} />
               <Text style={[styles.infoCellTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{job.deadline}</Text>
@@ -178,13 +180,13 @@ export function JobDetailScreen({ route, navigation }: any) {
         </View>
 
         {/* Description */}
-        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>DETAILS</Text>
+        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>{t.jobs2.details}</Text>
         <Text style={[styles.body, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>{job.description}</Text>
 
         {/* Requirements */}
         {job.requirements ? (
           <>
-            <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>REQUIREMENTS</Text>
+            <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>{t.jobs2.requirements}</Text>
             <View style={[styles.reqCard, { backgroundColor: C.surface, borderColor: C.border }]}>
               <Text style={[styles.reqText, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>{job.requirements}</Text>
             </View>
@@ -206,7 +208,7 @@ export function JobDetailScreen({ route, navigation }: any) {
                 activeOpacity={0.85}
               >
                 <Feather name="rotate-ccw" size={16} color={C.text} />
-                <Text style={[styles.secondaryTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Restore listing (admin)</Text>
+                <Text style={[styles.secondaryTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.jobs2.restoreListingAdmin}</Text>
               </TouchableOpacity>
             )}
           </>
@@ -223,13 +225,13 @@ export function JobDetailScreen({ route, navigation }: any) {
                   } else if (job.apply_method === 'file' && job.apply_file_url) {
                     Linking.openURL(job.apply_file_url);
                   } else {
-                    Alert.alert('Apply', 'Contact the poster directly to apply.');
+                    Alert.alert(t.jobs2.applyTitle, t.jobs2.applyBody);
                   }
                 }}
                 activeOpacity={0.85}
               >
                 <Icon name="jobs" size={17} color="#fff" />
-                <Text style={[styles.actionTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>Apply Now</Text>
+                <Text style={[styles.actionTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>{t.jobs2.applyNow}</Text>
               </TouchableOpacity>
             )}
             {isOwn ? (
@@ -239,7 +241,7 @@ export function JobDetailScreen({ route, navigation }: any) {
                 activeOpacity={0.85}
               >
                 <Icon name="trash" size={16} color={C.text} />
-                <Text style={[styles.secondaryTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Withdraw listing</Text>
+                <Text style={[styles.secondaryTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.jobs2.withdrawListing}</Text>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
@@ -248,7 +250,7 @@ export function JobDetailScreen({ route, navigation }: any) {
                 activeOpacity={0.85}
               >
                 <Feather name="flag" size={16} color={C.text} />
-                <Text style={[styles.secondaryTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Report listing</Text>
+                <Text style={[styles.secondaryTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.jobs2.reportListing}</Text>
               </TouchableOpacity>
             )}
             {isAdmin && !isOwn && (
@@ -258,7 +260,7 @@ export function JobDetailScreen({ route, navigation }: any) {
                 activeOpacity={0.85}
               >
                 <Feather name="slash" size={16} color={C.danger} />
-                <Text style={[styles.secondaryTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>Remove listing (admin)</Text>
+                <Text style={[styles.secondaryTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>{t.jobs2.removeListingAdmin}</Text>
               </TouchableOpacity>
             )}
           </>
@@ -271,12 +273,12 @@ export function JobDetailScreen({ route, navigation }: any) {
       <Modal visible={removeOpen} transparent animationType="slide" onRequestClose={() => setRemoveOpen(false)}>
         <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setRemoveOpen(false)} />
         <View style={[styles.sheet, { backgroundColor: C.surface }]}>
-          <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>Remove listing</Text>
+          <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{t.jobs2.removeListing}</Text>
           <TextInput
             style={[styles.removeInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
             value={removeReason}
             onChangeText={setRemoveReason}
-            placeholder="Reason (shown to the poster)"
+            placeholder={t.jobs2.removeReasonPlaceholder}
             placeholderTextColor={C.textMuted}
             multiline
           />
@@ -287,7 +289,7 @@ export function JobDetailScreen({ route, navigation }: any) {
             activeOpacity={0.85}
           >
             <Feather name="slash" size={17} color="#fff" />
-            <Text style={[styles.actionTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>Remove listing</Text>
+            <Text style={[styles.actionTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>{t.jobs2.removeListing}</Text>
           </TouchableOpacity>
         </View>
       </Modal>
@@ -296,7 +298,7 @@ export function JobDetailScreen({ route, navigation }: any) {
       <Modal visible={reportOpen} transparent animationType="slide" onRequestClose={() => setReportOpen(false)}>
         <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setReportOpen(false)} />
         <View style={[styles.sheet, { backgroundColor: C.surface }]}>
-          <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>Report listing</Text>
+          <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{t.jobs2.reportListing}</Text>
           <View style={styles.reasonRow}>
             {REPORT_REASONS.map(r => (
               <TouchableOpacity
@@ -319,7 +321,7 @@ export function JobDetailScreen({ route, navigation }: any) {
             activeOpacity={0.85}
           >
             <Feather name="flag" size={17} color="#fff" />
-            <Text style={[styles.actionTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>Submit report</Text>
+            <Text style={[styles.actionTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>{t.jobs2.submitReport}</Text>
           </TouchableOpacity>
         </View>
       </Modal>
