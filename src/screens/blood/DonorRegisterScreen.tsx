@@ -33,12 +33,15 @@ export function DonorRegisterScreen({ navigation }: any) {
     if (!canSubmit || !user) return;
     setLoading(true);
     try {
+      // last_donated is a DATE column — only send a valid YYYY-MM-DD, else null.
+      const ld = lastDonated.trim();
+      const lastDonatedDate = /^\d{4}-\d{2}-\d{2}$/.test(ld) ? ld : null;
       const [donorRes, profileRes] = await Promise.all([
         supabase.from('donors').upsert({
           user_id:      user.id,
           blood_group:  group,
           area:         area.trim(),
-          last_donated: lastDonated.trim() || null,
+          last_donated: lastDonatedDate,
         }, { onConflict: 'user_id' }),
         phone.trim()
           ? supabase.from('profiles').update({ whatsapp: phone.trim() }).eq('id', user.id)

@@ -302,7 +302,7 @@ export const bn: Dict = {
     yourBloodGroup: "আপনার রক্তের গ্রুপ",
     phoneWhatsapp: "ফোন / হোয়াটসঅ্যাপ",
     lastDonatedOptional: "সর্বশেষ দান (ঐচ্ছিক)",
-    lastDonatedPlaceholder: "যেমন ৩ মাস আগে",
+    lastDonatedPlaceholder: "YYYY-MM-DD",
     registerAsDonorBtnFull: "ডোনার হিসেবে নিবন্ধন",
     registerError: "নিবন্ধন করা যায়নি। আবার চেষ্টা করুন।",
   },
