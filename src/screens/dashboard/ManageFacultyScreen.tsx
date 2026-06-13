@@ -18,6 +18,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { uploadFile } from '../../utils/storage';
 import { BUCKETS } from '../../constants/app';
+import { useT } from '../../i18n';
 
 interface FacultyRow {
   id: string;
@@ -36,6 +37,7 @@ const shortDept = (name?: string | null) => (name ?? '').replace(/^Department of
 export function ManageFacultyScreen({ navigation }: any) {
   const { C } = useTheme();
   const { profile } = useAuth();
+  const t = useT();
   const [list, setList] = useState<FacultyRow[]>([]);
   const [query, setQuery] = useState('');
   const [target, setTarget] = useState<FacultyRow | null>(null);
@@ -85,7 +87,7 @@ export function ManageFacultyScreen({ navigation }: any) {
       let photoUrl: string | undefined;
       if (photoUri) {
         const up = await uploadFile(BUCKETS.photos, photoUri, `faculty/${target.id}/${Date.now()}.jpg`, 'image/jpeg');
-        if (!up.success) { Alert.alert('Error', up.error); return; }
+        if (!up.success) { Alert.alert(t.common.error, up.error); return; }
         photoUrl = up.url;
       }
       const payload: Record<string, any> = {
@@ -132,7 +134,7 @@ export function ManageFacultyScreen({ navigation }: any) {
           <Icon name="search" size={17} color={C.textMuted} />
           <TextInput
             style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
-            placeholder="Search by name, designation, department..."
+            placeholder={t.manage.facultySearchPlaceholder}
             placeholderTextColor={C.textMuted}
             value={query}
             onChangeText={setQuery}
@@ -160,7 +162,7 @@ export function ManageFacultyScreen({ navigation }: any) {
                 </View>
                 {!f.photo_url && (
                   <View style={[styles.noPhoto, { backgroundColor: C.warnBg }]}>
-                    <Text style={[styles.noPhotoTxt, { color: C.warn, fontFamily: FontFamily.jakartaBold }]}>No photo</Text>
+                    <Text style={[styles.noPhotoTxt, { color: C.warn, fontFamily: FontFamily.jakartaBold }]}>{t.manage.noPhoto}</Text>
                   </View>
                 )}
                 <TouchableOpacity onPress={() => openEdit(f)} hitSlop={8} activeOpacity={0.7}>
@@ -185,35 +187,35 @@ export function ManageFacultyScreen({ navigation }: any) {
             <TouchableOpacity style={styles.photoRow} onPress={pickPhoto} activeOpacity={0.75}>
               <Avatar uri={photoUri ?? target?.photo_url} name={target?.name} size="lg" />
               <Text style={[styles.photoHint, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
-                {photoUri ? 'Photo selected' : 'Change photo'}
+                {photoUri ? t.manage.photoSelected : t.manage.changePhoto}
               </Text>
             </TouchableOpacity>
 
-            <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>EMAIL</Text>
+            <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.emailLabel}</Text>
             <TextInput
               style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
               value={email} onChangeText={setEmail} placeholder="name@bubt.edu.bd" placeholderTextColor={C.textMuted}
               autoCapitalize="none" keyboardType="email-address"
             />
-            <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>PHONE</Text>
+            <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.phoneLabel}</Text>
             <TextInput
               style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
               value={phone} onChangeText={setPhone} placeholder="+8801..." placeholderTextColor={C.textMuted}
               keyboardType="phone-pad"
             />
-            <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>DESIGNATION</Text>
+            <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.designationLabel}</Text>
             <TextInput
               style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-              value={designation} onChangeText={setDesignation} placeholder="Assistant Professor" placeholderTextColor={C.textMuted}
+              value={designation} onChangeText={setDesignation} placeholder={t.manage.designationPlaceholder} placeholderTextColor={C.textMuted}
             />
-            <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>RESEARCH INTERESTS (COMMA-SEPARATED)</Text>
+            <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.researchInterestsLabel}</Text>
             <TextInput
               style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-              value={interests} onChangeText={setInterests} placeholder="Machine Learning, IoT" placeholderTextColor={C.textMuted}
+              value={interests} onChangeText={setInterests} placeholder={t.manage.researchInterestsPlaceholder} placeholderTextColor={C.textMuted}
             />
 
             <View style={styles.toggleRow}>
-              <Text style={[styles.toggleLbl, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>On leave</Text>
+              <Text style={[styles.toggleLbl, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>{t.manage.onLeave}</Text>
               <Switch value={onLeave} onValueChange={setOnLeave} trackColor={{ true: C.brand }} />
             </View>
 
@@ -225,7 +227,7 @@ export function ManageFacultyScreen({ navigation }: any) {
             >
               {saving
                 ? <ActivityIndicator color={C.white} size="small" />
-                : <Text style={[styles.saveTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>Save changes</Text>}
+                : <Text style={[styles.saveTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>{t.manage.saveChanges}</Text>}
             </TouchableOpacity>
             <View style={{ height: 8 }} />
           </ScrollView>
