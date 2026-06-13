@@ -46,6 +46,7 @@ export function LoginScreen({ navigation }: Props) {
       } else {
         setResetSent(true);
         setErr('');
+        setPass('');
       }
     } finally {
       setBusy(false);

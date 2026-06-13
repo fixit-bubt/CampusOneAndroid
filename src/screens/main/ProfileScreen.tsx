@@ -385,6 +385,7 @@ export function ProfileScreen({ navigation }: any) {
 
   async function handleSave() {
     if (!user || savingRef.current) return;
+    if (!editName.trim()) { Alert.alert(t.common.error, 'Full name is required'); return; }
     savingRef.current = true;
     setSaving(true);
     try {
