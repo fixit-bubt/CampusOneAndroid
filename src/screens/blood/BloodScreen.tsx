@@ -12,6 +12,7 @@ import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout, SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
+import { useT } from '../../i18n';
 import type { BloodRequest, Donor } from '../../types/database';
 
 type Tab = 'requests' | 'donors';
@@ -41,6 +42,7 @@ function GroupBadge({ group, size = 46 }: { group: string; size?: number }) {
 export function BloodScreen({ navigation }: any) {
   const { C } = useTheme();
   const { user } = useAuth();
+  const t = useT();
   const [tab, setTab] = useState<Tab>('requests');
   const [groupFilter, setGroupFilter] = useState('All');
   const [requests, setRequests] = useState<BloodRequest[]>([]);
@@ -105,11 +107,11 @@ export function BloodScreen({ navigation }: any) {
 
   function handleHelpPress(r: BloodRequest) {
     if (!user) {
-      Alert.alert('Sign in required', 'Please sign in to respond to blood requests.');
+      Alert.alert(t.blood2.signInRequired, t.blood2.signInToRespond);
       return;
     }
     if (respondedIds.has(r.id)) {
-      Alert.alert('Already responded', 'You have already offered to help with this request.');
+      Alert.alert(t.blood2.alreadyResponded, t.blood2.alreadyOfferedHelp);
       return;
     }
     Alert.alert(
@@ -150,7 +152,7 @@ export function BloodScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-      <SubBar title="Blood Donation" onBack={() => navigation.goBack()} />
+      <SubBar title={t.blood2.bloodDonation} onBack={() => navigation.goBack()} />
 
       {/* Action buttons + tabs */}
       <View style={[styles.actRow, { paddingHorizontal: Layout.screenPadding }]}>
@@ -160,7 +162,7 @@ export function BloodScreen({ navigation }: any) {
           activeOpacity={0.85}
         >
           <Icon name="blood" size={15} color="#fff" />
-          <Text style={[styles.actBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>Request blood</Text>
+          <Text style={[styles.actBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>{t.blood2.requestBloodBtn}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.actBtn, { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1 }]}
@@ -168,23 +170,23 @@ export function BloodScreen({ navigation }: any) {
           activeOpacity={0.85}
         >
           <Icon name="plus" size={15} color={C.text} />
-          <Text style={[styles.actBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Register as donor</Text>
+          <Text style={[styles.actBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.blood2.registerAsDonorBtn}</Text>
         </TouchableOpacity>
       </View>
 
       <View style={[styles.chips, { paddingHorizontal: Layout.screenPadding }]}>
-        {(['requests', 'donors'] as Tab[]).map(t => (
+        {(['requests', 'donors'] as Tab[]).map(tb => (
           <TouchableOpacity
-            key={t}
-            style={[styles.chip, tab === t ? { backgroundColor: C.brand, borderColor: C.brand } : { backgroundColor: C.surface, borderColor: C.border }]}
-            onPress={() => setTab(t)}
+            key={tb}
+            style={[styles.chip, tab === tb ? { backgroundColor: C.brand, borderColor: C.brand } : { backgroundColor: C.surface, borderColor: C.border }]}
+            onPress={() => setTab(tb)}
             activeOpacity={0.75}
           >
-            <Text style={[styles.chipTxt, { color: tab === t ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-              {t === 'requests' ? `Requests` : 'Donors'}
+            <Text style={[styles.chipTxt, { color: tab === tb ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>
+              {tb === 'requests' ? t.blood2.requestsTab : t.blood2.donorsTab}
             </Text>
-            <Text style={[styles.chipCount, { color: tab === t ? 'rgba(255,255,255,0.7)' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-              {t === 'requests' ? requests.length : donors.length}
+            <Text style={[styles.chipCount, { color: tab === tb ? 'rgba(255,255,255,0.7)' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+              {tb === 'requests' ? requests.length : donors.length}
             </Text>
           </TouchableOpacity>
         ))}
@@ -247,7 +249,7 @@ export function BloodScreen({ navigation }: any) {
                   </View>
                   <View style={styles.reqMeta}>
                     <Text style={[styles.reqMetaTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                      {r.area} · {r.units} unit{r.units !== 1 ? 's' : ''} needed
+                      {t.blood2.unitsNeeded(r.area, r.units)}
                     </Text>
                   </View>
                   {respondedIds.has(r.id) ? (
@@ -259,7 +261,7 @@ export function BloodScreen({ navigation }: any) {
                     >
                       <Icon name="phone" size={15} color={C.success} />
                       <Text style={[styles.pledgeTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
-                        {contactBusy ? '…' : 'View requester contact'}
+                        {contactBusy ? '…' : t.blood2.viewRequesterContact}
                       </Text>
                     </TouchableOpacity>
                   ) : (
@@ -310,14 +312,14 @@ export function BloodScreen({ navigation }: any) {
                     <Avatar name={(d as any).profiles?.full_name} size="sm" />
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.donorName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                        {(d as any).profiles?.full_name ?? 'Anonymous'}
+                        {(d as any).profiles?.full_name ?? t.blood2.anonymous}
                       </Text>
                       <Text style={[styles.donorMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                        {d.area} · Last: {d.last_donated ?? 'Never'}
+                        {t.blood2.donorMeta(d.area, d.last_donated ?? t.blood2.never)}
                       </Text>
                       <View style={[styles.eligPill, { backgroundColor: eligible ? C.successBg : C.warnBg }]}>
                         <Text style={[styles.eligTxt, { color: eligible ? C.success : C.warn, fontFamily: FontFamily.jakartaBold }]}>
-                          {eligible ? 'Eligible' : 'Recently donated'}
+                          {eligible ? t.blood2.eligible : t.blood2.recentlyDonated}
                         </Text>
                       </View>
                     </View>
@@ -329,7 +331,7 @@ export function BloodScreen({ navigation }: any) {
                       disabled={contactBusy}
                     >
                       <Text style={[styles.contactTxt, { color: BLOOD_COLOR, fontFamily: FontFamily.jakartaBold }]}>
-                        {contactBusy ? '…' : 'Contact'}
+                        {contactBusy ? '…' : t.blood2.contact}
                       </Text>
                     </TouchableOpacity>
                   </View>
