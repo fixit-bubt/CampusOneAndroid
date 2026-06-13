@@ -4,6 +4,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme } from '../../hooks/useTheme';
 import { useApp } from '../../store/appStore';
@@ -30,7 +31,7 @@ export function Brand({ size = 56 }: { size?: number }) {
         },
       ]}
     >
-      <Icon name="bell" size={size * 0.5} color={LightColors.white} />
+      <MaterialCommunityIcons name="school" size={size * 0.52} color={LightColors.white} />
     </LinearGradient>
   );
 }

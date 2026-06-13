@@ -39,8 +39,8 @@ export const en = {
 
   landing: {
     tagline: 'Your campus, all in one place. Reports, events, clubs, and more.',
-    getStarted: 'Get Started',
-    haveAccount: 'I already have an account',
+    getStarted: 'Create Account',
+    haveAccount: 'Login',
   },
 
   auth: {
@@ -55,7 +55,7 @@ export const en = {
     resetLinkSent: 'Reset link sent — check your email.',
     continueBtn: 'Continue',
     noAccount: "Don't have an account?",
-    register: 'Register',
+    register: 'Create account',
     invalidEmail: 'Enter a valid email address.',
     passwordTooShort: 'Password must be at least 6 characters.',
     registerFailed: 'Registration failed. Please try again.',

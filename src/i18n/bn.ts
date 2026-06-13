@@ -40,8 +40,8 @@ export const bn: Dict = {
 
   landing: {
     tagline: 'আপনার ক্যাম্পাস, সব এক জায়গায়। রিপোর্ট, ইভেন্ট, ক্লাব এবং আরও অনেক কিছু।',
-    getStarted: 'শুরু করুন',
-    haveAccount: 'আমার অ্যাকাউন্ট আছে',
+    getStarted: 'অ্যাকাউন্ট তৈরি করুন',
+    haveAccount: 'লগইন',
   },
 
   auth: {
@@ -56,7 +56,7 @@ export const bn: Dict = {
     resetLinkSent: 'রিসেট লিংক পাঠানো হয়েছে — আপনার ইমেইল দেখুন।',
     continueBtn: 'এগিয়ে যান',
     noAccount: 'অ্যাকাউন্ট নেই?',
-    register: 'নিবন্ধন করুন',
+    register: 'অ্যাকাউন্ট তৈরি করুন',
     invalidEmail: 'সঠিক ইমেইল ঠিকানা লিখুন।',
     passwordTooShort: 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।',
     registerFailed: 'নিবন্ধন ব্যর্থ হয়েছে। আবার চেষ্টা করুন।',
