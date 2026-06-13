@@ -12,6 +12,7 @@ import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout , Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
+import { useT } from '../../i18n';
 
 type ConnState = 'none' | 'requested' | 'incoming' | 'connected';
 
@@ -28,6 +29,7 @@ interface Student {
 export function DirectoryScreen({ navigation }: any) {
   const { C } = useTheme();
   const { user } = useAuth();
+  const t = useT();
   const [query, setQuery] = useState('');
   const [students, setStudents] = useState<Student[]>([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -85,7 +87,7 @@ export function DirectoryScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-      <SubBar title="Directory" onBack={() => navigation.goBack()} />
+      <SubBar title={t.sectors.directory} onBack={() => navigation.goBack()} />
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
@@ -97,7 +99,7 @@ export function DirectoryScreen({ navigation }: any) {
           <Icon name="search" size={17} color={C.textMuted} />
           <TextInput
             style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
-            placeholder="Search students..."
+            placeholder={t.directory2.searchPlaceholder}
             placeholderTextColor={C.textMuted}
             value={query}
             onChangeText={setQuery}
@@ -121,13 +123,13 @@ export function DirectoryScreen({ navigation }: any) {
                 {s.connState === 'connected' && (
                   <View style={[styles.connPill, { backgroundColor: Accent.tealBg }]}>
                     <View style={[styles.connDot, { backgroundColor: Accent.teal }]} />
-                    <Text style={[styles.connTxt, { color: Accent.teal, fontFamily: FontFamily.jakartaBold }]}>Connected</Text>
+                    <Text style={[styles.connTxt, { color: Accent.teal, fontFamily: FontFamily.jakartaBold }]}>{t.directory2.connected}</Text>
                   </View>
                 )}
                 {s.connState === 'requested' && (
                   <View style={[styles.connPill, { backgroundColor: C.warnBg }]}>
                     <View style={[styles.connDot, { backgroundColor: C.warn }]} />
-                    <Text style={[styles.connTxt, { color: C.warn, fontFamily: FontFamily.jakartaBold }]}>Requested</Text>
+                    <Text style={[styles.connTxt, { color: C.warn, fontFamily: FontFamily.jakartaBold }]}>{t.directory2.requested}</Text>
                   </View>
                 )}
                 {s.connState === 'none' && (
@@ -137,7 +139,7 @@ export function DirectoryScreen({ navigation }: any) {
                     activeOpacity={0.85}
                   >
                     <Icon name="userPlus" size={15} color="#fff" />
-                    <Text style={[styles.connectTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>Connect</Text>
+                    <Text style={[styles.connectTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>{t.directory2.connect}</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -154,7 +156,7 @@ export function DirectoryScreen({ navigation }: any) {
                       activeOpacity={0.85}
                     >
                       <Icon name="check" size={15} color="#fff" />
-                      <Text style={[styles.halfBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>Accept</Text>
+                      <Text style={[styles.halfBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>{t.directory2.accept}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={[styles.halfActionBtn, { backgroundColor: C.surface2, borderColor: C.border, borderWidth: 1 }]}
@@ -162,7 +164,7 @@ export function DirectoryScreen({ navigation }: any) {
                       activeOpacity={0.85}
                     >
                       <Icon name="x" size={15} color={C.text} />
-                      <Text style={[styles.halfBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Decline</Text>
+                      <Text style={[styles.halfBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.directory2.decline}</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
