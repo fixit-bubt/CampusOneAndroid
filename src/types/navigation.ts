@@ -64,7 +64,7 @@ export type AppStackParams = {
 
   // Bus
   Bus:       undefined;
-  BusDetail: { routeId: string };
+  BusDetail: { id: string };
 
   // Study Hub
   StudyHub:     undefined;
@@ -78,7 +78,7 @@ export type AppStackParams = {
   MedicalQueue:    undefined;
 
   // Notifications
-  NotifDetail:    { notifId: string };
+  NotifDetail:    { notification: import('../services/notificationsService').Notification };
   NotifSettings:  undefined;
 
   // Faculty
