@@ -12,6 +12,7 @@ import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout , Accent, LightColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
+import { useT } from '../../i18n';
 
 type Tab = 'all' | 'mine';
 
@@ -39,6 +40,7 @@ interface Listing {
 
 export function MarketScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
+  const t = useT();
   const { user } = useAuth();
   const [tab, setTab] = useState<Tab>('all');
   const [query, setQuery] = useState('');
@@ -87,20 +89,20 @@ export function MarketScreen({ navigation }: any) {
 
       {/* Tabs */}
       <View style={[styles.tabs, { paddingHorizontal: Layout.screenPadding }]}>
-        {(['all', 'mine'] as Tab[]).map(t => (
+        {(['all', 'mine'] as Tab[]).map(tb => (
           <TouchableOpacity
-            key={t}
-            style={[styles.chip, tab === t
+            key={tb}
+            style={[styles.chip, tab === tb
               ? { backgroundColor: C.brand, borderColor: C.brand }
               : { backgroundColor: C.surface, borderColor: C.border }]}
-            onPress={() => setTab(t)}
+            onPress={() => setTab(tb)}
             activeOpacity={0.75}
           >
-            <Text style={[styles.chipTxt, { color: tab === t ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-              {t === 'all' ? 'All Listings' : 'My Listings'}
+            <Text style={[styles.chipTxt, { color: tab === tb ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>
+              {tb === 'all' ? t.market2.allListings : t.market2.myListings}
             </Text>
-            <Text style={[styles.chipCount, { color: tab === t ? 'rgba(255,255,255,0.7)' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-              {t === 'all' ? listings.length : listings.filter(l => l.seller_id === user?.id).length}
+            <Text style={[styles.chipCount, { color: tab === tb ? 'rgba(255,255,255,0.7)' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+              {tb === 'all' ? listings.length : listings.filter(l => l.seller_id === user?.id).length}
             </Text>
           </TouchableOpacity>
         ))}
@@ -112,7 +114,7 @@ export function MarketScreen({ navigation }: any) {
           <Icon name="search" size={16} color={C.textMuted} />
           <TextInput
             style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
-            placeholder="Search items..."
+            placeholder={t.market2.searchItems}
             placeholderTextColor={C.textMuted}
             value={query}
             onChangeText={setQuery}
@@ -144,7 +146,7 @@ export function MarketScreen({ navigation }: any) {
               activeOpacity={0.75}
             >
               <Text style={[styles.catChipTxt, { color: on ? C.text : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                {c === 'all' ? 'All' : (MK_CATS[c]?.label ?? c)}
+                {c === 'all' ? t.common.all : (MK_CATS[c]?.label ?? c)}
               </Text>
             </TouchableOpacity>
           );
@@ -160,7 +162,7 @@ export function MarketScreen({ navigation }: any) {
           <View style={styles.empty}>
             <Icon name="market" size={28} color={C.textMuted} />
             <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-              {tab === 'mine' ? 'No listings yet' : 'No items available'}
+              {tab === 'mine' ? t.market2.noListingsYet : t.market2.noItemsAvailable}
             </Text>
           </View>
         ) : (
@@ -182,7 +184,7 @@ export function MarketScreen({ navigation }: any) {
                     {isSold && (
                       <View style={styles.soldOverlay}>
                         <View style={[styles.soldPill, { backgroundColor: '#fff' }]}>
-                          <Text style={[styles.soldTxt, { color: LightColors.text, fontFamily: FontFamily.jakartaExtraBold }]}>Sold</Text>
+                          <Text style={[styles.soldTxt, { color: LightColors.text, fontFamily: FontFamily.jakartaExtraBold }]}>{t.market2.sold}</Text>
                         </View>
                       </View>
                     )}
@@ -196,7 +198,7 @@ export function MarketScreen({ navigation }: any) {
                       ৳{(l.price ?? 0).toLocaleString('en-US')}
                     </Text>
                     <Text style={[styles.cellMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaSemiBold }]} numberOfLines={1}>
-                      {l.condition}{l.negotiable ? ' · Negotiable' : ''}
+                      {l.condition}{l.negotiable ? t.market2.negotiableSuffix : ''}
                     </Text>
                   </View>
                 </TouchableOpacity>
