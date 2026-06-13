@@ -10,6 +10,7 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { useT } from '../../i18n';
 import { useAuth } from '../../store/authStore';
 import type { Announcement } from '../../types/database';
 
@@ -32,6 +33,7 @@ function timeAgo(iso: string): string {
 export function AnnouncementDetailScreen({ route, navigation }: any) {
   const { C } = useTheme();
   const { user } = useAuth();
+  const t = useT();
   const { announcementId } = route.params;
   const id = announcementId;
   const [item, setItem] = useState<Announcement | null>(null);
@@ -76,12 +78,12 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
         <View style={styles.pills}>
           <View style={[styles.priPill, { backgroundColor: bg }]}>
             <View style={[styles.priDot, { backgroundColor: fg }]} />
-            <Text style={[styles.priText, { color: fg, fontFamily: FontFamily.jakartaBold }]}>{item.priority}</Text>
+            <Text style={[styles.priText, { color: fg, fontFamily: FontFamily.jakartaBold }]}>{t.announce2.priorityLabels[item.priority] ?? item.priority}</Text>
           </View>
           {item.pinned && (
             <View style={[styles.priPill, { backgroundColor: C.infoBg }]}>
               <View style={[styles.priDot, { backgroundColor: C.info }]} />
-              <Text style={[styles.priText, { color: C.info, fontFamily: FontFamily.jakartaBold }]}>Pinned</Text>
+              <Text style={[styles.priText, { color: C.info, fontFamily: FontFamily.jakartaBold }]}>{t.announce2.pinned}</Text>
             </View>
           )}
         </View>
@@ -93,7 +95,7 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
 
         {/* Meta */}
         <Text style={[styles.meta, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-          {item.department} · {timeAgo(item.created_at)}
+          {item.department} · {t.announce2.agoShort(timeAgo(item.created_at))}
         </Text>
 
         {/* Body */}
@@ -113,7 +115,7 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.attachName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                {item.attachment_name ?? 'Attachment.pdf'}
+                {item.attachment_name ?? t.announce2.attachmentDefault}
               </Text>
               <Text style={[styles.attachMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
                 PDF · Tap to open
