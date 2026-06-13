@@ -9,6 +9,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
+import { useT } from '../../i18n';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout, Accent } from '../../theme';
@@ -21,6 +22,7 @@ import {
 
 export function FacultyDeptScreen({ route, navigation }: any) {
   const { C } = useTheme();
+  const t = useT();
   const { user } = useAuth();
   const deptId: string = route.params?.deptId;
   const [dept, setDept] = useState<Department | null>(null);
@@ -74,7 +76,7 @@ export function FacultyDeptScreen({ route, navigation }: any) {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-      <SubBar title={shortDept(dept?.name) || 'Department'} onBack={() => navigation.goBack()} />
+      <SubBar title={shortDept(dept?.name) || t.faculty2.departmentFallback} onBack={() => navigation.goBack()} />
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
@@ -92,11 +94,11 @@ export function FacultyDeptScreen({ route, navigation }: any) {
                 {shortDept(dept.name)}
               </Text>
               <Text style={[styles.deptMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                {dept.branch} · {roster.length} teacher{roster.length === 1 ? '' : 's'}
+                {dept.branch} · {t.faculty2.teacherCount(roster.length)}
               </Text>
               {dept.chairman ? (
                 <Text style={[styles.chair, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                  <Text style={{ color: C.textMuted }}>Chair: </Text>{dept.chairman}
+                  <Text style={{ color: C.textMuted }}>{t.faculty2.chairPrefix}</Text>{dept.chairman}
                 </Text>
               ) : null}
             </View>
@@ -109,7 +111,7 @@ export function FacultyDeptScreen({ route, navigation }: any) {
             <Icon name="search" size={17} color={C.textMuted} />
             <TextInput
               style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
-              placeholder={`Search in ${shortDept(dept?.name) || 'department'}...`}
+              placeholder={t.faculty2.searchInDept(shortDept(dept?.name) || t.faculty2.departmentLower)}
               placeholderTextColor={C.textMuted}
               value={query}
               onChangeText={setQuery}
