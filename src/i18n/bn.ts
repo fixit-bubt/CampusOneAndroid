@@ -44,6 +44,25 @@ export const bn: Dict = {
     haveAccount: 'আমার অ্যাকাউন্ট আছে',
   },
 
+  auth: {
+    signIn: 'সাইন ইন',
+    email: 'ইমেইল',
+    password: 'পাসওয়ার্ড',
+    fullName: 'পুরো নাম',
+    fullNamePlaceholder: 'আপনার পুরো নাম',
+    forgotPassword: 'পাসওয়ার্ড ভুলে গেছেন?',
+    forgotPasswordHint: 'উপরে আপনার ইমেইল লিখুন, তারপর "পাসওয়ার্ড ভুলে গেছেন?"-এ ট্যাপ করুন।',
+    loginFailed: 'লগইন ব্যর্থ হয়েছে। আপনার তথ্য যাচাই করুন।',
+    resetLinkSent: 'রিসেট লিংক পাঠানো হয়েছে — আপনার ইমেইল দেখুন।',
+    continueBtn: 'এগিয়ে যান',
+    noAccount: 'অ্যাকাউন্ট নেই?',
+    register: 'নিবন্ধন করুন',
+    invalidEmail: 'সঠিক ইমেইল ঠিকানা লিখুন।',
+    passwordTooShort: 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।',
+    registerFailed: 'নিবন্ধন ব্যর্থ হয়েছে। আবার চেষ্টা করুন।',
+    alreadyHaveAccount: 'ইতিমধ্যে অ্যাকাউন্ট আছে?',
+  },
+
   sectors: {
     reports: 'রিপোর্ট',
     lostfound: 'হারানো',
