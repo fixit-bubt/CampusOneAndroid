@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
+import { useT } from '../../i18n';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
@@ -36,6 +37,7 @@ function gcalLink(ev: Event): string {
 export function EventDetailScreen({ route, navigation }: any) {
   const { C } = useTheme();
   const { user, profile } = useAuth();
+  const t = useT();
   const { eventId } = route.params;
   const id = eventId;
 
@@ -103,7 +105,7 @@ export function EventDetailScreen({ route, navigation }: any) {
         text: 'Delete', style: 'destructive',
         onPress: async () => {
           const { error } = await supabase.from('events').delete().eq('id', id);
-          if (error) { Alert.alert('Error', error.message); return; }
+          if (error) { Alert.alert(t.common.error, error.message); return; }
           navigation.goBack();
         },
       },
@@ -148,7 +150,7 @@ export function EventDetailScreen({ route, navigation }: any) {
         {/* Info grid */}
         <View style={[styles.infoGrid, { backgroundColor: C.surface, borderColor: C.border }]}>
           <View style={[styles.infoCell, { borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: C.border }]}>
-            <Text style={[styles.infoLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>When</Text>
+            <Text style={[styles.infoLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.events2.when}</Text>
             <View style={styles.infoVal}>
               <Icon name="clock" size={13} color={C.textMuted} />
               <Text style={[styles.infoTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>
@@ -160,7 +162,7 @@ export function EventDetailScreen({ route, navigation }: any) {
             </Text>
           </View>
           <View style={styles.infoCell}>
-            <Text style={[styles.infoLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>Where</Text>
+            <Text style={[styles.infoLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.events2.where}</Text>
             <View style={styles.infoVal}>
               <Icon name="pin" size={13} color={C.textMuted} />
               <Text style={[styles.infoTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>
@@ -175,12 +177,12 @@ export function EventDetailScreen({ route, navigation }: any) {
           <Avatar name={event.organizer} size="sm" style={{ borderRadius: 11, backgroundColor: bg }} />
           <View style={{ flex: 1 }}>
             <Text style={[styles.byName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{event.organizer}</Text>
-            <Text style={[styles.bySub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>Organizer</Text>
+            <Text style={[styles.bySub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>{t.events2.organizer}</Text>
           </View>
         </View>
 
         {/* Description */}
-        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>ABOUT</Text>
+        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>{t.events2.about}</Text>
         <Text style={[styles.body, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>{event.description}</Text>
 
         {/* Attendance */}
@@ -214,7 +216,7 @@ export function EventDetailScreen({ route, navigation }: any) {
               <View style={styles.btnRow}>
                 <Icon name={going ? 'check' : 'events'} size={17} color={going ? C.success : C.white} />
                 <Text style={[styles.btnTxt, { color: going ? C.success : C.white, fontFamily: FontFamily.jakartaBold }]}>
-                  {going ? 'Going ✓' : isFull ? 'Event Full' : 'RSVP'}
+                  {going ? t.events2.going : isFull ? t.events2.eventFull : t.events2.rsvp}
                 </Text>
               </View>
             )}
