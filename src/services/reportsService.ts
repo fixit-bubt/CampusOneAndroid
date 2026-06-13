@@ -18,7 +18,7 @@ export async function getReports(
 ): Promise<ServiceResult<ReportWithProfile[]>> {
   let query = supabase
     .from('reports')
-    .select('*, profiles(full_name, avatar_url)')
+    .select('*, profiles:reporter_id(full_name, avatar_url)')
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
     .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
@@ -44,7 +44,7 @@ export async function getMyReports(userId: string): Promise<ServiceResult<Report
 export async function getReportByCode(code: string): Promise<ServiceResult<ReportWithProfile>> {
   const { data, error } = await supabase
     .from('reports')
-    .select('*, profiles(full_name, avatar_url)')
+    .select('*, profiles:reporter_id(full_name, avatar_url)')
     .eq('code', code)
     .is('deleted_at', null)
     .single();
