@@ -29,7 +29,7 @@ export function ClubPostScreen({ route, navigation }: any) {
   const canSubmit = content.trim().length > 0;
 
   async function handleSubmit() {
-    if (!canSubmit || !user) return;
+    if (!canSubmit || !user || loading) return;
     setLoading(true);
     try {
       const { error } = await supabase.from('club_posts').insert({
