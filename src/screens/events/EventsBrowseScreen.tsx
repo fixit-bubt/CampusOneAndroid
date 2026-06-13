@@ -7,6 +7,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
+import { useT } from '../../i18n';
 import { Feather } from '@expo/vector-icons';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
@@ -64,6 +65,7 @@ function EventCard({ e, C, onPress }: { e: Event; C: any; onPress: () => void })
 export function EventsBrowseScreen({ navigation }: any) {
   const { C } = useTheme();
   const { user, profile } = useAuth();
+  const t = useT();
   const [isEventOrganizer, setIsEventOrganizer] = useState(false);
   const canPost = profile?.role === 'admin' || isEventOrganizer;
   const [events, setEvents] = useState<Event[]>([]);
@@ -131,7 +133,7 @@ export function EventsBrowseScreen({ navigation }: any) {
       />
 
       <View style={[styles.chips, { paddingHorizontal: Layout.screenPadding }]}>
-        {([['upcoming', 'Upcoming', upcoming.length], ['past', 'Past', past.length]] as const).map(([id, label, count]) => (
+        {([['upcoming', t.events2.upcoming, upcoming.length], ['past', t.events2.past, past.length]] as const).map(([id, label, count]) => (
           <TouchableOpacity
             key={id}
             style={[styles.chip, filter === id ? { backgroundColor: C.brand, borderColor: C.brand } : { backgroundColor: C.surface, borderColor: C.border }]}
