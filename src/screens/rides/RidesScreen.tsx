@@ -7,6 +7,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
+import { useT } from '../../i18n';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
@@ -33,6 +34,7 @@ interface Ride {
 
 export function RidesScreen({ navigation }: any) {
   const { C } = useTheme();
+  const t = useT();
   const { user } = useAuth();
   const [rides, setRides] = useState<Ride[]>([]);
   const [requestedIds, setRequestedIds] = useState<Set<string>>(new Set());
@@ -92,7 +94,7 @@ export function RidesScreen({ navigation }: any) {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar
-        title="Ride Share"
+        title={t.rides2.rideShareTitle}
         onBack={() => navigation.goBack()}
         rightSlot={
           <TouchableOpacity
@@ -107,7 +109,7 @@ export function RidesScreen({ navigation }: any) {
 
       {/* Direction filter */}
       <View style={[styles.dirRow, { paddingHorizontal: Layout.screenPadding }]}>
-        {([['all', 'All'], ['to', 'To Campus'], ['from', 'From Campus']] as const).map(([id, label]) => {
+        {([['all', t.common.all], ['to', t.rides2.toCampus], ['from', t.rides2.fromCampus]] as const).map(([id, label]) => {
           const on = direction === id;
           return (
             <TouchableOpacity
@@ -136,9 +138,9 @@ export function RidesScreen({ navigation }: any) {
           return filteredRides.length === 0 ? (
           <View style={styles.empty}>
             <Icon name="ride" size={28} color={C.textMuted} />
-            <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>No rides available</Text>
+            <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.rides2.noRidesTitle}</Text>
             <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-              Tap + to offer a ride
+              {t.rides2.noRidesSub}
             </Text>
           </View>
         ) : (
@@ -184,11 +186,11 @@ export function RidesScreen({ navigation }: any) {
                     <View style={styles.driverRow}>
                       <Avatar name={r.driver_name} size="xs" />
                       <Text style={[styles.driverName, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                        {r.driver_name ?? 'Driver'}
+                        {r.driver_name ?? t.rides2.driverFallback}
                       </Text>
                     </View>
                     <Text style={[styles.seatsLeft, { color: isFull ? C.textMuted : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                      {isFull ? 'Full' : `${Math.max(seatsLeft, 0)} seats left`}
+                      {isFull ? t.rides2.full : `${Math.max(seatsLeft, 0)} ${t.rides2.seatsLeftCount(Math.max(seatsLeft, 0))}`}
                     </Text>
                   </View>
 
@@ -212,7 +214,7 @@ export function RidesScreen({ navigation }: any) {
                       >
                         <Icon name="ride" size={16} color={isFull ? C.textMuted : RIDE_COLOR} />
                         <Text style={[styles.requestTxt, { color: isFull ? C.textMuted : RIDE_COLOR, fontFamily: FontFamily.jakartaBold }]}>
-                          {isFull ? 'Ride Full' : 'Request Ride'}
+                          {isFull ? t.rides2.rideFull : t.rides2.requestRide}
                         </Text>
                       </TouchableOpacity>
                     )
