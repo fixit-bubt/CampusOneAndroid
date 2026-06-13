@@ -98,6 +98,7 @@ export type AppStackParams = {
 
   // Directory
   Directory: undefined;
+  StudentProfile: { student: import('../screens/directory/StudentProfileScreen').DirectoryStudent };
 
   // Prayer
   Prayer: undefined;

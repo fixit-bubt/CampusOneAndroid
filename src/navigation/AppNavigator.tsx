@@ -25,6 +25,7 @@ import { MarketScreen }            from '../screens/market/MarketScreen';
 import { MarketDetailScreen }      from '../screens/market/MarketDetailScreen';
 import { RidesScreen }             from '../screens/rides/RidesScreen';
 import { DirectoryScreen }         from '../screens/directory/DirectoryScreen';
+import { StudentProfileScreen }    from '../screens/directory/StudentProfileScreen';
 import { MedicalScreen }           from '../screens/medical/MedicalScreen';
 import { DoctorDetailScreen }      from '../screens/medical/DoctorDetailScreen';
 import { MyAppointmentsScreen }    from '../screens/medical/MyAppointmentsScreen';
@@ -110,6 +111,7 @@ export function AppNavigator() {
 
       {/* Directory */}
       <Stack.Screen name="Directory"      component={DirectoryScreen} />
+      <Stack.Screen name="StudentProfile" component={StudentProfileScreen} />
 
       {/* Medical */}
       <Stack.Screen name="Medical"        component={MedicalScreen} />

@@ -491,6 +491,11 @@ export const bn: Dict = {
     wantsToConnect: "সংযুক্ত হতে চায়",
     accept: "গ্রহণ করুন",
     decline: "প্রত্যাখ্যান করুন",
+    contact: "যোগাযোগ",
+    email: "ইমেইল",
+    whatsapp: "হোয়াটসঅ্যাপ",
+    connectToSeeContact: "যোগাযোগের তথ্য দেখতে এই শিক্ষার্থীর সাথে সংযুক্ত হন।",
+    noContactShared: "এই শিক্ষার্থী কোনো যোগাযোগের তথ্য শেয়ার করেননি।",
   },
 
   events2: {

@@ -490,6 +490,11 @@ You will be registered as an available ${group} donor.`,
     wantsToConnect: "Wants to connect",
     accept: "Accept",
     decline: "Decline",
+    contact: "Contact",
+    email: "Email",
+    whatsapp: "WhatsApp",
+    connectToSeeContact: "Connect with this student to view their contact details.",
+    noContactShared: "This student hasn't shared any contact details.",
   },
 
   events2: {

@@ -24,6 +24,7 @@ interface Student {
   intake: string;
   section: string;
   email?: string;
+  whatsapp?: string | null;
   connState: ConnState;
 }
 
@@ -112,15 +113,21 @@ export function DirectoryScreen({ navigation }: any) {
           {filtered.map(s => (
             <View key={s.id} style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
               <View style={styles.cardTop}>
-                <Avatar uri={s.avatar_url} name={s.full_name} size="md" />
-                <View style={styles.cardBody}>
-                  <Text style={[styles.cardName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                    {s.full_name}
-                  </Text>
-                  <Text style={[styles.cardMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                    {s.department} · {s.intake} · {s.section}
-                  </Text>
-                </View>
+                <TouchableOpacity
+                  style={styles.identity}
+                  onPress={() => navigation.navigate('StudentProfile', { student: s })}
+                  activeOpacity={0.7}
+                >
+                  <Avatar uri={s.avatar_url} name={s.full_name} size="md" />
+                  <View style={styles.cardBody}>
+                    <Text style={[styles.cardName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                      {s.full_name}
+                    </Text>
+                    <Text style={[styles.cardMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                      {s.department} · {s.intake} · {s.section}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
                 {s.connState === 'connected' && (
                   <View style={[styles.connPill, { backgroundColor: Accent.tealBg }]}>
                     <View style={[styles.connDot, { backgroundColor: Accent.teal }]} />
@@ -199,6 +206,7 @@ const styles = StyleSheet.create({
   list: { gap: 10 } as ViewStyle,
   card: { padding: 13, borderRadius: 16, borderWidth: 1 } as ViewStyle,
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: 12 } as ViewStyle,
+  identity: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, minWidth: 0 } as ViewStyle,
   cardBody: { flex: 1, minWidth: 0 } as ViewStyle,
   cardName: { fontSize: 14.5 } as any,
   cardMeta: { fontSize: 12, marginTop: 2 } as any,
