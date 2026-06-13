@@ -134,7 +134,9 @@ export function RidesScreen({ navigation }: any) {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
         {(() => {
-          const filteredRides = direction === 'all' ? rides : rides.filter(r => (r as any).direction === direction);
+          // chip id ('to'/'from') -> stored direction value ('To Campus'/'From Campus')
+          const want = direction === 'to' ? 'To Campus' : 'From Campus';
+          const filteredRides = direction === 'all' ? rides : rides.filter(r => (r as any).direction === want);
           return filteredRides.length === 0 ? (
           <View style={styles.empty}>
             <Icon name="ride" size={28} color={C.textMuted} />
