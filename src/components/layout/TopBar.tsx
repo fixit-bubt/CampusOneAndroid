@@ -8,6 +8,7 @@ import { useApp } from '../../store/appStore';
 import { useT } from '../../i18n';
 import { Avatar } from '../ui/Avatar';
 import { Icon } from '../ui/Icon';
+import { LogoMark } from '../ui/Logo';
 import { FontFamily, FontSize, Layout } from '../../theme';
 import type { Profile } from '../../types/database';
 
@@ -30,6 +31,7 @@ export function TopBar({ profile, title, unread = 0, onAvatar, onBell, right }: 
   if (title) {
     return (
       <View style={[styles.topbar, { backgroundColor: C.surface, paddingHorizontal: Layout.screenPadding }]}>
+        <LogoMark size={30} shadow={false} />
         <Text style={[styles.dashTitle, { flex: 1, color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{title}</Text>
         {right ?? null}
       </View>
@@ -44,6 +46,8 @@ export function TopBar({ profile, title, unread = 0, onAvatar, onBell, right }: 
       <TouchableOpacity onPress={onAvatar} activeOpacity={0.8}>
         <Avatar uri={profile?.avatar_url} name={profile?.full_name} size="md" />
       </TouchableOpacity>
+
+      <LogoMark size={32} shadow={false} />
 
       <View style={styles.titleBlock}>
         <Text style={[styles.eyebrow, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
@@ -98,7 +102,7 @@ export function SubBar({ title, onBack, right, rightSlot }: SubBarProps) {
         {title}
       </Text>
       <View style={{ minWidth: 40, alignItems: 'flex-end' }}>
-        {rightSlot ?? right ?? null}
+        {rightSlot ?? right ?? <LogoMark size={28} shadow={false} />}
       </View>
     </View>
   );

@@ -3,37 +3,20 @@ import {
   View, Text, TouchableOpacity, StyleSheet, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme } from '../../hooks/useTheme';
 import { useApp } from '../../store/appStore';
 import { useT } from '../../i18n';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout, LightColors, darken } from '../../theme';
+import { LogoMark } from '../../components/ui/Logo';
+import { FontFamily, Layout } from '../../theme';
 import type { AuthStackParams } from '../../types/navigation';
 
 type Props = NativeStackScreenProps<AuthStackParams, 'Landing'>;
 
-// Shared Brand component — gradient box with bell icon
+// Shared Brand component — CampusOne logo mark (re-exported from Logo)
 export function Brand({ size = 56 }: { size?: number }) {
-  return (
-    <LinearGradient
-      colors={[LightColors.brand, darken(LightColors.brand)]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={[
-        styles.brandBox,
-        {
-          width: size,
-          height: size,
-          borderRadius: size * 0.3,
-        },
-      ]}
-    >
-      <MaterialCommunityIcons name="school" size={size * 0.52} color={LightColors.white} />
-    </LinearGradient>
-  );
+  return <LogoMark size={size} />;
 }
 
 export function LandingScreen({ navigation }: Props) {
@@ -157,17 +140,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     paddingBottom: 40,
-  } as ViewStyle,
-
-  brandBox: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    // shadow
-    shadowColor: LightColors.brand,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
-    shadowRadius: 11,
-    elevation: 8,
   } as ViewStyle,
 
   appName: {
