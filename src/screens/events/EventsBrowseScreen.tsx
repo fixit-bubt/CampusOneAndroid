@@ -27,7 +27,9 @@ const CAT_ICON: Record<string, string> = {
 function EventCard({ e, C, onPress }: { e: Event; C: any; onPress: () => void }) {
   const fg = CAT_COLOR[e.category] ?? Accent.slate;
   const bg = `${fg}1e`;
-  const isUpcoming = new Date(e.date) >= new Date();
+  // Date-only compare so a today-dated event isn't mislabelled 'Past' while
+  // the tab filter (also date-only) places it under Upcoming.
+  const isUpcoming = e.date >= new Date().toISOString().split('T')[0];
   return (
     <TouchableOpacity onPress={onPress} style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]} activeOpacity={0.75}>
       <View style={[styles.thumb, { backgroundColor: bg }]}>
