@@ -188,7 +188,7 @@ function AddSheet({ C, onClose, onAdd, t }: { C: any; onClose: () => void; onAdd
             {CATS.map(c => (
               <TouchableOpacity
                 key={c.id}
-                style={[sheetStyles.typeChip, cat === c.id && { backgroundColor: c.fg, borderColor: c.fg }]}
+                style={[sheetStyles.typeChip, { borderColor: C.border }, cat === c.id && { backgroundColor: c.fg, borderColor: c.fg }]}
                 onPress={() => setCat(c.id)}
                 activeOpacity={0.75}
               >
@@ -243,7 +243,7 @@ const sheetStyles = StyleSheet.create({
   typeChip: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20,
-    borderWidth: 1, borderColor: '#ddd',
+    borderWidth: 1,
   } as ViewStyle,
   typeChipTxt: { fontSize: 12.5 } as any,
   bigMedal: { width: 88, height: 88, borderRadius: 28, alignItems: 'center', justifyContent: 'center', backgroundColor: Accent.grayBg } as ViewStyle,
