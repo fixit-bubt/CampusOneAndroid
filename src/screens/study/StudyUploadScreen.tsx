@@ -11,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as DocumentPicker from 'expo-document-picker';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
+import { useT } from '../../i18n';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout } from '../../theme';
@@ -36,6 +37,7 @@ export function StudyUploadScreen({ route, navigation }: any) {
     courseTitle?: string;
   };
   const { C } = useTheme();
+  const t = useT();
   const { user } = useAuth();
 
   const [fileType, setFileType] = useState('materials');
@@ -131,7 +133,7 @@ export function StudyUploadScreen({ route, navigation }: any) {
 
       navigation.goBack();
     } catch (err: any) {
-      Alert.alert('Error', err?.message ?? 'Could not upload. Please try again.');
+      Alert.alert(t.common.error, err?.message ?? t.study2.couldNotUpload);
     } finally {
       setLoading(false);
     }
@@ -139,7 +141,7 @@ export function StudyUploadScreen({ route, navigation }: any) {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-      <SubBar title="Upload" onBack={() => navigation.goBack()} />
+      <SubBar title={t.study2.upload} onBack={() => navigation.goBack()} />
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
@@ -154,7 +156,7 @@ export function StudyUploadScreen({ route, navigation }: any) {
         )}
 
         {/* Section / File type */}
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>SECTION</Text>
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.study2.section}</Text>
         <View style={[styles.segRow, { backgroundColor: C.surface2, borderColor: C.border }]}>
           {FILE_TYPES.map(ft => {
             const on = fileType === ft.id;
@@ -176,7 +178,7 @@ export function StudyUploadScreen({ route, navigation }: any) {
         {/* Exam tag (questions only) */}
         {fileType === 'questions' && (
           <>
-            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>EXAM</Text>
+            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.study2.exam}</Text>
             <View style={styles.examRow}>
               {['Midterm', 'Final', 'Quiz', 'Assignment'].map(e => {
                 const on = exam === e;
@@ -189,7 +191,7 @@ export function StudyUploadScreen({ route, navigation }: any) {
                     onPress={() => setExam(e)}
                     activeOpacity={0.75}
                   >
-                    <Text style={[styles.examTxt, { color: on ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>{e}</Text>
+                    <Text style={[styles.examTxt, { color: on ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>{e === 'Midterm' ? t.study2.midterm : e === 'Final' ? t.study2.final : e === 'Quiz' ? t.study2.quiz : t.study2.assignment}</Text>
                   </TouchableOpacity>
                 );
               })}
@@ -208,7 +210,7 @@ export function StudyUploadScreen({ route, navigation }: any) {
               placeholder="e.g. Thomas H. Cormen"
               placeholderTextColor={C.textMuted}
             />
-            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>LINK (INSTEAD OF FILE)</Text>
+            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.study2.linkInsteadOfFile}</Text>
             <TextInput
               style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
               value={bookUrl}
