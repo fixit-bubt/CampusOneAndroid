@@ -76,12 +76,12 @@ export function BloodScreen({ navigation }: any) {
     try {
       const { data, error } = await supabase.rpc('donor_contact', { p_user_id: donorUserId });
       if (error) {
-        Alert.alert('Error', 'Could not reveal contact. Please try again.');
+        Alert.alert(t.common.error, t.blood2.revealContactError);
         return;
       }
       const row = Array.isArray(data) ? data[0] : data;
-      const contact = row?.whatsapp ?? 'Not shared';
-      Alert.alert(row?.name ?? 'Contact', String(contact));
+      const contact = row?.whatsapp ?? t.blood2.notShared;
+      Alert.alert(row?.name ?? t.blood2.contact, String(contact));
     } finally {
       setContactBusy(false);
     }
@@ -94,12 +94,12 @@ export function BloodScreen({ navigation }: any) {
     try {
       const { data, error } = await supabase.rpc('blood_requester_contact', { p_code: (r as any).code });
       if (error) {
-        Alert.alert('Error', 'Could not reveal contact. Please try again.');
+        Alert.alert(t.common.error, t.blood2.revealContactError);
         return;
       }
       const row = Array.isArray(data) ? data[0] : data;
-      if (!row) { Alert.alert('Not available', 'Contact is only shared with donors who pledged.'); return; }
-      Alert.alert(row.name ?? 'Requester', row.whatsapp ?? 'No WhatsApp shared');
+      if (!row) { Alert.alert(t.blood2.notAvailable, t.blood2.contactDonorsOnly); return; }
+      Alert.alert(row.name ?? t.blood2.requester, row.whatsapp ?? t.blood2.noWhatsapp);
     } finally {
       setContactBusy(false);
     }
@@ -115,12 +115,12 @@ export function BloodScreen({ navigation }: any) {
       return;
     }
     Alert.alert(
-      'Confirm response',
-      `Respond to the ${r.blood_group} request for ${r.patient} at ${r.hospital}?\n\nYou will be registered as an available ${r.blood_group} donor.`,
+      t.blood2.confirmResponse,
+      t.blood2.confirmResponseBody(r.blood_group, r.patient, r.hospital),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t.common.cancel, style: 'cancel' },
         {
-          text: 'Yes, I can help',
+          text: t.blood2.yesICanHelp,
           onPress: async () => {
             // Optimistically mark as responded so the user cannot double-tap
             setRespondedIds(prev => new Set(prev).add(r.id));
@@ -134,9 +134,9 @@ export function BloodScreen({ navigation }: any) {
                 next.delete(r.id);
                 return next;
               });
-              Alert.alert('Error', 'Could not submit your response. Please try again.');
+              Alert.alert(t.common.error, t.blood2.submitResponseError);
             } else {
-              Alert.alert('Thank you!', `You have pledged to help with this ${r.blood_group} request.`);
+              Alert.alert(t.blood2.thankYou, t.blood2.pledgedToHelp(r.blood_group));
             }
           },
         },
