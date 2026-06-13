@@ -28,7 +28,7 @@ const JOB_COLOR = SectorColors.jobs;
 const JOB_BG    = `${SectorColors.jobs}1e`;
 
 // Job status tones from theme tokens (dark-mode aware via C)
-function jobStatusTone(C: any, k: string): { label: string; fg: string; bg: string } {
+function jobStatusTone(C: any, t: any, k: string): { label: string; fg: string; bg: string } {
   switch (k) {
     case 'closing': return { label: 'Closing soon', fg: C.warn,   bg: C.warnBg };
     case 'closed':  return { label: 'Closed',  fg: Accent.slate, bg: Accent.grayBg };
@@ -215,7 +215,7 @@ export function JobsBrowseScreen({ navigation }: any) {
         ) : (
           <View style={styles.list}>
             {list.map(j => {
-              const s = jobStatusTone(C, computeJobStatus(j));
+              const s = jobStatusTone(C, t, computeJobStatus(j));
               const isSaved = savedIds.has(j.id);
               return (
                 <View key={j.id} style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
