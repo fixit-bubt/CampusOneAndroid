@@ -9,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
+import { useT } from '../../i18n';
 import { supabase } from '../../lib/supabase';
 import { Icon } from '../../components/ui/Icon';
 import { Brand } from './LandingScreen';
@@ -20,6 +21,7 @@ type Props = NativeStackScreenProps<AuthStackParams, 'Login'>;
 export function LoginScreen({ navigation }: Props) {
   const { C } = useTheme();
   const { signIn } = useAuth();
+  const t = useT();
 
   const [email, setEmail] = useState('');
   const [pass, setPass]   = useState('');
@@ -32,7 +34,7 @@ export function LoginScreen({ navigation }: Props) {
   async function handleForgotPassword() {
     const addr = email.trim();
     if (!addr) {
-      setErr('Enter your email above, then tap Forgot password.');
+      setErr(t.auth.forgotPasswordHint);
       return;
     }
     setBusy(true);
@@ -56,7 +58,7 @@ export function LoginScreen({ navigation }: Props) {
     try {
       await signIn(email.trim(), pass);
     } catch (e: any) {
-      setErr(e?.message ?? 'Login failed. Check your credentials.');
+      setErr(e?.message ?? t.auth.loginFailed);
     } finally {
       setBusy(false);
     }
@@ -74,7 +76,7 @@ export function LoginScreen({ navigation }: Props) {
           <Icon name="arrowL" size={20} color={C.text} />
         </TouchableOpacity>
         <Text style={[styles.subbarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-          Sign In
+          {t.auth.signIn}
         </Text>
         <View style={{ width: 40 }} />
       </View>
@@ -94,7 +96,7 @@ export function LoginScreen({ navigation }: Props) {
 
           {/* Email */}
           <Text style={[styles.label, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>
-            Email
+            {t.auth.email}
           </Text>
           <TextInput
             style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaRegular }]}
@@ -108,7 +110,7 @@ export function LoginScreen({ navigation }: Props) {
 
           {/* Password */}
           <Text style={[styles.label, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>
-            Password
+            {t.auth.password}
           </Text>
           <TextInput
             style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaRegular }]}
@@ -122,14 +124,14 @@ export function LoginScreen({ navigation }: Props) {
           {/* Forgot password */}
           <TouchableOpacity onPress={handleForgotPassword} activeOpacity={0.7} style={styles.forgotRow} disabled={busy}>
             <Text style={[styles.forgotTxt, { color: C.brand, fontFamily: FontFamily.jakartaSemiBold }]}>
-              Forgot password?
+              {t.auth.forgotPassword}
             </Text>
           </TouchableOpacity>
 
           {/* Error / reset confirmation */}
           {resetSent ? (
             <Text style={[styles.errText, { color: Accent.teal, fontFamily: FontFamily.jakartaMedium }]}>
-              Reset link sent — check your email.
+              {t.auth.resetLinkSent}
             </Text>
           ) : !!err && (
             <Text style={[styles.errText, { color: C.danger, fontFamily: FontFamily.jakartaMedium }]}>
@@ -149,7 +151,7 @@ export function LoginScreen({ navigation }: Props) {
             ) : (
               <View style={styles.btnRow}>
                 <Text style={[styles.btnText, { fontFamily: FontFamily.jakartaBold }]}>
-                  Continue
+                  {t.auth.continueBtn}
                 </Text>
                 <Icon name="chevR" size={18} color="#fff" />
               </View>
@@ -159,11 +161,11 @@ export function LoginScreen({ navigation }: Props) {
           {/* Switch to Register */}
           <View style={styles.switchRow}>
             <Text style={[styles.switchText, { color: C.textMuted, fontFamily: FontFamily.jakartaSemiBold }]}>
-              Don't have an account?{' '}
+              {t.auth.noAccount}{' '}
             </Text>
             <TouchableOpacity onPress={() => navigation.replace('Register')}>
               <Text style={[styles.switchLink, { color: C.brand, fontFamily: FontFamily.jakartaExtraBold }]}>
-                Register
+                {t.auth.register}
               </Text>
             </TouchableOpacity>
           </View>
