@@ -101,6 +101,8 @@ export function ClubMembersScreen({ route, navigation }: any) {
 
   const myRole = members.find(m => m.user_id === user?.id)?.role ?? null;
   const canManage = myRole === 'president' || myRole === 'vp' || profile?.role === 'admin';
+  // RLS: VPs can add/remove members but only presidents/admins can change roles.
+  const canSetRole = myRole === 'president' || profile?.role === 'admin';
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -129,6 +131,7 @@ export function ClubMembersScreen({ route, navigation }: any) {
           {members.map((m, i) => {
             const isLead = m.role === 'president' || m.role === 'vp';
             const canTouch = canManage && m.role !== 'president' && m.user_id !== user?.id;
+            const canRole = canSetRole && m.role !== 'president' && m.user_id !== user?.id;
             return (
               <View key={m.id}>
                 {i > 0 && <View style={[styles.divider, { backgroundColor: C.border }]} />}
@@ -139,13 +142,13 @@ export function ClubMembersScreen({ route, navigation }: any) {
                   </Text>
                   <TouchableOpacity
                     style={[styles.rolePill, isLead ? { backgroundColor: C.infoBg } : { backgroundColor: C.surface2 }]}
-                    onPress={canTouch ? () => setRoleTarget(m) : undefined}
-                    activeOpacity={canTouch ? 0.7 : 1}
+                    onPress={canRole ? () => setRoleTarget(m) : undefined}
+                    activeOpacity={canRole ? 0.7 : 1}
                   >
                     <Text style={[styles.roleTxt, { color: isLead ? C.info : C.text2, fontFamily: FontFamily.jakartaBold }]}>
                       {t.clubs.roleLabels[m.role] ?? m.role}
                     </Text>
-                    {canTouch && <Feather name="chevron-down" size={12} color={isLead ? C.info : C.textMuted} />}
+                    {canRole && <Feather name="chevron-down" size={12} color={isLead ? C.info : C.textMuted} />}
                   </TouchableOpacity>
                   {canTouch && (
                     <TouchableOpacity onPress={() => removeMember(m)} hitSlop={8} activeOpacity={0.7}>
