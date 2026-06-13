@@ -12,6 +12,7 @@ import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout, Radius , Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { useT } from '../../i18n';
 import type { Report, ReportEvent } from '../../types/database';
 
 const CAT_MAP: Record<string, { icon: string; fg: string }> = {
@@ -47,6 +48,7 @@ export function ReportDetailScreen({ route, navigation }: any) {
   const { reportId: paramReportId, report: initReport } = route.params as { reportId?: string; report?: Report };
   const { C } = useTheme();
   const { user, profile } = useAuth();
+  const t = useT();
 
   const [report, setReport] = useState<Report | null>(initReport ?? null);
   const [loadingReport, setLoadingReport] = useState(!initReport);
@@ -104,7 +106,7 @@ export function ReportDetailScreen({ route, navigation }: any) {
     const { error } = await supabase.from('reports').update({ status: newStatus }).eq('id', report.id);
     setUpdatingStatus(false);
     if (error) {
-      Alert.alert('Error', 'Failed to update status: ' + error.message);
+      Alert.alert(t.common.error, t.reports2.updateStatusFailed(error.message));
       return;
     }
     setReport(prev => prev ? { ...prev, status: newStatus } : prev);
@@ -127,7 +129,7 @@ export function ReportDetailScreen({ route, navigation }: any) {
   if (loadingReport || !report) {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-        <SubBar title="Report" onBack={() => navigation.goBack()} />
+        <SubBar title={t.reports2.report} onBack={() => navigation.goBack()} />
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator color={C.brand} />
         </View>
@@ -137,21 +139,21 @@ export function ReportDetailScreen({ route, navigation }: any) {
 
   // Build timeline steps from fetched events + static steps
   const timelineSteps: { label: string; sub?: string; done: boolean }[] = [
-    { label: 'Report filed', sub: formatDate(report.created_at), done: true },
+    { label: t.reports2.reportFiled, sub: formatDate(report.created_at), done: true },
   ];
   if (assigneeName) {
-    timelineSteps.push({ label: 'Assigned to staff', sub: assigneeName, done: true });
+    timelineSteps.push({ label: t.reports2.assignedToStaff, sub: assigneeName, done: true });
   }
   // Render fetched events in timeline
   events.forEach(ev => {
-    timelineSteps.push({ label: `Status → ${ev.status}`, sub: ev.note ?? formatDate(ev.created_at), done: true });
+    timelineSteps.push({ label: t.reports2.statusChanged(t.status[ev.status] ?? ev.status), sub: ev.note ?? formatDate(ev.created_at), done: true });
   });
   if (report.status === 'Resolved' || report.status === 'Closed') {
-    timelineSteps.push({ label: 'Issue resolved', done: true });
+    timelineSteps.push({ label: t.reports2.issueResolved, done: true });
   } else if (report.status === 'Rejected') {
-    timelineSteps.push({ label: 'Report rejected', done: true });
+    timelineSteps.push({ label: t.reports2.reportRejected, done: true });
   } else {
-    timelineSteps.push({ label: 'Awaiting resolution', done: false });
+    timelineSteps.push({ label: t.reports2.awaitingResolution, done: false });
   }
 
   return (
@@ -175,7 +177,7 @@ export function ReportDetailScreen({ route, navigation }: any) {
             <View style={styles.locRow}>
               <Icon name="pin" size={12} color={C.textMuted} />
               <Text style={[styles.loc, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                {report.building}{report.room ? ` · Room ${report.room}` : ''}
+                {report.building}{report.room ? ` · ${t.reports2.room(report.room)}` : ''}
               </Text>
             </View>
           </View>
@@ -203,7 +205,7 @@ export function ReportDetailScreen({ route, navigation }: any) {
               <View style={styles.personInfo}>
                 <Avatar name={reporterName} size="xs" />
                 <Text style={[styles.personName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                  {reporterName || 'Student'}
+                  {reporterName || t.reports2.student}
                 </Text>
               </View>
             </View>
@@ -279,7 +281,7 @@ export function ReportDetailScreen({ route, navigation }: any) {
               activeOpacity={0.75}
             >
               <Icon name="sliders" size={17} color={C.text2} />
-              <Text style={[styles.actionText, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>Edit</Text>
+              <Text style={[styles.actionText, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>{t.common.edit}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.actionBtn, { backgroundColor: C.surface, borderColor: C.border }]}
@@ -287,7 +289,7 @@ export function ReportDetailScreen({ route, navigation }: any) {
               activeOpacity={0.75}
             >
               <Icon name="trash" size={17} color={C.danger} />
-              <Text style={[styles.actionText, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>Delete</Text>
+              <Text style={[styles.actionText, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>{t.common.delete}</Text>
             </TouchableOpacity>
           </View>
         )}
