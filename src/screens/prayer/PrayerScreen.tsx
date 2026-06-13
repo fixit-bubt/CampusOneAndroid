@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
+import { useT } from '../../i18n';
 import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { FontFamily, Layout , SectorColors, darken } from '../../theme';
@@ -61,6 +62,7 @@ function timeUntil(timeStr: string): string {
 
 export function PrayerScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
+  const t = useT();
   const { profile } = useAuth();
   const isAdmin = profile?.role === 'admin';
   const [prayers, setPrayers] = useState<PrayerTime[]>([]);
@@ -90,7 +92,7 @@ export function PrayerScreen({ navigation }: any) {
 
   async function saveJamaat() {
     if (!editPrayer) return;
-    if (!/^\d{1,2}:\d{2}$/.test(jamaatInput.trim())) { Alert.alert('Invalid', 'Use HH:MM format, e.g. 13:30'); return; }
+    if (!/^\d{1,2}:\d{2}$/.test(jamaatInput.trim())) { Alert.alert(t.prayer2.invalid, t.prayer2.invalidTime); return; }
     const { error } = await supabase
       .from('prayer_times')
       .update({ jamaat: jamaatInput.trim() })
@@ -136,7 +138,7 @@ export function PrayerScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-      <SubBar title="Prayer Times" onBack={() => navigation.goBack()} />
+      <SubBar title={t.prayer2.prayerTimes} onBack={() => navigation.goBack()} />
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
@@ -161,7 +163,7 @@ export function PrayerScreen({ navigation }: any) {
             start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
             style={styles.nextCard}
           >
-            <Text style={[styles.nextLabel, { fontFamily: FontFamily.jakartaSemiBold }]}>Next Prayer</Text>
+            <Text style={[styles.nextLabel, { fontFamily: FontFamily.jakartaSemiBold }]}>{t.prayer2.nextPrayer}</Text>
             <View style={styles.nextRow}>
               <Text style={[styles.nextName, { fontFamily: FontFamily.jakartaExtraBold }]}>{next.en}</Text>
               <Text style={[styles.nextIn, { fontFamily: FontFamily.jakartaBold }]}>
@@ -178,14 +180,14 @@ export function PrayerScreen({ navigation }: any) {
         {SHOW_RAMADAN_STRIP && prayers.length > 0 && (
           <View style={[styles.ramadanStrip, { backgroundColor: isDark ? `${PRAYER_GREEN}24` : `${PRAYER_GREEN}14` }]}>
             <View style={styles.ramadanCell}>
-              <Text style={[styles.ramadanLbl, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>SEHRI ENDS</Text>
+              <Text style={[styles.ramadanLbl, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.prayer2.sehriEnds}</Text>
               <Text style={[styles.ramadanVal, { color: PRAYER_GREEN, fontFamily: FontFamily.jakartaExtraBold }]}>
                 {prayers.find(p => p.key === 'fajr')?.azan ?? '—'}
               </Text>
             </View>
             <View style={[styles.ramadanDiv, { backgroundColor: `${PRAYER_GREEN}44` }]} />
             <View style={styles.ramadanCell}>
-              <Text style={[styles.ramadanLbl, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>IFTAR</Text>
+              <Text style={[styles.ramadanLbl, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.prayer2.iftar}</Text>
               <Text style={[styles.ramadanVal, { color: PRAYER_GREEN, fontFamily: FontFamily.jakartaExtraBold }]}>
                 {prayers.find(p => p.key === 'maghrib')?.azan ?? '—'}
               </Text>
@@ -195,7 +197,7 @@ export function PrayerScreen({ navigation }: any) {
 
         {/* Today / Month toggle */}
         <View style={styles.viewToggle}>
-          {([['today', 'Today'], ['month', 'Month']] as const).map(([id, label]) => {
+          {([['today', t.prayer2.today], ['month', t.prayer2.month]] as const).map(([id, label]) => {
             const on = view === id;
             return (
               <TouchableOpacity
@@ -219,7 +221,7 @@ export function PrayerScreen({ navigation }: any) {
         {view === 'month' && (
           <View style={[styles.tableCard, { backgroundColor: C.surface, borderColor: C.border, marginTop: 0 }]}>
             <View style={[styles.monthRow, { paddingVertical: 10 }]}>
-              <Text style={[styles.monthDayCol, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold, fontSize: 10.5 }]}>DAY</Text>
+              <Text style={[styles.monthDayCol, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold, fontSize: 10.5 }]}>{t.prayer2.dayCol}</Text>
               {prayers.filter(p => p.key !== 'jumuah').map(p => (
                 <Text key={p.key} style={[styles.monthCol, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold, fontSize: 10.5 }]}>
                   {p.en.slice(0, 3).toUpperCase()}
@@ -265,8 +267,8 @@ export function PrayerScreen({ navigation }: any) {
           {/* Header row */}
           <View style={styles.tableHeader}>
             <View style={{ flex: 1 }} />
-            <Text style={[styles.colLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>Azan</Text>
-            <Text style={[styles.colLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>Jamaat</Text>
+            <Text style={[styles.colLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>{t.prayer2.azan}</Text>
+            <Text style={[styles.colLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>{t.prayer2.jamaat}</Text>
           </View>
 
           {prayers.map((p, i) => {
@@ -311,7 +313,7 @@ export function PrayerScreen({ navigation }: any) {
 
         {/* Musallah locations */}
         <View style={styles.musHeader}>
-          <Text style={[styles.musTitle, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>MUSALLAH LOCATIONS</Text>
+          <Text style={[styles.musTitle, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>{t.prayer2.musallahLocations}</Text>
           {isAdmin && (
             <TouchableOpacity onPress={() => setMusEdit({ id: null, name: '', floor_desc: '' })} hitSlop={8} activeOpacity={0.7}>
               <Feather name="plus-circle" size={18} color={PRAYER_GREEN} />
@@ -319,7 +321,7 @@ export function PrayerScreen({ navigation }: any) {
           )}
         </View>
         {musallah.length === 0 ? (
-          <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>No locations listed</Text>
+          <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{t.prayer2.noLocations}</Text>
         ) : (
           <View style={[styles.tableCard, { backgroundColor: C.surface, borderColor: C.border, marginTop: 0 }]}>
             {musallah.map((m, i) => (
@@ -383,12 +385,12 @@ export function PrayerScreen({ navigation }: any) {
             <TextInput
               style={[styles.sheetInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
               value={musEdit?.name ?? ''} onChangeText={t => setMusEdit(m => m ? { ...m, name: t } : m)}
-              placeholder="Name (e.g. Main Musallah)" placeholderTextColor={C.textMuted}
+              placeholder={t.prayer2.namePlaceholder} placeholderTextColor={C.textMuted}
             />
             <TextInput
               style={[styles.sheetInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
               value={musEdit?.floor_desc ?? ''} onChangeText={t => setMusEdit(m => m ? { ...m, floor_desc: t } : m)}
-              placeholder="Floor / directions" placeholderTextColor={C.textMuted}
+              placeholder={t.prayer2.floorPlaceholder} placeholderTextColor={C.textMuted}
             />
             <TouchableOpacity
               style={[styles.sheetBtn, { backgroundColor: PRAYER_GREEN, opacity: musEdit?.name.trim() ? 1 : 0.5 }]}
