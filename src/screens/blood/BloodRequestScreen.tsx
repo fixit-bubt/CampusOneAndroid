@@ -7,6 +7,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
+import { useT } from '../../i18n';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout, SectorColors } from '../../theme';
@@ -23,6 +24,7 @@ const URGENCIES: { id: BloodRequest['urgency']; label: string }[] = [
 export function BloodRequestScreen({ navigation }: any) {
   const { C } = useTheme();
   const { user } = useAuth();
+  const t = useT();
 
   const [group, setGroup] = useState<BloodRequest['blood_group'] | null>(null);
   const [units, setUnits] = useState('1');
@@ -50,7 +52,7 @@ export function BloodRequestScreen({ navigation }: any) {
       if (error) throw error;
       navigation.goBack();
     } catch {
-      Alert.alert('Error', 'Could not post request. Please try again.');
+      Alert.alert(t.common.error, t.blood2.postRequestError);
     } finally {
       setLoading(false);
     }
@@ -58,7 +60,7 @@ export function BloodRequestScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-      <SubBar title="Request Blood" onBack={() => navigation.goBack()} />
+      <SubBar title={t.blood2.requestBlood} onBack={() => navigation.goBack()} />
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
@@ -66,7 +68,7 @@ export function BloodRequestScreen({ navigation }: any) {
         keyboardShouldPersistTaps="handled"
       >
         {/* Blood group grid */}
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>BLOOD GROUP</Text>
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.blood2.bloodGroup}</Text>
         <View style={styles.groupGrid}>
           {GROUPS.map(g => {
             const on = group === g;
@@ -91,7 +93,7 @@ export function BloodRequestScreen({ navigation }: any) {
         {/* Units + Urgency */}
         <View style={styles.row}>
           <View style={[styles.halfField, { flex: 1 }]}>
-            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>UNITS</Text>
+            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>{t.blood2.units}</Text>
             <TextInput
               style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
               value={units}
@@ -101,7 +103,7 @@ export function BloodRequestScreen({ navigation }: any) {
             />
           </View>
           <View style={[styles.halfField, { flex: 2 }]}>
-            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>URGENCY</Text>
+            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>{t.blood2.urgency}</Text>
             <View style={[styles.segRow, { backgroundColor: C.surface2, borderColor: C.border }]}>
               {URGENCIES.map(u => {
                 const on = urgency === u.id;
@@ -123,32 +125,32 @@ export function BloodRequestScreen({ navigation }: any) {
         </View>
 
         {/* Patient */}
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>PATIENT</Text>
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.blood2.patient}</Text>
         <TextInput
           style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
           value={patient}
           onChangeText={setPatient}
-          placeholder="e.g. Student, Intake 50"
+          placeholder={t.blood2.patientPlaceholder}
           placeholderTextColor={C.textMuted}
         />
 
         {/* Hospital */}
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>HOSPITAL</Text>
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.blood2.hospital}</Text>
         <TextInput
           style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
           value={hospital}
           onChangeText={setHospital}
-          placeholder="e.g. Popular Diagnostic"
+          placeholder={t.blood2.hospitalPlaceholder}
           placeholderTextColor={C.textMuted}
         />
 
         {/* Area */}
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>AREA</Text>
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.blood2.area}</Text>
         <TextInput
           style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
           value={area}
           onChangeText={setArea}
-          placeholder="e.g. Mirpur"
+          placeholder={t.blood2.areaPlaceholder}
           placeholderTextColor={C.textMuted}
         />
 
