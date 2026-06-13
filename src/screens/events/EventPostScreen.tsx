@@ -7,6 +7,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
+import { useT } from '../../i18n';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout , SectorColors } from '../../theme';
@@ -24,6 +25,7 @@ const EVT_CATS: { id: Event['category']; label: string; color: string; icon: str
 export function EventPostScreen({ navigation }: any) {
   const { C } = useTheme();
   const { user, profile } = useAuth();
+  const t = useT();
 
   // All hooks must be declared before any early return
   const [cat, setCat] = useState<Event['category']>('Academic');
@@ -91,7 +93,7 @@ export function EventPostScreen({ navigation }: any) {
       if (error) throw error;
       navigation.goBack();
     } catch {
-      Alert.alert('Error', 'Could not post event. Please try again.');
+      Alert.alert(t.common.error, t.events2.postEventError);
     } finally {
       setLoading(false);
     }
@@ -107,7 +109,7 @@ export function EventPostScreen({ navigation }: any) {
         keyboardShouldPersistTaps="handled"
       >
         {/* Category */}
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>CATEGORY</Text>
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.events2.category}</Text>
         <View style={styles.catRow}>
           {EVT_CATS.map(c => {
             const on = cat === c.id;
@@ -130,54 +132,54 @@ export function EventPostScreen({ navigation }: any) {
         </View>
 
         {/* Title */}
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>EVENT TITLE</Text>
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.events2.eventTitleLabel}</Text>
         <TextInput
           style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
           value={title}
           onChangeText={setTitle}
-          placeholder="e.g. Tech Talk 2026"
+          placeholder={t.events2.titlePlaceholder}
           placeholderTextColor={C.textMuted}
         />
 
         {/* Organizer */}
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>ORGANIZER</Text>
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.events2.organizerLabel}</Text>
         <TextInput
           style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
           value={organizer}
           onChangeText={setOrganizer}
-          placeholder="e.g. CSE Department"
+          placeholder={t.events2.organizerPlaceholder}
           placeholderTextColor={C.textMuted}
         />
 
         {/* Location */}
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>VENUE</Text>
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.events2.venueLabel}</Text>
         <TextInput
           style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
           value={location}
           onChangeText={setLocation}
-          placeholder="e.g. Auditorium A"
+          placeholder={t.events2.venuePlaceholder}
           placeholderTextColor={C.textMuted}
         />
 
         {/* Date + Time */}
         <View style={styles.row}>
           <View style={styles.halfField}>
-            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>DATE</Text>
+            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>{t.events2.dateLabel}</Text>
             <TextInput
               style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
               value={eventDate}
               onChangeText={setEventDate}
-              placeholder="e.g. Fri, 14 Jun"
+              placeholder={t.events2.datePlaceholder}
               placeholderTextColor={C.textMuted}
             />
           </View>
           <View style={styles.halfField}>
-            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>TIME</Text>
+            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>{t.events2.timeLabel}</Text>
             <TextInput
               style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
               value={time}
               onChangeText={setTime}
-              placeholder="3:00 PM"
+              placeholder={t.events2.timePlaceholder}
               placeholderTextColor={C.textMuted}
             />
           </View>
@@ -186,17 +188,17 @@ export function EventPostScreen({ navigation }: any) {
         {/* End time + Capacity */}
         <View style={[styles.row, { marginTop: 14 }]}>
           <View style={styles.halfField}>
-            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>END TIME (OPTIONAL)</Text>
+            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>{t.events2.endTimeLabel}</Text>
             <TextInput
               style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
               value={endTime}
               onChangeText={setEndTime}
-              placeholder="5:00 PM"
+              placeholder={t.events2.endTimePlaceholder}
               placeholderTextColor={C.textMuted}
             />
           </View>
           <View style={styles.halfField}>
-            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>CAPACITY (OPTIONAL)</Text>
+            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>{t.events2.capacityLabel}</Text>
             <TextInput
               style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
               value={capacity}
@@ -209,12 +211,12 @@ export function EventPostScreen({ navigation }: any) {
         </View>
 
         {/* Description */}
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>DESCRIPTION</Text>
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.events2.descriptionLabel}</Text>
         <TextInput
           style={[styles.textarea, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
           value={desc}
           onChangeText={setDesc}
-          placeholder="Describe the event..."
+          placeholder={t.events2.descPlaceholder}
           placeholderTextColor={C.textMuted}
           multiline
           textAlignVertical="top"
