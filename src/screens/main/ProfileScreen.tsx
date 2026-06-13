@@ -21,7 +21,7 @@ import { useToast } from '../../components/ui/Toast';
 
 // ── Role helpers ──────────────────────────────────────────────────────────────
 const ROLE_TOKEN = { student: 'roleStudent', staff: 'roleStaff', admin: 'roleAdmin' } as const;
-const ROLE_LABEL = { student: 'Student', staff: 'Staff', admin: 'Admin' };
+const ROLE_LABEL = (t: any) => ({ student: t.mainx.roleStudent, staff: t.mainx.roleStaff, admin: t.mainx.roleAdmin });
 
 function hexAlpha(hex: string, a: number): string {
   const n = parseInt(hex.slice(1), 16);
@@ -30,12 +30,12 @@ function hexAlpha(hex: string, a: number): string {
 
 // ── Accomplishment categories ─────────────────────────────────────────────────
 const CATS: { id: string; label: string; icon: string; fg: string }[] = [
-  { id: 'award',      label: 'Award',      icon: 'award',    fg: Accent.amber },
-  { id: 'cert',       label: 'Certificate', icon: 'layers',  fg: Accent.blue },
-  { id: 'project',    label: 'Project',    icon: 'study',    fg: Accent.purple },
-  { id: 'volunteer',  label: 'Volunteer',  icon: 'clubs',    fg: Accent.green },
-  { id: 'leadership', label: 'Leadership', icon: 'directory',fg: Accent.teal },
-  { id: 'research',   label: 'Research',   icon: 'study',    fg: Accent.pink },
+  { id: 'award',      label: '',      icon: 'award',    fg: Accent.amber },
+  { id: 'cert',       label: '', icon: 'layers',  fg: Accent.blue },
+  { id: 'project',    label: '',    icon: 'study',    fg: Accent.purple },
+  { id: 'volunteer',  label: '',  icon: 'clubs',    fg: Accent.green },
+  { id: 'leadership', label: '', icon: 'directory',fg: Accent.teal },
+  { id: 'research',   label: '',   icon: 'study',    fg: Accent.pink },
 ];
 
 const CAT_MAP = Object.fromEntries(CATS.map(c => [c.id, c]));
@@ -61,18 +61,18 @@ const ROLE_LABELS_T = (t: any): Record<string, string> => ({
 
 // ── Static badge data ─────────────────────────────────────────────────────────
 const BADGES = [
-  { id: 'reporter',  icon: 'layers',   fg: Accent.blue, en: 'Reporter',   earned: false, progress: { cur: 1, total: 5 } },
-  { id: 'helper',    icon: 'clubs',    fg: Accent.green, en: 'Helper',      earned: true,  progress: null },
-  { id: 'active',    icon: 'bell',     fg: Accent.amber, en: 'Active',      earned: true,  progress: null },
-  { id: 'studious',  icon: 'study',    fg: Accent.purple, en: 'Studious',    earned: false, progress: { cur: 3, total: 10 } },
+  { id: 'reporter',  icon: 'layers',   fg: Accent.blue, en: '', earned: false, progress: { cur: 1, total: 5 } },
+  { id: 'helper',    icon: 'clubs',    fg: Accent.green, en: '', earned: true,  progress: null },
+  { id: 'active',    icon: 'bell',     fg: Accent.amber, en: '', earned: true,  progress: null },
+  { id: 'studious',  icon: 'study',    fg: Accent.purple, en: '', earned: false, progress: { cur: 3, total: 10 } },
 ];
 
 // ── Contribution sector config ────────────────────────────────────────────────
 const CONTRIB_CONFIG: { sector: SectorKey; en: string; table: string; field: string }[] = [
-  { sector: 'reports',   en: 'Reports',    table: 'reports',         field: 'reporter_id' },
-  { sector: 'clubs',     en: 'Clubs',      table: 'club_members',    field: 'user_id' },
-  { sector: 'events',    en: 'Events',     table: 'event_rsvps',     field: 'user_id' },
-  { sector: 'lostfound', en: 'Lost/Found', table: 'lost_found_items',field: 'poster_id' },
+  { sector: 'reports',   en: '', table: 'reports',         field: 'reporter_id' },
+  { sector: 'clubs',     en: '', table: 'club_members',    field: 'user_id' },
+  { sector: 'events',    en: '', table: 'event_rsvps',     field: 'user_id' },
+  { sector: 'lostfound', en: '', table: 'lost_found_items',field: 'poster_id' },
 ];
 
 // ── BadgesRow ─────────────────────────────────────────────────────────────────
@@ -144,7 +144,7 @@ function BadgeSheet({ badge, C, onClose, t }: { badge: typeof BADGES[0] | null; 
                   <>
                     <View style={[sheetStyles.earnedPill, { backgroundColor: C.surface2 }]}>
                       <Text style={[sheetStyles.earnedTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                        {badge.progress.cur} / {badge.progress.total} · In progress
+                        {t.mainx.inProgressLine(badge.progress.cur, badge.progress.total)}
                       </Text>
                     </View>
                     <View style={[sheetStyles.progBar, { backgroundColor: C.surface2 }]}>
@@ -354,15 +354,15 @@ export function ProfileScreen({ navigation }: any) {
 
   async function changePassword() {
     if (pwBusy) return;
-    if (pwNew.length < 8) { toast({ type: 'error', title: 'Error', message: 'Password must be at least 8 characters.' }); return; }
-    if (pwNew !== pwConfirm) { toast({ type: 'error', title: 'Error', message: 'Passwords do not match.' }); return; }
+    if (pwNew.length < 8) { toast({ type: 'error', title: 'Error', message: t.mainx.passwordTooShort }); return; }
+    if (pwNew !== pwConfirm) { toast({ type: 'error', title: 'Error', message: t.mainx.passwordsNoMatch }); return; }
     setPwBusy(true);
     const { error } = await supabase.auth.updateUser({ password: pwNew });
     setPwBusy(false);
     if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }
     setPwOpen(false);
     setPwNew(''); setPwConfirm('');
-    toast({ type: 'success', title: 'Done', message: 'Password updated.' });
+    toast({ type: 'success', title: 'Done', message: t.mainx.passwordUpdated });
   }
 
   const [focusBadge, setFocusBadge] = useState<typeof BADGES[0] | null>(null);
@@ -437,7 +437,7 @@ export function ProfileScreen({ navigation }: any) {
             ? <ActivityIndicator size="small" color={C.white} />
             : <Icon name={editMode ? 'check' : 'sliders'} size={16} color={editMode ? C.white : C.text2} />}
           <Text style={[styles.editTxt, { color: editMode ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-            {editMode ? 'Save' : 'Edit'}
+            {editMode ? t.common.save : t.common.edit}
           </Text>
         </TouchableOpacity>
       </View>
@@ -468,44 +468,44 @@ export function ProfileScreen({ navigation }: any) {
                   <TextInput
                     style={[styles.editInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaBold }]}
                     value={editName} onChangeText={setEditName}
-                    placeholder="Full name" placeholderTextColor={C.textMuted}
+                    placeholder={t.mainx.fullNamePlaceholder} placeholderTextColor={C.textMuted}
                   />
                   <TextInput
                     style={[styles.editInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                     value={editDept} onChangeText={setEditDept}
-                    placeholder="Department" placeholderTextColor={C.textMuted}
+                    placeholder={t.mainx.departmentPlaceholder} placeholderTextColor={C.textMuted}
                   />
                   {isStudent && (
                     <>
                       <TextInput
                         style={[styles.editInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                         value={editIntake} onChangeText={setEditIntake}
-                        placeholder="Intake" placeholderTextColor={C.textMuted}
+                        placeholder={t.mainx.intakePlaceholder} placeholderTextColor={C.textMuted}
                       />
                       <TextInput
                         style={[styles.editInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                         value={editSection} onChangeText={setEditSection}
-                        placeholder="Section" placeholderTextColor={C.textMuted}
+                        placeholder={t.mainx.sectionPlaceholder} placeholderTextColor={C.textMuted}
                       />
                     </>
                   )}
                   <TextInput
                     style={[styles.editInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                     value={editWhatsapp} onChangeText={setEditWhatsapp}
-                    placeholder="WhatsApp number" placeholderTextColor={C.textMuted}
+                    placeholder={t.mainx.whatsappPlaceholder} placeholderTextColor={C.textMuted}
                     keyboardType="phone-pad"
                   />
                   {isStudent && (
                     <>
                       <View style={styles.toggleRow}>
                         <Text style={[styles.toggleLbl, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
-                          Show in Student Directory
+                          {t.mainx.showInDirectory}
                         </Text>
                         <Switch value={editDirVisible} onValueChange={setEditDirVisible} trackColor={{ true: C.brand }} />
                       </View>
                       <View style={styles.toggleRow}>
                         <Text style={[styles.toggleLbl, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
-                          Show WhatsApp to students
+                          {t.mainx.showWhatsapp}
                         </Text>
                         <Switch value={editShowWa} onValueChange={setEditShowWa} trackColor={{ true: C.brand }} />
                       </View>
@@ -516,7 +516,7 @@ export function ProfileScreen({ navigation }: any) {
                 <>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                     <Text style={[styles.heroName, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]} numberOfLines={1}>
-                      {profile?.full_name ?? 'Campus Member'}
+                      {profile?.full_name ?? t.mainx.campusMember}
                     </Text>
                     <View style={[styles.verifyBadge, { backgroundColor: C.brand }]}>
                       <Icon name="check" size={9} color={C.white} />
@@ -529,7 +529,7 @@ export function ProfileScreen({ navigation }: any) {
                   <View style={[styles.rolePill, { backgroundColor: roleBg }]}>
                     <View style={[styles.rolePillDot, { backgroundColor: roleHex }]} />
                     <Text style={[styles.rolePillTxt, { color: roleHex, fontFamily: FontFamily.jakartaBold }]}>
-                      {ROLE_LABEL[role as keyof typeof ROLE_LABEL] ?? role}
+                      {ROLE_LABEL(t)[role] ?? role}
                     </Text>
                   </View>
                 </>
@@ -542,7 +542,7 @@ export function ProfileScreen({ navigation }: any) {
         {isStudent && (
           <>
             <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
-              CAMPUS CONTRIBUTIONS
+              {t.mainx.campusContributions}
             </Text>
             <View style={[styles.contribGrid, { backgroundColor: C.surface, borderColor: C.border }]}>
               {CONTRIB_CONFIG.map((s, i) => (
@@ -553,7 +553,7 @@ export function ProfileScreen({ navigation }: any) {
                       {contrib[s.sector] ?? 0}
                     </Text>
                     <Text style={[styles.contribLbl, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                      {s.en}
+                      {CONTRIB_LABELS(t)[s.sector]}
                     </Text>
                   </View>
                 </View>
@@ -597,21 +597,21 @@ export function ProfileScreen({ navigation }: any) {
         <TouchableOpacity style={styles.pwOverlay} activeOpacity={1} onPress={() => setPwOpen(false)} />
         <View style={[styles.pwSheet, { backgroundColor: C.surface }]}>
           <Text style={[styles.pwTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-            Change Password
+            {t.mainx.changePassword}
           </Text>
           <Text style={[styles.pwSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-            At least 8 characters.
+            {t.mainx.pwAtLeast8}
           </Text>
           <TextInput
             style={[styles.pwField, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
             value={pwNew} onChangeText={setPwNew}
-            placeholder="New password" placeholderTextColor={C.textMuted}
+            placeholder={t.mainx.newPasswordPlaceholder} placeholderTextColor={C.textMuted}
             secureTextEntry autoCapitalize="none"
           />
           <TextInput
             style={[styles.pwField, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
             value={pwConfirm} onChangeText={setPwConfirm}
-            placeholder="Confirm new password" placeholderTextColor={C.textMuted}
+            placeholder={t.mainx.confirmNewPasswordPlaceholder} placeholderTextColor={C.textMuted}
             secureTextEntry autoCapitalize="none"
           />
           <TouchableOpacity
@@ -624,7 +624,7 @@ export function ProfileScreen({ navigation }: any) {
               ? <ActivityIndicator color={C.white} size="small" />
               : (
                 <Text style={[styles.pwBtnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>
-                  Update Password
+                  {t.mainx.updatePassword}
                 </Text>
               )}
           </TouchableOpacity>

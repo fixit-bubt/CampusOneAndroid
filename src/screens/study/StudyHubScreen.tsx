@@ -127,12 +127,12 @@ function CodeCard({ code, copied, onCopy, C }: { code: string; copied: boolean; 
         >
           <Icon name={copied ? 'check' : 'copy'} size={14} color="#fff" />
           <Text style={[codeStyles.copyTxt, { fontFamily: FontFamily.jakartaBold }]}>
-            {copied ? 'Copied' : 'Copy'}
+            {copied ? t.study2.copied : 'Copy'}
           </Text>
         </TouchableOpacity>
       </View>
       <Text style={[codeStyles.hint, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
-        Students with this code join instantly — no approval needed.
+        {t.study2.codeJoinHint}
       </Text>
     </View>
   );
@@ -191,9 +191,9 @@ function CreateSheet({ visible, C, depts, onClose, onSubmit }: { visible: boolea
         <TouchableOpacity style={{ flex: 1 }} onPress={() => { reset(); onClose(); }} />
         <View style={[sheetStyles.sheet, { backgroundColor: C.surface }]}>
           <View style={[sheetStyles.handle, { backgroundColor: C.border }]} />
-          <Text style={[sheetStyles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>Request a section</Text>
+          <Text style={[sheetStyles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{t.study2.requestASection}</Text>
 
-          <Text style={[sheetStyles.flabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>DEPARTMENT</Text>
+          <Text style={[sheetStyles.flabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.study2.department}</Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7 }}>
             {depts.map(d => {
               const sel = d.id === deptId;
@@ -233,10 +233,10 @@ function CreateSheet({ visible, C, depts, onClose, onSubmit }: { visible: boolea
             </View>
           </View>
 
-          <Text style={[sheetStyles.flabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>REASON (OPTIONAL)</Text>
+          <Text style={[sheetStyles.flabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.study2.reasonOptional}</Text>
           <TextInput
             style={[sheetStyles.textarea, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-            value={reason} onChangeText={setReason} placeholder="e.g. CR for our batch" placeholderTextColor={C.textMuted}
+            value={reason} onChangeText={setReason} placeholder={t.study2.reasonPlaceholder} placeholderTextColor={C.textMuted}
             multiline numberOfLines={3}
           />
 
@@ -265,11 +265,11 @@ function RejectSheet({ visible, C, onClose, onReject }: { visible: boolean; C: a
         <TouchableOpacity style={{ flex: 1 }} onPress={onClose} />
         <View style={[sheetStyles.sheet, { backgroundColor: C.surface }]}>
           <View style={[sheetStyles.handle, { backgroundColor: C.border }]} />
-          <Text style={[sheetStyles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>Reject request</Text>
-          <Text style={[sheetStyles.flabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>REASON (SHOWN TO STUDENT)</Text>
+          <Text style={[sheetStyles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{t.study2.rejectRequest}</Text>
+          <Text style={[sheetStyles.flabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.study2.reasonShownToStudent}</Text>
           <TextInput
             style={[sheetStyles.textarea, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-            value={note} onChangeText={setNote} placeholder="e.g. Section already exists" placeholderTextColor={C.textMuted}
+            value={note} onChangeText={setNote} placeholder={t.study2.rejectReasonPlaceholder} placeholderTextColor={C.textMuted}
             multiline numberOfLines={3}
           />
           <TouchableOpacity
@@ -295,9 +295,9 @@ function VoteSheet({ visible, C, onClose, onStart }: { visible: boolean; C: any;
         <TouchableOpacity style={{ flex: 1 }} onPress={onClose} />
         <View style={[sheetStyles.sheet, { backgroundColor: C.surface }]}>
           <View style={[sheetStyles.handle, { backgroundColor: C.border }]} />
-          <Text style={[sheetStyles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>Start an intake vote</Text>
+          <Text style={[sheetStyles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{t.study2.startAnIntakeVote}</Text>
           <Text style={[sheetStyles.hintTxt, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
-            All CRs in this intake vote. Closes in 48 hours or when everyone has voted.
+            {t.study2.intakeVoteHint}
           </Text>
           <TouchableOpacity
             style={[sheetStyles.submitBtn, { backgroundColor: C.brand, marginTop: 20 }]}
@@ -826,14 +826,14 @@ export function StudyHubScreen({ navigation }: any) {
       <View>
         <View style={[s.card, { backgroundColor: C.surface, borderColor: C.border }]}>
           <Text style={[s.joinTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-            Join a study section
+            {t.study2.joinAStudySection}
           </Text>
           <View style={s.codeRow}>
             <TextInput
               style={[s.codeInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
               value={codeInput}
               onChangeText={t => setCodeInput(t.toUpperCase().slice(0, 6))}
-              placeholder="Enter code"
+              placeholder={t.study2.enterCode}
               placeholderTextColor={C.textMuted}
               autoCapitalize="characters"
             />
@@ -875,9 +875,9 @@ export function StudyHubScreen({ navigation }: any) {
         <View style={[s.pendingIcon, { backgroundColor: C.warnBg }]}>
           <Feather name="clock" size={28} color={C.warn} />
         </View>
-        <Text style={[s.pendingTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>Request under review</Text>
+        <Text style={[s.pendingTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{t.study2.requestUnderReview}</Text>
         <Text style={[s.pendingSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-          Admin will review within 24 hours.
+          {t.study2.adminReviewHint}
         </Text>
       </View>
     );
@@ -900,7 +900,7 @@ export function StudyHubScreen({ navigation }: any) {
             <View style={[s.visPill, { backgroundColor: mySection.is_public ? C.successBg : C.surface2 }]}>
               <View style={[s.visDot, { backgroundColor: mySection.is_public ? C.success : C.textMuted }]} />
               <Text style={[s.visTxt, { color: mySection.is_public ? C.success : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                {mySection.is_public ? 'Public' : 'Private'}
+                {mySection.is_public ? t.study2.public : t.study2.private}
               </Text>
             </View>
           </View>
@@ -1108,7 +1108,7 @@ export function StudyHubScreen({ navigation }: any) {
             style={[s.pinInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
             value={pinText}
             onChangeText={setPinText}
-            placeholder="e.g. Midterm syllabus posted — check CSE-221"
+            placeholder={t.study2.pinPlaceholder}
             placeholderTextColor={C.textMuted}
             multiline
           />
@@ -1132,7 +1132,7 @@ export function StudyHubScreen({ navigation }: any) {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[s.settingTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                {mySection.is_public ? 'Public' : 'Private'}
+                {mySection.is_public ? t.study2.public : t.study2.private}
               </Text>
               <Text style={[s.settingSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
                 {mySection.is_public ? 'Other sections in this intake can browse' : 'Only your approved members can access'}
@@ -1151,19 +1151,19 @@ export function StudyHubScreen({ navigation }: any) {
         <Text style={[s.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>{t.study2.intakeVisibility}</Text>
         <View style={[s.card, { backgroundColor: C.surface, borderColor: C.border }]}>
           <Text style={[s.intakeInfo, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-            Intake {mySection.intake} {mySection.department} — currently {mySection.intake_public ? 'Public' : 'Private'}
+            {t.study2.intakeInfo(mySection.intake, mySection.department, mySection.intake_public ? t.study2.public : t.study2.private)}
           </Text>
           {vote && vote.status === 'open' ? (
             <View style={[s.voteBox, { backgroundColor: C.surface2 }]}>
               <Text style={[s.voteTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                Open vote: make intake {vote.proposal}
+                {t.study2.openVote(vote.proposal)}
               </Text>
               <Text style={[s.voteSub, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
-                {vote.yes} yes · {vote.no} no · closes in {vote.closes_in_h}h
+                {t.study2.voteTally(vote.yes, vote.no, vote.closes_in_h)}
               </Text>
               {vote.myBallot ? (
                 <Text style={[s.voteSub, { color: C.text, fontFamily: FontFamily.jakartaBold, marginTop: 8 }]}>
-                  You voted {vote.myBallot}
+                  {t.study2.youVoted(vote.myBallot)}
                 </Text>
               ) : (
                 <View style={s.voteActions}>
@@ -1272,7 +1272,7 @@ export function StudyHubScreen({ navigation }: any) {
           activeOpacity={0.75}
         >
           <Icon name="plus" size={16} color={C.text} />
-          <Text style={[s.outlineBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Add intake</Text>
+          <Text style={[s.outlineBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.study2.addIntake}</Text>
         </TouchableOpacity>
 
         {catIntakes.length === 0 ? (
@@ -1301,7 +1301,7 @@ export function StudyHubScreen({ navigation }: any) {
                     <View style={{ flex: 1 }}>
                       <Text style={[s.reqName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Intake {ik.number}</Text>
                       <Text style={[s.reqTime, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                        {ik.years ?? '—'} · {ik.is_public ? 'Public' : 'Private'}
+                        {ik.years ?? '—'} · {ik.is_public ? t.study2.public : t.study2.private}
                       </Text>
                     </View>
                     <Feather name={open ? 'chevron-up' : 'chevron-down'} size={18} color={C.textMuted} />
@@ -1347,10 +1347,10 @@ export function StudyHubScreen({ navigation }: any) {
   }
 
   const barTitle = isAdmin
-    ? 'Admin · Study Hub'
-    : sub === 'manage' ? 'Manage Section'
-    : sub === 'browse' ? 'Browse Sections'
-    : 'Study Hub';
+    ? t.study2.adminStudyHub
+    : sub === 'manage' ? t.study2.manageSectionTitle
+    : sub === 'browse' ? t.study2.browseSections
+    : t.study2.studyHub;
 
   return (
     <SafeAreaView style={[s.safe, { backgroundColor: C.bg }]}>
@@ -1406,13 +1406,13 @@ export function StudyHubScreen({ navigation }: any) {
           <TouchableOpacity style={{ flex: 1 }} onPress={() => setAddIntakeOpen(false)} />
           <View style={[sheetStyles.sheet, { backgroundColor: C.surface }]}>
             <View style={[sheetStyles.handle, { backgroundColor: C.border }]} />
-            <Text style={[sheetStyles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>Add intake</Text>
-            <Text style={[sheetStyles.flabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>INTAKE NUMBER</Text>
+            <Text style={[sheetStyles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{t.study2.addIntake}</Text>
+            <Text style={[sheetStyles.flabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.study2.intakeNumber}</Text>
             <TextInput
               style={[sheetStyles.input, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
               value={numInput} onChangeText={t => setNumInput(t.replace(/\D/g, ''))} keyboardType="numeric" placeholder="52" placeholderTextColor={C.textMuted}
             />
-            <Text style={[sheetStyles.flabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>YEARS (OPTIONAL)</Text>
+            <Text style={[sheetStyles.flabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.study2.yearsOptional}</Text>
             <TextInput
               style={[sheetStyles.input, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
               value={yearsInput} onChangeText={setYearsInput} placeholder="2023–2024" placeholderTextColor={C.textMuted}
@@ -1431,8 +1431,8 @@ export function StudyHubScreen({ navigation }: any) {
           <TouchableOpacity style={{ flex: 1 }} onPress={() => setAddSectionFor(null)} />
           <View style={[sheetStyles.sheet, { backgroundColor: C.surface }]}>
             <View style={[sheetStyles.handle, { backgroundColor: C.border }]} />
-            <Text style={[sheetStyles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>Add section</Text>
-            <Text style={[sheetStyles.flabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>SECTION NUMBER</Text>
+            <Text style={[sheetStyles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{t.study2.addSection}</Text>
+            <Text style={[sheetStyles.flabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.study2.sectionNumber}</Text>
             <TextInput
               style={[sheetStyles.input, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
               value={numInput} onChangeText={t => setNumInput(t.replace(/\D/g, ''))} keyboardType="numeric" placeholder="1" placeholderTextColor={C.textMuted}
@@ -1451,10 +1451,10 @@ export function StudyHubScreen({ navigation }: any) {
           <TouchableOpacity style={{ flex: 1 }} onPress={() => setSetCrFor(null)} />
           <View style={[sheetStyles.sheet, { backgroundColor: C.surface, maxHeight: '70%' }]}>
             <View style={[sheetStyles.handle, { backgroundColor: C.border }]} />
-            <Text style={[sheetStyles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>Assign CR</Text>
+            <Text style={[sheetStyles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{t.study2.assignCr}</Text>
             <TextInput
               style={[sheetStyles.input, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-              value={crSearch} onChangeText={setCrSearch} placeholder="Search students…" placeholderTextColor={C.textMuted}
+              value={crSearch} onChangeText={setCrSearch} placeholder={t.study2.searchStudents} placeholderTextColor={C.textMuted}
             />
             <ScrollView style={{ marginTop: 10 }} keyboardShouldPersistTaps="handled">
               {students

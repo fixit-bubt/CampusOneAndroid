@@ -59,14 +59,14 @@ export function EventPostScreen({ navigation }: any) {
   if (canCreate === false) {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-        <SubBar title="Post an Event" onBack={() => navigation.goBack()} />
+        <SubBar title={t.events2.postAnEvent} onBack={() => navigation.goBack()} />
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
           <Icon name="events" size={36} color={C.textMuted} />
           <Text style={{ color: C.text, fontFamily: FontFamily.jakartaBold, fontSize: 16, marginTop: 14 }}>
-            Organizers Only
+            {t.events2.organizersOnly}
           </Text>
           <Text style={{ color: C.textMuted, fontFamily: FontFamily.jakartaMedium, fontSize: 13.5, marginTop: 8, textAlign: 'center' }}>
-            Only staff, admins, approved organizers, and club leaders can post events.
+            {t.events2.organizersOnlyBody}
           </Text>
         </View>
       </SafeAreaView>
@@ -103,7 +103,7 @@ export function EventPostScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-      <SubBar title="Post an Event" onBack={() => navigation.goBack()} />
+      <SubBar title={t.events2.postAnEvent} onBack={() => navigation.goBack()} />
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView
@@ -234,7 +234,7 @@ export function EventPostScreen({ navigation }: any) {
         >
           <Icon name="check" size={18} color={canSubmit ? '#fff' : C.textMuted} />
           <Text style={[styles.submitText, { color: canSubmit ? '#fff' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-            Post Event
+            {t.events2.postEvent}
           </Text>
         </TouchableOpacity>
 

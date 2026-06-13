@@ -62,8 +62,8 @@ export function ManageUsersScreen({ navigation }: any) {
   async function cycleRole(u: Profile) {
     const next = ROLE_NEXT[u.role] ?? 'student';
     Alert.alert(
-      'Change Role',
-      `Change ${u.full_name} from ${u.role} → ${next}?`,
+      t.manage.changeRole,
+      t.manage.changeRoleBody(u.full_name, u.role, next),
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -116,11 +116,11 @@ export function ManageUsersScreen({ navigation }: any) {
   if (profile && profile.role !== 'admin') {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-        <SubBar title="Manage Users" onBack={() => navigation.goBack()} />
+        <SubBar title={t.manage.manageUsers} onBack={() => navigation.goBack()} />
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 }}>
-          <Text style={{ color: C.text, fontFamily: FontFamily.jakartaExtraBold, fontSize: 18, marginBottom: 8 }}>Access Denied</Text>
+          <Text style={{ color: C.text, fontFamily: FontFamily.jakartaExtraBold, fontSize: 18, marginBottom: 8 }}>{t.manage.accessDenied}</Text>
           <Text style={{ color: C.textMuted, fontFamily: FontFamily.jakartaMedium, fontSize: 14, textAlign: 'center' }}>
-            Only admins can manage users.
+            {t.manage.onlyAdminsManageUsers}
           </Text>
         </View>
       </SafeAreaView>
@@ -130,7 +130,7 @@ export function ManageUsersScreen({ navigation }: any) {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar
-        title="Manage Users"
+        title={t.manage.manageUsers}
         onBack={() => navigation.goBack()}
         rightSlot={
           <TouchableOpacity
@@ -235,7 +235,7 @@ export function ManageUsersScreen({ navigation }: any) {
         <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => { setCreateOpen(false); resetCreateForm(); }} />
         <View style={[styles.sheet, { backgroundColor: C.surface }]}>
           <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-            Create account
+            {t.manage.createAccount}
           </Text>
           <Text style={[styles.sheetSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
             {t.manage.createAccountSub}
@@ -311,7 +311,7 @@ export function ManageUsersScreen({ navigation }: any) {
               ? <ActivityIndicator color="#fff" size="small" />
               : <Feather name="user-plus" size={16} color={createOk ? '#fff' : C.textMuted} />}
             <Text style={[styles.createBtnTxt, { color: createOk ? '#fff' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-              Create account
+              {t.manage.createAccount}
             </Text>
           </TouchableOpacity>
         </View>

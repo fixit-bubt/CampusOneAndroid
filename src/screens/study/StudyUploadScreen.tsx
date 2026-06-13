@@ -259,7 +259,7 @@ export function StudyUploadScreen({ route, navigation }: any) {
                 );
               })}
             </View>
-            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>AUTHOR (OPTIONAL)</Text>
+            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.study2.authorOptional}</Text>
             <TextInput
               style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
               value={author}
@@ -282,7 +282,7 @@ export function StudyUploadScreen({ route, navigation }: any) {
 
         {/* File picker */}
         <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-          {fileType === 'books' ? 'FILE (OPTIONAL IF LINK GIVEN)' : 'FILE'}
+          {fileType === 'books' ? t.study2.fileOptionalIfLink : t.study2.file}
         </Text>
         <TouchableOpacity
           style={[styles.filePicker, { backgroundColor: C.surface, borderColor: pickedFile ? C.brand : C.border }]}
@@ -291,17 +291,17 @@ export function StudyUploadScreen({ route, navigation }: any) {
         >
           <Icon name="layers" size={18} color={pickedFile ? C.brand : C.textMuted} />
           <Text style={[styles.filePickerTxt, { color: pickedFile ? C.brand : C.textMuted, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-            {pickedFile ? pickedFile.name : 'Choose a file (PDF, DOC…)'}
+            {pickedFile ? pickedFile.name : t.study2.chooseAFile}
           </Text>
         </TouchableOpacity>
 
         {/* File name / title */}
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>TITLE</Text>
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.study2.title}</Text>
         <TextInput
           style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
           value={name}
           onChangeText={setName}
-          placeholder="e.g. Lecture 6 notes"
+          placeholder={t.study2.titlePlaceholder}
           placeholderTextColor={C.textMuted}
         />
 
@@ -314,7 +314,7 @@ export function StudyUploadScreen({ route, navigation }: any) {
         >
           <Icon name="check" size={18} color={canSubmit ? C.white : C.textMuted} />
           <Text style={[styles.submitText, { color: canSubmit ? C.white : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-            {loading ? 'Uploading…' : 'Upload'}
+            {loading ? t.study2.uploading : t.study2.upload}
           </Text>
         </TouchableOpacity>
 

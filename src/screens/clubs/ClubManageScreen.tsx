@@ -86,7 +86,7 @@ export function ClubManageScreen({ route, navigation }: any) {
       p_user_id: memberId,
     });
     setSaving(false);
-    if (error) { toast({ type: 'error', title: t.common.error, message: 'Transfer failed: ' + error.message }); return; }
+    if (error) { toast({ type: 'error', title: t.common.error, message: t.clubs2.transferFailed(error.message) }); return; }
     setConfirm(null);
     navigation.goBack();
   }
@@ -94,7 +94,7 @@ export function ClubManageScreen({ route, navigation }: any) {
   if (loading) {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-        <SubBar title="Manage Club" onBack={() => navigation.goBack()} />
+        <SubBar title={t.clubs2.manageClub} onBack={() => navigation.goBack()} />
         <View style={styles.center}><ActivityIndicator color={C.brand} /></View>
       </SafeAreaView>
     );
@@ -102,7 +102,7 @@ export function ClubManageScreen({ route, navigation }: any) {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-      <SubBar title="Manage Club" onBack={() => navigation.goBack()} />
+      <SubBar title={t.clubs2.manageClub} onBack={() => navigation.goBack()} />
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
@@ -116,7 +116,7 @@ export function ClubManageScreen({ route, navigation }: any) {
           style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
           value={name}
           onChangeText={setName}
-          placeholder="Club name"
+          placeholder={t.clubs2.clubNamePlaceholder}
           placeholderTextColor={C.textMuted}
         />
 
@@ -125,7 +125,7 @@ export function ClubManageScreen({ route, navigation }: any) {
           style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
           value={tagline}
           onChangeText={setTagline}
-          placeholder="One-line tagline"
+          placeholder={t.clubs2.taglinePlaceholder}
           placeholderTextColor={C.textMuted}
         />
 
@@ -134,7 +134,7 @@ export function ClubManageScreen({ route, navigation }: any) {
           style={[styles.textarea, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
           value={about}
           onChangeText={setAbout}
-          placeholder="What this club does"
+          placeholder={t.clubs2.aboutPlaceholder}
           placeholderTextColor={C.textMuted}
           multiline
           numberOfLines={4}
@@ -223,9 +223,9 @@ export function ClubManageScreen({ route, navigation }: any) {
       <Modal visible={!!confirm} transparent animationType="slide" onRequestClose={() => setConfirm(null)}>
         <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setConfirm(null)} />
         <View style={[styles.sheet, { backgroundColor: C.surface }]}>
-          <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>Transfer presidency?</Text>
+          <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{t.clubs2.transferQuestion}</Text>
           <Text style={[styles.sheetBody, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
-            Make <Text style={{ fontFamily: FontFamily.jakartaBold }}>{(confirm as any)?.profiles?.full_name}</Text> the club president? You will become a regular member.
+            {t.clubs2.transferBodyPrefix}<Text style={{ fontFamily: FontFamily.jakartaBold }}>{(confirm as any)?.profiles?.full_name}</Text>{t.clubs2.transferBodySuffix}
           </Text>
           <TouchableOpacity
             style={[styles.confirmBtn, { backgroundColor: C.brand }]}

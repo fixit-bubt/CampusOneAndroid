@@ -222,18 +222,18 @@ export function AdminDashboardScreen({ navigation }: any) {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
         <Text style={[styles.pageTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-          Admin Dashboard
+          {t.dash.adminTitle}
         </Text>
         <Text style={[styles.intro, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-          Manage reports and campus operations
+          {t.dash.adminIntro}
         </Text>
 
         {/* Stat grid */}
         <View style={styles.statGrid}>
-          <StatCard icon="inbox"    fg={C.warn}    num={open.length}       label="Open"        C={C} />
-          <StatCard icon="userPlus" fg={C.danger}  num={unassigned.length} label="Unassigned"  C={C} />
-          <StatCard icon="pulse"    fg={C.info}    num={inprog.length}     label="In Progress" C={C} />
-          <StatCard icon="check"    fg={C.success} num={resolvedCount}     label="Resolved"    C={C} />
+          <StatCard icon="inbox"    fg={C.warn}    num={open.length}       label={t.dash.statOpen}       C={C} />
+          <StatCard icon="userPlus" fg={C.danger}  num={unassigned.length} label={t.dash.statUnassigned} C={C} />
+          <StatCard icon="pulse"    fg={C.info}    num={inprog.length}     label={t.dash.statInProgress} C={C} />
+          <StatCard icon="check"    fg={C.success} num={resolvedCount}     label={t.dash.statResolved}   C={C} />
         </View>
 
         {/* Needs assignment */}

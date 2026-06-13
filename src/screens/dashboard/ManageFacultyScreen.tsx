@@ -114,9 +114,9 @@ export function ManageFacultyScreen({ navigation }: any) {
   if (profile && profile.role !== 'admin') {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-        <SubBar title="Manage Faculty" onBack={() => navigation.goBack()} />
+        <SubBar title={t.manage.manageFaculty} onBack={() => navigation.goBack()} />
         <View style={styles.center}>
-          <Text style={{ color: C.text, fontFamily: FontFamily.jakartaExtraBold, fontSize: 18 }}>Access Denied</Text>
+          <Text style={{ color: C.text, fontFamily: FontFamily.jakartaExtraBold, fontSize: 18 }}>{t.manage.accessDenied}</Text>
         </View>
       </SafeAreaView>
     );
@@ -129,7 +129,7 @@ export function ManageFacultyScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-      <SubBar title="Manage Faculty" onBack={() => navigation.goBack()} />
+      <SubBar title={t.manage.manageFaculty} onBack={() => navigation.goBack()} />
 
       <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 8 }}>
         <View style={[styles.searchBar, { backgroundColor: C.surface2 }]}>
@@ -196,7 +196,7 @@ export function ManageFacultyScreen({ navigation }: any) {
             <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.emailLabel}</Text>
             <TextInput
               style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-              value={email} onChangeText={setEmail} placeholder="name@bubt.edu.bd" placeholderTextColor={C.textMuted}
+              value={email} onChangeText={setEmail} placeholder={t.manage.emailUniversityPlaceholder} placeholderTextColor={C.textMuted}
               autoCapitalize="none" keyboardType="email-address"
             />
             <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.phoneLabel}</Text>

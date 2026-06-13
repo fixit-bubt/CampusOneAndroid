@@ -192,17 +192,17 @@ export function StaffDashboardScreen({ navigation }: any) {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
         <Text style={[styles.pageTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-          Staff Dashboard
+          {t.dash.staffTitle}
         </Text>
         <Text style={[styles.intro, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-          Manage your assigned maintenance reports
+          {t.dash.staffIntro}
         </Text>
 
         {/* Stat row */}
         <View style={styles.statRow}>
-          <StatCard icon="inbox"  fg={C.info} num={reports.length} label="Assigned"   C={C} />
-          <StatCard icon="pulse"  fg={C.warn} num={active.length}  label="In Progress" C={C} />
-          <StatCard icon="check"  fg={C.success} num={resolved.length} label="Resolved"  C={C} />
+          <StatCard icon="inbox"  fg={C.info} num={reports.length} label={t.dash.statAssigned}   C={C} />
+          <StatCard icon="pulse"  fg={C.warn} num={active.length}  label={t.dash.statInProgress} C={C} />
+          <StatCard icon="check"  fg={C.success} num={resolved.length} label={t.dash.statResolved}  C={C} />
         </View>
 
         <View style={styles.sectionRow}>

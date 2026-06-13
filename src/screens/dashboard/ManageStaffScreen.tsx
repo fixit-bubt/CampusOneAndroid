@@ -87,12 +87,12 @@ export function ManageStaffScreen({ navigation }: any) {
   function demote(u: Profile) {
     if (u.id === user?.id) { toast({ type: 'error', title: t.manage.notAllowed, message: t.manage.cannotDemoteSelf }); return; }
     Alert.alert(
-      'Remove ' + (tab === 'staff' ? 'staff' : 'admin'),
-      `Demote ${u.full_name} back to student?`,
+      tab === 'staff' ? t.manage.removeStaff : t.manage.removeAdmin,
+      t.manage.demoteToStudent(u.full_name),
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Demote', style: 'destructive',
+          text: t.manage.demote, style: 'destructive',
           onPress: async () => {
             const { error } = await supabase.from('profiles').update({ role: 'student', expertise: null }).eq('id', u.id);
             if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
@@ -108,9 +108,9 @@ export function ManageStaffScreen({ navigation }: any) {
   if (profile && profile.role !== 'admin') {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-        <SubBar title="Staff & Admins" onBack={() => navigation.goBack()} />
+        <SubBar title={t.manage.staffAndAdmins} onBack={() => navigation.goBack()} />
         <View style={styles.center}>
-          <Text style={{ color: C.text, fontFamily: FontFamily.jakartaExtraBold, fontSize: 18 }}>Access Denied</Text>
+          <Text style={{ color: C.text, fontFamily: FontFamily.jakartaExtraBold, fontSize: 18 }}>{t.manage.accessDenied}</Text>
         </View>
       </SafeAreaView>
     );
@@ -120,7 +120,7 @@ export function ManageStaffScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-      <SubBar title="Staff & Admins" onBack={() => navigation.goBack()} />
+      <SubBar title={t.manage.staffAndAdmins} onBack={() => navigation.goBack()} />
 
       {/* Tabs with counts */}
       <View style={[styles.tabs, { paddingHorizontal: Layout.screenPadding }]}>
@@ -155,7 +155,7 @@ export function ManageStaffScreen({ navigation }: any) {
         >
           <Feather name="user-plus" size={16} color={C.white} />
           <Text style={[styles.addBtnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>
-            {tab === 'staff' ? 'Add Staff' : 'Add Admin'}
+            {tab === 'staff' ? t.manage.addStaff : t.manage.addAdmin}
           </Text>
         </TouchableOpacity>
 
@@ -216,12 +216,12 @@ export function ManageStaffScreen({ navigation }: any) {
         <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setAddOpen(false)} />
         <View style={[styles.sheet, { backgroundColor: C.surface }]}>
           <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-            {tab === 'staff' ? 'Add Staff' : 'Add Admin'}
+            {tab === 'staff' ? t.manage.addStaff : t.manage.addAdmin}
           </Text>
           <Text style={[styles.sheetSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
             {tab === 'staff'
-              ? 'Creates a staff account — they sign in and land on the Staff Dashboard.'
-              : 'Creates an admin account with full management access.'}
+              ? t.manage.addStaffSub
+              : t.manage.addAdminSub}
           </Text>
 
           <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.fullNameLabel}</Text>
@@ -230,10 +230,10 @@ export function ManageStaffScreen({ navigation }: any) {
             value={name} onChangeText={setName} placeholder={t.manage.fullNamePlaceholder} placeholderTextColor={C.textMuted}
           />
 
-          <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>EMAIL</Text>
+          <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.emailLabel}</Text>
           <TextInput
             style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-            value={email} onChangeText={setEmail} placeholder="name@university.edu" placeholderTextColor={C.textMuted}
+            value={email} onChangeText={setEmail} placeholder={t.manage.emailUniversityPlaceholder} placeholderTextColor={C.textMuted}
             autoCapitalize="none" keyboardType="email-address"
           />
 
