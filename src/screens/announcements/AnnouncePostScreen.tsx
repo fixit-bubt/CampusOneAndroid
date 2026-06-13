@@ -11,6 +11,7 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { useT } from '../../i18n';
 import type { Announcement } from '../../types/database';
 
 const PRIORITIES: { id: Announcement['priority']; label: string }[] = [
@@ -27,6 +28,7 @@ function priColor(C: any, id: Announcement['priority']): string {
 export function AnnouncePostScreen({ navigation }: any) {
   const { C } = useTheme();
   const { user, profile } = useAuth();
+  const t = useT();
 
   // All hooks must be declared before any early return
   const [title, setTitle] = useState('');
@@ -72,7 +74,7 @@ export function AnnouncePostScreen({ navigation }: any) {
       if (error) throw error;
       navigation.goBack();
     } catch {
-      Alert.alert('Error', 'Could not post announcement. Please try again.');
+      Alert.alert(t.common.error, t.announce2.postFailed);
     } finally {
       setLoading(false);
     }
@@ -87,25 +89,25 @@ export function AnnouncePostScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>TITLE</Text>
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.announce2.labelTitle}</Text>
         <TextInput
           style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
           value={title}
           onChangeText={setTitle}
-          placeholder="e.g. Class suspended Thursday"
+          placeholder={t.announce2.titlePlaceholder}
           placeholderTextColor={C.textMuted}
         />
 
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>DEPARTMENT</Text>
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.announce2.labelDepartment}</Text>
         <TextInput
           style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
           value={dept}
           onChangeText={setDept}
-          placeholder="e.g. Examination Dept"
+          placeholder={t.announce2.deptPlaceholder}
           placeholderTextColor={C.textMuted}
         />
 
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>PRIORITY</Text>
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.announce2.labelPriority}</Text>
         <View style={[styles.segRow, { backgroundColor: C.surface2, borderColor: C.border }]}>
           {PRIORITIES.map(p => {
             const on = priority === p.id;
@@ -124,12 +126,12 @@ export function AnnouncePostScreen({ navigation }: any) {
           })}
         </View>
 
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>BODY</Text>
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.announce2.labelBody}</Text>
         <TextInput
           style={[styles.textarea, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
           value={body}
           onChangeText={setBody}
-          placeholder="Write the notice…"
+          placeholder={t.announce2.bodyPlaceholder}
           placeholderTextColor={C.textMuted}
           multiline
           textAlignVertical="top"
