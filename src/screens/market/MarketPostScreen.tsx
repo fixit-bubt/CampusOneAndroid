@@ -9,6 +9,7 @@ import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
+import { useT } from '../../i18n';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout, Radius , Accent } from '../../theme';
@@ -33,6 +34,7 @@ const CONDITIONS: { id: Listing['condition']; label: string }[] = [
 export function MarketPostScreen({ route, navigation }: any) {
   const { listing } = (route.params ?? {}) as { listing?: Listing };
   const { C } = useTheme();
+  const t = useT();
   const { user } = useAuth();
 
   const [cat, setCat] = useState<Listing['category'] | null>(listing?.category ?? null);
@@ -51,7 +53,7 @@ export function MarketPostScreen({ route, navigation }: any) {
   async function pickImage() {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission required', 'Please allow photo library access to attach a photo.');
+      Alert.alert(t.market2.permissionRequired, t.market2.photoPermissionBody);
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -70,7 +72,7 @@ export function MarketPostScreen({ route, navigation }: any) {
       if (!result2.success) throw new Error(result2.error);
       setPhotoUri(result2.url);
     } catch {
-      Alert.alert('Upload failed', 'Could not upload image. Please try again.');
+      Alert.alert(t.market2.uploadFailed, t.market2.uploadFailedBody);
     } finally {
       setUploading(false);
     }
@@ -100,7 +102,7 @@ export function MarketPostScreen({ route, navigation }: any) {
       }
       navigation.goBack();
     } catch {
-      Alert.alert('Error', 'Could not save listing. Please try again.');
+      Alert.alert(t.common.error, t.market2.saveListingFailed);
     } finally {
       setLoading(false);
     }
@@ -109,7 +111,7 @@ export function MarketPostScreen({ route, navigation }: any) {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar
-        title={isEdit ? 'Edit Listing' : 'Sell an Item'}
+        title={isEdit ? t.market2.editListing : t.market2.sellItem}
         onBack={() => navigation.goBack()}
       />
 
@@ -119,7 +121,7 @@ export function MarketPostScreen({ route, navigation }: any) {
         keyboardShouldPersistTaps="handled"
       >
         {/* Category */}
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>CATEGORY</Text>
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.market2.category}</Text>
         <View style={styles.catGrid}>
           {CATEGORIES.map(c => {
             const on = cat === c.id;
@@ -145,17 +147,17 @@ export function MarketPostScreen({ route, navigation }: any) {
         </View>
 
         {/* Title */}
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>ITEM NAME</Text>
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.market2.itemName}</Text>
         <TextInput
           style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
           value={title}
           onChangeText={setTitle}
-          placeholder="e.g. Scientific calculator"
+          placeholder={t.market2.itemNamePlaceholder}
           placeholderTextColor={C.textMuted}
         />
 
         {/* Photo */}
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>PHOTO (optional)</Text>
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.market2.photoOptional}</Text>
         <TouchableOpacity
           style={[styles.photoBtn, { backgroundColor: C.surface, borderColor: C.border }]}
           onPress={pickImage}
@@ -168,25 +170,25 @@ export function MarketPostScreen({ route, navigation }: any) {
             <View style={styles.photoPlaceholder}>
               <Feather name="camera" size={22} color={C.textMuted} />
               <Text style={[styles.photoPlaceholderTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                {uploading ? 'Uploading…' : 'Tap to add photo'}
+                {uploading ? t.market2.uploading : t.market2.tapToAddPhoto}
               </Text>
             </View>
           )}
         </TouchableOpacity>
 
         {/* Price */}
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>PRICE (৳)</Text>
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.market2.priceLabel}</Text>
         <TextInput
           style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
           value={price}
           onChangeText={t => setPrice(t.replace(/\D/g, ''))}
-          placeholder="1500"
+          placeholder={t.market2.pricePlaceholder}
           placeholderTextColor={C.textMuted}
           keyboardType="numeric"
         />
 
         {/* Condition */}
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>CONDITION</Text>
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.market2.condition}</Text>
         <View style={[styles.segRow, { backgroundColor: C.surface2, borderColor: C.border }]}>
           {CONDITIONS.map(c => {
             const on = condition === c.id;
@@ -207,7 +209,7 @@ export function MarketPostScreen({ route, navigation }: any) {
 
         {/* Negotiable */}
         <View style={[styles.switchRow, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <Text style={[styles.switchLabel, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Negotiable</Text>
+          <Text style={[styles.switchLabel, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.market2.negotiable}</Text>
           <Switch
             value={negotiable}
             onValueChange={setNegotiable}
@@ -217,12 +219,12 @@ export function MarketPostScreen({ route, navigation }: any) {
         </View>
 
         {/* Description */}
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>DESCRIPTION</Text>
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.market2.description}</Text>
         <TextInput
           style={[styles.textarea, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
           value={desc}
           onChangeText={setDesc}
-          placeholder="Describe the item — condition details, what's included, etc."
+          placeholder={t.market2.descriptionPlaceholder}
           placeholderTextColor={C.textMuted}
           multiline
           textAlignVertical="top"
@@ -237,7 +239,7 @@ export function MarketPostScreen({ route, navigation }: any) {
         >
           <Icon name="check" size={18} color={canSubmit ? '#fff' : C.textMuted} />
           <Text style={[styles.submitText, { color: canSubmit ? '#fff' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-            {isEdit ? 'Save changes' : 'Post listing'}
+            {isEdit ? t.market2.saveChanges : t.market2.postListing}
           </Text>
         </TouchableOpacity>
 
