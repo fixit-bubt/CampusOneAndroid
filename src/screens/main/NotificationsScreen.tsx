@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
+import { useT } from '../../i18n';
 import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { SectorIcon } from '../../components/ui/SectorIcon';
@@ -86,6 +87,7 @@ function Empty({ C }: { C: any }) {
 // ── NotificationsScreen ───────────────────────────────────────────────────────
 export function NotificationsScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
+  const t = useT();
   const { user } = useAuth();
   const [notifs, setNotifs]     = useState<Notification[]>([]);
   const [filter, setFilter]     = useState<Filter>('all');
@@ -121,7 +123,7 @@ export function NotificationsScreen({ navigation }: any) {
   const unread = notifs.filter(n => !n.read).length;
   const list = filter === 'unread' ? notifs.filter(n => !n.read) : notifs;
 
-  const BUCKET_LABELS = { new: 'NEW', today: 'TODAY', earlier: 'EARLIER' };
+  const BUCKET_LABELS = { new: t.mainx.notifBucketNew, today: t.mainx.notifBucketToday, earlier: t.mainx.notifBucketEarlier };
   const buckets = (['new', 'today', 'earlier'] as const)
     .map(b => ({ id: b, label: BUCKET_LABELS[b], items: list.filter(n => bucket(n) === b) }))
     .filter(g => g.items.length > 0);
