@@ -9,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
+import { useT } from '../../i18n';
 import { Icon } from '../../components/ui/Icon';
 import { Brand } from './LandingScreen';
 import { FontFamily, Layout } from '../../theme';
@@ -19,6 +20,7 @@ type Props = NativeStackScreenProps<AuthStackParams, 'Register'>;
 export function RegisterScreen({ navigation }: Props) {
   const { C } = useTheme();
   const { signUp } = useAuth();
+  const t = useT();
 
   const [name, setName]   = useState('');
   const [email, setEmail] = useState('');
@@ -32,11 +34,11 @@ export function RegisterScreen({ navigation }: Props) {
     if (!ok || busy) return;
     const emailVal = email.trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) {
-      setErr('Enter a valid email address.');
+      setErr(t.auth.invalidEmail);
       return;
     }
     if (pass.length < 6) {
-      setErr('Password must be at least 6 characters.');
+      setErr(t.auth.passwordTooShort);
       return;
     }
     setBusy(true);
@@ -44,7 +46,7 @@ export function RegisterScreen({ navigation }: Props) {
     try {
       await signUp(emailVal, pass, name.trim());
     } catch (e: any) {
-      setErr(e?.message ?? 'Registration failed. Please try again.');
+      setErr(e?.message ?? t.auth.registerFailed);
     } finally {
       setBusy(false);
     }
@@ -62,7 +64,7 @@ export function RegisterScreen({ navigation }: Props) {
           <Icon name="arrowL" size={20} color={C.text} />
         </TouchableOpacity>
         <Text style={[styles.subbarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-          Register
+          {t.auth.register}
         </Text>
         <View style={{ width: 40 }} />
       </View>
@@ -82,20 +84,20 @@ export function RegisterScreen({ navigation }: Props) {
 
           {/* Full Name */}
           <Text style={[styles.label, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>
-            Full Name
+            {t.auth.fullName}
           </Text>
           <TextInput
             style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaRegular }]}
             value={name}
             onChangeText={setName}
-            placeholder="Your full name"
+            placeholder={t.auth.fullNamePlaceholder}
             placeholderTextColor={C.textMuted}
             autoCapitalize="words"
           />
 
           {/* Email */}
           <Text style={[styles.label, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>
-            Email
+            {t.auth.email}
           </Text>
           <TextInput
             style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaRegular }]}
@@ -110,7 +112,7 @@ export function RegisterScreen({ navigation }: Props) {
 
           {/* Password */}
           <Text style={[styles.label, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>
-            Password
+            {t.auth.password}
           </Text>
           <TextInput
             style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaRegular }]}
@@ -140,7 +142,7 @@ export function RegisterScreen({ navigation }: Props) {
             ) : (
               <View style={styles.btnRow}>
                 <Text style={[styles.btnText, { fontFamily: FontFamily.jakartaBold }]}>
-                  Continue
+                  {t.auth.continueBtn}
                 </Text>
                 <Icon name="chevR" size={18} color="#fff" />
               </View>
@@ -150,11 +152,11 @@ export function RegisterScreen({ navigation }: Props) {
           {/* Switch to Login */}
           <View style={styles.switchRow}>
             <Text style={[styles.switchText, { color: C.textMuted, fontFamily: FontFamily.jakartaSemiBold }]}>
-              Already have an account?{' '}
+              {t.auth.alreadyHaveAccount}{' '}
             </Text>
             <TouchableOpacity onPress={() => navigation.replace('Login')}>
               <Text style={[styles.switchLink, { color: C.brand, fontFamily: FontFamily.jakartaExtraBold }]}>
-                Sign In
+                {t.auth.signIn}
               </Text>
             </TouchableOpacity>
           </View>
