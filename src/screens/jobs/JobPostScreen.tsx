@@ -74,7 +74,8 @@ export function JobPostScreen({ navigation }: any) {
   const [applyValue, setApplyValue] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const canSubmit = company.trim() && role.trim() && desc.trim();
+  // apply_value is required by the DB for both email and link methods.
+  const canSubmit = company.trim() && role.trim() && desc.trim() && applyValue.trim();
 
   async function handleSubmit() {
     if (!canSubmit || !user) return;
