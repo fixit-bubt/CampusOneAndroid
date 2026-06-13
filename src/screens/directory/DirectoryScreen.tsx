@@ -19,6 +19,7 @@ type ConnState = 'none' | 'requested' | 'incoming' | 'connected';
 interface Student {
   id: string;
   full_name: string;
+  avatar_url?: string | null;
   department: string;
   intake: string;
   section: string;
@@ -111,7 +112,7 @@ export function DirectoryScreen({ navigation }: any) {
           {filtered.map(s => (
             <View key={s.id} style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
               <View style={styles.cardTop}>
-                <Avatar name={s.full_name} size="md" />
+                <Avatar uri={s.avatar_url} name={s.full_name} size="md" />
                 <View style={styles.cardBody}>
                   <Text style={[styles.cardName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                     {s.full_name}
