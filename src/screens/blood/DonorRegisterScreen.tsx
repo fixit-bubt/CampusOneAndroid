@@ -7,6 +7,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
+import { useT } from '../../i18n';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout, SectorColors } from '../../theme';
@@ -18,6 +19,7 @@ const GROUPS: BloodRequest['blood_group'][] = ['A+', 'A-', 'B+', 'B-', 'AB+', 'A
 export function DonorRegisterScreen({ navigation }: any) {
   const { C } = useTheme();
   const { user } = useAuth();
+  const t = useT();
 
   const [group, setGroup] = useState<BloodRequest['blood_group'] | null>(null);
   const [area, setArea] = useState('');
@@ -46,7 +48,7 @@ export function DonorRegisterScreen({ navigation }: any) {
       if (profileRes.error) throw profileRes.error;
       navigation.goBack();
     } catch {
-      Alert.alert('Error', 'Could not register. Please try again.');
+      Alert.alert(t.common.error, t.blood2.registerError);
     } finally {
       setLoading(false);
     }
@@ -54,14 +56,14 @@ export function DonorRegisterScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-      <SubBar title="Register as Donor" onBack={() => navigation.goBack()} />
+      <SubBar title={t.blood2.registerAsDonorTitle} onBack={() => navigation.goBack()} />
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>YOUR BLOOD GROUP</Text>
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.blood2.yourBloodGroup}</Text>
         <View style={styles.groupGrid}>
           {GROUPS.map(g => {
             const on = group === g;
@@ -83,16 +85,16 @@ export function DonorRegisterScreen({ navigation }: any) {
           })}
         </View>
 
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>AREA</Text>
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.blood2.area}</Text>
         <TextInput
           style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
           value={area}
           onChangeText={setArea}
-          placeholder="e.g. Mirpur"
+          placeholder={t.blood2.areaPlaceholder}
           placeholderTextColor={C.textMuted}
         />
 
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>PHONE / WHATSAPP</Text>
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.blood2.phoneWhatsapp}</Text>
         <TextInput
           style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
           value={phone}
@@ -102,12 +104,12 @@ export function DonorRegisterScreen({ navigation }: any) {
           keyboardType="phone-pad"
         />
 
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>LAST DONATED (OPTIONAL)</Text>
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.blood2.lastDonatedOptional}</Text>
         <TextInput
           style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
           value={lastDonated}
           onChangeText={setLastDonated}
-          placeholder="e.g. 3 months ago"
+          placeholder={t.blood2.lastDonatedPlaceholder}
           placeholderTextColor={C.textMuted}
         />
 
