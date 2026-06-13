@@ -93,7 +93,7 @@ export function StudyUploadScreen({ route, navigation }: any) {
   }
 
   async function handleSubmit() {
-    if (!canSubmit || !user || !courseId) return;
+    if (!canSubmit || !user || !courseId || loading) return;
     setLoading(true);
     try {
       let storagePath: string | null = null;
