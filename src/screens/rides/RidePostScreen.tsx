@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
+import { useT } from '../../i18n';
 import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
@@ -67,6 +68,7 @@ const segStyles = StyleSheet.create({
 
 export function RidePostScreen({ navigation }: any) {
   const { C } = useTheme();
+  const t = useT();
   const { user } = useAuth();
 
   const [vehicle, setVehicle] = useState<Ride['vehicle']>('Car');
@@ -92,12 +94,12 @@ export function RidePostScreen({ navigation }: any) {
     if (!canSubmit || !user) return;
     const parsedFare = parseInt(fare, 10);
     if (isNaN(parsedFare) || parsedFare < 0) {
-      Alert.alert('Invalid fare', 'Please enter a valid fare amount.');
+      Alert.alert(t.rides2.invalidFareTitle, t.rides2.invalidFareBody);
       return;
     }
     const timePart = time.trim() || '08:00';
     if (!date.trim().match(/^\d{4}-\d{2}-\d{2}$/)) {
-      Alert.alert('Invalid date', 'Please enter a valid date (YYYY-MM-DD).');
+      Alert.alert(t.rides2.invalidDateTitle, t.rides2.invalidDateBody);
       return;
     }
     setLoading(true);
@@ -118,7 +120,7 @@ export function RidePostScreen({ navigation }: any) {
       if (error) throw error;
       navigation.goBack();
     } catch {
-      Alert.alert('Error', 'Could not post ride. Please try again.');
+      Alert.alert(t.common.error, t.rides2.postFailed);
     } finally {
       setLoading(false);
     }
@@ -126,7 +128,7 @@ export function RidePostScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-      <SubBar title="Offer a Ride" onBack={() => navigation.goBack()} />
+      <SubBar title={t.rides2.offerRideTitle} onBack={() => navigation.goBack()} />
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
@@ -134,52 +136,52 @@ export function RidePostScreen({ navigation }: any) {
         keyboardShouldPersistTaps="handled"
       >
         {/* Vehicle */}
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>VEHICLE</Text>
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.rides2.vehicle}</Text>
         <SegControl options={VEHICLES} value={vehicle} onChange={setVehicle} C={C} />
 
         {/* Direction */}
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>DIRECTION</Text>
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.rides2.direction}</Text>
         <SegControl options={DIRECTIONS} value={direction} onChange={setDirection} C={C} />
 
         {/* From */}
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>FROM</Text>
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.rides2.from}</Text>
         <TextInput
           style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
           value={from}
           onChangeText={setFrom}
-          placeholder="e.g. Shyamoli"
+          placeholder={t.rides2.fromPlaceholder}
           placeholderTextColor={C.textMuted}
         />
 
         {/* To */}
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>TO</Text>
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.rides2.to}</Text>
         <TextInput
           style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
           value={to}
           onChangeText={setTo}
-          placeholder="e.g. Campus"
+          placeholder={t.rides2.toPlaceholder}
           placeholderTextColor={C.textMuted}
         />
 
         {/* Date + Time */}
         <View style={styles.row}>
           <View style={styles.halfField}>
-            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>DATE</Text>
+            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>{t.rides2.date}</Text>
             <TextInput
               style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
               value={date}
               onChangeText={setDate}
-              placeholder="Today"
+              placeholder={t.rides2.datePlaceholder}
               placeholderTextColor={C.textMuted}
             />
           </View>
           <View style={styles.halfField}>
-            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>TIME</Text>
+            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>{t.rides2.time}</Text>
             <TextInput
               style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
               value={time}
               onChangeText={setTime}
-              placeholder="8:00 AM"
+              placeholder={t.rides2.timePlaceholder}
               placeholderTextColor={C.textMuted}
             />
           </View>
@@ -188,7 +190,7 @@ export function RidePostScreen({ navigation }: any) {
         {/* Seats + Fare */}
         <View style={styles.row}>
           <View style={styles.halfField}>
-            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>SEATS</Text>
+            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>{t.rides2.seats}</Text>
             <TextInput
               style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
               value={seats}
@@ -198,7 +200,7 @@ export function RidePostScreen({ navigation }: any) {
             />
           </View>
           <View style={styles.halfField}>
-            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>FARE (৳)</Text>
+            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>{t.rides2.fareTk}</Text>
             <TextInput
               style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
               value={fare}
@@ -211,7 +213,7 @@ export function RidePostScreen({ navigation }: any) {
         </View>
 
         {/* Repeats on (optional) */}
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>REPEATS ON (OPTIONAL)</Text>
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.rides2.repeatsOnOptional}</Text>
         <View style={styles.dayRow}>
           {DOW.map(d => {
             const on = recurring.includes(d);
@@ -231,12 +233,12 @@ export function RidePostScreen({ navigation }: any) {
         </View>
 
         {/* Notes (optional) */}
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>NOTES (OPTIONAL)</Text>
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.rides2.notesOptional}</Text>
         <TextInput
           style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium, height: 70, paddingTop: 12 }]}
           value={notes}
           onChangeText={setNotes}
-          placeholder="e.g. Meet at the main gate"
+          placeholder={t.rides2.notesPlaceholder}
           placeholderTextColor={C.textMuted}
           multiline
           textAlignVertical="top"
