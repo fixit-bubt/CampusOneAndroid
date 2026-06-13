@@ -13,6 +13,7 @@ import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout , Accent, LightColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
+import { useT } from '../../i18n';
 
 const MK_CATS: Record<string, { icon: string; fg: string; label: string }> = {
   books:       { icon: 'book-open', fg: Accent.blue, label: 'Books'       },
@@ -26,6 +27,7 @@ const MK_CATS: Record<string, { icon: string; fg: string; label: string }> = {
 export function MarketDetailScreen({ route, navigation }: any) {
   const { C, isDark } = useTheme();
   const { user, profile } = useAuth();
+  const t = useT();
   const isAdmin = profile?.role === 'admin';
   const { listingId } = route.params;
   const [listing, setListing] = useState<any>(null);
@@ -101,7 +103,7 @@ export function MarketDetailScreen({ route, navigation }: any) {
           {isSold && (
             <View style={styles.soldOverlay}>
               <View style={[styles.soldPill, { backgroundColor: '#fff' }]}>
-                <Text style={[styles.soldTxt, { color: LightColors.text, fontFamily: FontFamily.jakartaExtraBold }]}>Sold</Text>
+                <Text style={[styles.soldTxt, { color: LightColors.text, fontFamily: FontFamily.jakartaExtraBold }]}>{t.market2.sold}</Text>
               </View>
             </View>
           )}
@@ -123,19 +125,19 @@ export function MarketDetailScreen({ route, navigation }: any) {
           </View>
           {listing.negotiable && (
             <View style={[styles.pill, { backgroundColor: C.infoBg }]}>
-              <Text style={[styles.pillTxt, { color: C.info, fontFamily: FontFamily.jakartaSemiBold }]}>Negotiable</Text>
+              <Text style={[styles.pillTxt, { color: C.info, fontFamily: FontFamily.jakartaSemiBold }]}>{t.market2.negotiable}</Text>
             </View>
           )}
           {isSold && (
             <View style={[styles.pill, { backgroundColor: C.dangerBg }]}>
               <View style={[styles.soldDot, { backgroundColor: C.danger }]} />
-              <Text style={[styles.pillTxt, { color: C.danger, fontFamily: FontFamily.jakartaSemiBold }]}>Sold</Text>
+              <Text style={[styles.pillTxt, { color: C.danger, fontFamily: FontFamily.jakartaSemiBold }]}>{t.market2.sold}</Text>
             </View>
           )}
         </View>
 
         {/* Description */}
-        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>DETAILS</Text>
+        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>{t.market2.details}</Text>
         <Text style={[styles.body, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>{listing.description}</Text>
 
         {/* Seller card */}
@@ -143,7 +145,7 @@ export function MarketDetailScreen({ route, navigation }: any) {
           <Avatar name={sellerName ?? undefined} size="sm" />
           <View style={{ flex: 1 }}>
             <Text style={[styles.sellerName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-              {sellerName ?? 'Unknown'}
+              {sellerName ?? t.market2.unknown}
             </Text>
             <Text style={[styles.sellerSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
               {listing.location}
@@ -161,7 +163,7 @@ export function MarketDetailScreen({ route, navigation }: any) {
                 activeOpacity={0.85}
               >
                 <Icon name="sliders" size={16} color={C.text} />
-                <Text style={[styles.halfBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Edit</Text>
+                <Text style={[styles.halfBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.common.edit}</Text>
               </TouchableOpacity>
               {!isSold && (
                 <TouchableOpacity
@@ -170,7 +172,7 @@ export function MarketDetailScreen({ route, navigation }: any) {
                   activeOpacity={0.85}
                 >
                   <Feather name="check" size={16} color={C.text} />
-                  <Text style={[styles.halfBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Mark Sold</Text>
+                  <Text style={[styles.halfBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.market2.markSold}</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -180,19 +182,19 @@ export function MarketDetailScreen({ route, navigation }: any) {
               activeOpacity={0.85}
             >
               <Icon name="trash" size={16} color={C.danger} />
-              <Text style={[styles.actionTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>Delete listing</Text>
+              <Text style={[styles.actionTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>{t.market2.deleteListing}</Text>
             </TouchableOpacity>
           </View>
         ) : revealed ? (
           <View style={[styles.contactCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <Text style={[styles.contactLabel, { color: Accent.teal, fontFamily: FontFamily.jakartaBold }]}>Contact Info</Text>
+            <Text style={[styles.contactLabel, { color: Accent.teal, fontFamily: FontFamily.jakartaBold }]}>{t.market2.contactInfo}</Text>
             <View style={styles.contactRow}>
               <Feather name="user" size={15} color={C.textMuted} />
-              <Text style={[styles.contactTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>{contactInfo?.name ?? sellerName ?? 'Seller'}</Text>
+              <Text style={[styles.contactTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>{contactInfo?.name ?? sellerName ?? t.market2.seller}</Text>
             </View>
             <View style={styles.contactRow}>
               <Feather name="phone" size={15} color={C.textMuted} />
-              <Text style={[styles.contactTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>{contactInfo?.whatsapp ?? 'WhatsApp not shared'}</Text>
+              <Text style={[styles.contactTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>{contactInfo?.whatsapp ?? t.market2.whatsappNotShared}</Text>
             </View>
           </View>
         ) : !isSold ? (
@@ -202,7 +204,7 @@ export function MarketDetailScreen({ route, navigation }: any) {
             activeOpacity={0.85}
           >
             <Icon name="mail" size={17} color="#fff" />
-            <Text style={[styles.actionTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>Contact Seller</Text>
+            <Text style={[styles.actionTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>{t.market2.contactSeller}</Text>
           </TouchableOpacity>
         ) : null}
 
@@ -214,7 +216,7 @@ export function MarketDetailScreen({ route, navigation }: any) {
             activeOpacity={0.85}
           >
             <Icon name="trash" size={16} color={C.danger} />
-            <Text style={[styles.actionTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>Delete listing (admin)</Text>
+            <Text style={[styles.actionTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>{t.market2.deleteListingAdmin}</Text>
           </TouchableOpacity>
         )}
 
