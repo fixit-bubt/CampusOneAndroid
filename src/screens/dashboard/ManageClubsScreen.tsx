@@ -17,11 +17,11 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 
-const CATEGORIES = ['academic', 'cultural', 'sports', 'technical', 'social', 'other'];
+const CATEGORIES = ['Tech', 'Cultural', 'Sports', 'Professional', 'Social'];
 
 const CL_CATS: Record<string, string> = {
-  academic: Accent.blue, cultural: Accent.pink, sports: Accent.teal,
-  technical: Accent.purple, social: Accent.amber, other: Accent.slate,
+  Tech: Accent.purple, Cultural: Accent.pink, Sports: Accent.teal,
+  Professional: Accent.blue, Social: Accent.amber, other: Accent.slate,
 };
 
 interface ClubRow {
@@ -104,7 +104,7 @@ export function ManageClubsScreen({ navigation }: any) {
     setCreating(false);
     if (error) { Alert.alert(t.common.error, error.message); return; }
     setCreateOpen(false);
-    setName(''); setTagline(''); setCategory('other');
+    setName(''); setTagline(''); setCategory('Tech');
     await load();
   }
 
