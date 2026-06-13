@@ -91,7 +91,7 @@ export function RidePostScreen({ navigation }: any) {
   const canSubmit = from.trim() && to.trim() && date.trim() && fare.trim();
 
   async function handleSubmit() {
-    if (!canSubmit || !user) return;
+    if (!canSubmit || !user || loading) return;
     const parsedFare = parseInt(fare, 10);
     if (isNaN(parsedFare) || parsedFare < 0) {
       Alert.alert(t.rides2.invalidFareTitle, t.rides2.invalidFareBody);
