@@ -59,7 +59,7 @@ export function AnnouncePostScreen({ navigation }: any) {
   const canSubmit = title.trim() && body.trim();
 
   async function handleSubmit() {
-    if (!canSubmit || !user) return;
+    if (!canSubmit || !user || loading) return;
     setLoading(true);
     try {
       const { error } = await supabase.from('announcements').insert({
