@@ -7,6 +7,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
+import { useToast } from '../../components/ui/Toast';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
@@ -336,6 +337,7 @@ export function StudyHubScreen({ navigation }: any) {
   const { user, profile } = useAuth();
   const isAdmin = profile?.role === 'admin';
 
+  const toast = useToast();
   const [sub, setSub] = useState<Sub>('home');
   const [persona, setPersona] = useState<Persona>('notjoined');
   const [mySection, setMySection] = useState<SectionRow | null>(null);
@@ -497,7 +499,7 @@ export function StudyHubScreen({ navigation }: any) {
       .select('id, number, years, is_public')
       .eq('department_id', deptId)
       .order('number', { ascending: false });
-    if (error) { Alert.alert('Error', error.message); return; }
+    if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }
     setCatIntakes((data ?? []) as IntakeRow[]);
   }
 
@@ -507,7 +509,7 @@ export function StudyHubScreen({ navigation }: any) {
       .select('id, number, join_code, is_public')
       .eq('intake_id', intakeId)
       .order('number');
-    if (error) { Alert.alert('Error', error.message); return; }
+    if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }
     const secs = (data ?? []) as CatSection[];
     if (secs.length) {
       const { data: crs } = await supabase
@@ -526,11 +528,11 @@ export function StudyHubScreen({ navigation }: any) {
   async function addIntake() {
     if (!catDept) return;
     const n = parseInt(numInput, 10);
-    if (!Number.isInteger(n) || n <= 0) { Alert.alert('Invalid', 'Enter a valid intake number.'); return; }
+    if (!Number.isInteger(n) || n <= 0) { toast({ type: 'error', title: 'Invalid', message: 'Enter a valid intake number.' }); return; }
     const { error } = await supabase
       .from('study_intakes')
       .insert({ department_id: catDept, number: n, years: yearsInput.trim() || null });
-    if (error) { Alert.alert('Error', error.code === '23505' ? 'That intake already exists.' : error.message); return; }
+    if (error) { toast({ type: 'error', title: 'Error', message: error.code === '23505' ? 'That intake already exists.' : error.message }); return; }
     setAddIntakeOpen(false); setNumInput(''); setYearsInput('');
     flash(`Intake ${n} added`);
     loadCatIntakes(catDept);
@@ -539,11 +541,11 @@ export function StudyHubScreen({ navigation }: any) {
   async function addCatSection() {
     if (!addSectionFor) return;
     const n = parseInt(numInput, 10);
-    if (!Number.isInteger(n) || n <= 0) { Alert.alert('Invalid', 'Enter a valid section number.'); return; }
+    if (!Number.isInteger(n) || n <= 0) { toast({ type: 'error', title: 'Invalid', message: 'Enter a valid section number.' }); return; }
     const { error } = await supabase
       .from('study_sections')
       .insert({ intake_id: addSectionFor, number: n });
-    if (error) { Alert.alert('Error', error.code === '23505' ? 'That section already exists.' : error.message); return; }
+    if (error) { toast({ type: 'error', title: 'Error', message: error.code === '23505' ? 'That section already exists.' : error.message }); return; }
     const intakeId = addSectionFor;
     setAddSectionFor(null); setNumInput('');
     flash(`Section ${n} added`);
@@ -557,7 +559,7 @@ export function StudyHubScreen({ navigation }: any) {
         { section_id: sectionId, user_id: userId, role: 'cr', status: 'approved' },
         { onConflict: 'section_id,user_id' },
       );
-    if (error) { Alert.alert('Error', error.message); return; }
+    if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }
     setSetCrFor(null); setCrSearch('');
     flash('CR assigned');
     if (catExpanded) loadCatSections(catExpanded);
@@ -605,20 +607,20 @@ export function StudyHubScreen({ navigation }: any) {
       message: pinText.trim(),
       pinned_by: user.id,
     });
-    if (error) { Alert.alert('Error', error.message); return; }
+    if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }
     setPinText('');
     loadPins();
   }
 
   async function deletePin(id: string) {
     const { error } = await supabase.from('study_pins').delete().eq('id', id);
-    if (error) { Alert.alert('Error', error.message); return; }
+    if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }
     setPins(prev => prev.filter(p => p.id !== id));
   }
 
   async function setMemberRole(memberId: string, role: 'editor' | 'member') {
     const { error } = await supabase.from('study_section_members').update({ role }).eq('id', memberId);
-    if (error) { Alert.alert('Error', error.message); return; }
+    if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }
     loadSecMembers();
   }
 
@@ -629,7 +631,7 @@ export function StudyHubScreen({ navigation }: any) {
         text: 'Remove', style: 'destructive',
         onPress: async () => {
           const { error } = await supabase.from('study_section_members').delete().eq('id', m.id);
-          if (error) { Alert.alert('Error', error.message); return; }
+          if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }
           loadSecMembers();
         },
       },
@@ -717,7 +719,7 @@ export function StudyHubScreen({ navigation }: any) {
     if (codeInput.trim().length < 4 || !user) return;
     const code = codeInput.trim().toUpperCase();
     const { data, error } = await supabase.rpc('join_section_by_code', { p_code: code });
-    if (error) { Alert.alert('Could not join', error.message); return; }
+    if (error) { toast({ type: 'error', title: 'Could not join', message: error.message }); return; }
     setCodeInput('');
     flash('Joined section!');
     load();
@@ -728,7 +730,7 @@ export function StudyHubScreen({ navigation }: any) {
     const { error } = await supabase
       .from('study_section_members')
       .insert({ section_id: sectionId, user_id: user.id, role: 'member', status: 'pending' });
-    if (error) { Alert.alert('Error', error.message); return; }
+    if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }
     flash('Join request sent to CR');
   }
 
@@ -738,7 +740,7 @@ export function StudyHubScreen({ navigation }: any) {
       .from('study_section_members')
       .update({ status: 'approved', decided_by: user.id, decided_at: new Date().toISOString() })
       .eq('id', id);
-    if (error) { Alert.alert('Error', error.message); return; }
+    if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }
     setJoinReqs(j => j.filter(x => x.id !== id));
     flash('Member approved');
   }
@@ -760,7 +762,7 @@ export function StudyHubScreen({ navigation }: any) {
       section_number: parseInt(section),
       reason: reason || null,
     });
-    if (error) { Alert.alert('Error', error.message); return; }
+    if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }
     setCreateOpen(false);
     setPersona('pendingcreate');
     flash('Request submitted');
@@ -769,8 +771,8 @@ export function StudyHubScreen({ navigation }: any) {
   async function approveAdminReq(id: string) {
     // RPC creates intake + section, generates join code and assigns requester as CR
     const { data, error } = await supabase.rpc('approve_section_request', { p_request_id: id });
-    if (error) { Alert.alert('Error', error.message); return; }
-    if (data && data.ok === false) { Alert.alert('Error', data.error ?? 'Could not approve'); return; }
+    if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }
+    if (data && data.ok === false) { toast({ type: 'error', title: 'Error', message: data.error ?? 'Could not approve' }); return; }
     setAdminReqs(r => r.filter(x => x.id !== id));
     flash(`Approved — join code ${data?.joinCode ?? 'generated'}`);
   }
@@ -778,7 +780,7 @@ export function StudyHubScreen({ navigation }: any) {
   async function rejectAdminReq(note: string) {
     if (!rejectId) return;
     const { error } = await supabase.rpc('reject_section_request', { p_request_id: rejectId, p_note: note });
-    if (error) { Alert.alert('Error', error.message); return; }
+    if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }
     setAdminReqs(r => r.filter(x => x.id !== rejectId));
     setRejectId(null);
     flash('Request rejected');
@@ -790,8 +792,8 @@ export function StudyHubScreen({ navigation }: any) {
       p_intake_id: mySection.intake_id,
       p_proposal: proposal,
     });
-    if (error) { Alert.alert('Error', error.message); return; }
-    if (data && data.ok === false) { Alert.alert('Could not start vote', data.error ?? 'Unknown error'); return; }
+    if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }
+    if (data && data.ok === false) { toast({ type: 'error', title: 'Could not start vote', message: data.error ?? 'Unknown error' }); return; }
     setStartVoteOpen(false);
     flash('Vote started');
     loadVote(mySection.intake_id);
@@ -803,8 +805,8 @@ export function StudyHubScreen({ navigation }: any) {
       p_vote_id: vote.id,
       p_ballot: ballot,
     });
-    if (error) { Alert.alert('Error', error.message); return; }
-    if (data && data.ok === false) { Alert.alert('Could not vote', data.error ?? 'Unknown error'); return; }
+    if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }
+    if (data && data.ok === false) { toast({ type: 'error', title: 'Could not vote', message: data.error ?? 'Unknown error' }); return; }
     flash('Vote recorded');
     loadVote(mySection.intake_id);
     load(); // intake visibility may have flipped if the vote closed

@@ -2,8 +2,9 @@
 import { useState } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView, Platform,
-  StyleSheet, Alert, type ViewStyle,
+  StyleSheet, type ViewStyle,
 } from 'react-native';
+import { useToast } from '../../components/ui/Toast';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
@@ -61,6 +62,7 @@ export function JobPostScreen({ navigation }: any) {
   const t = useT();
   const { user, profile } = useAuth();
 
+  const toast = useToast();
   const [company, setCompany] = useState('');
   const [role, setRole] = useState('');
   const [jobType, setJobType] = useState<Job['job_type']>('internship');
@@ -99,7 +101,7 @@ export function JobPostScreen({ navigation }: any) {
       if (error) throw error;
       navigation.goBack();
     } catch {
-      Alert.alert(t.common.error, t.jobs2.postFailed);
+      toast({ type: 'error', title: t.common.error, message: t.jobs2.postFailed });
     } finally {
       setLoading(false);
     }

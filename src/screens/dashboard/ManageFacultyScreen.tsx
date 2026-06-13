@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
-  Modal, Alert, Switch, ActivityIndicator, type ViewStyle, type TextStyle,
+  Modal, Switch, ActivityIndicator, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -19,6 +19,7 @@ import { useAuth } from '../../store/authStore';
 import { uploadFile } from '../../utils/storage';
 import { BUCKETS } from '../../constants/app';
 import { useT } from '../../i18n';
+import { useToast } from '../../components/ui/Toast';
 
 interface FacultyRow {
   id: string;
@@ -38,6 +39,7 @@ export function ManageFacultyScreen({ navigation }: any) {
   const { C } = useTheme();
   const { profile } = useAuth();
   const t = useT();
+  const toast = useToast();
   const [list, setList] = useState<FacultyRow[]>([]);
   const [query, setQuery] = useState('');
   const [target, setTarget] = useState<FacultyRow | null>(null);
@@ -87,7 +89,7 @@ export function ManageFacultyScreen({ navigation }: any) {
       let photoUrl: string | undefined;
       if (photoUri) {
         const up = await uploadFile(BUCKETS.photos, photoUri, `faculty/${target.id}/${Date.now()}.jpg`, 'image/jpeg');
-        if (!up.success) { Alert.alert(t.common.error, up.error); return; }
+        if (!up.success) { toast({ type: 'error', title: t.common.error, message: up.error }); return; }
         photoUrl = up.url;
       }
       const payload: Record<string, any> = {
@@ -101,7 +103,7 @@ export function ManageFacultyScreen({ navigation }: any) {
       };
       if (photoUrl) payload.photo_url = photoUrl;
       const { error } = await supabase.from('faculty').update(payload).eq('id', target.id);
-      if (error) { Alert.alert('Error', error.message); return; }
+      if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
       setTarget(null);
       await load();
     } finally {

@@ -15,6 +15,7 @@ import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
+import { useToast } from '../../components/ui/Toast';
 
 const MED_COLOR = SectorColors.medical;
 const MED_BG = `${SectorColors.medical}1e`;
@@ -57,6 +58,7 @@ export function MyAppointmentsScreen({ navigation }: any) {
   const [appts, setAppts] = useState<Appt[]>([]);
   const [tab, setTab] = useState<'upcoming' | 'past'>('upcoming');
   const [refreshing, setRefreshing] = useState(false);
+  const toast = useToast();
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -88,7 +90,7 @@ export function MyAppointmentsScreen({ navigation }: any) {
             .from('appointments')
             .update({ status: 'Cancelled' })
             .eq('id', a.id);
-          if (error) { Alert.alert(t.common.error, error.message); return; }
+          if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
           load();
         },
       },

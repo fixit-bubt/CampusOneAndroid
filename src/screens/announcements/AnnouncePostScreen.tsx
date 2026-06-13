@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView, Platform,
-  StyleSheet, Alert, Switch, type ViewStyle,
+  StyleSheet, Switch, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
@@ -12,6 +12,7 @@ import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useT } from '../../i18n';
+import { useToast } from '../../components/ui/Toast';
 import type { Announcement } from '../../types/database';
 
 const PRIORITIES: { id: Announcement['priority']; label: string }[] = [
@@ -37,6 +38,7 @@ export function AnnouncePostScreen({ navigation }: any) {
   const [body, setBody] = useState('');
   const [pinned, setPinned] = useState(false);
   const [loading, setLoading] = useState(false);
+  const toast = useToast();
 
   // Web parity: announcements are admin-only.
   if (profile?.role !== 'admin') {
@@ -74,7 +76,7 @@ export function AnnouncePostScreen({ navigation }: any) {
       if (error) throw error;
       navigation.goBack();
     } catch {
-      Alert.alert(t.common.error, t.announce2.postFailed);
+      toast({ type: 'error', title: t.common.error, message: t.announce2.postFailed });
     } finally {
       setLoading(false);
     }

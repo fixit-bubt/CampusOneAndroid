@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
+import { useToast } from '../../components/ui/Toast';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
@@ -21,6 +22,7 @@ const RIDE_BG    = `${SectorColors.ride}1e`;
 export function RideDetailScreen({ route, navigation }: any) {
   const { C } = useTheme();
   const t = useT();
+  const toast = useToast();
   const { user, profile } = useAuth();
   const isAdmin = profile?.role === 'admin';
   const { rideId } = route.params ?? {};
@@ -84,7 +86,7 @@ export function RideDetailScreen({ route, navigation }: any) {
     if (row?.whatsapp) {
       setRequesters(prev => prev.map(r => (r.requester_id === requesterId ? { ...r, whatsapp: row.whatsapp } : r)));
     } else {
-      Alert.alert(t.rides2.noContactTitle, t.rides2.noContactBody);
+      toast({ type: 'info', title: t.rides2.noContactTitle, message: t.rides2.noContactBody });
     }
   }
 
@@ -95,7 +97,7 @@ export function RideDetailScreen({ route, navigation }: any) {
         text: 'Delete', style: 'destructive',
         onPress: async () => {
           const { error } = await supabase.from('rides').delete().eq('id', rideId);
-          if (error) { Alert.alert('Error', error.message); return; }
+          if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }
           navigation.goBack();
         },
       },
@@ -126,7 +128,7 @@ export function RideDetailScreen({ route, navigation }: any) {
         text: 'Delete', style: 'destructive',
         onPress: async () => {
           const { error } = await supabase.from('rides').delete().eq('id', rideId);
-          if (error) { Alert.alert('Error', error.message); return; }
+          if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }
           navigation.goBack();
         },
       },

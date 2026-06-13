@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView,
-  StyleSheet, Alert, type ViewStyle,
+  StyleSheet, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
@@ -12,6 +12,7 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { useToast } from '../../components/ui/Toast';
 import type { BloodRequest } from '../../types/database';
 
 const GROUPS: BloodRequest['blood_group'][] = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
@@ -25,6 +26,7 @@ export function BloodRequestScreen({ navigation }: any) {
   const { C } = useTheme();
   const { user } = useAuth();
   const t = useT();
+  const toast = useToast();
 
   const [group, setGroup] = useState<BloodRequest['blood_group'] | null>(null);
   const [units, setUnits] = useState('1');
@@ -52,7 +54,7 @@ export function BloodRequestScreen({ navigation }: any) {
       if (error) throw error;
       navigation.goBack();
     } catch {
-      Alert.alert(t.common.error, t.blood2.postRequestError);
+      toast({ type: 'error', title: t.common.error, message: t.blood2.postRequestError });
     } finally {
       setLoading(false);
     }

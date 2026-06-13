@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
   StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
-  Alert, Image, type ViewStyle,
+  Image, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -15,6 +15,7 @@ import { supabase } from '../../lib/supabase';
 import { useT } from '../../i18n';
 import { createReport } from '../../services/reportsService';
 import { useAuth } from '../../store/authStore';
+import { useToast } from '../../components/ui/Toast';
 import { uploadFile } from '../../utils/storage';
 import { BUCKETS } from '../../constants/app';
 import type { Report } from '../../types/database';
@@ -45,6 +46,7 @@ function lightenHex(hex: string): string {
 
 export function ReportFormScreen({ route, navigation }: any) {
   const { C, isDark } = useTheme();
+  const toast = useToast();
   const { user } = useAuth();
   const t = useT();
   const editReportId: string | undefined = route.params?.editReportId;
@@ -81,7 +83,7 @@ export function ReportFormScreen({ route, navigation }: any) {
   async function pickPhoto() {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert(t.reports2.permissionRequired, t.reports2.mediaPermissionBody);
+      toast({ type: 'info', title: t.reports2.permissionRequired, message: t.reports2.mediaPermissionBody });
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({

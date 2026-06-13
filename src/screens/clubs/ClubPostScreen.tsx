@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView, Platform,
-  StyleSheet, Alert, type ViewStyle,
+  StyleSheet, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
@@ -12,6 +12,7 @@ import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useT } from '../../i18n';
+import { useToast } from '../../components/ui/Toast';
 
 export function ClubPostScreen({ route, navigation }: any) {
   const { C } = useTheme();
@@ -22,6 +23,7 @@ export function ClubPostScreen({ route, navigation }: any) {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(false);
+  const toast = useToast();
 
   const { clubId, clubName } = (route.params ?? {}) as { clubId: string; clubName: string };
   if (!clubId) return null;
@@ -41,7 +43,7 @@ export function ClubPostScreen({ route, navigation }: any) {
       if (error) throw error;
       navigation.goBack();
     } catch {
-      Alert.alert('Error', 'Could not post. Please try again.');
+      toast({ type: 'error', title: t.common.error, message: 'Could not post. Please try again.' });
     } finally {
       setLoading(false);
     }

@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
-  Modal, Alert, RefreshControl, ActivityIndicator, type ViewStyle, type TextStyle,
+  Modal, RefreshControl, ActivityIndicator, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -16,6 +16,7 @@ import { FontFamily, Layout, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
+import { useToast } from '../../components/ui/Toast';
 
 const CATEGORIES = ['Tech', 'Cultural', 'Sports', 'Professional', 'Social'];
 
@@ -38,6 +39,7 @@ export function ManageClubsScreen({ navigation }: any) {
   const { C } = useTheme();
   const { user, profile } = useAuth();
   const t = useT();
+  const toast = useToast();
   const [clubs, setClubs] = useState<ClubRow[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -102,7 +104,7 @@ export function ManageClubsScreen({ navigation }: any) {
       created_by: user?.id,
     });
     setCreating(false);
-    if (error) { Alert.alert(t.common.error, error.message); return; }
+    if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
     setCreateOpen(false);
     setName(''); setTagline(''); setCategory('Tech');
     await load();
@@ -110,7 +112,7 @@ export function ManageClubsScreen({ navigation }: any) {
 
   async function toggleActive(c: ClubRow) {
     const { error } = await supabase.from('clubs').update({ is_active: !c.is_active }).eq('id', c.id);
-    if (error) { Alert.alert(t.common.error, error.message); return; }
+    if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
     setClubs(prev => prev.map(x => (x.id === c.id ? { ...x, is_active: !c.is_active } : x)));
   }
 
@@ -120,7 +122,7 @@ export function ManageClubsScreen({ navigation }: any) {
       p_club_id: presTarget.id,
       p_user_id: userId,
     });
-    if (error) { Alert.alert(t.common.error, error.message); return; }
+    if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
     setPresTarget(null);
     setQuery('');
     await load();

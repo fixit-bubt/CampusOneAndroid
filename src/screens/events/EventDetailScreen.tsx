@@ -9,6 +9,7 @@ import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
+import { useToast } from '../../components/ui/Toast';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
@@ -42,6 +43,7 @@ export function EventDetailScreen({ route, navigation }: any) {
   if (!eventId) return null;
   const id = eventId;
 
+  const toast = useToast();
   const [event, setEvent] = useState<Event | null>(null);
   const [going, setGoing] = useState(false);
   const [goingCount, setGoingCount] = useState(0);
@@ -106,7 +108,7 @@ export function EventDetailScreen({ route, navigation }: any) {
         text: 'Delete', style: 'destructive',
         onPress: async () => {
           const { error } = await supabase.from('events').delete().eq('id', id);
-          if (error) { Alert.alert(t.common.error, error.message); return; }
+          if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
           navigation.goBack();
         },
       },

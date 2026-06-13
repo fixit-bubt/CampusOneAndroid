@@ -16,6 +16,7 @@ import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
+import { useToast } from '../../components/ui/Toast';
 
 const STUDY_COLOR = SectorColors.study;
 const STUDY_BG    = `${SectorColors.study}1e`;
@@ -42,6 +43,7 @@ interface Entry {
 export function CourseDetailScreen({ route, navigation }: any) {
   const { C, isDark } = useTheme();
   const t = useT();
+  const toast = useToast();
   const { user, profile } = useAuth();
   const { courseId } = route.params ?? {};
   if (!courseId) return null;
@@ -91,7 +93,7 @@ export function CourseDetailScreen({ route, navigation }: any) {
       .from('study-materials')
       .createSignedUrl(f.storage_path, 60);
     if (error || !data?.signedUrl) {
-      Alert.alert(t.common.error, error?.message ?? t.study2.couldNotOpenFile);
+      toast({ type: 'error', title: t.common.error, message: error?.message ?? t.study2.couldNotOpenFile });
       return;
     }
     Linking.openURL(data.signedUrl);
@@ -102,7 +104,7 @@ export function CourseDetailScreen({ route, navigation }: any) {
       .from('study_question_bank')
       .update({ verified: !f.verified })
       .eq('id', f.id);
-    if (error) { Alert.alert('Error', error.message); return; }
+    if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
     setQuestions(prev => prev.map(x => (x.id === f.id ? { ...x, verified: !f.verified } : x)));
   }
 
@@ -113,7 +115,7 @@ export function CourseDetailScreen({ route, navigation }: any) {
         text: 'Delete', style: 'destructive',
         onPress: async () => {
           const { error } = await supabase.from(f.table).delete().eq('id', f.id);
-          if (error) { Alert.alert('Error', error.message); return; }
+          if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
           load();
         },
       },

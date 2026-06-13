@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView, Modal,
-  StyleSheet, Alert, Switch, ActivityIndicator, type ViewStyle,
+  StyleSheet, Switch, ActivityIndicator, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -17,6 +17,7 @@ import { FontFamily, Layout, Accent } from '../../theme';
 import type { SectorKey } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { uploadPhoto } from '../../utils/storage';
+import { useToast } from '../../components/ui/Toast';
 
 // ── Role helpers ──────────────────────────────────────────────────────────────
 const ROLE_TOKEN = { student: 'roleStudent', staff: 'roleStaff', admin: 'roleAdmin' } as const;
@@ -299,6 +300,7 @@ const accompStyles = StyleSheet.create({
 export function ProfileScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
   const t = useT();
+  const toast = useToast();
   const { profile, user, signOut, refreshProfile } = useAuth();
 
   const [role, setRole] = useState<string>(profile?.role ?? 'student');
@@ -338,7 +340,7 @@ export function ProfileScreen({ navigation }: any) {
   async function pickAvatar() {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert(t.mainx.permissionRequired, t.mainx.mediaPermissionBody);
+      toast({ type: 'info', title: t.mainx.permissionRequired, message: t.mainx.mediaPermissionBody });
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -352,15 +354,15 @@ export function ProfileScreen({ navigation }: any) {
 
   async function changePassword() {
     if (pwBusy) return;
-    if (pwNew.length < 8) { Alert.alert('Error', 'Password must be at least 8 characters.'); return; }
-    if (pwNew !== pwConfirm) { Alert.alert('Error', 'Passwords do not match.'); return; }
+    if (pwNew.length < 8) { toast({ type: 'error', title: 'Error', message: 'Password must be at least 8 characters.' }); return; }
+    if (pwNew !== pwConfirm) { toast({ type: 'error', title: 'Error', message: 'Passwords do not match.' }); return; }
     setPwBusy(true);
     const { error } = await supabase.auth.updateUser({ password: pwNew });
     setPwBusy(false);
-    if (error) { Alert.alert('Error', error.message); return; }
+    if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }
     setPwOpen(false);
     setPwNew(''); setPwConfirm('');
-    Alert.alert('Done', 'Password updated.');
+    toast({ type: 'success', title: 'Done', message: 'Password updated.' });
   }
 
   const [focusBadge, setFocusBadge] = useState<typeof BADGES[0] | null>(null);
@@ -385,14 +387,14 @@ export function ProfileScreen({ navigation }: any) {
 
   async function handleSave() {
     if (!user || savingRef.current) return;
-    if (!editName.trim()) { Alert.alert(t.common.error, 'Full name is required'); return; }
+    if (!editName.trim()) { toast({ type: 'error', title: t.common.error, message: 'Full name is required' }); return; }
     savingRef.current = true;
     setSaving(true);
     try {
       let avatarUrl: string | undefined;
       if (pickedAvatar) {
         const up = await uploadPhoto(pickedAvatar, 'avatars', user.id);
-        if (!up.success) { Alert.alert(t.common.error, up.error); return; }
+        if (!up.success) { toast({ type: 'error', title: t.common.error, message: up.error }); return; }
         avatarUrl = up.url;
       }
       const payload: Record<string, any> = {
@@ -408,7 +410,7 @@ export function ProfileScreen({ navigation }: any) {
       }
       if (avatarUrl) payload.avatar_url = avatarUrl;
       const { error } = await supabase.from('profiles').update(payload).eq('id', user.id);
-      if (error) { Alert.alert('Error', error.message); return; }
+      if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }
       await refreshProfile();
       setEditMode(false);
     } finally {

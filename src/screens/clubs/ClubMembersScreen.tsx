@@ -16,6 +16,7 @@ import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
+import { useToast } from '../../components/ui/Toast';
 
 interface Member {
   id: string;
@@ -37,6 +38,7 @@ export function ClubMembersScreen({ route, navigation }: any) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<{ id: string; full_name: string; avatar_url: string | null }[]>([]);
   const [roleTarget, setRoleTarget] = useState<Member | null>(null);
+  const toast = useToast();
 
   const load = useCallback(async () => {
     const { data } = await supabase
@@ -73,14 +75,14 @@ export function ClubMembersScreen({ route, navigation }: any) {
     const { error } = await supabase
       .from('club_members')
       .insert({ club_id: clubId, user_id: userId, role: 'member', added_by: user?.id });
-    if (error) { Alert.alert(t.common.error, error.message); return; }
+    if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
     setQuery('');
     await load();
   }
 
   async function setRole(m: Member, role: string) {
     const { error } = await supabase.from('club_members').update({ role }).eq('id', m.id);
-    if (error) { Alert.alert(t.common.error, error.message); return; }
+    if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
     setRoleTarget(null);
     await load();
   }
@@ -92,7 +94,7 @@ export function ClubMembersScreen({ route, navigation }: any) {
         text: t.common.delete, style: 'destructive',
         onPress: async () => {
           const { error } = await supabase.from('club_members').delete().eq('id', m.id);
-          if (error) { Alert.alert(t.common.error, error.message); return; }
+          if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
           load();
         },
       },

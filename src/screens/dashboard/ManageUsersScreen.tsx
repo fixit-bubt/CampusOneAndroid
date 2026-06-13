@@ -15,6 +15,7 @@ import { useAuth } from '../../store/authStore';
 import { createUserAsAdmin } from '../../services/adminService';
 import type { Profile } from '../../types/database';
 import { useT } from '../../i18n';
+import { useToast } from '../../components/ui/Toast';
 
 const ROLE_TOKEN = { student: 'roleStudent', staff: 'roleStaff', admin: 'roleAdmin' } as const;
 const ROLE_NEXT: Record<string, Profile['role']> = { student: 'staff', staff: 'admin', admin: 'student' };
@@ -29,6 +30,7 @@ export function ManageUsersScreen({ navigation }: any) {
   const [users, setUsers] = useState<Profile[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [toast, setToast] = useState(false);
+  const showToast = useToast();
   const [expertiseTarget, setExpertiseTarget] = useState<Profile | null>(null);
 
   // Create-account sheet
@@ -81,7 +83,7 @@ export function ManageUsersScreen({ navigation }: any) {
     setUsers(prev => prev.map(x => x.id === u.id ? { ...x, expertise: value } : x));
     setExpertiseTarget(null);
     const { error } = await supabase.from('profiles').update({ expertise: value }).eq('id', u.id);
-    if (error) { Alert.alert(t.common.error, error.message); await load(); return; }
+    if (error) { showToast({ type: 'error', title: t.common.error, message: error.message }); await load(); return; }
     setToast(true);
     setTimeout(() => setToast(false), 1500);
   }
@@ -101,7 +103,7 @@ export function ManageUsersScreen({ navigation }: any) {
       expertise: cRole === 'staff' ? cTrade : null,
     });
     setCreating(false);
-    if (!res.ok) { Alert.alert(t.manage.couldNotCreateAccount, res.error); return; }
+    if (!res.ok) { showToast({ type: 'error', title: t.manage.couldNotCreateAccount, message: res.error }); return; }
     setCreateOpen(false);
     resetCreateForm();
     setToast(true);

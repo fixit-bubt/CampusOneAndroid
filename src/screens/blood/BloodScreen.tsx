@@ -13,6 +13,7 @@ import { FontFamily, Layout, SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
+import { useToast } from '../../components/ui/Toast';
 import type { BloodRequest, Donor } from '../../types/database';
 
 type Tab = 'requests' | 'donors';
@@ -48,6 +49,7 @@ export function BloodScreen({ navigation }: any) {
   const [requests, setRequests] = useState<BloodRequest[]>([]);
   const [donors, setDonors]     = useState<Donor[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const toast = useToast();
   const [respondedIds, setRespondedIds] = useState<Set<string>>(new Set());
   const [contactBusy, setContactBusy] = useState(false);
 
@@ -76,7 +78,7 @@ export function BloodScreen({ navigation }: any) {
     try {
       const { data, error } = await supabase.rpc('donor_contact', { p_user_id: donorUserId });
       if (error) {
-        Alert.alert(t.common.error, t.blood2.revealContactError);
+        toast({ type: 'error', title: t.common.error, message: t.blood2.revealContactError });
         return;
       }
       const row = Array.isArray(data) ? data[0] : data;
@@ -94,11 +96,11 @@ export function BloodScreen({ navigation }: any) {
     try {
       const { data, error } = await supabase.rpc('blood_requester_contact', { p_code: (r as any).code });
       if (error) {
-        Alert.alert(t.common.error, t.blood2.revealContactError);
+        toast({ type: 'error', title: t.common.error, message: t.blood2.revealContactError });
         return;
       }
       const row = Array.isArray(data) ? data[0] : data;
-      if (!row) { Alert.alert(t.blood2.notAvailable, t.blood2.contactDonorsOnly); return; }
+      if (!row) { toast({ type: 'info', title: t.blood2.notAvailable, message: t.blood2.contactDonorsOnly }); return; }
       Alert.alert(row.name ?? t.blood2.requester, row.whatsapp ?? t.blood2.noWhatsapp);
     } finally {
       setContactBusy(false);
@@ -107,11 +109,11 @@ export function BloodScreen({ navigation }: any) {
 
   function handleHelpPress(r: BloodRequest) {
     if (!user) {
-      Alert.alert(t.blood2.signInRequired, t.blood2.signInToRespond);
+      toast({ type: 'info', title: t.blood2.signInRequired, message: t.blood2.signInToRespond });
       return;
     }
     if (respondedIds.has(r.id)) {
-      Alert.alert(t.blood2.alreadyResponded, t.blood2.alreadyOfferedHelp);
+      toast({ type: 'info', title: t.blood2.alreadyResponded, message: t.blood2.alreadyOfferedHelp });
       return;
     }
     Alert.alert(
@@ -134,9 +136,9 @@ export function BloodScreen({ navigation }: any) {
                 next.delete(r.id);
                 return next;
               });
-              Alert.alert(t.common.error, t.blood2.submitResponseError);
+              toast({ type: 'error', title: t.common.error, message: t.blood2.submitResponseError });
             } else {
-              Alert.alert(t.blood2.thankYou, t.blood2.pledgedToHelp(r.blood_group));
+              toast({ type: 'success', title: t.blood2.thankYou, message: t.blood2.pledgedToHelp(r.blood_group) });
             }
           },
         },

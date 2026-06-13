@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
-  RefreshControl, Alert, type ViewStyle, type TextStyle,
+  RefreshControl, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -15,6 +15,7 @@ import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
+import { useToast } from '../../components/ui/Toast';
 
 const JOBS_COLOR = SectorColors.jobs;
 
@@ -32,6 +33,7 @@ export function JobsModerateScreen({ navigation }: any) {
   const { C } = useTheme();
   const { profile } = useAuth();
   const t = useT();
+  const toast = useToast();
   const [tab, setTab] = useState<'reported' | 'removed'>('reported');
   const [jobs, setJobs] = useState<JobRow[]>([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -61,7 +63,7 @@ export function JobsModerateScreen({ navigation }: any) {
 
   async function restore(j: JobRow) {
     const { error } = await supabase.rpc('job_admin_restore', { p_code: j.code });
-    if (error) { Alert.alert(t.common.error, error.message); return; }
+    if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
     load();
   }
 

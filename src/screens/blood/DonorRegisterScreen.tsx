@@ -2,12 +2,13 @@
 import { useState } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView,
-  StyleSheet, Alert, type ViewStyle,
+  StyleSheet, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
+import { useToast } from '../../components/ui/Toast';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout, SectorColors } from '../../theme';
@@ -20,6 +21,7 @@ export function DonorRegisterScreen({ navigation }: any) {
   const { C } = useTheme();
   const { user } = useAuth();
   const t = useT();
+  const toast = useToast();
 
   const [group, setGroup] = useState<BloodRequest['blood_group'] | null>(null);
   const [area, setArea] = useState('');
@@ -51,7 +53,7 @@ export function DonorRegisterScreen({ navigation }: any) {
       if (profileRes.error) throw profileRes.error;
       navigation.goBack();
     } catch {
-      Alert.alert(t.common.error, t.blood2.registerError);
+      toast({ type: 'error', title: t.common.error, message: t.blood2.registerError });
     } finally {
       setLoading(false);
     }

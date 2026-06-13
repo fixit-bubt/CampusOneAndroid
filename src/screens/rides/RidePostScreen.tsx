@@ -2,8 +2,9 @@
 import { useState } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView, Platform,
-  StyleSheet, Alert, type ViewStyle,
+  StyleSheet, type ViewStyle,
 } from 'react-native';
+import { useToast } from '../../components/ui/Toast';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
@@ -71,6 +72,7 @@ export function RidePostScreen({ navigation }: any) {
   const t = useT();
   const { user } = useAuth();
 
+  const toast = useToast();
   const [vehicle, setVehicle] = useState<Ride['vehicle']>('Car');
   const [direction, setDirection] = useState<Ride['direction']>('To Campus');
   const [from, setFrom] = useState('');
@@ -94,12 +96,12 @@ export function RidePostScreen({ navigation }: any) {
     if (!canSubmit || !user || loading) return;
     const parsedFare = parseInt(fare, 10);
     if (isNaN(parsedFare) || parsedFare < 0) {
-      Alert.alert(t.rides2.invalidFareTitle, t.rides2.invalidFareBody);
+      toast({ type: 'error', title: t.rides2.invalidFareTitle, message: t.rides2.invalidFareBody });
       return;
     }
     const timePart = time.trim() || '08:00';
     if (!date.trim().match(/^\d{4}-\d{2}-\d{2}$/)) {
-      Alert.alert(t.rides2.invalidDateTitle, t.rides2.invalidDateBody);
+      toast({ type: 'error', title: t.rides2.invalidDateTitle, message: t.rides2.invalidDateBody });
       return;
     }
     setLoading(true);
@@ -120,7 +122,7 @@ export function RidePostScreen({ navigation }: any) {
       if (error) throw error;
       navigation.goBack();
     } catch {
-      Alert.alert(t.common.error, t.rides2.postFailed);
+      toast({ type: 'error', title: t.common.error, message: t.rides2.postFailed });
     } finally {
       setLoading(false);
     }

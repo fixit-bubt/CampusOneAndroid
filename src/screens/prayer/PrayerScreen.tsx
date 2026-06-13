@@ -7,6 +7,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
+import { useToast } from '../../components/ui/Toast';
 import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
 import { useAuth } from '../../store/authStore';
@@ -62,6 +63,7 @@ function timeUntil(timeStr: string): string {
 
 export function PrayerScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
+  const toast = useToast();
   const t = useT();
   const { profile } = useAuth();
   const isAdmin = profile?.role === 'admin';
@@ -92,12 +94,12 @@ export function PrayerScreen({ navigation }: any) {
 
   async function saveJamaat() {
     if (!editPrayer) return;
-    if (!/^\d{1,2}:\d{2}$/.test(jamaatInput.trim())) { Alert.alert(t.prayer2.invalid, t.prayer2.invalidTime); return; }
+    if (!/^\d{1,2}:\d{2}$/.test(jamaatInput.trim())) { toast({ type: 'error', title: t.prayer2.invalid, message: t.prayer2.invalidTime }); return; }
     const { error } = await supabase
       .from('prayer_times')
       .update({ jamaat: jamaatInput.trim() })
       .eq('key', editPrayer.key);
-    if (error) { Alert.alert('Error', error.message); return; }
+    if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }
     setEditPrayer(null);
     load();
   }
@@ -109,12 +111,12 @@ export function PrayerScreen({ navigation }: any) {
         .from('musallah_locations')
         .update({ name: musEdit.name.trim(), floor_desc: musEdit.floor_desc.trim() || null })
         .eq('id', musEdit.id);
-      if (error) { Alert.alert('Error', error.message); return; }
+      if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }
     } else {
       const { error } = await supabase
         .from('musallah_locations')
         .insert({ name: musEdit.name.trim(), floor_desc: musEdit.floor_desc.trim() || null, sort: musallah.length + 1 });
-      if (error) { Alert.alert('Error', error.message); return; }
+      if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }
     }
     setMusEdit(null);
     load();
@@ -127,7 +129,7 @@ export function PrayerScreen({ navigation }: any) {
         text: 'Delete', style: 'destructive',
         onPress: async () => {
           const { error } = await supabase.from('musallah_locations').delete().eq('id', m.id);
-          if (error) { Alert.alert('Error', error.message); return; }
+          if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }
           load();
         },
       },

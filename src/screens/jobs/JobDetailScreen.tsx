@@ -13,6 +13,7 @@ import { FontFamily, Layout , SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
+import { useToast } from '../../components/ui/Toast';
 
 const JOB_COLOR = SectorColors.jobs;
 const JOB_BG    = `${SectorColors.jobs}1e`;
@@ -32,6 +33,7 @@ const REPORT_REASONS = ['Spam', 'Scam', 'Expired', 'Inappropriate'];
 export function JobDetailScreen({ route, navigation }: any) {
   const { C } = useTheme();
   const t = useT();
+  const toast = useToast();
   const { user, profile } = useAuth();
   const { jobId } = route.params ?? {};
   if (!jobId) return null;
@@ -71,7 +73,7 @@ export function JobDetailScreen({ route, navigation }: any) {
       p_reason: reason.toLowerCase(),
       p_note: null,
     });
-    if (error) { Alert.alert('Error', error.message); return; }
+    if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
     setReportOpen(false);
     setReason('');
   }
@@ -83,7 +85,7 @@ export function JobDetailScreen({ route, navigation }: any) {
         text: 'Withdraw', style: 'destructive',
         onPress: async () => {
           const { error } = await supabase.rpc('job_withdraw', { p_code: job.code });
-          if (error) { Alert.alert('Error', error.message); return; }
+          if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
           navigation.goBack();
         },
       },
@@ -91,9 +93,9 @@ export function JobDetailScreen({ route, navigation }: any) {
   }
 
   async function adminRemove() {
-    if (!removeReason.trim()) { Alert.alert('Reason required', 'Tell the poster why this was removed.'); return; }
+    if (!removeReason.trim()) { toast({ type: 'info', title: 'Reason required', message: 'Tell the poster why this was removed.' }); return; }
     const { error } = await supabase.rpc('job_admin_remove', { p_code: job.code, p_reason: removeReason.trim() });
-    if (error) { Alert.alert('Error', error.message); return; }
+    if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
     setRemoveOpen(false);
     setRemoveReason('');
     loadJob();
@@ -101,7 +103,7 @@ export function JobDetailScreen({ route, navigation }: any) {
 
   async function adminRestore() {
     const { error } = await supabase.rpc('job_admin_restore', { p_code: job.code });
-    if (error) { Alert.alert('Error', error.message); return; }
+    if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
     loadJob();
   }
 
@@ -226,7 +228,7 @@ export function JobDetailScreen({ route, navigation }: any) {
                   } else if (job.apply_method === 'file' && job.apply_file_url) {
                     Linking.openURL(job.apply_file_url);
                   } else {
-                    Alert.alert(t.jobs2.applyTitle, t.jobs2.applyBody);
+                    toast({ type: 'info', title: t.jobs2.applyTitle, message: t.jobs2.applyBody });
                   }
                 }}
                 activeOpacity={0.85}

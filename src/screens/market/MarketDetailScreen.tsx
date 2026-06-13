@@ -14,6 +14,7 @@ import { FontFamily, Layout , Accent, LightColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
+import { useToast } from '../../components/ui/Toast';
 
 const MK_CATS: Record<string, { icon: string; fg: string; label: string }> = {
   books:       { icon: 'book-open', fg: Accent.blue,   label: 'Books'       },
@@ -27,6 +28,7 @@ export function MarketDetailScreen({ route, navigation }: any) {
   const { C, isDark } = useTheme();
   const { user, profile } = useAuth();
   const t = useT();
+  const toast = useToast();
   const isAdmin = profile?.role === 'admin';
   const { listingId } = route.params ?? {};
   if (!listingId) return null;
@@ -69,7 +71,7 @@ export function MarketDetailScreen({ route, navigation }: any) {
         text: 'Delete', style: 'destructive',
         onPress: async () => {
           const { error } = await supabase.from('listings').delete().eq('id', listingId);
-          if (error) { Alert.alert('Error', error.message); return; }
+          if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
           navigation.goBack();
         },
       },

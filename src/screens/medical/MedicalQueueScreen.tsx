@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
-  RefreshControl, Alert, type ViewStyle, type TextStyle,
+  RefreshControl, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
@@ -15,6 +15,7 @@ import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
+import { useToast } from '../../components/ui/Toast';
 
 const MED_COLOR = SectorColors.medical;
 const MED_BG = `${SectorColors.medical}1e`;
@@ -53,6 +54,7 @@ export function MedicalQueueScreen({ navigation }: any) {
   const { C } = useTheme();
   const { profile } = useAuth();
   const t = useT();
+  const toast = useToast();
   const [appts, setAppts] = useState<QueueAppt[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [advancing, setAdvancing] = useState<string | null>(null);
@@ -80,7 +82,7 @@ export function MedicalQueueScreen({ navigation }: any) {
     setAdvancing(a.id);
     const { error } = await supabase.from('appointments').update({ status: next }).eq('id', a.id);
     setAdvancing(null);
-    if (error) { Alert.alert(t.common.error, error.message); return; }
+    if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
     setAppts(prev => prev.map(x => (x.id === a.id ? { ...x, status: next } : x)));
   }
 

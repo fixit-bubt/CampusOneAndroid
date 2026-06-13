@@ -12,6 +12,7 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { useToast } from '../../components/ui/Toast';
 import { useT } from '../../i18n';
 import type { Announcement } from '../../types/database';
 
@@ -85,6 +86,7 @@ export function AnnouncementsScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
   const { user, profile } = useAuth();
   const t = useT();
+  const toast = useToast();
   const isAdmin = profile?.role === 'admin';
   const canPost = isAdmin;
   const [items, setItems] = useState<Announcement[]>([]);
@@ -132,7 +134,7 @@ export function AnnouncementsScreen({ navigation }: any) {
             .from('announcements')
             .update({ deleted_at: new Date().toISOString() })
             .eq('id', a.id);
-          if (error) { Alert.alert(t.common.error, error.message); return; }
+          if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
           setItems(prev => prev.filter(x => x.id !== a.id));
         },
       },

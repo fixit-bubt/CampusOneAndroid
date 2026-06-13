@@ -15,6 +15,7 @@ import { FontFamily, Layout, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
+import { useToast } from '../../components/ui/Toast';
 import { getMyReports } from '../../services/reportsService';
 import type { Report } from '../../types/database';
 
@@ -52,6 +53,7 @@ export function MyReportsScreen({ navigation }: any) {
   const { C } = useTheme();
   const { user } = useAuth();
   const t = useT();
+  const toast = useToast();
   const [reports, setReports] = useState<Report[]>([]);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<StatusFilter>('All');
@@ -81,7 +83,7 @@ export function MyReportsScreen({ navigation }: any) {
             .from('reports')
             .update({ deleted_at: new Date().toISOString() })
             .eq('id', r.id);
-          if (error) { Alert.alert(t.common.error, error.message); return; }
+          if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
           setReports(prev => prev.filter(x => x.id !== r.id));
         },
       },

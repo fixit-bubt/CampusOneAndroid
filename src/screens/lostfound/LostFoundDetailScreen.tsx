@@ -18,6 +18,7 @@ import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout, SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useT } from '../../i18n';
+import { useToast } from '../../components/ui/Toast';
 import { uploadProof, getSignedUrl } from '../../utils/storage';
 import { BUCKETS } from '../../constants/app';
 import type { LostFoundItem } from '../../types/database';
@@ -63,6 +64,7 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
   if (!itemId) return null;
   const id = itemId;
 
+  const toast = useToast();
   const [item, setItem] = useState<LostFoundItem | null>(null);
   const [poster, setPoster] = useState<{ full_name: string; avatar_url: string | null } | null>(null);
   const [claims, setClaims] = useState<ClaimRow[]>([]);
@@ -117,7 +119,7 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
   async function pickProof() {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert(t.common.error, t.lf.mediaPermissionRequired);
+      toast({ type: 'error', title: t.common.error, message: t.lf.mediaPermissionRequired });
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -131,12 +133,12 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
   async function handleClaim() {
     const msg = claimNote.trim();
     if (busy || !item || !user) return;
-    if (msg.length < 10) { Alert.alert(t.common.error, t.lostfound.messageTooShort); return; }
+    if (msg.length < 10) { toast({ type: 'error', title: t.common.error, message: t.lostfound.messageTooShort }); return; }
     setBusy(true);
     let proofPath: string | null = null;
     if (proofUri) {
       const up = await uploadProof(proofUri, user.id, 'image/jpeg');
-      if (!up.success) { setBusy(false); Alert.alert(t.common.error, up.error); return; }
+      if (!up.success) { setBusy(false); toast({ type: 'error', title: t.common.error, message: up.error }); return; }
       proofPath = up.path;
     }
     const { error } = await supabase.from('claims').insert({
@@ -147,7 +149,7 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
       proof_url: proofPath,
     });
     setBusy(false);
-    if (error) { Alert.alert(t.common.error, error.message); return; }
+    if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
     setShowClaim(false);
     setClaimNote('');
     setProofUri(null);
@@ -168,7 +170,7 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
             setDeciding(claim.id);
             const { error } = await supabase.from('claims').update({ status }).eq('id', claim.id);
             setDeciding(null);
-            if (error) { Alert.alert(t.common.error, error.message); return; }
+            if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
             await load();
           },
         },
@@ -183,7 +185,7 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
       ? claim.proof_url
       : await getSignedUrl(BUCKETS.proofs, claim.proof_url);
     if (url) Linking.openURL(url);
-    else Alert.alert(t.common.error, t.common.loadingError);
+    else toast({ type: 'error', title: t.common.error, message: t.common.loadingError });
   }
 
   if (!item) {
@@ -499,7 +501,7 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
               style={[styles.actionBtn, { backgroundColor: C.brand, marginTop: 18 }]}
               onPress={() => {
                 if (!user) {
-                  Alert.alert(t.lf.signInRequiredTitle, t.lf.signInRequiredBody);
+                  toast({ type: 'info', title: t.lf.signInRequiredTitle, message: t.lf.signInRequiredBody });
                   return;
                 }
                 setShowClaim(true);

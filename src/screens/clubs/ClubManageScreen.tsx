@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
-  Modal, Alert, ActivityIndicator, type ViewStyle, type TextStyle,
+  Modal, ActivityIndicator, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
@@ -13,6 +13,7 @@ import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
+import { useToast } from '../../components/ui/Toast';
 
 interface Member {
   user_id: string;
@@ -25,6 +26,7 @@ const CATEGORIES = ['Tech', 'Cultural', 'Sports', 'Professional', 'Social'];
 export function ClubManageScreen({ route, navigation }: any) {
   const { C } = useTheme();
   const t = useT();
+  const toast = useToast();
   const { user, profile } = useAuth();
   const { clubId } = route.params ?? {};
   if (!clubId) return null;
@@ -73,7 +75,7 @@ export function ClubManageScreen({ route, navigation }: any) {
       p_cover_url: coverUrl,
     });
     setSaving(false);
-    if (error) { Alert.alert('Error', error.message); return; }
+    if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
     navigation.goBack();
   }
 
@@ -84,7 +86,7 @@ export function ClubManageScreen({ route, navigation }: any) {
       p_user_id: memberId,
     });
     setSaving(false);
-    if (error) { Alert.alert('Error', 'Transfer failed: ' + error.message); return; }
+    if (error) { toast({ type: 'error', title: t.common.error, message: 'Transfer failed: ' + error.message }); return; }
     setConfirm(null);
     navigation.goBack();
   }

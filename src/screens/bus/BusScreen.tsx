@@ -1,12 +1,13 @@
 // Matches design screens-a.jsx — Bus routes list
 import { useState, useEffect, useCallback } from 'react';
 import {
-  View, Text, TouchableOpacity, TextInput, Modal, Alert, ScrollView,
+  View, Text, TouchableOpacity, TextInput, Modal, ScrollView,
   StyleSheet, RefreshControl, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
+import { useToast } from '../../components/ui/Toast';
 import { useT } from '../../i18n';
 import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
@@ -35,6 +36,7 @@ const uncsv = (s: string) => s.split(',').map(x => x.trim()).filter(Boolean);
 
 export function BusScreen({ navigation }: any) {
   const { C } = useTheme();
+  const toast = useToast();
   const t = useT();
   const { user, profile } = useAuth();
   const isAdmin = profile?.role === 'admin';
@@ -103,11 +105,11 @@ export function BusScreen({ navigation }: any) {
     };
     if (form.id) {
       const { error } = await supabase.from('bus_routes').update(row).eq('id', form.id);
-      if (error) { Alert.alert('Error', error.message); return; }
+      if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }
     } else {
       const id = form.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40);
       const { error } = await supabase.from('bus_routes').insert({ id, ...row });
-      if (error) { Alert.alert('Error', error.message); return; }
+      if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }
     }
     setForm(null);
     load();

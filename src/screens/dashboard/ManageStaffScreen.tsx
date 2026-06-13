@@ -18,6 +18,7 @@ import { useAuth } from '../../store/authStore';
 import { createUserAsAdmin } from '../../services/adminService';
 import type { Profile } from '../../types/database';
 import { useT } from '../../i18n';
+import { useToast } from '../../components/ui/Toast';
 
 type Tab = 'staff' | 'admin';
 
@@ -28,6 +29,7 @@ export function ManageStaffScreen({ navigation }: any) {
   const { C } = useTheme();
   const { profile, user } = useAuth();
   const t = useT();
+  const toast = useToast();
   const [tab, setTab] = useState<Tab>('staff');
   const [staff, setStaff] = useState<Profile[]>([]);
   const [admins, setAdmins] = useState<Profile[]>([]);
@@ -76,14 +78,14 @@ export function ManageStaffScreen({ navigation }: any) {
       expertise: tab === 'staff' ? trade : null,
     });
     setCreating(false);
-    if (!res.ok) { Alert.alert(t.manage.couldNotCreateAccount, res.error); return; }
+    if (!res.ok) { toast({ type: 'error', title: t.manage.couldNotCreateAccount, message: res.error }); return; }
     setAddOpen(false);
     resetForm();
     await load();
   }
 
   function demote(u: Profile) {
-    if (u.id === user?.id) { Alert.alert(t.manage.notAllowed, t.manage.cannotDemoteSelf); return; }
+    if (u.id === user?.id) { toast({ type: 'error', title: t.manage.notAllowed, message: t.manage.cannotDemoteSelf }); return; }
     Alert.alert(
       'Remove ' + (tab === 'staff' ? 'staff' : 'admin'),
       `Demote ${u.full_name} back to student?`,
@@ -93,7 +95,7 @@ export function ManageStaffScreen({ navigation }: any) {
           text: 'Demote', style: 'destructive',
           onPress: async () => {
             const { error } = await supabase.from('profiles').update({ role: 'student', expertise: null }).eq('id', u.id);
-            if (error) { Alert.alert('Error', error.message); return; }
+            if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
             load();
           },
         },

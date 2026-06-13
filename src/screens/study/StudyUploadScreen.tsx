@@ -5,7 +5,7 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView, Platform,
-  StyleSheet, Alert, type ViewStyle,
+  StyleSheet, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as DocumentPicker from 'expo-document-picker';
@@ -16,6 +16,7 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { useToast } from '../../components/ui/Toast';
 
 const FILE_TYPES = [
   { id: 'materials', label: 'Materials' },
@@ -44,6 +45,7 @@ export function StudyUploadScreen({ route, navigation }: any) {
   const t = useT();
   const { user } = useAuth();
 
+  const toast = useToast();
   const [fileType, setFileType] = useState('materials');
   const [name, setName] = useState('');
   const [materialType, setMaterialType] = useState('Class Note');
@@ -145,7 +147,7 @@ export function StudyUploadScreen({ route, navigation }: any) {
 
       navigation.goBack();
     } catch (err: any) {
-      Alert.alert(t.common.error, err?.message ?? t.study2.couldNotUpload);
+      toast({ type: 'error', title: t.common.error, message: err?.message ?? t.study2.couldNotUpload });
     } finally {
       setLoading(false);
     }

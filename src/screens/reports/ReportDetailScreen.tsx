@@ -13,6 +13,7 @@ import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout, Radius , Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useT } from '../../i18n';
+import { useToast } from '../../components/ui/Toast';
 import type { Report, ReportEvent } from '../../types/database';
 
 const CAT_MAP: Record<string, { icon: string; fg: string }> = {
@@ -50,6 +51,7 @@ export function ReportDetailScreen({ route, navigation }: any) {
   const { user, profile } = useAuth();
   const t = useT();
 
+  const toast = useToast();
   const [report, setReport] = useState<Report | null>(initReport ?? null);
   const [loadingReport, setLoadingReport] = useState(!initReport);
   const [events, setEvents] = useState<ReportEvent[]>([]);
@@ -111,7 +113,7 @@ export function ReportDetailScreen({ route, navigation }: any) {
     const { error } = await supabase.from('reports').update({ status: newStatus }).eq('id', report.id);
     setUpdatingStatus(false);
     if (error) {
-      Alert.alert(t.common.error, t.reports2.updateStatusFailed(error.message));
+      toast({ type: 'error', title: t.common.error, message: t.reports2.updateStatusFailed(error.message) });
       return;
     }
     setReport(prev => prev ? { ...prev, status: newStatus } : prev);

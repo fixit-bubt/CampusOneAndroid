@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
-  ActivityIndicator, Alert, type ViewStyle,
+  ActivityIndicator, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
@@ -12,6 +12,7 @@ import { FontFamily, Layout , SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
+import { useToast } from '../../components/ui/Toast';
 
 const MED_COLOR = SectorColors.medical;
 const MED_BG    = `${SectorColors.medical}1e`;
@@ -96,6 +97,7 @@ export function DoctorDetailScreen({ route, navigation }: any) {
   const { C } = useTheme();
   const { user } = useAuth();
   const t = useT();
+  const toast = useToast();
   const { doctorId } = route.params ?? {};
   if (!doctorId) return null;
   const [doctor, setDoctor] = useState<Doctor | null>(null);
@@ -139,7 +141,7 @@ export function DoctorDetailScreen({ route, navigation }: any) {
   async function bookAppointment() {
     if (!doctor || !user || !selectedDate || !selectedSlot) return;
     if (takenSlots.has(selectedSlot)) {
-      Alert.alert(t.common.error, t.medical.slotTaken);
+      toast({ type: 'error', title: t.common.error, message: t.medical.slotTaken });
       return;
     }
     setBooking(true);
@@ -153,11 +155,11 @@ export function DoctorDetailScreen({ route, navigation }: any) {
       }).select('token').single();
       if (error) {
         const msg = error.code === '23505' ? t.medical.slotTaken : error.message;
-        Alert.alert(t.common.error, msg);
+        toast({ type: 'error', title: t.common.error, message: msg });
         loadTakenSlots(selectedDate);
         return;
       }
-      Alert.alert(t.medical.bookedTitle, data?.token ? t.medical.bookedBody(data.token) : '');
+      toast({ type: 'success', title: t.medical.bookedTitle, message: data?.token ? t.medical.bookedBody(data.token) : '' });
       setSelectedSlot(null);
       loadTakenSlots(selectedDate);
     } finally {

@@ -2,12 +2,13 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView, Platform,
-  StyleSheet, Alert, type ViewStyle,
+  StyleSheet, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
+import { useToast } from '../../components/ui/Toast';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout , SectorColors } from '../../theme';
@@ -26,6 +27,7 @@ export function EventPostScreen({ navigation }: any) {
   const { C } = useTheme();
   const { user, profile } = useAuth();
   const t = useT();
+  const toast = useToast();
 
   // All hooks must be declared before any early return
   const [cat, setCat] = useState<Event['category']>('Academic');
@@ -93,7 +95,7 @@ export function EventPostScreen({ navigation }: any) {
       if (error) throw error;
       navigation.goBack();
     } catch {
-      Alert.alert(t.common.error, t.events2.postEventError);
+      toast({ type: 'error', title: t.common.error, message: t.events2.postEventError });
     } finally {
       setLoading(false);
     }

@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView, Switch, KeyboardAvoidingView, Platform,
-  StyleSheet, Alert, Image, type ViewStyle,
+  StyleSheet, Image, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -13,6 +13,7 @@ import { useT } from '../../i18n';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout, Radius , Accent } from '../../theme';
+import { useToast } from '../../components/ui/Toast';
 import { supabase } from '../../lib/supabase';
 import { uploadFile } from '../../utils/storage';
 import type { Listing } from '../../types/database';
@@ -36,6 +37,7 @@ export function MarketPostScreen({ route, navigation }: any) {
   const { C } = useTheme();
   const t = useT();
   const { user } = useAuth();
+  const toast = useToast();
 
   const [cat, setCat] = useState<Listing['category'] | null>(listing?.category ?? null);
   const [title, setTitle] = useState(listing?.title ?? '');
@@ -53,7 +55,7 @@ export function MarketPostScreen({ route, navigation }: any) {
   async function pickImage() {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert(t.market2.permissionRequired, t.market2.photoPermissionBody);
+      toast({ type: 'info', title: t.market2.permissionRequired, message: t.market2.photoPermissionBody });
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -72,7 +74,7 @@ export function MarketPostScreen({ route, navigation }: any) {
       if (!result2.success) throw new Error(result2.error);
       setPhotoUri(result2.url);
     } catch {
-      Alert.alert(t.market2.uploadFailed, t.market2.uploadFailedBody);
+      toast({ type: 'error', title: t.market2.uploadFailed, message: t.market2.uploadFailedBody });
     } finally {
       setUploading(false);
     }
@@ -102,7 +104,7 @@ export function MarketPostScreen({ route, navigation }: any) {
       }
       navigation.goBack();
     } catch {
-      Alert.alert(t.common.error, t.market2.saveListingFailed);
+      toast({ type: 'error', title: t.common.error, message: t.market2.saveListingFailed });
     } finally {
       setLoading(false);
     }
