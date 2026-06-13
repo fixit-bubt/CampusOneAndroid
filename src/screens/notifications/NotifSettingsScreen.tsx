@@ -14,6 +14,7 @@ import { FontFamily, Layout, Accent } from '../../theme';
 import type { SectorKey } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
+import { useT } from '../../i18n';
 
 const SECTORS: { id: SectorKey; label: string; desc: string }[] = [
   { id: 'reports',   label: 'Reports',       desc: 'Campus maintenance issues' },
@@ -43,6 +44,7 @@ function defaultPref(): SectorPref {
 export function NotifSettingsScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
   const { user } = useAuth();
+  const t = useT();
   const [paused, setPaused] = useState(false);
   const [quiet, setQuiet] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -107,7 +109,7 @@ export function NotifSettingsScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-      <SubBar title="Notification Settings" onBack={() => navigation.goBack()} />
+      <SubBar title={t.notif.settingsTitle} onBack={() => navigation.goBack()} />
       {loadError ? (
         <Text style={[styles.errorText, { color: C.danger, fontFamily: FontFamily.jakartaMedium }]}>
           Failed to load preferences: {loadError}
@@ -168,7 +170,7 @@ export function NotifSettingsScreen({ navigation }: any) {
           </View>
           <TouchableOpacity onPress={() => toggleAll(!allOn)} style={{ padding: 4 }} activeOpacity={0.75}>
             <Text style={[styles.toggleAll, { color: C.brand, fontFamily: FontFamily.jakartaBold, opacity: paused ? 0.4 : 1 }]}>
-              {allOn ? 'Turn all off' : 'Turn all on'}
+              {allOn ? t.notif.turnAllOff : t.notif.turnAllOn}
             </Text>
           </TouchableOpacity>
         </View>
@@ -215,7 +217,7 @@ export function NotifSettingsScreen({ navigation }: any) {
                       >
                         <Feather name={ch === 'push' ? 'smartphone' : ch === 'email' ? 'mail' : 'bell'} size={15} color={p[ch] ? '#fff' : C.textMuted} />
                         <Text style={[styles.chanTxt, { color: p[ch] ? '#fff' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                          {ch === 'push' ? 'Push' : ch === 'email' ? 'Email' : 'In-app'}
+                          {ch === 'push' ? t.notif.chanPush : ch === 'email' ? t.notif.chanEmail : t.notif.chanInapp}
                         </Text>
                       </TouchableOpacity>
                     ))}
