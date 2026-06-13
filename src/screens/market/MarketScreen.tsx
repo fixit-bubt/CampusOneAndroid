@@ -16,13 +16,13 @@ import { useT } from '../../i18n';
 
 type Tab = 'all' | 'mine';
 
+// Keys must match the postable categories in MarketPostScreen / Listing.category.
 const MK_CATS: Record<string, { icon: string; fg: string; label: string }> = {
-  books:       { icon: 'book-open', fg: Accent.blue, label: 'Books'       },
+  books:       { icon: 'book-open', fg: Accent.blue,   label: 'Books'       },
   electronics: { icon: 'cpu',       fg: Accent.purple, label: 'Electronics' },
-  clothing:    { icon: 'scissors',  fg: Accent.pink, label: 'Clothing'    },
-  sports:      { icon: 'activity',  fg: Accent.teal, label: 'Sports'      },
-  furniture:   { icon: 'layers',    fg: Accent.amber, label: 'Furniture'   },
-  other:       { icon: 'package',   fg: Accent.slate, label: 'Other'       },
+  furniture:   { icon: 'layers',    fg: Accent.amber,  label: 'Furniture'   },
+  notes:       { icon: 'file-text', fg: Accent.teal,   label: 'Notes'       },
+  other:       { icon: 'package',   fg: Accent.slate,  label: 'Other'       },
 };
 
 interface Listing {
