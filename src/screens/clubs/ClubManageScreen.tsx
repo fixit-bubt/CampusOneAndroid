@@ -12,6 +12,7 @@ import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
+import { useT } from '../../i18n';
 
 interface Member {
   user_id: string;
@@ -23,6 +24,7 @@ const CATEGORIES = ['academic', 'cultural', 'sports', 'technical', 'social', 'ot
 
 export function ClubManageScreen({ route, navigation }: any) {
   const { C } = useTheme();
+  const t = useT();
   const { user } = useAuth();
   const { clubId } = route.params;
   const id = clubId;
@@ -104,9 +106,9 @@ export function ClubManageScreen({ route, navigation }: any) {
         showsVerticalScrollIndicator={false}
       >
         {/* Club details section */}
-        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>CLUB DETAILS</Text>
+        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>{t.clubs2.clubDetailsSection}</Text>
 
-        <Text style={[styles.fieldLabel, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>Name</Text>
+        <Text style={[styles.fieldLabel, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>{t.clubs2.nameLabel}</Text>
         <TextInput
           style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
           value={name}
@@ -115,7 +117,7 @@ export function ClubManageScreen({ route, navigation }: any) {
           placeholderTextColor={C.textMuted}
         />
 
-        <Text style={[styles.fieldLabel, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>Tagline</Text>
+        <Text style={[styles.fieldLabel, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>{t.clubs2.taglineLabel}</Text>
         <TextInput
           style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
           value={tagline}
@@ -124,7 +126,7 @@ export function ClubManageScreen({ route, navigation }: any) {
           placeholderTextColor={C.textMuted}
         />
 
-        <Text style={[styles.fieldLabel, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>About</Text>
+        <Text style={[styles.fieldLabel, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>{t.clubs2.aboutLabel}</Text>
         <TextInput
           style={[styles.textarea, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
           value={about}
@@ -136,7 +138,7 @@ export function ClubManageScreen({ route, navigation }: any) {
           textAlignVertical="top"
         />
 
-        <Text style={[styles.fieldLabel, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold, marginTop: 12 }]}>Category</Text>
+        <Text style={[styles.fieldLabel, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold, marginTop: 12 }]}>{t.clubs2.categoryLabel}</Text>
         <View style={styles.catRow}>
           {CATEGORIES.map(c => {
             const on = category === c;
@@ -164,11 +166,11 @@ export function ClubManageScreen({ route, navigation }: any) {
           activeOpacity={0.85}
         >
           <Icon name="check" size={18} color={C.white} />
-          <Text style={[styles.saveBtnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>Save changes</Text>
+          <Text style={[styles.saveBtnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>{t.clubs2.saveChanges}</Text>
         </TouchableOpacity>
 
         {/* Transfer presidency */}
-        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>TRANSFER PRESIDENCY</Text>
+        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>{t.clubs2.transferPresidencySection}</Text>
         <View style={[styles.membersCard, { backgroundColor: C.surface, borderColor: C.border }]}>
           {members.map((m, i) => {
             const isPresident = m.role === 'president';
@@ -179,7 +181,7 @@ export function ClubManageScreen({ route, navigation }: any) {
                   <Avatar name={(m as any).profiles?.full_name} size="sm" />
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={[styles.memberName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                      {(m as any).profiles?.full_name ?? 'Member'}
+                      {(m as any).profiles?.full_name ?? t.clubs2.memberFallback}
                     </Text>
                     <Text style={[styles.memberRole, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
                       {m.role}
@@ -188,7 +190,7 @@ export function ClubManageScreen({ route, navigation }: any) {
                   {isPresident ? (
                     <View style={[styles.pres, { backgroundColor: C.infoBg }]}>
                       <View style={[styles.presDot, { backgroundColor: C.info }]} />
-                      <Text style={[styles.presTxt, { color: C.info, fontFamily: FontFamily.jakartaBold }]}>President</Text>
+                      <Text style={[styles.presTxt, { color: C.info, fontFamily: FontFamily.jakartaBold }]}>{t.clubs2.president}</Text>
                     </View>
                   ) : (
                     <TouchableOpacity
@@ -197,7 +199,7 @@ export function ClubManageScreen({ route, navigation }: any) {
                       activeOpacity={0.75}
                     >
                       <Icon name="clubs" size={14} color={C.text} />
-                      <Text style={[styles.makeBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Make president</Text>
+                      <Text style={[styles.makeBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.clubs2.makePresident}</Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -223,7 +225,7 @@ export function ClubManageScreen({ route, navigation }: any) {
             activeOpacity={0.85}
           >
             <Icon name="check" size={18} color={C.white} />
-            <Text style={[styles.confirmTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>Confirm transfer</Text>
+            <Text style={[styles.confirmTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>{t.clubs2.confirmTransfer}</Text>
           </TouchableOpacity>
         </View>
       </Modal>
