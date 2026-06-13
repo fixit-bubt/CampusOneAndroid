@@ -116,7 +116,7 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
   async function pickProof() {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert(t.common.error, 'Permission to access the media library is required.');
+      Alert.alert(t.common.error, t.lf.mediaPermissionRequired);
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -245,7 +245,7 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
         {/* Info grid */}
         <View style={[styles.infoGrid, { backgroundColor: C.surface, borderColor: C.border }]}>
           <View style={[styles.infoCell, { borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: C.border }]}>
-            <Text style={[styles.infoLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>Where</Text>
+            <Text style={[styles.infoLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.lf.where}</Text>
             <View style={styles.infoVal}>
               <Icon name="pin" size={13} color={C.textMuted} />
               <Text style={[styles.infoTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>
@@ -254,7 +254,7 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
             </View>
           </View>
           <View style={styles.infoCell}>
-            <Text style={[styles.infoLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>When</Text>
+            <Text style={[styles.infoLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.lf.when}</Text>
             <View style={styles.infoVal}>
               <Icon name="clock" size={13} color={C.textMuted} />
               <Text style={[styles.infoTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>
@@ -269,10 +269,10 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
           <Avatar uri={poster?.avatar_url} name={poster?.full_name} size="sm" />
           <View style={{ flex: 1 }}>
             <Text style={[styles.byName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-              {poster?.full_name ?? 'Anonymous'}
+              {poster?.full_name ?? t.lf.anonymous}
             </Text>
             <Text style={[styles.bySub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-              {item.type === 'Found' ? 'Found by' : 'Posted by'}
+              {item.type === 'Found' ? t.lf.foundBy : t.lf.postedBy}
             </Text>
           </View>
         </View>
@@ -348,7 +348,7 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
                         <Avatar uri={cl.profiles?.avatar_url} name={cl.profiles?.full_name} size="sm" />
                         <View style={{ flex: 1, minWidth: 0 }}>
                           <Text style={[styles.byName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                            {cl.profiles?.full_name ?? 'Student'}
+                            {cl.profiles?.full_name ?? t.lf.student}
                           </Text>
                           <Text style={[styles.bySub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
                             {timeAgo(cl.created_at)}
@@ -439,7 +439,7 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
                 style={[styles.textarea, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaRegular }]}
                 value={claimNote}
                 onChangeText={setClaimNote}
-                placeholder="Describe how you identify this item..."
+                placeholder={t.lf.claimNotePlaceholder}
                 placeholderTextColor={C.textMuted}
                 multiline
                 numberOfLines={3}
@@ -487,7 +487,7 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
                   <View style={styles.btnRow}>
                     <Icon name="handshake" size={17} color={C.white} />
                     <Text style={[styles.btnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>
-                      {item.type === 'Found' ? 'Send Claim' : 'Notify Poster'}
+                      {item.type === 'Found' ? t.lf.sendClaim : t.lf.notifyPoster}
                     </Text>
                   </View>
                 )}
@@ -498,7 +498,7 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
               style={[styles.actionBtn, { backgroundColor: C.brand, marginTop: 18 }]}
               onPress={() => {
                 if (!user) {
-                  Alert.alert('Sign in required', 'Please sign in to claim or notify about this item.');
+                  Alert.alert(t.lf.signInRequiredTitle, t.lf.signInRequiredBody);
                   return;
                 }
                 setShowClaim(true);
@@ -507,7 +507,7 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
               <View style={styles.btnRow}>
                 <Icon name="handshake" size={17} color={C.white} />
                 <Text style={[styles.btnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>
-                  {item.type === 'Found' ? 'Claim This Item' : 'I Found It!'}
+                  {item.type === 'Found' ? t.lf.claimThisItem : t.lf.iFoundIt}
                 </Text>
               </View>
             </TouchableOpacity>
