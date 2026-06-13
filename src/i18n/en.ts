@@ -43,6 +43,25 @@ export const en = {
     haveAccount: 'I already have an account',
   },
 
+  auth: {
+    signIn: 'Sign In',
+    email: 'Email',
+    password: 'Password',
+    fullName: 'Full Name',
+    fullNamePlaceholder: 'Your full name',
+    forgotPassword: 'Forgot password?',
+    forgotPasswordHint: 'Enter your email above, then tap Forgot password.',
+    loginFailed: 'Login failed. Check your credentials.',
+    resetLinkSent: 'Reset link sent — check your email.',
+    continueBtn: 'Continue',
+    noAccount: "Don't have an account?",
+    register: 'Register',
+    invalidEmail: 'Enter a valid email address.',
+    passwordTooShort: 'Password must be at least 6 characters.',
+    registerFailed: 'Registration failed. Please try again.',
+    alreadyHaveAccount: 'Already have an account?',
+  },
+
   sectors: {
     reports: 'Reports',
     lostfound: 'Lost',
