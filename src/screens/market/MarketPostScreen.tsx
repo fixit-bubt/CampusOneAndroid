@@ -57,7 +57,7 @@ export function MarketPostScreen({ route, navigation }: any) {
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: 'images',
+      mediaTypes: ['images'],
       allowsEditing: true,
       quality: 0.8,
     });
