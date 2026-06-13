@@ -10,6 +10,7 @@ import { TopBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout, Accent, SectorColors } from '../../theme';
+import { useT } from '../../i18n';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { getMyNotifications } from '../../services/notificationsService';
@@ -81,6 +82,7 @@ function StatCard({ icon, fg, num, label, C }: any) {
 }
 
 function ReportCard({ r, C, onAssign }: { r: Report; C: any; onAssign: (r: Report) => void }) {
+  const t = useT();
   const issueConf = ISSUE_MAP[r.category?.toLowerCase()] ?? ISSUE_MAP.other;
   const statusConf = statusTone(C, r.status);
   const issueBg = `${issueConf.fg}1e`;
@@ -99,7 +101,7 @@ function ReportCard({ r, C, onAssign }: { r: Report; C: any; onAssign: (r: Repor
         </View>
         <View style={[styles.statusPill, { backgroundColor: statusConf.bg }]}>
           <View style={[styles.statusDot, { backgroundColor: statusConf.fg }]} />
-          <Text style={[styles.statusTxt, { color: statusConf.fg, fontFamily: FontFamily.jakartaBold }]}>{r.status}</Text>
+          <Text style={[styles.statusTxt, { color: statusConf.fg, fontFamily: FontFamily.jakartaBold }]}>{t.status[r.status]}</Text>
         </View>
       </View>
       <View style={styles.reportMeta}>
@@ -138,6 +140,7 @@ const MANAGE_TILES = [
 
 export function AdminDashboardScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
+  const t = useT();
   const { profile } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
   const [staffList, setStaffList] = useState<StaffMember[]>([]);
@@ -228,11 +231,11 @@ export function AdminDashboardScreen({ navigation }: any) {
         </View>
 
         {/* Needs assignment */}
-        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>NEEDS ASSIGNMENT</Text>
+        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>{t.dash.needsAssignment}</Text>
         {sorted.filter(r => !r.assigned_staff_id).length === 0 ? (
           <View style={[styles.allClear, { backgroundColor: C.surface, borderColor: C.border }]}>
             <Icon name="check" size={20} color={C.success} />
-            <Text style={[styles.allClearTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>All reports assigned</Text>
+            <Text style={[styles.allClearTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>{t.dash.allReportsAssigned}</Text>
           </View>
         ) : (
           <View style={styles.list}>
@@ -243,7 +246,7 @@ export function AdminDashboardScreen({ navigation }: any) {
         )}
 
         {/* Manage tiles */}
-        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>MANAGE</Text>
+        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>{t.dash.manage}</Text>
         <View style={styles.tilesGrid}>
           {MANAGE_TILES.map((tile, i) => {
             const tileBg = isDark ? `${tile.fg}2e` : `${tile.fg}14`;
@@ -257,7 +260,7 @@ export function AdminDashboardScreen({ navigation }: any) {
                 <View style={[styles.tileIcon, { backgroundColor: tileBg }]}>
                   <Icon name={tile.icon} size={17} color={tile.fg} />
                 </View>
-                <Text style={[styles.tileLabel, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{tile.label}</Text>
+                <Text style={[styles.tileLabel, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.dash[tile.label as keyof typeof t.dash] as string}</Text>
                 <Text style={[styles.tileSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{tile.sub}</Text>
               </TouchableOpacity>
             );
@@ -273,7 +276,7 @@ export function AdminDashboardScreen({ navigation }: any) {
       <Modal visible={!!assignTarget} transparent animationType="slide" onRequestClose={() => setAssignTarget(null)}>
         <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setAssignTarget(null)} />
         <View style={[styles.sheet, { backgroundColor: C.surface }]}>
-          <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>Assign Report</Text>
+          <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{t.dash.assignReport}</Text>
           {assignTarget && (
             <View style={styles.assignInfo}>
               <Text style={[styles.assignReportTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{assignTarget.title}</Text>
@@ -299,16 +302,16 @@ export function AdminDashboardScreen({ navigation }: any) {
                         <Text style={[styles.staffName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{s.full_name}</Text>
                         {match && (
                           <View style={[styles.matchPill, { backgroundColor: C.successBg }]}>
-                            <Text style={[styles.matchTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>Match</Text>
+                            <Text style={[styles.matchTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>{t.dash.match}</Text>
                           </View>
                         )}
                       </View>
                       <Text style={[styles.staffDept, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                        {s.expertise ?? s.department ?? 'No trade set'}
+                        {s.expertise ?? s.department ?? t.dash.noTradeSet}
                       </Text>
                     </View>
                     <Text style={[styles.staffLoad, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                      {s.active_count ?? 0} active
+                      {t.dash.activeCount(s.active_count ?? 0)}
                     </Text>
                   </TouchableOpacity>
                 </View>
