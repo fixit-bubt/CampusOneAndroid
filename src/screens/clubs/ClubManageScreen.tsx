@@ -25,7 +25,7 @@ const CATEGORIES = ['academic', 'cultural', 'sports', 'technical', 'social', 'ot
 export function ClubManageScreen({ route, navigation }: any) {
   const { C } = useTheme();
   const t = useT();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { clubId } = route.params;
   const id = clubId;
   const [name, setName] = useState('');
@@ -169,7 +169,10 @@ export function ClubManageScreen({ route, navigation }: any) {
           <Text style={[styles.saveBtnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>{t.clubs2.saveChanges}</Text>
         </TouchableOpacity>
 
-        {/* Transfer presidency */}
+        {/* Transfer presidency — the club_set_president RPC requires a global
+            admin, so only show it to admins (presidents/VPs would always fail). */}
+        {profile?.role === 'admin' && (
+        <>
         <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>{t.clubs2.transferPresidencySection}</Text>
         <View style={[styles.membersCard, { backgroundColor: C.surface, borderColor: C.border }]}>
           {members.map((m, i) => {
@@ -207,6 +210,8 @@ export function ClubManageScreen({ route, navigation }: any) {
             );
           })}
         </View>
+        </>
+        )}
 
         <View style={{ height: 26 }} />
       </ScrollView>
