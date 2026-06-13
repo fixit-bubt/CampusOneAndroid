@@ -7,6 +7,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
+import { useT } from '../../i18n';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
@@ -19,6 +20,7 @@ const RIDE_BG    = `${SectorColors.ride}1e`;
 
 export function RideDetailScreen({ route, navigation }: any) {
   const { C } = useTheme();
+  const t = useT();
   const { user, profile } = useAuth();
   const isAdmin = profile?.role === 'admin';
   const { rideId } = route.params;
@@ -81,7 +83,7 @@ export function RideDetailScreen({ route, navigation }: any) {
     if (row?.whatsapp) {
       setRequesters(prev => prev.map(r => (r.requester_id === requesterId ? { ...r, whatsapp: row.whatsapp } : r)));
     } else {
-      Alert.alert('No contact', 'This student has no WhatsApp number on file.');
+      Alert.alert(t.rides2.noContactTitle, t.rides2.noContactBody);
     }
   }
 
@@ -172,13 +174,13 @@ export function RideDetailScreen({ route, navigation }: any) {
         {/* Info grid */}
         <View style={[styles.infoGrid, { backgroundColor: C.surface, borderColor: C.border }]}>
           <View style={styles.infoCell}>
-            <Text style={[styles.infoCellLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>Seats left</Text>
+            <Text style={[styles.infoCellLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{t.rides2.seatsLeftLabel}</Text>
             <Text style={[styles.infoCellTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-              {isFull ? 'Full' : `${Math.max(seatsLeft, 0)} / ${ride.seats_total}`}
+              {isFull ? t.rides2.full : `${Math.max(seatsLeft, 0)} / ${ride.seats_total}`}
             </Text>
           </View>
           <View style={[styles.infoCell, { borderLeftWidth: 1, borderLeftColor: C.border }]}>
-            <Text style={[styles.infoCellLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>Fare/seat</Text>
+            <Text style={[styles.infoCellLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{t.rides2.farePerSeat}</Text>
             <Text style={[styles.infoCellTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
               ৳{ride.fare}
             </Text>
@@ -186,12 +188,12 @@ export function RideDetailScreen({ route, navigation }: any) {
         </View>
 
         {/* Driver card */}
-        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>DRIVER</Text>
+        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>{t.rides2.driver}</Text>
         <View style={[styles.driverCard, { backgroundColor: C.surface, borderColor: C.border }]}>
           <Avatar name={driverName ?? undefined} size="sm" />
           <View style={{ flex: 1 }}>
             <Text style={[styles.driverName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-              {driverName ?? 'Unknown'}
+              {driverName ?? t.rides2.unknown}
             </Text>
             {requested && contact?.whatsapp && (
               <View style={styles.contactRow}>
@@ -203,7 +205,7 @@ export function RideDetailScreen({ route, navigation }: any) {
             )}
             {requested && !contact?.whatsapp && (
               <Text style={[styles.contactTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium, marginTop: 4 }]}>
-                Request sent — driver will be notified
+                {t.rides2.requestSentNotified}
               </Text>
             )}
           </View>
@@ -212,7 +214,7 @@ export function RideDetailScreen({ route, navigation }: any) {
         {/* Notes + recurring */}
         {ride.notes ? (
           <>
-            <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>NOTES</Text>
+            <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>{t.rides2.notes}</Text>
             <View style={[styles.driverCard, { backgroundColor: C.surface, borderColor: C.border }]}>
               <Text style={[styles.contactTxt, { color: C.text2, fontFamily: FontFamily.jakartaMedium, fontSize: 13, lineHeight: 19 }]}>
                 {ride.notes}
@@ -222,7 +224,7 @@ export function RideDetailScreen({ route, navigation }: any) {
         ) : null}
         {Array.isArray(ride.recurring) && ride.recurring.length > 0 && (
           <>
-            <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>REPEATS</Text>
+            <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>{t.rides2.repeats}</Text>
             <View style={styles.dayRow}>
               {ride.recurring.map((d: string) => (
                 <View key={d} style={[styles.dayPill, { backgroundColor: RIDE_BG }]}>
@@ -241,7 +243,7 @@ export function RideDetailScreen({ route, navigation }: any) {
             </Text>
             {requesters.length === 0 ? (
               <Text style={[styles.contactTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                No requests yet.
+                {t.rides2.noRequestsYet}
               </Text>
             ) : (
               <View style={[styles.reqCard, { backgroundColor: C.surface, borderColor: C.border }]}>
@@ -264,7 +266,7 @@ export function RideDetailScreen({ route, navigation }: any) {
                           activeOpacity={0.75}
                         >
                           <Feather name="phone" size={12} color={C.text2} />
-                          <Text style={[styles.revealTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>Contact</Text>
+                          <Text style={[styles.revealTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>{t.rides2.contact}</Text>
                         </TouchableOpacity>
                       )}
                     </View>
@@ -279,7 +281,7 @@ export function RideDetailScreen({ route, navigation }: any) {
               activeOpacity={0.85}
             >
               <Icon name="trash" size={16} color={C.danger} />
-              <Text style={[styles.actionTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>Delete my ride</Text>
+              <Text style={[styles.actionTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>{t.rides2.deleteMyRide}</Text>
             </TouchableOpacity>
           </>
         )}
@@ -290,7 +292,7 @@ export function RideDetailScreen({ route, navigation }: any) {
             <View style={[styles.requestedBanner, { backgroundColor: C.successBg }]}>
               <Feather name="check-circle" size={17} color={C.success} />
               <Text style={[styles.requestedTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
-                Ride requested — contact details shown above
+                {t.rides2.rideRequestedShown}
               </Text>
             </View>
           ) : (
@@ -305,7 +307,7 @@ export function RideDetailScreen({ route, navigation }: any) {
             >
               <Icon name="ride" size={17} color={isFull ? C.textMuted : C.white} />
               <Text style={[styles.actionTxt, { color: isFull ? C.textMuted : C.white, fontFamily: FontFamily.jakartaBold }]}>
-                {isFull ? 'Ride Full' : 'Request Ride'}
+                {isFull ? t.rides2.rideFull : t.rides2.requestRide}
               </Text>
             </TouchableOpacity>
           )
@@ -319,7 +321,7 @@ export function RideDetailScreen({ route, navigation }: any) {
             activeOpacity={0.85}
           >
             <Icon name="trash" size={16} color={C.danger} />
-            <Text style={[styles.actionTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>Delete ride (admin)</Text>
+            <Text style={[styles.actionTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>{t.rides2.deleteRideAdmin}</Text>
           </TouchableOpacity>
         )}
 
