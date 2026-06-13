@@ -9,6 +9,7 @@ import { Feather } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
+import { useT } from '../../i18n';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { Avatar } from '../../components/ui/Avatar';
@@ -112,9 +113,10 @@ const toastStyles = StyleSheet.create({
 
 // ── CodeCard ──────────────────────────────────────────────────────────────────
 function CodeCard({ code, copied, onCopy, C }: { code: string; copied: boolean; onCopy: () => void; C: any }) {
+  const t = useT();
   return (
     <View style={[codeStyles.card, { backgroundColor: C.brand50, borderColor: C.brand + '40' }]}>
-      <Text style={[codeStyles.label, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>Section join code</Text>
+      <Text style={[codeStyles.label, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>{t.study2.sectionJoinCode}</Text>
       <View style={codeStyles.row}>
         <Text style={[codeStyles.code, { color: C.brand, fontFamily: FontFamily.jakartaExtraBold }]}>{code}</Text>
         <TouchableOpacity
@@ -173,6 +175,7 @@ const rowStyles = StyleSheet.create({
 
 // ── CreateSheet (Modal) ───────────────────────────────────────────────────────
 function CreateSheet({ visible, C, depts, onClose, onSubmit }: { visible: boolean; C: any; depts: Dept[]; onClose: () => void; onSubmit: (deptId: string, intake: string, section: string, reason: string) => void }) {
+  const t = useT();
   const [deptId, setDeptId] = useState('');
   const [intake, setIntake] = useState('');
   const [section, setSection] = useState('');
@@ -214,14 +217,14 @@ function CreateSheet({ visible, C, depts, onClose, onSubmit }: { visible: boolea
 
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <View style={{ flex: 1 }}>
-              <Text style={[sheetStyles.flabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>INTAKE</Text>
+              <Text style={[sheetStyles.flabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.study2.intake}</Text>
               <TextInput
                 style={[sheetStyles.input, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                 value={intake} onChangeText={t => setIntake(t.replace(/\D/g, ''))} keyboardType="numeric" placeholder="52" placeholderTextColor={C.textMuted}
               />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[sheetStyles.flabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>SECTION NO.</Text>
+              <Text style={[sheetStyles.flabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.study2.sectionNo}</Text>
               <TextInput
                 style={[sheetStyles.input, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                 value={section} onChangeText={t => setSection(t.replace(/\D/g, '').slice(0, 2))} keyboardType="numeric" placeholder="1" placeholderTextColor={C.textMuted}
@@ -243,7 +246,7 @@ function CreateSheet({ visible, C, depts, onClose, onSubmit }: { visible: boolea
             activeOpacity={0.8}
           >
             <Icon name="check" size={18} color={ok ? '#fff' : C.textMuted} />
-            <Text style={[sheetStyles.submitTxt, { color: ok ? '#fff' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>Submit request</Text>
+            <Text style={[sheetStyles.submitTxt, { color: ok ? '#fff' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.study2.submitRequest}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -253,6 +256,7 @@ function CreateSheet({ visible, C, depts, onClose, onSubmit }: { visible: boolea
 
 // ── RejectSheet (Modal) ───────────────────────────────────────────────────────
 function RejectSheet({ visible, C, onClose, onReject }: { visible: boolean; C: any; onClose: () => void; onReject: (note: string) => void }) {
+  const t = useT();
   const [note, setNote] = useState('');
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -273,7 +277,7 @@ function RejectSheet({ visible, C, onClose, onReject }: { visible: boolean; C: a
             activeOpacity={0.8}
           >
             <Feather name="x" size={18} color="#fff" />
-            <Text style={[sheetStyles.submitTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>Reject request</Text>
+            <Text style={[sheetStyles.submitTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>{t.study2.rejectRequest}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -283,6 +287,7 @@ function RejectSheet({ visible, C, onClose, onReject }: { visible: boolean; C: a
 
 // ── VoteSheet (Modal) ─────────────────────────────────────────────────────────
 function VoteSheet({ visible, C, onClose, onStart }: { visible: boolean; C: any; onClose: () => void; onStart: (proposal: 'public' | 'private') => void }) {
+  const t = useT();
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={sheetStyles.overlay}>
@@ -297,13 +302,13 @@ function VoteSheet({ visible, C, onClose, onStart }: { visible: boolean; C: any;
             style={[sheetStyles.submitBtn, { backgroundColor: C.brand, marginTop: 20 }]}
             onPress={() => onStart('public')} activeOpacity={0.8}
           >
-            <Text style={[sheetStyles.submitTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>Propose: make Public</Text>
+            <Text style={[sheetStyles.submitTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>{t.study2.proposeMakePublic}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[sheetStyles.submitBtn, { backgroundColor: C.surface2, marginTop: 10 }]}
             onPress={() => onStart('private')} activeOpacity={0.8}
           >
-            <Text style={[sheetStyles.submitTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Propose: make Private</Text>
+            <Text style={[sheetStyles.submitTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.study2.proposeMakePrivate}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -327,6 +332,7 @@ const sheetStyles = StyleSheet.create({
 // ── StudyHubScreen ────────────────────────────────────────────────────────────
 export function StudyHubScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
+  const t = useT();
   const { user, profile } = useAuth();
   const isAdmin = profile?.role === 'admin';
 
@@ -835,19 +841,19 @@ export function StudyHubScreen({ navigation }: any) {
               onPress={joinByCode}
               activeOpacity={0.8}
             >
-              <Text style={[s.joinBtnTxt, { color: codeInput.trim().length >= 4 ? '#fff' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>Join</Text>
+              <Text style={[s.joinBtnTxt, { color: codeInput.trim().length >= 4 ? '#fff' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.study2.join}</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        <Text style={[s.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>DON'T HAVE A CODE?</Text>
+        <Text style={[s.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>{t.study2.dontHaveCode}</Text>
         <TouchableOpacity
           style={[s.outlineBtn, { backgroundColor: C.surface, borderColor: C.border }]}
           onPress={() => { setSub('browse'); loadPublicSections(); }}
           activeOpacity={0.75}
         >
           <Icon name="study" size={17} color={C.text} />
-          <Text style={[s.outlineBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Browse public sections</Text>
+          <Text style={[s.outlineBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.study2.browsePublicSections}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[s.outlineBtn, { backgroundColor: C.surface, borderColor: C.border, marginTop: 8 }]}
@@ -855,7 +861,7 @@ export function StudyHubScreen({ navigation }: any) {
           activeOpacity={0.75}
         >
           <Icon name="plus" size={17} color={C.text} />
-          <Text style={[s.outlineBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Request to create a section</Text>
+          <Text style={[s.outlineBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.study2.requestToCreateSection}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -915,7 +921,7 @@ export function StudyHubScreen({ navigation }: any) {
             activeOpacity={0.75}
           >
             <Icon name="sliders" size={17} color={C.text} />
-            <Text style={[s.outlineBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Manage section</Text>
+            <Text style={[s.outlineBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.study2.manageSection}</Text>
             {joinReqs.length > 0 && (
               <View style={[s.badge, { backgroundColor: C.danger }]}>
                 <Text style={[s.badgeTxt, { fontFamily: FontFamily.jakartaBold }]}>{joinReqs.length}</Text>
@@ -927,7 +933,7 @@ export function StudyHubScreen({ navigation }: any) {
         {/* Pinboard (CR posts notices for the section) */}
         {pins.length > 0 && (
           <>
-            <Text style={[s.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>PINNED</Text>
+            <Text style={[s.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>{t.study2.pinned}</Text>
             <View style={[s.courseCard, { backgroundColor: C.surface, borderColor: C.border }]}>
               {pins.map((p, i) => (
                 <View key={p.id}>
@@ -950,11 +956,11 @@ export function StudyHubScreen({ navigation }: any) {
         )}
 
         {/* Courses */}
-        <Text style={[s.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>COURSES</Text>
+        <Text style={[s.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>{t.study2.courses}</Text>
         <View style={[s.courseCard, { backgroundColor: C.surface, borderColor: C.border }]}>
           {courses.length === 0 ? (
             <View style={s.emptyInner}>
-              <Text style={[s.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>No courses yet</Text>
+              <Text style={[s.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{t.study2.noCoursesYet}</Text>
             </View>
           ) : courses.map((c, i) => (
             <View key={c.id}>
@@ -971,11 +977,11 @@ export function StudyHubScreen({ navigation }: any) {
     const pub = sections.filter(sec => sec.is_public);
     return (
       <View>
-        <Text style={[s.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold, marginTop: 4 }]}>PUBLIC SECTIONS</Text>
+        <Text style={[s.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold, marginTop: 4 }]}>{t.study2.publicSections}</Text>
         {pub.length === 0 ? (
           <View style={s.empty}>
             <Icon name="study" size={28} color={C.textMuted} />
-            <Text style={[s.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>No public sections</Text>
+            <Text style={[s.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{t.study2.noPublicSections}</Text>
           </View>
         ) : (
           <View style={{ gap: 10 }}>
@@ -993,7 +999,7 @@ export function StudyHubScreen({ navigation }: any) {
                 </View>
                 {sec.intake_public && (
                   <View style={[s.intakePill, { backgroundColor: C.infoBg }]}>
-                    <Text style={[s.intakeTxt, { color: C.info, fontFamily: FontFamily.jakartaBold }]}>Open to other intakes</Text>
+                    <Text style={[s.intakeTxt, { color: C.info, fontFamily: FontFamily.jakartaBold }]}>{t.study2.openToOtherIntakes}</Text>
                   </View>
                 )}
                 <TouchableOpacity
@@ -1002,7 +1008,7 @@ export function StudyHubScreen({ navigation }: any) {
                   activeOpacity={0.8}
                 >
                   <Feather name="user-plus" size={14} color="#fff" />
-                  <Text style={[s.joinSecBtnTxt, { fontFamily: FontFamily.jakartaBold }]}>Request to join</Text>
+                  <Text style={[s.joinSecBtnTxt, { fontFamily: FontFamily.jakartaBold }]}>{t.study2.requestToJoin}</Text>
                 </TouchableOpacity>
               </View>
             ))}
@@ -1065,10 +1071,10 @@ export function StudyHubScreen({ navigation }: any) {
                   <Avatar name={m.full_name} size="sm" />
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={[s.reqName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                      {m.full_name}{isMe ? ' (you)' : ''}
+                      {m.full_name}{isMe ? t.study2.you : ''}
                     </Text>
                     <Text style={[s.reqTime, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                      {isCrRow ? 'CR' : m.role === 'editor' ? 'Editor' : 'Member'}
+                      {isCrRow ? t.study2.cr : m.role === 'editor' ? t.study2.editor : t.study2.member}
                     </Text>
                   </View>
                   {!isCrRow && !isMe && (
@@ -1079,7 +1085,7 @@ export function StudyHubScreen({ navigation }: any) {
                         activeOpacity={0.75}
                       >
                         <Text style={[s.approveTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                          {m.role === 'editor' ? 'Demote' : 'Make editor'}
+                          {m.role === 'editor' ? t.study2.demote : t.study2.makeEditor}
                         </Text>
                       </TouchableOpacity>
                       <TouchableOpacity onPress={() => removeMember(m)} hitSlop={8} activeOpacity={0.7} style={{ marginLeft: 8 }}>
@@ -1094,7 +1100,7 @@ export function StudyHubScreen({ navigation }: any) {
         </View>
 
         {/* Pinboard composer */}
-        <Text style={[s.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>PIN A NOTICE</Text>
+        <Text style={[s.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>{t.study2.pinANotice}</Text>
         <View style={[s.card, { backgroundColor: C.surface, borderColor: C.border }]}>
           <TextInput
             style={[s.pinInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
@@ -1111,12 +1117,12 @@ export function StudyHubScreen({ navigation }: any) {
             activeOpacity={0.75}
           >
             <Feather name="bookmark" size={15} color={C.text} />
-            <Text style={[s.outlineBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Pin to section</Text>
+            <Text style={[s.outlineBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.study2.pinToSection}</Text>
           </TouchableOpacity>
         </View>
 
         {/* Section visibility */}
-        <Text style={[s.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>SECTION VISIBILITY</Text>
+        <Text style={[s.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>{t.study2.sectionVisibility}</Text>
         <View style={[s.card, { backgroundColor: C.surface, borderColor: C.border }]}>
           <View style={s.settingRow}>
             <View style={[s.settingIcon, { backgroundColor: mySection.is_public ? C.successBg : C.surface2 }]}>
@@ -1140,7 +1146,7 @@ export function StudyHubScreen({ navigation }: any) {
         </View>
 
         {/* Intake visibility vote */}
-        <Text style={[s.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>INTAKE VISIBILITY</Text>
+        <Text style={[s.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>{t.study2.intakeVisibility}</Text>
         <View style={[s.card, { backgroundColor: C.surface, borderColor: C.border }]}>
           <Text style={[s.intakeInfo, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
             Intake {mySection.intake} {mySection.department} — currently {mySection.intake_public ? 'Public' : 'Private'}
@@ -1161,11 +1167,11 @@ export function StudyHubScreen({ navigation }: any) {
                 <View style={s.voteActions}>
                   <TouchableOpacity style={[s.voteBtn, { backgroundColor: C.successBg }]} onPress={() => castVote('yes')} activeOpacity={0.75}>
                     <Icon name="check" size={14} color={C.success} />
-                    <Text style={[s.voteBtnTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>Vote Yes</Text>
+                    <Text style={[s.voteBtnTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>{t.study2.voteYes}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={[s.voteBtn, { backgroundColor: C.surface }]} onPress={() => castVote('no')} activeOpacity={0.75}>
                     <Feather name="x" size={14} color={C.text2} />
-                    <Text style={[s.voteBtnTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>Vote No</Text>
+                    <Text style={[s.voteBtnTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>{t.study2.voteNo}</Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -1177,7 +1183,7 @@ export function StudyHubScreen({ navigation }: any) {
               activeOpacity={0.75}
             >
               <Feather name="bar-chart-2" size={16} color={C.text} />
-              <Text style={[s.outlineBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Start a vote</Text>
+              <Text style={[s.outlineBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.study2.startAVote}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -1194,7 +1200,7 @@ export function StudyHubScreen({ navigation }: any) {
         {adminReqs.length === 0 ? (
           <View style={s.empty}>
             <Icon name="check" size={28} color={C.textMuted} />
-            <Text style={[s.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>All clear</Text>
+            <Text style={[s.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{t.study2.allClear}</Text>
           </View>
         ) : (
           <View style={{ gap: 11 }}>
@@ -1239,7 +1245,7 @@ export function StudyHubScreen({ navigation }: any) {
         )}
 
         {/* Catalogue: departments → intakes → sections (web ManageStudyHub) */}
-        <Text style={[s.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>CATALOGUE</Text>
+        <Text style={[s.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>{t.study2.catalogue}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 7, paddingBottom: 4 }}>
           {departments.map(d => {
             const sel = d.id === catDept;
@@ -1269,7 +1275,7 @@ export function StudyHubScreen({ navigation }: any) {
 
         {catIntakes.length === 0 ? (
           <View style={s.empty}>
-            <Text style={[s.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>No intakes for this department</Text>
+            <Text style={[s.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{t.study2.noIntakesForDept}</Text>
           </View>
         ) : (
           <View style={{ gap: 9, marginTop: 12 }}>
@@ -1315,7 +1321,7 @@ export function StudyHubScreen({ navigation }: any) {
                             activeOpacity={0.75}
                           >
                             <Feather name="user-check" size={13} color={C.info} />
-                            <Text style={[s.approveTxt, { color: C.info, fontFamily: FontFamily.jakartaBold }]}>Set CR</Text>
+                            <Text style={[s.approveTxt, { color: C.info, fontFamily: FontFamily.jakartaBold }]}>{t.study2.setCr}</Text>
                           </TouchableOpacity>
                         </View>
                       ))}
@@ -1325,7 +1331,7 @@ export function StudyHubScreen({ navigation }: any) {
                         activeOpacity={0.75}
                       >
                         <Icon name="plus" size={15} color={C.text} />
-                        <Text style={[s.outlineBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Add section</Text>
+                        <Text style={[s.outlineBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.study2.addSection}</Text>
                       </TouchableOpacity>
                     </View>
                   )}
@@ -1411,7 +1417,7 @@ export function StudyHubScreen({ navigation }: any) {
             />
             <TouchableOpacity style={[sheetStyles.submitBtn, { backgroundColor: C.brand }]} onPress={addIntake} activeOpacity={0.8}>
               <Icon name="plus" size={17} color="#fff" />
-              <Text style={[sheetStyles.submitTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>Add intake</Text>
+              <Text style={[sheetStyles.submitTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>{t.study2.addIntake}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -1431,7 +1437,7 @@ export function StudyHubScreen({ navigation }: any) {
             />
             <TouchableOpacity style={[sheetStyles.submitBtn, { backgroundColor: C.brand }]} onPress={addCatSection} activeOpacity={0.8}>
               <Icon name="plus" size={17} color="#fff" />
-              <Text style={[sheetStyles.submitTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>Add section</Text>
+              <Text style={[sheetStyles.submitTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>{t.study2.addSection}</Text>
             </TouchableOpacity>
           </View>
         </View>
