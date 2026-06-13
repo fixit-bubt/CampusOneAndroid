@@ -128,15 +128,15 @@ function ReportCard({ r, C, onAssign }: { r: Report; C: any; onAssign: (r: Repor
 }
 
 const MANAGE_TILES = [
-  { icon: 'layers',    fg: Accent.blue, label: 'All Reports',   route: 'AllReports',   sub: 'reports'    },
-  { icon: 'userPlus',  fg: Accent.green, label: 'Staff & Admins', route: 'ManageStaff', sub: 'staffadmin' },
-  { icon: 'directory', fg: Accent.purple, label: 'Users',         route: 'ManageUsers',  sub: 'users'      },
-  { icon: 'announce',  fg: SectorColors.announce, label: 'Announcements', route: 'Announcements',sub: 'announce'   },
-  { icon: 'directory', fg: Accent.teal, label: 'Faculty',       route: 'ManageFaculty', sub: 'faculty'   },
-  { icon: 'study',     fg: SectorColors.study, label: 'Study Hub',     route: 'StudyHub',     sub: 'studyhub'   },
-  { icon: 'clubs',     fg: Accent.amber, label: 'Clubs',         route: 'ManageClubs',  sub: 'clubs'      },
-  { icon: 'medical',   fg: SectorColors.medical, label: 'Medical Queue', route: 'MedicalQueue', sub: 'medqueue'   },
-];
+  { icon: 'layers',    fg: Accent.blue,           tk: 'manageAllReports',     route: 'AllReports',   sub: 'reports'    },
+  { icon: 'userPlus',  fg: Accent.green,          tk: 'manageStaffAdmins',    route: 'ManageStaff',  sub: 'staffadmin' },
+  { icon: 'directory', fg: Accent.purple,         tk: 'manageUsers',          route: 'ManageUsers',  sub: 'users'      },
+  { icon: 'announce',  fg: SectorColors.announce, tk: 'manageAnnouncements',  route: 'Announcements',sub: 'announce'   },
+  { icon: 'directory', fg: Accent.teal,           tk: 'manageFaculty',        route: 'ManageFaculty',sub: 'faculty'    },
+  { icon: 'study',     fg: SectorColors.study,    tk: 'manageStudyHub',       route: 'StudyHub',     sub: 'studyhub'   },
+  { icon: 'clubs',     fg: Accent.amber,          tk: 'manageClubs',          route: 'ManageClubs',  sub: 'clubs'      },
+  { icon: 'medical',   fg: SectorColors.medical,  tk: 'manageMedicalQueue',   route: 'MedicalQueue', sub: 'medqueue'   },
+] as const;
 
 export function AdminDashboardScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
@@ -194,6 +194,12 @@ export function AdminDashboardScreen({ navigation }: any) {
   const sorted = [...reports].sort((a, b) => {
     const rank = (r: Report) => !r.assigned_staff_id ? 0 : 2;
     return rank(a) - rank(b);
+  });
+
+  // Active assignment counts per staff (from the loaded Open + In Progress rows).
+  const activeByStaff: Record<string, number> = {};
+  reports.forEach(r => {
+    if (r.assigned_staff_id) activeByStaff[r.assigned_staff_id] = (activeByStaff[r.assigned_staff_id] ?? 0) + 1;
   });
 
   // Assign sheet: surface staff whose trade matches the report category first
@@ -260,7 +266,7 @@ export function AdminDashboardScreen({ navigation }: any) {
                 <View style={[styles.tileIcon, { backgroundColor: tileBg }]}>
                   <Icon name={tile.icon} size={17} color={tile.fg} />
                 </View>
-                <Text style={[styles.tileLabel, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.dash[tile.label as keyof typeof t.dash] as string}</Text>
+                <Text style={[styles.tileLabel, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.dash[tile.tk] as string}</Text>
                 <Text style={[styles.tileSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{tile.sub}</Text>
               </TouchableOpacity>
             );
@@ -311,7 +317,7 @@ export function AdminDashboardScreen({ navigation }: any) {
                       </Text>
                     </View>
                     <Text style={[styles.staffLoad, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                      {t.dash.activeCount(s.active_count ?? 0)}
+                      {t.dash.activeCount(activeByStaff[s.id] ?? 0)}
                     </Text>
                   </TouchableOpacity>
                 </View>
