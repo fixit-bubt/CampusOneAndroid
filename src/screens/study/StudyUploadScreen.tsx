@@ -23,6 +23,10 @@ const FILE_TYPES = [
   { id: 'books',     label: 'Books' },
 ];
 
+// Must match the DB CHECK constraints exactly.
+const MATERIAL_TYPES = ['Class Note', 'Lecture Slide', 'Assignment', 'Reference', 'Lab Manual'];
+const BOOK_KINDS = ['Textbook', 'Reference', 'Syllabus'];
+
 interface PickedFile {
   uri: string;
   name: string;
@@ -42,6 +46,8 @@ export function StudyUploadScreen({ route, navigation }: any) {
 
   const [fileType, setFileType] = useState('materials');
   const [name, setName] = useState('');
+  const [materialType, setMaterialType] = useState('Class Note');
+  const [bookKind, setBookKind] = useState('Textbook');
   const [exam, setExam] = useState('Midterm');
   const [author, setAuthor] = useState('');
   const [bookUrl, setBookUrl] = useState('');
@@ -63,8 +69,14 @@ export function StudyUploadScreen({ route, navigation }: any) {
     })();
   }, [courseId]);
 
+  // Questions need the resolved section_id, books need the resolved intake_id
+  // (both NOT NULL in the DB) — block submit until the async lookup finishes.
   const canSubmit = name.trim().length > 0 &&
-    (fileType === 'books' ? (pickedFile !== null || bookUrl.trim().length > 0) : pickedFile !== null);
+    (fileType === 'books'
+      ? ((pickedFile !== null || bookUrl.trim().length > 0) && !!intakeId)
+      : fileType === 'questions'
+        ? (pickedFile !== null && !!sectionId)
+        : pickedFile !== null);
 
   async function pickFile() {
     const result = await DocumentPicker.getDocumentAsync({
@@ -115,7 +127,7 @@ export function StudyUploadScreen({ route, navigation }: any) {
           intake_id:    intakeId,
           title:        name.trim(),
           author:       author.trim() || null,
-          kind:         storagePath ? 'file' : 'link',
+          kind:         bookKind,
           storage_path: storagePath,
           url:          bookUrl.trim() || null,
           added_by:     user.id,
@@ -123,7 +135,7 @@ export function StudyUploadScreen({ route, navigation }: any) {
       } else {
         ({ error: insertError } = await supabase.from('study_materials').insert({
           course_id:    courseId,
-          type:         fileType,
+          type:         materialType,
           title:        name.trim(),
           storage_path: storagePath,
           uploaded_by:  user.id,
@@ -175,6 +187,30 @@ export function StudyUploadScreen({ route, navigation }: any) {
           })}
         </View>
 
+        {/* Material type (materials only) — must match DB CHECK */}
+        {fileType === 'materials' && (
+          <>
+            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>TYPE</Text>
+            <View style={styles.examRow}>
+              {MATERIAL_TYPES.map(mt => {
+                const on = materialType === mt;
+                return (
+                  <TouchableOpacity
+                    key={mt}
+                    style={[styles.examChip, on
+                      ? { backgroundColor: C.brand, borderColor: C.brand }
+                      : { backgroundColor: C.surface, borderColor: C.border }]}
+                    onPress={() => setMaterialType(mt)}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={[styles.examTxt, { color: on ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>{mt}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </>
+        )}
+
         {/* Exam tag (questions only) */}
         {fileType === 'questions' && (
           <>
@@ -202,6 +238,24 @@ export function StudyUploadScreen({ route, navigation }: any) {
         {/* Book extras */}
         {fileType === 'books' && (
           <>
+            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>KIND</Text>
+            <View style={styles.examRow}>
+              {BOOK_KINDS.map(bk => {
+                const on = bookKind === bk;
+                return (
+                  <TouchableOpacity
+                    key={bk}
+                    style={[styles.examChip, on
+                      ? { backgroundColor: C.brand, borderColor: C.brand }
+                      : { backgroundColor: C.surface, borderColor: C.border }]}
+                    onPress={() => setBookKind(bk)}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={[styles.examTxt, { color: on ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>{bk}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
             <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>AUTHOR (OPTIONAL)</Text>
             <TextInput
               style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
