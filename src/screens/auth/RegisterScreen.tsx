@@ -11,6 +11,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { Icon } from '../../components/ui/Icon';
+import { PasswordInput } from '../../components/ui/PasswordInput';
 import { Brand } from './LandingScreen';
 import { FontFamily, Layout } from '../../theme';
 import type { AuthStackParams } from '../../types/navigation';
@@ -25,7 +26,6 @@ export function RegisterScreen({ navigation }: Props) {
   const [name, setName]   = useState('');
   const [email, setEmail] = useState('');
   const [pass, setPass]   = useState('');
-  const [showPass, setShowPass] = useState(false);
   const [busy, setBusy]   = useState(false);
   const busyRef = useRef(false);
   const [err, setErr]     = useState('');
@@ -118,24 +118,13 @@ export function RegisterScreen({ navigation }: Props) {
           <Text style={[styles.label, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>
             {t.auth.password}
           </Text>
-          <View style={styles.passWrap}>
-            <TextInput
-              style={[styles.input, styles.passInput, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaRegular }]}
-              value={pass}
-              onChangeText={setPass}
-              secureTextEntry={!showPass}
-              placeholder="••••••••"
-              placeholderTextColor={C.textMuted}
-            />
-            <TouchableOpacity
-              onPress={() => setShowPass(s => !s)}
-              style={styles.eyeBtn}
-              hitSlop={8}
-              accessibilityLabel={showPass ? t.auth.hidePassword : t.auth.showPassword}
-            >
-              <Icon name={showPass ? 'eyeOff' : 'eye'} size={20} color={C.textMuted} />
-            </TouchableOpacity>
-          </View>
+          <PasswordInput
+            style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaRegular }]}
+            value={pass}
+            onChangeText={setPass}
+            placeholder="••••••••"
+            placeholderTextColor={C.textMuted}
+          />
 
           {/* Error */}
           {!!err && (
@@ -225,23 +214,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     fontSize: 15,
   } as any,
-
-  passWrap: {
-    justifyContent: 'center',
-  } as ViewStyle,
-
-  passInput: {
-    paddingRight: 48,
-  } as any,
-
-  eyeBtn: {
-    position: 'absolute',
-    right: 12,
-    height: 50,
-    width: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-  } as ViewStyle,
 
   errText: {
     fontSize: 13,

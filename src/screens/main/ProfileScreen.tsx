@@ -12,6 +12,7 @@ import { useT } from '../../i18n';
 import { useAuth } from '../../store/authStore';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
+import { PasswordInput } from '../../components/ui/PasswordInput';
 import { SectorIcon } from '../../components/ui/SectorIcon';
 import { FontFamily, Layout, Accent } from '../../theme';
 import type { SectorKey } from '../../theme';
@@ -602,17 +603,15 @@ export function ProfileScreen({ navigation }: any) {
           <Text style={[styles.pwSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
             {t.mainx.pwAtLeast8}
           </Text>
-          <TextInput
+          <PasswordInput
             style={[styles.pwField, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
             value={pwNew} onChangeText={setPwNew}
             placeholder={t.mainx.newPasswordPlaceholder} placeholderTextColor={C.textMuted}
-            secureTextEntry autoCapitalize="none"
           />
-          <TextInput
+          <PasswordInput
             style={[styles.pwField, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
             value={pwConfirm} onChangeText={setPwConfirm}
             placeholder={t.mainx.confirmNewPasswordPlaceholder} placeholderTextColor={C.textMuted}
-            secureTextEntry autoCapitalize="none"
           />
           <TouchableOpacity
             style={[styles.pwBtn, { backgroundColor: C.brand, opacity: pwBusy ? 0.6 : 1 }]}

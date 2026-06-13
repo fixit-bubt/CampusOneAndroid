@@ -719,7 +719,10 @@ export function StudyHubScreen({ navigation }: any) {
     if (codeInput.trim().length < 4 || !user) return;
     const code = codeInput.trim().toUpperCase();
     const { data, error } = await supabase.rpc('join_section_by_code', { p_code: code });
-    if (error) { toast({ type: 'error', title: 'Could not join', message: error.message }); return; }
+    if (error || !data?.ok) {
+      toast({ type: 'error', title: 'Could not join', message: error?.message ?? data?.error ?? 'Invalid join code.' });
+      return;
+    }
     setCodeInput('');
     flash('Joined section!');
     load();
@@ -913,7 +916,7 @@ export function StudyHubScreen({ navigation }: any) {
         </View>
 
         {/* CR code card */}
-        {isCr && <CodeCard code={mySection.join_code ?? 'ABCD12'} copied={copied} onCopy={copyCode} C={C} />}
+        {isCr && <CodeCard code={mySection.join_code ?? '—'} copied={copied} onCopy={copyCode} C={C} />}
 
         {/* Manage section button (CR only) */}
         {isCr && (
@@ -1025,7 +1028,7 @@ export function StudyHubScreen({ navigation }: any) {
     return (
       <View>
         {/* Code card */}
-        <CodeCard code={mySection.join_code ?? 'ABCD12'} copied={copied} onCopy={copyCode} C={C} />
+        <CodeCard code={mySection.join_code ?? '—'} copied={copied} onCopy={copyCode} C={C} />
 
         {/* Join requests */}
         {joinReqs.length > 0 && (

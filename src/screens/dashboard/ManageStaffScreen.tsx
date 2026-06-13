@@ -12,6 +12,7 @@ import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
+import { PasswordInput } from '../../components/ui/PasswordInput';
 import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
@@ -238,10 +239,9 @@ export function ManageStaffScreen({ navigation }: any) {
           />
 
           <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.passwordMin6Label}</Text>
-          <TextInput
+          <PasswordInput
             style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
             value={password} onChangeText={setPassword} placeholder="••••••" placeholderTextColor={C.textMuted}
-            secureTextEntry autoCapitalize="none"
           />
 
           {tab === 'staff' && (
