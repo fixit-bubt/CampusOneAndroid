@@ -167,7 +167,7 @@ export function DoctorDetailScreen({ route, navigation }: any) {
   if (!doctor) {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-        <SubBar title="Doctor" onBack={() => navigation.goBack()} />
+        <SubBar title={t.medical2.doctor} onBack={() => navigation.goBack()} />
         <View style={styles.center}><ActivityIndicator color={C.brand} /></View>
       </SafeAreaView>
     );
@@ -211,7 +211,7 @@ export function DoctorDetailScreen({ route, navigation }: any) {
               styles.availTitle,
               { color: onDuty ? C.success : C.text, fontFamily: FontFamily.jakartaExtraBold },
             ]}>
-              {onDuty ? 'Available now' : 'Not available now'}
+              {onDuty ? t.medical2.availableNow : t.medical2.notAvailableNow}
             </Text>
             <Text style={[styles.availSub, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
               {onDuty
@@ -222,17 +222,17 @@ export function DoctorDetailScreen({ route, navigation }: any) {
         </View>
 
         {/* Schedule card */}
-        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>SCHEDULE</Text>
+        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>{t.medical2.schedule}</Text>
         <View style={[styles.schedCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <ScheduleRow icon="events" label="Duty days" value={Array.isArray(doctor.days) ? doctor.days.join(', ') : ''} C={C} />
+          <ScheduleRow icon="events" label={t.medical2.dutyDays} value={Array.isArray(doctor.days) ? doctor.days.join(', ') : ''} C={C} />
           <View style={[styles.divider, { backgroundColor: C.border }]} />
-          <ScheduleRow icon="clock" label="Hours" value={`${doctor.start_time} – ${doctor.end_time}`} C={C} />
+          <ScheduleRow icon="clock" label={t.medical2.hours} value={`${doctor.start_time} – ${doctor.end_time}`} C={C} />
           <View style={[styles.divider, { backgroundColor: C.border }]} />
-          <ScheduleRow icon="pin" label="Location" value={doctor.room ?? 'Medical Center'} C={C} />
+          <ScheduleRow icon="pin" label={t.medical2.location} value={doctor.room ?? t.medical2.medicalCenter} C={C} />
         </View>
 
         {/* Book Appointment — duty-date picker + 20-min slot grid */}
-        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>BOOK APPOINTMENT</Text>
+        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>{t.medical2.bookAppointment}</Text>
         <View style={[styles.bookCard, { backgroundColor: C.surface, borderColor: C.border }]}>
           <Text style={[styles.slotLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.medical.pickDate}</Text>
           <View style={styles.dateRow}>
