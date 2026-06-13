@@ -11,6 +11,7 @@ import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout , SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
+import { useT } from '../../i18n';
 
 const MED_COLOR = SectorColors.medical;
 const MED_BG    = `${SectorColors.medical}1e`;
@@ -40,6 +41,7 @@ function isOnDuty(doc: Doctor): boolean {
 export function MedicalScreen({ navigation }: any) {
   const { C } = useTheme();
   const { profile } = useAuth();
+  const t = useT();
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -59,7 +61,7 @@ export function MedicalScreen({ navigation }: any) {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar
-        title="Medical"
+        title={t.sectors.medical}
         onBack={() => navigation.goBack()}
         rightSlot={
           <View style={{ flexDirection: 'row', gap: 6 }}>
@@ -90,7 +92,7 @@ export function MedicalScreen({ navigation }: any) {
         {doctors.length === 0 ? (
           <View style={styles.empty}>
             <Icon name="medical" size={28} color={C.textMuted} />
-            <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>No doctors listed</Text>
+            <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.medical2.noDoctors}</Text>
           </View>
         ) : (
           <View style={styles.list}>
@@ -115,7 +117,7 @@ export function MedicalScreen({ navigation }: any) {
                     {isOnDuty(d) ? (
                       <View style={[styles.dutyPill, { backgroundColor: C.successBg }]}>
                         <View style={[styles.dutyDot, { backgroundColor: C.success }]} />
-                        <Text style={[styles.dutyTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>On Duty</Text>
+                        <Text style={[styles.dutyTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>{t.medical2.onDuty}</Text>
                       </View>
                     ) : (
                       <View style={[styles.dutyPill, { backgroundColor: C.surface2 }]}>
