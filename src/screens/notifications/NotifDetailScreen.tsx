@@ -56,6 +56,23 @@ export function NotifDetailScreen({ route, navigation }: any) {
     navigation.goBack();
   }
 
+  // Resolve the related screen. Claim notifications carry the claim CODE in
+  // reference_id, so look up the item it belongs to before navigating.
+  async function openRelated() {
+    if (!n.reference_id) return;
+    if (n.reference_type === 'claim') {
+      const { data } = await supabase
+        .from('claims')
+        .select('item_id')
+        .eq('code', n.reference_id)
+        .maybeSingle();
+      if (data?.item_id) navigation.navigate('LostFoundDetail' as any, { itemId: data.item_id });
+      return;
+    }
+    const m = SCREEN_MAP[n.reference_type ?? ''];
+    if (m) navigation.navigate(m.screen as any, { [m.key]: n.reference_id });
+  }
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar title={sectorLabel} onBack={() => navigation.goBack()} />
@@ -81,11 +98,7 @@ export function NotifDetailScreen({ route, navigation }: any) {
         <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>{t.notif.relatedTo}</Text>
         <TouchableOpacity
           style={[styles.relatedCard, { backgroundColor: C.surface, borderColor: C.border }]}
-          onPress={() => {
-            if (!n.reference_id) return;
-            const m = SCREEN_MAP[n.reference_type ?? ''];
-            if (m) navigation.navigate(m.screen as any, { [m.key]: n.reference_id });
-          }}
+          onPress={openRelated}
           activeOpacity={0.75}
         >
           <SectorIcon sector={n.sector} size="sm" />
@@ -99,11 +112,7 @@ export function NotifDetailScreen({ route, navigation }: any) {
         {/* Primary action */}
         <TouchableOpacity
           style={[styles.actionBtn, { backgroundColor: C.brand }]}
-          onPress={() => {
-            if (!n.reference_id) return;
-            const m = SCREEN_MAP[n.reference_type ?? ''];
-            if (m) navigation.navigate(m.screen as any, { [m.key]: n.reference_id });
-          }}
+          onPress={openRelated}
           activeOpacity={0.85}
         >
           <Text style={[styles.actionTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>{t.notif.viewDetails}</Text>
