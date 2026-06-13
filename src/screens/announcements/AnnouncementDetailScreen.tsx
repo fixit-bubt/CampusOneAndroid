@@ -34,7 +34,8 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
   const { C } = useTheme();
   const { user } = useAuth();
   const t = useT();
-  const { announcementId } = route.params;
+  const { announcementId } = route.params ?? {};
+  if (!announcementId) return null;
   const id = announcementId;
   const [item, setItem] = useState<Announcement | null>(null);
 

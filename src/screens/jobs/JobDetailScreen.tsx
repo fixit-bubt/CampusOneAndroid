@@ -33,7 +33,8 @@ export function JobDetailScreen({ route, navigation }: any) {
   const { C } = useTheme();
   const t = useT();
   const { user, profile } = useAuth();
-  const { jobId } = route.params;
+  const { jobId } = route.params ?? {};
+  if (!jobId) return null;
   const [job, setJob] = useState<any>(null);
   const [saved, setSaved] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);

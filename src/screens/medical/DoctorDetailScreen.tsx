@@ -96,7 +96,8 @@ export function DoctorDetailScreen({ route, navigation }: any) {
   const { C } = useTheme();
   const { user } = useAuth();
   const t = useT();
-  const { doctorId } = route.params;
+  const { doctorId } = route.params ?? {};
+  if (!doctorId) return null;
   const [doctor, setDoctor] = useState<Doctor | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);

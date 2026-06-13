@@ -59,7 +59,8 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
   const { C } = useTheme();
   const { user } = useAuth();
   const t = useT();
-  const { itemId } = route.params;
+  const { itemId } = route.params ?? {};
+  if (!itemId) return null;
   const id = itemId;
 
   const [item, setItem] = useState<LostFoundItem | null>(null);

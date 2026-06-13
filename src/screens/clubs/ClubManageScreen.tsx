@@ -26,7 +26,8 @@ export function ClubManageScreen({ route, navigation }: any) {
   const { C } = useTheme();
   const t = useT();
   const { user, profile } = useAuth();
-  const { clubId } = route.params;
+  const { clubId } = route.params ?? {};
+  if (!clubId) return null;
   const id = clubId;
   const [name, setName] = useState('');
   const [tagline, setTagline] = useState('');

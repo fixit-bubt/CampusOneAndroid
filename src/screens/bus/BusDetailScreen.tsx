@@ -16,7 +16,8 @@ import type { BusRoute } from '../../types/database';
 export function BusDetailScreen({ route, navigation }: any) {
   const { C } = useTheme();
   const t = useT();
-  const { id } = route.params;
+  const { id } = route.params ?? {};
+  if (!id) return null;
   const [busRoute, setBusRoute] = useState<BusRoute | null>(null);
 
   useEffect(() => {

@@ -28,7 +28,8 @@ export function MarketDetailScreen({ route, navigation }: any) {
   const { user, profile } = useAuth();
   const t = useT();
   const isAdmin = profile?.role === 'admin';
-  const { listingId } = route.params;
+  const { listingId } = route.params ?? {};
+  if (!listingId) return null;
   const [listing, setListing] = useState<any>(null);
   const [sellerName, setSellerName] = useState<string | null>(null);
   const [revealed, setRevealed] = useState(false);

@@ -38,7 +38,8 @@ export function EventDetailScreen({ route, navigation }: any) {
   const { C } = useTheme();
   const { user, profile } = useAuth();
   const t = useT();
-  const { eventId } = route.params;
+  const { eventId } = route.params ?? {};
+  if (!eventId) return null;
   const id = eventId;
 
   const [event, setEvent] = useState<Event | null>(null);

@@ -23,7 +23,8 @@ export function RideDetailScreen({ route, navigation }: any) {
   const t = useT();
   const { user, profile } = useAuth();
   const isAdmin = profile?.role === 'admin';
-  const { rideId } = route.params;
+  const { rideId } = route.params ?? {};
+  if (!rideId) return null;
   const [ride, setRide] = useState<any>(null);
   const [driverName, setDriverName] = useState<string | null>(null);
   const [contact, setContact] = useState<{ whatsapp: string } | null>(null);

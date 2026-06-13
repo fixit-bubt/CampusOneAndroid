@@ -43,7 +43,8 @@ export function CourseDetailScreen({ route, navigation }: any) {
   const { C, isDark } = useTheme();
   const t = useT();
   const { user, profile } = useAuth();
-  const { courseId } = route.params;
+  const { courseId } = route.params ?? {};
+  if (!courseId) return null;
   const [course, setCourse] = useState<any>(null);
   const [materials, setMaterials] = useState<Entry[]>([]);
   const [questions, setQuestions] = useState<Entry[]>([]);
