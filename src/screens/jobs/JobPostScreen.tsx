@@ -1,7 +1,7 @@
 // Matches design screens-g.jsx — JobPost
 import { useState } from 'react';
 import {
-  View, Text, TouchableOpacity, TextInput, ScrollView,
+  View, Text, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView, Platform,
   StyleSheet, Alert, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -109,6 +109,7 @@ export function JobPostScreen({ navigation }: any) {
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar title={t.jobs2.postAJob} onBack={() => navigation.goBack()} />
 
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
@@ -221,6 +222,7 @@ export function JobPostScreen({ navigation }: any) {
 
         <View style={{ height: 30 }} />
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

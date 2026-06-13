@@ -1,7 +1,7 @@
 // Matches design screens-g.jsx — AnnouncePost
 import { useState } from 'react';
 import {
-  View, Text, TouchableOpacity, TextInput, ScrollView,
+  View, Text, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView, Platform,
   StyleSheet, Alert, Switch, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -84,6 +84,7 @@ export function AnnouncePostScreen({ navigation }: any) {
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar title="New Announcement" onBack={() => navigation.goBack()} />
 
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
@@ -158,6 +159,7 @@ export function AnnouncePostScreen({ navigation }: any) {
 
         <View style={{ height: 30 }} />
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

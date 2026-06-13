@@ -1,7 +1,7 @@
 // Matches design screens-e.jsx — MarketPost (create/edit listing)
 import { useState } from 'react';
 import {
-  View, Text, TouchableOpacity, TextInput, ScrollView, Switch,
+  View, Text, TouchableOpacity, TextInput, ScrollView, Switch, KeyboardAvoidingView, Platform,
   StyleSheet, Alert, Image, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -115,6 +115,7 @@ export function MarketPostScreen({ route, navigation }: any) {
         onBack={() => navigation.goBack()}
       />
 
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
@@ -245,6 +246,7 @@ export function MarketPostScreen({ route, navigation }: any) {
 
         <View style={{ height: 30 }} />
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
