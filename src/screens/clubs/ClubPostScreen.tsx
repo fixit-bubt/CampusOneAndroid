@@ -11,9 +11,11 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { useT } from '../../i18n';
 
 export function ClubPostScreen({ route, navigation }: any) {
   const { C } = useTheme();
+  const t = useT();
   const { user } = useAuth();
 
   // Hooks must be declared before any early return
@@ -47,7 +49,7 @@ export function ClubPostScreen({ route, navigation }: any) {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-      <SubBar title="New Post" onBack={() => navigation.goBack()} />
+      <SubBar title={t.clubs2.newPost} onBack={() => navigation.goBack()} />
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
