@@ -115,7 +115,7 @@ export function RidePostScreen({ navigation }: any) {
         seats_total: parseInt(seats, 10) || 1,
         fare:        parsedFare,
         notes:       notes.trim() || null,
-        recurring:   recurring.length > 0 ? recurring : null,
+        recurring:   recurring,
       });
       if (error) throw error;
       navigation.goBack();
