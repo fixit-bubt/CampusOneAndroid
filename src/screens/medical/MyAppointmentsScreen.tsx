@@ -151,7 +151,7 @@ export function MyAppointmentsScreen({ navigation }: any) {
                     </View>
                     <View style={{ flex: 1, minWidth: 0 }}>
                       <Text style={[styles.docName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                        {a.doctors?.name ?? 'Doctor'}
+                        {a.doctors?.name ?? t.medical2.doctor}
                       </Text>
                       <Text style={[styles.docSpec, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
                         {a.doctors?.specialty ?? ''} · {a.date} · {fmtSlot(a.slot)}
