@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '../../hooks/useTheme';
+import { useT } from '../../i18n';
 import { useAuth } from '../../store/authStore';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
@@ -38,6 +39,25 @@ const CATS: { id: string; label: string; icon: string; fg: string }[] = [
 
 const CAT_MAP = Object.fromEntries(CATS.map(c => [c.id, c]));
 
+const CAT_LABELS = (t: any): Record<string, string> => ({
+  award: t.mainx.catAward, cert: t.mainx.catCertificate, project: t.mainx.catProject,
+  volunteer: t.mainx.catVolunteer, leadership: t.mainx.catLeadership, research: t.mainx.catResearch,
+});
+
+const BADGE_LABELS = (t: any): Record<string, string> => ({
+  reporter: t.mainx.badgeReporter, helper: t.mainx.badgeHelper,
+  active: t.mainx.badgeActive, studious: t.mainx.badgeStudious,
+});
+
+const CONTRIB_LABELS = (t: any): Record<string, string> => ({
+  reports: t.mainx.contribReports, clubs: t.mainx.contribClubs,
+  events: t.mainx.contribEvents, lostfound: t.mainx.contribLostfound,
+});
+
+const ROLE_LABELS_T = (t: any): Record<string, string> => ({
+  student: t.mainx.roleStudent, staff: t.mainx.roleStaff, admin: t.mainx.roleAdmin,
+});
+
 // ── Static badge data ─────────────────────────────────────────────────────────
 const BADGES = [
   { id: 'reporter',  icon: 'layers',   fg: Accent.blue, en: 'Reporter',   earned: false, progress: { cur: 1, total: 5 } },
@@ -55,7 +75,7 @@ const CONTRIB_CONFIG: { sector: SectorKey; en: string; table: string; field: str
 ];
 
 // ── BadgesRow ─────────────────────────────────────────────────────────────────
-function BadgesRow({ badges, onPick, C }: { badges: typeof BADGES; onPick: (b: typeof BADGES[0]) => void; C: any }) {
+function BadgesRow({ badges, onPick, C, t }: { badges: typeof BADGES; onPick: (b: typeof BADGES[0]) => void; C: any; t: any }) {
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -4 }} contentContainerStyle={{ gap: 12, paddingHorizontal: 4, paddingVertical: 4 }}>
       {badges.map(b => (
@@ -75,7 +95,7 @@ function BadgesRow({ badges, onPick, C }: { badges: typeof BADGES; onPick: (b: t
               </View>
             )}
           </View>
-          <Text style={[badgeStyles.name, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>{b.en}</Text>
+          <Text style={[badgeStyles.name, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>{BADGE_LABELS(t)[b.id]}</Text>
         </TouchableOpacity>
       ))}
     </ScrollView>
@@ -98,7 +118,7 @@ const badgeStyles = StyleSheet.create({
 });
 
 // ── BadgeSheet ────────────────────────────────────────────────────────────────
-function BadgeSheet({ badge, C, onClose }: { badge: typeof BADGES[0] | null; C: any; onClose: () => void }) {
+function BadgeSheet({ badge, C, onClose, t }: { badge: typeof BADGES[0] | null; C: any; onClose: () => void; t: any }) {
   if (!badge) return null;
   return (
     <Modal visible animationType="slide" transparent onRequestClose={onClose}>
@@ -106,17 +126,17 @@ function BadgeSheet({ badge, C, onClose }: { badge: typeof BADGES[0] | null; C: 
         <TouchableOpacity style={{ flex: 1 }} onPress={onClose} />
         <View style={[sheetStyles.sheet, { backgroundColor: C.surface }]}>
           <View style={[sheetStyles.handle, { backgroundColor: C.border }]} />
-          <Text style={[sheetStyles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>Badge</Text>
+          <Text style={[sheetStyles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{t.mainx.badge}</Text>
           <View style={{ alignItems: 'center', paddingVertical: 18 }}>
             <View style={[sheetStyles.bigMedal, badge.earned && { backgroundColor: badge.fg + '22', borderColor: badge.fg + '55', borderWidth: 2 }]}>
               <Icon name={badge.icon as any} size={38} color={badge.earned ? badge.fg : C.textMuted} />
             </View>
-            <Text style={[sheetStyles.badgeName, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{badge.en}</Text>
+            <Text style={[sheetStyles.badgeName, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{BADGE_LABELS(t)[badge.id]}</Text>
             <View style={{ marginTop: 10 }}>
               {badge.earned ? (
                 <View style={[sheetStyles.earnedPill, { backgroundColor: Accent.greenBg }]}>
                   <View style={[sheetStyles.earnedDot, { backgroundColor: Accent.green }]} />
-                  <Text style={[sheetStyles.earnedTxt, { color: Accent.green, fontFamily: FontFamily.jakartaBold }]}>Earned</Text>
+                  <Text style={[sheetStyles.earnedTxt, { color: Accent.green, fontFamily: FontFamily.jakartaBold }]}>{t.mainx.earned}</Text>
                 </View>
               ) : (
                 badge.progress && (
@@ -141,7 +161,7 @@ function BadgeSheet({ badge, C, onClose }: { badge: typeof BADGES[0] | null; C: 
 }
 
 // ── AddSheet ──────────────────────────────────────────────────────────────────
-function AddSheet({ C, onClose, onAdd }: { C: any; onClose: () => void; onAdd: (item: AccomplishmentItem) => void }) {
+function AddSheet({ C, onClose, onAdd, t }: { C: any; onClose: () => void; onAdd: (item: AccomplishmentItem) => void; t: any }) {
   const [cat, setCat] = useState('award');
   const [title, setTitle] = useState('');
   const [org, setOrg] = useState('');
@@ -161,9 +181,9 @@ function AddSheet({ C, onClose, onAdd }: { C: any; onClose: () => void; onAdd: (
         <TouchableOpacity style={{ flex: 1 }} onPress={onClose} />
         <View style={[sheetStyles.sheet, { backgroundColor: C.surface }]}>
           <View style={[sheetStyles.handle, { backgroundColor: C.border }]} />
-          <Text style={[sheetStyles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>Add accomplishment</Text>
+          <Text style={[sheetStyles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{t.mainx.addAccomplishment}</Text>
 
-          <Text style={[sheetStyles.flabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>TYPE</Text>
+          <Text style={[sheetStyles.flabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.mainx.fieldType}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 2 }}>
             {CATS.map(c => (
               <TouchableOpacity
@@ -173,29 +193,29 @@ function AddSheet({ C, onClose, onAdd }: { C: any; onClose: () => void; onAdd: (
                 activeOpacity={0.75}
               >
                 <Icon name={c.icon as any} size={14} color={cat === c.id ? '#fff' : C.text2} />
-                <Text style={[sheetStyles.typeChipTxt, { color: cat === c.id ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>{c.label}</Text>
+                <Text style={[sheetStyles.typeChipTxt, { color: cat === c.id ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>{CAT_LABELS(t)[c.id]}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
 
-          <Text style={[sheetStyles.flabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>TITLE</Text>
+          <Text style={[sheetStyles.flabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.mainx.fieldTitle}</Text>
           <TextInput
             style={[sheetStyles.input, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
             value={title} onChangeText={setTitle}
             placeholder="e.g. Dean's List — Spring 2026" placeholderTextColor={C.textMuted}
           />
 
-          <Text style={[sheetStyles.flabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>ORGANIZATION / DETAIL</Text>
+          <Text style={[sheetStyles.flabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.mainx.fieldOrgDetail}</Text>
           <TextInput
             style={[sheetStyles.input, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
             value={org} onChangeText={setOrg}
             placeholder="e.g. Coursera · Certificate" placeholderTextColor={C.textMuted}
           />
 
-          <Text style={[sheetStyles.flabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>YEAR</Text>
+          <Text style={[sheetStyles.flabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.mainx.fieldYear}</Text>
           <TextInput
             style={[sheetStyles.input, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-            value={year} onChangeText={setYear} keyboardType="numeric" placeholder="2026" placeholderTextColor={C.textMuted}
+            value={year} onChangeText={setYear} keyboardType="numeric" placeholder={t.mainx.yearPlaceholder} placeholderTextColor={C.textMuted}
           />
 
           <TouchableOpacity
@@ -203,7 +223,7 @@ function AddSheet({ C, onClose, onAdd }: { C: any; onClose: () => void; onAdd: (
             disabled={!ok} onPress={submit} activeOpacity={0.8}
           >
             <Icon name="check" size={18} color={ok ? '#fff' : C.textMuted} />
-            <Text style={[sheetStyles.submitTxt, { color: ok ? '#fff' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>Add to profile</Text>
+            <Text style={[sheetStyles.submitTxt, { color: ok ? '#fff' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.mainx.addToProfile}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -278,6 +298,7 @@ const accompStyles = StyleSheet.create({
 // ── ProfileScreen ─────────────────────────────────────────────────────────────
 export function ProfileScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
+  const t = useT();
   const { profile, user, signOut, refreshProfile } = useAuth();
 
   const [role, setRole] = useState<string>(profile?.role ?? 'student');
@@ -316,7 +337,7 @@ export function ProfileScreen({ navigation }: any) {
   async function pickAvatar() {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permission required', 'Permission to access the media library is required.');
+      Alert.alert(t.mainx.permissionRequired, t.mainx.mediaPermissionBody);
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -368,7 +389,7 @@ export function ProfileScreen({ navigation }: any) {
       let avatarUrl: string | undefined;
       if (pickedAvatar) {
         const up = await uploadPhoto(pickedAvatar, 'avatars', user.id);
-        if (!up.success) { Alert.alert('Error', up.error); return; }
+        if (!up.success) { Alert.alert(t.common.error, up.error); return; }
         avatarUrl = up.url;
       }
       const payload: Record<string, any> = {
@@ -399,7 +420,7 @@ export function ProfileScreen({ navigation }: any) {
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       {/* Header row */}
       <View style={[styles.header, { paddingHorizontal: Layout.screenPadding }]}>
-        <Text style={[styles.title, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>Profile</Text>
+        <Text style={[styles.title, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{t.tabs.profile}</Text>
         <TouchableOpacity
           style={[styles.editBtn, { backgroundColor: editMode ? C.brand : C.surface, borderColor: editMode ? C.brand : C.border }]}
           onPress={editMode ? handleSave : () => setEditMode(true)}
@@ -535,7 +556,7 @@ export function ProfileScreen({ navigation }: any) {
 
             {/* Badges */}
             <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>BADGES</Text>
-            <BadgesRow badges={BADGES} onPick={setFocusBadge} C={C} />
+            <BadgesRow badges={BADGES} onPick={setFocusBadge} C={C} t={t} />
           </>
         )}
 
@@ -546,7 +567,7 @@ export function ProfileScreen({ navigation }: any) {
           activeOpacity={0.8}
         >
           <Icon name="key" size={17} color={C.text2} />
-          <Text style={[styles.logoutTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Change Password</Text>
+          <Text style={[styles.logoutTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.mainx.changePassword}</Text>
         </TouchableOpacity>
 
         {/* Sign out */}
@@ -556,14 +577,14 @@ export function ProfileScreen({ navigation }: any) {
           activeOpacity={0.8}
         >
           <Icon name="logout" size={17} color={C.danger} />
-          <Text style={[styles.logoutTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>Sign Out</Text>
+          <Text style={[styles.logoutTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>{t.mainx.signOut}</Text>
         </TouchableOpacity>
 
         <View style={{ height: 24 }} />
       </ScrollView>
 
       {/* Modals */}
-      {focusBadge && <BadgeSheet badge={focusBadge} C={C} onClose={() => setFocusBadge(null)} />}
+      {focusBadge && <BadgeSheet badge={focusBadge} C={C} onClose={() => setFocusBadge(null)} t={t} />}
 
       {/* Change password sheet */}
       <Modal visible={pwOpen} transparent animationType="slide" onRequestClose={() => setPwOpen(false)}>
