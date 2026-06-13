@@ -78,7 +78,7 @@ export function JobPostScreen({ navigation }: any) {
   const canSubmit = company.trim() && role.trim() && desc.trim() && applyValue.trim();
 
   async function handleSubmit() {
-    if (!canSubmit || !user) return;
+    if (!canSubmit || !user || loading) return;
     setLoading(true);
     try {
       const { error } = await supabase.from('jobs').insert({
