@@ -9,6 +9,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
+import { useT } from '../../i18n';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
@@ -38,6 +39,7 @@ interface FacultyFull extends FacultyMember {
 
 export function FacultyProfileScreen({ route, navigation }: any) {
   const { C } = useTheme();
+  const t = useT();
   const { user } = useAuth();
   const facultyId: string = route.params?.facultyId ?? route.params?.id;
   const [member, setMember] = useState<FacultyFull | null>(null);
@@ -68,7 +70,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
   if (!member) {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-        <SubBar title="Faculty" onBack={() => navigation.goBack()} />
+        <SubBar title={t.sectors.faculty} onBack={() => navigation.goBack()} />
         <View style={styles.center}><ActivityIndicator color={C.brand} /></View>
       </SafeAreaView>
     );
@@ -123,7 +125,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
         {/* Research interests */}
         {interests.length > 0 && (
           <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border, marginTop: 12 }]}>
-            <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Research interests</Text>
+            <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.faculty2.researchInterests}</Text>
             <View style={styles.pills}>
               {interests.map(i => (
                 <View key={i} style={[styles.pill, { backgroundColor: `${FACULTY_ACCENT}1a` }]}>
@@ -137,7 +139,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
         {/* Qualifications */}
         {quals.length > 0 && (
           <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border, marginTop: 12 }]}>
-            <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Qualifications</Text>
+            <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.faculty2.qualifications}</Text>
             <View style={{ gap: 10, marginTop: 11 }}>
               {quals.map((qual, i) => (
                 <View key={i} style={styles.qualRow}>
@@ -160,7 +162,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
 
         {/* Contact */}
         <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border, marginTop: 12 }]}>
-          <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Contact</Text>
+          <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.faculty2.contact}</Text>
           {member.email ? (
             <>
               <TouchableOpacity
@@ -169,7 +171,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
                 activeOpacity={0.8}
               >
                 <Feather name="mail" size={15} color={C.white} />
-                <Text style={[styles.emailBtnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>Email</Text>
+                <Text style={[styles.emailBtnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>{t.faculty2.email}</Text>
               </TouchableOpacity>
               <Text style={[styles.emailAddr, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{member.email}</Text>
             </>
@@ -186,7 +188,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
                 activeOpacity={0.75}
               >
                 <Feather name="phone" size={14} color={C.text} />
-                <Text style={[styles.phoneBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Call</Text>
+                <Text style={[styles.phoneBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.faculty2.call}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.phoneBtn, { backgroundColor: C.success }]}
@@ -194,7 +196,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
                 activeOpacity={0.8}
               >
                 <Feather name="message-circle" size={14} color={C.white} />
-                <Text style={[styles.phoneBtnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>WhatsApp</Text>
+                <Text style={[styles.phoneBtnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>{t.faculty2.whatsapp}</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -203,7 +205,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
         {/* Academic profiles — only the links that exist */}
         {links.length > 0 && (
           <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border, marginTop: 12 }]}>
-            <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Academic profiles</Text>
+            <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.faculty2.academicProfiles}</Text>
             <View style={{ gap: 8, marginTop: 11 }}>
               {links.map(l => (
                 <TouchableOpacity
