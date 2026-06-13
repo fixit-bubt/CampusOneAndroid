@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
-  RefreshControl, type ViewStyle, type TextStyle,
+  RefreshControl, Image, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -35,6 +35,7 @@ interface Listing {
   status: string;
   seller_id: string;
   description: string;
+  photo_url: string | null;
   created_at: string;
 }
 
@@ -180,7 +181,11 @@ export function MarketScreen({ navigation }: any) {
                 >
                   {/* Thumb */}
                   <View style={[styles.cellThumb, { backgroundColor: tintBg }]}>
-                    <Feather name={cat.icon as any} size={36} color={isDark ? cat.fg : cat.fg} />
+                    {l.photo_url ? (
+                      <Image source={{ uri: l.photo_url }} style={styles.cellThumbImg} resizeMode="cover" />
+                    ) : (
+                      <Feather name={cat.icon as any} size={36} color={cat.fg} />
+                    )}
                     {isSold && (
                       <View style={styles.soldOverlay}>
                         <View style={[styles.soldPill, { backgroundColor: '#fff' }]}>
@@ -227,6 +232,7 @@ const styles = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 11 } as ViewStyle,
   cell: { width: '47.5%', borderRadius: 16, borderWidth: 1, overflow: 'hidden' } as ViewStyle,
   cellThumb: { height: 96, alignItems: 'center', justifyContent: 'center', position: 'relative' } as ViewStyle,
+  cellThumbImg: { position: 'absolute', width: '100%', height: '100%' } as any,
   soldOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15,23,42,0.55)', alignItems: 'center', justifyContent: 'center' } as ViewStyle,
   soldPill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 } as ViewStyle,
   soldTxt: { fontSize: 11 } as any,

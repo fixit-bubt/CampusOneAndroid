@@ -124,7 +124,7 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
     }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      allowsEditing: true,
+      allowsEditing: false,
       quality: 0.7,
     });
     if (!result.canceled && result.assets[0]) setProofUri(result.assets[0].uri);

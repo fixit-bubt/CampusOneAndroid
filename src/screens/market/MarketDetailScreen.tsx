@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Alert, type ViewStyle,
+  ActivityIndicator, Alert, Image, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -101,7 +101,11 @@ export function MarketDetailScreen({ route, navigation }: any) {
       >
         {/* Large thumb */}
         <View style={[styles.bigThumb, { backgroundColor: tintBg }]}>
-          <Feather name={cat.icon as any} size={72} color={cat.fg} />
+          {listing.photo_url ? (
+            <Image source={{ uri: listing.photo_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+          ) : (
+            <Feather name={cat.icon as any} size={72} color={cat.fg} />
+          )}
           {isSold && (
             <View style={styles.soldOverlay}>
               <View style={[styles.soldPill, { backgroundColor: '#fff' }]}>
