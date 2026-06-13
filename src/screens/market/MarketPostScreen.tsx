@@ -79,7 +79,7 @@ export function MarketPostScreen({ route, navigation }: any) {
   }
 
   async function handleSubmit() {
-    if (!canSubmit || !user) return;
+    if (!canSubmit || !user || loading) return;
     setLoading(true);
     try {
       const payload = {
