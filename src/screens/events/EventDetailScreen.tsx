@@ -50,8 +50,8 @@ export function EventDetailScreen({ route, navigation }: any) {
     (async () => {
       const [evRes, rsvpRes, countRes] = await Promise.all([
         supabase.from('events').select('*').eq('id', id).single(),
-        user ? supabase.from('event_rsvps').select('id').eq('event_id', id).eq('user_id', user.id).maybeSingle() : Promise.resolve({ data: null, error: null }),
-        supabase.from('event_rsvps').select('id', { count: 'exact' }).eq('event_id', id),
+        user ? supabase.from('event_rsvps').select('user_id').eq('event_id', id).eq('user_id', user.id).maybeSingle() : Promise.resolve({ data: null, error: null }),
+        supabase.from('event_rsvps').select('user_id', { count: 'exact', head: true }).eq('event_id', id),
       ]);
       if (evRes.error) { console.error('event detail fetch:', evRes.error.message); return; }
       if (evRes.data) setEvent(evRes.data as Event);
