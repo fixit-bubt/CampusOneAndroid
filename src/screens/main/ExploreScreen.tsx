@@ -4,6 +4,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
+import { useT } from '../../i18n';
 import { SectorIcon } from '../../components/ui/SectorIcon';
 import { FontFamily, Layout } from '../../theme';
 import type { SectorKey } from '../../theme';
@@ -48,6 +49,7 @@ const SECTORS: { id: SectorKey; en: string; dEn: string }[] = [
 
 export function ExploreScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
+  const t = useT();
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
