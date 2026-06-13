@@ -11,6 +11,7 @@ import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
+import { useT } from '../../i18n';
 
 const CL_CATS: Record<string, { label: string; fg: string }> = {
   academic:  { label: 'Academic',  fg: Accent.blue },
@@ -32,6 +33,7 @@ interface Club {
 
 export function ClubsScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
+  const t = useT();
   const { user } = useAuth();
   const [clubs, setClubs] = useState<Club[]>([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -64,7 +66,7 @@ export function ClubsScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-      <SubBar title="Clubs" onBack={() => navigation.goBack()} />
+      <SubBar title={t.sectors.clubs} onBack={() => navigation.goBack()} />
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
@@ -73,7 +75,7 @@ export function ClubsScreen({ navigation }: any) {
         {clubs.length === 0 ? (
           <View style={styles.empty}>
             <Icon name="clubs" size={28} color={C.textMuted} />
-            <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>No clubs found</Text>
+            <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.clubs2.noClubsFound}</Text>
           </View>
         ) : (
           <View style={styles.list}>
@@ -102,7 +104,7 @@ export function ClubsScreen({ navigation }: any) {
                       <View style={styles.cardMeta}>
                         <View style={[styles.rolePill, { backgroundColor: C.infoBg }]}>
                           <View style={[styles.roleDot, { backgroundColor: C.info }]} />
-                          <Text style={[styles.roleTxt, { color: C.info, fontFamily: FontFamily.jakartaBold }]}>{role}</Text>
+                          <Text style={[styles.roleTxt, { color: C.info, fontFamily: FontFamily.jakartaBold }]}>{t.clubs.roleLabels[role] ?? role}</Text>
                         </View>
                       </View>
                     )}
