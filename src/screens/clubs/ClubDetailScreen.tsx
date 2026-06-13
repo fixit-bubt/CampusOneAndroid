@@ -101,7 +101,7 @@ export function ClubDetailScreen({ route, navigation }: any) {
   if (!club) {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-        <SubBar title="Club" onBack={() => navigation.goBack()} />
+        <SubBar title={t.clubs2.clubTitle} onBack={() => navigation.goBack()} />
         <View style={styles.center}><ActivityIndicator color={C.brand} /></View>
       </SafeAreaView>
     );
@@ -256,7 +256,7 @@ export function ClubDetailScreen({ route, navigation }: any) {
           <View style={styles.feedList}>
             {posts.length === 0 ? (
               <View style={styles.empty}>
-                <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>No posts yet</Text>
+                <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{t.clubs2.noPosts}</Text>
               </View>
             ) : posts.map(p => {
               const canModeratePost = canManage;
@@ -281,7 +281,7 @@ export function ClubDetailScreen({ route, navigation }: any) {
                     <Avatar name={(p as any).profiles?.full_name} size="sm" />
                     <View style={{ flex: 1, minWidth: 0 }}>
                       <Text style={[styles.postAuthor, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                        {(p as any).profiles?.full_name ?? 'Member'}
+                        {(p as any).profiles?.full_name ?? t.clubs2.memberFallback}
                       </Text>
                       <Text style={[styles.postTime, { color: C.textMuted, fontFamily: FontFamily.jakartaSemiBold }]}>
                         {timeAgo(p.created_at)}
