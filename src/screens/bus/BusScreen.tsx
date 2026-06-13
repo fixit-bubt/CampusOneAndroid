@@ -45,8 +45,8 @@ export function BusScreen({ navigation }: any) {
 
   const load = useCallback(async () => {
     const [{ data }, { data: saved }] = await Promise.all([
-      supabase.from('bus_routes').select('*').eq('active', true).order('name'),
-      supabase.from('saved_bus_routes').select('route_id').eq('user_id', user?.id ?? ''),
+      supabase.from('bus_routes').select('*').eq('active', true).order('name').limit(50),
+      supabase.from('saved_bus_routes').select('route_id').eq('user_id', user?.id ?? '').limit(50),
     ]);
     if (data) setRoutes(data as BusRoute[]);
     if (saved) setSavedIds(new Set(saved.map((r: any) => r.route_id)));

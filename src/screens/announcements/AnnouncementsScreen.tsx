@@ -103,7 +103,7 @@ export function AnnouncementsScreen({ navigation }: any) {
         .order('created_at', { ascending: false })
         .limit(50),
       // RLS returns only my own read rows.
-      supabase.from('announcement_reads').select('announcement_id'),
+      supabase.from('announcement_reads').select('announcement_id').limit(500),
     ]);
     if (aRes.error) { console.error('announcements fetch:', aRes.error.message); return; }
     if (aRes.data) setItems(aRes.data as Announcement[]);

@@ -44,7 +44,8 @@ export function ManageUsersScreen({ navigation }: any) {
     const { data } = await supabase
       .from('profiles')
       .select('*')
-      .order('full_name', { ascending: true });
+      .order('full_name', { ascending: true })
+      .limit(500);
     if (data) setUsers(data as Profile[]);
   }, []);
 

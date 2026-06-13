@@ -62,8 +62,9 @@ export function AllReportsScreen({ navigation }: any) {
         .from('reports')
         .select('*, profiles!reporter_id(full_name)')
         .is('deleted_at', null)
-        .order('created_at', { ascending: false }),
-      supabase.from('profiles').select('*').eq('role', 'staff'),
+        .order('created_at', { ascending: false })
+        .limit(200),
+      supabase.from('profiles').select('*').eq('role', 'staff').limit(100),
     ]);
     if (rRes.data) setReports(rRes.data as ReportWithProfile[]);
     if (sRes.data) setStaff(sRes.data as Profile[]);

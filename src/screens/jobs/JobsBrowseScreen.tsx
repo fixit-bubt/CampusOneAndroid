@@ -77,7 +77,7 @@ export function JobsBrowseScreen({ navigation }: any) {
   const load = useCallback(async () => {
     const [jobsRes, savedRes] = await Promise.all([
       supabase.from('jobs').select('*').is('deleted_at', null).order('created_at', { ascending: false }).limit(50),
-      supabase.from('job_bookmarks').select('job_id').eq('user_id', user?.id ?? ''),
+      supabase.from('job_bookmarks').select('job_id').eq('user_id', user?.id ?? '').limit(200),
     ]);
     if (jobsRes.data) setJobs(jobsRes.data as Job[]);
     if (savedRes.data) setSavedIds(new Set(savedRes.data.map((s: any) => s.job_id)));
