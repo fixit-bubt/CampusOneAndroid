@@ -12,6 +12,7 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout , SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { useT } from '../../i18n';
 import { createReport } from '../../services/reportsService';
 import { useAuth } from '../../store/authStore';
 import { uploadFile } from '../../utils/storage';
@@ -45,6 +46,7 @@ function lightenHex(hex: string): string {
 export function ReportFormScreen({ route, navigation }: any) {
   const { C, isDark } = useTheme();
   const { user } = useAuth();
+  const t = useT();
   const editReportId: string | undefined = route.params?.editReportId;
   const isEdit = !!editReportId;
 
@@ -79,7 +81,7 @@ export function ReportFormScreen({ route, navigation }: any) {
   async function pickPhoto() {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permission required', 'Permission to access the media library is required.');
+      Alert.alert(t.reports2.permissionRequired, t.reports2.mediaPermissionBody);
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -110,7 +112,7 @@ export function ReportFormScreen({ route, navigation }: any) {
         const result = await uploadFile(BUCKETS.photos, photoUri, remotePath, `image/${ext}`);
         if (!result.success) {
           setBusy(false);
-          setErr('Photo upload failed: ' + result.error);
+          setErr(t.reports2.photoUploadFailed(result.error));
           return;
         }
         finalPhotoUrl = result.url;
@@ -130,7 +132,7 @@ export function ReportFormScreen({ route, navigation }: any) {
       const { error } = await supabase.from('reports').update(payload).eq('id', editReportId!);
       setBusy(false);
       if (error) {
-        setErr(error.message ?? 'Failed to update report');
+        setErr(error.message ?? t.reports2.updateFailed);
       } else {
         navigation.goBack();
       }
@@ -140,7 +142,7 @@ export function ReportFormScreen({ route, navigation }: any) {
       if (res.ok) {
         navigation.goBack();
       } else {
-        setErr(res.error ?? 'Failed to submit report');
+        setErr(res.error ?? t.reports2.submitFailed);
       }
     }
   }
@@ -148,7 +150,7 @@ export function ReportFormScreen({ route, navigation }: any) {
   if (loading) {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-        <SubBar title="Edit Report" onBack={() => navigation.goBack()} />
+        <SubBar title={t.reports2.editReport} onBack={() => navigation.goBack()} />
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator color={C.brand} />
         </View>
@@ -158,7 +160,7 @@ export function ReportFormScreen({ route, navigation }: any) {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-      <SubBar title={isEdit ? 'Edit Report' : 'Report an Issue'} onBack={() => navigation.goBack()} />
+      <SubBar title={isEdit ? t.reports2.editReport : t.reports2.reportAnIssue} onBack={() => navigation.goBack()} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView
           contentContainerStyle={[styles.content, { paddingHorizontal: Layout.screenPadding }]}
@@ -207,7 +209,7 @@ export function ReportFormScreen({ route, navigation }: any) {
             style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaRegular }]}
             value={title}
             onChangeText={setTitle}
-            placeholder="e.g. Broken tube light — 3rd floor"
+            placeholder={t.reports2.titlePlaceholder}
             placeholderTextColor={C.textMuted}
           />
 
@@ -219,7 +221,7 @@ export function ReportFormScreen({ route, navigation }: any) {
             style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaRegular }]}
             value={loc}
             onChangeText={setLoc}
-            placeholder="e.g. Library · Room 302"
+            placeholder={t.reports2.locationPlaceholder}
             placeholderTextColor={C.textMuted}
           />
 
@@ -232,7 +234,7 @@ export function ReportFormScreen({ route, navigation }: any) {
             style={[styles.textarea, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaRegular }]}
             value={desc}
             onChangeText={setDesc}
-            placeholder="Describe the issue in detail…"
+            placeholder={t.reports2.descriptionPlaceholder}
             placeholderTextColor={C.textMuted}
             multiline
             numberOfLines={4}
@@ -253,7 +255,7 @@ export function ReportFormScreen({ route, navigation }: any) {
                 activeOpacity={0.75}
               >
                 <Icon name="x" size={15} color={C.text2} />
-                <Text style={[styles.photoTxt, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>Remove</Text>
+                <Text style={[styles.photoTxt, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>{t.reports2.remove}</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -288,7 +290,7 @@ export function ReportFormScreen({ route, navigation }: any) {
             ) : (
               <View style={styles.btnRow}>
                 <Icon name="check" size={18} color="#fff" />
-                <Text style={[styles.btnTxt, { fontFamily: FontFamily.jakartaBold }]}>{isEdit ? 'Update Report' : 'Submit Report'}</Text>
+                <Text style={[styles.btnTxt, { fontFamily: FontFamily.jakartaBold }]}>{isEdit ? t.reports2.updateReport : t.reports2.submitReport}</Text>
               </View>
             )}
           </TouchableOpacity>
