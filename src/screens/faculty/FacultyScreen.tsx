@@ -9,6 +9,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
+import { useT } from '../../i18n';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout, Accent } from '../../theme';
@@ -21,6 +22,7 @@ import {
 
 export function FacultyScreen({ navigation }: any) {
   const { C } = useTheme();
+  const t = useT();
   const { user } = useAuth();
   const [query, setQuery] = useState('');
   const [interest, setInterest] = useState<string | null>(null);
@@ -141,7 +143,7 @@ export function FacultyScreen({ navigation }: any) {
           >
             <Feather name="star" size={14} color={savedOnly ? Accent.gold : C.text2} />
             <Text style={[styles.savedBtnTxt, { color: savedOnly ? Accent.gold : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-              Saved{savedIds.size ? ` · ${savedIds.size}` : ''}
+              {t.faculty2.savedLabel(savedIds.size)}
             </Text>
           </TouchableOpacity>
         }
@@ -153,7 +155,7 @@ export function FacultyScreen({ navigation }: any) {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
         <Text style={[styles.subtitle, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-          {faculty.length} teachers across {departments.length} departments — browse, search, and explore research areas.
+          {t.faculty2.directorySubtitle(faculty.length, departments.length)}
         </Text>
 
         {/* Search */}
@@ -161,7 +163,7 @@ export function FacultyScreen({ navigation }: any) {
           <Icon name="search" size={17} color={C.textMuted} />
           <TextInput
             style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
-            placeholder="Search by name, title, or research area..."
+            placeholder={t.faculty2.searchPlaceholder}
             placeholderTextColor={C.textMuted}
             value={query}
             onChangeText={setQuery}
@@ -213,14 +215,14 @@ export function FacultyScreen({ navigation }: any) {
                 {interest ? ` in ${interest}` : ''}{savedOnly ? ' · saved' : ''}
               </Text>
               <TouchableOpacity onPress={clearFilters} hitSlop={8}>
-                <Text style={[styles.clearTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>Clear</Text>
+                <Text style={[styles.clearTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>{t.faculty2.clear}</Text>
               </TouchableOpacity>
             </View>
             {results.length === 0 ? (
               <View style={styles.empty}>
                 <Feather name="search" size={28} color={C.textMuted} />
                 <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                  {savedOnly && !q && !interest ? 'No saved teachers yet — tap the star on any teacher.' : 'No teachers found'}
+                  {savedOnly && !q && !interest ? t.faculty2.noSavedTeachers : t.faculty2.noTeachersFound}
                 </Text>
               </View>
             ) : (
@@ -263,7 +265,7 @@ export function FacultyScreen({ navigation }: any) {
                           {shortDept(d.name)}
                         </Text>
                         <Text style={[styles.deptCount, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                          {count} teacher{count === 1 ? '' : 's'}
+                          {t.faculty2.teacherCount(count)}
                         </Text>
                       </View>
                       <Icon name="chevR" size={17} color={C.textMuted} />
