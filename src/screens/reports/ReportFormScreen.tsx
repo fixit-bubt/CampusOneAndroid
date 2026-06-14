@@ -30,6 +30,22 @@ const ISSUE_CATS: { id: Report['category']; icon: string; fg: string; en: string
   { id: 'Other',            icon: 'dots',    fg: Accent.slate, en: 'Other' },
 ];
 
+type PlaceType = 'Classroom' | 'Lab' | 'Washroom' | 'Library' | 'Corridor/Stairs' | 'Other';
+const BUILDINGS = ['1', '2', '3', '4'];
+const FLOORS = ['Ground', '1st', '2nd', '3rd', '4th', '5th'];
+const PLACES: PlaceType[] = ['Classroom', 'Lab', 'Washroom', 'Library', 'Corridor/Stairs', 'Other'];
+
+function placeLabel(t: any, p: PlaceType): string {
+  switch (p) {
+    case 'Classroom': return t.reports2.placeClassroom;
+    case 'Lab': return t.reports2.placeLab;
+    case 'Washroom': return t.reports2.placeWashroom;
+    case 'Library': return t.reports2.placeLibrary;
+    case 'Corridor/Stairs': return t.reports2.placeCorridor;
+    default: return t.reports2.placeOther;
+  }
+}
+
 function hexAlpha(hex: string, a: number): string {
   const n = parseInt(hex.slice(1), 16);
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
@@ -53,7 +69,12 @@ export function ReportFormScreen({ route, navigation }: any) {
 
   const [cat, setCat]       = useState<Report['category'] | null>(null);
   const [title, setTitle]   = useState('');
-  const [loc, setLoc]       = useState('');
+  const [building, setBuilding] = useState<string | null>(null);
+  const [floor, setFloor]       = useState<string | null>(null);
+  const [place, setPlace]       = useState<PlaceType | null>(null);
+  const [roomNo, setRoomNo]     = useState('');
+  const [washGender, setWashGender] = useState<'Male' | 'Female' | null>(null);
+  const [locNote, setLocNote]   = useState('');
   const [desc, setDesc]     = useState('');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [busy, setBusy]     = useState(false);
@@ -70,14 +91,24 @@ export function ReportFormScreen({ route, navigation }: any) {
         setTitle(lines[0] ?? '');
         setDesc(lines.slice(1).join('\n'));
         setCat(data.category ?? null);
-        setLoc([data.building, data.room].filter(Boolean).join(' · '));
+        // Best-effort prefill: keep building, drop the rest into a note for editing.
+        const bMatch = (data.building ?? '').match(/(\d)/);
+        setBuilding(bMatch ? bMatch[1] : null);
+        setFloor('Ground');
+        setPlace('Other');
+        setLocNote(data.room ?? '');
         if (data.photo_url) setPhotoUri(data.photo_url);
       }
       setLoading(false);
     })();
   }, [editReportId]);
 
-  const ok = !!cat && title.trim().length > 0;
+  const needsRoom = place === 'Classroom' || place === 'Lab';
+  const needsGender = place === 'Washroom';
+  const locOk = !!building && !!floor && !!place
+    && (!needsRoom || roomNo.trim().length > 0)
+    && (!needsGender || !!washGender);
+  const ok = !!cat && title.trim().length > 0 && locOk;
 
   async function pickPhoto() {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -120,12 +151,16 @@ export function ReportFormScreen({ route, navigation }: any) {
       }
     }
 
-    const [building, room] = loc.includes('·') ? loc.split('·').map(s => s.trim()) : [loc.trim(), undefined];
+    const buildingStr = building ? `Building ${building}` : 'Unknown';
+    let roomStr = floor ? `${floor} floor` : '';
+    if (place === 'Classroom' || place === 'Lab') roomStr += ` · ${place} ${roomNo.trim()}`;
+    else if (place === 'Washroom') roomStr += ` · Washroom (${washGender})`;
+    else if (place) roomStr += ` · ${place}${locNote.trim() ? ` · ${locNote.trim()}` : ''}`;
     const payload = {
       category: cat,
       description: [title.trim(), desc.trim()].filter(Boolean).join('\n'),
-      building: building || 'Unknown',
-      room: room,
+      building: buildingStr,
+      room: roomStr || undefined,
       ...(finalPhotoUrl ? { photo_url: finalPhotoUrl } : {}),
     };
 
@@ -216,15 +251,76 @@ export function ReportFormScreen({ route, navigation }: any) {
 
           {/* Location */}
           <Text style={[styles.label, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>
-            Location
+            {t.reports2.locationLabel}
           </Text>
-          <TextInput
-            style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaRegular }]}
-            value={loc}
-            onChangeText={setLoc}
-            placeholder={t.reports2.locationPlaceholder}
-            placeholderTextColor={C.textMuted}
-          />
+
+          <Text style={[styles.subLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaSemiBold }]}>{t.reports2.locBuilding}</Text>
+          <View style={styles.chipRow}>
+            {BUILDINGS.map(b => {
+              const on = building === b;
+              return (
+                <TouchableOpacity key={b} style={[styles.chip, { backgroundColor: on ? C.brand : C.surface, borderColor: on ? C.brand : C.border }]} onPress={() => setBuilding(b)} activeOpacity={0.75}>
+                  <Text style={[styles.chipTxt, { color: on ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>{b}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          <Text style={[styles.subLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaSemiBold }]}>{t.reports2.locFloor}</Text>
+          <View style={styles.chipRow}>
+            {FLOORS.map(f => {
+              const on = floor === f;
+              return (
+                <TouchableOpacity key={f} style={[styles.chip, { backgroundColor: on ? C.brand : C.surface, borderColor: on ? C.brand : C.border }]} onPress={() => setFloor(f)} activeOpacity={0.75}>
+                  <Text style={[styles.chipTxt, { color: on ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>{f}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          <Text style={[styles.subLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaSemiBold }]}>{t.reports2.locPlace}</Text>
+          <View style={styles.chipRow}>
+            {PLACES.map(p => {
+              const on = place === p;
+              return (
+                <TouchableOpacity key={p} style={[styles.chip, { backgroundColor: on ? C.brand : C.surface, borderColor: on ? C.brand : C.border }]} onPress={() => setPlace(p)} activeOpacity={0.75}>
+                  <Text style={[styles.chipTxt, { color: on ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>{placeLabel(t, p)}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {(place === 'Classroom' || place === 'Lab') && (
+            <TextInput
+              style={[styles.input, { marginTop: 10, backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaRegular }]}
+              value={roomNo}
+              onChangeText={setRoomNo}
+              placeholder={t.reports2.locRoomPlaceholder}
+              placeholderTextColor={C.textMuted}
+              keyboardType="numbers-and-punctuation"
+            />
+          )}
+          {place === 'Washroom' && (
+            <View style={[styles.chipRow, { marginTop: 10 }]}>
+              {(['Male', 'Female'] as const).map(g => {
+                const on = washGender === g;
+                return (
+                  <TouchableOpacity key={g} style={[styles.chip, { backgroundColor: on ? C.brand : C.surface, borderColor: on ? C.brand : C.border }]} onPress={() => setWashGender(g)} activeOpacity={0.75}>
+                    <Text style={[styles.chipTxt, { color: on ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>{g === 'Male' ? t.reports2.genderMale : t.reports2.genderFemale}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+          {(place === 'Library' || place === 'Corridor/Stairs' || place === 'Other') && (
+            <TextInput
+              style={[styles.input, { marginTop: 10, backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaRegular }]}
+              value={locNote}
+              onChangeText={setLocNote}
+              placeholder={t.reports2.locDetailPlaceholder}
+              placeholderTextColor={C.textMuted}
+            />
+          )}
 
           {/* Description */}
           <Text style={[styles.label, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>
@@ -309,6 +405,10 @@ const styles = StyleSheet.create({
 
   label: { fontSize: 13, marginBottom: 8, marginTop: 16 } as any,
   optLabel: { fontSize: 12, fontWeight: '500' } as any,
+  subLabel: { fontSize: 12, marginTop: 12, marginBottom: 6 } as any,
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 } as ViewStyle,
+  chip: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 11, borderWidth: 1.5 } as ViewStyle,
+  chipTxt: { fontSize: 13 } as any,
 
   catGrid: {
     flexDirection: 'row',
