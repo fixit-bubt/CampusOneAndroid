@@ -10,7 +10,6 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout , SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
-import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 
 const MED_COLOR = SectorColors.medical;
@@ -40,7 +39,6 @@ function isOnDuty(doc: Doctor): boolean {
 
 export function MedicalScreen({ navigation }: any) {
   const { C } = useTheme();
-  const { profile } = useAuth();
   const t = useT();
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -63,26 +61,6 @@ export function MedicalScreen({ navigation }: any) {
       <SubBar
         title={t.sectors.medical}
         onBack={() => navigation.goBack()}
-        rightSlot={
-          <View style={{ flexDirection: 'row', gap: 6 }}>
-            {profile?.role === 'admin' && (
-              <TouchableOpacity
-                style={[styles.headBtn, { backgroundColor: C.surface2 }]}
-                onPress={() => navigation.navigate('MedicalQueue')}
-                activeOpacity={0.75}
-              >
-                <Icon name="directory" size={16} color={C.text2} />
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity
-              style={[styles.headBtn, { backgroundColor: MED_BG }]}
-              onPress={() => navigation.navigate('MyAppointments')}
-              activeOpacity={0.75}
-            >
-              <Icon name="calendar" size={16} color={MED_COLOR} />
-            </TouchableOpacity>
-          </View>
-        }
       />
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
