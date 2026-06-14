@@ -218,6 +218,10 @@ export const bn: Dict = {
 
   reports: {
     myReportsTitle: 'আমার রিপোর্ট',
+    allReportsTitle: 'ক্যাম্পাস রিপোর্ট',
+    scopeEveryone: 'সবার',
+    scopeMine: 'আমার',
+    byLabel: 'রিপোর্ট করেছেন',
     assignedTitle: 'আমার দায়িত্বে',
     searchPlaceholder: 'রিপোর্ট খুঁজুন...',
     newReport: 'নতুন রিপোর্ট',

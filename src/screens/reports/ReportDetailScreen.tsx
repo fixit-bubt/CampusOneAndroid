@@ -82,19 +82,27 @@ export function ReportDetailScreen({ route, navigation }: any) {
     if (!reportId) return;
     const [evRes, rptData] = await Promise.all([
       supabase.from('report_events').select('*').eq('report_id', reportId).order('created_at', { ascending: true }),
-      supabase.from('reports').select('*').eq('id', reportId).single(),
+      supabase.from('reports').select('*').eq('id', reportId).maybeSingle(),
     ]);
     if (evRes.data) setEvents(evRes.data as ReportEvent[]);
-    if (rptData.data) setReport(rptData.data as Report);
+
+    let currentReport: any = rptData.data;
+    if (!currentReport) {
+      // Viewer isn't the owner/assignee/admin (RLS hides the row) — open it
+      // read-only via the campus feed RPC so any student can view it.
+      const { data: feed } = await supabase.rpc('campus_reports', { p_limit: 500 });
+      currentReport = (feed ?? []).find((x: any) => x.id === reportId) ?? null;
+      if (currentReport?.reporter_name) setReporterName(currentReport.reporter_name);
+    }
+    if (currentReport) setReport(currentReport as Report);
     setLoadingReport(false);
 
-    const currentReport = rptData.data;
-    if (currentReport?.reporter_id) {
-      const { data } = await supabase.from('profiles').select('full_name').eq('id', currentReport.reporter_id).single();
+    if (currentReport?.reporter_id && !currentReport?.reporter_name) {
+      const { data } = await supabase.from('profiles').select('full_name').eq('id', currentReport.reporter_id).maybeSingle();
       if (data) setReporterName((data as any).full_name);
     }
     if (currentReport?.assigned_staff_id) {
-      const { data } = await supabase.from('profiles').select('full_name').eq('id', currentReport.assigned_staff_id).single();
+      const { data } = await supabase.from('profiles').select('full_name').eq('id', currentReport.assigned_staff_id).maybeSingle();
       if (data) setAssigneeName(data.full_name);
     }
   }, [reportId]);

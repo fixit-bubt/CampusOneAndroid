@@ -217,6 +217,10 @@ export const en = {
 
   reports: {
     myReportsTitle: 'My Reports',
+    allReportsTitle: 'Campus Reports',
+    scopeEveryone: 'Everyone',
+    scopeMine: 'Mine',
+    byLabel: 'by',
     assignedTitle: 'Assigned to Me',
     searchPlaceholder: 'Search reports...',
     newReport: 'New Report',

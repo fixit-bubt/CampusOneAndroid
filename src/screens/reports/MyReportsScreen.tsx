@@ -16,8 +16,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
-import { getMyReports } from '../../services/reportsService';
-import type { Report } from '../../types/database';
+import { getCampusReports, type CampusReport } from '../../services/reportsService';
 
 const STATUSES = ['All', 'Open', 'In Progress', 'Resolved', 'Rejected', 'Closed'] as const;
 type StatusFilter = (typeof STATUSES)[number];
@@ -54,14 +53,15 @@ export function MyReportsScreen({ navigation }: any) {
   const { user } = useAuth();
   const t = useT();
   const toast = useToast();
-  const [reports, setReports] = useState<Report[]>([]);
+  const [reports, setReports] = useState<CampusReport[]>([]);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<StatusFilter>('All');
+  const [scope, setScope] = useState<'everyone' | 'mine'>('everyone');
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     if (!user) return;
-    const res = await getMyReports(user.id);
+    const res = await getCampusReports();
     if (res.ok) setReports(res.data);
   }, [user]);
 
@@ -73,7 +73,7 @@ export function MyReportsScreen({ navigation }: any) {
     setRefreshing(false);
   }
 
-  function confirmDelete(r: Report) {
+  function confirmDelete(r: CampusReport) {
     Alert.alert(t.reports.deleteTitle, t.reports.deleteBody, [
       { text: t.common.cancel, style: 'cancel' },
       {
@@ -90,14 +90,19 @@ export function MyReportsScreen({ navigation }: any) {
     ]);
   }
 
+  const scoped = useMemo(
+    () => (scope === 'mine' ? reports.filter(r => r.reporter_id === user?.id) : reports),
+    [reports, scope, user?.id],
+  );
+
   const counts = useMemo(() => {
-    const m: Record<string, number> = { All: reports.length };
-    reports.forEach(r => { m[r.status] = (m[r.status] || 0) + 1; });
+    const m: Record<string, number> = { All: scoped.length };
+    scoped.forEach(r => { m[r.status] = (m[r.status] || 0) + 1; });
     return m;
-  }, [reports]);
+  }, [scoped]);
 
   const q = query.trim().toLowerCase();
-  const filtered = reports
+  const filtered = scoped
     .filter(r => filter === 'All' || r.status === filter)
     .filter(r => {
       if (!q) return true;
@@ -111,7 +116,7 @@ export function MyReportsScreen({ navigation }: any) {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar
-        title={t.reports.myReportsTitle}
+        title={t.reports.allReportsTitle}
         onBack={() => navigation.goBack()}
         rightSlot={
           <TouchableOpacity
@@ -147,6 +152,27 @@ export function MyReportsScreen({ navigation }: any) {
               <Feather name="x" size={16} color={C.textMuted} />
             </TouchableOpacity>
           )}
+        </View>
+
+        {/* Scope: everyone vs mine */}
+        <View style={styles.scopeRow}>
+          {(['everyone', 'mine'] as const).map(s => {
+            const on = scope === s;
+            return (
+              <TouchableOpacity
+                key={s}
+                style={[styles.scopeChip, on
+                  ? { backgroundColor: C.brand, borderColor: C.brand }
+                  : { backgroundColor: C.surface, borderColor: C.border }]}
+                onPress={() => setScope(s)}
+                activeOpacity={0.75}
+              >
+                <Text style={[styles.chipTxt, { color: on ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                  {s === 'everyone' ? t.reports.scopeEveryone : t.reports.scopeMine}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
         {/* Status chips with counts */}
@@ -190,7 +216,8 @@ export function MyReportsScreen({ navigation }: any) {
               const cat = CATEGORY_ICON[r.category] ?? CATEGORY_ICON.Other;
               const tone = statusTone(C, r.status);
               const title = (r.description ?? '').split('\n')[0];
-              const editable = r.status === 'Open';
+              const isOwn = r.reporter_id === user?.id;
+              const editable = isOwn && r.status === 'Open';
               return (
                 <View key={r.id} style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
                   <TouchableOpacity
@@ -209,6 +236,12 @@ export function MyReportsScreen({ navigation }: any) {
                         <Icon name="pin" size={12} color={C.textMuted} />
                         <Text style={[styles.cardMetaTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
                           {r.building}{r.room ? ` · ${r.room}` : ''}  ·  {timeAgo(r.created_at)}
+                        </Text>
+                      </View>
+                      <View style={styles.cardMeta}>
+                        <Icon name="user" size={12} color={C.textMuted} />
+                        <Text style={[styles.cardMetaTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                          {isOwn ? t.reports.scopeMine : `${t.reports.byLabel} ${r.reporter_name ?? '—'}`}
                         </Text>
                       </View>
                     </View>
@@ -282,6 +315,9 @@ const styles = StyleSheet.create({
 
   searchBar: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 14, borderRadius: 14, marginBottom: 10 } as ViewStyle,
   searchInput: { flex: 1, fontSize: 15, paddingVertical: 12 } as TextStyle,
+
+  scopeRow: { flexDirection: 'row', gap: 7, marginBottom: 10 } as ViewStyle,
+  scopeChip: { flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: 11, borderWidth: 1 } as ViewStyle,
 
   chips: { flexDirection: 'row', gap: 7, paddingBottom: 12 } as ViewStyle,
   chip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 11, paddingVertical: 7, borderRadius: 999, borderWidth: 1 } as ViewStyle,

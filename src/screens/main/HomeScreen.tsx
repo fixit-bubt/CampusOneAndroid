@@ -121,7 +121,7 @@ export function HomeScreen({ navigation }: any) {
       getMyReports(user.id),
       getMyNotifications(20),
     ]);
-    if (rRes.ok) setReports(rRes.data.slice(0, 5));
+    if (rRes.ok) setReports(rRes.data.slice(0, 2));
     if (nRes.ok) {
       setNotifs(nRes.data);
       setUnread(nRes.data.filter(n => !n.read).length);

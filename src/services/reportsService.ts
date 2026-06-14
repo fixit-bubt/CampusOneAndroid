@@ -30,6 +30,18 @@ export async function getReports(
   return { ok: true, data: data as ReportWithProfile[] };
 }
 
+export interface CampusReport extends Report {
+  reporter_name: string | null;
+}
+
+// Campus-wide feed (own + other students') via SECURITY DEFINER RPC, since the
+// reports_select RLS policy is owner/assigned/admin only.
+export async function getCampusReports(limit = 200): Promise<ServiceResult<CampusReport[]>> {
+  const { data, error } = await supabase.rpc('campus_reports', { p_limit: limit });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, data: (data ?? []) as CampusReport[] };
+}
+
 export async function getMyReports(userId: string): Promise<ServiceResult<Report[]>> {
   const { data, error } = await supabase
     .from('reports')
