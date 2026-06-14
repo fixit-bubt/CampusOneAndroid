@@ -53,10 +53,12 @@ export function CourseDetailScreen({ route, navigation }: any) {
   const [books, setBooks] = useState<Entry[]>([]);
   const [isCR, setIsCR] = useState(false);
   const [tab, setTab] = useState<Tab>('materials');
+  const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
+    setLoading(true);
     const [courseRes, matRes, qbRes, bookRes] = await Promise.all([
-      supabase.from('study_courses').select('*').eq('id', courseId).single(),
+      supabase.from('study_courses').select('*').eq('id', courseId).maybeSingle(),
       supabase.from('study_materials').select('*').eq('course_id', courseId).order('created_at', { ascending: false }),
       supabase.from('study_question_bank').select('*').eq('course_id', courseId).order('created_at', { ascending: false }),
       supabase.from('study_books').select('*').eq('course_id', courseId).order('created_at', { ascending: false }),
@@ -78,6 +80,7 @@ export function CourseDetailScreen({ route, navigation }: any) {
     if (matRes.data) setMaterials((matRes.data as any[]).map(r => ({ ...r, table: 'study_materials' as const })));
     if (qbRes.data) setQuestions((qbRes.data as any[]).map(r => ({ ...r, table: 'study_question_bank' as const })));
     if (bookRes.data) setBooks((bookRes.data as any[]).map(r => ({ ...r, table: 'study_books' as const })));
+    setLoading(false);
   }, [courseId, user, profile?.role]);
 
   useEffect(() => {
@@ -126,7 +129,13 @@ export function CourseDetailScreen({ route, navigation }: any) {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
         <SubBar title={t.study2.course} onBack={() => navigation.goBack()} />
-        <View style={styles.center}><ActivityIndicator color={C.brand} /></View>
+        <View style={styles.center}>
+          {loading ? (
+            <ActivityIndicator color={C.brand} />
+          ) : (
+            <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaSemiBold }]}>—</Text>
+          )}
+        </View>
       </SafeAreaView>
     );
   }

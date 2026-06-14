@@ -409,6 +409,8 @@ export function StudyHubScreen({ navigation }: any) {
       .select('role, study_sections(id, intake_id, number, join_code, is_public, study_intakes(number, is_public, departments(name)))')
       .eq('user_id', user.id)
       .eq('status', 'approved')
+      .order('role', { ascending: true })
+      .order('created_at', { ascending: true })
       .limit(1);
 
     if (memErr) { console.warn('load membership:', memErr.message); }

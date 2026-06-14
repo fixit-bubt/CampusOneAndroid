@@ -5,6 +5,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
+import { useAuth } from '../../store/authStore';
 import { SectorIcon } from '../../components/ui/SectorIcon';
 import { FontFamily, Layout } from '../../theme';
 import type { SectorKey } from '../../theme';
@@ -50,6 +51,9 @@ const SECTORS: { id: SectorKey; en: string; dEn: string }[] = [
 export function ExploreScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
   const t = useT();
+  const { profile } = useAuth();
+  const isStudent = profile?.role === 'student';
+  const sectors = isStudent ? SECTORS : SECTORS.filter((s) => s.id !== 'lostfound');
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -68,9 +72,9 @@ export function ExploreScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
       >
         {/* Pair rows — 2-col grid with proper gap */}
-        {Array.from({ length: Math.ceil(SECTORS.length / 2) }, (_, i) => (
+        {Array.from({ length: Math.ceil(sectors.length / 2) }, (_, i) => (
           <View key={i} style={styles.row}>
-            {SECTORS.slice(i * 2, i * 2 + 2).map((s) => (
+            {sectors.slice(i * 2, i * 2 + 2).map((s) => (
               <TouchableOpacity
                 key={s.id}
                 style={[styles.cell, { backgroundColor: C.surface, borderColor: C.border }]}
@@ -89,7 +93,7 @@ export function ExploreScreen({ navigation }: any) {
               </TouchableOpacity>
             ))}
             {/* pad last row if odd number of items */}
-            {SECTORS.slice(i * 2, i * 2 + 2).length === 1 && <View style={styles.cell} />}
+            {sectors.slice(i * 2, i * 2 + 2).length === 1 && <View style={styles.cell} />}
           </View>
         ))}
         <View style={{ height: 20 }} />

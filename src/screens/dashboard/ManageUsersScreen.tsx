@@ -26,7 +26,7 @@ const TRADES = ['Electrical', 'Plumbing', 'Cleanliness', 'IT / Network', 'Furnit
 
 export function ManageUsersScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const t = useT();
   const [users, setUsers] = useState<Profile[]>([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -61,6 +61,10 @@ export function ManageUsersScreen({ navigation }: any) {
   }
 
   async function cycleRole(u: Profile) {
+    if (u.id === user?.id) {
+      showToast({ type: 'error', title: t.manage.notAllowed, message: t.manage.cannotDemoteSelf });
+      return;
+    }
     const next = ROLE_NEXT[u.role] ?? 'student';
     Alert.alert(
       t.manage.changeRole,
@@ -71,7 +75,8 @@ export function ManageUsersScreen({ navigation }: any) {
           text: 'Confirm',
           onPress: async () => {
             setUsers(prev => prev.map(x => x.id === u.id ? { ...x, role: next } : x));
-            await supabase.from('profiles').update({ role: next }).eq('id', u.id);
+            const { error } = await supabase.from('profiles').update({ role: next }).eq('id', u.id);
+            if (error) { showToast({ type: 'error', title: t.common.error, message: error.message }); await load(); return; }
             setToast(true);
             setTimeout(() => setToast(false), 1500);
           },

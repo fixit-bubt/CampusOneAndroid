@@ -88,7 +88,7 @@ export function RidesScreen({ navigation }: any) {
     if (!user) return;
     if (requestedIds.has(rideId)) return;
     const { error } = await supabase.from('ride_requests').insert({ ride_id: rideId, requester_id: user.id });
-    if (!error) setRequestedIds(prev => new Set([...prev, rideId]));
+    if (!error || error.code === '23505') setRequestedIds(prev => new Set([...prev, rideId]));
   }
 
   return (

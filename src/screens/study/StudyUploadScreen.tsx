@@ -17,6 +17,7 @@ import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../components/ui/Toast';
+import { uploadFile } from '../../utils/storage';
 
 const FILE_TYPES = [
   { id: 'materials', label: 'Materials' },
@@ -100,17 +101,16 @@ export function StudyUploadScreen({ route, navigation }: any) {
     try {
       let storagePath: string | null = null;
       if (pickedFile) {
-        const response = await fetch(pickedFile.uri);
-        const blob = await response.blob();
         const ext = pickedFile.name.split('.').pop() ?? 'bin';
         storagePath = `${courseId}/${Date.now()}_${name.trim().replace(/\s+/g, '_')}.${ext}`;
-        const { error: uploadError } = await supabase.storage
-          .from('study-materials')
-          .upload(storagePath, blob, {
-            contentType: pickedFile.mimeType ?? 'application/octet-stream',
-            upsert: false,
-          });
-        if (uploadError) throw uploadError;
+        // Use the shared helper (reads real bytes via the SDK 56 File API);
+        // fetch().blob() on a content:// URI can silently upload 0 bytes in RN.
+        // study-materials is a PRIVATE bucket → bucketIsPublic=false, store the path.
+        const up = await uploadFile(
+          'study-materials', pickedFile.uri, storagePath,
+          pickedFile.mimeType ?? 'application/octet-stream', false,
+        );
+        if (!up.success) throw new Error(up.error);
       }
 
       let insertError = null as any;

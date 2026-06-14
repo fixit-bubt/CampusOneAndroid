@@ -97,24 +97,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function signUp(email: string, password: string, fullName: string) {
-    const { data, error } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signUp({
       email,
       password,
       options: { data: { full_name: fullName } },
     });
     if (error) throw error;
-    if (data.user) {
-      const { error: profileError } = await supabase.from('profiles').upsert({
-        id: data.user.id,
-        full_name: fullName,
-        email: data.user.email ?? '',
-        role: 'student',
-      }, { onConflict: 'id' });
-      if (profileError) {
-        await supabase.auth.signOut();
-        throw new Error('Failed to create profile: ' + profileError.message);
-      }
-    }
+    // The profiles row is created by the handle_new_user DB trigger
+    // (SECURITY DEFINER) from options.data.full_name + email, role='student'.
+    // Do NOT upsert from the client: profiles has no INSERT RLS policy, so the
+    // upsert always fails with 42501 and used to break registration entirely.
   }
 
   async function signOut() {

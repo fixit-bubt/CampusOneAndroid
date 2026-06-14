@@ -76,8 +76,18 @@ export function JobPostScreen({ navigation }: any) {
   const [applyValue, setApplyValue] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // apply_value is required by the DB for both email and link methods.
-  const canSubmit = company.trim() && role.trim() && desc.trim() && applyValue.trim();
+  // Match the DB CHECK minimums (company>=2, title>=3, description>=10) and
+  // apply_value (required by DB for both email and link methods).
+  const canSubmit =
+    company.trim().length >= 2 &&
+    role.trim().length >= 3 &&
+    desc.trim().length >= 10 &&
+    applyValue.trim().length > 0;
+
+  // Today's date in Asia/Dhaka (UTC+6). en-CA yields YYYY-MM-DD. Using the UTC
+  // date here would be a day behind during 00:00-05:59 Dhaka and the RLS
+  // deadline check (>= now() AT TIME ZONE 'Asia/Dhaka') would reject the row.
+  const dhakaToday = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Dhaka' }).format(new Date());
 
   async function handleSubmit() {
     if (!canSubmit || !user || loading) return;
@@ -90,7 +100,7 @@ export function JobPostScreen({ navigation }: any) {
         work_mode:    workMode,
         location:     location.trim() || 'Dhaka',
         stipend:      salary.trim() || null,
-        deadline:     deadline.trim() || new Date().toISOString().split('T')[0],
+        deadline:     deadline.trim() || dhakaToday,
         description:  desc.trim(),
         requirements: requirements.trim() || null,
         apply_method: applyMethod as Job['apply_method'],
@@ -100,8 +110,8 @@ export function JobPostScreen({ navigation }: any) {
       });
       if (error) throw error;
       navigation.goBack();
-    } catch {
-      toast({ type: 'error', title: t.common.error, message: t.jobs2.postFailed });
+    } catch (e: any) {
+      toast({ type: 'error', title: t.common.error, message: e?.message ?? t.jobs2.postFailed });
     } finally {
       setLoading(false);
     }

@@ -47,7 +47,7 @@ export function ManageClubsScreen({ navigation }: any) {
   const [createOpen, setCreateOpen] = useState(false);
   const [name, setName] = useState('');
   const [tagline, setTagline] = useState('');
-  const [category, setCategory] = useState('other');
+  const [category, setCategory] = useState('Tech');
   const [creating, setCreating] = useState(false);
 
   // Assign-president sheet

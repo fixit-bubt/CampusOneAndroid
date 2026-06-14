@@ -23,11 +23,13 @@ function priTone(C: any, priority: string): { fg: string; bg: string } {
   }
 }
 
+// Return only the magnitude; the localized " ago" suffix is added by
+// t.announce2.agoShort() at the call site (avoids a doubled "ago ago").
 function timeAgo(iso: string): string {
   const secs = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-  if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
-  if (secs < 86400) return `${Math.floor(secs / 3600)}h ago`;
-  return `${Math.floor(secs / 86400)}d ago`;
+  if (secs < 3600) return `${Math.floor(secs / 60)}m`;
+  if (secs < 86400) return `${Math.floor(secs / 3600)}h`;
+  return `${Math.floor(secs / 86400)}d`;
 }
 
 export function AnnouncementDetailScreen({ route, navigation }: any) {

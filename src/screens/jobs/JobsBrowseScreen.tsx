@@ -66,8 +66,10 @@ export function JobsBrowseScreen({ navigation }: any) {
   const { C } = useTheme();
   const { user, profile } = useAuth();
   const t = useT();
-  const canPost = profile?.role === 'admin' || profile?.role === 'staff';
   const isAdmin = profile?.role === 'admin';
+  // Mirror the DB can_post_jobs(): admin OR event organizer OR club president/vp.
+  // (Staff are NOT allowed — showing them the button only to have RLS reject it.)
+  const [canPost, setCanPost] = useState(isAdmin);
   const [tab, setTab] = useState<Tab>('open');
   const [query, setQuery] = useState('');
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -84,6 +86,20 @@ export function JobsBrowseScreen({ navigation }: any) {
   }, [user?.id]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Resolve job-posting permission to match RLS, so the + button only shows
+  // to users whose insert will actually succeed.
+  useEffect(() => {
+    if (!user) { setCanPost(false); return; }
+    if (isAdmin) { setCanPost(true); return; }
+    (async () => {
+      const [org, lead] = await Promise.all([
+        supabase.from('event_organizers').select('user_id').eq('user_id', user.id).limit(1),
+        supabase.from('club_members').select('role').eq('user_id', user.id).in('role', ['president', 'vp']).limit(1),
+      ]);
+      setCanPost(!!(org.data?.length || lead.data?.length));
+    })();
+  }, [user?.id, isAdmin]);
 
   async function onRefresh() {
     setRefreshing(true);

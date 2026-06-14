@@ -109,15 +109,19 @@ export function RideDetailScreen({ route, navigation }: any) {
     const { error } = await supabase
       .from('ride_requests')
       .insert({ ride_id: rideId, requester_id: user.id });
-    if (!error) {
+    if (!error || error.code === '23505') {
+      const isDup = !!error && error.code === '23505';
       setRequested(true);
-      setTakenCount(c => c + 1);
+      // Only count a brand-new request; a duplicate (23505) was already counted.
+      if (!isDup) setTakenCount(c => c + 1);
       const { data: c } = await supabase.rpc('ride_contact', {
         p_code:   ride.code,
         p_target: ride.driver_id,
       });
       const row = Array.isArray(c) ? c[0] : c;
       if (row) setContact(row);
+    } else {
+      toast({ type: 'error', title: 'Error', message: error.message });
     }
   }
 

@@ -68,7 +68,8 @@ function LFCard({ item, C, isDark, onPress }: { item: LostFoundItem; C: any; isD
 
 export function LostFoundBrowseScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const isStudent = profile?.role === 'student';
   const t = useT();
   const [items, setItems] = useState<LostFoundItem[]>([]);
   const [filter, setFilter] = useState<Filter>('all');
@@ -116,12 +117,14 @@ export function LostFoundBrowseScreen({ navigation }: any) {
         title="Lost & Found"
         onBack={() => navigation.goBack()}
         right={
-          <TouchableOpacity
-            style={[styles.iconBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
-            onPress={() => navigation.navigate('LostFoundPost')}
-          >
-            <Icon name="plus" size={20} color={C.text} />
-          </TouchableOpacity>
+          isStudent ? (
+            <TouchableOpacity
+              style={[styles.iconBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+              onPress={() => navigation.navigate('LostFoundPost')}
+            >
+              <Icon name="plus" size={20} color={C.text} />
+            </TouchableOpacity>
+          ) : undefined
         }
       />
 
@@ -154,7 +157,12 @@ export function LostFoundBrowseScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
-        {list.length === 0 ? (
+        {!isStudent ? (
+          <View style={styles.empty}>
+            <Icon name="found" size={28} color={C.textMuted} />
+            <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Lost & Found is for students.</Text>
+          </View>
+        ) : list.length === 0 ? (
           <View style={styles.empty}>
             <Icon name="found" size={28} color={C.textMuted} />
             <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.lf.noItems}</Text>

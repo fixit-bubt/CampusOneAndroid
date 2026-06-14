@@ -1,7 +1,7 @@
 // Matches design screens-e.jsx — ReportDetail
 import { useState, useEffect, useCallback } from 'react';
 import {
-  View, Text, TouchableOpacity, ScrollView, StyleSheet,
+  View, Text, TouchableOpacity, ScrollView, StyleSheet, Image,
   RefreshControl, Alert, ActivityIndicator, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -206,6 +206,10 @@ export function ReportDetailScreen({ route, navigation }: any) {
             {report.description}
           </Text>
         )}
+
+        {report.photo_url ? (
+          <Image source={{ uri: report.photo_url }} style={{ width: '100%', height: 200, borderRadius: 14, marginTop: 14, marginBottom: 4 }} resizeMode="cover" />
+        ) : null}
 
         {/* Reporter + Assignee */}
         <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>

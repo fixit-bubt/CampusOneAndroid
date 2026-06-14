@@ -69,16 +69,21 @@ export function DirectoryScreen({ navigation }: any) {
 
   async function handleConn(studentId: string, action: 'connect' | 'accept' | 'decline') {
     if (!user) return;
+    // Each mutation can be rejected by RLS / dedupe trigger; on error re-sync
+    // from the DB instead of optimistically showing a false success state.
     if (action === 'connect') {
-      await supabase.from('connections').insert({ requester_id: user.id, addressee_id: studentId, status: 'pending' });
+      const { error } = await supabase.from('connections').insert({ requester_id: user.id, addressee_id: studentId, status: 'pending' });
+      if (error) { await load(); return; }
       setStudents(prev => prev.map(s => s.id === studentId ? { ...s, connState: 'requested' } : s));
     } else if (action === 'accept') {
-      await supabase.from('connections').update({ status: 'accepted' })
+      const { error } = await supabase.from('connections').update({ status: 'accepted' })
         .eq('requester_id', studentId).eq('addressee_id', user.id);
+      if (error) { await load(); return; }
       setStudents(prev => prev.map(s => s.id === studentId ? { ...s, connState: 'connected' } : s));
     } else {
-      await supabase.from('connections').delete()
+      const { error } = await supabase.from('connections').delete()
         .eq('requester_id', studentId).eq('addressee_id', user.id);
+      if (error) { await load(); return; }
       setStudents(prev => prev.map(s => s.id === studentId ? { ...s, connState: 'none' } : s));
     }
   }

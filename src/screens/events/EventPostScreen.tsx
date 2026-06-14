@@ -47,7 +47,7 @@ export function EventPostScreen({ navigation }: any) {
   useEffect(() => {
     (async () => {
       if (!user) { setCanCreate(false); return; }
-      if (profile?.role === 'admin' || profile?.role === 'staff') { setCanCreate(true); return; }
+      if (profile?.role === 'admin') { setCanCreate(true); return; }
       const [orgRes, leadRes] = await Promise.all([
         supabase.from('event_organizers').select('user_id').eq('user_id', user.id).maybeSingle(),
         supabase.from('club_members').select('id').eq('user_id', user.id).in('role', ['president', 'vp']).limit(1),

@@ -346,8 +346,7 @@ export function ProfileScreen({ navigation }: any) {
     }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
+      allowsEditing: false,
       quality: 0.7,
     });
     if (!result.canceled && result.assets[0]) setPickedAvatar(result.assets[0].uri);

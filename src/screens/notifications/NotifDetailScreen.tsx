@@ -60,7 +60,8 @@ export function NotifDetailScreen({ route, navigation }: any) {
   // reference_id, so look up the item it belongs to before navigating.
   async function openRelated() {
     if (!n.reference_id) return;
-    if (n.reference_type === 'claim') {
+    const refType = n.reference_type ?? '';
+    if (refType === 'claim') {
       const { data } = await supabase
         .from('claims')
         .select('item_id')
@@ -69,7 +70,19 @@ export function NotifDetailScreen({ route, navigation }: any) {
       if (data?.item_id) navigation.navigate('LostFoundDetail' as any, { itemId: data.item_id });
       return;
     }
-    const m = SCREEN_MAP[n.reference_type ?? ''];
+    // Report + announcement notifications carry the CODE in reference_id, but
+    // their detail screens look up by UUID id — resolve code -> id first.
+    if (refType === 'report' || refType === 'reports') {
+      const { data } = await supabase.from('reports').select('id').eq('code', n.reference_id).maybeSingle();
+      if (data?.id) navigation.navigate('ReportDetail' as any, { reportId: data.id });
+      return;
+    }
+    if (refType === 'announcement') {
+      const { data } = await supabase.from('announcements').select('id').eq('code', n.reference_id).maybeSingle();
+      if (data?.id) navigation.navigate('AnnouncementDetail' as any, { announcementId: data.id });
+      return;
+    }
+    const m = SCREEN_MAP[refType];
     if (m) navigation.navigate(m.screen as any, { [m.key]: n.reference_id });
   }
 

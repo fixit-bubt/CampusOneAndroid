@@ -37,8 +37,9 @@ export function FacultyScreen({ navigation }: any) {
       supabase.from('departments').select('id, name, branch, chairman').limit(50),
       supabase.from('faculty')
         .select('id, department_id, name, designation, email, research_interests, on_leave, is_chairman, photo_url')
-        .limit(300),
-      supabase.from('faculty_bookmarks').select('faculty_id').eq('user_id', user?.id ?? '').limit(300),
+        .order('name')
+        .limit(1000),
+      supabase.from('faculty_bookmarks').select('faculty_id').eq('user_id', user?.id ?? '').limit(1000),
     ]);
     if (deptRes.data) setDepartments(deptRes.data as Department[]);
     if (facRes.data) setFaculty(facRes.data as FacultyMember[]);

@@ -65,15 +65,18 @@ export function StudentProfileScreen({ route, navigation }: any) {
   async function handleConn(action: 'connect' | 'accept' | 'decline') {
     if (!user || !student) return;
     if (action === 'connect') {
-      await supabase.from('connections').insert({ requester_id: user.id, addressee_id: student.id, status: 'pending' });
+      const { error } = await supabase.from('connections').insert({ requester_id: user.id, addressee_id: student.id, status: 'pending' });
+      if (error) { await refresh(); return; }
       setStudent(s => ({ ...s, connState: 'requested' }));
     } else if (action === 'accept') {
-      await supabase.from('connections').update({ status: 'accepted' })
+      const { error } = await supabase.from('connections').update({ status: 'accepted' })
         .eq('requester_id', student.id).eq('addressee_id', user.id);
+      if (error) { await refresh(); return; }
       setStudent(s => ({ ...s, connState: 'connected' }));
     } else {
-      await supabase.from('connections').delete()
+      const { error } = await supabase.from('connections').delete()
         .eq('requester_id', student.id).eq('addressee_id', user.id);
+      if (error) { await refresh(); return; }
       setStudent(s => ({ ...s, connState: 'none' }));
     }
     // Pull fresh contact details once the connection state settles.
