@@ -131,7 +131,7 @@ export function HomeScreen({ navigation }: any) {
     setRefreshing(false);
   }
 
-  const recentAlerts = notifs.slice(0, 3);
+  const recentAlerts = notifs.slice(0, 2);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
