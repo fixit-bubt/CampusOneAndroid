@@ -10,6 +10,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
+import { supabase } from '../../lib/supabase';
 import { Icon } from '../../components/ui/Icon';
 import { PasswordInput } from '../../components/ui/PasswordInput';
 import { Brand } from './LandingScreen';
@@ -47,6 +48,13 @@ export function RegisterScreen({ navigation }: Props) {
     setBusy(true);
     setErr('');
     try {
+      // Hard-block re-using an email. Supabase will also reject the duplicate,
+      // but auto-confirm makes its response unreliable, so check up front.
+      const { data: taken } = await supabase.rpc('email_is_registered', { p_email: emailVal });
+      if (taken) {
+        setErr(t.auth.emailTaken);
+        return;
+      }
       await signUp(emailVal, pass, name.trim());
     } catch (e: any) {
       setErr(e?.message ?? t.auth.registerFailed);

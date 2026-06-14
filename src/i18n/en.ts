@@ -60,6 +60,7 @@ export const en = {
     register: 'Create account',
     invalidEmail: 'Enter a valid email address.',
     passwordTooShort: 'Password must be at least 6 characters.',
+    emailTaken: 'This email is already registered. Please log in instead.',
     registerFailed: 'Registration failed. Please try again.',
     alreadyHaveAccount: 'Already have an account?',
   },

@@ -61,6 +61,7 @@ export const bn: Dict = {
     register: 'অ্যাকাউন্ট তৈরি করুন',
     invalidEmail: 'সঠিক ইমেইল ঠিকানা লিখুন।',
     passwordTooShort: 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।',
+    emailTaken: 'এই ইমেইল দিয়ে ইতিমধ্যে অ্যাকাউন্ট আছে। লগইন করুন।',
     registerFailed: 'নিবন্ধন ব্যর্থ হয়েছে। আবার চেষ্টা করুন।',
     alreadyHaveAccount: 'ইতিমধ্যে অ্যাকাউন্ট আছে?',
   },
