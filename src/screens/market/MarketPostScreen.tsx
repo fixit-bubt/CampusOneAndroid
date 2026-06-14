@@ -1,4 +1,4 @@
-// Matches design screens-e.jsx — MarketPost (create/edit listing)
+// Create / edit listing.
 import { useState } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView, Switch, KeyboardAvoidingView, Platform,

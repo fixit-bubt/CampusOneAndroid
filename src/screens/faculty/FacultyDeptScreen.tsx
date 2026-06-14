@@ -1,4 +1,4 @@
-// Faculty — one department's roster (web parity: DepartmentFaculty).
+// Faculty — one department's roster.
 // Header: branch icon tile, dept name, branch · count, chair line.
 // Search appears when the roster is bigger than 6. Chairman sorts first.
 import { useState, useEffect, useCallback } from 'react';

@@ -1,4 +1,4 @@
-// Matches design screens-c.jsx — DoctorDetail (availability only, no booking)
+// Availability only, no booking.
 import { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, StyleSheet,

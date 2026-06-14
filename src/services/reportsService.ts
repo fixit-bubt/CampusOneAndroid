@@ -1,7 +1,4 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// Reports Service — ONE place for all report DB logic.
-// Real devs don't write SQL/Supabase calls inside screen components.
-// ─────────────────────────────────────────────────────────────────────────────
+// Reports Service — report DB logic.
 
 import { supabase } from '../lib/supabase';
 import type { Report, ReportEvent } from '../types/database';
@@ -35,7 +32,7 @@ export interface CampusReport extends Report {
 }
 
 // Campus-wide feed (own + other students') via SECURITY DEFINER RPC, since the
-// reports_select RLS policy is owner/assigned/admin only.
+// reports_select policy is owner/assigned/admin only.
 export async function getCampusReports(limit = 200): Promise<ServiceResult<CampusReport[]>> {
   const { data, error } = await supabase.rpc('campus_reports', { p_limit: limit });
   if (error) return { ok: false, error: error.message };

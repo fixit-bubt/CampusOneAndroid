@@ -1,4 +1,3 @@
-// Matches design screens-b.jsx — JobDetail
 import { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet,

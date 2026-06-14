@@ -16,8 +16,7 @@ export interface Notification {
 export async function getMyNotifications(
   limit = 20,
 ): Promise<ServiceResult<Notification[]>> {
-  // RLS already scopes rows to the signed-in user; filter explicitly anyway
-  // so a policy change can never leak someone else's notifications.
+  // explicit user filter in case the policy changes.
   const { data: auth } = await supabase.auth.getUser();
   const uid = auth.user?.id;
   if (!uid) return { ok: true, data: [] };

@@ -1,4 +1,3 @@
-// Matches design screens-a.jsx — AnnouncementDetail
 import { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator,
@@ -50,7 +49,7 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
         .single();
       if (error) { console.error('announcement detail fetch:', error.message); return; }
       if (data) setItem(data as Announcement);
-      // Read tracking (web parity) — opening counts as read
+      // Opening counts as read.
       if (data && user) {
         await supabase
           .from('announcement_reads')

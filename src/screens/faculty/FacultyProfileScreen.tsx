@@ -1,6 +1,6 @@
-// Faculty profile (web parity) — photo, badges, research interest pills,
-// qualifications, contact (Email / Call / WhatsApp), academic profiles
-// (only links that exist), and the official bubt.edu.bd profile link.
+// Faculty profile — photo, badges, research interest pills, qualifications,
+// contact (Email / Call / WhatsApp), academic profiles (only links that
+// exist), and the official bubt.edu.bd profile link.
 import { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
@@ -18,7 +18,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { FACULTY_ACCENT, BRANCH_ICON, shortDept, PersonBadges, type FacultyMember } from './facultyShared';
 
-// Academic link order matches web (no LinkedIn on web profiles).
+// No LinkedIn on these profiles.
 const LINK_META: { key: string; label: string; icon: keyof typeof Feather.glyphMap }[] = [
   { key: 'scholar_url',      label: 'Google Scholar', icon: 'book' },
   { key: 'researchgate_url', label: 'ResearchGate',   icon: 'book-open' },

@@ -1,7 +1,5 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// Auth Store — React context + useReducer, no extra library needed.
-// Wrap the app in <AuthProvider> then call useAuth() anywhere.
-// ─────────────────────────────────────────────────────────────────────────────
+// Auth Store — React context + useReducer.
+// Wrap the app in <AuthProvider>, then call useAuth() anywhere.
 
 import React, { createContext, useContext, useEffect, useReducer } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
@@ -105,8 +103,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) throw error;
     // The profiles row is created by the handle_new_user DB trigger
     // (SECURITY DEFINER) from options.data.full_name + email, role='student'.
-    // Do NOT upsert from the client: profiles has no INSERT RLS policy, so the
-    // upsert always fails with 42501 and used to break registration entirely.
+    // Don't upsert from the client: profiles has no INSERT policy, so the
+    // upsert fails with 42501 and used to break registration entirely.
   }
 
   async function signOut() {

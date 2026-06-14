@@ -1,5 +1,5 @@
-// Main app stack — web parity: every role gets the full app. The Home tab
-// inside BottomTabNavigator is what differs per role (dashboard vs feed).
+// Main app stack — every role gets the full app. The Home tab inside
+// BottomTabNavigator is what differs per role (dashboard vs feed).
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { AppStackParams } from '../types/navigation';
 import { BottomTabNavigator } from './BottomTabNavigator';

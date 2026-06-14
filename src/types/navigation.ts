@@ -1,7 +1,4 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// CampusOne — Navigation Types
-// Every screen's params are typed here. TypeScript will catch wrong params.
-// ─────────────────────────────────────────────────────────────────────────────
+// CampusOne — Navigation Types. Every screen's params are typed here.
 
 export type AuthStackParams = {
   Landing: undefined;
@@ -16,7 +13,7 @@ export type BottomTabParams = {
   Profile: undefined;
 };
 
-// ─── Main app stack (flat, ID-based) ─────────────────────────────────────────
+// Main app stack (flat, ID-based)
 export type AppStackParams = {
   // Core tabs wrapper
   Tabs: undefined;

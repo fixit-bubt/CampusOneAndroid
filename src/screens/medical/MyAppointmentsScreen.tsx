@@ -1,4 +1,3 @@
-// My Appointments (web parity: MyAppointments view in Medical.jsx).
 // Upcoming / Past tabs; upcoming Booked/Confirmed appointments can be
 // cancelled (status -> 'Cancelled', releasing the slot).
 import { useState, useEffect, useCallback } from 'react';

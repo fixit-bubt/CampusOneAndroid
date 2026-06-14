@@ -1,7 +1,7 @@
 // Admin-only: create staff/admin/student accounts from inside the app.
-// Mirrors the web app's createUser (store.jsx): a throwaway client signs the
-// new user up (so the admin's own session is untouched), the signup trigger
-// creates the profile as 'student', then the admin session sets the real role.
+// A separate client signs the new user up (so the admin's own session is
+// untouched), the signup trigger creates the profile as 'student', then the
+// admin session sets the real role.
 import { createClient } from '@supabase/supabase-js';
 import { supabase, supabaseUrl, supabaseAnonKey } from '../lib/supabase';
 import type { ServiceResult } from './authService';
@@ -28,9 +28,9 @@ export async function createUserAsAdmin({ name, email, password, role, expertise
   if (error) {
     return { ok: false, error: /already/i.test(error.message) ? 'An account with this email already exists.' : error.message };
   }
-  // When confirmation is ON and the email already exists, Supabase returns an
-  // obfuscated user with empty identities (anti-enumeration) and no error.
-  // Bail out before we accidentally overwrite that real account's role.
+  // When confirmation is on and the email already exists, Supabase returns an
+  // obfuscated user with empty identities and no error. Bail out before we
+  // overwrite that real account's role.
   if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
     await tmp.auth.signOut();
     return { ok: false, error: 'An account with this email already exists.' };

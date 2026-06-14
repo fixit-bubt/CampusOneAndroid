@@ -1,4 +1,3 @@
-// Matches design screens-d.jsx — Clubs browse
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,

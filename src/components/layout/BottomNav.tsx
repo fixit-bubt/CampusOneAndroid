@@ -1,4 +1,3 @@
-// Matches design chrome.jsx BottomNav exactly
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, type ViewStyle } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';

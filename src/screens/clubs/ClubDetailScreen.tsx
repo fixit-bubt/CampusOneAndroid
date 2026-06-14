@@ -1,4 +1,3 @@
-// Matches design screens-d.jsx — ClubDetail (Feed + Members tabs)
 import { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet, Image,
@@ -211,7 +210,7 @@ export function ClubDetailScreen({ route, navigation }: any) {
           <Text style={[styles.desc, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>{club.about}</Text>
         ) : null}
 
-        {/* Invitation-only (web parity): no self-join. Members can leave. */}
+        {/* Invitation-only: no self-join. Members can leave. */}
         {!isMember && !isAdmin && (
           <View style={[styles.inviteCard, { backgroundColor: C.surface2 }]}>
             <Feather name="lock" size={14} color={C.textMuted} />

@@ -1,4 +1,3 @@
-// Matches design screens-a.jsx — Blood (requests + donors tabs)
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
@@ -304,7 +303,7 @@ export function BloodScreen({ navigation }: any) {
             {/* Donor list */}
             <View style={[styles.donorList, { backgroundColor: C.surface, borderColor: C.border }]}>
               {donors.filter(d => groupFilter === 'All' || d.blood_group === groupFilter).map((d, i) => {
-                // 90-day eligibility window (web parity)
+                // 90-day eligibility window
                 const eligible = !d.last_donated ||
                   (Date.now() - new Date(d.last_donated).getTime()) / 86400000 >= 90;
                 return (

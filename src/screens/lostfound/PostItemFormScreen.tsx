@@ -1,4 +1,3 @@
-// Matches design screens-lostfound.jsx — PostItemForm
 import { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,

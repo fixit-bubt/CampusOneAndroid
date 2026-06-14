@@ -23,7 +23,7 @@ import { useToast } from '../../components/ui/Toast';
 
 type Tab = 'staff' | 'admin';
 
-// Staff trades — values MUST match Report.category exactly so assignment can match by trade
+// Staff trade values match Report.category so assignment can match by trade.
 const TRADES = ['Electrical', 'Plumbing', 'Cleanliness', 'IT / Network', 'Furniture', 'Safety / Security', 'Other'] as const;
 
 export function ManageStaffScreen({ navigation }: any) {

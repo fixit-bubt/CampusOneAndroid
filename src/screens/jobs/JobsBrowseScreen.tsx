@@ -1,4 +1,3 @@
-// Matches design screens-b.jsx — Jobs browse (All / Saved tabs)
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
@@ -67,8 +66,8 @@ export function JobsBrowseScreen({ navigation }: any) {
   const { user, profile } = useAuth();
   const t = useT();
   const isAdmin = profile?.role === 'admin';
-  // Mirror the DB can_post_jobs(): admin OR event organizer OR club president/vp.
-  // (Staff are NOT allowed — showing them the button only to have RLS reject it.)
+  // Matches can_post_jobs(): admin OR event organizer OR club president/vp.
+  // Staff are excluded, so the button isn't shown only to have RLS reject it.
   const [canPost, setCanPost] = useState(isAdmin);
   const [tab, setTab] = useState<Tab>('open');
   const [query, setQuery] = useState('');
@@ -132,7 +131,7 @@ export function JobsBrowseScreen({ navigation }: any) {
     saved: searched.filter(j => savedIds.has(j.id)).length,
   };
   const list = tab === 'saved'
-    // Saved sorts by soonest deadline first (web parity)
+    // Saved sorts by soonest deadline first
     ? searched.filter(j => savedIds.has(j.id)).sort((a, b) => (a.deadline ?? '9999').localeCompare(b.deadline ?? '9999'))
     : searched.filter(j => computeJobStatus(j) === tab);
 

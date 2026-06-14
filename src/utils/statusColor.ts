@@ -1,7 +1,4 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// Maps DB status strings → consistent colors for Pill / badges.
-// Add here, works everywhere. Never scatter color logic in screens.
-// ─────────────────────────────────────────────────────────────────────────────
+// Maps DB status strings → colors for Pill / badges.
 
 type PillVariant = 'default' | 'brand' | 'success' | 'warning' | 'error' | 'info';
 

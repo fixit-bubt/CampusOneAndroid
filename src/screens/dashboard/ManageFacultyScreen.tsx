@@ -1,6 +1,5 @@
-// Manage Faculty (web parity: ManageFaculty.jsx) — admin-only. Search the
-// scraped faculty list and patch the fields the scraper can't know: email,
-// phone, designation, research interests, on-leave flag, and a profile photo.
+// Admin-only. Search the scraped faculty list and patch the fields the scraper
+// can't know: email, phone, designation, research interests, on-leave flag, photo.
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,

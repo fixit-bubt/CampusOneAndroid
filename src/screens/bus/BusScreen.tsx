@@ -1,4 +1,3 @@
-// Matches design screens-a.jsx — Bus routes list
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, Modal, ScrollView,

@@ -1,4 +1,3 @@
-// Matches design screens-home.jsx — student Home view
 import { useEffect, useState, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
@@ -21,7 +20,7 @@ import { getMyReports } from '../../services/reportsService';
 import { getMyNotifications, type Notification } from '../../services/notificationsService';
 import type { Report } from '../../types/database';
 
-// ── quick-action sectors (labels live in src/i18n) ───────────────────────────
+// quick-action sectors (labels live in src/i18n)
 const QUICK: SectorKey[] = ['reports', 'bus', 'study', 'medical'];
 const QUICK_ROUTE: Record<SectorKey, string> = {
   reports: 'ReportForm', lostfound: 'LostFoundBrowse', clubs: 'Clubs',
@@ -30,13 +29,12 @@ const QUICK_ROUTE: Record<SectorKey, string> = {
   ride: 'Rides', blood: 'Blood', directory: 'Directory', prayer: 'Prayer', faculty: 'Faculty',
 };
 
-// ── status colors ─────────────────────────────────────────────────────────────
+// status colors
 const STATUS_TONE: Record<string, string> = {
   Open: Accent.amber, 'In Progress': Accent.blue, Resolved: Accent.green,
   Rejected: Accent.red, Closed: Accent.slate,
 };
 
-// ── NotifRow ──────────────────────────────────────────────────────────────────
 function NotifRow({ n, C, onPress }: { n: Notification; C: any; onPress: () => void }) {
   const sector = (n.sector as SectorKey) in SectorColors ? (n.sector as SectorKey) : 'announce';
   return (
@@ -64,7 +62,6 @@ function NotifRow({ n, C, onPress }: { n: Notification; C: any; onPress: () => v
   );
 }
 
-// ── ReportRow ─────────────────────────────────────────────────────────────────
 function ReportRow({ r, C, onPress }: { r: Report; C: any; onPress: () => void }) {
   const t = useT();
   const color = STATUS_TONE[r.status] ?? Accent.slate;
@@ -92,7 +89,6 @@ function ReportRow({ r, C, onPress }: { r: Report; C: any; onPress: () => void }
   );
 }
 
-// ── Empty state ───────────────────────────────────────────────────────────────
 function EmptyCard({ icon, text, C }: { icon: string; text: string; C: any }) {
   return (
     <View style={[styles.emptyCard, { backgroundColor: C.surface, borderColor: C.border }]}>
@@ -104,7 +100,6 @@ function EmptyCard({ icon, text, C }: { icon: string; text: string; C: any }) {
   );
 }
 
-// ── HomeScreen ────────────────────────────────────────────────────────────────
 export function HomeScreen({ navigation }: any) {
   const { C } = useTheme();
   const { profile, user } = useAuth();
@@ -154,7 +149,7 @@ export function HomeScreen({ navigation }: any) {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />
         }
       >
-        {/* ── Spotlight card ── */}
+        {/* Spotlight card */}
         <LinearGradient
           colors={[Accent.blue, darken(Accent.blue)]}
           start={{ x: 0, y: 0 }}
@@ -181,7 +176,7 @@ export function HomeScreen({ navigation }: any) {
           </TouchableOpacity>
         </LinearGradient>
 
-        {/* ── Quick actions ── */}
+        {/* Quick actions */}
         <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
           {t.home.quickActions}
         </Text>
@@ -201,7 +196,7 @@ export function HomeScreen({ navigation }: any) {
           ))}
         </View>
 
-        {/* ── My Reports ── */}
+        {/* My Reports */}
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold, marginTop: 0 }]}>
             {t.home.myReports}
@@ -242,7 +237,7 @@ export function HomeScreen({ navigation }: any) {
           </View>
         )}
 
-        {/* ── Recent Alerts ── */}
+        {/* Recent Alerts */}
         <View style={[styles.sectionHeader, { marginTop: 24 }]}>
           <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold, marginTop: 0 }]}>
             {t.home.recentAlerts}

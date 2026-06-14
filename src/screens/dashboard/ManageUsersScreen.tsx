@@ -1,4 +1,3 @@
-// Matches design screens-f.jsx — ManageUsers (Admin)
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView, StyleSheet,
@@ -21,7 +20,7 @@ import { useToast } from '../../components/ui/Toast';
 const ROLE_TOKEN = { student: 'roleStudent', staff: 'roleStaff', admin: 'roleAdmin' } as const;
 const ROLE_NEXT: Record<string, Profile['role']> = { student: 'staff', staff: 'admin', admin: 'student' };
 
-// Staff trades — values MUST match Report.category exactly so assignment can match by trade
+// Staff trade values match Report.category so assignment can match by trade.
 const TRADES = ['Electrical', 'Plumbing', 'Cleanliness', 'IT / Network', 'Furniture', 'Safety / Security', 'Other'] as const;
 
 export function ManageUsersScreen({ navigation }: any) {

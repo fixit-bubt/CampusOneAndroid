@@ -1,5 +1,4 @@
-// Toast system (web parity: ui.jsx ToastProvider) — non-blocking feedback
-// instead of Alert.alert. Bottom-anchored, auto-dismisses, type-tinted.
+// Toast provider — bottom-anchored, auto-dismisses, type-tinted.
 // Usage: const toast = useToast(); toast({ type: 'success', title: 'Saved' });
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
 import { View, Text, Animated, StyleSheet, type ViewStyle } from 'react-native';
@@ -20,7 +19,7 @@ const ToastContext = createContext<PushFn | null>(null);
 
 export function useToast(): PushFn {
   const push = useContext(ToastContext);
-  // Soft-fail so a screen rendered outside the provider never crashes.
+  // no-op if rendered outside the provider, so it never crashes.
   return push ?? (() => {});
 }
 

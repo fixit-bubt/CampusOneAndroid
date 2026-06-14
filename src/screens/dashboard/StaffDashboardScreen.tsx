@@ -1,4 +1,3 @@
-// Matches design screens-dash.jsx — StaffBody dashboard
 import { useState, useEffect, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
@@ -28,7 +27,7 @@ const ISSUE_MAP: Record<string, { icon: string; fg: string }> = {
   other:      { icon: 'sliders',  fg: Accent.slate },
 };
 
-// Status → theme tokens (light + dark aware via C)
+// Status colors, light + dark aware via C.
 function statusTone(C: any, status: string): { fg: string; bg: string } {
   switch (status) {
     case 'In Progress': return { fg: C.info,      bg: C.infoBg };
@@ -186,7 +185,7 @@ export function StaffDashboardScreen({ navigation }: any) {
         onPress: async () => {
           const res = await declineReport(reportId);
           if (!res.ok) { Alert.alert(t.common.error, res.error); return; }
-          // It's no longer assigned to me — drop it from the list.
+          // No longer assigned to me, so drop it from the list.
           setReports(prev => prev.filter(r => r.id !== reportId));
         },
       },

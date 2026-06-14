@@ -1,7 +1,4 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// Storage utilities — all Supabase file upload/URL logic in one place.
-// Real devs never scatter upload code across multiple screens.
-// ─────────────────────────────────────────────────────────────────────────────
+// Storage utilities — Supabase file upload/URL logic.
 
 import { File } from 'expo-file-system';
 import { supabase } from '../lib/supabase';
@@ -13,9 +10,8 @@ export type UploadResult =
 
 /**
  * Upload a local file URI to a Supabase storage bucket.
- * Public buckets get a permanent public URL. Private buckets get the storage
- * PATH back as `url` — store that in the DB and sign it at view time with
- * getSignedUrl (a public URL on a private bucket would 403).
+ * Public buckets return a public URL. Private buckets return the storage path
+ * as `url` — store it and sign it at view time with getSignedUrl.
  */
 export async function uploadFile(
   bucket: string,
@@ -43,10 +39,7 @@ export async function uploadFile(
   }
 }
 
-/**
- * Upload a photo to the public `photos` bucket.
- * Path format: {folder}/{userId}/{timestamp}.jpg
- */
+/** Upload a photo to the public `photos` bucket. Path: {folder}/{userId}/{timestamp}.jpg */
 export async function uploadPhoto(
   localUri: string,
   folder: string,
@@ -57,10 +50,7 @@ export async function uploadPhoto(
   return uploadFile(BUCKETS.photos, localUri, path, 'image/jpeg');
 }
 
-/**
- * Upload a proof document (private bucket). Returns the storage PATH —
- * store it and resolve with getSignedUrl(BUCKETS.proofs, path) to view.
- */
+/** Upload a proof document (private bucket). Returns the storage path; view via getSignedUrl. */
 export async function uploadProof(
   localUri: string,
   userId: string,
@@ -72,16 +62,12 @@ export async function uploadProof(
   return uploadFile(BUCKETS.proofs, localUri, path, contentType, false);
 }
 
-/**
- * Delete a file from a bucket by its storage path.
- */
+/** Delete a file from a bucket by its storage path. */
 export async function deleteFile(bucket: string, path: string): Promise<void> {
   await supabase.storage.from(bucket).remove([path]);
 }
 
-/**
- * Get a short-lived signed URL for a private bucket file (60 min).
- */
+/** Get a short-lived signed URL for a private bucket file (60 min). */
 export async function getSignedUrl(bucket: string, path: string): Promise<string | null> {
   const { data } = await supabase.storage
     .from(bucket)

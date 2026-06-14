@@ -1,6 +1,5 @@
-// Manage Clubs (web parity: AdminManageClubs) — admin-only. Create clubs,
-// deactivate / reactivate, and assign a president (via club_set_president RPC,
-// which atomically demotes the previous one).
+// Admin-only. Create clubs, deactivate / reactivate, and assign a president
+// via the club_set_president RPC, which atomically demotes the previous one.
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,

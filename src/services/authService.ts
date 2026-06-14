@@ -1,8 +1,4 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// Auth Service — all auth calls go through here, never call supabase.auth
-// directly in a screen. This means if Supabase changes their API, you fix
-// it in ONE file, not across 20 screens.
-// ─────────────────────────────────────────────────────────────────────────────
+// Auth Service — auth calls go through here rather than supabase.auth directly.
 
 import { supabase } from '../lib/supabase';
 

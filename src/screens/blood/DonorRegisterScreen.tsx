@@ -1,4 +1,3 @@
-// Matches design screens-g.jsx — DonorRegister
 import { useState } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView,

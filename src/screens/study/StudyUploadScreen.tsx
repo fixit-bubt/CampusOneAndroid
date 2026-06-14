@@ -1,5 +1,4 @@
-// Matches design screens-g.jsx — StudyUpload
-// Uploads route to the right table per section (web parity):
+// Uploads route to a table per section:
 // Materials -> study_materials, Questions -> study_question_bank (exam tag),
 // Books -> study_books (author, optional external URL instead of a file).
 import { useState, useEffect } from 'react';
@@ -103,9 +102,9 @@ export function StudyUploadScreen({ route, navigation }: any) {
       if (pickedFile) {
         const ext = pickedFile.name.split('.').pop() ?? 'bin';
         storagePath = `${courseId}/${Date.now()}_${name.trim().replace(/\s+/g, '_')}.${ext}`;
-        // Use the shared helper (reads real bytes via the SDK 56 File API);
-        // fetch().blob() on a content:// URI can silently upload 0 bytes in RN.
-        // study-materials is a PRIVATE bucket → bucketIsPublic=false, store the path.
+        // uploadFile reads real bytes via the SDK 56 File API; fetch().blob() on
+        // a content:// URI can silently upload 0 bytes in RN.
+        // study-materials is a private bucket → bucketIsPublic=false, store the path.
         const up = await uploadFile(
           'study-materials', pickedFile.uri, storagePath,
           pickedFile.mimeType ?? 'application/octet-stream', false,

@@ -490,7 +490,7 @@ export const bn: Dict = {
     createAccount: "অ্যাকাউন্ট তৈরি করুন",
     createAccountSub: "আপনার নির্বাচিত ভূমিকা অনুযায়ী অ্যাকাউন্ট তৈরি হয় — স্টাফ ও অ্যাডমিনরা এই তথ্য দিয়ে সাইন ইন করেন।",
     roleLabel: "ভূমিকা",
-    saved: "✓ সংরক্ষিত",
+    saved: "সংরক্ষিত",
     emDash: "—",
   },
 
@@ -519,7 +519,7 @@ export const bn: Dict = {
     about: "বিবরণ",
     attending: (n: number) => `${n} জন উপস্থিত থাকছেন`,
     capacitySuffix: (n: number) => ` · ${n} ধারণক্ষমতা`,
-    going: "যাচ্ছি ✓",
+    going: "যাচ্ছি",
     eventFull: "ইভেন্ট পূর্ণ",
     rsvp: "আরএসভিপি",
     addToCalendar: "গুগল ক্যালেন্ডারে যোগ করুন",

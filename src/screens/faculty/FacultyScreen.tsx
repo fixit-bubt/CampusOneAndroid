@@ -1,5 +1,5 @@
-// Faculty Directory (web parity) — browse departments grouped by branch,
-// filter by research area, search everything, view saved teachers.
+// Faculty Directory — browse departments grouped by branch, filter by
+// research area, search everything, view saved teachers.
 // Searching / filtering switches to flat teacher cards; otherwise dept cards.
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {

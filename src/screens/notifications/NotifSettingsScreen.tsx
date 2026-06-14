@@ -1,4 +1,3 @@
-// Matches design screens-notif.jsx — NotifSettings
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, Switch, StyleSheet,

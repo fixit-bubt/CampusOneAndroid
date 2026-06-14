@@ -1,4 +1,3 @@
-// Matches design screens-profile.jsx — full Profile screen with accomplishments & badges
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView, Modal,
@@ -20,7 +19,6 @@ import { supabase } from '../../lib/supabase';
 import { uploadPhoto } from '../../utils/storage';
 import { useToast } from '../../components/ui/Toast';
 
-// ── Role helpers ──────────────────────────────────────────────────────────────
 const ROLE_TOKEN = { student: 'roleStudent', staff: 'roleStaff', admin: 'roleAdmin' } as const;
 const ROLE_LABEL = (t: any) => ({ student: t.mainx.roleStudent, staff: t.mainx.roleStaff, admin: t.mainx.roleAdmin });
 
@@ -29,7 +27,7 @@ function hexAlpha(hex: string, a: number): string {
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
 }
 
-// ── Accomplishment categories ─────────────────────────────────────────────────
+// Accomplishment categories
 const CATS: { id: string; label: string; icon: string; fg: string }[] = [
   { id: 'award',      label: '',      icon: 'award',    fg: Accent.amber },
   { id: 'cert',       label: '', icon: 'layers',  fg: Accent.blue },
@@ -60,7 +58,7 @@ const ROLE_LABELS_T = (t: any): Record<string, string> => ({
   student: t.mainx.roleStudent, staff: t.mainx.roleStaff, admin: t.mainx.roleAdmin,
 });
 
-// ── Static badge data ─────────────────────────────────────────────────────────
+// Static badge data
 const BADGES = [
   { id: 'reporter',  icon: 'layers',   fg: Accent.blue, en: '', earned: false, progress: { cur: 1, total: 5 } },
   { id: 'helper',    icon: 'clubs',    fg: Accent.green, en: '', earned: true,  progress: null },
@@ -68,7 +66,7 @@ const BADGES = [
   { id: 'studious',  icon: 'study',    fg: Accent.purple, en: '', earned: false, progress: { cur: 3, total: 10 } },
 ];
 
-// ── Contribution sector config ────────────────────────────────────────────────
+// Contribution sector config
 const CONTRIB_CONFIG: { sector: SectorKey; en: string; table: string; field: string }[] = [
   { sector: 'reports',   en: '', table: 'reports',         field: 'reporter_id' },
   { sector: 'clubs',     en: '', table: 'club_members',    field: 'user_id' },
@@ -76,7 +74,6 @@ const CONTRIB_CONFIG: { sector: SectorKey; en: string; table: string; field: str
   { sector: 'lostfound', en: '', table: 'lost_found_items',field: 'poster_id' },
 ];
 
-// ── BadgesRow ─────────────────────────────────────────────────────────────────
 function BadgesRow({ badges, onPick, C, t }: { badges: typeof BADGES; onPick: (b: typeof BADGES[0]) => void; C: any; t: any }) {
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -4 }} contentContainerStyle={{ gap: 12, paddingHorizontal: 4, paddingVertical: 4 }}>
@@ -119,7 +116,6 @@ const badgeStyles = StyleSheet.create({
   name: { fontSize: 10.5, textAlign: 'center', lineHeight: 14 } as any,
 });
 
-// ── BadgeSheet ────────────────────────────────────────────────────────────────
 function BadgeSheet({ badge, C, onClose, t }: { badge: typeof BADGES[0] | null; C: any; onClose: () => void; t: any }) {
   if (!badge) return null;
   return (
@@ -162,7 +158,6 @@ function BadgeSheet({ badge, C, onClose, t }: { badge: typeof BADGES[0] | null; 
   );
 }
 
-// ── AddSheet ──────────────────────────────────────────────────────────────────
 function AddSheet({ C, onClose, onAdd, t }: { C: any; onClose: () => void; onAdd: (item: AccomplishmentItem) => void; t: any }) {
   const [cat, setCat] = useState('award');
   const [title, setTitle] = useState('');
@@ -257,7 +252,6 @@ const sheetStyles = StyleSheet.create({
   progFill: { height: '100%', borderRadius: 4 } as ViewStyle,
 });
 
-// ── AccomplishmentCard ────────────────────────────────────────────────────────
 interface AccomplishmentItem {
   id: string;
   cat: string;
@@ -297,7 +291,6 @@ const accompStyles = StyleSheet.create({
   delBtn: { padding: 4 } as ViewStyle,
 });
 
-// ── ProfileScreen ─────────────────────────────────────────────────────────────
 export function ProfileScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
   const t = useT();

@@ -1,6 +1,4 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// CampusOne — Database Types (matches fixit-campus Supabase schema)
-// ─────────────────────────────────────────────────────────────────────────────
+// CampusOne — Database Types
 
 export type UserRole = 'student' | 'staff' | 'admin';
 

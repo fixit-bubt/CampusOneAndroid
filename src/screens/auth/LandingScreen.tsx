@@ -1,4 +1,3 @@
-// Matches design screens-auth.jsx — Landing mode
 import {
   View, Text, TouchableOpacity, StyleSheet, type ViewStyle,
 } from 'react-native';

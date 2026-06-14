@@ -1,5 +1,5 @@
 // Shared faculty kit — types, sorting, branch icons, badges, and the
-// web-parity teacher card used by the directory, department, and saved views.
+// teacher card used by the directory, department, and saved views.
 import {
   View, Text, TouchableOpacity, StyleSheet, Linking,
   type ViewStyle, type TextStyle,
@@ -30,7 +30,7 @@ export interface Department {
   chairman: string | null;
 }
 
-// Branch display order matches web; only branches that exist are shown.
+// Only branches that exist are shown.
 export const BRANCH_ORDER = [
   'Engineering & Applied Sciences',
   'Business',

@@ -1,4 +1,3 @@
-// Matches design screens-c.jsx — Medical (doctor list)
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,

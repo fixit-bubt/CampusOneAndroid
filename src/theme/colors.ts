@@ -1,6 +1,4 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// CampusOne — Color Tokens (source of truth — matches design_handoff_campusone)
-// ─────────────────────────────────────────────────────────────────────────────
+// CampusOne — Color Tokens
 
 export const LightColors = {
   // Brand
@@ -102,10 +100,7 @@ export const DarkColors: typeof LightColors = {
   transparent: 'transparent',
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Sector colors — exact fg values from design data.jsx
-// IDs match the design exactly: 'announce' not 'announcements', 'study' not 'studyhub', etc.
-// ─────────────────────────────────────────────────────────────────────────────
+// Sector colors. IDs: 'announce' not 'announcements', 'study' not 'studyhub', etc.
 export const SectorColors = {
   reports:   '#4f6bed',
   lostfound: '#c77d1a',
@@ -127,11 +122,8 @@ export const SectorColors = {
 export type SectorKey = keyof typeof SectorColors;
 export type Colors = typeof LightColors;
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Accent palette — fixed decorative colors used in chips/pills/tiles that are
-// not theme-dependent (same in light & dark, like SectorColors). Screens must
-// import these instead of hardcoding hexes.
-// ─────────────────────────────────────────────────────────────────────────────
+// Accent palette — fixed colors for chips/pills/tiles, not theme-dependent
+// (same in light & dark, like SectorColors).
 // Derive a darker shade of a hex token (gradient end stops etc.)
 export function darken(hex: string, factor = 0.22): string {
   const n = parseInt(hex.slice(1), 16);

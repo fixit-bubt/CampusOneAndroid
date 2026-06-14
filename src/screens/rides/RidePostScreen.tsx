@@ -1,4 +1,3 @@
-// Matches design screens-e.jsx — RidePost (offer a ride)
 import { useState } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView, Platform,

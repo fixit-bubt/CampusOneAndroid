@@ -1,4 +1,3 @@
-// Matches design screens-dash.jsx — AdminBody dashboard
 import { useState, useEffect, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
@@ -27,7 +26,7 @@ const ISSUE_MAP: Record<string, { icon: string; fg: string }> = {
   other:      { icon: 'sliders',  fg: Accent.slate },
 };
 
-// Status → theme tokens (light + dark aware via C)
+// Status colors, light + dark aware via C.
 function statusTone(C: any, status: string): { fg: string; bg: string } {
   switch (status) {
     case 'In Progress': return { fg: C.info,      bg: C.infoBg };
@@ -203,7 +202,7 @@ export function AdminDashboardScreen({ navigation }: any) {
     if (r.assigned_staff_id) activeByStaff[r.assigned_staff_id] = (activeByStaff[r.assigned_staff_id] ?? 0) + 1;
   });
 
-  // Assign sheet: surface staff whose trade matches the report category first
+  // Assign sheet: staff whose trade matches the report category come first.
   const assignCat = assignTarget?.category;
   const staffRanked = assignCat
     ? [...staffList].sort((a, b) => Number(b.expertise === assignCat) - Number(a.expertise === assignCat))

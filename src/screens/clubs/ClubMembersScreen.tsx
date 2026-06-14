@@ -1,6 +1,6 @@
-// Club member management (web parity: ClubMembers.jsx) — president/VP only.
-// Add students by search, change member roles (vp / editor / member), remove
-// members. Presidency itself is transferred from the Manage screen.
+// Club member management — president/VP only. Add students by search, change
+// member roles (vp / editor / member), remove members. Presidency itself is
+// transferred from the Manage screen.
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,

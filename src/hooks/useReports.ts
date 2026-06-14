@@ -1,8 +1,5 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// useReports — data-fetching hook for reports list.
-// Real devs separate DATA LOGIC from UI — screens just call hooks, not services.
-// The hook owns: loading state, error state, refetch, pagination.
-// ─────────────────────────────────────────────────────────────────────────────
+// useReports — data-fetching hook for the reports list.
+// Owns loading state, error state, refetch, and pagination.
 
 import { useState, useEffect, useCallback } from 'react';
 import { getReports, type ReportWithProfile } from '../services/reportsService';

@@ -1,7 +1,4 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// CampusOne — Shadow Presets
-// React Native shadows need both iOS (shadow*) and Android (elevation) props.
-// ─────────────────────────────────────────────────────────────────────────────
+// Shadow presets — RN needs both iOS (shadow*) and Android (elevation) props.
 
 export const Shadows = {
   none: {

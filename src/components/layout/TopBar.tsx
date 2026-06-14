@@ -1,4 +1,4 @@
-// Matches design chrome.jsx — TopBar (home header) + SubBar (back header)
+// TopBar (home header) + SubBar (back header)
 import React from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, type ViewStyle,
@@ -12,7 +12,7 @@ import { LogoMark } from '../ui/Logo';
 import { FontFamily, FontSize, Layout } from '../../theme';
 import type { Profile } from '../../types/database';
 
-// ── Home TopBar ──────────────────────────────────────────────────────────────
+// Home TopBar
 interface TopBarProps {
   profile?: Profile | null;
   title?: string;
@@ -83,7 +83,7 @@ export function TopBar({ profile, title, unread = 0, onAvatar, onBell, right }: 
   );
 }
 
-// ── SubBar (back navigation) ─────────────────────────────────────────────────
+// SubBar (back navigation)
 interface SubBarProps {
   title: string;
   onBack: () => void;

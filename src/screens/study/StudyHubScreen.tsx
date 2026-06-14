@@ -1,4 +1,3 @@
-// Matches design screens-h.jsx — Study Hub redesign with CR codes, sections, votes
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView, Switch, Modal,
@@ -22,7 +21,7 @@ const STUDY_COLOR = SectorColors.study;
 type Persona = 'notjoined' | 'pendingcreate' | 'member' | 'cr';
 type Sub = 'home' | 'browse' | 'manage';
 
-// Mirrors live schema: study_sections(intake_id, number, join_code, is_public)
+// study_sections(intake_id, number, join_code, is_public)
 // → study_intakes(number, is_public, department_id) → departments(name).
 // department/intake/intake_public are flattened from the joins for display.
 interface SectionRow {
@@ -80,7 +79,7 @@ interface Dept {
   name: string;
 }
 
-// Admin catalogue rows (web ManageStudyHub parity)
+// Admin catalogue rows
 interface IntakeRow {
   id: string;
   number: number;
@@ -96,7 +95,6 @@ interface CatSection {
   cr_name: string | null;
 }
 
-// ── Toast ─────────────────────────────────────────────────────────────────────
 function Toast({ msg, C }: { msg: string; C: any }) {
   if (!msg) return null;
   return (
@@ -112,7 +110,6 @@ const toastStyles = StyleSheet.create({
   txt: { fontSize: 13 } as any,
 });
 
-// ── CodeCard ──────────────────────────────────────────────────────────────────
 function CodeCard({ code, copied, onCopy, C }: { code: string; copied: boolean; onCopy: () => void; C: any }) {
   const t = useT();
   return (
@@ -147,7 +144,6 @@ const codeStyles = StyleSheet.create({
   hint: { fontSize: 12, lineHeight: 17, marginTop: 8 } as any,
 });
 
-// ── CourseRow ─────────────────────────────────────────────────────────────────
 function CourseRow({ c, C, onPress }: { c: Course; C: any; onPress: () => void }) {
   const total = (c.material_count ?? 0) + (c.question_count ?? 0) + (c.book_count ?? 0);
   return (
@@ -174,7 +170,6 @@ const rowStyles = StyleSheet.create({
   sub: { fontSize: 12, marginTop: 2 } as any,
 });
 
-// ── CreateSheet (Modal) ───────────────────────────────────────────────────────
 function CreateSheet({ visible, C, depts, onClose, onSubmit }: { visible: boolean; C: any; depts: Dept[]; onClose: () => void; onSubmit: (deptId: string, intake: string, section: string, reason: string) => void }) {
   const t = useT();
   const [deptId, setDeptId] = useState('');
@@ -255,7 +250,6 @@ function CreateSheet({ visible, C, depts, onClose, onSubmit }: { visible: boolea
   );
 }
 
-// ── RejectSheet (Modal) ───────────────────────────────────────────────────────
 function RejectSheet({ visible, C, onClose, onReject }: { visible: boolean; C: any; onClose: () => void; onReject: (note: string) => void }) {
   const t = useT();
   const [note, setNote] = useState('');
@@ -286,7 +280,6 @@ function RejectSheet({ visible, C, onClose, onReject }: { visible: boolean; C: a
   );
 }
 
-// ── VoteSheet (Modal) ─────────────────────────────────────────────────────────
 function VoteSheet({ visible, C, onClose, onStart }: { visible: boolean; C: any; onClose: () => void; onStart: (proposal: 'public' | 'private') => void }) {
   const t = useT();
   return (
@@ -330,7 +323,6 @@ const sheetStyles = StyleSheet.create({
   hintTxt: { fontSize: 13.5, lineHeight: 20 } as any,
 });
 
-// ── StudyHubScreen ────────────────────────────────────────────────────────────
 export function StudyHubScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
   const t = useT();
@@ -494,7 +486,6 @@ export function StudyHubScreen({ navigation }: any) {
     }
   }
 
-  // ── Admin catalogue (web ManageStudyHub parity) ───────────────────────────
   async function loadCatIntakes(deptId: string) {
     const { data, error } = await supabase
       .from('study_intakes')
@@ -642,7 +633,7 @@ export function StudyHubScreen({ navigation }: any) {
 
   // Open intake-visibility vote for my intake (+ ballot counts and my own ballot)
   async function loadVote(intakeId: string) {
-    // Close any expired vote first so results apply (web parity).
+    // Close any expired vote first so results apply.
     await supabase.rpc('check_expired_intake_votes', { p_intake_id: intakeId }).then(() => {}, () => {});
     const { data: v } = await supabase
       .from('study_intake_votes')
@@ -823,8 +814,6 @@ export function StudyHubScreen({ navigation }: any) {
     if (secs < 86400) return `${Math.floor(secs / 3600)}h ago`;
     return `${Math.floor(secs / 86400)}d ago`;
   }
-
-  // ── Render sub-views ──────────────────────────────────────────────────────
 
   function renderNotJoined() {
     return (
@@ -1251,7 +1240,7 @@ export function StudyHubScreen({ navigation }: any) {
           </View>
         )}
 
-        {/* Catalogue: departments → intakes → sections (web ManageStudyHub) */}
+        {/* Catalogue: departments → intakes → sections */}
         <Text style={[s.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>{t.study2.catalogue}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 7, paddingBottom: 4 }}>
           {departments.map(d => {

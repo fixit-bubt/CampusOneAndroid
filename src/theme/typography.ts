@@ -1,6 +1,4 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// CampusOne — Typography Tokens
-// ─────────────────────────────────────────────────────────────────────────────
+// Typography tokens
 
 export const FontFamily = {
   // English — Plus Jakarta Sans (loaded via expo-font)

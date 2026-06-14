@@ -1,4 +1,3 @@
-// Matches design screens-b.jsx — MarketDetail
 import { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,

@@ -1,4 +1,3 @@
-// Matches design screens-c.jsx — Prayer times
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput, Modal, Alert,
@@ -17,8 +16,7 @@ import { supabase } from '../../lib/supabase';
 
 const PRAYER_GREEN = SectorColors.prayer;
 
-// Web parity: Sehri/Iftar strip shown during Ramadan (flag kept on for
-// showcase, same as the web app). Sehri ends at Fajr azan; Iftar at Maghrib.
+// Sehri/Iftar strip shown during Ramadan. Sehri ends at Fajr azan; Iftar at Maghrib.
 const SHOW_RAMADAN_STRIP = true;
 
 interface PrayerTime {
@@ -219,7 +217,7 @@ export function PrayerScreen({ navigation }: any) {
         </View>
 
         {/* Month table — campus runs a fixed timetable, so every day shares
-            the same times; today's row is highlighted (web parity). */}
+            the same times; today's row is highlighted. */}
         {view === 'month' && (
           <View style={[styles.tableCard, { backgroundColor: C.surface, borderColor: C.border, marginTop: 0 }]}>
             <View style={[styles.monthRow, { paddingVertical: 10 }]}>

@@ -1,7 +1,5 @@
-// ─────────────────────────────────────────────────────────────────────────────
 // CampusOne — Theme Export
-// Import everything from here: import { Colors, Spacing, Radius } from '@/theme'
-// ─────────────────────────────────────────────────────────────────────────────
+// Import from here: import { Colors, Spacing, Radius } from '@/theme'
 
 export { LightColors, DarkColors, SectorColors, Accent, darken } from './colors';
 export type { SectorKey, Colors } from './colors';

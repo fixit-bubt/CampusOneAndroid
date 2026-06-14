@@ -1,4 +1,4 @@
-// Today's Queue (web parity: DoctorQueue view in Medical.jsx) — admin-only.
+// Today's queue — admin-only.
 // All of today's appointments sorted by slot; admin advances each one
 // Booked -> Confirmed -> Completed as patients arrive and are seen.
 import { useState, useEffect, useCallback } from 'react';

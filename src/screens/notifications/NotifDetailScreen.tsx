@@ -1,4 +1,3 @@
-// Matches design screens-notif.jsx — NotifDetail
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet, type ViewStyle,
 } from 'react-native';

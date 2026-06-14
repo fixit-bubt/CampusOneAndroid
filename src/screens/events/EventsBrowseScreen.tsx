@@ -1,4 +1,3 @@
-// Matches design screens-events.jsx — EventsBrowse
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,

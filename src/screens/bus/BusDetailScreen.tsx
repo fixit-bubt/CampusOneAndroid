@@ -1,4 +1,3 @@
-// Matches design screens-a.jsx — BusDetail
 import { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, ActivityIndicator, type ViewStyle,

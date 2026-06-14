@@ -1,4 +1,3 @@
-// Matches design screens-g.jsx — EventPost
 import { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView, Platform,
@@ -42,8 +41,8 @@ export function EventPostScreen({ navigation }: any) {
   const [loading, setLoading] = useState(false);
   const [canCreate, setCanCreate] = useState<boolean | null>(null);
 
-  // Web parity: admins, event_organizers allowlist, and club presidents/VPs
-  // can create events. The DB can_create_events() RLS gate enforces it too.
+  // Admins, event_organizers allowlist, and club presidents/VPs can create
+  // events. The DB can_create_events() RLS gate enforces it too.
   useEffect(() => {
     (async () => {
       if (!user) { setCanCreate(false); return; }

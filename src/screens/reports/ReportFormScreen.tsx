@@ -1,4 +1,3 @@
-// Matches design screens-reportform.jsx — ReportForm
 import { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,

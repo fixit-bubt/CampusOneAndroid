@@ -1,4 +1,3 @@
-// Matches design screens-b.jsx — Ride Share
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
@@ -43,7 +42,7 @@ export function RidesScreen({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
-    // Web parity: prune expired rides server-side before listing.
+    // Prune expired rides server-side before listing.
     await supabase.rpc('delete_expired_rides').then(() => {}, () => {});
     const [ridesRes, reqRes] = await Promise.all([
       supabase

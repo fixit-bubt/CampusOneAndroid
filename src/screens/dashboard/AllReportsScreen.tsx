@@ -1,4 +1,3 @@
-// Matches design screens-f.jsx — AllReports (Admin)
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, Modal, StyleSheet,
@@ -28,7 +27,7 @@ const STATUS_TABS: { id: StatusFilter; label: string }[] = [
 
 const CATEGORIES = ['All', 'Electrical', 'Plumbing', 'Cleanliness', 'IT / Network', 'Furniture', 'Safety / Security', 'Other'];
 
-// Status → theme tokens (light + dark aware via C)
+// Status colors, light + dark aware via C.
 function statusTone(C: any, status: string): { text: string; bg: string } {
   switch (status) {
     case 'In Progress': return { text: C.info,      bg: C.infoBg };
@@ -100,7 +99,7 @@ export function AllReportsScreen({ navigation }: any) {
         .filter(Boolean).join(' ').toLowerCase().includes(q);
     });
 
-  // Assign sheet: surface staff whose trade matches the report category first
+  // Assign sheet: staff whose trade matches the report category come first.
   const assignCat = assignTarget?.category;
   const staffRanked = assignCat
     ? [...staff].sort((a, b) => Number(b.expertise === assignCat) - Number(a.expertise === assignCat))

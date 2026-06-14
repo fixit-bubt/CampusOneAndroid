@@ -1,4 +1,3 @@
-// Matches design screens-lostfound.jsx — LostFoundBrowse
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,

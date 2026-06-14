@@ -1,6 +1,6 @@
-// Assigned to Me (web parity: AssignedToMe.jsx) — staff's full assigned-report
-// list with search and status filters. Status changes happen on the detail
-// screen; this is the searchable overview the dashboard links into.
+// Staff's full assigned-report list with search and status filters. Status
+// changes happen on the detail screen; this is the searchable overview the
+// dashboard links into.
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,

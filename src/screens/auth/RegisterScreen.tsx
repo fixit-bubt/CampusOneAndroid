@@ -1,4 +1,3 @@
-// Matches design screens-auth.jsx — Register mode
 import { useState, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,

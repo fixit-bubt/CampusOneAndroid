@@ -1,5 +1,5 @@
 // CampusOne logo mark — gradient box + graduation-cap glyph.
-// Single source of truth for the in-app logo (auth screens, top bar, sub-headers).
+// Used for the in-app logo (auth screens, top bar, sub-headers).
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { StyleSheet, type ViewStyle } from 'react-native';

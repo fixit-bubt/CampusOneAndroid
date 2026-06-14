@@ -1,4 +1,3 @@
-// Matches design screens-g.jsx — BloodRequest
 import { useState } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView,

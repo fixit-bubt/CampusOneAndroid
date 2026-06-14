@@ -1,4 +1,3 @@
-// Matches design screens-home.jsx — Explore tab
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet, type ViewStyle,
 } from 'react-native';
@@ -29,7 +28,7 @@ const SECTOR_ROUTE: Record<SectorKey, string> = {
   faculty:   'Faculty',
 };
 
-// All 15 sectors from design data.jsx — id, label, description
+// All 15 sectors — id, label, description
 const SECTORS: { id: SectorKey; en: string; dEn: string }[] = [
   { id: 'reports',   en: 'Issue Reports',     dEn: 'Status updates on issues you reported' },
   { id: 'lostfound', en: 'Lost & Found',       dEn: 'Claims and matches on your posts' },
@@ -57,7 +56,6 @@ export function ExploreScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-      {/* Tab header matching design's TabHeader */}
       <View style={[styles.tabHeader, { paddingHorizontal: Layout.screenPadding }]}>
         <Text style={[styles.tabSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
           CampusOne
@@ -71,7 +69,7 @@ export function ExploreScreen({ navigation }: any) {
         contentContainerStyle={[styles.content, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Pair rows — 2-col grid with proper gap */}
+        {/* 2-col grid */}
         {Array.from({ length: Math.ceil(sectors.length / 2) }, (_, i) => (
           <View key={i} style={styles.row}>
             {sectors.slice(i * 2, i * 2 + 2).map((s) => (

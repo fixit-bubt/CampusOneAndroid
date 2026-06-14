@@ -1,4 +1,3 @@
-// Matches design screens-a.jsx — Announcements browse
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,

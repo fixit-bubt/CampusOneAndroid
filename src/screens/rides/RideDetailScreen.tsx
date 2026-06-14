@@ -1,4 +1,3 @@
-// RideDetailScreen — full ride details with request button
 import { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
@@ -56,7 +55,7 @@ export function RideDetailScreen({ route, navigation }: any) {
       if (rideRes.data) {
         setRide(rideRes.data);
         setDriverName((rideRes.data as any).profiles?.full_name ?? null);
-        // Driver sees who requested a seat (web parity).
+        // Driver sees who requested a seat.
         if (rideRes.data.driver_id === user?.id && takenRes.data) {
           setRequesters((takenRes.data as any[]).map(r => ({
             requester_id: r.requester_id,

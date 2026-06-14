@@ -1,4 +1,3 @@
-// Matches design screens-g.jsx — AnnouncePost
 import { useState } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView, Platform,
@@ -40,7 +39,7 @@ export function AnnouncePostScreen({ navigation }: any) {
   const [loading, setLoading] = useState(false);
   const toast = useToast();
 
-  // Web parity: announcements are admin-only.
+  // Announcements are admin-only.
   if (profile?.role !== 'admin') {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>

@@ -1,4 +1,3 @@
-// Matches design screens-notif.jsx — NotifPanel
 import { useState, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
@@ -38,7 +37,6 @@ function timeAgo(iso: string): string {
   return `${Math.floor(secs / 86400)}d`;
 }
 
-// ── Single notification row ───────────────────────────────────────────────────
 function NotifRow({ n, C, isDark, onPress }: { n: Notification; C: any; isDark: boolean; onPress: () => void }) {
   const sector: SectorKey = (n.sector in SectorColors) ? n.sector as SectorKey : 'announce';
   return (
@@ -68,7 +66,6 @@ function NotifRow({ n, C, isDark, onPress }: { n: Notification; C: any; isDark: 
   );
 }
 
-// ── Empty state ───────────────────────────────────────────────────────────────
 function Empty({ C }: { C: any }) {
   return (
     <View style={styles.empty}>
@@ -85,7 +82,6 @@ function Empty({ C }: { C: any }) {
   );
 }
 
-// ── NotificationsScreen ───────────────────────────────────────────────────────
 export function NotificationsScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
   const t = useT();

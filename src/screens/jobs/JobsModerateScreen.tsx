@@ -1,4 +1,4 @@
-// Jobs Moderation (web parity: ModerateJobs in Jobs.jsx) — admin-only.
+// Jobs moderation — admin-only.
 // Reported tab: live jobs with reports, most-reported first, with the report
 // reasons listed. Removed tab: withdrawn/removed jobs with restore.
 import { useState, useEffect, useCallback } from 'react';

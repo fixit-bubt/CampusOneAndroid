@@ -1,4 +1,3 @@
-// Matches design screens-b.jsx — Marketplace (2-col grid, All/Mine tabs)
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,

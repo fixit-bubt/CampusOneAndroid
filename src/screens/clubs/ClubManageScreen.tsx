@@ -1,4 +1,4 @@
-// Matches design screens-d.jsx — ClubManage (edit details + transfer presidency)
+// Edit club details + transfer presidency.
 import { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
@@ -64,7 +64,7 @@ export function ClubManageScreen({ route, navigation }: any) {
   async function saveChanges() {
     if (!name.trim()) return;
     setSaving(true);
-    // club_update_details RPC — RLS-safe edit path used by the web app too.
+    // club_update_details RPC — RLS-safe edit path.
     const { error } = await supabase.rpc('club_update_details', {
       p_club_id: id,
       p_name: name.trim(),

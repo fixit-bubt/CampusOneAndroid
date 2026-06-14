@@ -1,4 +1,3 @@
-// Matches design screens-e.jsx — ReportDetail
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet, Image,
@@ -67,8 +66,8 @@ export function ReportDetailScreen({ route, navigation }: any) {
   const cat = report ? (CAT_MAP[report.category] ?? { icon: 'wrench', fg: Accent.slate }) : { icon: 'wrench', fg: Accent.slate };
   const statusStyle = report ? (statusTone(C, report.status)) : { text: Accent.slate, bg: Accent.grayBg };
   const isMine = report?.reporter_id === user?.id;
-  // Web parity: admin moderates any report; staff can only work reports
-  // assigned to them, and only advance forward (no reject/close).
+  // Admin moderates any report; staff can only work reports assigned to them,
+  // and only advance forward (no reject/close).
   const isAdmin = profile?.role === 'admin';
   const isAssignedStaff = profile?.role === 'staff' && !!report?.assigned_staff_id && report.assigned_staff_id === user?.id;
   const canUpdateStatus = isAdmin || isAssignedStaff;

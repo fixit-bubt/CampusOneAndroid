@@ -1,4 +1,3 @@
-// Matches design screens-feature.jsx — Generic sector landing
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet, type ViewStyle,
 } from 'react-native';

@@ -1,4 +1,4 @@
-// Lost & Found item detail (web parity: ItemDetail.jsx) — full claims flow.
+// Lost & Found item detail — full claims flow.
 // Claimant: submit claim/notify with optional proof photo, track its status,
 // see the poster's contact once approved. Poster: review incoming claims,
 // view proof, approve (unlocks contacts both ways + auto-resolves the item

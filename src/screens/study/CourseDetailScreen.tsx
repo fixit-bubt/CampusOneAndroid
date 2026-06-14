@@ -1,6 +1,5 @@
-// Course detail (web parity) — Materials / Questions / Books tabs reading the
-// real three tables (study_materials, study_question_bank, study_books).
-// Questions carry an exam tag and a CR-verifiable "Verified" badge; books can
+// Materials / Questions / Books tabs read study_materials, study_question_bank,
+// study_books. Questions carry an exam tag and a CR-verifiable badge; books can
 // be external links or files. CRs can delete entries.
 import { useState, useEffect, useCallback } from 'react';
 import {

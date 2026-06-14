@@ -1,4 +1,3 @@
-// Matches design screens-g.jsx — JobPost
 import { useState } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView, Platform,

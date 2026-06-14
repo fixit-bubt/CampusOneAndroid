@@ -1,4 +1,3 @@
-// Matches design screens-c.jsx — Directory (search + connect)
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,

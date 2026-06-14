@@ -1,6 +1,5 @@
-// My Reports (web parity: MyReports.jsx) — the student's full report list
-// with search, all six status filters with counts, and per-row actions:
-// View always; Edit/Delete only while a report is still Open.
+// Student's full report list with search, status filters + counts, and per-row
+// actions: View always; Edit/Delete only while a report is still Open.
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,

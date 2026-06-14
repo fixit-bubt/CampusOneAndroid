@@ -1,7 +1,4 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// App-wide constants — change here, changes everywhere.
-// Real devs NEVER scatter magic strings across screens.
-// ─────────────────────────────────────────────────────────────────────────────
+// App-wide constants.
 
 export const APP_NAME = 'CampusOne';
 export const UNIVERSITY_NAME = 'DIU'; // Change to your university short name

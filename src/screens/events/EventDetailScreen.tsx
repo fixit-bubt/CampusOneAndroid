@@ -1,4 +1,3 @@
-// Matches design screens-events.jsx — EventDetail with RSVP
 import { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
@@ -26,7 +25,7 @@ const CAT_ICON: Record<string, string> = {
   Club: 'clubs', Career: 'jobs',
 };
 
-// Build a Google Calendar template link from event fields (web parity).
+// Build a Google Calendar template link from event fields.
 function gcalLink(ev: Event): string {
   const date = (ev.date ?? '').replace(/-/g, '');
   const details = encodeURIComponent(ev.description ?? '');

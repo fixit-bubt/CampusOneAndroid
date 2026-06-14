@@ -1,6 +1,6 @@
-// Matches design chrome.jsx BottomNav — 4 tabs with Feather icons.
-// Web parity: the Home tab IS the role's dashboard (admin/staff), students
-// get the regular home feed. All roles keep Explore/Alerts/Profile.
+// 4 tabs with Feather icons. The Home tab is the role's dashboard for
+// admin/staff; students get the regular home feed. All roles keep
+// Explore/Alerts/Profile.
 import { View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Feather } from '@expo/vector-icons';
