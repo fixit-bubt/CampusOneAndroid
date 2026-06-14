@@ -84,6 +84,15 @@ export async function createReport(payload: {
   return { ok: true, data: data as Report };
 }
 
+// Assigned staff declines a report → it returns to the admin pool
+// (unassigned + Open). RPC returns soft {ok:false,error} on failure.
+export async function declineReport(reportId: string): Promise<ServiceResult<null>> {
+  const { data, error } = await supabase.rpc('decline_report', { p_report_id: reportId });
+  if (error) return { ok: false, error: error.message };
+  if (!data?.ok) return { ok: false, error: data?.error ?? 'Could not decline this report.' };
+  return { ok: true, data: null };
+}
+
 export async function getReportEvents(reportId: string): Promise<ServiceResult<ReportEvent[]>> {
   const { data, error } = await supabase
     .from('report_events')

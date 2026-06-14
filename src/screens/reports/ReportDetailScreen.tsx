@@ -14,6 +14,7 @@ import { FontFamily, Layout, Radius , Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
+import { declineReport } from '../../services/reportsService';
 import type { Report, ReportEvent } from '../../types/database';
 
 const CAT_MAP: Record<string, { icon: string; fg: string }> = {
@@ -125,6 +126,21 @@ export function ReportDetailScreen({ route, navigation }: any) {
       return;
     }
     setReport(prev => prev ? { ...prev, status: newStatus } : prev);
+  }
+
+  function handleDecline() {
+    if (!report) return;
+    Alert.alert(t.dash.declineTitle, t.dash.declineBody, [
+      { text: t.common.cancel, style: 'cancel' },
+      {
+        text: t.dash.decline, style: 'destructive',
+        onPress: async () => {
+          const res = await declineReport(report.id);
+          if (!res.ok) { toast({ type: 'error', title: t.common.error, message: res.error }); return; }
+          navigation.goBack();
+        },
+      },
+    ]);
   }
 
   async function handleDelete() {
@@ -350,6 +366,20 @@ export function ReportDetailScreen({ route, navigation }: any) {
                 );
               })}
             </View>
+          </View>
+        )}
+
+        {/* Assigned staff can decline → sends the report back to the admin pool */}
+        {isAssignedStaff && (report.status === 'Open' || report.status === 'In Progress') && (
+          <View style={{ marginTop: 14 }}>
+            <TouchableOpacity
+              style={[styles.actionBtn, { backgroundColor: C.surface, borderColor: C.border }]}
+              onPress={handleDecline}
+              activeOpacity={0.75}
+            >
+              <Icon name="x" size={17} color={C.textMuted} />
+              <Text style={[styles.actionText, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.dash.decline}</Text>
+            </TouchableOpacity>
           </View>
         )}
 

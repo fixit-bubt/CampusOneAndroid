@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
-  RefreshControl, type ViewStyle,
+  RefreshControl, Alert, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
@@ -15,6 +15,7 @@ import { useT } from '../../i18n';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { getMyNotifications } from '../../services/notificationsService';
+import { declineReport } from '../../services/reportsService';
 import { CampusToday } from '../../components/CampusToday';
 
 const ISSUE_MAP: Record<string, { icon: string; fg: string }> = {
@@ -73,7 +74,7 @@ function StatCard({ icon, fg, num, label, C }: any) {
   );
 }
 
-function ReportCard({ r, C, onAdvance, onPress }: { r: Report; C: any; onAdvance: (id: string, status: string) => void; onPress: () => void }) {
+function ReportCard({ r, C, onAdvance, onDecline, onPress }: { r: Report; C: any; onAdvance: (id: string, status: string) => void; onDecline: (id: string) => void; onPress: () => void }) {
   const t = useT();
   const issueConf = ISSUE_MAP[r.category?.toLowerCase()] ?? ISSUE_MAP.other;
   const statusConf = statusTone(C, r.status);
@@ -127,6 +128,12 @@ function ReportCard({ r, C, onAdvance, onPress }: { r: Report; C: any; onAdvance
           <Text style={[styles.actionTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>{t.common.done}</Text>
         </View>
       )}
+      {(r.status === 'Open' || r.status === 'In Progress') && (
+        <TouchableOpacity style={[styles.declineBtn, { borderColor: C.border }]} onPress={() => onDecline(r.id)} activeOpacity={0.75}>
+          <Icon name="x" size={14} color={C.textMuted} />
+          <Text style={[styles.declineTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.dash.decline}</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -169,6 +176,21 @@ export function StaffDashboardScreen({ navigation }: any) {
   async function advanceStatus(reportId: string, newStatus: string) {
     await supabase.from('reports').update({ status: newStatus }).eq('id', reportId);
     setReports(prev => prev.map(r => r.id === reportId ? { ...r, status: newStatus } : r));
+  }
+
+  function declineAssigned(reportId: string) {
+    Alert.alert(t.dash.declineTitle, t.dash.declineBody, [
+      { text: t.common.cancel, style: 'cancel' },
+      {
+        text: t.dash.decline, style: 'destructive',
+        onPress: async () => {
+          const res = await declineReport(reportId);
+          if (!res.ok) { Alert.alert(t.common.error, res.error); return; }
+          // It's no longer assigned to me — drop it from the list.
+          setReports(prev => prev.filter(r => r.id !== reportId));
+        },
+      },
+    ]);
   }
 
   const active = reports.filter(r => r.status === 'In Progress');
@@ -222,7 +244,7 @@ export function StaffDashboardScreen({ navigation }: any) {
         ) : (
           <View style={styles.list}>
             {sorted.map(r => (
-              <ReportCard key={r.id} r={r} C={C} onAdvance={advanceStatus} onPress={() => navigation.navigate('ReportDetail', { reportId: r.id })} />
+              <ReportCard key={r.id} r={r} C={C} onAdvance={advanceStatus} onDecline={declineAssigned} onPress={() => navigation.navigate('ReportDetail', { reportId: r.id })} />
             ))}
           </View>
         )}
@@ -267,6 +289,8 @@ const styles = StyleSheet.create({
   reportTime: { fontSize: 11, marginLeft: 'auto' } as any,
   actionBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, height: 38, borderRadius: 11, marginTop: 11 } as ViewStyle,
   actionTxt: { fontSize: 13 } as any,
+  declineBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, height: 34, borderRadius: 10, borderWidth: 1, marginTop: 8 } as ViewStyle,
+  declineTxt: { fontSize: 12.5 } as any,
   empty: { alignItems: 'center', paddingTop: 40, gap: 8 } as ViewStyle,
   emptyTitle: { fontSize: 16 } as any,
   emptySub: { fontSize: 13 } as any,
