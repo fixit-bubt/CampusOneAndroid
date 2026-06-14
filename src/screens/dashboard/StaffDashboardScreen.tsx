@@ -1,5 +1,6 @@
 // Matches design screens-dash.jsx — StaffBody dashboard
 import { useState, useEffect, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
   RefreshControl, type ViewStyle,
@@ -157,7 +158,7 @@ export function StaffDashboardScreen({ navigation }: any) {
     if (nRes.ok) setUnread(nRes.data.filter(n => !n.read).length);
   }, [user?.id]);
 
-  useEffect(() => { load(); }, [load]);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   async function onRefresh() {
     setRefreshing(true);

@@ -1,5 +1,6 @@
 // Matches design screens-home.jsx — student Home view
 import { useEffect, useState, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
   RefreshControl, type ViewStyle,
@@ -127,7 +128,7 @@ export function HomeScreen({ navigation }: any) {
     }
   }, [user]);
 
-  useEffect(() => { load(); }, [load]);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   async function onRefresh() {
     setRefreshing(true);

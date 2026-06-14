@@ -1,5 +1,6 @@
 // Matches design screens-dash.jsx — AdminBody dashboard
 import { useState, useEffect, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
   RefreshControl, Modal, type ViewStyle,
@@ -173,7 +174,7 @@ export function AdminDashboardScreen({ navigation }: any) {
     if (nRes.ok) setUnread(nRes.data.filter(n => !n.read).length);
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   async function onRefresh() {
     setRefreshing(true);

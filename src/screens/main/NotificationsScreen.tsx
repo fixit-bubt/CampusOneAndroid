@@ -1,5 +1,6 @@
 // Matches design screens-notif.jsx — NotifPanel
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
   RefreshControl, type ViewStyle,
@@ -98,7 +99,9 @@ export function NotificationsScreen({ navigation }: any) {
     if (res.ok) setNotifs(res.data);
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  // Reload every time the screen regains focus so new notifications appear
+  // without a manual pull-to-refresh.
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   async function onRefresh() {
     setRefreshing(true);
