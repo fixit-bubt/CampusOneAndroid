@@ -8,6 +8,7 @@ import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet, Image,
   TextInput, ActivityIndicator, Alert, Linking, type ViewStyle,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '../../hooks/useTheme';
@@ -101,7 +102,7 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
     if (claimsRes.data) setClaims(claimsRes.data as ClaimRow[]);
   }, [id]);
 
-  useEffect(() => { load(); }, [load]);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   // Reveal the counterpart's contact once an approved claim involves me.
   useEffect(() => {

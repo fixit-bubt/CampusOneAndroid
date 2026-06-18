@@ -3,6 +3,7 @@ import {
   View, Text, TouchableOpacity, TextInput, ScrollView, Switch, Modal,
   StyleSheet, Alert, type ViewStyle,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
@@ -657,7 +658,7 @@ export function StudyHubScreen({ navigation }: any) {
     });
   }
 
-  useEffect(() => { load(); }, [load]);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   useEffect(() => {
     supabase.from('departments').select('id, name').order('name')

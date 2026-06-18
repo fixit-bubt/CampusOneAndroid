@@ -5,6 +5,7 @@ import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
   Modal, Switch, ActivityIndicator, type ViewStyle, type TextStyle,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -60,7 +61,7 @@ export function ManageFacultyScreen({ navigation }: any) {
     if (data) setList(data as any[]);
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   function openEdit(f: FacultyRow) {
     setTarget(f);

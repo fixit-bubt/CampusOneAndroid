@@ -5,6 +5,7 @@ import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
   RefreshControl, Alert, type ViewStyle, type TextStyle,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
@@ -64,7 +65,7 @@ export function MyReportsScreen({ navigation }: any) {
     if (res.ok) setReports(res.data);
   }, [user]);
 
-  useEffect(() => { load(); }, [load]);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   async function onRefresh() {
     setRefreshing(true);

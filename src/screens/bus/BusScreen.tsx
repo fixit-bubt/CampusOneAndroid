@@ -3,6 +3,7 @@ import {
   View, Text, TouchableOpacity, TextInput, Modal, ScrollView,
   StyleSheet, RefreshControl, type ViewStyle,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
@@ -53,7 +54,7 @@ export function BusScreen({ navigation }: any) {
     if (saved) setSavedIds(new Set(saved.map((r: any) => r.route_id)));
   }, [user?.id]);
 
-  useEffect(() => { load(); }, [load]);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   async function onRefresh() {
     setRefreshing(true);

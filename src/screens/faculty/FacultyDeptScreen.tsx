@@ -6,6 +6,7 @@ import {
   View, Text, TextInput, ScrollView, StyleSheet,
   RefreshControl, type ViewStyle, type TextStyle,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
@@ -44,7 +45,7 @@ export function FacultyDeptScreen({ route, navigation }: any) {
     if (savedRes.data) setSavedIds(new Set(savedRes.data.map((s: any) => s.faculty_id)));
   }, [deptId, user?.id]);
 
-  useEffect(() => { load(); }, [load]);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   async function onRefresh() {
     setRefreshing(true);

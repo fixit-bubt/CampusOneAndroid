@@ -6,6 +6,7 @@ import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
   RefreshControl, type ViewStyle, type TextStyle,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
@@ -69,7 +70,7 @@ export function MedicalQueueScreen({ navigation }: any) {
     if (data) setAppts(data as QueueAppt[]);
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   async function onRefresh() {
     setRefreshing(true);
