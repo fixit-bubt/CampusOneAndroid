@@ -1,15 +1,17 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
-  RefreshControl, type ViewStyle,
+  RefreshControl, ActivityIndicator, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
+import { useToast } from '../../components/ui/Toast';
 import { FontFamily, Layout , SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
@@ -35,16 +37,18 @@ export function RidesScreen({ navigation }: any) {
   const { C } = useTheme();
   const t = useT();
   const { user } = useAuth();
+  const toast = useToast();
   const [rides, setRides] = useState<Ride[]>([]);
   const [requestedIds, setRequestedIds] = useState<Set<string>>(new Set());
   const [takenCounts, setTakenCounts] = useState<Record<string, number>>({});
   const [direction, setDirection] = useState<'all' | 'to' | 'from'>('all');
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     // Prune expired rides server-side before listing.
     await supabase.rpc('delete_expired_rides').then(() => {}, () => {});
-    const [ridesRes, reqRes] = await Promise.all([
+    const [ridesRes, reqRes, countRes] = await Promise.all([
       supabase
         .from('rides')
         .select('*, profiles:driver_id(full_name)')
@@ -53,29 +57,27 @@ export function RidesScreen({ navigation }: any) {
         .order('time')
         .limit(30),
       supabase.from('ride_requests').select('ride_id').eq('requester_id', user?.id ?? ''),
+      // Row SELECT on ride_requests is restricted; aggregate seat counts come from this RPC.
+      supabase.rpc('ride_request_counts'),
     ]);
-    if (ridesRes.data) {
-      const rows = ridesRes.data.map((r: any) => ({
-        ...r,
-        driver_name: r.profiles?.full_name,
-      })) as Ride[];
-      setRides(rows);
-      // fetch taken counts
-      const ids = rows.map(r => r.id);
-      if (ids.length > 0) {
-        const { data: counts } = await supabase
-          .from('ride_requests')
-          .select('ride_id')
-          .in('ride_id', ids);
-        const map: Record<string, number> = {};
-        (counts ?? []).forEach((c: any) => { map[c.ride_id] = (map[c.ride_id] ?? 0) + 1; });
-        setTakenCounts(map);
-      }
+    if (ridesRes.error) {
+      toast({ type: 'error', title: t.common.error });
+      setLoading(false);
+      return;
     }
+    const rows = (ridesRes.data ?? []).map((r: any) => ({
+      ...r,
+      driver_name: r.profiles?.full_name,
+    })) as Ride[];
+    setRides(rows);
+    const map: Record<string, number> = {};
+    (countRes.data ?? []).forEach((c: any) => { map[c.ride_id] = Number(c.taken); });
+    setTakenCounts(map);
     if (reqRes.data) setRequestedIds(new Set(reqRes.data.map((r: any) => r.ride_id)));
-  }, [user?.id]);
+    setLoading(false);
+  }, [user?.id, toast, t]);
 
-  useEffect(() => { load(); }, [load]);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   async function onRefresh() {
     setRefreshing(true);
@@ -87,7 +89,13 @@ export function RidesScreen({ navigation }: any) {
     if (!user) return;
     if (requestedIds.has(rideId)) return;
     const { error } = await supabase.from('ride_requests').insert({ ride_id: rideId, requester_id: user.id });
-    if (!error || error.code === '23505') setRequestedIds(prev => new Set([...prev, rideId]));
+    if (error && error.code !== '23505') {
+      toast({ type: 'error', title: t.common.error });
+      return;
+    }
+    setRequestedIds(prev => new Set([...prev, rideId]));
+    // Mirror the detail screen: a brand-new request takes a seat (skip on duplicate).
+    if (!error) setTakenCounts(prev => ({ ...prev, [rideId]: (prev[rideId] ?? 0) + 1 }));
   }
 
   return (
@@ -136,6 +144,9 @@ export function RidesScreen({ navigation }: any) {
           // chip id ('to'/'from') -> stored direction value ('To Campus'/'From Campus')
           const want = direction === 'to' ? 'To Campus' : 'From Campus';
           const filteredRides = direction === 'all' ? rides : rides.filter(r => (r as any).direction === want);
+          if (loading && rides.length === 0) {
+            return <ActivityIndicator style={{ marginTop: 60 }} color={C.brand} />;
+          }
           return filteredRides.length === 0 ? (
           <View style={styles.empty}>
             <Icon name="ride" size={28} color={C.textMuted} />
@@ -200,7 +211,7 @@ export function RidesScreen({ navigation }: any) {
                     isRequested ? (
                       <View style={[styles.contactCard, { backgroundColor: C.surface2 }]}>
                         <Text style={[styles.contactLabel, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
-                          Request sent
+                          {t.rides2.requestSent}
                         </Text>
                       </View>
                     ) : (

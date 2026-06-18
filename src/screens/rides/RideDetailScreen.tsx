@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   ActivityIndicator, Alert, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
@@ -25,56 +26,60 @@ export function RideDetailScreen({ route, navigation }: any) {
   const { user, profile } = useAuth();
   const isAdmin = profile?.role === 'admin';
   const { rideId } = route.params ?? {};
-  if (!rideId) return null;
   const [ride, setRide] = useState<any>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [driverName, setDriverName] = useState<string | null>(null);
   const [contact, setContact] = useState<{ whatsapp: string } | null>(null);
   const [requested, setRequested] = useState(false);
   const [takenCount, setTakenCount] = useState(0);
   const [requesters, setRequesters] = useState<{ requester_id: string; full_name: string; whatsapp?: string | null }[]>([]);
 
-  useEffect(() => {
-    (async () => {
-      const [rideRes, reqRes, takenRes] = await Promise.all([
-        supabase
-          .from('rides')
-          .select('*, profiles:driver_id(full_name)')
-          .eq('id', rideId)
-          .single(),
-        supabase
-          .from('ride_requests')
-          .select('ride_id')
-          .eq('ride_id', rideId)
-          .eq('requester_id', user?.id ?? '')
-          .maybeSingle(),
-        supabase
-          .from('ride_requests')
-          .select('requester_id, profiles:requester_id(full_name)')
-          .eq('ride_id', rideId),
-      ]);
-      if (rideRes.data) {
-        setRide(rideRes.data);
-        setDriverName((rideRes.data as any).profiles?.full_name ?? null);
-        // Driver sees who requested a seat.
-        if (rideRes.data.driver_id === user?.id && takenRes.data) {
-          setRequesters((takenRes.data as any[]).map(r => ({
-            requester_id: r.requester_id,
-            full_name: r.profiles?.full_name ?? 'Student',
-          })));
-        }
-      }
-      if (reqRes.data && rideRes.data) {
-        setRequested(true);
-        const { data: c } = await supabase.rpc('ride_contact', {
-          p_code:   rideRes.data.code,
-          p_target: rideRes.data.driver_id,
-        });
-        const row = Array.isArray(c) ? c[0] : c;
-        if (row) setContact(row);
-      }
-      setTakenCount(takenRes.data?.length ?? 0);
-    })();
-  }, [rideId, user?.id]);
+  const load = useCallback(async () => {
+    if (!rideId) { setLoadFailed(true); return; }
+    const [rideRes, reqRes, takenRes, countRes] = await Promise.all([
+      supabase
+        .from('rides')
+        .select('*, profiles:driver_id(full_name)')
+        .eq('id', rideId)
+        .maybeSingle(),
+      supabase
+        .from('ride_requests')
+        .select('ride_id')
+        .eq('ride_id', rideId)
+        .eq('requester_id', user?.id ?? '')
+        .maybeSingle(),
+      // RLS only returns the driver's own ride rows here; used for requester names.
+      supabase
+        .from('ride_requests')
+        .select('requester_id, profiles:requester_id(full_name)')
+        .eq('ride_id', rideId),
+      // Authoritative seat count (row SELECT is restricted, so count via RPC).
+      supabase.rpc('ride_request_counts'),
+    ]);
+    if (rideRes.error) { toast({ type: 'error', title: t.common.error }); setLoadFailed(true); return; }
+    if (!rideRes.data) { setLoadFailed(true); return; }
+    setRide(rideRes.data);
+    setDriverName((rideRes.data as any).profiles?.full_name ?? null);
+    if (rideRes.data.driver_id === user?.id && takenRes.data) {
+      setRequesters((takenRes.data as any[]).map(r => ({
+        requester_id: r.requester_id,
+        full_name: r.profiles?.full_name ?? t.rides2.unknown,
+      })));
+    }
+    if (reqRes.data) {
+      setRequested(true);
+      const { data: c } = await supabase.rpc('ride_contact', {
+        p_code:   rideRes.data.code,
+        p_target: rideRes.data.driver_id,
+      });
+      const row = Array.isArray(c) ? c[0] : c;
+      if (row) setContact(row);
+    }
+    const cnt = (countRes.data ?? []).find((c: any) => c.ride_id === rideId);
+    setTakenCount(cnt ? Number(cnt.taken) : 0);
+  }, [rideId, user?.id, toast, t]);
+
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   async function revealRequester(requesterId: string) {
     const { data } = await supabase.rpc('ride_contact', {
@@ -141,8 +146,12 @@ export function RideDetailScreen({ route, navigation }: any) {
   if (!ride) {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-        <SubBar title="Ride Detail" onBack={() => navigation.goBack()} />
-        <View style={styles.center}><ActivityIndicator color={C.brand} /></View>
+        <SubBar title={t.rides2.rideDetailTitle} onBack={() => navigation.goBack()} />
+        <View style={styles.center}>
+          {loadFailed
+            ? <Text style={{ color: C.textMuted, fontFamily: FontFamily.jakartaMedium }}>{t.rides2.rideUnavailable}</Text>
+            : <ActivityIndicator color={C.brand} />}
+        </View>
       </SafeAreaView>
     );
   }
@@ -154,7 +163,7 @@ export function RideDetailScreen({ route, navigation }: any) {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-      <SubBar title="Ride Detail" onBack={() => navigation.goBack()} />
+      <SubBar title={t.rides2.rideDetailTitle} onBack={() => navigation.goBack()} />
       <ScrollView
         contentContainerStyle={[styles.content, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}

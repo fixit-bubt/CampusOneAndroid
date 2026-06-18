@@ -1046,6 +1046,7 @@ export const bn: Dict = {
 
   rides2: {
     rideDetailTitle: "রাইড বিবরণ",
+    rideUnavailable: "এই রাইডটি আর নেই।",
     noContactTitle: "যোগাযোগ নেই",
     noContactBody: "এই শিক্ষার্থীর কোনো হোয়াটসঅ্যাপ নম্বর নেই।",
     deleteOwnTitle: "এই রাইডটি মুছবেন?",

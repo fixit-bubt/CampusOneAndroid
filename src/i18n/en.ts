@@ -1045,6 +1045,7 @@ You will be registered as an available ${group} donor.`,
 
   rides2: {
     rideDetailTitle: "Ride Detail",
+    rideUnavailable: "This ride is no longer available.",
     noContactTitle: "No contact",
     noContactBody: "This student has no WhatsApp number on file.",
     deleteOwnTitle: "Delete this ride?",
