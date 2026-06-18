@@ -145,7 +145,6 @@ const codeStyles = StyleSheet.create({
 });
 
 function CourseRow({ c, C, onPress }: { c: Course; C: any; onPress: () => void }) {
-  const total = (c.material_count ?? 0) + (c.question_count ?? 0) + (c.book_count ?? 0);
   return (
     <TouchableOpacity style={[rowStyles.row]} onPress={onPress} activeOpacity={0.75}>
       <View style={[rowStyles.thumb, { backgroundColor: STUDY_COLOR + '20' }]}>
@@ -154,9 +153,6 @@ function CourseRow({ c, C, onPress }: { c: Course; C: any; onPress: () => void }
       <View style={{ flex: 1 }}>
         <Text style={[rowStyles.code, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
           {c.code} · {c.name}
-        </Text>
-        <Text style={[rowStyles.sub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-          {total} files
         </Text>
       </View>
       <Icon name="chevR" size={18} color={C.textMuted} />

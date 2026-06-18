@@ -37,7 +37,7 @@ interface Musallah {
 
 function computeNext(prayers: PrayerTime[]): PrayerTime | undefined {
   const now = new Date();
-  const isToday = (p: PrayerTime) => p.key !== 'jumuah' || now.getDay() === 5;
+  const isToday = (p: PrayerTime) => p.key !== 'jummah' || now.getDay() === 5;
   const nowMins = now.getHours() * 60 + now.getMinutes();
   return prayers.find(p => {
     if (!isToday(p)) return false;
@@ -107,13 +107,13 @@ export function PrayerScreen({ navigation }: any) {
     if (musEdit.id) {
       const { error } = await supabase
         .from('musallah_locations')
-        .update({ name: musEdit.name.trim(), floor_desc: musEdit.floor_desc.trim() || null })
+        .update({ name: musEdit.name.trim(), floor_desc: musEdit.floor_desc.trim() })
         .eq('id', musEdit.id);
       if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }
     } else {
       const { error } = await supabase
         .from('musallah_locations')
-        .insert({ name: musEdit.name.trim(), floor_desc: musEdit.floor_desc.trim() || null, sort: musallah.length + 1 });
+        .insert({ name: musEdit.name.trim(), floor_desc: musEdit.floor_desc.trim(), sort: musallah.length + 1 });
       if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }
     }
     setMusEdit(null);
@@ -222,7 +222,7 @@ export function PrayerScreen({ navigation }: any) {
           <View style={[styles.tableCard, { backgroundColor: C.surface, borderColor: C.border, marginTop: 0 }]}>
             <View style={[styles.monthRow, { paddingVertical: 10 }]}>
               <Text style={[styles.monthDayCol, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold, fontSize: 10.5 }]}>{t.prayer2.dayCol}</Text>
-              {prayers.filter(p => p.key !== 'jumuah').map(p => (
+              {prayers.filter(p => p.key !== 'jummah').map(p => (
                 <Text key={p.key} style={[styles.monthCol, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold, fontSize: 10.5 }]}>
                   {p.en.slice(0, 3).toUpperCase()}
                 </Text>
@@ -244,7 +244,7 @@ export function PrayerScreen({ navigation }: any) {
                       }]}>
                         {d}
                       </Text>
-                      {prayers.filter(p => p.key !== 'jumuah').map(p => (
+                      {prayers.filter(p => p.key !== 'jummah').map(p => (
                         <Text key={p.key} style={[styles.monthCol, {
                           color: isToday ? C.text : C.text2,
                           fontFamily: FontFamily.jakartaMedium,

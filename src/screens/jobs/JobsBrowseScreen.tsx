@@ -30,7 +30,6 @@ const JOB_BG    = `${SectorColors.jobs}1e`;
 function jobStatusTone(C: any, t: any, k: string): { label: string; fg: string; bg: string } {
   switch (k) {
     case 'closing': return { label: 'Closing soon', fg: C.warn,   bg: C.warnBg };
-    case 'closed':  return { label: 'Closed',  fg: Accent.slate, bg: Accent.grayBg };
     case 'expired': return { label: 'Expired', fg: Accent.slate, bg: Accent.grayBg };
     case 'removed': return { label: 'Removed', fg: C.danger,     bg: C.dangerBg };
     default:        return { label: 'Open',    fg: Accent.teal,  bg: Accent.tealBg };
@@ -46,7 +45,6 @@ interface Job {
   location: string;
   job_type: string;
   work_mode: string;
-  status: string;
   deadline: string;
   stipend: string | null;
   description: string;

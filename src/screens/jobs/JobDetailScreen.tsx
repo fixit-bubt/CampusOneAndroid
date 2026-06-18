@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet,
   ActivityIndicator, Modal, Alert, Linking, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
@@ -20,7 +21,6 @@ const JOB_BG    = `${SectorColors.jobs}1e`;
 // Job status tones from theme tokens (dark-mode aware via C)
 function jobStatusTone(C: any, t: any, k: string): { label: string; fg: string; bg: string } {
   switch (k) {
-    case 'closed':  return { label: 'Closed',  fg: Accent.slate, bg: Accent.grayBg };
     case 'expired': return { label: 'Expired', fg: C.warn,       bg: C.warnBg };
     case 'removed': return { label: 'Removed', fg: C.danger,     bg: C.dangerBg };
     default:        return { label: 'Open',    fg: Accent.teal,  bg: Accent.tealBg };
@@ -35,8 +35,8 @@ export function JobDetailScreen({ route, navigation }: any) {
   const toast = useToast();
   const { user, profile } = useAuth();
   const { jobId } = route.params ?? {};
-  if (!jobId) return null;
   const [job, setJob] = useState<any>(null);
+  const [failed, setFailed] = useState(false);
   const [saved, setSaved] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [reason, setReason] = useState('');
@@ -44,25 +44,32 @@ export function JobDetailScreen({ route, navigation }: any) {
   const [removeReason, setRemoveReason] = useState('');
   const isAdmin = profile?.role === 'admin';
 
-  async function loadJob() {
+  const loadJob = useCallback(async () => {
+    if (!jobId) { setFailed(true); return; }
     const [jobRes, saveRes] = await Promise.all([
-      supabase.from('jobs').select('*').eq('id', jobId).single(),
+      // maybeSingle: a removed job is invisible to non-admins (RLS), so .single()
+      // would error and leave the screen spinning forever.
+      supabase.from('jobs').select('*').eq('id', jobId).maybeSingle(),
       supabase.from('job_bookmarks').select('job_id').eq('job_id', jobId).eq('user_id', user?.id ?? '').maybeSingle(),
     ]);
-    if (jobRes.data) setJob(jobRes.data);
+    if (jobRes.error || !jobRes.data) { setFailed(true); return; }
+    setJob(jobRes.data);
     setSaved(!!saveRes.data);
-  }
+  }, [jobId, user?.id]);
 
-  useEffect(() => { loadJob(); }, [jobId, user?.id]);
+  useFocusEffect(useCallback(() => { loadJob(); }, [loadJob]));
 
   async function toggleSave() {
     if (!user || !job) return;
-    if (saved) {
-      await supabase.from('job_bookmarks').delete().eq('job_id', jobId).eq('user_id', user.id);
-    } else {
-      await supabase.from('job_bookmarks').insert({ job_id: jobId, user_id: user.id });
+    const next = !saved;
+    setSaved(next); // optimistic
+    const { error } = next
+      ? await supabase.from('job_bookmarks').insert({ job_id: jobId, user_id: user.id })
+      : await supabase.from('job_bookmarks').delete().eq('job_id', jobId).eq('user_id', user.id);
+    if (error && error.code !== '23505') {
+      setSaved(!next); // rollback
+      toast({ type: 'error', title: t.common.error });
     }
-    setSaved(!saved);
   }
 
   async function submitReport() {
@@ -110,7 +117,11 @@ export function JobDetailScreen({ route, navigation }: any) {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
         <SubBar title="Jobs" onBack={() => navigation.goBack()} />
-        <View style={styles.center}><ActivityIndicator color={C.brand} /></View>
+        <View style={styles.center}>
+          {failed
+            ? <Text style={{ color: C.textMuted, fontFamily: FontFamily.jakartaMedium }}>{t.common.notFound}</Text>
+            : <ActivityIndicator color={C.brand} />}
+        </View>
       </SafeAreaView>
     );
   }

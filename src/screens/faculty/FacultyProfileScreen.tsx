@@ -1,18 +1,20 @@
 // Faculty profile — photo, badges, research interest pills, qualifications,
 // contact (Email / Call / WhatsApp), academic profiles (only links that
 // exist), and the official bubt.edu.bd profile link.
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
   ActivityIndicator, Linking, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
+import { useToast } from '../../components/ui/Toast';
 import { FontFamily, Layout, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
@@ -40,38 +42,52 @@ interface FacultyFull extends FacultyMember {
 export function FacultyProfileScreen({ route, navigation }: any) {
   const { C } = useTheme();
   const t = useT();
+  const toast = useToast();
   const { user } = useAuth();
   const facultyId: string = route.params?.facultyId ?? route.params?.id;
   const [member, setMember] = useState<FacultyFull | null>(null);
+  const [failed, setFailed] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  useEffect(() => {
-    if (!facultyId) return;
-    (async () => {
-      const [memberRes, saveRes] = await Promise.all([
-        supabase.from('faculty').select('*, departments(id, name, branch)').eq('id', facultyId).single(),
-        supabase.from('faculty_bookmarks').select('faculty_id').eq('faculty_id', facultyId).eq('user_id', user?.id ?? '').maybeSingle(),
-      ]);
-      if (memberRes.data) setMember(memberRes.data as FacultyFull);
-      setSaved(!!saveRes.data);
-    })();
+  const load = useCallback(async () => {
+    if (!facultyId) { setFailed(true); return; }
+    const [memberRes, saveRes] = await Promise.all([
+      supabase.from('faculty').select('*, departments(id, name, branch)').eq('id', facultyId).maybeSingle(),
+      supabase.from('faculty_bookmarks').select('faculty_id').eq('faculty_id', facultyId).eq('user_id', user?.id ?? '').maybeSingle(),
+    ]);
+    if (memberRes.error || !memberRes.data) { setFailed(true); return; }
+    setMember(memberRes.data as FacultyFull);
+    setSaved(!!saveRes.data);
   }, [facultyId, user?.id]);
+
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   async function toggleSave() {
     if (!user || !member) return;
-    if (saved) {
-      await supabase.from('faculty_bookmarks').delete().eq('faculty_id', facultyId).eq('user_id', user.id);
-    } else {
-      await supabase.from('faculty_bookmarks').insert({ faculty_id: facultyId, user_id: user.id });
+    const next = !saved;
+    setSaved(next); // optimistic
+    const { error } = next
+      ? await supabase.from('faculty_bookmarks').insert({ faculty_id: facultyId, user_id: user.id })
+      : await supabase.from('faculty_bookmarks').delete().eq('faculty_id', facultyId).eq('user_id', user.id);
+    if (error && error.code !== '23505') {
+      setSaved(!next); // rollback
+      toast({ type: 'error', title: t.common.error });
     }
-    setSaved(!saved);
   }
+
+  const openLink = (url: string) => {
+    Linking.openURL(url).catch(() => toast({ type: 'error', title: t.common.error }));
+  };
 
   if (!member) {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
         <SubBar title={t.sectors.faculty} onBack={() => navigation.goBack()} />
-        <View style={styles.center}><ActivityIndicator color={C.brand} /></View>
+        <View style={styles.center}>
+          {failed
+            ? <Text style={{ color: C.textMuted, fontFamily: FontFamily.jakartaMedium }}>{t.common.notFound}</Text>
+            : <ActivityIndicator color={C.brand} />}
+        </View>
       </SafeAreaView>
     );
   }
@@ -79,7 +95,12 @@ export function FacultyProfileScreen({ route, navigation }: any) {
   const interests = Array.isArray(member.research_interests) ? member.research_interests.filter(Boolean) : [];
   const quals = Array.isArray(member.qualifications) ? member.qualifications.filter(Boolean) : [];
   const links = LINK_META.filter(l => (member as Record<string, any>)[l.key]);
-  const phoneDigits = (member.phone ?? '').replace(/[^0-9]/g, '');
+  // wa.me needs full international format; local BD numbers (01…) become 8801…
+  const phoneDigits = (() => {
+    let d = (member.phone ?? '').replace(/[^0-9]/g, '');
+    if (d.startsWith('0')) d = '88' + d;
+    return d;
+  })();
   const dept = member.departments;
 
   return (
@@ -127,8 +148,8 @@ export function FacultyProfileScreen({ route, navigation }: any) {
           <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border, marginTop: 12 }]}>
             <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.faculty2.researchInterests}</Text>
             <View style={styles.pills}>
-              {interests.map(i => (
-                <View key={i} style={[styles.pill, { backgroundColor: `${FACULTY_ACCENT}1a` }]}>
+              {interests.map((i, idx) => (
+                <View key={`${i}-${idx}`} style={[styles.pill, { backgroundColor: `${FACULTY_ACCENT}1a` }]}>
                   <Text style={[styles.pillTxt, { color: FACULTY_ACCENT, fontFamily: FontFamily.jakartaBold }]}>{i}</Text>
                 </View>
               ))}
@@ -167,7 +188,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
             <>
               <TouchableOpacity
                 style={[styles.emailBtn, { backgroundColor: Accent.blue }]}
-                onPress={() => Linking.openURL(`mailto:${member.email}`)}
+                onPress={() => openLink(`mailto:${member.email}`)}
                 activeOpacity={0.8}
               >
                 <Feather name="mail" size={15} color={C.white} />
@@ -184,7 +205,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
             <View style={styles.phoneRow}>
               <TouchableOpacity
                 style={[styles.phoneBtn, { backgroundColor: C.bg, borderColor: C.border, borderWidth: 1 }]}
-                onPress={() => Linking.openURL(`tel:${member.phone}`)}
+                onPress={() => openLink(`tel:${member.phone}`)}
                 activeOpacity={0.75}
               >
                 <Feather name="phone" size={14} color={C.text} />
@@ -192,7 +213,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.phoneBtn, { backgroundColor: C.success }]}
-                onPress={() => Linking.openURL(`https://wa.me/${phoneDigits}`)}
+                onPress={() => openLink(`https://wa.me/${phoneDigits}`)}
                 activeOpacity={0.8}
               >
                 <Feather name="message-circle" size={14} color={C.white} />
@@ -211,7 +232,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
                 <TouchableOpacity
                   key={l.key}
                   style={[styles.linkRow, { backgroundColor: C.bg, borderColor: C.border }]}
-                  onPress={() => Linking.openURL((member as Record<string, any>)[l.key])}
+                  onPress={() => openLink((member as Record<string, any>)[l.key])}
                   activeOpacity={0.75}
                 >
                   <Feather name={l.icon} size={16} color={C.textMuted} />
@@ -227,7 +248,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
         {member.profile_url && (
           <TouchableOpacity
             style={[styles.officialLink, { borderColor: C.border, backgroundColor: C.surface2 }]}
-            onPress={() => Linking.openURL(member.profile_url!)}
+            onPress={() => openLink(member.profile_url!)}
             activeOpacity={0.75}
           >
             <Feather name="external-link" size={13} color={C.textMuted} />

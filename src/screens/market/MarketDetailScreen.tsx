@@ -153,7 +153,7 @@ export function MarketDetailScreen({ route, navigation }: any) {
               {sellerName ?? t.market2.unknown}
             </Text>
             <Text style={[styles.sellerSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-              {listing.location}
+              {listing.category}
             </Text>
           </View>
         </View>
