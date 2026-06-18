@@ -14,6 +14,7 @@ export const bn: Dict = {
     none: 'কিছু নেই',
     done: 'সম্পন্ন',
     error: 'ত্রুটি',
+    notFound: 'পাওয়া যায়নি',
     retry: 'আবার চেষ্টা',
     confirm: 'নিশ্চিত করুন',
     back: 'ফিরে যান',
@@ -315,6 +316,7 @@ export const bn: Dict = {
   },
 
   bus2: {
+    scheduleTitle: "বাস সময়সূচি",
     nextDeparture: "পরবর্তী ছাড়ার সময়",
     timetable: "সময়সূচি",
     toCampus: "ক্যাম্পাসের দিকে",

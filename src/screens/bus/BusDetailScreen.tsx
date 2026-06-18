@@ -16,21 +16,27 @@ export function BusDetailScreen({ route, navigation }: any) {
   const { C } = useTheme();
   const t = useT();
   const { id } = route.params ?? {};
-  if (!id) return null;
   const [busRoute, setBusRoute] = useState<BusRoute | null>(null);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
+    if (!id) { setFailed(true); return; }
     (async () => {
-      const { data } = await supabase.from('bus_routes').select('*').eq('id', id).single();
-      if (data) setBusRoute(data as BusRoute);
+      const { data, error } = await supabase.from('bus_routes').select('*').eq('id', id).maybeSingle();
+      if (error || !data) { setFailed(true); return; }
+      setBusRoute(data as BusRoute);
     })();
   }, [id]);
 
   if (!busRoute) {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-        <SubBar title="Bus Schedule" onBack={() => navigation.goBack()} />
-        <View style={styles.center}><ActivityIndicator color={C.brand} /></View>
+        <SubBar title={t.bus2?.scheduleTitle ?? 'Bus Schedule'} onBack={() => navigation.goBack()} />
+        <View style={styles.center}>
+          {failed
+            ? <Text style={{ color: C.textMuted, fontFamily: FontFamily.jakartaMedium }}>{t.common.notFound}</Text>
+            : <ActivityIndicator color={C.brand} />}
+        </View>
       </SafeAreaView>
     );
   }

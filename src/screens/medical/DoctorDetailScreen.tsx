@@ -55,14 +55,16 @@ export function DoctorDetailScreen({ route, navigation }: any) {
   const { C } = useTheme();
   const t = useT();
   const { doctorId } = route.params ?? {};
-  if (!doctorId) return null;
   const [doctor, setDoctor] = useState<Doctor | null>(null);
+  const [failed, setFailed] = useState(false);
   const onDuty = doctor ? isOnDuty(doctor) : false;
 
   useEffect(() => {
+    if (!doctorId) { setFailed(true); return; }
     (async () => {
-      const { data } = await supabase.from('doctors').select('*').eq('id', doctorId).maybeSingle();
-      if (data) setDoctor(data as Doctor);
+      const { data, error } = await supabase.from('doctors').select('*').eq('id', doctorId).maybeSingle();
+      if (error || !data) { setFailed(true); return; }
+      setDoctor(data as Doctor);
     })();
   }, [doctorId]);
 
@@ -70,7 +72,11 @@ export function DoctorDetailScreen({ route, navigation }: any) {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
         <SubBar title={t.medical2.doctor} onBack={() => navigation.goBack()} />
-        <View style={styles.center}><ActivityIndicator color={C.brand} /></View>
+        <View style={styles.center}>
+          {failed
+            ? <Text style={{ color: C.textMuted, fontFamily: FontFamily.jakartaMedium }}>{t.common.notFound}</Text>
+            : <ActivityIndicator color={C.brand} />}
+        </View>
       </SafeAreaView>
     );
   }

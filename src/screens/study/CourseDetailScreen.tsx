@@ -45,7 +45,6 @@ export function CourseDetailScreen({ route, navigation }: any) {
   const toast = useToast();
   const { user, profile } = useAuth();
   const { courseId } = route.params ?? {};
-  if (!courseId) return null;
   const [course, setCourse] = useState<any>(null);
   const [materials, setMaterials] = useState<Entry[]>([]);
   const [questions, setQuestions] = useState<Entry[]>([]);
@@ -55,6 +54,7 @@ export function CourseDetailScreen({ route, navigation }: any) {
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
+    if (!courseId) { setLoading(false); return; }
     setLoading(true);
     const [courseRes, matRes, qbRes, bookRes] = await Promise.all([
       supabase.from('study_courses').select('*').eq('id', courseId).maybeSingle(),
@@ -132,7 +132,7 @@ export function CourseDetailScreen({ route, navigation }: any) {
           {loading ? (
             <ActivityIndicator color={C.brand} />
           ) : (
-            <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaSemiBold }]}>—</Text>
+            <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaSemiBold }]}>{t.common.notFound}</Text>
           )}
         </View>
       </SafeAreaView>

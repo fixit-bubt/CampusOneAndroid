@@ -13,6 +13,7 @@ export const en = {
     none: 'None',
     done: 'Done',
     error: 'Error',
+    notFound: 'Not found',
     retry: 'Retry',
     confirm: 'Confirm',
     back: 'Back',
@@ -314,6 +315,7 @@ You will be registered as an available ${group} donor.`,
   },
 
   bus2: {
+    scheduleTitle: "Bus Schedule",
     nextDeparture: "Next departure",
     timetable: "TIMETABLE",
     toCampus: "TO CAMPUS",
