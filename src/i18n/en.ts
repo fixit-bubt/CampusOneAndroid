@@ -55,6 +55,7 @@ export const en = {
     forgotPassword: 'Forgot password?',
     forgotPasswordHint: 'Enter your email above, then tap Forgot password.',
     loginFailed: 'Login failed. Check your credentials.',
+    profileLoadFailed: "Couldn't load your account. Please try again.",
     resetLinkSent: 'Reset link sent — check your email.',
     continueBtn: 'Continue',
     noAccount: "Don't have an account?",

@@ -1,7 +1,7 @@
 // Auth Store — React context + useReducer.
 // Wrap the app in <AuthProvider>, then call useAuth() anywhere.
 
-import React, { createContext, useContext, useEffect, useReducer } from 'react';
+import React, { createContext, useContext, useEffect, useReducer, useRef } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import type { Profile } from '../types/database';
@@ -12,11 +12,13 @@ interface AuthState {
   profile: Profile | null;
   loading: boolean;
   profileLoaded: boolean;
+  profileError: boolean;
 }
 
 type AuthAction =
   | { type: 'SET_SESSION'; session: Session | null }
   | { type: 'SET_PROFILE'; profile: Profile | null }
+  | { type: 'PROFILE_ERROR' }
   | { type: 'SIGN_OUT' }
   | { type: 'LOADED' };
 
@@ -30,9 +32,13 @@ function reducer(state: AuthState, action: AuthAction): AuthState {
         loading: false,
       };
     case 'SET_PROFILE':
-      return { ...state, profile: action.profile, profileLoaded: true };
+      return { ...state, profile: action.profile, profileLoaded: true, profileError: false };
+    case 'PROFILE_ERROR':
+      // Keep profileLoaded:false so the navigator does NOT fall through to the
+      // student UI; surface profileError so a retry screen can be shown.
+      return { ...state, profileError: true };
     case 'SIGN_OUT':
-      return { session: null, user: null, profile: null, loading: false, profileLoaded: false };
+      return { session: null, user: null, profile: null, loading: false, profileLoaded: false, profileError: false };
     case 'LOADED':
       return { ...state, loading: false };
     default:
@@ -56,7 +62,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     profile: null,
     loading: true,
     profileLoaded: false,
+    profileError: false,
   });
+
+  // Token to discard stale profile fetches: getSession() and onAuthStateChange
+  // can both fire for the same user on cold start, racing each other.
+  const reqIdRef = useRef(0);
 
   useEffect(() => {
     // Initial session check
@@ -76,14 +87,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   async function fetchProfile(userId: string) {
+    const myReq = ++reqIdRef.current;
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', userId)
       .single();
+    if (myReq !== reqIdRef.current) return; // a newer fetch superseded this one
     if (error) {
       console.error('fetchProfile failed:', error.message);
-      dispatch({ type: 'SET_PROFILE', profile: null });
+      // Do NOT mark the profile as loaded-with-null; that silently drops
+      // admin/staff into the student UI. Surface an error for retry instead.
+      dispatch({ type: 'PROFILE_ERROR' });
       return;
     }
     dispatch({ type: 'SET_PROFILE', profile: data as Profile | null });
@@ -108,7 +123,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function signOut() {
-    await supabase.auth.signOut();
+    reqIdRef.current++; // invalidate any in-flight profile fetch
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {
+      console.error('signOut failed:', e);
+    }
+    // onAuthStateChange(SIGNED_OUT) also clears state; dispatch here too so the
+    // UI updates immediately even if the network call was slow.
     dispatch({ type: 'SIGN_OUT' });
   }
 
