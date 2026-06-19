@@ -9,6 +9,7 @@ import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
+import { useToast } from '../../components/ui/Toast';
 import { FontFamily, Layout , SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
@@ -64,6 +65,7 @@ export function JobsBrowseScreen({ navigation }: any) {
   const { C } = useTheme();
   const { user, profile } = useAuth();
   const t = useT();
+  const toast = useToast();
   const isAdmin = profile?.role === 'admin';
   // Matches can_post_jobs(): admin OR event organizer OR club president/vp.
   // Staff are excluded, so the button isn't shown only to have RLS reject it.
@@ -109,14 +111,15 @@ export function JobsBrowseScreen({ navigation }: any) {
     if (!user) return;
     const isSaved = savedIds.has(jobId);
     const next = new Set(savedIds);
-    if (isSaved) {
-      next.delete(jobId);
-      await supabase.from('job_bookmarks').delete().eq('job_id', jobId).eq('user_id', user.id);
-    } else {
-      next.add(jobId);
-      await supabase.from('job_bookmarks').insert({ job_id: jobId, user_id: user.id });
+    isSaved ? next.delete(jobId) : next.add(jobId);
+    setSavedIds(next); // optimistic
+    const { error } = isSaved
+      ? await supabase.from('job_bookmarks').delete().eq('job_id', jobId).eq('user_id', user.id)
+      : await supabase.from('job_bookmarks').insert({ job_id: jobId, user_id: user.id });
+    if (error && error.code !== '23505') {
+      setSavedIds(savedIds); // rollback
+      toast({ type: 'error', title: t.common.error });
     }
-    setSavedIds(next);
   }
 
   const q = query.trim().toLowerCase();

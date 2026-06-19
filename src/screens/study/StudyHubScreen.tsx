@@ -741,7 +741,8 @@ export function StudyHubScreen({ navigation }: any) {
   async function toggleVisibility() {
     if (!mySection) return;
     const next = !mySection.is_public;
-    await supabase.from('study_sections').update({ is_public: next }).eq('id', mySection.id);
+    const { error } = await supabase.from('study_sections').update({ is_public: next }).eq('id', mySection.id);
+    if (error) { flash(t.common.error); return; }
     setMySection(s => s ? { ...s, is_public: next } : s);
     flash('Visibility updated');
   }

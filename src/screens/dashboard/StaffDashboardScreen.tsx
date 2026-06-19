@@ -9,6 +9,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { TopBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
+import { useToast } from '../../components/ui/Toast';
 import { FontFamily, Layout, Accent } from '../../theme';
 import { useT } from '../../i18n';
 import { supabase } from '../../lib/supabase';
@@ -27,6 +28,19 @@ const ISSUE_MAP: Record<string, { icon: string; fg: string }> = {
   other:      { icon: 'sliders',  fg: Accent.slate },
 };
 
+// DB categories include multi-word values ("IT / Network", "Safety / Security")
+// that don't lowercase straight to an ISSUE_MAP key.
+function issueKey(cat?: string): string {
+  const c = (cat ?? '').toLowerCase();
+  if (c.includes('it') || c.includes('network')) return 'it_network';
+  if (c.includes('safety') || c.includes('security')) return 'safety';
+  if (c.includes('clean')) return 'cleanliness';
+  if (c.includes('plumb')) return 'plumbing';
+  if (c.includes('electric')) return 'electrical';
+  if (c.includes('furnitur')) return 'furniture';
+  return 'other';
+}
+
 // Status colors, light + dark aware via C.
 function statusTone(C: any, status: string): { fg: string; bg: string } {
   switch (status) {
@@ -40,7 +54,8 @@ function statusTone(C: any, status: string): { fg: string; bg: string } {
 }
 
 function timeAgo(iso: string): string {
-  const secs = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  const secs = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
+  if (secs < 60) return 'just now';
   if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
   if (secs < 86400) return `${Math.floor(secs / 3600)}h ago`;
   return `${Math.floor(secs / 86400)}d ago`;
@@ -75,7 +90,7 @@ function StatCard({ icon, fg, num, label, C }: any) {
 
 function ReportCard({ r, C, onAdvance, onDecline, onPress }: { r: Report; C: any; onAdvance: (id: string, status: string) => void; onDecline: (id: string) => void; onPress: () => void }) {
   const t = useT();
-  const issueConf = ISSUE_MAP[r.category?.toLowerCase()] ?? ISSUE_MAP.other;
+  const issueConf = ISSUE_MAP[issueKey(r.category)] ?? ISSUE_MAP.other;
   const statusConf = statusTone(C, r.status);
   const issueBg = `${issueConf.fg}1e`;
   return (
@@ -140,6 +155,7 @@ function ReportCard({ r, C, onAdvance, onDecline, onPress }: { r: Report; C: any
 export function StaffDashboardScreen({ navigation }: any) {
   const { C } = useTheme();
   const t = useT();
+  const toast = useToast();
   const { user, profile } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
   const [unread, setUnread] = useState(0);
@@ -173,8 +189,14 @@ export function StaffDashboardScreen({ navigation }: any) {
   }
 
   async function advanceStatus(reportId: string, newStatus: string) {
-    await supabase.from('reports').update({ status: newStatus }).eq('id', reportId);
+    const prevStatus = reports.find(r => r.id === reportId)?.status;
     setReports(prev => prev.map(r => r.id === reportId ? { ...r, status: newStatus } : r));
+    const { error } = await supabase.from('reports').update({ status: newStatus }).eq('id', reportId);
+    if (error) {
+      // revert the optimistic change on failure
+      setReports(prev => prev.map(r => r.id === reportId ? { ...r, status: prevStatus ?? r.status } : r));
+      toast({ type: 'error', title: t.common.error, message: error.message });
+    }
   }
 
   function declineAssigned(reportId: string) {

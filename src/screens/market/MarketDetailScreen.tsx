@@ -52,14 +52,16 @@ export function MarketDetailScreen({ route, navigation }: any) {
 
   async function revealContact() {
     if (!listing) return;
-    const { data: c } = await supabase.rpc('listing_contact', { p_code: listing.code });
+    const { data: c, error } = await supabase.rpc('listing_contact', { p_code: listing.code });
+    if (error) { toast({ type: 'error', title: t.common.error }); return; }
     setRevealed(true);
     const row = Array.isArray(c) ? c[0] : c;
     if (row) setContactInfo({ name: row.name ?? null, whatsapp: row.whatsapp ?? null });
   }
 
   async function markSold() {
-    await supabase.from('listings').update({ status: 'Sold' }).eq('id', listingId);
+    const { error } = await supabase.from('listings').update({ status: 'Sold' }).eq('id', listingId);
+    if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
     setListing((prev: any) => ({ ...prev, status: 'Sold' }));
   }
 

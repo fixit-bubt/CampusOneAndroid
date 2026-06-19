@@ -13,6 +13,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
+import { useToast } from '../../components/ui/Toast';
 import { FontFamily, Layout, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
@@ -24,6 +25,7 @@ import {
 export function FacultyDeptScreen({ route, navigation }: any) {
   const { C } = useTheme();
   const t = useT();
+  const toast = useToast();
   const { user } = useAuth();
   const deptId: string = route.params?.deptId;
   const [dept, setDept] = useState<Department | null>(null);
@@ -57,14 +59,16 @@ export function FacultyDeptScreen({ route, navigation }: any) {
     if (!user) return;
     const isSaved = savedIds.has(facId);
     const next = new Set(savedIds);
-    if (isSaved) {
-      next.delete(facId);
-      await supabase.from('faculty_bookmarks').delete().eq('faculty_id', facId).eq('user_id', user.id);
-    } else {
-      next.add(facId);
-      await supabase.from('faculty_bookmarks').insert({ faculty_id: facId, user_id: user.id });
+    isSaved ? next.delete(facId) : next.add(facId);
+    setSavedIds(next); // optimistic
+    const { error } = isSaved
+      ? await supabase.from('faculty_bookmarks').delete().eq('faculty_id', facId).eq('user_id', user.id)
+      : await supabase.from('faculty_bookmarks').insert({ faculty_id: facId, user_id: user.id });
+    if (error && error.code !== '23505') {
+      setSavedIds(savedIds); // rollback
+      toast({ type: 'error', title: t.common.error });
+      return;
     }
-    setSavedIds(next);
   }
 
   const q = query.trim().toLowerCase();

@@ -9,6 +9,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { TopBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
+import { useToast } from '../../components/ui/Toast';
 import { FontFamily, Layout, Accent, SectorColors } from '../../theme';
 import { useT } from '../../i18n';
 import { supabase } from '../../lib/supabase';
@@ -26,6 +27,19 @@ const ISSUE_MAP: Record<string, { icon: string; fg: string }> = {
   other:      { icon: 'sliders',  fg: Accent.slate },
 };
 
+// Map a report category to an ISSUE_MAP key. DB values include multi-word
+// categories ("IT / Network", "Safety / Security") that don't lowercase to a key.
+function issueKey(cat?: string): string {
+  const c = (cat ?? '').toLowerCase();
+  if (c.includes('it') || c.includes('network')) return 'it_network';
+  if (c.includes('safety') || c.includes('security')) return 'safety';
+  if (c.includes('clean')) return 'cleanliness';
+  if (c.includes('plumb')) return 'plumbing';
+  if (c.includes('electric')) return 'electrical';
+  if (c.includes('furnitur')) return 'furniture';
+  return 'other';
+}
+
 // Status colors, light + dark aware via C.
 function statusTone(C: any, status: string): { fg: string; bg: string } {
   switch (status) {
@@ -39,7 +53,8 @@ function statusTone(C: any, status: string): { fg: string; bg: string } {
 }
 
 function timeAgo(iso: string): string {
-  const secs = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  const secs = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
+  if (secs < 60) return 'just now';
   if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
   if (secs < 86400) return `${Math.floor(secs / 3600)}h ago`;
   return `${Math.floor(secs / 86400)}d ago`;
@@ -83,7 +98,7 @@ function StatCard({ icon, fg, num, label, C }: any) {
 
 function ReportCard({ r, C, onAssign }: { r: Report; C: any; onAssign: (r: Report) => void }) {
   const t = useT();
-  const issueConf = ISSUE_MAP[r.category?.toLowerCase()] ?? ISSUE_MAP.other;
+  const issueConf = ISSUE_MAP[issueKey(r.category)] ?? ISSUE_MAP.other;
   const statusConf = statusTone(C, r.status);
   const issueBg = `${issueConf.fg}1e`;
   return (
@@ -141,6 +156,7 @@ const MANAGE_TILES = [
 export function AdminDashboardScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
   const t = useT();
+  const toast = useToast();
   const { profile } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
   const [staffList, setStaffList] = useState<StaffMember[]>([]);
@@ -182,7 +198,8 @@ export function AdminDashboardScreen({ navigation }: any) {
   }
 
   async function assignReport(reportId: string, staffId: string) {
-    await supabase.from('reports').update({ assigned_staff_id: staffId, status: 'In Progress' }).eq('id', reportId);
+    const { error } = await supabase.from('reports').update({ assigned_staff_id: staffId, status: 'In Progress' }).eq('id', reportId);
+    if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
     setAssignTarget(null);
     load();
   }

@@ -9,6 +9,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
+import { useToast } from '../../components/ui/Toast';
 import { FontFamily, Layout } from '../../theme';
 import { useT } from '../../i18n';
 import { supabase } from '../../lib/supabase';
@@ -47,6 +48,7 @@ interface ReportWithProfile extends Report {
 export function AllReportsScreen({ navigation }: any) {
   const { C } = useTheme();
   const t = useT();
+  const toast = useToast();
   const { profile } = useAuth();
   const [reports, setReports] = useState<ReportWithProfile[]>([]);
   const [filter, setFilter] = useState<StatusFilter>('all');
@@ -79,10 +81,12 @@ export function AllReportsScreen({ navigation }: any) {
   }
 
   async function assignReport(reportId: string, staffId: string) {
-    await supabase.from('reports').update({
+    const { error } = await supabase.from('reports').update({
       assigned_staff_id: staffId,
       status: 'In Progress',
     }).eq('id', reportId);
+    if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
+    // Only apply the optimistic mutation after a confirmed write.
     setReports(prev => prev.map(r =>
       r.id === reportId ? { ...r, assigned_staff_id: staffId, status: 'In Progress' } : r
     ));

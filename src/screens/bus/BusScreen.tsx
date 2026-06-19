@@ -64,12 +64,15 @@ export function BusScreen({ navigation }: any) {
 
   async function toggleSave(routeId: string) {
     if (!user) return;
-    if (savedIds.has(routeId)) {
-      setSavedIds(prev => { const n = new Set(prev); n.delete(routeId); return n; });
-      await supabase.from('saved_bus_routes').delete().eq('route_id', routeId).eq('user_id', user.id);
-    } else {
-      setSavedIds(prev => new Set(prev).add(routeId));
-      await supabase.from('saved_bus_routes').upsert({ route_id: routeId, user_id: user.id });
+    const isSaved = savedIds.has(routeId);
+    setSavedIds(prev => { const n = new Set(prev); isSaved ? n.delete(routeId) : n.add(routeId); return n; });
+    const { error } = isSaved
+      ? await supabase.from('saved_bus_routes').delete().eq('route_id', routeId).eq('user_id', user.id)
+      : await supabase.from('saved_bus_routes').upsert({ route_id: routeId, user_id: user.id }, { onConflict: 'user_id,route_id' });
+    if (error && error.code !== '23505') {
+      // revert the optimistic toggle on failure
+      setSavedIds(prev => { const n = new Set(prev); isSaved ? n.add(routeId) : n.delete(routeId); return n; });
+      toast({ type: 'error', title: t.common.error });
     }
   }
 
