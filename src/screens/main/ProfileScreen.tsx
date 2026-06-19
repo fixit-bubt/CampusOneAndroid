@@ -522,7 +522,7 @@ export function ProfileScreen({ navigation }: any) {
                   <View style={[styles.rolePill, { backgroundColor: roleBg }]}>
                     <View style={[styles.rolePillDot, { backgroundColor: roleHex }]} />
                     <Text style={[styles.rolePillTxt, { color: roleHex, fontFamily: FontFamily.jakartaBold }]}>
-                      {ROLE_LABEL(t)[role] ?? role}
+                      {(ROLE_LABEL(t) as Record<string, string>)[role] ?? role}
                     </Text>
                   </View>
                 </>
