@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
-  RefreshControl, Image, type ViewStyle, type TextStyle,
+  RefreshControl, Image, ActivityIndicator, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -48,14 +48,19 @@ export function MarketScreen({ navigation }: any) {
   const [category, setCategory] = useState('all');
   const [listings, setListings] = useState<Listing[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('listings')
       .select('*')
+      // Available ('A') sorts before Sold ('S') so Sold items don't crowd
+      // available ones out of the 60-row window.
+      .order('status', { ascending: true })
       .order('created_at', { ascending: false })
       .limit(60);
-    if (data) setListings(data as Listing[]);
+    if (!error && data) setListings(data as Listing[]);
+    setLoading(false);
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -159,7 +164,9 @@ export function MarketScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
-        {list.length === 0 ? (
+        {loading && listings.length === 0 ? (
+          <ActivityIndicator style={{ marginTop: 60 }} color={C.brand} />
+        ) : list.length === 0 ? (
           <View style={styles.empty}>
             <Icon name="market" size={28} color={C.textMuted} />
             <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>

@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
-  RefreshControl, type ViewStyle, type TextStyle,
+  RefreshControl, ActivityIndicator, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -38,6 +38,7 @@ export function JobsModerateScreen({ navigation }: any) {
   const [tab, setTab] = useState<'reported' | 'removed'>('reported');
   const [jobs, setJobs] = useState<JobRow[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     // job_reports is admin-readable per RLS; join report rows onto each job.
@@ -52,6 +53,7 @@ export function JobsModerateScreen({ navigation }: any) {
         reports: reports.filter(r => r.job_id === j.id),
       })));
     }
+    setLoading(false);
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -120,7 +122,9 @@ export function JobsModerateScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
-        {list.length === 0 ? (
+        {loading && jobs.length === 0 ? (
+          <ActivityIndicator style={{ marginTop: 50 }} color={C.brand} />
+        ) : list.length === 0 ? (
           <View style={styles.empty}>
             <Icon name="jobs" size={28} color={C.textMuted} />
             <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
