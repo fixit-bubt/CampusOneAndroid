@@ -50,7 +50,7 @@ export function MarketPostScreen({ route, navigation }: any) {
   const [loading, setLoading] = useState(false);
 
   const isEdit = !!listing;
-  const canSubmit = cat !== null && title.trim() && price.trim();
+  const canSubmit = cat !== null && !!title.trim() && Number(price) > 0;
 
   async function pickImage() {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -86,7 +86,7 @@ export function MarketPostScreen({ route, navigation }: any) {
     try {
       const payload = {
         title:       title.trim(),
-        price:       parseInt(price, 10) || 0,
+        price:       parseInt(price, 10),
         category:    cat,
         condition,
         negotiable,
@@ -240,8 +240,8 @@ export function MarketPostScreen({ route, navigation }: any) {
           disabled={!canSubmit || loading}
           activeOpacity={0.8}
         >
-          <Icon name="check" size={18} color={canSubmit ? '#fff' : C.textMuted} />
-          <Text style={[styles.submitText, { color: canSubmit ? '#fff' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+          <Icon name="check" size={18} color={canSubmit ? C.white : C.textMuted} />
+          <Text style={[styles.submitText, { color: canSubmit ? C.white : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
             {isEdit ? t.market2.saveChanges : t.market2.postListing}
           </Text>
         </TouchableOpacity>

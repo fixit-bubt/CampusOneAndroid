@@ -60,7 +60,7 @@ export function EventDetailScreen({ route, navigation }: any) {
       setGoing(!!rsvpRes.data);
       setGoingCount(countRes.count ?? 0);
     })();
-  }, [id, user]);
+  }, [id, user?.id]);
 
   async function handleRSVP() {
     if (!event || !user || busy) return;
@@ -74,12 +74,16 @@ export function EventDetailScreen({ route, navigation }: any) {
         console.error('RSVP delete error:', error.message);
       }
     } else {
-      const { error } = await supabase.from('event_rsvps').insert({ event_id: id, user_id: user.id });
-      if (!error) {
-        setGoing(true);
-        setGoingCount(c => c + 1);
+      // Server-side capacity guard (atomic) instead of a raw insert that could
+      // exceed capacity under a race.
+      const { data, error } = await supabase.rpc('rsvp_event', { p_event_id: id });
+      const res: any = Array.isArray(data) ? data[0] : data;
+      if (error || !res?.ok) {
+        if (res?.reason === 'full') toast({ type: 'info', title: t.events2.eventFull });
+        else toast({ type: 'error', title: t.common.error });
       } else {
-        console.error('RSVP insert error:', error.message);
+        setGoing(true);
+        if (!res.already) setGoingCount(c => c + 1);
       }
     }
     setBusy(false);
