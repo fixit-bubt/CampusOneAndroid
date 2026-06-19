@@ -126,6 +126,8 @@ export function ReportDetailScreen({ route, navigation }: any) {
       return;
     }
     setReport(prev => prev ? { ...prev, status: newStatus } : prev);
+    // Refresh so the timeline picks up the report_events row a DB trigger may add.
+    load();
   }
 
   function handleDecline() {

@@ -76,10 +76,15 @@ export function EventPostScreen({ navigation }: any) {
 
   async function handleSubmit() {
     if (!canSubmit || !user || loading) return;
+    const capNum = capacity.trim() ? parseInt(capacity.trim(), 10) : null;
+    if (capNum !== null && (!Number.isFinite(capNum) || capNum <= 0)) {
+      toast({ type: 'error', title: t.common.error, message: t.events2.postEventError });
+      return;
+    }
     setLoading(true);
     try {
       const { error } = await supabase.from('events').insert({
-        code:        'EVT-' + String(performance.now()),
+        code:        'EVT-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
         title:       title.trim(),
         category:    cat,
         organizer:   organizer.trim() || 'Campus',
@@ -87,7 +92,7 @@ export function EventPostScreen({ navigation }: any) {
         date:        eventDate.trim(),
         time:        time.trim(),
         end_time:    endTime.trim() || null,
-        capacity:    capacity.trim() ? Number(capacity.trim()) : null,
+        capacity:    capNum,
         description: desc.trim(),
         created_by:  user.id,
       });

@@ -366,6 +366,9 @@ export function StudyHubScreen({ navigation }: any) {
     toastRef.current = setTimeout(() => setToastMsg(''), 1800);
   }
 
+  // Clear any pending toast timer on unmount (avoids setState after unmount).
+  useEffect(() => () => { if (toastRef.current) clearTimeout(toastRef.current); }, []);
+
   // Flatten the nested join rows (supabase returns object or 1-elem array).
   function one<T>(v: T | T[] | null | undefined): T | null {
     if (!v) return null;
