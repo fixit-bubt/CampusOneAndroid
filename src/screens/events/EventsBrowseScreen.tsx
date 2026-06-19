@@ -88,13 +88,15 @@ export function EventsBrowseScreen({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('events')
-      .select('*')
-      .order('date', { ascending: true })
-      .limit(50);
-    if (error) { console.error('events fetch:', error.message); return; }
-    if (data) setEvents(data as Event[]);
+    // Fetch upcoming and past separately. A single ascending limit(50) let past
+    // events fill the quota and silently drop genuinely upcoming ones.
+    const today = new Date().toISOString().split('T')[0];
+    const [upRes, pastRes] = await Promise.all([
+      supabase.from('events').select('*').gte('date', today).order('date', { ascending: true }).limit(50),
+      supabase.from('events').select('*').lt('date', today).order('date', { ascending: false }).limit(50),
+    ]);
+    if (upRes.error || pastRes.error) { console.error('events fetch:', upRes.error?.message ?? pastRes.error?.message); return; }
+    setEvents([...(upRes.data ?? []), ...(pastRes.data ?? [])] as Event[]);
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));

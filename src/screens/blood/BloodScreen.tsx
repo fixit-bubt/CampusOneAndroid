@@ -51,7 +51,7 @@ export function BloodScreen({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
   const toast = useToast();
   const [respondedIds, setRespondedIds] = useState<Set<string>>(new Set());
-  const [contactBusy, setContactBusy] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const [rRes, dRes, pRes] = await Promise.all([
@@ -72,9 +72,9 @@ export function BloodScreen({ navigation }: any) {
     setRefreshing(false);
   }
 
-  async function revealContact(donorUserId: string) {
-    if (!user || contactBusy) return;
-    setContactBusy(true);
+  async function revealContact(donorUserId: string, donorName?: string | null) {
+    if (!user || busyId) return;
+    setBusyId(donorUserId);
     try {
       const { data, error } = await supabase.rpc('donor_contact', { p_user_id: donorUserId });
       if (error) {
@@ -83,16 +83,17 @@ export function BloodScreen({ navigation }: any) {
       }
       const row = Array.isArray(data) ? data[0] : data;
       const contact = row?.whatsapp ?? t.blood2.notShared;
-      Alert.alert(row?.name ?? t.blood2.contact, String(contact));
+      // donor_contact returns only { whatsapp }; use the name we already have.
+      Alert.alert(donorName ?? t.blood2.contact, String(contact));
     } finally {
-      setContactBusy(false);
+      setBusyId(null);
     }
   }
 
   // Pledged donors may see the requester's contact (consent-by-posting)
   async function revealRequester(r: BloodRequest) {
-    if (!user || contactBusy) return;
-    setContactBusy(true);
+    if (!user || busyId) return;
+    setBusyId(r.id);
     try {
       const { data, error } = await supabase.rpc('blood_requester_contact', { p_code: (r as any).code });
       if (error) {
@@ -103,7 +104,7 @@ export function BloodScreen({ navigation }: any) {
       if (!row) { toast({ type: 'info', title: t.blood2.notAvailable, message: t.blood2.contactDonorsOnly }); return; }
       Alert.alert(row.name ?? t.blood2.requester, row.whatsapp ?? t.blood2.noWhatsapp);
     } finally {
-      setContactBusy(false);
+      setBusyId(null);
     }
   }
 
@@ -259,11 +260,11 @@ export function BloodScreen({ navigation }: any) {
                       style={[styles.pledgeBtn, { backgroundColor: C.successBg }]}
                       onPress={() => revealRequester(r)}
                       activeOpacity={0.75}
-                      disabled={contactBusy}
+                      disabled={busyId === r.id}
                     >
                       <Icon name="phone" size={15} color={C.success} />
                       <Text style={[styles.pledgeTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
-                        {contactBusy ? '…' : t.blood2.viewRequesterContact}
+                        {busyId === r.id ? '…' : t.blood2.viewRequesterContact}
                       </Text>
                     </TouchableOpacity>
                   ) : (
@@ -274,7 +275,7 @@ export function BloodScreen({ navigation }: any) {
                     >
                       <Icon name="blood" size={16} color={BLOOD_COLOR} />
                       <Text style={[styles.pledgeTxt, { color: BLOOD_COLOR, fontFamily: FontFamily.jakartaBold }]}>
-                        I can help
+                        {t.blood2.iCanHelp}
                       </Text>
                     </TouchableOpacity>
                   )}
@@ -287,7 +288,7 @@ export function BloodScreen({ navigation }: any) {
             {/* Blood type summary */}
             <View style={[styles.summaryCard, { backgroundColor: C.surface, borderColor: C.border }]}>
               <Text style={[styles.summaryTitle, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                Available Donors
+                {t.blood2.availableDonors}
               </Text>
               <View style={styles.summaryGrid}>
                 {bloodTypes.map(g => (
@@ -327,13 +328,13 @@ export function BloodScreen({ navigation }: any) {
                     </View>
                     <GroupBadge group={d.blood_group} size={34} />
                     <TouchableOpacity
-                      style={[styles.contactBtn, { backgroundColor: BLOOD_BG, opacity: contactBusy ? 0.5 : 1 }]}
-                      onPress={() => revealContact(d.user_id)}
+                      style={[styles.contactBtn, { backgroundColor: BLOOD_BG, opacity: busyId === d.user_id ? 0.5 : 1 }]}
+                      onPress={() => revealContact(d.user_id, (d as any).profiles?.full_name)}
                       activeOpacity={0.75}
-                      disabled={contactBusy}
+                      disabled={busyId === d.user_id}
                     >
                       <Text style={[styles.contactTxt, { color: BLOOD_COLOR, fontFamily: FontFamily.jakartaBold }]}>
-                        {contactBusy ? '…' : t.blood2.contact}
+                        {busyId === d.user_id ? '…' : t.blood2.contact}
                       </Text>
                     </TouchableOpacity>
                   </View>
