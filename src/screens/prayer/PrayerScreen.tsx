@@ -149,10 +149,10 @@ export function PrayerScreen({ navigation }: any) {
         {prayers.length === 0 && !refreshing && (
           <View style={styles.empty}>
             <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-              No prayer times available
+              {t.prayer2.noTimes}
             </Text>
             <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-              Pull down to refresh
+              {t.prayer2.pullRefresh}
             </Text>
           </View>
         )}
@@ -168,11 +168,11 @@ export function PrayerScreen({ navigation }: any) {
             <View style={styles.nextRow}>
               <Text style={[styles.nextName, { fontFamily: FontFamily.jakartaExtraBold }]}>{next.en}</Text>
               <Text style={[styles.nextIn, { fontFamily: FontFamily.jakartaBold }]}>
-                in {timeUntil(next.azan)}
+                {t.prayer2.inTime(timeUntil(next.azan))}
               </Text>
             </View>
             <Text style={[styles.nextTimes, { fontFamily: FontFamily.jakartaSemiBold }]}>
-              Azan {next.azan} · Jamaat {next.jamaat}
+              {t.prayer2.azanJamaat(next.azan, next.jamaat)}
             </Text>
           </LinearGradient>
         )}

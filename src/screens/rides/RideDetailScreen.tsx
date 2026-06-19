@@ -254,7 +254,7 @@ export function RideDetailScreen({ route, navigation }: any) {
         {isOwnRide && (
           <>
             <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
-              SEAT REQUESTS ({requesters.length})
+              {t.rides2.seatRequests(requesters.length)} ({requesters.length})
             </Text>
             {requesters.length === 0 ? (
               <Text style={[styles.contactTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>

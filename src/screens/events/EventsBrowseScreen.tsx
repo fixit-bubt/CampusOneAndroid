@@ -86,6 +86,7 @@ export function EventsBrowseScreen({ navigation }: any) {
   const [category, setCategory] = useState('All');
   const [view, setView] = useState<'list' | 'calendar'>('list');
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [monthOffset, setMonthOffset] = useState(0); // 0 = current month
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
@@ -188,9 +189,11 @@ export function EventsBrowseScreen({ navigation }: any) {
       >
         {view === 'calendar' ? (() => {
           // Month grid — dots mark event days; tap a day to list its events.
-          const now = new Date();
-          const year = now.getFullYear();
-          const month = now.getMonth();
+          const base = new Date();
+          base.setDate(1);
+          base.setMonth(base.getMonth() + monthOffset);
+          const year = base.getFullYear();
+          const month = base.getMonth();
           const daysInMonth = new Date(year, month + 1, 0).getDate();
           const firstDow = new Date(year, month, 1).getDay();
           const iso = (d: number) =>
@@ -203,9 +206,17 @@ export function EventsBrowseScreen({ navigation }: any) {
           const dayEvents = selectedDay ? byCat.filter(e => e.date === selectedDay) : [];
           return (
             <View>
-              <Text style={[styles.calTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-                {now.toLocaleString('en', { month: 'long' })} {year}
-              </Text>
+              <View style={styles.calNav}>
+                <TouchableOpacity onPress={() => { setSelectedDay(null); setMonthOffset(o => o - 1); }} hitSlop={10} activeOpacity={0.7}>
+                  <Feather name="chevron-left" size={22} color={C.text} />
+                </TouchableOpacity>
+                <Text style={[styles.calTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+                  {base.toLocaleString('en', { month: 'long' })} {year}
+                </Text>
+                <TouchableOpacity onPress={() => { setSelectedDay(null); setMonthOffset(o => o + 1); }} hitSlop={10} activeOpacity={0.7}>
+                  <Feather name="chevron-right" size={22} color={C.text} />
+                </TouchableOpacity>
+              </View>
               <View style={styles.calGrid}>
                 {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
                   <View key={`h${i}`} style={styles.calCell}>
@@ -279,7 +290,8 @@ const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
   chips: { flexDirection: 'row', gap: 8, paddingVertical: 10 } as ViewStyle,
   catChips: { flexDirection: 'row', gap: 7, paddingBottom: 10 } as ViewStyle,
-  calTitle: { fontSize: 15, marginBottom: 10 } as any,
+  calNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 } as ViewStyle,
+  calTitle: { fontSize: 15 } as any,
   calGrid: { flexDirection: 'row', flexWrap: 'wrap' } as ViewStyle,
   calCell: { width: `${100 / 7}%`, alignItems: 'center', paddingVertical: 8, gap: 2 } as ViewStyle,
   calHead: { fontSize: 10.5 } as any,

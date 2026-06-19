@@ -256,7 +256,7 @@ export function RidePostScreen({ navigation }: any) {
         >
           <Icon name="check" size={18} color={canSubmit ? C.white : C.textMuted} />
           <Text style={[styles.submitText, { color: canSubmit ? C.white : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-            Offer Ride
+            {t.rides2.offerRide}
           </Text>
         </TouchableOpacity>
 
