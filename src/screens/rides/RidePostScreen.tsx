@@ -12,6 +12,7 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout , SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { isValidDate } from '../../utils/format';
 import type { Ride } from '../../types/database';
 
 const VEHICLES: { id: Ride['vehicle']; label: string }[] = [
@@ -99,7 +100,7 @@ export function RidePostScreen({ navigation }: any) {
       return;
     }
     const timePart = time.trim() || '08:00';
-    if (!date.trim().match(/^\d{4}-\d{2}-\d{2}$/)) {
+    if (!isValidDate(date)) {
       toast({ type: 'error', title: t.rides2.invalidDateTitle, message: t.rides2.invalidDateBody });
       return;
     }

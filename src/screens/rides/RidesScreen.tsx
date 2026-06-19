@@ -14,6 +14,7 @@ import { Icon } from '../../components/ui/Icon';
 import { useToast } from '../../components/ui/Toast';
 import { FontFamily, Layout , SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { localToday } from '../../utils/format';
 import { useAuth } from '../../store/authStore';
 
 const RIDE_COLOR = SectorColors.ride;
@@ -52,7 +53,7 @@ export function RidesScreen({ navigation }: any) {
       supabase
         .from('rides')
         .select('*, profiles:driver_id(full_name)')
-        .gte('date', new Date().toISOString().split('T')[0])
+        .gte('date', localToday())
         .order('date')
         .order('time')
         .limit(30),

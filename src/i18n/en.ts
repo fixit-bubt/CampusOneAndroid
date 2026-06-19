@@ -14,6 +14,7 @@ export const en = {
     done: 'Done',
     error: 'Error',
     notFound: 'Not found',
+    invalidDate: 'Enter a valid future date (YYYY-MM-DD).',
     retry: 'Retry',
     confirm: 'Confirm',
     back: 'Back',

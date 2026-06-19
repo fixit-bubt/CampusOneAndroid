@@ -68,3 +68,25 @@ export function formatFileSize(bytes: number): string {
 export function bloodGroupSlug(bg: string): string {
   return bg.replace('+', 'pos').replace('-', 'neg').toLowerCase();
 }
+
+/** Local YYYY-MM-DD for "today" (avoids the UTC off-by-one for UTC+6 users). */
+export function localToday(): string {
+  const d = new Date();
+  const off = d.getTimezoneOffset() * 60000;
+  return new Date(d.getTime() - off).toISOString().split('T')[0];
+}
+
+/**
+ * Validate a YYYY-MM-DD string: correct shape, a real calendar date (rejects
+ * 2026-13-40 / 2026-02-31), and today-or-future when allowPast is false.
+ */
+export function isValidDate(s: string, allowPast = false): boolean {
+  const str = s.trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(str)) return false;
+  const [y, m, d] = str.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  // round-trip check rejects impossible dates that JS would roll over
+  if (dt.getFullYear() !== y || dt.getMonth() !== m - 1 || dt.getDate() !== d) return false;
+  if (!allowPast && str < localToday()) return false;
+  return true;
+}

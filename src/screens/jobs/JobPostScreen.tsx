@@ -12,6 +12,7 @@ import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useT } from '../../i18n';
+import { isValidDate } from '../../utils/format';
 import type { Job } from '../../types/database';
 
 function SegControl<T extends string>({
@@ -90,6 +91,12 @@ export function JobPostScreen({ navigation }: any) {
 
   async function handleSubmit() {
     if (!canSubmit || !user || loading) return;
+    // Free-text deadline must be a real, non-past date or the NOT NULL date column
+    // / RLS deadline check rejects it with a raw Postgres error.
+    if (deadline.trim() && !isValidDate(deadline)) {
+      toast({ type: 'error', title: t.common.error, message: t.common.invalidDate });
+      return;
+    }
     setLoading(true);
     try {
       const { error } = await supabase.from('jobs').insert({

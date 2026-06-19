@@ -15,6 +15,7 @@ export const bn: Dict = {
     done: 'সম্পন্ন',
     error: 'ত্রুটি',
     notFound: 'পাওয়া যায়নি',
+    invalidDate: 'একটি বৈধ ভবিষ্যৎ তারিখ দিন (YYYY-MM-DD)।',
     retry: 'আবার চেষ্টা',
     confirm: 'নিশ্চিত করুন',
     back: 'ফিরে যান',

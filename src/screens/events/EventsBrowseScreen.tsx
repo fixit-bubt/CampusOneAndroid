@@ -13,6 +13,7 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout , SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { localToday } from '../../utils/format';
 import type { Event } from '../../types/database';
 
 const CAT_COLOR: Record<string, string> = {
@@ -90,7 +91,7 @@ export function EventsBrowseScreen({ navigation }: any) {
   const load = useCallback(async () => {
     // Fetch upcoming and past separately. A single ascending limit(50) let past
     // events fill the quota and silently drop genuinely upcoming ones.
-    const today = new Date().toISOString().split('T')[0];
+    const today = localToday();
     const [upRes, pastRes] = await Promise.all([
       supabase.from('events').select('*').gte('date', today).order('date', { ascending: true }).limit(50),
       supabase.from('events').select('*').lt('date', today).order('date', { ascending: false }).limit(50),
