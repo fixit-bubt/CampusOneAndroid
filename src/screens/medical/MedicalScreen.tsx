@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
-  RefreshControl, type ViewStyle,
+  RefreshControl, ActivityIndicator, type ViewStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -42,10 +42,12 @@ export function MedicalScreen({ navigation }: any) {
   const t = useT();
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    const { data } = await supabase.from('doctors').select('*').order('name').limit(100);
-    if (data) setDoctors(data as Doctor[]);
+    const { data, error } = await supabase.from('doctors').select('*').order('name').limit(100);
+    if (!error && data) setDoctors(data as Doctor[]);
+    setLoading(false);
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -67,7 +69,9 @@ export function MedicalScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
-        {doctors.length === 0 ? (
+        {loading && doctors.length === 0 ? (
+          <ActivityIndicator style={{ marginTop: 40 }} color={C.brand} />
+        ) : doctors.length === 0 ? (
           <View style={styles.empty}>
             <Icon name="medical" size={28} color={C.textMuted} />
             <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.medical2.noDoctors}</Text>

@@ -61,14 +61,17 @@ export function MedicalQueueScreen({ navigation }: any) {
   const [advancing, setAdvancing] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const { data } = await supabase
+    // Don't fetch every patient's data until the admin role is confirmed.
+    if (profile?.role !== 'admin') return;
+    const { data, error } = await supabase
       .from('appointments')
       .select('*, doctors(name, specialty), profiles:student_id(full_name, avatar_url)')
       .eq('date', localISO(new Date()))
       .neq('status', 'Cancelled')
       .order('slot', { ascending: true });
+    if (error) { toast({ type: 'error', title: t.common.error }); return; }
     if (data) setAppts(data as QueueAppt[]);
-  }, []);
+  }, [profile?.role, toast, t]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -87,7 +90,7 @@ export function MedicalQueueScreen({ navigation }: any) {
     setAppts(prev => prev.map(x => (x.id === a.id ? { ...x, status: next } : x)));
   }
 
-  if (profile && profile.role !== 'admin') {
+  if (profile?.role !== 'admin') {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
         <SubBar title={t.medical.queueTitle} onBack={() => navigation.goBack()} />

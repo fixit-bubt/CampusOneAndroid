@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
-  RefreshControl, Alert, type ViewStyle, type TextStyle,
+  RefreshControl, Alert, ActivityIndicator, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -58,19 +58,21 @@ export function MyAppointmentsScreen({ navigation }: any) {
   const [appts, setAppts] = useState<Appt[]>([]);
   const [tab, setTab] = useState<'upcoming' | 'past'>('upcoming');
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
   const toast = useToast();
 
   const load = useCallback(async () => {
-    if (!user) return;
+    if (!user) { setLoading(false); return; }
     // RLS scopes students to their own appointment rows.
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('appointments')
       .select('*, doctors(name, specialty, room)')
       .eq('student_id', user.id)
       .order('date', { ascending: false })
       .order('slot', { ascending: true });
-    if (data) setAppts(data as Appt[]);
-  }, [user]);
+    if (!error && data) setAppts(data as Appt[]);
+    setLoading(false);
+  }, [user?.id]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -133,7 +135,9 @@ export function MyAppointmentsScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
-        {upcomingSorted.length === 0 ? (
+        {loading && appts.length === 0 ? (
+          <ActivityIndicator style={{ marginTop: 40 }} color={C.brand} />
+        ) : upcomingSorted.length === 0 ? (
           <View style={styles.empty}>
             <Icon name="medical" size={28} color={C.textMuted} />
             <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
