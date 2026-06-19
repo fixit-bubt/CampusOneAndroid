@@ -2,7 +2,7 @@
 // actions: View always; Edit/Delete only while a report is still Open.
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
+  View, Text, TextInput, TouchableOpacity, ScrollView, FlatList, StyleSheet,
   RefreshControl, Alert, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
@@ -132,75 +132,82 @@ export function MyReportsScreen({ navigation }: any) {
         }
       />
 
-      <ScrollView
+      <FlatList
+        data={filtered}
+        keyExtractor={r => r.id}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
-      >
-        {/* Search */}
-        <View style={[styles.searchBar, { backgroundColor: C.surface2 }]}>
-          <Icon name="search" size={17} color={C.textMuted} />
-          <TextInput
-            style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
-            placeholder={t.reports.searchPlaceholder}
-            placeholderTextColor={C.textMuted}
-            value={query}
-            onChangeText={setQuery}
-          />
-          {query.length > 0 && (
-            <TouchableOpacity onPress={() => setQuery('')} hitSlop={8}>
-              <Feather name="x" size={16} color={C.textMuted} />
-            </TouchableOpacity>
-          )}
-        </View>
+        ItemSeparatorComponent={() => <View style={{ height: 11 }} />}
+        ListHeaderComponent={
+          <View>
+            {/* Search */}
+            <View style={[styles.searchBar, { backgroundColor: C.surface2 }]}>
+              <Icon name="search" size={17} color={C.textMuted} />
+              <TextInput
+                style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
+                placeholder={t.reports.searchPlaceholder}
+                placeholderTextColor={C.textMuted}
+                value={query}
+                onChangeText={setQuery}
+              />
+              {query.length > 0 && (
+                <TouchableOpacity onPress={() => setQuery('')} hitSlop={8}>
+                  <Feather name="x" size={16} color={C.textMuted} />
+                </TouchableOpacity>
+              )}
+            </View>
 
-        {/* Scope: everyone vs mine */}
-        <View style={styles.scopeRow}>
-          {(['everyone', 'mine'] as const).map(s => {
-            const on = scope === s;
-            return (
-              <TouchableOpacity
-                key={s}
-                style={[styles.scopeChip, on
-                  ? { backgroundColor: C.brand, borderColor: C.brand }
-                  : { backgroundColor: C.surface, borderColor: C.border }]}
-                onPress={() => setScope(s)}
-                activeOpacity={0.75}
-              >
-                <Text style={[styles.chipTxt, { color: on ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                  {s === 'everyone' ? t.reports.scopeEveryone : t.reports.scopeMine}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+            {/* Scope: everyone vs mine */}
+            <View style={styles.scopeRow}>
+              {(['everyone', 'mine'] as const).map(s => {
+                const on = scope === s;
+                return (
+                  <TouchableOpacity
+                    key={s}
+                    style={[styles.scopeChip, on
+                      ? { backgroundColor: C.brand, borderColor: C.brand }
+                      : { backgroundColor: C.surface, borderColor: C.border }]}
+                    onPress={() => setScope(s)}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={[styles.chipTxt, { color: on ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                      {s === 'everyone' ? t.reports.scopeEveryone : t.reports.scopeMine}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
 
-        {/* Status chips with counts */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-          {STATUSES.map(s => {
-            const on = filter === s;
-            const count = counts[s] ?? 0;
-            return (
-              <TouchableOpacity
-                key={s}
-                style={[styles.chip, on
-                  ? { backgroundColor: C.brand, borderColor: C.brand }
-                  : { backgroundColor: C.surface, borderColor: C.border }]}
-                onPress={() => setFilter(s)}
-                activeOpacity={0.75}
-              >
-                <Text style={[styles.chipTxt, { color: on ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                  {s === 'All' ? t.common.all : (t.status[s] ?? s)}
-                </Text>
-                <Text style={[styles.chipCount, { color: on ? 'rgba(255,255,255,0.75)' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                  {count}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-
-        {filtered.length === 0 ? (
+            {/* Status chips with counts */}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+              {STATUSES.map(s => {
+                const on = filter === s;
+                const count = counts[s] ?? 0;
+                return (
+                  <TouchableOpacity
+                    key={s}
+                    style={[styles.chip, on
+                      ? { backgroundColor: C.brand, borderColor: C.brand }
+                      : { backgroundColor: C.surface, borderColor: C.border }]}
+                    onPress={() => setFilter(s)}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={[styles.chipTxt, { color: on ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                      {s === 'All' ? t.common.all : (t.status[s] ?? s)}
+                    </Text>
+                    <Text style={[styles.chipCount, { color: on ? 'rgba(255,255,255,0.75)' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                      {count}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+            <View style={{ height: 12 }} />
+          </View>
+        }
+        ListEmptyComponent={
           <View style={styles.empty}>
             <Feather name="inbox" size={28} color={C.textMuted} />
             <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -210,98 +217,94 @@ export function MyReportsScreen({ navigation }: any) {
               {t.reports.noReportsBody}
             </Text>
           </View>
-        ) : (
-          <View style={styles.list}>
-            {filtered.map(r => {
-              const cat = CATEGORY_ICON[r.category] ?? CATEGORY_ICON.Other;
-              const tone = statusTone(C, r.status);
-              const title = (r.description ?? '').split('\n')[0];
-              const isOwn = r.reporter_id === user?.id;
-              const editable = isOwn && r.status === 'Open';
-              return (
-                <View key={r.id} style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
+        }
+        renderItem={({ item: r }) => {
+          const cat = CATEGORY_ICON[r.category] ?? CATEGORY_ICON.Other;
+          const tone = statusTone(C, r.status);
+          const title = (r.description ?? '').split('\n')[0];
+          const isOwn = r.reporter_id === user?.id;
+          const editable = isOwn && r.status === 'Open';
+          return (
+            <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
+              <TouchableOpacity
+                style={styles.cardTop}
+                onPress={() => navigation.navigate('ReportDetail', { reportId: r.id })}
+                activeOpacity={0.75}
+              >
+                <View style={[styles.catIcon, { backgroundColor: `${cat.fg}1e` }]}>
+                  <Icon name={cat.icon} size={19} color={cat.fg} />
+                </View>
+                <View style={styles.cardBody}>
+                  <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                    {title}
+                  </Text>
+                  <View style={styles.cardMeta}>
+                    <Icon name="pin" size={12} color={C.textMuted} />
+                    <Text style={[styles.cardMetaTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                      {r.building}{r.room ? ` · ${r.room}` : ''}  ·  {timeAgo(r.created_at)}
+                    </Text>
+                  </View>
+                  <View style={styles.cardMeta}>
+                    <Icon name="user" size={12} color={C.textMuted} />
+                    <Text style={[styles.cardMetaTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                      {isOwn ? t.reports.scopeMine : `${t.reports.byLabel} ${r.reporter_name ?? '—'}`}
+                    </Text>
+                  </View>
+                </View>
+                <View style={[styles.statusPill, { backgroundColor: tone.bg }]}>
+                  <View style={[styles.statusDot, { backgroundColor: tone.fg }]} />
+                  <Text style={[styles.statusTxt, { color: tone.fg, fontFamily: FontFamily.jakartaBold }]}>
+                    {t.status[r.status] ?? r.status}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+              <View style={[styles.cardFoot, { borderTopColor: C.border }]}>
+                <Text style={[styles.code, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                  {r.code}
+                </Text>
+                <View style={styles.actions}>
+                  {editable && (
+                    <>
+                      <TouchableOpacity
+                        style={[styles.actBtn, { backgroundColor: C.surface2 }]}
+                        onPress={() => navigation.navigate('ReportForm', { editReportId: r.id })}
+                        activeOpacity={0.75}
+                      >
+                        <Feather name="edit-2" size={13} color={C.text2} />
+                        <Text style={[styles.actTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                          {t.common.edit}
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.actBtn, { backgroundColor: C.dangerBg }]}
+                        onPress={() => confirmDelete(r)}
+                        activeOpacity={0.75}
+                      >
+                        <Feather name="trash-2" size={13} color={C.danger} />
+                        <Text style={[styles.actTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
+                          {t.common.delete}
+                        </Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
                   <TouchableOpacity
-                    style={styles.cardTop}
+                    style={[styles.actBtn, { backgroundColor: C.surface2 }]}
                     onPress={() => navigation.navigate('ReportDetail', { reportId: r.id })}
                     activeOpacity={0.75}
                   >
-                    <View style={[styles.catIcon, { backgroundColor: `${cat.fg}1e` }]}>
-                      <Icon name={cat.icon} size={19} color={cat.fg} />
-                    </View>
-                    <View style={styles.cardBody}>
-                      <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                        {title}
-                      </Text>
-                      <View style={styles.cardMeta}>
-                        <Icon name="pin" size={12} color={C.textMuted} />
-                        <Text style={[styles.cardMetaTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                          {r.building}{r.room ? ` · ${r.room}` : ''}  ·  {timeAgo(r.created_at)}
-                        </Text>
-                      </View>
-                      <View style={styles.cardMeta}>
-                        <Icon name="user" size={12} color={C.textMuted} />
-                        <Text style={[styles.cardMetaTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                          {isOwn ? t.reports.scopeMine : `${t.reports.byLabel} ${r.reporter_name ?? '—'}`}
-                        </Text>
-                      </View>
-                    </View>
-                    <View style={[styles.statusPill, { backgroundColor: tone.bg }]}>
-                      <View style={[styles.statusDot, { backgroundColor: tone.fg }]} />
-                      <Text style={[styles.statusTxt, { color: tone.fg, fontFamily: FontFamily.jakartaBold }]}>
-                        {t.status[r.status] ?? r.status}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-
-                  <View style={[styles.cardFoot, { borderTopColor: C.border }]}>
-                    <Text style={[styles.code, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                      {r.code}
+                    <Text style={[styles.actTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                      {t.reports.view}
                     </Text>
-                    <View style={styles.actions}>
-                      {editable && (
-                        <>
-                          <TouchableOpacity
-                            style={[styles.actBtn, { backgroundColor: C.surface2 }]}
-                            onPress={() => navigation.navigate('ReportForm', { editReportId: r.id })}
-                            activeOpacity={0.75}
-                          >
-                            <Feather name="edit-2" size={13} color={C.text2} />
-                            <Text style={[styles.actTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                              {t.common.edit}
-                            </Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={[styles.actBtn, { backgroundColor: C.dangerBg }]}
-                            onPress={() => confirmDelete(r)}
-                            activeOpacity={0.75}
-                          >
-                            <Feather name="trash-2" size={13} color={C.danger} />
-                            <Text style={[styles.actTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
-                              {t.common.delete}
-                            </Text>
-                          </TouchableOpacity>
-                        </>
-                      )}
-                      <TouchableOpacity
-                        style={[styles.actBtn, { backgroundColor: C.surface2 }]}
-                        onPress={() => navigation.navigate('ReportDetail', { reportId: r.id })}
-                        activeOpacity={0.75}
-                      >
-                        <Text style={[styles.actTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                          {t.reports.view}
-                        </Text>
-                        <Feather name="arrow-right" size={13} color={C.text} />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
+                    <Feather name="arrow-right" size={13} color={C.text} />
+                  </TouchableOpacity>
                 </View>
-              );
-            })}
-          </View>
-        )}
-
-        <View style={{ height: 16 }} />
-      </ScrollView>
+              </View>
+            </View>
+          );
+        }}
+        ListFooterComponent={<View style={{ height: 16 }} />}
+      />
     </SafeAreaView>
   );
 }
