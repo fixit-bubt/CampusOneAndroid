@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
+  View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet,
   RefreshControl, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
@@ -90,109 +90,111 @@ export function DirectoryScreen({ navigation }: any) {
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar title={t.sectors.directory} onBack={() => navigation.goBack()} />
 
-      <ScrollView
+      <FlatList
+        data={filtered}
+        keyExtractor={s => s.id}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
-      >
-        {/* Search */}
-        <View style={[styles.searchBar, { backgroundColor: C.surface2 }]}>
-          <Icon name="search" size={17} color={C.textMuted} />
-          <TextInput
-            style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
-            placeholder={t.directory2.searchPlaceholder}
-            placeholderTextColor={C.textMuted}
-            value={query}
-            onChangeText={setQuery}
-          />
-        </View>
-
-        {/* List */}
-        <View style={styles.list}>
-          {filtered.map(s => (
-            <View key={s.id} style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
-              <View style={styles.cardTop}>
-                <TouchableOpacity
-                  style={styles.identity}
-                  onPress={() => navigation.navigate('StudentProfile', { student: s })}
-                  activeOpacity={0.7}
-                >
-                  <Avatar uri={s.avatar_url} name={s.full_name} size="md" />
-                  <View style={styles.cardBody}>
-                    <Text style={[styles.cardName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                      {s.full_name}
-                    </Text>
-                    <Text style={[styles.cardMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                      {s.department} · {s.intake} · {s.section}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-                {s.connState === 'connected' && (
-                  <View style={[styles.connPill, { backgroundColor: Accent.tealBg }]}>
-                    <View style={[styles.connDot, { backgroundColor: Accent.teal }]} />
-                    <Text style={[styles.connTxt, { color: Accent.teal, fontFamily: FontFamily.jakartaBold }]}>{t.directory2.connected}</Text>
-                  </View>
-                )}
-                {s.connState === 'requested' && (
-                  <View style={[styles.connPill, { backgroundColor: C.warnBg }]}>
-                    <View style={[styles.connDot, { backgroundColor: C.warn }]} />
-                    <Text style={[styles.connTxt, { color: C.warn, fontFamily: FontFamily.jakartaBold }]}>{t.directory2.requested}</Text>
-                  </View>
-                )}
-                {s.connState === 'none' && (
-                  <TouchableOpacity
-                    style={[styles.connectBtn, { backgroundColor: C.brand }]}
-                    onPress={() => handleConn(s.id, 'connect')}
-                    activeOpacity={0.85}
-                  >
-                    <Icon name="userPlus" size={15} color="#fff" />
-                    <Text style={[styles.connectTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>{t.directory2.connect}</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-
-              {s.connState === 'incoming' && (
-                <View style={styles.incomingArea}>
-                  <Text style={[styles.wantsToConnect, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
-                    {t.directory2.wantsToConnect}
+        ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+        ListHeaderComponent={
+          <View style={[styles.searchBar, { backgroundColor: C.surface2 }]}>
+            <Icon name="search" size={17} color={C.textMuted} />
+            <TextInput
+              style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
+              placeholder={t.directory2.searchPlaceholder}
+              placeholderTextColor={C.textMuted}
+              value={query}
+              onChangeText={setQuery}
+            />
+          </View>
+        }
+        ListEmptyComponent={
+          <Text style={{ color: C.textMuted, fontFamily: FontFamily.jakartaMedium, textAlign: 'center', marginTop: 24 }}>
+            {t.common.noResults}
+          </Text>
+        }
+        renderItem={({ item: s }) => (
+          <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <View style={styles.cardTop}>
+              <TouchableOpacity
+                style={styles.identity}
+                onPress={() => navigation.navigate('StudentProfile', { student: s })}
+                activeOpacity={0.7}
+              >
+                <Avatar uri={s.avatar_url} name={s.full_name} size="md" />
+                <View style={styles.cardBody}>
+                  <Text style={[styles.cardName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    {s.full_name}
                   </Text>
-                  <View style={styles.incomingActions}>
-                    <TouchableOpacity
-                      style={[styles.halfActionBtn, { backgroundColor: C.brand }]}
-                      onPress={() => handleConn(s.id, 'accept')}
-                      activeOpacity={0.85}
-                    >
-                      <Icon name="check" size={15} color="#fff" />
-                      <Text style={[styles.halfBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>{t.directory2.accept}</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.halfActionBtn, { backgroundColor: C.surface2, borderColor: C.border, borderWidth: 1 }]}
-                      onPress={() => handleConn(s.id, 'decline')}
-                      activeOpacity={0.85}
-                    >
-                      <Icon name="x" size={15} color={C.text} />
-                      <Text style={[styles.halfBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.directory2.decline}</Text>
-                    </TouchableOpacity>
-                  </View>
+                  <Text style={[styles.cardMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                    {s.department} · {s.intake} · {s.section}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+              {s.connState === 'connected' && (
+                <View style={[styles.connPill, { backgroundColor: Accent.tealBg }]}>
+                  <View style={[styles.connDot, { backgroundColor: Accent.teal }]} />
+                  <Text style={[styles.connTxt, { color: Accent.teal, fontFamily: FontFamily.jakartaBold }]}>{t.directory2.connected}</Text>
                 </View>
               )}
-
-              {s.connState === 'connected' && s.email && (
-                <View style={[styles.contactArea, { backgroundColor: C.surface2 }]}>
-                  <View style={styles.contactRow}>
-                    <Icon name="mail" size={14} color={C.textMuted} />
-                    <Text style={[styles.contactTxt, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
-                      {s.email}
-                    </Text>
-                  </View>
+              {s.connState === 'requested' && (
+                <View style={[styles.connPill, { backgroundColor: C.warnBg }]}>
+                  <View style={[styles.connDot, { backgroundColor: C.warn }]} />
+                  <Text style={[styles.connTxt, { color: C.warn, fontFamily: FontFamily.jakartaBold }]}>{t.directory2.requested}</Text>
                 </View>
+              )}
+              {s.connState === 'none' && (
+                <TouchableOpacity
+                  style={[styles.connectBtn, { backgroundColor: C.brand }]}
+                  onPress={() => handleConn(s.id, 'connect')}
+                  activeOpacity={0.85}
+                >
+                  <Icon name="userPlus" size={15} color={C.white} />
+                  <Text style={[styles.connectTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>{t.directory2.connect}</Text>
+                </TouchableOpacity>
               )}
             </View>
-          ))}
-        </View>
 
-        <View style={{ height: 12 }} />
-      </ScrollView>
+            {s.connState === 'incoming' && (
+              <View style={styles.incomingArea}>
+                <Text style={[styles.wantsToConnect, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+                  {t.directory2.wantsToConnect}
+                </Text>
+                <View style={styles.incomingActions}>
+                  <TouchableOpacity
+                    style={[styles.halfActionBtn, { backgroundColor: C.brand }]}
+                    onPress={() => handleConn(s.id, 'accept')}
+                    activeOpacity={0.85}
+                  >
+                    <Icon name="check" size={15} color={C.white} />
+                    <Text style={[styles.halfBtnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>{t.directory2.accept}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.halfActionBtn, { backgroundColor: C.surface2, borderColor: C.border, borderWidth: 1 }]}
+                    onPress={() => handleConn(s.id, 'decline')}
+                    activeOpacity={0.85}
+                  >
+                    <Icon name="x" size={15} color={C.text} />
+                    <Text style={[styles.halfBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.directory2.decline}</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
+            {s.connState === 'connected' && s.email && (
+              <View style={[styles.contactArea, { backgroundColor: C.surface2 }]}>
+                <View style={styles.contactRow}>
+                  <Icon name="mail" size={14} color={C.textMuted} />
+                  <Text style={[styles.contactTxt, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
+                    {s.email}
+                  </Text>
+                </View>
+              </View>
+            )}
+          </View>
+        )}
+      />
     </SafeAreaView>
   );
 }
