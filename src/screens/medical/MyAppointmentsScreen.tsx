@@ -40,7 +40,8 @@ function apptTone(C: any, status: string): { fg: string; bg: string } {
   }
 }
 
-function fmtSlot(hhmm: string): string {
+function fmtSlot(hhmm: string | null | undefined): string {
+  if (!hhmm) return '';
   const [h = 0, m = 0] = hhmm.split(':').map(Number);
   const ampm = h >= 12 ? 'PM' : 'AM';
   const h12 = h % 12 === 0 ? 12 : h % 12;

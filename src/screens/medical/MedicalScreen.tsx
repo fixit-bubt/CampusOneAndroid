@@ -26,15 +26,22 @@ interface Doctor {
   active: boolean;
 }
 
+function toMins(s: string | null | undefined, fallback: number): number {
+  const [h, m] = (s ?? '').split(':').map(Number);
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return fallback;
+  return h * 60 + m;
+}
+
 function isOnDuty(doc: Doctor): boolean {
   if (!doc.active) return false;
   const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const now = new Date();
   if (!doc.days?.includes(DAY_NAMES[now.getDay()])) return false;
-  const [sh = 0, sm = 0] = (doc.start_time ?? '').split(':').map(Number);
-  const [eh = 23, em = 59] = (doc.end_time ?? '').split(':').map(Number);
+  const start = toMins(doc.start_time, 0);
+  const end = toMins(doc.end_time, 24 * 60 - 1);
   const nowMins = now.getHours() * 60 + now.getMinutes();
-  return nowMins >= sh * 60 + sm && nowMins <= eh * 60 + em;
+  // Handle overnight shifts (end before start wraps past midnight).
+  return start <= end ? (nowMins >= start && nowMins <= end) : (nowMins >= start || nowMins <= end);
 }
 
 export function MedicalScreen({ navigation }: any) {
