@@ -38,24 +38,16 @@ export function DirectoryScreen({ navigation }: any) {
 
   const load = useCallback(async () => {
     if (!user?.id) return;
+    // student_directory() already returns an authoritative per-row status; use it
+    // as the single source instead of re-deriving from a second connections query
+    // (the two could disagree and contradict StudentProfile).
     const { data: profiles } = await supabase.rpc('student_directory');
-
-    const { data: connections } = await supabase
-      .from('connections')
-      .select('*')
-      .or(`requester_id.eq.${user?.id ?? ''},addressee_id.eq.${user?.id ?? ''}`);
-
-    const map = new Map<string, ConnState>();
-    (connections ?? []).forEach((c: any) => {
-      const other = c.requester_id === user?.id ? c.addressee_id : c.requester_id;
-      if (c.status === 'accepted') map.set(other, 'connected');
-      else if (c.requester_id === user?.id) map.set(other, 'requested');
-      else map.set(other, 'incoming');
-    });
-
+    const STATUS_MAP: Record<string, ConnState> = {
+      accepted: 'connected', pending_outgoing: 'requested', pending_incoming: 'incoming',
+    };
     setStudents((profiles ?? []).map((p: any) => ({
       ...p,
-      connState: map.get(p.id) ?? 'none',
+      connState: STATUS_MAP[p.status as string] ?? 'none',
     })));
   }, [user?.id]);
 
@@ -76,14 +68,16 @@ export function DirectoryScreen({ navigation }: any) {
       if (error) { await load(); return; }
       setStudents(prev => prev.map(s => s.id === studentId ? { ...s, connState: 'requested' } : s));
     } else if (action === 'accept') {
-      const { error } = await supabase.from('connections').update({ status: 'accepted' })
-        .eq('requester_id', studentId).eq('addressee_id', user.id);
-      if (error) { await load(); return; }
+      // Guard on status='pending' and verify a row actually changed; a stale tap on
+      // an already-decided row affects 0 rows yet returns no error.
+      const { data: upd, error } = await supabase.from('connections').update({ status: 'accepted' })
+        .eq('requester_id', studentId).eq('addressee_id', user.id).eq('status', 'pending').select('requester_id');
+      if (error || !upd || upd.length === 0) { await load(); return; }
       setStudents(prev => prev.map(s => s.id === studentId ? { ...s, connState: 'connected' } : s));
     } else {
-      const { error } = await supabase.from('connections').delete()
-        .eq('requester_id', studentId).eq('addressee_id', user.id);
-      if (error) { await load(); return; }
+      const { data: del, error } = await supabase.from('connections').delete()
+        .eq('requester_id', studentId).eq('addressee_id', user.id).eq('status', 'pending').select('requester_id');
+      if (error || !del || del.length === 0) { await load(); return; }
       setStudents(prev => prev.map(s => s.id === studentId ? { ...s, connState: 'none' } : s));
     }
   }
@@ -160,7 +154,7 @@ export function DirectoryScreen({ navigation }: any) {
               {s.connState === 'incoming' && (
                 <View style={styles.incomingArea}>
                   <Text style={[styles.wantsToConnect, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
-                    Wants to connect
+                    {t.directory2.wantsToConnect}
                   </Text>
                   <View style={styles.incomingActions}>
                     <TouchableOpacity

@@ -27,14 +27,3 @@ export async function updateProfile(
   if (error) return { ok: false, error: error.message };
   return { ok: true, data: data as Profile };
 }
-
-export async function searchDirectory(query: string): Promise<ServiceResult<Profile[]>> {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('directory_visible', true)
-    .ilike('full_name', `%${query}%`)
-    .limit(30);
-  if (error) return { ok: false, error: error.message };
-  return { ok: true, data: data as Profile[] };
-}

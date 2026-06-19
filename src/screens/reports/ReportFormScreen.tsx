@@ -91,12 +91,36 @@ export function ReportFormScreen({ route, navigation }: any) {
         setTitle(lines[0] ?? '');
         setDesc(lines.slice(1).join('\n'));
         setCat(data.category ?? null);
-        // Best-effort prefill: keep building, drop the rest into a note for editing.
+        // Parse the stored "Building N" / "<floor> floor · <place> ..." strings back
+        // into the structured fields so an edit round-trips instead of cumulatively
+        // corrupting the location (e.g. re-prefixing "Ground floor · Other ·").
         const bMatch = (data.building ?? '').match(/(\d)/);
         setBuilding(bMatch ? bMatch[1] : null);
-        setFloor('Ground');
-        setPlace('Other');
-        setLocNote(data.room ?? '');
+
+        const room = (data.room ?? '');
+        const fm = room.match(/^(.+?) floor/);
+        setFloor(fm && FLOORS.includes(fm[1]) ? fm[1] : 'Ground');
+        const rest = room.replace(/^.+? floor\s*/, '').replace(/^·\s*/, '').trim();
+
+        if (rest.startsWith('Washroom')) {
+          setPlace('Washroom');
+          const g = rest.match(/\((Male|Female)\)/);
+          setWashGender(g ? (g[1] as 'Male' | 'Female') : null);
+        } else if (rest.startsWith('Classroom') || rest.startsWith('Lab')) {
+          const p: PlaceType = rest.startsWith('Classroom') ? 'Classroom' : 'Lab';
+          setPlace(p);
+          setRoomNo(rest.replace(/^(Classroom|Lab)\s*/, '').trim());
+        } else if (rest.startsWith('Corridor')) {
+          setPlace('Corridor/Stairs');
+        } else if (rest === 'Library') {
+          setPlace('Library');
+        } else if (rest.startsWith('Other')) {
+          setPlace('Other');
+          setLocNote(rest.replace(/^Other\s*·?\s*/, '').trim());
+        } else {
+          setPlace('Other');
+          setLocNote(rest);
+        }
         if (data.photo_url) setPhotoUri(data.photo_url);
       }
       setLoading(false);
@@ -165,10 +189,15 @@ export function ReportFormScreen({ route, navigation }: any) {
     };
 
     if (isEdit) {
-      const { error } = await supabase.from('reports').update(payload).eq('id', editReportId!);
+      // .select() so a no-op update (RLS matched 0 rows, e.g. report no longer Open)
+      // is caught — a bare update returns error=null even when nothing changed.
+      const { data: updated, error } = await supabase
+        .from('reports').update(payload).eq('id', editReportId!).select('id');
       setBusy(false);
       if (error) {
         setErr(error.message ?? t.reports2.updateFailed);
+      } else if (!updated || updated.length === 0) {
+        setErr(t.reports2.updateFailed);
       } else {
         navigation.goBack();
       }

@@ -69,14 +69,14 @@ export function StudentProfileScreen({ route, navigation }: any) {
       if (error) { await refresh(); return; }
       setStudent(s => ({ ...s, connState: 'requested' }));
     } else if (action === 'accept') {
-      const { error } = await supabase.from('connections').update({ status: 'accepted' })
-        .eq('requester_id', student.id).eq('addressee_id', user.id);
-      if (error) { await refresh(); return; }
+      const { data: upd, error } = await supabase.from('connections').update({ status: 'accepted' })
+        .eq('requester_id', student.id).eq('addressee_id', user.id).eq('status', 'pending').select('requester_id');
+      if (error || !upd || upd.length === 0) { await refresh(); return; }
       setStudent(s => ({ ...s, connState: 'connected' }));
     } else {
-      const { error } = await supabase.from('connections').delete()
-        .eq('requester_id', student.id).eq('addressee_id', user.id);
-      if (error) { await refresh(); return; }
+      const { data: del, error } = await supabase.from('connections').delete()
+        .eq('requester_id', student.id).eq('addressee_id', user.id).eq('status', 'pending').select('requester_id');
+      if (error || !del || del.length === 0) { await refresh(); return; }
       setStudent(s => ({ ...s, connState: 'none' }));
     }
     // Pull fresh contact details once the connection state settles.
