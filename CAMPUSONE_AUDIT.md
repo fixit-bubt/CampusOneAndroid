@@ -19,7 +19,9 @@ _Generated 2026-06-19. Multi-agent sweep: 22 code-domain bug lanes + live Supaba
 - **Medical:** queue role-gate race closed; loading states
 - **Confirmed intended (no change):** open-join study `join_code`; campus_reports feed with names
 
-**Remaining (trivial, optional):** FlatList on bounded admin lists (MyReports/AllReports/ManageUsers 200–500 rows); a few `load()` empty/error states (jobs/clubs-browse/study-browse); minor i18n (Alert button labels); medical overnight-shift/null-time guards; enable leaked-password protection in the Supabase dashboard.
+**P2 tail — now also done:** FlatList virtualization (Directory, MyReports, AssignedToMe, AllReports); loading/error states (Clubs, Jobs, JobsModerate, Medical, Market); medical overnight-shift + NaN-time + null-slot guards; Market orders Available before Sold; date validation; calendar nav; collision-safe codes; RSVP capacity RPC.
+
+**Truly remaining (negligible):** ManageUsers/ManageClubs virtualization (admin-only, capped, kept to preserve the single-card layout); a few Alert dialog button labels not yet localized; enable leaked-password protection in the Supabase dashboard (a setting only you can toggle).
 
 ---
 
