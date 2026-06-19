@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
-  RefreshControl, type ViewStyle, type TextStyle,
+  RefreshControl, ActivityIndicator, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -75,15 +75,18 @@ export function JobsBrowseScreen({ navigation }: any) {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     const [jobsRes, savedRes] = await Promise.all([
       supabase.from('jobs').select('*').is('deleted_at', null).order('created_at', { ascending: false }).limit(50),
       supabase.from('job_bookmarks').select('job_id').eq('user_id', user?.id ?? '').limit(200),
     ]);
+    if (jobsRes.error) { toast({ type: 'error', title: t.common.error }); setLoading(false); return; }
     if (jobsRes.data) setJobs(jobsRes.data as Job[]);
     if (savedRes.data) setSavedIds(new Set(savedRes.data.map((s: any) => s.job_id)));
-  }, [user?.id]);
+    setLoading(false);
+  }, [user?.id, toast, t]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -222,7 +225,9 @@ export function JobsBrowseScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
-        {list.length === 0 ? (
+        {loading && jobs.length === 0 ? (
+          <ActivityIndicator style={{ marginTop: 60 }} color={C.brand} />
+        ) : list.length === 0 ? (
           <View style={styles.empty}>
             <Icon name="jobs" size={28} color={C.textMuted} />
             <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>

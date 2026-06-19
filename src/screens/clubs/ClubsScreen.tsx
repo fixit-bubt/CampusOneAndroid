@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
-  RefreshControl, type ViewStyle,
+  RefreshControl, ActivityIndicator, type ViewStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -38,6 +38,8 @@ export function ClubsScreen({ navigation }: any) {
   const { user } = useAuth();
   const [clubs, setClubs] = useState<Club[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadErr, setLoadErr] = useState(false);
 
   const load = useCallback(async () => {
     const [clubsRes, countsRes] = await Promise.all([
@@ -51,7 +53,8 @@ export function ClubsScreen({ navigation }: any) {
       // member rows of clubs the current user has joined).
       supabase.rpc('club_member_counts'),
     ]);
-    if (clubsRes.error) return;
+    if (clubsRes.error) { setLoadErr(true); setLoading(false); return; }
+    setLoadErr(false);
     const countMap: Record<string, number> = {};
     (countsRes.data ?? []).forEach((r: any) => { countMap[r.club_id] = Number(r.members); });
     if (clubsRes.data) {
@@ -62,6 +65,7 @@ export function ClubsScreen({ navigation }: any) {
       }));
       setClubs(mapped as Club[]);
     }
+    setLoading(false);
   }, [user?.id]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -80,7 +84,14 @@ export function ClubsScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
-        {clubs.length === 0 ? (
+        {loading && clubs.length === 0 ? (
+          <ActivityIndicator style={{ marginTop: 40 }} color={C.brand} />
+        ) : loadErr && clubs.length === 0 ? (
+          <View style={styles.empty}>
+            <Icon name="clubs" size={28} color={C.textMuted} />
+            <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.common.error}</Text>
+          </View>
+        ) : clubs.length === 0 ? (
           <View style={styles.empty}>
             <Icon name="clubs" size={28} color={C.textMuted} />
             <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.clubs2.noClubsFound}</Text>
