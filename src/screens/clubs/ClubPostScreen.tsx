@@ -42,7 +42,7 @@ export function ClubPostScreen({ route, navigation }: any) {
       if (error) throw error;
       navigation.goBack();
     } catch {
-      toast({ type: 'error', title: t.common.error, message: 'Could not post. Please try again.' });
+      toast({ type: 'error', title: t.common.error });
     } finally {
       setLoading(false);
     }
@@ -66,7 +66,7 @@ export function ClubPostScreen({ route, navigation }: any) {
           style={[styles.titleInput, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaBold }]}
           value={title}
           onChangeText={setTitle}
-          placeholder="Title (optional)"
+          placeholder={t.clubs2.titlePlaceholder}
           placeholderTextColor={C.textMuted}
         />
 
@@ -74,7 +74,7 @@ export function ClubPostScreen({ route, navigation }: any) {
           style={[styles.textarea, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
           value={content}
           onChangeText={setContent}
-          placeholder="Share an update with members…"
+          placeholder={t.clubs2.shareUpdatePlaceholder}
           placeholderTextColor={C.textMuted}
           multiline
           textAlignVertical="top"
@@ -89,7 +89,7 @@ export function ClubPostScreen({ route, navigation }: any) {
         >
           <Icon name="check" size={18} color={canSubmit ? C.white : C.textMuted} />
           <Text style={[styles.submitText, { color: canSubmit ? C.white : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-            Post
+            {t.clubs2.postBtn}
           </Text>
         </TouchableOpacity>
 

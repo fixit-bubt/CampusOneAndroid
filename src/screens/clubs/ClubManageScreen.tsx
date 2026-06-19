@@ -29,7 +29,6 @@ export function ClubManageScreen({ route, navigation }: any) {
   const toast = useToast();
   const { user, profile } = useAuth();
   const { clubId } = route.params ?? {};
-  if (!clubId) return null;
   const id = clubId;
   const [name, setName] = useState('');
   const [tagline, setTagline] = useState('');
@@ -52,7 +51,10 @@ export function ClubManageScreen({ route, navigation }: any) {
         setName(clubRes.data.name ?? '');
         setTagline(clubRes.data.tagline ?? '');
         setAbout(clubRes.data.about ?? '');
-        setCategory(clubRes.data.category ?? 'other');
+        // Fall back to a valid category; 'other' isn't in CATEGORIES and the
+        // club_update_details RPC rejects it.
+        setCategory(clubRes.data.category && CATEGORIES.includes(clubRes.data.category)
+          ? clubRes.data.category : 'Tech');
         setAdvisor(clubRes.data.faculty_advisor_id ?? null);
         setCoverUrl(clubRes.data.cover_url ?? null);
       }
@@ -60,6 +62,8 @@ export function ClubManageScreen({ route, navigation }: any) {
       setLoading(false);
     })();
   }, [id]);
+
+  if (!clubId) return null; // after hooks — Rules of Hooks
 
   async function saveChanges() {
     if (!name.trim()) return;

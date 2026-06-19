@@ -1,7 +1,7 @@
 // Club member management — president/VP only. Add students by search, change
 // member roles (vp / editor / member), remove members. Presidency itself is
 // transferred from the Manage screen.
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
   Modal, Alert, type ViewStyle, type TextStyle,
@@ -35,6 +35,10 @@ export function ClubMembersScreen({ route, navigation }: any) {
   const t = useT();
   const clubId: string = route.params?.clubId;
   const [members, setMembers] = useState<Member[]>([]);
+  // Latest members for the search exclusion, without making the search effect
+  // re-run (and refetch) every time the member list mutates.
+  const membersRef = useRef<Member[]>([]);
+  membersRef.current = members;
   const [addOpen, setAddOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<{ id: string; full_name: string; avatar_url: string | null }[]>([]);
@@ -65,12 +69,12 @@ export function ClubMembersScreen({ route, navigation }: any) {
         .eq('role', 'student')
         .limit(12);
       if (data) {
-        const memberIds = new Set(members.map(m => m.user_id));
+        const memberIds = new Set(membersRef.current.map(m => m.user_id));
         setResults((data as any[]).filter(p => !memberIds.has(p.id)));
       }
     }, 250);
     return () => clearTimeout(timer);
-  }, [query, addOpen, members]);
+  }, [query, addOpen]);
 
   async function addMember(userId: string) {
     const { error } = await supabase
