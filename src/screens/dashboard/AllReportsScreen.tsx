@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, ScrollView, Modal, StyleSheet,
+  View, Text, TextInput, TouchableOpacity, ScrollView, FlatList, Modal, StyleSheet,
   RefreshControl, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
@@ -203,77 +203,81 @@ export function AllReportsScreen({ navigation }: any) {
         })}
       </ScrollView>
 
-      <ScrollView
+      <FlatList
+        data={list}
+        keyExtractor={r => r.id}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
-      >
-        <View style={styles.cardList}>
-          {list.map(r => {
-            const tone = statusTone(C, r.status);
-            const code = (r as any).code ?? ('RPT-' + r.id.replace(/\D/g, '').padStart(4, '0').slice(-4));
-            return (
-              <TouchableOpacity
-                key={r.id}
-                style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}
-                onPress={() => navigation.navigate('ReportDetail', { reportId: r.id })}
-                activeOpacity={0.75}
-              >
-                <View style={styles.cardTop}>
-                  <View style={styles.cardInfo}>
-                    <Text style={[styles.cardCode, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                      {code}
-                    </Text>
-                    <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={2}>
-                      {r.description.split('\n')[0]}
-                    </Text>
-                    <View style={styles.locRow}>
-                      <Icon name="pin" size={11} color={C.textMuted} />
-                      <Text style={[styles.loc, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                        {r.building}{r.room ? ` · ${t.dash.roomLabel(r.room)}` : ''}
-                      </Text>
-                    </View>
-                  </View>
-                  <View style={[styles.statusPill, { backgroundColor: tone.bg }]}>
-                    <Text style={[styles.statusTxt, { color: tone.text, fontFamily: FontFamily.jakartaBold }]}>
-                      {r.status}
+        ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+        ListEmptyComponent={
+          <Text style={{ color: C.textMuted, fontFamily: FontFamily.jakartaMedium, textAlign: 'center', marginTop: 24 }}>
+            {t.common.noResults}
+          </Text>
+        }
+        ListFooterComponent={<View style={{ height: 20 }} />}
+        renderItem={({ item: r }) => {
+          const tone = statusTone(C, r.status);
+          const code = (r as any).code ?? ('RPT-' + r.id.replace(/\D/g, '').padStart(4, '0').slice(-4));
+          return (
+            <TouchableOpacity
+              style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}
+              onPress={() => navigation.navigate('ReportDetail', { reportId: r.id })}
+              activeOpacity={0.75}
+            >
+              <View style={styles.cardTop}>
+                <View style={styles.cardInfo}>
+                  <Text style={[styles.cardCode, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                    {code}
+                  </Text>
+                  <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={2}>
+                    {r.description.split('\n')[0]}
+                  </Text>
+                  <View style={styles.locRow}>
+                    <Icon name="pin" size={11} color={C.textMuted} />
+                    <Text style={[styles.loc, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                      {r.building}{r.room ? ` · ${t.dash.roomLabel(r.room)}` : ''}
                     </Text>
                   </View>
                 </View>
+                <View style={[styles.statusPill, { backgroundColor: tone.bg }]}>
+                  <Text style={[styles.statusTxt, { color: tone.text, fontFamily: FontFamily.jakartaBold }]}>
+                    {r.status}
+                  </Text>
+                </View>
+              </View>
 
-                <View style={styles.cardFooter}>
-                  <View style={styles.byRow}>
-                    <Avatar name={r.profiles?.full_name} size="xs" />
-                    <Text style={[styles.byName, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
-                      {r.profiles?.full_name ?? t.dash.unknown}
-                    </Text>
-                  </View>
-                  {r.status !== 'Rejected' && r.status !== 'Closed' && r.status !== 'Resolved' && (
-                    r.assigned_staff_id ? (
-                      <TouchableOpacity
-                        style={[styles.assignBtn, { backgroundColor: C.surface2 }]}
-                        onPress={() => setAssignTarget(r)}
-                        activeOpacity={0.8}
-                      >
-                        <Text style={[styles.assignTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.dash.reassign}</Text>
-                      </TouchableOpacity>
-                    ) : (
-                      <TouchableOpacity
-                        style={[styles.assignBtn, { backgroundColor: C.brand }]}
-                        onPress={() => setAssignTarget(r)}
-                        activeOpacity={0.8}
-                      >
-                        <Text style={[styles.assignTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>{t.dash.assignBtn}</Text>
-                      </TouchableOpacity>
-                    )
-                  )}
+              <View style={styles.cardFooter}>
+                <View style={styles.byRow}>
+                  <Avatar name={r.profiles?.full_name} size="xs" />
+                  <Text style={[styles.byName, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
+                    {r.profiles?.full_name ?? t.dash.unknown}
+                  </Text>
                 </View>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-        <View style={{ height: 20 }} />
-      </ScrollView>
+                {r.status !== 'Rejected' && r.status !== 'Closed' && r.status !== 'Resolved' && (
+                  r.assigned_staff_id ? (
+                    <TouchableOpacity
+                      style={[styles.assignBtn, { backgroundColor: C.surface2 }]}
+                      onPress={() => setAssignTarget(r)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={[styles.assignTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.dash.reassign}</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      style={[styles.assignBtn, { backgroundColor: C.brand }]}
+                      onPress={() => setAssignTarget(r)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={[styles.assignTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>{t.dash.assignBtn}</Text>
+                    </TouchableOpacity>
+                  )
+                )}
+              </View>
+            </TouchableOpacity>
+          );
+        }}
+      />
 
       {/* Assign Modal */}
       <Modal visible={!!assignTarget} transparent animationType="slide" onRequestClose={() => setAssignTarget(null)}>

@@ -3,7 +3,7 @@
 // dashboard links into.
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
+  View, Text, TextInput, TouchableOpacity, ScrollView, FlatList, StyleSheet,
   RefreshControl, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
@@ -104,53 +104,60 @@ export function AssignedToMeScreen({ navigation }: any) {
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar title={t.reports.assignedTitle} onBack={() => navigation.goBack()} />
 
-      <ScrollView
+      <FlatList
+        data={filtered}
+        keyExtractor={r => r.id}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
-      >
-        {/* Search */}
-        <View style={[styles.searchBar, { backgroundColor: C.surface2 }]}>
-          <Icon name="search" size={17} color={C.textMuted} />
-          <TextInput
-            style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
-            placeholder={t.reports.searchPlaceholder}
-            placeholderTextColor={C.textMuted}
-            value={query}
-            onChangeText={setQuery}
-          />
-          {query.length > 0 && (
-            <TouchableOpacity onPress={() => setQuery('')} hitSlop={8}>
-              <Feather name="x" size={16} color={C.textMuted} />
-            </TouchableOpacity>
-          )}
-        </View>
+        ItemSeparatorComponent={() => <View style={{ height: 11 }} />}
+        ListHeaderComponent={
+          <View>
+            {/* Search */}
+            <View style={[styles.searchBar, { backgroundColor: C.surface2 }]}>
+              <Icon name="search" size={17} color={C.textMuted} />
+              <TextInput
+                style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
+                placeholder={t.reports.searchPlaceholder}
+                placeholderTextColor={C.textMuted}
+                value={query}
+                onChangeText={setQuery}
+              />
+              {query.length > 0 && (
+                <TouchableOpacity onPress={() => setQuery('')} hitSlop={8}>
+                  <Feather name="x" size={16} color={C.textMuted} />
+                </TouchableOpacity>
+              )}
+            </View>
 
-        {/* Status chips */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-          {STATUSES.map(s => {
-            const on = filter === s;
-            return (
-              <TouchableOpacity
-                key={s}
-                style={[styles.chip, on
-                  ? { backgroundColor: C.brand, borderColor: C.brand }
-                  : { backgroundColor: C.surface, borderColor: C.border }]}
-                onPress={() => setFilter(s)}
-                activeOpacity={0.75}
-              >
-                <Text style={[styles.chipTxt, { color: on ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                  {s === 'All' ? t.common.all : (t.status[s] ?? s)}
-                </Text>
-                <Text style={[styles.chipCount, { color: on ? 'rgba(255,255,255,0.75)' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                  {counts[s] ?? 0}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-
-        {filtered.length === 0 ? (
+            {/* Status chips */}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+              {STATUSES.map(s => {
+                const on = filter === s;
+                return (
+                  <TouchableOpacity
+                    key={s}
+                    style={[styles.chip, on
+                      ? { backgroundColor: C.brand, borderColor: C.brand }
+                      : { backgroundColor: C.surface, borderColor: C.border }]}
+                    onPress={() => setFilter(s)}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={[styles.chipTxt, { color: on ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                      {s === 'All' ? t.common.all : (t.status[s] ?? s)}
+                    </Text>
+                    <Text style={[styles.chipCount, { color: on ? 'rgba(255,255,255,0.75)' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                      {counts[s] ?? 0}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+            <View style={{ height: 12 }} />
+          </View>
+        }
+        ListEmptyComponent={
           <View style={styles.empty}>
             <Feather name="clipboard" size={28} color={C.textMuted} />
             <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -160,48 +167,43 @@ export function AssignedToMeScreen({ navigation }: any) {
               {t.reports.noReportsBody}
             </Text>
           </View>
-        ) : (
-          <View style={styles.list}>
-            {filtered.map(r => {
-              const cat = CATEGORY_ICON[r.category] ?? CATEGORY_ICON.Other;
-              const tone = statusTone(C, r.status);
-              const title = (r.description ?? '').split('\n')[0];
-              return (
-                <TouchableOpacity
-                  key={r.id}
-                  style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}
-                  onPress={() => navigation.navigate('ReportDetail', { reportId: r.id })}
-                  activeOpacity={0.75}
-                >
-                  <View style={[styles.catIcon, { backgroundColor: `${cat.fg}1e` }]}>
-                    <Icon name={cat.icon} size={19} color={cat.fg} />
-                  </View>
-                  <View style={styles.cardBody}>
-                    <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                      {title}
-                    </Text>
-                    <View style={styles.cardMeta}>
-                      <Icon name="pin" size={12} color={C.textMuted} />
-                      <Text style={[styles.cardMetaTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                        {r.building}{r.room ? ` · ${r.room}` : ''}
-                        {r.reporter_name ? `  ·  ${r.reporter_name}` : ''}  ·  {timeAgo(r.created_at)}
-                      </Text>
-                    </View>
-                  </View>
-                  <View style={[styles.statusPill, { backgroundColor: tone.bg }]}>
-                    <View style={[styles.statusDot, { backgroundColor: tone.fg }]} />
-                    <Text style={[styles.statusTxt, { color: tone.fg, fontFamily: FontFamily.jakartaBold }]}>
-                      {t.status[r.status] ?? r.status}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        )}
-
-        <View style={{ height: 16 }} />
-      </ScrollView>
+        }
+        renderItem={({ item: r }) => {
+          const cat = CATEGORY_ICON[r.category] ?? CATEGORY_ICON.Other;
+          const tone = statusTone(C, r.status);
+          const title = (r.description ?? '').split('\n')[0];
+          return (
+            <TouchableOpacity
+              style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}
+              onPress={() => navigation.navigate('ReportDetail', { reportId: r.id })}
+              activeOpacity={0.75}
+            >
+              <View style={[styles.catIcon, { backgroundColor: `${cat.fg}1e` }]}>
+                <Icon name={cat.icon} size={19} color={cat.fg} />
+              </View>
+              <View style={styles.cardBody}>
+                <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                  {title}
+                </Text>
+                <View style={styles.cardMeta}>
+                  <Icon name="pin" size={12} color={C.textMuted} />
+                  <Text style={[styles.cardMetaTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                    {r.building}{r.room ? ` · ${r.room}` : ''}
+                    {r.reporter_name ? `  ·  ${r.reporter_name}` : ''}  ·  {timeAgo(r.created_at)}
+                  </Text>
+                </View>
+              </View>
+              <View style={[styles.statusPill, { backgroundColor: tone.bg }]}>
+                <View style={[styles.statusDot, { backgroundColor: tone.fg }]} />
+                <Text style={[styles.statusTxt, { color: tone.fg, fontFamily: FontFamily.jakartaBold }]}>
+                  {t.status[r.status] ?? r.status}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          );
+        }}
+        ListFooterComponent={<View style={{ height: 16 }} />}
+      />
     </SafeAreaView>
   );
 }
