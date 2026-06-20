@@ -299,6 +299,11 @@ export function ProfileScreen({ navigation }: any) {
   const [editIntake, setEditIntake] = useState('');
   const [editSection, setEditSection] = useState('');
   const [editWhatsapp, setEditWhatsapp] = useState('');
+  const [editStudentId, setEditStudentId] = useState('');
+  const [editProgram, setEditProgram] = useState('');
+  const [editBlood, setEditBlood] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editAddress, setEditAddress] = useState('');
   const [editDirVisible, setEditDirVisible] = useState(true);
   const [editShowWa, setEditShowWa] = useState(false);
   const [pickedAvatar, setPickedAvatar] = useState<string | null>(null);
@@ -310,6 +315,11 @@ export function ProfileScreen({ navigation }: any) {
       setEditIntake(profile?.intake ?? '');
       setEditSection(profile?.section ?? '');
       setEditWhatsapp(profile?.whatsapp ?? '');
+      setEditStudentId(profile?.student_id ?? '');
+      setEditProgram(profile?.program ?? '');
+      setEditBlood(profile?.blood_group ?? '');
+      setEditPhone(profile?.phone ?? '');
+      setEditAddress(profile?.address ?? '');
       setEditDirVisible(profile?.directory_visible ?? true);
       setEditShowWa(profile?.show_whatsapp ?? false);
       setPickedAvatar(null);
@@ -366,10 +376,15 @@ export function ProfileScreen({ navigation }: any) {
         full_name: editName,
         department: editDept,
         whatsapp: editWhatsapp,
+        phone: editPhone,
+        address: editAddress,
       };
       if (isStudent) {
         payload.intake = editIntake;
         payload.section = editSection;
+        payload.student_id = editStudentId;
+        payload.program = editProgram;
+        payload.blood_group = editBlood;
         payload.directory_visible = editDirVisible;
         payload.show_whatsapp = editShowWa;
       }
@@ -454,6 +469,17 @@ export function ProfileScreen({ navigation }: any) {
                 />
                 {isStudent && (
                   <>
+                    <TextInput
+                      style={[styles.editInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                      value={editStudentId} onChangeText={setEditStudentId}
+                      placeholder="Student ID" placeholderTextColor={C.textMuted}
+                      keyboardType="number-pad"
+                    />
+                    <TextInput
+                      style={[styles.editInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                      value={editProgram} onChangeText={setEditProgram}
+                      placeholder="Program (e.g. B.Sc. in CSE)" placeholderTextColor={C.textMuted}
+                    />
                     <View style={styles.editRow}>
                       <TextInput
                         style={[styles.editInput, styles.editHalf, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
@@ -466,6 +492,12 @@ export function ProfileScreen({ navigation }: any) {
                         placeholder={t.mainx.sectionPlaceholder} placeholderTextColor={C.textMuted}
                       />
                     </View>
+                    <TextInput
+                      style={[styles.editInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                      value={editBlood} onChangeText={setEditBlood}
+                      placeholder="Blood Group (e.g. O+)" placeholderTextColor={C.textMuted}
+                      autoCapitalize="characters"
+                    />
                   </>
                 )}
                 <TextInput
@@ -473,6 +505,17 @@ export function ProfileScreen({ navigation }: any) {
                   value={editWhatsapp} onChangeText={setEditWhatsapp}
                   placeholder={t.mainx.whatsappPlaceholder} placeholderTextColor={C.textMuted}
                   keyboardType="phone-pad"
+                />
+                <TextInput
+                  style={[styles.editInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                  value={editPhone} onChangeText={setEditPhone}
+                  placeholder="Phone" placeholderTextColor={C.textMuted}
+                  keyboardType="phone-pad"
+                />
+                <TextInput
+                  style={[styles.editInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                  value={editAddress} onChangeText={setEditAddress}
+                  placeholder="Present Address" placeholderTextColor={C.textMuted}
                 />
                 {isStudent && (
                   <View style={[styles.toggleCard, { backgroundColor: C.bg, borderColor: C.border }]}>
@@ -506,17 +549,32 @@ export function ProfileScreen({ navigation }: any) {
                   {profile?.department ?? '—'}{profile?.intake ? ` · Intake ${profile.intake}` : ''}
                   {profile?.section ? ` · Sec ${profile.section}` : ''}
                 </Text>
+                {(profile?.student_id || profile?.blood_group || profile?.program) ? (
+                  <Text style={[styles.heroMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                    {profile?.student_id ? `ID ${profile.student_id}` : ''}
+                    {profile?.program ? `${profile?.student_id ? ' · ' : ''}${profile.program}` : ''}
+                    {profile?.blood_group ? `${profile?.student_id || profile?.program ? ' · ' : ''}Blood ${profile.blood_group}` : ''}
+                  </Text>
+                ) : null}
                 <View style={[styles.rolePill, { backgroundColor: roleBg }]}>
                   <View style={[styles.rolePillDot, { backgroundColor: roleHex }]} />
                   <Text style={[styles.rolePillTxt, { color: roleHex, fontFamily: FontFamily.jakartaBold }]}>
                     {ROLE_LABEL[role] ?? role}
                   </Text>
                 </View>
-                {profile?.whatsapp ? (
+                {(profile?.phone || profile?.whatsapp) ? (
                   <View style={styles.contactRow}>
                     <Feather name="phone" size={13} color={C.textMuted} />
                     <Text style={[styles.contactTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                      {profile.whatsapp}
+                      {profile?.phone || profile?.whatsapp}
+                    </Text>
+                  </View>
+                ) : null}
+                {profile?.address ? (
+                  <View style={styles.contactRow}>
+                    <Feather name="map-pin" size={13} color={C.textMuted} />
+                    <Text style={[styles.contactTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                      {profile.address}
                     </Text>
                   </View>
                 ) : null}

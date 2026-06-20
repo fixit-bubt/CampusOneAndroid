@@ -3,6 +3,7 @@
     "name": "CampusOne",
     "slug": "CampusOne",
     "version": "1.0.0",
+    "scheme": "campusone",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -33,7 +34,8 @@
           "backgroundColor": "#E6F4FE"
         }
       ],
-      "expo-sharing"
+      "expo-sharing",
+      "@react-native-google-signin/google-signin"
     ]
   }
 }

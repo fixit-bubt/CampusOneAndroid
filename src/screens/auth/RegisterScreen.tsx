@@ -12,6 +12,8 @@ import { useT } from '../../i18n';
 import { supabase } from '../../lib/supabase';
 import { Icon } from '../../components/ui/Icon';
 import { PasswordInput } from '../../components/ui/PasswordInput';
+import { GoogleButton, OrDivider } from '../../components/ui/GoogleButton';
+import { signInWithGoogle } from '../../lib/googleAuth';
 import { Brand } from './LandingScreen';
 import { FontFamily, Layout } from '../../theme';
 import type { AuthStackParams } from '../../types/navigation';
@@ -27,10 +29,24 @@ export function RegisterScreen({ navigation }: Props) {
   const [email, setEmail] = useState('');
   const [pass, setPass]   = useState('');
   const [busy, setBusy]   = useState(false);
+  const [busyG, setBusyG] = useState(false);
   const busyRef = useRef(false);
   const [err, setErr]     = useState('');
 
   const ok = name.trim().length > 0 && email.trim().length > 0 && pass.trim().length > 0;
+
+  async function handleGoogle() {
+    if (busyG) return;
+    setBusyG(true);
+    setErr('');
+    try {
+      await signInWithGoogle();
+    } catch (e: any) {
+      setErr(e?.message ?? 'Google sign-in failed.');
+    } finally {
+      setBusyG(false);
+    }
+  }
 
   async function handleContinue() {
     if (!ok || busyRef.current) return;
@@ -158,6 +174,10 @@ export function RegisterScreen({ navigation }: Props) {
               </View>
             )}
           </TouchableOpacity>
+
+          {/* Google */}
+          <OrDivider label="or" />
+          <GoogleButton label="Continue with Google" onPress={handleGoogle} busy={busyG} />
 
           {/* Switch to Login */}
           <View style={styles.switchRow}>

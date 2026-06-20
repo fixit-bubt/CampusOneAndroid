@@ -301,11 +301,11 @@ export function CoverPageFormScreen({ navigation }: any) {
   const [duration, setDuration] = useState('');
   const [indexRows, setIndexRows] = useState('15');
   const [studentName, setStudentName] = useState(profile?.full_name ?? '');
-  const [studentId, setStudentId] = useState('');
+  const [studentId, setStudentId] = useState(profile?.student_id ?? '');
   const [department, setDepartment] = useState(profile?.department ?? '');
   const [intake, setIntake] = useState(profile?.intake ?? '');
   const [section, setSection] = useState(profile?.section ?? '');
-  const [program, setProgram] = useState('');
+  const [program, setProgram] = useState(profile?.program ?? '');
   const [teacherName, setTeacherName] = useState('');
   const [teacherDesig, setTeacherDesig] = useState('');
   const [teacherDept, setTeacherDept] = useState('');

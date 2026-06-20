@@ -15,6 +15,11 @@ export interface Profile {
   directory_visible: boolean;
   show_whatsapp: boolean;
   expertise: string | null;
+  student_id: string | null;
+  blood_group: string | null;
+  phone: string | null;
+  program: string | null;
+  address: string | null;
   created_at: string;
   updated_at: string;
 }

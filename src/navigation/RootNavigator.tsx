@@ -7,9 +7,10 @@ import { useT } from '../i18n';
 import { FontFamily } from '../theme';
 import { AuthNavigator } from './AuthNavigator';
 import { AppNavigator } from './AppNavigator';
+import { OnboardingScreen } from '../screens/auth/OnboardingScreen';
 
 export function RootNavigator() {
-  const { session, loading, profileLoaded, profileError, refreshProfile } = useAuth();
+  const { session, profile, loading, profileLoaded, profileError, refreshProfile } = useAuth();
   const { C } = useTheme();
   const t = useT();
 
@@ -39,6 +40,14 @@ export function RootNavigator() {
         <ActivityIndicator color={C.brand} size="large" />
       </View>
     );
+  }
+
+  // Students must complete onboarding (student_id) before reaching the app.
+  // Staff/admin skip it.
+  const needsOnboarding =
+    !!session && profileLoaded && profile?.role === 'student' && !profile?.student_id;
+  if (needsOnboarding) {
+    return <OnboardingScreen />;
   }
 
   return (

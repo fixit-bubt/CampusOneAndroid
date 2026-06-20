@@ -16,7 +16,7 @@ export async function getProfile(userId: string): Promise<ServiceResult<Profile>
 
 export async function updateProfile(
   userId: string,
-  updates: Partial<Pick<Profile, 'full_name' | 'department' | 'whatsapp' | 'intake' | 'section' | 'avatar_url' | 'directory_visible' | 'show_whatsapp' | 'expertise'>>,
+  updates: Partial<Pick<Profile, 'full_name' | 'department' | 'whatsapp' | 'intake' | 'section' | 'avatar_url' | 'directory_visible' | 'show_whatsapp' | 'expertise' | 'student_id' | 'blood_group' | 'phone' | 'program' | 'address'>>,
 ): Promise<ServiceResult<Profile>> {
   const { data, error } = await supabase
     .from('profiles')
