@@ -85,7 +85,7 @@ interface HtmlData {
   experimentDate: string; experimentName: string; reportTitle: string;
   studentName: string; studentId: string; intake: string; section: string;
   program: string; dept: string; teacherName: string; teacherDesig: string;
-  members: Member[]; date: string;
+  members: Member[]; date: string; company: string; duration: string; indexRows: number;
   logoCrest: string; logoHeader: string;
 }
 
@@ -124,6 +124,7 @@ body{color:#000;width:210mm;min-height:297mm;padding:10mm;-webkit-print-color-ad
 .box .bh{text-align:center;font-weight:bold;font-size:16px;margin-bottom:12px;}
 .box .row{font-weight:bold;font-size:14px;margin:8px 0;}
 .box .uni{font-weight:normal;font-size:12px;margin-top:4px;}
+.box .desig{font-weight:normal;font-style:italic;font-size:12px;margin:2px 0 6px;}
 .gap{height:12px;}
 .date{text-align:center;font-weight:bold;font-size:15px;margin-top:auto;padding-top:16mm;}
 .ptitle{text-align:center;font-weight:bold;font-size:17px;margin:12px 16mm;}
@@ -193,7 +194,8 @@ function bodyAssignLab(f: HtmlData): string {
       <div class="box">
         <div class="bh">Submitted To:</div>
         <div class="row">Name : ${e(f.teacherName)}</div>
-        <div class="gap"></div><div class="gap"></div>
+        ${f.teacherDesig ? `<div class="desig">(${e(f.teacherDesig)})</div>` : '<div class="gap"></div>'}
+        <div class="gap"></div>
         <div class="row">Dept. of ${e(f.dept)}</div>
         <div class="uni">${e(UNI)}</div>
       </div>
@@ -233,6 +235,8 @@ function bodyInternship(f: HtmlData): string {
   const inner = `<div class="utitle">${e(UNI)} (BUBT)</div>
     <img class="crest" src="${f.logoCrest}" />
     <div class="ititle">Internship Report<br/>on<br/><b>${e(f.reportTitle)}</b></div>
+    ${f.company ? `<div class="ctrb" style="margin-bottom:4px">${e(f.company)}</div>` : ''}
+    ${f.duration ? `<div class="ctr" style="margin-bottom:6px">Duration: ${e(f.duration)}</div>` : ''}
     <div class="subh2">Supervised By</div>
     <div class="ctrb">${e(f.teacherName)}</div>
     ${f.teacherDesig ? `<div class="ctr">${e(f.teacherDesig)}</div>` : ''}
@@ -255,7 +259,8 @@ function bodyIndex(f: HtmlData): string {
   const e = esc;
   const ul = (v: string) => `<u>&nbsp;${e(v) || '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'}&nbsp;</u>`;
   let rows = '';
-  for (let i = 1; i <= 15; i++) {
+  const n = Math.min(Math.max(f.indexRows || 15, 1), 40);
+  for (let i = 1; i <= n; i++) {
     rows += `<tr><td>${i}</td><td></td><td class="t"></td><td></td><td></td></tr>`;
   }
   const inner = `<img class="hdr" src="${f.logoHeader}" />
@@ -292,6 +297,9 @@ export function CoverPageFormScreen({ navigation }: any) {
   const [experimentDate, setExperimentDate] = useState(new Date().toISOString().slice(0, 10));
   const [experimentName, setExperimentName] = useState('');
   const [reportTitle, setReportTitle] = useState('');
+  const [company, setCompany] = useState('');
+  const [duration, setDuration] = useState('');
+  const [indexRows, setIndexRows] = useState('15');
   const [studentName, setStudentName] = useState(profile?.full_name ?? '');
   const [studentId, setStudentId] = useState('');
   const [department, setDepartment] = useState(profile?.department ?? '');
@@ -396,6 +404,8 @@ export function CoverPageFormScreen({ navigation }: any) {
         dept,
         teacherName: teacherName.trim() || 'N/A', teacherDesig: teacherDesig.trim(),
         members: cleanMembers.length ? cleanMembers : [{ name: studentName.trim(), id: studentId.trim() }],
+        company: company.trim(), duration: duration.trim(),
+        indexRows: parseInt(indexRows, 10) || 15,
         date: fmtDate(dateOfSubmission),
         logoCrest: BUBT_LOGO_CREST, logoHeader: BUBT_LOGO_HEADER,
       });
@@ -470,6 +480,20 @@ export function CoverPageFormScreen({ navigation }: any) {
               <IconField icon="chevR" C={C} value={courseCode} onChange={setCourseCode} placeholder="Course Code (optional)"
                 badge="Autofill" onBadge={() => setCourseModal(true)} badgeIcon="chevD" />
               <IconField icon="sparkle" C={C} value={courseTitle} onChange={setCourseTitle} placeholder="Course Title (optional)" />
+              {docType === 'internship_report' && (
+                <>
+                  <IconField icon="box" C={C} value={company} onChange={setCompany} placeholder="Company / Organization Name (optional)" />
+                  <IconField icon="calendar" C={C} value={duration} onChange={setDuration} placeholder="Duration (optional)" />
+                </>
+              )}
+            </>
+          )}
+
+          {/* Index rows */}
+          {docType === 'index_page' && (
+            <>
+              <Sec icon="inbox" label="Index Table" C={C} />
+              <IconField icon="layers" C={C} value={indexRows} onChange={setIndexRows} placeholder="Number of Rows (e.g. 15)" />
             </>
           )}
 
