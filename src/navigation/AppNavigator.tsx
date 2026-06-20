@@ -63,6 +63,7 @@ import { ClubPostScreen }          from '../screens/clubs/ClubPostScreen';
 import { StudyUploadScreen }       from '../screens/study/StudyUploadScreen';
 import { AcademicCalendarScreen }  from '../screens/calendar/AcademicCalendarScreen';
 import { RoutinesBrowseScreen }    from '../screens/routines/RoutinesBrowseScreen';
+import { CoverPageFormScreen }     from '../screens/coverpage/CoverPageFormScreen';
 
 const Stack = createNativeStackNavigator<AppStackParams>();
 
@@ -146,6 +147,9 @@ export function AppNavigator() {
 
       {/* Routines */}
       <Stack.Screen name="RoutinesBrowse" component={RoutinesBrowseScreen} />
+
+      {/* Cover Page Generator */}
+      <Stack.Screen name="CoverPageForm" component={CoverPageFormScreen} />
 
       {/* Generic feature landing */}
       <Stack.Screen name="Feature"        component={FeatureScreen} />
