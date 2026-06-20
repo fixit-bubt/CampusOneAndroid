@@ -275,8 +275,6 @@ export function CoverPageFormScreen({ navigation }: any) {
     finally { setGenerating(false); }
   }
 
-  const inp = [styles.input, { color: C.text, backgroundColor: C.surface2, borderColor: C.border, fontFamily: FontFamily.jakartaRegular }] as any;
-
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar title={t.coverpage2.title} onBack={() => navigation.goBack()} />
@@ -297,7 +295,7 @@ export function CoverPageFormScreen({ navigation }: any) {
           </View>
 
           {/* Template selection */}
-          <Sec icon="grid" label="Select Template" C={C} />
+          <Sec icon="grid" label="Select Template" C={C} count={TEMPLATES.length} />
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: Spacing[3] }}>
             {TEMPLATES.map(tmpl => {
               const a = template === tmpl;
@@ -305,6 +303,7 @@ export function CoverPageFormScreen({ navigation }: any) {
                 <TouchableOpacity key={tmpl} style={[styles.tCard, { borderColor: a ? SectorColors.coverpage : C.border, borderWidth: a ? 2.5 : 1, backgroundColor: C.surface }]} onPress={() => setTemplate(tmpl)} activeOpacity={0.8}>
                   <MiniPage tmpl={tmpl} C={C} isDark={isDark} />
                   {a && <View style={[styles.chk, { backgroundColor: SectorColors.coverpage }]}><Icon name="check" size={12} color={C.white} /></View>}
+                  <View style={[styles.freeBadge, { backgroundColor: Accent.teal }]}><Text style={styles.freeTxt}>FREE</Text></View>
                   <Text style={[styles.tLabel, { color: a ? SectorColors.coverpage : C.text2, fontFamily: a ? FontFamily.jakartaBold : FontFamily.jakartaMedium }]}>{TEMPLATE_LABELS[tmpl]}</Text>
                 </TouchableOpacity>
               );
@@ -313,74 +312,42 @@ export function CoverPageFormScreen({ navigation }: any) {
 
           {/* Course Details */}
           <Sec icon="box" label="Course Details" C={C} />
-          <Row>
-            <View style={{ flex: 1 }}>
-              <FL label="Course Code" C={C} link="Enter Code for auto-fill" onLink={() => setCourseModal(true)} />
-              <TextInput style={inp} value={courseCode} onChangeText={setCourseCode} placeholder="CSE-101" placeholderTextColor={C.textMuted} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <FL label="Course Title" C={C} />
-              <TextInput style={inp} value={courseTitle} onChangeText={setCourseTitle} placeholder={t.coverpage2.courseTitlePlaceholder} placeholderTextColor={C.textMuted} />
-            </View>
-          </Row>
-          <Row>
-            <View style={{ flex: 1 }}>
-              <FL label={docType === 'lab_report' ? 'Experiment No' : 'Assignment No'} C={C} />
-              <TextInput style={inp} value={assignmentNo} onChangeText={setAssignmentNo} placeholder="01" placeholderTextColor={C.textMuted} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <FL label={docType === 'lab_report' ? 'Experiment / Topic' : 'Assignment Topic'} C={C} toggle={showTopic} onToggle={() => setShowTopic(!showTopic)} toggleLabel="Show Topic" />
-              <TextInput style={inp} value={experiment} onChangeText={setExperiment} placeholder="Optional" placeholderTextColor={C.textMuted} editable={showTopic} />
-            </View>
-          </Row>
+          <IconField icon="chevR" C={C} value={courseCode} onChange={setCourseCode} placeholder="Course Code"
+            badge="Autofill" onBadge={() => setCourseModal(true)} badgeIcon="chevD" />
+          <IconField icon="sparkle" C={C} value={courseTitle} onChange={setCourseTitle} placeholder="Course Title" />
+
+          {/* Assignment Details */}
+          <Sec icon={docType === 'lab_report' ? 'layers' : 'fileText'} label={docType === 'lab_report' ? 'Lab Report Details' : 'Assignment Details'} C={C} />
+          <IconField icon="flag" C={C} value={assignmentNo} onChange={setAssignmentNo}
+            placeholder={docType === 'lab_report' ? 'Experiment No' : 'Assignment No'} />
+          {(docType === 'lab_report' || showTopic) && (
+            <IconField icon="layers" C={C} value={experiment} onChange={setExperiment} placeholder="Topic (optional)" />
+          )}
 
           {/* Student Information */}
           <Sec icon="user" label="Student Information" C={C} />
-          <Row>
+          <IconField icon="user" C={C} value={studentName} onChange={setStudentName} placeholder="Student Name" />
+          <IconField icon="idcard" C={C} value={studentId} onChange={setStudentId} placeholder="Student ID" />
+          <View style={hStyles.row}>
             <View style={{ flex: 1 }}>
-              <FL label="Student Name" C={C} />
-              <TextInput style={inp} value={studentName} onChangeText={setStudentName} placeholder="Enter full name" placeholderTextColor={C.textMuted} />
+              <IconField icon="inbox" C={C} value={intake} onChange={setIntake} placeholder="Intake" />
             </View>
             <View style={{ flex: 1 }}>
-              <FL label="ID Number" C={C} />
-              <TextInput style={inp} value={studentId} onChangeText={setStudentId} placeholder="21225103xxx" placeholderTextColor={C.textMuted} />
+              <IconField icon="grid" C={C} value={section} onChange={setSection} placeholder="Section" />
             </View>
-          </Row>
-          <Row>
-            <View style={{ flex: 1 }}>
-              <FL label="Intake" C={C} />
-              <TextInput style={inp} value={intake} onChangeText={setIntake} placeholder="51" placeholderTextColor={C.textMuted} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <FL label="Section" C={C} toggle={showSection} onToggle={() => setShowSection(!showSection)} toggleLabel="Show Section" />
-              <TextInput style={inp} value={section} onChangeText={setSection} placeholder="01" placeholderTextColor={C.textMuted} />
-            </View>
-          </Row>
-          <FL label="Program" C={C} />
-          <TouchableOpacity style={[styles.picker, { backgroundColor: C.surface2, borderColor: C.border }]} onPress={() => setDeptModal(true)}>
-            <Text style={[styles.pickerText, { color: program ? C.text : C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>{program || 'Select or enter program'}</Text>
-            <Icon name="search" size={14} color={C.textMuted} />
-          </TouchableOpacity>
+          </View>
+          <IconField icon="award" C={C} value={program} placeholder="Program" onPress={() => setDeptModal(true)} chevron />
 
           {/* Faculty Details */}
           <Sec icon="user" label="Faculty Details" C={C} />
-          <FL label="Teacher Name" C={C} link="Autofill" onLink={() => setFacultyModal(true)} />
-          <TextInput style={inp} value={teacherName} onChangeText={setTeacherName} placeholder={t.coverpage2.teacherPlaceholder} placeholderTextColor={C.textMuted} />
-          <Row>
-            <View style={{ flex: 1 }}>
-              <FL label="Department" C={C} />
-              <TextInput style={inp} value={teacherDept || department} onChangeText={setTeacherDept} placeholder="CSE" placeholderTextColor={C.textMuted} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <FL label="Designation" C={C} />
-              <TextInput style={inp} value={teacherDesig} onChangeText={setTeacherDesig} placeholder="Associate Professor" placeholderTextColor={C.textMuted} />
-            </View>
-          </Row>
+          <IconField icon="user" C={C} value={teacherName} onChange={setTeacherName} placeholder="Teacher Name"
+            badge="Autofill" onBadge={() => setFacultyModal(true)} badgeIcon="chevD" />
+          <IconField icon="grid" C={C} value={teacherDept || department} onChange={setTeacherDept} placeholder="Department" />
+          <IconField icon="award" C={C} value={teacherDesig} onChange={setTeacherDesig} placeholder="Designation" chevron />
 
           {/* Dates & Signature */}
           <Sec icon="calendar" label="Dates &amp; Signature" C={C} />
-          <FL label="Date of Submission" C={C} />
-          <TextInput style={inp} value={dateOfSubmission} onChangeText={setDateOfSubmission} placeholder="YYYY-MM-DD" placeholderTextColor={C.textMuted} />
+          <IconField icon="calendar" C={C} value={dateOfSubmission} onChange={setDateOfSubmission} placeholder="Date of Submission" />
           <View style={styles.switchRow}>
             <Text style={[styles.switchLabel, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>Include Teacher's Signature</Text>
             <Switch value={showSignature} onValueChange={setShowSignature} trackColor={{ false: C.surface3, true: SectorColors.coverpage + '66' }} thumbColor={showSignature ? SectorColors.coverpage : C.white} />
@@ -388,9 +355,8 @@ export function CoverPageFormScreen({ navigation }: any) {
 
           {/* Generate */}
           <TouchableOpacity style={[styles.genBtn, { backgroundColor: SectorColors.coverpage, opacity: !canGenerate || generating ? 0.5 : 1 }]} onPress={handleGenerate} disabled={!canGenerate || generating}>
-            {generating ? <ActivityIndicator color={C.white} size="small" /> : <Icon name="fileText" size={20} color={C.white} />}
-            <Text style={[styles.genBtnText, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>{generating ? t.coverpage2.generating : t.coverpage2.generatePdf}</Text>
-            <Icon name="chevR" size={18} color={C.white} />
+            {generating ? <ActivityIndicator color={C.white} size="small" /> : <Icon name="sparkles" size={20} color={C.white} />}
+            <Text style={[styles.genBtnText, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>{generating ? t.coverpage2.generating : 'Generate Document'}</Text>
           </TouchableOpacity>
           <View style={{ height: 40 }} />
         </ScrollView>
@@ -465,27 +431,58 @@ function BottomSheet({ visible, onClose, title, C, children }: { visible: boolea
   );
 }
 
-function Sec({ icon, label, C }: { icon: string; label: string; C: any }) {
+function IconField({ icon, C, value, onChange, placeholder, badge, onBadge, badgeIcon, chevron, onPress }: {
+  icon: string; C: any; value: string; onChange?: (v: string) => void;
+  placeholder: string; badge?: string; onBadge?: () => void; badgeIcon?: string;
+  chevron?: boolean; onPress?: () => void;
+}) {
+  const content = (
+    <View style={[ifStyles.wrap, { backgroundColor: C.surface, borderColor: C.border }]}>
+      <Icon name={icon} size={18} color={C.textMuted} />
+      {onChange && !onPress ? (
+        <TextInput
+          style={[ifStyles.input, { color: C.text, fontFamily: FontFamily.jakartaRegular }]}
+          value={value} onChangeText={onChange}
+          placeholder={placeholder} placeholderTextColor={C.textMuted}
+        />
+      ) : (
+        <Text style={[ifStyles.input, { color: value ? C.text : C.textMuted, fontFamily: FontFamily.jakartaRegular, paddingVertical: 14 }]} numberOfLines={1}>
+          {value || placeholder}
+        </Text>
+      )}
+      {badge && (
+        <TouchableOpacity style={[ifStyles.badge, { backgroundColor: Accent.tealBg }]} onPress={onBadge}>
+          <Icon name="sparkle" size={11} color={Accent.teal} />
+          <Text style={[ifStyles.badgeTxt, { color: Accent.teal, fontFamily: FontFamily.jakartaBold }]}>{badge}</Text>
+          {badgeIcon && <Icon name={badgeIcon} size={11} color={Accent.teal} />}
+        </TouchableOpacity>
+      )}
+      {chevron && <Icon name="chevD" size={16} color={C.textMuted} />}
+    </View>
+  );
+  if (onPress) return <TouchableOpacity onPress={onPress} activeOpacity={0.7}>{content}</TouchableOpacity>;
+  return content;
+}
+
+const ifStyles = StyleSheet.create({
+  wrap: { flexDirection: 'row', alignItems: 'center', height: 56, borderRadius: 14, borderWidth: 1.5, paddingHorizontal: Spacing[4], gap: Spacing[3], marginBottom: Spacing[3] },
+  input: { flex: 1, fontSize: FontSize.base, padding: 0 },
+  badge: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 8, paddingVertical: 4, borderRadius: Radius.full },
+  badgeTxt: { fontSize: 11 },
+});
+
+function Sec({ icon, label, C, count }: { icon: string; label: string; C: any; count?: number }) {
   return (
     <View style={[hStyles.sec, { borderBottomColor: C.border }]}>
       <View style={[hStyles.dot, { backgroundColor: SectorColors.coverpage }]} />
       <Text style={[hStyles.secText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{label}</Text>
+      {count !== undefined && (
+        <View style={[hStyles.countBadge, { backgroundColor: SectorColors.coverpage }]}>
+          <Text style={hStyles.countTxt}>{count}</Text>
+        </View>
+      )}
     </View>
   );
-}
-
-function FL({ label, C, link, onLink, toggle, onToggle, toggleLabel }: { label: string; C: any; link?: string; onLink?: () => void; toggle?: boolean; onToggle?: () => void; toggleLabel?: string }) {
-  return (
-    <View style={hStyles.flRow}>
-      <Text style={[hStyles.flLabel, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>{label}</Text>
-      {link && <TouchableOpacity onPress={onLink}><Text style={[hStyles.flLink, { color: Accent.teal, fontFamily: FontFamily.jakartaBold }]}>{link}</Text></TouchableOpacity>}
-      {toggleLabel !== undefined && <View style={hStyles.toggleWrap}><Text style={[hStyles.toggleLbl, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>{toggleLabel}</Text><Switch value={toggle} onValueChange={onToggle} style={{ transform: [{ scale: 0.7 }] }} trackColor={{ false: C.surface3, true: SectorColors.coverpage + '66' }} thumbColor={toggle ? SectorColors.coverpage : C.white} /></View>}
-    </View>
-  );
-}
-
-function Row({ children }: { children: React.ReactNode }) {
-  return <View style={hStyles.row}>{children}</View>;
 }
 
 function MiniPage({ tmpl, C, isDark }: { tmpl: TemplateStyle; C: any; isDark: boolean }) {
@@ -541,7 +538,9 @@ const mpS = StyleSheet.create({
 const hStyles = StyleSheet.create({
   sec: { flexDirection: 'row', alignItems: 'center', gap: Spacing[2], marginTop: Spacing[5], paddingBottom: Spacing[2], borderBottomWidth: StyleSheet.hairlineWidth },
   dot: { width: 4, height: 18, borderRadius: 2 },
-  secText: { fontSize: FontSize.md },
+  secText: { fontSize: FontSize.md, flex: 1 },
+  countBadge: { width: 22, height: 22, borderRadius: 11, alignItems: 'center' as const, justifyContent: 'center' as const },
+  countTxt: { color: '#fff', fontSize: 11, fontWeight: '700' as const },
   flRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: Spacing[3], marginBottom: Spacing[1] },
   flLabel: { fontSize: FontSize.xs, letterSpacing: 0.3 },
   flLink: { fontSize: 11 },
@@ -553,12 +552,14 @@ const hStyles = StyleSheet.create({
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { paddingBottom: 20, paddingTop: Spacing[2] },
-  input: { height: Layout.inputHeight, borderRadius: Radius.sm, borderWidth: 1, paddingHorizontal: Spacing[3], fontSize: FontSize.base },
+  input: { height: 56, borderRadius: 14, borderWidth: 1.5, paddingHorizontal: Spacing[4], fontSize: FontSize.base },
   typeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing[2], marginBottom: Spacing[2] },
   typeChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: Spacing[4], paddingVertical: Spacing[2], borderRadius: Radius.full, borderWidth: 1.5 },
   typeChipText: { fontSize: FontSize.sm },
   tCard: { width: 110, borderRadius: Radius.md, marginRight: Spacing[3], overflow: 'hidden' },
   chk: { position: 'absolute', top: 6, left: 6, width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  freeBadge: { position: 'absolute', top: 6, right: 6, paddingHorizontal: 5, paddingVertical: 2, borderRadius: 4 },
+  freeTxt: { color: '#fff', fontSize: 8, fontWeight: '800', letterSpacing: 0.5 },
   tLabel: { textAlign: 'center', fontSize: FontSize.xs, paddingVertical: Spacing[2] },
   picker: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', height: Layout.inputHeight, borderRadius: Radius.sm, borderWidth: 1, paddingHorizontal: Spacing[3] },
   pickerText: { flex: 1, fontSize: FontSize.base },
