@@ -62,6 +62,7 @@ import { DonorRegisterScreen }     from '../screens/blood/DonorRegisterScreen';
 import { ClubPostScreen }          from '../screens/clubs/ClubPostScreen';
 import { StudyUploadScreen }       from '../screens/study/StudyUploadScreen';
 import { AcademicCalendarScreen }  from '../screens/calendar/AcademicCalendarScreen';
+import { RoutinesBrowseScreen }    from '../screens/routines/RoutinesBrowseScreen';
 
 const Stack = createNativeStackNavigator<AppStackParams>();
 
@@ -142,6 +143,9 @@ export function AppNavigator() {
 
       {/* Academic Calendar */}
       <Stack.Screen name="AcademicCalendar" component={AcademicCalendarScreen} />
+
+      {/* Routines */}
+      <Stack.Screen name="RoutinesBrowse" component={RoutinesBrowseScreen} />
 
       {/* Generic feature landing */}
       <Stack.Screen name="Feature"        component={FeatureScreen} />
