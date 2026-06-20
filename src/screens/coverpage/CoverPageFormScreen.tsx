@@ -336,18 +336,7 @@ export function CoverPageFormScreen({ navigation }: any) {
                   onPress={() => setTemplate(tmpl)}
                   activeOpacity={0.8}
                 >
-                  <View style={[styles.templatePreview, { backgroundColor: isDark ? '#1a1f2e' : '#f8f8f8' }]}>
-                    <View style={[styles.previewLine, { backgroundColor: C.text3, width: '60%', height: 6 }]} />
-                    <View style={[styles.previewLine, { backgroundColor: C.border, width: '40%', height: 4, marginTop: 4 }]} />
-                    <View style={[styles.previewBox, { borderColor: C.border }]}>
-                      <View style={[styles.previewLine, { backgroundColor: C.text3, width: '50%', height: 3 }]} />
-                      <View style={[styles.previewLine, { backgroundColor: C.border, width: '70%', height: 3, marginTop: 2 }]} />
-                    </View>
-                    <View style={{ flexDirection: 'row', gap: 3, marginTop: 4 }}>
-                      <View style={[styles.previewSmallBox, { borderColor: C.border }]} />
-                      <View style={[styles.previewSmallBox, { borderColor: C.border }]} />
-                    </View>
-                  </View>
+                  <MiniCoverPreview template={tmpl} C={C} isDark={isDark} />
                   {active && (
                     <View style={[styles.checkBadge, { backgroundColor: SectorColors.coverpage }]}>
                       <Icon name="check" size={12} color={C.white} />
@@ -585,6 +574,63 @@ export function CoverPageFormScreen({ navigation }: any) {
   );
 }
 
+function MiniCoverPreview({ template, C, isDark }: { template: TemplateStyle; C: any; isDark: boolean }) {
+  const pageBg = isDark ? '#1e2433' : '#fff';
+  const borderC = isDark ? '#3a4460' : '#888';
+  const textC = isDark ? '#b0b8cc' : '#333';
+  const lightC = isDark ? '#6a7490' : '#999';
+  const accentC = template === 'classic' ? '#1a3a6b' : template === 'modern' ? '#2a2a2a' : '#333';
+  const tagBg = template === 'classic' ? '#1a3a6b' : template === 'modern' ? '#2a2a2a' : 'transparent';
+  const tagBorder = template === 'default' ? borderC : 'transparent';
+  const tagText = tagBg !== 'transparent' ? '#fff' : textC;
+
+  return (
+    <View style={[pvStyles.page, { backgroundColor: pageBg, borderColor: borderC }]}>
+      {template === 'classic' ? (
+        <Text style={[pvStyles.uniSmall, { color: accentC, fontWeight: 'bold' }]}>BUBT</Text>
+      ) : (
+        <Text style={[pvStyles.uni, { color: textC }]} numberOfLines={1}>
+          Bangladesh University of{'\n'}Business and Technology
+        </Text>
+      )}
+      <View style={[pvStyles.tag, { backgroundColor: tagBg, borderColor: tagBorder, borderWidth: tagBg === 'transparent' ? 1 : 0 }]}>
+        <Text style={[pvStyles.tagText, { color: tagText }]}>ASSIGNMENT</Text>
+      </View>
+      <View style={{ alignItems: 'flex-start', width: '100%', marginTop: 4 }}>
+        <View style={[pvStyles.line, { backgroundColor: lightC, width: '55%' }]} />
+        <View style={[pvStyles.line, { backgroundColor: lightC, width: '50%' }]} />
+        <View style={[pvStyles.line, { backgroundColor: lightC, width: '45%' }]} />
+      </View>
+      <View style={pvStyles.boxes}>
+        <View style={[pvStyles.box, { borderColor: borderC }]}>
+          <View style={[pvStyles.boxLine, { backgroundColor: textC, width: '60%' }]} />
+          <View style={[pvStyles.boxLine, { backgroundColor: lightC, width: '50%' }]} />
+          <View style={[pvStyles.boxLine, { backgroundColor: lightC, width: '40%' }]} />
+          <View style={[pvStyles.boxLine, { backgroundColor: lightC, width: '45%' }]} />
+        </View>
+        <View style={[pvStyles.box, { borderColor: borderC }]}>
+          <View style={[pvStyles.boxLine, { backgroundColor: textC, width: '60%' }]} />
+          <View style={[pvStyles.boxLine, { backgroundColor: lightC, width: '50%' }]} />
+          <View style={[pvStyles.boxLine, { backgroundColor: lightC, width: '55%' }]} />
+        </View>
+      </View>
+      <View style={[pvStyles.line, { backgroundColor: lightC, width: '60%', marginTop: 3 }]} />
+    </View>
+  );
+}
+
+const pvStyles = StyleSheet.create({
+  page: { height: 140, borderWidth: 1.5, borderRadius: 4, padding: 8, alignItems: 'center', justifyContent: 'space-between' },
+  uni: { fontSize: 5.5, textAlign: 'center', fontStyle: 'italic', lineHeight: 7 },
+  uniSmall: { fontSize: 8, letterSpacing: 1 },
+  tag: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 1.5, marginTop: 3 },
+  tagText: { fontSize: 5, fontWeight: 'bold', letterSpacing: 0.5 },
+  line: { height: 2, borderRadius: 1, marginTop: 2 },
+  boxes: { flexDirection: 'row', gap: 3, width: '100%', marginTop: 4 },
+  box: { flex: 1, borderWidth: 0.8, borderRadius: 2, padding: 3 },
+  boxLine: { height: 1.5, borderRadius: 1, marginTop: 1.5 },
+});
+
 function SectionLabel({ icon, label, C }: { icon: string; label: string; C: any }) {
   return (
     <View style={[secStyles.header, { borderBottomColor: C.border }]}>
@@ -627,10 +673,7 @@ const styles = StyleSheet.create({
   typeChipText: { fontSize: FontSize.sm },
   halfRow: { flexDirection: 'row', gap: Spacing[3] },
   templateCard: { width: 110, borderRadius: Radius.md, marginRight: Spacing[3], overflow: 'hidden' },
-  templatePreview: { height: 130, padding: 10, alignItems: 'center', justifyContent: 'center' },
-  previewLine: { borderRadius: 2 },
-  previewBox: { borderWidth: 1, borderRadius: 3, padding: 6, marginTop: 6, width: '80%', alignItems: 'center' },
-  previewSmallBox: { borderWidth: 1, borderRadius: 2, width: 32, height: 20 },
+  templatePreview: { overflow: 'hidden' },
   checkBadge: { position: 'absolute', top: 6, left: 6, width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   templateLabel: { textAlign: 'center', fontSize: FontSize.xs, paddingVertical: Spacing[2] },
   pickerBtn: { flexDirection: 'row', alignItems: 'center', height: Layout.inputHeight, borderRadius: Radius.sm, borderWidth: 1, paddingHorizontal: Spacing[3], gap: Spacing[2] },
