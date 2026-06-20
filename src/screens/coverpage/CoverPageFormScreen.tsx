@@ -32,6 +32,16 @@ function buildHtml(fields: {
   dateOfSubmission: string;
   experiment: string;
   docTypeLabel: string;
+  labels: {
+    submittedTo: string;
+    submittedBy: string;
+    name: string;
+    studentId: string;
+    department: string;
+    intake: string;
+    section: string;
+    dateOfSubmission: string;
+  };
 }): string {
   const f = fields;
   const docTitle = f.docTypeLabel;
@@ -103,23 +113,23 @@ function buildHtml(fields: {
 
   <div class="info-section">
     <div class="info-block">
-      <div class="info-label">Submitted To</div>
+      <div class="info-label">${f.labels.submittedTo}</div>
       <table class="info-table"><tr><td colspan="2">${f.submittedTo}</td></tr></table>
     </div>
     <div class="info-block">
-      <div class="info-label">Submitted By</div>
+      <div class="info-label">${f.labels.submittedBy}</div>
       <table class="info-table">
-        <tr><td>Name</td><td>${f.studentName}</td></tr>
-        <tr><td>Student ID</td><td>${f.studentId}</td></tr>
-        <tr><td>Department</td><td>${f.department}</td></tr>
-        <tr><td>Intake</td><td>${f.intake}</td></tr>
-        <tr><td>Section</td><td>${f.section}</td></tr>
+        <tr><td>${f.labels.name}</td><td>${f.studentName}</td></tr>
+        <tr><td>${f.labels.studentId}</td><td>${f.studentId}</td></tr>
+        <tr><td>${f.labels.department}</td><td>${f.department}</td></tr>
+        <tr><td>${f.labels.intake}</td><td>${f.intake}</td></tr>
+        <tr><td>${f.labels.section}</td><td>${f.section}</td></tr>
       </table>
     </div>
   </div>
 
   <div class="date-block">
-    Date of Submission: ${f.dateOfSubmission}
+    ${f.labels.dateOfSubmission}: ${f.dateOfSubmission}
   </div>
 </div>
 </body>
@@ -174,6 +184,16 @@ export function CoverPageFormScreen({ navigation }: any) {
         dateOfSubmission: dateOfSubmission.trim() || 'N/A',
         experiment: experiment.trim(),
         docTypeLabel: docTypeLabel(docType),
+        labels: {
+          submittedTo: t.coverpage2.submittedTo,
+          submittedBy: t.coverpage2.submittedBy,
+          name: t.coverpage2.studentName,
+          studentId: t.coverpage2.studentId,
+          department: t.coverpage2.department,
+          intake: t.coverpage2.intake,
+          section: t.coverpage2.section,
+          dateOfSubmission: t.coverpage2.dateOfSubmission,
+        },
       });
 
       const { uri } = await Print.printToFileAsync({ html, base64: false });
