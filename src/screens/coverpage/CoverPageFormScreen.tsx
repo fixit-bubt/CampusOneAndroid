@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert,
   TextInput, Platform, KeyboardAvoidingView, ActivityIndicator,
+  Modal, FlatList, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Print from 'expo-print';
@@ -11,153 +12,200 @@ import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, FontSize, Layout, Radius, Spacing, SectorColors } from '../../theme';
+import { Avatar } from '../../components/ui/Avatar';
+import { supabase } from '../../lib/supabase';
+import { FontFamily, FontSize, Layout, Radius, Spacing, SectorColors, Accent } from '../../theme';
 
 type DocType = 'assignment' | 'lab_report' | 'project_report';
+type TemplateStyle = 'default' | 'classic' | 'modern';
 
 const DOC_TYPES: DocType[] = ['assignment', 'lab_report', 'project_report'];
+const TEMPLATES: TemplateStyle[] = ['default', 'classic', 'modern'];
+
+interface FacultyRow {
+  id: string;
+  name: string;
+  designation: string;
+  department_id: string;
+  photo_url: string | null;
+  dept_name?: string;
+}
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-function buildHtml(fields: {
-  docType: DocType;
+function buildHtml(f: {
+  template: TemplateStyle;
+  docTypeLabel: string;
   university: string;
-  departmentOf: string;
   department: string;
-  courseTitle: string;
   courseCode: string;
-  submittedTo: string;
+  courseTitle: string;
+  assignmentNo: string;
+  experiment: string;
   studentName: string;
   studentId: string;
   intake: string;
   section: string;
+  program: string;
+  teacherName: string;
+  teacherDesig: string;
   dateOfSubmission: string;
-  experiment: string;
-  docTypeLabel: string;
-  labels: {
-    submittedTo: string;
-    submittedBy: string;
-    name: string;
-    studentId: string;
-    department: string;
-    intake: string;
-    section: string;
-    dateOfSubmission: string;
-  };
+  showSignature: boolean;
+  docType: DocType;
 }): string {
-  const e = (s: string) => escapeHtml(s);
-  const f = fields;
-  const docTitle = e(f.docTypeLabel);
-  const showExperiment = f.docType === 'lab_report' && f.experiment;
+  const e = escapeHtml;
+  const isLab = f.docType === 'lab_report';
 
-  return `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8"/>
-<style>
-  @page { size: A4; margin: 0; }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    font-family: 'Times New Roman', serif;
-    width: 210mm; min-height: 297mm;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    padding: 30mm 25mm;
-    color: #1a1a1a;
-  }
-  .border-frame {
-    border: 2.5px solid #1a3a6b;
-    padding: 28mm 20mm;
-    width: 100%; min-height: 237mm;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: space-between;
-  }
-  .header { text-align: center; margin-bottom: 12mm; }
-  .uni-name { font-size: 20pt; font-weight: bold; color: #1a3a6b; margin-bottom: 3mm; }
-  .dept { font-size: 13pt; color: #333; margin-bottom: 6mm; }
-  .doc-type {
-    font-size: 16pt; font-weight: bold; color: #fff;
-    background: #1a3a6b; padding: 3mm 10mm;
-    border-radius: 2mm; display: inline-block;
-    margin-top: 4mm; letter-spacing: 0.5pt;
-  }
-  .course-block { text-align: center; margin: 8mm 0; }
-  .course-title { font-size: 15pt; font-weight: bold; margin-bottom: 2mm; }
-  .course-code { font-size: 12pt; color: #555; }
-  .experiment { font-size: 11pt; color: #444; margin-top: 3mm; font-style: italic; }
-  .info-section { width: 100%; margin-top: 6mm; }
-  .info-block { margin-bottom: 8mm; }
-  .info-label {
-    font-size: 10pt; font-weight: bold; color: #1a3a6b;
-    text-transform: uppercase; letter-spacing: 1pt;
-    border-bottom: 1.5px solid #1a3a6b;
-    padding-bottom: 1.5mm; margin-bottom: 3mm;
-  }
-  .info-table { width: 100%; font-size: 11pt; }
-  .info-table td { padding: 1.5mm 0; vertical-align: top; }
-  .info-table td:first-child { width: 40%; font-weight: bold; color: #333; }
-  .info-table td:last-child { color: #1a1a1a; }
-  .date-block { text-align: center; margin-top: 10mm; font-size: 11pt; color: #555; }
-</style>
-</head>
+  const courseBlock = `
+    <div style="margin:6mm 0;">
+      ${f.assignmentNo ? `<div style="font-size:12pt;">${isLab ? 'Experiment No' : 'Assignment No'} : ${e(f.assignmentNo)}</div>` : ''}
+      <div style="font-size:12pt;">Course Code &nbsp;: ${e(f.courseCode)}</div>
+      <div style="font-size:12pt;">Course Title &nbsp;: ${e(f.courseTitle)}</div>
+      ${isLab && f.experiment ? `<div style="font-size:12pt;margin-top:2mm;">Topic : ${e(f.experiment)}</div>` : ''}
+    </div>`;
+
+  const submittedBy = `
+    <td style="width:48%;border:1.5px solid #222;padding:4mm;vertical-align:top;">
+      <div style="font-size:12pt;font-weight:bold;margin-bottom:3mm;border-bottom:1px solid #888;padding-bottom:2mm;">Submitted By:</div>
+      <div style="font-size:11pt;line-height:1.8;">
+        Name : ${e(f.studentName)}<br/>
+        ID No : ${e(f.studentId)}<br/>
+        Intake : ${e(f.intake)}<br/>
+        Section : ${e(f.section)}<br/>
+        Program : ${e(f.program)}
+      </div>
+    </td>`;
+
+  const submittedTo = `
+    <td style="width:48%;border:1.5px solid #222;padding:4mm;vertical-align:top;">
+      <div style="font-size:12pt;font-weight:bold;margin-bottom:3mm;border-bottom:1px solid #888;padding-bottom:2mm;">Submitted To:</div>
+      <div style="font-size:11pt;line-height:1.8;">
+        Name : ${e(f.teacherName)}<br/>
+        ${f.teacherDesig ? `${e(f.teacherDesig)}<br/>` : ''}
+        <br/>
+        Dept. of ${e(f.department)}<br/>
+        <span style="font-size:9pt;">${e(f.university)}</span>
+      </div>
+    </td>`;
+
+  const signatureBlock = f.showSignature ? `
+    <div style="margin-top:12mm;width:100%;display:flex;justify-content:flex-end;">
+      <div style="text-align:center;border-top:1px solid #333;padding-top:2mm;width:50mm;margin-left:auto;">
+        <span style="font-size:9pt;">Teacher's Signature</span>
+      </div>
+    </div>` : '';
+
+  const dateBlock = `<div style="text-align:center;margin-top:8mm;font-size:11pt;">Date of Submission : ${e(f.dateOfSubmission)}</div>`;
+
+  if (f.template === 'classic') {
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"/>
+<style>@page{size:A4;margin:0}*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Times New Roman',serif;width:210mm;min-height:297mm;padding:15mm 20mm;color:#1a1a1a;}</style></head>
 <body>
-<div class="border-frame">
-  <div class="header">
-    <div class="uni-name">${e(f.university)}</div>
-    <div class="dept">${e(f.departmentOf)} ${e(f.department)}</div>
-    <div class="doc-type">${docTitle}</div>
+<div style="border:2px solid #1a3a6b;padding:12mm 15mm;min-height:267mm;display:flex;flex-direction:column;align-items:center;justify-content:space-between;">
+  <div style="text-align:center;">
+    <div style="font-size:22pt;font-weight:bold;color:#1a3a6b;letter-spacing:1pt;">BUBT</div>
+    <div style="font-size:10pt;color:#1a3a6b;margin-bottom:1mm;">BANGLADESH UNIVERSITY OF BUSINESS AND TECHNOLOGY</div>
+    <div style="font-size:8pt;font-style:italic;color:#555;margin-bottom:6mm;">Commitment to Academic Excellence</div>
+    <div style="display:inline-block;border:2px solid #1a3a6b;padding:3mm 12mm;font-size:14pt;font-weight:bold;color:#1a3a6b;">${e(f.docTypeLabel).toUpperCase()}</div>
   </div>
+  ${courseBlock}
+  <table style="width:100%;border-collapse:separate;border-spacing:4mm 0;"><tr>${submittedBy}${submittedTo}</tr></table>
+  ${dateBlock}
+  ${signatureBlock}
+</div></body></html>`;
+  }
 
-  <div class="course-block">
-    <div class="course-title">${e(f.courseTitle)}</div>
-    <div class="course-code">${e(f.courseCode)}</div>
-    ${showExperiment ? `<div class="experiment">${e(f.experiment)}</div>` : ''}
+  if (f.template === 'modern') {
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"/>
+<style>@page{size:A4;margin:0}*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Georgia,serif;width:210mm;min-height:297mm;padding:20mm 22mm;color:#1a1a1a;}</style></head>
+<body>
+<div style="border:1.5px solid #444;border-radius:3mm;padding:18mm 16mm;min-height:257mm;display:flex;flex-direction:column;align-items:center;justify-content:space-between;">
+  <div style="text-align:center;">
+    <div style="font-size:18pt;font-weight:bold;font-style:italic;color:#2a2a2a;margin-bottom:4mm;">${e(f.university)}</div>
+    <div style="font-size:11pt;color:#555;margin-bottom:8mm;">Department of ${e(f.department)}</div>
+    <div style="background:#2a2a2a;color:#fff;padding:3mm 14mm;font-size:13pt;font-weight:bold;letter-spacing:2pt;display:inline-block;border-radius:1mm;">${e(f.docTypeLabel).toUpperCase()}</div>
   </div>
+  ${courseBlock}
+  <table style="width:100%;border-collapse:separate;border-spacing:3mm 0;"><tr>${submittedBy}${submittedTo}</tr></table>
+  ${dateBlock}
+  ${signatureBlock}
+</div></body></html>`;
+  }
 
-  <div class="info-section">
-    <div class="info-block">
-      <div class="info-label">${e(f.labels.submittedTo)}</div>
-      <table class="info-table"><tr><td colspan="2">${e(f.submittedTo)}</td></tr></table>
-    </div>
-    <div class="info-block">
-      <div class="info-label">${e(f.labels.submittedBy)}</div>
-      <table class="info-table">
-        <tr><td>${e(f.labels.name)}</td><td>${e(f.studentName)}</td></tr>
-        <tr><td>${e(f.labels.studentId)}</td><td>${e(f.studentId)}</td></tr>
-        <tr><td>${e(f.labels.department)}</td><td>${e(f.department)}</td></tr>
-        <tr><td>${e(f.labels.intake)}</td><td>${e(f.intake)}</td></tr>
-        <tr><td>${e(f.labels.section)}</td><td>${e(f.section)}</td></tr>
-      </table>
-    </div>
+  // default template
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"/>
+<style>@page{size:A4;margin:0}*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Times New Roman',serif;width:210mm;min-height:297mm;padding:18mm 22mm;color:#1a1a1a;}</style></head>
+<body>
+<div style="border:2px solid #333;padding:15mm 18mm;min-height:261mm;display:flex;flex-direction:column;align-items:center;justify-content:space-between;">
+  <div style="text-align:center;">
+    <div style="font-size:18pt;font-weight:bold;font-style:italic;margin-bottom:8mm;">${e(f.university)}</div>
+    <div style="display:inline-block;border:2px solid #333;padding:2.5mm 10mm;font-size:13pt;font-weight:bold;">${e(f.docTypeLabel).toUpperCase()}</div>
   </div>
-
-  <div class="date-block">
-    ${e(f.labels.dateOfSubmission)}: ${e(f.dateOfSubmission)}
-  </div>
-</div>
-</body>
-</html>`;
+  ${courseBlock}
+  <table style="width:100%;border-collapse:separate;border-spacing:3mm 0;"><tr>${submittedBy}${submittedTo}</tr></table>
+  ${dateBlock}
+  ${signatureBlock}
+</div></body></html>`;
 }
 
+const TEMPLATE_LABELS: Record<TemplateStyle, string> = {
+  default: 'Default',
+  classic: 'Classic',
+  modern: 'Modern',
+};
+
 export function CoverPageFormScreen({ navigation }: any) {
-  const { C } = useTheme();
+  const { C, isDark } = useTheme();
   const { profile } = useAuth();
   const t = useT();
 
+  // Form state
   const [docType, setDocType] = useState<DocType>('assignment');
-  const [submittedTo, setSubmittedTo] = useState('');
+  const [template, setTemplate] = useState<TemplateStyle>('default');
+  const [courseCode, setCourseCode] = useState('');
+  const [courseTitle, setCourseTitle] = useState('');
+  const [assignmentNo, setAssignmentNo] = useState('');
+  const [experiment, setExperiment] = useState('');
   const [studentName, setStudentName] = useState(profile?.full_name ?? '');
   const [studentId, setStudentId] = useState('');
   const [department, setDepartment] = useState(profile?.department ?? '');
   const [intake, setIntake] = useState(profile?.intake ?? '');
   const [section, setSection] = useState(profile?.section ?? '');
-  const [courseTitle, setCourseTitle] = useState('');
-  const [courseCode, setCourseCode] = useState('');
+  const [program, setProgram] = useState('');
+  const [teacherName, setTeacherName] = useState('');
+  const [teacherDesig, setTeacherDesig] = useState('');
   const [dateOfSubmission, setDateOfSubmission] = useState(new Date().toISOString().slice(0, 10));
-  const [experiment, setExperiment] = useState('');
+  const [showSignature, setShowSignature] = useState(false);
   const [generating, setGenerating] = useState(false);
+
+  // Faculty picker
+  const [facultyList, setFacultyList] = useState<FacultyRow[]>([]);
+  const [facultyModal, setFacultyModal] = useState(false);
+  const [facultySearch, setFacultySearch] = useState('');
+
+  // Departments for program dropdown
+  const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
+  const [deptModal, setDeptModal] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const [fRes, dRes] = await Promise.all([
+        supabase.from('faculty').select('id, name, designation, department_id, photo_url').eq('on_leave', false).order('name'),
+        supabase.from('departments').select('id, name').order('name'),
+      ]);
+      const depts = (dRes.data ?? []) as { id: string; name: string }[];
+      setDepartments(depts);
+      const deptMap = new Map(depts.map(d => [d.id, d.name]));
+      setFacultyList(
+        ((fRes.data ?? []) as FacultyRow[]).map(f => ({ ...f, dept_name: deptMap.get(f.department_id) ?? '' }))
+      );
+    })();
+  }, []);
 
   const docTypeLabel = (dt: DocType) => {
     const map: Record<DocType, string> = {
@@ -170,35 +218,51 @@ export function CoverPageFormScreen({ navigation }: any) {
 
   const canGenerate = studentName.trim() && studentId.trim() && courseTitle.trim() && courseCode.trim();
 
+  function selectTeacher(f: FacultyRow) {
+    setTeacherName(f.name);
+    setTeacherDesig(f.designation);
+    if (f.dept_name && !department) setDepartment(f.dept_name.replace(/^Department of\s*/i, ''));
+    setFacultyModal(false);
+    setFacultySearch('');
+  }
+
+  function selectProgram(d: { id: string; name: string }) {
+    const short = d.name.replace(/^Department of\s*/i, '');
+    setProgram(short);
+    if (!department) setDepartment(short);
+    setDeptModal(false);
+  }
+
+  const filteredFaculty = facultySearch
+    ? facultyList.filter(f =>
+        f.name.toLowerCase().includes(facultySearch.toLowerCase()) ||
+        (f.dept_name ?? '').toLowerCase().includes(facultySearch.toLowerCase())
+      )
+    : facultyList;
+
   async function handleGenerate() {
     if (!canGenerate) return;
     setGenerating(true);
     try {
       const html = buildHtml({
+        template,
         docType,
+        docTypeLabel: docTypeLabel(docType),
         university: t.coverpage2.universityName,
-        departmentOf: t.coverpage2.departmentOf,
         department: department.trim() || 'N/A',
-        courseTitle: courseTitle.trim(),
         courseCode: courseCode.trim(),
-        submittedTo: submittedTo.trim() || 'N/A',
+        courseTitle: courseTitle.trim(),
+        assignmentNo: assignmentNo.trim(),
+        experiment: experiment.trim(),
         studentName: studentName.trim(),
         studentId: studentId.trim(),
         intake: intake.trim() || 'N/A',
         section: section.trim() || 'N/A',
+        program: program.trim() || department.trim() || 'N/A',
+        teacherName: teacherName.trim() || 'N/A',
+        teacherDesig: teacherDesig.trim(),
         dateOfSubmission: dateOfSubmission.trim() || 'N/A',
-        experiment: experiment.trim(),
-        docTypeLabel: docTypeLabel(docType),
-        labels: {
-          submittedTo: t.coverpage2.submittedTo,
-          submittedBy: t.coverpage2.submittedBy,
-          name: t.coverpage2.studentName,
-          studentId: t.coverpage2.studentId,
-          department: t.coverpage2.department,
-          intake: t.coverpage2.intake,
-          section: t.coverpage2.section,
-          dateOfSubmission: t.coverpage2.dateOfSubmission,
-        },
+        showSignature,
       });
 
       const { uri } = await Print.printToFileAsync({ html, base64: false });
@@ -219,6 +283,8 @@ export function CoverPageFormScreen({ navigation }: any) {
     }
   }
 
+  const inputStyle = [styles.input, { color: C.text, backgroundColor: C.surface2, borderColor: C.border, fontFamily: FontFamily.jakartaRegular }] as any;
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar title={t.coverpage2.title} onBack={() => navigation.goBack()} />
@@ -228,139 +294,180 @@ export function CoverPageFormScreen({ navigation }: any) {
           contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
           showsVerticalScrollIndicator={false}
         >
-          {/* Doc type */}
-          <Text style={[styles.fieldLabel, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
-            {t.coverpage2.docType}
-          </Text>
+          {/* Doc type tabs */}
           <View style={styles.typeRow}>
-            {DOC_TYPES.map(dt => (
-              <TouchableOpacity
-                key={dt}
-                style={[styles.typeChip, {
-                  borderColor: docType === dt ? SectorColors.coverpage : C.border,
-                  backgroundColor: docType === dt ? SectorColors.coverpage + '18' : C.surface2,
-                }]}
-                onPress={() => setDocType(dt)}
-              >
-                <Text style={[styles.typeChipText, {
-                  color: docType === dt ? SectorColors.coverpage : C.text2,
-                  fontFamily: FontFamily.jakartaMedium,
-                }]}>
-                  {docTypeLabel(dt)}
-                </Text>
-              </TouchableOpacity>
-            ))}
+            {DOC_TYPES.map(dt => {
+              const active = docType === dt;
+              return (
+                <TouchableOpacity
+                  key={dt}
+                  style={[styles.typeChip, {
+                    borderColor: active ? SectorColors.coverpage : C.border,
+                    backgroundColor: active ? SectorColors.coverpage : C.surface2,
+                  }]}
+                  onPress={() => setDocType(dt)}
+                >
+                  <Icon name={dt === 'lab_report' ? 'layers' : 'fileText'} size={14}
+                    color={active ? C.white : C.text2} />
+                  <Text style={[styles.typeChipText, {
+                    color: active ? C.white : C.text2,
+                    fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                  }]}>
+                    {docTypeLabel(dt)}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
 
-          {/* Course info */}
-          <Text style={[styles.fieldLabel, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
-            {t.coverpage2.courseTitle}
-          </Text>
-          <TextInput
-            style={[styles.input, { color: C.text, backgroundColor: C.surface2, borderColor: C.border, fontFamily: FontFamily.jakartaRegular }]}
-            value={courseTitle} onChangeText={setCourseTitle}
-            placeholder={t.coverpage2.courseTitlePlaceholder} placeholderTextColor={C.textMuted}
-          />
+          {/* Template selection */}
+          <SectionLabel icon="grid" label="Select Template" C={C} />
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: Spacing[3] }}>
+            {TEMPLATES.map(tmpl => {
+              const active = template === tmpl;
+              return (
+                <TouchableOpacity
+                  key={tmpl}
+                  style={[styles.templateCard, {
+                    borderColor: active ? SectorColors.coverpage : C.border,
+                    borderWidth: active ? 2.5 : 1,
+                    backgroundColor: C.surface,
+                  }]}
+                  onPress={() => setTemplate(tmpl)}
+                  activeOpacity={0.8}
+                >
+                  <View style={[styles.templatePreview, { backgroundColor: isDark ? '#1a1f2e' : '#f8f8f8' }]}>
+                    <View style={[styles.previewLine, { backgroundColor: C.text3, width: '60%', height: 6 }]} />
+                    <View style={[styles.previewLine, { backgroundColor: C.border, width: '40%', height: 4, marginTop: 4 }]} />
+                    <View style={[styles.previewBox, { borderColor: C.border }]}>
+                      <View style={[styles.previewLine, { backgroundColor: C.text3, width: '50%', height: 3 }]} />
+                      <View style={[styles.previewLine, { backgroundColor: C.border, width: '70%', height: 3, marginTop: 2 }]} />
+                    </View>
+                    <View style={{ flexDirection: 'row', gap: 3, marginTop: 4 }}>
+                      <View style={[styles.previewSmallBox, { borderColor: C.border }]} />
+                      <View style={[styles.previewSmallBox, { borderColor: C.border }]} />
+                    </View>
+                  </View>
+                  {active && (
+                    <View style={[styles.checkBadge, { backgroundColor: SectorColors.coverpage }]}>
+                      <Icon name="check" size={12} color={C.white} />
+                    </View>
+                  )}
+                  <Text style={[styles.templateLabel, {
+                    color: active ? SectorColors.coverpage : C.text2,
+                    fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                  }]}>
+                    {TEMPLATE_LABELS[tmpl]}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
 
-          <Text style={[styles.fieldLabel, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
-            {t.coverpage2.courseCode}
-          </Text>
-          <TextInput
-            style={[styles.input, { color: C.text, backgroundColor: C.surface2, borderColor: C.border, fontFamily: FontFamily.jakartaRegular }]}
-            value={courseCode} onChangeText={setCourseCode}
-            placeholder={t.coverpage2.courseCodePlaceholder} placeholderTextColor={C.textMuted}
-          />
+          {/* Course Details */}
+          <SectionLabel icon="box" label="Course Details" C={C} />
+
+          <FieldLabel label={t.coverpage2.courseCode} C={C} />
+          <TextInput style={inputStyle} value={courseCode} onChangeText={setCourseCode}
+            placeholder={t.coverpage2.courseCodePlaceholder} placeholderTextColor={C.textMuted} />
+
+          <FieldLabel label={t.coverpage2.courseTitle} C={C} />
+          <TextInput style={inputStyle} value={courseTitle} onChangeText={setCourseTitle}
+            placeholder={t.coverpage2.courseTitlePlaceholder} placeholderTextColor={C.textMuted} />
+
+          {/* Assignment / Lab details */}
+          <SectionLabel icon={docType === 'lab_report' ? 'layers' : 'fileText'}
+            label={docType === 'lab_report' ? 'Lab Report Details' : 'Assignment Details'} C={C} />
+
+          <FieldLabel label={docType === 'lab_report' ? 'EXPERIMENT NO' : 'ASSIGNMENT NO'} C={C} />
+          <TextInput style={inputStyle} value={assignmentNo} onChangeText={setAssignmentNo}
+            placeholder="e.g. 1" placeholderTextColor={C.textMuted} />
 
           {docType === 'lab_report' && (
             <>
-              <Text style={[styles.fieldLabel, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
-                {t.coverpage2.experimentTopic}
-              </Text>
-              <TextInput
-                style={[styles.input, { color: C.text, backgroundColor: C.surface2, borderColor: C.border, fontFamily: FontFamily.jakartaRegular }]}
-                value={experiment} onChangeText={setExperiment}
-                placeholder={t.coverpage2.experimentPlaceholder} placeholderTextColor={C.textMuted}
-              />
+              <FieldLabel label={t.coverpage2.experimentTopic} C={C} />
+              <TextInput style={inputStyle} value={experiment} onChangeText={setExperiment}
+                placeholder={t.coverpage2.experimentPlaceholder} placeholderTextColor={C.textMuted} />
             </>
           )}
 
-          {/* Submitted to */}
-          <Text style={[styles.fieldLabel, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
-            {t.coverpage2.submittedTo}
-          </Text>
-          <TextInput
-            style={[styles.input, styles.multiline, { color: C.text, backgroundColor: C.surface2, borderColor: C.border, fontFamily: FontFamily.jakartaRegular }]}
-            value={submittedTo} onChangeText={setSubmittedTo}
-            placeholder={t.coverpage2.teacherPlaceholder} placeholderTextColor={C.textMuted}
-            multiline numberOfLines={2}
-          />
+          {/* Student Information */}
+          <SectionLabel icon="user" label="Student Information" C={C} />
 
-          {/* Student info section */}
-          <View style={[styles.sectionHeader, { borderBottomColor: C.border }]}>
-            <Icon name="user" size={16} color={SectorColors.coverpage} />
-            <Text style={[styles.sectionTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-              {t.coverpage2.submittedBy}
-            </Text>
-          </View>
+          <FieldLabel label={t.coverpage2.studentName} C={C} />
+          <TextInput style={inputStyle} value={studentName} onChangeText={setStudentName}
+            placeholder={t.coverpage2.studentNamePlaceholder} placeholderTextColor={C.textMuted} />
 
-          <Text style={[styles.fieldLabel, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
-            {t.coverpage2.studentName}
-          </Text>
-          <TextInput
-            style={[styles.input, { color: C.text, backgroundColor: C.surface2, borderColor: C.border, fontFamily: FontFamily.jakartaRegular }]}
-            value={studentName} onChangeText={setStudentName}
-            placeholder={t.coverpage2.studentNamePlaceholder} placeholderTextColor={C.textMuted}
-          />
-
-          <Text style={[styles.fieldLabel, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
-            {t.coverpage2.studentId}
-          </Text>
-          <TextInput
-            style={[styles.input, { color: C.text, backgroundColor: C.surface2, borderColor: C.border, fontFamily: FontFamily.jakartaRegular }]}
-            value={studentId} onChangeText={setStudentId}
-            placeholder={t.coverpage2.studentIdPlaceholder} placeholderTextColor={C.textMuted}
-          />
+          <FieldLabel label={t.coverpage2.studentId} C={C} />
+          <TextInput style={inputStyle} value={studentId} onChangeText={setStudentId}
+            placeholder={t.coverpage2.studentIdPlaceholder} placeholderTextColor={C.textMuted} />
 
           <View style={styles.halfRow}>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.fieldLabel, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
-                {t.coverpage2.department}
-              </Text>
-              <TextInput
-                style={[styles.input, { color: C.text, backgroundColor: C.surface2, borderColor: C.border, fontFamily: FontFamily.jakartaRegular }]}
-                value={department} onChangeText={setDepartment}
-                placeholder={t.coverpage2.departmentPlaceholder} placeholderTextColor={C.textMuted}
-              />
+              <FieldLabel label={t.coverpage2.intake} C={C} />
+              <TextInput style={inputStyle} value={intake} onChangeText={setIntake}
+                placeholder={t.coverpage2.intakePlaceholder} placeholderTextColor={C.textMuted} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.fieldLabel, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
-                {t.coverpage2.intake}
-              </Text>
-              <TextInput
-                style={[styles.input, { color: C.text, backgroundColor: C.surface2, borderColor: C.border, fontFamily: FontFamily.jakartaRegular }]}
-                value={intake} onChangeText={setIntake}
-                placeholder={t.coverpage2.intakePlaceholder} placeholderTextColor={C.textMuted}
-              />
+              <FieldLabel label={t.coverpage2.section} C={C} />
+              <TextInput style={inputStyle} value={section} onChangeText={setSection}
+                placeholder={t.coverpage2.sectionPlaceholder} placeholderTextColor={C.textMuted} />
             </View>
           </View>
 
-          <Text style={[styles.fieldLabel, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
-            {t.coverpage2.section}
-          </Text>
-          <TextInput
-            style={[styles.input, { color: C.text, backgroundColor: C.surface2, borderColor: C.border, fontFamily: FontFamily.jakartaRegular }]}
-            value={section} onChangeText={setSection}
-            placeholder={t.coverpage2.sectionPlaceholder} placeholderTextColor={C.textMuted}
-          />
+          {/* Program picker */}
+          <FieldLabel label="PROGRAM" C={C} />
+          <TouchableOpacity style={[styles.pickerBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+            onPress={() => setDeptModal(true)}>
+            <Icon name="grid" size={16} color={C.textMuted} />
+            <Text style={[styles.pickerText, {
+              color: program ? C.text : C.textMuted,
+              fontFamily: FontFamily.jakartaRegular,
+            }]} numberOfLines={1}>
+              {program || 'Select program'}
+            </Text>
+            <Icon name="chevD" size={16} color={C.textMuted} />
+          </TouchableOpacity>
 
-          <Text style={[styles.fieldLabel, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
-            {t.coverpage2.dateOfSubmission}
-          </Text>
-          <TextInput
-            style={[styles.input, { color: C.text, backgroundColor: C.surface2, borderColor: C.border, fontFamily: FontFamily.jakartaRegular }]}
-            value={dateOfSubmission} onChangeText={setDateOfSubmission}
-            placeholder={t.coverpage2.datePlaceholder} placeholderTextColor={C.textMuted}
-          />
+          {/* Faculty Details */}
+          <SectionLabel icon="user" label="Faculty Details" C={C} />
+
+          <FieldLabel label="TEACHER NAME" C={C} autofill onAutofill={() => setFacultyModal(true)} />
+          <TextInput style={inputStyle} value={teacherName} onChangeText={setTeacherName}
+            placeholder={t.coverpage2.teacherPlaceholder} placeholderTextColor={C.textMuted} />
+
+          <FieldLabel label={t.coverpage2.department} C={C} />
+          <TextInput style={inputStyle} value={department} onChangeText={setDepartment}
+            placeholder={t.coverpage2.departmentPlaceholder} placeholderTextColor={C.textMuted} />
+
+          <FieldLabel label="DESIGNATION" C={C} />
+          <TextInput style={inputStyle} value={teacherDesig} onChangeText={setTeacherDesig}
+            placeholder="e.g. Associate Professor" placeholderTextColor={C.textMuted} />
+
+          {/* Dates & Signature */}
+          <SectionLabel icon="calendar" label="Dates &amp; Signature" C={C} />
+
+          <FieldLabel label={t.coverpage2.dateOfSubmission} C={C} />
+          <TextInput style={inputStyle} value={dateOfSubmission} onChangeText={setDateOfSubmission}
+            placeholder={t.coverpage2.datePlaceholder} placeholderTextColor={C.textMuted} />
+
+          <TouchableOpacity
+            style={[styles.switchRow, { borderColor: C.border }]}
+            onPress={() => setShowSignature(!showSignature)}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.switchLabel, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
+              Include Teacher's Signature
+            </Text>
+            <View style={[styles.toggle, {
+              backgroundColor: showSignature ? SectorColors.coverpage : C.surface3,
+            }]}>
+              <View style={[styles.toggleKnob, {
+                backgroundColor: C.white,
+                transform: [{ translateX: showSignature ? 18 : 2 }],
+              }]} />
+            </View>
+          </TouchableOpacity>
 
           {/* Generate button */}
           <TouchableOpacity
@@ -369,11 +476,11 @@ export function CoverPageFormScreen({ navigation }: any) {
             disabled={!canGenerate || generating}
           >
             {generating ? (
-              <ActivityIndicator color="#fff" size="small" />
+              <ActivityIndicator color={C.white} size="small" />
             ) : (
-              <Icon name="fileText" size={20} color="#fff" />
+              <Icon name="fileText" size={20} color={C.white} />
             )}
-            <Text style={[styles.genBtnText, { fontFamily: FontFamily.jakartaBold }]}>
+            <Text style={[styles.genBtnText, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>
               {generating ? t.coverpage2.generating : t.coverpage2.generatePdf}
             </Text>
           </TouchableOpacity>
@@ -381,22 +488,172 @@ export function CoverPageFormScreen({ navigation }: any) {
           <View style={{ height: 40 }} />
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Faculty picker modal */}
+      <Modal visible={facultyModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalSheet, { backgroundColor: C.surface }]}>
+            <View style={styles.modalHandle}>
+              <View style={[styles.handle, { backgroundColor: C.border }]} />
+            </View>
+            <Text style={[styles.modalTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              Select Teacher
+            </Text>
+            <View style={[styles.searchBar, { backgroundColor: C.surface2, borderColor: C.border }]}>
+              <Icon name="search" size={16} color={C.textMuted} />
+              <TextInput
+                style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaRegular }]}
+                value={facultySearch} onChangeText={setFacultySearch}
+                placeholder="Search teacher name..." placeholderTextColor={C.textMuted}
+                autoFocus
+              />
+            </View>
+            <FlatList
+              data={filteredFaculty}
+              keyExtractor={i => i.id}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[styles.facultyRow, { borderBottomColor: C.border }]}
+                  onPress={() => selectTeacher(item)}
+                  activeOpacity={0.7}
+                >
+                  <Avatar uri={item.photo_url} name={item.name} size="sm" />
+                  <View style={{ flex: 1, marginLeft: Spacing[3] }}>
+                    <Text style={[styles.facultyName, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}
+                      numberOfLines={1}>{item.name}</Text>
+                    <Text style={[styles.facultyMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}
+                      numberOfLines={1}>
+                      {(item.dept_name ?? '').replace(/^Department of\s*/i, '')}
+                      {item.designation ? ` · ${item.designation}` : ''}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              )}
+              ListEmptyComponent={
+                <Text style={[styles.emptyText, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                  No teachers found
+                </Text>
+              }
+              style={{ maxHeight: 400 }}
+            />
+            <TouchableOpacity style={[styles.closeBtn, { borderColor: C.border }]}
+              onPress={() => { setFacultyModal(false); setFacultySearch(''); }}>
+              <Text style={[styles.closeBtnText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                {t.common.close}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Program picker modal */}
+      <Modal visible={deptModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalSheet, { backgroundColor: C.surface }]}>
+            <View style={styles.modalHandle}>
+              <View style={[styles.handle, { backgroundColor: C.border }]} />
+            </View>
+            <Text style={[styles.modalTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              Select Program
+            </Text>
+            <FlatList
+              data={departments}
+              keyExtractor={i => i.id}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[styles.deptRow, { borderBottomColor: C.border }]}
+                  onPress={() => selectProgram(item)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.deptText, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>
+                    {item.name.replace(/^Department of\s*/i, '')}
+                  </Text>
+                </TouchableOpacity>
+              )}
+              style={{ maxHeight: 400 }}
+            />
+            <TouchableOpacity style={[styles.closeBtn, { borderColor: C.border }]}
+              onPress={() => setDeptModal(false)}>
+              <Text style={[styles.closeBtnText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                {t.common.close}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
 
+function SectionLabel({ icon, label, C }: { icon: string; label: string; C: any }) {
+  return (
+    <View style={[secStyles.header, { borderBottomColor: C.border }]}>
+      <View style={[secStyles.dot, { backgroundColor: SectorColors.coverpage }]} />
+      <Text style={[secStyles.title, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{label}</Text>
+    </View>
+  );
+}
+
+function FieldLabel({ label, C, autofill, onAutofill }: { label: string; C: any; autofill?: boolean; onAutofill?: () => void }) {
+  return (
+    <View style={secStyles.fieldRow}>
+      <Text style={[secStyles.fieldLabel, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>{label}</Text>
+      {autofill && (
+        <TouchableOpacity style={[secStyles.autofillBtn, { backgroundColor: Accent.tealBg }]} onPress={onAutofill}>
+          <Icon name="sparkle" size={12} color={Accent.teal} />
+          <Text style={[secStyles.autofillText, { color: Accent.teal, fontFamily: FontFamily.jakartaBold }]}>Autofill</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+}
+
+const secStyles = StyleSheet.create({
+  header: { flexDirection: 'row', alignItems: 'center', gap: Spacing[2], marginTop: Spacing[5], paddingBottom: Spacing[2], borderBottomWidth: StyleSheet.hairlineWidth },
+  dot: { width: 4, height: 18, borderRadius: 2 },
+  title: { fontSize: FontSize.md },
+  fieldRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: Spacing[3], marginBottom: Spacing[1] },
+  fieldLabel: { fontSize: FontSize.xs, letterSpacing: 0.5 },
+  autofillBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 3, borderRadius: Radius.full },
+  autofillText: { fontSize: 11 },
+});
+
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { paddingBottom: 20, paddingTop: Spacing[2] },
-  fieldLabel: { fontSize: FontSize.xs, letterSpacing: 0.5, marginBottom: Spacing[1], marginTop: Spacing[3] },
   input: { height: Layout.inputHeight, borderRadius: Radius.sm, borderWidth: 1, paddingHorizontal: Spacing[3], fontSize: FontSize.base },
-  multiline: { height: 72, paddingTop: Spacing[2], textAlignVertical: 'top' },
-  typeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing[2] },
-  typeChip: { paddingHorizontal: Spacing[3], paddingVertical: Spacing[2], borderRadius: Radius.full, borderWidth: 1 },
+  typeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing[2], marginBottom: Spacing[2] },
+  typeChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: Spacing[4], paddingVertical: Spacing[2], borderRadius: Radius.full, borderWidth: 1.5 },
   typeChipText: { fontSize: FontSize.sm },
   halfRow: { flexDirection: 'row', gap: Spacing[3] },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing[2], marginTop: Spacing[5], paddingBottom: Spacing[2], borderBottomWidth: StyleSheet.hairlineWidth },
-  sectionTitle: { fontSize: FontSize.md },
+  templateCard: { width: 110, borderRadius: Radius.md, marginRight: Spacing[3], overflow: 'hidden' },
+  templatePreview: { height: 130, padding: 10, alignItems: 'center', justifyContent: 'center' },
+  previewLine: { borderRadius: 2 },
+  previewBox: { borderWidth: 1, borderRadius: 3, padding: 6, marginTop: 6, width: '80%', alignItems: 'center' },
+  previewSmallBox: { borderWidth: 1, borderRadius: 2, width: 32, height: 20 },
+  checkBadge: { position: 'absolute', top: 6, left: 6, width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  templateLabel: { textAlign: 'center', fontSize: FontSize.xs, paddingVertical: Spacing[2] },
+  pickerBtn: { flexDirection: 'row', alignItems: 'center', height: Layout.inputHeight, borderRadius: Radius.sm, borderWidth: 1, paddingHorizontal: Spacing[3], gap: Spacing[2] },
+  pickerText: { flex: 1, fontSize: FontSize.base },
+  switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: Spacing[3], marginTop: Spacing[2] },
+  switchLabel: { fontSize: FontSize.base },
+  toggle: { width: 44, height: 24, borderRadius: 12, justifyContent: 'center' },
+  toggleKnob: { width: 20, height: 20, borderRadius: 10 },
   genBtn: { flexDirection: 'row', height: 52, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center', gap: Spacing[2], marginTop: Spacing[6] },
-  genBtnText: { color: '#fff', fontSize: FontSize.lg },
+  genBtnText: { fontSize: FontSize.lg },
+  modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' },
+  modalSheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: Layout.screenPadding, paddingBottom: Layout.screenPadding, maxHeight: '80%' },
+  modalHandle: { alignItems: 'center', paddingVertical: Spacing[3] },
+  handle: { width: 36, height: 4, borderRadius: 2 },
+  modalTitle: { fontSize: FontSize['2xl'], textAlign: 'center', marginBottom: Spacing[3] },
+  searchBar: { flexDirection: 'row', alignItems: 'center', height: 42, borderRadius: Radius.sm, borderWidth: 1, paddingHorizontal: Spacing[3], gap: Spacing[2], marginBottom: Spacing[3] },
+  searchInput: { flex: 1, fontSize: FontSize.base, padding: 0 },
+  facultyRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing[3], borderBottomWidth: StyleSheet.hairlineWidth },
+  facultyName: { fontSize: FontSize.md },
+  facultyMeta: { fontSize: FontSize.xs, marginTop: 2 },
+  deptRow: { paddingVertical: Spacing[3], borderBottomWidth: StyleSheet.hairlineWidth },
+  deptText: { fontSize: FontSize.md },
+  emptyText: { textAlign: 'center', marginTop: Spacing[6], fontSize: FontSize.base },
+  closeBtn: { height: 44, borderRadius: Radius.md, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginTop: Spacing[3] },
+  closeBtnText: { fontSize: FontSize.base },
 });
