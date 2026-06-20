@@ -17,6 +17,10 @@ type DocType = 'assignment' | 'lab_report' | 'project_report';
 
 const DOC_TYPES: DocType[] = ['assignment', 'lab_report', 'project_report'];
 
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 function buildHtml(fields: {
   docType: DocType;
   university: string;
@@ -43,8 +47,9 @@ function buildHtml(fields: {
     dateOfSubmission: string;
   };
 }): string {
+  const e = (s: string) => escapeHtml(s);
   const f = fields;
-  const docTitle = f.docTypeLabel;
+  const docTitle = e(f.docTypeLabel);
   const showExperiment = f.docType === 'lab_report' && f.experiment;
 
   return `<!DOCTYPE html>
@@ -100,36 +105,36 @@ function buildHtml(fields: {
 <body>
 <div class="border-frame">
   <div class="header">
-    <div class="uni-name">${f.university}</div>
-    <div class="dept">${f.departmentOf} ${f.department}</div>
+    <div class="uni-name">${e(f.university)}</div>
+    <div class="dept">${e(f.departmentOf)} ${e(f.department)}</div>
     <div class="doc-type">${docTitle}</div>
   </div>
 
   <div class="course-block">
-    <div class="course-title">${f.courseTitle}</div>
-    <div class="course-code">${f.courseCode}</div>
-    ${showExperiment ? `<div class="experiment">${f.experiment}</div>` : ''}
+    <div class="course-title">${e(f.courseTitle)}</div>
+    <div class="course-code">${e(f.courseCode)}</div>
+    ${showExperiment ? `<div class="experiment">${e(f.experiment)}</div>` : ''}
   </div>
 
   <div class="info-section">
     <div class="info-block">
-      <div class="info-label">${f.labels.submittedTo}</div>
-      <table class="info-table"><tr><td colspan="2">${f.submittedTo}</td></tr></table>
+      <div class="info-label">${e(f.labels.submittedTo)}</div>
+      <table class="info-table"><tr><td colspan="2">${e(f.submittedTo)}</td></tr></table>
     </div>
     <div class="info-block">
-      <div class="info-label">${f.labels.submittedBy}</div>
+      <div class="info-label">${e(f.labels.submittedBy)}</div>
       <table class="info-table">
-        <tr><td>${f.labels.name}</td><td>${f.studentName}</td></tr>
-        <tr><td>${f.labels.studentId}</td><td>${f.studentId}</td></tr>
-        <tr><td>${f.labels.department}</td><td>${f.department}</td></tr>
-        <tr><td>${f.labels.intake}</td><td>${f.intake}</td></tr>
-        <tr><td>${f.labels.section}</td><td>${f.section}</td></tr>
+        <tr><td>${e(f.labels.name)}</td><td>${e(f.studentName)}</td></tr>
+        <tr><td>${e(f.labels.studentId)}</td><td>${e(f.studentId)}</td></tr>
+        <tr><td>${e(f.labels.department)}</td><td>${e(f.department)}</td></tr>
+        <tr><td>${e(f.labels.intake)}</td><td>${e(f.intake)}</td></tr>
+        <tr><td>${e(f.labels.section)}</td><td>${e(f.section)}</td></tr>
       </table>
     </div>
   </div>
 
   <div class="date-block">
-    ${f.labels.dateOfSubmission}: ${f.dateOfSubmission}
+    ${e(f.labels.dateOfSubmission)}: ${e(f.dateOfSubmission)}
   </div>
 </div>
 </body>

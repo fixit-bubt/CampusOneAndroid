@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert,
   RefreshControl, TextInput, Modal, Platform, KeyboardAvoidingView,
@@ -12,7 +12,7 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { Pill } from '../../components/ui/Pill';
 import { supabase } from '../../lib/supabase';
-import { FontFamily, FontSize, Layout, Radius, Spacing, SectorColors } from '../../theme';
+import { FontFamily, FontSize, Layout, Radius, Spacing, SectorColors, Accent } from '../../theme';
 
 interface CalendarEvent {
   id: string;
@@ -33,10 +33,10 @@ const MONTHS = [
 ];
 
 const TYPE_COLOR: Record<string, string> = {
-  holiday: '#d63d35',
-  exam: '#b9760a',
-  semester: '#2b5be3',
-  general: '#5b6b86',
+  holiday: Accent.red,
+  exam: Accent.amber,
+  semester: Accent.blue,
+  general: Accent.slate,
 };
 
 function getDaysInMonth(year: number, month: number) {
@@ -58,9 +58,10 @@ export function AcademicCalendarScreen({ navigation }: any) {
   const t = useT();
   const isAdmin = profile?.role === 'admin';
 
-  const now = new Date();
-  const [year, setYear] = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth());
+  const [now] = useState(() => new Date());
+  const [yearMonth, setYearMonth] = useState<[number, number]>([now.getFullYear(), now.getMonth()]);
+  const year = yearMonth[0];
+  const month = yearMonth[1];
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
@@ -75,13 +76,12 @@ export function AcademicCalendarScreen({ navigation }: any) {
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
-    const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`;
-    const endDate = `${year}-${String(month + 1).padStart(2, '0')}-${getDaysInMonth(year, month)}`;
+    const monthStart = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+    const monthEnd = `${year}-${String(month + 1).padStart(2, '0')}-${getDaysInMonth(year, month)}`;
     const { data } = await supabase
       .from('academic_calendar')
       .select('*')
-      .gte('event_date', startDate)
-      .lte('event_date', endDate)
+      .or(`and(event_date.gte.${monthStart},event_date.lte.${monthEnd}),and(end_date.gte.${monthStart},event_date.lt.${monthStart})`)
       .order('event_date', { ascending: true });
     setEvents((data as CalendarEvent[]) ?? []);
   }, [year, month]);
@@ -95,36 +95,37 @@ export function AcademicCalendarScreen({ navigation }: any) {
   }
 
   function prevMonth() {
-    if (month === 0) { setMonth(11); setYear(y => y - 1); }
-    else setMonth(m => m - 1);
+    setYearMonth(([y, m]) => m === 0 ? [y - 1, 11] : [y, m - 1]);
   }
 
   function nextMonth() {
-    if (month === 11) { setMonth(0); setYear(y => y + 1); }
-    else setMonth(m => m + 1);
+    setYearMonth(([y, m]) => m === 11 ? [y + 1, 0] : [y, m + 1]);
   }
 
   const daysInMonth = getDaysInMonth(year, month);
   const firstDay = getFirstDayOfMonth(year, month);
 
-  const eventsByDate = new Map<number, CalendarEvent[]>();
-  for (const e of events) {
-    const day = parseInt(e.event_date.split('-')[2], 10);
-    const arr = eventsByDate.get(day) ?? [];
-    arr.push(e);
-    eventsByDate.set(day, arr);
-  }
+  const { eventsByDate, weeks } = useMemo(() => {
+    const ebd = new Map<number, CalendarEvent[]>();
+    for (const ev of events) {
+      const day = parseInt(ev.event_date.split('-')[2], 10);
+      const arr = ebd.get(day) ?? [];
+      arr.push(ev);
+      ebd.set(day, arr);
+    }
 
-  const weeks: (number | null)[][] = [];
-  let week: (number | null)[] = Array(firstDay).fill(null);
-  for (let d = 1; d <= daysInMonth; d++) {
-    week.push(d);
-    if (week.length === 7) { weeks.push(week); week = []; }
-  }
-  if (week.length > 0) {
-    while (week.length < 7) week.push(null);
-    weeks.push(week);
-  }
+    const wks: (number | null)[][] = [];
+    let wk: (number | null)[] = Array(firstDay).fill(null);
+    for (let d = 1; d <= daysInMonth; d++) {
+      wk.push(d);
+      if (wk.length === 7) { wks.push(wk); wk = []; }
+    }
+    if (wk.length > 0) {
+      while (wk.length < 7) wk.push(null);
+      wks.push(wk);
+    }
+    return { eventsByDate: ebd, weeks: wks };
+  }, [events, daysInMonth, firstDay]);
 
   const todayDay = now.getFullYear() === year && now.getMonth() === month ? now.getDate() : -1;
 

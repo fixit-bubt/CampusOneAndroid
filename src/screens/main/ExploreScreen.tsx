@@ -31,7 +31,7 @@ const SECTOR_ROUTE: Record<SectorKey, string> = {
   coverpage: 'CoverPageForm',
 };
 
-// All 15 sectors — id, label, description
+// All sectors — id, label, description
 const SECTORS: { id: SectorKey; en: string; dEn: string }[] = [
   { id: 'reports',   en: 'Issue Reports',     dEn: 'Status updates on issues you reported' },
   { id: 'lostfound', en: 'Lost & Found',       dEn: 'Claims and matches on your posts' },

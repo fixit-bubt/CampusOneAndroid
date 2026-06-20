@@ -13,7 +13,9 @@ import { useT } from '../../i18n';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { Pill } from '../../components/ui/Pill';
-import { supabase, supabaseUrl } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase';
+import { uploadFile } from '../../utils/storage';
+import { formatRelativeTime } from '../../utils/format';
 import { FontFamily, FontSize, Layout, Radius, Spacing, SectorColors } from '../../theme';
 
 interface Routine {
@@ -106,18 +108,14 @@ export function RoutinesBrowseScreen({ navigation }: any) {
 
       if (pickedFile) {
         const ext = pickedFile.name.split('.').pop() ?? 'bin';
-        const storagePath = `routines/${Date.now()}_${fTitle.trim().replace(/\s+/g, '_')}.${ext}`;
-        const resp = await fetch(pickedFile.uri);
-        const blob = await resp.blob();
-        const { error: upErr } = await supabase.storage
-          .from('study-materials')
-          .upload(storagePath, blob, { contentType: pickedFile.mimeType, upsert: false });
-        if (upErr) throw upErr;
-        const publicUrl = `${supabaseUrl}/storage/v1/object/public/study-materials/${storagePath}`;
+        const safeName = fTitle.trim().replace(/[^a-zA-Z0-9_-]/g, '_');
+        const storagePath = `routines/${Date.now()}_${safeName}.${ext}`;
+        const up = await uploadFile('study-materials', pickedFile.uri, storagePath, pickedFile.mimeType, true);
+        if (!up.success) throw new Error(up.error);
         if (pickedFile.mimeType.startsWith('image/')) {
-          imageUrl = publicUrl;
+          imageUrl = up.url;
         } else {
-          fileUrl = publicUrl;
+          fileUrl = up.url;
         }
       }
 
@@ -160,16 +158,6 @@ export function RoutinesBrowseScreen({ navigation }: any) {
     if (url) Linking.openURL(url);
   }
 
-  function timeAgo(iso: string) {
-    const ms = Date.now() - new Date(iso).getTime();
-    const d = Math.floor(ms / 86400000);
-    if (d > 0) return `${d}d ago`;
-    const h = Math.floor(ms / 3600000);
-    if (h > 0) return `${h}h ago`;
-    const m = Math.floor(ms / 60000);
-    return `${m}m ago`;
-  }
-
   function renderRoutine({ item }: { item: Routine }) {
     const isOwner = item.published_by === user?.id;
     return (
@@ -201,7 +189,7 @@ export function RoutinesBrowseScreen({ navigation }: any) {
             ) : null}
           </View>
           <Text style={[styles.timeText, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-            {timeAgo(item.created_at)}
+            {formatRelativeTime(item.created_at)}
           </Text>
         </View>
         <View style={styles.cardChev}>

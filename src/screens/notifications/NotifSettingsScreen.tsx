@@ -32,6 +32,9 @@ const SECTORS: { id: SectorKey; label: string; desc: string }[] = [
   { id: 'directory', label: 'Directory',      desc: 'Connection requests'        },
   { id: 'prayer',    label: 'Prayer Times',   desc: 'Daily prayer time updates'  },
   { id: 'faculty',   label: 'Faculty',        desc: 'Faculty announcements'      },
+  { id: 'calendar',  label: 'Academic Calendar', desc: 'Academic dates and holidays'},
+  { id: 'routines',  label: 'Class Routines', desc: 'Class and exam schedules'   },
+  { id: 'coverpage', label: 'Cover Page',     desc: 'Assignment cover pages'     },
 ];
 
 type SectorPref = { enabled: boolean; push: boolean; email: boolean; inapp: boolean };
