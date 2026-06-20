@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView, Modal,
-  StyleSheet, Switch, ActivityIndicator, type ViewStyle,
+  StyleSheet, Switch, ActivityIndicator, Share, Alert, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -13,7 +13,8 @@ import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { PasswordInput } from '../../components/ui/PasswordInput';
 import { SectorIcon } from '../../components/ui/SectorIcon';
-import { FontFamily, Layout, Accent } from '../../theme';
+import { FontFamily, Layout, Accent, SectorColors } from '../../theme';
+import { useApp } from '../../store/appStore';
 import type { SectorKey } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { uploadPhoto } from '../../utils/storage';
@@ -296,6 +297,7 @@ export function ProfileScreen({ navigation }: any) {
   const t = useT();
   const toast = useToast();
   const { profile, user, signOut, refreshProfile } = useAuth();
+  const { isDark: appDark, toggleTheme, lang, toggleLang } = useApp();
 
   const [role, setRole] = useState<string>(profile?.role ?? 'student');
   useEffect(() => { if (profile?.role) setRole(profile.role as any); }, [profile?.role]);
@@ -559,9 +561,68 @@ export function ProfileScreen({ navigation }: any) {
           </>
         )}
 
+        {/* ─── Settings ─── */}
+        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold, marginTop: 24 }]}>
+          SETTINGS
+        </Text>
+
+        {/* Dark mode */}
+        <View style={[styles.settRow, { backgroundColor: C.surface, borderColor: C.border }]}>
+          <Icon name="moon" size={18} color={C.text2} />
+          <Text style={[styles.settLabel, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>Dark Mode</Text>
+          <Switch value={appDark} onValueChange={toggleTheme}
+            trackColor={{ false: C.surface3, true: C.brand + '66' }} thumbColor={appDark ? C.brand : C.white} />
+        </View>
+
+        {/* Language */}
+        <View style={[styles.settRow, { backgroundColor: C.surface, borderColor: C.border }]}>
+          <Icon name="globe" size={18} color={C.text2} />
+          <Text style={[styles.settLabel, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>
+            Language: {lang === 'en' ? 'English' : 'বাংলা'}
+          </Text>
+          <Switch value={lang === 'bn'} onValueChange={toggleLang}
+            trackColor={{ false: C.surface3, true: C.brand + '66' }} thumbColor={lang === 'bn' ? C.brand : C.white} />
+        </View>
+
+        {/* Notifications */}
+        <TouchableOpacity style={[styles.settRow, { backgroundColor: C.surface, borderColor: C.border }]}
+          onPress={() => navigation.navigate('NotifSettings')} activeOpacity={0.7}>
+          <Icon name="bell" size={18} color={C.text2} />
+          <Text style={[styles.settLabel, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>Notifications</Text>
+          <Icon name="chevR" size={16} color={C.textMuted} />
+        </TouchableOpacity>
+
+        {/* Cover Page Generator */}
+        <TouchableOpacity style={[styles.settRow, { backgroundColor: C.surface, borderColor: C.border }]}
+          onPress={() => navigation.navigate('CoverPageForm')} activeOpacity={0.7}>
+          <Icon name="fileText" size={18} color={SectorColors.coverpage} />
+          <Text style={[styles.settLabel, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>Cover Page Generator</Text>
+          <Icon name="chevR" size={16} color={C.textMuted} />
+        </TouchableOpacity>
+
+        {/* Share App */}
+        <TouchableOpacity style={[styles.settRow, { backgroundColor: C.surface, borderColor: C.border }]}
+          onPress={() => Share.share({ message: 'Check out CampusOne - your university companion app!' })} activeOpacity={0.7}>
+          <Icon name="handshake" size={18} color={C.text2} />
+          <Text style={[styles.settLabel, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>Share App</Text>
+          <Icon name="chevR" size={16} color={C.textMuted} />
+        </TouchableOpacity>
+
+        {/* About */}
+        <View style={[styles.settRow, { backgroundColor: C.surface, borderColor: C.border }]}>
+          <Icon name="shield" size={18} color={C.text2} />
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.settLabel, { color: C.text, fontFamily: FontFamily.jakartaSemiBold, flex: 0 }]}>About</Text>
+            <Text style={{ color: C.textMuted, fontSize: 11, fontFamily: FontFamily.jakartaMedium }}>CampusOne v1.1.3</Text>
+          </View>
+        </View>
+
         {/* Change password */}
+        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold, marginTop: 20 }]}>
+          ACCOUNT
+        </Text>
         <TouchableOpacity
-          style={[styles.logoutBtn, { backgroundColor: C.surface, borderColor: C.border, marginTop: 24 }]}
+          style={[styles.logoutBtn, { backgroundColor: C.surface, borderColor: C.border }]}
           onPress={() => setPwOpen(true)}
           activeOpacity={0.8}
         >
@@ -672,7 +733,9 @@ const styles = StyleSheet.create({
   dashBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: 14, marginTop: 24 } as ViewStyle,
   dashTxt: { fontSize: 15 } as any,
 
-  logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: 14, borderWidth: 1, marginTop: 16 } as ViewStyle,
+  settRow: { flexDirection: 'row', alignItems: 'center', gap: 12, height: 54, borderRadius: 14, borderWidth: 1, paddingHorizontal: 16, marginBottom: 8 } as ViewStyle,
+  settLabel: { flex: 1, fontSize: 14 } as any,
+  logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: 14, borderWidth: 1, marginTop: 8 } as ViewStyle,
   logoutTxt: { fontSize: 15 } as any,
 
   avatarEditBadge: {
