@@ -15,6 +15,7 @@ import { Icon } from '../../components/ui/Icon';
 import { Avatar } from '../../components/ui/Avatar';
 import { supabase } from '../../lib/supabase';
 import { FontFamily, FontSize, Layout, Radius, Spacing, SectorColors, Accent } from '../../theme';
+import { BUBT_LOGO_CREST, BUBT_LOGO_HEADER } from './logos';
 
 type DocType = 'assignment' | 'lab_report' | 'project_report';
 type TemplateStyle = 'default' | 'classic' | 'premium' | 'minimal' | 'modern';
@@ -44,6 +45,7 @@ function buildHtml(f: {
   section: string; showSection: boolean; program: string;
   teacherName: string; teacherDesig: string; teacherDept: string;
   dateOfSubmission: string; showSignature: boolean; docType: DocType;
+  logoCrest: string; logoHeader: string;
 }): string {
   const e = esc;
   const isLab = f.docType === 'lab_report';
@@ -103,16 +105,14 @@ function buildHtml(f: {
 
   const docUp = e(f.docTypeLabel).toUpperCase();
 
+  const crest = `<img src="${f.logoCrest}" style="width:28mm;height:auto;margin:4mm 0;" />`;
+  const hdrLogo = `<img src="${f.logoHeader}" style="width:90mm;height:auto;margin-bottom:3mm;" />`;
+
   if (f.template === 'classic') {
     return wrap('2.5px solid #1a3a6b', `
       <div style="text-align:center;">
-        <table style="margin:0 auto;"><tr>
-          <td style="padding-right:4mm;vertical-align:middle;"><span style="font-size:30pt;font-weight:bold;color:#1a3a6b;letter-spacing:2pt;">BUBT</span></td>
-          <td style="text-align:left;vertical-align:middle;border-left:2.5px solid #1a3a6b;padding-left:4mm;">
-            <span style="font-size:9pt;font-weight:bold;color:#1a3a6b;line-height:1.4;">BANGLADESH UNIVERSITY OF<br/>BUSINESS AND TECHNOLOGY</span>
-          </td>
-        </tr></table>
-        <p style="font-size:9pt;font-style:italic;color:#555;margin:3mm 0 10mm;">Committed to Academic Excellence</p>
+        ${hdrLogo}
+        <p style="font-size:9pt;font-style:italic;color:#555;margin:2mm 0 10mm;">Committed to Academic Excellence</p>
         <div style="display:inline-block;border:2px solid #1a3a6b;padding:3mm 16mm;">
           <span style="font-size:14pt;font-weight:bold;color:#1a3a6b;">${docUp}</span>
         </div>
@@ -122,13 +122,8 @@ function buildHtml(f: {
   if (f.template === 'premium') {
     return wrap('2.5px solid #1a3a6b', `
       <div style="text-align:center;">
-        <table style="margin:0 auto;"><tr>
-          <td style="padding-right:4mm;vertical-align:middle;"><span style="font-size:30pt;font-weight:bold;color:#1a3a6b;letter-spacing:2pt;">BUBT</span></td>
-          <td style="text-align:left;vertical-align:middle;border-left:2.5px solid #1a3a6b;padding-left:4mm;">
-            <span style="font-size:9pt;font-weight:bold;color:#1a3a6b;line-height:1.4;">BANGLADESH UNIVERSITY OF<br/>BUSINESS AND TECHNOLOGY</span>
-          </td>
-        </tr></table>
-        <p style="font-size:9pt;font-style:italic;color:#555;margin:3mm 0 10mm;">Committed to Academic Excellence</p>
+        ${hdrLogo}
+        <p style="font-size:9pt;font-style:italic;color:#555;margin:2mm 0 10mm;">Committed to Academic Excellence</p>
         <div style="display:inline-block;border:2px dashed #1a3a6b;padding:3mm 16mm;">
           <span style="font-size:14pt;font-weight:bold;color:#1a3a6b;">${docUp}</span>
         </div>
@@ -138,8 +133,9 @@ function buildHtml(f: {
   if (f.template === 'minimal') {
     return wrap('1.5px solid #666', `
       <div style="text-align:center;">
-        <p style="font-size:17pt;font-weight:bold;font-style:italic;margin-bottom:14mm;">${e(uni)}</p>
-        <p style="font-size:15pt;font-weight:bold;text-decoration:underline;margin-bottom:6mm;">${docUp}</p>
+        <p style="font-size:17pt;font-weight:bold;font-style:italic;margin-bottom:4mm;">${e(uni)}</p>
+        ${crest}
+        <p style="font-size:15pt;font-weight:bold;text-decoration:underline;margin:4mm 0 6mm;">${docUp}</p>
       </div>`, '.bx td{border-radius:0;}');
   }
 
@@ -147,18 +143,20 @@ function buildHtml(f: {
     return wrap('2px solid #444;border-radius:4mm', `
       <div style="text-align:center;">
         <p style="font-size:16pt;font-weight:bold;color:#2a2a2a;margin-bottom:3mm;">${e(uni)}</p>
-        <p style="font-size:11pt;color:#555;margin-bottom:10mm;">Department of ${e(f.department)}</p>
+        ${crest}
+        <p style="font-size:11pt;color:#555;margin:3mm 0 8mm;">Department of ${e(f.department)}</p>
         <div style="background:#2a2a2a;color:#fff;padding:3.5mm 18mm;display:inline-block;border-radius:2mm;">
           <span style="font-size:13pt;font-weight:bold;letter-spacing:2pt;">${docUp}</span>
         </div>
       </div>`, 'body{font-family:Georgia,serif;} .bx td{border-color:#444;}');
   }
 
-  // default
+  // default — matches the real BUBT template with crest logo
   return wrap('2px solid #333', `
     <div style="text-align:center;">
-      <p style="font-size:18pt;font-weight:bold;font-style:italic;margin-bottom:14mm;">${e(uni)}</p>
-      <div style="display:inline-block;border:2px solid #333;padding:3mm 14mm;">
+      <p style="font-size:18pt;font-weight:bold;font-style:italic;margin-bottom:4mm;">${e(uni)}</p>
+      ${crest}
+      <div style="display:inline-block;border:2px solid #333;padding:3mm 14mm;margin-top:4mm;">
         <span style="font-size:14pt;font-weight:bold;">${docUp}</span>
       </div>
     </div>`);
@@ -265,7 +263,7 @@ export function CoverPageFormScreen({ navigation }: any) {
         program: program.trim() || department.trim() || 'N/A',
         teacherName: teacherName.trim() || 'N/A', teacherDesig: teacherDesig.trim(),
         teacherDept: teacherDept.trim(), dateOfSubmission: dateOfSubmission.trim() || 'N/A',
-        showSignature,
+        showSignature, logoCrest: BUBT_LOGO_CREST, logoHeader: BUBT_LOGO_HEADER,
       });
       const { uri } = await Print.printToFileAsync({ html, base64: false });
       if (await Sharing.isAvailableAsync()) {
