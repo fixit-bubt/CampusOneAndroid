@@ -52,114 +52,96 @@ function buildHtml(f: {
   const noLabel = isLab ? 'Experiment No' : 'Assignment No';
   const uni = 'Bangladesh University of Business and Technology';
 
-  const css = `@page{size:A4;margin:0}*{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:'Times New Roman',serif;width:210mm;min-height:297mm;color:#1a1a1a;}
-    .page{display:flex;flex-direction:column;align-items:center;justify-content:space-between;}
-    .ci p{font-size:12pt;margin:2mm 0;}
-    .bx{border-collapse:collapse;width:86%;margin:0 auto;}
-    .bx td{width:50%;border:2px solid #333;border-radius:3mm;padding:5mm 6mm;vertical-align:top;}
-    .bx .h{font-size:12.5pt;font-weight:bold;margin-bottom:4mm;}
-    .bx p{font-size:11pt;line-height:2.0;margin:0;}
-    .dt{text-align:center;font-size:12pt;font-weight:bold;margin-top:8mm;}
-    .sg{text-align:right;margin-top:8mm;padding-right:18mm;}
-    .sl{display:inline-block;text-align:center;width:45mm;border-top:1px solid #333;padding-top:2mm;font-size:9pt;font-weight:normal;}`;
+  const css = `@page{size:A4;margin:0}
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Times New Roman',Times,serif;width:210mm;min-height:297mm;padding:20mm;
+         background:#fff;color:#1a1a1a;display:flex;flex-direction:column;}
+    h1{text-align:center;font-size:22px;margin:5px 0;}
+    h2{text-align:center;font-size:18px;margin:5px 0;}
+    .logo{width:200px;height:200px;margin:10px auto 15px;display:flex;justify-content:center;align-items:center;}
+    .logo img{max-width:100%;max-height:100%;}
+    .hdr-logo{margin:0 auto 5px;display:block;width:380px;height:auto;}
+    .ci{text-align:center;margin:5px 0;}
+    .ci p{margin:3px 0;font-size:14px;}
+    .doc-label{text-align:center;margin:15px 0 20px;font-size:18px;font-weight:bold;}
+    .tbl{width:100%;border-collapse:collapse;margin-top:25px;margin-bottom:auto;}
+    .tbl th,.tbl td{border:1px solid #000;padding:10px;width:50%;vertical-align:top;text-align:left;}
+    .tbl th{background:#f2f2f2;text-align:center;font-size:14px;}
+    .tbl td p{margin:0 0 5px 0;font-size:13px;line-height:1.6;}
+    .dt{text-align:center;font-size:14px;font-weight:bold;margin-top:auto;padding-top:20px;}
+    .sg{text-align:right;margin-top:15px;}
+    .sl{display:inline-block;text-align:center;width:150px;border-top:1px solid #333;padding-top:5px;font-size:11px;font-weight:normal;}`;
 
-  const courseInfo = `<div class="ci" style="text-align:left;width:100%;padding:0 22mm;margin:8mm 0;">
-      <p><b>${noLabel} :</b> ${e(f.assignmentNo) || ''}</p>
-      <p><b>Course Code &nbsp;&nbsp;:</b> ${e(f.courseCode)}</p>
-      <p><b>Course Title &nbsp;&nbsp;:</b> ${e(f.courseTitle)}</p>
-      ${f.showTopic && f.experiment ? `<p><b>${isLab ? 'Experiment / Topic' : 'Topic'} :</b> ${e(f.experiment)}</p>` : ''}
+  const crest = `<div class="logo"><img src="${f.logoCrest}" /></div>`;
+  const hdrLogo = `<img src="${f.logoHeader}" class="hdr-logo" />`;
+  const docUp = e(f.docTypeLabel).toUpperCase();
+  const dept = e(f.teacherDept || f.department);
+
+  const courseBlock = `<div class="ci">
+      <p><strong>${noLabel} :</strong> ${e(f.assignmentNo) || ''}</p>
+      <p><strong>Course Code :</strong> ${e(f.courseCode)}</p>
+      <p><strong>Course Title :</strong> ${e(f.courseTitle)}</p>
+      ${f.showTopic && f.experiment ? `<p><strong>${isLab ? 'Experiment / Topic' : 'Topic'} :</strong> ${e(f.experiment)}</p>` : ''}
     </div>`;
 
-  const byFields = `
-      <p><b>Name :</b> ${e(f.studentName)}</p>
-      <p><b>ID No :</b> ${e(f.studentId)}</p>
-      <p><b>Intake :</b> ${e(f.intake)}</p>
-      ${f.showSection ? `<p><b>Section :</b> ${e(f.section)}</p>` : ''}
-      <p><b>Program :</b> ${e(f.program)}</p>`;
-
-  const toFields = `
-      <p><b>Name :</b> ${e(f.teacherName)}</p>
-      ${f.teacherDesig ? `<p>${e(f.teacherDesig)}</p>` : ''}
-      <p style="margin-top:5mm;"><b>Dept. of</b> ${e(f.teacherDept || f.department)}</p>
-      <p style="font-size:9.5pt;">${e(uni)}</p>`;
-
-  const boxes = `<table class="bx" cellspacing="6"><tr>
-      <td><div class="h">Submitted By:</div>${byFields}</td>
-      <td><div class="h">Submitted To:</div>${toFields}</td>
+  const tbl = `<table class="tbl"><tr>
+      <th>Submitted By</th><th>Submitted To</th>
+    </tr><tr>
+      <td>
+        <p><strong>Name :</strong> ${e(f.studentName)}</p>
+        <p><strong>ID No :</strong> ${e(f.studentId)}</p>
+        <p><strong>Intake :</strong> ${e(f.intake)}</p>
+        ${f.showSection ? `<p><strong>Section :</strong> ${e(f.section)}</p>` : ''}
+        <p><strong>Program :</strong> ${e(f.program)}</p>
+      </td>
+      <td>
+        <p>${e(f.teacherName)}</p>
+        ${f.teacherDesig ? `<p>${e(f.teacherDesig)}</p>` : ''}
+        <p style="margin-top:8px;">Department of ${dept}</p>
+        <p style="font-size:12px;">${e(uni)}</p>
+      </td>
     </tr></table>`;
 
   const date = `<p class="dt">Date of Submission : ${e(f.dateOfSubmission)}</p>`;
   const sig = f.showSignature ? `<div class="sg"><div class="sl">Teacher's Signature</div></div>` : '';
+  const bottom = `${date}${sig}`;
 
-  const wrap = (border: string, headerHtml: string, extra = '') =>
-    `<!DOCTYPE html><html><head><meta charset="utf-8"/><style>${css}
-      body{padding:12mm 16mm;}${extra}</style></head><body>
-<div class="page" style="border:${border};min-height:273mm;padding:14mm 10mm;">
-  ${headerHtml}
-  ${courseInfo}
-  ${boxes}
-  ${date}
-  ${sig}
-</div></body></html>`;
-
-  const docUp = e(f.docTypeLabel).toUpperCase();
-
-  const crest = `<img src="${f.logoCrest}" style="width:40mm;height:auto;margin:6mm 0;" />`;
-  const hdrLogo = `<img src="${f.logoHeader}" style="width:100mm;height:auto;margin-bottom:4mm;" />`;
+  const page = (header: string, extra = '') =>
+    `<!DOCTYPE html><html><head><meta charset="utf-8"/><style>${css}${extra}</style></head><body>
+${header}${courseBlock}${tbl}${bottom}</body></html>`;
 
   if (f.template === 'classic') {
-    return wrap('2.5px solid #1a3a6b', `
-      <div style="text-align:center;">
-        ${hdrLogo}
-        <p style="font-size:9pt;font-style:italic;color:#555;margin:2mm 0 10mm;">Committed to Academic Excellence</p>
-        <div style="display:inline-block;border:2px solid #1a3a6b;padding:3mm 16mm;">
-          <span style="font-size:14pt;font-weight:bold;color:#1a3a6b;">${docUp}</span>
-        </div>
-      </div>`);
+    return page(`${hdrLogo}
+      <p style="text-align:center;font-size:10px;font-style:italic;color:#555;margin-bottom:10px;">Committed to Academic Excellence</p>
+      <h2 style="margin:15px 0 20px;">${docUp}</h2>`);
   }
 
   if (f.template === 'premium') {
-    return wrap('2.5px solid #1a3a6b', `
-      <div style="text-align:center;">
-        ${hdrLogo}
-        <p style="font-size:9pt;font-style:italic;color:#555;margin:2mm 0 10mm;">Committed to Academic Excellence</p>
-        <div style="display:inline-block;border:2px dashed #1a3a6b;padding:3mm 16mm;">
-          <span style="font-size:14pt;font-weight:bold;color:#1a3a6b;">${docUp}</span>
-        </div>
-      </div>`, '.bx td{border-style:dashed;}');
+    return page(`${hdrLogo}
+      <p style="text-align:center;font-size:10px;font-style:italic;color:#555;margin-bottom:10px;">Committed to Academic Excellence</p>
+      <div class="doc-label" style="display:inline-block;border:2px dashed #1a3a6b;padding:8px 30px;margin:15px auto 20px;color:#1a3a6b;">${docUp}</div>`,
+      '.tbl th,.tbl td{border-style:dashed;border-color:#1a3a6b;}');
   }
 
   if (f.template === 'minimal') {
-    return wrap('1.5px solid #666', `
-      <div style="text-align:center;">
-        <p style="font-size:17pt;font-weight:bold;font-style:italic;margin-bottom:4mm;">${e(uni)}</p>
-        ${crest}
-        <p style="font-size:15pt;font-weight:bold;text-decoration:underline;margin:4mm 0 6mm;">${docUp}</p>
-      </div>`, '.bx td{border-radius:0;}');
+    return page(`<h1 style="font-style:italic;margin-bottom:5px;">${e(uni)}</h1>
+      ${crest}
+      <h2 style="text-decoration:underline;margin:10px 0 20px;">${docUp}</h2>`,
+      '.tbl th{background:none;}');
   }
 
   if (f.template === 'modern') {
-    return wrap('2px solid #444;border-radius:4mm', `
-      <div style="text-align:center;">
-        <p style="font-size:16pt;font-weight:bold;color:#2a2a2a;margin-bottom:3mm;">${e(uni)}</p>
-        ${crest}
-        <p style="font-size:11pt;color:#555;margin:3mm 0 8mm;">Department of ${e(f.department)}</p>
-        <div style="background:#2a2a2a;color:#fff;padding:3.5mm 18mm;display:inline-block;border-radius:2mm;">
-          <span style="font-size:13pt;font-weight:bold;letter-spacing:2pt;">${docUp}</span>
-        </div>
-      </div>`, 'body{font-family:Georgia,serif;} .bx td{border-color:#444;}');
+    return page(`<h1 style="margin-bottom:5px;">${e(uni)}</h1>
+      ${crest}
+      <p style="text-align:center;font-size:13px;color:#555;margin-bottom:10px;">Department of ${dept}</p>
+      <div style="text-align:center;margin:10px 0 20px;"><span style="background:#2a2a2a;color:#fff;padding:8px 25px;font-size:15px;font-weight:bold;letter-spacing:2px;border-radius:3px;">${docUp}</span></div>`,
+      'body{font-family:Georgia,serif;} .tbl th,.tbl td{border-color:#444;}');
   }
 
-  // default — matches the real BUBT template with crest logo
-  return wrap('2px solid #333', `
-    <div style="text-align:center;">
-      <p style="font-size:18pt;font-weight:bold;font-style:italic;margin-bottom:4mm;">${e(uni)}</p>
-      ${crest}
-      <div style="display:inline-block;border:2px solid #333;padding:3mm 14mm;margin-top:4mm;">
-        <span style="font-size:14pt;font-weight:bold;">${docUp}</span>
-      </div>
-    </div>`);
+  // Default — matches real BUBT cover page from Scribd/APK
+  return page(`<h1 style="font-style:italic;margin-bottom:5px;">${e(uni)}</h1>
+    ${crest}
+    <div class="doc-label"><span style="border:2px solid #333;padding:8px 25px;">${docUp}</span></div>`);
 }
 
 // ─── Main Screen ───────────────────────────────────────────────────
