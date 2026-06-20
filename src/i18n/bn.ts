@@ -1350,6 +1350,8 @@ export const bn: Dict = {
     typeAssignment: "অ্যাসাইনমেন্ট",
     typeLabReport: "ল্যাব রিপোর্ট",
     typeProjectReport: "প্রজেক্ট রিপোর্ট",
+    typeIndexPage: "ইনডেক্স পেজ",
+    typeInternshipReport: "ইন্টার্নশিপ রিপোর্ট",
     dateOfSubmission: "জমা দেওয়ার তারিখ",
     datePlaceholder: "YYYY-MM-DD",
     experimentTopic: "পরীক্ষা / বিষয় (ঐচ্ছিক)",

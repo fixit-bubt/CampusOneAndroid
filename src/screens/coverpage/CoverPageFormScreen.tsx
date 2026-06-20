@@ -17,10 +17,10 @@ import { supabase } from '../../lib/supabase';
 import { FontFamily, FontSize, Layout, Radius, Spacing, SectorColors, Accent } from '../../theme';
 import { BUBT_LOGO_CREST, BUBT_LOGO_HEADER } from './logos';
 
-type DocType = 'assignment' | 'lab_report' | 'project_report';
+type DocType = 'assignment' | 'lab_report' | 'project_report' | 'index_page' | 'internship_report';
 type TemplateStyle = 'default' | 'classic' | 'premium' | 'minimal' | 'modern';
 
-const DOC_TYPES: DocType[] = ['assignment', 'lab_report', 'project_report'];
+const DOC_TYPES: DocType[] = ['assignment', 'lab_report', 'project_report', 'index_page', 'internship_report'];
 const TEMPLATES: TemplateStyle[] = ['default', 'classic', 'premium', 'minimal', 'modern'];
 const TEMPLATE_LABELS: Record<TemplateStyle, string> = {
   default: 'Default Style', classic: 'Classic Style', premium: 'Premium Style',
@@ -199,6 +199,8 @@ export function CoverPageFormScreen({ navigation }: any) {
     assignment: t.coverpage2.typeAssignment,
     lab_report: t.coverpage2.typeLabReport,
     project_report: t.coverpage2.typeProjectReport,
+    index_page: t.coverpage2.typeIndexPage,
+    internship_report: t.coverpage2.typeInternshipReport,
   }[dt]);
 
   const canGenerate = studentName.trim() && studentId.trim() && courseTitle.trim() && courseCode.trim();
@@ -267,7 +269,7 @@ export function CoverPageFormScreen({ navigation }: any) {
               const a = docType === dt;
               return (
                 <TouchableOpacity key={dt} style={[styles.typeChip, { borderColor: a ? SectorColors.coverpage : C.border, backgroundColor: a ? SectorColors.coverpage : C.surface2 }]} onPress={() => setDocType(dt)}>
-                  <Icon name={dt === 'lab_report' ? 'layers' : 'fileText'} size={14} color={a ? C.white : C.text2} />
+                  <Icon name={dt === 'lab_report' ? 'layers' : dt === 'index_page' ? 'inbox' : dt === 'internship_report' ? 'bag' : 'fileText'} size={14} color={a ? C.white : C.text2} />
                   <Text style={[styles.typeChipText, { color: a ? C.white : C.text2, fontFamily: a ? FontFamily.jakartaBold : FontFamily.jakartaMedium }]}>{docTypeLabel(dt)}</Text>
                 </TouchableOpacity>
               );
