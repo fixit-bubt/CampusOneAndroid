@@ -22,6 +22,9 @@ const SECTOR_ICON: Record<SectorKey, string> = {
   directory: 'directory',
   prayer:    'moon',
   faculty:   'faculty',
+  calendar:  'calendar',
+  routines:  'clipboard',
+  coverpage: 'fileText',
 };
 
 const SIZE_MAP = { sm: 32, md: 42, lg: 58 } as const;

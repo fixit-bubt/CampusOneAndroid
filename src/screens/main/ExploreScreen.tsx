@@ -26,6 +26,9 @@ const SECTOR_ROUTE: Record<SectorKey, string> = {
   directory: 'Directory',
   prayer:    'Prayer',
   faculty:   'Faculty',
+  calendar:  'AcademicCalendar',
+  routines:  'RoutinesBrowse',
+  coverpage: 'CoverPageForm',
 };
 
 // All 15 sectors — id, label, description
@@ -45,6 +48,9 @@ const SECTORS: { id: SectorKey; en: string; dEn: string }[] = [
   { id: 'directory', en: 'Student Directory',  dEn: 'Connection requests' },
   { id: 'prayer',    en: 'Prayer Times',       dEn: 'Azan & jamaat times' },
   { id: 'faculty',   en: 'Faculty',            dEn: 'Find teachers & supervisors' },
+  { id: 'calendar',  en: 'Academic Calendar',  dEn: 'University events & breaks' },
+  { id: 'routines',  en: 'Class Routines',     dEn: 'Class & exam schedules' },
+  { id: 'coverpage', en: 'Cover Page',         dEn: 'Generate assignment covers' },
 ];
 
 export function ExploreScreen({ navigation }: any) {

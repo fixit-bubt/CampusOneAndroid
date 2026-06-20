@@ -100,6 +100,15 @@ export type AppStackParams = {
   // Prayer
   Prayer: undefined;
 
+  // Academic Calendar
+  AcademicCalendar: undefined;
+
+  // Routines
+  RoutinesBrowse: undefined;
+
+  // Cover Page Generator
+  CoverPageForm: undefined;
+
   // Generic feature landing
   Feature: undefined;
 

@@ -117,6 +117,9 @@ export const SectorColors = {
   directory: '#5b6b86',
   prayer:    '#1f8a5b',
   faculty:   '#0e9c8a',
+  calendar:  '#d4553a',
+  routines:  '#5c6bc0',
+  coverpage: '#00838f',
 } as const;
 
 export type SectorKey = keyof typeof SectorColors;
