@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView, Modal,
-  StyleSheet, Switch, ActivityIndicator, Share, Alert, type ViewStyle,
+  StyleSheet, Switch, ActivityIndicator, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -11,24 +11,20 @@ import { useT } from '../../i18n';
 import { useAuth } from '../../store/authStore';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
-import { PasswordInput } from '../../components/ui/PasswordInput';
 import { SectorIcon } from '../../components/ui/SectorIcon';
-import { FontFamily, Layout, Accent, SectorColors } from '../../theme';
-import { useApp } from '../../store/appStore';
+import { FontFamily, Layout, Accent } from '../../theme';
 import type { SectorKey } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { uploadPhoto } from '../../utils/storage';
 import { useToast } from '../../components/ui/Toast';
 
 const ROLE_TOKEN = { student: 'roleStudent', staff: 'roleStaff', admin: 'roleAdmin' } as const;
-const ROLE_LABEL = (t: any) => ({ student: t.mainx.roleStudent, staff: t.mainx.roleStaff, admin: t.mainx.roleAdmin });
 
 function hexAlpha(hex: string, a: number): string {
   const n = parseInt(hex.slice(1), 16);
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
 }
 
-// Accomplishment categories
 const CATS: { id: string; label: string; icon: string; fg: string }[] = [
   { id: 'award',      label: '',      icon: 'award',    fg: Accent.amber },
   { id: 'cert',       label: '', icon: 'layers',  fg: Accent.blue },
@@ -55,11 +51,6 @@ const CONTRIB_LABELS = (t: any): Record<string, string> => ({
   events: t.mainx.contribEvents, lostfound: t.mainx.contribLostfound,
 });
 
-const ROLE_LABELS_T = (t: any): Record<string, string> => ({
-  student: t.mainx.roleStudent, staff: t.mainx.roleStaff, admin: t.mainx.roleAdmin,
-});
-
-// Static badge data
 const BADGES = [
   { id: 'reporter',  icon: 'layers',   fg: Accent.blue, en: '', earned: false, progress: { cur: 1, total: 5 } },
   { id: 'helper',    icon: 'clubs',    fg: Accent.green, en: '', earned: true,  progress: null },
@@ -67,7 +58,6 @@ const BADGES = [
   { id: 'studious',  icon: 'study',    fg: Accent.purple, en: '', earned: false, progress: { cur: 3, total: 10 } },
 ];
 
-// Contribution sector config
 const CONTRIB_CONFIG: { sector: SectorKey; en: string; table: string; field: string }[] = [
   { sector: 'reports',   en: '', table: 'reports',         field: 'reporter_id' },
   { sector: 'clubs',     en: '', table: 'club_members',    field: 'user_id' },
@@ -296,8 +286,7 @@ export function ProfileScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
   const t = useT();
   const toast = useToast();
-  const { profile, user, signOut, refreshProfile } = useAuth();
-  const { isDark: appDark, toggleTheme, lang, toggleLang } = useApp();
+  const { profile, user, refreshProfile } = useAuth();
 
   const [role, setRole] = useState<string>(profile?.role ?? 'student');
   useEffect(() => { if (profile?.role) setRole(profile.role as any); }, [profile?.role]);
@@ -313,12 +302,6 @@ export function ProfileScreen({ navigation }: any) {
   const [editDirVisible, setEditDirVisible] = useState(true);
   const [editShowWa, setEditShowWa] = useState(false);
   const [pickedAvatar, setPickedAvatar] = useState<string | null>(null);
-
-  // Password sheet
-  const [pwOpen, setPwOpen] = useState(false);
-  const [pwNew, setPwNew] = useState('');
-  const [pwConfirm, setPwConfirm] = useState('');
-  const [pwBusy, setPwBusy] = useState(false);
 
   useEffect(() => {
     if (editMode) {
@@ -345,19 +328,6 @@ export function ProfileScreen({ navigation }: any) {
       quality: 0.7,
     });
     if (!result.canceled && result.assets[0]) setPickedAvatar(result.assets[0].uri);
-  }
-
-  async function changePassword() {
-    if (pwBusy) return;
-    if (pwNew.length < 8) { toast({ type: 'error', title: 'Error', message: t.mainx.passwordTooShort }); return; }
-    if (pwNew !== pwConfirm) { toast({ type: 'error', title: 'Error', message: t.mainx.passwordsNoMatch }); return; }
-    setPwBusy(true);
-    const { error } = await supabase.auth.updateUser({ password: pwNew });
-    setPwBusy(false);
-    if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }
-    setPwOpen(false);
-    setPwNew(''); setPwConfirm('');
-    toast({ type: 'success', title: 'Done', message: t.mainx.passwordUpdated });
   }
 
   const [focusBadge, setFocusBadge] = useState<typeof BADGES[0] | null>(null);
@@ -416,12 +386,24 @@ export function ProfileScreen({ navigation }: any) {
 
   const roleHex = C[ROLE_TOKEN[role as keyof typeof ROLE_TOKEN] ?? 'roleStudent'];
   const roleBg  = hexAlpha(roleHex, isDark ? 0.2 : 0.12);
+  const ROLE_LABEL: Record<string, string> = {
+    student: t.mainx.roleStudent, staff: t.mainx.roleStaff, admin: t.mainx.roleAdmin,
+  };
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-      {/* Header row */}
+      {/* Header with back + edit */}
       <View style={[styles.header, { paddingHorizontal: Layout.screenPadding }]}>
-        <Text style={[styles.title, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{t.tabs.profile}</Text>
+        <TouchableOpacity
+          style={[styles.backBtn, { backgroundColor: C.surface, borderColor: C.border }]}
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.7}
+        >
+          <Feather name="arrow-left" size={20} color={C.text} />
+        </TouchableOpacity>
+        <Text style={[styles.title, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+          {t.tabs.profile}
+        </Text>
         <TouchableOpacity
           style={[styles.editBtn, { backgroundColor: editMode ? C.brand : C.surface, borderColor: editMode ? C.brand : C.border }]}
           onPress={editMode ? handleSave : () => setEditMode(true)}
@@ -444,92 +426,102 @@ export function ProfileScreen({ navigation }: any) {
         {/* Hero card */}
         <View style={[styles.hero, { backgroundColor: C.surface, borderColor: C.border }]}>
           <View style={[styles.heroBand, { backgroundColor: C.brand50 }]} />
-          <View style={styles.heroRow}>
+          <View style={styles.heroContent}>
             <TouchableOpacity
               style={[styles.avatarWrap, { borderColor: C.bg }]}
               onPress={editMode ? pickAvatar : undefined}
               activeOpacity={editMode ? 0.7 : 1}
             >
-              <Avatar uri={pickedAvatar ?? profile?.avatar_url} name={profile?.full_name} size="lg" />
+              <Avatar uri={pickedAvatar ?? profile?.avatar_url} name={profile?.full_name} size="xl" />
               {editMode && (
                 <View style={[styles.avatarEditBadge, { backgroundColor: C.brand, borderColor: C.bg }]}>
-                  <Feather name="camera" size={11} color={C.white} />
+                  <Feather name="camera" size={13} color={C.white} />
                 </View>
               )}
             </TouchableOpacity>
-            <View style={styles.heroInfo}>
-              {editMode ? (
-                <>
-                  <TextInput
-                    style={[styles.editInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaBold }]}
-                    value={editName} onChangeText={setEditName}
-                    placeholder={t.mainx.fullNamePlaceholder} placeholderTextColor={C.textMuted}
-                  />
-                  <TextInput
-                    style={[styles.editInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                    value={editDept} onChangeText={setEditDept}
-                    placeholder={t.mainx.departmentPlaceholder} placeholderTextColor={C.textMuted}
-                  />
-                  {isStudent && (
-                    <>
+
+            {editMode ? (
+              <View style={styles.editFields}>
+                <TextInput
+                  style={[styles.editInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaBold }]}
+                  value={editName} onChangeText={setEditName}
+                  placeholder={t.mainx.fullNamePlaceholder} placeholderTextColor={C.textMuted}
+                />
+                <TextInput
+                  style={[styles.editInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                  value={editDept} onChangeText={setEditDept}
+                  placeholder={t.mainx.departmentPlaceholder} placeholderTextColor={C.textMuted}
+                />
+                {isStudent && (
+                  <>
+                    <View style={styles.editRow}>
                       <TextInput
-                        style={[styles.editInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                        style={[styles.editInput, styles.editHalf, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                         value={editIntake} onChangeText={setEditIntake}
                         placeholder={t.mainx.intakePlaceholder} placeholderTextColor={C.textMuted}
                       />
                       <TextInput
-                        style={[styles.editInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                        style={[styles.editInput, styles.editHalf, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                         value={editSection} onChangeText={setEditSection}
                         placeholder={t.mainx.sectionPlaceholder} placeholderTextColor={C.textMuted}
                       />
-                    </>
-                  )}
-                  <TextInput
-                    style={[styles.editInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                    value={editWhatsapp} onChangeText={setEditWhatsapp}
-                    placeholder={t.mainx.whatsappPlaceholder} placeholderTextColor={C.textMuted}
-                    keyboardType="phone-pad"
-                  />
-                  {isStudent && (
-                    <>
-                      <View style={styles.toggleRow}>
-                        <Text style={[styles.toggleLbl, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
-                          {t.mainx.showInDirectory}
-                        </Text>
-                        <Switch value={editDirVisible} onValueChange={setEditDirVisible} trackColor={{ true: C.brand }} />
-                      </View>
-                      <View style={styles.toggleRow}>
-                        <Text style={[styles.toggleLbl, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
-                          {t.mainx.showWhatsapp}
-                        </Text>
-                        <Switch value={editShowWa} onValueChange={setEditShowWa} trackColor={{ true: C.brand }} />
-                      </View>
-                    </>
-                  )}
-                </>
-              ) : (
-                <>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                    <Text style={[styles.heroName, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]} numberOfLines={1}>
-                      {profile?.full_name ?? t.mainx.campusMember}
-                    </Text>
-                    <View style={[styles.verifyBadge, { backgroundColor: C.brand }]}>
-                      <Icon name="check" size={9} color={C.white} />
+                    </View>
+                  </>
+                )}
+                <TextInput
+                  style={[styles.editInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                  value={editWhatsapp} onChangeText={setEditWhatsapp}
+                  placeholder={t.mainx.whatsappPlaceholder} placeholderTextColor={C.textMuted}
+                  keyboardType="phone-pad"
+                />
+                {isStudent && (
+                  <View style={[styles.toggleCard, { backgroundColor: C.bg, borderColor: C.border }]}>
+                    <View style={styles.toggleRow}>
+                      <Text style={[styles.toggleLbl, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
+                        {t.mainx.showInDirectory}
+                      </Text>
+                      <Switch value={editDirVisible} onValueChange={setEditDirVisible} trackColor={{ true: C.brand }} />
+                    </View>
+                    <View style={[styles.toggleDivider, { backgroundColor: C.border }]} />
+                    <View style={styles.toggleRow}>
+                      <Text style={[styles.toggleLbl, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
+                        {t.mainx.showWhatsapp}
+                      </Text>
+                      <Switch value={editShowWa} onValueChange={setEditShowWa} trackColor={{ true: C.brand }} />
                     </View>
                   </View>
-                  <Text style={[styles.heroMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                    {profile?.department ?? '—'}{profile?.intake ? ` · Intake ${profile.intake}` : ''}
-                    {profile?.section ? ` · Sec ${profile.section}` : ''}
+                )}
+              </View>
+            ) : (
+              <View style={styles.heroInfo}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={[styles.heroName, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]} numberOfLines={1}>
+                    {profile?.full_name ?? t.mainx.campusMember}
                   </Text>
-                  <View style={[styles.rolePill, { backgroundColor: roleBg }]}>
-                    <View style={[styles.rolePillDot, { backgroundColor: roleHex }]} />
-                    <Text style={[styles.rolePillTxt, { color: roleHex, fontFamily: FontFamily.jakartaBold }]}>
-                      {(ROLE_LABEL(t) as Record<string, string>)[role] ?? role}
+                  <View style={[styles.verifyBadge, { backgroundColor: C.brand }]}>
+                    <Icon name="check" size={10} color={C.white} />
+                  </View>
+                </View>
+                <Text style={[styles.heroMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                  {profile?.department ?? '—'}{profile?.intake ? ` · Intake ${profile.intake}` : ''}
+                  {profile?.section ? ` · Sec ${profile.section}` : ''}
+                </Text>
+                <View style={[styles.rolePill, { backgroundColor: roleBg }]}>
+                  <View style={[styles.rolePillDot, { backgroundColor: roleHex }]} />
+                  <Text style={[styles.rolePillTxt, { color: roleHex, fontFamily: FontFamily.jakartaBold }]}>
+                    {ROLE_LABEL[role] ?? role}
+                  </Text>
+                </View>
+                {profile?.whatsapp ? (
+                  <View style={styles.contactRow}>
+                    <Feather name="phone" size={13} color={C.textMuted} />
+                    <Text style={[styles.contactTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                      {profile.whatsapp}
                     </Text>
                   </View>
-                </>
-              )}
-            </View>
+                ) : null}
+              </View>
+            )}
           </View>
         </View>
 
@@ -561,127 +553,10 @@ export function ProfileScreen({ navigation }: any) {
           </>
         )}
 
-        {/* ─── Settings ─── */}
-        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold, marginTop: 24 }]}>
-          SETTINGS
-        </Text>
-
-        {/* Dark mode */}
-        <View style={[styles.settRow, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <Icon name="moon" size={18} color={C.text2} />
-          <Text style={[styles.settLabel, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>Dark Mode</Text>
-          <Switch value={appDark} onValueChange={toggleTheme}
-            trackColor={{ false: C.surface3, true: C.brand + '66' }} thumbColor={appDark ? C.brand : C.white} />
-        </View>
-
-        {/* Language */}
-        <View style={[styles.settRow, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <Icon name="globe" size={18} color={C.text2} />
-          <Text style={[styles.settLabel, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>
-            Language: {lang === 'en' ? 'English' : 'বাংলা'}
-          </Text>
-          <Switch value={lang === 'bn'} onValueChange={toggleLang}
-            trackColor={{ false: C.surface3, true: C.brand + '66' }} thumbColor={lang === 'bn' ? C.brand : C.white} />
-        </View>
-
-        {/* Notifications */}
-        <TouchableOpacity style={[styles.settRow, { backgroundColor: C.surface, borderColor: C.border }]}
-          onPress={() => navigation.navigate('NotifSettings')} activeOpacity={0.7}>
-          <Icon name="bell" size={18} color={C.text2} />
-          <Text style={[styles.settLabel, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>Notifications</Text>
-          <Icon name="chevR" size={16} color={C.textMuted} />
-        </TouchableOpacity>
-
-        {/* Cover Page Generator */}
-        <TouchableOpacity style={[styles.settRow, { backgroundColor: C.surface, borderColor: C.border }]}
-          onPress={() => navigation.navigate('CoverPageForm')} activeOpacity={0.7}>
-          <Icon name="fileText" size={18} color={SectorColors.coverpage} />
-          <Text style={[styles.settLabel, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>Cover Page Generator</Text>
-          <Icon name="chevR" size={16} color={C.textMuted} />
-        </TouchableOpacity>
-
-        {/* Share App */}
-        <TouchableOpacity style={[styles.settRow, { backgroundColor: C.surface, borderColor: C.border }]}
-          onPress={() => Share.share({ message: 'Check out CampusOne - your university companion app!' })} activeOpacity={0.7}>
-          <Icon name="handshake" size={18} color={C.text2} />
-          <Text style={[styles.settLabel, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>Share App</Text>
-          <Icon name="chevR" size={16} color={C.textMuted} />
-        </TouchableOpacity>
-
-        {/* About */}
-        <View style={[styles.settRow, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <Icon name="shield" size={18} color={C.text2} />
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.settLabel, { color: C.text, fontFamily: FontFamily.jakartaSemiBold, flex: 0 }]}>About</Text>
-            <Text style={{ color: C.textMuted, fontSize: 11, fontFamily: FontFamily.jakartaMedium }}>CampusOne v1.1.3</Text>
-          </View>
-        </View>
-
-        {/* Change password */}
-        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold, marginTop: 20 }]}>
-          ACCOUNT
-        </Text>
-        <TouchableOpacity
-          style={[styles.logoutBtn, { backgroundColor: C.surface, borderColor: C.border }]}
-          onPress={() => setPwOpen(true)}
-          activeOpacity={0.8}
-        >
-          <Icon name="key" size={17} color={C.text2} />
-          <Text style={[styles.logoutTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.mainx.changePassword}</Text>
-        </TouchableOpacity>
-
-        {/* Sign out */}
-        <TouchableOpacity
-          style={[styles.logoutBtn, { backgroundColor: C.surface, borderColor: C.border }]}
-          onPress={signOut}
-          activeOpacity={0.8}
-        >
-          <Icon name="logout" size={17} color={C.danger} />
-          <Text style={[styles.logoutTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>{t.mainx.signOut}</Text>
-        </TouchableOpacity>
-
-        <View style={{ height: 24 }} />
+        <View style={{ height: 32 }} />
       </ScrollView>
 
-      {/* Modals */}
       {focusBadge && <BadgeSheet badge={focusBadge} C={C} onClose={() => setFocusBadge(null)} t={t} />}
-
-      {/* Change password sheet */}
-      <Modal visible={pwOpen} transparent animationType="slide" onRequestClose={() => setPwOpen(false)}>
-        <TouchableOpacity style={styles.pwOverlay} activeOpacity={1} onPress={() => setPwOpen(false)} />
-        <View style={[styles.pwSheet, { backgroundColor: C.surface }]}>
-          <Text style={[styles.pwTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-            {t.mainx.changePassword}
-          </Text>
-          <Text style={[styles.pwSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-            {t.mainx.pwAtLeast8}
-          </Text>
-          <PasswordInput
-            style={[styles.pwField, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-            value={pwNew} onChangeText={setPwNew}
-            placeholder={t.mainx.newPasswordPlaceholder} placeholderTextColor={C.textMuted}
-          />
-          <PasswordInput
-            style={[styles.pwField, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-            value={pwConfirm} onChangeText={setPwConfirm}
-            placeholder={t.mainx.confirmNewPasswordPlaceholder} placeholderTextColor={C.textMuted}
-          />
-          <TouchableOpacity
-            style={[styles.pwBtn, { backgroundColor: C.brand, opacity: pwBusy ? 0.6 : 1 }]}
-            onPress={changePassword}
-            disabled={pwBusy}
-            activeOpacity={0.8}
-          >
-            {pwBusy
-              ? <ActivityIndicator color={C.white} size="small" />
-              : (
-                <Text style={[styles.pwBtnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>
-                  {t.mainx.updatePassword}
-                </Text>
-              )}
-          </TouchableOpacity>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }
@@ -689,25 +564,36 @@ export function ProfileScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
 
-  header: { flexDirection: 'row', alignItems: 'center', paddingTop: 8, paddingBottom: 4 } as ViewStyle,
-  title: { flex: 1, fontSize: 26, letterSpacing: -0.5 } as any,
+  header: { flexDirection: 'row', alignItems: 'center', paddingTop: 8, paddingBottom: 4, gap: 10 } as ViewStyle,
+  backBtn: { width: 38, height: 38, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
+  title: { flex: 1, fontSize: 22, letterSpacing: -0.3 } as any,
   editBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 12, borderWidth: 1 } as ViewStyle,
   editTxt: { fontSize: 13 } as any,
 
   scroll: { paddingBottom: 24 } as ViewStyle,
 
   hero: { borderRadius: 18, borderWidth: 1, overflow: 'hidden', marginTop: 10 } as ViewStyle,
-  heroBand: { height: 44 } as ViewStyle,
-  heroRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 14, paddingHorizontal: 16, paddingBottom: 16, marginTop: -22 } as ViewStyle,
-  avatarWrap: { borderRadius: 22, borderWidth: 3 } as ViewStyle,
-  heroInfo: { flex: 1, paddingTop: 24 } as ViewStyle,
-  heroName: { fontSize: 17, letterSpacing: -0.2 } as any,
-  editInput: { height: 38, borderRadius: 10, borderWidth: 1, paddingHorizontal: 10, fontSize: 13, marginBottom: 6 } as any,
-  verifyBadge: { width: 16, height: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
-  heroMeta: { fontSize: 12, marginTop: 2 } as any,
-  rolePill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, alignSelf: 'flex-start', marginTop: 8 } as ViewStyle,
+  heroBand: { height: 56 } as ViewStyle,
+  heroContent: { alignItems: 'center', paddingHorizontal: 20, paddingBottom: 20, marginTop: -36 } as ViewStyle,
+  avatarWrap: { borderRadius: 40, borderWidth: 3 } as ViewStyle,
+  heroInfo: { alignItems: 'center', paddingTop: 10 } as ViewStyle,
+  heroName: { fontSize: 19, letterSpacing: -0.2 } as any,
+  verifyBadge: { width: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
+  heroMeta: { fontSize: 13, marginTop: 3, textAlign: 'center' } as any,
+  rolePill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, marginTop: 8 } as ViewStyle,
   rolePillDot: { width: 6, height: 6, borderRadius: 3 } as ViewStyle,
   rolePillTxt: { fontSize: 12 } as any,
+  contactRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 8 } as ViewStyle,
+  contactTxt: { fontSize: 12.5 } as any,
+
+  editFields: { width: '100%', paddingTop: 12 } as ViewStyle,
+  editInput: { height: 42, borderRadius: 12, borderWidth: 1, paddingHorizontal: 12, fontSize: 14, marginBottom: 8 } as any,
+  editRow: { flexDirection: 'row', gap: 8 } as ViewStyle,
+  editHalf: { flex: 1 } as ViewStyle,
+  toggleCard: { borderRadius: 12, borderWidth: 1, padding: 12, marginTop: 4 } as ViewStyle,
+  toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' } as ViewStyle,
+  toggleDivider: { height: StyleSheet.hairlineWidth, marginVertical: 10 } as ViewStyle,
+  toggleLbl: { fontSize: 13, flex: 1, marginRight: 8 } as any,
 
   sectionLabel: { fontSize: 11, letterSpacing: 0.8, marginTop: 24, marginBottom: 9, marginLeft: 4 } as any,
 
@@ -716,53 +602,9 @@ const styles = StyleSheet.create({
   contribNum: { fontSize: 20 } as any,
   contribLbl: { fontSize: 11, marginTop: 1 } as any,
 
-  addBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 48, borderRadius: 14, borderWidth: 1.5, borderStyle: 'dashed', marginTop: 14 } as ViewStyle,
-  addBtnTxt: { fontSize: 14 } as any,
-
-  acSecHead: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 } as ViewStyle,
-  acSecIcon: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
-  acSecLabel: { flex: 1, fontSize: 14 } as any,
-  acSecCount: { fontSize: 12 } as any,
-  acCard: { borderRadius: 16, borderWidth: 1, overflow: 'hidden' } as ViewStyle,
-  divider: { height: StyleSheet.hairlineWidth } as ViewStyle,
-
-  emptyCard: { borderRadius: 16, borderWidth: 1, alignItems: 'center', gap: 8, paddingVertical: 32, marginTop: 16 } as ViewStyle,
-  emptyTitle: { fontSize: 16 } as any,
-  emptyText: { fontSize: 13, textAlign: 'center', maxWidth: 240 } as any,
-
-  dashBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: 14, marginTop: 24 } as ViewStyle,
-  dashTxt: { fontSize: 15 } as any,
-
-  settRow: { flexDirection: 'row', alignItems: 'center', gap: 12, height: 54, borderRadius: 14, borderWidth: 1, paddingHorizontal: 16, marginBottom: 8 } as ViewStyle,
-  settLabel: { flex: 1, fontSize: 14 } as any,
-  logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: 14, borderWidth: 1, marginTop: 8 } as ViewStyle,
-  logoutTxt: { fontSize: 15 } as any,
-
   avatarEditBadge: {
-    position: 'absolute',
-    bottom: -2,
-    right: -2,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
+    position: 'absolute', bottom: 0, right: 0,
+    width: 26, height: 26, borderRadius: 13, borderWidth: 2,
+    alignItems: 'center', justifyContent: 'center',
   } as ViewStyle,
-  toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4, marginBottom: 2 } as ViewStyle,
-  toggleLbl: { fontSize: 12.5, flex: 1, marginRight: 8 } as any,
-
-  pwOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' } as ViewStyle,
-  pwSheet: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: Layout.screenPadding,
-    paddingTop: 20,
-    paddingBottom: 34,
-  } as ViewStyle,
-  pwTitle: { fontSize: 17 } as any,
-  pwSub: { fontSize: 12.5, marginTop: 3, marginBottom: 14 } as any,
-  pwField: { height: 46, borderRadius: 12, borderWidth: 1, paddingHorizontal: 13, fontSize: 14, marginBottom: 10 } as any,
-  pwBtn: { height: 50, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginTop: 8 } as ViewStyle,
-  pwBtnTxt: { fontSize: 15 } as any,
 });

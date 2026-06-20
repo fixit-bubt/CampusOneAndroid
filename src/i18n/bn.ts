@@ -33,6 +33,7 @@ export const bn: Dict = {
     explore: 'এক্সপ্লোর',
     alerts: 'অ্যালার্ট',
     profile: 'প্রোফাইল',
+    settings: 'সেটিংস',
   },
 
   topbar: {

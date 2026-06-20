@@ -1,6 +1,6 @@
 // 4 tabs with Feather icons. The Home tab is the role's dashboard for
 // admin/staff; students get the regular home feed. All roles keep
-// Explore/Alerts/Profile.
+// Explore/Alerts/Settings.
 import { View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Feather } from '@expo/vector-icons';
@@ -13,7 +13,7 @@ import type { BottomTabParams } from '../types/navigation';
 import { HomeScreen } from '../screens/main/HomeScreen';
 import { ExploreScreen } from '../screens/main/ExploreScreen';
 import { NotificationsScreen } from '../screens/main/NotificationsScreen';
-import { ProfileScreen } from '../screens/main/ProfileScreen';
+import { SettingsScreen } from '../screens/main/SettingsScreen';
 import { AdminDashboardScreen } from '../screens/dashboard/AdminDashboardScreen';
 import { StaffDashboardScreen } from '../screens/dashboard/StaffDashboardScreen';
 
@@ -25,7 +25,7 @@ const TAB_ICON: Record<keyof BottomTabParams, FeatherName> = {
   Home:          'home',
   Explore:       'grid',
   Notifications: 'bell',
-  Profile:       'user',
+  Settings:      'settings',
 };
 
 export function BottomTabNavigator() {
@@ -36,7 +36,7 @@ export function BottomTabNavigator() {
     Home: t.tabs.home,
     Explore: t.tabs.explore,
     Notifications: t.tabs.alerts,
-    Profile: t.tabs.profile,
+    Settings: t.tabs.settings,
   };
   const HomeComponent =
     profile?.role === 'admin' ? AdminDashboardScreen :
@@ -72,7 +72,7 @@ export function BottomTabNavigator() {
       <Tab.Screen name="Home"          component={HomeComponent} />
       <Tab.Screen name="Explore"       component={ExploreScreen} />
       <Tab.Screen name="Notifications" component={NotificationsScreen} />
-      <Tab.Screen name="Profile"       component={ProfileScreen} />
+      <Tab.Screen name="Settings"      component={SettingsScreen} />
     </Tab.Navigator>
   );
 }

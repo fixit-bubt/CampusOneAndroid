@@ -32,6 +32,7 @@ export const en = {
     explore: 'Explore',
     alerts: 'Alerts',
     profile: 'Profile',
+    settings: 'Settings',
   },
 
   topbar: {

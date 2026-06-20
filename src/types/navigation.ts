@@ -10,7 +10,7 @@ export type BottomTabParams = {
   Home: undefined;
   Explore: undefined;
   Notifications: undefined;
-  Profile: undefined;
+  Settings: undefined;
 };
 
 // Main app stack (flat, ID-based)
@@ -108,6 +108,9 @@ export type AppStackParams = {
 
   // Cover Page Generator
   CoverPageForm: undefined;
+
+  // Profile (from Settings tab)
+  Profile: undefined;
 
   // Generic feature landing
   Feature: undefined;
