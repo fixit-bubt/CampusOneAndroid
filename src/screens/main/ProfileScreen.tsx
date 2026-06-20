@@ -366,12 +366,6 @@ export function ProfileScreen({ navigation }: any) {
     savingRef.current = true;
     setSaving(true);
     try {
-      let avatarUrl: string | undefined;
-      if (pickedAvatar) {
-        const up = await uploadPhoto(pickedAvatar, 'avatars', user.id);
-        if (!up.success) { toast({ type: 'error', title: t.common.error, message: up.error }); return; }
-        avatarUrl = up.url;
-      }
       const payload: Record<string, any> = {
         full_name: editName,
         department: editDept,
@@ -388,9 +382,19 @@ export function ProfileScreen({ navigation }: any) {
         payload.directory_visible = editDirVisible;
         payload.show_whatsapp = editShowWa;
       }
-      if (avatarUrl) payload.avatar_url = avatarUrl;
+      // Save profile fields first — the important data must persist even if the
+      // (optional) avatar upload fails. Avatar upload is best-effort.
       const { error } = await supabase.from('profiles').update(payload).eq('id', user.id);
       if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }
+
+      if (pickedAvatar) {
+        const up = await uploadPhoto(pickedAvatar, 'avatars', user.id);
+        if (up.success) {
+          await supabase.from('profiles').update({ avatar_url: up.url }).eq('id', user.id);
+        } else {
+          toast({ type: 'info', title: 'Saved', message: 'Profile saved. Photo upload failed — please try the photo again later.' });
+        }
+      }
       await refreshProfile();
       setEditMode(false);
     } finally {
