@@ -192,14 +192,21 @@ export function CoverPageFormScreen({ navigation }: any) {
   const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
   const [deptModal, setDeptModal] = useState(false);
 
+  // Course picker
+  const [courseList, setCourseList] = useState<{ code: string; name: string }[]>([]);
+  const [courseModal, setCourseModal] = useState(false);
+  const [courseSearch, setCourseSearch] = useState('');
+
   useEffect(() => {
     (async () => {
-      const [fRes, dRes] = await Promise.all([
+      const [fRes, dRes, cRes] = await Promise.all([
         supabase.from('faculty').select('id, name, designation, department_id, photo_url').eq('on_leave', false).order('name'),
         supabase.from('departments').select('id, name').order('name'),
+        supabase.from('courses').select('code, name').order('code'),
       ]);
       const depts = (dRes.data ?? []) as { id: string; name: string }[];
       setDepartments(depts);
+      setCourseList((cRes.data ?? []) as { code: string; name: string }[]);
       const deptMap = new Map(depts.map(d => [d.id, d.name]));
       setFacultyList(
         ((fRes.data ?? []) as FacultyRow[]).map(f => ({ ...f, dept_name: deptMap.get(f.department_id) ?? '' }))
@@ -225,6 +232,20 @@ export function CoverPageFormScreen({ navigation }: any) {
     setFacultyModal(false);
     setFacultySearch('');
   }
+
+  function selectCourse(c: { code: string; name: string }) {
+    setCourseCode(c.code);
+    setCourseTitle(c.name);
+    setCourseModal(false);
+    setCourseSearch('');
+  }
+
+  const filteredCourses = courseSearch
+    ? courseList.filter(c =>
+        c.code.toLowerCase().includes(courseSearch.toLowerCase()) ||
+        c.name.toLowerCase().includes(courseSearch.toLowerCase())
+      )
+    : courseList;
 
   function selectProgram(d: { id: string; name: string }) {
     const short = d.name.replace(/^Department of\s*/i, '');
@@ -356,7 +377,7 @@ export function CoverPageFormScreen({ navigation }: any) {
           {/* Course Details */}
           <SectionLabel icon="box" label="Course Details" C={C} />
 
-          <FieldLabel label={t.coverpage2.courseCode} C={C} />
+          <FieldLabel label={t.coverpage2.courseCode} C={C} autofill onAutofill={() => setCourseModal(true)} />
           <TextInput style={inputStyle} value={courseCode} onChangeText={setCourseCode}
             placeholder={t.coverpage2.courseCodePlaceholder} placeholderTextColor={C.textMuted} />
 
@@ -563,6 +584,60 @@ export function CoverPageFormScreen({ navigation }: any) {
             />
             <TouchableOpacity style={[styles.closeBtn, { borderColor: C.border }]}
               onPress={() => setDeptModal(false)}>
+              <Text style={[styles.closeBtnText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                {t.common.close}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Course picker modal */}
+      <Modal visible={courseModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalSheet, { backgroundColor: C.surface }]}>
+            <View style={styles.modalHandle}>
+              <View style={[styles.handle, { backgroundColor: C.border }]} />
+            </View>
+            <Text style={[styles.modalTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              Select Course
+            </Text>
+            <View style={[styles.searchBar, { backgroundColor: C.surface2, borderColor: C.border }]}>
+              <Icon name="search" size={16} color={C.textMuted} />
+              <TextInput
+                style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaRegular }]}
+                value={courseSearch} onChangeText={setCourseSearch}
+                placeholder="Search course code or title..." placeholderTextColor={C.textMuted}
+                autoFocus
+              />
+            </View>
+            <FlatList
+              data={filteredCourses}
+              keyExtractor={i => i.code}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[styles.facultyRow, { borderBottomColor: C.border }]}
+                  onPress={() => selectCourse(item)}
+                  activeOpacity={0.7}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.facultyName, { color: SectorColors.coverpage, fontFamily: FontFamily.jakartaBold }]}>
+                      {item.code}
+                    </Text>
+                    <Text style={[styles.facultyMeta, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}
+                      numberOfLines={1}>{item.name}</Text>
+                  </View>
+                </TouchableOpacity>
+              )}
+              ListEmptyComponent={
+                <Text style={[styles.emptyText, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                  No courses found
+                </Text>
+              }
+              style={{ maxHeight: 400 }}
+            />
+            <TouchableOpacity style={[styles.closeBtn, { borderColor: C.border }]}
+              onPress={() => { setCourseModal(false); setCourseSearch(''); }}>
               <Text style={[styles.closeBtnText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                 {t.common.close}
               </Text>
