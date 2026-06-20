@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert,
   TextInput, Platform, KeyboardAvoidingView, ActivityIndicator,
-  Modal, FlatList, Switch,
+  Modal, FlatList, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Print from 'expo-print';
@@ -19,6 +19,7 @@ import { BUBT_LOGO_CREST, BUBT_LOGO_HEADER } from './logos';
 
 type DocType = 'assignment' | 'lab_report' | 'project_report' | 'index_page' | 'internship_report';
 type TemplateStyle = 'default' | 'classic' | 'premium' | 'minimal' | 'modern';
+type Member = { name: string; id: string };
 
 const DOC_TYPES: DocType[] = ['assignment', 'lab_report', 'project_report', 'index_page', 'internship_report'];
 const TEMPLATES: TemplateStyle[] = ['default', 'classic', 'premium', 'minimal', 'modern'];
@@ -26,6 +27,41 @@ const TEMPLATE_LABELS: Record<TemplateStyle, string> = {
   default: 'Default Style', classic: 'Classic Style', premium: 'Premium Style',
   minimal: 'Minimal Style', modern: 'Modern Style',
 };
+const DESIGNATIONS = [
+  'Lecturer', 'Senior Lecturer', 'Assistant Professor', 'Assistant Professor & Chairman',
+  'Associate Professor', 'Professor', 'Professor & Chairman', 'Professor & Dean',
+];
+
+const UNI = 'Bangladesh University of Business and Technology';
+const SANS = 'Helvetica, Arial, sans-serif';
+const SERIF = "'Times New Roman', Times, serif";
+
+// Real rendered previews extracted from the BUBT Info source app.
+const PREV: Record<string, any> = {
+  assign_default: require('./previews/assign_default.jpg'),
+  assign_classic: require('./previews/assign_classic.jpg'),
+  assign_premium: require('./previews/assign_premium.jpg'),
+  assign_minimal: require('./previews/assign_minimal.jpg'),
+  assign_modern: require('./previews/assign_modern.jpg'),
+  lab_default: require('./previews/lab_default.jpg'),
+  lab_classic: require('./previews/lab_classic.jpg'),
+  lab_premium: require('./previews/lab_premium.jpg'),
+  lab_minimal: require('./previews/lab_minimal.jpg'),
+  lab_modern: require('./previews/lab_modern.jpg'),
+  project_default: require('./previews/project_default.jpg'),
+  internship_default: require('./previews/internship_default.jpg'),
+  pageindex_1: require('./previews/pageindex_1.jpg'),
+};
+const DOC_PREFIX: Record<DocType, string> = {
+  assignment: 'assign', lab_report: 'lab', project_report: 'project',
+  internship_report: 'internship', index_page: 'pageindex',
+};
+function previewFor(docType: DocType, tmpl: TemplateStyle): any {
+  if (docType === 'index_page') return PREV.pageindex_1;
+  if (docType === 'project_report' || docType === 'internship_report') return PREV[`${DOC_PREFIX[docType]}_default`];
+  return PREV[`${DOC_PREFIX[docType]}_${tmpl}`];
+}
+const hasStyles = (d: DocType) => d === 'assignment' || d === 'lab_report';
 
 interface FacultyRow {
   id: string; name: string; designation: string;
@@ -33,126 +69,213 @@ interface FacultyRow {
 }
 
 function esc(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return (s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// YYYY-MM-DD -> MM/dd/yyyy (matches the BUBT Info app output).
+function fmtDate(s: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec((s ?? '').trim());
+  return m ? `${m[2]}/${m[3]}/${m[1]}` : s;
 }
 
 // ─── PDF HTML Templates ────────────────────────────────────────────
-function buildHtml(f: {
-  template: TemplateStyle; docTypeLabel: string; university: string;
-  department: string; courseCode: string; courseTitle: string;
-  assignmentNo: string; experiment: string; showTopic: boolean;
-  studentName: string; studentId: string; intake: string;
-  section: string; showSection: boolean; program: string;
-  teacherName: string; teacherDesig: string; teacherDept: string;
-  dateOfSubmission: string; showSignature: boolean; docType: DocType;
+interface HtmlData {
+  template: TemplateStyle; docType: DocType; docTypeLabel: string;
+  courseCode: string; courseTitle: string; assignmentNo: string;
+  experimentDate: string; experimentName: string; reportTitle: string;
+  studentName: string; studentId: string; intake: string; section: string;
+  program: string; dept: string; teacherName: string; teacherDesig: string;
+  members: Member[]; date: string;
   logoCrest: string; logoHeader: string;
-}): string {
+}
+
+interface StyleCfg {
+  font: string; logo: 'crest' | 'header';
+  label: 'box' | 'box-round' | 'underline' | 'underline-rule';
+  round: boolean; title: boolean;
+}
+
+function styleCfg(t: TemplateStyle): StyleCfg {
+  switch (t) {
+    case 'classic': return { font: SANS, logo: 'header', label: 'box', round: false, title: false };
+    case 'premium': return { font: SERIF, logo: 'header', label: 'underline', round: false, title: false };
+    case 'minimal': return { font: SERIF, logo: 'crest', label: 'underline-rule', round: false, title: true };
+    case 'modern': return { font: SERIF, logo: 'crest', label: 'box-round', round: true, title: true };
+    default: return { font: SANS, logo: 'crest', label: 'box', round: false, title: true };
+  }
+}
+
+const CSS = `@page{size:A4;margin:0}
+*{margin:0;padding:0;box-sizing:border-box}
+body{color:#000;width:210mm;min-height:297mm;padding:10mm;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+.page{border:1.5px solid #000;width:100%;min-height:277mm;padding:12mm 14mm;display:flex;flex-direction:column;}
+.utitle{text-align:center;font-weight:bold;font-size:20px;margin:6px 0 12px;}
+.crest{display:block;margin:6px auto 12px;width:150px;height:auto;}
+.hdr{display:block;margin:4px auto 16px;width:150mm;max-width:100%;height:auto;}
+.lblwrap{text-align:center;margin:6px 0 20px;}
+.lblbox{display:inline-block;border:1.5px solid #000;padding:8px 28px;font-weight:bold;font-size:17px;letter-spacing:1px;}
+.lblu{font-weight:bold;font-size:18px;text-decoration:underline;letter-spacing:1px;}
+.rule{border-bottom:1.5px solid #000;width:62mm;margin:7px auto 0;}
+.kv{margin:8px 0 0 8mm;}
+.kv .row{font-weight:bold;font-size:15px;margin:6px 0;}
+.kv .k{display:inline-block;min-width:128px;}
+.boxes{display:flex;gap:10mm;margin-top:16mm;}
+.box{flex:1;border:1.5px solid #000;border-radius:6px;padding:10px 14px;min-height:52mm;}
+.box .bh{text-align:center;font-weight:bold;font-size:16px;margin-bottom:12px;}
+.box .row{font-weight:bold;font-size:14px;margin:8px 0;}
+.box .uni{font-weight:normal;font-size:12px;margin-top:4px;}
+.gap{height:12px;}
+.date{text-align:center;font-weight:bold;font-size:15px;margin-top:auto;padding-top:16mm;}
+.ptitle{text-align:center;font-weight:bold;font-size:17px;margin:12px 16mm;}
+.cc{text-align:center;font-weight:bold;font-size:14px;margin:4px 0;}
+.subh{text-align:center;font-weight:bold;font-size:15px;margin:16px 0 6px;text-decoration:underline;}
+.subh2{text-align:center;font-weight:bold;font-size:15px;margin:16px 0 6px;}
+.ctr{text-align:center;font-size:14px;margin:3px 0;}
+.ctrb{text-align:center;font-weight:bold;font-size:15px;margin:3px 0;}
+table.mt{border-collapse:collapse;margin:8px auto;width:80%;}
+table.mt th,table.mt td{border:1px solid #000;padding:7px 10px;font-size:13px;text-align:center;}
+.ititle{text-align:center;font-size:15px;margin:12px 0;line-height:2;}
+.ititle b{font-size:16px;}
+.ixtitle{text-align:center;font-weight:bold;font-size:20px;margin:6px 0 16px;}
+.ixf{font-size:13px;font-weight:bold;margin:10px 0;}
+.ixf u{font-weight:normal;}
+table.ix{border-collapse:collapse;width:100%;margin-top:12px;}
+table.ix th,table.ix td{border:1px solid #000;font-size:12px;padding:6px 4px;text-align:center;height:26px;}
+table.ix td.t{text-align:left;}
+.ixfoot{text-align:center;font-size:9px;color:#444;margin-top:auto;padding-top:8mm;}`;
+
+function wrap(cfg: StyleCfg, inner: string): string {
+  const round = cfg.round ? '.page{border-radius:16px}' : '';
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"/>
+<style>${CSS}body{font-family:${cfg.font};}${round}</style></head>
+<body><div class="page">${inner}</div></body></html>`;
+}
+
+function headerBlock(cfg: StyleCfg, f: HtmlData): string {
+  if (cfg.logo === 'header') return `<img class="hdr" src="${f.logoHeader}" />`;
+  return `${cfg.title ? `<div class="utitle">${esc(UNI)}</div>` : ''}<img class="crest" src="${f.logoCrest}" />`;
+}
+
+function labelBlock(cfg: StyleCfg, text: string): string {
+  if (cfg.label === 'underline') return `<div class="lblwrap"><span class="lblu">${text}</span></div>`;
+  if (cfg.label === 'underline-rule') return `<div class="lblwrap"><span class="lblu">${text}</span><div class="rule"></div></div>`;
+  const r = cfg.label === 'box-round' ? ' style="border-radius:14px"' : '';
+  return `<div class="lblwrap"><span class="lblbox"${r}>${text}</span></div>`;
+}
+
+function bodyAssignLab(f: HtmlData): string {
+  const cfg = styleCfg(f.template);
   const e = esc;
-  const isLab = f.docType === 'lab_report';
-  const noLabel = isLab ? 'Experiment No' : 'Assignment No';
-  const uni = 'Bangladesh University of Business and Technology';
+  const kv = f.docType === 'lab_report'
+    ? `<div class="kv">
+        <div class="row"><span class="k">Experiment Date</span>: ${e(f.experimentDate)}</div>
+        <div class="row"><span class="k">Experiment No</span>: ${e(f.assignmentNo)}</div>
+        <div class="row"><span class="k">Course Title</span>: ${e(f.courseTitle)}</div>
+        <div class="row"><span class="k">Course Code</span>: ${e(f.courseCode)}</div>
+        <div class="row"><span class="k">Experiment Name</span>: ${e(f.experimentName)}</div>
+      </div>`
+    : `<div class="kv">
+        <div class="row"><span class="k">Assignment No</span>: ${e(f.assignmentNo)}</div>
+        <div class="row"><span class="k">Course Code</span>: ${e(f.courseCode)}</div>
+        <div class="row"><span class="k">Course Title</span>: ${e(f.courseTitle)}</div>
+        ${f.experimentName ? `<div class="row"><span class="k">Topic</span>: ${e(f.experimentName)}</div>` : ''}
+      </div>`;
 
-  const docUp = e(f.docTypeLabel).toUpperCase();
-  const dept = e(f.teacherDept || f.department);
-
-  const courseFields = `
-    <div style="text-align:left;padding-left:25%;margin:20px 0;">
-      <p style="font-size:14px;margin:4px 0;"><strong>${noLabel} :</strong> ${e(f.assignmentNo) || ''}</p>
-      <p style="font-size:14px;margin:4px 0;"><strong>Course Code &nbsp;&nbsp;:</strong> ${e(f.courseCode)}</p>
-      <p style="font-size:14px;margin:4px 0;"><strong>Course Title &nbsp;&nbsp;:</strong> ${e(f.courseTitle)}</p>
-      ${f.showTopic && f.experiment ? `<p style="font-size:14px;margin:4px 0;"><strong>${isLab ? 'Experiment / Topic' : 'Topic'} :</strong> ${e(f.experiment)}</p>` : ''}
+  const boxes = `<div class="boxes">
+      <div class="box">
+        <div class="bh">Submitted By:</div>
+        <div class="row">Name : ${e(f.studentName)}</div>
+        <div class="row">ID No : ${e(f.studentId)}</div>
+        <div class="row">Intake : ${e(f.intake)}</div>
+        <div class="row">Section : ${e(f.section)}</div>
+        <div class="row">Program : ${e(f.program)}</div>
+      </div>
+      <div class="box">
+        <div class="bh">Submitted To:</div>
+        <div class="row">Name : ${e(f.teacherName)}</div>
+        <div class="gap"></div><div class="gap"></div>
+        <div class="row">Dept. of ${e(f.dept)}</div>
+        <div class="uni">${e(UNI)}</div>
+      </div>
     </div>`;
 
-  const infoBoxes = `
-    <table style="width:90%;margin:15px auto 0;border-collapse:separate;border-spacing:8px 0;">
-      <tr>
-        <td class="box">
-          <div class="boxhdr">Submitted By:</div>
-          <p><strong>Name :</strong> ${e(f.studentName)}</p>
-          <p><strong>ID No :</strong> ${e(f.studentId)}</p>
-          <p><strong>Intake :</strong> ${e(f.intake)}</p>
-          ${f.showSection ? `<p><strong>Section :</strong> ${e(f.section)}</p>` : ''}
-          <p><strong>Program :</strong> ${e(f.program)}</p>
-        </td>
-        <td class="box">
-          <div class="boxhdr">Submitted To:</div>
-          <p><strong>Name :</strong> ${e(f.teacherName)}</p>
-          ${f.teacherDesig ? `<p>${e(f.teacherDesig)}</p>` : ''}
-          <p style="margin-top:10px;"><strong>Dept. of</strong> ${dept}</p>
-          <p style="font-size:11px;">${e(uni)}</p>
-        </td>
-      </tr>
-    </table>`;
+  const date = `<div class="date">Date of Submission : ${e(f.date)}</div>`;
+  return wrap(cfg, headerBlock(cfg, f) + labelBlock(cfg, e(f.docTypeLabel).toUpperCase()) + kv + boxes + date);
+}
 
-  const dateLine = `<p style="text-align:center;font-size:14px;font-weight:bold;margin-top:auto;padding-top:25px;">Date of Submission : ${e(f.dateOfSubmission)}</p>`;
-  const sigLine = f.showSignature ? `<div style="text-align:right;margin-top:12px;padding-right:25px;"><div style="display:inline-block;text-align:center;width:140px;border-top:1px solid #333;padding-top:4px;font-size:10px;">Teacher's Signature</div></div>` : '';
+function bodyProject(f: HtmlData): string {
+  const cfg = styleCfg('classic'); // header logo, sans, sharp border
+  const e = esc;
+  const rows = f.members.map((m, i) =>
+    `<tr><td>${i + 1}</td><td style="text-align:left">${e(m.name)}</td><td>${e(m.id)}</td></tr>`).join('');
+  const inner = `<img class="hdr" src="${f.logoHeader}" />
+    ${labelBlock(cfg, 'PROJECT REPORT')}
+    <div class="ptitle">${e(f.reportTitle)}</div>
+    <div class="cc">Course Title : ${e(f.courseTitle)}</div>
+    <div class="cc">Course Code : ${e(f.courseCode)}</div>
+    <div class="subh">Submitted to:</div>
+    <div class="ctrb">${e(f.teacherName)}</div>
+    ${f.teacherDesig ? `<div class="ctr">(${e(f.teacherDesig)})</div>` : ''}
+    <div class="ctr">Department of ${e(f.dept)}</div>
+    <div class="ctr">${e(UNI)} (BUBT)</div>
+    <div class="subh">Submitted by:</div>
+    <table class="mt"><tr><th>Sl No</th><th>Name</th><th>ID</th></tr>${rows}</table>
+    <div class="ctr" style="margin-top:10px">Intake : ${e(f.intake)}, Section : ${e(f.section)}</div>
+    <div class="ctr">${e(f.program)}</div>
+    <div class="ctr">${e(UNI)} (BUBT)</div>
+    <div class="date">Date of Submission : ${e(f.date)}</div>`;
+  return wrap(cfg, inner);
+}
 
-  function makePage(fontImport: string, fontFamily: string, borderStyle: string, headerHtml: string, boxBorder: string) {
-    return `<!DOCTYPE html><html><head><meta charset="utf-8"/>
-${fontImport}
-<style>
-  @page{size:A4;margin:0}
-  *{margin:0;padding:0;box-sizing:border-box}
-  body{font-family:${fontFamily};width:210mm;height:297mm;padding:15mm;background:#fff;color:#1a1a1a;}
-  .frame{border:${borderStyle};height:267mm;padding:12mm 8mm;display:flex;flex-direction:column;align-items:center;}
-  .box{width:50%;border:${boxBorder};border-radius:8px;padding:12px;vertical-align:top;}
-  .boxhdr{font-size:14px;font-weight:bold;margin-bottom:8px;}
-  .box p{font-size:12px;line-height:1.7;margin:0 0 3px 0;}
-</style></head><body>
-<div class="frame">
-  ${headerHtml}
-  ${courseFields}
-  ${infoBoxes}
-  ${dateLine}
-  ${sigLine}
-</div></body></html>`;
+function bodyInternship(f: HtmlData): string {
+  const cfg = styleCfg('default'); // crest, sans, has title
+  const e = esc;
+  const inner = `<div class="utitle">${e(UNI)} (BUBT)</div>
+    <img class="crest" src="${f.logoCrest}" />
+    <div class="ititle">Internship Report<br/>on<br/><b>${e(f.reportTitle)}</b></div>
+    <div class="subh2">Supervised By</div>
+    <div class="ctrb">${e(f.teacherName)}</div>
+    ${f.teacherDesig ? `<div class="ctr">${e(f.teacherDesig)}</div>` : ''}
+    <div class="ctr">Department of ${e(f.dept)}</div>
+    <div class="ctr">${e(UNI)} (BUBT)</div>
+    <div class="subh2">Submitted By</div>
+    <div class="ctrb">${e(f.studentName)}</div>
+    <div class="ctr">ID: ${e(f.studentId)}</div>
+    <div class="ctr">Intake: ${e(f.intake)}</div>
+    <div class="ctr">Program: ${e(f.program)}</div>
+    <div class="ctr">Section: ${e(f.section)}</div>
+    <div class="ctr">Department of ${e(f.dept)}</div>
+    <div class="ctr">${e(UNI)} (BUBT)</div>
+    <div class="date">Date of Submission : ${e(f.date)}</div>`;
+  return wrap(cfg, inner);
+}
+
+function bodyIndex(f: HtmlData): string {
+  const cfg = styleCfg('classic'); // header logo, sans
+  const e = esc;
+  const ul = (v: string) => `<u>&nbsp;${e(v) || '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'}&nbsp;</u>`;
+  let rows = '';
+  for (let i = 1; i <= 15; i++) {
+    rows += `<tr><td>${i}</td><td></td><td class="t"></td><td></td><td></td></tr>`;
   }
+  const inner = `<img class="hdr" src="${f.logoHeader}" />
+    <div class="ixtitle">INDEX</div>
+    <div class="ixf">Name : ${ul(f.studentName)} &nbsp;&nbsp;&nbsp;&nbsp; ID No : ${ul(f.studentId)}</div>
+    <div class="ixf">Intake : ${ul(f.intake)} &nbsp;&nbsp; Section : ${ul(f.section)} &nbsp;&nbsp; Course Code : ${ul(f.courseCode)}</div>
+    <div class="ixf">Course Title : ${ul(f.courseTitle)}</div>
+    <table class="ix">
+      <tr><th style="width:8%">SL</th><th style="width:18%">Date</th><th>Title of Experiment / Topic</th><th style="width:10%">Page</th><th style="width:16%">Remarks</th></tr>
+      ${rows}
+    </table>
+    <div class="ixfoot">Generated by BUBT Info App on ${e(f.date)}</div>`;
+  return wrap(cfg, inner);
+}
 
-  const crestImg = `<div style="text-align:center;margin:8px 0;"><img src="${f.logoCrest}" style="width:120px;height:auto;" /></div>`;
-  const headerImg = `<div style="text-align:left;margin-bottom:5px;"><img src="${f.logoHeader}" style="width:350px;height:auto;" /></div>`;
-
-  if (f.template === 'classic') {
-    return makePage('', "'Times New Roman',serif", '2px solid #1a3a6b',
-      `${headerImg}
-       <p style="text-align:center;font-size:10px;font-style:italic;color:#555;margin:5px 0 15px;">Committed to Academic Excellence</p>
-       <div style="text-align:center;"><span style="border:2px solid #1a3a6b;padding:6px 25px;font-size:16px;font-weight:bold;color:#1a3a6b;">${docUp}</span></div>`,
-      '2px solid #333');
-  }
-
-  if (f.template === 'premium') {
-    return makePage('', "'Times New Roman',serif", '2.5px dashed #1a3a6b',
-      `${headerImg}
-       <p style="text-align:center;font-size:10px;font-style:italic;color:#555;margin:5px 0 15px;">Committed to Academic Excellence</p>
-       <div style="text-align:center;"><span style="border:2px dashed #1a3a6b;padding:6px 25px;font-size:16px;font-weight:bold;color:#1a3a6b;">${docUp}</span></div>`,
-      '2px dashed #333');
-  }
-
-  if (f.template === 'minimal') {
-    return makePage(
-      '<link href="https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&display=swap" rel="stylesheet">',
-      "'UnifrakturMaguntia','Times New Roman',serif", '1.5px solid #555',
-      `<h1 style="font-family:'UnifrakturMaguntia',serif;font-size:22px;text-align:center;margin-bottom:5px;">${e(uni)}</h1>
-       ${crestImg}
-       <h2 style="font-family:'UnifrakturMaguntia',serif;font-size:20px;text-align:center;text-decoration:underline;margin:8px 0 10px;">${docUp}</h2>`,
-      '2px solid #333');
-  }
-
-  if (f.template === 'modern') {
-    return makePage(
-      '<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" rel="stylesheet">',
-      "'Dancing Script','Times New Roman',cursive", '2px solid #333',
-      `<h1 style="font-family:'Dancing Script',cursive;font-size:24px;text-align:center;margin-bottom:5px;">${e(uni)}</h1>
-       ${crestImg}
-       <div style="text-align:center;margin:8px 0 10px;"><span style="border:2px solid #333;border-radius:6px;padding:6px 22px;font-size:16px;font-weight:bold;text-decoration:underline;">${docUp}</span></div>`,
-      '2px solid #333');
-  }
-
-  // Default — Times New Roman, italic uni name, crest, bordered ASSIGNMENT box
-  return makePage('', "'Times New Roman',serif", '2px solid #333',
-    `<h1 style="font-size:20px;text-align:center;font-style:italic;margin-bottom:5px;">${e(uni)}</h1>
-     ${crestImg}
-     <div style="text-align:center;margin:8px 0 10px;"><span style="border:2px solid #333;padding:6px 22px;font-size:16px;font-weight:bold;">${docUp}</span></div>`,
-    '2px solid #333');
+function buildHtml(f: HtmlData): string {
+  if (f.docType === 'project_report') return bodyProject(f);
+  if (f.docType === 'internship_report') return bodyInternship(f);
+  if (f.docType === 'index_page') return bodyIndex(f);
+  return bodyAssignLab(f);
 }
 
 // ─── Main Screen ───────────────────────────────────────────────────
@@ -166,20 +289,20 @@ export function CoverPageFormScreen({ navigation }: any) {
   const [courseCode, setCourseCode] = useState('');
   const [courseTitle, setCourseTitle] = useState('');
   const [assignmentNo, setAssignmentNo] = useState('');
-  const [experiment, setExperiment] = useState('');
-  const [showTopic, setShowTopic] = useState(false);
+  const [experimentDate, setExperimentDate] = useState(new Date().toISOString().slice(0, 10));
+  const [experimentName, setExperimentName] = useState('');
+  const [reportTitle, setReportTitle] = useState('');
   const [studentName, setStudentName] = useState(profile?.full_name ?? '');
   const [studentId, setStudentId] = useState('');
   const [department, setDepartment] = useState(profile?.department ?? '');
   const [intake, setIntake] = useState(profile?.intake ?? '');
   const [section, setSection] = useState(profile?.section ?? '');
-  const [showSection, setShowSection] = useState(true);
   const [program, setProgram] = useState('');
   const [teacherName, setTeacherName] = useState('');
   const [teacherDesig, setTeacherDesig] = useState('');
   const [teacherDept, setTeacherDept] = useState('');
+  const [members, setMembers] = useState<Member[]>([{ name: profile?.full_name ?? '', id: '' }]);
   const [dateOfSubmission, setDateOfSubmission] = useState(new Date().toISOString().slice(0, 10));
-  const [showSignature, setShowSignature] = useState(false);
   const [generating, setGenerating] = useState(false);
 
   const [facultyList, setFacultyList] = useState<FacultyRow[]>([]);
@@ -190,6 +313,7 @@ export function CoverPageFormScreen({ navigation }: any) {
   const [courseSearch, setCourseSearch] = useState('');
   const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
   const [deptModal, setDeptModal] = useState(false);
+  const [desigModal, setDesigModal] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -214,7 +338,12 @@ export function CoverPageFormScreen({ navigation }: any) {
     internship_report: t.coverpage2.typeInternshipReport,
   }[dt]);
 
-  const canGenerate = studentName.trim() && studentId.trim() && courseTitle.trim() && courseCode.trim();
+  const needCourse = docType === 'assignment' || docType === 'lab_report' || docType === 'index_page';
+  const needTitle = docType === 'project_report' || docType === 'internship_report';
+  const needFaculty = docType !== 'index_page';
+  const canGenerate = !!(studentName.trim() && studentId.trim()
+    && (!needCourse || (courseTitle.trim() && courseCode.trim()))
+    && (!needTitle || reportTitle.trim()));
 
   function selectCourse(c: { code: string; name: string }) {
     setCourseCode(c.code); setCourseTitle(c.name);
@@ -235,6 +364,12 @@ export function CoverPageFormScreen({ navigation }: any) {
     setDeptModal(false);
   }
 
+  function updateMember(i: number, patch: Partial<Member>) {
+    setMembers(prev => prev.map((m, idx) => idx === i ? { ...m, ...patch } : m));
+  }
+  function addMember() { setMembers(prev => [...prev, { name: '', id: '' }]); }
+  function removeMember(i: number) { setMembers(prev => prev.filter((_, idx) => idx !== i)); }
+
   const filteredFaculty = facultySearch
     ? facultyList.filter(f => f.name.toLowerCase().includes(facultySearch.toLowerCase()) || (f.dept_name ?? '').toLowerCase().includes(facultySearch.toLowerCase()))
     : facultyList;
@@ -247,18 +382,22 @@ export function CoverPageFormScreen({ navigation }: any) {
     if (!canGenerate) return;
     setGenerating(true);
     try {
+      const dept = (teacherDept.trim() || department.trim() || program.trim() || 'N/A');
+      const cleanMembers = members.filter(m => m.name.trim() || m.id.trim());
       const html = buildHtml({
         template, docType, docTypeLabel: docTypeLabel(docType),
-        university: t.coverpage2.universityName,
-        department: department.trim() || 'N/A',
         courseCode: courseCode.trim(), courseTitle: courseTitle.trim(),
-        assignmentNo: assignmentNo.trim(), experiment: experiment.trim(), showTopic,
+        assignmentNo: assignmentNo.trim(),
+        experimentDate: fmtDate(experimentDate), experimentName: experimentName.trim(),
+        reportTitle: reportTitle.trim(),
         studentName: studentName.trim(), studentId: studentId.trim(),
-        intake: intake.trim() || 'N/A', section: section.trim() || 'N/A', showSection,
+        intake: intake.trim(), section: section.trim(),
         program: program.trim() || department.trim() || 'N/A',
+        dept,
         teacherName: teacherName.trim() || 'N/A', teacherDesig: teacherDesig.trim(),
-        teacherDept: teacherDept.trim(), dateOfSubmission: dateOfSubmission.trim() || 'N/A',
-        showSignature, logoCrest: BUBT_LOGO_CREST, logoHeader: BUBT_LOGO_HEADER,
+        members: cleanMembers.length ? cleanMembers : [{ name: studentName.trim(), id: studentId.trim() }],
+        date: fmtDate(dateOfSubmission),
+        logoCrest: BUBT_LOGO_CREST, logoHeader: BUBT_LOGO_HEADER,
       });
       const { uri } = await Print.printToFileAsync({ html, base64: false });
       if (await Sharing.isAvailableAsync()) {
@@ -287,34 +426,68 @@ export function CoverPageFormScreen({ navigation }: any) {
             })}
           </View>
 
-          {/* Template selection */}
-          <Sec icon="grid" label="Select Template" C={C} count={TEMPLATES.length} />
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: Spacing[3] }}>
-            {TEMPLATES.map(tmpl => {
-              const a = template === tmpl;
-              return (
-                <TouchableOpacity key={tmpl} style={[styles.tCard, { borderColor: a ? SectorColors.coverpage : C.border, borderWidth: a ? 2.5 : 1, backgroundColor: C.surface }]} onPress={() => setTemplate(tmpl)} activeOpacity={0.8}>
-                  <MiniPage tmpl={tmpl} C={C} isDark={isDark} />
-                  {a && <View style={[styles.chk, { backgroundColor: SectorColors.coverpage }]}><Icon name="check" size={12} color={C.white} /></View>}
-                  <View style={[styles.freeBadge, { backgroundColor: Accent.teal }]}><Text style={styles.freeTxt}>FREE</Text></View>
-                  <Text style={[styles.tLabel, { color: a ? SectorColors.coverpage : C.text2, fontFamily: a ? FontFamily.jakartaBold : FontFamily.jakartaMedium }]}>{TEMPLATE_LABELS[tmpl]}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
+          {/* Template selection (assignment & lab only) */}
+          {hasStyles(docType) ? (
+            <>
+              <Sec icon="grid" label="Select Template" C={C} count={TEMPLATES.length} />
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: Spacing[3] }}>
+                {TEMPLATES.map(tmpl => {
+                  const a = template === tmpl;
+                  return (
+                    <TouchableOpacity key={tmpl} style={[styles.tCard, { borderColor: a ? SectorColors.coverpage : C.border, borderWidth: a ? 2.5 : 1, backgroundColor: C.surface }]} onPress={() => setTemplate(tmpl)} activeOpacity={0.8}>
+                      <Image source={previewFor(docType, tmpl)} style={styles.tImg} resizeMode="contain" />
+                      {a && <View style={[styles.chk, { backgroundColor: SectorColors.coverpage }]}><Icon name="check" size={12} color={C.white} /></View>}
+                      <View style={[styles.freeBadge, { backgroundColor: Accent.teal }]}><Text style={styles.freeTxt}>FREE</Text></View>
+                      <Text style={[styles.tLabel, { color: a ? SectorColors.coverpage : C.text2, fontFamily: a ? FontFamily.jakartaBold : FontFamily.jakartaMedium }]}>{TEMPLATE_LABELS[tmpl]}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </>
+          ) : (
+            <>
+              <Sec icon="eye" label="Layout Preview" C={C} />
+              <Image source={previewFor(docType, template)} style={[styles.bigPrev, { borderColor: C.border, backgroundColor: '#fff' }]} resizeMode="contain" />
+            </>
+          )}
 
           {/* Course Details */}
-          <Sec icon="box" label="Course Details" C={C} />
-          <IconField icon="chevR" C={C} value={courseCode} onChange={setCourseCode} placeholder="Course Code"
-            badge="Autofill" onBadge={() => setCourseModal(true)} badgeIcon="chevD" />
-          <IconField icon="sparkle" C={C} value={courseTitle} onChange={setCourseTitle} placeholder="Course Title" />
+          {needCourse && (
+            <>
+              <Sec icon="box" label="Course Details" C={C} />
+              <IconField icon="chevR" C={C} value={courseCode} onChange={setCourseCode} placeholder="Course Code"
+                badge="Autofill" onBadge={() => setCourseModal(true)} badgeIcon="chevD" />
+              <IconField icon="sparkle" C={C} value={courseTitle} onChange={setCourseTitle} placeholder="Course Title" />
+            </>
+          )}
 
-          {/* Assignment Details */}
-          <Sec icon={docType === 'lab_report' ? 'layers' : 'fileText'} label={docType === 'lab_report' ? 'Lab Report Details' : 'Assignment Details'} C={C} />
-          <IconField icon="flag" C={C} value={assignmentNo} onChange={setAssignmentNo}
-            placeholder={docType === 'lab_report' ? 'Experiment No' : 'Assignment No'} />
-          {(docType === 'lab_report' || showTopic) && (
-            <IconField icon="layers" C={C} value={experiment} onChange={setExperiment} placeholder="Topic (optional)" />
+          {/* Report Title (project / internship) */}
+          {needTitle && (
+            <>
+              <Sec icon="fileText" label={docType === 'project_report' ? 'Project Details' : 'Internship Details'} C={C} />
+              <IconField icon="fileText" C={C} value={reportTitle} onChange={setReportTitle}
+                placeholder={docType === 'project_report' ? 'Project Title' : 'Internship Topic'} />
+              <IconField icon="chevR" C={C} value={courseCode} onChange={setCourseCode} placeholder="Course Code (optional)"
+                badge="Autofill" onBadge={() => setCourseModal(true)} badgeIcon="chevD" />
+              <IconField icon="sparkle" C={C} value={courseTitle} onChange={setCourseTitle} placeholder="Course Title (optional)" />
+            </>
+          )}
+
+          {/* Assignment / Lab details */}
+          {docType === 'assignment' && (
+            <>
+              <Sec icon="fileText" label="Assignment Details" C={C} />
+              <IconField icon="flag" C={C} value={assignmentNo} onChange={setAssignmentNo} placeholder="Assignment No" />
+              <IconField icon="layers" C={C} value={experimentName} onChange={setExperimentName} placeholder="Topic (optional)" />
+            </>
+          )}
+          {docType === 'lab_report' && (
+            <>
+              <Sec icon="layers" label="Lab Report Details" C={C} />
+              <IconField icon="calendar" C={C} value={experimentDate} onChange={setExperimentDate} placeholder="Experiment Date (YYYY-MM-DD)" />
+              <IconField icon="flag" C={C} value={assignmentNo} onChange={setAssignmentNo} placeholder="Experiment No" />
+              <IconField icon="layers" C={C} value={experimentName} onChange={setExperimentName} placeholder="Experiment Name" />
+            </>
           )}
 
           {/* Student Information */}
@@ -329,22 +502,50 @@ export function CoverPageFormScreen({ navigation }: any) {
               <IconField icon="grid" C={C} value={section} onChange={setSection} placeholder="Section" />
             </View>
           </View>
-          <IconField icon="award" C={C} value={program} placeholder="Program" onPress={() => setDeptModal(true)} chevron />
+          {docType !== 'index_page' && (
+            <IconField icon="award" C={C} value={program} placeholder="Program" onPress={() => setDeptModal(true)} chevron />
+          )}
+
+          {/* Group Members (project only) */}
+          {docType === 'project_report' && (
+            <>
+              <Sec icon="user" label="Group Members" C={C} count={members.length} />
+              {members.map((m, i) => (
+                <View key={i} style={hStyles.row}>
+                  <View style={{ flex: 1.4 }}>
+                    <IconField icon="user" C={C} value={m.name} onChange={v => updateMember(i, { name: v })} placeholder={`Member ${i + 1} Name`} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <IconField icon="idcard" C={C} value={m.id} onChange={v => updateMember(i, { id: v })} placeholder="ID" />
+                  </View>
+                  {members.length > 1 && (
+                    <TouchableOpacity style={[styles.delMember, { borderColor: C.border }]} onPress={() => removeMember(i)}>
+                      <Icon name="trash" size={16} color={C.danger ?? '#e23'} />
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ))}
+              <TouchableOpacity style={[styles.addBtn, { borderColor: SectorColors.coverpage }]} onPress={addMember}>
+                <Icon name="plus" size={16} color={SectorColors.coverpage} />
+                <Text style={[styles.addTxt, { color: SectorColors.coverpage, fontFamily: FontFamily.jakartaBold }]}>Add Member</Text>
+              </TouchableOpacity>
+            </>
+          )}
 
           {/* Faculty Details */}
-          <Sec icon="user" label="Faculty Details" C={C} />
-          <IconField icon="user" C={C} value={teacherName} onChange={setTeacherName} placeholder="Teacher Name"
-            badge="Autofill" onBadge={() => setFacultyModal(true)} badgeIcon="chevD" />
-          <IconField icon="grid" C={C} value={teacherDept || department} onChange={setTeacherDept} placeholder="Department" />
-          <IconField icon="award" C={C} value={teacherDesig} onChange={setTeacherDesig} placeholder="Designation" chevron />
+          {needFaculty && (
+            <>
+              <Sec icon="user" label={docType === 'internship_report' ? 'Supervisor Details' : 'Faculty Details'} C={C} />
+              <IconField icon="user" C={C} value={teacherName} onChange={setTeacherName} placeholder="Teacher Name"
+                badge="Autofill" onBadge={() => setFacultyModal(true)} badgeIcon="chevD" />
+              <IconField icon="grid" C={C} value={teacherDept} onChange={setTeacherDept} placeholder="Department" />
+              <IconField icon="award" C={C} value={teacherDesig} placeholder="Designation" onPress={() => setDesigModal(true)} chevron />
+            </>
+          )}
 
-          {/* Dates & Signature */}
-          <Sec icon="calendar" label="Dates &amp; Signature" C={C} />
-          <IconField icon="calendar" C={C} value={dateOfSubmission} onChange={setDateOfSubmission} placeholder="Date of Submission" />
-          <View style={styles.switchRow}>
-            <Text style={[styles.switchLabel, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>Include Teacher's Signature</Text>
-            <Switch value={showSignature} onValueChange={setShowSignature} trackColor={{ false: C.surface3, true: SectorColors.coverpage + '66' }} thumbColor={showSignature ? SectorColors.coverpage : C.white} />
-          </View>
+          {/* Date */}
+          <Sec icon="calendar" label="Date of Submission" C={C} />
+          <IconField icon="calendar" C={C} value={dateOfSubmission} onChange={setDateOfSubmission} placeholder="YYYY-MM-DD" />
 
           {/* Generate */}
           <TouchableOpacity style={[styles.genBtn, { backgroundColor: SectorColors.coverpage, opacity: !canGenerate || generating ? 0.5 : 1 }]} onPress={handleGenerate} disabled={!canGenerate || generating}>
@@ -398,6 +599,17 @@ export function CoverPageFormScreen({ navigation }: any) {
           renderItem={({ item }) => (
             <TouchableOpacity style={[styles.listRow, { borderBottomColor: C.border }]} onPress={() => selectProgram(item)} activeOpacity={0.7}>
               <Text style={[styles.deptText, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>{item.name.replace(/^Department of\s*/i, '')}</Text>
+            </TouchableOpacity>
+          )}
+        />
+      </BottomSheet>
+
+      {/* Designation picker */}
+      <BottomSheet visible={desigModal} onClose={() => setDesigModal(false)} title="Select Designation" C={C}>
+        <FlatList data={DESIGNATIONS} keyExtractor={i => i} style={{ maxHeight: 380 }}
+          renderItem={({ item }) => (
+            <TouchableOpacity style={[styles.listRow, { borderBottomColor: C.border }]} onPress={() => { setTeacherDesig(item); setDesigModal(false); }} activeOpacity={0.7}>
+              <Text style={[styles.deptText, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>{item}</Text>
             </TouchableOpacity>
           )}
         />
@@ -478,86 +690,31 @@ function Sec({ icon, label, C, count }: { icon: string; label: string; C: any; c
   );
 }
 
-function MiniPage({ tmpl, C, isDark }: { tmpl: TemplateStyle; C: any; isDark: boolean }) {
-  const bg = isDark ? '#1e2433' : '#fff';
-  const bd = isDark ? '#3a4460' : '#888';
-  const tx = isDark ? '#b0b8cc' : '#333';
-  const lt = isDark ? '#6a7490' : '#999';
-  const isClassic = tmpl === 'classic' || tmpl === 'premium';
-  const accent = isClassic ? '#1a3a6b' : '#333';
-  const dashed = tmpl === 'premium';
-
-  return (
-    <View style={[mpS.pg, { backgroundColor: bg, borderColor: bd, borderStyle: dashed ? 'dashed' : 'solid', borderRadius: tmpl === 'modern' ? 4 : 1 }]}>
-      {isClassic ? (
-        <Text style={[mpS.bold, { color: accent, fontSize: 8 }]}>BUBT</Text>
-      ) : (
-        <Text style={[mpS.it, { color: tx }]} numberOfLines={2}>Bangladesh University{'\n'}of Business and Technology</Text>
-      )}
-      <View style={[mpS.tag, { borderColor: bd, backgroundColor: tmpl === 'modern' ? '#2a2a2a' : 'transparent' }]}>
-        <Text style={[mpS.tagT, { color: tmpl === 'modern' ? '#fff' : tx }]}>ASSIGNMENT</Text>
-      </View>
-      <View style={{ alignItems: 'flex-start', width: '100%', marginTop: 3 }}>
-        <View style={[mpS.ln, { backgroundColor: lt, width: '55%' }]} />
-        <View style={[mpS.ln, { backgroundColor: lt, width: '50%' }]} />
-      </View>
-      <View style={mpS.bxR}>
-        <View style={[mpS.bx, { borderColor: bd, borderStyle: dashed ? 'dashed' : 'solid' }]}>
-          <View style={[mpS.ln, { backgroundColor: tx, width: '60%' }]} />
-          <View style={[mpS.ln, { backgroundColor: lt, width: '50%' }]} />
-          <View style={[mpS.ln, { backgroundColor: lt, width: '40%' }]} />
-        </View>
-        <View style={[mpS.bx, { borderColor: bd, borderStyle: dashed ? 'dashed' : 'solid' }]}>
-          <View style={[mpS.ln, { backgroundColor: tx, width: '60%' }]} />
-          <View style={[mpS.ln, { backgroundColor: lt, width: '55%' }]} />
-        </View>
-      </View>
-      <View style={[mpS.ln, { backgroundColor: lt, width: '60%', marginTop: 3 }]} />
-    </View>
-  );
-}
-
-const mpS = StyleSheet.create({
-  pg: { height: 140, borderWidth: 1.5, padding: 8, alignItems: 'center', justifyContent: 'space-between' },
-  bold: { fontWeight: 'bold', letterSpacing: 1 },
-  it: { fontSize: 5.5, textAlign: 'center', fontStyle: 'italic', lineHeight: 7 },
-  tag: { paddingHorizontal: 6, paddingVertical: 2, borderWidth: 0.8, borderRadius: 1.5, marginTop: 3 },
-  tagT: { fontSize: 5, fontWeight: 'bold', letterSpacing: 0.5 },
-  ln: { height: 2, borderRadius: 1, marginTop: 2 },
-  bxR: { flexDirection: 'row', gap: 3, width: '100%', marginTop: 4 },
-  bx: { flex: 1, borderWidth: 0.8, borderRadius: 2, padding: 3 },
-});
-
 const hStyles = StyleSheet.create({
   sec: { flexDirection: 'row', alignItems: 'center', gap: Spacing[2], marginTop: Spacing[5], paddingBottom: Spacing[2], borderBottomWidth: StyleSheet.hairlineWidth },
   dot: { width: 4, height: 18, borderRadius: 2 },
   secText: { fontSize: FontSize.md, flex: 1 },
   countBadge: { width: 22, height: 22, borderRadius: 11, alignItems: 'center' as const, justifyContent: 'center' as const },
   countTxt: { color: '#fff', fontSize: 11, fontWeight: '700' as const },
-  flRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: Spacing[3], marginBottom: Spacing[1] },
-  flLabel: { fontSize: FontSize.xs, letterSpacing: 0.3 },
-  flLink: { fontSize: 11 },
-  toggleWrap: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  toggleLbl: { fontSize: 10 },
-  row: { flexDirection: 'row', gap: Spacing[3] },
+  row: { flexDirection: 'row', gap: Spacing[3], alignItems: 'center' },
 });
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { paddingBottom: 20, paddingTop: Spacing[2] },
-  input: { height: 56, borderRadius: 14, borderWidth: 1.5, paddingHorizontal: Spacing[4], fontSize: FontSize.base },
   typeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing[2], marginBottom: Spacing[2] },
   typeChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: Spacing[4], paddingVertical: Spacing[2], borderRadius: Radius.full, borderWidth: 1.5 },
   typeChipText: { fontSize: FontSize.sm },
-  tCard: { width: 110, borderRadius: Radius.md, marginRight: Spacing[3], overflow: 'hidden' },
+  tCard: { width: 124, borderRadius: Radius.md, marginRight: Spacing[3], overflow: 'hidden' },
+  tImg: { width: '100%', height: 160 },
+  bigPrev: { width: '100%', height: 460, borderRadius: Radius.md, borderWidth: 1, marginTop: Spacing[3] },
   chk: { position: 'absolute', top: 6, left: 6, width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   freeBadge: { position: 'absolute', top: 6, right: 6, paddingHorizontal: 5, paddingVertical: 2, borderRadius: 4 },
   freeTxt: { color: '#fff', fontSize: 8, fontWeight: '800', letterSpacing: 0.5 },
   tLabel: { textAlign: 'center', fontSize: FontSize.xs, paddingVertical: Spacing[2] },
-  picker: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', height: Layout.inputHeight, borderRadius: Radius.sm, borderWidth: 1, paddingHorizontal: Spacing[3] },
-  pickerText: { flex: 1, fontSize: FontSize.base },
-  switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: Spacing[2], marginTop: Spacing[1] },
-  switchLabel: { fontSize: FontSize.base },
+  delMember: { width: 44, height: 44, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginBottom: Spacing[3] },
+  addBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, height: 46, borderRadius: 12, borderWidth: 1.5, borderStyle: 'dashed', marginTop: Spacing[1] },
+  addTxt: { fontSize: FontSize.sm },
   genBtn: { flexDirection: 'row', height: 52, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center', gap: Spacing[2], marginTop: Spacing[6] },
   genBtnText: { fontSize: FontSize.lg },
   overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' },
