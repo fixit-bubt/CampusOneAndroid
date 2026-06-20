@@ -6,7 +6,7 @@
 //  2. Supabase dashboard -> Authentication -> Providers -> enable Google,
 //     paste the Web client ID + secret.
 //  3. Paste the Web client ID below.
-export const GOOGLE_WEB_CLIENT_ID = '';
+export const GOOGLE_WEB_CLIENT_ID = '319379123495-9nhac1h2oh4n9tgnln9bv4kudv1jljb5.apps.googleusercontent.com';
 
 import { supabase } from './supabase';
 
