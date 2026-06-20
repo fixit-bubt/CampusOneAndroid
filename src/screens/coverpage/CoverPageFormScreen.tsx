@@ -105,8 +105,8 @@ function buildHtml(f: {
 
   const docUp = e(f.docTypeLabel).toUpperCase();
 
-  const crest = `<img src="${f.logoCrest}" style="width:28mm;height:auto;margin:4mm 0;" />`;
-  const hdrLogo = `<img src="${f.logoHeader}" style="width:90mm;height:auto;margin-bottom:3mm;" />`;
+  const crest = `<img src="${f.logoCrest}" style="width:40mm;height:auto;margin:6mm 0;" />`;
+  const hdrLogo = `<img src="${f.logoHeader}" style="width:100mm;height:auto;margin-bottom:4mm;" />`;
 
   if (f.template === 'classic') {
     return wrap('2.5px solid #1a3a6b', `
