@@ -57,99 +57,102 @@ function buildHtml(f: {
 }): string {
   const e = escapeHtml;
   const isLab = f.docType === 'lab_report';
+  const noLabel = isLab ? 'Experiment No' : 'Assignment No';
+  const uni = e(f.university);
+  const dept = e(f.department);
+  const docLabel = e(f.docTypeLabel);
 
-  const courseBlock = `
-    <div style="margin:6mm 0;">
-      ${f.assignmentNo ? `<div style="font-size:12pt;">${isLab ? 'Experiment No' : 'Assignment No'} : ${e(f.assignmentNo)}</div>` : ''}
-      <div style="font-size:12pt;">Course Code &nbsp;: ${e(f.courseCode)}</div>
-      <div style="font-size:12pt;">Course Title &nbsp;: ${e(f.courseTitle)}</div>
-      ${isLab && f.experiment ? `<div style="font-size:12pt;margin-top:2mm;">Topic : ${e(f.experiment)}</div>` : ''}
+  const baseStyle = `@page{size:A4;margin:0}*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Times New Roman',serif;width:210mm;min-height:297mm;color:#1a1a1a;}`;
+
+  const courseLines = `
+    <div style="text-align:left;width:100%;padding-left:25mm;">
+      <p style="font-size:12pt;margin:2mm 0;"><b>Course Title:</b> ${e(f.courseTitle)}</p>
+      <p style="font-size:12pt;margin:2mm 0;"><b>Course Code:</b> ${e(f.courseCode)}</p>
+      <p style="font-size:12pt;margin:2mm 0;"><b>${noLabel}:</b> ${e(f.assignmentNo) || '___'}</p>
+      ${isLab && f.experiment ? `<p style="font-size:12pt;margin:2mm 0;"><b>Topic:</b> ${e(f.experiment)}</p>` : ''}
     </div>`;
 
-  const submittedBy = `
-    <td style="width:48%;border:1.5px solid #222;padding:4mm;vertical-align:top;">
-      <div style="font-size:12pt;font-weight:bold;margin-bottom:3mm;border-bottom:1px solid #888;padding-bottom:2mm;">Submitted By:</div>
-      <div style="font-size:11pt;line-height:1.8;">
-        Name : ${e(f.studentName)}<br/>
-        ID No : ${e(f.studentId)}<br/>
-        Intake : ${e(f.intake)}<br/>
-        Section : ${e(f.section)}<br/>
-        Program : ${e(f.program)}
-      </div>
-    </td>`;
+  const infoBoxes = `
+    <table style="width:88%;margin:0 auto;border-collapse:collapse;">
+      <tr>
+        <td style="width:50%;border:1.5px solid #333;padding:5mm;vertical-align:top;">
+          <p style="font-size:12pt;font-weight:bold;text-decoration:underline;margin-bottom:4mm;">Submitted By:</p>
+          <p style="font-size:11pt;line-height:2;">Name: ${e(f.studentName)}</p>
+          <p style="font-size:11pt;line-height:2;">ID No: ${e(f.studentId)}</p>
+          <p style="font-size:11pt;line-height:2;">Intake: ${e(f.intake)}</p>
+          <p style="font-size:11pt;line-height:2;">Section: ${e(f.section)}</p>
+          <p style="font-size:11pt;line-height:2;">Program: ${e(f.program)}</p>
+        </td>
+        <td style="width:50%;border:1.5px solid #333;padding:5mm;vertical-align:top;">
+          <p style="font-size:12pt;font-weight:bold;text-decoration:underline;margin-bottom:4mm;">Submitted To:</p>
+          <p style="font-size:11pt;line-height:2;">Name: ${e(f.teacherName)}</p>
+          ${f.teacherDesig ? `<p style="font-size:11pt;line-height:2;">${e(f.teacherDesig)}</p>` : ''}
+          <p style="font-size:11pt;line-height:2;margin-top:4mm;">Department of ${dept}</p>
+          <p style="font-size:10pt;line-height:1.6;">${uni}</p>
+        </td>
+      </tr>
+    </table>`;
 
-  const submittedTo = `
-    <td style="width:48%;border:1.5px solid #222;padding:4mm;vertical-align:top;">
-      <div style="font-size:12pt;font-weight:bold;margin-bottom:3mm;border-bottom:1px solid #888;padding-bottom:2mm;">Submitted To:</div>
-      <div style="font-size:11pt;line-height:1.8;">
-        Name : ${e(f.teacherName)}<br/>
-        ${f.teacherDesig ? `${e(f.teacherDesig)}<br/>` : ''}
-        <br/>
-        Dept. of ${e(f.department)}<br/>
-        <span style="font-size:9pt;">${e(f.university)}</span>
-      </div>
-    </td>`;
+  const dateLine = `<p style="text-align:center;font-size:11pt;margin-top:10mm;"><b>Date of Submission:</b> ${e(f.dateOfSubmission)}</p>`;
 
-  const signatureBlock = f.showSignature ? `
-    <div style="margin-top:12mm;width:100%;display:flex;justify-content:flex-end;">
-      <div style="text-align:center;border-top:1px solid #333;padding-top:2mm;width:50mm;margin-left:auto;">
+  const sigBlock = f.showSignature ? `
+    <div style="text-align:right;margin-top:10mm;padding-right:20mm;">
+      <div style="display:inline-block;text-align:center;width:50mm;border-top:1px solid #333;padding-top:2mm;">
         <span style="font-size:9pt;">Teacher's Signature</span>
       </div>
     </div>` : '';
 
-  const dateBlock = `<div style="text-align:center;margin-top:8mm;font-size:11pt;">Date of Submission : ${e(f.dateOfSubmission)}</div>`;
-
   if (f.template === 'classic') {
-    return `<!DOCTYPE html><html><head><meta charset="utf-8"/>
-<style>@page{size:A4;margin:0}*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Times New Roman',serif;width:210mm;min-height:297mm;padding:15mm 20mm;color:#1a1a1a;}</style></head>
-<body>
-<div style="border:2px solid #1a3a6b;padding:12mm 15mm;min-height:267mm;display:flex;flex-direction:column;align-items:center;justify-content:space-between;">
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"/><style>${baseStyle}
+      body{padding:12mm 18mm;}</style></head><body>
+<div style="border:2.5px solid #1a3a6b;min-height:273mm;padding:12mm 10mm;display:flex;flex-direction:column;align-items:center;justify-content:space-between;">
   <div style="text-align:center;">
-    <div style="font-size:22pt;font-weight:bold;color:#1a3a6b;letter-spacing:1pt;">BUBT</div>
-    <div style="font-size:10pt;color:#1a3a6b;margin-bottom:1mm;">BANGLADESH UNIVERSITY OF BUSINESS AND TECHNOLOGY</div>
-    <div style="font-size:8pt;font-style:italic;color:#555;margin-bottom:6mm;">Commitment to Academic Excellence</div>
-    <div style="display:inline-block;border:2px solid #1a3a6b;padding:3mm 12mm;font-size:14pt;font-weight:bold;color:#1a3a6b;">${e(f.docTypeLabel).toUpperCase()}</div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:3mm;margin-bottom:2mm;">
+      <span style="font-size:28pt;font-weight:bold;color:#1a3a6b;letter-spacing:2pt;">BUBT</span>
+      <span style="text-align:left;font-size:9pt;color:#1a3a6b;font-weight:bold;line-height:1.3;">BANGLADESH UNIVERSITY OF<br/>BUSINESS AND TECHNOLOGY</span>
+    </div>
+    <p style="font-size:9pt;font-style:italic;color:#555;margin-bottom:8mm;">Committed to Academic Excellence</p>
+    <div style="display:inline-block;border:2px solid #1a3a6b;padding:3mm 14mm;">
+      <span style="font-size:14pt;font-weight:bold;color:#1a3a6b;">${docLabel}</span>
+    </div>
   </div>
-  ${courseBlock}
-  <table style="width:100%;border-collapse:separate;border-spacing:4mm 0;"><tr>${submittedBy}${submittedTo}</tr></table>
-  ${dateBlock}
-  ${signatureBlock}
+  ${courseLines}
+  ${infoBoxes}
+  ${dateLine}
+  ${sigBlock}
 </div></body></html>`;
   }
 
   if (f.template === 'modern') {
-    return `<!DOCTYPE html><html><head><meta charset="utf-8"/>
-<style>@page{size:A4;margin:0}*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:Georgia,serif;width:210mm;min-height:297mm;padding:20mm 22mm;color:#1a1a1a;}</style></head>
-<body>
-<div style="border:1.5px solid #444;border-radius:3mm;padding:18mm 16mm;min-height:257mm;display:flex;flex-direction:column;align-items:center;justify-content:space-between;">
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"/><style>${baseStyle}
+      body{font-family:Georgia,serif;padding:15mm 20mm;}</style></head><body>
+<div style="border:2px solid #2a2a2a;border-radius:3mm;min-height:267mm;padding:14mm 12mm;display:flex;flex-direction:column;align-items:center;justify-content:space-between;">
   <div style="text-align:center;">
-    <div style="font-size:18pt;font-weight:bold;font-style:italic;color:#2a2a2a;margin-bottom:4mm;">${e(f.university)}</div>
-    <div style="font-size:11pt;color:#555;margin-bottom:8mm;">Department of ${e(f.department)}</div>
-    <div style="background:#2a2a2a;color:#fff;padding:3mm 14mm;font-size:13pt;font-weight:bold;letter-spacing:2pt;display:inline-block;border-radius:1mm;">${e(f.docTypeLabel).toUpperCase()}</div>
+    <p style="font-size:16pt;font-weight:bold;color:#2a2a2a;margin-bottom:2mm;">${uni}</p>
+    <p style="font-size:11pt;color:#555;margin-bottom:8mm;">Department of ${dept}</p>
+    <div style="background:#2a2a2a;color:#fff;padding:3mm 16mm;display:inline-block;border-radius:1.5mm;">
+      <span style="font-size:13pt;font-weight:bold;letter-spacing:2pt;">${docLabel.toUpperCase()}</span>
+    </div>
   </div>
-  ${courseBlock}
-  <table style="width:100%;border-collapse:separate;border-spacing:3mm 0;"><tr>${submittedBy}${submittedTo}</tr></table>
-  ${dateBlock}
-  ${signatureBlock}
+  ${courseLines}
+  ${infoBoxes}
+  ${dateLine}
+  ${sigBlock}
 </div></body></html>`;
   }
 
-  // default template
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"/>
-<style>@page{size:A4;margin:0}*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Times New Roman',serif;width:210mm;min-height:297mm;padding:18mm 22mm;color:#1a1a1a;}</style></head>
-<body>
-<div style="border:2px solid #333;padding:15mm 18mm;min-height:261mm;display:flex;flex-direction:column;align-items:center;justify-content:space-between;">
+  // Default — matches the real BUBT Scribd template exactly
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"/><style>${baseStyle}
+    body{padding:12mm 18mm;}</style></head><body>
+<div style="border:2px solid #333;min-height:273mm;padding:12mm 10mm;display:flex;flex-direction:column;align-items:center;justify-content:space-between;">
   <div style="text-align:center;">
-    <div style="font-size:18pt;font-weight:bold;font-style:italic;margin-bottom:8mm;">${e(f.university)}</div>
-    <div style="display:inline-block;border:2px solid #333;padding:2.5mm 10mm;font-size:13pt;font-weight:bold;">${e(f.docTypeLabel).toUpperCase()}</div>
+    <p style="font-size:17pt;font-weight:bold;font-style:italic;margin-bottom:10mm;">${uni}</p>
+    <p style="font-size:15pt;font-weight:bold;text-decoration:underline;margin-bottom:6mm;">${docLabel}</p>
   </div>
-  ${courseBlock}
-  <table style="width:100%;border-collapse:separate;border-spacing:3mm 0;"><tr>${submittedBy}${submittedTo}</tr></table>
-  ${dateBlock}
-  ${signatureBlock}
+  ${courseLines}
+  ${infoBoxes}
+  ${dateLine}
+  ${sigBlock}
 </div></body></html>`;
 }
 
