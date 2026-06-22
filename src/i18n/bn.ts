@@ -45,6 +45,17 @@ export const bn: Dict = {
     tagline: 'আপনার ক্যাম্পাস, সব এক জায়গায়। রিপোর্ট, ইভেন্ট, ক্লাব এবং আরও অনেক কিছু।',
     getStarted: 'অ্যাকাউন্ট তৈরি করুন',
     haveAccount: 'লগইন',
+    welcome: 'স্বাগতম',
+    subtitle: 'চালিয়ে যেতে সাইন ইন করুন',
+    continueGoogle: 'গুগল দিয়ে চালিয়ে যান',
+    orLabel: 'অথবা',
+    emailSignIn: 'ইমেইল দিয়ে সাইন ইন',
+    googleFailed: 'গুগল সাইন-ইন ব্যর্থ হয়েছে।',
+    termsPrefix: 'চালিয়ে গেলে আপনি আমাদের ',
+    privacy: 'গোপনীয়তা নীতি',
+    termsAnd: ' এবং ',
+    terms: 'সেবার শর্তাবলী',
+    termsSuffix: ' মেনে নিচ্ছেন।',
   },
 
   auth: {

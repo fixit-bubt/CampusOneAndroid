@@ -24,6 +24,9 @@ export async function signInWithGoogle(): Promise<void> {
   const { GoogleSignin } = require('@react-native-google-signin/google-signin');
   GoogleSignin.configure({ webClientId: GOOGLE_WEB_CLIENT_ID });
   await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+  // Clear any cached Google session so the account chooser is shown every time.
+  // Without this, a previously-picked account is reused silently with no prompt.
+  try { await GoogleSignin.signOut(); } catch { /* no cached session */ }
   const userInfo: any = await GoogleSignin.signIn();
   const idToken: string | undefined = userInfo?.data?.idToken ?? userInfo?.idToken;
   if (!idToken) throw new Error('No ID token returned from Google.');

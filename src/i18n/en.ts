@@ -44,6 +44,17 @@ export const en = {
     tagline: 'Your campus, all in one place. Reports, events, clubs, and more.',
     getStarted: 'Create Account',
     haveAccount: 'Login',
+    welcome: 'Welcome',
+    subtitle: 'Sign in to continue',
+    continueGoogle: 'Continue with Google',
+    orLabel: 'or',
+    emailSignIn: 'Sign in with email',
+    googleFailed: 'Google sign-in failed.',
+    termsPrefix: 'By continuing you agree to our ',
+    privacy: 'Privacy Policy',
+    termsAnd: ' and ',
+    terms: 'Terms of Service',
+    termsSuffix: '.',
   },
 
   auth: {
