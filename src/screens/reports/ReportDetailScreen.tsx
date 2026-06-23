@@ -47,7 +47,7 @@ function formatDate(iso: string): string {
 const STATUS_OPTIONS: Report['status'][] = ['Open', 'In Progress', 'Resolved', 'Rejected', 'Closed'];
 
 export function ReportDetailScreen({ route, navigation }: any) {
-  const { reportId: paramReportId, report: initReport } = route.params as { reportId?: string; report?: Report };
+  const { reportId: paramReportId, report: initReport } = (route.params ?? {}) as { reportId?: string; report?: Report };
   const { C } = useTheme();
   const { user, profile } = useAuth();
   const t = useT();
@@ -273,7 +273,7 @@ export function ReportDetailScreen({ route, navigation }: any) {
         </Text>
         <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border, paddingVertical: 14, paddingHorizontal: 16 }]}>
           {timelineSteps.map((step, i) => (
-            <View key={i} style={styles.timelineStep}>
+            <View key={step.label} style={styles.timelineStep}>
               <View style={styles.timelineTrack}>
                 <View style={[
                   styles.timelineDot,

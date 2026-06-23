@@ -124,7 +124,7 @@ const SECTOR_INFO: Record<string, {
 
 export function FeatureScreen({ route, navigation }: any) {
   const { C, isDark } = useTheme();
-  const { sector } = route.params;
+  const { sector } = route.params ?? {};
   const info = SECTOR_INFO[sector];
 
   if (!info) return null;

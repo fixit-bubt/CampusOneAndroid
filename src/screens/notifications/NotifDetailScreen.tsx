@@ -41,7 +41,8 @@ export function NotifDetailScreen({ route, navigation }: any) {
   const { C } = useTheme();
   const { user } = useAuth();
   const t = useT();
-  const { notification: n } = route.params;
+  const n = route.params?.notification;
+  if (!n) return null;
   const sectorLabel = SECTOR_LABELS[n.sector] ?? n.sector;
 
   async function markUnread() {
