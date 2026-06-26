@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, FlatList, StyleSheet, Alert,
-  TextInput, Modal, Platform, KeyboardAvoidingView, Linking,
+  TextInput, Modal, Platform, KeyboardAvoidingView,
   RefreshControl, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,6 +16,7 @@ import { Pill } from '../../components/ui/Pill';
 import { supabase } from '../../lib/supabase';
 import { uploadFile } from '../../utils/storage';
 import { formatRelativeTime } from '../../utils/format';
+import { openUrl } from '../../utils/link';
 import { FontFamily, FontSize, Layout, Radius, Spacing, SectorColors } from '../../theme';
 
 interface Routine {
@@ -155,7 +156,7 @@ export function RoutinesBrowseScreen({ navigation }: any) {
 
   function openFile(r: Routine) {
     const url = r.file_url || r.image_url;
-    if (url) Linking.openURL(url);
+    if (url) openUrl(url);
   }
 
   function renderRoutine({ item }: { item: Routine }) {

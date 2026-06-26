@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator,
-  Linking, type ViewStyle,
+  type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
@@ -9,6 +9,7 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { openUrl } from '../../utils/link';
 import { useT } from '../../i18n';
 import { useAuth } from '../../store/authStore';
 import type { Announcement } from '../../types/database';
@@ -35,22 +36,24 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
   const { C } = useTheme();
   const { user } = useAuth();
   const t = useT();
+  // Hooks must run unconditionally — no early return before them.
   const { announcementId } = route.params ?? {};
-  if (!announcementId) return null;
   const id = announcementId;
   const [item, setItem] = useState<Announcement | null>(null);
+  const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
+    if (!id) { setNotFound(true); return; }
     (async () => {
       const { data, error } = await supabase
         .from('announcements')
         .select('*')
         .eq('id', id)
-        .single();
-      if (error) { console.error('announcement detail fetch:', error.message); return; }
-      if (data) setItem(data as Announcement);
+        .maybeSingle();
+      if (error || !data) { if (error) console.error('announcement detail fetch:', error.message); setNotFound(true); return; }
+      setItem(data as Announcement);
       // Opening counts as read.
-      if (data && user) {
+      if (user) {
         await supabase
           .from('announcement_reads')
           .upsert({ announcement_id: id, user_id: user.id }, { onConflict: 'announcement_id,user_id' });
@@ -62,7 +65,11 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
         <SubBar title="Announcements" onBack={() => navigation.goBack()} />
-        <View style={styles.center}><ActivityIndicator color={C.brand} /></View>
+        <View style={styles.center}>
+          {notFound
+            ? <Text style={{ color: C.textMuted, fontFamily: FontFamily.jakartaMedium }}>{t.common.error}</Text>
+            : <ActivityIndicator color={C.brand} />}
+        </View>
       </SafeAreaView>
     );
   }
@@ -109,7 +116,7 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
         {item.attachment_url && (
           <TouchableOpacity
             style={[styles.attachCard, { backgroundColor: C.surface, borderColor: C.border }]}
-            onPress={() => Linking.openURL(item.attachment_url!)}
+            onPress={() => openUrl(item.attachment_url!)}
             activeOpacity={0.75}
           >
             <View style={[styles.attachIcon, { backgroundColor: C.dangerBg }]}>

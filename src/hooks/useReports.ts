@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { getReports, type ReportWithProfile } from '../services/reportsService';
+import { PAGE_SIZE } from '../constants/app';
 import type { Report } from '../types/database';
 
 interface UseReportsOptions {
@@ -22,7 +23,7 @@ export function useReports({ status }: UseReportsOptions = {}) {
     const result = await getReports(pageNum, status);
     if (result.ok) {
       setData((prev) => (reset ? result.data : [...prev, ...result.data]));
-      setHasMore(result.data.length === 20);
+      setHasMore(result.data.length === PAGE_SIZE);
       setError(null);
     } else {
       setError(result.error);

@@ -162,10 +162,14 @@ export function ReportFormScreen({ route, navigation }: any) {
         // Already an uploaded URL (editing existing report)
         finalPhotoUrl = photoUri;
       } else {
-        // Local file — upload to storage
-        const ext = photoUri.split('.').pop() ?? 'jpg';
+        // Local file — upload to storage. Strip any ?query/#fragment and only
+        // trust a short alphanumeric extension; content:// and extensionless URIs
+        // otherwise yield a garbage extension/contentType.
+        const rawExt = (photoUri.split(/[#?]/)[0].split('.').pop() ?? '').toLowerCase();
+        const ext = /^[a-z0-9]{1,5}$/.test(rawExt) ? rawExt : 'jpg';
+        const mime = ext === 'jpg' ? 'jpeg' : ext;
         const remotePath = `reports/${user?.id ?? 'anon'}/${Date.now()}.${ext}`;
-        const result = await uploadFile(BUCKETS.photos, photoUri, remotePath, `image/${ext}`);
+        const result = await uploadFile(BUCKETS.photos, photoUri, remotePath, `image/${mime}`);
         if (!result.success) {
           setBusy(false);
           setErr(t.reports2.photoUploadFailed(result.error));

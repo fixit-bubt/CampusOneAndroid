@@ -4,7 +4,7 @@
 import { useState, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
-  ActivityIndicator, Linking, type ViewStyle, type TextStyle,
+  ActivityIndicator, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -17,6 +17,7 @@ import { Icon } from '../../components/ui/Icon';
 import { useToast } from '../../components/ui/Toast';
 import { FontFamily, Layout, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { openUrl } from '../../utils/link';
 import { useAuth } from '../../store/authStore';
 import { FACULTY_ACCENT, BRANCH_ICON, shortDept, PersonBadges, type FacultyMember } from './facultyShared';
 
@@ -76,7 +77,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
   }
 
   const openLink = (url: string) => {
-    Linking.openURL(url).catch(() => toast({ type: 'error', title: t.common.error }));
+    openUrl(url).then(ok => { if (!ok) toast({ type: 'error', title: t.common.error }); });
   };
 
   if (!member) {

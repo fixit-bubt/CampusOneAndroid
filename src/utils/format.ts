@@ -2,7 +2,9 @@
 
 /** "2025-06-08T14:30:00Z" → "Jun 8, 2025" */
 export function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', {
+  const d = new Date(iso);
+  if (!iso || isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -11,7 +13,9 @@ export function formatDate(iso: string): string {
 
 /** "2025-06-08" → "08 Jun 2025" (for schedules / events) */
 export function formatDateLong(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-GB', {
+  const d = new Date(iso);
+  if (!iso || isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('en-GB', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -20,7 +24,9 @@ export function formatDateLong(iso: string): string {
 
 /** Relative time: "3m ago", "2d ago" */
 export function formatRelativeTime(iso: string): string {
-  const diff = (Date.now() - new Date(iso).getTime()) / 1000; // seconds
+  const t = new Date(iso).getTime();
+  if (!iso || isNaN(t)) return '';
+  const diff = (Date.now() - t) / 1000; // seconds
   if (diff < 60) return 'just now';
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
@@ -30,7 +36,8 @@ export function formatRelativeTime(iso: string): string {
 
 /** "14:30" → "2:30 PM" */
 export function formatTime(time24: string): string {
-  const [h, m] = time24.split(':').map(Number);
+  const [h, m] = (time24 ?? '').split(':').map(Number);
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return time24 ?? '';
   const period = h >= 12 ? 'PM' : 'AM';
   const h12 = h % 12 || 12;
   return `${h12}:${String(m).padStart(2, '0')} ${period}`;

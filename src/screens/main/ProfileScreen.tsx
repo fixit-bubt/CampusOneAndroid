@@ -367,17 +367,17 @@ export function ProfileScreen({ navigation }: any) {
     setSaving(true);
     try {
       const payload: Record<string, any> = {
-        full_name: editName,
-        department: editDept,
-        whatsapp: editWhatsapp,
-        phone: editPhone,
-        address: editAddress,
+        full_name: editName.trim(),
+        department: editDept.trim(),
+        whatsapp: editWhatsapp.trim(),
+        phone: editPhone.trim(),
+        address: editAddress.trim(),
       };
       if (isStudent) {
-        payload.intake = editIntake;
-        payload.section = editSection;
-        payload.student_id = editStudentId;
-        payload.program = editProgram;
+        payload.intake = editIntake.trim();
+        payload.section = editSection.trim();
+        payload.student_id = editStudentId.trim();
+        payload.program = editProgram.trim();
         payload.blood_group = editBlood;
         payload.directory_visible = editDirVisible;
         payload.show_whatsapp = editShowWa;

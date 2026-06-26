@@ -5,7 +5,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
-  Linking, type ViewStyle, type TextStyle,
+  type ViewStyle, type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
@@ -16,6 +16,7 @@ import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { openUrl } from '../../utils/link';
 
 export type ConnState = 'none' | 'requested' | 'incoming' | 'connected';
 
@@ -200,7 +201,7 @@ export function StudentProfileScreen({ route, navigation }: any) {
                 <>
                   <TouchableOpacity
                     style={[styles.emailBtn, { backgroundColor: Accent.blue }]}
-                    onPress={() => Linking.openURL(`mailto:${student.email}`)}
+                    onPress={() => openUrl(`mailto:${student.email}`)}
                     activeOpacity={0.8}
                   >
                     <Icon name="mail" size={15} color="#fff" />
@@ -216,7 +217,7 @@ export function StudentProfileScreen({ route, navigation }: any) {
               {waDigits.length > 0 && (
                 <TouchableOpacity
                   style={[styles.waBtn, { backgroundColor: C.success }]}
-                  onPress={() => Linking.openURL(`https://wa.me/${waDigits}`)}
+                  onPress={() => openUrl(`https://wa.me/${waDigits}`)}
                   activeOpacity={0.8}
                 >
                   <Icon name="phone" size={14} color="#fff" />

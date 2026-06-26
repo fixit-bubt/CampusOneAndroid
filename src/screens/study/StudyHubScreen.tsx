@@ -755,8 +755,8 @@ export function StudyHubScreen({ navigation }: any) {
     const { error } = await supabase.from('study_section_requests').insert({
       requester_id: user.id,
       department_id: deptId,
-      intake_number: parseInt(intake),
-      section_number: parseInt(section),
+      intake_number: parseInt(intake, 10),
+      section_number: parseInt(section, 10),
       reason: reason || null,
     });
     if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }

@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
-  ActivityIndicator, Alert, Linking, type ViewStyle,
+  ActivityIndicator, Alert, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -16,6 +16,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
+import { openUrl } from '../../utils/link';
 
 const STUDY_COLOR = SectorColors.study;
 const STUDY_BG    = `${SectorColors.study}1e`;
@@ -89,7 +90,7 @@ export function CourseDetailScreen({ route, navigation }: any) {
   }, [load, navigation]);
 
   async function openEntry(f: Entry) {
-    if (f.url) { Linking.openURL(f.url); return; }
+    if (f.url) { openUrl(f.url); return; }
     if (!f.storage_path) return;
     const { data, error } = await supabase.storage
       .from('study-materials')
@@ -98,7 +99,7 @@ export function CourseDetailScreen({ route, navigation }: any) {
       toast({ type: 'error', title: t.common.error, message: error?.message ?? t.study2.couldNotOpenFile });
       return;
     }
-    Linking.openURL(data.signedUrl);
+    openUrl(data.signedUrl);
   }
 
   async function toggleVerified(f: Entry) {

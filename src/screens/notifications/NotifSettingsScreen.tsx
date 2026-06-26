@@ -67,23 +67,33 @@ export function NotifSettingsScreen({ navigation }: any) {
       return;
     }
     if (data) {
-      const updated: Record<string, SectorPref> = { ...prefs };
-      (data as any[]).forEach(p => {
-        // Master toggles persisted as special rows
-        if (p.sector === '_paused') { setPaused(p.enabled); return; }
-        if (p.sector === '_quiet')  { setQuiet(p.enabled);  return; }
-        updated[p.sector] = { enabled: p.enabled, push: p.push, email: p.email, inapp: p.inapp };
+      const rows = data as any[];
+      // Master toggles persisted as special rows — pull them out first.
+      const pausedRow = rows.find(p => p.sector === '_paused');
+      const quietRow  = rows.find(p => p.sector === '_quiet');
+      if (pausedRow) setPaused(pausedRow.enabled);
+      if (quietRow)  setQuiet(quietRow.enabled);
+      // Merge into existing prefs via a functional updater so `prefs` does NOT
+      // need to be a dependency — depending on it here recreates `load`, which
+      // re-fires useFocusEffect and refetches forever while the screen is open.
+      setPrefs(prev => {
+        const updated = { ...prev };
+        rows.forEach(p => {
+          if (p.sector === '_paused' || p.sector === '_quiet') return;
+          updated[p.sector] = { enabled: p.enabled, push: p.push, email: p.email, inapp: p.inapp };
+        });
+        return updated;
       });
-      setPrefs(updated);
     }
-  }, [user?.id, prefs]);
+  }, [user?.id]);
 
   async function saveMaster(sector: '_paused' | '_quiet', on: boolean) {
     if (!user?.id) return;
-    await supabase.from('notif_prefs').upsert(
+    const { error } = await supabase.from('notif_prefs').upsert(
       { user_id: user.id, sector, enabled: on },
       { onConflict: 'user_id,sector' },
     );
+    if (error) load(); // failed write → re-sync UI to DB truth
   }
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -92,10 +102,11 @@ export function NotifSettingsScreen({ navigation }: any) {
     if (!user?.id) return;
     const next = { ...prefs[sectorId], ...update };
     setPrefs(prev => ({ ...prev, [sectorId]: next }));
-    await supabase.from('notif_prefs').upsert(
+    const { error } = await supabase.from('notif_prefs').upsert(
       { user_id: user.id, sector: sectorId, ...next },
       { onConflict: 'user_id,sector' },
     );
+    if (error) load(); // failed write → re-sync UI to DB truth
   }
 
   const onCount = SECTORS.filter(s => prefs[s.id]?.enabled).length;
@@ -105,9 +116,13 @@ export function NotifSettingsScreen({ navigation }: any) {
     const next: Record<string, SectorPref> = {};
     SECTORS.forEach(s => { next[s.id] = { ...prefs[s.id], enabled: on }; });
     setPrefs(next);
-    await Promise.all(SECTORS.map(s =>
-      supabase.from('notif_prefs').upsert({ user_id: user?.id, sector: s.id, enabled: on })
+    const results = await Promise.all(SECTORS.map(s =>
+      supabase.from('notif_prefs').upsert(
+        { user_id: user?.id, sector: s.id, enabled: on },
+        { onConflict: 'user_id,sector' },
+      )
     ));
+    if (results.some(r => r.error)) load(); // any failed write → re-sync
   }
 
   return (

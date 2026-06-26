@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet,
-  ActivityIndicator, Modal, Alert, Linking, type ViewStyle,
+  ActivityIndicator, Modal, Alert, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -14,6 +14,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
+import { openUrl } from '../../utils/link';
 
 const JOB_COLOR = SectorColors.jobs;
 const JOB_BG    = `${SectorColors.jobs}1e`;
@@ -232,11 +233,11 @@ export function JobDetailScreen({ route, navigation }: any) {
                 style={[styles.actionBtn, { backgroundColor: C.brand }]}
                 onPress={() => {
                   if (job.apply_method === 'link' && job.apply_value) {
-                    Linking.openURL(job.apply_value);
+                    openUrl(job.apply_value);
                   } else if (job.apply_method === 'email' && job.apply_value) {
-                    Linking.openURL(`mailto:${job.apply_value}`);
+                    openUrl(`mailto:${job.apply_value}`);
                   } else if (job.apply_method === 'file' && job.apply_file_url) {
-                    Linking.openURL(job.apply_file_url);
+                    openUrl(job.apply_file_url);
                   } else {
                     toast({ type: 'info', title: t.jobs2.applyTitle, message: t.jobs2.applyBody });
                   }

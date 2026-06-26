@@ -1,12 +1,13 @@
 // Shared faculty kit — types, sorting, branch icons, badges, and the
 // teacher card used by the directory, department, and saved views.
 import {
-  View, Text, TouchableOpacity, StyleSheet, Linking,
+  View, Text, TouchableOpacity, StyleSheet,
   type ViewStyle, type TextStyle,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Avatar } from '../../components/ui/Avatar';
 import { FontFamily, SectorColors } from '../../theme';
+import { openUrl } from '../../utils/link';
 import type { Colors } from '../../theme';
 
 export const FACULTY_ACCENT = SectorColors.faculty;
@@ -156,7 +157,7 @@ export function FacultyCard({ f, deptName, saved, onToggleSave, onOpen, C, goldC
         {f.email ? (
           <TouchableOpacity
             style={styles.emailLink}
-            onPress={() => Linking.openURL(`mailto:${f.email}`)}
+            onPress={() => openUrl(`mailto:${f.email}`)}
             activeOpacity={0.7}
           >
             <Feather name="mail" size={13} color={C.textMuted} />

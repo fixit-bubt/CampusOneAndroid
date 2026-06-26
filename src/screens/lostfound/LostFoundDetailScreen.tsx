@@ -6,7 +6,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet, Image,
-  TextInput, ActivityIndicator, Alert, Linking, type ViewStyle,
+  TextInput, ActivityIndicator, Alert, type ViewStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,6 +20,7 @@ import { FontFamily, Layout, SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
+import { openUrl } from '../../utils/link';
 import { uploadProof, getSignedUrl } from '../../utils/storage';
 import { BUCKETS } from '../../constants/app';
 import type { LostFoundItem } from '../../types/database';
@@ -185,7 +186,7 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
     const url = claim.proof_url.startsWith('http')
       ? claim.proof_url
       : await getSignedUrl(BUCKETS.proofs, claim.proof_url);
-    if (url) Linking.openURL(url);
+    if (url) openUrl(url);
     else toast({ type: 'error', title: t.common.error, message: t.common.loadingError });
   }
 
@@ -312,7 +313,7 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
                 {contact.email ? (
                   <TouchableOpacity
                     style={[styles.contactBtn, { backgroundColor: C.surface2 }]}
-                    onPress={() => Linking.openURL(`mailto:${contact.email}`)}
+                    onPress={() => openUrl(`mailto:${contact.email}`)}
                     activeOpacity={0.75}
                   >
                     <Icon name="mail" size={15} color={C.text} />
@@ -321,7 +322,7 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
                 {contact.whatsapp ? (
                   <TouchableOpacity
                     style={[styles.contactBtn, { backgroundColor: C.successBg }]}
-                    onPress={() => Linking.openURL(`https://wa.me/${(contact.whatsapp ?? '').replace(/[^0-9]/g, '')}`)}
+                    onPress={() => openUrl(`https://wa.me/${(contact.whatsapp ?? '').replace(/[^0-9]/g, '')}`)}
                     activeOpacity={0.75}
                   >
                     <Icon name="chat" size={15} color={C.success} />

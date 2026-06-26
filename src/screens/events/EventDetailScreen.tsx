@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
-  ActivityIndicator, Alert, Linking, type ViewStyle,
+  ActivityIndicator, Alert, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -14,6 +14,7 @@ import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout , SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { openUrl } from '../../utils/link';
 import type { Event } from '../../types/database';
 
 const CAT_COLOR: Record<string, string> = {
@@ -38,30 +39,32 @@ export function EventDetailScreen({ route, navigation }: any) {
   const { C } = useTheme();
   const { user, profile } = useAuth();
   const t = useT();
-  const { eventId } = route.params ?? {};
-  if (!eventId) return null;
-  const id = eventId;
-
   const toast = useToast();
+  // Hooks must run unconditionally — keep all of them above any early return.
+  const { eventId } = route.params ?? {};
+  const id = eventId;
   const [event, setEvent] = useState<Event | null>(null);
+  const [notFound, setNotFound] = useState(false);
   const [going, setGoing] = useState(false);
   const [goingCount, setGoingCount] = useState(0);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
+    if (!id) { setNotFound(true); return; }
     (async () => {
       try {
         const [evRes, rsvpRes, countRes] = await Promise.all([
-          supabase.from('events').select('*').eq('id', id).single(),
+          supabase.from('events').select('*').eq('id', id).maybeSingle(),
           user ? supabase.from('event_rsvps').select('user_id').eq('event_id', id).eq('user_id', user.id).maybeSingle() : Promise.resolve({ data: null, error: null }),
           supabase.from('event_rsvps').select('user_id', { count: 'exact', head: true }).eq('event_id', id),
         ]);
-        if (evRes.error) { console.error('event detail fetch:', evRes.error.message); return; }
-        if (evRes.data) setEvent(evRes.data as Event);
+        if (evRes.error || !evRes.data) { if (evRes.error) console.error('event detail fetch:', evRes.error.message); setNotFound(true); return; }
+        setEvent(evRes.data as Event);
         setGoing(!!rsvpRes.data);
         setGoingCount(countRes.count ?? 0);
       } catch (e) {
         console.error('EventDetail load:', e);
+        setNotFound(true);
       }
     })();
   }, [id, user?.id]);
@@ -97,7 +100,11 @@ export function EventDetailScreen({ route, navigation }: any) {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
         <SubBar title="Events" onBack={() => navigation.goBack()} />
-        <View style={styles.center}><ActivityIndicator color={C.brand} /></View>
+        <View style={styles.center}>
+          {notFound
+            ? <Text style={{ color: C.textMuted, fontFamily: FontFamily.jakartaMedium }}>{t.common.error}</Text>
+            : <ActivityIndicator color={C.brand} />}
+        </View>
       </SafeAreaView>
     );
   }
@@ -237,7 +244,7 @@ export function EventDetailScreen({ route, navigation }: any) {
         {isUpcoming && (
           <TouchableOpacity
             style={[styles.rsvpBtn, { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1, marginTop: 10 }]}
-            onPress={() => Linking.openURL(gcalLink(event))}
+            onPress={() => openUrl(gcalLink(event))}
             activeOpacity={0.8}
           >
             <View style={styles.btnRow}>
