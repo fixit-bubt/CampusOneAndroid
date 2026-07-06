@@ -62,8 +62,8 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
   const { C } = useTheme();
   const { user } = useAuth();
   const t = useT();
+  // Hooks must run unconditionally — the missing-param bail-out lives below them.
   const { itemId } = route.params ?? {};
-  if (!itemId) return null;
   const id = itemId;
 
   const toast = useToast();
@@ -81,6 +81,7 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
   const myClaim = claims.find(c => c.claimant_id === user?.id) ?? null;
 
   const load = useCallback(async () => {
+    if (!id) return;
     const [itemRes, claimsRes] = await Promise.all([
       supabase
         .from('lost_found_items')
@@ -189,6 +190,8 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
     if (url) openUrl(url);
     else toast({ type: 'error', title: t.common.error, message: t.common.loadingError });
   }
+
+  if (!itemId) return null;
 
   if (!item) {
     return (

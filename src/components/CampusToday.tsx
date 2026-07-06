@@ -6,6 +6,7 @@ import { useTheme } from '../hooks/useTheme';
 import { SectorIcon } from './ui/SectorIcon';
 import { FontFamily, type SectorKey } from '../theme';
 import { supabase } from '../lib/supabase';
+import { localToday } from '../utils/format';
 
 interface WidgetData {
   sector: SectorKey;
@@ -31,7 +32,7 @@ export function CampusToday({ navigation }: { navigation: any }) {
   const [widgets, setWidgets] = useState<WidgetData[]>([]);
 
   const load = useCallback(async () => {
-    const todayISO = new Date().toISOString().split('T')[0];
+    const todayISO = localToday();
     const nowMins = new Date().getHours() * 60 + new Date().getMinutes();
 
     const [busRes, prayerRes, annRes, evRes, jobsRes, bloodRes] = await Promise.all([

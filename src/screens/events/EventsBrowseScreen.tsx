@@ -30,7 +30,7 @@ function EventCard({ e, C, onPress }: { e: Event; C: any; onPress: () => void })
   const bg = `${fg}1e`;
   // Date-only compare so a today-dated event isn't mislabelled 'Past' while
   // the tab filter (also date-only) places it under Upcoming.
-  const isUpcoming = e.date >= new Date().toISOString().split('T')[0];
+  const isUpcoming = e.date >= localToday();
   return (
     <TouchableOpacity onPress={onPress} style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]} activeOpacity={0.75}>
       <View style={[styles.thumb, { backgroundColor: bg }]}>
@@ -109,7 +109,7 @@ export function EventsBrowseScreen({ navigation }: any) {
     setRefreshing(false);
   }
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = localToday();
   const byCat = category === 'All' ? events : events.filter(e => e.category === category);
   const upcoming = byCat.filter(e => e.date >= today);
   const past = byCat.filter(e => e.date < today);

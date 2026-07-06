@@ -64,6 +64,9 @@ export function OnboardingScreen() {
     }
     await refreshProfile();
     // RootNavigator re-evaluates: student_id now set -> onboarding gate clears.
+    // If the profile refetch failed (flaky network) the gate stays, so reset
+    // busy here or the button spins forever with no way to retry.
+    setBusy(false);
   }
 
   return (
@@ -185,7 +188,7 @@ function PickerSheet({ visible, title, C, data, onPick, onClose }: {
   visible: boolean; title: string; C: any; data: string[]; onPick: (v: string) => void; onClose: () => void;
 }) {
   return (
-    <Modal visible={visible} animationType="slide" transparent>
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={[styles.sheet, { backgroundColor: C.surface }]}>
           <View style={styles.handle}><View style={[styles.handleBar, { backgroundColor: C.border }]} /></View>

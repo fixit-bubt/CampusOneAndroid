@@ -11,6 +11,7 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout , SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { localToday } from '../../utils/format';
 import type { LostFoundItem } from '../../types/database';
 import { useT } from '../../i18n';
 
@@ -85,7 +86,7 @@ export function PostItemFormScreen({ route, navigation }: any) {
         category:    cat,
         description: desc.trim() || title.trim(),
         location:    loc.trim() || 'Campus',
-        item_date:   new Date().toISOString().split('T')[0],
+        item_date:   localToday(),
         status:      'Open',
         poster_id:   user?.id,
       }));

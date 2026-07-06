@@ -15,6 +15,7 @@ import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout , SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { openUrl } from '../../utils/link';
+import { localToday } from '../../utils/format';
 import type { Event } from '../../types/database';
 
 const CAT_COLOR: Record<string, string> = {
@@ -79,6 +80,7 @@ export function EventDetailScreen({ route, navigation }: any) {
         setGoingCount(c => Math.max(0, c - 1));
       } else {
         console.error('RSVP delete error:', error.message);
+        toast({ type: 'error', title: t.common.error });
       }
     } else {
       // Server-side capacity guard (atomic) instead of a raw insert that could
@@ -111,7 +113,7 @@ export function EventDetailScreen({ route, navigation }: any) {
 
   const fg = CAT_COLOR[event.category] ?? Accent.slate;
   const bg = `${fg}1e`;
-  const isUpcoming = event.date >= new Date().toISOString().split('T')[0];
+  const isUpcoming = event.date >= localToday();
   const isFull = !!(event.capacity && goingCount >= event.capacity && !going);
   const canDelete = profile?.role === 'admin' || (event as any).created_by === user?.id;
 
