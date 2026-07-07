@@ -58,6 +58,7 @@ import { EventPostScreen }         from '../screens/events/EventPostScreen';
 import { JobPostScreen }           from '../screens/jobs/JobPostScreen';
 import { AnnouncePostScreen }      from '../screens/announcements/AnnouncePostScreen';
 import { BloodRequestScreen }      from '../screens/blood/BloodRequestScreen';
+import { BloodRequestDetailScreen } from '../screens/blood/BloodRequestDetailScreen';
 import { DonorRegisterScreen }     from '../screens/blood/DonorRegisterScreen';
 import { ClubPostScreen }          from '../screens/clubs/ClubPostScreen';
 import { StudyUploadScreen }       from '../screens/study/StudyUploadScreen';
@@ -180,6 +181,7 @@ export function AppNavigator() {
       <Stack.Screen name="JobPost"        component={JobPostScreen} />
       <Stack.Screen name="AnnouncePost"   component={AnnouncePostScreen} />
       <Stack.Screen name="BloodRequest"   component={BloodRequestScreen} />
+      <Stack.Screen name="BloodRequestDetail" component={BloodRequestDetailScreen} />
       <Stack.Screen name="DonorRegister"  component={DonorRegisterScreen} />
       <Stack.Screen name="ClubPost"       component={ClubPostScreen} />
     </Stack.Navigator>

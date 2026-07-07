@@ -90,9 +90,10 @@ export type AppStackParams = {
   RideDetail: { rideId: string };
 
   // Blood
-  Blood:          undefined;
-  BloodRequest:   undefined;
-  DonorRegister:  undefined;
+  Blood:              undefined;
+  BloodRequest:       undefined;
+  BloodRequestDetail: { requestId: string };
+  DonorRegister:      undefined;
 
   // Directory
   Directory: undefined;

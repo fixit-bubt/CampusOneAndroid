@@ -14,6 +14,8 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
+import { localToday } from '../../utils/format';
+import { donorEligibility } from '../../utils/blood';
 import type { BloodRequest, Donor } from '../../types/database';
 
 type Tab = 'requests' | 'donors';
@@ -106,6 +108,27 @@ export function BloodScreen({ navigation }: any) {
     } finally {
       setBusyId(null);
     }
+  }
+
+  // Donor stamps their own last-donation date (RLS lets a donor update their
+  // own row). Resets their 90-day eligibility clock.
+  function markDonatedToday() {
+    Alert.alert(t.blood2.markDonatedTitle, t.blood2.markDonatedBody, [
+      { text: t.common.cancel, style: 'cancel' },
+      {
+        text: t.blood2.markDonatedConfirm,
+        onPress: async () => {
+          if (!user) return;
+          const { error } = await supabase
+            .from('donors')
+            .update({ last_donated: localToday() })
+            .eq('user_id', user.id);
+          if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
+          toast({ type: 'success', title: t.blood2.markedDonatedTitle, message: t.blood2.markedDonatedBody });
+          load();
+        },
+      },
+    ]);
   }
 
   function handleHelpPress(r: BloodRequest) {
@@ -255,7 +278,18 @@ export function BloodScreen({ navigation }: any) {
                       {t.blood2.unitsNeeded(r.area, r.units)}
                     </Text>
                   </View>
-                  {respondedIds.has(r.id) ? (
+                  {r.requester_id === user?.id ? (
+                    <TouchableOpacity
+                      style={[styles.pledgeBtn, { backgroundColor: C.surface2 }]}
+                      onPress={() => navigation.navigate('BloodRequestDetail', { requestId: r.id })}
+                      activeOpacity={0.75}
+                    >
+                      <Icon name="directory" size={15} color={C.text2} />
+                      <Text style={[styles.pledgeTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                        {t.blood2.manageResponses}
+                      </Text>
+                    </TouchableOpacity>
+                  ) : respondedIds.has(r.id) ? (
                     <TouchableOpacity
                       style={[styles.pledgeBtn, { backgroundColor: C.successBg }]}
                       onPress={() => revealRequester(r)}
@@ -305,38 +339,52 @@ export function BloodScreen({ navigation }: any) {
             {/* Donor list */}
             <View style={[styles.donorList, { backgroundColor: C.surface, borderColor: C.border }]}>
               {donors.filter(d => groupFilter === 'All' || d.blood_group === groupFilter).map((d, i) => {
-                // 90-day eligibility window
-                const eligible = !d.last_donated ||
-                  (Date.now() - new Date(d.last_donated).getTime()) / 86400000 >= 90;
+                const { eligible, daysLeft } = donorEligibility(d.last_donated);
+                const isMe = d.user_id === user?.id;
                 return (
                 <View key={d.user_id}>
                   {i > 0 && <View style={[styles.divider, { backgroundColor: C.border }]} />}
-                  <View style={styles.donorRow}>
+                  <View style={[styles.donorRow, !eligible && { opacity: 0.6 }]}>
                     <Avatar name={(d as any).profiles?.full_name} size="sm" />
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.donorName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                        {(d as any).profiles?.full_name ?? t.blood2.anonymous}
+                        {(d as any).profiles?.full_name ?? t.blood2.anonymous}{isMe ? ` ${t.blood2.youTag}` : ''}
                       </Text>
                       <Text style={[styles.donorMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
                         {t.blood2.donorMeta(d.area, d.last_donated ?? t.blood2.never)}
                       </Text>
                       <View style={[styles.eligPill, { backgroundColor: eligible ? C.successBg : C.warnBg }]}>
                         <Text style={[styles.eligTxt, { color: eligible ? C.success : C.warn, fontFamily: FontFamily.jakartaBold }]}>
-                          {eligible ? t.blood2.eligible : t.blood2.recentlyDonated}
+                          {eligible ? t.blood2.eligible : t.blood2.eligibleInDays(daysLeft)}
                         </Text>
                       </View>
                     </View>
                     <GroupBadge group={d.blood_group} size={34} />
-                    <TouchableOpacity
-                      style={[styles.contactBtn, { backgroundColor: BLOOD_BG, opacity: busyId === d.user_id ? 0.5 : 1 }]}
-                      onPress={() => revealContact(d.user_id, (d as any).profiles?.full_name)}
-                      activeOpacity={0.75}
-                      disabled={busyId === d.user_id}
-                    >
-                      <Text style={[styles.contactTxt, { color: BLOOD_COLOR, fontFamily: FontFamily.jakartaBold }]}>
-                        {busyId === d.user_id ? '…' : t.blood2.contact}
-                      </Text>
-                    </TouchableOpacity>
+                    {isMe ? (
+                      <TouchableOpacity
+                        style={[styles.contactBtn, { backgroundColor: C.successBg }]}
+                        onPress={markDonatedToday}
+                        activeOpacity={0.75}
+                      >
+                        <Text style={[styles.contactTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
+                          {t.blood2.iDonated}
+                        </Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity
+                        style={[styles.contactBtn, {
+                          backgroundColor: eligible ? BLOOD_BG : C.surface2,
+                          opacity: busyId === d.user_id ? 0.5 : 1,
+                        }]}
+                        onPress={() => revealContact(d.user_id, (d as any).profiles?.full_name)}
+                        activeOpacity={0.75}
+                        disabled={busyId === d.user_id || !eligible}
+                      >
+                        <Text style={[styles.contactTxt, { color: eligible ? BLOOD_COLOR : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                          {busyId === d.user_id ? '…' : t.blood2.contact}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
                 </View>
               );})}
