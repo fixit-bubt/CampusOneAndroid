@@ -4,6 +4,7 @@ export type AuthStackParams = {
   Landing: undefined;
   Login: undefined;
   Register: undefined;
+  ResetPassword: { email?: string } | undefined;
 };
 
 export type BottomTabParams = {

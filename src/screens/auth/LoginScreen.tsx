@@ -9,13 +9,12 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
-import { supabase } from '../../lib/supabase';
 import { Icon } from '../../components/ui/Icon';
 import { PasswordInput } from '../../components/ui/PasswordInput';
 import { GoogleButton, OrDivider } from '../../components/ui/GoogleButton';
 import { signInWithGoogle } from '../../lib/googleAuth';
 import { Brand } from './LandingScreen';
-import { FontFamily, Layout, Accent } from '../../theme';
+import { FontFamily, Layout } from '../../theme';
 import type { AuthStackParams } from '../../types/navigation';
 
 type Props = NativeStackScreenProps<AuthStackParams, 'Login'>;
@@ -31,7 +30,6 @@ export function LoginScreen({ navigation }: Props) {
   const [busyG, setBusyG] = useState(false);
   const busyRef = useRef(false);
   const [err, setErr]     = useState('');
-  const [resetSent, setResetSent] = useState(false);
 
   const ok = email.trim().length > 0 && pass.trim().length > 0;
 
@@ -48,25 +46,8 @@ export function LoginScreen({ navigation }: Props) {
     }
   }
 
-  async function handleForgotPassword() {
-    const addr = email.trim();
-    if (!addr) {
-      setErr(t.auth.forgotPasswordHint);
-      return;
-    }
-    setBusy(true);
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(addr);
-      if (error) {
-        setErr(error.message);
-      } else {
-        setResetSent(true);
-        setErr('');
-        setPass('');
-      }
-    } finally {
-      setBusy(false);
-    }
+  function handleForgotPassword() {
+    navigation.navigate('ResetPassword', { email: email.trim() || undefined });
   }
 
   async function handleContinue() {
@@ -121,7 +102,7 @@ export function LoginScreen({ navigation }: Props) {
           <TextInput
             style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaRegular }]}
             value={email}
-            onChangeText={v => { setEmail(v); setResetSent(false); }}
+            onChangeText={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
             placeholder="you@std.bubt.edu.bd"
@@ -147,12 +128,8 @@ export function LoginScreen({ navigation }: Props) {
             </Text>
           </TouchableOpacity>
 
-          {/* Error / reset confirmation */}
-          {resetSent ? (
-            <Text style={[styles.errText, { color: Accent.teal, fontFamily: FontFamily.jakartaMedium }]}>
-              {t.auth.resetLinkSent}
-            </Text>
-          ) : !!err && (
+          {/* Error */}
+          {!!err && (
             <Text style={[styles.errText, { color: C.danger, fontFamily: FontFamily.jakartaMedium }]}>
               {err}
             </Text>
