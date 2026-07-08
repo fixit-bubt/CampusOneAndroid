@@ -11,13 +11,15 @@ import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { SkeletonList, LoadError } from '../../components/ui/LoadState';
 import { FontFamily, Layout, SectorColors, Accent } from '../../theme';
-import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
-import { localToday } from '../../utils/format';
 import { donorEligibility } from '../../utils/blood';
-import type { BloodRequest, Donor } from '../../types/database';
+import {
+  getBloodFeed, pledgeToRequest, markDonatedToday as markDonated,
+  getDonorContact, getRequesterContact, type DonorWithName,
+} from '../../services/bloodService';
+import type { BloodRequest } from '../../types/database';
 
 type Tab = 'requests' | 'donors';
 
@@ -50,7 +52,7 @@ export function BloodScreen({ navigation }: any) {
   const [tab, setTab] = useState<Tab>('requests');
   const [groupFilter, setGroupFilter] = useState('All');
   const [requests, setRequests] = useState<BloodRequest[]>([]);
-  const [donors, setDonors]     = useState<Donor[]>([]);
+  const [donors, setDonors]     = useState<DonorWithName[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const toast = useToast();
   const [respondedIds, setRespondedIds] = useState<Set<string>>(new Set());
@@ -58,21 +60,11 @@ export function BloodScreen({ navigation }: any) {
   const [loadState, setLoadState] = useState<'loading' | 'error' | 'ready'>('loading');
 
   const load = useCallback(async () => {
-    // Hide fulfilled requests and age out stale ones (nothing auto-expires them
-    // server-side, so an abandoned request shouldn't linger in the feed forever).
-    const staleCutoff = new Date(Date.now() - 21 * 86400000).toISOString();
-    const [rRes, dRes, pRes] = await Promise.all([
-      supabase.from('blood_requests').select('*')
-        .is('fulfilled_at', null)
-        .gte('created_at', staleCutoff)
-        .order('created_at', { ascending: false }).limit(30),
-      supabase.from('donors').select('*, profiles:profiles!user_id(full_name)').limit(50),
-      supabase.from('blood_pledges').select('request_id').eq('donor_id', user?.id ?? ''),
-    ]);
-    if (rRes.error || dRes.error) { setLoadState('error'); return; }
-    if (rRes.data) setRequests(rRes.data as BloodRequest[]);
-    if (dRes.data) setDonors(dRes.data as any);
-    if (pRes.data) setRespondedIds(new Set(pRes.data.map((p: any) => p.request_id)));
+    const res = await getBloodFeed(user?.id);
+    if (!res.ok) { setLoadState('error'); return; }
+    setRequests(res.data.requests);
+    setDonors(res.data.donors);
+    setRespondedIds(res.data.respondedIds);
     setLoadState('ready');
   }, [user?.id]);
 
@@ -88,15 +80,12 @@ export function BloodScreen({ navigation }: any) {
     if (!user || busyId) return;
     setBusyId(donorUserId);
     try {
-      const { data, error } = await supabase.rpc('donor_contact', { p_user_id: donorUserId });
-      if (error) {
+      const res = await getDonorContact(donorUserId);
+      if (!res.ok) {
         toast({ type: 'error', title: t.common.error, message: t.blood2.revealContactError });
         return;
       }
-      // donor_contact returns json: { whatsapp }; use the name we already have.
-      const row = (Array.isArray(data) ? data[0] : data) as { whatsapp?: string | null } | null;
-      const contact = row?.whatsapp ?? t.blood2.notShared;
-      Alert.alert(donorName ?? t.blood2.contact, String(contact));
+      Alert.alert(donorName ?? t.blood2.contact, res.data ?? t.blood2.notShared);
     } finally {
       setBusyId(null);
     }
@@ -107,21 +96,19 @@ export function BloodScreen({ navigation }: any) {
     if (!user || busyId) return;
     setBusyId(r.id);
     try {
-      const { data, error } = await supabase.rpc('blood_requester_contact', { p_code: r.code });
-      if (error) {
+      const res = await getRequesterContact(r.code);
+      if (!res.ok) {
         toast({ type: 'error', title: t.common.error, message: t.blood2.revealContactError });
         return;
       }
-      const row = Array.isArray(data) ? data[0] : data;
-      if (!row) { toast({ type: 'info', title: t.blood2.notAvailable, message: t.blood2.contactDonorsOnly }); return; }
-      Alert.alert(row.name ?? t.blood2.requester, row.whatsapp ?? t.blood2.noWhatsapp);
+      if (!res.data) { toast({ type: 'info', title: t.blood2.notAvailable, message: t.blood2.contactDonorsOnly }); return; }
+      Alert.alert(res.data.name ?? t.blood2.requester, res.data.whatsapp ?? t.blood2.noWhatsapp);
     } finally {
       setBusyId(null);
     }
   }
 
-  // Donor stamps their own last-donation date (RLS lets a donor update their
-  // own row). Resets their 90-day eligibility clock.
+  // Donor stamps their own last-donation date; resets the 90-day clock.
   function markDonatedToday() {
     Alert.alert(t.blood2.markDonatedTitle, t.blood2.markDonatedBody, [
       { text: t.common.cancel, style: 'cancel' },
@@ -129,11 +116,8 @@ export function BloodScreen({ navigation }: any) {
         text: t.blood2.markDonatedConfirm,
         onPress: async () => {
           if (!user) return;
-          const { error } = await supabase
-            .from('donors')
-            .update({ last_donated: localToday() })
-            .eq('user_id', user.id);
-          if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
+          const res = await markDonated(user.id);
+          if (!res.ok) { toast({ type: 'error', title: t.common.error, message: res.error }); return; }
           toast({ type: 'success', title: t.blood2.markedDonatedTitle, message: t.blood2.markedDonatedBody });
           load();
         },
@@ -160,11 +144,8 @@ export function BloodScreen({ navigation }: any) {
           onPress: async () => {
             // Optimistically mark as responded so the user cannot double-tap
             setRespondedIds(prev => new Set(prev).add(r.id));
-            const { error } = await supabase.from('blood_pledges').insert({
-              request_id: r.id,
-              donor_id:   user.id,
-            });
-            if (error) {
+            const res = await pledgeToRequest(r.id, user.id);
+            if (!res.ok) {
               setRespondedIds(prev => {
                 const next = new Set(prev);
                 next.delete(r.id);

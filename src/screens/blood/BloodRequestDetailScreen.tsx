@@ -12,17 +12,10 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout, SectorColors } from '../../theme';
-import { supabase } from '../../lib/supabase';
 import { donorEligibility } from '../../utils/blood';
-
-interface Pledge {
-  donor_id: string;
-  full_name: string | null;
-  blood_group: string | null;
-  last_donated: string | null;
-  fulfilled_at: string | null;
-  pledged_at: string;
-}
+import {
+  getRequest, getResponders, confirmDonation, markRequestFulfilled, type Pledge,
+} from '../../services/bloodService';
 
 const BLOOD = SectorColors.blood;
 
@@ -41,11 +34,11 @@ export function BloodRequestDetailScreen({ route, navigation }: any) {
   const load = useCallback(async () => {
     if (!requestId) return;
     const [reqRes, plRes] = await Promise.all([
-      supabase.from('blood_requests').select('*').eq('id', requestId).maybeSingle(),
-      supabase.rpc('donor_pledges_for_request', { p_request_id: requestId }),
+      getRequest(requestId),
+      getResponders(requestId),
     ]);
-    if (reqRes.data) setReq(reqRes.data);
-    setPledges((plRes.data ?? []) as Pledge[]);
+    if (reqRes.ok && reqRes.data) setReq(reqRes.data);
+    if (plRes.ok) setPledges(plRes.data);
     setLoading(false);
   }, [requestId]);
 
@@ -67,14 +60,10 @@ export function BloodRequestDetailScreen({ route, navigation }: any) {
           text: t.blood2.confirmDonatedConfirm,
           onPress: async () => {
             setBusyId(p.donor_id);
-            const { data, error } = await supabase.rpc('confirm_blood_donation', {
-              p_request_id: requestId,
-              p_donor_id: p.donor_id,
-            });
+            const res = await confirmDonation(requestId, p.donor_id);
             setBusyId(null);
-            const res: any = Array.isArray(data) ? data[0] : data;
-            if (error || !res?.ok) {
-              toast({ type: 'error', title: t.common.error, message: res?.error ?? error?.message });
+            if (!res.ok) {
+              toast({ type: 'error', title: t.common.error, message: res.error });
               return;
             }
             toast({ type: 'success', title: t.blood2.confirmedTitle, message: t.blood2.confirmedBody });
@@ -92,10 +81,8 @@ export function BloodRequestDetailScreen({ route, navigation }: any) {
         text: t.blood2.markFulfilledConfirm,
         onPress: async () => {
           // RLS blood_req_update lets the requester update their own row.
-          const { error } = await supabase.from('blood_requests')
-            .update({ fulfilled_at: new Date().toISOString() })
-            .eq('id', requestId);
-          if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
+          const res = await markRequestFulfilled(requestId);
+          if (!res.ok) { toast({ type: 'error', title: t.common.error, message: res.error }); return; }
           toast({ type: 'success', title: t.blood2.fulfilledTitle, message: t.blood2.fulfilledBody });
           navigation.goBack();
         },
