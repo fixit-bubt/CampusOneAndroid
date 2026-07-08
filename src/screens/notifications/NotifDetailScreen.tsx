@@ -10,6 +10,7 @@ import { SectorIcon } from '../../components/ui/SectorIcon';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { resolveNotifTarget } from '../../utils/notifTarget';
 
 const SECTOR_LABELS: Record<string, string> = {
   reports: 'Reports', lostfound: 'Lost & Found', clubs: 'Clubs', events: 'Events',
@@ -18,18 +19,6 @@ const SECTOR_LABELS: Record<string, string> = {
   directory: 'Directory', prayer: 'Prayer', faculty: 'Faculty',
 };
 
-const SCREEN_MAP: Record<string, { screen: string; key: string }> = {
-  report:       { screen: 'ReportDetail',       key: 'reportId'       },
-  reports:      { screen: 'ReportDetail',       key: 'reportId'       },
-  event:        { screen: 'EventDetail',        key: 'eventId'        },
-  announcement: { screen: 'AnnouncementDetail', key: 'announcementId' },
-  club:         { screen: 'ClubDetail',         key: 'clubId'         },
-  lost_found:   { screen: 'LostFoundDetail',    key: 'itemId'         },
-  market:       { screen: 'MarketDetail',       key: 'listingId'      },
-  job:          { screen: 'JobDetail',          key: 'jobId'          },
-  // study material/question notifications carry the course UUID in reference_id.
-  study_course: { screen: 'CourseDetail',       key: 'courseId'       },
-};
 
 function timeAgo(iso: string): string {
   const secs = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -58,40 +47,9 @@ export function NotifDetailScreen({ route, navigation }: any) {
     navigation.goBack();
   }
 
-  // Resolve the related screen. Claim notifications carry the claim CODE in
-  // reference_id, so look up the item it belongs to before navigating.
   async function openRelated() {
-    if (!n.reference_id) return;
-    const refType = n.reference_type ?? '';
-    if (refType === 'claim') {
-      const { data } = await supabase
-        .from('claims')
-        .select('item_id')
-        .eq('code', n.reference_id)
-        .maybeSingle();
-      if (data?.item_id) navigation.navigate('LostFoundDetail' as any, { itemId: data.item_id });
-      return;
-    }
-    // Report + announcement notifications carry the CODE in reference_id, but
-    // their detail screens look up by UUID id — resolve code -> id first.
-    if (refType === 'report' || refType === 'reports') {
-      const { data } = await supabase.from('reports').select('id').eq('code', n.reference_id).maybeSingle();
-      if (data?.id) navigation.navigate('ReportDetail' as any, { reportId: data.id });
-      return;
-    }
-    if (refType === 'announcement') {
-      const { data } = await supabase.from('announcements').select('id').eq('code', n.reference_id).maybeSingle();
-      if (data?.id) navigation.navigate('AnnouncementDetail' as any, { announcementId: data.id });
-      return;
-    }
-    // Blood notifications carry a request code, and there's no public per-request
-    // detail for non-requesters — land the donor on the Blood screen.
-    if (refType === 'blood_request') {
-      navigation.navigate('Blood' as any);
-      return;
-    }
-    const m = SCREEN_MAP[refType];
-    if (m) navigation.navigate(m.screen as any, { [m.key]: n.reference_id });
+    const target = await resolveNotifTarget(n.reference_type, n.reference_id);
+    if (target) navigation.navigate(target.screen as any, target.params as any);
   }
 
   return (

@@ -9,6 +9,7 @@ import { AuthNavigator } from './AuthNavigator';
 import { AppNavigator } from './AppNavigator';
 import { OnboardingScreen } from '../screens/auth/OnboardingScreen';
 import { registerPushToken, addNotificationTapHandler } from '../lib/push';
+import { resolveNotifTarget } from '../utils/notifTarget';
 
 const navigationRef = createNavigationContainerRef();
 
@@ -22,18 +23,23 @@ export function RootNavigator() {
     if (user?.id) registerPushToken(user.id);
   }, [user?.id]);
 
-  // Tapping a push (app backgrounded/killed) opens the Alerts tab. On a cold
-  // start the navigator isn't mounted yet when the tap is delivered - retry
-  // briefly instead of dropping it.
+  // Tapping a push deep-links to the referenced item (falling back to the
+  // Alerts tab). On a cold start the navigator isn't mounted yet when the tap
+  // is delivered - retry briefly instead of dropping it.
   React.useEffect(() => {
-    const goToAlerts = (attempt = 0) => {
+    const go = (screen: string, params: object | undefined, attempt = 0) => {
       if (navigationRef.isReady()) {
-        (navigationRef.navigate as any)('Tabs', { screen: 'Notifications' });
+        (navigationRef.navigate as any)(screen, params);
       } else if (attempt < 10) {
-        setTimeout(() => goToAlerts(attempt + 1), 400);
+        setTimeout(() => go(screen, params, attempt + 1), 400);
       }
     };
-    return addNotificationTapHandler(() => goToAlerts());
+    return addNotificationTapHandler(async (data) => {
+      const target = await resolveNotifTarget(data.reference_type, data.reference_id)
+        .catch(() => null);
+      if (target) go(target.screen, target.params);
+      else go('Tabs', { screen: 'Notifications' });
+    });
   }, []);
 
   // Profile load failed — don't fall through to the student UI. Offer a retry.

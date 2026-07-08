@@ -65,13 +65,23 @@ export async function unregisterPushToken(): Promise<void> {
   } catch { /* nothing to remove */ }
 }
 
+export interface PushTapData {
+  sector?: string;
+  reference_id?: string;
+  reference_type?: string;
+}
+
+function tapData(r: Notifications.NotificationResponse): PushTapData {
+  return (r.notification.request.content.data ?? {}) as PushTapData;
+}
+
 // Fire `onTap` when the user taps a push. The listener only covers taps while
 // the app is alive; a tap that cold-started the app arrives as the "last
 // response" instead, so check that once on mount too.
-export function addNotificationTapHandler(onTap: () => void): () => void {
-  const sub = Notifications.addNotificationResponseReceivedListener(() => onTap());
+export function addNotificationTapHandler(onTap: (data: PushTapData) => void): () => void {
+  const sub = Notifications.addNotificationResponseReceivedListener(r => onTap(tapData(r)));
   Notifications.getLastNotificationResponseAsync()
-    .then(r => { if (r) onTap(); })
+    .then(r => { if (r) onTap(tapData(r)); })
     .catch(() => {});
   return () => sub.remove();
 }
