@@ -5,6 +5,7 @@
 // failures are swallowed and reported via the boolean return.
 
 import { Linking } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 
 /**
  * Open an external URL safely.
@@ -23,5 +24,23 @@ export async function openUrl(raw: string | null | undefined): Promise<boolean> 
     return true;
   } catch {
     return false;
+  }
+}
+
+/**
+ * Open a URL in an in-app browser tab (Android Custom Tab / iOS SafariViewController)
+ * so the user stays inside the app — used for previewing study files and docs.
+ * Falls back to openUrl if the in-app browser can't handle it.
+ */
+export async function openInApp(raw: string | null | undefined): Promise<boolean> {
+  const url = (raw ?? '').trim();
+  if (!url) return false;
+  const hasScheme = /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(url);
+  const final = hasScheme ? url : `https://${url}`;
+  try {
+    await WebBrowser.openBrowserAsync(final);
+    return true;
+  } catch {
+    return openUrl(final);
   }
 }

@@ -28,6 +28,11 @@ const FILE_TYPES = [
 const MATERIAL_TYPES = ['Class Note', 'Lecture Slide', 'Assignment', 'Reference', 'Lab Manual'];
 const BOOK_KINDS = ['Textbook', 'Reference', 'Syllabus'];
 
+// Lowercased file extension, used for the file-type icon + label on the course.
+function fileKindFrom(name: string): string {
+  return (name.split('.').pop() ?? '').toLowerCase().slice(0, 8);
+}
+
 interface PickedFile {
   uri: string;
   name: string;
@@ -120,6 +125,8 @@ export function StudyUploadScreen({ route, navigation }: any) {
           exam,
           title:        name.trim(),
           storage_path: storagePath,
+          file_kind:    pickedFile ? fileKindFrom(pickedFile.name) : null,
+          size_bytes:   pickedFile?.size ?? null,
           uploaded_by:  user.id,
         }));
       } else if (fileType === 'books') {
@@ -139,6 +146,8 @@ export function StudyUploadScreen({ route, navigation }: any) {
           type:         materialType,
           title:        name.trim(),
           storage_path: storagePath,
+          file_kind:    pickedFile ? fileKindFrom(pickedFile.name) : null,
+          size_bytes:   pickedFile?.size ?? null,
           uploaded_by:  user.id,
         }));
       }
