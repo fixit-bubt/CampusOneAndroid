@@ -85,6 +85,24 @@ export function BloodRequestDetailScreen({ route, navigation }: any) {
     );
   }
 
+  function markFulfilled() {
+    Alert.alert(t.blood2.markFulfilledTitle, t.blood2.markFulfilledBody, [
+      { text: t.common.cancel, style: 'cancel' },
+      {
+        text: t.blood2.markFulfilledConfirm,
+        onPress: async () => {
+          // RLS blood_req_update lets the requester update their own row.
+          const { error } = await supabase.from('blood_requests')
+            .update({ fulfilled_at: new Date().toISOString() })
+            .eq('id', requestId);
+          if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
+          toast({ type: 'success', title: t.blood2.fulfilledTitle, message: t.blood2.fulfilledBody });
+          navigation.goBack();
+        },
+      },
+    ]);
+  }
+
   if (loading) {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -114,6 +132,19 @@ export function BloodRequestDetailScreen({ route, navigation }: any) {
               </Text>
             </View>
           </View>
+        )}
+
+        {req && !req.fulfilled_at && (
+          <TouchableOpacity
+            style={[styles.fulfillBtn, { borderColor: C.success }]}
+            onPress={markFulfilled}
+            activeOpacity={0.85}
+          >
+            <Icon name="checkAll" size={16} color={C.success} />
+            <Text style={[styles.fulfillTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
+              {t.blood2.markFulfilled}
+            </Text>
+          </TouchableOpacity>
         )}
 
         <Text style={[styles.sectionTitle, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
@@ -186,6 +217,9 @@ const styles = StyleSheet.create({
   groupTxt: { fontSize: 15 } as any,
   reqPatient: { fontSize: 15 } as any,
   reqSub: { fontSize: 12.5, marginTop: 2 } as any,
+  fulfillBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    height: 46, borderRadius: 13, borderWidth: 1.5, marginBottom: 20 } as ViewStyle,
+  fulfillTxt: { fontSize: 14 } as any,
   sectionTitle: { fontSize: 12, letterSpacing: 0.5, marginBottom: 10, marginLeft: 2 } as any,
   list: { borderRadius: 16, borderWidth: 1, paddingHorizontal: 14 } as ViewStyle,
   divider: { height: StyleSheet.hairlineWidth } as ViewStyle,

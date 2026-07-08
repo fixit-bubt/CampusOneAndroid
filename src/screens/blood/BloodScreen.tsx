@@ -56,8 +56,14 @@ export function BloodScreen({ navigation }: any) {
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    // Hide fulfilled requests and age out stale ones (nothing auto-expires them
+    // server-side, so an abandoned request shouldn't linger in the feed forever).
+    const staleCutoff = new Date(Date.now() - 21 * 86400000).toISOString();
     const [rRes, dRes, pRes] = await Promise.all([
-      supabase.from('blood_requests').select('*').order('created_at', { ascending: false }).limit(30),
+      supabase.from('blood_requests').select('*')
+        .is('fulfilled_at', null)
+        .gte('created_at', staleCutoff)
+        .order('created_at', { ascending: false }).limit(30),
       supabase.from('donors').select('*, profiles:user_id(full_name)').limit(50),
       supabase.from('blood_pledges').select('request_id').eq('donor_id', user?.id ?? ''),
     ]);
