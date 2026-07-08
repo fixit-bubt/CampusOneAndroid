@@ -12,6 +12,7 @@
     },
     "android": {
       "package": "com.bubt.campusone",
+      "googleServicesFile": "./android/app/google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#2b5be3",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -37,7 +38,8 @@
       "expo-sharing",
       "@react-native-google-signin/google-signin",
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-notifications"
     ]
   }
 }
