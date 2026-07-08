@@ -65,8 +65,13 @@ export async function unregisterPushToken(): Promise<void> {
   } catch { /* nothing to remove */ }
 }
 
-// Fire `onTap` when the user taps a push (app backgrounded or killed).
+// Fire `onTap` when the user taps a push. The listener only covers taps while
+// the app is alive; a tap that cold-started the app arrives as the "last
+// response" instead, so check that once on mount too.
 export function addNotificationTapHandler(onTap: () => void): () => void {
   const sub = Notifications.addNotificationResponseReceivedListener(() => onTap());
+  Notifications.getLastNotificationResponseAsync()
+    .then(r => { if (r) onTap(); })
+    .catch(() => {});
   return () => sub.remove();
 }

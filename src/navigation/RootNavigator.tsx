@@ -22,13 +22,18 @@ export function RootNavigator() {
     if (user?.id) registerPushToken(user.id);
   }, [user?.id]);
 
-  // Tapping a push (app backgrounded/killed) opens the Alerts tab.
+  // Tapping a push (app backgrounded/killed) opens the Alerts tab. On a cold
+  // start the navigator isn't mounted yet when the tap is delivered - retry
+  // briefly instead of dropping it.
   React.useEffect(() => {
-    return addNotificationTapHandler(() => {
+    const goToAlerts = (attempt = 0) => {
       if (navigationRef.isReady()) {
         (navigationRef.navigate as any)('Tabs', { screen: 'Notifications' });
+      } else if (attempt < 10) {
+        setTimeout(() => goToAlerts(attempt + 1), 400);
       }
-    });
+    };
+    return addNotificationTapHandler(() => goToAlerts());
   }, []);
 
   // Profile load failed — don't fall through to the student UI. Offer a retry.

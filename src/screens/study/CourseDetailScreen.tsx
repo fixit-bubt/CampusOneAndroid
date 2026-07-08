@@ -127,11 +127,11 @@ export function CourseDetailScreen({ route, navigation }: any) {
     setLoading(false);
   }, [courseId, user, profile?.role]);
 
+  // 'focus' also fires on first mount, so this covers the initial load too.
   useEffect(() => {
     const unsub = navigation.addListener('focus', load);
     return unsub;
   }, [load, navigation]);
-  useEffect(() => { load(); }, [load]);
 
   async function openEntry(f: Entry) {
     if (openingId) return;
