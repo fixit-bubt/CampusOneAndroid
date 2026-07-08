@@ -127,7 +127,7 @@ export function MedicalQueueScreen({ navigation }: any) {
                   <View style={styles.cardTop}>
                     <View style={[styles.tokenBox, { backgroundColor: MED_BG }]}>
                       <Text style={[styles.tokenTxt, { color: MED_COLOR, fontFamily: FontFamily.jakartaExtraBold }]}>
-                        {a.token ?? '—'}
+                        {a.token ?? '-'}
                       </Text>
                     </View>
                     <View style={{ flex: 1, minWidth: 0 }}>

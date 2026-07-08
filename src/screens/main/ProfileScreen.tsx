@@ -158,7 +158,7 @@ function AddSheet({ C, onClose, onAdd, t }: { C: any; onClose: () => void; onAdd
 
   function submit() {
     if (!ok) return;
-    onAdd({ id: `tmp-${Date.now()}`, cat, title: title.trim(), org: org.trim(), year: year.trim() || '—' });
+    onAdd({ id: `tmp-${Date.now()}`, cat, title: title.trim(), org: org.trim(), year: year.trim() || '-' });
     setTitle(''); setOrg(''); setYear(''); setCat('award');
     onClose();
   }
@@ -190,7 +190,7 @@ function AddSheet({ C, onClose, onAdd, t }: { C: any; onClose: () => void; onAdd
           <TextInput
             style={[sheetStyles.input, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
             value={title} onChangeText={setTitle}
-            placeholder="e.g. Dean's List — Spring 2026" placeholderTextColor={C.textMuted}
+            placeholder="e.g. Dean's List - Spring 2026" placeholderTextColor={C.textMuted}
           />
 
           <Text style={[sheetStyles.flabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.mainx.fieldOrgDetail}</Text>
@@ -392,7 +392,7 @@ export function ProfileScreen({ navigation }: any) {
         if (up.success) {
           await supabase.from('profiles').update({ avatar_url: up.url }).eq('id', user.id);
         } else {
-          toast({ type: 'info', title: 'Saved', message: 'Profile saved. Photo upload failed — please try the photo again later.' });
+          toast({ type: 'info', title: 'Saved', message: 'Profile saved. Photo upload failed - please try the photo again later.' });
         }
       }
       await refreshProfile();
@@ -550,7 +550,7 @@ export function ProfileScreen({ navigation }: any) {
                   </View>
                 </View>
                 <Text style={[styles.heroMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                  {profile?.department ?? '—'}{profile?.intake ? ` · Intake ${profile.intake}` : ''}
+                  {profile?.department ?? '-'}{profile?.intake ? ` · Intake ${profile.intake}` : ''}
                   {profile?.section ? ` · Sec ${profile.section}` : ''}
                 </Text>
                 {(profile?.student_id || profile?.blood_group || profile?.program) ? (

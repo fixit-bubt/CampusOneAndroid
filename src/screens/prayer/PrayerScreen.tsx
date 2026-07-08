@@ -183,14 +183,14 @@ export function PrayerScreen({ navigation }: any) {
             <View style={styles.ramadanCell}>
               <Text style={[styles.ramadanLbl, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.prayer2.sehriEnds}</Text>
               <Text style={[styles.ramadanVal, { color: PRAYER_GREEN, fontFamily: FontFamily.jakartaExtraBold }]}>
-                {prayers.find(p => p.key === 'fajr')?.azan ?? '—'}
+                {prayers.find(p => p.key === 'fajr')?.azan ?? '-'}
               </Text>
             </View>
             <View style={[styles.ramadanDiv, { backgroundColor: `${PRAYER_GREEN}44` }]} />
             <View style={styles.ramadanCell}>
               <Text style={[styles.ramadanLbl, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.prayer2.iftar}</Text>
               <Text style={[styles.ramadanVal, { color: PRAYER_GREEN, fontFamily: FontFamily.jakartaExtraBold }]}>
-                {prayers.find(p => p.key === 'maghrib')?.azan ?? '—'}
+                {prayers.find(p => p.key === 'maghrib')?.azan ?? '-'}
               </Text>
             </View>
           </View>

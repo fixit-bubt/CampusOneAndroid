@@ -247,7 +247,7 @@ export function MyReportsScreen({ navigation }: any) {
                   <View style={styles.cardMeta}>
                     <Icon name="user" size={12} color={C.textMuted} />
                     <Text style={[styles.cardMetaTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                      {isOwn ? t.reports.scopeMine : `${t.reports.byLabel} ${r.reporter_name ?? '—'}`}
+                      {isOwn ? t.reports.scopeMine : `${t.reports.byLabel} ${r.reporter_name ?? '-'}`}
                     </Text>
                   </View>
                 </View>

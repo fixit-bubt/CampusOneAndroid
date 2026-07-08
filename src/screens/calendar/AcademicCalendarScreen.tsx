@@ -304,7 +304,7 @@ export function AcademicCalendarScreen({ navigation }: any) {
                     <Pill label={typeLabel(ev.event_type)} customColor={TYPE_COLOR[ev.event_type]} />
                   </View>
                   <Text style={[styles.eventDate, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
-                    {formatDate(ev.event_date)}{ev.end_date ? ` — ${formatDate(ev.end_date)}` : ''}
+                    {formatDate(ev.event_date)}{ev.end_date ? ` - ${formatDate(ev.end_date)}` : ''}
                   </Text>
                   {ev.description ? (
                     <Text style={[styles.eventDesc, { color: C.text3, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={2}>

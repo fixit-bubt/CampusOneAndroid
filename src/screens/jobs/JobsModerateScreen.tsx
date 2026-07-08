@@ -176,7 +176,7 @@ export function JobsModerateScreen({ navigation }: any) {
                   <View style={[styles.reasons, { borderTopColor: C.border }]}>
                     {j.reports.slice(0, 4).map((r, i) => (
                       <Text key={i} style={[styles.reasonTxt, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                        • {r.reason}{r.note ? ` — ${r.note}` : ''}
+                        • {r.reason}{r.note ? ` - ${r.note}` : ''}
                       </Text>
                     ))}
                   </View>

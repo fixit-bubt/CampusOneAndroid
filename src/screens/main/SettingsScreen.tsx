@@ -109,7 +109,7 @@ export function SettingsScreen({ navigation }: any) {
               {profile?.full_name ?? t.mainx.campusMember}
             </Text>
             <Text style={[styles.profileMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-              {profile?.department ?? '—'}{profile?.intake ? ` · Intake ${profile.intake}` : ''}
+              {profile?.department ?? '-'}{profile?.intake ? ` · Intake ${profile.intake}` : ''}
             </Text>
             <View style={[styles.rolePill, { backgroundColor: roleBg }]}>
               <View style={[styles.roleDot, { backgroundColor: roleHex }]} />

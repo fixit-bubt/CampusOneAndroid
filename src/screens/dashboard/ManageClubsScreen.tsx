@@ -288,7 +288,7 @@ export function ManageClubsScreen({ navigation }: any) {
         <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setPresTarget(null)} />
         <View style={[styles.sheet, { backgroundColor: C.surface }]}>
           <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-            {t.clubs.assignPresident} — {presTarget?.name}
+            {t.clubs.assignPresident} - {presTarget?.name}
           </Text>
           <View style={[styles.searchBar, { backgroundColor: C.bg, borderColor: C.border }]}>
             <Icon name="search" size={16} color={C.textMuted} />

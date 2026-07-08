@@ -80,7 +80,7 @@ const SECTOR_INFO: Record<string, {
   },
   market: {
     label: 'Marketplace',
-    description: 'Buy and sell items within the campus community — books, electronics, and more.',
+    description: 'Buy and sell items within the campus community - books, electronics, and more.',
     caps: ['Browse listings', 'Post items for sale', 'Contact sellers', 'Mark items as sold'],
     cta: 'Browse Marketplace',
     route: 'Market',

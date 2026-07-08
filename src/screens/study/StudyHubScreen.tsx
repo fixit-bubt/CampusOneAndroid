@@ -771,7 +771,7 @@ export function StudyHubScreen({ navigation }: any) {
     if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }
     if (data && data.ok === false) { toast({ type: 'error', title: 'Error', message: data.error ?? 'Could not approve' }); return; }
     setAdminReqs(r => r.filter(x => x.id !== id));
-    flash(`Approved — join code ${data?.joinCode ?? 'generated'}`);
+    flash(`Approved - join code ${data?.joinCode ?? 'generated'}`);
   }
 
   async function rejectAdminReq(note: string) {
@@ -908,7 +908,7 @@ export function StudyHubScreen({ navigation }: any) {
         </View>
 
         {/* CR code card */}
-        {isCr && <CodeCard code={mySection.join_code ?? '—'} copied={copied} onCopy={copyCode} C={C} />}
+        {isCr && <CodeCard code={mySection.join_code ?? '-'} copied={copied} onCopy={copyCode} C={C} />}
 
         {/* Manage section button (CR only) */}
         {isCr && (
@@ -1020,7 +1020,7 @@ export function StudyHubScreen({ navigation }: any) {
     return (
       <View>
         {/* Code card */}
-        <CodeCard code={mySection.join_code ?? '—'} copied={copied} onCopy={copyCode} C={C} />
+        <CodeCard code={mySection.join_code ?? '-'} copied={copied} onCopy={copyCode} C={C} />
 
         {/* Join requests */}
         {joinReqs.length > 0 && (
@@ -1296,7 +1296,7 @@ export function StudyHubScreen({ navigation }: any) {
                     <View style={{ flex: 1 }}>
                       <Text style={[s.reqName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Intake {ik.number}</Text>
                       <Text style={[s.reqTime, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                        {ik.years ?? '—'} · {ik.is_public ? t.study2.public : t.study2.private}
+                        {ik.years ?? '-'} · {ik.is_public ? t.study2.public : t.study2.private}
                       </Text>
                     </View>
                     <Feather name={open ? 'chevron-up' : 'chevron-down'} size={18} color={C.textMuted} />
@@ -1309,7 +1309,7 @@ export function StudyHubScreen({ navigation }: any) {
                           <View style={{ flex: 1 }}>
                             <Text style={[s.reqName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Sec {sec.number}</Text>
                             <Text style={[s.reqTime, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                              Code {sec.join_code ?? '—'} · CR {sec.cr_name ?? 'none'}
+                              Code {sec.join_code ?? '-'} · CR {sec.cr_name ?? 'none'}
                             </Text>
                           </View>
                           <TouchableOpacity

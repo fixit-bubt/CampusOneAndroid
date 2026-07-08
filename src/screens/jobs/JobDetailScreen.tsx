@@ -212,7 +212,7 @@ export function JobDetailScreen({ route, navigation }: any) {
           <>
             <View style={[styles.removedBanner, { backgroundColor: C.dangerBg }]}>
               <Text style={[styles.removedText, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
-                This listing has been removed{job.removed_reason ? ` — ${job.removed_reason}` : ''}
+                This listing has been removed{job.removed_reason ? ` - ${job.removed_reason}` : ''}
               </Text>
             </View>
             {isAdmin && (

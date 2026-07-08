@@ -172,7 +172,7 @@ export function ManageUsersScreen({ navigation }: any) {
                       {u.full_name}
                     </Text>
                     <Text style={[styles.meta, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                      {u.department ?? t.manage.emDash}{u.intake ? t.manage.intakeLabel(u.intake) : ''}
+                      {u.department ?? '-'}{u.intake ? t.manage.intakeLabel(u.intake) : ''}
                     </Text>
                     {u.role === 'staff' && (
                       <TouchableOpacity

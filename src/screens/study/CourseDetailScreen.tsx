@@ -190,7 +190,7 @@ export function CourseDetailScreen({ route, navigation }: any) {
         <View style={[styles.filesList, { backgroundColor: C.surface, borderColor: C.border }]}>
           {tabFiles.length === 0 ? (
             <View style={styles.empty}>
-              <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaSemiBold }]}>—</Text>
+              <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaSemiBold }]}>-</Text>
             </View>
           ) : tabFiles.map((f, i) => (
             <View key={f.id}>
