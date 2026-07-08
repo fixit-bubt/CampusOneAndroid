@@ -230,7 +230,9 @@ const styles = StyleSheet.create({
   sub: { fontSize: 13.5, lineHeight: 19, marginBottom: 6 } as any,
   label: { fontSize: 13, marginBottom: 6, marginTop: 14 } as any,
   input: { height: 50, borderRadius: 14, borderWidth: 1.5, paddingHorizontal: 14, fontSize: 15 } as any,
-  codeInput: { letterSpacing: 8, textAlign: 'center', fontSize: 20 } as any,
+  // letterSpacing on Android adds a trailing gap after the last digit, which
+  // shifts centered text off to the side; keep it small so the box stays centred.
+  codeInput: { letterSpacing: 3, textAlign: 'center', textAlignVertical: 'center', includeFontPadding: false, fontSize: 22 } as any,
   msg: { fontSize: 13, marginTop: 10 } as any,
   btnPrimary: { height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
   btnRow: { flexDirection: 'row', alignItems: 'center', gap: 6 } as ViewStyle,
