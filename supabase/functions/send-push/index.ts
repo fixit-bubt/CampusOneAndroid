@@ -5,10 +5,10 @@
 // Google OAuth token from the Firebase service account (FCM_SERVICE_ACCOUNT
 // secret), and posts to FCM v1. Invalid tokens are pruned.
 //
-// Required secrets (supabase secrets set ...):
+// Required secret (dashboard -> Edge Functions -> Secrets):
 //   FCM_SERVICE_ACCOUNT  - the full Firebase service-account JSON (as a string)
-//   PUSH_SECRET          - shared secret; the DB trigger sends it as x-push-secret
-// Auto-provided by the platform: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
+// The shared push_secret lives in the app_config table (read via service role),
+// not an env var. Auto-provided: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
 
 interface Payload {
   user_id: string;
@@ -72,8 +72,19 @@ async function getAccessToken(sa: any): Promise<string> {
 
 Deno.serve(async (req) => {
   try {
-    const pushSecret = Deno.env.get('PUSH_SECRET');
-    if (pushSecret && req.headers.get('x-push-secret') !== pushSecret) {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+    // Shared-secret gate: the DB trigger sends x-push-secret from a private
+    // app_config row. Reject anything that doesn't match (the public anon key
+    // alone is not enough to forge a push).
+    const cfgRes = await fetch(
+      `${supabaseUrl}/rest/v1/app_config?key=eq.push_secret&select=value`,
+      { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
+    );
+    const cfg = (await cfgRes.json()) as { value: string }[];
+    const expected = cfg?.[0]?.value;
+    if (expected && req.headers.get('x-push-secret') !== expected) {
       return new Response('forbidden', { status: 403 });
     }
 
@@ -83,9 +94,6 @@ Deno.serve(async (req) => {
     const saRaw = Deno.env.get('FCM_SERVICE_ACCOUNT');
     if (!saRaw) return new Response('FCM not configured', { status: 500 });
     const sa = JSON.parse(saRaw);
-
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
     // Fetch this user's device tokens.
     const tokRes = await fetch(
