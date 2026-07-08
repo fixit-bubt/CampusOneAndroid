@@ -4,6 +4,7 @@
 import React, { createContext, useContext, useEffect, useReducer, useRef } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { unregisterPushToken } from '../lib/push';
 import type { Profile } from '../types/database';
 
 interface AuthState {
@@ -124,6 +125,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function signOut() {
     reqIdRef.current++; // invalidate any in-flight profile fetch
+    await unregisterPushToken(); // stop pushes to this device (shared phones)
     try {
       await supabase.auth.signOut();
     } catch (e) {

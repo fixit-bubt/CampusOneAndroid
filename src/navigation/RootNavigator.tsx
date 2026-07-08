@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { useAuth } from '../store/authStore';
 import { useTheme } from '../hooks/useTheme';
 import { useT } from '../i18n';
@@ -8,11 +8,28 @@ import { FontFamily } from '../theme';
 import { AuthNavigator } from './AuthNavigator';
 import { AppNavigator } from './AppNavigator';
 import { OnboardingScreen } from '../screens/auth/OnboardingScreen';
+import { registerPushToken, addNotificationTapHandler } from '../lib/push';
+
+const navigationRef = createNavigationContainerRef();
 
 export function RootNavigator() {
-  const { session, profile, loading, profileLoaded, profileError, refreshProfile } = useAuth();
+  const { session, user, profile, loading, profileLoaded, profileError, refreshProfile } = useAuth();
   const { C } = useTheme();
   const t = useT();
+
+  // Register this device's FCM token once the user is signed in.
+  React.useEffect(() => {
+    if (user?.id) registerPushToken(user.id);
+  }, [user?.id]);
+
+  // Tapping a push (app backgrounded/killed) opens the Alerts tab.
+  React.useEffect(() => {
+    return addNotificationTapHandler(() => {
+      if (navigationRef.isReady()) {
+        (navigationRef.navigate as any)('Tabs', { screen: 'Notifications' });
+      }
+    });
+  }, []);
 
   // Profile load failed — don't fall through to the student UI. Offer a retry.
   if (session && profileError && !profileLoaded) {
@@ -51,7 +68,7 @@ export function RootNavigator() {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       {session ? <AppNavigator /> : <AuthNavigator />}
     </NavigationContainer>
   );
