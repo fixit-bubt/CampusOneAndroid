@@ -50,7 +50,7 @@ function reducer(state: AuthState, action: AuthAction): AuthState {
 
 interface AuthContextValue extends AuthState {
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, fullName: string) => Promise<void>;
+  signUp: (email: string, password: string, fullName: string) => Promise<{ needsVerification: boolean }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -113,7 +113,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function signUp(email: string, password: string, fullName: string) {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { data: { full_name: fullName } },
@@ -123,6 +123,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // (SECURITY DEFINER) from options.data.full_name + email, role='student'.
     // Don't upsert from the client: profiles has no INSERT policy, so the
     // upsert fails with 42501 and used to break registration entirely.
+    //
+    // With "Confirm email" ON in the dashboard, signUp returns no session and
+    // the user must enter the emailed code first (VerifyEmail screen). With
+    // auto-confirm the session opens immediately and this stays false.
+    return { needsVerification: !data.session };
   }
 
   async function signOut() {

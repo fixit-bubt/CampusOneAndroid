@@ -70,7 +70,9 @@ export function RegisterScreen({ navigation }: Props) {
         setErr(t.auth.emailTaken);
         return;
       }
-      await signUp(emailVal, pass, name.trim());
+      const { needsVerification } = await signUp(emailVal, pass, name.trim());
+      // With email confirmation on there's no session yet - collect the code.
+      if (needsVerification) navigation.navigate('VerifyEmail', { email: emailVal });
     } catch (e: any) {
       setErr(e?.message ?? t.auth.registerFailed);
     } finally {

@@ -58,6 +58,11 @@ export function LoginScreen({ navigation }: Props) {
     try {
       await signIn(email.trim(), pass);
     } catch (e: any) {
+      // Account exists but never entered the signup code - send them there.
+      if (/not confirmed/i.test(e?.message ?? '')) {
+        navigation.navigate('VerifyEmail', { email: email.trim() });
+        return;
+      }
       setErr(e?.message ?? t.auth.loginFailed);
     } finally {
       busyRef.current = false;
