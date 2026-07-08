@@ -27,6 +27,8 @@ const SCREEN_MAP: Record<string, { screen: string; key: string }> = {
   lost_found:   { screen: 'LostFoundDetail',    key: 'itemId'         },
   market:       { screen: 'MarketDetail',       key: 'listingId'      },
   job:          { screen: 'JobDetail',          key: 'jobId'          },
+  // study material/question notifications carry the course UUID in reference_id.
+  study_course: { screen: 'CourseDetail',       key: 'courseId'       },
 };
 
 function timeAgo(iso: string): string {
@@ -80,6 +82,12 @@ export function NotifDetailScreen({ route, navigation }: any) {
     if (refType === 'announcement') {
       const { data } = await supabase.from('announcements').select('id').eq('code', n.reference_id).maybeSingle();
       if (data?.id) navigation.navigate('AnnouncementDetail' as any, { announcementId: data.id });
+      return;
+    }
+    // Blood notifications carry a request code, and there's no public per-request
+    // detail for non-requesters — land the donor on the Blood screen.
+    if (refType === 'blood_request') {
+      navigation.navigate('Blood' as any);
       return;
     }
     const m = SCREEN_MAP[refType];
