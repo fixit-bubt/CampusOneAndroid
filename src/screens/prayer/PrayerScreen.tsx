@@ -30,10 +30,10 @@ interface PrayerTime {
 }
 
 interface Musallah {
-  id: string;
+  id: number;
   name: string;
-  floor_desc: string | null;
-  sort: number | null;
+  floor_desc: string;
+  sort: number;
 }
 
 function computeNext(prayers: PrayerTime[]): PrayerTime | undefined {
@@ -72,7 +72,7 @@ export function PrayerScreen({ navigation }: any) {
   const [view, setView] = useState<'today' | 'month'>('today');
   const [editPrayer, setEditPrayer] = useState<PrayerTime | null>(null);
   const [jamaatInput, setJamaatInput] = useState('');
-  const [musEdit, setMusEdit] = useState<{ id: string | null; name: string; floor_desc: string } | null>(null);
+  const [musEdit, setMusEdit] = useState<{ id: number | null; name: string; floor_desc: string } | null>(null);
 
   const load = useCallback(async () => {
     const [{ data }, { data: mus }] = await Promise.all([

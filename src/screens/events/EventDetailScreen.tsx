@@ -115,7 +115,7 @@ export function EventDetailScreen({ route, navigation }: any) {
   const bg = `${fg}1e`;
   const isUpcoming = event.date >= localToday();
   const isFull = !!(event.capacity && goingCount >= event.capacity && !going);
-  const canDelete = profile?.role === 'admin' || (event as any).created_by === user?.id;
+  const canDelete = profile?.role === 'admin' || event.created_by === user?.id;
 
   function deleteEvent() {
     Alert.alert('Delete event?', event!.title, [

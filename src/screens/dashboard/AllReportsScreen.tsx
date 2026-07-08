@@ -99,7 +99,7 @@ export function AllReportsScreen({ navigation }: any) {
     .filter(r => category === 'All' || r.category === category)
     .filter(r => {
       if (!q) return true;
-      const code = (r as any).code ?? '';
+      const code = r.code ?? '';
       return [r.category, r.description, r.building, code]
         .filter(Boolean).join(' ').toLowerCase().includes(q);
     });
@@ -218,7 +218,7 @@ export function AllReportsScreen({ navigation }: any) {
         ListFooterComponent={<View style={{ height: 20 }} />}
         renderItem={({ item: r }) => {
           const tone = statusTone(C, r.status);
-          const code = (r as any).code ?? ('RPT-' + r.id.replace(/\D/g, '').padStart(4, '0').slice(-4));
+          const code = r.code ?? ('RPT-' + r.id.replace(/\D/g, '').padStart(4, '0').slice(-4));
           return (
             <TouchableOpacity
               style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}

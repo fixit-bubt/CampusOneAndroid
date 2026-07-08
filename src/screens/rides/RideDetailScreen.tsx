@@ -39,7 +39,7 @@ export function RideDetailScreen({ route, navigation }: any) {
     const [rideRes, reqRes, takenRes, countRes] = await Promise.all([
       supabase
         .from('rides')
-        .select('*, profiles:driver_id(full_name)')
+        .select('*, profiles:profiles!driver_id(full_name)')
         .eq('id', rideId)
         .maybeSingle(),
       supabase
@@ -51,7 +51,7 @@ export function RideDetailScreen({ route, navigation }: any) {
       // RLS only returns the driver's own ride rows here; used for requester names.
       supabase
         .from('ride_requests')
-        .select('requester_id, profiles:requester_id(full_name)')
+        .select('requester_id, profiles:profiles!requester_id(full_name)')
         .eq('ride_id', rideId),
       // Authoritative seat count (row SELECT is restricted, so count via RPC).
       supabase.rpc('ride_request_counts'),

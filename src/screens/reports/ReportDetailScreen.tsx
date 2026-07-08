@@ -63,7 +63,7 @@ export function ReportDetailScreen({ route, navigation }: any) {
 
   const reportId = report?.id ?? paramReportId ?? '';
 
-  const code = report ? ((report as any).code ?? ('RPT-' + report.id.replace(/\D/g, '').padStart(4, '0').slice(-4))) : '…';
+  const code = report ? (report.code ?? ('RPT-' + report.id.replace(/\D/g, '').padStart(4, '0').slice(-4))) : '…';
   const cat = report ? (CAT_MAP[report.category] ?? { icon: 'wrench', fg: Accent.slate }) : { icon: 'wrench', fg: Accent.slate };
   const statusStyle = report ? (statusTone(C, report.status)) : { text: Accent.slate, bg: Accent.grayBg };
   const isMine = report?.reporter_id === user?.id;
@@ -100,7 +100,7 @@ export function ReportDetailScreen({ route, navigation }: any) {
 
     if (currentReport?.reporter_id && !currentReport?.reporter_name) {
       const { data } = await supabase.from('profiles').select('full_name').eq('id', currentReport.reporter_id).maybeSingle();
-      if (data) setReporterName((data as any).full_name);
+      if (data) setReporterName(data.full_name);
     }
     if (currentReport?.assigned_staff_id) {
       const { data } = await supabase.from('profiles').select('full_name').eq('id', currentReport.assigned_staff_id).maybeSingle();

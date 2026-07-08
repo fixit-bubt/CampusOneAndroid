@@ -45,7 +45,7 @@ export function ClubManageScreen({ route, navigation }: any) {
     (async () => {
       const [clubRes, membersRes] = await Promise.all([
         supabase.from('clubs').select('name, tagline, about, category, faculty_advisor_id, cover_url').eq('id', id).single(),
-        supabase.from('club_members').select('*, profiles:user_id(full_name)').eq('club_id', id),
+        supabase.from('club_members').select('*, profiles:profiles!user_id(full_name)').eq('club_id', id),
       ]);
       if (clubRes.data) {
         setName(clubRes.data.name ?? '');
@@ -69,14 +69,16 @@ export function ClubManageScreen({ route, navigation }: any) {
     if (!name.trim()) return;
     setSaving(true);
     // club_update_details RPC — RLS-safe edit path.
+    // Omitted args fall back to the SQL defaults (null) - same result as
+    // passing null, which the generated arg types don't allow.
     const { error } = await supabase.rpc('club_update_details', {
       p_club_id: id,
       p_name: name.trim(),
-      p_tagline: tagline.trim() || null,
-      p_about: about.trim() || null,
+      p_tagline: tagline.trim() || undefined,
+      p_about: about.trim() || undefined,
       p_category: category,
-      p_advisor: advisor,
-      p_cover_url: coverUrl,
+      p_advisor: advisor ?? undefined,
+      p_cover_url: coverUrl ?? undefined,
     });
     setSaving(false);
     if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }

@@ -16,23 +16,13 @@ import { FontFamily, Layout , SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { localToday } from '../../utils/format';
 import { useAuth } from '../../store/authStore';
+import type { Ride as RideRow } from '../../types/database';
 
 const RIDE_COLOR = SectorColors.ride;
 const RIDE_BG    = `${SectorColors.ride}1e`;
 
-interface Ride {
-  id: string;
-  code: string;
-  origin: string;
-  destination: string;
-  date: string;
-  time: string;
-  seats_total: number;
-  fare: number;
-  driver_id: string;
-  driver_name?: string;
-  created_at: string;
-}
+// Schema-derived row + the joined driver name the list query flattens in.
+type Ride = RideRow & { driver_name?: string };
 
 export function RidesScreen({ navigation }: any) {
   const { C } = useTheme();
@@ -52,7 +42,7 @@ export function RidesScreen({ navigation }: any) {
     const [ridesRes, reqRes, countRes] = await Promise.all([
       supabase
         .from('rides')
-        .select('*, profiles:driver_id(full_name)')
+        .select('*, profiles:profiles!driver_id(full_name)')
         .gte('date', localToday())
         .order('date')
         .order('time')
@@ -144,7 +134,7 @@ export function RidesScreen({ navigation }: any) {
         {(() => {
           // chip id ('to'/'from') -> stored direction value ('To Campus'/'From Campus')
           const want = direction === 'to' ? 'To Campus' : 'From Campus';
-          const filteredRides = direction === 'all' ? rides : rides.filter(r => (r as any).direction === want);
+          const filteredRides = direction === 'all' ? rides : rides.filter(r => r.direction === want);
           if (loading && rides.length === 0) {
             return <ActivityIndicator style={{ marginTop: 60 }} color={C.brand} />;
           }

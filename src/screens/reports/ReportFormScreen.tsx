@@ -90,7 +90,7 @@ export function ReportFormScreen({ route, navigation }: any) {
         const lines = (data.description ?? '').split('\n');
         setTitle(lines[0] ?? '');
         setDesc(lines.slice(1).join('\n'));
-        setCat(data.category ?? null);
+        setCat((data.category as Report['category']) ?? null);
         // Parse the stored "Building N" / "<floor> floor · <place> ..." strings back
         // into the structured fields so an edit round-trips instead of cumulatively
         // corrupting the location (e.g. re-prefixing "Ground floor · Other ·").

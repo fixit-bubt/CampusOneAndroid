@@ -80,13 +80,13 @@ export function BusScreen({ navigation }: any) {
     setForm(r ? {
       id: r.id,
       name: r.name ?? '',
-      area: (r as any).area ?? '',
-      bus_no: (r as any).bus_no ?? '',
-      helper_name: (r as any).helper_name ?? '',
-      helper_phone: (r as any).helper_phone ?? '',
+      area: r.area ?? '',
+      bus_no: r.bus_no ?? '',
+      helper_name: r.helper_name ?? '',
+      helper_phone: r.helper_phone ?? '',
       stops: csv(r.stops),
       to_departures: csv(r.to_departures),
-      from_departures: csv((r as any).from_departures),
+      from_departures: csv(r.from_departures),
     } : {
       id: null, name: '', area: '', bus_no: '', helper_name: '', helper_phone: '',
       stops: '', to_departures: '', from_departures: '',

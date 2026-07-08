@@ -78,7 +78,6 @@ export function JobDetailScreen({ route, navigation }: any) {
     const { error } = await supabase.rpc('job_report', {
       p_code: job.code,
       p_reason: reason.toLowerCase(),
-      p_note: null,
     });
     if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
     setReportOpen(false);

@@ -66,7 +66,7 @@ export function MedicalQueueScreen({ navigation }: any) {
     if (profile?.role !== 'admin') return;
     const { data, error } = await supabase
       .from('appointments')
-      .select('*, doctors(name, specialty), profiles:student_id(full_name, avatar_url)')
+      .select('*, doctors(name, specialty), profiles:profiles!student_id(full_name, avatar_url)')
       .eq('date', localISO(new Date()))
       .neq('status', 'Cancelled')
       .order('slot', { ascending: true });

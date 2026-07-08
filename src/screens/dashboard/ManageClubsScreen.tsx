@@ -58,7 +58,7 @@ export function ManageClubsScreen({ navigation }: any) {
   const load = useCallback(async () => {
     const [clubsRes, membersRes] = await Promise.all([
       supabase.from('clubs').select('*').order('name'),
-      supabase.from('club_members').select('club_id, role, profiles:user_id(full_name)'),
+      supabase.from('club_members').select('club_id, role, profiles:profiles!user_id(full_name)'),
     ]);
     if (clubsRes.data) {
       const members = (membersRes.data ?? []) as any[];

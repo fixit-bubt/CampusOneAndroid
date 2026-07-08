@@ -113,12 +113,13 @@ export function NotifSettingsScreen({ navigation }: any) {
   const allOn = onCount === SECTORS.length;
 
   async function toggleAll(on: boolean) {
+    if (!user) return;
     const next: Record<string, SectorPref> = {};
     SECTORS.forEach(s => { next[s.id] = { ...prefs[s.id], enabled: on }; });
     setPrefs(next);
     const results = await Promise.all(SECTORS.map(s =>
       supabase.from('notif_prefs').upsert(
-        { user_id: user?.id, sector: s.id, enabled: on },
+        { user_id: user.id, sector: s.id, enabled: on },
         { onConflict: 'user_id,sector' },
       )
     ));

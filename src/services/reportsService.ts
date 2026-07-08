@@ -15,7 +15,7 @@ export async function getReports(
 ): Promise<ServiceResult<ReportWithProfile[]>> {
   let query = supabase
     .from('reports')
-    .select('*, profiles:reporter_id(full_name, avatar_url)')
+    .select('*, profiles:profiles!reporter_id(full_name, avatar_url)')
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
     .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
@@ -53,7 +53,7 @@ export async function getMyReports(userId: string): Promise<ServiceResult<Report
 export async function getReportByCode(code: string): Promise<ServiceResult<ReportWithProfile>> {
   const { data, error } = await supabase
     .from('reports')
-    .select('*, profiles:reporter_id(full_name, avatar_url)')
+    .select('*, profiles:profiles!reporter_id(full_name, avatar_url)')
     .eq('code', code)
     .is('deleted_at', null)
     .single();
@@ -85,8 +85,9 @@ export async function createReport(payload: {
 // (unassigned + Open). RPC returns soft {ok:false,error} on failure.
 export async function declineReport(reportId: string): Promise<ServiceResult<null>> {
   const { data, error } = await supabase.rpc('decline_report', { p_report_id: reportId });
+  const res = data as { ok?: boolean; error?: string } | null;
   if (error) return { ok: false, error: error.message };
-  if (!data?.ok) return { ok: false, error: data?.error ?? 'Could not decline this report.' };
+  if (!res?.ok) return { ok: false, error: res?.error ?? 'Could not decline this report.' };
   return { ok: true, data: null };
 }
 

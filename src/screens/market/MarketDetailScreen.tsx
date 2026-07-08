@@ -40,7 +40,7 @@ export function MarketDetailScreen({ route, navigation }: any) {
     (async () => {
       const { data: l } = await supabase
         .from('listings')
-        .select('*, profiles:seller_id(full_name)')
+        .select('*, profiles:profiles!seller_id(full_name)')
         .eq('id', listingId)
         .single();
       if (l) {

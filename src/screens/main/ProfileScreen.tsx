@@ -15,6 +15,7 @@ import { SectorIcon } from '../../components/ui/SectorIcon';
 import { FontFamily, Layout, Accent } from '../../theme';
 import type { SectorKey } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import type { TablesUpdate } from '../../types/supabase';
 import { uploadPhoto } from '../../utils/storage';
 import { useToast } from '../../components/ui/Toast';
 
@@ -347,15 +348,19 @@ export function ProfileScreen({ navigation }: any) {
 
   const loadContrib = useCallback(async () => {
     if (!user) return;
-    const counts: Record<string, number> = {};
-    for (const cfg of CONTRIB_CONFIG) {
-      const { count } = await supabase
-        .from(cfg.table)
-        .select('*', { count: 'exact', head: true })
-        .eq(cfg.field, user.id);
-      counts[cfg.sector] = count ?? 0;
-    }
-    setContrib(counts);
+    const head = { count: 'exact' as const, head: true };
+    const [rep, clb, evt, lf] = await Promise.all([
+      supabase.from('reports').select('*', head).eq('reporter_id', user.id),
+      supabase.from('club_members').select('*', head).eq('user_id', user.id),
+      supabase.from('event_rsvps').select('*', head).eq('user_id', user.id),
+      supabase.from('lost_found_items').select('*', head).eq('poster_id', user.id),
+    ]);
+    setContrib({
+      reports:   rep.count ?? 0,
+      clubs:     clb.count ?? 0,
+      events:    evt.count ?? 0,
+      lostfound: lf.count ?? 0,
+    });
   }, [user]);
 
   useEffect(() => { loadContrib(); }, [loadContrib]);
@@ -366,7 +371,7 @@ export function ProfileScreen({ navigation }: any) {
     savingRef.current = true;
     setSaving(true);
     try {
-      const payload: Record<string, any> = {
+      const payload: TablesUpdate<'profiles'> = {
         full_name: editName.trim(),
         department: editDept.trim(),
         whatsapp: editWhatsapp.trim(),

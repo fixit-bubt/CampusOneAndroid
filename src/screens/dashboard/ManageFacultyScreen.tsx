@@ -15,6 +15,7 @@ import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import type { TablesUpdate } from '../../types/supabase';
 import { useAuth } from '../../store/authStore';
 import { uploadFile } from '../../utils/storage';
 import { BUCKETS } from '../../constants/app';
@@ -92,7 +93,7 @@ export function ManageFacultyScreen({ navigation }: any) {
         if (!up.success) { toast({ type: 'error', title: t.common.error, message: up.error }); return; }
         photoUrl = up.url;
       }
-      const payload: Record<string, any> = {
+      const payload: TablesUpdate<'faculty'> = {
         email: email.trim() || null,
         phone: phone.trim() || null,
         designation: designation.trim() || target.designation,

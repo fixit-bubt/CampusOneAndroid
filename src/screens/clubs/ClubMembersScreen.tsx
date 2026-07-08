@@ -48,7 +48,7 @@ export function ClubMembersScreen({ route, navigation }: any) {
   const load = useCallback(async () => {
     const { data } = await supabase
       .from('club_members')
-      .select('*, profiles:user_id(full_name, avatar_url)')
+      .select('*, profiles:profiles!user_id(full_name, avatar_url)')
       .eq('club_id', clubId);
     if (data) {
       setMembers((data as Member[]).sort((a, b) => (ROLE_RANK[a.role] ?? 9) - (ROLE_RANK[b.role] ?? 9)));

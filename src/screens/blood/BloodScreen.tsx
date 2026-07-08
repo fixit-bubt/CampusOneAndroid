@@ -64,7 +64,7 @@ export function BloodScreen({ navigation }: any) {
         .is('fulfilled_at', null)
         .gte('created_at', staleCutoff)
         .order('created_at', { ascending: false }).limit(30),
-      supabase.from('donors').select('*, profiles:user_id(full_name)').limit(50),
+      supabase.from('donors').select('*, profiles:profiles!user_id(full_name)').limit(50),
       supabase.from('blood_pledges').select('request_id').eq('donor_id', user?.id ?? ''),
     ]);
     if (rRes.data) setRequests(rRes.data as BloodRequest[]);
@@ -89,9 +89,9 @@ export function BloodScreen({ navigation }: any) {
         toast({ type: 'error', title: t.common.error, message: t.blood2.revealContactError });
         return;
       }
-      const row = Array.isArray(data) ? data[0] : data;
+      // donor_contact returns json: { whatsapp }; use the name we already have.
+      const row = (Array.isArray(data) ? data[0] : data) as { whatsapp?: string | null } | null;
       const contact = row?.whatsapp ?? t.blood2.notShared;
-      // donor_contact returns only { whatsapp }; use the name we already have.
       Alert.alert(donorName ?? t.blood2.contact, String(contact));
     } finally {
       setBusyId(null);
@@ -103,7 +103,7 @@ export function BloodScreen({ navigation }: any) {
     if (!user || busyId) return;
     setBusyId(r.id);
     try {
-      const { data, error } = await supabase.rpc('blood_requester_contact', { p_code: (r as any).code });
+      const { data, error } = await supabase.rpc('blood_requester_contact', { p_code: r.code });
       if (error) {
         toast({ type: 'error', title: t.common.error, message: t.blood2.revealContactError });
         return;

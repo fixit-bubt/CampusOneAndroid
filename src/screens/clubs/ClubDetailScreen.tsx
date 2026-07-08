@@ -85,11 +85,11 @@ export function ClubDetailScreen({ route, navigation }: any) {
   async function load() {
     const [clubRes, postsRes, membersRes] = await Promise.all([
       supabase.from('clubs').select('*').eq('id', id).single(),
-      supabase.from('club_posts').select('*, profiles:author_id(full_name)').eq('club_id', id)
+      supabase.from('club_posts').select('*, profiles:profiles!author_id(full_name)').eq('club_id', id)
         .order('is_pinned', { ascending: false })
         .order('created_at', { ascending: false })
         .limit(30),
-      supabase.from('club_members').select('*, profiles:user_id(full_name)').eq('club_id', id),
+      supabase.from('club_members').select('*, profiles:profiles!user_id(full_name)').eq('club_id', id),
     ]);
     if (clubRes.data) setClub(clubRes.data as Club);
     if (postsRes.data) setPosts(postsRes.data as any);

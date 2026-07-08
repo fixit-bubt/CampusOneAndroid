@@ -85,14 +85,14 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
     const [itemRes, claimsRes] = await Promise.all([
       supabase
         .from('lost_found_items')
-        .select('*, profiles:poster_id(full_name, avatar_url)')
+        .select('*, profiles:profiles!poster_id(full_name, avatar_url)')
         .eq('id', id)
         .single(),
       // RLS scopes this automatically: poster sees all claims on the item,
       // a claimant sees only their own.
       supabase
         .from('claims')
-        .select('*, profiles:claimant_id(full_name, avatar_url)')
+        .select('*, profiles:profiles!claimant_id(full_name, avatar_url)')
         .eq('item_id', id)
         .order('created_at', { ascending: false }),
     ]);

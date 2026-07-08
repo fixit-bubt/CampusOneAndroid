@@ -65,7 +65,7 @@ export function AssignedToMeScreen({ navigation }: any) {
     if (!user) return;
     const { data } = await supabase
       .from('reports')
-      .select('*, profiles:reporter_id(full_name)')
+      .select('*, profiles:profiles!reporter_id(full_name)')
       .eq('assigned_staff_id', user.id)
       .is('deleted_at', null)
       .order('created_at', { ascending: false });

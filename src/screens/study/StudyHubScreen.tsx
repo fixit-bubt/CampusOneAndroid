@@ -19,6 +19,9 @@ import { supabase } from '../../lib/supabase';
 
 const STUDY_COLOR = SectorColors.study;
 
+// Study RPCs return soft results as json: { ok, error?, ... }.
+type RpcResult = { ok?: boolean; error?: string; joinCode?: string } | null;
+
 type Persona = 'notjoined' | 'pendingcreate' | 'member' | 'cr';
 type Sub = 'home' | 'browse' | 'manage';
 
@@ -432,7 +435,7 @@ export function StudyHubScreen({ navigation }: any) {
   async function loadAdminQueue() {
     const { data, error } = await supabase
       .from('study_section_requests')
-      .select('*, profiles:requester_id(full_name), departments:department_id(name)')
+      .select('*, profiles:profiles!requester_id(full_name), departments:department_id(name)')
       .eq('status', 'pending')
       .order('created_at');
     if (error) { console.warn('loadAdminQueue:', error.message); return; }
@@ -468,7 +471,7 @@ export function StudyHubScreen({ navigation }: any) {
     if (!mySection) return;
     const { data, error } = await supabase
       .from('study_section_members')
-      .select('*, profiles:user_id(full_name)')
+      .select('*, profiles:profiles!user_id(full_name)')
       .eq('section_id', mySection.id)
       .eq('status', 'pending');
     if (error) { console.warn('loadJoinReqs:', error.message); return; }
@@ -507,7 +510,7 @@ export function StudyHubScreen({ navigation }: any) {
     if (secs.length) {
       const { data: crs } = await supabase
         .from('study_section_members')
-        .select('section_id, profiles:user_id(full_name)')
+        .select('section_id, profiles:profiles!user_id(full_name)')
         .in('section_id', secs.map(x => x.id))
         .eq('role', 'cr')
         .eq('status', 'approved');
@@ -571,7 +574,7 @@ export function StudyHubScreen({ navigation }: any) {
     if (!mySection) return;
     const { data } = await supabase
       .from('study_section_members')
-      .select('id, user_id, role, profiles:user_id(full_name)')
+      .select('id, user_id, role, profiles:profiles!user_id(full_name)')
       .eq('section_id', mySection.id)
       .eq('status', 'approved');
     if (data) {
@@ -652,11 +655,11 @@ export function StudyHubScreen({ navigation }: any) {
     const hoursLeft = Math.max(0, Math.round((new Date(v.closes_at).getTime() - Date.now()) / 3600000));
     setVote({
       id: v.id,
-      proposal: v.proposal,
+      proposal: v.proposal as Vote['proposal'],
       yes,
       no,
       closes_in_h: hoursLeft,
-      status: v.status,
+      status: v.status as Vote['status'],
       myBallot: mine as Vote['myBallot'],
     });
   }
@@ -712,8 +715,9 @@ export function StudyHubScreen({ navigation }: any) {
     if (codeInput.trim().length < 4 || !user) return;
     const code = codeInput.trim().toUpperCase();
     const { data, error } = await supabase.rpc('join_section_by_code', { p_code: code });
-    if (error || !data?.ok) {
-      toast({ type: 'error', title: 'Could not join', message: error?.message ?? data?.error ?? 'Invalid join code.' });
+    const res = data as RpcResult;
+    if (error || !res?.ok) {
+      toast({ type: 'error', title: 'Could not join', message: error?.message ?? res?.error ?? 'Invalid join code.' });
       return;
     }
     setCodeInput('');
@@ -768,10 +772,11 @@ export function StudyHubScreen({ navigation }: any) {
   async function approveAdminReq(id: string) {
     // RPC creates intake + section, generates join code and assigns requester as CR
     const { data, error } = await supabase.rpc('approve_section_request', { p_request_id: id });
+    const res = data as RpcResult;
     if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }
-    if (data && data.ok === false) { toast({ type: 'error', title: 'Error', message: data.error ?? 'Could not approve' }); return; }
+    if (res && res.ok === false) { toast({ type: 'error', title: 'Error', message: res.error ?? 'Could not approve' }); return; }
     setAdminReqs(r => r.filter(x => x.id !== id));
-    flash(`Approved - join code ${data?.joinCode ?? 'generated'}`);
+    flash(`Approved - join code ${res?.joinCode ?? 'generated'}`);
   }
 
   async function rejectAdminReq(note: string) {
@@ -789,8 +794,9 @@ export function StudyHubScreen({ navigation }: any) {
       p_intake_id: mySection.intake_id,
       p_proposal: proposal,
     });
+    const res = data as RpcResult;
     if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }
-    if (data && data.ok === false) { toast({ type: 'error', title: 'Could not start vote', message: data.error ?? 'Unknown error' }); return; }
+    if (res && res.ok === false) { toast({ type: 'error', title: 'Could not start vote', message: res.error ?? 'Unknown error' }); return; }
     setStartVoteOpen(false);
     flash('Vote started');
     loadVote(mySection.intake_id);
@@ -802,8 +808,9 @@ export function StudyHubScreen({ navigation }: any) {
       p_vote_id: vote.id,
       p_ballot: ballot,
     });
+    const res = data as RpcResult;
     if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }
-    if (data && data.ok === false) { toast({ type: 'error', title: 'Could not vote', message: data.error ?? 'Unknown error' }); return; }
+    if (res && res.ok === false) { toast({ type: 'error', title: 'Could not vote', message: res.error ?? 'Unknown error' }); return; }
     flash('Vote recorded');
     loadVote(mySection.intake_id);
     load(); // intake visibility may have flipped if the vote closed

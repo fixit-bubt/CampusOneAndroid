@@ -64,7 +64,7 @@ export function PostItemFormScreen({ route, navigation }: any) {
   const ok = !!cat && title.trim().length > 0;
 
   async function handleSubmit() {
-    if (!ok || busy || !cat) return;
+    if (!ok || busy || !cat || !user) return;
     setBusy(true);
     setErr('');
     let error: any;
@@ -88,7 +88,7 @@ export function PostItemFormScreen({ route, navigation }: any) {
         location:    loc.trim() || 'Campus',
         item_date:   localToday(),
         status:      'Open',
-        poster_id:   user?.id,
+        poster_id:   user.id,
       }));
     }
     setBusy(false);

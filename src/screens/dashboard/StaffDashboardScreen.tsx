@@ -164,7 +164,7 @@ export function StaffDashboardScreen({ navigation }: any) {
   const load = useCallback(async () => {
     const { data } = await supabase
       .from('reports')
-      .select('*, profiles:reporter_id(full_name)')
+      .select('*, profiles:profiles!reporter_id(full_name)')
       .eq('assigned_staff_id', user?.id ?? '')
       .order('status')
       .limit(30);

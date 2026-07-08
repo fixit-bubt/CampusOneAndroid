@@ -119,6 +119,8 @@ export function StudyUploadScreen({ route, navigation }: any) {
 
       let insertError = null as any;
       if (fileType === 'questions') {
+        // canSubmit guarantees these; the checks make it visible to the compiler.
+        if (!sectionId || !storagePath) throw new Error(t.study2.couldNotUpload);
         ({ error: insertError } = await supabase.from('study_question_bank').insert({
           course_id:    courseId,
           section_id:   sectionId,
@@ -130,6 +132,7 @@ export function StudyUploadScreen({ route, navigation }: any) {
           uploaded_by:  user.id,
         }));
       } else if (fileType === 'books') {
+        if (!intakeId) throw new Error(t.study2.couldNotUpload);
         ({ error: insertError } = await supabase.from('study_books').insert({
           course_id:    courseId,
           intake_id:    intakeId,
@@ -141,6 +144,7 @@ export function StudyUploadScreen({ route, navigation }: any) {
           added_by:     user.id,
         }));
       } else {
+        if (!storagePath) throw new Error(t.study2.couldNotUpload);
         ({ error: insertError } = await supabase.from('study_materials').insert({
           course_id:    courseId,
           type:         materialType,

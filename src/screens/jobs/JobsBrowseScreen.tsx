@@ -14,9 +14,10 @@ import { FontFamily, Layout , SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
+import type { Job as JobRow } from '../../types/database';
 
 function computeJobStatus(job: Job): string {
-  if ((job as any).deleted_at) return 'removed';
+  if (job.deleted_at) return 'removed';
   if (job.deadline) {
     const days = (new Date(job.deadline).getTime() - Date.now()) / 86400000;
     if (days < 0) return 'expired';
@@ -40,19 +41,9 @@ function jobStatusTone(C: any, t: any, k: string): { label: string; fg: string; 
 
 type Tab = 'open' | 'closing' | 'expired' | 'saved';
 
-interface Job {
-  id: string;
-  title: string;
-  company: string;
-  location: string;
-  job_type: string;
-  work_mode: string;
-  deadline: string;
-  stipend: string | null;
-  description: string;
-  requirements: string | null;
-  posted_by: string;
-}
+// Full row from select('*') - use the schema-derived type instead of a local
+// shadow that drifts (the old one was missing deleted_at).
+type Job = JobRow;
 
 function timeAgo(iso: string): string {
   const secs = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
