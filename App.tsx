@@ -6,6 +6,9 @@ import { AppProvider, useApp } from './src/store/appStore';
 import { AuthProvider } from './src/store/authStore';
 import { ToastProvider } from './src/components/ui/Toast';
 import { RootNavigator } from './src/navigation/RootNavigator';
+import { initMonitoring } from './src/lib/monitoring';
+
+initMonitoring();
 
 function ThemedStatusBar() {
   const { isDark } = useApp();

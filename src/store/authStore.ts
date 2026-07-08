@@ -5,6 +5,7 @@ import React, { createContext, useContext, useEffect, useReducer, useRef } from 
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { unregisterPushToken } from '../lib/push';
+import { setMonitoringUser } from '../lib/monitoring';
 import type { Profile } from '../types/database';
 
 interface AuthState {
@@ -80,6 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth changes
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       dispatch({ type: 'SET_SESSION', session });
+      setMonitoringUser(session?.user.id ?? null);
       if (session) fetchProfile(session.user.id);
       else dispatch({ type: 'SET_PROFILE', profile: null });
     });
