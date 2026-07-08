@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
+import { SkeletonList, LoadError } from '../../components/ui/LoadState';
 import { FontFamily, Layout , SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
@@ -74,15 +75,18 @@ export function LostFoundBrowseScreen({ navigation }: any) {
   const [items, setItems] = useState<LostFoundItem[]>([]);
   const [filter, setFilter] = useState<Filter>('all');
   const [refreshing, setRefreshing] = useState(false);
+  const [loadState, setLoadState] = useState<'loading' | 'error' | 'ready'>('loading');
 
   const load = useCallback(async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('lost_found_items')
       .select('*')
       .is('deleted_at', null)
       .order('created_at', { ascending: false })
       .limit(50);
+    if (error) { setLoadState('error'); return; }
     if (data) setItems(data as LostFoundItem[]);
+    setLoadState('ready');
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -162,6 +166,10 @@ export function LostFoundBrowseScreen({ navigation }: any) {
             <Icon name="found" size={28} color={C.textMuted} />
             <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Lost & Found is for students.</Text>
           </View>
+        ) : loadState === 'loading' && items.length === 0 ? (
+          <SkeletonList />
+        ) : loadState === 'error' && items.length === 0 ? (
+          <LoadError onRetry={load} />
         ) : list.length === 0 ? (
           <View style={styles.empty}>
             <Icon name="found" size={28} color={C.textMuted} />

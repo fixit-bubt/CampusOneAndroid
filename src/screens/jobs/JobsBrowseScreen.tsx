@@ -9,6 +9,7 @@ import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
+import { SkeletonList, LoadError } from '../../components/ui/LoadState';
 import { useToast } from '../../components/ui/Toast';
 import { FontFamily, Layout , SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
@@ -67,17 +68,19 @@ export function JobsBrowseScreen({ navigation }: any) {
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
 
   const load = useCallback(async () => {
     const [jobsRes, savedRes] = await Promise.all([
       supabase.from('jobs').select('*').is('deleted_at', null).order('created_at', { ascending: false }).limit(50),
       supabase.from('job_bookmarks').select('job_id').eq('user_id', user?.id ?? '').limit(200),
     ]);
-    if (jobsRes.error) { toast({ type: 'error', title: t.common.error }); setLoading(false); return; }
+    if (jobsRes.error) { setLoadFailed(true); setLoading(false); return; }
+    setLoadFailed(false);
     if (jobsRes.data) setJobs(jobsRes.data as Job[]);
     if (savedRes.data) setSavedIds(new Set(savedRes.data.map((s: any) => s.job_id)));
     setLoading(false);
-  }, [user?.id, toast, t]);
+  }, [user?.id]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -217,7 +220,9 @@ export function JobsBrowseScreen({ navigation }: any) {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
         {loading && jobs.length === 0 ? (
-          <ActivityIndicator style={{ marginTop: 60 }} color={C.brand} />
+          <SkeletonList />
+        ) : loadFailed && jobs.length === 0 ? (
+          <LoadError onRetry={load} />
         ) : list.length === 0 ? (
           <View style={styles.empty}>
             <Icon name="jobs" size={28} color={C.textMuted} />

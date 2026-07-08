@@ -11,6 +11,7 @@ import { useT } from '../../i18n';
 import { Feather } from '@expo/vector-icons';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
+import { SkeletonList, LoadError } from '../../components/ui/LoadState';
 import { FontFamily, Layout , SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { localToday } from '../../utils/format';
@@ -88,6 +89,7 @@ export function EventsBrowseScreen({ navigation }: any) {
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [monthOffset, setMonthOffset] = useState(0); // 0 = current month
   const [refreshing, setRefreshing] = useState(false);
+  const [loadState, setLoadState] = useState<'loading' | 'error' | 'ready'>('loading');
 
   const load = useCallback(async () => {
     // Fetch upcoming and past separately. A single ascending limit(50) let past
@@ -97,8 +99,13 @@ export function EventsBrowseScreen({ navigation }: any) {
       supabase.from('events').select('*').gte('date', today).order('date', { ascending: true }).limit(50),
       supabase.from('events').select('*').lt('date', today).order('date', { ascending: false }).limit(50),
     ]);
-    if (upRes.error || pastRes.error) { console.error('events fetch:', upRes.error?.message ?? pastRes.error?.message); return; }
+    if (upRes.error || pastRes.error) {
+      console.error('events fetch:', upRes.error?.message ?? pastRes.error?.message);
+      setLoadState('error');
+      return;
+    }
     setEvents([...(upRes.data ?? []), ...(pastRes.data ?? [])] as Event[]);
+    setLoadState('ready');
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -187,7 +194,11 @@ export function EventsBrowseScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
-        {view === 'calendar' ? (() => {
+        {loadState === 'loading' && events.length === 0 ? (
+          <SkeletonList />
+        ) : loadState === 'error' && events.length === 0 ? (
+          <LoadError onRetry={load} />
+        ) : view === 'calendar' ? (() => {
           // Month grid — dots mark event days; tap a day to list its events.
           const base = new Date();
           base.setDate(1);

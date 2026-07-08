@@ -9,6 +9,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
+import { SkeletonList, LoadError } from '../../components/ui/LoadState';
 import { FontFamily, Layout, SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
@@ -54,6 +55,7 @@ export function BloodScreen({ navigation }: any) {
   const toast = useToast();
   const [respondedIds, setRespondedIds] = useState<Set<string>>(new Set());
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [loadState, setLoadState] = useState<'loading' | 'error' | 'ready'>('loading');
 
   const load = useCallback(async () => {
     // Hide fulfilled requests and age out stale ones (nothing auto-expires them
@@ -67,9 +69,11 @@ export function BloodScreen({ navigation }: any) {
       supabase.from('donors').select('*, profiles:profiles!user_id(full_name)').limit(50),
       supabase.from('blood_pledges').select('request_id').eq('donor_id', user?.id ?? ''),
     ]);
+    if (rRes.error || dRes.error) { setLoadState('error'); return; }
     if (rRes.data) setRequests(rRes.data as BloodRequest[]);
     if (dRes.data) setDonors(dRes.data as any);
     if (pRes.data) setRespondedIds(new Set(pRes.data.map((p: any) => p.request_id)));
+    setLoadState('ready');
   }, [user?.id]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -255,7 +259,11 @@ export function BloodScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
-        {tab === 'requests' ? (
+        {loadState === 'loading' && requests.length === 0 && donors.length === 0 ? (
+          <SkeletonList />
+        ) : loadState === 'error' && requests.length === 0 && donors.length === 0 ? (
+          <LoadError onRetry={load} />
+        ) : tab === 'requests' ? (
           <View style={styles.list}>
             {requests.filter(r => groupFilter === 'All' || r.blood_group === groupFilter).map(r => {
               const { fg, bg } = urgencyTone(C, r.urgency);
