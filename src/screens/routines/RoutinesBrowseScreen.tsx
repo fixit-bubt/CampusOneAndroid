@@ -110,8 +110,11 @@ export function RoutinesBrowseScreen({ navigation }: any) {
       if (pickedFile) {
         const ext = pickedFile.name.split('.').pop() ?? 'bin';
         const safeName = fTitle.trim().replace(/[^a-zA-Z0-9_-]/g, '_');
-        const storagePath = `routines/${Date.now()}_${safeName}.${ext}`;
-        const up = await uploadFile('study-materials', pickedFile.uri, storagePath, pickedFile.mimeType, true);
+        // 'photos' is a public bucket with an open authenticated-upload policy;
+        // study-materials is private and its RLS requires a uid-prefixed path, so a
+        // routines/ path there is denied. Routine sheets are public reference data.
+        const storagePath = `routines/${user.id}/${Date.now()}_${safeName}.${ext}`;
+        const up = await uploadFile('photos', pickedFile.uri, storagePath, pickedFile.mimeType, true);
         if (!up.success) throw new Error(up.error);
         if (pickedFile.mimeType.startsWith('image/')) {
           imageUrl = up.url;
