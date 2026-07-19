@@ -236,6 +236,8 @@ export const en = {
 
   lostfound: {
     claimsTitle: 'Claims & messages',
+    possibleMatches: 'Possible matches',
+    possibleMatchesSub: 'Opposite posts in the same category that might be your item.',
     claimStatusPending: 'Your claim is pending - the poster will review it.',
     claimStatusApproved: 'Claim approved! Contact details are unlocked below.',
     claimStatusRejected: 'Your claim was not approved.',

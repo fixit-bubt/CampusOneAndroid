@@ -32,6 +32,42 @@ const CAT_ICON: Record<string, string> = {
   Personal: 'user', Electronics: 'phone', Documents: 'layers', Other: 'inbox',
 };
 
+interface MatchItem {
+  id: string; title: string; description: string; type: string;
+  category: string; status: string; created_at: string; poster_id: string; location: string;
+}
+
+// Keyword-overlap match ranking — mirrors web findItemMatches: opposite type +
+// same category (filtered in the query), scored by shared title/description
+// tokens, top 4.
+const MATCH_STOPWORDS = new Set([
+  'the', 'and', 'for', 'with', 'was', 'lost', 'found', 'near', 'item',
+  'from', 'have', 'has', 'this', 'that', 'your', 'you', 'are',
+]);
+function matchTokens(text: string | null): Set<string> {
+  return new Set(
+    (text || '').toLowerCase().split(/[^a-z0-9]+/).filter(w => w.length >= 3 && !MATCH_STOPWORDS.has(w)),
+  );
+}
+function rankMatches(target: { title: string; description: string; poster_id: string }, items: MatchItem[], limit = 4): MatchItem[] {
+  const titleTokens = matchTokens(target.title);
+  const descTokens = matchTokens(target.description);
+  return items
+    .filter(i => i.poster_id !== target.poster_id)
+    .map(i => {
+      const iTitle = matchTokens(i.title);
+      const iAll = new Set<string>(iTitle);
+      matchTokens(i.description).forEach(w => iAll.add(w));
+      let score = 0;
+      titleTokens.forEach(tk => { if (iTitle.has(tk)) score += 2; else if (iAll.has(tk)) score += 1; });
+      descTokens.forEach(tk => { if (iAll.has(tk)) score += 1; });
+      return { item: i, score };
+    })
+    .sort((a, b) => b.score - a.score || (b.item.created_at || '').localeCompare(a.item.created_at || ''))
+    .slice(0, limit)
+    .map(x => x.item);
+}
+
 function timeAgo(iso: string): string {
   const secs = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
   if (secs < 3600) return `${Math.max(1, Math.floor(secs / 60))} min ago`;
@@ -70,6 +106,7 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
   const [item, setItem] = useState<LostFoundItem | null>(null);
   const [poster, setPoster] = useState<{ full_name: string; avatar_url: string | null } | null>(null);
   const [claims, setClaims] = useState<ClaimRow[]>([]);
+  const [matches, setMatches] = useState<MatchItem[]>([]);
   const [contact, setContact] = useState<Contact | null>(null);
   const [claimNote, setClaimNote] = useState('');
   const [proofUri, setProofUri] = useState<string | null>(null);
@@ -96,12 +133,33 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
         .eq('item_id', id)
         .order('created_at', { ascending: false }),
     ]);
+    let loaded: LostFoundItem | null = null;
     if (itemRes.data) {
       const { profiles, ...rest } = itemRes.data as any;
-      setItem(rest as LostFoundItem);
+      loaded = rest as LostFoundItem;
+      setItem(loaded);
       setPoster(profiles);
     }
     if (claimsRes.data) setClaims(claimsRes.data as ClaimRow[]);
+
+    // Possible matches: opposite type, same category, still open. Only worth
+    // computing while the item itself is unresolved.
+    if (loaded && loaded.status === 'Open') {
+      const oppType = loaded.type === 'Lost' ? 'Found' : 'Lost';
+      const { data: cand } = await supabase
+        .from('lost_found_items')
+        .select('id, title, description, type, category, status, created_at, poster_id, location')
+        .eq('type', oppType)
+        .eq('category', loaded.category)
+        .eq('status', 'Open')
+        .is('deleted_at', null)
+        .neq('id', loaded.id)
+        .order('created_at', { ascending: false })
+        .limit(40);
+      setMatches(rankMatches(loaded, (cand ?? []) as MatchItem[]));
+    } else {
+      setMatches([]);
+    }
   }, [id]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -332,6 +390,44 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
                   </TouchableOpacity>
                 ) : null}
               </View>
+            </View>
+          </>
+        )}
+
+        {/* Possible matches — surfaced to the poster while the item is open */}
+        {isMine && !resolved && matches.length > 0 && (
+          <>
+            <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
+              {t.lostfound.possibleMatches.toUpperCase()}
+            </Text>
+            <Text style={[styles.matchSubtitle, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+              {t.lostfound.possibleMatchesSub}
+            </Text>
+            <View style={{ gap: 10, marginTop: 10 }}>
+              {matches.map(m => {
+                const mfg = CAT_COLOR[m.category] ?? Accent.slate;
+                return (
+                  <TouchableOpacity
+                    key={m.id}
+                    style={[styles.matchCard, { backgroundColor: C.surface, borderColor: C.border }]}
+                    onPress={() => navigation.push('LostFoundDetail', { itemId: m.id })}
+                    activeOpacity={0.75}
+                  >
+                    <View style={[styles.matchThumb, { backgroundColor: `${mfg}1e` }]}>
+                      <Icon name={CAT_ICON[m.category] ?? 'inbox'} size={20} color={mfg} />
+                    </View>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={[styles.matchTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                        {m.title}
+                      </Text>
+                      <Text style={[styles.matchSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                        {m.type} · {m.location} · {timeAgo(m.created_at)}
+                      </Text>
+                    </View>
+                    <Icon name="chevR" size={18} color={C.textMuted} />
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </>
         )}
@@ -629,6 +725,12 @@ const styles = StyleSheet.create({
   contactLine: { fontSize: 12, marginTop: 2 } as any,
   contactBtns: { flexDirection: 'row', gap: 7 } as ViewStyle,
   contactBtn: { width: 36, height: 36, borderRadius: 11, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
+
+  matchSubtitle: { fontSize: 12, lineHeight: 17, marginTop: -2 } as any,
+  matchCard: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 14, borderWidth: 1 } as ViewStyle,
+  matchThumb: { width: 40, height: 40, borderRadius: 11, alignItems: 'center', justifyContent: 'center', flexShrink: 0 } as ViewStyle,
+  matchTitle: { fontSize: 14 } as any,
+  matchSub: { fontSize: 12, marginTop: 2 } as any,
 
   claimCard: { borderRadius: 14, borderWidth: 1, padding: 13 } as ViewStyle,
   claimTop: { flexDirection: 'row', alignItems: 'center', gap: 10 } as ViewStyle,

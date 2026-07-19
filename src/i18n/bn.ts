@@ -237,6 +237,8 @@ export const bn: Dict = {
 
   lostfound: {
     claimsTitle: 'দাবি ও বার্তা',
+    possibleMatches: 'সম্ভাব্য মিল',
+    possibleMatchesSub: 'একই বিভাগে বিপরীত পোস্ট যা আপনার জিনিস হতে পারে।',
     claimStatusPending: 'আপনার দাবি অপেক্ষমাণ - পোস্টদাতা পর্যালোচনা করবেন।',
     claimStatusApproved: 'দাবি অনুমোদিত! নিচে যোগাযোগের তথ্য দেখুন।',
     claimStatusRejected: 'আপনার দাবি অনুমোদিত হয়নি।',
