@@ -350,10 +350,10 @@ export function ProfileScreen({ navigation }: any) {
     if (!user) return;
     const head = { count: 'exact' as const, head: true };
     const [rep, clb, evt, lf] = await Promise.all([
-      supabase.from('reports').select('*', head).eq('reporter_id', user.id),
+      supabase.from('reports').select('*', head).eq('reporter_id', user.id).is('deleted_at', null),
       supabase.from('club_members').select('*', head).eq('user_id', user.id),
       supabase.from('event_rsvps').select('*', head).eq('user_id', user.id),
-      supabase.from('lost_found_items').select('*', head).eq('poster_id', user.id),
+      supabase.from('lost_found_items').select('*', head).eq('poster_id', user.id).is('deleted_at', null),
     ]);
     setContrib({
       reports:   rep.count ?? 0,

@@ -170,6 +170,7 @@ export function AdminDashboardScreen({ navigation }: any) {
       .from('reports')
       .select('*, profiles!reporter_id(full_name), assignee:profiles!assigned_staff_id(full_name)')
       .in('status', ['Open', 'In Progress'])
+      .is('deleted_at', null)
       .order('created_at', { ascending: false })
       .limit(40);
     if (data) {
@@ -183,7 +184,7 @@ export function AdminDashboardScreen({ navigation }: any) {
     }
     const { data: staff } = await supabase.from('profiles').select('id, full_name, department, expertise').eq('role', 'staff');
     if (staff) setStaffList(staff as StaffMember[]);
-    const { count } = await supabase.from('reports').select('id', { count: 'exact', head: true }).in('status', ['Resolved', 'Closed']);
+    const { count } = await supabase.from('reports').select('id', { count: 'exact', head: true }).in('status', ['Resolved', 'Closed']).is('deleted_at', null);
     setResolvedCount(count ?? 0);
     const nRes = await getMyNotifications(20);
     if (nRes.ok) setUnread(nRes.data.filter(n => !n.read).length);

@@ -166,6 +166,7 @@ export function StaffDashboardScreen({ navigation }: any) {
       .from('reports')
       .select('*, profiles:profiles!reporter_id(full_name)')
       .eq('assigned_staff_id', user?.id ?? '')
+      .is('deleted_at', null)
       .order('status')
       .limit(30);
     if (data) {
