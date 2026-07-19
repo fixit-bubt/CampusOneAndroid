@@ -45,12 +45,16 @@ export function MarketPostScreen({ route, navigation }: any) {
   const [condition, setCondition] = useState<Listing['condition']>(listing?.condition ?? 'Used');
   const [negotiable, setNegotiable] = useState(listing?.negotiable ?? true);
   const [desc, setDesc] = useState(listing?.description ?? '');
+  const [courseCode, setCourseCode] = useState(listing?.course_code ?? '');
   const [photoUri, setPhotoUri] = useState<string | null>(listing?.photo_url ?? null);
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const isEdit = !!listing;
   const canSubmit = cat !== null && !!title.trim() && Number(price) > 0;
+  // Course code only applies to study materials — links the listing to the
+  // course's Study Hub page (mirrors web).
+  const showCourse = cat === 'Books' || cat === 'Notes';
 
   async function pickImage() {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -92,6 +96,7 @@ export function MarketPostScreen({ route, navigation }: any) {
         negotiable,
         description: desc.trim(),
         photo_url:   photoUri ?? null,
+        course_code: showCourse ? (courseCode.trim() || null) : null,
         seller_id:   user.id,
         status:      'Available' as Listing['status'],
       };
@@ -233,6 +238,22 @@ export function MarketPostScreen({ route, navigation }: any) {
           textAlignVertical="top"
         />
 
+        {/* Course code — books/notes only, links to Study Hub */}
+        {showCourse && (
+          <>
+            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.market2.courseCode}</Text>
+            <TextInput
+              style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+              value={courseCode}
+              onChangeText={setCourseCode}
+              placeholder={t.market2.courseCodePlaceholder}
+              placeholderTextColor={C.textMuted}
+              autoCapitalize="characters"
+            />
+            <Text style={[styles.hint, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{t.market2.courseCodeHint}</Text>
+          </>
+        )}
+
         {/* Submit */}
         <TouchableOpacity
           style={[styles.submitBtn, { backgroundColor: canSubmit ? C.brand : C.surface2, opacity: loading ? 0.6 : 1 }]}
@@ -290,6 +311,8 @@ const styles = StyleSheet.create({
   } as ViewStyle,
 
   catLabel: { fontSize: 13 } as any,
+
+  hint: { fontSize: 11.5, marginTop: 6, marginLeft: 2, lineHeight: 16 } as any,
 
   input: {
     height: 48,

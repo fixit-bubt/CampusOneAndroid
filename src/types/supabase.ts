@@ -1416,6 +1416,7 @@ export type Database = {
           category: string
           code: string
           condition: string
+          course_code: string | null
           created_at: string
           description: string
           id: string
@@ -1431,6 +1432,7 @@ export type Database = {
           category: string
           code?: string
           condition: string
+          course_code?: string | null
           created_at?: string
           description: string
           id?: string
@@ -1446,6 +1448,7 @@ export type Database = {
           category?: string
           code?: string
           condition?: string
+          course_code?: string | null
           created_at?: string
           description?: string
           id?: string

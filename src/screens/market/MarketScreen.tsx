@@ -46,6 +46,9 @@ export function MarketScreen({ navigation }: any) {
   const [tab, setTab] = useState<Tab>('all');
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('all');
+  const [sortBy, setSortBy] = useState<'newest' | 'asc' | 'desc'>('newest');
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
   const [listings, setListings] = useState<Listing[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -72,10 +75,19 @@ export function MarketScreen({ navigation }: any) {
   }
 
   const q = query.trim().toLowerCase();
+  const min = parseInt(minPrice, 10);
+  const max = parseInt(maxPrice, 10);
   const list = listings
     .filter(l => (tab === 'mine' ? l.seller_id === user?.id : true))
     .filter(l => category === 'all' || l.category?.toLowerCase() === category)
-    .filter(l => !q || [l.title, l.description, l.category].filter(Boolean).join(' ').toLowerCase().includes(q));
+    .filter(l => !q || [l.title, l.description, l.category].filter(Boolean).join(' ').toLowerCase().includes(q))
+    .filter(l => (Number.isNaN(min) || l.price >= min) && (Number.isNaN(max) || l.price <= max))
+    .sort((a, b) => (sortBy === 'asc' ? a.price - b.price : sortBy === 'desc' ? b.price - a.price : 0));
+
+  const SORT_ORDER = ['newest', 'asc', 'desc'] as const;
+  const cycleSort = () => setSortBy(prev => SORT_ORDER[(SORT_ORDER.indexOf(prev) + 1) % 3]);
+  const sortLabel = sortBy === 'asc' ? t.market2.sortPriceAsc : sortBy === 'desc' ? t.market2.sortPriceDesc : t.market2.sortNewest;
+  const sortIcon = sortBy === 'asc' ? 'arrow-up' : sortBy === 'desc' ? 'arrow-down' : 'clock';
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -159,6 +171,34 @@ export function MarketScreen({ navigation }: any) {
         })}
       </ScrollView>
 
+      {/* Price tools — min/max range + sort */}
+      <View style={[styles.filterRow, { paddingHorizontal: Layout.screenPadding }]}>
+        <TextInput
+          style={[styles.priceInput, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
+          placeholder={t.market2.priceMin}
+          placeholderTextColor={C.textMuted}
+          value={minPrice}
+          onChangeText={v => setMinPrice(v.replace(/\D/g, ''))}
+          keyboardType="numeric"
+        />
+        <TextInput
+          style={[styles.priceInput, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
+          placeholder={t.market2.priceMax}
+          placeholderTextColor={C.textMuted}
+          value={maxPrice}
+          onChangeText={v => setMaxPrice(v.replace(/\D/g, ''))}
+          keyboardType="numeric"
+        />
+        <TouchableOpacity
+          style={[styles.sortBtn, { backgroundColor: C.surface, borderColor: C.border }]}
+          onPress={cycleSort}
+          activeOpacity={0.75}
+        >
+          <Feather name={sortIcon as any} size={13} color={C.text2} />
+          <Text style={[styles.sortTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>{sortLabel}</Text>
+        </TouchableOpacity>
+      </View>
+
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
@@ -232,6 +272,10 @@ const styles = StyleSheet.create({
   catChips: { flexDirection: 'row', gap: 7, paddingBottom: 8 } as ViewStyle,
   catChip: { paddingHorizontal: 11, paddingVertical: 6, borderRadius: 999, borderWidth: 1 } as ViewStyle,
   catChipTxt: { fontSize: 11.5 } as any,
+  filterRow: { flexDirection: 'row', gap: 8, alignItems: 'center', paddingBottom: 8 } as ViewStyle,
+  priceInput: { flex: 1, height: 38, borderRadius: 10, borderWidth: 1, paddingHorizontal: 12, fontSize: 13 } as TextStyle,
+  sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, height: 38, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1 } as ViewStyle,
+  sortTxt: { fontSize: 12.5 } as any,
   chip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1 } as ViewStyle,
   chipTxt: { fontSize: 12.5 } as any,
   chipCount: { fontSize: 12 } as any,

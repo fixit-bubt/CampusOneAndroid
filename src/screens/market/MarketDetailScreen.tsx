@@ -127,6 +127,12 @@ export function MarketDetailScreen({ route, navigation }: any) {
           <View style={[styles.pill, { backgroundColor: C.surface2 }]}>
             <Text style={[styles.pillTxt, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>{cat.label}</Text>
           </View>
+          {listing.course_code ? (
+            <View style={[styles.pill, { backgroundColor: isDark ? `${Accent.blue}2e` : `${Accent.blue}18` }]}>
+              <Feather name="book" size={11} color={Accent.blue} />
+              <Text style={[styles.pillTxt, { color: Accent.blue, fontFamily: FontFamily.jakartaBold }]}>{listing.course_code}</Text>
+            </View>
+          ) : null}
           <View style={[styles.pill, { backgroundColor: C.surface2 }]}>
             <Text style={[styles.pillTxt, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>{listing.condition}</Text>
           </View>

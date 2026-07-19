@@ -1007,6 +1007,14 @@ export const bn: Dict = {
     noListingsYet: "এখনও কোনো লিস্টিং নেই",
     noItemsAvailable: "কোনো পণ্য উপলব্ধ নেই",
     negotiableSuffix: " · দরদাম করা যাবে",
+    courseCode: "কোর্স কোড (ঐচ্ছিক)",
+    courseCodePlaceholder: "যেমন CSE 101",
+    courseCodeHint: "এই তালিকাটি স্টাডি হাবের কোর্সের সাথে যুক্ত করে।",
+    priceMin: "সর্বনিম্ন ৳",
+    priceMax: "সর্বোচ্চ ৳",
+    sortNewest: "নতুন",
+    sortPriceAsc: "দাম ↑",
+    sortPriceDesc: "দাম ↓",
   },
 
   medical2: {
