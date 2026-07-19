@@ -1018,6 +1018,19 @@ You will be registered as an available ${group} donor.`,
     sortPriceDesc: "Price ↓",
   },
 
+  cgpa: {
+    title: 'CGPA Calculator',
+    subtitle: 'Add courses, credits and grades to get your GPA on the BUBT scale.',
+    coursePlaceholder: 'e.g. CSE 101',
+    credit: 'Credit',
+    grade: 'Grade',
+    addCourse: 'Add course',
+    yourGpa: 'YOUR GPA',
+    credits: 'credits',
+    courses: 'courses',
+    note: 'Weighted by credit hours on the BUBT scale (A+ = 4.00). Calculated on your device; nothing is saved or sent.',
+  },
+
   medical2: {
     doctor: "Doctor",
     availableNow: "Available now",

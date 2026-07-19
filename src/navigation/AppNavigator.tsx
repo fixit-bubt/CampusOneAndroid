@@ -65,6 +65,7 @@ import { StudyUploadScreen }       from '../screens/study/StudyUploadScreen';
 import { AcademicCalendarScreen }  from '../screens/calendar/AcademicCalendarScreen';
 import { RoutinesBrowseScreen }    from '../screens/routines/RoutinesBrowseScreen';
 import { CoverPageFormScreen }     from '../screens/coverpage/CoverPageFormScreen';
+import { CgpaScreen }              from '../screens/cgpa/CgpaScreen';
 import { ProfileScreen }          from '../screens/main/ProfileScreen';
 
 const Stack = createNativeStackNavigator<AppStackParams>();
@@ -152,6 +153,9 @@ export function AppNavigator() {
 
       {/* Cover Page Generator */}
       <Stack.Screen name="CoverPageForm" component={CoverPageFormScreen} />
+
+      {/* CGPA Calculator */}
+      <Stack.Screen name="Cgpa"          component={CgpaScreen} />
 
       {/* Profile (from Settings tab) */}
       <Stack.Screen name="Profile"        component={ProfileScreen} />

@@ -112,6 +112,9 @@ export type AppStackParams = {
   // Cover Page Generator
   CoverPageForm: undefined;
 
+  // CGPA Calculator
+  Cgpa: undefined;
+
   // Profile (from Settings tab)
   Profile: undefined;
 

@@ -2,6 +2,7 @@ import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
 import { useAuth } from '../../store/authStore';
@@ -75,6 +76,26 @@ export function ExploreScreen({ navigation }: any) {
         contentContainerStyle={[styles.content, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
       >
+        {/* Tool: CGPA calculator */}
+        <TouchableOpacity
+          style={[styles.toolCard, { backgroundColor: C.surface, borderColor: C.border }]}
+          onPress={() => navigation.navigate('Cgpa')}
+          activeOpacity={0.75}
+        >
+          <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
+            <Feather name="percent" size={20} color={C.brand} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.cellTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              {t.cgpa.title}
+            </Text>
+            <Text style={[styles.cellDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
+              {t.cgpa.subtitle}
+            </Text>
+          </View>
+          <Feather name="chevron-right" size={18} color={C.textMuted} />
+        </TouchableOpacity>
+
         {/* 2-col grid */}
         {Array.from({ length: Math.ceil(sectors.length / 2) }, (_, i) => (
           <View key={i} style={styles.row}>
@@ -133,6 +154,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 11,
     marginBottom: 11,
+  } as ViewStyle,
+
+  toolCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 13,
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 11,
+  } as ViewStyle,
+
+  toolIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
   } as ViewStyle,
 
   cell: {
