@@ -14,6 +14,7 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { Avatar } from '../../components/ui/Avatar';
 import { supabase } from '../../lib/supabase';
+import { localToday } from '../../utils/format';
 import { FontFamily, FontSize, Layout, Radius, Spacing, SectorColors, Accent } from '../../theme';
 import { BUBT_LOGO_CREST, BUBT_LOGO_HEADER } from './logos';
 
@@ -294,7 +295,7 @@ export function CoverPageFormScreen({ navigation }: any) {
   const [courseCode, setCourseCode] = useState('');
   const [courseTitle, setCourseTitle] = useState('');
   const [assignmentNo, setAssignmentNo] = useState('');
-  const [experimentDate, setExperimentDate] = useState(new Date().toISOString().slice(0, 10));
+  const [experimentDate, setExperimentDate] = useState(localToday());
   const [experimentName, setExperimentName] = useState('');
   const [reportTitle, setReportTitle] = useState('');
   const [company, setCompany] = useState('');
@@ -310,7 +311,7 @@ export function CoverPageFormScreen({ navigation }: any) {
   const [teacherDesig, setTeacherDesig] = useState('');
   const [teacherDept, setTeacherDept] = useState('');
   const [members, setMembers] = useState<Member[]>([{ name: profile?.full_name ?? '', id: '' }]);
-  const [dateOfSubmission, setDateOfSubmission] = useState(new Date().toISOString().slice(0, 10));
+  const [dateOfSubmission, setDateOfSubmission] = useState(localToday());
   const [generating, setGenerating] = useState(false);
 
   const [facultyList, setFacultyList] = useState<FacultyRow[]>([]);
