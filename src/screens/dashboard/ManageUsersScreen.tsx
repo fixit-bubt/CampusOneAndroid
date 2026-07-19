@@ -19,7 +19,10 @@ import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
 
 const ROLE_TOKEN = { student: 'roleStudent', staff: 'roleStaff', admin: 'roleAdmin' } as const;
-const ROLE_NEXT: Record<string, Profile['role']> = { student: 'staff', staff: 'admin', admin: 'student' };
+// Students are never promoted to staff/admin — they only become CR or Club
+// President (per-row shortcuts). The role pill only toggles Staff <-> Admin on
+// accounts that are already staff/admin; new staff/admin come from Create account.
+const ROLE_NEXT: Record<string, Profile['role']> = { staff: 'admin', admin: 'staff' };
 
 // Staff trade values match Report.category so assignment can match by trade.
 const TRADES = ['Electrical', 'Plumbing', 'Cleanliness', 'IT / Network', 'Furniture', 'Safety / Security', 'Other'] as const;
@@ -68,11 +71,14 @@ export function ManageUsersScreen({ navigation }: any) {
   }
 
   async function cycleRole(u: Profile) {
+    // Students can't be promoted from here — CR / President only (via the row shortcuts).
+    if (u.role === 'student') return;
     if (u.id === user?.id) {
       showToast({ type: 'error', title: t.manage.notAllowed, message: t.manage.cannotDemoteSelf });
       return;
     }
-    const next = ROLE_NEXT[u.role] ?? 'student';
+    const next = ROLE_NEXT[u.role];
+    if (!next) return;
     Alert.alert(
       t.manage.changeRole,
       t.manage.changeRoleBody(u.full_name, u.role, next),
@@ -104,10 +110,12 @@ export function ManageUsersScreen({ navigation }: any) {
   async function openCr(u: Profile) {
     setCrFor(u);
     if (sections === null) {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('study_sections')
         .select('id, number, study_intakes(number, departments(name))')
         .order('number');
+      // Leave the cache null on failure so reopening retries instead of showing a false-empty list.
+      if (error) { showToast({ type: 'error', title: t.common.error, message: error.message }); return; }
       const opts = (data ?? []).map((s: any) => {
         const intake = Array.isArray(s.study_intakes) ? s.study_intakes[0] : s.study_intakes;
         const dept = intake && (Array.isArray(intake.departments) ? intake.departments[0] : intake.departments);
@@ -121,7 +129,8 @@ export function ManageUsersScreen({ navigation }: any) {
   async function openPres(u: Profile) {
     setPresFor(u);
     if (clubs === null) {
-      const { data } = await supabase.from('clubs').select('id, name').eq('is_active', true).order('name');
+      const { data, error } = await supabase.from('clubs').select('id, name').eq('is_active', true).order('name');
+      if (error) { showToast({ type: 'error', title: t.common.error, message: error.message }); return; }
       setClubs((data ?? []) as { id: string; name: string }[]);
     }
   }
@@ -129,6 +138,11 @@ export function ManageUsersScreen({ navigation }: any) {
   async function assignCr(sectionId: string) {
     if (!crFor || assigning) return;
     setAssigning(true);
+    // One CR per section: demote any current CR first (mirrors club_set_president's
+    // atomic hand-over), otherwise a section accumulates multiple CRs.
+    await supabase.from('study_section_members')
+      .update({ role: 'member' })
+      .eq('section_id', sectionId).eq('role', 'cr').neq('user_id', crFor.id);
     const { error } = await supabase.from('study_section_members').upsert(
       { section_id: sectionId, user_id: crFor.id, role: 'cr', status: 'approved' },
       { onConflict: 'section_id,user_id' },
@@ -264,8 +278,9 @@ export function ManageUsersScreen({ navigation }: any) {
                   </View>
                   <TouchableOpacity
                     style={[styles.rolePill, { backgroundColor: roleHex + (isDark ? '36' : '1e') }]}
-                    onPress={() => cycleRole(u)}
-                    activeOpacity={0.75}
+                    onPress={u.role === 'student' ? undefined : () => cycleRole(u)}
+                    disabled={u.role === 'student'}
+                    activeOpacity={u.role === 'student' ? 1 : 0.75}
                   >
                     <View style={[styles.pilldot, { backgroundColor: roleHex }]} />
                     <Text style={[styles.pillTxt, { color: roleHex, fontFamily: FontFamily.jakartaBold }]}>
