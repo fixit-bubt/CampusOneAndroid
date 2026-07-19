@@ -1362,6 +1362,8 @@ You will be registered as an available ${group} donor.`,
   },
   calendar2: {
     title: "Academic Calendar",
+    pdf: "PDF",
+    officialPdf: "Official calendar PDF",
     addEvent: "Add Event",
     editEvent: "Edit Event",
     noEvents: "No events this month",

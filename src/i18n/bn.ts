@@ -1364,6 +1364,8 @@ export const bn: Dict = {
 
   calendar2: {
     title: "একাডেমিক ক্যালেন্ডার",
+    pdf: "পিডিএফ",
+    officialPdf: "অফিসিয়াল ক্যালেন্ডার পিডিএফ",
     addEvent: "ইভেন্ট যোগ",
     editEvent: "ইভেন্ট সম্পাদনা",
     noEvents: "এই মাসে কোনো ইভেন্ট নেই",

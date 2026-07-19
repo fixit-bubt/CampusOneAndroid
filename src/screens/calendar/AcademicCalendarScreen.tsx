@@ -12,7 +12,11 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { Pill } from '../../components/ui/Pill';
 import { supabase } from '../../lib/supabase';
+import { openUrl } from '../../utils/link';
 import { FontFamily, FontSize, Layout, Radius, Spacing, SectorColors, Accent } from '../../theme';
+
+// Official academic-calendar PDF, served from the campus web app.
+const CALENDAR_PDF_URL = 'https://fixit-campus-theta.vercel.app/bubt-academic-calendar-summer-2026.pdf';
 
 interface CalendarEvent {
   id: string;
@@ -200,11 +204,24 @@ export function AcademicCalendarScreen({ navigation }: any) {
       <SubBar
         title={t.calendar2.title}
         onBack={() => navigation.goBack()}
-        rightSlot={isAdmin ? (
-          <TouchableOpacity onPress={openAdd} hitSlop={8}>
-            <Icon name="plus" size={22} color={C.brand} />
-          </TouchableOpacity>
-        ) : undefined}
+        rightSlot={(
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              style={[styles.pdfBtn, { borderColor: C.border }]}
+              onPress={() => openUrl(CALENDAR_PDF_URL)}
+              accessibilityLabel={t.calendar2.officialPdf}
+              activeOpacity={0.7}
+            >
+              <Icon name="fileText" size={14} color={C.text2} />
+              <Text style={[styles.pdfTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>{t.calendar2.pdf}</Text>
+            </TouchableOpacity>
+            {isAdmin && (
+              <TouchableOpacity onPress={openAdd} hitSlop={8}>
+                <Icon name="plus" size={22} color={C.brand} />
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
       />
 
       <ScrollView
@@ -422,6 +439,9 @@ export function AcademicCalendarScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { paddingBottom: 20 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  pdfBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, height: 32, borderRadius: 9, borderWidth: 1 },
+  pdfTxt: { fontSize: 12.5 },
   monthRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: Spacing[4] },
   monthLabel: { fontSize: FontSize.xl },
   calendarCard: { borderRadius: Radius.lg, borderWidth: 1, padding: Spacing[3], marginBottom: Spacing[3] },
