@@ -34,6 +34,13 @@ export function ManageUsersScreen({ navigation }: any) {
   const showToast = useToast();
   const [expertiseTarget, setExpertiseTarget] = useState<Profile | null>(null);
 
+  // Assign-position pickers (student rows only)
+  const [crFor, setCrFor] = useState<Profile | null>(null);
+  const [presFor, setPresFor] = useState<Profile | null>(null);
+  const [sections, setSections] = useState<{ id: string; label: string }[] | null>(null);
+  const [clubs, setClubs] = useState<{ id: string; name: string }[] | null>(null);
+  const [assigning, setAssigning] = useState(false);
+
   // Create-account sheet
   const [createOpen, setCreateOpen] = useState(false);
   const [cName, setCName] = useState('');
@@ -92,6 +99,54 @@ export function ManageUsersScreen({ navigation }: any) {
     if (error) { showToast({ type: 'error', title: t.common.error, message: error.message }); await load(); return; }
     setToast(true);
     setTimeout(() => setToast(false), 1500);
+  }
+
+  async function openCr(u: Profile) {
+    setCrFor(u);
+    if (sections === null) {
+      const { data } = await supabase
+        .from('study_sections')
+        .select('id, number, study_intakes(number, departments(name))')
+        .order('number');
+      const opts = (data ?? []).map((s: any) => {
+        const intake = Array.isArray(s.study_intakes) ? s.study_intakes[0] : s.study_intakes;
+        const dept = intake && (Array.isArray(intake.departments) ? intake.departments[0] : intake.departments);
+        const deptName = (dept?.name ?? '').replace(/^Department of\s*/i, '');
+        return { id: s.id as string, label: `${deptName || '-'} · Intake ${intake?.number ?? '?'} · Sec ${s.number}` };
+      }).sort((a: { label: string }, b: { label: string }) => a.label.localeCompare(b.label));
+      setSections(opts);
+    }
+  }
+
+  async function openPres(u: Profile) {
+    setPresFor(u);
+    if (clubs === null) {
+      const { data } = await supabase.from('clubs').select('id, name').eq('is_active', true).order('name');
+      setClubs((data ?? []) as { id: string; name: string }[]);
+    }
+  }
+
+  async function assignCr(sectionId: string) {
+    if (!crFor || assigning) return;
+    setAssigning(true);
+    const { error } = await supabase.from('study_section_members').upsert(
+      { section_id: sectionId, user_id: crFor.id, role: 'cr', status: 'approved' },
+      { onConflict: 'section_id,user_id' },
+    );
+    setAssigning(false);
+    if (error) { showToast({ type: 'error', title: t.common.error, message: error.message }); return; }
+    showToast({ type: 'success', title: t.manage.crAssigned, message: crFor.full_name });
+    setCrFor(null);
+  }
+
+  async function assignPres(clubId: string) {
+    if (!presFor || assigning) return;
+    setAssigning(true);
+    const { error } = await supabase.rpc('club_set_president', { p_club_id: clubId, p_user_id: presFor.id });
+    setAssigning(false);
+    if (error) { showToast({ type: 'error', title: t.common.error, message: error.message }); return; }
+    showToast({ type: 'success', title: t.manage.presidentAssigned, message: presFor.full_name });
+    setPresFor(null);
   }
 
   function resetCreateForm() {
@@ -186,6 +241,26 @@ export function ManageUsersScreen({ navigation }: any) {
                         </Text>
                       </TouchableOpacity>
                     )}
+                    {u.role === 'student' && (
+                      <View style={styles.studentActions}>
+                        <TouchableOpacity
+                          style={[styles.actChip, { borderColor: C.border, backgroundColor: C.bg }]}
+                          onPress={() => openCr(u)}
+                          activeOpacity={0.75}
+                        >
+                          <Feather name="award" size={12} color={C.text2} />
+                          <Text style={[styles.actChipTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>{t.manage.makeCr}</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.actChip, { borderColor: C.border, backgroundColor: C.bg }]}
+                          onPress={() => openPres(u)}
+                          activeOpacity={0.75}
+                        >
+                          <Feather name="star" size={12} color={C.text2} />
+                          <Text style={[styles.actChipTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>{t.manage.makePresident}</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
                   </View>
                   <TouchableOpacity
                     style={[styles.rolePill, { backgroundColor: roleHex + (isDark ? '36' : '1e') }]}
@@ -233,6 +308,60 @@ export function ManageUsersScreen({ navigation }: any) {
             <View style={[styles.pilldot, { backgroundColor: C.textMuted }]} />
             <Text style={[styles.optTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{t.manage.noTradeOption}</Text>
           </TouchableOpacity>
+        </View>
+      </Modal>
+
+      {/* CR picker */}
+      <Modal visible={!!crFor} transparent animationType="slide" onRequestClose={() => setCrFor(null)}>
+        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setCrFor(null)} />
+        <View style={[styles.sheet, { backgroundColor: C.surface }]}>
+          <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{t.manage.crSheetTitle}</Text>
+          <Text style={[styles.sheetSub, { color: C.text2, fontFamily: FontFamily.jakartaBold, marginBottom: 2 }]}>{crFor?.full_name}</Text>
+          <Text style={[styles.sheetSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{t.manage.crSheetSub}</Text>
+          {sections === null ? (
+            <ActivityIndicator style={{ marginVertical: 24 }} color={C.brand} />
+          ) : sections.length === 0 ? (
+            <Text style={[styles.optTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium, paddingVertical: 18 }]}>{t.manage.noSections}</Text>
+          ) : (
+            <ScrollView style={{ maxHeight: 360 }}>
+              {sections.map((s, i) => (
+                <View key={s.id}>
+                  {i > 0 && <View style={[styles.divider, { backgroundColor: C.border }]} />}
+                  <TouchableOpacity style={styles.optRow} onPress={() => assignCr(s.id)} disabled={assigning} activeOpacity={0.75}>
+                    <Text style={[styles.optTxt, { color: C.text, fontFamily: FontFamily.jakartaBold, flex: 1 }]}>{s.label}</Text>
+                    <Feather name="chevron-right" size={16} color={C.textMuted} />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </ScrollView>
+          )}
+        </View>
+      </Modal>
+
+      {/* President picker */}
+      <Modal visible={!!presFor} transparent animationType="slide" onRequestClose={() => setPresFor(null)}>
+        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setPresFor(null)} />
+        <View style={[styles.sheet, { backgroundColor: C.surface }]}>
+          <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{t.manage.presSheetTitle}</Text>
+          <Text style={[styles.sheetSub, { color: C.text2, fontFamily: FontFamily.jakartaBold, marginBottom: 2 }]}>{presFor?.full_name}</Text>
+          <Text style={[styles.sheetSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{t.manage.presSheetSub}</Text>
+          {clubs === null ? (
+            <ActivityIndicator style={{ marginVertical: 24 }} color={C.brand} />
+          ) : clubs.length === 0 ? (
+            <Text style={[styles.optTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium, paddingVertical: 18 }]}>{t.manage.noActiveClubs}</Text>
+          ) : (
+            <ScrollView style={{ maxHeight: 360 }}>
+              {clubs.map((c, i) => (
+                <View key={c.id}>
+                  {i > 0 && <View style={[styles.divider, { backgroundColor: C.border }]} />}
+                  <TouchableOpacity style={styles.optRow} onPress={() => assignPres(c.id)} disabled={assigning} activeOpacity={0.75}>
+                    <Text style={[styles.optTxt, { color: C.text, fontFamily: FontFamily.jakartaBold, flex: 1 }]}>{c.name}</Text>
+                    <Feather name="chevron-right" size={16} color={C.textMuted} />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </ScrollView>
+          )}
         </View>
       </Modal>
 
@@ -392,6 +521,18 @@ const styles = StyleSheet.create({
     marginTop: 6,
   } as ViewStyle,
   tradeChipTxt: { fontSize: 11.5 } as any,
+
+  studentActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 6 } as ViewStyle,
+  actChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 20,
+    borderWidth: 1,
+  } as ViewStyle,
+  actChipTxt: { fontSize: 11.5 } as any,
 
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' } as ViewStyle,
   sheet: {
