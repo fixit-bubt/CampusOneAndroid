@@ -32,21 +32,21 @@ export function MarketDetailScreen({ route, navigation }: any) {
   const { listingId } = route.params ?? {};
   if (!listingId) return null;
   const [listing, setListing] = useState<any>(null);
+  const [failed, setFailed] = useState(false);
   const [sellerName, setSellerName] = useState<string | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [contactInfo, setContactInfo] = useState<{ name: string | null; whatsapp: string | null } | null>(null);
 
   useEffect(() => {
     (async () => {
-      const { data: l } = await supabase
+      const { data: l, error } = await supabase
         .from('listings')
         .select('*, profiles:profiles!seller_id(full_name)')
         .eq('id', listingId)
         .single();
-      if (l) {
-        setListing(l);
-        setSellerName((l as any).profiles?.full_name ?? null);
-      }
+      if (error || !l) { setFailed(true); return; }
+      setListing(l);
+      setSellerName((l as any).profiles?.full_name ?? null);
     })();
   }, [listingId]);
 
@@ -83,7 +83,11 @@ export function MarketDetailScreen({ route, navigation }: any) {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
         <SubBar title="Marketplace" onBack={() => navigation.goBack()} />
-        <View style={styles.center}><ActivityIndicator color={C.brand} /></View>
+        <View style={styles.center}>
+          {failed
+            ? <Text style={{ color: C.textMuted, fontFamily: FontFamily.jakartaMedium }}>{t.common.notFound}</Text>
+            : <ActivityIndicator color={C.brand} />}
+        </View>
       </SafeAreaView>
     );
   }

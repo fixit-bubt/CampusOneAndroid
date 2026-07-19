@@ -104,6 +104,7 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
 
   const toast = useToast();
   const [item, setItem] = useState<LostFoundItem | null>(null);
+  const [notFound, setNotFound] = useState(false);
   const [poster, setPoster] = useState<{ full_name: string; avatar_url: string | null } | null>(null);
   const [claims, setClaims] = useState<ClaimRow[]>([]);
   const [matches, setMatches] = useState<MatchItem[]>([]);
@@ -139,6 +140,8 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
       loaded = rest as LostFoundItem;
       setItem(loaded);
       setPoster(profiles);
+    } else {
+      setNotFound(true);
     }
     if (claimsRes.data) setClaims(claimsRes.data as ClaimRow[]);
 
@@ -256,7 +259,9 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
         <SubBar title="Lost & Found" onBack={() => navigation.goBack()} />
         <View style={styles.center}>
-          <ActivityIndicator color={C.brand} />
+          {notFound
+            ? <Text style={{ color: C.textMuted, fontFamily: FontFamily.jakartaMedium }}>{t.common.notFound}</Text>
+            : <ActivityIndicator color={C.brand} />}
         </View>
       </SafeAreaView>
     );

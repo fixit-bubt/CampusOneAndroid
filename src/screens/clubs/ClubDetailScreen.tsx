@@ -70,6 +70,7 @@ export function ClubDetailScreen({ route, navigation }: any) {
   const toast = useToast();
   const id = route.params?.clubId ?? route.params?.id;
   const [club, setClub] = useState<Club | null>(null);
+  const [notFound, setNotFound] = useState(false);
   const [tab, setTab] = useState<Tab>('feed');
   const [posts, setPosts] = useState<Post[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
@@ -98,6 +99,7 @@ export function ClubDetailScreen({ route, navigation }: any) {
         .eq('status', 'pending').maybeSingle(),
     ]);
     if (clubRes.data) setClub(clubRes.data as Club);
+    else setNotFound(true);
     if (postsRes.data) setPosts(postsRes.data as any);
     if (membersRes.data) {
       setMembers((membersRes.data as any[]).sort((a, b) => (ROLE_RANK[a.role] ?? 9) - (ROLE_RANK[b.role] ?? 9)));
@@ -139,7 +141,11 @@ export function ClubDetailScreen({ route, navigation }: any) {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
         <SubBar title={t.clubs2.clubTitle} onBack={() => navigation.goBack()} />
-        <View style={styles.center}><ActivityIndicator color={C.brand} /></View>
+        <View style={styles.center}>
+          {notFound
+            ? <Text style={{ color: C.textMuted, fontFamily: FontFamily.jakartaMedium }}>{t.common.notFound}</Text>
+            : <ActivityIndicator color={C.brand} />}
+        </View>
       </SafeAreaView>
     );
   }
