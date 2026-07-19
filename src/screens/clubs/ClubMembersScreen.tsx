@@ -26,6 +26,14 @@ interface Member {
   profiles: { full_name: string; avatar_url: string | null } | null;
 }
 
+interface JoinReq {
+  id: string;
+  user_id: string;
+  message: string | null;
+  created_at: string;
+  profiles: { full_name: string; avatar_url: string | null } | null;
+}
+
 const ROLE_RANK: Record<string, number> = { president: 0, vp: 1, editor: 2, member: 3 };
 const ASSIGNABLE = ['vp', 'editor', 'member'];
 
@@ -35,6 +43,7 @@ export function ClubMembersScreen({ route, navigation }: any) {
   const t = useT();
   const clubId: string = route.params?.clubId;
   const [members, setMembers] = useState<Member[]>([]);
+  const [requests, setRequests] = useState<JoinReq[]>([]);
   // Latest members for the search exclusion, without making the search effect
   // re-run (and refetch) every time the member list mutates.
   const membersRef = useRef<Member[]>([]);
@@ -46,13 +55,20 @@ export function ClubMembersScreen({ route, navigation }: any) {
   const toast = useToast();
 
   const load = useCallback(async () => {
-    const { data } = await supabase
-      .from('club_members')
-      .select('*, profiles:profiles!user_id(full_name, avatar_url)')
-      .eq('club_id', clubId);
-    if (data) {
-      setMembers((data as Member[]).sort((a, b) => (ROLE_RANK[a.role] ?? 9) - (ROLE_RANK[b.role] ?? 9)));
+    const [memRes, reqRes] = await Promise.all([
+      supabase.from('club_members')
+        .select('*, profiles:profiles!user_id(full_name, avatar_url)')
+        .eq('club_id', clubId),
+      // Pending join requests. RLS returns rows only to this club's officers/admins.
+      supabase.from('club_join_requests')
+        .select('id, user_id, message, created_at, profiles:profiles!user_id(full_name, avatar_url)')
+        .eq('club_id', clubId).eq('status', 'pending')
+        .order('created_at', { ascending: true }),
+    ]);
+    if (memRes.data) {
+      setMembers((memRes.data as Member[]).sort((a, b) => (ROLE_RANK[a.role] ?? 9) - (ROLE_RANK[b.role] ?? 9)));
     }
+    setRequests((reqRes.data as JoinReq[] | null) ?? []);
   }, [clubId]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -106,6 +122,26 @@ export function ClubMembersScreen({ route, navigation }: any) {
     ]);
   }
 
+  // Approve = add the member first, then stamp the request, so a failure can't
+  // strand an approved request without a membership. 23505 = already a member.
+  async function decide(req: JoinReq, approve: boolean) {
+    if (approve) {
+      const { error: memErr } = await supabase.from('club_members')
+        .insert({ club_id: clubId, user_id: req.user_id, role: 'member', added_by: user?.id });
+      if (memErr && memErr.code !== '23505') {
+        toast({ type: 'error', title: t.common.error, message: memErr.message }); return;
+      }
+    }
+    const { data: rows, error } = await supabase.from('club_join_requests')
+      .update({ status: approve ? 'approved' : 'denied', decided_by: user?.id, decided_at: new Date().toISOString() })
+      .eq('id', req.id)
+      .select('id');
+    if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
+    if (!rows || rows.length === 0) { toast({ type: 'error', title: t.common.error }); return; }
+    setRequests(prev => prev.filter(r => r.id !== req.id));
+    load();
+  }
+
   const myRole = members.find(m => m.user_id === user?.id)?.role ?? null;
   const canManage = myRole === 'president' || myRole === 'vp' || profile?.role === 'admin';
   // RLS: VPs can add/remove members but only presidents/admins can change roles.
@@ -134,6 +170,40 @@ export function ClubMembersScreen({ route, navigation }: any) {
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
       >
+        {requests.length > 0 && (
+          <View style={{ marginBottom: 16 }}>
+            <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+              {t.clubs.joinRequests} · {requests.length}
+            </Text>
+            <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
+              {requests.map((r, i) => (
+                <View key={r.id}>
+                  {i > 0 && <View style={[styles.divider, { backgroundColor: C.border }]} />}
+                  <View style={styles.row}>
+                    <Avatar uri={r.profiles?.avatar_url} name={r.profiles?.full_name} size="sm" />
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={[styles.name, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                        {r.profiles?.full_name ?? 'Student'}
+                      </Text>
+                      {r.message ? (
+                        <Text style={[styles.reqMsg, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={2}>
+                          {r.message}
+                        </Text>
+                      ) : null}
+                    </View>
+                    <TouchableOpacity style={[styles.reqBtn, { backgroundColor: C.brand }]} onPress={() => decide(r, true)} activeOpacity={0.8}>
+                      <Feather name="check" size={15} color={C.white} />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.reqBtn, { backgroundColor: C.surface2, borderColor: C.border, borderWidth: 1 }]} onPress={() => decide(r, false)} activeOpacity={0.8}>
+                      <Feather name="x" size={15} color={C.text2} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
         <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
           {members.map((m, i) => {
             const isLead = m.role === 'president' || m.role === 'vp';
@@ -243,6 +313,9 @@ const styles = StyleSheet.create({
   card: { borderRadius: 16, borderWidth: 1, overflow: 'hidden' } as ViewStyle,
   divider: { height: StyleSheet.hairlineWidth } as ViewStyle,
   row: { flexDirection: 'row', alignItems: 'center', gap: 11, padding: 12, paddingHorizontal: 14 } as ViewStyle,
+  sectionLabel: { fontSize: 11, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 8, marginLeft: 2 } as TextStyle,
+  reqMsg: { fontSize: 12, marginTop: 2, lineHeight: 16 } as TextStyle,
+  reqBtn: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
   name: { fontSize: 14 } as TextStyle,
   rolePill: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 9, paddingVertical: 5, borderRadius: 999 } as ViewStyle,
   roleTxt: { fontSize: 11 } as TextStyle,

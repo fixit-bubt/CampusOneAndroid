@@ -192,6 +192,17 @@ export const en = {
     category: 'CATEGORY',
     noClubs: 'No clubs yet.',
     notMember: 'You are not a member of any club yet.',
+    requestToJoin: 'Request to join',
+    withdrawRequest: 'Withdraw request',
+    requestPending: 'Request pending',
+    requestSent: 'Request sent',
+    requestSentBody: 'The club officers will review your request.',
+    requestWithdrawn: 'Request withdrawn',
+    alreadyRequested: 'You already have a pending request for this club.',
+    alreadyMemberErr: "You're already a member of this club.",
+    joinRequests: 'Join requests',
+    approve: 'Approve',
+    deny: 'Deny',
   },
 
   medical: {

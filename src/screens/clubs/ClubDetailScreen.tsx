@@ -74,6 +74,8 @@ export function ClubDetailScreen({ route, navigation }: any) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [myRole, setMyRole] = useState<string | null>(null);
+  const [myRequest, setMyRequest] = useState<{ id: string } | null>(null);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     const unsub = navigation.addListener('focus', load);
@@ -83,13 +85,17 @@ export function ClubDetailScreen({ route, navigation }: any) {
   }, [id, user?.id]);
 
   async function load() {
-    const [clubRes, postsRes, membersRes] = await Promise.all([
+    const [clubRes, postsRes, membersRes, reqRes] = await Promise.all([
       supabase.from('clubs').select('*').eq('id', id).single(),
       supabase.from('club_posts').select('*, profiles:profiles!author_id(full_name)').eq('club_id', id)
         .order('is_pinned', { ascending: false })
         .order('created_at', { ascending: false })
         .limit(30),
       supabase.from('club_members').select('*, profiles:profiles!user_id(full_name)').eq('club_id', id),
+      // My own pending join request, if any (RLS only returns the caller's row).
+      supabase.from('club_join_requests').select('id')
+        .eq('club_id', id).eq('user_id', user?.id ?? '')
+        .eq('status', 'pending').maybeSingle(),
     ]);
     if (clubRes.data) setClub(clubRes.data as Club);
     if (postsRes.data) setPosts(postsRes.data as any);
@@ -98,6 +104,35 @@ export function ClubDetailScreen({ route, navigation }: any) {
       const me = (membersRes.data as any[]).find(m => m.user_id === user?.id);
       setMyRole(me ? me.role : null);
     }
+    setMyRequest(reqRes.data ? { id: (reqRes.data as any).id } : null);
+  }
+
+  async function requestJoin() {
+    if (!user || busy) return;
+    setBusy(true);
+    const { error } = await supabase.from('club_join_requests')
+      .insert({ club_id: id, user_id: user.id, message: '' });
+    setBusy(false);
+    if (error) {
+      const message = error.code === '23505' ? t.clubs.alreadyRequested
+        : error.code === '42501' ? t.clubs.alreadyMemberErr
+        : error.message;
+      toast({ type: 'error', title: t.common.error, message });
+      return;
+    }
+    toast({ type: 'success', title: t.clubs.requestSent, message: t.clubs.requestSentBody });
+    load();
+  }
+
+  async function withdrawRequest() {
+    if (!user || busy) return;
+    setBusy(true);
+    const { error } = await supabase.from('club_join_requests')
+      .delete().eq('club_id', id).eq('user_id', user.id).eq('status', 'pending');
+    setBusy(false);
+    if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
+    setMyRequest(null);
+    toast({ type: 'success', title: t.clubs.requestWithdrawn });
   }
 
   if (!club) {
@@ -210,14 +245,33 @@ export function ClubDetailScreen({ route, navigation }: any) {
           <Text style={[styles.desc, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>{club.about}</Text>
         ) : null}
 
-        {/* Invitation-only: no self-join. Members can leave. */}
+        {/* Self-serve join: request to join, or withdraw a pending request. */}
         {!isMember && !isAdmin && (
-          <View style={[styles.inviteCard, { backgroundColor: C.surface2 }]}>
-            <Feather name="lock" size={14} color={C.textMuted} />
-            <Text style={[styles.inviteTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-              {t.clubs.inviteOnly}
-            </Text>
-          </View>
+          myRequest ? (
+            <View style={[styles.inviteCard, { backgroundColor: C.surface2 }]}>
+              <View style={[styles.pendingDot, { backgroundColor: Accent.amber }]} />
+              <Text style={[styles.inviteTxt, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>
+                {t.clubs.requestPending}
+              </Text>
+              <TouchableOpacity onPress={withdrawRequest} disabled={busy} hitSlop={8} activeOpacity={0.7}>
+                <Text style={[styles.withdrawTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
+                  {t.clubs.withdrawRequest}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={[styles.joinBtn, { backgroundColor: C.brand }]}
+              onPress={requestJoin}
+              disabled={busy}
+              activeOpacity={0.8}
+            >
+              <Feather name="user-plus" size={15} color={C.white} />
+              <Text style={[styles.joinBtnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>
+                {t.clubs.requestToJoin}
+              </Text>
+            </TouchableOpacity>
+          )
         )}
         {isMember && myRole !== 'president' && (
           <TouchableOpacity
@@ -360,6 +414,8 @@ const styles = StyleSheet.create({
   desc: { fontSize: 13.5, lineHeight: 20, marginTop: 6, marginHorizontal: 2 } as any,
   inviteCard: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, borderRadius: 12, marginTop: 12 } as ViewStyle,
   inviteTxt: { flex: 1, fontSize: 12.5, lineHeight: 18 } as any,
+  pendingDot: { width: 7, height: 7, borderRadius: 4 } as ViewStyle,
+  withdrawTxt: { fontSize: 12.5 } as any,
   pinnedRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 8 } as ViewStyle,
   pinnedTxt: { fontSize: 10.5, letterSpacing: 0.4 } as any,
   postTitle: { fontSize: 14.5, marginTop: 10 } as any,

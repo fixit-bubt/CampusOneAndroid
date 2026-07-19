@@ -193,6 +193,17 @@ export const bn: Dict = {
     category: 'বিভাগ',
     noClubs: 'এখনও কোনো ক্লাব নেই।',
     notMember: 'আপনি এখনও কোনো ক্লাবের সদস্য নন।',
+    requestToJoin: 'যোগ দিতে অনুরোধ',
+    withdrawRequest: 'অনুরোধ প্রত্যাহার',
+    requestPending: 'অনুরোধ অপেক্ষমাণ',
+    requestSent: 'অনুরোধ পাঠানো হয়েছে',
+    requestSentBody: 'ক্লাবের কর্মকর্তারা আপনার অনুরোধ পর্যালোচনা করবেন।',
+    requestWithdrawn: 'অনুরোধ প্রত্যাহার করা হয়েছে',
+    alreadyRequested: 'এই ক্লাবের জন্য আপনার একটি অপেক্ষমাণ অনুরোধ রয়েছে।',
+    alreadyMemberErr: 'আপনি ইতিমধ্যে এই ক্লাবের সদস্য।',
+    joinRequests: 'যোগদানের অনুরোধ',
+    approve: 'অনুমোদন',
+    deny: 'প্রত্যাখ্যান',
   },
 
   medical: {
