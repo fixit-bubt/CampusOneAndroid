@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView, Platform,
   StyleSheet, type ViewStyle,
@@ -75,6 +75,28 @@ export function JobPostScreen({ navigation }: any) {
   const [applyMethod, setApplyMethod] = useState<'email' | 'link'>('email');
   const [applyValue, setApplyValue] = useState('');
   const [loading, setLoading] = useState(false);
+  const [myClubs, setMyClubs] = useState<{ id: string; name: string }[]>([]);
+  const [clubId, setClubId] = useState<string | null>(null);
+
+  // Clubs the user leads (president/vp) — they may post a job on the club's
+  // behalf. club_can_post(club_id) in the jobs RLS gate mirrors this list.
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data } = await supabase
+        .from('club_members')
+        .select('club_id, clubs:club_id(name)')
+        .eq('user_id', user.id)
+        .in('role', ['president', 'vp']);
+      if (data) {
+        setMyClubs(
+          (data as any[])
+            .map(r => ({ id: r.club_id as string, name: r.clubs?.name as string }))
+            .filter(c => !!c.name),
+        );
+      }
+    })();
+  }, [user?.id]);
 
   // Match the DB CHECK minimums (company>=2, title>=3, description>=10) and
   // apply_value (required by DB for both email and link methods).
@@ -113,6 +135,7 @@ export function JobPostScreen({ navigation }: any) {
         apply_value:  applyValue.trim() || null,
         posted_by:    user.id,
         posted_by_name: profile?.full_name ?? '',
+        club_id:      clubId,
       });
       if (error) throw error;
       navigation.goBack();
@@ -133,6 +156,31 @@ export function JobPostScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
+        {myClubs.length > 0 && (
+          <>
+            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 4 }]}>{t.jobs2.postAs}</Text>
+            <View style={styles.postAsRow}>
+              {([{ id: null as string | null, name: t.jobs2.postAsSelf }, ...myClubs]).map(opt => {
+                const on = clubId === opt.id;
+                return (
+                  <TouchableOpacity
+                    key={opt.id ?? 'self'}
+                    style={[styles.postAsChip, on
+                      ? { backgroundColor: C.brand, borderColor: C.brand }
+                      : { backgroundColor: C.surface, borderColor: C.border }]}
+                    onPress={() => setClubId(opt.id)}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={[styles.postAsChipTxt, { color: on ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                      {opt.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </>
+        )}
+
         <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.jobs2.company}</Text>
         <TextInput
           style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
@@ -248,6 +296,10 @@ export function JobPostScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
   scroll: { paddingTop: 12, paddingBottom: 20 } as ViewStyle,
+
+  postAsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 } as ViewStyle,
+  postAsChip: { paddingHorizontal: 13, paddingVertical: 8, borderRadius: 20, borderWidth: 1 } as ViewStyle,
+  postAsChipTxt: { fontSize: 13 } as any,
 
   label: {
     fontSize: 11,

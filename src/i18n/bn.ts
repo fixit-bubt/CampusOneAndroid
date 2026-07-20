@@ -296,6 +296,14 @@ export const bn: Dict = {
     pinned: "পিন করা",
     attachmentDefault: "সংযুক্তি.pdf",
     pdfTapToOpen: "PDF · খুলতে ট্যাপ করুন",
+    labelImage: "ছবি (ঐচ্ছিক)",
+    labelAttachment: "PDF (ঐচ্ছিক)",
+    tapToAddImage: "ছবি যোগ করতে ট্যাপ করুন",
+    tapToAttachPdf: "PDF যুক্ত করতে ট্যাপ করুন",
+    uploading: "আপলোড হচ্ছে…",
+    permissionRequired: "অনুমতি প্রয়োজন",
+    photoPermissionBody: "ছবি যুক্ত করতে অনুগ্রহ করে ফটো লাইব্রেরি অ্যাক্সেসের অনুমতি দিন।",
+    uploadFailed: "আপলোড ব্যর্থ হয়েছে। আবার চেষ্টা করুন।",
     agoShort: (v: string) => `${v} আগে`,
     priorityLabels: { Urgent: 'জরুরি', Important: 'গুরুত্বপূর্ণ', General: 'সাধারণ' } as Record<string, string>,
   },
@@ -446,6 +454,12 @@ export const bn: Dict = {
     postBtn: "পোস্ট",
     couldNotPost: "পোস্ট করা যায়নি। আবার চেষ্টা করুন।",
     noClubsFound: "কোনো ক্লাব পাওয়া যায়নি",
+    photoOptional: "ছবি (ঐচ্ছিক)",
+    tapToAddPhoto: "ছবি যোগ করতে ট্যাপ করুন",
+    uploading: "আপলোড হচ্ছে…",
+    permissionRequired: "অনুমতি প্রয়োজন",
+    photoPermissionBody: "ছবি যুক্ত করতে অনুগ্রহ করে ফটো লাইব্রেরি অ্যাক্সেসের অনুমতি দিন।",
+    uploadFailed: "ছবি আপলোড করা যায়নি। আবার চেষ্টা করুন।",
   },
 
   dash: {
@@ -707,6 +721,9 @@ export const bn: Dict = {
     remote: "রিমোট",
     hybrid: "হাইব্রিড",
     accessDenied: "প্রবেশ নিষেধ",
+    postAs: "যেভাবে পোস্ট করবেন",
+    postAsSelf: "নিজে",
+    onBehalfOf: (club: string) => `${club}-এর পক্ষে`,
   },
 
   lf: {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Image,
   type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -112,6 +112,11 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
           {item.body}
         </Text>
 
+        {/* Notice image */}
+        {item.image_url ? (
+          <Image source={{ uri: item.image_url }} style={styles.noticeImage} resizeMode="cover" />
+        ) : null}
+
         {/* Attachment */}
         {item.attachment_url && (
           <TouchableOpacity
@@ -151,6 +156,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 21, letterSpacing: -0.4, marginTop: 14, lineHeight: 28 } as any,
   meta: { fontSize: 12.5, marginTop: 6 } as any,
   body: { fontSize: 14.5, lineHeight: 24, marginTop: 16 } as any,
+  noticeImage: { width: '100%', height: 200, borderRadius: 14, marginTop: 16 } as any,
   attachCard: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 14, borderWidth: 1, marginTop: 18 } as ViewStyle,
   attachIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
   attachName: { fontSize: 13.5 } as any,

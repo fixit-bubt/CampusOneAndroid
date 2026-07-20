@@ -50,7 +50,7 @@ export function JobDetailScreen({ route, navigation }: any) {
     const [jobRes, saveRes] = await Promise.all([
       // maybeSingle: a removed job is invisible to non-admins (RLS), so .single()
       // would error and leave the screen spinning forever.
-      supabase.from('jobs').select('*').eq('id', jobId).maybeSingle(),
+      supabase.from('jobs').select('*, clubs:club_id(name)').eq('id', jobId).maybeSingle(),
       supabase.from('job_bookmarks').select('job_id').eq('job_id', jobId).eq('user_id', user?.id ?? '').maybeSingle(),
     ]);
     if (jobRes.error || !jobRes.data) { setFailed(true); return; }
@@ -160,6 +160,14 @@ export function JobDetailScreen({ route, navigation }: any) {
             <Text style={[styles.company, { color: C.textMuted, fontFamily: FontFamily.jakartaSemiBold }]}>
               {job.company}
             </Text>
+            {job.clubs?.name ? (
+              <View style={[styles.clubTag, { backgroundColor: C.infoBg }]}>
+                <Feather name="users" size={11} color={C.info} />
+                <Text style={[styles.clubTagTxt, { color: C.info, fontFamily: FontFamily.jakartaBold }]}>
+                  {t.jobs2.onBehalfOf(job.clubs.name)}
+                </Text>
+              </View>
+            ) : null}
           </View>
         </View>
 
@@ -352,6 +360,8 @@ const styles = StyleSheet.create({
   thumb: { width: 56, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center', flexShrink: 0 } as ViewStyle,
   role: { fontSize: 18, letterSpacing: -0.01, lineHeight: 24 } as any,
   company: { fontSize: 13, marginTop: 2 } as any,
+  clubTag: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20, marginTop: 7 } as ViewStyle,
+  clubTagTxt: { fontSize: 11 } as any,
 
   pills: { flexDirection: 'row', gap: 7, flexWrap: 'wrap', marginTop: 12 } as ViewStyle,
   statusPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 9, paddingVertical: 5, borderRadius: 20 } as ViewStyle,

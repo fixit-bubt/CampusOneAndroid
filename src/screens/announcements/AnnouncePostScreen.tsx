@@ -1,15 +1,20 @@
 import { useState } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView, Platform,
-  StyleSheet, Switch, type ViewStyle,
+  StyleSheet, Switch, Image, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Feather } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { uploadFile } from '../../utils/storage';
+import { BUCKETS } from '../../constants/app';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
 import type { Announcement } from '../../types/database';
@@ -36,6 +41,11 @@ export function AnnouncePostScreen({ navigation }: any) {
   const [priority, setPriority] = useState<Announcement['priority']>('General');
   const [body, setBody] = useState('');
   const [pinned, setPinned] = useState(false);
+  const [imageUri, setImageUri] = useState<string | null>(null);
+  const [attachmentUrl, setAttachmentUrl] = useState<string | null>(null);
+  const [attachmentName, setAttachmentName] = useState<string | null>(null);
+  const [uploadingImg, setUploadingImg] = useState(false);
+  const [uploadingPdf, setUploadingPdf] = useState(false);
   const [loading, setLoading] = useState(false);
   const toast = useToast();
 
@@ -58,9 +68,51 @@ export function AnnouncePostScreen({ navigation }: any) {
   }
 
   const canSubmit = title.trim() && body.trim();
+  const busy = uploadingImg || uploadingPdf;
+
+  async function pickImage() {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      toast({ type: 'info', title: t.announce2.permissionRequired, message: t.announce2.photoPermissionBody });
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: false, quality: 0.8 });
+    if (result.canceled || !result.assets?.[0]) return;
+    const asset = result.assets[0];
+    setUploadingImg(true);
+    try {
+      const ext = asset.uri.split('.').pop()?.toLowerCase() ?? 'jpg';
+      const contentType = ext === 'png' ? 'image/png' : 'image/jpeg';
+      const up = await uploadFile(BUCKETS.attachments, asset.uri, `announcements/${user!.id}/${Date.now()}.${ext}`, contentType);
+      if (!up.success) throw new Error(up.error);
+      setImageUri(up.url);
+    } catch {
+      toast({ type: 'error', title: t.common.error, message: t.announce2.uploadFailed });
+    } finally {
+      setUploadingImg(false);
+    }
+  }
+
+  async function pickPdf() {
+    const result = await DocumentPicker.getDocumentAsync({ type: 'application/pdf', copyToCacheDirectory: true });
+    if (result.canceled || !result.assets?.[0]) return;
+    const asset = result.assets[0];
+    setUploadingPdf(true);
+    try {
+      const safeName = asset.name.replace(/\s+/g, '_');
+      const up = await uploadFile(BUCKETS.attachments, asset.uri, `announcements/${user!.id}/${Date.now()}_${safeName}`, asset.mimeType ?? 'application/pdf');
+      if (!up.success) throw new Error(up.error);
+      setAttachmentUrl(up.url);
+      setAttachmentName(asset.name);
+    } catch {
+      toast({ type: 'error', title: t.common.error, message: t.announce2.uploadFailed });
+    } finally {
+      setUploadingPdf(false);
+    }
+  }
 
   async function handleSubmit() {
-    if (!canSubmit || !user || loading) return;
+    if (!canSubmit || !user || loading || busy) return;
     setLoading(true);
     try {
       const { error } = await supabase.from('announcements').insert({
@@ -71,6 +123,9 @@ export function AnnouncePostScreen({ navigation }: any) {
         body:       body.trim(),
         created_by: user.id,
         pinned:     pinned || priority === 'Urgent',
+        image_url:       imageUri,
+        attachment_url:  attachmentUrl,
+        attachment_name: attachmentName,
       });
       if (error) throw error;
       navigation.goBack();
@@ -139,6 +194,38 @@ export function AnnouncePostScreen({ navigation }: any) {
           textAlignVertical="top"
         />
 
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.announce2.labelImage}</Text>
+        <TouchableOpacity
+          style={[styles.photoBtn, { backgroundColor: C.surface, borderColor: C.border }]}
+          onPress={pickImage}
+          disabled={uploadingImg}
+          activeOpacity={0.75}
+        >
+          {imageUri ? (
+            <Image source={{ uri: imageUri }} style={styles.photoPreview} resizeMode="cover" />
+          ) : (
+            <View style={styles.photoPlaceholder}>
+              <Feather name="image" size={22} color={C.textMuted} />
+              <Text style={[styles.photoPlaceholderTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                {uploadingImg ? t.announce2.uploading : t.announce2.tapToAddImage}
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
+
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.announce2.labelAttachment}</Text>
+        <TouchableOpacity
+          style={[styles.fileBtn, { backgroundColor: C.surface, borderColor: attachmentUrl ? C.brand : C.border }]}
+          onPress={pickPdf}
+          disabled={uploadingPdf}
+          activeOpacity={0.75}
+        >
+          <Feather name="file-text" size={18} color={attachmentUrl ? C.brand : C.textMuted} />
+          <Text style={[styles.fileBtnTxt, { color: attachmentUrl ? C.brand : C.textMuted, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+            {uploadingPdf ? t.announce2.uploading : (attachmentName ?? t.announce2.tapToAttachPdf)}
+          </Text>
+        </TouchableOpacity>
+
         <View style={styles.pinRow}>
           <Text style={[styles.pinLbl, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>
             Pin to top
@@ -147,14 +234,14 @@ export function AnnouncePostScreen({ navigation }: any) {
         </View>
 
         <TouchableOpacity
-          style={[styles.submitBtn, { backgroundColor: canSubmit ? C.brand : C.surface2, opacity: loading ? 0.6 : 1 }]}
+          style={[styles.submitBtn, { backgroundColor: canSubmit ? C.brand : C.surface2, opacity: (loading || busy) ? 0.6 : 1 }]}
           onPress={handleSubmit}
-          disabled={!canSubmit || loading}
+          disabled={!canSubmit || loading || busy}
           activeOpacity={0.8}
         >
           <Icon name="check" size={18} color={canSubmit ? C.white : C.textMuted} />
           <Text style={[styles.submitText, { color: canSubmit ? C.white : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-            Publish
+            {t.announce2.publish}
           </Text>
         </TouchableOpacity>
 
@@ -170,6 +257,13 @@ const styles = StyleSheet.create({
   scroll: { paddingTop: 12, paddingBottom: 20 } as ViewStyle,
   pinRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 16 } as ViewStyle,
   pinLbl: { fontSize: 14 } as any,
+
+  photoBtn: { borderRadius: 12, borderWidth: 1, borderStyle: 'dashed', overflow: 'hidden', height: 120 } as ViewStyle,
+  photoPreview: { width: '100%', height: '100%' } as any,
+  photoPlaceholder: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 6 } as ViewStyle,
+  photoPlaceholderTxt: { fontSize: 13 } as any,
+  fileBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 52, borderRadius: 12, borderWidth: 1.5, borderStyle: 'dashed', marginTop: 4, paddingHorizontal: 12 } as ViewStyle,
+  fileBtnTxt: { fontSize: 14, flexShrink: 1 } as any,
 
   label: {
     fontSize: 11,
