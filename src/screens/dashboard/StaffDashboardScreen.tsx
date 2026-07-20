@@ -271,7 +271,7 @@ export function StaffDashboardScreen({ navigation }: any) {
           </View>
         )}
 
-        <CampusToday navigation={navigation} />
+        <CampusToday navigation={navigation} hide={['events', 'jobs']} />
 
         <View style={{ height: 12 }} />
       </ScrollView>

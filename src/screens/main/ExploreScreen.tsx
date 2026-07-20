@@ -54,12 +54,26 @@ const SECTORS: { id: SectorKey; en: string; dEn: string }[] = [
   { id: 'coverpage', en: 'Cover Page',         dEn: 'Generate assignment covers' },
 ];
 
+// Sectors a staff (maintenance) account sees in Explore — mirrors the web staff
+// nav. Everything else (Study Hub, Clubs, Jobs, Events, Faculty, Calendar,
+// Routines, Cover Page, Reports-create) stays student/admin-only.
+const STAFF_SECTORS: SectorKey[] = ['bus', 'prayer', 'announce', 'medical', 'market', 'ride', 'blood'];
+
 export function ExploreScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
   const t = useT();
   const { profile } = useAuth();
-  const isStudent = profile?.role === 'student';
-  const sectors = isStudent ? SECTORS : SECTORS.filter((s) => s.id !== 'lostfound');
+  const role = profile?.role;
+  const isStudent = role === 'student';
+  const isStaff = role === 'staff';
+  // Staff are maintenance crew — their panel is trimmed to maintenance-relevant
+  // sectors only (mirrors the web staff nav). Admin keeps everything but the
+  // student-only Lost & Found; students get the full grid.
+  const sectors = isStaff
+    ? SECTORS.filter((s) => STAFF_SECTORS.includes(s.id))
+    : isStudent
+      ? SECTORS
+      : SECTORS.filter((s) => s.id !== 'lostfound');
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -76,25 +90,27 @@ export function ExploreScreen({ navigation }: any) {
         contentContainerStyle={[styles.content, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Tool: CGPA calculator */}
-        <TouchableOpacity
-          style={[styles.toolCard, { backgroundColor: C.surface, borderColor: C.border }]}
-          onPress={() => navigation.navigate('Cgpa')}
-          activeOpacity={0.75}
-        >
-          <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
-            <Feather name="percent" size={20} color={C.brand} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.cellTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-              {t.cgpa.title}
-            </Text>
-            <Text style={[styles.cellDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
-              {t.cgpa.subtitle}
-            </Text>
-          </View>
-          <Feather name="chevron-right" size={18} color={C.textMuted} />
-        </TouchableOpacity>
+        {/* Tool: CGPA calculator — academic tool, hidden from maintenance staff */}
+        {!isStaff && (
+          <TouchableOpacity
+            style={[styles.toolCard, { backgroundColor: C.surface, borderColor: C.border }]}
+            onPress={() => navigation.navigate('Cgpa')}
+            activeOpacity={0.75}
+          >
+            <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
+              <Feather name="percent" size={20} color={C.brand} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.cellTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                {t.cgpa.title}
+              </Text>
+              <Text style={[styles.cellDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
+                {t.cgpa.subtitle}
+              </Text>
+            </View>
+            <Feather name="chevron-right" size={18} color={C.textMuted} />
+          </TouchableOpacity>
+        )}
 
         {/* 2-col grid */}
         {Array.from({ length: Math.ceil(sectors.length / 2) }, (_, i) => (

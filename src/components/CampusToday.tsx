@@ -27,7 +27,7 @@ function fmtTime(hhmm: string): string {
   return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
 }
 
-export function CampusToday({ navigation }: { navigation: any }) {
+export function CampusToday({ navigation, hide }: { navigation: any; hide?: string[] }) {
   const { C, isDark } = useTheme();
   const [widgets, setWidgets] = useState<WidgetData[]>([]);
 
@@ -93,7 +93,9 @@ export function CampusToday({ navigation }: { navigation: any }) {
 
   useEffect(() => { load(); }, [load]);
 
-  if (widgets.length === 0) return null;
+  // Some roles (e.g. maintenance staff) hide sectors they no longer have access to.
+  const shown = hide?.length ? widgets.filter(w => !hide.includes(w.sector)) : widgets;
+  if (shown.length === 0) return null;
 
   return (
     <View>
@@ -101,7 +103,7 @@ export function CampusToday({ navigation }: { navigation: any }) {
         CAMPUS TODAY
       </Text>
       <View style={styles.grid}>
-        {widgets.map(w => (
+        {shown.map(w => (
           <TouchableOpacity
             key={w.sector}
             style={[styles.cell, { backgroundColor: C.surface, borderColor: C.border }]}
