@@ -12,6 +12,7 @@ import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout , SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { localToday } from '../../utils/format';
+import { rankMatches, type MatchItem } from '../../utils/lostFoundMatch';
 import type { LostFoundItem } from '../../types/database';
 import { useT } from '../../i18n';
 
@@ -41,6 +42,7 @@ export function PostItemFormScreen({ route, navigation }: any) {
   const [desc, setDesc]   = useState('');
   const [busy, setBusy]   = useState(false);
   const [err, setErr]     = useState('');
+  const [matches, setMatches] = useState<MatchItem[]>([]);
 
   // Pre-fill fields when editing an existing item
   useEffect(() => {
@@ -60,6 +62,32 @@ export function PostItemFormScreen({ route, navigation }: any) {
       }
     })();
   }, [editId]);
+
+  // Pre-post hint: once a category and a 3+ char name exist, surface similar
+  // opposite-type open items so a return/duplicate isn't missed. Debounced.
+  useEffect(() => {
+    const q = title.trim();
+    if (!cat || q.length < 3 || !user) { setMatches([]); return; }
+    const oppType = type === 'Lost' ? 'Found' : 'Lost';
+    // `cancelled` covers a request already in flight — clearTimeout alone only
+    // cancels a still-pending debounce, so a slow older response could land last.
+    let cancelled = false;
+    const handle = setTimeout(async () => {
+      const { data } = await supabase
+        .from('lost_found_items')
+        .select('id, title, description, type, category, status, created_at, poster_id, location')
+        .eq('type', oppType)
+        .eq('category', cat)
+        .eq('status', 'Open')
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false })
+        .limit(40);
+      if (cancelled) return;
+      const ranked = rankMatches({ title: q, description: desc, poster_id: user.id }, (data ?? []) as MatchItem[]);
+      setMatches(editId ? ranked.filter(m => m.id !== editId) : ranked);
+    }, 350);
+    return () => { cancelled = true; clearTimeout(handle); };
+  }, [cat, title, desc, type, user, editId]);
 
   const ok = !!cat && title.trim().length > 0;
 
@@ -171,6 +199,38 @@ export function PostItemFormScreen({ route, navigation }: any) {
             placeholderTextColor={C.textMuted}
           />
 
+          {/* Pre-post match hint */}
+          {matches.length > 0 && (
+            <View style={[styles.matchWrap, { backgroundColor: C.surface2, borderColor: C.border }]}>
+              <Text style={[styles.matchHead, { color: C.text2, fontFamily: FontFamily.jakartaExtraBold }]}>
+                {t.lostfound.possibleMatches.toUpperCase()}
+              </Text>
+              <Text style={[styles.matchSub2, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                {t.lostfound.possibleMatchesSub}
+              </Text>
+              {matches.map(m => {
+                const mc = LF_CATS.find(c => c.id === m.category) ?? LF_CATS[LF_CATS.length - 1];
+                return (
+                  <TouchableOpacity
+                    key={m.id}
+                    style={styles.matchRow}
+                    onPress={() => navigation.navigate('LostFoundDetail', { itemId: m.id })}
+                    activeOpacity={0.75}
+                  >
+                    <View style={[styles.matchIcon, { backgroundColor: hexAlpha(mc.fg, 0.14) }]}>
+                      <Icon name={mc.icon} size={15} color={mc.fg} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.matchName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>{m.title}</Text>
+                      <Text style={[styles.matchLoc, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>{m.location}</Text>
+                    </View>
+                    <Icon name="chevR" size={16} color={C.textMuted} />
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+
           {/* Location */}
           <Text style={[styles.label, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>{t.lf.locationLabel}</Text>
           <TextInput
@@ -266,6 +326,14 @@ const styles = StyleSheet.create({
   } as ViewStyle,
 
   catLabel: { fontSize: 13 } as any,
+
+  matchWrap: { marginTop: 14, borderRadius: 14, borderWidth: 1, padding: 12 } as ViewStyle,
+  matchHead: { fontSize: 11, letterSpacing: 0.6 } as any,
+  matchSub2: { fontSize: 12, marginTop: 3, marginBottom: 6, lineHeight: 16 } as any,
+  matchRow: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 8 } as ViewStyle,
+  matchIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
+  matchName: { fontSize: 13.5 } as any,
+  matchLoc: { fontSize: 11.5, marginTop: 1 } as any,
 
   input: {
     height: 50,
