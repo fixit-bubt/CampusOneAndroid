@@ -11,12 +11,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
 import { useAuth } from '../../store/authStore';
+import { useMessages } from '../../store/messagesStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
-import { openUrl } from '../../utils/link';
+import { openUrl, waHref } from '../../utils/link';
 
 export type ConnState = 'none' | 'requested' | 'incoming' | 'connected';
 
@@ -44,6 +45,7 @@ export function StudentProfileScreen({ route, navigation }: any) {
   const { C } = useTheme();
   const t = useT();
   const { user } = useAuth();
+  const { reload: reloadMessages } = useMessages();
 
   const initial: DirectoryStudent = route.params?.student;
   const [student, setStudent] = useState<DirectoryStudent>(initial);
@@ -74,6 +76,9 @@ export function StudentProfileScreen({ route, navigation }: any) {
         .eq('requester_id', student.id).eq('addressee_id', user.id).eq('status', 'pending').select('requester_id');
       if (error || !upd || upd.length === 0) { await refresh(); return; }
       setStudent(s => ({ ...s, connState: 'connected' }));
+      // Accepting unlocks a DM — refresh the messages roster so the new partner
+      // is reachable before the "Message" button is tapped.
+      reloadMessages();
     } else {
       const { data: del, error } = await supabase.from('connections').delete()
         .eq('requester_id', student.id).eq('addressee_id', user.id).eq('status', 'pending').select('requester_id');
@@ -97,7 +102,7 @@ export function StudentProfileScreen({ route, navigation }: any) {
     .filter(Boolean)
     .join(' · ');
   const connected = student.connState === 'connected';
-  const waDigits = (student.whatsapp ?? '').replace(/[^0-9]/g, '');
+  const waLink = waHref(student.whatsapp);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -126,11 +131,23 @@ export function StudentProfileScreen({ route, navigation }: any) {
           {/* Connection state / action */}
           <View style={styles.connArea}>
             {student.connState === 'connected' && (
-              <View style={[styles.statePill, { backgroundColor: Accent.tealBg }]}>
-                <View style={[styles.stateDot, { backgroundColor: Accent.teal }]} />
-                <Text style={[styles.statePillTxt, { color: Accent.teal, fontFamily: FontFamily.jakartaBold }]}>
-                  {t.directory2.connected}
-                </Text>
+              <View style={styles.connectedRow}>
+                <View style={[styles.statePill, { backgroundColor: Accent.tealBg }]}>
+                  <View style={[styles.stateDot, { backgroundColor: Accent.teal }]} />
+                  <Text style={[styles.statePillTxt, { color: Accent.teal, fontFamily: FontFamily.jakartaBold }]}>
+                    {t.directory2.connected}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={[styles.msgBtn, { backgroundColor: C.brand }]}
+                  onPress={() => navigation.navigate('MessageThread', { kind: 'dm', id: student.id, title: student.full_name })}
+                  activeOpacity={0.85}
+                >
+                  <Icon name="chat" size={15} color="#fff" />
+                  <Text style={[styles.msgBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                    {t.messages.startChat}
+                  </Text>
+                </TouchableOpacity>
               </View>
             )}
             {student.connState === 'requested' && (
@@ -195,7 +212,7 @@ export function StudentProfileScreen({ route, navigation }: any) {
             <Text style={[styles.lockedTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
               {t.directory2.connectToSeeContact}
             </Text>
-          ) : student.email || waDigits.length > 0 ? (
+          ) : student.email || waLink ? (
             <>
               {student.email && (
                 <>
@@ -214,10 +231,10 @@ export function StudentProfileScreen({ route, navigation }: any) {
                   </Text>
                 </>
               )}
-              {waDigits.length > 0 && (
+              {waLink && (
                 <TouchableOpacity
                   style={[styles.waBtn, { backgroundColor: C.success }]}
-                  onPress={() => openUrl(`https://wa.me/${waDigits}`)}
+                  onPress={() => openUrl(waLink)}
                   activeOpacity={0.8}
                 >
                   <Icon name="phone" size={14} color="#fff" />
@@ -258,6 +275,12 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   stateDot: { width: 7, height: 7, borderRadius: 3.5 } as ViewStyle,
   statePillTxt: { fontSize: 12.5 } as TextStyle,
+  connectedRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 } as ViewStyle,
+  msgBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: 16, paddingVertical: 9, borderRadius: 12,
+  } as ViewStyle,
+  msgBtnTxt: { fontSize: 13 } as TextStyle,
 
   wants: { fontSize: 13, marginBottom: 9 } as TextStyle,
   fullBtn: {
