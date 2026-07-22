@@ -80,6 +80,7 @@ export function CourseDetailScreen({ route, navigation }: any) {
   const [tab, setTab] = useState<Tab>('materials');
   const [loading, setLoading] = useState(true);
   const [openingId, setOpeningId] = useState<string | null>(null);
+  const [forSale, setForSale] = useState<any[]>([]);
 
   // Controls
   const [showSearch, setShowSearch] = useState(false);
@@ -123,6 +124,28 @@ export function CourseDetailScreen({ route, navigation }: any) {
       setSaved(new Set((bm ?? []).map((b: any) => b.item_id)));
     } else {
       setSaved(new Set());
+    }
+
+    // Marketplace listings tagged with this course code (case/space-insensitive).
+    const code: string | undefined = courseRes.data?.code;
+    if (code) {
+      const norm = (s: string) => (s ?? '').toLowerCase().replace(/\s+/g, '');
+      const raw = code.trim();
+      const nospace = raw.replace(/\s+/g, '');
+      // Match server-side (case-insensitive, spaced + unspaced) and order newest
+      // first — a client-side cap would silently blank the strip once the
+      // marketplace grows past it.
+      const { data: listings } = await supabase
+        .from('listings')
+        .select('id, title, price, course_code, status')
+        .eq('status', 'Available')
+        .or(`course_code.ilike.${raw},course_code.ilike.${nospace}`)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      const n = norm(code);
+      setForSale(((listings ?? []) as any[]).filter(l => norm(l.course_code) === n));
+    } else {
+      setForSale([]);
     }
     setLoading(false);
   }, [courseId, user, profile?.role]);
@@ -254,6 +277,35 @@ export function CourseDetailScreen({ route, navigation }: any) {
         keyboardShouldPersistTaps="handled"
       >
         <Text style={[styles.title, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{course.name}</Text>
+
+        {/* Marketplace cross-link — textbooks/notes on sale for this course */}
+        {forSale.length > 0 && (
+          <View style={styles.forSaleWrap}>
+            <Text style={[styles.forSaleTitle, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
+              {t.study2.forSaleTitle}
+            </Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 9 }}>
+              {forSale.map(l => (
+                <TouchableOpacity
+                  key={l.id}
+                  style={[styles.forSaleCard, { backgroundColor: C.surface, borderColor: C.border }]}
+                  onPress={() => navigation.navigate('MarketDetail', { listingId: l.id })}
+                  activeOpacity={0.75}
+                >
+                  <Feather name="shopping-bag" size={14} color={SectorColors.market} />
+                  <Text style={[styles.forSaleName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                    {l.title}
+                  </Text>
+                  {l.price != null && (
+                    <Text style={[styles.forSalePrice, { color: SectorColors.market, fontFamily: FontFamily.jakartaExtraBold }]}>
+                      ৳{l.price}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
         {showSearch && (
           <TextInput
@@ -391,6 +443,12 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
   scroll: { paddingTop: 12, paddingBottom: 20 } as ViewStyle,
   title: { fontSize: 19, letterSpacing: -0.4, marginBottom: 2 } as any,
+
+  forSaleWrap: { marginTop: 12 } as ViewStyle,
+  forSaleTitle: { fontSize: 11, letterSpacing: 0.6, marginBottom: 8 } as any,
+  forSaleCard: { flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 12, paddingVertical: 9, borderRadius: 12, borderWidth: 1, maxWidth: 220 } as ViewStyle,
+  forSaleName: { fontSize: 12.5, flexShrink: 1 } as any,
+  forSalePrice: { fontSize: 12.5 } as any,
   search: { height: 44, borderRadius: 12, borderWidth: 1, paddingHorizontal: 14, fontSize: 14, marginTop: 12 } as any,
   tabsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 12 } as ViewStyle,
   chips: { flexDirection: 'row', gap: 8, flexShrink: 1 } as ViewStyle,
