@@ -37,6 +37,11 @@ export function DonorRegisterScreen({ navigation }: any) {
       // last_donated is a DATE column — only send a valid YYYY-MM-DD, else null.
       const ld = lastDonated.trim();
       const lastDonatedDate = /^\d{4}-\d{2}-\d{2}$/.test(ld) ? ld : null;
+      // Registering as a donor is consent to be reached. donor_contact only
+      // reveals the number when show_whatsapp is true, so opt in here — without
+      // it the donor stays hidden and unreachable (column defaults to false).
+      const profilePatch: { show_whatsapp: boolean; whatsapp?: string } = { show_whatsapp: true };
+      if (phone.trim()) profilePatch.whatsapp = phone.trim();
       const [donorRes, profileRes] = await Promise.all([
         supabase.from('donors').upsert({
           user_id:      user.id,
@@ -44,9 +49,7 @@ export function DonorRegisterScreen({ navigation }: any) {
           area:         area.trim(),
           last_donated: lastDonatedDate,
         }, { onConflict: 'user_id' }),
-        phone.trim()
-          ? supabase.from('profiles').update({ whatsapp: phone.trim() }).eq('id', user.id)
-          : Promise.resolve({ error: null }),
+        supabase.from('profiles').update(profilePatch).eq('id', user.id),
       ]);
       if (donorRes.error) throw donorRes.error;
       if (profileRes.error) throw profileRes.error;
@@ -107,6 +110,9 @@ export function DonorRegisterScreen({ navigation }: any) {
           placeholderTextColor={C.textMuted}
           keyboardType="phone-pad"
         />
+        <Text style={[styles.consent, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+          {t.blood2.whatsappConsent}
+        </Text>
 
         <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.blood2.lastDonatedOptional}</Text>
         <TextInput
@@ -162,6 +168,8 @@ const styles = StyleSheet.create({
   } as ViewStyle,
 
   groupTxt: { fontSize: 15 } as any,
+
+  consent: { fontSize: 11.5, lineHeight: 16, marginTop: 8, marginLeft: 2 } as any,
 
   input: {
     height: 48,
