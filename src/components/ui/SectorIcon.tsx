@@ -25,6 +25,7 @@ const SECTOR_ICON: Record<SectorKey, string> = {
   calendar:  'calendar',
   routines:  'clipboard',
   coverpage: 'fileText',
+  messages:  'chat',
 };
 
 const SIZE_MAP = { sm: 32, md: 42, lg: 58 } as const;
