@@ -17,6 +17,7 @@ import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
 import { getCampusReports, type CampusReport } from '../../services/reportsService';
+import { setReportBoardVisibility } from '../../services/campusIssuesService';
 
 const STATUSES = ['All', 'Open', 'In Progress', 'Resolved', 'Rejected', 'Closed'] as const;
 type StatusFilter = (typeof STATUSES)[number];
@@ -58,12 +59,41 @@ export function MyReportsScreen({ navigation }: any) {
   const [filter, setFilter] = useState<StatusFilter>('All');
   const [scope, setScope] = useState<'everyone' | 'mine'>('everyone');
   const [refreshing, setRefreshing] = useState(false);
+  const [boardMap, setBoardMap] = useState<Record<string, boolean>>({});
+  const [boardLoaded, setBoardLoaded] = useState(false);
 
   const load = useCallback(async () => {
     if (!user) return;
     const res = await getCampusReports();
     if (res.ok) setReports(res.data);
+    // campus_reports() doesn't project show_on_board, so pull the board state of
+    // the caller's own reports directly for the per-report visibility toggle.
+    // show_on_board is NOT NULL DEFAULT false, so an unknown id means OFF — the
+    // toggle stays hidden until this resolves rather than guessing.
+    const { data: mine, error: mineErr } = await supabase
+      .from('reports').select('id, show_on_board').eq('reporter_id', user.id).is('deleted_at', null);
+    if (!mineErr && mine) {
+      setBoardMap(Object.fromEntries(mine.map(m => [m.id, m.show_on_board === true])));
+      setBoardLoaded(true);
+    }
   }, [user]);
+
+  async function toggleBoard(r: CampusReport) {
+    const current = boardMap[r.id] === true;
+    const next = !current;
+    setBoardMap(prev => ({ ...prev, [r.id]: next }));
+    const res = await setReportBoardVisibility(r.id, next);
+    if (!res.ok) {
+      setBoardMap(prev => ({ ...prev, [r.id]: current }));
+      toast({ type: 'error', title: t.common.error, message: res.error });
+      return;
+    }
+    toast({
+      type: 'success',
+      title: t.campusIssues.visibilityUpdated,
+      message: next ? t.campusIssues.onBoard : t.campusIssues.hiddenFromBoard,
+    });
+  }
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -224,6 +254,11 @@ export function MyReportsScreen({ navigation }: any) {
           const title = (r.description ?? '').split('\n')[0];
           const isOwn = r.reporter_id === user?.id;
           const editable = isOwn && r.status === 'Open';
+          const onBoard = boardMap[r.id] === true;
+          // Rejected reports are excluded by the board feed, so don't offer a
+          // toggle that would report success but never surface anything.
+          const canBoard = isOwn && boardLoaded
+            && r.category !== 'Safety / Security' && r.status !== 'Rejected';
           return (
             <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
               <TouchableOpacity
@@ -287,6 +322,19 @@ export function MyReportsScreen({ navigation }: any) {
                         </Text>
                       </TouchableOpacity>
                     </>
+                  )}
+                  {canBoard && (
+                    <TouchableOpacity
+                      style={[styles.actBtn, { backgroundColor: onBoard ? `${C.brand}1e` : C.surface2, paddingHorizontal: 8 }]}
+                      onPress={() => toggleBoard(r)}
+                      activeOpacity={0.75}
+                    >
+                      <Feather
+                        name={onBoard ? 'eye' : 'eye-off'}
+                        size={14}
+                        color={onBoard ? C.brand : C.textMuted}
+                      />
+                    </TouchableOpacity>
                   )}
                   <TouchableOpacity
                     style={[styles.actBtn, { backgroundColor: C.surface2 }]}

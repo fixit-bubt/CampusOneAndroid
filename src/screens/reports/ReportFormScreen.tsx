@@ -80,6 +80,9 @@ export function ReportFormScreen({ route, navigation }: any) {
   const [busy, setBusy]     = useState(false);
   const [loading, setLoading] = useState(isEdit);
   const [err, setErr]       = useState('');
+  // Opt the report onto the anonymous Campus Issues board (default on; Safety /
+  // Security is always private and can never be boarded).
+  const [showOnBoard, setShowOnBoard] = useState(true);
 
   // Pre-fill when editing
   useEffect(() => {
@@ -122,6 +125,7 @@ export function ReportFormScreen({ route, navigation }: any) {
           setLocNote(rest);
         }
         if (data.photo_url) setPhotoUri(data.photo_url);
+        setShowOnBoard(data.show_on_board !== false);
       }
       setLoading(false);
     })();
@@ -189,6 +193,7 @@ export function ReportFormScreen({ route, navigation }: any) {
       description: [title.trim(), desc.trim()].filter(Boolean).join('\n'),
       building: buildingStr,
       room: roomStr || undefined,
+      show_on_board: cat !== 'Safety / Security' && showOnBoard,
       ...(finalPhotoUrl ? { photo_url: finalPhotoUrl } : {}),
     };
 
@@ -401,6 +406,34 @@ export function ReportFormScreen({ route, navigation }: any) {
             </TouchableOpacity>
           )}
 
+          {/* Campus Issues board opt-in */}
+          {cat === 'Safety / Security' ? (
+            <View style={[styles.boardNotice, { backgroundColor: C.surface2, borderColor: C.border }]}>
+              <Icon name="shield" size={16} color={C.textMuted} />
+              <Text style={[styles.boardNoticeTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                {t.campusIssues.alwaysPrivate}
+              </Text>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={[styles.boardCard, { backgroundColor: C.surface, borderColor: showOnBoard ? C.brand : C.border }]}
+              onPress={() => setShowOnBoard(v => !v)}
+              activeOpacity={0.75}
+            >
+              <View style={[styles.checkbox, { backgroundColor: showOnBoard ? C.brand : 'transparent', borderColor: showOnBoard ? C.brand : C.border }]}>
+                {showOnBoard && <Icon name="check" size={13} color="#fff" />}
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.boardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  {t.campusIssues.optInLabel}
+                </Text>
+                <Text style={[styles.boardDesc, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                  {t.campusIssues.optInDesc}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          )}
+
           {/* Error */}
           {!!err && (
             <Text style={[styles.errText, { color: C.danger, fontFamily: FontFamily.jakartaMedium }]}>
@@ -510,6 +543,37 @@ const styles = StyleSheet.create({
 
   photoTxt: { fontSize: 14 } as any,
   errText: { fontSize: 13, marginTop: 8 } as any,
+
+  boardCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 11,
+    padding: 13,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    marginTop: 18,
+  } as ViewStyle,
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 7,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+  } as ViewStyle,
+  boardTitle: { fontSize: 13.5 } as any,
+  boardDesc: { fontSize: 12, marginTop: 3, lineHeight: 16 } as any,
+  boardNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+    padding: 13,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginTop: 18,
+  } as ViewStyle,
+  boardNoticeTxt: { fontSize: 12.5, flex: 1 } as any,
 
   submitBtn: {
     height: 52,

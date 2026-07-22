@@ -67,6 +67,7 @@ export async function createReport(payload: {
   building: string;
   room?: string;
   photo_url?: string;
+  show_on_board?: boolean;
 }): Promise<ServiceResult<Report>> {
   // RLS reports_insert requires reporter_id = auth.uid() AND status = 'Open'.
   const { data: auth } = await supabase.auth.getUser();

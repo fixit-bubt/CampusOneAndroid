@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
@@ -14,6 +15,7 @@ import { FontFamily, Layout } from '../../theme';
 import { useT } from '../../i18n';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
+import { getReportVoteCounts } from '../../services/campusIssuesService';
 import type { Report, Profile } from '../../types/database';
 
 type StatusFilter = 'all' | Report['status'];
@@ -57,9 +59,10 @@ export function AllReportsScreen({ navigation }: any) {
   const [staff, setStaff] = useState<Profile[]>([]);
   const [assignTarget, setAssignTarget] = useState<ReportWithProfile | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [voteCounts, setVoteCounts] = useState<Record<string, number>>({});
 
   const load = useCallback(async () => {
-    const [rRes, sRes] = await Promise.all([
+    const [rRes, sRes, vRes] = await Promise.all([
       supabase
         .from('reports')
         .select('*, profiles!reporter_id(full_name)')
@@ -67,9 +70,11 @@ export function AllReportsScreen({ navigation }: any) {
         .order('created_at', { ascending: false })
         .limit(200),
       supabase.from('profiles').select('*').eq('role', 'staff').limit(100),
+      getReportVoteCounts(),
     ]);
     if (rRes.data) setReports(rRes.data as ReportWithProfile[]);
     if (sRes.data) setStaff(sRes.data as Profile[]);
+    if (vRes.ok) setVoteCounts(vRes.data);
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -253,6 +258,14 @@ export function AllReportsScreen({ navigation }: any) {
                   <Text style={[styles.byName, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
                     {r.profiles?.full_name ?? t.dash.unknown}
                   </Text>
+                  {voteCounts[r.id] > 0 && (
+                    <View style={[styles.meTooPill, { backgroundColor: C.surface2 }]}>
+                      <Feather name="thumbs-up" size={11} color={C.textMuted} />
+                      <Text style={[styles.meTooTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                        {voteCounts[r.id]}
+                      </Text>
+                    </View>
+                  )}
                 </View>
                 {r.status !== 'Rejected' && r.status !== 'Closed' && r.status !== 'Resolved' && (
                   r.assigned_staff_id ? (
@@ -420,6 +433,8 @@ const styles = StyleSheet.create({
   } as ViewStyle,
 
   byName: { fontSize: 12 } as any,
+  meTooPill: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 7, paddingVertical: 3, borderRadius: 999 } as ViewStyle,
+  meTooTxt: { fontSize: 11 } as any,
 
   assignBtn: {
     paddingHorizontal: 14,
