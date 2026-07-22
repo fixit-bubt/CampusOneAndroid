@@ -1543,6 +1543,155 @@ export type Database = {
           },
         ]
       }
+      message_reads: {
+        Row: {
+          conv_key: string
+          last_read_at: string
+          user_id: string
+        }
+        Insert: {
+          conv_key: string
+          last_read_at?: string
+          user_id: string
+        }
+        Update: {
+          conv_key?: string
+          last_read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_reads_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_reads_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          body: string
+          club_id: string | null
+          created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+          edited_at: string | null
+          id: string
+          kind: string
+          peer_high: string | null
+          peer_low: string | null
+          section_id: string | null
+          sender_id: string | null
+        }
+        Insert: {
+          body: string
+          club_id?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          edited_at?: string | null
+          id?: string
+          kind: string
+          peer_high?: string | null
+          peer_low?: string | null
+          section_id?: string | null
+          sender_id?: string | null
+        }
+        Update: {
+          body?: string
+          club_id?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          edited_at?: string | null
+          id?: string
+          kind?: string
+          peer_high?: string | null
+          peer_low?: string | null
+          section_id?: string | null
+          sender_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_peer_high_fkey"
+            columns: ["peer_high"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_peer_high_fkey"
+            columns: ["peer_high"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_peer_low_fkey"
+            columns: ["peer_low"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_peer_low_fkey"
+            columns: ["peer_low"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "study_sections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       musallah_locations: {
         Row: {
           floor_desc: string
@@ -1823,6 +1972,46 @@ export type Database = {
           },
         ]
       }
+      report_votes: {
+        Row: {
+          created_at: string
+          report_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          report_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          report_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_votes_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_votes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_votes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reports: {
         Row: {
           assigned_staff_id: string | null
@@ -1836,6 +2025,7 @@ export type Database = {
           photo_url: string | null
           reporter_id: string
           room: string | null
+          show_on_board: boolean
           status: string
           updated_at: string
         }
@@ -1851,6 +2041,7 @@ export type Database = {
           photo_url?: string | null
           reporter_id: string
           room?: string | null
+          show_on_board?: boolean
           status?: string
           updated_at?: string
         }
@@ -1866,6 +2057,7 @@ export type Database = {
           photo_url?: string | null
           reporter_id?: string
           room?: string | null
+          show_on_board?: boolean
           status?: string
           updated_at?: string
         }
@@ -2868,6 +3060,53 @@ export type Database = {
           },
         ]
       }
+      user_blocks: {
+        Row: {
+          blocked_id: string
+          blocker_id: string
+          created_at: string
+        }
+        Insert: {
+          blocked_id: string
+          blocker_id: string
+          created_at?: string
+        }
+        Update: {
+          blocked_id?: string
+          blocker_id?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_blocks_blocked_id_fkey"
+            columns: ["blocked_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_blocks_blocked_id_fkey"
+            columns: ["blocked_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_blocks_blocker_id_fkey"
+            columns: ["blocker_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_blocks_blocker_id_fkey"
+            columns: ["blocker_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       public_profiles: {
@@ -2916,6 +3155,21 @@ export type Database = {
       booked_slots: {
         Args: { p_date: string; p_doctor_id: string }
         Returns: string[]
+      }
+      campus_issues_feed: {
+        Args: never
+        Returns: {
+          building: string
+          category: string
+          code: string
+          created_at: string
+          description: string
+          id: string
+          room: string
+          status: string
+          vote_count: number
+          voted: boolean
+        }[]
       }
       campus_reports: {
         Args: { p_limit?: number }
@@ -2985,6 +3239,17 @@ export type Database = {
       }
       decline_report: { Args: { p_report_id: string }; Returns: Json }
       delete_expired_rides: { Args: never; Returns: undefined }
+      directory_profiles: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          department: string
+          full_name: string
+          id: string
+          role: string
+        }[]
+      }
+      dm_can_send: { Args: { other: string }; Returns: boolean }
       donor_contact: { Args: { p_user_id: string }; Returns: Json }
       donor_pledges_for_request: {
         Args: { p_request_id: string }
@@ -3004,6 +3269,10 @@ export type Database = {
         Returns: Json
       }
       is_admin: { Args: never; Returns: boolean }
+      is_report_board_eligible: {
+        Args: { p_report_id: string }
+        Returns: boolean
+      }
       is_staff_or_admin: { Args: never; Returns: boolean }
       is_student: { Args: never; Returns: boolean }
       job_admin_remove: {
@@ -3028,6 +3297,13 @@ export type Database = {
         Args: { p_note: string; p_request_id: string }
         Returns: Json
       }
+      report_vote_counts: {
+        Args: never
+        Returns: {
+          report_id: string
+          vote_count: number
+        }[]
+      }
       ride_contact: {
         Args: { p_code: string; p_target: string }
         Returns: {
@@ -3043,6 +3319,10 @@ export type Database = {
         }[]
       }
       rsvp_event: { Args: { p_event_id: string }; Returns: Json }
+      set_report_board_visibility: {
+        Args: { p_report_id: string; p_visible: boolean }
+        Returns: boolean
+      }
       student_directory: {
         Args: never
         Returns: {
@@ -3070,6 +3350,13 @@ export type Database = {
         Args: never
         Returns: {
           section_id: string
+        }[]
+      }
+      toggle_report_vote: {
+        Args: { p_report_id: string }
+        Returns: {
+          vote_count: number
+          voted: boolean
         }[]
       }
     }
