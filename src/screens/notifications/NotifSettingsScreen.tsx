@@ -30,6 +30,7 @@ const SECTORS: { id: SectorKey; label: string; desc: string }[] = [
   { id: 'ride',      label: 'Ride Share',     desc: 'New ride offers'            },
   { id: 'blood',     label: 'Blood',          desc: 'Urgent blood requests'      },
   { id: 'directory', label: 'Directory',      desc: 'Connection requests'        },
+  { id: 'messages',  label: 'Messages',       desc: 'New direct messages'        },
   { id: 'prayer',    label: 'Prayer Times',   desc: 'Daily prayer time updates'  },
   { id: 'faculty',   label: 'Faculty',        desc: 'Faculty announcements'      },
   { id: 'calendar',  label: 'Academic Calendar', desc: 'Academic dates and holidays'},
@@ -46,7 +47,12 @@ function defaultPref(): SectorPref {
 
 export function NotifSettingsScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  // Messaging is student-only, so don't offer staff/admin a toggle for a sector
+  // that can never fire for them.
+  const visibleSectors = profile?.role === 'student'
+    ? SECTORS
+    : SECTORS.filter(s => s.id !== 'messages');
   const t = useT();
   const [paused, setPaused] = useState(false);
   const [quiet, setQuiet] = useState(false);
@@ -109,15 +115,15 @@ export function NotifSettingsScreen({ navigation }: any) {
     if (error) load(); // failed write → re-sync UI to DB truth
   }
 
-  const onCount = SECTORS.filter(s => prefs[s.id]?.enabled).length;
-  const allOn = onCount === SECTORS.length;
+  const onCount = visibleSectors.filter(s => prefs[s.id]?.enabled).length;
+  const allOn = onCount === visibleSectors.length;
 
   async function toggleAll(on: boolean) {
     if (!user) return;
-    const next: Record<string, SectorPref> = {};
-    SECTORS.forEach(s => { next[s.id] = { ...prefs[s.id], enabled: on }; });
+    const next: Record<string, SectorPref> = { ...prefs };
+    visibleSectors.forEach(s => { next[s.id] = { ...prefs[s.id], enabled: on }; });
     setPrefs(next);
-    const results = await Promise.all(SECTORS.map(s =>
+    const results = await Promise.all(visibleSectors.map(s =>
       supabase.from('notif_prefs').upsert(
         { user_id: user.id, sector: s.id, enabled: on },
         { onConflict: 'user_id,sector' },
@@ -196,7 +202,7 @@ export function NotifSettingsScreen({ navigation }: any) {
 
         {/* Sector list */}
         <View style={[styles.sectorsCard, { backgroundColor: C.surface, borderColor: C.border, opacity: paused ? 0.5 : 1 }]}>
-          {SECTORS.map((s, i) => {
+          {visibleSectors.map((s, i) => {
             const p = prefs[s.id] ?? defaultPref();
             const isOpen = expanded === s.id;
             return (
@@ -225,7 +231,7 @@ export function NotifSettingsScreen({ navigation }: any) {
 
                 {isOpen && p.enabled && (
                   <View style={styles.chanRow}>
-                    {(['push', 'email', 'inapp'] as ChanKey[]).map(ch => (
+                    {(['push', 'inapp'] as ChanKey[]).map(ch => (
                       <TouchableOpacity
                         key={ch}
                         style={[styles.chanPill, p[ch]
@@ -234,9 +240,9 @@ export function NotifSettingsScreen({ navigation }: any) {
                         onPress={() => savePref(s.id, { [ch]: !p[ch] })}
                         activeOpacity={0.75}
                       >
-                        <Feather name={ch === 'push' ? 'smartphone' : ch === 'email' ? 'mail' : 'bell'} size={15} color={p[ch] ? '#fff' : C.textMuted} />
+                        <Feather name={ch === 'push' ? 'smartphone' : 'bell'} size={15} color={p[ch] ? '#fff' : C.textMuted} />
                         <Text style={[styles.chanTxt, { color: p[ch] ? '#fff' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                          {ch === 'push' ? t.notif.chanPush : ch === 'email' ? t.notif.chanEmail : t.notif.chanInapp}
+                          {ch === 'push' ? t.notif.chanPush : t.notif.chanInapp}
                         </Text>
                       </TouchableOpacity>
                     ))}
