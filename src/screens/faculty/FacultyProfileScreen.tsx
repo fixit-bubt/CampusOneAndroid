@@ -17,7 +17,7 @@ import { Icon } from '../../components/ui/Icon';
 import { useToast } from '../../components/ui/Toast';
 import { FontFamily, Layout, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
-import { openUrl } from '../../utils/link';
+import { openUrl, waHref } from '../../utils/link';
 import { useAuth } from '../../store/authStore';
 import { FACULTY_ACCENT, BRANCH_ICON, shortDept, PersonBadges, type FacultyMember } from './facultyShared';
 
@@ -96,12 +96,8 @@ export function FacultyProfileScreen({ route, navigation }: any) {
   const interests = Array.isArray(member.research_interests) ? member.research_interests.filter(Boolean) : [];
   const quals = Array.isArray(member.qualifications) ? member.qualifications.filter(Boolean) : [];
   const links = LINK_META.filter(l => (member as Record<string, any>)[l.key]);
-  // wa.me needs full international format; local BD numbers (01…) become 8801…
-  const phoneDigits = (() => {
-    let d = (member.phone ?? '').replace(/[^0-9]/g, '');
-    if (d.startsWith('0')) d = '88' + d;
-    return d;
-  })();
+  const phoneDigits = (member.phone ?? '').replace(/[^0-9]/g, '');
+  const waLink = waHref(member.phone);
   const dept = member.departments;
 
   return (
@@ -212,14 +208,16 @@ export function FacultyProfileScreen({ route, navigation }: any) {
                 <Feather name="phone" size={14} color={C.text} />
                 <Text style={[styles.phoneBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.faculty2.call}</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.phoneBtn, { backgroundColor: C.success }]}
-                onPress={() => openLink(`https://wa.me/${phoneDigits}`)}
-                activeOpacity={0.8}
-              >
-                <Feather name="message-circle" size={14} color={C.white} />
-                <Text style={[styles.phoneBtnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>{t.faculty2.whatsapp}</Text>
-              </TouchableOpacity>
+              {waLink && (
+                <TouchableOpacity
+                  style={[styles.phoneBtn, { backgroundColor: C.success }]}
+                  onPress={() => openLink(waLink)}
+                  activeOpacity={0.8}
+                >
+                  <Feather name="message-circle" size={14} color={C.white} />
+                  <Text style={[styles.phoneBtnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>{t.faculty2.whatsapp}</Text>
+                </TouchableOpacity>
+              )}
             </View>
           )}
         </View>
