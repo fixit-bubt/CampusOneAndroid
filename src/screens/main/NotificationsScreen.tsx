@@ -17,6 +17,9 @@ import {
   getMyNotifications, markAllRead, markRead,
   type Notification,
 } from '../../services/notificationsService';
+import { respondConnection, getConnectionStates } from '../../services/connectionsService';
+import { useMessages } from '../../store/messagesStore';
+import { useToast } from '../../components/ui/Toast';
 
 type Filter = 'all' | 'unread';
 
@@ -37,7 +40,13 @@ function timeAgo(iso: string): string {
   return `${Math.floor(secs / 86400)}d`;
 }
 
-function NotifRow({ n, C, isDark, onPress }: { n: Notification; C: any; isDark: boolean; onPress: () => void }) {
+type ConnUi = 'buttons' | 'accepted' | 'declined' | 'none';
+
+function NotifRow({ n, C, isDark, onPress, onAccept, onDecline, connUi }: {
+  n: Notification; C: any; isDark: boolean; onPress: () => void;
+  onAccept: () => void; onDecline: () => void; connUi: ConnUi;
+}) {
+  const t = useT();
   const sector: SectorKey = (n.sector in SectorColors) ? n.sector as SectorKey : 'announce';
   return (
     <TouchableOpacity
@@ -61,6 +70,24 @@ function NotifRow({ n, C, isDark, onPress }: { n: Notification; C: any; isDark: 
         <Text style={[styles.rowText, { color: C.text2, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={2}>
           {n.body}
         </Text>
+        {connUi !== 'none' && (
+          <View style={styles.connActions}>
+            {connUi === 'buttons' ? (
+              <>
+                <TouchableOpacity style={[styles.connBtn, { backgroundColor: C.brand }]} onPress={onAccept} activeOpacity={0.8}>
+                  <Text style={[styles.connBtnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>{t.directory2.accept}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.connBtn, { backgroundColor: C.surface2 }]} onPress={onDecline} activeOpacity={0.8}>
+                  <Text style={[styles.connBtnTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>{t.directory2.decline}</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <Text style={[styles.connHandled, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                {connUi === 'accepted' ? t.directory2.connected : t.directory2.declined}
+              </Text>
+            )}
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -85,14 +112,29 @@ function Empty({ C }: { C: any }) {
 export function NotificationsScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
   const t = useT();
+  const toast = useToast();
+  const { reload: reloadMessages } = useMessages();
   const { user } = useAuth();
   const [notifs, setNotifs]     = useState<Notification[]>([]);
   const [filter, setFilter]     = useState<Filter>('all');
   const [refreshing, setRefreshing] = useState(false);
+  const [handled, setHandled]   = useState<Record<string, 'accepted' | 'declined'>>({});
+  const [connStates, setConnStates] = useState<Record<string, 'pending' | 'accepted' | 'gone'>>({});
 
   const load = useCallback(async () => {
     const res = await getMyNotifications(50);
-    if (res.ok) setNotifs(res.data);
+    if (!res.ok) return;
+    setNotifs(res.data);
+    // Resolve the live state of each connection-request notification so the
+    // inline buttons reflect reality after a remount instead of re-offering a
+    // request that was already accepted/declined.
+    const reqIds = Array.from(new Set(
+      res.data
+        .filter(n => n.reference_type === 'connection_request' && n.reference_id)
+        .map(n => n.reference_id as string),
+    ));
+    const st = await getConnectionStates(reqIds);
+    if (st.ok) setConnStates(st.data);
   }, []);
 
   // Reload every time the screen regains focus so new notifications appear
@@ -117,6 +159,36 @@ export function NotificationsScreen({ navigation }: any) {
       setNotifs(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x));
     }
     navigation.navigate('NotifDetail', { notification: n });
+  }
+
+  // Inline accept/decline for connection-request notifications (reference_id is
+  // the requester's user id). Accept unlocks DMs; decline removes the request.
+  async function respond(n: Notification, accept: boolean) {
+    if (!n.reference_id) return;
+    const res = await respondConnection(n.reference_id, accept);
+    if (!res.ok) { toast({ type: 'error', title: t.common.error, message: res.error }); return; }
+    setHandled(prev => ({ ...prev, [n.id]: accept ? 'accepted' : 'declined' }));
+    // Accepting unlocks a DM — refresh the messages roster so the new partner
+    // is immediately reachable from the Messages tab.
+    if (accept) reloadMessages();
+    if (!n.read) {
+      markRead(n.id);
+      setNotifs(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x));
+    }
+  }
+
+  // Prefer the just-tapped local result, else the live connection state. Unknown
+  // (states not loaded, or that query failed) renders nothing rather than a
+  // button that would fail — the Directory screen stays the fallback path.
+  function connUiFor(n: Notification): ConnUi {
+    if (n.reference_type !== 'connection_request') return 'none';
+    const local = handled[n.id];
+    if (local) return local;
+    const st = n.reference_id ? connStates[n.reference_id] : undefined;
+    if (st === 'pending') return 'buttons';
+    if (st === 'accepted') return 'accepted';
+    if (st === 'gone') return 'declined';
+    return 'none';
   }
 
   const unread = notifs.filter(n => !n.read).length;
@@ -199,7 +271,13 @@ export function NotificationsScreen({ navigation }: any) {
                 {g.items.map((n, i) => (
                   <View key={n.id}>
                     {i > 0 && <View style={[styles.divider, { backgroundColor: C.border }]} />}
-                    <NotifRow n={n} C={C} isDark={isDark} onPress={() => handleOpen(n)} />
+                    <NotifRow
+                      n={n} C={C} isDark={isDark}
+                      onPress={() => handleOpen(n)}
+                      onAccept={() => respond(n, true)}
+                      onDecline={() => respond(n, false)}
+                      connUi={connUiFor(n)}
+                    />
                   </View>
                 ))}
               </View>
@@ -298,6 +376,11 @@ const styles = StyleSheet.create({
     lineHeight: 17,
     marginTop: 3,
   } as any,
+
+  connActions: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 9 } as ViewStyle,
+  connBtn: { paddingHorizontal: 16, paddingVertical: 7, borderRadius: 10 } as ViewStyle,
+  connBtnTxt: { fontSize: 12.5 } as any,
+  connHandled: { fontSize: 12 } as any,
 
   // Empty
   empty: {

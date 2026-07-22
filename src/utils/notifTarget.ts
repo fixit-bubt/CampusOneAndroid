@@ -43,6 +43,16 @@ export async function resolveNotifTarget(
   if (refType === 'blood_request') {
     return { screen: 'Blood' };
   }
+  // Connection request/accepted — the alerts list has inline accept/decline;
+  // a tap just lands on the Directory where incoming requests are shown.
+  if (refType === 'connection_request' || refType === 'connection_accepted') {
+    return { screen: 'Directory' };
+  }
+  // DM notification — reference_id is the sender's id. Open their thread.
+  if (refType === 'dm') {
+    const { data } = await supabase.from('profiles').select('full_name').eq('id', refId).maybeSingle();
+    return { screen: 'MessageThread', params: { kind: 'dm', id: refId, title: data?.full_name ?? 'Chat' } };
+  }
   const m = DIRECT[refType];
   return m ? { screen: m.screen, params: { [m.key]: refId } } : null;
 }
