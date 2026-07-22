@@ -6,12 +6,14 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
 import { useAuth } from '../store/authStore';
+import { useMessages } from '../store/messagesStore';
 import { useT } from '../i18n';
 import { FontFamily, FontSize, Layout } from '../theme';
 import type { BottomTabParams } from '../types/navigation';
 
 import { HomeScreen } from '../screens/main/HomeScreen';
 import { ExploreScreen } from '../screens/main/ExploreScreen';
+import { MessagesHome } from '../screens/messages/MessagesHome';
 import { NotificationsScreen } from '../screens/main/NotificationsScreen';
 import { SettingsScreen } from '../screens/main/SettingsScreen';
 import { AdminDashboardScreen } from '../screens/dashboard/AdminDashboardScreen';
@@ -24,6 +26,7 @@ type FeatherName = React.ComponentProps<typeof Feather>['name'];
 const TAB_ICON: Record<keyof BottomTabParams, FeatherName> = {
   Home:          'home',
   Explore:       'grid',
+  Messages:      'message-circle',
   Notifications: 'bell',
   Settings:      'settings',
 };
@@ -31,10 +34,13 @@ const TAB_ICON: Record<keyof BottomTabParams, FeatherName> = {
 export function BottomTabNavigator() {
   const { C } = useTheme();
   const { profile } = useAuth();
+  const { totalUnread } = useMessages();
   const t = useT();
+  const isStudent = profile?.role === 'student';
   const TAB_LABEL: Record<keyof BottomTabParams, string> = {
     Home: t.tabs.home,
     Explore: t.tabs.explore,
+    Messages: t.messages.title,
     Notifications: t.tabs.alerts,
     Settings: t.tabs.settings,
   };
@@ -71,6 +77,13 @@ export function BottomTabNavigator() {
     >
       <Tab.Screen name="Home"          component={HomeComponent} />
       <Tab.Screen name="Explore"       component={ExploreScreen} />
+      {isStudent && (
+        <Tab.Screen
+          name="Messages"
+          component={MessagesHome}
+          options={{ tabBarBadge: totalUnread > 0 ? (totalUnread > 9 ? '9+' : totalUnread) : undefined }}
+        />
+      )}
       <Tab.Screen name="Notifications" component={NotificationsScreen} />
       <Tab.Screen name="Settings"      component={SettingsScreen} />
     </Tab.Navigator>

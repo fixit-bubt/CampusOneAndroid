@@ -8,6 +8,7 @@ import { BottomTabNavigator } from './BottomTabNavigator';
 import { ReportFormScreen }        from '../screens/reports/ReportFormScreen';
 import { MyReportsScreen }         from '../screens/reports/MyReportsScreen';
 import { AssignedToMeScreen }      from '../screens/reports/AssignedToMeScreen';
+import { CampusIssuesScreen }      from '../screens/reports/CampusIssuesScreen';
 import { LostFoundBrowseScreen }   from '../screens/lostfound/LostFoundBrowseScreen';
 import { LostFoundDetailScreen }   from '../screens/lostfound/LostFoundDetailScreen';
 import { PostItemFormScreen }       from '../screens/lostfound/PostItemFormScreen';
@@ -28,8 +29,6 @@ import { DirectoryScreen }         from '../screens/directory/DirectoryScreen';
 import { StudentProfileScreen }    from '../screens/directory/StudentProfileScreen';
 import { MedicalScreen }           from '../screens/medical/MedicalScreen';
 import { DoctorDetailScreen }      from '../screens/medical/DoctorDetailScreen';
-import { MyAppointmentsScreen }    from '../screens/medical/MyAppointmentsScreen';
-import { MedicalQueueScreen }      from '../screens/medical/MedicalQueueScreen';
 import { PrayerScreen }            from '../screens/prayer/PrayerScreen';
 import { ClubsScreen }             from '../screens/clubs/ClubsScreen';
 import { ClubDetailScreen }        from '../screens/clubs/ClubDetailScreen';
@@ -44,6 +43,7 @@ import { FacultyProfileScreen }    from '../screens/faculty/FacultyProfileScreen
 import { FeatureScreen }           from '../screens/feature/FeatureScreen';
 import { NotifDetailScreen }       from '../screens/notifications/NotifDetailScreen';
 import { NotifSettingsScreen }     from '../screens/notifications/NotifSettingsScreen';
+import { MessageThread }           from '../screens/messages/MessageThread';
 import { StaffDashboardScreen }    from '../screens/dashboard/StaffDashboardScreen';
 import { AdminDashboardScreen }    from '../screens/dashboard/AdminDashboardScreen';
 import { ManageUsersScreen }       from '../screens/dashboard/ManageUsersScreen';
@@ -80,6 +80,7 @@ export function AppNavigator() {
       <Stack.Screen name="ReportForm"     component={ReportFormScreen} />
       <Stack.Screen name="MyReports"      component={MyReportsScreen} />
       <Stack.Screen name="AssignedToMe"   component={AssignedToMeScreen} />
+      <Stack.Screen name="CampusIssues"   component={CampusIssuesScreen} />
 
       {/* Lost & Found */}
       <Stack.Screen name="LostFoundBrowse"  component={LostFoundBrowseScreen} />
@@ -119,11 +120,9 @@ export function AppNavigator() {
       <Stack.Screen name="Directory"      component={DirectoryScreen} />
       <Stack.Screen name="StudentProfile" component={StudentProfileScreen} />
 
-      {/* Medical */}
+      {/* Medical — directory + doctor availability only (no booking) */}
       <Stack.Screen name="Medical"        component={MedicalScreen} />
       <Stack.Screen name="DoctorDetail"   component={DoctorDetailScreen} />
-      <Stack.Screen name="MyAppointments" component={MyAppointmentsScreen} />
-      <Stack.Screen name="MedicalQueue"   component={MedicalQueueScreen} />
 
       {/* Prayer */}
       <Stack.Screen name="Prayer"         component={PrayerScreen} />
@@ -166,6 +165,9 @@ export function AppNavigator() {
       {/* Notifications */}
       <Stack.Screen name="NotifDetail"    component={NotifDetailScreen} />
       <Stack.Screen name="NotifSettings"  component={NotifSettingsScreen} />
+
+      {/* Messages */}
+      <Stack.Screen name="MessageThread"  component={MessageThread} />
 
       {/* Dashboards (reached from Admin Dashboard tiles / Home tab) */}
       <Stack.Screen name="StaffDashboard" component={StaffDashboardScreen} />

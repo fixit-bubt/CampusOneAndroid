@@ -11,6 +11,7 @@ export type AuthStackParams = {
 export type BottomTabParams = {
   Home: undefined;
   Explore: undefined;
+  Messages: undefined;
   Notifications: undefined;
   Settings: undefined;
 };
@@ -25,6 +26,7 @@ export type AppStackParams = {
   ReportForm:   { editReportId?: string };
   MyReports:    undefined;
   AssignedToMe: undefined;
+  CampusIssues: undefined;
 
   // Lost & Found
   LostFoundBrowse: undefined;
@@ -70,15 +72,16 @@ export type AppStackParams = {
   CourseDetail: { courseId: string };
   StudyUpload:  { courseId: string; courseCode: string; courseTitle: string };
 
-  // Medical
+  // Medical (directory + doctor availability only — no booking)
   Medical:         undefined;
   DoctorDetail:    { doctorId: string };
-  MyAppointments:  undefined;
-  MedicalQueue:    undefined;
 
   // Notifications
   NotifDetail:    { notification: import('../services/notificationsService').Notification };
   NotifSettings:  undefined;
+
+  // Messages
+  MessageThread:  { kind: import('../services/messagesService').MsgKind; id: string; title: string };
 
   // Faculty
   Faculty:        undefined;
@@ -156,8 +159,6 @@ export type JobsStackParams = {
 export type MedicalStackParams = {
   DoctorList: undefined;
   DoctorDetail: { doctorId: string };
-  BookAppointment: { doctorId: string };
-  MyAppointments: undefined;
 };
 
 export type ClubsStackParams = {
