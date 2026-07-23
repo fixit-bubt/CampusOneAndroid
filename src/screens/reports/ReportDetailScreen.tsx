@@ -12,6 +12,7 @@ import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout, Radius , Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { personName } from '../../services/peopleService';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
 import { declineReport } from '../../services/reportsService';
@@ -98,13 +99,15 @@ export function ReportDetailScreen({ route, navigation }: any) {
     if (currentReport) setReport(currentReport as Report);
     setLoadingReport(false);
 
+    // Names via the roster RPC — profiles RLS only returns the caller's own row,
+    // so reading it directly leaves both of these blank.
     if (currentReport?.reporter_id && !currentReport?.reporter_name) {
-      const { data } = await supabase.from('profiles').select('full_name').eq('id', currentReport.reporter_id).maybeSingle();
-      if (data) setReporterName(data.full_name);
+      const name = await personName(currentReport.reporter_id);
+      if (name) setReporterName(name);
     }
     if (currentReport?.assigned_staff_id) {
-      const { data } = await supabase.from('profiles').select('full_name').eq('id', currentReport.assigned_staff_id).maybeSingle();
-      if (data) setAssigneeName(data.full_name);
+      const name = await personName(currentReport.assigned_staff_id);
+      if (name) setAssigneeName(name);
     }
   }, [reportId]);
 

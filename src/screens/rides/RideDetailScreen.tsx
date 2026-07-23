@@ -14,6 +14,7 @@ import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout , SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { fetchPeople } from '../../services/peopleService';
 import { useAuth } from '../../store/authStore';
 
 const RIDE_COLOR = SectorColors.ride;
@@ -39,7 +40,7 @@ export function RideDetailScreen({ route, navigation }: any) {
     const [rideRes, reqRes, takenRes, countRes] = await Promise.all([
       supabase
         .from('rides')
-        .select('*, profiles:profiles!driver_id(full_name)')
+        .select('*')
         .eq('id', rideId)
         .maybeSingle(),
       supabase
@@ -51,7 +52,7 @@ export function RideDetailScreen({ route, navigation }: any) {
       // RLS only returns the driver's own ride rows here; used for requester names.
       supabase
         .from('ride_requests')
-        .select('requester_id, profiles:profiles!requester_id(full_name)')
+        .select('requester_id')
         .eq('ride_id', rideId),
       // Authoritative seat count (row SELECT is restricted, so count via RPC).
       supabase.rpc('ride_request_counts'),
@@ -59,11 +60,17 @@ export function RideDetailScreen({ route, navigation }: any) {
     if (rideRes.error) { toast({ type: 'error', title: t.common.error }); setLoadFailed(true); return; }
     if (!rideRes.data) { setLoadFailed(true); return; }
     setRide(rideRes.data);
-    setDriverName((rideRes.data as any).profiles?.full_name ?? null);
+    // Driver/requester names via the roster RPC — profiles RLS returns only the
+    // caller's own row, so an embed here resolves to null for everyone else.
+    const people = await fetchPeople([
+      rideRes.data.driver_id,
+      ...((takenRes.data as any[]) ?? []).map(r => r.requester_id),
+    ]);
+    setDriverName(people[rideRes.data.driver_id]?.full_name ?? null);
     if (rideRes.data.driver_id === user?.id && takenRes.data) {
       setRequesters((takenRes.data as any[]).map(r => ({
         requester_id: r.requester_id,
-        full_name: r.profiles?.full_name ?? t.rides2.unknown,
+        full_name: people[r.requester_id]?.full_name ?? t.rides2.unknown,
       })));
     }
     if (reqRes.data) {

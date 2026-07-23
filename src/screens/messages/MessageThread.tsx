@@ -18,7 +18,8 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
-import { fetchChatProfiles, type Message } from '../../services/messagesService';
+import type { Message } from '../../services/messagesService';
+import { fetchPeople } from '../../services/peopleService';
 
 function clock(iso: string): string {
   const d = new Date(iso);
@@ -105,7 +106,7 @@ export function MessageThread({ route, navigation }: any) {
     const ids = Array.from(new Set(msgs.map(m => m.senderId).filter(Boolean))) as string[];
     const missing = ids.filter(i => !nameMap[i]);
     if (missing.length === 0) return;
-    fetchChatProfiles(missing).then(map => {
+    fetchPeople(missing).then(map => {
       if (Object.keys(map).length) setNameMap(prev => ({ ...prev, ...map }));
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps

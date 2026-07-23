@@ -6,6 +6,7 @@ import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { unregisterPushToken } from '../lib/push';
 import { setMonitoringUser } from '../lib/monitoring';
+import { clearPeople } from '../services/peopleService';
 import type { Profile } from '../types/database';
 
 interface AuthState {
@@ -132,6 +133,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function signOut() {
     reqIdRef.current++; // invalidate any in-flight profile fetch
+    clearPeople();      // drop the cached roster so the next account starts fresh
     await unregisterPushToken(); // stop pushes to this device (shared phones)
     try {
       await supabase.auth.signOut();

@@ -14,6 +14,7 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { fetchPeople } from '../../services/peopleService';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import type { Report } from '../../types/database';
@@ -65,12 +66,15 @@ export function AssignedToMeScreen({ navigation }: any) {
     if (!user) return;
     const { data } = await supabase
       .from('reports')
-      .select('*, profiles:profiles!reporter_id(full_name)')
+      .select('*')
       .eq('assigned_staff_id', user.id)
       .is('deleted_at', null)
       .order('created_at', { ascending: false });
     if (data) {
-      setReports(data.map((r: any) => ({ ...r, reporter_name: r.profiles?.full_name })));
+      // profiles RLS is self/admin only, so staff resolve reporter names through
+      // the roster RPC instead of an embed.
+      const people = await fetchPeople((data as any[]).map(r => r.reporter_id));
+      setReports(data.map((r: any) => ({ ...r, reporter_name: people[r.reporter_id]?.full_name })));
     }
   }, [user]);
 

@@ -11,6 +11,7 @@ import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { fetchPeople } from '../../services/peopleService';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
@@ -45,7 +46,7 @@ export function ClubManageScreen({ route, navigation }: any) {
     (async () => {
       const [clubRes, membersRes] = await Promise.all([
         supabase.from('clubs').select('name, tagline, about, category, faculty_advisor_id, cover_url').eq('id', id).single(),
-        supabase.from('club_members').select('*, profiles:profiles!user_id(full_name)').eq('club_id', id),
+        supabase.from('club_members').select('*').eq('club_id', id),
       ]);
       if (clubRes.data) {
         setName(clubRes.data.name ?? '');
@@ -58,7 +59,14 @@ export function ClubManageScreen({ route, navigation }: any) {
         setAdvisor(clubRes.data.faculty_advisor_id ?? null);
         setCoverUrl(clubRes.data.cover_url ?? null);
       }
-      if (membersRes.data) setMembers(membersRes.data as any);
+      if (membersRes.data) {
+        // Names via the roster RPC — profiles RLS hides other members.
+        const people = await fetchPeople((membersRes.data as any[]).map(m => m.user_id));
+        setMembers((membersRes.data as any[]).map(m => ({
+          ...m,
+          profiles: people[m.user_id] ? { full_name: people[m.user_id].full_name } : null,
+        })) as any);
+      }
       setLoading(false);
     })();
   }, [id]);

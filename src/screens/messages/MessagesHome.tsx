@@ -14,7 +14,8 @@ import { useAuth } from '../../store/authStore';
 import { useMessages } from '../../store/messagesStore';
 import { Avatar } from '../../components/ui/Avatar';
 import { FontFamily, Layout } from '../../theme';
-import { convKeyOf, fetchChatProfiles, type Message, type MsgKind } from '../../services/messagesService';
+import { convKeyOf, type Message, type MsgKind } from '../../services/messagesService';
+import { fetchPeople } from '../../services/peopleService';
 
 interface Row {
   key: string;
@@ -52,7 +53,7 @@ export function MessagesHome({ navigation }: any) {
   useEffect(() => {
     if (dmPartners.length === 0) { setProfileMap({}); return; }
     let active = true;
-    fetchChatProfiles(dmPartners).then(map => { if (active) setProfileMap(map); });
+    fetchPeople(dmPartners).then(map => { if (active) setProfileMap(map); });
     return () => { active = false; };
   }, [dmPartners]);
 

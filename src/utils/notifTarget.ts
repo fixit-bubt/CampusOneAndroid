@@ -2,6 +2,7 @@
 // in-app NotifDetail "View details" button and the push-notification tap
 // handler, so both land on the same place.
 import { supabase } from '../lib/supabase';
+import { personName } from '../services/peopleService';
 
 export interface NavTarget {
   screen: string;
@@ -50,8 +51,10 @@ export async function resolveNotifTarget(
   }
   // DM notification — reference_id is the sender's id. Open their thread.
   if (refType === 'dm') {
-    const { data } = await supabase.from('profiles').select('full_name').eq('id', refId).maybeSingle();
-    return { screen: 'MessageThread', params: { kind: 'dm', id: refId, title: data?.full_name ?? 'Chat' } };
+    // profiles is RLS-locked to the caller's own row; the roster RPC is what
+    // resolves other people's names.
+    const name = await personName(refId);
+    return { screen: 'MessageThread', params: { kind: 'dm', id: refId, title: name ?? 'Chat' } };
   }
   const m = DIRECT[refType];
   return m ? { screen: m.screen, params: { [m.key]: refId } } : null;

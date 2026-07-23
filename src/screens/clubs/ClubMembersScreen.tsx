@@ -15,6 +15,7 @@ import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { fetchPeople, loadPeople } from '../../services/peopleService';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
@@ -56,19 +57,28 @@ export function ClubMembersScreen({ route, navigation }: any) {
 
   const load = useCallback(async () => {
     const [memRes, reqRes] = await Promise.all([
-      supabase.from('club_members')
-        .select('*, profiles:profiles!user_id(full_name, avatar_url)')
-        .eq('club_id', clubId),
+      supabase.from('club_members').select('*').eq('club_id', clubId),
       // Pending join requests. RLS returns rows only to this club's officers/admins.
       supabase.from('club_join_requests')
-        .select('id, user_id, message, created_at, profiles:profiles!user_id(full_name, avatar_url)')
+        .select('id, user_id, message, created_at')
         .eq('club_id', clubId).eq('status', 'pending')
         .order('created_at', { ascending: true }),
     ]);
+    // Names/avatars come from the roster RPC — profiles itself is RLS-locked to
+    // the caller's own row, so an embed here would blank every member.
+    const rows = [...((memRes.data as any[]) ?? []), ...((reqRes.data as any[]) ?? [])];
+    const people = await fetchPeople(rows.map(r => r.user_id));
+    const hydrate = (r: any) => ({
+      ...r,
+      profiles: people[r.user_id]
+        ? { full_name: people[r.user_id].full_name, avatar_url: people[r.user_id].avatar_url }
+        : null,
+    });
     if (memRes.data) {
-      setMembers((memRes.data as Member[]).sort((a, b) => (ROLE_RANK[a.role] ?? 9) - (ROLE_RANK[b.role] ?? 9)));
+      setMembers((memRes.data as any[]).map(hydrate)
+        .sort((a, b) => (ROLE_RANK[a.role] ?? 9) - (ROLE_RANK[b.role] ?? 9)) as Member[]);
     }
-    setRequests((reqRes.data as JoinReq[] | null) ?? []);
+    setRequests(((reqRes.data as any[]) ?? []).map(hydrate) as JoinReq[]);
   }, [clubId]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -78,16 +88,15 @@ export function ClubMembersScreen({ route, navigation }: any) {
     const q = query.trim();
     if (!addOpen || q.length < 2) { setResults([]); return; }
     const timer = setTimeout(async () => {
-      const { data } = await supabase
-        .from('profiles')
-        .select('id, full_name, avatar_url')
-        .ilike('full_name', `%${q}%`)
-        .eq('role', 'student')
-        .limit(12);
-      if (data) {
-        const memberIds = new Set(membersRef.current.map(m => m.user_id));
-        setResults((data as any[]).filter(p => !memberIds.has(p.id)));
-      }
+      const people = await loadPeople();
+      const memberIds = new Set(membersRef.current.map(m => m.user_id));
+      const needle = q.toLowerCase();
+      setResults(
+        Object.values(people)
+          .filter(p => p.role === 'student' && !memberIds.has(p.id) && p.full_name.toLowerCase().includes(needle))
+          .slice(0, 12)
+          .map(p => ({ id: p.id, full_name: p.full_name, avatar_url: p.avatar_url })),
+      );
     }, 250);
     return () => clearTimeout(timer);
   }, [query, addOpen]);

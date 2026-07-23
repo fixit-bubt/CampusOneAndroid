@@ -13,6 +13,7 @@ import { useToast } from '../../components/ui/Toast';
 import { FontFamily, Layout, Accent } from '../../theme';
 import { useT } from '../../i18n';
 import { supabase } from '../../lib/supabase';
+import { fetchPeople } from '../../services/peopleService';
 import { useAuth } from '../../store/authStore';
 import { getMyNotifications } from '../../services/notificationsService';
 import { declineReport } from '../../services/reportsService';
@@ -164,15 +165,18 @@ export function StaffDashboardScreen({ navigation }: any) {
   const load = useCallback(async () => {
     const { data } = await supabase
       .from('reports')
-      .select('*, profiles:profiles!reporter_id(full_name)')
+      .select('*')
       .eq('assigned_staff_id', user?.id ?? '')
       .is('deleted_at', null)
       .order('status')
       .limit(30);
     if (data) {
+      // Reporter names via the roster RPC: profiles RLS covers self and admins,
+      // so staff embedding it would see no names at all.
+      const people = await fetchPeople((data as any[]).map(r => r.reporter_id));
       setReports(data.map((r: any) => ({
         ...r,
-        reporter_name: r.profiles?.full_name,
+        reporter_name: people[r.reporter_id]?.full_name,
         title: r.description?.split('\n')[0] ?? '',
         location: [r.building, r.room].filter(Boolean).join(' · '),
       })));

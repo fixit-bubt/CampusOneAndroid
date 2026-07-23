@@ -11,6 +11,7 @@ import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { fetchPeople } from '../../services/peopleService';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
@@ -88,11 +89,11 @@ export function ClubDetailScreen({ route, navigation }: any) {
   async function load() {
     const [clubRes, postsRes, membersRes, reqRes] = await Promise.all([
       supabase.from('clubs').select('*').eq('id', id).single(),
-      supabase.from('club_posts').select('*, profiles:profiles!author_id(full_name)').eq('club_id', id)
+      supabase.from('club_posts').select('*').eq('club_id', id)
         .order('is_pinned', { ascending: false })
         .order('created_at', { ascending: false })
         .limit(30),
-      supabase.from('club_members').select('*, profiles:profiles!user_id(full_name)').eq('club_id', id),
+      supabase.from('club_members').select('*').eq('club_id', id),
       // My own pending join request, if any (RLS only returns the caller's row).
       supabase.from('club_join_requests').select('id')
         .eq('club_id', id).eq('user_id', user?.id ?? '')
@@ -100,9 +101,21 @@ export function ClubDetailScreen({ route, navigation }: any) {
     ]);
     if (clubRes.data) setClub(clubRes.data as Club);
     else setNotFound(true);
-    if (postsRes.data) setPosts(postsRes.data as any);
+    // Author/member names come from the roster RPC: profiles RLS hides everyone
+    // but the caller, so embedding it here would render blank names.
+    const people = await fetchPeople([
+      ...((postsRes.data as any[]) ?? []).map(p => p.author_id),
+      ...((membersRes.data as any[]) ?? []).map(m => m.user_id),
+    ]);
+    const named = (uid: string) =>
+      people[uid] ? { full_name: people[uid].full_name } : null;
+    if (postsRes.data) {
+      setPosts((postsRes.data as any[]).map(p => ({ ...p, profiles: named(p.author_id) })) as any);
+    }
     if (membersRes.data) {
-      setMembers((membersRes.data as any[]).sort((a, b) => (ROLE_RANK[a.role] ?? 9) - (ROLE_RANK[b.role] ?? 9)));
+      setMembers((membersRes.data as any[])
+        .map(m => ({ ...m, profiles: named(m.user_id) }))
+        .sort((a, b) => (ROLE_RANK[a.role] ?? 9) - (ROLE_RANK[b.role] ?? 9)));
       const me = (membersRes.data as any[]).find(m => m.user_id === user?.id);
       setMyRole(me ? me.role : null);
     }

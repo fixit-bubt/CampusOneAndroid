@@ -1,6 +1,7 @@
 // Blood donation data layer. All blood screens go through here so the
 // queries, RPC result shapes and eligibility rules live in one place.
 import { supabase } from '../lib/supabase';
+import { fetchPeople } from './peopleService';
 import { localToday } from '../utils/format';
 import type { ServiceResult } from './authService';
 import type { BloodRequest, Donor } from '../types/database';
@@ -22,15 +23,22 @@ export async function getBloodFeed(userId: string | undefined): Promise<ServiceR
       .is('fulfilled_at', null)
       .gte('created_at', staleCutoff)
       .order('created_at', { ascending: false }).limit(30),
-    supabase.from('donors').select('*, profiles:profiles!user_id(full_name)').limit(50),
+    supabase.from('donors').select('*').limit(50),
     supabase.from('blood_pledges').select('request_id').eq('donor_id', userId ?? ''),
   ]);
   if (rRes.error || dRes.error) return { ok: false, error: (rRes.error ?? dRes.error)!.message };
+  // Donor names come from the roster RPC: profiles RLS exposes only the
+  // caller's own row, so embedding it leaves every other donor nameless.
+  const people = await fetchPeople((dRes.data ?? []).map((d: any) => d.user_id));
+  const donors = ((dRes.data ?? []) as any[]).map(d => ({
+    ...d,
+    profiles: people[d.user_id] ? { full_name: people[d.user_id].full_name } : null,
+  }));
   return {
     ok: true,
     data: {
       requests: (rRes.data ?? []) as BloodRequest[],
-      donors: (dRes.data ?? []) as DonorWithName[],
+      donors: donors as DonorWithName[],
       respondedIds: new Set((pRes.data ?? []).map(p => p.request_id)),
     },
   };
