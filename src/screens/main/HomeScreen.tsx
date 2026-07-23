@@ -199,6 +199,27 @@ export function HomeScreen({ navigation }: any) {
           ))}
         </View>
 
+        {/* PDF Maker sits below the row rather than inside it: a fifth column
+            squeezes the labels on a small phone. */}
+        <TouchableOpacity
+          style={[styles.pdfCard, { backgroundColor: C.surface, borderColor: C.border }]}
+          onPress={() => navigation.navigate('PdfMaker')}
+          activeOpacity={0.75}
+        >
+          <View style={[styles.pdfTile, { backgroundColor: C.surface2 }]}>
+            <Icon name="fileText" size={19} color={SectorColors.pdfmaker} />
+          </View>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={[styles.pdfTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              {t.pdfmaker.title}
+            </Text>
+            <Text style={[styles.pdfDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
+              {t.pdfmaker.exploreDesc}
+            </Text>
+          </View>
+          <Icon name="chevR" size={17} color={C.textMuted} />
+        </TouchableOpacity>
+
         {/* My Reports */}
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold, marginTop: 0 }]}>
@@ -359,6 +380,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 9,
   } as ViewStyle,
+
+  pdfCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 13,
+    borderRadius: 15,
+    borderWidth: 1,
+    marginTop: 9,
+  } as ViewStyle,
+
+  pdfTile: {
+    width: 38,
+    height: 38,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+
+  pdfTitle: { fontSize: 14.5 },
+  pdfDesc: { fontSize: 12, marginTop: 1 },
 
   quickCard: {
     flex: 1,

@@ -66,6 +66,7 @@ import { AcademicCalendarScreen }  from '../screens/calendar/AcademicCalendarScr
 import { RoutinesBrowseScreen }    from '../screens/routines/RoutinesBrowseScreen';
 import { CoverPageFormScreen }     from '../screens/coverpage/CoverPageFormScreen';
 import { CgpaScreen }              from '../screens/cgpa/CgpaScreen';
+import { PdfMakerScreen }          from '../screens/pdfmaker/PdfMakerScreen';
 import { ToolImagesScreen }        from '../screens/pdfmaker/ToolImagesScreen';
 import { ToolMergeScreen }         from '../screens/pdfmaker/ToolMergeScreen';
 import { ToolOrganizeScreen }      from '../screens/pdfmaker/ToolOrganizeScreen';
@@ -159,6 +160,7 @@ export function AppNavigator() {
 
       {/* CGPA Calculator */}
       <Stack.Screen name="Cgpa"          component={CgpaScreen} />
+      <Stack.Screen name="PdfMaker"      component={PdfMakerScreen} />
       <Stack.Screen name="PdfImages"     component={ToolImagesScreen} />
       <Stack.Screen name="PdfMerge"      component={ToolMergeScreen} />
       <Stack.Screen name="PdfOrganize"   component={ToolOrganizeScreen} />

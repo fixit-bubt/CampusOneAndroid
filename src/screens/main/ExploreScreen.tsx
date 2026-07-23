@@ -140,7 +140,7 @@ export function ExploreScreen({ navigation }: any) {
         {isStudent && (
           <TouchableOpacity
             style={[styles.toolCard, { backgroundColor: C.surface, borderColor: C.border }]}
-            onPress={() => navigation.navigate('PdfImages')}
+            onPress={() => navigation.navigate('PdfMaker')}
             activeOpacity={0.75}
           >
             <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
