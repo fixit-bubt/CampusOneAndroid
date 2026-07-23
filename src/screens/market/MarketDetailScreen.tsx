@@ -11,6 +11,7 @@ import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout , Accent, LightColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { personName } from '../../services/peopleService';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
@@ -41,12 +42,13 @@ export function MarketDetailScreen({ route, navigation }: any) {
     (async () => {
       const { data: l, error } = await supabase
         .from('listings')
-        .select('*, profiles:profiles!seller_id(full_name)')
+        .select('*')
         .eq('id', listingId)
         .single();
       if (error || !l) { setFailed(true); return; }
       setListing(l);
-      setSellerName((l as any).profiles?.full_name ?? null);
+      // Seller name via the roster RPC — profiles RLS returns only my own row.
+      setSellerName(await personName((l as any).seller_id));
     })();
   }, [listingId]);
 

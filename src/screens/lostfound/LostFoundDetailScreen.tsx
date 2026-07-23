@@ -18,6 +18,7 @@ import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout, SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { fetchPeople } from '../../services/peopleService';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
 import { openUrl, waHref } from '../../utils/link';
@@ -88,27 +89,37 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
     const [itemRes, claimsRes] = await Promise.all([
       supabase
         .from('lost_found_items')
-        .select('*, profiles:profiles!poster_id(full_name, avatar_url)')
+        .select('*')
         .eq('id', id)
         .single(),
       // RLS scopes this automatically: poster sees all claims on the item,
       // a claimant sees only their own.
       supabase
         .from('claims')
-        .select('*, profiles:profiles!claimant_id(full_name, avatar_url)')
+        .select('*')
         .eq('item_id', id)
         .order('created_at', { ascending: false }),
     ]);
+    // Poster/claimant names come from the roster RPC: profiles RLS only opens up
+    // once a claim is approved, so before that an embed shows nobody.
+    const people = await fetchPeople([
+      (itemRes.data as any)?.poster_id,
+      ...((claimsRes.data as any[]) ?? []).map(c => c.claimant_id),
+    ]);
+    const named = (uid: string) => people[uid]
+      ? { full_name: people[uid].full_name, avatar_url: people[uid].avatar_url }
+      : null;
     let loaded: LostFoundItem | null = null;
     if (itemRes.data) {
-      const { profiles, ...rest } = itemRes.data as any;
-      loaded = rest as LostFoundItem;
+      loaded = itemRes.data as LostFoundItem;
       setItem(loaded);
-      setPoster(profiles);
+      setPoster(named((itemRes.data as any).poster_id));
     } else {
       setNotFound(true);
     }
-    if (claimsRes.data) setClaims(claimsRes.data as ClaimRow[]);
+    if (claimsRes.data) {
+      setClaims((claimsRes.data as any[]).map(c => ({ ...c, profiles: named(c.claimant_id) })) as ClaimRow[]);
+    }
 
     // Possible matches: opposite type, same category, still open. Only worth
     // computing while the item itself is unresolved.

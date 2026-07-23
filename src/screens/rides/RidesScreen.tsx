@@ -14,6 +14,7 @@ import { Icon } from '../../components/ui/Icon';
 import { useToast } from '../../components/ui/Toast';
 import { FontFamily, Layout , SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { fetchPeople } from '../../services/peopleService';
 import { localToday } from '../../utils/format';
 import { useAuth } from '../../store/authStore';
 import type { Ride as RideRow } from '../../types/database';
@@ -42,7 +43,7 @@ export function RidesScreen({ navigation }: any) {
     const [ridesRes, reqRes, countRes] = await Promise.all([
       supabase
         .from('rides')
-        .select('*, profiles:profiles!driver_id(full_name)')
+        .select('*')
         .gte('date', localToday())
         .order('date')
         .order('time')
@@ -56,9 +57,11 @@ export function RidesScreen({ navigation }: any) {
       setLoading(false);
       return;
     }
+    // Driver names via the roster RPC — profiles RLS hides every row but mine.
+    const people = await fetchPeople((ridesRes.data ?? []).map((r: any) => r.driver_id));
     const rows = (ridesRes.data ?? []).map((r: any) => ({
       ...r,
-      driver_name: r.profiles?.full_name,
+      driver_name: people[r.driver_id]?.full_name,
     })) as Ride[];
     setRides(rows);
     const map: Record<string, number> = {};

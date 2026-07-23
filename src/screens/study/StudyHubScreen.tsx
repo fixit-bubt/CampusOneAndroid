@@ -16,6 +16,7 @@ import { Icon } from '../../components/ui/Icon';
 import { Avatar } from '../../components/ui/Avatar';
 import { FontFamily, Layout , SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { fetchPeople, loadPeople } from '../../services/peopleService';
 
 const STUDY_COLOR = SectorColors.study;
 
@@ -471,18 +472,20 @@ export function StudyHubScreen({ navigation }: any) {
     if (!mySection) return;
     const { data, error } = await supabase
       .from('study_section_members')
-      .select('*, profiles:profiles!user_id(full_name)')
+      .select('*')
       .eq('section_id', mySection.id)
       .eq('status', 'pending');
     if (error) { console.warn('loadJoinReqs:', error.message); return; }
     if (data) {
+      // Names via the roster RPC — the CR can't read applicants' profiles rows.
+      const people = await fetchPeople((data as any[]).map(r => r.user_id));
       setJoinReqs(data.map((r: any) => {
-        const prof = one<any>(r.profiles);
+        const name = people[r.user_id]?.full_name ?? 'Unknown';
         return {
           id: r.id,
           user_id: r.user_id,
-          full_name: prof?.full_name ?? 'Unknown',
-          initials: (prof?.full_name ?? '??').split(' ').slice(0, 2).map((w: string) => w[0]).join(''),
+          full_name: name,
+          initials: name.split(' ').slice(0, 2).map((w: string) => w[0]).join(''),
           created_at: r.created_at,
         };
       }));
@@ -510,12 +513,14 @@ export function StudyHubScreen({ navigation }: any) {
     if (secs.length) {
       const { data: crs } = await supabase
         .from('study_section_members')
-        .select('section_id, profiles:profiles!user_id(full_name)')
+        .select('section_id, user_id')
         .in('section_id', secs.map(x => x.id))
         .eq('role', 'cr')
         .eq('status', 'approved');
+      // CR names via the roster RPC; profiles itself is self-only.
+      const people = await fetchPeople((crs ?? []).map((r: any) => r.user_id));
       const crMap: Record<string, string> = {};
-      (crs ?? []).forEach((r: any) => { crMap[r.section_id] = one<any>(r.profiles)?.full_name ?? null; });
+      (crs ?? []).forEach((r: any) => { crMap[r.section_id] = people[r.user_id]?.full_name ?? null; });
       secs.forEach(x => { x.cr_name = crMap[x.id] ?? null; });
     }
     setCatSections(prev => ({ ...prev, [intakeId]: secs }));
@@ -567,25 +572,30 @@ export function StudyHubScreen({ navigation }: any) {
   }
 
   async function loadStudents() {
-    const { data } = await supabase
-      .from('profiles')
-      .select('id, full_name')
-      .order('full_name')
-      .limit(100);
-    if (data) setStudents(data as { id: string; full_name: string }[]);
+    // The roster RPC rather than profiles, so a CR assigning a replacement sees
+    // the same list an admin does.
+    const people = await loadPeople();
+    setStudents(
+      Object.values(people)
+        .sort((a, b) => a.full_name.localeCompare(b.full_name))
+        .slice(0, 100)
+        .map(p => ({ id: p.id, full_name: p.full_name })),
+    );
   }
 
   async function loadSecMembers() {
     if (!mySection) return;
     const { data } = await supabase
       .from('study_section_members')
-      .select('id, user_id, role, profiles:profiles!user_id(full_name)')
+      .select('id, user_id, role')
       .eq('section_id', mySection.id)
       .eq('status', 'approved');
     if (data) {
+      // Classmate names via the roster RPC — profiles RLS is self-only.
+      const people = await fetchPeople((data as any[]).map(r => r.user_id));
       setSecMembers((data as any[]).map(r => ({
         id: r.id, user_id: r.user_id, role: r.role,
-        full_name: one<any>(r.profiles)?.full_name ?? 'Student',
+        full_name: people[r.user_id]?.full_name ?? 'Student',
       })).sort((a, b) => (a.role === 'cr' ? -1 : 1) - (b.role === 'cr' ? -1 : 1)));
     }
   }
