@@ -14,8 +14,7 @@ import { useAuth } from '../../store/authStore';
 import { useMessages } from '../../store/messagesStore';
 import { Avatar } from '../../components/ui/Avatar';
 import { FontFamily, Layout } from '../../theme';
-import { supabase } from '../../lib/supabase';
-import { convKeyOf, type Message, type MsgKind } from '../../services/messagesService';
+import { convKeyOf, fetchChatProfiles, type Message, type MsgKind } from '../../services/messagesService';
 
 interface Row {
   key: string;
@@ -52,10 +51,9 @@ export function MessagesHome({ navigation }: any) {
   // Pull DM-partner display info whenever the partner set changes.
   useEffect(() => {
     if (dmPartners.length === 0) { setProfileMap({}); return; }
-    supabase.from('profiles').select('id, full_name, avatar_url').in('id', dmPartners)
-      .then(({ data }) => {
-        if (data) setProfileMap(Object.fromEntries((data as any[]).map(p => [p.id, p])));
-      });
+    let active = true;
+    fetchChatProfiles(dmPartners).then(map => { if (active) setProfileMap(map); });
+    return () => { active = false; };
   }, [dmPartners]);
 
   const lastByConv: Record<string, Message> = {};

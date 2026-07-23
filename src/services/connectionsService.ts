@@ -37,6 +37,12 @@ export async function getConnectionStates(
   return { ok: true, data: map };
 }
 
+// The dedupe trigger raises a raw Postgres message; map it to a dictionary key
+// so the screens can show a translated reason instead of the SQL text.
+export function connectErrorKey(dbMessage: string): 'alreadyLinked' | 'connectFailed' {
+  return /already exists/i.test(dbMessage) ? 'alreadyLinked' : 'connectFailed';
+}
+
 export async function respondConnection(
   requesterId: string,
   accept: boolean,

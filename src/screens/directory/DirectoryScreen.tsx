@@ -13,6 +13,8 @@ import { FontFamily, Layout , Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
+import { useToast } from '../../components/ui/Toast';
+import { connectErrorKey } from '../../services/connectionsService';
 
 type ConnState = 'none' | 'requested' | 'incoming' | 'connected';
 
@@ -32,6 +34,7 @@ export function DirectoryScreen({ navigation }: any) {
   const { C } = useTheme();
   const { user } = useAuth();
   const t = useT();
+  const toast = useToast();
   const [query, setQuery] = useState('');
   const [students, setStudents] = useState<Student[]>([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -65,8 +68,13 @@ export function DirectoryScreen({ navigation }: any) {
     // from the DB instead of optimistically showing a false success state.
     if (action === 'connect') {
       const { error } = await supabase.from('connections').insert({ requester_id: user.id, addressee_id: studentId, status: 'pending' });
-      if (error) { await load(); return; }
+      if (error) {
+        toast({ type: 'error', title: t.common.error, message: t.directory2[connectErrorKey(error.message)] });
+        await load();
+        return;
+      }
       setStudents(prev => prev.map(s => s.id === studentId ? { ...s, connState: 'requested' } : s));
+      toast({ type: 'success', title: t.directory2.requestSent });
     } else if (action === 'accept') {
       // Guard on status='pending' and verify a row actually changed; a stale tap on
       // an already-decided row affects 0 rows yet returns no error.

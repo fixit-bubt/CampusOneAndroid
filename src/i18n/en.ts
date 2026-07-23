@@ -604,6 +604,9 @@ You will be registered as an available ${group} donor.`,
     whatsapp: "WhatsApp",
     connectToSeeContact: "Connect with this student to view their contact details.",
     noContactShared: "This student hasn't shared any contact details.",
+    requestSent: "Connection request sent.",
+    connectFailed: "Couldn't send the request. Please try again.",
+    alreadyLinked: "You're already connected or have a pending request with this student.",
   },
 
   events2: {

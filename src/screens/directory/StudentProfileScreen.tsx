@@ -15,6 +15,8 @@ import { useMessages } from '../../store/messagesStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
+import { useToast } from '../../components/ui/Toast';
+import { connectErrorKey } from '../../services/connectionsService';
 import { FontFamily, Layout, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { openUrl, waHref } from '../../utils/link';
@@ -45,6 +47,7 @@ export function StudentProfileScreen({ route, navigation }: any) {
   const { C } = useTheme();
   const t = useT();
   const { user } = useAuth();
+  const toast = useToast();
   const { reload: reloadMessages } = useMessages();
 
   const initial: DirectoryStudent = route.params?.student;
@@ -69,8 +72,13 @@ export function StudentProfileScreen({ route, navigation }: any) {
     if (!user || !student) return;
     if (action === 'connect') {
       const { error } = await supabase.from('connections').insert({ requester_id: user.id, addressee_id: student.id, status: 'pending' });
-      if (error) { await refresh(); return; }
+      if (error) {
+        toast({ type: 'error', title: t.common.error, message: t.directory2[connectErrorKey(error.message)] });
+        await refresh();
+        return;
+      }
       setStudent(s => ({ ...s, connState: 'requested' }));
+      toast({ type: 'success', title: t.directory2.requestSent });
     } else if (action === 'accept') {
       const { data: upd, error } = await supabase.from('connections').update({ status: 'accepted' })
         .eq('requester_id', student.id).eq('addressee_id', user.id).eq('status', 'pending').select('requester_id');

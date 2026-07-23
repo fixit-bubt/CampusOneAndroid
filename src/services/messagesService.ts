@@ -136,6 +136,23 @@ export async function fetchDmPartners(myId: string): Promise<ServiceResult<strin
   return { ok: true, data: Array.from(new Set(ids)) };
 }
 
+export interface ChatProfile { full_name: string; avatar_url: string | null }
+
+// Names/avatars for the people in my conversations. `profiles` is RLS-locked to
+// the caller's own row, so selecting it directly blanks every peer — go through
+// the same SECURITY DEFINER roster RPC the directory uses.
+export async function fetchChatProfiles(ids: string[]): Promise<Record<string, ChatProfile>> {
+  if (ids.length === 0) return {};
+  const { data, error } = await supabase.rpc('directory_profiles');
+  if (error || !data) return {};
+  const want = new Set(ids);
+  const out: Record<string, ChatProfile> = {};
+  for (const p of data as any[]) {
+    if (want.has(p.id)) out[p.id] = { full_name: p.full_name ?? '', avatar_url: p.avatar_url ?? null };
+  }
+  return out;
+}
+
 // ---- per-conversation reads ----------------------------------------------
 
 export async function fetchConversation(
