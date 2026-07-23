@@ -53,22 +53,57 @@ export async function sharePdf(uri: string, dialogTitle: string): Promise<void> 
   });
 }
 
+// Files the engine folder owns. Anything else in there is a document being
+// worked on, and is disposable.
+export const ENGINE_RUNTIME = ['engine.html', 'pdf.min.mjs', 'pdf.worker.min.mjs'];
+const ENGINE_SOURCE = 'source.pdf';
+
 // The WebView is only granted read access to engineDir(), so anything it must
-// open is copied in first under a name the engine page can fetch by.
-export async function copyIntoEngineDir(uri: string, filename: string): Promise<string> {
-  const dest = new File(engineDir(), safeFileName(filename));
+// open is copied in first.
+//
+// The destination name is FIXED, never derived from the student's filename.
+// A PDF called "pdf.min.mjs" would otherwise overwrite the vendored pdf.js
+// runtime, which clearEngineDir() then preserves and prepareEngineFolder()
+// declines to restore, so the tool would stay broken for good and the engine
+// would import student-supplied bytes as a module. The engine never needs the
+// real name: msg.path is its only consumer.
+export async function copyIntoEngineDir(uri: string): Promise<string> {
+  const dest = new File(engineDir(), ENGINE_SOURCE);
   if (dest.exists) dest.delete();
-  new File(uri).copy(dest);
+  await new File(uri).copy(dest);
   return dest.uri;
 }
 
-// Drop any document the engine was allowed to read, leaving the engine's own
-// runtime in place. Called when a tool unmounts or a different file is picked.
+// Drop any document the engine was allowed to read, leaving its own runtime in
+// place. Called when a tool unmounts or a different file is picked. Keeping by
+// allowlist rather than by extension means nothing a student supplies can
+// survive here by choosing a name.
 export function clearEngineDir(): void {
   for (const entry of engineDir().list()) {
-    if (entry instanceof File && !entry.name.endsWith('.html') && !entry.name.endsWith('.mjs')) {
-      entry.delete();
-    }
+    if (entry instanceof File && !ENGINE_RUNTIME.includes(entry.name)) entry.delete();
+  }
+}
+
+// Thumbnails go to disk rather than staying in memory as data URIs: a 200 page
+// document would otherwise hold 200 base64 strings plus 200 decoded bitmaps
+// that React Native's image cache will not evict.
+export function thumbDir(): Directory {
+  const dir = new Directory(Paths.cache, 'pdfthumbs');
+  if (!dir.exists) dir.create({ intermediates: true });
+  return dir;
+}
+
+export function saveThumbJpeg(bytes: Uint8Array, index: number): string {
+  const file = new File(thumbDir(), `thumb-${index}.jpg`);
+  if (file.exists) file.delete();
+  file.create();
+  file.write(bytes);
+  return file.uri;
+}
+
+export function clearThumbDir(): void {
+  for (const entry of thumbDir().list()) {
+    if (entry instanceof File) entry.delete();
   }
 }
 

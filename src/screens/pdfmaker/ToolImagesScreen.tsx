@@ -243,7 +243,7 @@ export function ToolImagesScreen({ navigation }: any) {
               </TouchableOpacity>
             ) : null}
 
-            <Notice tone="info"><NoticeText>{t.pdfmaker.images.hint}</NoticeText></Notice>
+            <Notice tone="info"><NoticeText>{t.pdfmaker.images.gridHint}</NoticeText></Notice>
             <PrivacyNote />
           </>
         )}

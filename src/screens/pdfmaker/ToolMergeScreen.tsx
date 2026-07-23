@@ -63,14 +63,15 @@ export function ToolMergeScreen({ navigation }: any) {
       const pdf = isPdfFile(a.name, a.mimeType);
       const img = !pdf && isImageFile(a.name, a.mimeType);
       if (!pdf && !img) { badType++; continue; }
-      if ((a.size ?? 0) > LIMITS.merge.maxBytes) { tooBig++; continue; }
+      const size = a.size ?? 0;
+      if (size > LIMITS.merge.maxBytes) { tooBig++; continue; }
 
       if (pdf) {
-        accepted.push({ id: ++seq, size: a.size ?? 0, item: { kind: 'pdf', uri: a.uri, name: a.name } });
+        accepted.push({ id: ++seq, size, item: { kind: 'pdf', uri: a.uri, name: a.name } });
       } else {
         try {
           const { width, height } = await imageSize(a.uri);
-          accepted.push({ id: ++seq, size: a.size ?? 0, item: { kind: 'image', uri: a.uri, name: a.name, width, height } });
+          accepted.push({ id: ++seq, size, item: { kind: 'image', uri: a.uri, name: a.name, width, height } });
         } catch {
           badType++;
         }
@@ -86,7 +87,21 @@ export function ToolMergeScreen({ navigation }: any) {
       toast({ type: 'error', title: t.pdfmaker.tools.mergeTitle, message: t.pdfmaker.errors.tooManyFiles(LIMITS.merge.maxFiles) });
     }
     if (room <= 0) return;
-    const added = accepted.slice(0, room);
+
+    // The size cap has to apply to the queue, not to each file: ten files just
+    // under the per-file limit would still be far more than the phone can hold
+    // once pdf-lib has copied every page.
+    const added: Item[] = [];
+    let running = items.reduce((n, i) => n + i.size, 0);
+    let overflow = 0;
+    for (const candidate of accepted.slice(0, room)) {
+      if (running + candidate.size > LIMITS.merge.maxBytes) { overflow++; continue; }
+      running += candidate.size;
+      added.push(candidate);
+    }
+    if (overflow) {
+      toast({ type: 'error', title: t.pdfmaker.tools.mergeTitle, message: t.pdfmaker.errors.skippedBig(overflow) });
+    }
     if (!added.length) return;
     update((prev) => prev.concat(added));
   }

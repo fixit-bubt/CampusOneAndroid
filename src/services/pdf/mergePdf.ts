@@ -3,7 +3,7 @@
 // PDF pages are copied, not re-encoded, so text stays selectable and nothing
 // loses quality. Photos take the same path as the Photos to PDF tool.
 import { PDFDocument } from 'pdf-lib';
-import { PdfError, IMAGE_PRESETS, DEFAULT_PRESET } from './presets';
+import { PdfError, IMAGE_PRESETS, DEFAULT_PRESET, LIMITS } from './presets';
 import { fitOnPage } from './pdfUtils';
 import { readBytes, savePdfBytes } from './pdfFiles';
 import { rasterisePhoto, type BuiltPdf, type BuildOpts } from './imagesToPdf';
@@ -46,6 +46,12 @@ export async function mergeToPdf(items: MergeItem[], opts: BuildOpts): Promise<B
       } catch {
         // Merging PDFs whose form fields share names can fail here.
         throw new PdfError('corrupt', item.name);
+      }
+      // Checked while copying rather than up front: page counts are not known
+      // until each file is parsed, and pdf-lib holds every copied page in
+      // memory, so an unbounded merge is an out-of-memory crash.
+      if (out.getPageCount() + copied.length > LIMITS.merge.maxPages) {
+        throw new PdfError('too-many-pages', item.name);
       }
       copied.forEach((p) => out.addPage(p));
     } else {

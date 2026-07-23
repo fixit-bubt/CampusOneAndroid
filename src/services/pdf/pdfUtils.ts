@@ -8,9 +8,37 @@ export function isPdfFile(name?: string, mime?: string): boolean {
 }
 
 export function isImageFile(name?: string, mime?: string): boolean {
-  if ((mime ?? '').toLowerCase().startsWith('image/')) return true;
-  if ((mime ?? '').length > 0) return false;
+  const m = (mime ?? '').toLowerCase();
+  if (m.startsWith('image/')) return true;
+  // A specific non-image type is trusted; a generic one is not. Document
+  // providers routinely hand back application/octet-stream for a real JPEG,
+  // so fall through to the extension rather than rejecting it.
+  if (m && m !== 'application/octet-stream' && m !== 'binary/octet-stream') return false;
   return /\.(jpe?g|png|webp|gif|bmp|heic|heif)$/i.test(name ?? '');
+}
+
+const B64_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+
+// Decode base64 to bytes without depending on atob, which is not guaranteed to
+// exist under Hermes. Used to put engine output on disk instead of holding it
+// as a data URI string.
+export function base64ToBytes(b64: string): Uint8Array {
+  const clean = b64.replace(/[^A-Za-z0-9+/]/g, '');
+  const out = new Uint8Array(Math.floor((clean.length * 3) / 4));
+  let o = 0;
+  let buffer = 0;
+  let bits = 0;
+  for (let i = 0; i < clean.length; i++) {
+    const v = B64_ALPHABET.indexOf(clean[i]);
+    if (v < 0) continue;
+    buffer = (buffer << 6) | v;
+    bits += 6;
+    if (bits >= 8) {
+      bits -= 8;
+      out[o++] = (buffer >> bits) & 0xff;
+    }
+  }
+  return o === out.length ? out : out.subarray(0, o);
 }
 
 // HEIC gets its own check because it is what every default iPhone camera

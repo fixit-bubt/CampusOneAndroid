@@ -1,6 +1,6 @@
 import {
   isPdfFile, isImageFile, isHeicFile, parseRanges, moveItem,
-  nextQuality, nextLongEdge, baseName, fitOnPage,
+  nextQuality, nextLongEdge, baseName, fitOnPage, base64ToBytes,
 } from '../pdfUtils';
 import { A4, MIN_QUALITY, MIN_LONG_EDGE } from '../presets';
 
@@ -16,6 +16,11 @@ describe('file type checks', () => {
     expect(isImageFile('p.PNG')).toBe(true);
     expect(isImageFile('blob', 'image/webp')).toBe(true);
     expect(isImageFile('a.pdf', 'application/pdf')).toBe(false);
+  });
+  it('trusts the extension when the provider reports a generic type', () => {
+    // Document providers hand back octet-stream for real photos.
+    expect(isImageFile('shot.jpg', 'application/octet-stream')).toBe(true);
+    expect(isImageFile('notes.pdf', 'application/octet-stream')).toBe(false);
   });
   it('detects HEIC separately from other images', () => {
     expect(isHeicFile('IMG_0001.HEIC')).toBe(true);
@@ -76,6 +81,22 @@ describe('baseName', () => {
   it('falls back for empty or extension-only names', () => {
     expect(baseName('')).toBe('document');
     expect(baseName(undefined)).toBe('document');
+  });
+});
+
+describe('base64ToBytes', () => {
+  it('decodes to the exact bytes', () => {
+    // "Hi!" and a JPEG's opening marker.
+    expect([...base64ToBytes('SGkh')]).toEqual([0x48, 0x69, 0x21]);
+    expect([...base64ToBytes('/9j/4A==')]).toEqual([0xff, 0xd8, 0xff, 0xe0]);
+  });
+  it('handles both padding lengths and ignores whitespace', () => {
+    expect([...base64ToBytes('QQ==')]).toEqual([0x41]);
+    expect([...base64ToBytes('QUI=')]).toEqual([0x41, 0x42]);
+    expect([...base64ToBytes('QU\nJD')]).toEqual([0x41, 0x42, 0x43]);
+  });
+  it('returns an empty array for empty input', () => {
+    expect(base64ToBytes('').length).toBe(0);
   });
 });
 

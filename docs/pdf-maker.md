@@ -37,12 +37,19 @@ layout does not run its content on every Android version.
 
 - **Into the engine: never over the bridge.** Passing a 25 MB PDF as base64
   would mean a ~33 MB JavaScript string copied on both sides. Instead the file
-  is copied into `Paths.cache/pdfengine/`, and the engine page, which is loaded
-  from that same folder over `file://`, fetches it itself. Read access is
-  scoped to that one folder (`allowFileAccess` on Android,
-  `allowingReadAccessToURL` on iOS).
+  is copied into `Paths.cache/pdfengine/` under the fixed name `source.pdf`,
+  and the engine page, loaded from that same folder over `file://`, reads it
+  with `XMLHttpRequest` (the Fetch API refuses the `file:` scheme).
+- **The copied name is fixed on purpose.** Deriving it from the student's
+  filename let a PDF called `pdf.min.mjs` overwrite the vendored pdf.js
+  runtime, which `clearEngineDir()` preserves and `prepareEngineFolder()`
+  would not restore, so the tool stayed broken and the engine would import
+  student-supplied bytes as a module. `clearEngineDir()` now keeps an
+  allowlist (`ENGINE_RUNTIME`) rather than keeping by file extension.
 - **Out of the engine: one page JPEG at a time.** A thumbnail is a few KB; a
-  full page raster is a few hundred KB.
+  full page raster is a few hundred KB. Thumbnails are written straight to
+  `Paths.cache/pdfthumbs/` and shown by file URI: 200 data URIs would pin 200
+  base64 strings plus 200 decoded bitmaps that RN's image cache never evicts.
 - **The finished PDF never crosses the bridge at all.** pdf-lib assembles it
   natively and `File.write()` puts it on disk. The design doc anticipated
   chunking the output; it turned out unnecessary, because only individual page
@@ -52,7 +59,30 @@ layout does not run its content on every Android version.
   reclaim them.
 
 If `file://` reads ever fail on a device, the fallback is chunked base64 input;
-it changes `EngineHandle.open()` and the engine's `fetch` call, nothing else.
+it changes `EngineHandle.open()` and the engine's `readLocal()` call, nothing
+else.
+
+### WebView permissions, stated honestly
+
+iOS is tightly scoped by `allowingReadAccessToURL`. Android is not: the page
+needs `allowUniversalAccessFromFileURLs` for its ES module imports to resolve
+from a `file://` origin, and that flag removes the same-origin barrier for the
+whole page. Since that page parses untrusted student PDFs through pdf.js, the
+mitigations are: `originWhitelist` is `file://*`,
+`onShouldStartLoadWithRequest` refuses any URL outside the engine folder,
+and both window-opening props are off. Dropping the flag entirely means
+inlining pdf.js as a classic script instead of a module, which is the right
+follow-up once there is a device to verify it on.
+
+### Nothing waits forever
+
+Every request is bounded (`JOB_TIMEOUT_MS`), the page has a boot deadline
+(`BOOT_TIMEOUT_MS`), the page reports its own script failures through
+`window.onerror`, and any fatal rejects every in-flight job with
+`engine-failed` and remounts the WebView so the next attempt gets a live page.
+`engine.close()` rejects pending jobs with `cancelled` first, so a tool that
+navigates away mid-loop does not surface pdf.js's teardown error as a real
+failure.
 
 ## Layout
 

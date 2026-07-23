@@ -65,6 +65,15 @@ describe('mergeToPdf', () => {
       .rejects.toMatchObject({ code: 'encrypted', detail: 'a1.pdf' });
   });
 
+  it('stops before the page ceiling instead of running the phone out of memory', async () => {
+    // Two 300 page files against a 500 page cap: the second must be refused.
+    const big = Array.from({ length: 300 }, (_, i) => i);
+    mockLoad.mockImplementation(async () => ({ getPageIndices: () => big }));
+    await expect(mergeToPdf([pdfItem(1), pdfItem(2)], { name: 'm.pdf' }))
+      .rejects.toMatchObject({ code: 'too-many-pages', detail: 'a2.pdf' });
+    expect(mockAddPage).toHaveBeenCalledTimes(300);
+  });
+
   it('needs at least two items', async () => {
     await expect(mergeToPdf([pdfItem(1)], { name: 'm.pdf' })).rejects.toMatchObject({ code: 'unknown' });
   });

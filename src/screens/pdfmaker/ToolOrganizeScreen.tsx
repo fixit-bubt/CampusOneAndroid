@@ -17,7 +17,8 @@ import { LIMITS, THUMB_MAX_DIM, PdfError } from '../../services/pdf/presets';
 import { moveItem, baseName, parseRanges, isPdfFile } from '../../services/pdf/pdfUtils';
 import { organizePdf, type PageOp } from '../../services/pdf/organizePdf';
 import type { BuiltPdf } from '../../services/pdf/imagesToPdf';
-import { sharePdf } from '../../services/pdf/pdfFiles';
+import { sharePdf, saveThumbJpeg, clearThumbDir } from '../../services/pdf/pdfFiles';
+import { base64ToBytes } from '../../services/pdf/pdfUtils';
 import { useRasterEngine } from '../../services/pdf/rasterEngine';
 import {
   Notice, NoticeText, ProgressPanel, ResultPanel, ThumbGrid, ThumbCard, PrivacyNote, usePdfErrorText,
@@ -38,20 +39,22 @@ export function ToolOrganizeScreen({ navigation }: any) {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<BuiltPdf | null>(null);
   const [range, setRange] = useState('');
-  // Set on unmount and on "choose another", so a thumbnail loop that is still
-  // running does not write into a screen that has moved on.
-  const abandoned = useRef(false);
+  // A counter rather than a boolean: a single flag gets reset by the next
+  // open(), which would let an older thumbnail loop resume and write the
+  // previous document's pictures into the new document's tiles.
+  const genRef = useRef(0);
 
-  useEffect(() => () => { abandoned.current = true; engine.close(); }, [engine]);
+  useEffect(() => () => { genRef.current++; engine.close(); clearThumbDir(); }, [engine]);
 
   function reset() {
-    abandoned.current = true;
+    genRef.current++;
     setFile(null);
     setPages([]);
     setResult(null);
     setRange('');
     setLoading(null);
     engine.close();
+    clearThumbDir();
   }
 
   async function open() {
@@ -68,15 +71,17 @@ export function ToolOrganizeScreen({ navigation }: any) {
       return;
     }
 
+    clearThumbDir();
     setResult(null);
     setRange('');
     setPages([]);
     setFile({ uri: picked.uri, name: picked.name });
-    abandoned.current = false;
+    const gen = ++genRef.current;
     setLoading({ done: 0, total: 0 });
 
     try {
-      const { pages: count } = await engine.open(picked.uri, picked.name);
+      const { pages: count } = await engine.open(picked.uri);
+      if (gen !== genRef.current) return;
       if (count > LIMITS.organize.maxPages) {
         toast({ type: 'error', title: t.pdfmaker.tools.organizeTitle, message: t.pdfmaker.errors.tooManyPages });
         reset();
@@ -86,21 +91,27 @@ export function ToolOrganizeScreen({ navigation }: any) {
       setLoading({ done: 0, total: count });
 
       for (let n = 1; n <= count; n++) {
-        if (abandoned.current) return;
+        if (gen !== genRef.current) return;
         const base64 = await engine.thumb(n, THUMB_MAX_DIM);
-        if (abandoned.current) return;
-        setPages((prev) =>
-          prev.map((p) => (p.orig === n - 1 ? { ...p, uri: `data:image/jpeg;base64,${base64}` } : p)));
+        if (gen !== genRef.current) return;
+        // To disk, not a data URI: 200 base64 strings plus the bitmaps React
+        // Native decodes from them are never evicted, which is the likeliest
+        // way to run a cheap phone out of memory here.
+        const uri = saveThumbJpeg(base64ToBytes(base64), n - 1);
+        setPages((prev) => prev.map((p) => (p.orig === n - 1 ? { ...p, uri } : p)));
         setLoading({ done: n, total: count });
       }
     } catch (err) {
+      // A newer open, or reset(), has already moved on: its cancellation is
+      // what woke this loop, so it is not something to report.
+      if (gen !== genRef.current) return;
       const code = err instanceof PdfError ? err.code : 'unknown';
       if (code !== 'cancelled') {
         toast({ type: 'error', title: t.pdfmaker.tools.organizeTitle, message: errorText(code) });
+        reset();
       }
-      reset();
     } finally {
-      setLoading(null);
+      if (gen === genRef.current) setLoading(null);
     }
   }
 
@@ -202,7 +213,12 @@ export function ToolOrganizeScreen({ navigation }: any) {
             </View>
 
             {loading ? (
-              <ProgressPanel label={t.pdfmaker.organize.reading} done={loading.done} total={loading.total} />
+              <ProgressPanel
+                label={t.pdfmaker.organize.reading}
+                done={loading.done}
+                total={loading.total}
+                onCancel={reset}
+              />
             ) : null}
 
             {pages.length > 0 ? (

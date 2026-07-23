@@ -9,6 +9,7 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet, type ViewStyle } 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
+import { File } from 'expo-file-system';
 import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
@@ -37,6 +38,7 @@ export function ToolCompressScreen({ navigation }: any) {
 
   const [doc, setDoc] = useState<Doc | null>(null);
   const [target, setTarget] = useState<CompressTargetKey>('2mb');
+  const [opening, setOpening] = useState(false);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState({ done: 0, total: 0, pass: 1 });
   const [result, setResult] = useState<CompressResult | null>(null);
@@ -51,6 +53,7 @@ export function ToolCompressScreen({ navigation }: any) {
     setResult(null);
     setNoGain(false);
     setAcknowledged(false);
+    setProgress({ done: 0, total: 0, pass: 1 });
     cancelRef.current = false;
     engine.close();
   }
@@ -69,11 +72,26 @@ export function ToolCompressScreen({ navigation }: any) {
       return;
     }
 
+    // Some Android providers report no size. Falling back to 0 would make the
+    // "is it actually smaller" guard true for every result, so read the file.
+    let size = picked.size ?? 0;
+    if (!size) {
+      try { size = new File(picked.uri).size; } catch { size = 0; }
+    }
+    if (size > LIMITS.compress.maxBytes) {
+      toast({ type: 'error', title: t.pdfmaker.tools.compressTitle, message: t.pdfmaker.errors.tooLarge });
+      return;
+    }
+
     setResult(null);
     setNoGain(false);
     setAcknowledged(false);
+    // Opening parses the file and samples five pages for text, which takes
+    // seconds on a big scan. Without a visible state the drop zone looks dead
+    // and a second tap would collide with the first open.
+    setOpening(true);
     try {
-      const { pages, textChars } = await engine.open(picked.uri, picked.name);
+      const { pages, textChars } = await engine.open(picked.uri);
       if (pages > LIMITS.compress.maxPages) {
         toast({ type: 'error', title: t.pdfmaker.tools.compressTitle, message: t.pdfmaker.errors.tooManyPages });
         engine.close();
@@ -82,13 +100,17 @@ export function ToolCompressScreen({ navigation }: any) {
       setDoc({
         uri: picked.uri,
         name: picked.name,
-        size: picked.size ?? 0,
+        size,
         pages,
         texty: textChars > TEXT_HEAVY_CHARS_PER_PAGE,
       });
     } catch (err) {
       const code = err instanceof PdfError ? err.code : 'unknown';
-      toast({ type: 'error', title: t.pdfmaker.tools.compressTitle, message: errorText(code) });
+      if (code !== 'cancelled') {
+        toast({ type: 'error', title: t.pdfmaker.tools.compressTitle, message: errorText(code) });
+      }
+    } finally {
+      setOpening(false);
     }
   }
 
@@ -144,8 +166,9 @@ export function ToolCompressScreen({ navigation }: any) {
         {!doc ? (
           <>
             <TouchableOpacity
-              style={[styles.dropZone, { borderColor: C.border2, backgroundColor: C.surface }]}
+              style={[styles.dropZone, { borderColor: C.border2, backgroundColor: C.surface, opacity: opening ? 0.5 : 1 }]}
               onPress={open}
+              disabled={opening}
               activeOpacity={0.8}
             >
               <Feather name="minimize-2" size={26} color={SectorColors.pdfmaker} />
@@ -156,6 +179,7 @@ export function ToolCompressScreen({ navigation }: any) {
                 {t.pdfmaker.compress.hint}
               </Text>
             </TouchableOpacity>
+            {opening ? <ProgressPanel label={t.pdfmaker.compress.opening} done={0} total={0} /> : null}
             <Notice tone="info"><NoticeText>{t.pdfmaker.compress.worksBest}</NoticeText></Notice>
             <PrivacyNote />
           </>

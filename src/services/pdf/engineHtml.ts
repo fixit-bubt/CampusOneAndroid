@@ -14,10 +14,26 @@ import * as pdfjs from './pdf.min.mjs';
 pdfjs.GlobalWorkerOptions.workerSrc = './pdf.worker.min.mjs';
 
 var doc = null;
-var cancelled = {};
 
 function send(m) { window.ReactNativeWebView.postMessage(JSON.stringify(m)); }
 function fail(id, code, detail) { send({ id: id, type: 'error', code: code, detail: detail }); }
+
+// Read a local file as bytes. XHR rather than fetch: the Fetch API rejects the
+// file: scheme outright, while allowFileAccessFromFileURLs exists precisely to
+// let XHR read a sibling file.
+function readLocal(path) {
+  return new Promise(function (resolve, reject) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', path, true);
+    xhr.responseType = 'arraybuffer';
+    xhr.onload = function () {
+      if (xhr.response) resolve(xhr.response);
+      else reject(new Error('empty'));
+    };
+    xhr.onerror = function () { reject(new Error('read failed')); };
+    xhr.send();
+  });
+}
 
 // Render one page to a JPEG. The page is flattened onto white first: PDF
 // pages are transparent and JPEG has no alpha channel.
@@ -39,13 +55,11 @@ async function handle(msg) {
   var id = msg.id;
   var op = msg.op;
   try {
-    if (op === 'cancel') { cancelled[msg.targetId] = true; return; }
     if (op === 'close') { if (doc) { await doc.destroy(); doc = null; } return; }
 
     if (op === 'open') {
       if (doc) { await doc.destroy(); doc = null; }
-      var res = await fetch(msg.path);
-      var buf = await res.arrayBuffer();
+      var buf = await readLocal(msg.path);
       try {
         doc = await pdfjs.getDocument({ data: new Uint8Array(buf), useSystemFonts: true }).promise;
       } catch (e) {
@@ -69,7 +83,6 @@ async function handle(msg) {
     }
 
     if (!doc) return fail(id, 'unknown');
-    if (cancelled[id]) { delete cancelled[id]; return fail(id, 'cancelled'); }
 
     var page = await doc.getPage(msg.page);
     try {
@@ -98,6 +111,16 @@ async function handle(msg) {
 
 window.__pdfEngine = function (json) { handle(JSON.parse(json)); };
 send({ id: 0, type: 'ready' });
+</script>
+<script>
+// Classic script, so it still runs if the module above fails to load at all.
+// Without this a broken runtime is silent and the native side waits forever.
+window.onerror = function () {
+  if (window.ReactNativeWebView) {
+    window.ReactNativeWebView.postMessage(JSON.stringify({ id: 0, type: 'fatal' }));
+  }
+};
+window.addEventListener('unhandledrejection', window.onerror);
 </script>
 </body></html>`;
 }

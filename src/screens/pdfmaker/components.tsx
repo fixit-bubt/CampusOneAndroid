@@ -74,7 +74,7 @@ export function ResultPanel({
         {t.pdfmaker.common.pages(pages)}
         {'   '}
         {bytesBefore ? `${formatFileSize(bytesBefore)} > ${formatFileSize(bytesAfter)}` : formatFileSize(bytesAfter)}
-        {saved > 0 ? `   (${saved}% smaller)` : ''}
+        {saved > 0 ? `   ${t.pdfmaker.common.smaller(saved)}` : ''}
       </Text>
       {warning ? (
         <View style={{ marginTop: 2 }}>
@@ -124,7 +124,7 @@ export function ThumbCard({
         <View style={styles.badge}><Text style={styles.badgeText}>{index + 1}</Text></View>
         {onRemove ? (
           <TouchableOpacity style={styles.corner} onPress={onRemove} accessibilityLabel={t.pdfmaker.common.remove}>
-            <Feather name="x" size={13} color="#ffffff" />
+            <Feather name="x" size={13} color={C.white} />
           </TouchableOpacity>
         ) : null}
         {onToggle ? (
@@ -133,7 +133,7 @@ export function ThumbCard({
             onPress={onToggle}
             accessibilityLabel={keep ? t.pdfmaker.common.remove : t.pdfmaker.common.keep}
           >
-            <Feather name={keep ? 'x' : 'rotate-ccw'} size={13} color="#ffffff" />
+            <Feather name={keep ? 'x' : 'rotate-ccw'} size={13} color={C.white} />
           </TouchableOpacity>
         ) : null}
       </View>
