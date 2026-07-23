@@ -68,6 +68,7 @@ import { CoverPageFormScreen }     from '../screens/coverpage/CoverPageFormScree
 import { CgpaScreen }              from '../screens/cgpa/CgpaScreen';
 import { ToolImagesScreen }        from '../screens/pdfmaker/ToolImagesScreen';
 import { ToolMergeScreen }         from '../screens/pdfmaker/ToolMergeScreen';
+import { ToolOrganizeScreen }      from '../screens/pdfmaker/ToolOrganizeScreen';
 import { ProfileScreen }          from '../screens/main/ProfileScreen';
 
 const Stack = createNativeStackNavigator<AppStackParams>();
@@ -159,6 +160,7 @@ export function AppNavigator() {
       <Stack.Screen name="Cgpa"          component={CgpaScreen} />
       <Stack.Screen name="PdfImages"     component={ToolImagesScreen} />
       <Stack.Screen name="PdfMerge"      component={ToolMergeScreen} />
+      <Stack.Screen name="PdfOrganize"   component={ToolOrganizeScreen} />
 
       {/* Profile (from Settings tab) */}
       <Stack.Screen name="Profile"        component={ProfileScreen} />
