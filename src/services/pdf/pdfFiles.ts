@@ -93,8 +93,13 @@ export function thumbDir(): Directory {
   return dir;
 }
 
-export function saveThumbJpeg(bytes: Uint8Array, index: number): string {
-  const file = new File(thumbDir(), `thumb-${index}.jpg`);
+// `run` distinguishes one opened document from the next. Reusing a name across
+// documents leaves the URI unchanged, and React Native caches images by URI, so
+// page 3 of the previous file would still be on screen for page 3 of this one.
+// In a tool whose whole job is choosing pages to delete from their pictures,
+// that deletes the wrong pages.
+export function saveThumbJpeg(bytes: Uint8Array, run: number, index: number): string {
+  const file = new File(thumbDir(), `thumb-${run}-${index}.jpg`);
   if (file.exists) file.delete();
   file.create();
   file.write(bytes);

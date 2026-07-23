@@ -7,6 +7,17 @@ export function buildEngineHtml(): string {
   return `<!doctype html>
 <html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- The page parses untrusted PDFs, and Android needs
+     allowUniversalAccessFromFileURLs for its module imports, which removes the
+     same-origin barrier. Refusing navigation is not enough on its own: an image
+     src, a beacon or an XHR would still reach the network without ever being a
+     navigation. This policy is enforced by the engine itself, so it holds
+     whatever the file-origin flags say. -->
+<!-- The file: scheme is listed explicitly beside 'self': a file:// document can be an
+     opaque origin, in which case 'self' matches nothing and the engine's own
+     module and worker would be blocked. No http, https or wss source appears
+     anywhere, which is what closes the exfiltration routes. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' file: 'unsafe-inline' blob:; worker-src 'self' file: blob:; child-src 'self' file: blob:; img-src 'self' file: data: blob:; style-src 'unsafe-inline'; connect-src 'self' file: data: blob:; form-action 'none'; base-uri 'none'">
 <style>html,body{margin:0;background:#fff}</style>
 </head><body>
 <script type="module">
@@ -110,17 +121,31 @@ async function handle(msg) {
 }
 
 window.__pdfEngine = function (json) { handle(JSON.parse(json)); };
+if (window.__pdfEngineBooted) window.__pdfEngineBooted();
 send({ id: 0, type: 'ready' });
 </script>
 <script>
 // Classic script, so it still runs if the module above fails to load at all.
 // Without this a broken runtime is silent and the native side waits forever.
-window.onerror = function () {
+var booted = false;
+function reportFatal() {
   if (window.ReactNativeWebView) {
     window.ReactNativeWebView.postMessage(JSON.stringify({ id: 0, type: 'fatal' }));
   }
-};
-window.addEventListener('unhandledrejection', window.onerror);
+}
+// Capture phase, because a script that fails to FETCH dispatches a
+// non-bubbling error event at the element itself, which never reaches
+// window.onerror. That is the exact failure this exists to catch: the runtime
+// not being there.
+window.addEventListener('error', reportFatal, true);
+window.onerror = reportFatal;
+// A rejection that escapes is only fatal before the page has announced itself.
+// Afterwards it is far more likely to be pdf.js tidying up a destroyed
+// document, and killing a working engine over that is worse than ignoring it.
+window.addEventListener('unhandledrejection', function () {
+  if (!booted) reportFatal();
+});
+window.__pdfEngineBooted = function () { booted = true; };
 </script>
 </body></html>`;
 }

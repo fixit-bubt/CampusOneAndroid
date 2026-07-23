@@ -97,7 +97,7 @@ export function ToolOrganizeScreen({ navigation }: any) {
         // To disk, not a data URI: 200 base64 strings plus the bitmaps React
         // Native decodes from them are never evicted, which is the likeliest
         // way to run a cheap phone out of memory here.
-        const uri = saveThumbJpeg(base64ToBytes(base64), n - 1);
+        const uri = saveThumbJpeg(base64ToBytes(base64), gen, n - 1);
         setPages((prev) => prev.map((p) => (p.orig === n - 1 ? { ...p, uri } : p)));
         setLoading({ done: n, total: count });
       }

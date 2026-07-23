@@ -68,11 +68,20 @@ iOS is tightly scoped by `allowingReadAccessToURL`. Android is not: the page
 needs `allowUniversalAccessFromFileURLs` for its ES module imports to resolve
 from a `file://` origin, and that flag removes the same-origin barrier for the
 whole page. Since that page parses untrusted student PDFs through pdf.js, the
-mitigations are: `originWhitelist` is `file://*`,
-`onShouldStartLoadWithRequest` refuses any URL outside the engine folder,
-and both window-opening props are off. Dropping the flag entirely means
-inlining pdf.js as a classic script instead of a module, which is the right
-follow-up once there is a device to verify it on.
+mitigation that actually carries the weight is the `Content-Security-Policy`
+meta in `buildEngineHtml()`: `default-src 'none'` with only `'self'`, `data:`
+and `blob:` allowed for scripts, workers, images and connections. The WebView
+enforces that regardless of the file-origin flags, so an `img.src`, a
+`sendBeacon` or an XHR to an outside host is refused.
+
+`onShouldStartLoadWithRequest` only sees **navigations**, not subresource
+requests, so on its own it would have been close to decorative. It stays, along
+with `originWhitelist: ['file://*']` and both window-opening props off, but the
+CSP is the actual boundary.
+
+Two follow-ups, both needing a device: inline pdf.js as a classic script so
+`allowUniversalAccessFromFileURLs` can be dropped altogether, and confirm CSP
+`'self'` resolves as expected on a `file://` origin in both engines.
 
 ### Nothing waits forever
 

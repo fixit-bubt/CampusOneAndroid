@@ -20,6 +20,7 @@ import { reduceEngineMessage, type EngineMessage, type PendingJob } from './engi
 // cheap phone, hence the generous ceiling.
 const BOOT_TIMEOUT_MS = 20_000;
 const JOB_TIMEOUT_MS = 90_000;
+const MAX_ENGINE_RESTARTS = 2;
 
 export interface EngineHandle {
   open(uri: string): Promise<{ pages: number; textChars: number }>;
@@ -67,7 +68,10 @@ export function useRasterEngine() {
   // gets a live page instead of posting into a corpse.
   const [generation, setGeneration] = useState(0);
   const readAccess = useRef<string | null>(null);
-  if (!readAccess.current) readAccess.current = engineDir().uri;
+  const bootTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // A broken runtime would otherwise remount forever, since the reload hits the
+  // same failing page and reports the same error.
+  const restarts = useRef(0);
 
   // Resolved by the page's own "ready" message, rejected if it never arrives.
   // Every job waits on it, so a request cannot be injected before the module
@@ -85,31 +89,52 @@ export function useRasterEngine() {
   if (!ready.current) ready.current = newReady();
 
   const failEngine = useCallback(() => {
+    if (bootTimer.current) { clearTimeout(bootTimer.current); bootTimer.current = null; }
     if (!ready.current.settled) {
       ready.current.settled = true;
       ready.current.reject(new PdfError('engine-failed'));
     }
     reduceEngineMessage(pending, { id: 0, type: 'fatal' });
+    if (restarts.current >= MAX_ENGINE_RESTARTS) return;
+    restarts.current++;
     // Arm a fresh gate for the remounted page, otherwise one crash would keep
     // every later job rejecting against the old, already-settled promise.
     ready.current = newReady();
     setGeneration((g) => g + 1);
   }, [pending]);
 
+  // Prepare the folder once, then again for each restart: the cache directory
+  // this lives in can be purged by the OS while the screen is open, so a
+  // remount that reuses a vanished path would fail exactly as before.
   useEffect(() => {
     let alive = true;
-    const boot = setTimeout(() => { if (alive) failEngine(); }, BOOT_TIMEOUT_MS);
+    if (!readAccess.current) readAccess.current = engineDir().uri;
     prepareEngineFolder()
       .then((uri) => { if (alive) setHtmlUri(uri); })
       .catch(() => { if (alive) failEngine(); });
+    return () => { alive = false; };
+  }, [generation, failEngine]);
+
+  // Armed per generation, not once per mount. A page that never announces
+  // itself is the failure; clearing this on "ready" is what stops a healthy
+  // engine from tearing itself down mid job, and re-arming it on a remount is
+  // what stops the second failure from hanging forever.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!ready.current.settled) failEngine();
+    }, BOOT_TIMEOUT_MS);
+    bootTimer.current = timer;
     return () => {
-      alive = false;
-      clearTimeout(boot);
-      for (const [, job] of pending) job.reject(new PdfError('cancelled'));
-      pending.clear();
-      clearEngineDir();
+      clearTimeout(timer);
+      if (bootTimer.current === timer) bootTimer.current = null;
     };
-  }, [pending, failEngine]);
+  }, [generation, failEngine]);
+
+  useEffect(() => () => {
+    for (const [, job] of pending) job.reject(new PdfError('cancelled'));
+    pending.clear();
+    clearEngineDir();
+  }, [pending]);
 
   const post = useCallback((payload: Record<string, unknown>) => {
     // JSON.stringify of the JSON text yields a correctly escaped JS string
@@ -160,6 +185,7 @@ export function useRasterEngine() {
       return;
     }
     if (msg.type === 'ready') {
+      if (bootTimer.current) { clearTimeout(bootTimer.current); bootTimer.current = null; }
       if (!ready.current.settled) { ready.current.settled = true; ready.current.resolve(); }
       return;
     }
@@ -191,7 +217,7 @@ export function useRasterEngine() {
           // elsewhere is either a bug or an exfiltration attempt through a
           // malformed PDF, so refuse every other URL.
           onShouldStartLoadWithRequest={(req) =>
-            req.url === 'about:blank' || req.url.startsWith(readAccess.current ?? ' ')}
+            req.url === 'about:blank' || (!!readAccess.current && req.url.startsWith(readAccess.current))}
           onMessage={(e) => onMessage(e.nativeEvent.data)}
           onError={failEngine}
           onRenderProcessGone={failEngine}

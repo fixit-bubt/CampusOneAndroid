@@ -76,7 +76,17 @@ export function ToolCompressScreen({ navigation }: any) {
     // "is it actually smaller" guard true for every result, so read the file.
     let size = picked.size ?? 0;
     if (!size) {
+      // File.size answers 0 for a file it cannot read rather than throwing, so
+      // a zero here is not proof of an empty file.
       try { size = new File(picked.uri).size; } catch { size = 0; }
+    }
+    if (!size) {
+      // Every later decision compares against this number: the size gate, and
+      // the guard that refuses a result which is not smaller than the input.
+      // Rendering three passes only to declare the file already optimized is
+      // the worst possible way to find out it was unknown.
+      toast({ type: 'error', title: t.pdfmaker.tools.compressTitle, message: t.pdfmaker.errors.unknown });
+      return;
     }
     if (size > LIMITS.compress.maxBytes) {
       toast({ type: 'error', title: t.pdfmaker.tools.compressTitle, message: t.pdfmaker.errors.tooLarge });
