@@ -158,30 +158,25 @@ export function ExploreScreen({ navigation }: any) {
           </TouchableOpacity>
         )}
 
-        {/* 2-col grid */}
-        {Array.from({ length: Math.ceil(sectors.length / 2) }, (_, i) => (
-          <View key={i} style={styles.row}>
-            {sectors.slice(i * 2, i * 2 + 2).map((s) => (
-              <TouchableOpacity
-                key={s.id}
-                style={[styles.cell, { backgroundColor: C.surface, borderColor: C.border }]}
-                onPress={() => navigation.navigate(SECTOR_ROUTE[s.id])}
-                activeOpacity={0.75}
-              >
-                <SectorIcon sector={s.id} size="md" dark={isDark} />
-                <View style={styles.cellText}>
-                  <Text style={[styles.cellTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                    {s.en}
-                  </Text>
-                  <Text style={[styles.cellDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
-                    {s.dEn}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            ))}
-            {/* pad last row if odd number of items */}
-            {sectors.slice(i * 2, i * 2 + 2).length === 1 && <View style={styles.cell} />}
-          </View>
+        {sectors.map((s) => (
+          <TouchableOpacity
+            key={s.id}
+            style={[styles.toolCard, { backgroundColor: C.surface, borderColor: C.border }]}
+            onPress={() => navigation.navigate(SECTOR_ROUTE[s.id])}
+            activeOpacity={0.75}
+          >
+            {/* nudged to 44 so every icon lines up with the tool cards above */}
+            <SectorIcon sector={s.id} size="md" dark={isDark} style={styles.sectorIcon} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.cellTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                {s.en}
+              </Text>
+              <Text style={[styles.cellDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
+                {s.dEn}
+              </Text>
+            </View>
+            <Feather name="chevron-right" size={18} color={C.textMuted} />
+          </TouchableOpacity>
         ))}
         <View style={{ height: 20 }} />
       </ScrollView>
@@ -212,12 +207,6 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   } as ViewStyle,
 
-  row: {
-    flexDirection: 'row',
-    gap: 11,
-    marginBottom: 11,
-  } as ViewStyle,
-
   toolCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -236,17 +225,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   } as ViewStyle,
 
-  cell: {
-    flex: 1,
-    minHeight: 116,
-    padding: 15,
-    borderRadius: 16,
-    borderWidth: 1,
-    justifyContent: 'space-between',
-  } as ViewStyle,
-
-  cellText: {
-    marginTop: 12,
+  sectorIcon: {
+    width: 44,
+    height: 44,
   } as ViewStyle,
 
   cellTitle: {
