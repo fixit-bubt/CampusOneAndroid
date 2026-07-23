@@ -3293,6 +3293,10 @@ export type Database = {
           whatsapp: string
         }[]
       }
+      register_push_token: {
+        Args: { p_platform?: string; p_token: string }
+        Returns: undefined
+      }
       reject_section_request: {
         Args: { p_note: string; p_request_id: string }
         Returns: Json

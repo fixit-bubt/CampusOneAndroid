@@ -15,6 +15,7 @@ import type { SectorKey } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
+import { watchPushStatus, registerPushToken, type PushStatus } from '../../lib/push';
 
 const SECTORS: { id: SectorKey; label: string; desc: string }[] = [
   { id: 'reports',   label: 'Reports',       desc: 'Campus maintenance issues' },
@@ -41,6 +42,24 @@ const SECTORS: { id: SectorKey; label: string; desc: string }[] = [
 type SectorPref = { enabled: boolean; push: boolean; email: boolean; inapp: boolean };
 type ChanKey = 'push' | 'email' | 'inapp';
 
+// What the device-registration state means to someone reading the screen. Until
+// this says "on", nothing arrives while the app is closed, whatever the toggles
+// below say.
+function pushStatusCopy(s: PushStatus): { title: string; sub: string; bad: boolean } {
+  switch (s.state) {
+    case 'ok':
+      return { title: 'Push is on for this device', sub: 'Notifications arrive even when the app is closed', bad: false };
+    case 'denied':
+      return { title: 'Notifications are blocked', sub: 'Allow notifications for CampusOne in your phone settings, then retry', bad: true };
+    case 'unsupported':
+      return { title: 'Push unavailable on this device', sub: s.message ?? 'This device cannot receive push notifications', bad: true };
+    case 'error':
+      return { title: 'This device is not registered', sub: s.message ?? 'Registration failed', bad: true };
+    default:
+      return { title: 'Registering this device…', sub: 'Checking whether push notifications can be delivered', bad: false };
+  }
+}
+
 function defaultPref(): SectorPref {
   return { enabled: true, push: true, email: false, inapp: true };
 }
@@ -61,6 +80,16 @@ export function NotifSettingsScreen({ navigation }: any) {
   const [prefs, setPrefs] = useState<Record<string, SectorPref>>(
     Object.fromEntries(SECTORS.map(s => [s.id, defaultPref()]))
   );
+  const [push, setPush] = useState<PushStatus>({ state: 'pending' });
+  const [retrying, setRetrying] = useState(false);
+
+  useEffect(() => watchPushStatus(setPush), []);
+
+  async function retryPush() {
+    setRetrying(true);
+    await registerPushToken();
+    setRetrying(false);
+  }
 
   const load = useCallback(async () => {
     setLoadError(null);
@@ -144,6 +173,35 @@ export function NotifSettingsScreen({ navigation }: any) {
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
       >
+        {/* Device push registration — the gate everything else sits behind */}
+        {(() => {
+          const copy = pushStatusCopy(push);
+          const tone = copy.bad ? C.danger : push.state === 'ok' ? C.success : C.textMuted;
+          const toneBg = copy.bad ? C.dangerBg : push.state === 'ok' ? C.successBg : C.surface2;
+          return (
+            <View style={[styles.settingCard, { backgroundColor: C.surface, borderColor: copy.bad ? C.danger : C.border }]}>
+              <View style={styles.settingRow}>
+                <View style={[styles.settingIcon, { backgroundColor: toneBg }]}>
+                  {copy.bad
+                    ? <Icon name="bellOff" size={22} color={tone} />
+                    : <Feather name="smartphone" size={21} color={tone} />}
+                </View>
+                <View style={styles.settingBody}>
+                  <Text style={[styles.settingTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{copy.title}</Text>
+                  <Text style={[styles.settingSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{copy.sub}</Text>
+                </View>
+                {copy.bad && (
+                  <TouchableOpacity onPress={retryPush} disabled={retrying} style={{ padding: 4 }} activeOpacity={0.75}>
+                    <Text style={[styles.toggleAll, { color: C.brand, fontFamily: FontFamily.jakartaBold, opacity: retrying ? 0.4 : 1 }]}>
+                      {t.common.retry}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+          );
+        })()}
+
         {/* Master pause */}
         <View style={[styles.settingCard, { backgroundColor: C.surface, borderColor: C.border }]}>
           <View style={styles.settingRow}>

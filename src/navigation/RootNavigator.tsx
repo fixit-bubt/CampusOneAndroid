@@ -8,7 +8,7 @@ import { FontFamily } from '../theme';
 import { AuthNavigator } from './AuthNavigator';
 import { AppNavigator } from './AppNavigator';
 import { OnboardingScreen } from '../screens/auth/OnboardingScreen';
-import { registerPushToken, addNotificationTapHandler } from '../lib/push';
+import { registerPushToken, addPushTokenRotationHandler, addNotificationTapHandler } from '../lib/push';
 import { resolveNotifTarget } from '../utils/notifTarget';
 
 const navigationRef = createNavigationContainerRef();
@@ -18,9 +18,12 @@ export function RootNavigator() {
   const { C } = useTheme();
   const t = useT();
 
-  // Register this device's FCM token once the user is signed in.
+  // Claim this device's FCM token once the user is signed in, and keep it
+  // current if FCM rotates the token while the app is running.
   React.useEffect(() => {
-    if (user?.id) registerPushToken(user.id);
+    if (!user?.id) return;
+    registerPushToken();
+    return addPushTokenRotationHandler();
   }, [user?.id]);
 
   // Tapping a push deep-links to the referenced item (falling back to the
