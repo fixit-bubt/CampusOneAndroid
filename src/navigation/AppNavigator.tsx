@@ -66,6 +66,7 @@ import { AcademicCalendarScreen }  from '../screens/calendar/AcademicCalendarScr
 import { RoutinesBrowseScreen }    from '../screens/routines/RoutinesBrowseScreen';
 import { CoverPageFormScreen }     from '../screens/coverpage/CoverPageFormScreen';
 import { CgpaScreen }              from '../screens/cgpa/CgpaScreen';
+import { ToolImagesScreen }        from '../screens/pdfmaker/ToolImagesScreen';
 import { ProfileScreen }          from '../screens/main/ProfileScreen';
 
 const Stack = createNativeStackNavigator<AppStackParams>();
@@ -155,6 +156,7 @@ export function AppNavigator() {
 
       {/* CGPA Calculator */}
       <Stack.Screen name="Cgpa"          component={CgpaScreen} />
+      <Stack.Screen name="PdfImages"     component={ToolImagesScreen} />
 
       {/* Profile (from Settings tab) */}
       <Stack.Screen name="Profile"        component={ProfileScreen} />

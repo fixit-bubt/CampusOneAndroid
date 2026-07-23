@@ -25,6 +25,7 @@ const SECTOR_ICON: Record<SectorKey, string> = {
   calendar:  'calendar',
   routines:  'clipboard',
   coverpage: 'fileText',
+  pdfmaker:  'fileText',
   messages:  'chat',
 };
 

@@ -7,7 +7,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
 import { useAuth } from '../../store/authStore';
 import { SectorIcon } from '../../components/ui/SectorIcon';
-import { FontFamily, Layout } from '../../theme';
+import { FontFamily, Layout, SectorColors } from '../../theme';
 import type { SectorKey } from '../../theme';
 
 // Maps sector id → app navigator route name
@@ -30,6 +30,7 @@ const SECTOR_ROUTE: Record<SectorKey, string> = {
   calendar:  'AcademicCalendar',
   routines:  'RoutinesBrowse',
   coverpage: 'CoverPageForm',
+  pdfmaker:  'PdfMaker',
   messages:  'Messages',
 };
 
@@ -129,6 +130,28 @@ export function ExploreScreen({ navigation }: any) {
               </Text>
               <Text style={[styles.cellDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
                 {t.campusIssues.exploreDesc}
+              </Text>
+            </View>
+            <Feather name="chevron-right" size={18} color={C.textMuted} />
+          </TouchableOpacity>
+        )}
+
+        {/* PDF Maker — student-only, everything runs on the phone */}
+        {isStudent && (
+          <TouchableOpacity
+            style={[styles.toolCard, { backgroundColor: C.surface, borderColor: C.border }]}
+            onPress={() => navigation.navigate('PdfImages')}
+            activeOpacity={0.75}
+          >
+            <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
+              <Feather name="file-plus" size={20} color={SectorColors.pdfmaker} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.cellTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                {t.pdfmaker.title}
+              </Text>
+              <Text style={[styles.cellDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
+                {t.pdfmaker.exploreDesc}
               </Text>
             </View>
             <Feather name="chevron-right" size={18} color={C.textMuted} />

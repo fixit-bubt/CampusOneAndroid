@@ -120,6 +120,7 @@ export const SectorColors = {
   calendar:  '#d4553a',
   routines:  '#5c6bc0',
   coverpage: '#00838f',
+  pdfmaker:  '#b12f8c',
   messages:  '#3d8bfd',
 } as const;
 

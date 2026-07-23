@@ -28,6 +28,7 @@ const QUICK_ROUTE: Record<SectorKey, string> = {
   study: 'StudyHub', bus: 'Bus', medical: 'Medical', market: 'Market',
   ride: 'Rides', blood: 'Blood', directory: 'Directory', prayer: 'Prayer', faculty: 'Faculty',
   calendar: 'AcademicCalendar', routines: 'RoutinesBrowse', coverpage: 'CoverPageForm',
+  pdfmaker: 'PdfMaker',
   messages: 'Messages',
 };
 

@@ -118,6 +118,13 @@ export type AppStackParams = {
   // CGPA Calculator
   Cgpa: undefined;
 
+  // PDF Maker (students only, fully on-device)
+  PdfMaker:    undefined;
+  PdfImages:   undefined;
+  PdfMerge:    undefined;
+  PdfOrganize: undefined;
+  PdfCompress: undefined;
+
   // Profile (from Settings tab)
   Profile: undefined;
 
