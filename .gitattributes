@@ -1,0 +1,3 @@
+# The vendored pdf.js runtime is minified third-party output. Leave it exactly
+# as upstream shipped it rather than rewriting its line endings on checkout.
+assets/pdfjs/*.txt -text
