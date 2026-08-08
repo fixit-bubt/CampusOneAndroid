@@ -269,36 +269,41 @@ export function MessageThread({ route, navigation }: any) {
       ) : (
         <KeyboardAvoidingView
           style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
         >
-          <FlatList
-            inverted
-            data={rendered}
-            keyExtractor={m => m.id}
-            contentContainerStyle={{ paddingHorizontal: Layout.screenPadding, paddingVertical: 12 }}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            renderItem={({ item }) => renderBubble(item)}
-            onEndReached={() => { if (!searching && hasMore) loadOlder(); }}
-            onEndReachedThreshold={0.3}
-            ListEmptyComponent={
-              <View style={[styles.center, { transform: [{ scaleY: -1 }] }]}>
-                <Text style={[styles.unavail, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                  {searching ? t.messages.noMatches : t.messages.emptyThread}
-                </Text>
-              </View>
-            }
-            ListFooterComponent={
-              !searching && hasMore ? (
-                <TouchableOpacity onPress={loadOlder} style={styles.older} activeOpacity={0.7}>
-                  {loadingOlder
-                    ? <ActivityIndicator color={C.brand} size="small" />
-                    : <Text style={[styles.olderTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>{t.messages.loadOlder}</Text>}
-                </TouchableOpacity>
-              ) : null
-            }
-          />
+          {rendered.length === 0 ? (
+            // Plain sibling, not ListEmptyComponent — RN doesn't auto
+            // counter-flip that (or Header/Footer) for an inverted list the
+            // way it does renderItem cells, so text placed there renders
+            // upside-down instead of the manual scaleY:-1 reliably undoing it.
+            <View style={styles.center}>
+              <Text style={[styles.unavail, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                {searching ? t.messages.noMatches : t.messages.emptyThread}
+              </Text>
+            </View>
+          ) : (
+            <FlatList
+              inverted
+              data={rendered}
+              keyExtractor={m => m.id}
+              contentContainerStyle={{ paddingHorizontal: Layout.screenPadding, paddingVertical: 12 }}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              renderItem={({ item }) => renderBubble(item)}
+              onEndReached={() => { if (!searching && hasMore) loadOlder(); }}
+              onEndReachedThreshold={0.3}
+              ListFooterComponent={
+                !searching && hasMore ? (
+                  <TouchableOpacity onPress={loadOlder} style={styles.older} activeOpacity={0.7}>
+                    {loadingOlder
+                      ? <ActivityIndicator color={C.brand} size="small" />
+                      : <Text style={[styles.olderTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>{t.messages.loadOlder}</Text>}
+                  </TouchableOpacity>
+                ) : null
+              }
+            />
+          )}
 
           {/* Composer / blocked notice */}
           {blocked ? (

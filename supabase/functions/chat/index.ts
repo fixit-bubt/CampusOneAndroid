@@ -338,7 +338,14 @@ async function* streamGemini(apiKey: string, contents: unknown[]) {
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
-    buf += decoder.decode(value, { stream: true });
+    // Normalize CRLF to LF first — Gemini's SSE stream uses \r\n line
+    // endings, and a raw \n\n search never matches \r\n\r\n frame
+    // boundaries, so every chunk would collect into `buf` forever and no
+    // round would ever produce a reply. Safe to do globally: real \r\n bytes
+    // only appear as protocol framing here, never inside the JSON payload
+    // (escaped \r\n in a JSON string is the two literal characters
+    // backslash-r/backslash-n, not actual CR/LF bytes).
+    buf += decoder.decode(value, { stream: true }).replace(/\r\n/g, '\n');
     let idx: number;
     while ((idx = buf.indexOf('\n\n')) !== -1) {
       const frame = buf.slice(0, idx);

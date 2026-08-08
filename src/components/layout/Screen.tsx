@@ -39,7 +39,7 @@ export function Screen({ children, scrollable = false, keyboardAvoid = false, no
   );
 
   const body = keyboardAvoid ? (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       {inner}
     </KeyboardAvoidingView>
   ) : (

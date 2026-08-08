@@ -157,12 +157,24 @@ export function ChatbotScreen({ navigation }: any) {
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
         {loadingHistory ? (
           <View style={styles.center}>
             <ActivityIndicator color={C.brand} />
+          </View>
+        ) : rendered.length === 0 ? (
+          // Rendered as a plain sibling, never as the inverted FlatList's
+          // ListEmptyComponent — RN auto-counter-flips renderItem cells for
+          // an inverted list, but not ListEmptyComponent, so putting text
+          // there needs a manual scaleY:-1 that doesn't reliably cancel out
+          // on newer RN/Fabric and ends up rendering upside-down instead.
+          <View style={styles.center}>
+            <Feather name="message-circle" size={28} color={C.textMuted} />
+            <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+              {t.chatbot.emptyState}
+            </Text>
           </View>
         ) : (
           <FlatList
@@ -173,14 +185,6 @@ export function ChatbotScreen({ navigation }: any) {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             renderItem={({ item }) => renderBubble(item)}
-            ListEmptyComponent={
-              <View style={[styles.center, { transform: [{ scaleY: -1 }] }]}>
-                <Feather name="message-circle" size={28} color={C.textMuted} />
-                <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                  {t.chatbot.emptyState}
-                </Text>
-              </View>
-            }
           />
         )}
 
