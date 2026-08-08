@@ -149,14 +149,15 @@ export function NotificationsScreen({ navigation }: any) {
 
   async function handleMarkAll() {
     if (!user?.id) return;
-    await markAllRead(user.id);
+    const res = await markAllRead(user.id);
+    if (!res.ok) { toast({ type: 'error', title: t.common.error, message: res.error }); return; }
     setNotifs(n => n.map(x => ({ ...x, read: true })));
   }
 
   async function handleOpen(n: Notification) {
     if (!n.read) {
-      await markRead(n.id);
-      setNotifs(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x));
+      const res = await markRead(n.id);
+      if (res.ok) setNotifs(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x));
     }
     navigation.navigate('NotifDetail', { notification: n });
   }
@@ -172,8 +173,8 @@ export function NotificationsScreen({ navigation }: any) {
     // is immediately reachable from the Messages tab.
     if (accept) reloadMessages();
     if (!n.read) {
-      markRead(n.id);
-      setNotifs(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x));
+      const markRes = await markRead(n.id);
+      if (markRes.ok) setNotifs(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x));
     }
   }
 

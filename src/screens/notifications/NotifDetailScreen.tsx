@@ -11,6 +11,7 @@ import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { resolveNotifTarget } from '../../utils/notifTarget';
+import { useToast } from '../../components/ui/Toast';
 
 const SECTOR_LABELS: Record<string, string> = {
   reports: 'Reports', lostfound: 'Lost & Found', clubs: 'Clubs', events: 'Events',
@@ -32,18 +33,21 @@ export function NotifDetailScreen({ route, navigation }: any) {
   const { C } = useTheme();
   const { user } = useAuth();
   const t = useT();
+  const toast = useToast();
   const n = route.params?.notification;
   if (!n) return null;
   const sectorLabel = SECTOR_LABELS[n.sector] ?? n.sector;
 
   async function markUnread() {
-    await supabase.from('notifications').update({ read: false }).eq('id', n.id);
+    const { error } = await supabase.from('notifications').update({ read: false }).eq('id', n.id);
+    if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
     navigation.goBack();
   }
 
   async function muteSector() {
     if (!user?.id) return;
-    await supabase.from('notif_prefs').upsert({ user_id: user.id, sector: n.sector, enabled: false });
+    const { error } = await supabase.from('notif_prefs').upsert({ user_id: user.id, sector: n.sector, enabled: false });
+    if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
     navigation.goBack();
   }
 

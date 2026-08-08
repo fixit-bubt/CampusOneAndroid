@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView, Modal,
   StyleSheet, Switch, ActivityIndicator, type ViewStyle,
@@ -363,7 +364,10 @@ export function ProfileScreen({ navigation }: any) {
     });
   }, [user]);
 
-  useEffect(() => { loadContrib(); }, [loadContrib]);
+  // Contribution counts change from other screens (post a report, join a club,
+  // RSVP, post lost&found) — refresh on focus, not just mount, so returning to
+  // Profile shows current numbers.
+  useFocusEffect(useCallback(() => { loadContrib(); }, [loadContrib]));
 
   async function handleSave() {
     if (!user || savingRef.current) return;
