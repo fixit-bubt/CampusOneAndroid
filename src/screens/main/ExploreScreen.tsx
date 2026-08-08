@@ -110,7 +110,6 @@ export function ExploreScreen({ navigation }: any) {
             {s.dEn}
           </Text>
         </View>
-        <Feather name="chevron-right" size={18} color={C.textMuted} />
       </TouchableOpacity>
     );
   }
@@ -159,7 +158,6 @@ export function ExploreScreen({ navigation }: any) {
               Ask questions, get help with campus life
             </Text>
           </View>
-          <Feather name="chevron-right" size={18} color={C.textMuted} />
         </TouchableOpacity>
 
         {/* Campus Issues board — student-only anonymous issues + me-too votes */}
@@ -180,7 +178,6 @@ export function ExploreScreen({ navigation }: any) {
                 {t.campusIssues.exploreDesc}
               </Text>
             </View>
-            <Feather name="chevron-right" size={18} color={C.textMuted} />
           </TouchableOpacity>
         )}
 
@@ -205,7 +202,6 @@ export function ExploreScreen({ navigation }: any) {
                   {t.cgpa.subtitle}
                 </Text>
               </View>
-              <Feather name="chevron-right" size={18} color={C.textMuted} />
             </TouchableOpacity>
 
             {/* PDF Maker — student-only, everything runs on the phone */}
@@ -226,7 +222,6 @@ export function ExploreScreen({ navigation }: any) {
                     {t.pdfmaker.exploreDesc}
                   </Text>
                 </View>
-                <Feather name="chevron-right" size={18} color={C.textMuted} />
               </TouchableOpacity>
             )}
           </CollapsibleSection>

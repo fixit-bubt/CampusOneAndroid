@@ -37,7 +37,7 @@ export function CollapsibleSection({ title, icon, defaultOpen = true, children }
         </Text>
         <Icon
           name="chevD"
-          size={18}
+          size={24}
           color={C.textMuted}
           style={{ transform: [{ rotate: open ? '0deg' : '-90deg' }] } as ViewStyle}
         />
