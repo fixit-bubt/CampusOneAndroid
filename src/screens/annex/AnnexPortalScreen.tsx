@@ -15,6 +15,28 @@ import { FontFamily, Layout } from '../../theme';
 
 const ANNEX_URL = 'https://annex.bubt.edu.bd/';
 
+// forceDarkOn only drives Android's deprecated per-WebView dark API, which is
+// a no-op on modern WebView versions — the reliable cross-version fix is to
+// make the page itself declare it's light-only, which is what the browser
+// engine's auto-darken heuristic actually checks.
+const FORCE_LIGHT_JS = `
+  (function () {
+    function apply() {
+      if (!document.head || document.querySelector('meta[name="color-scheme"]')) return;
+      var meta = document.createElement('meta');
+      meta.name = 'color-scheme';
+      meta.content = 'light';
+      document.head.appendChild(meta);
+      var style = document.createElement('style');
+      style.textContent = ':root { color-scheme: light; }';
+      document.head.appendChild(style);
+    }
+    if (document.head) apply();
+    else document.addEventListener('DOMContentLoaded', apply);
+  })();
+  true;
+`;
+
 export function AnnexPortalScreen() {
   const { C } = useTheme();
   const webRef = useRef<WebView>(null);
@@ -79,12 +101,14 @@ export function AnnexPortalScreen() {
           <WebView
             ref={webRef}
             source={{ uri: ANNEX_URL }}
-            style={{ flex: 1, backgroundColor: C.bg }}
+            style={{ flex: 1, backgroundColor: '#fff' }}
             pullToRefreshEnabled
             javaScriptEnabled
             domStorageEnabled
             sharedCookiesEnabled
             forceDarkOn={false}
+            injectedJavaScriptBeforeContentLoaded={FORCE_LIGHT_JS}
+            injectedJavaScript={FORCE_LIGHT_JS}
             onLoadProgress={({ nativeEvent }) => setProgress(nativeEvent.progress)}
             onLoadEnd={() => setLoading(false)}
             onNavigationStateChange={onNavStateChange}
