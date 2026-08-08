@@ -132,7 +132,8 @@ export type AppStackParams = {
   Feature: undefined;
 
   // AI Chatbot
-  Chatbot: undefined;
+  Chatbot: { conversationId?: string } | undefined;
+  ChatbotHistory: undefined;
 
   // Dashboards
   StaffDashboard: undefined;

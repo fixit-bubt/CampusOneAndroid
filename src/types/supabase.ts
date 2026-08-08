@@ -413,9 +413,49 @@ export type Database = {
         }
         Relationships: []
       }
+      chatbot_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chatbot_conversations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chatbot_conversations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chatbot_messages: {
         Row: {
           body: string
+          conversation_id: string
           created_at: string
           id: string
           role: string
@@ -423,6 +463,7 @@ export type Database = {
         }
         Insert: {
           body: string
+          conversation_id: string
           created_at?: string
           id?: string
           role: string
@@ -430,12 +471,20 @@ export type Database = {
         }
         Update: {
           body?: string
+          conversation_id?: string
           created_at?: string
           id?: string
           role?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "chatbot_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chatbot_conversations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "chatbot_messages_user_id_fkey"
             columns: ["user_id"]

@@ -1,6 +1,8 @@
-// AI chatbot — talks to the `chat` edge function (Gemini proxy). History is
-// persisted per-user in chatbot_messages (RLS: own rows only), loaded once on
-// mount and appended to as the conversation goes.
+// AI chatbot — talks to the `chat` edge function (Gemini proxy). Each screen
+// instance is one conversation: an existing one if opened with a
+// conversationId param (from ChatbotHistoryScreen), or a fresh blank one
+// otherwise — created lazily in the DB on the first message actually sent,
+// so browsing in and backing out never leaves an empty chat behind.
 import { useState, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView,
@@ -13,7 +15,9 @@ import { useT } from '../../i18n';
 import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { FontFamily, Layout } from '../../theme';
-import { askChatbotStream, loadChatHistory, saveChatMessage, clearChatHistory, type ChatTurn } from '../../services/chatbotService';
+import {
+  askChatbotStream, loadChatHistory, saveChatMessage, createConversation, deleteConversation, type ChatTurn,
+} from '../../services/chatbotService';
 
 interface Bubble {
   id: string;
@@ -22,10 +26,12 @@ interface Bubble {
   isError?: boolean; // client-side only — never sent to Gemini as conversation history, never saved to DB
 }
 
-export function ChatbotScreen({ navigation }: any) {
+export function ChatbotScreen({ navigation, route }: any) {
   const { C } = useTheme();
   const t = useT();
   const { user } = useAuth();
+  const initialConversationId: string | undefined = route?.params?.conversationId;
+  const [conversationId, setConversationId] = useState<string | undefined>(initialConversationId);
   const [messages, setMessages] = useState<Bubble[]>([]);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
@@ -33,17 +39,18 @@ export function ChatbotScreen({ navigation }: any) {
   // round retracts its preamble) — the "thinking" spinner, distinct from
   // `sending` which covers the whole turn and disables the composer.
   const [waitingFirstToken, setWaitingFirstToken] = useState(false);
-  const [loadingHistory, setLoadingHistory] = useState(true);
+  const [loadingHistory, setLoadingHistory] = useState(!!initialConversationId);
   const seq = useRef(0);
 
   useEffect(() => {
-    if (!user) { setLoadingHistory(false); return; }
-    loadChatHistory(user.id).then((res) => {
+    if (!initialConversationId) { setLoadingHistory(false); return; }
+    loadChatHistory(initialConversationId).then((res) => {
       if (res.ok) setMessages(res.data.map((m) => ({ id: m.id, role: m.role, text: m.text })));
       setLoadingHistory(false);
     });
-    // Mount-only: nothing outside this screen can change chat history, so no
-    // need to reload on focus — local state already reflects everything sent.
+    // Mount-only: this screen instance is pinned to one conversation — a
+    // fresh conversationId means a fresh screen instance (navigation.replace
+    // in ChatbotHistoryScreen), not a param change on this one.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -55,7 +62,14 @@ export function ChatbotScreen({ navigation }: any) {
     setMessages((prev) => [...prev, userMsg]);
     setSending(true);
     setWaitingFirstToken(true);
-    saveChatMessage(user.id, 'user', body); // fire-and-forget — a failed save just means this turn won't persist, not worth blocking chat over
+
+    // First message of a brand-new chat — create its conversation row now.
+    let convId = conversationId;
+    if (!convId) {
+      const res = await createConversation(user.id, body);
+      if (res.ok) { convId = res.data; setConversationId(res.data); }
+    }
+    if (convId) saveChatMessage(user.id, convId, 'user', body); // fire-and-forget — a failed save just means this turn won't persist, not worth blocking chat over
 
     // Exclude past error bubbles — they're a client-side artifact, not something
     // the model actually said, and would confuse it if replayed as history.
@@ -89,7 +103,7 @@ export function ChatbotScreen({ navigation }: any) {
         setSending(false);
         setWaitingFirstToken(false);
         setMessages((prev) => [...prev.filter((m) => m.id !== streamId), { id: streamId, role: 'model', text: fullText }]);
-        saveChatMessage(user.id, 'model', fullText);
+        if (convId) saveChatMessage(user.id, convId, 'model', fullText);
       },
       onError: (message) => {
         setSending(false);
@@ -102,17 +116,16 @@ export function ChatbotScreen({ navigation }: any) {
     });
   }
 
-  function confirmClear() {
-    if (!user || messages.length === 0) return;
-    Alert.alert(t.chatbot.clearTitle, t.chatbot.clearBody, [
+  function confirmDelete() {
+    if (!conversationId) return;
+    Alert.alert(t.chatbot.deleteTitle, t.chatbot.deleteBody, [
       { text: t.common.cancel, style: 'cancel' },
       {
-        text: t.chatbot.clearConfirm, style: 'destructive',
+        text: t.chatbot.deleteConfirm, style: 'destructive',
         onPress: async () => {
-          const prev = messages;
-          setMessages([]);
-          const res = await clearChatHistory(user.id);
-          if (!res.ok) setMessages(prev); // roll back — the delete didn't actually happen
+          const res = await deleteConversation(conversationId);
+          if (res.ok) navigation.goBack();
+          // on failure, leave the chat as-is — nothing was actually deleted
         },
       },
     ]);
@@ -144,14 +157,22 @@ export function ChatbotScreen({ navigation }: any) {
         title={t.chatbot.title}
         onBack={() => navigation.goBack()}
         rightSlot={
-          messages.length > 0 ? (
+          <View style={styles.headerBtns}>
             <TouchableOpacity
-              style={[styles.clearBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
-              onPress={confirmClear}
+              style={[styles.headerBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+              onPress={() => navigation.navigate('ChatbotHistory')}
             >
-              <Feather name="trash-2" size={16} color={C.text2} />
+              <Feather name="clock" size={16} color={C.text2} />
             </TouchableOpacity>
-          ) : undefined
+            {conversationId && (
+              <TouchableOpacity
+                style={[styles.headerBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+                onPress={confirmDelete}
+              >
+                <Feather name="trash-2" size={16} color={C.text2} />
+              </TouchableOpacity>
+            )}
+          </View>
         }
       />
 
@@ -223,7 +244,8 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 10 } as ViewStyle,
   emptyTxt: { fontSize: 13.5, textAlign: 'center' } as TextStyle,
 
-  clearBtn: { width: 36, height: 36, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
+  headerBtns: { flexDirection: 'row', gap: 8 } as ViewStyle,
+  headerBtn: { width: 36, height: 36, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
 
   bubbleRow: { flexDirection: 'row', marginVertical: 3 } as ViewStyle,
   mineRow: { justifyContent: 'flex-end' } as ViewStyle,

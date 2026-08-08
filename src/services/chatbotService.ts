@@ -14,25 +14,57 @@ export interface StoredChatMessage extends ChatTurn {
   id: string;
 }
 
-export async function loadChatHistory(userId: string): Promise<ServiceResult<StoredChatMessage[]>> {
-  const { data, error } = await supabase
-    .from('chatbot_messages')
-    .select('id, role, body')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: true })
-    .limit(200);
-  if (error) return { ok: false, error: error.message };
-  return { ok: true, data: (data ?? []).map((r: any) => ({ id: r.id, role: r.role, text: r.body })) };
+export interface Conversation {
+  id: string;
+  title: string;
+  updatedAt: string;
 }
 
-export async function saveChatMessage(userId: string, role: 'user' | 'model', text: string): Promise<ServiceResult<null>> {
-  const { error } = await supabase.from('chatbot_messages').insert({ user_id: userId, role, body: text });
+// One row per past chat thread, newest activity first (bumped server-side by
+// a trigger on every message insert — see touch_chatbot_conversation()).
+export async function listConversations(userId: string): Promise<ServiceResult<Conversation[]>> {
+  const { data, error } = await supabase
+    .from('chatbot_conversations')
+    .select('id, title, updated_at')
+    .eq('user_id', userId)
+    .order('updated_at', { ascending: false })
+    .limit(100);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, data: (data ?? []).map((r: any) => ({ id: r.id, title: r.title, updatedAt: r.updated_at })) };
+}
+
+// Created lazily on the first message of a new chat, not eagerly on screen
+// open — otherwise every visit to the chatbot (even one that sends nothing)
+// would leave a titleless empty conversation behind.
+export async function createConversation(userId: string, title: string): Promise<ServiceResult<string>> {
+  const { data, error } = await supabase
+    .from('chatbot_conversations')
+    .insert({ user_id: userId, title: title.slice(0, 60) || 'New chat' })
+    .select('id')
+    .single();
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, data: data.id };
+}
+
+export async function deleteConversation(conversationId: string): Promise<ServiceResult<null>> {
+  const { error } = await supabase.from('chatbot_conversations').delete().eq('id', conversationId);
   if (error) return { ok: false, error: error.message };
   return { ok: true, data: null };
 }
 
-export async function clearChatHistory(userId: string): Promise<ServiceResult<null>> {
-  const { error } = await supabase.from('chatbot_messages').delete().eq('user_id', userId);
+export async function loadChatHistory(conversationId: string): Promise<ServiceResult<StoredChatMessage[]>> {
+  const { data, error } = await supabase
+    .from('chatbot_messages')
+    .select('id, role, body')
+    .eq('conversation_id', conversationId)
+    .order('created_at', { ascending: true })
+    .limit(500);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, data: (data ?? []).map((r: any) => ({ id: r.id, role: r.role, text: r.body })) };
+}
+
+export async function saveChatMessage(userId: string, conversationId: string, role: 'user' | 'model', text: string): Promise<ServiceResult<null>> {
+  const { error } = await supabase.from('chatbot_messages').insert({ user_id: userId, conversation_id: conversationId, role, body: text });
   if (error) return { ok: false, error: error.message };
   return { ok: true, data: null };
 }
