@@ -16,7 +16,7 @@
 
 const SYSTEM_PROMPT = `You are the CampusOne assistant for BUBT (Bangladesh University of Business & Technology) students. Be concise and helpful.
 
-You have tools to look up live bus schedules, prayer times, lost & found posts, clubs, rides, class/exam routine files, campus events, blood donation requests, and job/internship postings — use them instead of guessing when asked. If a tool returns no results, say so plainly rather than inventing an answer; lost & found is student-only data, so if a non-student account gets an empty result, mention that it's restricted to students rather than implying nothing exists. Routine lookups return uploaded PDF/image files per department/semester/section, not a per-course class-time schedule — point the user to the file rather than inventing a specific class time you don't actually have.
+You have tools to look up live bus schedules, prayer times, lost & found posts, clubs, rides, class/exam routine files, campus events, blood donation requests, job/internship postings, and the faculty directory — use them instead of guessing when asked. If a tool returns no results, say so plainly rather than inventing an answer; lost & found is student-only data, so if a non-student account gets an empty result, mention that it's restricted to students rather than implying nothing exists. Routine lookups return uploaded PDF/image files per department/semester/section, not a per-course class-time schedule — point the user to the file rather than inventing a specific class time you don't actually have.
 
 For CGPA questions you can calculate directly — you don't need a tool for this. The grading scale is: A+ =4.00, A=3.75, A- =3.50, B+ =3.25, B=3.00, B- =2.75, C+ =2.50, C=2.25, D=2.00, F=0.00. CGPA = sum(credit × grade point) / sum(credit). Show the math when it helps.
 
@@ -129,6 +129,17 @@ const TOOLS = [
           properties: {
             jobType: { type: 'string', enum: ['internship', 'part_time', 'full_time'] },
             query: { type: 'string', description: 'Free-text match against the job title, e.g. "developer"' },
+          },
+        },
+      },
+      {
+        name: 'get_faculty',
+        description: 'Search the BUBT faculty directory by name or department. Returns designation, email, phone (CSE only), office/leave status.',
+        parameters: {
+          type: 'object',
+          properties: {
+            query: { type: 'string', description: 'Free-text match against the teacher\'s name, e.g. "Rahman"' },
+            department: { type: 'string', description: 'Department name, partial match, e.g. "CSE" or "Computer Science"' },
           },
         },
       },
@@ -261,6 +272,22 @@ async function runTool(
       `jobs?select=title,company,job_type,work_mode,location,stipend,deadline,apply_method,apply_value${filter}&order=deadline.asc&limit=10`,
     );
     return { jobs: rows };
+  }
+
+  if (name === 'get_faculty') {
+    const query = str(args.query);
+    const department = str(args.department);
+    let select = 'name,designation,email,phone,on_leave,is_chairman';
+    let filter = '';
+    if (query) filter += `&name=ilike.*${encodeURIComponent(escLike(query))}*`;
+    if (department) {
+      select += ',departments!inner(name)';
+      filter += `&departments.name=ilike.*${encodeURIComponent(escLike(department))}*`;
+    } else {
+      select += ',departments(name)';
+    }
+    const rows = await get(`faculty?select=${select}${filter}&order=name.asc&limit=10`);
+    return { faculty: rows };
   }
 
   return { error: `unknown tool: ${name}` };
