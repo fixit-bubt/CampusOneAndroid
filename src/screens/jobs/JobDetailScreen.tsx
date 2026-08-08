@@ -79,9 +79,16 @@ export function JobDetailScreen({ route, navigation }: any) {
       p_code: job.code,
       p_reason: reason.toLowerCase(),
     });
-    if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
+    if (error) {
+      // job_report() does a plain insert with no ON CONFLICT — a second
+      // report from the same user hits the unique constraint directly.
+      const message = error.code === '23505' ? t.jobs2.alreadyReported : error.message;
+      toast({ type: 'error', title: t.common.error, message });
+      return;
+    }
     setReportOpen(false);
     setReason('');
+    toast({ type: 'success', title: t.jobs2.reportSubmitted });
   }
 
   function confirmWithdraw() {

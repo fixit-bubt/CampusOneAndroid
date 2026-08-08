@@ -11,6 +11,7 @@ import { useToast } from '../../components/ui/Toast';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
+import { LoadError } from '../../components/ui/LoadState';
 import { FontFamily, Layout, SectorColors } from '../../theme';
 import { donorEligibility } from '../../utils/blood';
 import {
@@ -28,16 +29,19 @@ export function BloodRequestDetailScreen({ route, navigation }: any) {
   const [req, setReq] = useState<any>(null);
   const [pledges, setPledges] = useState<Pledge[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    if (!requestId) return;
+    if (!requestId) { setLoadFailed(true); setLoading(false); return; }
     const [reqRes, plRes] = await Promise.all([
       getRequest(requestId),
       getResponders(requestId),
     ]);
-    if (reqRes.ok && reqRes.data) setReq(reqRes.data);
+    if (!reqRes.ok || !reqRes.data) { setLoadFailed(true); setLoading(false); return; }
+    setLoadFailed(false);
+    setReq(reqRes.data);
     if (plRes.ok) setPledges(plRes.data);
     setLoading(false);
   }, [requestId]);
@@ -95,6 +99,15 @@ export function BloodRequestDetailScreen({ route, navigation }: any) {
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
         <SubBar title={t.blood2.responders} onBack={() => navigation.goBack()} />
         <View style={styles.center}><ActivityIndicator color={C.brand} /></View>
+      </SafeAreaView>
+    );
+  }
+
+  if (loadFailed) {
+    return (
+      <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
+        <SubBar title={t.blood2.responders} onBack={() => navigation.goBack()} />
+        <LoadError onRetry={load} />
       </SafeAreaView>
     );
   }

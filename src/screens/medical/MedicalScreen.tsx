@@ -52,7 +52,7 @@ export function MedicalScreen({ navigation }: any) {
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    const { data, error } = await supabase.from('doctors').select('*').order('name').limit(100);
+    const { data, error } = await supabase.from('doctors').select('*').eq('active', true).order('name').limit(100);
     if (!error && data) setDoctors(data as Doctor[]);
     setLoading(false);
   }, []);

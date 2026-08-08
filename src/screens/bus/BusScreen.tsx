@@ -12,6 +12,7 @@ import { useT } from '../../i18n';
 import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
+import { SkeletonList, LoadError } from '../../components/ui/LoadState';
 import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import type { BusRoute } from '../../types/database';
@@ -43,15 +44,20 @@ export function BusScreen({ navigation }: any) {
   const [routes, setRoutes] = useState<BusRoute[]>([]);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [form, setForm] = useState<RouteForm | null>(null);
 
   const load = useCallback(async () => {
-    const [{ data }, { data: saved }] = await Promise.all([
+    const [routesRes, savedRes] = await Promise.all([
       supabase.from('bus_routes').select('*').eq('active', true).order('name').limit(50),
       supabase.from('saved_bus_routes').select('route_id').eq('user_id', user?.id ?? '').limit(50),
     ]);
-    if (data) setRoutes(data as BusRoute[]);
-    if (saved) setSavedIds(new Set(saved.map((r: any) => r.route_id)));
+    if (routesRes.error) { setLoadFailed(true); setLoading(false); return; }
+    setLoadFailed(false);
+    setRoutes(routesRes.data as BusRoute[]);
+    if (savedRes.data) setSavedIds(new Set(savedRes.data.map((r: any) => r.route_id)));
+    setLoading(false);
   }, [user?.id]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -144,7 +150,11 @@ export function BusScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
-        {routes.length === 0 ? (
+        {loading ? (
+          <SkeletonList />
+        ) : loadFailed ? (
+          <LoadError onRetry={load} />
+        ) : routes.length === 0 ? (
           <View style={styles.empty}>
             <Icon name="bus" size={28} color={C.textMuted} />
             <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.bus2.noRoutes}</Text>

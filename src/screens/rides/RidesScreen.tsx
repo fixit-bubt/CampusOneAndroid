@@ -64,9 +64,16 @@ export function RidesScreen({ navigation }: any) {
       driver_name: people[r.driver_id]?.full_name,
     })) as Ride[];
     setRides(rows);
-    const map: Record<string, number> = {};
-    (countRes.data ?? []).forEach((c: any) => { map[c.ride_id] = Number(c.taken); });
-    setTakenCounts(map);
+    // A failed count fetch previously left every ride showing as fully
+    // available (0 taken) instead of an accurate seat count — warn instead
+    // of silently showing wrong availability.
+    if (countRes.error) {
+      toast({ type: 'error', title: t.common.error, message: 'Seat availability may be out of date.' });
+    } else {
+      const map: Record<string, number> = {};
+      (countRes.data ?? []).forEach((c: any) => { map[c.ride_id] = Number(c.taken); });
+      setTakenCounts(map);
+    }
     if (reqRes.data) setRequestedIds(new Set(reqRes.data.map((r: any) => r.ride_id)));
     setLoading(false);
   }, [user?.id, toast, t]);

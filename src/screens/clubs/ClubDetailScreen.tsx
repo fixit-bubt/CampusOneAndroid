@@ -166,8 +166,17 @@ export function ClubDetailScreen({ route, navigation }: any) {
   const cat = CL_CATS[club.category] ?? CL_CATS.other;
   const tintBg = isDark ? `${cat.fg}2e` : `${cat.fg}18`;
   const isAdmin = profile?.role === 'admin';
-  const canManage = myRole === 'president' || myRole === 'vp' || isAdmin;
-  const canPost = canManage || myRole === 'editor';
+  // Two different admin bypasses on the backend, not one: club_update_details()
+  // and club_members RLS both allow is_admin() regardless of membership, so
+  // the Members/Manage screens are legitimately open to any admin. But
+  // club_posts select/insert/update (migration 0053) and club_can_manage()/
+  // club_can_post() are membership-role-only with NO is_admin() bypass — an
+  // admin who isn't a member of this club gets zero posts back and any
+  // post insert/update/pin is rejected, so post actions must not be gated
+  // on isAdmin or the buttons just fail.
+  const canManageMembers = myRole === 'president' || myRole === 'vp' || isAdmin;
+  const canManagePosts = myRole === 'president' || myRole === 'vp';
+  const canPost = canManagePosts || myRole === 'editor';
   const isMember = !!myRole;
 
   function leaveClub() {
@@ -211,9 +220,9 @@ export function ClubDetailScreen({ route, navigation }: any) {
       <SubBar
         title={club.name}
         onBack={() => navigation.goBack()}
-        rightSlot={(canManage || canPost) ? (
+        rightSlot={(canManageMembers || canPost) ? (
           <View style={styles.rightRow}>
-            {canManage && (
+            {canManageMembers && (
               <>
                 <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('ClubMembers', { clubId: club.id })} activeOpacity={0.75}>
                   <Feather name="users" size={20} color={C.text} />
@@ -264,8 +273,11 @@ export function ClubDetailScreen({ route, navigation }: any) {
           <Text style={[styles.desc, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>{club.about}</Text>
         ) : null}
 
-        {/* Self-serve join: request to join, or withdraw a pending request. */}
-        {!isMember && !isAdmin && (
+        {/* Self-serve join: request to join, or withdraw a pending request.
+            No is_admin() carve-out here either — an admin who wants club
+            content access joins like anyone else and gets real membership
+            permissions, rather than the UI pretending they already have some. */}
+        {!isMember && (
           myRequest ? (
             <View style={[styles.inviteCard, { backgroundColor: C.surface2 }]}>
               <View style={[styles.pendingDot, { backgroundColor: Accent.amber }]} />
@@ -331,11 +343,13 @@ export function ClubDetailScreen({ route, navigation }: any) {
           <View style={styles.feedList}>
             {posts.length === 0 ? (
               <View style={styles.empty}>
-                <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{t.clubs2.noPosts}</Text>
+                <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                  {isMember ? t.clubs2.noPosts : t.clubs2.noPostsNotMember}
+                </Text>
               </View>
             ) : posts.map(p => {
-              const canModeratePost = canManage;
-              const canDeletePost = canManage || p.author_id === user?.id;
+              const canModeratePost = canManagePosts;
+              const canDeletePost = canManagePosts || p.author_id === user?.id;
               return (
                 <View
                   key={p.id}

@@ -111,9 +111,13 @@ export async function confirmDonation(requestId: string, donorId: string): Promi
 }
 
 export async function markRequestFulfilled(requestId: string): Promise<ServiceResult<null>> {
-  const { error } = await supabase.from('blood_requests')
+  // .select() so an RLS-filtered zero-row update (not the owner) is
+  // detectable — without it, error comes back null either way.
+  const { data, error } = await supabase.from('blood_requests')
     .update({ fulfilled_at: new Date().toISOString() })
-    .eq('id', requestId);
+    .eq('id', requestId)
+    .select('id');
   if (error) return { ok: false, error: error.message };
+  if (!data || data.length === 0) return { ok: false, error: 'Not allowed to update this request.' };
   return { ok: true, data: null };
 }

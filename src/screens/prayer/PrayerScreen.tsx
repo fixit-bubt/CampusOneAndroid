@@ -12,6 +12,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
 import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
+import { SkeletonList, LoadError } from '../../components/ui/LoadState';
 import { FontFamily, Layout , SectorColors, darken } from '../../theme';
 import { supabase } from '../../lib/supabase';
 
@@ -40,11 +41,15 @@ function computeNext(prayers: PrayerTime[]): PrayerTime | undefined {
   const now = new Date();
   const isToday = (p: PrayerTime) => p.key !== 'jummah' || now.getDay() === 5;
   const nowMins = now.getHours() * 60 + now.getMinutes();
-  return prayers.find(p => {
+  const todayNext = prayers.find(p => {
     if (!isToday(p)) return false;
     const [h = 0, m = 0] = p.azan.split(':').map(Number);
     return h * 60 + m > nowMins;
   });
+  if (todayNext) return todayNext;
+  // Nothing left today (past Isha) — wrap to tomorrow's Fajr rather than
+  // leaving the "next prayer" card unmounted for the rest of the night.
+  return prayers.find(p => p.key !== 'jummah') ?? prayers[0];
 }
 
 function timeUntil(timeStr: string): string {
@@ -69,18 +74,23 @@ export function PrayerScreen({ navigation }: any) {
   const [prayers, setPrayers] = useState<PrayerTime[]>([]);
   const [musallah, setMusallah] = useState<Musallah[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [view, setView] = useState<'today' | 'month'>('today');
   const [editPrayer, setEditPrayer] = useState<PrayerTime | null>(null);
   const [jamaatInput, setJamaatInput] = useState('');
   const [musEdit, setMusEdit] = useState<{ id: number | null; name: string; floor_desc: string } | null>(null);
 
   const load = useCallback(async () => {
-    const [{ data }, { data: mus }] = await Promise.all([
+    const [prayersRes, musRes] = await Promise.all([
       supabase.from('prayer_times').select('*').order('sort'),
       supabase.from('musallah_locations').select('*').order('sort'),
     ]);
-    if (data) setPrayers(data as PrayerTime[]);
-    if (mus) setMusallah(mus as Musallah[]);
+    if (prayersRes.error) { setLoadFailed(true); setLoading(false); return; }
+    setLoadFailed(false);
+    setPrayers(prayersRes.data as PrayerTime[]);
+    if (musRes.data) setMusallah(musRes.data as Musallah[]);
+    setLoading(false);
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -145,8 +155,12 @@ export function PrayerScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
-        {/* Empty state */}
-        {prayers.length === 0 && !refreshing && (
+        {/* Loading / error / empty states */}
+        {loading ? (
+          <SkeletonList />
+        ) : loadFailed ? (
+          <LoadError onRetry={load} />
+        ) : prayers.length === 0 && !refreshing && (
           <View style={styles.empty}>
             <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
               {t.prayer2.noTimes}

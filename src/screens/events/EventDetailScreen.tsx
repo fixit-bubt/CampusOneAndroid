@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
   ActivityIndicator, Alert, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
@@ -49,26 +50,36 @@ export function EventDetailScreen({ route, navigation }: any) {
   const [going, setGoing] = useState(false);
   const [goingCount, setGoingCount] = useState(0);
   const [busy, setBusy] = useState(false);
+  // Mirrors the events_delete RLS policy (is_admin() OR (created_by=self AND
+  // can_create_events())) — a creator who lost organizer/club-officer status
+  // since posting the event no longer passes can_create_events(), so the
+  // delete button must not show for them even though they're still `created_by`.
+  const [canCreateEvents, setCanCreateEvents] = useState(false);
 
   useEffect(() => {
+    if (!user) return;
+    supabase.rpc('can_create_events').then(({ data }) => setCanCreateEvents(!!data));
+  }, [user?.id]);
+
+  const load = useCallback(async () => {
     if (!id) { setNotFound(true); return; }
-    (async () => {
-      try {
-        const [evRes, rsvpRes, countRes] = await Promise.all([
-          supabase.from('events').select('*').eq('id', id).maybeSingle(),
-          user ? supabase.from('event_rsvps').select('user_id').eq('event_id', id).eq('user_id', user.id).maybeSingle() : Promise.resolve({ data: null, error: null }),
-          supabase.from('event_rsvps').select('user_id', { count: 'exact', head: true }).eq('event_id', id),
-        ]);
-        if (evRes.error || !evRes.data) { if (evRes.error) console.error('event detail fetch:', evRes.error.message); setNotFound(true); return; }
-        setEvent(evRes.data as Event);
-        setGoing(!!rsvpRes.data);
-        setGoingCount(countRes.count ?? 0);
-      } catch (e) {
-        console.error('EventDetail load:', e);
-        setNotFound(true);
-      }
-    })();
+    try {
+      const [evRes, rsvpRes, countRes] = await Promise.all([
+        supabase.from('events').select('*').eq('id', id).maybeSingle(),
+        user ? supabase.from('event_rsvps').select('user_id').eq('event_id', id).eq('user_id', user.id).maybeSingle() : Promise.resolve({ data: null, error: null }),
+        supabase.from('event_rsvps').select('user_id', { count: 'exact', head: true }).eq('event_id', id),
+      ]);
+      if (evRes.error || !evRes.data) { if (evRes.error) console.error('event detail fetch:', evRes.error.message); setNotFound(true); return; }
+      setEvent(evRes.data as Event);
+      setGoing(!!rsvpRes.data);
+      setGoingCount(countRes.count ?? 0);
+    } catch (e) {
+      console.error('EventDetail load:', e);
+      setNotFound(true);
+    }
   }, [id, user?.id]);
+
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   async function handleRSVP() {
     if (!event || !user || busy) return;
@@ -115,7 +126,7 @@ export function EventDetailScreen({ route, navigation }: any) {
   const bg = `${fg}1e`;
   const isUpcoming = event.date >= localToday();
   const isFull = !!(event.capacity && goingCount >= event.capacity && !going);
-  const canDelete = profile?.role === 'admin' || event.created_by === user?.id;
+  const canDelete = profile?.role === 'admin' || (event.created_by === user?.id && canCreateEvents);
 
   function deleteEvent() {
     Alert.alert('Delete event?', event!.title, [
@@ -123,8 +134,15 @@ export function EventDetailScreen({ route, navigation }: any) {
       {
         text: 'Delete', style: 'destructive',
         onPress: async () => {
-          const { error } = await supabase.from('events').delete().eq('id', id);
+          // .select() so an RLS-filtered zero-row delete (permissions
+          // changed after the button rendered) is detectable instead of
+          // silently reporting success and navigating away.
+          const { data, error } = await supabase.from('events').delete().eq('id', id).select('id');
           if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
+          if (!data || data.length === 0) {
+            toast({ type: 'error', title: t.common.error, message: 'Not allowed to delete this event.' });
+            return;
+          }
           navigation.goBack();
         },
       },
