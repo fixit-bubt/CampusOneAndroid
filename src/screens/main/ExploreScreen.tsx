@@ -80,12 +80,18 @@ export function ExploreScreen({ navigation }: any) {
   const isStaff = role === 'staff';
   // Staff are maintenance crew — their panel is trimmed to maintenance-relevant
   // sectors only (mirrors the web staff nav). Admin keeps everything but the
-  // student-only Lost & Found; students get the full grid.
+  // student-only Lost & Found; students get the full grid. Student Directory
+  // is ALSO student-only — the backend (student_directory() RPC) is
+  // security-definer gated on the CALLER being role='student', so an
+  // admin/staff account always gets zero rows back no matter what. Showing
+  // the tile to them just leads to a permanently-empty screen with no
+  // explanation, so it's excluded here too (matches the web app's own nav,
+  // which never lists it for Admin/Staff either).
   const sectors = isStaff
     ? SECTORS.filter((s) => STAFF_SECTORS.includes(s.id))
     : isStudent
       ? SECTORS
-      : SECTORS.filter((s) => s.id !== 'lostfound');
+      : SECTORS.filter((s) => s.id !== 'lostfound' && s.id !== 'directory');
 
   // Pulls the role-filtered sectors in a group's own order (not SECTORS'
   // declaration order) — the group arrays already read in the order each
