@@ -185,7 +185,7 @@ export function ExploreScreen({ navigation }: any) {
         )}
 
         {showAcademics && (
-          <CollapsibleSection title={t.exploreGroups.academics}>
+          <CollapsibleSection title={t.exploreGroups.academics} icon="study">
             {academicsSectors.map(renderSectorRow)}
 
             {/* Tool: CGPA calculator — academic tool, hidden from maintenance staff */}
@@ -233,19 +233,19 @@ export function ExploreScreen({ navigation }: any) {
         )}
 
         {campusLifeSectors.length > 0 && (
-          <CollapsibleSection title={t.exploreGroups.campusLife}>
+          <CollapsibleSection title={t.exploreGroups.campusLife} icon="events">
             {campusLifeSectors.map(renderSectorRow)}
           </CollapsibleSection>
         )}
 
         {servicesSectors.length > 0 && (
-          <CollapsibleSection title={t.exploreGroups.services}>
+          <CollapsibleSection title={t.exploreGroups.services} icon="wrench">
             {servicesSectors.map(renderSectorRow)}
           </CollapsibleSection>
         )}
 
         {communitySectors.length > 0 && (
-          <CollapsibleSection title={t.exploreGroups.community}>
+          <CollapsibleSection title={t.exploreGroups.community} icon="market">
             {communitySectors.map(renderSectorRow)}
           </CollapsibleSection>
         )}

@@ -270,7 +270,7 @@ export function AdminDashboardScreen({ navigation }: any) {
         )}
 
         {/* Manage tiles */}
-        <CollapsibleSection title={t.dash.manage}>
+        <CollapsibleSection title={t.dash.manage} icon="layers">
           <View style={styles.tilesGrid}>
             {MANAGE_TILES.map((tile, i) => {
               const tileBg = isDark ? `${tile.fg}2e` : `${tile.fg}14`;
