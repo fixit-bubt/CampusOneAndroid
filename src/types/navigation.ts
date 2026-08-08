@@ -12,7 +12,7 @@ export type BottomTabParams = {
   Home: undefined;
   Explore: undefined;
   Messages: undefined;
-  Notifications: undefined;
+  Annex: undefined;
   Settings: undefined;
 };
 
@@ -77,6 +77,7 @@ export type AppStackParams = {
   DoctorDetail:    { doctorId: string };
 
   // Notifications
+  Notifications:  undefined;
   NotifDetail:    { notification: import('../services/notificationsService').Notification };
   NotifSettings:  undefined;
 

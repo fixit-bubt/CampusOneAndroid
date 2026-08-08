@@ -30,7 +30,7 @@ export const en = {
   tabs: {
     home: 'Home',
     explore: 'Explore',
-    alerts: 'Alerts',
+    annex: 'Annex',
     profile: 'Profile',
     settings: 'Settings',
   },

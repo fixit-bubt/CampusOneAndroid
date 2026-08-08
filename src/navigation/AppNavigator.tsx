@@ -41,6 +41,7 @@ import { FacultyScreen }           from '../screens/faculty/FacultyScreen';
 import { FacultyDeptScreen }       from '../screens/faculty/FacultyDeptScreen';
 import { FacultyProfileScreen }    from '../screens/faculty/FacultyProfileScreen';
 import { FeatureScreen }           from '../screens/feature/FeatureScreen';
+import { NotificationsScreen }     from '../screens/main/NotificationsScreen';
 import { NotifDetailScreen }       from '../screens/notifications/NotifDetailScreen';
 import { NotifSettingsScreen }     from '../screens/notifications/NotifSettingsScreen';
 import { MessageThread }           from '../screens/messages/MessageThread';
@@ -178,7 +179,8 @@ export function AppNavigator() {
       <Stack.Screen name="Chatbot"        component={ChatbotScreen} />
       <Stack.Screen name="ChatbotHistory" component={ChatbotHistoryScreen} />
 
-      {/* Notifications */}
+      {/* Notifications (reached via the bell on Home, not a bottom tab) */}
+      <Stack.Screen name="Notifications"  component={NotificationsScreen} />
       <Stack.Screen name="NotifDetail"    component={NotifDetailScreen} />
       <Stack.Screen name="NotifSettings"  component={NotifSettingsScreen} />
 

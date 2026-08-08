@@ -31,7 +31,7 @@ export const bn: Dict = {
   tabs: {
     home: 'হোম',
     explore: 'এক্সপ্লোর',
-    alerts: 'অ্যালার্ট',
+    annex: 'Annex',
     profile: 'প্রোফাইল',
     settings: 'সেটিংস',
   },

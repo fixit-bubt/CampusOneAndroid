@@ -1,6 +1,7 @@
 // 4 tabs with Feather icons. The Home tab is the role's dashboard for
 // admin/staff; students get the regular home feed. All roles keep
-// Explore/Alerts/Settings.
+// Explore/Annex/Settings. Notifications moved off the tab bar — it's a
+// stack screen now, reached via the bell on the Home tab.
 import { View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Feather } from '@expo/vector-icons';
@@ -14,7 +15,7 @@ import type { BottomTabParams } from '../types/navigation';
 import { HomeScreen } from '../screens/main/HomeScreen';
 import { ExploreScreen } from '../screens/main/ExploreScreen';
 import { MessagesHome } from '../screens/messages/MessagesHome';
-import { NotificationsScreen } from '../screens/main/NotificationsScreen';
+import { AnnexPortalScreen } from '../screens/annex/AnnexPortalScreen';
 import { SettingsScreen } from '../screens/main/SettingsScreen';
 import { AdminDashboardScreen } from '../screens/dashboard/AdminDashboardScreen';
 import { StaffDashboardScreen } from '../screens/dashboard/StaffDashboardScreen';
@@ -27,7 +28,7 @@ const TAB_ICON: Record<keyof BottomTabParams, FeatherName> = {
   Home:          'home',
   Explore:       'grid',
   Messages:      'message-circle',
-  Notifications: 'bell',
+  Annex:         'external-link',
   Settings:      'settings',
 };
 
@@ -41,7 +42,7 @@ export function BottomTabNavigator() {
     Home: t.tabs.home,
     Explore: t.tabs.explore,
     Messages: t.messages.title,
-    Notifications: t.tabs.alerts,
+    Annex: t.tabs.annex,
     Settings: t.tabs.settings,
   };
   const HomeComponent =
@@ -84,7 +85,7 @@ export function BottomTabNavigator() {
           options={{ tabBarBadge: totalUnread > 0 ? (totalUnread > 9 ? '9+' : totalUnread) : undefined }}
         />
       )}
-      <Tab.Screen name="Notifications" component={NotificationsScreen} />
+      <Tab.Screen name="Annex" component={AnnexPortalScreen} />
       <Tab.Screen name="Settings"      component={SettingsScreen} />
     </Tab.Navigator>
   );

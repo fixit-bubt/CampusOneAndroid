@@ -27,8 +27,8 @@ export function RootNavigator() {
   }, [user?.id]);
 
   // Tapping a push deep-links to the referenced item (falling back to the
-  // Alerts tab). On a cold start the navigator isn't mounted yet when the tap
-  // is delivered - retry briefly instead of dropping it.
+  // Notifications screen). On a cold start the navigator isn't mounted yet
+  // when the tap is delivered - retry briefly instead of dropping it.
   React.useEffect(() => {
     const go = (screen: string, params: object | undefined, attempt = 0) => {
       if (navigationRef.isReady()) {
@@ -41,7 +41,7 @@ export function RootNavigator() {
       const target = await resolveNotifTarget(data.reference_type, data.reference_id)
         .catch(() => null);
       if (target) go(target.screen, target.params);
-      else go('Tabs', { screen: 'Notifications' });
+      else go('Notifications', undefined);
     });
   }, []);
 
