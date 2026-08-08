@@ -72,6 +72,7 @@ import { ToolMergeScreen }         from '../screens/pdfmaker/ToolMergeScreen';
 import { ToolOrganizeScreen }      from '../screens/pdfmaker/ToolOrganizeScreen';
 import { ToolCompressScreen }      from '../screens/pdfmaker/ToolCompressScreen';
 import { ProfileScreen }          from '../screens/main/ProfileScreen';
+import { ChatbotScreen }          from '../screens/chatbot/ChatbotScreen';
 
 const Stack = createNativeStackNavigator<AppStackParams>();
 
@@ -171,6 +172,9 @@ export function AppNavigator() {
 
       {/* Generic feature landing */}
       <Stack.Screen name="Feature"        component={FeatureScreen} />
+
+      {/* AI Chatbot */}
+      <Stack.Screen name="Chatbot"        component={ChatbotScreen} />
 
       {/* Notifications */}
       <Stack.Screen name="NotifDetail"    component={NotifDetailScreen} />

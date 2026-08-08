@@ -131,6 +131,9 @@ export type AppStackParams = {
   // Generic feature landing
   Feature: undefined;
 
+  // AI Chatbot
+  Chatbot: undefined;
+
   // Dashboards
   StaffDashboard: undefined;
   AdminDashboard: undefined;

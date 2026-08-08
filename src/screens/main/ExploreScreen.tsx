@@ -92,6 +92,26 @@ export function ExploreScreen({ navigation }: any) {
         contentContainerStyle={[styles.content, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
       >
+        {/* AI Chatbot — everyone */}
+        <TouchableOpacity
+          style={[styles.toolCard, { backgroundColor: C.surface, borderColor: C.border }]}
+          onPress={() => navigation.navigate('Chatbot')}
+          activeOpacity={0.75}
+        >
+          <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
+            <Feather name="message-circle" size={20} color={C.brand} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.cellTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              AI Assistant
+            </Text>
+            <Text style={[styles.cellDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
+              Ask questions, get help with campus life
+            </Text>
+          </View>
+          <Feather name="chevron-right" size={18} color={C.textMuted} />
+        </TouchableOpacity>
+
         {/* Tool: CGPA calculator — academic tool, hidden from maintenance staff */}
         {!isStaff && (
           <TouchableOpacity
