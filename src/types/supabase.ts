@@ -458,14 +458,16 @@ export type Database = {
           conversation_id: string
           created_at: string
           id: string
+          image_url: string | null
           role: string
           user_id: string
         }
         Insert: {
-          body: string
+          body?: string
           conversation_id: string
           created_at?: string
           id?: string
+          image_url?: string | null
           role: string
           user_id: string
         }
@@ -474,6 +476,7 @@ export type Database = {
           conversation_id?: string
           created_at?: string
           id?: string
+          image_url?: string | null
           role?: string
           user_id?: string
         }

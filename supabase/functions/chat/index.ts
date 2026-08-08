@@ -20,10 +20,13 @@ You have tools to look up live bus schedules, prayer times, lost & found posts, 
 
 For CGPA questions you can calculate directly — you don't need a tool for this. The grading scale is: A+ =4.00, A=3.75, A- =3.50, B+ =3.25, B=3.00, B- =2.75, C+ =2.50, C=2.25, D=2.00, F=0.00. CGPA = sum(credit × grade point) / sum(credit). Show the math when it helps.
 
-For anything else you don't have a tool for, tell the user to check the relevant tab in the app instead of guessing.`;
+For anything else you don't have a tool for, tell the user to check the relevant tab in the app instead of guessing.
+
+The user can attach a photo to their message — e.g. a homework problem, lecture slide, or notice board. Look at it and help directly (explain, solve, transcribe, summarize) rather than asking them to describe it in text instead.`;
 
 const GEMINI_MODEL = 'gemini-flash-latest';
 const MAX_TOOL_ROUNDS = 3;
+const MAX_IMAGE_BASE64_CHARS = 6_000_000; // ~4.5MB binary — generous for a compressed photo
 
 interface HistoryTurn {
   role: 'user' | 'model';
@@ -33,6 +36,8 @@ interface HistoryTurn {
 interface Payload {
   message: string;
   history?: HistoryTurn[];
+  imageBase64?: string;
+  imageMimeType?: string;
 }
 
 const TOOLS = [
@@ -383,8 +388,12 @@ Deno.serve(async (req) => {
 
     const p = (await req.json()) as Payload;
     const message = (p?.message ?? '').trim();
-    if (!message) return new Response(JSON.stringify({ error: 'message required' }), { status: 400 });
+    const imageBase64 = typeof p?.imageBase64 === 'string' ? p.imageBase64 : '';
+    const imageMimeType = typeof p?.imageMimeType === 'string' ? p.imageMimeType : '';
+    const hasImage = !!(imageBase64 && imageMimeType);
+    if (!message && !hasImage) return new Response(JSON.stringify({ error: 'message or image required' }), { status: 400 });
     if (message.length > 4000) return new Response(JSON.stringify({ error: 'message too long (max 4000 chars)' }), { status: 400 });
+    if (imageBase64.length > MAX_IMAGE_BASE64_CHARS) return new Response(JSON.stringify({ error: 'image too large' }), { status: 400 });
 
     const recentCount = await recentUserMessageCount(supabaseUrl, anonKey, authHeader);
     if (recentCount >= RATE_LIMIT_MAX) {
@@ -402,9 +411,16 @@ Deno.serve(async (req) => {
         (h?.role === 'user' || h?.role === 'model') && typeof h?.text === 'string' && h.text.length > 0 && h.text.length <= 4000)
       .slice(-20);
 
+    // Only the CURRENT turn's image is sent to Gemini — past images in
+    // history aren't re-fetched and re-attached on every later message, to
+    // keep request size and latency bounded as a conversation grows.
+    const currentParts: any[] = [];
+    if (hasImage) currentParts.push({ inlineData: { mimeType: imageMimeType, data: imageBase64 } });
+    if (message) currentParts.push({ text: message });
+
     const contents: any[] = [
       ...history.map((h) => ({ role: h.role, parts: [{ text: h.text }] })),
-      { role: 'user', parts: [{ text: message }] },
+      { role: 'user', parts: currentParts },
     ];
 
     // Everything past this point streams to the client as our own small SSE

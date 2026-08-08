@@ -6,15 +6,19 @@
 import { useState, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView,
-  Platform, ActivityIndicator, StyleSheet, Alert, type ViewStyle, type TextStyle,
+  Platform, ActivityIndicator, StyleSheet, Alert, Image, type ViewStyle, type TextStyle, type ImageStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
 import { useAuth } from '../../store/authStore';
+import { useToast } from '../../components/ui/Toast';
 import { SubBar } from '../../components/layout/TopBar';
 import { FontFamily, Layout } from '../../theme';
+import { uploadPhoto } from '../../utils/storage';
 import {
   askChatbotStream, loadChatHistory, saveChatMessage, createConversation, deleteConversation, type ChatTurn,
 } from '../../services/chatbotService';
@@ -23,13 +27,21 @@ interface Bubble {
   id: string;
   role: 'user' | 'model';
   text: string;
+  imageUrl?: string | null;
   isError?: boolean; // client-side only — never sent to Gemini as conversation history, never saved to DB
 }
+
+// Downscaled/re-encoded before both upload and sending to Gemini — keeps the
+// stored copy small and the base64 payload well under the edge function's
+// size cap, without a visible quality hit for "photo of a homework problem".
+const CHAT_IMAGE_MAX_DIM = 1280;
+const CHAT_IMAGE_QUALITY = 0.6;
 
 export function ChatbotScreen({ navigation, route }: any) {
   const { C } = useTheme();
   const t = useT();
   const { user } = useAuth();
+  const toast = useToast();
   const initialConversationId: string | undefined = route?.params?.conversationId;
   const [conversationId, setConversationId] = useState<string | undefined>(initialConversationId);
   const [messages, setMessages] = useState<Bubble[]>([]);
@@ -40,12 +52,26 @@ export function ChatbotScreen({ navigation, route }: any) {
   // `sending` which covers the whole turn and disables the composer.
   const [waitingFirstToken, setWaitingFirstToken] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(!!initialConversationId);
+  const [pendingImage, setPendingImage] = useState<{ uri: string; width: number; height: number } | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const seq = useRef(0);
+
+  async function pickImage() {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      toast({ type: 'info', title: t.chatbot.permissionRequired, message: t.chatbot.permissionBody });
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: false, quality: 0.8 });
+    if (result.canceled || !result.assets?.[0]) return;
+    const a = result.assets[0];
+    setPendingImage({ uri: a.uri, width: a.width, height: a.height });
+  }
 
   useEffect(() => {
     if (!initialConversationId) { setLoadingHistory(false); return; }
     loadChatHistory(initialConversationId).then((res) => {
-      if (res.ok) setMessages(res.data.map((m) => ({ id: m.id, role: m.role, text: m.text })));
+      if (res.ok) setMessages(res.data.map((m) => ({ id: m.id, role: m.role, text: m.text, imageUrl: m.imageUrl })));
       setLoadingHistory(false);
     });
     // Mount-only: this screen instance is pinned to one conversation — a
@@ -56,9 +82,39 @@ export function ChatbotScreen({ navigation, route }: any) {
 
   async function send() {
     const body = text.trim();
-    if (!body || sending || !user) return;
+    const image = pendingImage;
+    if ((!body && !image) || sending || !user) return;
     setText('');
-    const userMsg: Bubble = { id: `local-${seq.current++}`, role: 'user', text: body };
+    setPendingImage(null);
+
+    // Downscale + re-encode once, reused for both the Gemini call (base64)
+    // and the persisted copy (uploaded from the same resized local file) —
+    // never the original full-resolution photo either way.
+    let imageBase64: string | undefined;
+    let imageUrl: string | undefined;
+    if (image) {
+      setUploadingImage(true);
+      try {
+        const longEdge = Math.max(image.width, image.height) || CHAT_IMAGE_MAX_DIM;
+        const ratio = longEdge > CHAT_IMAGE_MAX_DIM ? CHAT_IMAGE_MAX_DIM / longEdge : 1;
+        const targetW = Math.max(1, Math.round((image.width || CHAT_IMAGE_MAX_DIM) * ratio));
+        const ctx = ImageManipulator.manipulate(image.uri);
+        ctx.resize({ width: targetW });
+        const rendered = await ctx.renderAsync();
+        const saved = await rendered.saveAsync({ format: SaveFormat.JPEG, compress: CHAT_IMAGE_QUALITY, base64: true });
+        if (saved.base64) {
+          imageBase64 = saved.base64;
+          const up = await uploadPhoto(saved.uri, 'chatbot', user.id);
+          if (up.success) imageUrl = up.url;
+        }
+      } catch {
+        // compression/upload failed — fall through and send just the text, if any
+      }
+      setUploadingImage(false);
+    }
+    if (!body && !imageBase64) return; // image failed and there's no text either — nothing to send
+
+    const userMsg: Bubble = { id: `local-${seq.current++}`, role: 'user', text: body, imageUrl: imageUrl ?? image?.uri };
     setMessages((prev) => [...prev, userMsg]);
     setSending(true);
     setWaitingFirstToken(true);
@@ -66,13 +122,14 @@ export function ChatbotScreen({ navigation, route }: any) {
     // First message of a brand-new chat — create its conversation row now.
     let convId = conversationId;
     if (!convId) {
-      const res = await createConversation(user.id, body);
+      const res = await createConversation(user.id, body || 'Photo');
       if (res.ok) { convId = res.data; setConversationId(res.data); }
     }
-    if (convId) saveChatMessage(user.id, convId, 'user', body); // fire-and-forget — a failed save just means this turn won't persist, not worth blocking chat over
+    if (convId) saveChatMessage(user.id, convId, 'user', body, imageUrl); // fire-and-forget — a failed save just means this turn won't persist, not worth blocking chat over
 
     // Exclude past error bubbles — they're a client-side artifact, not something
     // the model actually said, and would confuse it if replayed as history.
+    // Past images aren't replayed to Gemini (see edge function) — only text.
     const history: ChatTurn[] = messages.filter((m) => !m.isError).map((m) => ({ role: m.role, text: m.text }));
 
     const streamId = `local-${seq.current++}`;
@@ -113,7 +170,7 @@ export function ChatbotScreen({ navigation, route }: any) {
           { id: `local-${seq.current++}`, role: 'model', text: `Couldn't reach the assistant: ${message}`, isError: true },
         ]);
       },
-    });
+    }, imageBase64 ? { base64: imageBase64, mimeType: 'image/jpeg' } : undefined);
   }
 
   function confirmDelete() {
@@ -140,10 +197,13 @@ export function ChatbotScreen({ navigation, route }: any) {
         : { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1 };
     return (
       <View style={[styles.bubbleRow, mine ? styles.mineRow : styles.theirRow]}>
-        <View style={[styles.bubble, bubbleStyle]}>
-          <Text style={[styles.body, { color: mine ? C.white : m.isError ? C.danger : C.text, fontFamily: FontFamily.jakartaMedium }]}>
-            {m.text}
-          </Text>
+        <View style={[styles.bubble, bubbleStyle, m.imageUrl ? styles.bubbleWithImage : null]}>
+          {m.imageUrl && <Image source={{ uri: m.imageUrl }} style={styles.bubbleImage} resizeMode="cover" />}
+          {!!m.text && (
+            <Text style={[styles.body, { color: mine ? C.white : m.isError ? C.danger : C.text, fontFamily: FontFamily.jakartaMedium }]}>
+              {m.text}
+            </Text>
+          )}
         </View>
       </View>
     );
@@ -215,7 +275,35 @@ export function ChatbotScreen({ navigation, route }: any) {
           </View>
         )}
 
+        {pendingImage && (
+          <View style={[styles.previewRow, { backgroundColor: C.surface, borderTopColor: C.border }]}>
+            <View style={styles.previewThumbWrap}>
+              <Image source={{ uri: pendingImage.uri }} style={styles.previewThumb} resizeMode="cover" />
+              {uploadingImage && (
+                <View style={styles.previewSpinner}>
+                  <ActivityIndicator size="small" color="#fff" />
+                </View>
+              )}
+              <TouchableOpacity
+                style={[styles.previewRemove, { backgroundColor: C.surface }]}
+                onPress={() => setPendingImage(null)}
+                disabled={uploadingImage}
+              >
+                <Feather name="x" size={12} color={C.text} />
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
         <View style={[styles.composer, { backgroundColor: C.surface, borderTopColor: C.border }]}>
+          <TouchableOpacity
+            style={[styles.attachBtn, { backgroundColor: C.surface2 }]}
+            onPress={pickImage}
+            disabled={sending || !!pendingImage}
+            activeOpacity={0.8}
+          >
+            <Feather name="image" size={19} color={C.text2} />
+          </TouchableOpacity>
           <TextInput
             style={[styles.composerInput, { backgroundColor: C.surface2, color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
             placeholder={t.chatbot.placeholder}
@@ -226,12 +314,12 @@ export function ChatbotScreen({ navigation, route }: any) {
             maxLength={2000}
           />
           <TouchableOpacity
-            style={[styles.sendBtn, { backgroundColor: text.trim() ? C.brand : C.surface2 }]}
+            style={[styles.sendBtn, { backgroundColor: (text.trim() || pendingImage) ? C.brand : C.surface2 }]}
             onPress={send}
-            disabled={!text.trim() || sending}
+            disabled={(!text.trim() && !pendingImage) || sending}
             activeOpacity={0.8}
           >
-            <Feather name="send" size={18} color={text.trim() ? C.white : C.textMuted} />
+            <Feather name="send" size={18} color={(text.trim() || pendingImage) ? C.white : C.textMuted} />
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -251,6 +339,8 @@ const styles = StyleSheet.create({
   mineRow: { justifyContent: 'flex-end' } as ViewStyle,
   theirRow: { justifyContent: 'flex-start' } as ViewStyle,
   bubble: { maxWidth: '78%', paddingHorizontal: 13, paddingVertical: 9, borderRadius: 16 } as ViewStyle,
+  bubbleWithImage: { padding: 5, gap: 7 } as ViewStyle,
+  bubbleImage: { width: 220, height: 220, borderRadius: 12 } as ImageStyle,
   body: { fontSize: 14.5, lineHeight: 20 } as TextStyle,
 
   typingRow: { paddingHorizontal: Layout.screenPadding, paddingBottom: 6 } as ViewStyle,
@@ -258,4 +348,11 @@ const styles = StyleSheet.create({
   composer: { flexDirection: 'row', alignItems: 'flex-end', gap: 9, paddingHorizontal: Layout.screenPadding, paddingTop: 9, paddingBottom: 9, borderTopWidth: StyleSheet.hairlineWidth } as ViewStyle,
   composerInput: { flex: 1, maxHeight: 120, minHeight: 44, borderRadius: 22, paddingHorizontal: 16, paddingTop: 11, paddingBottom: 11, fontSize: 14.5 } as TextStyle,
   sendBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
+  attachBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
+
+  previewRow: { paddingHorizontal: Layout.screenPadding, paddingTop: 9, borderTopWidth: StyleSheet.hairlineWidth } as ViewStyle,
+  previewThumbWrap: { width: 64, height: 64 } as ViewStyle,
+  previewThumb: { width: 64, height: 64, borderRadius: 12 } as ImageStyle,
+  previewSpinner: { ...StyleSheet.absoluteFill, borderRadius: 12, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center' } as ViewStyle,
+  previewRemove: { position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
 });

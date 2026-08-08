@@ -1678,5 +1678,7 @@ export const bn: Dict = {
     historyTitle: 'চ্যাটসমূহ',
     historyEmptyTitle: 'এখনও কোনো চ্যাট নেই',
     historyEmptyBody: 'সহায়কের সাথে কথোপকথন শুরু করুন, এখানে তা দেখা যাবে।',
+    permissionRequired: 'অনুমতি প্রয়োজন',
+    permissionBody: 'ছবি সংযুক্ত করতে ফটো লাইব্রেরি অ্যাক্সেসের অনুমতি দিন।',
   },
 };

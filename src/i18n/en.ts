@@ -1676,6 +1676,8 @@ You will be registered as an available ${group} donor.`,
     historyTitle: 'Chats',
     historyEmptyTitle: 'No chats yet',
     historyEmptyBody: 'Start a conversation with the assistant and it will show up here.',
+    permissionRequired: 'Permission required',
+    permissionBody: 'Please allow photo library access to attach an image.',
   },
 };
 

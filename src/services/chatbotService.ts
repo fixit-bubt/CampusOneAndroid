@@ -12,6 +12,7 @@ export interface ChatTurn {
 
 export interface StoredChatMessage extends ChatTurn {
   id: string;
+  imageUrl?: string | null;
 }
 
 export interface Conversation {
@@ -55,16 +56,20 @@ export async function deleteConversation(conversationId: string): Promise<Servic
 export async function loadChatHistory(conversationId: string): Promise<ServiceResult<StoredChatMessage[]>> {
   const { data, error } = await supabase
     .from('chatbot_messages')
-    .select('id, role, body')
+    .select('id, role, body, image_url')
     .eq('conversation_id', conversationId)
     .order('created_at', { ascending: true })
     .limit(500);
   if (error) return { ok: false, error: error.message };
-  return { ok: true, data: (data ?? []).map((r: any) => ({ id: r.id, role: r.role, text: r.body })) };
+  return { ok: true, data: (data ?? []).map((r: any) => ({ id: r.id, role: r.role, text: r.body, imageUrl: r.image_url })) };
 }
 
-export async function saveChatMessage(userId: string, conversationId: string, role: 'user' | 'model', text: string): Promise<ServiceResult<null>> {
-  const { error } = await supabase.from('chatbot_messages').insert({ user_id: userId, conversation_id: conversationId, role, body: text });
+export async function saveChatMessage(
+  userId: string, conversationId: string, role: 'user' | 'model', text: string, imageUrl?: string,
+): Promise<ServiceResult<null>> {
+  const { error } = await supabase.from('chatbot_messages').insert({
+    user_id: userId, conversation_id: conversationId, role, body: text, image_url: imageUrl ?? null,
+  });
   if (error) return { ok: false, error: error.message };
   return { ok: true, data: null };
 }
@@ -79,11 +84,18 @@ export interface ChatStreamHandlers {
   onError: (message: string) => void;
 }
 
+export interface ChatImageAttachment {
+  base64: string;
+  mimeType: string;
+}
+
 // Streams the assistant's reply via SSE. Uses expo/fetch (not supabase-js's
 // functions.invoke, which buffers the whole response) because it's the
 // WinterCG fetch implementation with real ReadableStream support on
 // Android/iOS — the stock RN fetch polyfill can't stream response bodies.
-export async function askChatbotStream(message: string, history: ChatTurn[], handlers: ChatStreamHandlers): Promise<void> {
+export async function askChatbotStream(
+  message: string, history: ChatTurn[], handlers: ChatStreamHandlers, image?: ChatImageAttachment,
+): Promise<void> {
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
   if (!token) {
@@ -96,7 +108,10 @@ export async function askChatbotStream(message: string, history: ChatTurn[], han
     res = await expoFetch(`${supabaseUrl}/functions/v1/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, apikey: supabaseAnonKey },
-      body: JSON.stringify({ message, history }),
+      body: JSON.stringify({
+        message, history,
+        ...(image ? { imageBase64: image.base64, imageMimeType: image.mimeType } : {}),
+      }),
     });
   } catch (e) {
     handlers.onError(e instanceof Error ? e.message : String(e));
