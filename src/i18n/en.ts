@@ -117,6 +117,13 @@ export const en = {
     messages: 'Messages',
   },
 
+  exploreGroups: {
+    academics: 'ACADEMICS',
+    campusLife: 'CAMPUS LIFE',
+    services: 'SERVICES',
+    community: 'COMMUNITY',
+  },
+
   home: {
     newAlerts: (n: number) => `${n} new ${n === 1 ? 'alert' : 'alerts'}`,
     alertsFrom: 'From reports, clubs & more',

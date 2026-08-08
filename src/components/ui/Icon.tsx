@@ -88,7 +88,7 @@ interface IconProps {
   style?: StyleProp<ViewStyle>;
 }
 
-export function Icon({ name, size = 21, color, stroke }: IconProps) {
+export function Icon({ name, size = 21, color, stroke, style }: IconProps) {
   const featherName = ICON_MAP[name] ?? 'help-circle';
-  return <Feather name={featherName} size={size} color={color} />;
+  return <Feather name={featherName} size={size} color={color} style={style} />;
 }

@@ -118,6 +118,13 @@ export const bn: Dict = {
     messages: 'মেসেজ',
   },
 
+  exploreGroups: {
+    academics: 'একাডেমিক্স',
+    campusLife: 'ক্যাম্পাস লাইফ',
+    services: 'সার্ভিসেস',
+    community: 'কমিউনিটি',
+  },
+
   home: {
     newAlerts: (n: number) => `${n} টি নতুন অ্যালার্ট`,
     alertsFrom: 'রিপোর্ট, ক্লাব ও আরও কিছু থেকে',

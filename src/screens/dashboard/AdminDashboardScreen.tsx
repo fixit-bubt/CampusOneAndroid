@@ -9,6 +9,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { TopBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
+import { CollapsibleSection } from '../../components/ui/CollapsibleSection';
 import { useToast } from '../../components/ui/Toast';
 import { FontFamily, Layout, Accent, SectorColors } from '../../theme';
 import { useT } from '../../i18n';
@@ -269,26 +270,27 @@ export function AdminDashboardScreen({ navigation }: any) {
         )}
 
         {/* Manage tiles */}
-        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>{t.dash.manage}</Text>
-        <View style={styles.tilesGrid}>
-          {MANAGE_TILES.map((tile, i) => {
-            const tileBg = isDark ? `${tile.fg}2e` : `${tile.fg}14`;
-            return (
-              <TouchableOpacity
-                key={i}
-                style={[styles.tile, { backgroundColor: C.surface, borderColor: C.border }]}
-                onPress={() => navigation.navigate(tile.route)}
-                activeOpacity={0.75}
-              >
-                <View style={[styles.tileIcon, { backgroundColor: tileBg }]}>
-                  <Icon name={tile.icon} size={17} color={tile.fg} />
-                </View>
-                <Text style={[styles.tileLabel, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.dash[tile.tk] as string}</Text>
-                <Text style={[styles.tileSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{tile.sub}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+        <CollapsibleSection title={t.dash.manage}>
+          <View style={styles.tilesGrid}>
+            {MANAGE_TILES.map((tile, i) => {
+              const tileBg = isDark ? `${tile.fg}2e` : `${tile.fg}14`;
+              return (
+                <TouchableOpacity
+                  key={i}
+                  style={[styles.tile, { backgroundColor: C.surface, borderColor: C.border }]}
+                  onPress={() => navigation.navigate(tile.route)}
+                  activeOpacity={0.75}
+                >
+                  <View style={[styles.tileIcon, { backgroundColor: tileBg }]}>
+                    <Icon name={tile.icon} size={17} color={tile.fg} />
+                  </View>
+                  <Text style={[styles.tileLabel, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.dash[tile.tk] as string}</Text>
+                  <Text style={[styles.tileSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{tile.sub}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </CollapsibleSection>
 
         <CampusToday navigation={navigation} />
 
