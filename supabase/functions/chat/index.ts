@@ -161,6 +161,23 @@ async function supaGet(supabaseUrl: string, anonKey: string, authHeader: string,
   return res.json();
 }
 
+const RATE_LIMIT_MAX = 6; // user turns per RATE_LIMIT_WINDOW_MS, per user
+const RATE_LIMIT_WINDOW_MS = 60_000;
+
+// Reuses chatbot_messages (already logged by the client for history) as the
+// rate-limit ledger — no separate table needed. RLS scopes this to the
+// caller's own rows already, same as every other tool read.
+async function recentUserMessageCount(supabaseUrl: string, anonKey: string, authHeader: string): Promise<number> {
+  const since = new Date(Date.now() - RATE_LIMIT_WINDOW_MS).toISOString();
+  const res = await fetch(
+    `${supabaseUrl}/rest/v1/chatbot_messages?select=id&role=eq.user&created_at=gte.${encodeURIComponent(since)}`,
+    { method: 'HEAD', headers: { apikey: anonKey, Authorization: authHeader, Prefer: 'count=exact' } },
+  );
+  if (!res.ok) return 0; // fail open — a broken count check shouldn't block chat entirely
+  const range = res.headers.get('content-range'); // "*/N"
+  return range ? parseInt(range.split('/')[1] ?? '0', 10) || 0 : 0;
+}
+
 async function runTool(
   name: string, args: Record<string, unknown>, supabaseUrl: string, anonKey: string, authHeader: string,
 ) {
@@ -329,6 +346,14 @@ Deno.serve(async (req) => {
     const message = (p?.message ?? '').trim();
     if (!message) return new Response(JSON.stringify({ error: 'message required' }), { status: 400 });
     if (message.length > 4000) return new Response(JSON.stringify({ error: 'message too long (max 4000 chars)' }), { status: 400 });
+
+    const recentCount = await recentUserMessageCount(supabaseUrl, anonKey, authHeader);
+    if (recentCount >= RATE_LIMIT_MAX) {
+      return new Response(
+        JSON.stringify({ error: "You're sending messages too fast — wait a moment and try again." }),
+        { status: 429 },
+      );
+    }
 
     // Client-supplied history is untrusted — this endpoint is callable by any
     // authenticated user directly, not just through the app. Drop malformed

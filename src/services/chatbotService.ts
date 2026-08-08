@@ -1,5 +1,5 @@
-// Chatbot Service — talks to the `chat` edge function (Gemini proxy). No DB
-// persistence yet; history is kept client-side for the life of the screen.
+// Chatbot Service — talks to the `chat` edge function (Gemini proxy), plus
+// DB persistence for chat history (chatbot_messages, self-scoped RLS).
 
 import { supabase } from '../lib/supabase';
 import type { ServiceResult } from './authService';
@@ -7,6 +7,33 @@ import type { ServiceResult } from './authService';
 export interface ChatTurn {
   role: 'user' | 'model';
   text: string;
+}
+
+export interface StoredChatMessage extends ChatTurn {
+  id: string;
+}
+
+export async function loadChatHistory(userId: string): Promise<ServiceResult<StoredChatMessage[]>> {
+  const { data, error } = await supabase
+    .from('chatbot_messages')
+    .select('id, role, body')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: true })
+    .limit(200);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, data: (data ?? []).map((r: any) => ({ id: r.id, role: r.role, text: r.body })) };
+}
+
+export async function saveChatMessage(userId: string, role: 'user' | 'model', text: string): Promise<ServiceResult<null>> {
+  const { error } = await supabase.from('chatbot_messages').insert({ user_id: userId, role, body: text });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, data: null };
+}
+
+export async function clearChatHistory(userId: string): Promise<ServiceResult<null>> {
+  const { error } = await supabase.from('chatbot_messages').delete().eq('user_id', userId);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, data: null };
 }
 
 export async function askChatbot(message: string, history: ChatTurn[]): Promise<ServiceResult<string>> {

@@ -1659,4 +1659,12 @@ export const bn: Dict = {
     messageAction: 'মেসেজ',
     startChat: 'মেসেজ',
   },
+  chatbot: {
+    title: 'এআই সহায়ক',
+    emptyState: 'ক্যাম্পাস জীবন নিয়ে যেকোনো প্রশ্ন করুন',
+    placeholder: 'একটি বার্তা লিখুন…',
+    clearTitle: 'কথোপকথন মুছবেন?',
+    clearBody: 'এতে সহায়কের সাথে আপনার চ্যাট হিস্ট্রি মুছে যাবে। এটি ফিরিয়ে আনা যাবে না।',
+    clearConfirm: 'মুছুন',
+  },
 };

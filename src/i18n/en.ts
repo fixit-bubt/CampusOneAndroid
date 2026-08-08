@@ -1657,6 +1657,14 @@ You will be registered as an available ${group} donor.`,
     messageAction: 'Message',
     startChat: 'Message',
   },
+  chatbot: {
+    title: 'AI Assistant',
+    emptyState: 'Ask me anything about campus life',
+    placeholder: 'Type a message…',
+    clearTitle: 'Clear conversation?',
+    clearBody: 'This deletes your chat history with the assistant. This cannot be undone.',
+    clearConfirm: 'Clear',
+  },
 };
 
 export type Dict = typeof en;
