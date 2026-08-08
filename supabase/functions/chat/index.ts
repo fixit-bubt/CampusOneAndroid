@@ -310,9 +310,13 @@ async function runTool(
   return { error: `unknown tool: ${name}` };
 }
 
-async function callGemini(apiKey: string, contents: unknown[]) {
+// Streams a single round from Gemini and yields each chunk's response JSON as
+// it arrives (SSE: "data: {...}\n\n" frames). Function-call parts come back
+// whole in one chunk (Gemini doesn't fragment call args like it does text),
+// so callers can react to a functionCall the moment it shows up.
+async function* streamGemini(apiKey: string, contents: unknown[]) {
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:streamGenerateContent?alt=sse&key=${apiKey}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -324,9 +328,32 @@ async function callGemini(apiKey: string, contents: unknown[]) {
       }),
     },
   );
-  const json = await res.json();
-  if (!res.ok) throw new Error(json?.error?.message ?? `gemini request failed: ${res.status}`);
-  return json;
+  if (!res.ok || !res.body) {
+    const errJson = await res.json().catch(() => null);
+    throw new Error(errJson?.error?.message ?? `gemini request failed: ${res.status}`);
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    let idx: number;
+    while ((idx = buf.indexOf('\n\n')) !== -1) {
+      const frame = buf.slice(0, idx);
+      buf = buf.slice(idx + 2);
+      const dataLine = frame.split('\n').find((l) => l.startsWith('data:'));
+      if (!dataLine) continue;
+      const jsonStr = dataLine.slice(5).trim();
+      if (!jsonStr) continue;
+      try {
+        yield JSON.parse(jsonStr);
+      } catch {
+        // malformed/partial frame — skip rather than crash the whole round
+      }
+    }
+  }
 }
 
 Deno.serve(async (req) => {
@@ -368,42 +395,80 @@ Deno.serve(async (req) => {
       { role: 'user', parts: [{ text: message }] },
     ];
 
-    let reply = '';
-    for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-      const json = await callGemini(apiKey, contents);
-      const candidate = json?.candidates?.[0];
-      const parts = candidate?.content?.parts ?? [];
-      const functionCalls = parts.filter((part: any) => part.functionCall);
-
-      if (functionCalls.length === 0) {
-        reply = parts.map((part: any) => part.text ?? '').join('');
-        break;
-      }
-
-      // Echo the model's function-call turn, then run each tool and feed results back.
-      contents.push({ role: 'model', parts });
-      const responseParts = [];
-      for (const fc of functionCalls) {
-        const { name, args } = fc.functionCall;
-        let result: unknown;
+    // Everything past this point streams to the client as our own small SSE
+    // protocol: {type:'chunk',text} appends text live as it's generated;
+    // {type:'retract'} means the text shown so far in this round turned out
+    // to be a tool-call round after all (rare — a little preamble before the
+    // model decided to call a tool) and must be discarded, not shown as the
+    // answer; {type:'done',text} is the final, complete reply; {type:'error'}
+    // is a mid-stream failure. HTTP status is always 200 once this starts —
+    // errors can't change the status after headers are sent, so they're
+    // signaled in-band instead.
+    const encoder = new TextEncoder();
+    const body = new ReadableStream({
+      async start(controller) {
+        const send = (obj: unknown) => controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`));
         try {
-          result = await runTool(name, args ?? {}, supabaseUrl, anonKey, authHeader);
+          let finalText = '';
+          for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
+            let roundText = '';
+            const functionCalls: any[] = [];
+            for await (const json of streamGemini(apiKey, contents)) {
+              const parts = json?.candidates?.[0]?.content?.parts ?? [];
+              for (const part of parts) {
+                if (part.functionCall) {
+                  functionCalls.push(part);
+                } else if (typeof part.text === 'string' && part.text) {
+                  roundText += part.text;
+                  // Only forward live once we know this round hasn't turned
+                  // into a tool call — a functionCall part, if any, always
+                  // arrives as its own complete part, never interleaved
+                  // character-by-character with text the way token text is.
+                  if (functionCalls.length === 0) send({ type: 'chunk', text: part.text });
+                }
+              }
+            }
+
+            if (functionCalls.length > 0) {
+              if (roundText) send({ type: 'retract' }); // discard whatever preamble text was shown live
+              const modelParts = [...(roundText ? [{ text: roundText }] : []), ...functionCalls];
+              contents.push({ role: 'model', parts: modelParts });
+              const responseParts = [];
+              for (const fc of functionCalls) {
+                const { name, args } = fc.functionCall;
+                let result: unknown;
+                try {
+                  result = await runTool(name, args ?? {}, supabaseUrl, anonKey, authHeader);
+                } catch (e) {
+                  result = { error: String(e) };
+                }
+                responseParts.push({ functionResponse: { name, response: result } });
+              }
+              // NOTE: despite older Gemini docs showing role: "function" for
+              // tool results, the live API rejects it ("Role 'function' is
+              // not supported") — confirmed against the deployed model.
+              // "user" is what it accepts.
+              contents.push({ role: 'user', parts: responseParts });
+              continue;
+            }
+
+            finalText = roundText;
+            break;
+          }
+
+          if (!finalText) send({ type: 'error', message: 'no response from model' });
+          else send({ type: 'done', text: finalText });
         } catch (e) {
-          result = { error: String(e) };
+          send({ type: 'error', message: String(e) });
+        } finally {
+          controller.close();
         }
-        responseParts.push({ functionResponse: { name, response: result } });
-      }
-      // NOTE: despite older Gemini docs showing role: "function" for tool
-      // results, the live API rejects it ("Role 'function' is not supported")
-      // — confirmed against the deployed model. "user" is what it accepts.
-      contents.push({ role: 'user', parts: responseParts });
-    }
+      },
+    });
 
-    if (!reply) return new Response(JSON.stringify({ error: 'no response from model' }), { status: 502 });
-
-    return new Response(JSON.stringify({ reply }), {
+    return new Response(body, {
       status: 200,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' },
     });
   } catch (e) {
     return new Response(JSON.stringify({ error: String(e) }), { status: 500 });

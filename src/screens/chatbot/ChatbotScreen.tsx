@@ -13,7 +13,7 @@ import { useT } from '../../i18n';
 import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { FontFamily, Layout } from '../../theme';
-import { askChatbot, loadChatHistory, saveChatMessage, clearChatHistory, type ChatTurn } from '../../services/chatbotService';
+import { askChatbotStream, loadChatHistory, saveChatMessage, clearChatHistory, type ChatTurn } from '../../services/chatbotService';
 
 interface Bubble {
   id: string;
@@ -29,6 +29,10 @@ export function ChatbotScreen({ navigation }: any) {
   const [messages, setMessages] = useState<Bubble[]>([]);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
+  // True only until the first chunk of a reply arrives (or a tool-call
+  // round retracts its preamble) — the "thinking" spinner, distinct from
+  // `sending` which covers the whole turn and disables the composer.
+  const [waitingFirstToken, setWaitingFirstToken] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const seq = useRef(0);
 
@@ -50,20 +54,52 @@ export function ChatbotScreen({ navigation }: any) {
     const userMsg: Bubble = { id: `local-${seq.current++}`, role: 'user', text: body };
     setMessages((prev) => [...prev, userMsg]);
     setSending(true);
+    setWaitingFirstToken(true);
     saveChatMessage(user.id, 'user', body); // fire-and-forget — a failed save just means this turn won't persist, not worth blocking chat over
 
     // Exclude past error bubbles — they're a client-side artifact, not something
     // the model actually said, and would confuse it if replayed as history.
     const history: ChatTurn[] = messages.filter((m) => !m.isError).map((m) => ({ role: m.role, text: m.text }));
-    const res = await askChatbot(body, history);
-    setSending(false);
 
-    if (res.ok) {
-      setMessages((prev) => [...prev, { id: `local-${seq.current++}`, role: 'model', text: res.data }]);
-      saveChatMessage(user.id, 'model', res.data);
-    } else {
-      setMessages((prev) => [...prev, { id: `local-${seq.current++}`, role: 'model', text: `Couldn't reach the assistant: ${res.error}`, isError: true }]);
-    }
+    const streamId = `local-${seq.current++}`;
+    let streamedText = '';
+    let bubbleAdded = false;
+
+    await askChatbotStream(body, history, {
+      onChunk: (chunk) => {
+        streamedText += chunk;
+        setWaitingFirstToken(false);
+        setMessages((prev) => {
+          if (!bubbleAdded) {
+            bubbleAdded = true;
+            return [...prev, { id: streamId, role: 'model', text: streamedText }];
+          }
+          return prev.map((m) => (m.id === streamId ? { ...m, text: streamedText } : m));
+        });
+      },
+      onRetract: () => {
+        // This round turned out to be a tool call, not the real answer —
+        // drop whatever preamble text was showing and go back to "thinking".
+        streamedText = '';
+        bubbleAdded = false;
+        setWaitingFirstToken(true);
+        setMessages((prev) => prev.filter((m) => m.id !== streamId));
+      },
+      onDone: (fullText) => {
+        setSending(false);
+        setWaitingFirstToken(false);
+        setMessages((prev) => [...prev.filter((m) => m.id !== streamId), { id: streamId, role: 'model', text: fullText }]);
+        saveChatMessage(user.id, 'model', fullText);
+      },
+      onError: (message) => {
+        setSending(false);
+        setWaitingFirstToken(false);
+        setMessages((prev) => [
+          ...prev.filter((m) => m.id !== streamId),
+          { id: `local-${seq.current++}`, role: 'model', text: `Couldn't reach the assistant: ${message}`, isError: true },
+        ]);
+      },
+    });
   }
 
   function confirmClear() {
@@ -148,7 +184,7 @@ export function ChatbotScreen({ navigation }: any) {
           />
         )}
 
-        {sending && (
+        {waitingFirstToken && (
           <View style={styles.typingRow}>
             <ActivityIndicator size="small" color={C.brand} />
           </View>
