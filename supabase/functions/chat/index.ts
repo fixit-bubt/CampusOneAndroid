@@ -158,6 +158,20 @@ function escLike(s: string): string {
   return s.replace(/[\\%_]/g, (c) => `\\${c}`);
 }
 
+// Pulls the "sub" (user id) claim straight out of the already-gateway-verified
+// JWT — no signature check needed here since Supabase's edge function
+// gateway already rejected anything invalid before this code ever runs.
+function userIdFromJwt(authHeader: string): string | null {
+  try {
+    const token = authHeader.replace(/^Bearer\s+/i, '');
+    const payloadB64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(atob(payloadB64));
+    return typeof payload?.sub === 'string' ? payload.sub : null;
+  } catch {
+    return null;
+  }
+}
+
 async function supaGet(supabaseUrl: string, anonKey: string, authHeader: string, path: string) {
   const res = await fetch(`${supabaseUrl}/rest/v1/${path}`, {
     headers: { apikey: anonKey, Authorization: authHeader },
@@ -385,6 +399,16 @@ Deno.serve(async (req) => {
     // as-is so DB reads run as the calling user and RLS applies normally.
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401 });
+
+    // Student-only feature — checked server-side, not just hidden in the UI,
+    // since this endpoint is directly callable by any authenticated user
+    // regardless of what the app's nav shows them.
+    const uid = userIdFromJwt(authHeader);
+    if (!uid) return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401 });
+    const [me] = await supaGet(supabaseUrl, anonKey, authHeader, `profiles?select=role&id=eq.${uid}&limit=1`);
+    if (me?.role !== 'student') {
+      return new Response(JSON.stringify({ error: 'The AI assistant is available to students only.' }), { status: 403 });
+    }
 
     const p = (await req.json()) as Payload;
     const message = (p?.message ?? '').trim();
