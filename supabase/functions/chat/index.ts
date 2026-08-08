@@ -3,11 +3,12 @@
 // function auth gate — no anonymous calls).
 //
 // Grounds the bot in real campus data via Gemini function calling: bus routes,
-// prayer times, lost & found, clubs, and rides are looked up live from the DB
-// instead of guessed. DB reads run as the CALLING USER (their JWT + anon key,
-// not the service role) so Postgres RLS applies exactly as it does everywhere
-// else in the app — e.g. lost_found_items is student-only by policy, so a
-// staff/admin asking the bot about it correctly gets nothing back.
+// prayer times, lost & found, clubs, rides, routine files, events, blood
+// requests, and jobs are looked up live from the DB instead of guessed. DB
+// reads run as the CALLING USER (their JWT + anon key, not the service role)
+// so Postgres RLS applies exactly as it does everywhere else in the app —
+// e.g. lost_found_items is student-only by policy, so a staff/admin asking
+// the bot about it correctly gets nothing back.
 //
 // Required secret (dashboard -> Edge Functions -> Secrets):
 //   GEMINI_API_KEY  - from aistudio.google.com/apikey
@@ -15,11 +16,11 @@
 
 const SYSTEM_PROMPT = `You are the CampusOne assistant for BUBT (Bangladesh University of Business & Technology) students. Be concise and helpful.
 
-You have tools to look up live bus schedules, prayer times, lost & found posts, clubs, and rides — use them instead of guessing when asked. If a tool returns no results, say so plainly rather than inventing an answer; lost & found is student-only data, so if a non-student account gets an empty result, mention that it's restricted to students rather than implying nothing exists.
+You have tools to look up live bus schedules, prayer times, lost & found posts, clubs, rides, class/exam routine files, campus events, blood donation requests, and job/internship postings — use them instead of guessing when asked. If a tool returns no results, say so plainly rather than inventing an answer; lost & found is student-only data, so if a non-student account gets an empty result, mention that it's restricted to students rather than implying nothing exists. Routine lookups return uploaded PDF/image files per department/semester/section, not a per-course class-time schedule — point the user to the file rather than inventing a specific class time you don't actually have.
 
 For CGPA questions you can calculate directly — you don't need a tool for this. The grading scale is: A+ =4.00, A=3.75, A- =3.50, B+ =3.25, B=3.00, B- =2.75, C+ =2.50, C=2.25, D=2.00, F=0.00. CGPA = sum(credit × grade point) / sum(credit). Show the math when it helps.
 
-For anything else you don't have a tool for (routines, blood requests, events, jobs, etc.), tell the user to check the relevant tab in the app instead of guessing.`;
+For anything else you don't have a tool for, tell the user to check the relevant tab in the app instead of guessing.`;
 
 const GEMINI_MODEL = 'gemini-flash-latest';
 const MAX_TOOL_ROUNDS = 3;
@@ -83,6 +84,51 @@ const TOOLS = [
           properties: {
             direction: { type: 'string', enum: ['To Campus', 'From Campus'] },
             date: { type: 'string', description: 'ISO date (YYYY-MM-DD) to filter to; omit for all upcoming rides' },
+          },
+        },
+      },
+      {
+        name: 'get_routines',
+        description: 'Look up uploaded class or exam routine files by department/semester/section. Returns file metadata and a link, not individual class times.',
+        parameters: {
+          type: 'object',
+          properties: {
+            routineType: { type: 'string', enum: ['class', 'exam'] },
+            department: { type: 'string', description: 'Partial match, e.g. "CSE"' },
+            semester: { type: 'string' },
+            section: { type: 'string' },
+          },
+        },
+      },
+      {
+        name: 'get_events',
+        description: 'Look up upcoming campus events, optionally filtered by category or a text search on the title.',
+        parameters: {
+          type: 'object',
+          properties: {
+            category: { type: 'string', enum: ['Academic', 'Cultural', 'Sports', 'Club', 'Career'] },
+            query: { type: 'string', description: 'Free-text match against the event title' },
+          },
+        },
+      },
+      {
+        name: 'get_blood_requests',
+        description: 'Look up active blood donation requests, optionally filtered by blood group.',
+        parameters: {
+          type: 'object',
+          properties: {
+            bloodGroup: { type: 'string', enum: ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'] },
+          },
+        },
+      },
+      {
+        name: 'get_jobs',
+        description: 'Look up open (non-expired) job and internship postings.',
+        parameters: {
+          type: 'object',
+          properties: {
+            jobType: { type: 'string', enum: ['internship', 'part_time', 'full_time'] },
+            query: { type: 'string', description: 'Free-text match against the job title, e.g. "developer"' },
           },
         },
       },
@@ -159,6 +205,62 @@ async function runTool(
       `rides?select=code,direction,vehicle,origin,destination,date,time,seats_total,fare,recurring${filter}&order=date.asc,time.asc&limit=10`,
     );
     return { rides: rows };
+  }
+
+  if (name === 'get_routines') {
+    const routineType = args.routineType === 'class' || args.routineType === 'exam' ? args.routineType : '';
+    const department = str(args.department);
+    const semester = str(args.semester);
+    const section = str(args.section);
+    let filter = '';
+    if (routineType) filter += `&type=eq.${encodeURIComponent(routineType)}`;
+    if (department) filter += `&department=ilike.*${encodeURIComponent(escLike(department))}*`;
+    if (semester) filter += `&semester=eq.${encodeURIComponent(semester)}`;
+    if (section) filter += `&section=eq.${encodeURIComponent(section)}`;
+    const rows = await get(
+      `routines?select=type,title,department,semester,intake,section,file_url,image_url,created_at${filter}&order=created_at.desc&limit=5`,
+    );
+    return { routines: rows };
+  }
+
+  if (name === 'get_events') {
+    const category = str(args.category);
+    const query = str(args.query);
+    const today = new Date().toISOString().slice(0, 10);
+    let filter = `&date=gte.${today}`;
+    if (category) filter += `&category=eq.${encodeURIComponent(category)}`;
+    if (query) filter += `&title=ilike.*${encodeURIComponent(escLike(query))}*`;
+    const rows = await get(
+      `events?select=title,category,organizer,date,time,end_time,venue,description,capacity${filter}&order=date.asc,time.asc&limit=10`,
+    );
+    return { events: rows };
+  }
+
+  if (name === 'get_blood_requests') {
+    const groups = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
+    const bloodGroup = groups.includes(args.bloodGroup as string) ? (args.bloodGroup as string) : '';
+    // Match the app's own feed rules exactly (bloodService.getBloodFeed):
+    // hide fulfilled requests, age out anything older than 21 days.
+    const staleCutoff = new Date(Date.now() - 21 * 86400000).toISOString();
+    let filter = `&fulfilled_at=is.null&created_at=gte.${encodeURIComponent(staleCutoff)}`;
+    if (bloodGroup) filter += `&blood_group=eq.${encodeURIComponent(bloodGroup)}`;
+    const rows = await get(
+      `blood_requests?select=code,blood_group,units,patient,hospital,area,urgency,created_at${filter}&order=created_at.desc&limit=10`,
+    );
+    return { blood_requests: rows };
+  }
+
+  if (name === 'get_jobs') {
+    const jobType = ['internship', 'part_time', 'full_time'].includes(args.jobType as string) ? (args.jobType as string) : '';
+    const query = str(args.query);
+    const today = new Date().toISOString().slice(0, 10);
+    let filter = `&deadline=gte.${today}`;
+    if (jobType) filter += `&job_type=eq.${encodeURIComponent(jobType)}`;
+    if (query) filter += `&title=ilike.*${encodeURIComponent(escLike(query))}*`;
+    const rows = await get(
+      `jobs?select=title,company,job_type,work_mode,location,stipend,deadline,apply_method,apply_value${filter}&order=deadline.asc&limit=10`,
+    );
+    return { jobs: rows };
   }
 
   return { error: `unknown tool: ${name}` };
