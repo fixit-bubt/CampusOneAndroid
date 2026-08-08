@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView, Modal,
@@ -53,12 +53,10 @@ const CONTRIB_LABELS = (t: any): Record<string, string> => ({
   events: t.mainx.contribEvents, lostfound: t.mainx.contribLostfound,
 });
 
-const BADGES = [
-  { id: 'reporter',  icon: 'layers',   fg: Accent.blue, en: '', earned: false, progress: { cur: 1, total: 5 } },
-  { id: 'helper',    icon: 'clubs',    fg: Accent.green, en: '', earned: true,  progress: null },
-  { id: 'active',    icon: 'bell',     fg: Accent.amber, en: '', earned: true,  progress: null },
-  { id: 'studious',  icon: 'study',    fg: Accent.purple, en: '', earned: false, progress: { cur: 3, total: 10 } },
-];
+interface Badge {
+  id: string; icon: string; fg: string; en: string;
+  earned: boolean; progress: { cur: number; total: number } | null;
+}
 
 const CONTRIB_CONFIG: { sector: SectorKey; en: string; table: string; field: string }[] = [
   { sector: 'reports',   en: '', table: 'reports',         field: 'reporter_id' },
@@ -67,7 +65,7 @@ const CONTRIB_CONFIG: { sector: SectorKey; en: string; table: string; field: str
   { sector: 'lostfound', en: '', table: 'lost_found_items',field: 'poster_id' },
 ];
 
-function BadgesRow({ badges, onPick, C, t }: { badges: typeof BADGES; onPick: (b: typeof BADGES[0]) => void; C: any; t: any }) {
+function BadgesRow({ badges, onPick, C, t }: { badges: Badge[]; onPick: (b: Badge) => void; C: any; t: any }) {
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -4 }} contentContainerStyle={{ gap: 12, paddingHorizontal: 4, paddingVertical: 4 }}>
       {badges.map(b => (
@@ -109,7 +107,7 @@ const badgeStyles = StyleSheet.create({
   name: { fontSize: 10.5, textAlign: 'center', lineHeight: 14 } as any,
 });
 
-function BadgeSheet({ badge, C, onClose, t }: { badge: typeof BADGES[0] | null; C: any; onClose: () => void; t: any }) {
+function BadgeSheet({ badge, C, onClose, t }: { badge: Badge | null; C: any; onClose: () => void; t: any }) {
   if (!badge) return null;
   return (
     <Modal visible animationType="slide" transparent onRequestClose={onClose}>
@@ -342,32 +340,82 @@ export function ProfileScreen({ navigation }: any) {
     if (!result.canceled && result.assets[0]) setPickedAvatar(result.assets[0].uri);
   }
 
-  const [focusBadge, setFocusBadge] = useState<typeof BADGES[0] | null>(null);
+  const [focusBadge, setFocusBadge] = useState<Badge | null>(null);
   const [contrib, setContrib] = useState<Record<string, number>>({});
+  const [accomplishments, setAccomplishments] = useState<AccomplishmentItem[]>([]);
+  const [addSheetOpen, setAddSheetOpen] = useState(false);
 
   const isStudent = role === 'student';
 
   const loadContrib = useCallback(async () => {
     if (!user) return;
     const head = { count: 'exact' as const, head: true };
-    const [rep, clb, evt, lf] = await Promise.all([
+    const [rep, clb, evt, lf, mat, qb, book] = await Promise.all([
       supabase.from('reports').select('*', head).eq('reporter_id', user.id).is('deleted_at', null),
       supabase.from('club_members').select('*', head).eq('user_id', user.id),
       supabase.from('event_rsvps').select('*', head).eq('user_id', user.id),
       supabase.from('lost_found_items').select('*', head).eq('poster_id', user.id).is('deleted_at', null),
+      supabase.from('study_materials').select('*', head).eq('uploaded_by', user.id),
+      supabase.from('study_question_bank').select('*', head).eq('uploaded_by', user.id),
+      supabase.from('study_books').select('*', head).eq('added_by', user.id),
     ]);
     setContrib({
       reports:   rep.count ?? 0,
       clubs:     clb.count ?? 0,
       events:    evt.count ?? 0,
       lostfound: lf.count ?? 0,
+      study:     (mat.count ?? 0) + (qb.count ?? 0) + (book.count ?? 0),
     });
   }, [user]);
 
-  // Contribution counts change from other screens (post a report, join a club,
-  // RSVP, post lost&found) — refresh on focus, not just mount, so returning to
-  // Profile shows current numbers.
-  useFocusEffect(useCallback(() => { loadContrib(); }, [loadContrib]));
+  const loadAccomplishments = useCallback(async () => {
+    if (!user) return;
+    const { data, error } = await supabase
+      .from('accomplishments').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
+    if (!error && data) {
+      setAccomplishments((data as any[]).map(a => ({
+        id: a.id, cat: a.category, title: a.title, org: a.org ?? '', year: a.year ?? '-',
+      })));
+    }
+  }, [user]);
+
+  // Contribution counts + accomplishments change from other screens (post a
+  // report, join a club, RSVP, post lost&found, upload study material) —
+  // refresh on focus, not just mount, so returning to Profile shows current
+  // numbers.
+  useFocusEffect(useCallback(() => { loadContrib(); loadAccomplishments(); }, [loadContrib, loadAccomplishments]));
+
+  // Real badges computed from actual activity — thresholds preserve the
+  // original placeholder values (reporter@5, studious@10); helper/active
+  // didn't have a documented threshold before, picked reasonable ones.
+  const computedBadges = useMemo(() => {
+    const mk = (id: string, icon: string, fg: string, cur: number, total: number) => ({
+      id, icon, fg, en: '', earned: cur >= total, progress: cur >= total ? null : { cur, total },
+    });
+    return [
+      mk('reporter', 'layers', Accent.blue,   contrib.reports ?? 0,                        5),
+      mk('helper',   'clubs',  Accent.green,  contrib.lostfound ?? 0,                       3),
+      mk('active',   'bell',   Accent.amber,  (contrib.clubs ?? 0) + (contrib.events ?? 0), 5),
+      mk('studious', 'study',  Accent.purple, contrib.study ?? 0,                          10),
+    ];
+  }, [contrib]);
+
+  async function addAccomplishment(item: AccomplishmentItem) {
+    if (!user) return;
+    const { data, error } = await supabase
+      .from('accomplishments')
+      .insert({ user_id: user.id, category: item.cat, title: item.title, org: item.org || null, year: item.year === '-' ? null : item.year })
+      .select().single();
+    if (error || !data) { toast({ type: 'error', title: t.common.error, message: error?.message }); return; }
+    setAccomplishments(prev => [{ id: data.id, cat: data.category, title: data.title, org: data.org ?? '', year: data.year ?? '-' }, ...prev]);
+  }
+
+  async function deleteAccomplishment(id: string) {
+    const prev = accomplishments;
+    setAccomplishments(list => list.filter(a => a.id !== id)); // optimistic
+    const { error } = await supabase.from('accomplishments').delete().eq('id', id);
+    if (error) { setAccomplishments(prev); toast({ type: 'error', title: t.common.error, message: error.message }); }
+  }
 
   async function handleSave() {
     if (!user || savingRef.current) return;
@@ -619,13 +667,42 @@ export function ProfileScreen({ navigation }: any) {
             </View>
 
             {/* Badges */}
-            <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>BADGES</Text>
-            <BadgesRow badges={BADGES} onPick={setFocusBadge} C={C} t={t} />
+            <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>{t.mainx.badges}</Text>
+            <BadgesRow badges={computedBadges} onPick={setFocusBadge} C={C} t={t} />
           </>
+        )}
+
+        {/* Accomplishments */}
+        <View style={styles.accompHeader}>
+          <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold, marginBottom: 0 }]}>
+            {t.mainx.accomplishmentsSection}
+          </Text>
+          {editMode && (
+            <TouchableOpacity onPress={() => setAddSheetOpen(true)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Feather name="plus-circle" size={20} color={C.brand} />
+            </TouchableOpacity>
+          )}
+        </View>
+        {accomplishments.length === 0 ? (
+          <Text style={[styles.emptyAccomp, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+            {t.mainx.noAccomplishments}
+          </Text>
+        ) : (
+          <View style={[styles.accompList, { backgroundColor: C.surface, borderColor: C.border }]}>
+            {accomplishments.map((a, i) => (
+              <View key={a.id} style={i > 0 ? [styles.accompDivider, { borderTopColor: C.border }] : undefined}>
+                <AccompCard a={a} editMode={editMode} onDelete={deleteAccomplishment} C={C} isDark={isDark} />
+              </View>
+            ))}
+          </View>
         )}
 
         <View style={{ height: 32 }} />
       </ScrollView>
+
+      {addSheetOpen && (
+        <AddSheet C={C} t={t} onClose={() => setAddSheetOpen(false)} onAdd={addAccomplishment} />
+      )}
 
       {focusBadge && <BadgeSheet badge={focusBadge} C={C} onClose={() => setFocusBadge(null)} t={t} />}
     </SafeAreaView>
@@ -672,6 +749,11 @@ const styles = StyleSheet.create({
   contribCell: { width: '50%', flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderBottomWidth: StyleSheet.hairlineWidth } as ViewStyle,
   contribNum: { fontSize: 20 } as any,
   contribLbl: { fontSize: 11, marginTop: 1 } as any,
+
+  accompHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 24, marginBottom: 9, marginLeft: 4, marginRight: 2 } as ViewStyle,
+  emptyAccomp: { fontSize: 13, marginLeft: 4 } as any,
+  accompList: { borderRadius: 16, borderWidth: 1, overflow: 'hidden' } as ViewStyle,
+  accompDivider: { borderTopWidth: StyleSheet.hairlineWidth } as ViewStyle,
 
   avatarEditBadge: {
     position: 'absolute', bottom: 0, right: 0,

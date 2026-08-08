@@ -845,6 +845,8 @@ export const bn: Dict = {
     sectionPrefix: (v: string) => ` · সেকশন ${v}`,
     campusContributions: "ক্যাম্পাস অবদান",
     badges: "ব্যাজ",
+    accomplishmentsSection: "অর্জন",
+    noAccomplishments: "এখনো কোনো অর্জন যোগ করা হয়নি",
     changePassword: "পাসওয়ার্ড পরিবর্তন",
     signOut: "সাইন আউট",
     showInDirectory: "স্টুডেন্ট ডিরেক্টরিতে দেখান",
