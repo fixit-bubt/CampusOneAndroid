@@ -84,6 +84,7 @@ export function AnnexPortalScreen() {
             javaScriptEnabled
             domStorageEnabled
             sharedCookiesEnabled
+            forceDarkOn={false}
             onLoadProgress={({ nativeEvent }) => setProgress(nativeEvent.progress)}
             onLoadEnd={() => setLoading(false)}
             onNavigationStateChange={onNavStateChange}
