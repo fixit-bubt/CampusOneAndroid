@@ -329,6 +329,11 @@ async function* streamGemini(apiKey: string, contents: unknown[]) {
     },
   );
   if (!res.ok || !res.body) {
+    // 429 here is Gemini's own free-tier quota (shared across every user of
+    // the app, separate from our per-user rate limit above) — a normal,
+    // expected condition under load, not a real failure, so it gets a plain
+    // message instead of surfacing Google's verbose quota-docs error text.
+    if (res.status === 429) throw new Error('The assistant is getting a lot of requests right now — please wait a bit and try again.');
     const errJson = await res.json().catch(() => null);
     throw new Error(errJson?.error?.message ?? `gemini request failed: ${res.status}`);
   }
