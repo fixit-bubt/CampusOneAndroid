@@ -256,67 +256,6 @@ export type Database = {
         }
         Relationships: []
       }
-      appointments: {
-        Row: {
-          code: string
-          created_at: string
-          date: string
-          doctor_id: string
-          id: string
-          slot: string
-          status: string
-          student_id: string
-          token: string
-          updated_at: string
-        }
-        Insert: {
-          code?: string
-          created_at?: string
-          date: string
-          doctor_id: string
-          id?: string
-          slot: string
-          status?: string
-          student_id: string
-          token: string
-          updated_at?: string
-        }
-        Update: {
-          code?: string
-          created_at?: string
-          date?: string
-          doctor_id?: string
-          id?: string
-          slot?: string
-          status?: string
-          student_id?: string
-          token?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "appointments_doctor_id_fkey"
-            columns: ["doctor_id"]
-            isOneToOne: false
-            referencedRelation: "doctors"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "appointments_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "appointments_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "public_profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       blood_pledges: {
         Row: {
           created_at: string
@@ -3218,10 +3157,6 @@ export type Database = {
           name: string
           whatsapp: string
         }[]
-      }
-      booked_slots: {
-        Args: { p_date: string; p_doctor_id: string }
-        Returns: string[]
       }
       campus_issues_feed: {
         Args: never

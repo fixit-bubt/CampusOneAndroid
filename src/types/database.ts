@@ -66,10 +66,6 @@ export type Donor = Omit<Tables<'donors'>, 'blood_group'> & {
 
 export type Doctor = Tables<'doctors'>;
 
-export type Appointment = Omit<Tables<'appointments'>, 'status'> & {
-  status: 'Booked' | 'Confirmed' | 'Completed' | 'Cancelled';
-};
-
 export type BusRoute = Tables<'bus_routes'>;
 
 export type PrayerTime = Omit<Tables<'prayer_times'>, 'key'> & {
