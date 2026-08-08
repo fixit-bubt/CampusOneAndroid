@@ -52,6 +52,7 @@ export function AllReportsScreen({ navigation }: any) {
   const t = useT();
   const toast = useToast();
   const { profile } = useAuth();
+  const isAdmin = profile?.role === 'admin';
   const [reports, setReports] = useState<ReportWithProfile[]>([]);
   const [filter, setFilter] = useState<StatusFilter>('all');
   const [category, setCategory] = useState('All');
@@ -269,13 +270,20 @@ export function AllReportsScreen({ navigation }: any) {
                 </View>
                 {r.status !== 'Rejected' && r.status !== 'Closed' && r.status !== 'Resolved' && (
                   r.assigned_staff_id ? (
-                    <TouchableOpacity
-                      style={[styles.assignBtn, { backgroundColor: C.surface2 }]}
-                      onPress={() => setAssignTarget(r)}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={[styles.assignTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.dash.reassign}</Text>
-                    </TouchableOpacity>
+                    // Reassigning to a THIRD staff member is admin-only server-side
+                    // (a non-admin's update is only permitted when the new
+                    // assigned_staff_id is their own uid) -- hide it for staff so
+                    // the picker isn't a dead end once a report is already assigned
+                    // to someone else.
+                    isAdmin && (
+                      <TouchableOpacity
+                        style={[styles.assignBtn, { backgroundColor: C.surface2 }]}
+                        onPress={() => setAssignTarget(r)}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={[styles.assignTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.dash.reassign}</Text>
+                      </TouchableOpacity>
+                    )
                   ) : (
                     <TouchableOpacity
                       style={[styles.assignBtn, { backgroundColor: C.brand }]}

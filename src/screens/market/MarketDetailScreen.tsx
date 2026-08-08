@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   ActivityIndicator, Alert, Image, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
@@ -31,26 +32,28 @@ export function MarketDetailScreen({ route, navigation }: any) {
   const toast = useToast();
   const isAdmin = profile?.role === 'admin';
   const { listingId } = route.params ?? {};
-  if (!listingId) return null;
   const [listing, setListing] = useState<any>(null);
   const [failed, setFailed] = useState(false);
   const [sellerName, setSellerName] = useState<string | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [contactInfo, setContactInfo] = useState<{ name: string | null; whatsapp: string | null } | null>(null);
 
-  useEffect(() => {
-    (async () => {
-      const { data: l, error } = await supabase
-        .from('listings')
-        .select('*')
-        .eq('id', listingId)
-        .single();
-      if (error || !l) { setFailed(true); return; }
-      setListing(l);
-      // Seller name via the roster RPC — profiles RLS returns only my own row.
-      setSellerName(await personName((l as any).seller_id));
-    })();
+  const load = useCallback(async () => {
+    if (!listingId) { setFailed(true); return; }
+    const { data: l, error } = await supabase
+      .from('listings')
+      .select('*')
+      .eq('id', listingId)
+      .single();
+    if (error || !l) { setFailed(true); return; }
+    setListing(l);
+    // Seller name via the roster RPC — profiles RLS returns only my own row.
+    setSellerName(await personName((l as any).seller_id));
   }, [listingId]);
+
+  // Refresh on focus so returning from the edit screen (MarketPost) shows the
+  // updated title/price/description/photo instead of stale pre-edit data.
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   async function revealContact() {
     if (!listing) return;

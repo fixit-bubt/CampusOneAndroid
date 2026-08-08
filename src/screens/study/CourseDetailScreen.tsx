@@ -181,13 +181,17 @@ export function CourseDetailScreen({ route, navigation }: any) {
       return next;
     });
     if (!user) return;
-    if (isSaved) {
-      await supabase.from('study_bookmarks').delete()
-        .eq('user_id', user.id).eq('item_id', f.id);
-    } else {
-      await supabase.from('study_bookmarks').insert({
-        user_id: user.id, item_type: ITEM_TYPE[tab], item_id: f.id,
+    const { error } = isSaved
+      ? await supabase.from('study_bookmarks').delete().eq('user_id', user.id).eq('item_id', f.id)
+      : await supabase.from('study_bookmarks').insert({ user_id: user.id, item_type: ITEM_TYPE[tab], item_id: f.id });
+    if (error && error.code !== '23505') {
+      // roll back the optimistic toggle on failure
+      setSaved(prev => {
+        const next = new Set(prev);
+        if (isSaved) next.add(f.id); else next.delete(f.id);
+        return next;
       });
+      toast({ type: 'error', title: t.common.error });
     }
   }
 
