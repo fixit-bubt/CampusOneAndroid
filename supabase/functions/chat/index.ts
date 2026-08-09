@@ -16,7 +16,7 @@
 
 const SYSTEM_PROMPT = `You are the CampusOne assistant for BUBT (Bangladesh University of Business & Technology) students. Be concise and helpful.
 
-You have tools to look up live bus schedules, prayer times, lost & found posts, clubs, rides, class/exam routine files, campus events, blood donation requests, job/internship postings, and the faculty directory — use them instead of guessing when asked. If a tool returns no results, say so plainly rather than inventing an answer; lost & found is student-only data, so if a non-student account gets an empty result, mention that it's restricted to students rather than implying nothing exists. Routine lookups return uploaded PDF/image files per department/semester/section, not a per-course class-time schedule — point the user to the file rather than inventing a specific class time you don't actually have.
+You have tools to look up live bus schedules, prayer times, lost & found posts, clubs, rides, class/exam routine files, campus events, blood donation requests, job/internship postings, and the faculty directory — use them instead of guessing when asked. When asked who a department's chairman/head is, call get_faculty with chairmanOnly=true and department set, not a name search. If a tool returns no results, say so plainly rather than inventing an answer; lost & found is student-only data, so if a non-student account gets an empty result, mention that it's restricted to students rather than implying nothing exists. Routine lookups return uploaded PDF/image files per department/semester/section, not a per-course class-time schedule — point the user to the file rather than inventing a specific class time you don't actually have.
 
 For CGPA questions you can calculate directly — you don't need a tool for this. The grading scale is: A+ =4.00, A=3.75, A- =3.50, B+ =3.25, B=3.00, B- =2.75, C+ =2.50, C=2.25, D=2.00, F=0.00. CGPA = sum(credit × grade point) / sum(credit). Show the math when it helps.
 
@@ -24,7 +24,10 @@ For anything else you don't have a tool for, tell the user to check the relevant
 
 The user can attach a photo to their message — e.g. a homework problem, lecture slide, or notice board. Look at it and help directly (explain, solve, transcribe, summarize) rather than asking them to describe it in text instead.`;
 
-const GEMINI_MODEL = 'gemini-flash-latest';
+// flash-lite over flash: same tool-calling + vision support, much higher
+// free-tier RPM/RPD — matters here since one user turn can cost 2-3 calls
+// (MAX_TOOL_ROUNDS below) and the key is shared across every student.
+const GEMINI_MODEL = 'gemini-flash-lite-latest';
 const MAX_TOOL_ROUNDS = 3;
 const MAX_IMAGE_BASE64_CHARS = 6_000_000; // ~4.5MB binary — generous for a compressed photo
 
@@ -139,12 +142,13 @@ const TOOLS = [
       },
       {
         name: 'get_faculty',
-        description: 'Search the BUBT faculty directory by name or department. Returns designation, email, phone (CSE only), office/leave status.',
+        description: 'Search the BUBT faculty directory by name or department, or look up a department\'s chairman. Returns designation, email, phone (CSE only), office/leave status.',
         parameters: {
           type: 'object',
           properties: {
             query: { type: 'string', description: 'Free-text match against the teacher\'s name, e.g. "Rahman"' },
             department: { type: 'string', description: 'Department name, partial match, e.g. "CSE" or "Computer Science"' },
+            chairmanOnly: { type: 'boolean', description: 'Set true when the user asks who the chairman/head of a department is — filters to just the chairman instead of the full faculty list. Combine with department.' },
           },
         },
       },
@@ -156,6 +160,24 @@ const TOOLS = [
 // literal % or _ doesn't turn into a wildcard (same rule as messagesService).
 function escLike(s: string): string {
   return s.replace(/[\\%_]/g, (c) => `\\${c}`);
+}
+
+// Department filters below do a plain ilike substring match against the
+// full department name (e.g. "Department of Computer Science &
+// Engineering") — but students ask for departments by their common
+// abbreviation, and an abbreviation's letters usually aren't a literal
+// substring of the full name ("CSE" doesn't appear in "Computer Science &
+// Engineering"). Resolve known abbreviations to a substring that actually
+// matches before building the filter.
+const DEPT_ABBREVIATIONS: Record<string, string> = {
+  CSE: 'Computer Science',
+  DSE: 'Data Science',
+  EEE: 'Electrical',
+  CE: 'Civil',
+  TE: 'Textile',
+};
+function resolveDeptQuery(input: string): string {
+  return DEPT_ABBREVIATIONS[input.trim().toUpperCase()] ?? input;
 }
 
 // Pulls the "sub" (user id) claim straight out of the already-gateway-verified
@@ -313,12 +335,14 @@ async function runTool(
   if (name === 'get_faculty') {
     const query = str(args.query);
     const department = str(args.department);
+    const chairmanOnly = args.chairmanOnly === true;
     let select = 'name,designation,email,phone,on_leave,is_chairman';
     let filter = '';
     if (query) filter += `&name=ilike.*${encodeURIComponent(escLike(query))}*`;
+    if (chairmanOnly) filter += `&is_chairman=eq.true`;
     if (department) {
       select += ',departments!inner(name)';
-      filter += `&departments.name=ilike.*${encodeURIComponent(escLike(department))}*`;
+      filter += `&departments.name=ilike.*${encodeURIComponent(escLike(resolveDeptQuery(department)))}*`;
     } else {
       select += ',departments(name)';
     }
