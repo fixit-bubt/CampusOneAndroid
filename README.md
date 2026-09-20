@@ -1,4 +1,4 @@
-# CampusOne
+# CampusOne android 
 
 A mobile app for BUBT students built with React Native (Expo) and Supabase.
 
