@@ -5,7 +5,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme } from '../../hooks/useTheme';
 import { useApp } from '../../store/appStore';
@@ -85,9 +84,7 @@ export function LandingScreen({ navigation }: Props) {
 
           {/* Centered hero content */}
           <View style={styles.heroContent}>
-            <View style={styles.heroLogo}>
-              <MaterialCommunityIcons name="school" size={42} color={C.brand} />
-            </View>
+            <LogoMark size={76} shadow />
             <Text style={[styles.appName, { color: C.white, fontFamily: FontFamily.jakartaExtraBold }]}>
               CampusOne
             </Text>

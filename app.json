@@ -14,7 +14,7 @@
       "package": "com.bubt.campusone",
       "googleServicesFile": "./android/app/google-services.json",
       "adaptiveIcon": {
-        "backgroundColor": "#2b5be3",
+        "backgroundColor": "#ffffff",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -32,7 +32,7 @@
           "image": "./assets/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#E6F4FE"
+          "backgroundColor": "#ffffff"
         }
       ],
       "expo-sharing",

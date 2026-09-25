@@ -1,9 +1,5 @@
-// CampusOne logo mark — gradient box + graduation-cap glyph.
-// Used for the in-app logo (auth screens, top bar, sub-headers).
-import { LinearGradient } from 'expo-linear-gradient';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { StyleSheet, type ViewStyle } from 'react-native';
-import { LightColors, darken } from '../../theme';
+import { Image, StyleSheet, View, type ViewStyle } from 'react-native';
+import { LightColors } from '../../theme';
 
 interface LogoMarkProps {
   size?: number;
@@ -13,18 +9,41 @@ interface LogoMarkProps {
 
 export function LogoMark({ size = 56, shadow = true }: LogoMarkProps) {
   return (
-    <LinearGradient
-      colors={[LightColors.brand, darken(LightColors.brand)]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
+    <View
       style={[
         styles.box,
         shadow && styles.shadow,
-        { width: size, height: size, borderRadius: size * 0.3 },
+        { width: size, height: size },
       ]}
     >
-      <MaterialCommunityIcons name="school" size={size * 0.52} color={LightColors.white} />
-    </LinearGradient>
+      <Image
+        source={require('../../../assets/logo-mark.png')}
+        style={{ width: size, height: size, borderRadius: size * 0.22 }}
+        resizeMode="contain"
+      />
+    </View>
+  );
+}
+
+export function LogoFull({ width = 180, height }: { width?: number; height?: number }) {
+  const calculatedHeight = height ?? width * (871 / 1013);
+  return (
+    <Image
+      source={require('../../../assets/logo.png')}
+      style={{ width, height: calculatedHeight }}
+      resizeMode="contain"
+    />
+  );
+}
+
+export function LogoText({ width = 140, height }: { width?: number; height?: number }) {
+  const calculatedHeight = height ?? width * (182 / 1003);
+  return (
+    <Image
+      source={require('../../../assets/logo-text.png')}
+      style={{ width, height: calculatedHeight }}
+      resizeMode="contain"
+    />
   );
 }
 
@@ -35,9 +54,9 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   shadow: {
     shadowColor: LightColors.brand,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
-    shadowRadius: 11,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.28,
+    shadowRadius: 10,
+    elevation: 6,
   } as ViewStyle,
 });

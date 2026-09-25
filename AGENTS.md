@@ -305,3 +305,41 @@ The mobile and web applications are actively pitched and presented to BUBT admin
 - Never use hardcoded light pastel constants (`Accent.tealBg = #e4f5f4`, `greenBg = #e8f8f0`, `grayBg = #f0f2f6`) on cards or badges in dark mode.
 - Use `pillBg(fgHex, isDark)` from `src/theme/colors.ts`, generating `${fgHex}2e` on dark and `${fgHex}18` on light.
 
+---
+
+## 14. Official Logo & Brand Assets (Google Play Ready)
+
+### 14.1 Visual Brand Identity
+- **Mark:** Royal blue squircle container (`#0D3ECF` to `#1B52F8` gradient) featuring a unified C1 monogram:
+  - Sweeping 3D beveled letter "C".
+  - Upright numeral "1" embedded in center space.
+  - Academic graduation mortarboard cap with hanging tassel.
+- **Typography:** Modern geometric sans-serif wordmark "CampusOne" — "Campus" in deep midnight navy (`#0A1C3D`), "One" in royal blue (`#1B52F8`).
+- **Zero AI / Generic Icon Tells:** All generic `@expo/vector-icons` `school` hats and placeholder icons are strictly purged. The official mark is used universally.
+
+### 14.2 Asset Registry & Directory Locations
+- **Master App Icon:** `assets/icon.png` (1024×1024 transparent PNG).
+- **Google Play Console Upload:** `assets/playstore-icon.png` & `assets/playstore-icon-full.png` (512×512 PNG, formatted to official Google Play store requirements).
+- **Android Adaptive Icon Layers:**
+  - Foreground: `assets/android-icon-foreground.png` (1024×1024, emblem centered inside 66% safe keyline zone).
+  - Background: `assets/android-icon-background.png` (1024×1024 `#ffffff`).
+  - Themed Icon: `assets/android-icon-monochrome.png` (1024×1024 white silhouette for Android 13+ Material You).
+- **Splash Screen:** `assets/splash-icon.png` (1024×1024 combination mark centered on `#ffffff`).
+- **In-App Transparent PNGs:** `assets/logo.png` (full mark), `assets/logo-mark.png` (emblem only), `assets/logo-text.png` (wordmark only), `assets/favicon.png` (64×64).
+- **Native Android Prebuilds (`android/app/src/main/res/`):**
+  - Drawables: `drawable-*/splashscreen_logo.png` across mdpi, hdpi, xhdpi, xxhdpi, xxxhdpi.
+  - Mipmaps: `mipmap-*/ic_launcher.webp`, `ic_launcher_round.webp`, `ic_launcher_foreground.webp`, `ic_launcher_background.webp`, `ic_launcher_monochrome.webp` across all 5 densities.
+  - Background colors: `values/colors.xml` (`splashscreen_background`, `iconBackground` set to `#ffffff`).
+
+### 14.3 In-App UI Components
+- `src/components/ui/Logo.tsx`: `LogoMark` renders `assets/logo-mark.png` with dynamic `size` and elevation `shadow`. Also exports `LogoFull` and `LogoText`.
+- `Brand` component in `LandingScreen.tsx` wraps `LogoMark`, automatically providing the new logo to `LandingScreen`, `LoginScreen`, `RegisterScreen`, `OnboardingScreen`, `ResetPasswordScreen`, `VerifyEmailScreen`, and `TopBar`.
+
+---
+
+## 15. Memory Synchronization Mandate
+Whenever the user instructs to "update memorys", the agent MUST synchronously update ALL memory references across both projects:
+1. `CampusOne/AGENTS.md` & `CampusOne/CampusOne/AGENTS.md`
+2. `CampusOne/CLAUDE.md` & `CampusOne/CampusOne/CLAUDE.md`
+3. `fixit-campus/AGENTS.md`, `fixit-campus/agent.md`, and `fixit-campus/CLAUDE.md`
+
