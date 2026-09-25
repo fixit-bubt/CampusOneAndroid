@@ -237,18 +237,23 @@ In `RootNavigator.tsx`, students who have not completed onboarding (`!profile?.s
 ## 11. Android Build, Signing & Deployment
 
 - **Keystore File:** `campusone-release.keystore` (located in the repo root).
-- **Alias & Password:** Configured in `android/app/build.gradle` (`signingConfigs.release`).
+- **Alias & Password:** Configured in `android/app/build.gradle` (`signingConfigs.release` with alias `campusone` and password `campusone2026`).
+- **Local Android SDK & NDK:** Configured via `android/local.properties` (`sdk.dir=C:/Users/dracu/Android/sdk`). NDK version is `27.1.12297006`.
 - **Google Sign-In Dependency:** Google Sign-In is registered against the **release keystore's SHA-1 fingerprint**. Debug builds (`npx expo run:android`) fail Google Sign-In with `DEVELOPER_ERROR`. Real testing must use the release APK.
 - **Build Release APK Locally (No EAS required):**
   ```bash
   cd android
-  ./gradlew assembleRelease
+  .\gradlew assembleRelease
   ```
+- **Release APK Locations:**
+  - Standard output: `android/app/build/outputs/apk/release/app-release.apk` (~51MB, fully signed).
+  - Quick-access root copy: `CampusOne-release.apk`.
 - **Install on Device via ADB:**
   ```bash
-  adb install -r android/app/build/outputs/apk/release/app-release.apk
-  adb shell am start -n com.bubt.campusone/.MainActivity
+  & "C:\Users\dracu\Android\sdk\platform-tools\adb.exe" install -r android/app/build/outputs/apk/release/app-release.apk
+  & "C:\Users\dracu\Android\sdk\platform-tools\adb.exe" shell am start -n com.bubt.campusone/.MainActivity
   ```
+- **Stale Path / Gradle Cache Gotcha:** If Gradle ever reports a missing directory referencing an old machine path (e.g. `C:\Users\Administrator\...`), remove `android/.gradle`, `android/build`, and `android/app/build`, verify `local.properties`, run `.\gradlew --stop`, and rebuild.
 
 ---
 
