@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import {
-  View, Text, TouchableOpacity, ScrollView, StyleSheet,
+  View, Text, TouchableOpacity, ScrollView, StyleSheet, Image,
   RefreshControl, type ViewStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
@@ -9,7 +9,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { SkeletonList, LoadError } from '../../components/ui/LoadState';
-import { FontFamily, Layout , SectorColors, Accent } from '../../theme';
+import { FontFamily, Layout, SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import type { LostFoundItem } from '../../types/database';
@@ -38,7 +38,11 @@ function LFCard({ item, C, isDark, onPress }: { item: LostFoundItem; C: any; isD
   return (
     <TouchableOpacity onPress={onPress} style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]} activeOpacity={0.75}>
       <View style={[styles.thumb, { backgroundColor: bg }]}>
-        <Icon name={CAT_ICON[item.category] ?? 'inbox'} size={22} color={fg} />
+        {item.photo_url ? (
+          <Image source={{ uri: item.photo_url }} style={styles.thumbImg} resizeMode="cover" />
+        ) : (
+          <Icon name={CAT_ICON[item.category] ?? 'inbox'} size={24} color={fg} />
+        )}
       </View>
       <View style={styles.cardBody}>
         <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -242,13 +246,19 @@ const styles = StyleSheet.create({
   } as ViewStyle,
 
   thumb: {
-    width: 48,
-    height: 48,
+    width: 52,
+    height: 52,
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
     flexShrink: 0,
   } as ViewStyle,
+
+  thumbImg: {
+    width: '100%',
+    height: '100%',
+  } as any,
 
   cardBody: { flex: 1 } as ViewStyle,
   cardTitle: { fontSize: 14 } as any,

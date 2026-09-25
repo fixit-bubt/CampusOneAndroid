@@ -1,10 +1,10 @@
 // Campus Today — at-a-glance strip shown on every role's Home. Mini-widgets in
 // a 2-column grid; each hides when it has nothing to show and links into its feature.
 import { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, type ViewStyle } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, type ViewStyle } from 'react-native';
 import { useTheme } from '../hooks/useTheme';
 import { SectorIcon } from './ui/SectorIcon';
-import { FontFamily, type SectorKey } from '../theme';
+import { FontFamily, Layout, type SectorKey } from '../theme';
 import { supabase } from '../lib/supabase';
 import { localToday } from '../utils/format';
 
@@ -93,51 +93,59 @@ export function CampusToday({ navigation, hide }: { navigation: any; hide?: stri
 
   useEffect(() => { load(); }, [load]);
 
-  // Some roles (e.g. maintenance staff) hide sectors they no longer have access to.
   const shown = hide?.length ? widgets.filter(w => !hide.includes(w.sector)) : widgets;
   if (shown.length === 0) return null;
 
   return (
-    <View>
+    <View style={styles.container}>
       <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
         CAMPUS TODAY
       </Text>
-      <View style={styles.grid}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.scrollList}
+      >
         {shown.map(w => (
           <TouchableOpacity
             key={w.sector}
-            style={[styles.cell, { backgroundColor: C.surface, borderColor: C.border }]}
+            style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}
             onPress={() => navigation.navigate(w.route)}
             activeOpacity={0.75}
           >
-            <SectorIcon sector={w.sector} size="sm" dark={isDark} />
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={[styles.title, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                {w.title}
-              </Text>
-              <Text style={[styles.sub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+            <View style={styles.cardHeader}>
+              <SectorIcon sector={w.sector} size="sm" dark={isDark} />
+              <Text style={[styles.sub, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                 {w.sub}
               </Text>
             </View>
+            <Text style={[styles.title, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={2}>
+              {w.title}
+            </Text>
           </TouchableOpacity>
         ))}
-      </View>
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  label: { fontSize: 11, letterSpacing: 0.8, marginTop: 24, marginBottom: 9 } as any,
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 } as ViewStyle,
-  cell: {
-    width: '48.5%',
+  container: { marginTop: 8 },
+  label: { fontSize: 11, letterSpacing: 0.8, marginBottom: 11, marginLeft: 2 } as any,
+  scrollList: { flexDirection: 'row', gap: 10, paddingRight: 16 } as ViewStyle,
+  card: {
+    width: 210,
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    justifyContent: 'space-between',
+    gap: 10,
+  } as ViewStyle,
+  cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 9,
-    padding: 11,
-    borderRadius: 14,
-    borderWidth: 1,
+    gap: 8,
   } as ViewStyle,
-  title: { fontSize: 12.5 } as any,
-  sub: { fontSize: 10.5, marginTop: 1 } as any,
+  title: { fontSize: 13.5, lineHeight: 18 } as any,
+  sub: { fontSize: 11.5, flex: 1 } as any,
 });

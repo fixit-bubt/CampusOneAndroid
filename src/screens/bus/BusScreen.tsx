@@ -35,6 +35,16 @@ interface RouteForm {
 const csv = (a: string[] | null | undefined) => (a ?? []).join(', ');
 const uncsv = (s: string) => s.split(',').map(x => x.trim()).filter(Boolean);
 
+function format12Hour(time24: string): string {
+  if (!time24 || !time24.includes(':')) return time24;
+  const [hStr, mStr] = time24.split(':');
+  let h = parseInt(hStr, 10);
+  if (isNaN(h)) return time24;
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  return `${String(h).padStart(2, '0')}:${mStr} ${ampm}`;
+}
+
 export function BusScreen({ navigation }: any) {
   const { C } = useTheme();
   const toast = useToast();
@@ -128,7 +138,8 @@ export function BusScreen({ navigation }: any) {
     const now = new Date();
     const hhmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     const upcoming = (route.to_departures ?? []).find(d => d > hhmm);
-    return upcoming ?? (route.to_departures ?? [])[0] ?? '--:--';
+    const chosen = upcoming ?? (route.to_departures ?? [])[0];
+    return chosen ? format12Hour(chosen) : '--:--';
   }
 
   const sorted = [...routes].sort((a, b) =>
@@ -179,7 +190,7 @@ export function BusScreen({ navigation }: any) {
                       {r.name}
                     </Text>
                     <Text style={[styles.cardStops, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                      {r.stops.length} stops
+                      {(r.stops ?? []).length} stops
                     </Text>
                     <View style={styles.cardMeta}>
                       <View style={[styles.timePill, { backgroundColor: `${BUS_COLOR}1e` }]}>

@@ -17,7 +17,7 @@ import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { useToast } from '../../components/ui/Toast';
 import { connectErrorKey } from '../../services/connectionsService';
-import { FontFamily, Layout, Accent } from '../../theme';
+import { FontFamily, Layout, Accent, pillBg } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { openUrl, waHref } from '../../utils/link';
 
@@ -44,7 +44,7 @@ const STATUS_MAP: Record<string, ConnState> = {
 };
 
 export function StudentProfileScreen({ route, navigation }: any) {
-  const { C } = useTheme();
+  const { C, isDark } = useTheme();
   const t = useT();
   const { user } = useAuth();
   const toast = useToast();
@@ -140,7 +140,7 @@ export function StudentProfileScreen({ route, navigation }: any) {
           <View style={styles.connArea}>
             {student.connState === 'connected' && (
               <View style={styles.connectedRow}>
-                <View style={[styles.statePill, { backgroundColor: Accent.tealBg }]}>
+                <View style={[styles.statePill, { backgroundColor: pillBg(Accent.teal, isDark) }]}>
                   <View style={[styles.stateDot, { backgroundColor: Accent.teal }]} />
                   <Text style={[styles.statePillTxt, { color: Accent.teal, fontFamily: FontFamily.jakartaBold }]}>
                     {t.directory2.connected}

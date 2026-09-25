@@ -16,6 +16,7 @@ import { personName } from '../../services/peopleService';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
+import { ContactSheet } from '../../components/ui/ContactSheet';
 
 const MK_CATS: Record<string, { icon: string; fg: string; label: string }> = {
   books:       { icon: 'book-open', fg: Accent.blue,   label: 'Books'       },
@@ -37,6 +38,7 @@ export function MarketDetailScreen({ route, navigation }: any) {
   const [sellerName, setSellerName] = useState<string | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [contactInfo, setContactInfo] = useState<{ name: string | null; whatsapp: string | null } | null>(null);
+  const [contactSheetOpen, setContactSheetOpen] = useState(false);
 
   const load = useCallback(async () => {
     if (!listingId) { setFailed(true); return; }
@@ -61,7 +63,10 @@ export function MarketDetailScreen({ route, navigation }: any) {
     if (error) { toast({ type: 'error', title: t.common.error }); return; }
     setRevealed(true);
     const row = Array.isArray(c) ? c[0] : c;
-    if (row) setContactInfo({ name: row.name ?? null, whatsapp: row.whatsapp ?? null });
+    if (row) {
+      setContactInfo({ name: row.name ?? null, whatsapp: row.whatsapp ?? null });
+      setContactSheetOpen(true);
+    }
   }
 
   async function markSold() {
@@ -71,10 +76,10 @@ export function MarketDetailScreen({ route, navigation }: any) {
   }
 
   function deleteListing() {
-    Alert.alert('Delete listing', 'Remove this listing permanently?', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t.market2.deleteListing, 'Remove this listing permanently?', [
+      { text: t.common.cancel, style: 'cancel' },
       {
-        text: 'Delete', style: 'destructive',
+        text: t.common.delete ?? 'Delete', style: 'destructive',
         onPress: async () => {
           const { error } = await supabase.from('listings').delete().eq('id', listingId);
           if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
@@ -208,17 +213,26 @@ export function MarketDetailScreen({ route, navigation }: any) {
             </TouchableOpacity>
           </View>
         ) : revealed ? (
-          <View style={[styles.contactCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <Text style={[styles.contactLabel, { color: Accent.teal, fontFamily: FontFamily.jakartaBold }]}>{t.market2.contactInfo}</Text>
-            <View style={styles.contactRow}>
-              <Feather name="user" size={15} color={C.textMuted} />
-              <Text style={[styles.contactTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>{contactInfo?.name ?? sellerName ?? t.market2.seller}</Text>
+          <TouchableOpacity
+            style={[styles.contactCard, { backgroundColor: C.surface, borderColor: Accent.teal }]}
+            onPress={() => setContactSheetOpen(true)}
+            activeOpacity={0.8}
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.contactLabel, { color: Accent.teal, fontFamily: FontFamily.jakartaBold }]}>{t.market2.contactInfo}</Text>
+              <View style={styles.contactRow}>
+                <Feather name="user" size={15} color={C.textMuted} />
+                <Text style={[styles.contactTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>{contactInfo?.name ?? sellerName ?? t.market2.seller}</Text>
+              </View>
+              <View style={styles.contactRow}>
+                <Feather name="phone" size={15} color={C.textMuted} />
+                <Text style={[styles.contactTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>{contactInfo?.whatsapp ?? t.market2.whatsappNotShared}</Text>
+              </View>
             </View>
-            <View style={styles.contactRow}>
-              <Feather name="phone" size={15} color={C.textMuted} />
-              <Text style={[styles.contactTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>{contactInfo?.whatsapp ?? t.market2.whatsappNotShared}</Text>
+            <View style={[styles.contactCallBtn, { backgroundColor: C.successBg }]}>
+              <Feather name="phone" size={16} color={C.success} />
             </View>
-          </View>
+          </TouchableOpacity>
         ) : !isSold ? (
           <TouchableOpacity
             style={[styles.actionBtn, { backgroundColor: C.brand }]}
@@ -244,6 +258,13 @@ export function MarketDetailScreen({ route, navigation }: any) {
 
         <View style={{ height: 26 }} />
       </ScrollView>
+      <ContactSheet
+        visible={contactSheetOpen}
+        onClose={() => setContactSheetOpen(false)}
+        title={t.market2.contactInfo}
+        name={contactInfo?.name ?? sellerName ?? t.market2.seller}
+        phone={contactInfo?.whatsapp}
+      />
     </SafeAreaView>
   );
 }
@@ -278,7 +299,8 @@ const styles = StyleSheet.create({
   halfBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, height: 44, borderRadius: 14, borderWidth: 1 } as ViewStyle,
   halfBtnTxt: { fontSize: 14 } as any,
 
-  contactCard: { padding: 14, borderRadius: 14, borderWidth: 1, gap: 8, marginTop: 18 } as ViewStyle,
+  contactCard: { flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 14, borderWidth: 1, gap: 8, marginTop: 18 } as ViewStyle,
+  contactCallBtn: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
   contactLabel: { fontSize: 12, marginBottom: 2 } as any,
   contactRow: { flexDirection: 'row', alignItems: 'center', gap: 8 } as ViewStyle,
   contactTxt: { fontSize: 13.5 } as any,

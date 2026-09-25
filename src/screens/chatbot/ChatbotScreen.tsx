@@ -6,7 +6,7 @@
 import { useState, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView,
-  Platform, ActivityIndicator, StyleSheet, Alert, Image, type ViewStyle, type TextStyle, type ImageStyle,
+  ScrollView, Platform, ActivityIndicator, StyleSheet, Alert, Image, type ViewStyle, type TextStyle, type ImageStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -36,6 +36,13 @@ interface Bubble {
 // size cap, without a visible quality hit for "photo of a homework problem".
 const CHAT_IMAGE_MAX_DIM = 1280;
 const CHAT_IMAGE_QUALITY = 0.6;
+
+const PROMPT_SUGGESTIONS = [
+  { icon: 'compass', text: 'When does the Uttara campus bus leave?' },
+  { icon: 'clock', text: "What are today's prayer times on campus?" },
+  { icon: 'award', text: 'How is CGPA calculated at BUBT?' },
+  { icon: 'briefcase', text: 'Are there student jobs or internships available?' },
+];
 
 export function ChatbotScreen({ navigation, route }: any) {
   const { C } = useTheme();
@@ -246,17 +253,40 @@ export function ChatbotScreen({ navigation, route }: any) {
             <ActivityIndicator color={C.brand} />
           </View>
         ) : rendered.length === 0 ? (
-          // Rendered as a plain sibling, never as the inverted FlatList's
-          // ListEmptyComponent — RN auto-counter-flips renderItem cells for
-          // an inverted list, but not ListEmptyComponent, so putting text
-          // there needs a manual scaleY:-1 that doesn't reliably cancel out
-          // on newer RN/Fabric and ends up rendering upside-down instead.
-          <View style={styles.center}>
-            <Feather name="message-circle" size={28} color={C.textMuted} />
-            <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+          <ScrollView
+            contentContainerStyle={styles.emptyContainer}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={[styles.botIconWrap, { backgroundColor: `${C.brand}18` }]}>
+              <Feather name="cpu" size={32} color={C.brand} />
+            </View>
+            <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              {t.chatbot.title}
+            </Text>
+            <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
               {t.chatbot.emptyState}
             </Text>
-          </View>
+
+            <View style={styles.suggestionsWrap}>
+              {PROMPT_SUGGESTIONS.map((s, i) => (
+                <TouchableOpacity
+                  key={i}
+                  style={[styles.suggestionCard, { backgroundColor: C.surface, borderColor: C.border }]}
+                  onPress={() => setText(s.text)}
+                  activeOpacity={0.75}
+                >
+                  <View style={[styles.suggestionIcon, { backgroundColor: C.surface2 }]}>
+                    <Feather name={s.icon as any} size={15} color={C.brand} />
+                  </View>
+                  <Text style={[styles.suggestionTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>
+                    {s.text}
+                  </Text>
+                  <Feather name="arrow-up-right" size={15} color={C.textMuted} />
+                </TouchableOpacity>
+              ))}
+            </View>
+          </ScrollView>
         ) : (
           <FlatList
             inverted
@@ -330,7 +360,14 @@ export function ChatbotScreen({ navigation, route }: any) {
 const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 10 } as ViewStyle,
-  emptyTxt: { fontSize: 13.5, textAlign: 'center' } as TextStyle,
+  emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20, paddingTop: 36, paddingBottom: 20 } as ViewStyle,
+  botIconWrap: { width: 64, height: 64, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 6 } as ViewStyle,
+  emptyTitle: { fontSize: 18, marginTop: 4 } as TextStyle,
+  emptyTxt: { fontSize: 13.5, textAlign: 'center', marginTop: 4, maxWidth: 280 } as TextStyle,
+  suggestionsWrap: { width: '100%', gap: 9, marginTop: 26 } as ViewStyle,
+  suggestionCard: { flexDirection: 'row', alignItems: 'center', gap: 11, padding: 13, borderRadius: 14, borderWidth: 1 } as ViewStyle,
+  suggestionIcon: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
+  suggestionTxt: { flex: 1, fontSize: 13.5, lineHeight: 18 } as TextStyle,
 
   headerBtns: { flexDirection: 'row', gap: 8 } as ViewStyle,
   headerBtn: { width: 36, height: 36, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' } as ViewStyle,

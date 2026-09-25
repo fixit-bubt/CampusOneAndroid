@@ -269,23 +269,27 @@ export function AdminDashboardScreen({ navigation }: any) {
           </View>
         )}
 
-        {/* Manage tiles */}
+        {/* Manage rows */}
         <CollapsibleSection title={t.dash.manage} icon="layers">
-          <View style={styles.tilesGrid}>
+          <View style={styles.manageList}>
             {MANAGE_TILES.map((tile, i) => {
               const tileBg = isDark ? `${tile.fg}2e` : `${tile.fg}14`;
               return (
                 <TouchableOpacity
                   key={i}
-                  style={[styles.tile, { backgroundColor: C.surface, borderColor: C.border }]}
+                  style={[styles.manageRow, { backgroundColor: C.surface, borderColor: C.border }]}
                   onPress={() => navigation.navigate(tile.route)}
                   activeOpacity={0.75}
                 >
-                  <View style={[styles.tileIcon, { backgroundColor: tileBg }]}>
-                    <Icon name={tile.icon} size={17} color={tile.fg} />
+                  <View style={[styles.manageIcon, { backgroundColor: tileBg }]}>
+                    <Icon name={tile.icon} size={18} color={tile.fg} />
                   </View>
-                  <Text style={[styles.tileLabel, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.dash[tile.tk] as string}</Text>
-                  <Text style={[styles.tileSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{tile.sub}</Text>
+                  <View style={styles.manageInfo}>
+                    <Text style={[styles.manageLabel, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                      {t.dash[tile.tk] as string}
+                    </Text>
+                  </View>
+                  <Icon name="chevR" size={16} color={C.textMuted} />
                 </TouchableOpacity>
               );
             })}
@@ -381,11 +385,25 @@ const styles = StyleSheet.create({
   actionTxt: { fontSize: 13 } as any,
   allClear: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderRadius: 14, borderWidth: 1 } as ViewStyle,
   allClearTxt: { fontSize: 14 } as any,
-  tilesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 } as ViewStyle,
-  tile: { width: '47.5%', padding: 13, borderRadius: 14, borderWidth: 1, gap: 6 } as ViewStyle,
-  tileIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
-  tileLabel: { fontSize: 13.5 } as any,
-  tileSub: { fontSize: 12 } as any,
+  manageList: { gap: 8 } as ViewStyle,
+  manageRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 13,
+    borderRadius: 14,
+    borderWidth: 1,
+  } as ViewStyle,
+  manageIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  } as ViewStyle,
+  manageInfo: { flex: 1 } as ViewStyle,
+  manageLabel: { fontSize: 14 } as any,
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' } as ViewStyle,
   sheet: { borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 36 } as ViewStyle,
   sheetTitle: { fontSize: 16, marginBottom: 12 } as any,

@@ -68,3 +68,21 @@ export function waHref(phone: string | null | undefined): string | null {
   if (d.length < 11) return null;
   return `https://wa.me/${d}`;
 }
+
+/**
+ * Open phone dialer directly with the given number.
+ */
+export async function callPhone(phone: string | null | undefined): Promise<boolean> {
+  const d = (phone ?? '').replace(/[^0-9+]/g, '');
+  if (!d) return false;
+  return openUrl(`tel:${d}`);
+}
+
+/**
+ * Open WhatsApp chat with the given phone number directly.
+ */
+export async function openWhatsApp(phone: string | null | undefined): Promise<boolean> {
+  const href = waHref(phone);
+  if (!href) return false;
+  return openUrl(href);
+}

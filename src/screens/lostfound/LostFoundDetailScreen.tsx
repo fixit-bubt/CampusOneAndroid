@@ -24,6 +24,7 @@ import { useToast } from '../../components/ui/Toast';
 import { openUrl, waHref } from '../../utils/link';
 import { rankMatches, type MatchItem } from '../../utils/lostFoundMatch';
 import { uploadProof, getSignedUrl } from '../../utils/storage';
+import { ContactSheet } from '../../components/ui/ContactSheet';
 import { BUCKETS } from '../../constants/app';
 import type { LostFoundItem } from '../../types/database';
 
@@ -80,6 +81,7 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
   const [showClaim, setShowClaim] = useState(false);
   const [busy, setBusy] = useState(false);
   const [deciding, setDeciding] = useState<string | null>(null);
+  const [contactSheetOpen, setContactSheetOpen] = useState(false);
 
   const isMine = item?.poster_id === user?.id;
   const myClaim = claims.find(c => c.claimant_id === user?.id) ?? null;
@@ -260,9 +262,17 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
         contentContainerStyle={[styles.content, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Large category thumb */}
+        {/* Large category thumb / photo */}
         <View style={[styles.thumbLg, { backgroundColor: bg }]}>
-          <Icon name={CAT_ICON[item.category] ?? 'inbox'} size={48} color={fg} />
+          {item.photo_url ? (
+            <Image
+              source={{ uri: item.photo_url }}
+              style={styles.heroImg}
+              resizeMode="cover"
+            />
+          ) : (
+            <Icon name={CAT_ICON[item.category] ?? 'inbox'} size={48} color={fg} />
+          )}
           <View style={[styles.typeOverlay, isLost ? { backgroundColor: C.dangerBg } : { backgroundColor: C.successBg }]}>
             <View style={[styles.typeDot, { backgroundColor: isLost ? C.danger : C.success }]} />
             <Text style={[styles.typeText, { color: isLost ? C.danger : C.success, fontFamily: FontFamily.jakartaBold }]}>
@@ -339,39 +349,32 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
             <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
               {t.lostfound.contactUnlocked.toUpperCase()}
             </Text>
-            <View style={[styles.contactCard, { backgroundColor: C.surface, borderColor: C.success }]}>
+            <TouchableOpacity
+              style={[styles.contactCard, { backgroundColor: C.surface, borderColor: C.success }]}
+              onPress={() => setContactSheetOpen(true)}
+              activeOpacity={0.8}
+            >
               <Avatar uri={contact.avatar_url} name={contact.full_name} size="sm" />
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text style={[styles.byName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                   {contact.full_name}
                 </Text>
-                {contact.email ? (
+                {contact.whatsapp ? (
+                  <Text style={[styles.contactLine, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                    {contact.whatsapp}
+                  </Text>
+                ) : contact.email ? (
                   <Text style={[styles.contactLine, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
                     {contact.email}
                   </Text>
                 ) : null}
               </View>
               <View style={styles.contactBtns}>
-                {contact.email ? (
-                  <TouchableOpacity
-                    style={[styles.contactBtn, { backgroundColor: C.surface2 }]}
-                    onPress={() => openUrl(`mailto:${contact.email}`)}
-                    activeOpacity={0.75}
-                  >
-                    <Icon name="mail" size={15} color={C.text} />
-                  </TouchableOpacity>
-                ) : null}
-                {waHref(contact.whatsapp) ? (
-                  <TouchableOpacity
-                    style={[styles.contactBtn, { backgroundColor: C.successBg }]}
-                    onPress={() => openUrl(waHref(contact.whatsapp))}
-                    activeOpacity={0.75}
-                  >
-                    <Icon name="chat" size={15} color={C.success} />
-                  </TouchableOpacity>
-                ) : null}
+                <View style={[styles.contactBtn, { backgroundColor: C.successBg }]}>
+                  <Icon name="phone" size={15} color={C.success} />
+                </View>
               </View>
-            </View>
+            </TouchableOpacity>
           </>
         )}
 
@@ -601,6 +604,16 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
 
         <View style={{ height: 26 }} />
       </ScrollView>
+      {contact && (
+        <ContactSheet
+          visible={contactSheetOpen}
+          onClose={() => setContactSheetOpen(false)}
+          title={t.lostfound.contactUnlocked}
+          name={contact.full_name}
+          phone={contact.whatsapp}
+          email={contact.email}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -611,12 +624,17 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
 
   thumbLg: {
-    height: 160,
+    height: 190,
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
+    overflow: 'hidden',
   } as ViewStyle,
+  heroImg: {
+    width: '100%',
+    height: '100%',
+  } as any,
 
   typeOverlay: {
     position: 'absolute',

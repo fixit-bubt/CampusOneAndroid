@@ -16,6 +16,7 @@ import { FontFamily, Layout , SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { fetchPeople } from '../../services/peopleService';
 import { useAuth } from '../../store/authStore';
+import { ContactSheet } from '../../components/ui/ContactSheet';
 
 const RIDE_COLOR = SectorColors.ride;
 const RIDE_BG    = `${SectorColors.ride}1e`;
@@ -34,6 +35,7 @@ export function RideDetailScreen({ route, navigation }: any) {
   const [requested, setRequested] = useState(false);
   const [takenCount, setTakenCount] = useState(0);
   const [requesters, setRequesters] = useState<{ requester_id: string; full_name: string; whatsapp?: string | null }[]>([]);
+  const [contactTarget, setContactTarget] = useState<{ name: string; phone: string } | null>(null);
 
   const load = useCallback(async () => {
     if (!rideId) { setLoadFailed(true); return; }
@@ -96,6 +98,8 @@ export function RideDetailScreen({ route, navigation }: any) {
     const row = Array.isArray(data) ? data[0] : data;
     if (row?.whatsapp) {
       setRequesters(prev => prev.map(r => (r.requester_id === requesterId ? { ...r, whatsapp: row.whatsapp } : r)));
+      const person = requesters.find(r => r.requester_id === requesterId);
+      setContactTarget({ name: person?.full_name ?? t.rides2.contact, phone: row.whatsapp });
     } else {
       toast({ type: 'info', title: t.rides2.noContactTitle, message: t.rides2.noContactBody });
     }
@@ -130,7 +134,12 @@ export function RideDetailScreen({ route, navigation }: any) {
         p_target: ride.driver_id,
       });
       const row = Array.isArray(c) ? c[0] : c;
-      if (row) setContact(row);
+      if (row) {
+        setContact(row);
+        if (row.whatsapp) {
+          setContactTarget({ name: driverName ?? t.rides2.driver, phone: row.whatsapp });
+        }
+      }
     } else {
       toast({ type: 'error', title: 'Error', message: error.message });
     }
@@ -211,7 +220,12 @@ export function RideDetailScreen({ route, navigation }: any) {
 
         {/* Driver card */}
         <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>{t.rides2.driver}</Text>
-        <View style={[styles.driverCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+        <TouchableOpacity
+          style={[styles.driverCard, { backgroundColor: C.surface, borderColor: requested && contact?.whatsapp ? SectorColors.ride : C.border }]}
+          disabled={!contact?.whatsapp}
+          onPress={() => contact?.whatsapp && setContactTarget({ name: driverName ?? t.rides2.driver, phone: contact.whatsapp })}
+          activeOpacity={0.8}
+        >
           <Avatar name={driverName ?? undefined} size="sm" />
           <View style={{ flex: 1 }}>
             <Text style={[styles.driverName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -220,7 +234,7 @@ export function RideDetailScreen({ route, navigation }: any) {
             {requested && contact?.whatsapp && (
               <View style={styles.contactRow}>
                 <Feather name="phone" size={13} color={C.textMuted} />
-                <Text style={[styles.contactTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                <Text style={[styles.contactTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>
                   {contact.whatsapp}
                 </Text>
               </View>
@@ -231,7 +245,12 @@ export function RideDetailScreen({ route, navigation }: any) {
               </Text>
             )}
           </View>
-        </View>
+          {requested && contact?.whatsapp && (
+            <View style={[styles.callIconBtn, { backgroundColor: C.successBg }]}>
+              <Feather name="phone" size={15} color={C.success} />
+            </View>
+          )}
+        </TouchableOpacity>
 
         {/* Notes + recurring */}
         {ride.notes ? (
@@ -278,9 +297,16 @@ export function RideDetailScreen({ route, navigation }: any) {
                         {r.full_name}
                       </Text>
                       {r.whatsapp ? (
-                        <Text style={[styles.contactTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                          {r.whatsapp}
-                        </Text>
+                        <TouchableOpacity
+                          style={[styles.revealBtn, { backgroundColor: C.successBg }]}
+                          onPress={() => setContactTarget({ name: r.full_name, phone: r.whatsapp! })}
+                          activeOpacity={0.75}
+                        >
+                          <Feather name="phone" size={12} color={C.success} />
+                          <Text style={[styles.revealTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
+                            {r.whatsapp}
+                          </Text>
+                        </TouchableOpacity>
                       ) : (
                         <TouchableOpacity
                           style={[styles.revealBtn, { backgroundColor: C.surface2 }]}
@@ -349,6 +375,13 @@ export function RideDetailScreen({ route, navigation }: any) {
 
         <View style={{ height: 26 }} />
       </ScrollView>
+      <ContactSheet
+        visible={!!contactTarget}
+        onClose={() => setContactTarget(null)}
+        title={t.rides2.contact}
+        name={contactTarget?.name ?? ''}
+        phone={contactTarget?.phone}
+      />
     </SafeAreaView>
   );
 }
@@ -371,8 +404,9 @@ const styles = StyleSheet.create({
 
   sectionLabel: { fontSize: 11, letterSpacing: 0.8, marginTop: 18, marginBottom: 8 } as any,
 
-  driverCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 11, padding: 14, borderRadius: 14, borderWidth: 1 } as ViewStyle,
+  driverCard: { flexDirection: 'row', alignItems: 'center', gap: 11, padding: 14, borderRadius: 14, borderWidth: 1 } as ViewStyle,
   driverName: { fontSize: 14 } as any,
+  callIconBtn: { width: 36, height: 36, borderRadius: 11, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
   contactRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 } as ViewStyle,
   contactTxt: { fontSize: 12 } as any,
 

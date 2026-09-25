@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import {
-  View, Text, TouchableOpacity, ScrollView, StyleSheet,
+  View, Text, TouchableOpacity, ScrollView, StyleSheet, Image,
   TextInput, KeyboardAvoidingView, Platform, ActivityIndicator,
   type ViewStyle,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
@@ -13,6 +14,7 @@ import { FontFamily, Layout , SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { localToday } from '../../utils/format';
 import { rankMatches, type MatchItem } from '../../utils/lostFoundMatch';
+import { uploadPhoto } from '../../utils/storage';
 import type { LostFoundItem } from '../../types/database';
 import { useT } from '../../i18n';
 
@@ -42,6 +44,8 @@ export function PostItemFormScreen({ route, navigation }: any) {
   const [desc, setDesc]   = useState('');
   const [busy, setBusy]   = useState(false);
   const [err, setErr]     = useState('');
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [existingPhotoUrl, setExistingPhotoUrl] = useState<string | null>(null);
   const [matches, setMatches] = useState<MatchItem[]>([]);
 
   // Pre-fill fields when editing an existing item
@@ -50,7 +54,7 @@ export function PostItemFormScreen({ route, navigation }: any) {
     (async () => {
       const { data } = await supabase
         .from('lost_found_items')
-        .select('type, category, title, location, description')
+        .select('type, category, title, location, description, photo_url')
         .eq('id', editId)
         .single();
       if (data) {
@@ -59,6 +63,7 @@ export function PostItemFormScreen({ route, navigation }: any) {
         setTitle(data.title ?? '');
         setLoc(data.location ?? '');
         setDesc(data.description ?? '');
+        setExistingPhotoUrl(data.photo_url ?? null);
       }
     })();
   }, [editId]);
@@ -89,12 +94,36 @@ export function PostItemFormScreen({ route, navigation }: any) {
     return () => { cancelled = true; clearTimeout(handle); };
   }, [cat, title, desc, type, user, editId]);
 
+  async function pickPhoto() {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      setErr('Permission to access photo library is required');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setPhotoUri(result.assets[0].uri);
+    }
+  }
+
   const ok = !!cat && title.trim().length > 0;
 
   async function handleSubmit() {
     if (!ok || busy || !cat || !user) return;
     setBusy(true);
     setErr('');
+    let photoUrl: string | null = existingPhotoUrl;
+    if (photoUri) {
+      const up = await uploadPhoto(photoUri, 'lostfound', user.id);
+      if (up.success) {
+        photoUrl = up.url;
+      }
+    }
     let error: any;
     if (isEdit) {
       ({ error } = await supabase
@@ -105,6 +134,7 @@ export function PostItemFormScreen({ route, navigation }: any) {
           category:    cat,
           description: desc.trim() || title.trim(),
           location:    loc.trim() || 'Campus',
+          photo_url:   photoUrl,
         })
         .eq('id', editId));
     } else {
@@ -117,6 +147,7 @@ export function PostItemFormScreen({ route, navigation }: any) {
         item_date:   localToday(),
         status:      'Open',
         poster_id:   user.id,
+        photo_url:   photoUrl,
       }));
     }
     setBusy(false);
@@ -254,6 +285,43 @@ export function PostItemFormScreen({ route, navigation }: any) {
             textAlignVertical="top"
           />
 
+          {/* Photo upload */}
+          <Text style={[styles.label, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>Photo (Optional)</Text>
+          {photoUri || existingPhotoUrl ? (
+            <View style={[styles.photoCard, { borderColor: C.border, backgroundColor: C.surface }]}>
+              <Image source={{ uri: photoUri || existingPhotoUrl! }} style={styles.photoThumb} resizeMode="cover" />
+              <View style={styles.photoActions}>
+                <TouchableOpacity
+                  style={[styles.photoBtn, { backgroundColor: C.surface2 }]}
+                  onPress={pickPhoto}
+                  activeOpacity={0.75}
+                >
+                  <Icon name="image" size={14} color={C.text} />
+                  <Text style={[styles.photoBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Change</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.photoBtn, { backgroundColor: C.dangerBg }]}
+                  onPress={() => { setPhotoUri(null); setExistingPhotoUrl(null); }}
+                  activeOpacity={0.75}
+                >
+                  <Icon name="trash" size={14} color={C.danger} />
+                  <Text style={[styles.photoBtnTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>Remove</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={[styles.photoUploadBtn, { borderColor: C.border, backgroundColor: C.surface }]}
+              onPress={pickPhoto}
+              activeOpacity={0.75}
+            >
+              <Icon name="camera" size={20} color={C.brand} />
+              <Text style={[styles.photoUploadTxt, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>
+                Add Photo (Optional)
+              </Text>
+            </TouchableOpacity>
+          )}
+
           {!!err && <Text style={[styles.errText, { color: C.danger }]}>{err}</Text>}
 
           <TouchableOpacity
@@ -363,4 +431,41 @@ const styles = StyleSheet.create({
 
   btnRow: { flexDirection: 'row', alignItems: 'center', gap: 8 } as ViewStyle,
   btnTxt: { fontSize: 15, color: '#fff' } as any,
+
+  photoUploadBtn: {
+    height: 52,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  } as ViewStyle,
+  photoUploadTxt: { fontSize: 13.5 } as any,
+
+  photoCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    overflow: 'hidden',
+  } as ViewStyle,
+  photoThumb: {
+    width: '100%',
+    height: 160,
+  } as any,
+  photoActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 8,
+    padding: 10,
+  } as ViewStyle,
+  photoBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 9,
+  } as ViewStyle,
+  photoBtnTxt: { fontSize: 12 } as any,
 });

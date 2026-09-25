@@ -153,3 +153,7 @@ export const Accent = {
   tealBg:  '#e4f5f4',   // teal pill bg (resolved/jobs)
   greenBg: '#e8f8f0',   // green pill bg (approve/success chips)
 } as const;
+
+export function pillBg(fgHex: string, isDark: boolean): string {
+  return isDark ? `${fgHex}2e` : `${fgHex}18`;
+}

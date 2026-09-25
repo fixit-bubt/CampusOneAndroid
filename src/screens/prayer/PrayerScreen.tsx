@@ -18,8 +18,16 @@ import { supabase } from '../../lib/supabase';
 
 const PRAYER_GREEN = SectorColors.prayer;
 
-// Sehri/Iftar strip shown during Ramadan. Sehri ends at Fajr azan; Iftar at Maghrib.
-const SHOW_RAMADAN_STRIP = true;
+function isRamadanNow(): boolean {
+  try {
+    const islamicMonth = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura', { month: 'numeric' }).format(new Date());
+    return parseInt(islamicMonth, 10) === 9;
+  } catch {
+    return false;
+  }
+}
+
+const SHOW_RAMADAN_STRIP = isRamadanNow();
 
 interface PrayerTime {
   key: string;
@@ -132,13 +140,13 @@ export function PrayerScreen({ navigation }: any) {
   }
 
   function deleteMusallah(m: Musallah) {
-    Alert.alert('Delete location', `Remove "${m.name}"?`, [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t.common.delete ?? 'Delete', `Remove "${m.name}"?`, [
+      { text: t.common.cancel, style: 'cancel' },
       {
-        text: 'Delete', style: 'destructive',
+        text: t.common.delete ?? 'Delete', style: 'destructive',
         onPress: async () => {
           const { error } = await supabase.from('musallah_locations').delete().eq('id', m.id);
-          if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }
+          if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
           load();
         },
       },

@@ -19,6 +19,7 @@ import {
   getBloodFeed, pledgeToRequest, markDonatedToday as markDonated,
   getDonorContact, getRequesterContact, type DonorWithName,
 } from '../../services/bloodService';
+import { ContactSheet } from '../../components/ui/ContactSheet';
 import type { BloodRequest } from '../../types/database';
 
 type Tab = 'requests' | 'donors';
@@ -31,14 +32,14 @@ function urgencyTone(C: any, urgency: string): { fg: string; bg: string } {
   switch (urgency) {
     case 'Urgent': return { fg: C.danger, bg: C.dangerBg };
     case 'Today':  return { fg: C.warn,   bg: C.warnBg };
-    default:       return { fg: Accent.slate, bg: Accent.grayBg };
+    default:       return { fg: C.textMuted, bg: C.surface2 };
   }
 }
 
 function GroupBadge({ group, size = 46 }: { group: string; size?: number }) {
   return (
     <View style={[styles.groupBadge, { width: size, height: size, borderRadius: size * 0.28 }]}>
-      <Text style={[styles.groupText, { fontSize: size * 0.34, color: BLOOD_COLOR, fontFamily: 'PlusJakartaSans_800ExtraBold' }]}>
+      <Text style={[styles.groupText, { fontSize: size * 0.34, color: BLOOD_COLOR, fontFamily: FontFamily.jakartaExtraBold }]}>
         {group}
       </Text>
     </View>
@@ -58,6 +59,7 @@ export function BloodScreen({ navigation }: any) {
   const [respondedIds, setRespondedIds] = useState<Set<string>>(new Set());
   const [busyId, setBusyId] = useState<string | null>(null);
   const [loadState, setLoadState] = useState<'loading' | 'error' | 'ready'>('loading');
+  const [contactTarget, setContactTarget] = useState<{ name: string; phone: string; title?: string } | null>(null);
 
   const load = useCallback(async () => {
     const res = await getBloodFeed(user?.id);
@@ -85,7 +87,15 @@ export function BloodScreen({ navigation }: any) {
         toast({ type: 'error', title: t.common.error, message: t.blood2.revealContactError });
         return;
       }
-      Alert.alert(donorName ?? t.blood2.contact, res.data ?? t.blood2.notShared);
+      if (!res.data) {
+        toast({ type: 'info', title: t.blood2.notAvailable, message: t.blood2.notShared });
+        return;
+      }
+      setContactTarget({
+        name: donorName ?? t.blood2.contact,
+        phone: res.data,
+        title: t.blood2.donorsTab,
+      });
     } finally {
       setBusyId(null);
     }
@@ -101,8 +111,15 @@ export function BloodScreen({ navigation }: any) {
         toast({ type: 'error', title: t.common.error, message: t.blood2.revealContactError });
         return;
       }
-      if (!res.data) { toast({ type: 'info', title: t.blood2.notAvailable, message: t.blood2.contactDonorsOnly }); return; }
-      Alert.alert(res.data.name ?? t.blood2.requester, res.data.whatsapp ?? t.blood2.noWhatsapp);
+      if (!res.data?.whatsapp) {
+        toast({ type: 'info', title: t.blood2.notAvailable, message: t.blood2.contactDonorsOnly });
+        return;
+      }
+      setContactTarget({
+        name: res.data.name ?? r.patient ?? t.blood2.requester,
+        phone: res.data.whatsapp,
+        title: `${r.blood_group} - ${r.patient}`,
+      });
     } finally {
       setBusyId(null);
     }
@@ -388,6 +405,13 @@ export function BloodScreen({ navigation }: any) {
         )}
         <View style={{ height: 12 }} />
       </ScrollView>
+      <ContactSheet
+        visible={!!contactTarget}
+        onClose={() => setContactTarget(null)}
+        title={contactTarget?.title ?? t.blood2.contact}
+        name={contactTarget?.name ?? ''}
+        phone={contactTarget?.phone}
+      />
     </SafeAreaView>
   );
 }
@@ -427,7 +451,7 @@ const styles = StyleSheet.create({
   summaryTitle: { fontSize: 11, letterSpacing: 0.5, marginBottom: 10 } as any,
   summaryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 } as ViewStyle,
   summaryCell: { width: '22%', alignItems: 'center', paddingVertical: 8, borderRadius: 10 } as ViewStyle,
-  summaryCellGroup: { fontSize: 13, fontFamily: 'PlusJakartaSans_800ExtraBold' } as any,
+  summaryCellGroup: { fontSize: 13, fontFamily: FontFamily.jakartaExtraBold } as any,
   summaryCellNum: { fontSize: 15, marginTop: 2 } as any,
   donorList: { borderRadius: 16, borderWidth: 1, overflow: 'hidden' } as ViewStyle,
   divider: { height: StyleSheet.hairlineWidth } as ViewStyle,
