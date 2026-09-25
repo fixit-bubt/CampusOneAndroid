@@ -258,3 +258,50 @@ In `RootNavigator.tsx`, students who have not completed onboarding (`!profile?.s
 - **Current State:** Chapters 1–4 completed (Introduction, Background Study, Methodology, Implementation & Result Analysis). Chapters 5–6 (Constraints/Milestones, Conclusion) remain template placeholders.
 - **Report Strategy:** Mobile app and Web app are presented as **one unified system** with two client interfaces sharing a single backend.
 - **Editing Tool:** Edit using `python-docx` (`pip show python-docx` is available). Always confirm scope before altering document structure.
+
+---
+
+## 13. UI/UX & Institutional Polish Standards (Varsity Pitch Ready)
+
+The mobile and web applications are actively pitched and presented to BUBT administration, department heads, and academic review committees. The following design and implementation patterns are strictly mandatory across all screens:
+
+### 13.1 Native Direct Contact Flow (`ContactSheet.tsx`)
+- **Prohibition:** NEVER display raw, un-dialable system dialogs (`Alert.alert("Name", "+880...")`) for phone numbers.
+- **Pattern:** Use `ContactSheet` from `src/components/ui/ContactSheet.tsx`.
+- **Capabilities:**
+  - One-tap Call Phone (`callPhone(cleanPhone)` via `tel:` intent).
+  - One-tap Chat on WhatsApp (`openWhatsApp(cleanPhone)` via `https://wa.me/`).
+  - Copy to clipboard (`handleCopy()` with success toast).
+  - Send Email (`mailto:${email}` when email is present).
+  - In-app student chat action fallback (`inAppChatAction`).
+- **Integration Points:**
+  - `MarketDetailScreen.tsx`: Triggered upon seller contact reveal RPC (`listing_contact`) and interactive seller contact card.
+  - `RideDetailScreen.tsx`: Triggered upon driver contact reveal (`ride_contact`) and seat requester contact cards.
+  - `BloodScreen.tsx`: Triggered upon donor contact reveal (`donor_contact`) and urgent patient requester contact reveal.
+  - `LostFoundDetailScreen.tsx`: Triggered upon approved claim contact unlock (`claim_contact`).
+
+### 13.2 Visual Media Pipeline & Attachments
+- **Lost & Found Photos:**
+  - `LostFoundBrowseScreen.tsx`: Render 52×52 rounded cover thumbnail with category icon fallback.
+  - `LostFoundDetailScreen.tsx`: Render 190dp hero image card with anchored status badge (`Lost` in crimson / `Found` in emerald).
+  - `PostItemFormScreen.tsx`: Support image picking via `expo-image-picker`, preview thumbnail with Change/Remove actions, and upload to public `photos` bucket via `uploadPhoto(uri, 'lostfound', user.id)`.
+
+### 13.3 Home Live Status Carousel (`CampusToday.tsx`)
+- Replaced cramped 2-column flex-wrapped grid with a horizontal snap carousel (210dp card width, 13.5px bold title, 11.5px subtitle, sector accent pill).
+- Surfaces next bus to campus, next prayer azan, latest campus announcement, upcoming event, open jobs count, and urgent blood requests.
+
+### 13.4 Real-World Logistics & Time Display
+- **12-Hour Bus Departures:** Always format military time (e.g. `13:30`) to human 12-hour AM/PM format (e.g. `01:30 PM`) using `format12Hour` helper. Always safeguard route stops (`(r.stops ?? []).length`).
+- **Dynamic Ramadan Detection:** In `PrayerScreen.tsx`, never hardcode fasting banners. Use `isRamadanNow()` checking Hijri calendar month 9 via `Intl.DateTimeFormat('en-u-ca-islamic-umalqura')`.
+
+### 13.5 AI Assistant Onboarding (`ChatbotScreen.tsx`)
+- Never present an empty blank screen. Present 4 varsity-focused starter prompt chips (Bus routes, prayer times, CGPA calculation, campus jobs) that pre-fill the composer on tap.
+
+### 13.6 Navigation & Dashboard Layout Integrity
+- Strictly enforce AGENTS.md Rule 5.2 (full-width rows with left icon, bold title, and right chevron).
+- In `AdminDashboardScreen.tsx`, all 7 management destinations use full-width rows to prevent orphaned cards.
+
+### 13.7 Theme-Aware Dark Mode Tokens (`pillBg`)
+- Never use hardcoded light pastel constants (`Accent.tealBg = #e4f5f4`, `greenBg = #e8f8f0`, `grayBg = #f0f2f6`) on cards or badges in dark mode.
+- Use `pillBg(fgHex, isDark)` from `src/theme/colors.ts`, generating `${fgHex}2e` on dark and `${fgHex}18` on light.
+
