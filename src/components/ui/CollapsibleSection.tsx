@@ -8,24 +8,35 @@ interface CollapsibleSectionProps {
   title: string;
   icon: string;
   defaultOpen?: boolean;
+  open?: boolean;
+  onToggle?: () => void;
   children: React.ReactNode;
 }
 
-// Tappable section header used to group feature lists (Explore, Admin's
-// Manage tiles) instead of one long undifferentiated scroll. Styled as a
-// full card bar (icon + label + chevron) to match the other tappable rows
-// on the screen (e.g. the AI Assistant card) rather than a small text label
-// - the small-label version read as decorative, not something to tap.
-// Each instance tracks its own open state independently - no shared/
-// exclusive accordion, so opening one section never closes another.
-export function CollapsibleSection({ title, icon, defaultOpen = true, children }: CollapsibleSectionProps) {
+export function CollapsibleSection({
+  title,
+  icon,
+  defaultOpen = false,
+  open: controlledOpen,
+  onToggle,
+  children,
+}: CollapsibleSectionProps) {
   const { C } = useTheme();
-  const [open, setOpen] = useState(defaultOpen);
+  const [internalOpen, setInternalOpen] = useState(defaultOpen);
+  const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen;
+
+  const handlePress = () => {
+    if (onToggle) {
+      onToggle();
+    } else {
+      setInternalOpen((o) => !o);
+    }
+  };
 
   return (
     <View style={styles.wrap}>
       <TouchableOpacity
-        onPress={() => setOpen((o) => !o)}
+        onPress={handlePress}
         style={[styles.header, { backgroundColor: C.surface, borderColor: C.border }]}
         activeOpacity={0.75}
       >
@@ -36,13 +47,12 @@ export function CollapsibleSection({ title, icon, defaultOpen = true, children }
           {title}
         </Text>
         <Icon
-          name="chevD"
-          size={24}
+          name={isOpen ? 'chevD' : 'chevR'}
+          size={18}
           color={C.textMuted}
-          style={{ transform: [{ rotate: open ? '0deg' : '-90deg' }] } as ViewStyle}
         />
       </TouchableOpacity>
-      {open && <View style={styles.body}>{children}</View>}
+      {isOpen && <View style={styles.body}>{children}</View>}
     </View>
   );
 }

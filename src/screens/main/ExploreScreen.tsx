@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet, type ViewStyle,
 } from 'react-native';
@@ -131,6 +132,8 @@ export function ExploreScreen({ navigation }: any) {
   // Every Academics item (sectors and tools alike) is staff-excluded, so the
   // whole section simply doesn't apply to that role.
   const showAcademics = !isStaff;
+  const [openSection, setOpenSection] = useState<string | null>(null);
+  const toggleSection = (id: string) => setOpenSection((prev) => (prev === id ? null : id));
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -190,7 +193,12 @@ export function ExploreScreen({ navigation }: any) {
         )}
 
         {showAcademics && (
-          <CollapsibleSection title={t.exploreGroups.academics} icon="study">
+          <CollapsibleSection
+            title={t.exploreGroups.academics}
+            icon="study"
+            open={openSection === 'academics'}
+            onToggle={() => toggleSection('academics')}
+          >
             {academicsSectors.map(renderSectorRow)}
 
             {/* Tool: CGPA calculator - academic tool, hidden from maintenance staff */}
@@ -236,19 +244,34 @@ export function ExploreScreen({ navigation }: any) {
         )}
 
         {campusLifeSectors.length > 0 && (
-          <CollapsibleSection title={t.exploreGroups.campusLife} icon="events">
+          <CollapsibleSection
+            title={t.exploreGroups.campusLife}
+            icon="events"
+            open={openSection === 'campusLife'}
+            onToggle={() => toggleSection('campusLife')}
+          >
             {campusLifeSectors.map(renderSectorRow)}
           </CollapsibleSection>
         )}
 
         {servicesSectors.length > 0 && (
-          <CollapsibleSection title={t.exploreGroups.services} icon="wrench">
+          <CollapsibleSection
+            title={t.exploreGroups.services}
+            icon="wrench"
+            open={openSection === 'services'}
+            onToggle={() => toggleSection('services')}
+          >
             {servicesSectors.map(renderSectorRow)}
           </CollapsibleSection>
         )}
 
         {communitySectors.length > 0 && (
-          <CollapsibleSection title={t.exploreGroups.community} icon="market">
+          <CollapsibleSection
+            title={t.exploreGroups.community}
+            icon="market"
+            open={openSection === 'community'}
+            onToggle={() => toggleSection('community')}
+          >
             {communitySectors.map(renderSectorRow)}
           </CollapsibleSection>
         )}

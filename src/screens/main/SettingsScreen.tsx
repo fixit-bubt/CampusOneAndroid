@@ -11,7 +11,7 @@ import { useAuth } from '../../store/authStore';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { PasswordInput } from '../../components/ui/PasswordInput';
-import { FontFamily, Layout, SectorColors } from '../../theme';
+import { FontFamily, Layout } from '../../theme';
 import { useApp } from '../../store/appStore';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../components/ui/Toast';
@@ -150,18 +150,6 @@ export function SettingsScreen({ navigation }: any) {
           <SettingRow
             icon="bell" iconColor={C.text2} label="Notifications" C={C}
             onPress={() => navigation.navigate('NotifSettings')}
-          />
-        </View>
-
-        {/* Tools */}
-        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
-          TOOLS
-        </Text>
-        <View style={[styles.group, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <SettingRow
-            icon="fileText" iconColor={SectorColors.coverpage}
-            label="Cover Page Generator" C={C}
-            onPress={() => navigation.navigate('CoverPageForm')}
           />
         </View>
 
