@@ -386,5 +386,31 @@ Whenever the user instructs to "update memorys", the agent MUST synchronously up
 - **Feather Icon Reliability:** Directly uses `name={isOpen ? 'chevD' : 'chevR'}` instead of fragile CSS/style rotation transforms on font components.
 - **Admin Dashboard Integrity:** `AdminDashboardScreen.tsx` explicitly sets `defaultOpen={true}` on its single Manage section to maintain visibility on the dashboard.
 
+---
+
+## 18. Admin & Staff Operations Architecture (Full Audit Reference)
+
+### 18.1 Staff Workflow & Dispatch Mechanics
+- **Staff Home Routing:** Role `'staff'` lands directly on `StaffDashboardScreen.tsx` with live workload counters (`Assigned`, `In Progress`, `Resolved`).
+- **Issue Lifecycle Actions:**
+  - `Start Work`: Optimistically updates issue status from `Open` to `In Progress`.
+  - `Mark Resolved`: Optimistically updates status to `Resolved`.
+  - `Decline`: Prompts confirmation and executes `decline_report(reportId)` RPC, atomically removing `assigned_staff_id` and reverting status to `Open` for admin re-dispatch.
+- **Cross-RLS Reporter Resolution:** Staff queries use `fetchPeople` via `directory_profiles()` to retrieve student reporter names without hitting `profiles` RLS blockades.
+- **Maintenance-Focused Explore:** Staff accounts are filtered to maintenance-relevant sectors (`bus`, `prayer`, `announce`, `medical`, `market`, `ride`, `blood`). Academic tools, student directories, anonymous boards, and chatbot are excluded.
+
+### 18.2 Administrator Operations & Security Rules
+- **Admin Home Routing:** Role `'admin'` lands on `AdminDashboardScreen.tsx` with high-level triage counters (`Open`, `In Progress`, `Resolved`).
+- **Smart Trade-Matching Dispatch:** Reports are classified into trades (`Electrical`, `Plumbing`, `Cleanliness`, `IT / Network`, `Furniture`, `Safety / Security`, `Other`). The assignment modal sorts staff whose `expertise` matches the report trade to the top, flags them with a `Match` pill, and displays their active workload count.
+- **7 Core Management Hubs:**
+  - `AllReportsScreen`: Filterable, searchable catalog of all campus infrastructure reports.
+  - `ManageStaffScreen`: Staff trade management and in-app staff/admin account creation.
+  - `ManageUsersScreen`: Student-to-executive elevation (CR / President) and staff/admin role cycling.
+  - `AnnouncementsScreen`: Campus-wide broadcast announcements with priority and attachments.
+  - `ManageFacultyScreen`: Teacher profile patching, contact details, research tags, and photos.
+  - `StudyHubScreen`: Academic catalogue management, intake/section provisioning, and CR review.
+  - `ManageClubsScreen`: Club creation, status toggle, and atomic presidential assignment (`club_set_president` RPC).
+
+
 
 
