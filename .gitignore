@@ -47,4 +47,6 @@ yarn-error.*
 # Android release signing keystore (keep local, never commit)
 *.keystore
 campusone-release.keystore
+*.apk
+*.aab
 supabase/.temp/

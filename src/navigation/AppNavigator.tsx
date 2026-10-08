@@ -75,6 +75,8 @@ import { ToolCompressScreen }      from '../screens/pdfmaker/ToolCompressScreen'
 import { ProfileScreen }          from '../screens/main/ProfileScreen';
 import { ChatbotScreen }          from '../screens/chatbot/ChatbotScreen';
 import { ChatbotHistoryScreen }   from '../screens/chatbot/ChatbotHistoryScreen';
+import { PrivacyPolicyScreen }    from '../screens/legal/PrivacyPolicyScreen';
+import { TermsScreen }            from '../screens/legal/TermsScreen';
 
 const Stack = createNativeStackNavigator<AppStackParams>();
 
@@ -208,6 +210,10 @@ export function AppNavigator() {
       <Stack.Screen name="BloodRequestDetail" component={BloodRequestDetailScreen} />
       <Stack.Screen name="DonorRegister"  component={DonorRegisterScreen} />
       <Stack.Screen name="ClubPost"       component={ClubPostScreen} />
+
+      {/* Legal & Policies */}
+      <Stack.Screen name="PrivacyPolicy"  component={PrivacyPolicyScreen} />
+      <Stack.Screen name="TermsOfService" component={TermsScreen} />
     </Stack.Navigator>
   );
 }

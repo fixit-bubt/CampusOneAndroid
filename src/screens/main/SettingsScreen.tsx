@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, Modal,
-  StyleSheet, Switch, ActivityIndicator, Share, type ViewStyle,
+  StyleSheet, Switch, ActivityIndicator, Share, Linking, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -57,7 +57,7 @@ export function SettingsScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
   const t = useT();
   const toast = useToast();
-  const { profile, user, signOut } = useAuth();
+  const { profile, user, signOut, deleteAccount } = useAuth();
   const { isDark: appDark, toggleTheme, lang, toggleLang } = useApp();
 
   const role = profile?.role ?? 'student';
@@ -71,6 +71,22 @@ export function SettingsScreen({ navigation }: any) {
   const [pwNew, setPwNew] = useState('');
   const [pwConfirm, setPwConfirm] = useState('');
   const [pwBusy, setPwBusy] = useState(false);
+
+  const [delOpen, setDelOpen] = useState(false);
+  const [delBusy, setDelBusy] = useState(false);
+
+  const handleDeleteAccount = useCallback(async () => {
+    if (delBusy) return;
+    setDelBusy(true);
+    try {
+      await deleteAccount();
+      setDelOpen(false);
+      toast({ type: 'success', title: 'Done', message: t.mainx.accountDeleted });
+    } catch (err: any) {
+      setDelBusy(false);
+      toast({ type: 'error', title: 'Error', message: err?.message || 'Could not delete account' });
+    }
+  }, [delBusy, deleteAccount, t, toast]);
 
   const changePassword = useCallback(async () => {
     if (pwBusy) return;
@@ -153,18 +169,39 @@ export function SettingsScreen({ navigation }: any) {
           />
         </View>
 
-        {/* More */}
+        {/* Legal & Policies */}
         <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
-          MORE
+          {t.mainx.legalSection}
         </Text>
         <View style={[styles.group, { backgroundColor: C.surface, borderColor: C.border }]}>
+          <SettingRow
+            icon="shield" iconColor={C.brand} label={t.mainx.privacyPolicy} sub={t.mainx.privacyPolicySub} C={C}
+            onPress={() => navigation.navigate('PrivacyPolicy')}
+          />
+          <View style={[styles.divider, { backgroundColor: C.border }]} />
+          <SettingRow
+            icon="fileText" iconColor={C.brand} label={t.mainx.termsOfService} sub={t.mainx.termsOfServiceSub} C={C}
+            onPress={() => navigation.navigate('TermsOfService')}
+          />
+        </View>
+
+        {/* Help & Support */}
+        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
+          {t.mainx.supportSection}
+        </Text>
+        <View style={[styles.group, { backgroundColor: C.surface, borderColor: C.border }]}>
+          <SettingRow
+            icon="mail" iconColor={C.brand} label={t.mainx.contactSupport} sub={t.mainx.contactSupportSub} C={C}
+            onPress={() => Linking.openURL('mailto:campusone.bubt@gmail.com?subject=CampusOne%20Support')}
+          />
+          <View style={[styles.divider, { backgroundColor: C.border }]} />
           <SettingRow
             icon="handshake" iconColor={C.text2} label="Share App" C={C}
             onPress={() => Share.share({ message: 'Check out CampusOne - your university companion app!' })}
           />
           <View style={[styles.divider, { backgroundColor: C.border }]} />
           <SettingRow
-            icon="shield" iconColor={C.text2} label="About" sub="CampusOne v1.1.3" C={C}
+            icon="award" iconColor={C.text2} label={t.mainx.appVersion} sub="CampusOne v1.0.0 (Build 1)" C={C}
           />
         </View>
 
@@ -183,12 +220,31 @@ export function SettingsScreen({ navigation }: any) {
             onPress={signOut}
             activeOpacity={0.65}
           >
-            <View style={[styles.rowIconWrap, { backgroundColor: C.danger + '18' }]}>
-              <Icon name="logout" size={17} color={C.danger} />
+            <View style={[styles.rowIconWrap, { backgroundColor: C.textMuted + '18' }]}>
+              <Icon name="logout" size={17} color={C.text2} />
             </View>
-            <Text style={[styles.rowLabel, { color: C.danger, fontFamily: FontFamily.jakartaSemiBold, flex: 1 }]}>
+            <Text style={[styles.rowLabel, { color: C.text, fontFamily: FontFamily.jakartaSemiBold, flex: 1 }]}>
               {t.mainx.signOut}
             </Text>
+          </TouchableOpacity>
+          <View style={[styles.divider, { backgroundColor: C.border }]} />
+          <TouchableOpacity
+            style={styles.row}
+            onPress={() => setDelOpen(true)}
+            activeOpacity={0.65}
+          >
+            <View style={[styles.rowIconWrap, { backgroundColor: C.danger + '18' }]}>
+              <Icon name="trash" size={17} color={C.danger} />
+            </View>
+            <View style={styles.rowBody}>
+              <Text style={[styles.rowLabel, { color: C.danger, fontFamily: FontFamily.jakartaSemiBold }]}>
+                {t.mainx.deleteAccount}
+              </Text>
+              <Text style={[styles.rowSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                {t.mainx.deleteAccountSub}
+              </Text>
+            </View>
+            <Feather name="chevron-right" size={18} color={C.textMuted} />
           </TouchableOpacity>
         </View>
 
@@ -228,6 +284,46 @@ export function SettingsScreen({ navigation }: any) {
                   {t.mainx.updatePassword}
                 </Text>
               )}
+          </TouchableOpacity>
+        </View>
+      </Modal>
+
+      {/* Delete account confirmation sheet */}
+      <Modal visible={delOpen} transparent animationType="slide" onRequestClose={() => !delBusy && setDelOpen(false)}>
+        <TouchableOpacity style={styles.pwOverlay} activeOpacity={1} onPress={() => !delBusy && setDelOpen(false)} />
+        <View style={[styles.pwSheet, { backgroundColor: C.surface }]}>
+          <View style={[styles.delIconWrap, { backgroundColor: C.danger + '18' }]}>
+            <Feather name="trash-2" size={24} color={C.danger} />
+          </View>
+          <Text style={[styles.pwTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold, marginTop: 12 }]}>
+            {t.mainx.deleteAccountTitle}
+          </Text>
+          <Text style={[styles.delWarningText, { color: C.text2, fontFamily: FontFamily.jakartaRegular }]}>
+            {t.mainx.deleteAccountWarning}
+          </Text>
+          <TouchableOpacity
+            style={[styles.delBtn, { backgroundColor: C.danger, opacity: delBusy ? 0.6 : 1 }]}
+            onPress={handleDeleteAccount}
+            disabled={delBusy}
+            activeOpacity={0.8}
+          >
+            {delBusy
+              ? <ActivityIndicator color="#fff" size="small" />
+              : (
+                <Text style={[styles.pwBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                  {t.mainx.deleteAccountConfirmBtn}
+                </Text>
+              )}
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.cancelBtn, { borderColor: C.border }]}
+            onPress={() => setDelOpen(false)}
+            disabled={delBusy}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.cancelBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>
+              {t.mainx.cancel}
+            </Text>
           </TouchableOpacity>
         </View>
       </Modal>
@@ -285,4 +381,26 @@ const styles = StyleSheet.create({
   pwField: { height: 46, borderRadius: 12, borderWidth: 1, paddingHorizontal: 13, fontSize: 14, marginBottom: 10 } as any,
   pwBtn: { height: 50, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginTop: 8 } as ViewStyle,
   pwBtnTxt: { fontSize: 15 } as any,
+
+  delIconWrap: {
+    width: 48, height: 48, borderRadius: 16,
+    alignItems: 'center', justifyContent: 'center',
+    alignSelf: 'center',
+  } as ViewStyle,
+  delWarningText: {
+    fontSize: 13.5, lineHeight: 20,
+    marginTop: 8, marginBottom: 20,
+  } as any,
+  delBtn: {
+    height: 50, borderRadius: 14,
+    alignItems: 'center', justifyContent: 'center',
+  } as ViewStyle,
+  cancelBtn: {
+    height: 48, borderRadius: 14, borderWidth: 1,
+    alignItems: 'center', justifyContent: 'center',
+    marginTop: 10,
+  } as ViewStyle,
+  cancelBtnTxt: {
+    fontSize: 14.5,
+  } as any,
 });

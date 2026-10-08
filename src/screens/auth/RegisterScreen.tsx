@@ -192,6 +192,25 @@ export function RegisterScreen({ navigation }: Props) {
               </Text>
             </TouchableOpacity>
           </View>
+
+          {/* Terms & Privacy */}
+          <Text style={[styles.termsText, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+            {t.landing.termsPrefix}
+            <Text
+              style={{ color: C.brand, fontFamily: FontFamily.jakartaSemiBold }}
+              onPress={() => navigation.navigate('PrivacyPolicy')}
+            >
+              {t.landing.privacy}
+            </Text>
+            {t.landing.termsAnd}
+            <Text
+              style={{ color: C.brand, fontFamily: FontFamily.jakartaSemiBold }}
+              onPress={() => navigation.navigate('TermsOfService')}
+            >
+              {t.landing.terms}
+            </Text>
+            {t.landing.termsSuffix}
+          </Text>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -276,4 +295,11 @@ const styles = StyleSheet.create({
 
   switchText: { fontSize: 13.5 } as any,
   switchLink: { fontSize: 13.5 } as any,
+  termsText: {
+    fontSize: 12,
+    textAlign: 'center',
+    lineHeight: 18,
+    marginTop: 22,
+    paddingHorizontal: 8,
+  } as any,
 });

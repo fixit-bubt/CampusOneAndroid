@@ -6,6 +6,8 @@ export type AuthStackParams = {
   Register: undefined;
   ResetPassword: { email?: string } | undefined;
   VerifyEmail: { email: string };
+  PrivacyPolicy: undefined;
+  TermsOfService: undefined;
 };
 
 export type BottomTabParams = {
@@ -143,6 +145,10 @@ export type AppStackParams = {
   ManageStaff:    undefined;
   ManageFaculty:  undefined;
   AllReports:     undefined;
+
+  // Legal & Policy
+  PrivacyPolicy:  undefined;
+  TermsOfService: undefined;
 };
 
 export type AnnouncementsStackParams = {

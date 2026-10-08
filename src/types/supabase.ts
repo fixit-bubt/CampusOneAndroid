@@ -3241,6 +3241,7 @@ export type Database = {
       }
     }
     Functions: {
+      delete_own_account: { Args: Record<PropertyKey, never>; Returns: boolean }
       approve_section_request: { Args: { p_request_id: string }; Returns: Json }
       blood_requester_contact: {
         Args: { p_code: string }

@@ -63,6 +63,7 @@ interface AuthContextValue extends AuthState {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ needsVerification: boolean }>;
   signOut: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
 
@@ -161,13 +162,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: 'SIGN_OUT' });
   }
 
+  async function deleteAccount() {
+    reqIdRef.current++;
+    clearPeople();
+    await unregisterPushToken().catch(() => {});
+    const { error } = await supabase.rpc('delete_own_account');
+    if (error) {
+      console.error('delete_own_account failed:', error.message);
+      throw error;
+    }
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {
+      console.error('signOut after deletion failed:', e);
+    }
+    dispatch({ type: 'SIGN_OUT' });
+  }
+
   async function refreshProfile() {
     if (state.user) await fetchProfile(state.user.id);
   }
 
   return React.createElement(
     AuthContext.Provider,
-    { value: { ...state, signIn, signUp, signOut, refreshProfile } },
+    { value: { ...state, signIn, signUp, signOut, deleteAccount, refreshProfile } },
     children,
   );
 }

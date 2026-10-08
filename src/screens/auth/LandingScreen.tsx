@@ -148,9 +148,19 @@ export function LandingScreen({ navigation }: Props) {
           {/* Footer */}
           <Text style={[styles.footer, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
             {t.landing.termsPrefix}
-            <Text style={{ color: C.brand, fontFamily: FontFamily.jakartaSemiBold }}>{t.landing.privacy}</Text>
+            <Text
+              style={{ color: C.brand, fontFamily: FontFamily.jakartaSemiBold }}
+              onPress={() => navigation.navigate('PrivacyPolicy')}
+            >
+              {t.landing.privacy}
+            </Text>
             {t.landing.termsAnd}
-            <Text style={{ color: C.brand, fontFamily: FontFamily.jakartaSemiBold }}>{t.landing.terms}</Text>
+            <Text
+              style={{ color: C.brand, fontFamily: FontFamily.jakartaSemiBold }}
+              onPress={() => navigation.navigate('TermsOfService')}
+            >
+              {t.landing.terms}
+            </Text>
             {t.landing.termsSuffix}
           </Text>
         </ScrollView>
