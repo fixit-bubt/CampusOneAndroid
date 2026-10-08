@@ -362,4 +362,29 @@ Whenever the user instructs to "update memorys", the agent MUST synchronously up
 - **Zero AI Tells:** 0 em-dashes `—` in user-facing microcopy/i18n; no ASCII box-drawing comments (`// ───`); no AI header comments (`// Matches design...`).
 - **Theme Polish:** `pillBg(fgHex, isDark)` with default `isDark = false` applied across all status badges and pills, ensuring zero blinding pastels in dark mode.
 
+---
+
+## 17. Navigation & Screen Information Architecture (Explore & Tools Placement)
+
+### 17.1 Home Screen Integrity (`HomeScreen.tsx`)
+- **Quick Actions Row:** Strictly contains the 4 core campus actions: `Reports`, `Bus`, `Study`, and `Medical`.
+- **Zero Misplaced Tool Promos:** Document tools (PDF Maker, Cover Page Generator) must never be inserted on the Home screen. Home must stay clean and jump directly to `My Reports` and `Recent Alerts`.
+
+### 17.2 Settings Screen Scope (`SettingsScreen.tsx`)
+- **Settings Only:** Settings is strictly reserved for user account management and app preferences (`Dark Mode`, `Language`, `Notifications`, `Share App`, `About`, `Change Password`, `Sign Out`).
+- **Zero Utility Dumps:** Utility tools or document generators must never be embedded inside Settings.
+
+### 17.3 Explore Screen Categories & Accordion UX (`ExploreScreen.tsx` & `CollapsibleSection.tsx`)
+- **Categorization:** High-level grouping matches the web sidebar:
+  - **Academics:** Study Hub, Class Routines, Academic Calendar, Faculty, Cover Page Generator, CGPA Calculator, and PDF Maker.
+  - **Campus Life:** Clubs, Events, Announcements, Prayer Times, Jobs & Internships.
+  - **Services:** Medical Center, Bus Schedule, Lost & Found.
+  - **Community:** Student Marketplace, Ride Share, Blood Donation, Student Directory.
+  - **Top Pinned Cards:** AI Assistant and Campus Issues.
+- **Default State (Collapsed):** All categories start **collapsed by default** (`defaultOpen = false`). When the user taps the Explore tab, only the category headers are visible, preventing an overwhelming 20+ item wall.
+- **Accordion Behavior:** Tapping any category smoothly expands it (`chevD` `v`) and closes other open categories, keeping the screen compact and matching the web application (`AppShell.jsx`) 1:1. Tapping an open category collapses it back (`chevR` `>`).
+- **Feather Icon Reliability:** Directly uses `name={isOpen ? 'chevD' : 'chevR'}` instead of fragile CSS/style rotation transforms on font components.
+- **Admin Dashboard Integrity:** `AdminDashboardScreen.tsx` explicitly sets `defaultOpen={true}` on its single Manage section to maintain visibility on the dashboard.
+
+
 
