@@ -78,7 +78,7 @@ export function JobPostScreen({ navigation }: any) {
   const [myClubs, setMyClubs] = useState<{ id: string; name: string }[]>([]);
   const [clubId, setClubId] = useState<string | null>(null);
 
-  // Clubs the user leads (president/vp) — they may post a job on the club's
+  // Clubs the user leads (president/vp) - they may post a job on the club's
   // behalf. club_can_post(club_id) in the jobs RLS gate mirrors this list.
   useEffect(() => {
     if (!user) return;

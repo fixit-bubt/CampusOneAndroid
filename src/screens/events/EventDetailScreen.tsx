@@ -42,7 +42,7 @@ export function EventDetailScreen({ route, navigation }: any) {
   const { user, profile } = useAuth();
   const t = useT();
   const toast = useToast();
-  // Hooks must run unconditionally — keep all of them above any early return.
+  // Hooks must run unconditionally - keep all of them above any early return.
   const { eventId } = route.params ?? {};
   const id = eventId;
   const [event, setEvent] = useState<Event | null>(null);
@@ -51,7 +51,7 @@ export function EventDetailScreen({ route, navigation }: any) {
   const [goingCount, setGoingCount] = useState(0);
   const [busy, setBusy] = useState(false);
   // Mirrors the events_delete RLS policy (is_admin() OR (created_by=self AND
-  // can_create_events())) — a creator who lost organizer/club-officer status
+  // can_create_events())) - a creator who lost organizer/club-officer status
   // since posting the event no longer passes can_create_events(), so the
   // delete button must not show for them even though they're still `created_by`.
   const [canCreateEvents, setCanCreateEvents] = useState(false);

@@ -1,4 +1,4 @@
-// Faculty Directory — browse departments grouped by branch, filter by
+// Faculty Directory - browse departments grouped by branch, filter by
 // research area, search everything, view saved teachers.
 // Searching / filtering switches to flat teacher cards; otherwise dept cards.
 import { useState, useEffect, useCallback, useMemo } from 'react';

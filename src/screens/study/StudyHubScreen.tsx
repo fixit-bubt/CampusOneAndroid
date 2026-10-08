@@ -477,7 +477,7 @@ export function StudyHubScreen({ navigation }: any) {
       .eq('status', 'pending');
     if (error) { console.warn('loadJoinReqs:', error.message); return; }
     if (data) {
-      // Names via the roster RPC — the CR can't read applicants' profiles rows.
+      // Names via the roster RPC - the CR can't read applicants' profiles rows.
       const people = await fetchPeople((data as any[]).map(r => r.user_id));
       setJoinReqs(data.map((r: any) => {
         const name = people[r.user_id]?.full_name ?? 'Unknown';
@@ -591,7 +591,7 @@ export function StudyHubScreen({ navigation }: any) {
       .eq('section_id', mySection.id)
       .eq('status', 'approved');
     if (data) {
-      // Classmate names via the roster RPC — profiles RLS is self-only.
+      // Classmate names via the roster RPC - profiles RLS is self-only.
       const people = await fetchPeople((data as any[]).map(r => r.user_id));
       setSecMembers((data as any[]).map(r => ({
         id: r.id, user_id: r.user_id, role: r.role,
@@ -1075,7 +1075,7 @@ export function StudyHubScreen({ navigation }: any) {
           </>
         )}
 
-        {/* Members — promote to editor, demote, remove */}
+        {/* Members - promote to editor, demote, remove */}
         <Text style={[s.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
           MEMBERS · {secMembers.length}
         </Text>

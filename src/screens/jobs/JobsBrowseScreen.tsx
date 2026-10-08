@@ -11,7 +11,7 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { SkeletonList, LoadError } from '../../components/ui/LoadState';
 import { useToast } from '../../components/ui/Toast';
-import { FontFamily, Layout , SectorColors, Accent } from '../../theme';
+import { FontFamily, Layout, SectorColors, Accent, pillBg } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
@@ -30,13 +30,13 @@ function computeJobStatus(job: Job): string {
 const JOB_COLOR = SectorColors.jobs;
 const JOB_BG    = `${SectorColors.jobs}1e`;
 
-// Job status tones from theme tokens (dark-mode aware via C)
-function jobStatusTone(C: any, t: any, k: string): { label: string; fg: string; bg: string } {
+// Job status tones from theme tokens (dark-mode aware via C + isDark)
+function jobStatusTone(C: any, t: any, k: string, isDark?: boolean): { label: string; fg: string; bg: string } {
   switch (k) {
     case 'closing': return { label: 'Closing soon', fg: C.warn,   bg: C.warnBg };
-    case 'expired': return { label: 'Expired', fg: Accent.slate, bg: Accent.grayBg };
+    case 'expired': return { label: 'Expired', fg: Accent.slate, bg: pillBg(Accent.slate, isDark) };
     case 'removed': return { label: 'Removed', fg: C.danger,     bg: C.dangerBg };
-    default:        return { label: 'Open',    fg: Accent.teal,  bg: Accent.tealBg };
+    default:        return { label: 'Open',    fg: Accent.teal,  bg: pillBg(Accent.teal, isDark) };
   }
 }
 
@@ -54,7 +54,7 @@ function timeAgo(iso: string): string {
 }
 
 export function JobsBrowseScreen({ navigation }: any) {
-  const { C } = useTheme();
+  const { C, isDark } = useTheme();
   const { user, profile } = useAuth();
   const t = useT();
   const toast = useToast();
@@ -233,7 +233,7 @@ export function JobsBrowseScreen({ navigation }: any) {
         ) : (
           <View style={styles.list}>
             {list.map(j => {
-              const s = jobStatusTone(C, t, computeJobStatus(j));
+              const s = jobStatusTone(C, t, computeJobStatus(j), isDark);
               const isSaved = savedIds.has(j.id);
               return (
                 <View key={j.id} style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>

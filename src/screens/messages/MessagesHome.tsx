@@ -1,4 +1,4 @@
-// Messages home — the student's conversation list: accepted-connection DMs plus
+// Messages home - the student's conversation list: accepted-connection DMs plus
 // one auto-provisioned chat per club and per approved study section. Tapping a
 // row opens the thread; the tab badge shows total unread (from the store).
 import { useState, useEffect, useCallback } from 'react';

@@ -6,7 +6,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { SectorIcon } from '../../components/ui/SectorIcon';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout , Accent } from '../../theme';
+import { FontFamily, Layout, Accent, pillBg } from '../../theme';
 
 const SECTOR_INFO: Record<string, {
   label: string;
@@ -144,7 +144,7 @@ export function FeatureScreen({ route, navigation }: any) {
               <Text style={[styles.heroTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
                 {info.label}
               </Text>
-              <View style={[styles.livePill, { backgroundColor: Accent.tealBg }]}>
+              <View style={[styles.livePill, { backgroundColor: pillBg(Accent.teal, isDark) }]}>
                 <View style={[styles.liveDot, { backgroundColor: Accent.teal }]} />
                 <Text style={[styles.liveTxt, { color: Accent.teal, fontFamily: FontFamily.jakartaBold }]}>Live</Text>
               </View>

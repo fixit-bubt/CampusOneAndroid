@@ -15,8 +15,8 @@ interface CollapsibleSectionProps {
 // Manage tiles) instead of one long undifferentiated scroll. Styled as a
 // full card bar (icon + label + chevron) to match the other tappable rows
 // on the screen (e.g. the AI Assistant card) rather than a small text label
-// — the small-label version read as decorative, not something to tap.
-// Each instance tracks its own open state independently — no shared/
+// - the small-label version read as decorative, not something to tap.
+// Each instance tracks its own open state independently - no shared/
 // exclusive accordion, so opening one section never closes another.
 export function CollapsibleSection({ title, icon, defaultOpen = true, children }: CollapsibleSectionProps) {
   const { C } = useTheme();
@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   iconBox: { width: 44, height: 44, borderRadius: 13, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
   title: { flex: 1, fontSize: 14.5 } as TextStyle,
-  // No gap here — Explore's row cards carry their own marginBottom, and
+  // No gap here - Explore's row cards carry their own marginBottom, and
   // Admin's tile grid carries its own gap; this just adds room under the header.
   body: { marginTop: 11 } as ViewStyle,
 });

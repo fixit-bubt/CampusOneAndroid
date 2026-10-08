@@ -19,7 +19,7 @@ type Props = NativeStackScreenProps<AuthStackParams, 'ResetPassword'>;
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// Password reset by 6-digit email code (Supabase recovery OTP), not a link —
+// Password reset by 6-digit email code (Supabase recovery OTP), not a link -
 // magic links can't return to the app in a standalone APK. Flow:
 //   resetPasswordForEmail -> email code -> verifyOtp(type:'recovery') -> updateUser.
 // verifyOtp opens a session, so a successful reset also signs the user in;
@@ -47,7 +47,7 @@ export function ResetPasswordScreen({ route, navigation }: Props) {
     setNote('');
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(addr);
-      // Don't leak whether the email exists — always advance to the code step.
+      // Don't leak whether the email exists - always advance to the code step.
       if (error && !/rate|limit/i.test(error.message)) {
         setErr(error.message);
       } else if (error) {
@@ -81,7 +81,7 @@ export function ResetPasswordScreen({ route, navigation }: Props) {
       const { error: uErr } = await supabase.auth.updateUser({ password: pass });
       if (uErr) { setErr(uErr.message); return; }
       // onAuthStateChange in authStore picks up the session and routes into the
-      // app — no manual navigation needed.
+      // app - no manual navigation needed.
     } finally {
       busyRef.current = false;
       setBusy(false);

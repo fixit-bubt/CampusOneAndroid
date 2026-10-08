@@ -169,7 +169,7 @@ export function NotificationsScreen({ navigation }: any) {
     const res = await respondConnection(n.reference_id, accept);
     if (!res.ok) { toast({ type: 'error', title: t.common.error, message: res.error }); return; }
     setHandled(prev => ({ ...prev, [n.id]: accept ? 'accepted' : 'declined' }));
-    // Accepting unlocks a DM — refresh the messages roster so the new partner
+    // Accepting unlocks a DM - refresh the messages roster so the new partner
     // is immediately reachable from the Messages tab.
     if (accept) reloadMessages();
     if (!n.read) {
@@ -180,7 +180,7 @@ export function NotificationsScreen({ navigation }: any) {
 
   // Prefer the just-tapped local result, else the live connection state. Unknown
   // (states not loaded, or that query failed) renders nothing rather than a
-  // button that would fail — the Directory screen stays the fallback path.
+  // button that would fail - the Directory screen stays the fallback path.
   function connUiFor(n: Notification): ConnUi {
     if (n.reference_type !== 'connection_request') return 'none';
     const local = handled[n.id];

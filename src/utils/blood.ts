@@ -1,4 +1,4 @@
-// Blood donation eligibility — the 90-day wait between donations.
+// Blood donation eligibility - the 90-day wait between donations.
 // last_donated is a YYYY-MM-DD date (local Dhaka date; see localToday()).
 
 export const DONATION_WAIT_DAYS = 90;

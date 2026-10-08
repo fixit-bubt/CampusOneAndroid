@@ -68,7 +68,7 @@ export function MyReportsScreen({ navigation }: any) {
     if (res.ok) setReports(res.data);
     // campus_reports() doesn't project show_on_board, so pull the board state of
     // the caller's own reports directly for the per-report visibility toggle.
-    // show_on_board is NOT NULL DEFAULT false, so an unknown id means OFF — the
+    // show_on_board is NOT NULL DEFAULT false, so an unknown id means OFF - the
     // toggle stays hidden until this resolves rather than guessing.
     const { data: mine, error: mineErr } = await supabase
       .from('reports').select('id, show_on_board').eq('reporter_id', user.id).is('deleted_at', null);

@@ -1,4 +1,4 @@
-// CampusOne — Theme Export
+// CampusOne - Theme Export
 // Import from here: import { Colors, Spacing, Radius } from '@/theme'
 
 export { LightColors, DarkColors, SectorColors, Accent, darken, pillBg } from './colors';

@@ -49,7 +49,7 @@ export function MarketDetailScreen({ route, navigation }: any) {
       .single();
     if (error || !l) { setFailed(true); return; }
     setListing(l);
-    // Seller name via the roster RPC — profiles RLS returns only my own row.
+    // Seller name via the roster RPC - profiles RLS returns only my own row.
     setSellerName(await personName((l as any).seller_id));
   }, [listingId]);
 

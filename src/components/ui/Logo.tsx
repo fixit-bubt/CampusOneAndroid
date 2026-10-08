@@ -3,7 +3,7 @@ import { LightColors } from '../../theme';
 
 interface LogoMarkProps {
   size?: number;
-  /** drop shadow — on for hero/auth, off for compact headers */
+  /** drop shadow - on for hero/auth, off for compact headers */
   shadow?: boolean;
 }
 

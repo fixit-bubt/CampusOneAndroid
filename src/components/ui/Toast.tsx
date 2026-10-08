@@ -1,4 +1,4 @@
-// Toast provider — bottom-anchored, auto-dismisses, type-tinted.
+// Toast provider - bottom-anchored, auto-dismisses, type-tinted.
 // Usage: const toast = useToast(); toast({ type: 'success', title: 'Saved' });
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
 import { View, Text, Animated, StyleSheet, type ViewStyle } from 'react-native';

@@ -29,7 +29,7 @@ export async function openUrl(raw: string | null | undefined): Promise<boolean> 
 
 /**
  * Open a URL in an in-app browser tab (Android Custom Tab / iOS SafariViewController)
- * so the user stays inside the app — used for previewing study files and docs.
+ * so the user stays inside the app - used for previewing study files and docs.
  * Falls back to openUrl if the in-app browser can't handle it.
  */
 export async function openInApp(raw: string | null | undefined): Promise<boolean> {

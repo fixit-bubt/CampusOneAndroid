@@ -44,12 +44,12 @@ export async function resolveNotifTarget(
   if (refType === 'blood_request') {
     return { screen: 'Blood' };
   }
-  // Connection request/accepted — the alerts list has inline accept/decline;
+  // Connection request/accepted - the alerts list has inline accept/decline;
   // a tap just lands on the Directory where incoming requests are shown.
   if (refType === 'connection_request' || refType === 'connection_accepted') {
     return { screen: 'Directory' };
   }
-  // DM notification — reference_id is the sender's id. Open their thread.
+  // DM notification - reference_id is the sender's id. Open their thread.
   if (refType === 'dm') {
     // profiles is RLS-locked to the caller's own row; the roster RPC is what
     // resolves other people's names.

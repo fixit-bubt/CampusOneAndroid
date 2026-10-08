@@ -1,9 +1,9 @@
 // App-wide constants.
 
 export const APP_NAME = 'CampusOne';
-export const UNIVERSITY_NAME = 'DIU'; // Change to your university short name
+export const UNIVERSITY_NAME = 'BUBT';
 
-// Pagination — how many rows to fetch per page
+// Pagination - how many rows to fetch per page
 export const PAGE_SIZE = 20;
 
 // Report categories (matches DB enum)
@@ -70,9 +70,9 @@ export const WEEKDAYS = ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday',
 
 // Supabase storage bucket names (match exactly what's in the DB)
 export const BUCKETS = {
-  photos: 'photos',           // public  — report/lostfound/listing photos
-  proofs: 'proofs',           // private — claim proof uploads
-  attachments: 'attachments', // public  — announcement attachments
+  photos: 'photos',           // public - report/lostfound/listing photos
+  proofs: 'proofs',           // private - claim proof uploads
+  attachments: 'attachments', // public - announcement attachments
   studyMaterials: 'study-materials', // private
   clubCovers: 'club-covers',  // public
   clubAttachments: 'club-attachments', // private

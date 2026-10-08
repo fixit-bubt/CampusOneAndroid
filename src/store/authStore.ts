@@ -1,4 +1,4 @@
-// Auth Store — React context + useReducer.
+// Auth Store - React context + useReducer.
 // Wrap the app in <AuthProvider>, then call useAuth() anywhere.
 
 import React, { createContext, useContext, useEffect, useReducer, useRef } from 'react';

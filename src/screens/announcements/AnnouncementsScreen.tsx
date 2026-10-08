@@ -9,7 +9,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout, Accent } from '../../theme';
+import { FontFamily, Layout, Accent, pillBg } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../components/ui/Toast';
 import { useT } from '../../i18n';
@@ -17,12 +17,12 @@ import type { Announcement } from '../../types/database';
 
 const PRIORITIES = ['All', 'Urgent', 'Important', 'General'];
 
-// Priority tones from theme tokens (dark-mode aware via C)
-function priTone(C: any, priority: string): { fg: string; bg: string } {
+// Priority tones from theme tokens (dark-mode aware via C + isDark)
+function priTone(C: any, priority: string, isDark?: boolean): { fg: string; bg: string } {
   switch (priority) {
     case 'Urgent':    return { fg: C.danger, bg: C.dangerBg };
     case 'Important': return { fg: C.warn,   bg: C.warnBg };
-    default:          return { fg: Accent.slate, bg: Accent.grayBg };
+    default:          return { fg: Accent.slate, bg: pillBg(Accent.slate, isDark) };
   }
 }
 
@@ -37,7 +37,7 @@ function AnnouncementCard({ a, C, isDark, unread, canDelete, onDelete, onPress }
   a: Announcement; C: any; isDark: boolean; unread: boolean;
   canDelete: boolean; onDelete: () => void; onPress: () => void;
 }) {
-  const { fg, bg: priBg } = priTone(C, a.priority);
+  const { fg, bg: priBg } = priTone(C, a.priority, isDark);
   const bg = `${fg}1e`;
   return (
     <TouchableOpacity

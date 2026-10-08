@@ -133,7 +133,7 @@ export function CourseDetailScreen({ route, navigation }: any) {
       const raw = code.trim();
       const nospace = raw.replace(/\s+/g, '');
       // Match server-side (case-insensitive, spaced + unspaced) and order newest
-      // first — a client-side cap would silently blank the strip once the
+      // first - a client-side cap would silently blank the strip once the
       // marketplace grows past it.
       const { data: listings } = await supabase
         .from('listings')
@@ -282,7 +282,7 @@ export function CourseDetailScreen({ route, navigation }: any) {
       >
         <Text style={[styles.title, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{course.name}</Text>
 
-        {/* Marketplace cross-link — textbooks/notes on sale for this course */}
+        {/* Marketplace cross-link - textbooks/notes on sale for this course */}
         {forSale.length > 0 && (
           <View style={styles.forSaleWrap}>
             <Text style={[styles.forSaleTitle, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>

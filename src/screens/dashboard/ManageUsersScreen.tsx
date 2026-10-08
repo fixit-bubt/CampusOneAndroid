@@ -19,7 +19,7 @@ import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
 
 const ROLE_TOKEN = { student: 'roleStudent', staff: 'roleStaff', admin: 'roleAdmin' } as const;
-// Students are never promoted to staff/admin — they only become CR or Club
+// Students are never promoted to staff/admin - they only become CR or Club
 // President (per-row shortcuts). The role pill only toggles Staff <-> Admin on
 // accounts that are already staff/admin; new staff/admin come from Create account.
 const ROLE_NEXT: Record<string, Profile['role']> = { staff: 'admin', admin: 'staff' };
@@ -71,7 +71,7 @@ export function ManageUsersScreen({ navigation }: any) {
   }
 
   async function cycleRole(u: Profile) {
-    // Students can't be promoted from here — CR / President only (via the row shortcuts).
+    // Students can't be promoted from here - CR / President only (via the row shortcuts).
     if (u.role === 'student') return;
     if (u.id === user?.id) {
       showToast({ type: 'error', title: t.manage.notAllowed, message: t.manage.cannotDemoteSelf });

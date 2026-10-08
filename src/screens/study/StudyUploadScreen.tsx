@@ -77,7 +77,7 @@ export function StudyUploadScreen({ route, navigation }: any) {
   }, [courseId]);
 
   // Questions need the resolved section_id, books need the resolved intake_id
-  // (both NOT NULL in the DB) — block submit until the async lookup finishes.
+  // (both NOT NULL in the DB) - block submit until the async lookup finishes.
   const canSubmit = name.trim().length > 0 &&
     (fileType === 'books'
       ? ((pickedFile !== null || bookUrl.trim().length > 0) && !!intakeId)
@@ -202,7 +202,7 @@ export function StudyUploadScreen({ route, navigation }: any) {
           })}
         </View>
 
-        {/* Material type (materials only) — must match DB CHECK */}
+        {/* Material type (materials only) - must match DB CHECK */}
         {fileType === 'materials' && (
           <>
             <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>TYPE</Text>

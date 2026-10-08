@@ -1,4 +1,4 @@
-// Auth Service — auth calls go through here rather than supabase.auth directly.
+// Auth Service - auth calls go through here rather than supabase.auth directly.
 
 import { supabase } from '../lib/supabase';
 

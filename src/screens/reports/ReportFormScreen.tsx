@@ -166,7 +166,7 @@ export function ReportFormScreen({ route, navigation }: any) {
         // Already an uploaded URL (editing existing report)
         finalPhotoUrl = photoUri;
       } else {
-        // Local file — upload to storage. Strip any ?query/#fragment and only
+        // Local file - upload to storage. Strip any ?query/#fragment and only
         // trust a short alphanumeric extension; content:// and extensionless URIs
         // otherwise yield a garbage extension/contentType.
         const rawExt = (photoUri.split(/[#?]/)[0].split('.').pop() ?? '').toLowerCase();
@@ -199,7 +199,7 @@ export function ReportFormScreen({ route, navigation }: any) {
 
     if (isEdit) {
       // .select() so a no-op update (RLS matched 0 rows, e.g. report no longer Open)
-      // is caught — a bare update returns error=null even when nothing changed.
+      // is caught - a bare update returns error=null even when nothing changed.
       const { data: updated, error } = await supabase
         .from('reports').update(payload).eq('id', editReportId!).select('id');
       setBusy(false);

@@ -1,4 +1,4 @@
-// Chatbot Service — talks to the `chat` edge function (Gemini proxy), plus
+// Chatbot Service - talks to the `chat` edge function (Gemini proxy), plus
 // DB persistence for chat history (chatbot_messages, self-scoped RLS).
 
 import { fetch as expoFetch } from 'expo/fetch';
@@ -22,7 +22,7 @@ export interface Conversation {
 }
 
 // One row per past chat thread, newest activity first (bumped server-side by
-// a trigger on every message insert — see touch_chatbot_conversation()).
+// a trigger on every message insert - see touch_chatbot_conversation()).
 export async function listConversations(userId: string): Promise<ServiceResult<Conversation[]>> {
   const { data, error } = await supabase
     .from('chatbot_conversations')
@@ -35,7 +35,7 @@ export async function listConversations(userId: string): Promise<ServiceResult<C
 }
 
 // Created lazily on the first message of a new chat, not eagerly on screen
-// open — otherwise every visit to the chatbot (even one that sends nothing)
+// open - otherwise every visit to the chatbot (even one that sends nothing)
 // would leave a titleless empty conversation behind.
 export async function createConversation(userId: string, title: string): Promise<ServiceResult<string>> {
   const { data, error } = await supabase
@@ -76,7 +76,7 @@ export async function saveChatMessage(
 
 export interface ChatStreamHandlers {
   onChunk: (text: string) => void;
-  // Discards whatever text has been shown so far this turn — the model
+  // Discards whatever text has been shown so far this turn - the model
   // spoke a little, then decided to call a tool, so what streamed live
   // wasn't actually its answer. Caller should clear the in-progress bubble.
   onRetract: () => void;
@@ -92,7 +92,7 @@ export interface ChatImageAttachment {
 // Streams the assistant's reply via SSE. Uses expo/fetch (not supabase-js's
 // functions.invoke, which buffers the whole response) because it's the
 // WinterCG fetch implementation with real ReadableStream support on
-// Android/iOS — the stock RN fetch polyfill can't stream response bodies.
+// Android/iOS - the stock RN fetch polyfill can't stream response bodies.
 export async function askChatbotStream(
   message: string, history: ChatTurn[], handlers: ChatStreamHandlers, image?: ChatImageAttachment,
 ): Promise<void> {
@@ -124,7 +124,7 @@ export async function askChatbotStream(
       const j = await res.json();
       if (j?.error) msg = j.error;
     } catch {
-      // not JSON — keep the generic message
+      // not JSON - keep the generic message
     }
     handlers.onError(msg);
     return;

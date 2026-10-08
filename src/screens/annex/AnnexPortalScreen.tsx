@@ -1,4 +1,4 @@
-// Annex tab — BUBT's student portal (results, routine, attendance) embedded
+// Annex tab - BUBT's student portal (results, routine, attendance) embedded
 // in-app via WebView. We never see the student's portal password: the login
 // form is the portal's own page, rendered as-is.
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -16,7 +16,7 @@ import { FontFamily, Layout } from '../../theme';
 const ANNEX_URL = 'https://annex.bubt.edu.bd/';
 
 // forceDarkOn only drives Android's deprecated per-WebView dark API, which is
-// a no-op on modern WebView versions — the reliable cross-version fix is to
+// a no-op on modern WebView versions - the reliable cross-version fix is to
 // make the page itself declare it's light-only, which is what the browser
 // engine's auto-darken heuristic actually checks.
 const FORCE_LIGHT_JS = `
@@ -115,7 +115,7 @@ export function AnnexPortalScreen() {
             onError={() => { setError(true); setLoading(false); }}
             onHttpError={({ nativeEvent }) => {
               // Only a non-2xx on the top-level document (site down/blocked)
-              // is a real failure — subresource errors (an ad, a broken
+              // is a real failure - subresource errors (an ad, a broken
               // icon) shouldn't nuke the whole page.
               if (nativeEvent.url !== ANNEX_URL) return;
               setError(true);

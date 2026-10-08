@@ -1,4 +1,4 @@
-// useReports — data-fetching hook for the reports list.
+// useReports - data-fetching hook for the reports list.
 // Owns loading state, error state, refetch, and pagination.
 
 import { useState, useEffect, useCallback } from 'react';

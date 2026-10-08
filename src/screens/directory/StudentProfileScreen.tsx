@@ -84,7 +84,7 @@ export function StudentProfileScreen({ route, navigation }: any) {
         .eq('requester_id', student.id).eq('addressee_id', user.id).eq('status', 'pending').select('requester_id');
       if (error || !upd || upd.length === 0) { await refresh(); return; }
       setStudent(s => ({ ...s, connState: 'connected' }));
-      // Accepting unlocks a DM — refresh the messages roster so the new partner
+      // Accepting unlocks a DM - refresh the messages roster so the new partner
       // is reachable before the "Message" button is tapped.
       reloadMessages();
     } else {
@@ -210,7 +210,7 @@ export function StudentProfileScreen({ route, navigation }: any) {
           </View>
         </View>
 
-        {/* Contact — only when connected */}
+        {/* Contact - only when connected */}
         <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border, marginTop: 12 }]}>
           <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
             {t.directory2.contact}

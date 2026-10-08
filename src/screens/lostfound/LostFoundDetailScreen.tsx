@@ -1,4 +1,4 @@
-// Lost & Found item detail — full claims flow.
+// Lost & Found item detail - full claims flow.
 // Claimant: submit claim/notify with optional proof photo, track its status,
 // see the poster's contact once approved. Poster: review incoming claims,
 // view proof, approve (unlocks contacts both ways + auto-resolves the item
@@ -65,7 +65,7 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
   const { C } = useTheme();
   const { user } = useAuth();
   const t = useT();
-  // Hooks must run unconditionally — the missing-param bail-out lives below them.
+  // Hooks must run unconditionally - the missing-param bail-out lives below them.
   const { itemId } = route.params ?? {};
   const id = itemId;
 
@@ -378,7 +378,7 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
           </>
         )}
 
-        {/* Possible matches — surfaced to the poster while the item is open */}
+        {/* Possible matches - surfaced to the poster while the item is open */}
         {isMine && !resolved && matches.length > 0 && (
           <>
             <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>

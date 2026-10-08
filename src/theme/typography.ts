@@ -1,7 +1,7 @@
 // Typography tokens
 
 export const FontFamily = {
-  // English — Plus Jakarta Sans (loaded via expo-font)
+  // English - Plus Jakarta Sans (loaded via expo-font)
   regular:            'PlusJakartaSans_400Regular',
   medium:             'PlusJakartaSans_500Medium',
   semiBold:           'PlusJakartaSans_600SemiBold',
@@ -14,7 +14,7 @@ export const FontFamily = {
   jakartaBold:        'PlusJakartaSans_700Bold',
   jakartaExtraBold:   'PlusJakartaSans_800ExtraBold',
 
-  // Bengali — Hind Siliguri (loaded via expo-font)
+  // Bengali - Hind Siliguri (loaded via expo-font)
   bnRegular:   'HindSiliguri_400Regular',
   bnMedium:    'HindSiliguri_500Medium',
   bnSemiBold:  'HindSiliguri_600SemiBold',
@@ -54,7 +54,7 @@ export const LetterSpacing = {
   widest:   2,   // uppercase labels
 } as const;
 
-// Pre-built text style presets — use these in components
+// Pre-built text style presets - use these in components
 export const TextPreset = {
   display:     { fontSize: FontSize['5xl'], fontFamily: FontFamily.extraBold, letterSpacing: LetterSpacing.tighter },
   h1:          { fontSize: FontSize['3xl'], fontFamily: FontFamily.extraBold, letterSpacing: LetterSpacing.tight },

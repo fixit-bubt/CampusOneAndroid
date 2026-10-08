@@ -57,7 +57,7 @@ export function RidesScreen({ navigation }: any) {
       setLoading(false);
       return;
     }
-    // Driver names via the roster RPC — profiles RLS hides every row but mine.
+    // Driver names via the roster RPC - profiles RLS hides every row but mine.
     const people = await fetchPeople((ridesRes.data ?? []).map((r: any) => r.driver_id));
     const rows = (ridesRes.data ?? []).map((r: any) => ({
       ...r,
@@ -65,7 +65,7 @@ export function RidesScreen({ navigation }: any) {
     })) as Ride[];
     setRides(rows);
     // A failed count fetch previously left every ride showing as fully
-    // available (0 taken) instead of an accurate seat count — warn instead
+    // available (0 taken) instead of an accurate seat count - warn instead
     // of silently showing wrong availability.
     if (countRes.error) {
       toast({ type: 'error', title: t.common.error, message: 'Seat availability may be out of date.' });
@@ -207,7 +207,7 @@ export function RidesScreen({ navigation }: any) {
                     </Text>
                   </View>
 
-                  {/* Action — hide for own ride */}
+                  {/* Action - hide for own ride */}
                   {!isOwnRide && (
                     isRequested ? (
                       <View style={[styles.contactCard, { backgroundColor: C.surface2 }]}>

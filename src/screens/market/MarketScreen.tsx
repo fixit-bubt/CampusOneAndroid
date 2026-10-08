@@ -171,7 +171,7 @@ export function MarketScreen({ navigation }: any) {
         })}
       </ScrollView>
 
-      {/* Price tools — min/max range + sort */}
+      {/* Price tools - min/max range + sort */}
       <View style={[styles.filterRow, { paddingHorizontal: Layout.screenPadding }]}>
         <TextInput
           style={[styles.priceInput, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}

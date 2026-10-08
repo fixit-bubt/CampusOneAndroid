@@ -10,7 +10,7 @@ const KEY_LANG = 'app.lang';
 
 // Load AsyncStorage defensively: if the native module isn't present (e.g. a
 // dev client built before it was added), fall back to a no-op so the app still
-// opens — persistence is simply disabled until the binary is rebuilt.
+// opens - persistence is simply disabled until the binary is rebuilt.
 let storage: {
   multiGet: (keys: string[]) => Promise<[string, string | null][]>;
   setItem: (key: string, value: string) => Promise<void>;

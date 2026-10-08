@@ -35,7 +35,7 @@ const SECTOR_ROUTE: Record<SectorKey, string> = {
   messages:  'Messages',
 };
 
-// All sectors — id, label, description
+// All sectors - id, label, description
 const SECTORS: { id: SectorKey; en: string; dEn: string }[] = [
   { id: 'reports',   en: 'Issue Reports',     dEn: 'Status updates on issues you reported' },
   { id: 'lostfound', en: 'Lost & Found',       dEn: 'Claims and matches on your posts' },
@@ -57,13 +57,13 @@ const SECTORS: { id: SectorKey; en: string; dEn: string }[] = [
   { id: 'coverpage', en: 'Cover Page',         dEn: 'Generate assignment covers' },
 ];
 
-// Sectors a staff (maintenance) account sees in Explore — mirrors the web staff
+// Sectors a staff (maintenance) account sees in Explore - mirrors the web staff
 // nav. Everything else (Study Hub, Clubs, Jobs, Events, Faculty, Calendar,
 // Routines, Cover Page, Reports-create) stays student/admin-only.
 const STAFF_SECTORS: SectorKey[] = ['bus', 'prayer', 'announce', 'medical', 'market', 'ride', 'blood'];
 
 // Groups sectors into labeled, collapsible sections instead of one long flat
-// list — mirrors the web app's sidebar grouping (Academics / Campus Life /
+// list - mirrors the web app's sidebar grouping (Academics / Campus Life /
 // Services / Community). A group that ends up with zero visible items for
 // the current role (e.g. Academics for staff) simply isn't rendered.
 const GROUP_ACADEMICS: SectorKey[] = ['study', 'routines', 'calendar', 'faculty', 'coverpage'];
@@ -78,10 +78,10 @@ export function ExploreScreen({ navigation }: any) {
   const role = profile?.role;
   const isStudent = role === 'student';
   const isStaff = role === 'staff';
-  // Staff are maintenance crew — their panel is trimmed to maintenance-relevant
+  // Staff are maintenance crew - their panel is trimmed to maintenance-relevant
   // sectors only (mirrors the web staff nav). Admin keeps everything but the
   // student-only Lost & Found; students get the full grid. Student Directory
-  // is ALSO student-only — the backend (student_directory() RPC) is
+  // is ALSO student-only - the backend (student_directory() RPC) is
   // security-definer gated on the CALLER being role='student', so an
   // admin/staff account always gets zero rows back no matter what. Showing
   // the tile to them just leads to a permanently-empty screen with no
@@ -94,7 +94,7 @@ export function ExploreScreen({ navigation }: any) {
       : SECTORS.filter((s) => s.id !== 'lostfound' && s.id !== 'directory');
 
   // Pulls the role-filtered sectors in a group's own order (not SECTORS'
-  // declaration order) — the group arrays already read in the order each
+  // declaration order) - the group arrays already read in the order each
   // section should display in.
   const pick = (ids: SectorKey[]) => ids.map((id) => sectors.find((s) => s.id === id)).filter((s): s is typeof sectors[number] => !!s);
 
@@ -126,7 +126,7 @@ export function ExploreScreen({ navigation }: any) {
   const communitySectors = pick(GROUP_COMMUNITY);
   // CGPA/PDF Maker aren't SECTORS entries (they're client-side tools, not a
   // DB-backed feed), but they belong in Academics alongside Study Hub/Cover
-  // Page — same gating as before (CGPA hidden from staff, PDF Maker
+  // Page - same gating as before (CGPA hidden from staff, PDF Maker
   // student-only), just relocated from ungrouped top cards into the group.
   // Every Academics item (sectors and tools alike) is staff-excluded, so the
   // whole section simply doesn't apply to that role.
@@ -147,7 +147,7 @@ export function ExploreScreen({ navigation }: any) {
         contentContainerStyle={[styles.content, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* AI Chatbot — student-only (also enforced server-side in the edge function) */}
+        {/* AI Chatbot - student-only (also enforced server-side in the edge function) */}
         {isStudent && (
           <TouchableOpacity
             style={[styles.toolCard, { backgroundColor: C.surface, borderColor: C.border }]}
@@ -168,7 +168,7 @@ export function ExploreScreen({ navigation }: any) {
           </TouchableOpacity>
         )}
 
-        {/* Campus Issues board — student-only anonymous issues + me-too votes */}
+        {/* Campus Issues board - student-only anonymous issues + me-too votes */}
         {isStudent && (
           <TouchableOpacity
             style={[styles.toolCard, { backgroundColor: C.surface, borderColor: C.border }]}
@@ -193,7 +193,7 @@ export function ExploreScreen({ navigation }: any) {
           <CollapsibleSection title={t.exploreGroups.academics} icon="study">
             {academicsSectors.map(renderSectorRow)}
 
-            {/* Tool: CGPA calculator — academic tool, hidden from maintenance staff */}
+            {/* Tool: CGPA calculator - academic tool, hidden from maintenance staff */}
             <TouchableOpacity
               style={[styles.toolCard, { backgroundColor: C.surface, borderColor: C.border }]}
               onPress={() => navigation.navigate('Cgpa')}
@@ -212,7 +212,7 @@ export function ExploreScreen({ navigation }: any) {
               </View>
             </TouchableOpacity>
 
-            {/* PDF Maker — student-only, everything runs on the phone */}
+            {/* PDF Maker - student-only, everything runs on the phone */}
             {isStudent && (
               <TouchableOpacity
                 style={[styles.toolCard, { backgroundColor: C.surface, borderColor: C.border }]}

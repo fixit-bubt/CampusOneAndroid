@@ -45,7 +45,7 @@ export function RootNavigator() {
     });
   }, []);
 
-  // Profile load failed — don't fall through to the student UI. Offer a retry.
+  // Profile load failed - don't fall through to the student UI. Offer a retry.
   if (session && profileError && !profileLoaded) {
     return (
       <View style={{ flex: 1, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 16 }}>

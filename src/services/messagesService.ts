@@ -1,4 +1,4 @@
-// Messages Service — DB access for direct messages + club/section group chats.
+// Messages Service - DB access for direct messages + club/section group chats.
 //
 // Conversation identity lives on the messages row itself (there is no
 // conversations table): a DM is the canonical peer pair (peer_low < peer_high),
@@ -45,7 +45,7 @@ export function toMessage(r: any): Message {
   };
 }
 
-// Canonical DM pair — the smaller uuid is always peer_low.
+// Canonical DM pair - the smaller uuid is always peer_low.
 export function dmPair(a: string, b: string): { low: string; high: string } {
   return a < b ? { low: a, high: b } : { low: b, high: a };
 }

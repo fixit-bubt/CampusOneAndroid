@@ -1,4 +1,4 @@
-// Club member management — president/VP only. Add students by search, change
+// Club member management - president/VP only. Add students by search, change
 // member roles (vp / editor / member), remove members. Presidency itself is
 // transferred from the Manage screen.
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -64,7 +64,7 @@ export function ClubMembersScreen({ route, navigation }: any) {
         .eq('club_id', clubId).eq('status', 'pending')
         .order('created_at', { ascending: true }),
     ]);
-    // Names/avatars come from the roster RPC — profiles itself is RLS-locked to
+    // Names/avatars come from the roster RPC - profiles itself is RLS-locked to
     // the caller's own row, so an embed here would blank every member.
     const rows = [...((memRes.data as any[]) ?? []), ...((reqRes.data as any[]) ?? [])];
     const people = await fetchPeople(rows.map(r => r.user_id));
@@ -83,7 +83,7 @@ export function ClubMembersScreen({ route, navigation }: any) {
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
-  // Student search for the add sheet — exclude existing members client-side.
+  // Student search for the add sheet - exclude existing members client-side.
   useEffect(() => {
     const q = query.trim();
     if (!addOpen || q.length < 2) { setResults([]); return; }

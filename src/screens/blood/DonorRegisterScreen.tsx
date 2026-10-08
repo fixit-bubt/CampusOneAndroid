@@ -34,11 +34,11 @@ export function DonorRegisterScreen({ navigation }: any) {
     if (!canSubmit || !user) return;
     setLoading(true);
     try {
-      // last_donated is a DATE column — only send a valid YYYY-MM-DD, else null.
+      // last_donated is a DATE column - only send a valid YYYY-MM-DD, else null.
       const ld = lastDonated.trim();
       const lastDonatedDate = /^\d{4}-\d{2}-\d{2}$/.test(ld) ? ld : null;
       // Registering as a donor is consent to be reached. donor_contact only
-      // reveals the number when show_whatsapp is true, so opt in here — without
+      // reveals the number when show_whatsapp is true, so opt in here - without
       // it the donor stays hidden and unreachable (column defaults to false).
       const profilePatch: { show_whatsapp: boolean; whatsapp?: string } = { show_whatsapp: true };
       if (phone.trim()) profilePatch.whatsapp = phone.trim();

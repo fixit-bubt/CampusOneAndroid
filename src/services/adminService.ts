@@ -35,13 +35,13 @@ export async function createUserAsAdmin({ name, email, password, role, expertise
     await tmp.auth.signOut();
     return { ok: false, error: 'An account with this email already exists.' };
   }
-  // If email confirmation is on, signUp returns no user — we can't set the role.
+  // If email confirmation is on, signUp returns no user - we can't set the role.
   if (!data.user) {
     await tmp.auth.signOut();
     return { ok: false, error: 'Account created, but it must confirm its email before the role can be set. Set the role from the Users list once confirmed.' };
   }
 
-  // Signup trigger created the profile as 'student' — set the requested role.
+  // Signup trigger created the profile as 'student' - set the requested role.
   const { data: updated, error: e2 } = await supabase
     .from('profiles')
     .update({ role, expertise: expertise ?? null })
@@ -50,7 +50,7 @@ export async function createUserAsAdmin({ name, email, password, role, expertise
   await tmp.auth.signOut();
   if (e2) return { ok: false, error: e2.message };
   if (!updated || updated.length !== 1) {
-    return { ok: false, error: 'Account created, but assigning the role failed — set it from the Users list.' };
+    return { ok: false, error: 'Account created, but assigning the role failed. Set it from the Users list.' };
   }
   return { ok: true, data: null };
 }

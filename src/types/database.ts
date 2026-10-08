@@ -1,9 +1,9 @@
-// CampusOne — app-facing database types.
+// CampusOne - app-facing database types.
 //
 // Column presence/nullability comes from the generated schema (./supabase.ts,
 // regenerate after DDL changes) so these can never drift from the live DB again.
 // The string-literal unions the app relies on for narrowing (statuses,
-// categories, roles) are overlaid on top — the DB stores plain text for those,
+// categories, roles) are overlaid on top - the DB stores plain text for those,
 // enforced by CHECK constraints.
 
 import type { Tables } from './supabase';

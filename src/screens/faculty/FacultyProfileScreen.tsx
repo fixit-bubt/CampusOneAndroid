@@ -1,4 +1,4 @@
-// Faculty profile — photo, badges, research interest pills, qualifications,
+// Faculty profile - photo, badges, research interest pills, qualifications,
 // contact (Email / Call / WhatsApp), academic profiles (only links that
 // exist), and the official bubt.edu.bd profile link.
 import { useState, useCallback } from 'react';
@@ -222,7 +222,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
           )}
         </View>
 
-        {/* Academic profiles — only the links that exist */}
+        {/* Academic profiles - only the links that exist */}
         {links.length > 0 && (
           <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border, marginTop: 12 }]}>
             <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.faculty2.academicProfiles}</Text>

@@ -62,7 +62,7 @@ export function RideDetailScreen({ route, navigation }: any) {
     if (rideRes.error) { toast({ type: 'error', title: t.common.error }); setLoadFailed(true); return; }
     if (!rideRes.data) { setLoadFailed(true); return; }
     setRide(rideRes.data);
-    // Driver/requester names via the roster RPC — profiles RLS returns only the
+    // Driver/requester names via the roster RPC - profiles RLS returns only the
     // caller's own row, so an embed here resolves to null for everyone else.
     const people = await fetchPeople([
       rideRes.data.driver_id,

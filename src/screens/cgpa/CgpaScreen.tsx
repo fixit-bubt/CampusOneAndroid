@@ -1,4 +1,4 @@
-// CGPA calculator — a self-contained client tool. Add courses, credits and
+// CGPA calculator - a self-contained client tool. Add courses, credits and
 // grades; the GPA is credit-weighted on the BUBT / UGC Bangladesh scale.
 // Nothing is stored or sent.
 import { useState, useRef, useMemo } from 'react';

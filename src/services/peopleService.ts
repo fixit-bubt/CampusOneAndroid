@@ -1,9 +1,9 @@
-// People Service — display names and avatars for other users.
+// People Service - display names and avatars for other users.
 //
 // The profiles table carries contact details (email, phone, WhatsApp, address),
 // so its RLS only exposes the caller's own row. That means every
 // `profiles!some_id(full_name)` embed silently resolves to null for anyone but
-// yourself — names render blank and avatars fall back to initials of nothing.
+// yourself - names render blank and avatars fall back to initials of nothing.
 // directory_profiles() is a SECURITY DEFINER view of just the display fields;
 // route every cross-user name through here instead of touching profiles.
 

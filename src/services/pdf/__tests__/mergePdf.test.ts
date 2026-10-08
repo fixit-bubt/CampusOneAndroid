@@ -1,4 +1,4 @@
-// Factory closures must be named mock* — jest hoists jest.mock() above the
+// Factory closures must be named mock* - jest hoists jest.mock() above the
 // imports and babel rejects any other out-of-scope reference.
 const mockCopyPages = jest.fn(async (_src: any, idx: number[]) => idx.map((i) => ({ page: i })));
 const mockDrawImage = jest.fn();

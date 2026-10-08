@@ -5,7 +5,7 @@ import { Icon } from './Icon';
 import { SectorColors } from '../../theme';
 import type { SectorKey } from '../../theme';
 
-// Icon name per sector — matches design data.jsx
+// Sector icon mapping.
 const SECTOR_ICON: Record<SectorKey, string> = {
   reports:   'report',
   lostfound: 'found',

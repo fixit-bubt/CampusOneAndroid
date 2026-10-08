@@ -1,4 +1,4 @@
-// Main app stack — every role gets the full app. The Home tab inside
+// Main app stack - every role gets the full app. The Home tab inside
 // BottomTabNavigator is what differs per role (dashboard vs feed).
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { AppStackParams } from '../types/navigation';
@@ -128,7 +128,7 @@ export function AppNavigator() {
       <Stack.Screen name="Directory"      component={DirectoryScreen} />
       <Stack.Screen name="StudentProfile" component={StudentProfileScreen} />
 
-      {/* Medical — directory + doctor availability only (no booking) */}
+      {/* Medical - directory + doctor availability only (no booking) */}
       <Stack.Screen name="Medical"        component={MedicalScreen} />
       <Stack.Screen name="DoctorDetail"   component={DoctorDetailScreen} />
 

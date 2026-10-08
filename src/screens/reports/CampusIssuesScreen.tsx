@@ -1,4 +1,4 @@
-// Campus Issues board — anonymous student-facing feed of reports whose owners
+// Campus Issues board - anonymous student-facing feed of reports whose owners
 // opted them onto the board, with a "me too" vote. No reporter identity is ever
 // shown (the feed RPC never projects it) and cards don't deep-link to the
 // owner-only report detail.
@@ -92,7 +92,7 @@ export function CampusIssuesScreen({ navigation }: any) {
   }, [issues]);
 
   const q = query.trim().toLowerCase();
-  // Server already orders by vote count then newest — keep that order.
+  // Server already orders by vote count then newest - keep that order.
   const filtered = issues
     .filter(r => filter === 'All' || r.status === filter)
     .filter(r => {

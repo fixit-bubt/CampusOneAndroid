@@ -1,7 +1,7 @@
-// AI chatbot — talks to the `chat` edge function (Gemini proxy). Each screen
+// AI chatbot - talks to the `chat` edge function (Gemini proxy). Each screen
 // instance is one conversation: an existing one if opened with a
 // conversationId param (from ChatbotHistoryScreen), or a fresh blank one
-// otherwise — created lazily in the DB on the first message actually sent,
+// otherwise - created lazily in the DB on the first message actually sent,
 // so browsing in and backing out never leaves an empty chat behind.
 import { useState, useRef, useEffect } from 'react';
 import {
@@ -28,10 +28,10 @@ interface Bubble {
   role: 'user' | 'model';
   text: string;
   imageUrl?: string | null;
-  isError?: boolean; // client-side only — never sent to Gemini as conversation history, never saved to DB
+  isError?: boolean; // client-side only - never sent to Gemini as conversation history, never saved to DB
 }
 
-// Downscaled/re-encoded before both upload and sending to Gemini — keeps the
+// Downscaled/re-encoded before both upload and sending to Gemini - keeps the
 // stored copy small and the base64 payload well under the edge function's
 // size cap, without a visible quality hit for "photo of a homework problem".
 const CHAT_IMAGE_MAX_DIM = 1280;
@@ -55,7 +55,7 @@ export function ChatbotScreen({ navigation, route }: any) {
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   // True only until the first chunk of a reply arrives (or a tool-call
-  // round retracts its preamble) — the "thinking" spinner, distinct from
+  // round retracts its preamble) - the "thinking" spinner, distinct from
   // `sending` which covers the whole turn and disables the composer.
   const [waitingFirstToken, setWaitingFirstToken] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(!!initialConversationId);
@@ -81,7 +81,7 @@ export function ChatbotScreen({ navigation, route }: any) {
       if (res.ok) setMessages(res.data.map((m) => ({ id: m.id, role: m.role, text: m.text, imageUrl: m.imageUrl })));
       setLoadingHistory(false);
     });
-    // Mount-only: this screen instance is pinned to one conversation — a
+    // Mount-only: this screen instance is pinned to one conversation - a
     // fresh conversationId means a fresh screen instance (navigation.replace
     // in ChatbotHistoryScreen), not a param change on this one.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -95,7 +95,7 @@ export function ChatbotScreen({ navigation, route }: any) {
     setPendingImage(null);
 
     // Downscale + re-encode once, reused for both the Gemini call (base64)
-    // and the persisted copy (uploaded from the same resized local file) —
+    // and the persisted copy (uploaded from the same resized local file) -
     // never the original full-resolution photo either way.
     let imageBase64: string | undefined;
     let imageUrl: string | undefined;
@@ -115,28 +115,28 @@ export function ChatbotScreen({ navigation, route }: any) {
           if (up.success) imageUrl = up.url;
         }
       } catch {
-        // compression/upload failed — fall through and send just the text, if any
+        // compression/upload failed - fall through and send just the text, if any
       }
       setUploadingImage(false);
     }
-    if (!body && !imageBase64) return; // image failed and there's no text either — nothing to send
+    if (!body && !imageBase64) return; // image failed and there's no text either - nothing to send
 
     const userMsg: Bubble = { id: `local-${seq.current++}`, role: 'user', text: body, imageUrl: imageUrl ?? image?.uri };
     setMessages((prev) => [...prev, userMsg]);
     setSending(true);
     setWaitingFirstToken(true);
 
-    // First message of a brand-new chat — create its conversation row now.
+    // First message of a brand-new chat - create its conversation row now.
     let convId = conversationId;
     if (!convId) {
       const res = await createConversation(user.id, body || 'Photo');
       if (res.ok) { convId = res.data; setConversationId(res.data); }
     }
-    if (convId) saveChatMessage(user.id, convId, 'user', body, imageUrl); // fire-and-forget — a failed save just means this turn won't persist, not worth blocking chat over
+    if (convId) saveChatMessage(user.id, convId, 'user', body, imageUrl); // fire-and-forget - a failed save just means this turn won't persist, not worth blocking chat over
 
-    // Exclude past error bubbles — they're a client-side artifact, not something
+    // Exclude past error bubbles - they're a client-side artifact, not something
     // the model actually said, and would confuse it if replayed as history.
-    // Past images aren't replayed to Gemini (see edge function) — only text.
+    // Past images aren't replayed to Gemini (see edge function) - only text.
     const history: ChatTurn[] = messages.filter((m) => !m.isError).map((m) => ({ role: m.role, text: m.text }));
 
     const streamId = `local-${seq.current++}`;
@@ -156,7 +156,7 @@ export function ChatbotScreen({ navigation, route }: any) {
         });
       },
       onRetract: () => {
-        // This round turned out to be a tool call, not the real answer —
+        // This round turned out to be a tool call, not the real answer -
         // drop whatever preamble text was showing and go back to "thinking".
         streamedText = '';
         bubbleAdded = false;
@@ -189,7 +189,7 @@ export function ChatbotScreen({ navigation, route }: any) {
         onPress: async () => {
           const res = await deleteConversation(conversationId);
           if (res.ok) navigation.goBack();
-          // on failure, leave the chat as-is — nothing was actually deleted
+          // on failure, leave the chat as-is - nothing was actually deleted
         },
       },
     ]);

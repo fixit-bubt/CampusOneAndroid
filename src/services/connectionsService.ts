@@ -1,4 +1,4 @@
-// Connections Service — respond to incoming connection requests from the alerts
+// Connections Service - respond to incoming connection requests from the alerts
 // list (the Directory/Profile screens still own the request/send flow).
 
 import { supabase } from '../lib/supabase';

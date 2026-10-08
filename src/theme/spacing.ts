@@ -26,15 +26,15 @@ export const Spacing = {
 
 // Semantic spacing shortcuts
 export const Layout = {
-  screenPadding:    Spacing[4],   // 16px — side gutters on all screens
-  cardPadding:      Spacing[4],   // 16px — inside cards
-  cardPaddingSm:    Spacing[3],   // 12px — inside compact cards
-  sectionGap:       Spacing[6],   // 24px — between sections on a screen
-  itemGap:          Spacing[2.5], // 10px — between list items
-  inputHeight:      Spacing[12],  // 48px — touch target height
+  screenPadding:    Spacing[4],   // 16px - side gutters on all screens
+  cardPadding:      Spacing[4],   // 16px - inside cards
+  cardPaddingSm:    Spacing[3],   // 12px - inside compact cards
+  sectionGap:       Spacing[6],   // 24px - between sections on a screen
+  itemGap:          Spacing[2.5], // 10px - between list items
+  inputHeight:      Spacing[12],  // 48px - touch target height
   buttonHeight:     Spacing[12],  // 48px
   buttonHeightSm:   Spacing[9],   // 36px
-  bottomNavHeight:  Spacing[20],  // 80px — tab bar
+  bottomNavHeight:  Spacing[20],  // 80px - tab bar
   bottomPadding:    110,          // scroll area bottom padding (clears nav)
   topBarHeight:     Spacing[14],  // 56px
 } as const;

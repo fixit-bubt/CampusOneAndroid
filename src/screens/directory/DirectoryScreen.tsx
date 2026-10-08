@@ -9,7 +9,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout , Accent } from '../../theme';
+import { FontFamily, Layout, Accent, pillBg } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
@@ -31,7 +31,7 @@ interface Student {
 }
 
 export function DirectoryScreen({ navigation }: any) {
-  const { C } = useTheme();
+  const { C, isDark } = useTheme();
   const { user } = useAuth();
   const t = useT();
   const toast = useToast();
@@ -141,7 +141,7 @@ export function DirectoryScreen({ navigation }: any) {
                 </View>
               </TouchableOpacity>
               {s.connState === 'connected' && (
-                <View style={[styles.connPill, { backgroundColor: Accent.tealBg }]}>
+                <View style={[styles.connPill, { backgroundColor: pillBg(Accent.teal, isDark) }]}>
                   <View style={[styles.connDot, { backgroundColor: Accent.teal }]} />
                   <Text style={[styles.connTxt, { color: Accent.teal, fontFamily: FontFamily.jakartaBold }]}>{t.directory2.connected}</Text>
                 </View>

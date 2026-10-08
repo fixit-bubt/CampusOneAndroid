@@ -1,4 +1,4 @@
-// Campus Today — at-a-glance strip shown on every role's Home. Mini-widgets in
+// Campus Today - at-a-glance strip shown on every role's Home. Mini-widgets in
 // a 2-column grid; each hides when it has nothing to show and links into its feature.
 import { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, type ViewStyle } from 'react-native';

@@ -58,7 +58,7 @@ function tokenString(resp: Notifications.DevicePushToken): string {
 }
 
 // The RPC claims the token for auth.uid() and drops any other account's claim
-// on the same device — a plain upsert can't, because RLS hides the other rows.
+// on the same device - a plain upsert can't, because RLS hides the other rows.
 async function claimToken(token: string): Promise<void> {
   const { error } = await supabase.rpc('register_push_token', {
     p_token: token,

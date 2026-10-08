@@ -1,4 +1,4 @@
-// Chatbot conversation list — the "sidebar" equivalent for mobile. Tap a row
+// Chatbot conversation list - the "sidebar" equivalent for mobile. Tap a row
 // to resume that chat, tap the header's plus to start a new one, swipe/tap
 // trash to delete a chat outright (cascades its messages via FK).
 import { useState, useCallback } from 'react';

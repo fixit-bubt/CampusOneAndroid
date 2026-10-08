@@ -1,4 +1,4 @@
-// Staff & Admins — admin-only management screen with two tabs.
+// Staff & Admins - admin-only management screen with two tabs.
 // Staff tab: staff count + list + Add Staff (role locked to staff, trade picker).
 // Admin tab: admin count + list + Add Admin (role locked to admin).
 // Students are managed separately in ManageUsers.
@@ -213,7 +213,7 @@ export function ManageStaffScreen({ navigation }: any) {
         <View style={{ height: 20 }} />
       </ScrollView>
 
-      {/* Add sheet — role locked to the active tab */}
+      {/* Add sheet - role locked to the active tab */}
       <Modal visible={addOpen} transparent animationType="slide" onRequestClose={() => setAddOpen(false)}>
         <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setAddOpen(false)} />
         <View style={[styles.sheet, { backgroundColor: C.surface }]}>

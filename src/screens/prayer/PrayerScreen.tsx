@@ -55,7 +55,7 @@ function computeNext(prayers: PrayerTime[]): PrayerTime | undefined {
     return h * 60 + m > nowMins;
   });
   if (todayNext) return todayNext;
-  // Nothing left today (past Isha) — wrap to tomorrow's Fajr rather than
+  // Nothing left today (past Isha) - wrap to tomorrow's Fajr rather than
   // leaving the "next prayer" card unmounted for the rest of the night.
   return prayers.find(p => p.key !== 'jummah') ?? prayers[0];
 }
@@ -239,7 +239,7 @@ export function PrayerScreen({ navigation }: any) {
           })}
         </View>
 
-        {/* Month table — campus runs a fixed timetable, so every day shares
+        {/* Month table - campus runs a fixed timetable, so every day shares
             the same times; today's row is highlighted. */}
         {view === 'month' && (
           <View style={[styles.tableCard, { backgroundColor: C.surface, borderColor: C.border, marginTop: 0 }]}>

@@ -52,7 +52,7 @@ export function MarketPostScreen({ route, navigation }: any) {
 
   const isEdit = !!listing;
   const canSubmit = cat !== null && !!title.trim() && Number(price) > 0;
-  // Course code only applies to study materials — links the listing to the
+  // Course code only applies to study materials - links the listing to the
   // course's Study Hub page (mirrors web).
   const showCourse = cat === 'Books' || cat === 'Notes';
 
@@ -238,7 +238,7 @@ export function MarketPostScreen({ route, navigation }: any) {
           textAlignVertical="top"
         />
 
-        {/* Course code — books/notes only, links to Study Hub */}
+        {/* Course code - books/notes only, links to Study Hub */}
         {showCourse && (
           <>
             <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.market2.courseCode}</Text>

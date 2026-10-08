@@ -1,4 +1,4 @@
-// Reports Service — report DB logic.
+// Reports Service - report DB logic.
 
 import { supabase } from '../lib/supabase';
 import { fetchPeople } from './peopleService';

@@ -97,7 +97,7 @@ export function SettingsScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
       >
-        {/* Profile card — tappable */}
+        {/* Profile card - tappable */}
         <TouchableOpacity
           style={[styles.profileCard, { backgroundColor: C.surface, borderColor: C.border }]}
           onPress={() => navigation.navigate('Profile')}

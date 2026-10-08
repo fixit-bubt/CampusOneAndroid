@@ -1,4 +1,4 @@
-// Format utilities — pure functions, no side effects.
+// Format utilities - pure functions, no side effects.
 
 /** "2025-06-08T14:30:00Z" → "Jun 8, 2025" */
 export function formatDate(iso: string): string {

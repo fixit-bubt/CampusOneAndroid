@@ -1,4 +1,4 @@
-// Shared faculty kit — types, sorting, branch icons, badges, and the
+// Shared faculty kit - types, sorting, branch icons, badges, and the
 // teacher card used by the directory, department, and saved views.
 import {
   View, Text, TouchableOpacity, StyleSheet,

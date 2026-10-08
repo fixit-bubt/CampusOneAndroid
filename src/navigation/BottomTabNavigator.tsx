@@ -1,6 +1,6 @@
 // 4 tabs with Feather icons. The Home tab is the role's dashboard for
 // admin/staff; students get the regular home feed. All roles keep
-// Explore/Annex/Settings. Notifications moved off the tab bar — it's a
+// Explore/Annex/Settings. Notifications moved off the tab bar - it's a
 // stack screen now, reached via the bell on the Home tab.
 import { View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';

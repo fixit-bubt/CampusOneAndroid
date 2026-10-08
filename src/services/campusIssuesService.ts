@@ -1,4 +1,4 @@
-// Campus Issues Service — the anonymous student issues board + me-too votes.
+// Campus Issues Service - the anonymous student issues board + me-too votes.
 //
 // Reports opted onto the board (reports.show_on_board = true) are exposed through
 // SECURITY DEFINER RPCs that never project reporter identity, so the board is
@@ -8,7 +8,7 @@
 import { supabase } from '../lib/supabase';
 import type { ServiceResult } from './authService';
 
-// Row shape from campus_issues_feed() — safe columns only, no reporter identity.
+// Row shape from campus_issues_feed() - safe columns only, no reporter identity.
 export interface CampusIssue {
   id: string;
   code: string | null;

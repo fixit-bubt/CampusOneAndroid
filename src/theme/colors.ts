@@ -1,4 +1,4 @@
-// CampusOne — Color Tokens
+// CampusOne - Color Tokens
 
 export const LightColors = {
   // Brand
@@ -26,21 +26,21 @@ export const LightColors = {
   text3:         '#8693aa',
   textMuted:     '#8693aa',  // alias for text3
 
-  // Semantic — Success
+  // Semantic - Success
   success:   '#12915e',
   successBg: '#e3f5ec',
 
-  // Semantic — Warning
+  // Semantic - Warning
   warn:   '#b9760a',
   warnBg: '#fbefdb',
 
-  // Semantic — Danger / Error
+  // Semantic - Danger / Error
   danger:   '#d63d35',
   dangerBg: '#fbe7e5',
   error:    '#d63d35',  // alias for danger
   errorBg:  '#fbe7e5',
 
-  // Semantic — Info (brand-tinted)
+  // Semantic - Info (brand-tinted)
   info:   '#2b5be3',
   infoBg: '#eef3ff',
 
@@ -127,7 +127,7 @@ export const SectorColors = {
 export type SectorKey = keyof typeof SectorColors;
 export type Colors = typeof LightColors;
 
-// Accent palette — fixed colors for chips/pills/tiles, not theme-dependent
+// Accent palette - fixed colors for chips/pills/tiles, not theme-dependent
 // (same in light & dark, like SectorColors).
 // Derive a darker shade of a hex token (gradient end stops etc.)
 export function darken(hex: string, factor = 0.22): string {
@@ -154,6 +154,6 @@ export const Accent = {
   greenBg: '#e8f8f0',   // green pill bg (approve/success chips)
 } as const;
 
-export function pillBg(fgHex: string, isDark: boolean): string {
+export function pillBg(fgHex: string, isDark = false): string {
   return isDark ? `${fgHex}2e` : `${fgHex}18`;
 }

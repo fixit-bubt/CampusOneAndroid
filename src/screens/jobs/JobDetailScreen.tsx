@@ -9,7 +9,7 @@ import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout , SectorColors, Accent } from '../../theme';
+import { FontFamily, Layout, SectorColors, Accent, pillBg } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
@@ -19,19 +19,19 @@ import { openUrl } from '../../utils/link';
 const JOB_COLOR = SectorColors.jobs;
 const JOB_BG    = `${SectorColors.jobs}1e`;
 
-// Job status tones from theme tokens (dark-mode aware via C)
-function jobStatusTone(C: any, t: any, k: string): { label: string; fg: string; bg: string } {
+// Job status tones from theme tokens (dark-mode aware via C + isDark)
+function jobStatusTone(C: any, t: any, k: string, isDark?: boolean): { label: string; fg: string; bg: string } {
   switch (k) {
     case 'expired': return { label: 'Expired', fg: C.warn,       bg: C.warnBg };
     case 'removed': return { label: 'Removed', fg: C.danger,     bg: C.dangerBg };
-    default:        return { label: 'Open',    fg: Accent.teal,  bg: Accent.tealBg };
+    default:        return { label: 'Open',    fg: Accent.teal,  bg: pillBg(Accent.teal, isDark) };
   }
 }
 
 const REPORT_REASONS = ['Spam', 'Scam', 'Expired', 'Inappropriate'];
 
 export function JobDetailScreen({ route, navigation }: any) {
-  const { C } = useTheme();
+  const { C, isDark } = useTheme();
   const t = useT();
   const toast = useToast();
   const { user, profile } = useAuth();
@@ -80,7 +80,7 @@ export function JobDetailScreen({ route, navigation }: any) {
       p_reason: reason.toLowerCase(),
     });
     if (error) {
-      // job_report() does a plain insert with no ON CONFLICT — a second
+      // job_report() does a plain insert with no ON CONFLICT - a second
       // report from the same user hits the unique constraint directly.
       const message = error.code === '23505' ? t.jobs2.alreadyReported : error.message;
       toast({ type: 'error', title: t.common.error, message });
@@ -134,7 +134,7 @@ export function JobDetailScreen({ route, navigation }: any) {
   }
 
   const computedStatus = job.deleted_at ? 'removed' : (job.deadline && new Date(job.deadline) < new Date() ? 'expired' : 'open');
-  const s = jobStatusTone(C, t, computedStatus);
+  const s = jobStatusTone(C, t, computedStatus, isDark);
   const isOwn = job.posted_by === user?.id;
   const isRemoved = !!job.deleted_at;
   const isExpired = computedStatus === 'expired';

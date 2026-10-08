@@ -103,13 +103,13 @@ export function NotifSettingsScreen({ navigation }: any) {
     }
     if (data) {
       const rows = data as any[];
-      // Master toggles persisted as special rows — pull them out first.
+      // Master toggles persisted as special rows - pull them out first.
       const pausedRow = rows.find(p => p.sector === '_paused');
       const quietRow  = rows.find(p => p.sector === '_quiet');
       if (pausedRow) setPaused(pausedRow.enabled);
       if (quietRow)  setQuiet(quietRow.enabled);
       // Merge into existing prefs via a functional updater so `prefs` does NOT
-      // need to be a dependency — depending on it here recreates `load`, which
+      // need to be a dependency - depending on it here recreates `load`, which
       // re-fires useFocusEffect and refetches forever while the screen is open.
       setPrefs(prev => {
         const updated = { ...prev };
@@ -173,7 +173,7 @@ export function NotifSettingsScreen({ navigation }: any) {
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Device push registration — the gate everything else sits behind */}
+        {/* Device push registration - the gate everything else sits behind */}
         {(() => {
           const copy = pushStatusCopy(push);
           const tone = copy.bad ? C.danger : push.state === 'ok' ? C.success : C.textMuted;

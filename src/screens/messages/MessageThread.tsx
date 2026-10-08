@@ -1,4 +1,4 @@
-// A single conversation — DM or club/section group chat. Realtime keeps it live
+// A single conversation - DM or club/section group chat. Realtime keeps it live
 // via the store; this screen handles the composer, edit/delete (long-press),
 // block (DM), in-conversation search and older-message paging.
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -88,7 +88,7 @@ export function MessageThread({ route, navigation }: any) {
     })();
   }, [kind, id, loadConversation]);
 
-  // Am I a moderator here? (club officer / section CR — can delete any message.)
+  // Am I a moderator here? (club officer / section CR - can delete any message.)
   useEffect(() => {
     if (!myId) return;
     if (kind === 'club') {
@@ -273,7 +273,7 @@ export function MessageThread({ route, navigation }: any) {
           keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
         >
           {rendered.length === 0 ? (
-            // Plain sibling, not ListEmptyComponent — RN doesn't auto
+            // Plain sibling, not ListEmptyComponent - RN doesn't auto
             // counter-flip that (or Header/Footer) for an inverted list the
             // way it does renderItem cells, so text placed there renders
             // upside-down instead of the manual scaleY:-1 reliably undoing it.

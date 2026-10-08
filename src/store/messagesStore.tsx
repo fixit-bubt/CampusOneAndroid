@@ -1,4 +1,4 @@
-// Messages Store — cached messages + realtime for DMs and club/section chats.
+// Messages Store - cached messages + realtime for DMs and club/section chats.
 //
 // Messaging is student-only, so the whole store no-ops for staff/admin. It holds
 // the message cache, read markers, blocks and the conversation roster, subscribes

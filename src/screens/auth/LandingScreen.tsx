@@ -18,7 +18,7 @@ import type { AuthStackParams } from '../../types/navigation';
 
 type Props = NativeStackScreenProps<AuthStackParams, 'Landing'>;
 
-// Shared Brand component — CampusOne logo mark (re-exported from Logo).
+// Shared Brand component - CampusOne logo mark (re-exported from Logo).
 // Login/Register import this; keep the signature stable.
 export function Brand({ size = 56 }: { size?: number }) {
   return <LogoMark size={size} />;
@@ -47,7 +47,7 @@ export function LandingScreen({ navigation }: Props) {
 
   return (
     <View style={[styles.root, { backgroundColor: C.brand }]}>
-      {/* Hero — brand gradient, logo + name + tagline */}
+      {/* Hero - brand gradient, logo + name + tagline */}
       <LinearGradient
         colors={[C.brand, darken(C.brand)]}
         start={{ x: 0, y: 0 }}
@@ -95,7 +95,7 @@ export function LandingScreen({ navigation }: Props) {
         </SafeAreaView>
       </LinearGradient>
 
-      {/* Card — auth options */}
+      {/* Card - auth options */}
       <View style={[styles.card, { backgroundColor: C.bg }]}>
         <ScrollView
           contentContainerStyle={[styles.cardContent, { paddingHorizontal: Layout.screenPadding }]}
@@ -115,7 +115,7 @@ export function LandingScreen({ navigation }: Props) {
             </Text>
           )}
 
-          {/* Google — primary */}
+          {/* Google - primary */}
           <View style={{ marginTop: 22 }}>
             <GoogleButton label={t.landing.continueGoogle} onPress={handleGoogle} busy={busyG} />
           </View>

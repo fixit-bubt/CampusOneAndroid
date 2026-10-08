@@ -7,19 +7,19 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout, Accent } from '../../theme';
+import { FontFamily, Layout, Accent, pillBg } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { openUrl } from '../../utils/link';
 import { useT } from '../../i18n';
 import { useAuth } from '../../store/authStore';
 import type { Announcement } from '../../types/database';
 
-// Priority tones from theme tokens (dark-mode aware via C)
-function priTone(C: any, priority: string): { fg: string; bg: string } {
+// Priority tones from theme tokens (dark-mode aware via C + isDark)
+function priTone(C: any, priority: string, isDark?: boolean): { fg: string; bg: string } {
   switch (priority) {
     case 'Urgent':    return { fg: C.danger, bg: C.dangerBg };
     case 'Important': return { fg: C.warn,   bg: C.warnBg };
-    default:          return { fg: Accent.slate, bg: Accent.grayBg };
+    default:          return { fg: Accent.slate, bg: pillBg(Accent.slate, isDark) };
   }
 }
 
@@ -33,10 +33,10 @@ function timeAgo(iso: string): string {
 }
 
 export function AnnouncementDetailScreen({ route, navigation }: any) {
-  const { C } = useTheme();
+  const { C, isDark } = useTheme();
   const { user } = useAuth();
   const t = useT();
-  // Hooks must run unconditionally — no early return before them.
+  // Hooks must run unconditionally - no early return before them.
   const { announcementId } = route.params ?? {};
   const id = announcementId;
   const [item, setItem] = useState<Announcement | null>(null);
@@ -74,7 +74,7 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
     );
   }
 
-  const { fg, bg } = priTone(C, item.priority);
+  const { fg, bg } = priTone(C, item.priority, isDark);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>

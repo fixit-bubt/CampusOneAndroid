@@ -1,5 +1,5 @@
 // jest hoists jest.mock() above the imports, so anything a factory closes over
-// has to be named mock* — that prefix is the only out-of-scope reference babel
+// has to be named mock* - that prefix is the only out-of-scope reference babel
 // allows through.
 const mockEmbedJpg = jest.fn(async () => ({ tag: 'img' }));
 const mockDrawImage = jest.fn();

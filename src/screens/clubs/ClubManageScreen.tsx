@@ -60,7 +60,7 @@ export function ClubManageScreen({ route, navigation }: any) {
         setCoverUrl(clubRes.data.cover_url ?? null);
       }
       if (membersRes.data) {
-        // Names via the roster RPC — profiles RLS hides other members.
+        // Names via the roster RPC - profiles RLS hides other members.
         const people = await fetchPeople((membersRes.data as any[]).map(m => m.user_id));
         setMembers((membersRes.data as any[]).map(m => ({
           ...m,
@@ -71,12 +71,12 @@ export function ClubManageScreen({ route, navigation }: any) {
     })();
   }, [id]);
 
-  if (!clubId) return null; // after hooks — Rules of Hooks
+  if (!clubId) return null; // after hooks - Rules of Hooks
 
   async function saveChanges() {
     if (!name.trim()) return;
     setSaving(true);
-    // club_update_details RPC — RLS-safe edit path.
+    // club_update_details RPC - RLS-safe edit path.
     // Omitted args fall back to the SQL defaults (null) - same result as
     // passing null, which the generated arg types don't allow.
     const { error } = await supabase.rpc('club_update_details', {
@@ -186,7 +186,7 @@ export function ClubManageScreen({ route, navigation }: any) {
           <Text style={[styles.saveBtnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>{t.clubs2.saveChanges}</Text>
         </TouchableOpacity>
 
-        {/* Transfer presidency — the club_set_president RPC requires a global
+        {/* Transfer presidency - the club_set_president RPC requires a global
             admin, so only show it to admins (presidents/VPs would always fail). */}
         {profile?.role === 'admin' && (
         <>

@@ -10,7 +10,7 @@ import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout, Radius , Accent } from '../../theme';
+import { FontFamily, Layout, Radius, Accent, pillBg } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { personName } from '../../services/peopleService';
 import { useT } from '../../i18n';
@@ -49,7 +49,7 @@ const STATUS_OPTIONS: Report['status'][] = ['Open', 'In Progress', 'Resolved', '
 
 export function ReportDetailScreen({ route, navigation }: any) {
   const { reportId: paramReportId, report: initReport } = (route.params ?? {}) as { reportId?: string; report?: Report };
-  const { C } = useTheme();
+  const { C, isDark } = useTheme();
   const { user, profile } = useAuth();
   const t = useT();
 
@@ -66,7 +66,7 @@ export function ReportDetailScreen({ route, navigation }: any) {
 
   const code = report ? (report.code ?? ('RPT-' + report.id.replace(/\D/g, '').padStart(4, '0').slice(-4))) : '…';
   const cat = report ? (CAT_MAP[report.category] ?? { icon: 'wrench', fg: Accent.slate }) : { icon: 'wrench', fg: Accent.slate };
-  const statusStyle = report ? (statusTone(C, report.status)) : { text: Accent.slate, bg: Accent.grayBg };
+  const statusStyle = report ? (statusTone(C, report.status)) : { text: Accent.slate, bg: pillBg(Accent.slate, isDark) };
   const isMine = report?.reporter_id === user?.id;
   // Admin moderates any report; staff can only work reports assigned to them,
   // and only advance forward (no reject/close).
@@ -90,7 +90,7 @@ export function ReportDetailScreen({ route, navigation }: any) {
 
     let currentReport: any = rptData.data;
     if (!currentReport) {
-      // Viewer isn't the owner/assignee/admin (RLS hides the row) — open it
+      // Viewer isn't the owner/assignee/admin (RLS hides the row) - open it
       // read-only via the campus feed RPC so any student can view it.
       const { data: feed } = await supabase.rpc('campus_reports', { p_limit: 500 });
       currentReport = (feed ?? []).find((x: any) => x.id === reportId) ?? null;
@@ -99,7 +99,7 @@ export function ReportDetailScreen({ route, navigation }: any) {
     if (currentReport) setReport(currentReport as Report);
     setLoadingReport(false);
 
-    // Names via the roster RPC — profiles RLS only returns the caller's own row,
+    // Names via the roster RPC - profiles RLS only returns the caller's own row,
     // so reading it directly leaves both of these blank.
     if (currentReport?.reporter_id && !currentReport?.reporter_name) {
       const name = await personName(currentReport.reporter_id);
@@ -339,7 +339,7 @@ export function ReportDetailScreen({ route, navigation }: any) {
           </View>
         )}
 
-        {/* Status update — admin: any status; staff: forward-only on own assigned */}
+        {/* Status update - admin: any status; staff: forward-only on own assigned */}
         {canUpdateStatus && (
           <View style={styles.statusSection}>
             <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>

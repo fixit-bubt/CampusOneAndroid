@@ -1,4 +1,4 @@
-// Factory closures must be named mock* — jest hoists jest.mock() above the
+// Factory closures must be named mock* - jest hoists jest.mock() above the
 // imports and babel rejects any other out-of-scope reference.
 const mockEmbedJpg = jest.fn(async () => ({ tag: 'img' }));
 const mockDrawImage = jest.fn();

@@ -1,4 +1,4 @@
-// Lost & Found match ranking — shared by the item detail (suggests matches to
+// Lost & Found match ranking - shared by the item detail (suggests matches to
 // the poster) and the post form (pre-post "this might already be posted" hint).
 // Mirrors web findItemMatches: opposite type + same category (filtered in the
 // query), scored by shared title/description tokens, top N.

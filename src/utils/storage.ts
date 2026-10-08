@@ -1,4 +1,4 @@
-// Storage utilities — Supabase file upload/URL logic.
+// Storage utilities - Supabase file upload/URL logic.
 
 import { File } from 'expo-file-system';
 import { supabase } from '../lib/supabase';
@@ -11,7 +11,7 @@ export type UploadResult =
 /**
  * Upload a local file URI to a Supabase storage bucket.
  * Public buckets return a public URL. Private buckets return the storage path
- * as `url` — store it and sign it at view time with getSignedUrl.
+ * as `url` - store it and sign it at view time with getSignedUrl.
  */
 export async function uploadFile(
   bucket: string,
@@ -21,7 +21,7 @@ export async function uploadFile(
   bucketIsPublic = true,
 ): Promise<UploadResult> {
   try {
-    // SDK 56: legacy readAsStringAsync is deprecated — new File API returns bytes directly.
+    // SDK 56: legacy readAsStringAsync is deprecated - new File API returns bytes directly.
     const bytes = await new File(localUri).bytes();
 
     const { error } = await supabase.storage

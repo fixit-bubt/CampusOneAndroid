@@ -1,4 +1,4 @@
-// CampusOne — Navigation Types. Every screen's params are typed here.
+// CampusOne - Navigation Types. Every screen's params are typed here.
 
 export type AuthStackParams = {
   Landing: undefined;
@@ -72,7 +72,7 @@ export type AppStackParams = {
   CourseDetail: { courseId: string };
   StudyUpload:  { courseId: string; courseCode: string; courseTitle: string };
 
-  // Medical (directory + doctor availability only — no booking)
+  // Medical (directory + doctor availability only - no booking)
   Medical:         undefined;
   DoctorDetail:    { doctorId: string };
 

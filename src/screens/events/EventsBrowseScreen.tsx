@@ -199,7 +199,7 @@ export function EventsBrowseScreen({ navigation }: any) {
         ) : loadState === 'error' && events.length === 0 ? (
           <LoadError onRetry={load} />
         ) : view === 'calendar' ? (() => {
-          // Month grid — dots mark event days; tap a day to list its events.
+          // Month grid - dots mark event days; tap a day to list its events.
           const base = new Date();
           base.setDate(1);
           base.setMonth(base.getMonth() + monthOffset);

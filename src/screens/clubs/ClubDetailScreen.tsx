@@ -170,7 +170,7 @@ export function ClubDetailScreen({ route, navigation }: any) {
   // and club_members RLS both allow is_admin() regardless of membership, so
   // the Members/Manage screens are legitimately open to any admin. But
   // club_posts select/insert/update (migration 0053) and club_can_manage()/
-  // club_can_post() are membership-role-only with NO is_admin() bypass — an
+  // club_can_post() are membership-role-only with NO is_admin() bypass - an
   // admin who isn't a member of this club gets zero posts back and any
   // post insert/update/pin is rejected, so post actions must not be gated
   // on isAdmin or the buttons just fail.
@@ -274,7 +274,7 @@ export function ClubDetailScreen({ route, navigation }: any) {
         ) : null}
 
         {/* Self-serve join: request to join, or withdraw a pending request.
-            No is_admin() carve-out here either — an admin who wants club
+            No is_admin() carve-out here either - an admin who wants club
             content access joins like anyone else and gets real membership
             permissions, rather than the UI pretending they already have some. */}
         {!isMember && (

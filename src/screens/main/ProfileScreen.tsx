@@ -75,7 +75,7 @@ function BadgesRow({ badges, onPick, C, t }: { badges: Badge[]; onPick: (b: Badg
           onPress={() => onPick(b)}
           activeOpacity={0.75}
         >
-          <View style={[badgeStyles.medal, b.earned && { backgroundColor: b.fg + '22', borderColor: b.fg + '55', borderWidth: 2 }]}>
+          <View style={[badgeStyles.medal, { backgroundColor: C.surface2 }, b.earned && { backgroundColor: b.fg + '22', borderColor: b.fg + '55', borderWidth: 2 }]}>
             <Icon name={b.icon as any} size={24} color={b.earned ? b.fg : C.textMuted} />
             {!b.earned && b.progress && (
               <View style={[badgeStyles.prog, { backgroundColor: C.surface }]}>
@@ -96,7 +96,6 @@ const badgeStyles = StyleSheet.create({
   medal: {
     width: 56, height: 56, borderRadius: 18,
     alignItems: 'center', justifyContent: 'center',
-    backgroundColor: Accent.grayBg,
     position: 'relative',
   } as ViewStyle,
   prog: {
@@ -117,13 +116,13 @@ function BadgeSheet({ badge, C, onClose, t }: { badge: Badge | null; C: any; onC
           <View style={[sheetStyles.handle, { backgroundColor: C.border }]} />
           <Text style={[sheetStyles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{t.mainx.badge}</Text>
           <View style={{ alignItems: 'center', paddingVertical: 18 }}>
-            <View style={[sheetStyles.bigMedal, badge.earned && { backgroundColor: badge.fg + '22', borderColor: badge.fg + '55', borderWidth: 2 }]}>
+            <View style={[sheetStyles.bigMedal, { backgroundColor: C.surface2 }, badge.earned && { backgroundColor: badge.fg + '22', borderColor: badge.fg + '55', borderWidth: 2 }]}>
               <Icon name={badge.icon as any} size={38} color={badge.earned ? badge.fg : C.textMuted} />
             </View>
             <Text style={[sheetStyles.badgeName, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{BADGE_LABELS(t)[badge.id]}</Text>
             <View style={{ marginTop: 10 }}>
               {badge.earned ? (
-                <View style={[sheetStyles.earnedPill, { backgroundColor: Accent.greenBg }]}>
+                <View style={[sheetStyles.earnedPill, { backgroundColor: C.successBg }]}>
                   <View style={[sheetStyles.earnedDot, { backgroundColor: Accent.green }]} />
                   <Text style={[sheetStyles.earnedTxt, { color: Accent.green, fontFamily: FontFamily.jakartaBold }]}>{t.mainx.earned}</Text>
                 </View>
@@ -234,7 +233,7 @@ const sheetStyles = StyleSheet.create({
     borderWidth: 1,
   } as ViewStyle,
   typeChipTxt: { fontSize: 12.5 } as any,
-  bigMedal: { width: 88, height: 88, borderRadius: 28, alignItems: 'center', justifyContent: 'center', backgroundColor: Accent.grayBg } as ViewStyle,
+  bigMedal: { width: 88, height: 88, borderRadius: 28, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
   badgeName: { fontSize: 20, letterSpacing: -0.4, marginTop: 14 } as any,
   earnedPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 } as ViewStyle,
   earnedDot: { width: 6, height: 6, borderRadius: 3 } as ViewStyle,
@@ -380,12 +379,12 @@ export function ProfileScreen({ navigation }: any) {
   }, [user]);
 
   // Contribution counts + accomplishments change from other screens (post a
-  // report, join a club, RSVP, post lost&found, upload study material) —
+  // report, join a club, RSVP, post lost&found, upload study material) -
   // refresh on focus, not just mount, so returning to Profile shows current
   // numbers.
   useFocusEffect(useCallback(() => { loadContrib(); loadAccomplishments(); }, [loadContrib, loadAccomplishments]));
 
-  // Real badges computed from actual activity — thresholds preserve the
+  // Real badges computed from actual activity - thresholds preserve the
   // original placeholder values (reporter@5, studious@10); helper/active
   // didn't have a documented threshold before, picked reasonable ones.
   const computedBadges = useMemo(() => {
@@ -439,7 +438,7 @@ export function ProfileScreen({ navigation }: any) {
         payload.directory_visible = editDirVisible;
         payload.show_whatsapp = editShowWa;
       }
-      // Save profile fields first — the important data must persist even if the
+      // Save profile fields first - the important data must persist even if the
       // (optional) avatar upload fails. Avatar upload is best-effort.
       const { error } = await supabase.from('profiles').update(payload).eq('id', user.id);
       if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }

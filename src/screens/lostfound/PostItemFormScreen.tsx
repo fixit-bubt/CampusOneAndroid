@@ -74,7 +74,7 @@ export function PostItemFormScreen({ route, navigation }: any) {
     const q = title.trim();
     if (!cat || q.length < 3 || !user) { setMatches([]); return; }
     const oppType = type === 'Lost' ? 'Found' : 'Lost';
-    // `cancelled` covers a request already in flight — clearTimeout alone only
+    // `cancelled` covers a request already in flight - clearTimeout alone only
     // cancels a still-pending debounce, so a slow older response could land last.
     let cancelled = false;
     const handle = setTimeout(async () => {
