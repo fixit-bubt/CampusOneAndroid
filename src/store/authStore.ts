@@ -27,15 +27,25 @@ type AuthAction =
 
 function reducer(state: AuthState, action: AuthAction): AuthState {
   switch (action.type) {
-    case 'SET_SESSION':
+    case 'SET_SESSION': {
+      const isSameUser = !!state.user?.id && !!action.session?.user?.id && action.session.user.id === state.user.id;
       return {
         ...state,
         session: action.session,
         user: action.session?.user ?? null,
         loading: false,
+        profile: isSameUser ? state.profile : null,
+        profileLoaded: isSameUser ? state.profileLoaded : false,
+        profileError: isSameUser ? state.profileError : false,
       };
+    }
     case 'SET_PROFILE':
-      return { ...state, profile: action.profile, profileLoaded: true, profileError: false };
+      return {
+        ...state,
+        profile: action.profile,
+        profileLoaded: action.profile !== null,
+        profileError: false,
+      };
     case 'PROFILE_ERROR':
       // Keep profileLoaded:false so the navigator does NOT fall through to the
       // student UI; surface profileError so a retry screen can be shown.
@@ -76,15 +86,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Initial session check
     supabase.auth.getSession().then(({ data }) => {
       dispatch({ type: 'SET_SESSION', session: data.session });
-      if (data.session) fetchProfile(data.session.user.id);
+      if (data.session?.user?.id) fetchProfile(data.session.user.id);
     });
 
     // Listen for auth changes
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       dispatch({ type: 'SET_SESSION', session });
       setMonitoringUser(session?.user.id ?? null);
-      if (session) fetchProfile(session.user.id);
-      else dispatch({ type: 'SET_PROFILE', profile: null });
+      if (session?.user?.id) {
+        fetchProfile(session.user.id);
+      } else {
+        dispatch({ type: 'SIGN_OUT' });
+      }
     });
 
     return () => listener.subscription.unsubscribe();
@@ -98,19 +111,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .eq('id', userId)
       .single();
     if (myReq !== reqIdRef.current) return; // a newer fetch superseded this one
-    if (error) {
-      console.error('fetchProfile failed:', error.message);
+    if (error || !data) {
+      console.error('fetchProfile failed:', error?.message ?? 'Profile not found');
       // Do NOT mark the profile as loaded-with-null; that silently drops
       // admin/staff into the student UI. Surface an error for retry instead.
       dispatch({ type: 'PROFILE_ERROR' });
       return;
     }
-    dispatch({ type: 'SET_PROFILE', profile: data as Profile | null });
+    dispatch({ type: 'SET_PROFILE', profile: data as Profile });
   }
 
   async function signIn(email: string, password: string) {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
+    if (data.session?.user?.id) {
+      await fetchProfile(data.session.user.id);
+    }
   }
 
   async function signUp(email: string, password: string, fullName: string) {

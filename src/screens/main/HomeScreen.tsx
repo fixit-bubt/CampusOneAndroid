@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
-  RefreshControl, type ViewStyle,
+  RefreshControl, ActivityIndicator, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -114,7 +114,7 @@ export function HomeScreen({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
-    if (!user) return;
+    if (!user || (profile && profile.role !== 'student')) return;
     const [rRes, nRes] = await Promise.all([
       getMyReports(user.id),
       getMyNotifications(20),
@@ -124,7 +124,7 @@ export function HomeScreen({ navigation }: any) {
       setNotifs(nRes.data);
       setUnread(nRes.data.filter(n => !n.read).length);
     }
-  }, [user]);
+  }, [user, profile]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -132,6 +132,14 @@ export function HomeScreen({ navigation }: any) {
     setRefreshing(true);
     await load();
     setRefreshing(false);
+  }
+
+  if (profile && profile.role !== 'student') {
+    return (
+      <SafeAreaView style={[styles.safe, { backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' }]}>
+        <ActivityIndicator color={C.brand} size="large" />
+      </SafeAreaView>
+    );
   }
 
   const recentAlerts = notifs.slice(0, 2);

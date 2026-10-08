@@ -166,6 +166,7 @@ export function AdminDashboardScreen({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
+    if (profile && profile.role !== 'admin') return;
     const { data } = await supabase
       .from('reports')
       .select('*, profiles!reporter_id(full_name), assignee:profiles!assigned_staff_id(full_name)')
@@ -188,7 +189,7 @@ export function AdminDashboardScreen({ navigation }: any) {
     setResolvedCount(count ?? 0);
     const nRes = await getMyNotifications(20);
     if (nRes.ok) setUnread(nRes.data.filter(n => !n.read).length);
-  }, []);
+  }, [profile]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -225,6 +226,14 @@ export function AdminDashboardScreen({ navigation }: any) {
   const staffRanked = assignCat
     ? [...staffList].sort((a, b) => Number(b.expertise === assignCat) - Number(a.expertise === assignCat))
     : staffList;
+
+  if (profile && profile.role !== 'admin') {
+    return (
+      <SafeAreaView style={[styles.safe, { backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' }]}>
+        <Text style={{ color: C.textMuted, fontFamily: FontFamily.jakartaMedium }}>Admin access required</Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>

@@ -163,6 +163,7 @@ export function StaffDashboardScreen({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
+    if (!user?.id || (profile && profile.role !== 'staff' && profile.role !== 'admin')) return;
     const { data } = await supabase
       .from('reports')
       .select('*')
@@ -183,7 +184,7 @@ export function StaffDashboardScreen({ navigation }: any) {
     }
     const nRes = await getMyNotifications(20);
     if (nRes.ok) setUnread(nRes.data.filter(n => !n.read).length);
-  }, [user?.id]);
+  }, [user?.id, profile]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -226,6 +227,14 @@ export function StaffDashboardScreen({ navigation }: any) {
     const order = (r: Report) => r.status === 'In Progress' ? 0 : r.status === 'Open' ? 1 : 2;
     return order(a) - order(b);
   });
+
+  if (profile && profile.role !== 'staff' && profile.role !== 'admin') {
+    return (
+      <SafeAreaView style={[styles.safe, { backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' }]}>
+        <Text style={{ color: C.textMuted, fontFamily: FontFamily.jakartaMedium }}>Staff access required</Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>

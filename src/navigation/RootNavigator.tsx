@@ -18,13 +18,14 @@ export function RootNavigator() {
   const { C } = useTheme();
   const t = useT();
 
-  // Claim this device's FCM token once the user is signed in, and keep it
-  // current if FCM rotates the token while the app is running.
+  // Claim this device's FCM token once the user is signed in and their
+  // profile is loaded, and keep it current if FCM rotates the token while
+  // the app is running.
   React.useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id || !profileLoaded || !profile) return;
     registerPushToken();
     return addPushTokenRotationHandler();
-  }, [user?.id]);
+  }, [user?.id, profileLoaded, profile]);
 
   // Tapping a push deep-links to the referenced item (falling back to the
   // Notifications screen). On a cold start the navigator isn't mounted yet
@@ -64,8 +65,8 @@ export function RootNavigator() {
   }
 
   // Wait for the profile (role) before choosing a navigator, so an admin
-  // never flashes the student UI.
-  if (loading || (session && !profileLoaded)) {
+  // or staff member never flashes the student UI.
+  if (loading || (session && (!profileLoaded || !profile))) {
     return (
       <View style={{ flex: 1, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' }}>
         <ActivityIndicator color={C.brand} size="large" />

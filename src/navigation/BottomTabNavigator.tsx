@@ -2,7 +2,7 @@
 // admin/staff; students get the regular home feed. All roles keep
 // Explore/Annex/Settings. Notifications moved off the tab bar - it's a
 // stack screen now, reached via the bell on the Home tab.
-import { View } from 'react-native';
+import { View, ActivityIndicator } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
@@ -19,6 +19,15 @@ import { AnnexPortalScreen } from '../screens/annex/AnnexPortalScreen';
 import { SettingsScreen } from '../screens/main/SettingsScreen';
 import { AdminDashboardScreen } from '../screens/dashboard/AdminDashboardScreen';
 import { StaffDashboardScreen } from '../screens/dashboard/StaffDashboardScreen';
+
+function HomeLoadingScreen() {
+  const { C } = useTheme();
+  return (
+    <View style={{ flex: 1, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' }}>
+      <ActivityIndicator color={C.brand} size="large" />
+    </View>
+  );
+}
 
 const Tab = createBottomTabNavigator<BottomTabParams>();
 
@@ -48,7 +57,8 @@ export function BottomTabNavigator() {
   const HomeComponent =
     profile?.role === 'admin' ? AdminDashboardScreen :
     profile?.role === 'staff' ? StaffDashboardScreen :
-    HomeScreen;
+    profile?.role === 'student' ? HomeScreen :
+    HomeLoadingScreen;
 
   return (
     <Tab.Navigator
