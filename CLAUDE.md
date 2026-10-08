@@ -150,6 +150,7 @@ The live Supabase database (`xhgpxvyqrufbbuivttmi`) is the single source of trut
 | **Reports** | `reports` | Columns: `code`, `reporter_id`, `assigned_staff_id`, `status` (`'Open'`, `'In Progress'`, `'Resolved'`, `'Rejected'`, `'Closed'`). Trade assignment matches `profiles.expertise`. |
 | **Connections** | `connections` | `requester_id`, `addressee_id`, `status` (`'pending'`, `'accepted'`). |
 | **Medical** | `doctors` & `appointments` | Clinic is walk-in / directory only. Doctors: `room`. Appointments: `student_id`, `slot`, `date`. |
+| **Account Deletion** | `delete_own_account()` RPC | SECURITY DEFINER. Removes dependent records and caller from `auth.users` (cascading to `profiles`). Revoked from anon; authenticated only. |
 
 ### 8.2 Profiles RLS & Display Names
 - `profiles` RLS policy (`profiles_select_self_admin_or_matched`) returns **ONLY the caller's own row** (or admin/matched lost-and-found counterpart).
@@ -260,9 +261,16 @@ In `RootNavigator.tsx`, students who have not completed onboarding (`!profile?.s
   ```
   Standard output: `android/app/build/outputs/bundle/release/app-release.aab`
 - **Google Play Compliance & Legal Infrastructure:**
-  - **In-App Policy & Terms:** `PrivacyPolicyScreen.tsx` and `TermsScreen.tsx` wired into both `AppNavigator` and `AuthNavigator`.
+  - **Account Context:** Personal Account ID `6137426018535669538` (`nawyaj morshed`).
+  - **Account Verification:** Official Government NID/Passport identity approval + SMS phone verification required before publishing.
+  - **20-Tester / 14-Day Closed Testing Rule:** Personal accounts created after Nov 2023 must run a closed test with 20 opted-in testers for 14 continuous days before Google unlocks production release.
+  - **In-App Policy & Terms:** `PrivacyPolicyScreen.tsx` and `TermsScreen.tsx` wired into both `AppNavigator` and `AuthNavigator`. Interactive footer links on `LandingScreen.tsx` and `RegisterScreen.tsx`.
   - **Account & Data Deletion:** In-app flow in `SettingsScreen.tsx` calling `delete_own_account()` RPC. Public web request page at `delete-account.html`.
   - **Public Web Pages:** `public/privacy-policy.html` and `public/delete-account.html` mirrored to `CampusOneWeb` public directory for live URL hosting.
+  - **Store Listing Assets:**
+    - App Icon: `assets/playstore-icon-full.png` (512×512 PNG, verified).
+    - Feature Graphic: 1024×500 PNG banner (required by Play Console).
+    - Reviewer Credentials: Test student credentials must be supplied in Play Console App Access declaration.
 - **Release APK Locations:**
   - Standard output: `android/app/build/outputs/apk/release/app-release.apk` (~51MB, fully signed).
   - Quick-access root copy: `CampusOne-release.apk`.
