@@ -253,6 +253,16 @@ In `RootNavigator.tsx`, students who have not completed onboarding (`!profile?.s
   cd android
   .\gradlew assembleRelease
   ```
+- **Build Release Android App Bundle (.aab) for Google Play Submission:**
+  ```bash
+  cd android
+  .\gradlew bundleRelease
+  ```
+  Standard output: `android/app/build/outputs/bundle/release/app-release.aab`
+- **Google Play Compliance & Legal Infrastructure:**
+  - **In-App Policy & Terms:** `PrivacyPolicyScreen.tsx` and `TermsScreen.tsx` wired into both `AppNavigator` and `AuthNavigator`.
+  - **Account & Data Deletion:** In-app flow in `SettingsScreen.tsx` calling `delete_own_account()` RPC. Public web request page at `delete-account.html`.
+  - **Public Web Pages:** `public/privacy-policy.html` and `public/delete-account.html` mirrored to `CampusOneWeb` public directory for live URL hosting.
 - **Release APK Locations:**
   - Standard output: `android/app/build/outputs/apk/release/app-release.apk` (~51MB, fully signed).
   - Quick-access root copy: `CampusOne-release.apk`.
