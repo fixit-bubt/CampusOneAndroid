@@ -346,8 +346,7 @@ The mobile and web applications are actively pitched and presented to BUBT admin
 Whenever the user instructs to "update memorys", the agent MUST synchronously update ALL memory references across both projects:
 1. `CampusOne/AGENTS.md` & `CampusOne/CampusOne/AGENTS.md`
 2. `CampusOne/CLAUDE.md` & `CampusOne/CampusOne/CLAUDE.md`
-3. `CampusOne/GEMINI.md` & `CampusOne/CampusOne/GEMINI.md`
-4. `fixit-campus/AGENTS.md`, `fixit-campus/agent.md`, and `fixit-campus/CLAUDE.md`
+3. `fixit-campus/AGENTS.md`, `fixit-campus/agent.md`, and `fixit-campus/CLAUDE.md`
 
 ---
 
