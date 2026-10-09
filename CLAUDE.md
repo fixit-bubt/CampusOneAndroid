@@ -404,6 +404,7 @@ Whenever the user instructs to "update memorys", the agent MUST synchronously up
   4. Browse Lost & Found action card linking to `LostFoundBrowse`.
   5. Campus Today Highlights (`CampusToday.tsx` with `hide={['bus', 'prayer']}`): Shows urgent blood requests and campus job opportunities.
 - **De-cluttered Efficiency:** Old `Quick Actions` row and redundant `My Reports` card list are eliminated since Reports, Bus, and Prayer are directly represented in the status strips.
+- **Banner Image Resolution Engine:** In `HomeHeroBanner.tsx`, `resolveBannerSource()` intercepts image URLs from the database. When relative web paths from database seeds are encountered (e.g. `/announcements/convocation-2026.jpg` or `/events/blood-drive.jpg`), it automatically resolves them to bundled local assets in `assets/banners/` (`convocation-2026.jpg`, `blood-drive.jpg`, `exam-routine.jpg`, `hackathon-2026.jpg`) with 0ms latency. Full remote URLs (`https://...` from Supabase storage) load over the network, and unrecognized relative paths resolve against the web host.
 - **Zero Misplaced Tool Promos:** Document tools (PDF Maker, Cover Page Generator) remain organized in Explore -> Academics and are not dumped on the Home screen.
 
 ### 17.2 Settings & Notification Architecture (`SettingsScreen.tsx` & `NotifSettingsScreen.tsx`)
