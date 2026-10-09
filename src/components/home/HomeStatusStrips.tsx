@@ -66,7 +66,7 @@ export function HomeStatusStrips() {
           .gte('created_at', staleCutoff),
         supabase
           .from('donors')
-          .select('id', { count: 'exact', head: true }),
+          .select('*', { count: 'exact', head: true }),
       ]);
 
       if (repRes.ok) {
