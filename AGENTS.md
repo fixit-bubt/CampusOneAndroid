@@ -409,13 +409,14 @@ Whenever the user instructs to "update memorys", the agent MUST synchronously up
 - **Home Screen Flow (Student):**
   1. TopBar (Varsity LogoMark insignia, CampusOne brand text, role-aware subtitle / badge, and single Notification Bell with live unread badge).
   2. Hero Auto-Changing Banner (`HomeHeroBanner.tsx`): 4.2s auto-rotating carousel of announcements and events strictly gated to photo attachments with fallback varsity assets.
-  3. Three Luxury Status Strips (`HomeStatusStrips.tsx`):
+  3. Four Luxury Status Strips (`HomeStatusStrips.tsx`):
      - Reports Strip: Indigo blueprint gradient with Open, In Progress, Resolved counters linking to `MyReports`.
      - Bus Strip: Dark transit amber gradient with route, departure, wait countdown, and 120-min cycle progress bar.
      - Prayer Strip: Midnight Islamic emerald gradient with Salah name, Azan time, wait countdown, and interval progress bar.
+     - Blood Strip: Midnight crimson gradient with Urgent requests, Needed active requests, and Registered Donors counters linking to `Blood`.
   4. Browse Lost & Found action card linking to `LostFoundBrowse`.
-  5. Campus Today Highlights (`CampusToday.tsx` with `hide={['bus', 'prayer']}`): Shows urgent blood requests and campus job opportunities.
-- **De-cluttered Efficiency:** Old `Quick Actions` row and redundant `My Reports` card list are eliminated since Reports, Bus, and Prayer are directly represented in the status strips.
+  5. Campus Today Highlights (`CampusToday.tsx` with `hide={['bus', 'prayer', 'blood']}`): Shows open campus jobs and updates.
+- **De-cluttered Efficiency:** Old `Quick Actions` row and redundant `My Reports` card list are eliminated since Reports, Bus, Prayer, and Blood are directly represented in the status strips.
 - **Banner Image Resolution Engine:** In `HomeHeroBanner.tsx`, `resolveBannerSource()` intercepts image URLs from the database. When relative web paths from database seeds are encountered (e.g. `/announcements/convocation-2026.jpg` or `/events/blood-drive.jpg`), it automatically resolves them to bundled local assets in `assets/banners/` (`convocation-2026.jpg`, `blood-drive.jpg`, `exam-routine.jpg`, `hackathon-2026.jpg`) with 0ms latency. Full remote URLs (`https://...` from Supabase storage) load over the network, and unrecognized relative paths resolve against the web host.
 - **Zero Misplaced Tool Promos:** Document tools (PDF Maker, Cover Page Generator) remain organized in Explore -> Academics and are not dumped on the Home screen.
 
