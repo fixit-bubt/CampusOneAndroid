@@ -393,14 +393,18 @@ Whenever the user instructs to "update memorys", the agent MUST synchronously up
 ## 17. Navigation & Screen Information Architecture (Explore & Tools Placement)
 
 ### 17.1 Home Screen Integrity (`HomeScreen.tsx`)
-- **Zero Redundant Notification Clutter:** Notifications belong strictly in the dedicated top-right **Bell Icon** (with live unread badge count) linking to `NotificationsScreen`. Redundant notification widgets—specifically the legacy top blue Spotlight banner (`1 new alert / From reports, clubs & more`) and the inline `RECENT ALERTS` card list—are permanently eliminated from the Home screen.
+- **Zero Redundant Clutter:** Notifications belong strictly in the dedicated top-right **Bell Icon** (with live unread badge count) linking to `NotificationsScreen`. Redundant legacy notification banners and large repetitive list cards are eliminated from the Home screen.
 - **Home Screen Flow (Student):**
   1. TopBar (Avatar, Greeting, Language switch, Theme toggle, Bell Icon with live unread badge).
-  2. Quick Actions row (`Reports`, `Bus`, `Study`, `Medical`) positioned cleanly at the top (`marginTop: 14`).
-  3. My Reports (`+ New Report` / `See All`).
-  4. Campus Today (`CampusToday.tsx` live transit, prayer times, notices, events, and urgent blood request carousel).
-- **Quick Actions Row:** Strictly contains the 4 core campus actions: `Reports`, `Bus`, `Study`, and `Medical`.
-- **Zero Misplaced Tool Promos:** Document tools (PDF Maker, Cover Page Generator) must never be inserted on the Home screen.
+  2. Hero Auto-Changing Banner (`HomeHeroBanner.tsx`): 4.2s auto-rotating carousel of announcements and events strictly gated to photo attachments with fallback varsity assets.
+  3. Three Luxury Status Strips (`HomeStatusStrips.tsx`):
+     - Reports Strip: Indigo blueprint gradient with Open, In Progress, Resolved counters linking to `MyReports`.
+     - Bus Strip: Dark transit amber gradient with route, departure, wait countdown, and 120-min cycle progress bar.
+     - Prayer Strip: Midnight Islamic emerald gradient with Salah name, Azan time, wait countdown, and interval progress bar.
+  4. Browse Lost & Found action card linking to `LostFoundBrowse`.
+  5. Campus Today Highlights (`CampusToday.tsx` with `hide={['bus', 'prayer']}`): Shows urgent blood requests and campus job opportunities.
+- **De-cluttered Efficiency:** Old `Quick Actions` row and redundant `My Reports` card list are eliminated since Reports, Bus, and Prayer are directly represented in the status strips.
+- **Zero Misplaced Tool Promos:** Document tools (PDF Maker, Cover Page Generator) remain organized in Explore -> Academics and are not dumped on the Home screen.
 
 ### 17.2 Settings & Notification Architecture (`SettingsScreen.tsx` & `NotifSettingsScreen.tsx`)
 - **Standalone Card Layout:** Settings items are structured as independent floating cards (`borderRadius: 16`, `borderWidth: 1`, `marginBottom: 10`, `padding: 14`) with tinted squircle icons, bold titles, and subtitles. Monolithic grouped tables and hairline dividers are strictly forbidden.
