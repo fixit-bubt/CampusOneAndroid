@@ -423,6 +423,13 @@ You will be registered as an available ${group} donor.`,
     updateDonorTitle: "Update Donor Info",
     updateLocationPhone: "Update Info",
     showingGroupFilter: (group: string) => `Showing ${group} donors · Tap to clear`,
+    searchAreaPlaceholder: "Search area, hospital, or donor...",
+    allAreasBtn: "All Areas (45+)",
+    selectAreaTitle: "Dhaka Areas",
+    selectAreaSub: "Select hospital or living zone",
+    searchAreaInput: "Search area (e.g. Mirpur, Gulshan, DMCH)...",
+    clearAreaFilter: "Clear Filter",
+    pickAreaAction: "Select from Dhaka Areas",
   },
 
   bus2: {

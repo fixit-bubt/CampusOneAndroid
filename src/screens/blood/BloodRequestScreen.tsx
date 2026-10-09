@@ -12,6 +12,7 @@ import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../components/ui/Toast';
+import { AreaPickerModal } from '../../components/blood/AreaPickerModal';
 import type { BloodRequest } from '../../types/database';
 
 const GROUPS: BloodRequest['blood_group'][] = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
@@ -32,6 +33,7 @@ export function BloodRequestScreen({ navigation }: any) {
   const [patient, setPatient] = useState('');
   const [hospital, setHospital] = useState('');
   const [area, setArea] = useState('');
+  const [areaModalVisible, setAreaModalVisible] = useState(false);
   const [urgency, setUrgency] = useState<BloodRequest['urgency']>('Today');
   const [isPlatelets, setIsPlatelets] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -148,7 +150,19 @@ export function BloodRequestScreen({ navigation }: any) {
         />
 
         {/* Area */}
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.blood2.area}</Text>
+        <View style={styles.labelRow}>
+          <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>{t.blood2.area}</Text>
+          <TouchableOpacity
+            onPress={() => setAreaModalVisible(true)}
+            style={styles.pickAreaBtn}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Icon name="pin" size={12} color={SectorColors.blood} />
+            <Text style={[styles.pickAreaTxt, { color: SectorColors.blood, fontFamily: FontFamily.jakartaBold }]}>
+              {t.blood2.pickAreaAction}
+            </Text>
+          </TouchableOpacity>
+        </View>
         <TextInput
           style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
           value={area}
@@ -202,6 +216,12 @@ export function BloodRequestScreen({ navigation }: any) {
 
         <View style={{ height: 30 }} />
       </ScrollView>
+      <AreaPickerModal
+        visible={areaModalVisible}
+        onClose={() => setAreaModalVisible(false)}
+        selectedArea={area}
+        onSelectArea={setArea}
+      />
     </SafeAreaView>
   );
 }
@@ -216,6 +236,25 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     marginTop: 18,
     marginLeft: 2,
+  } as any,
+
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 18,
+    marginBottom: 8,
+    marginHorizontal: 2,
+  } as ViewStyle,
+
+  pickAreaBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  } as ViewStyle,
+
+  pickAreaTxt: {
+    fontSize: 11.5,
   } as any,
 
   groupGrid: {

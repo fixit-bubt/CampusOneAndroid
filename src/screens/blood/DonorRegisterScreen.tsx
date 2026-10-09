@@ -15,6 +15,7 @@ import { supabase } from '../../lib/supabase';
 import { getMyDonor } from '../../services/bloodService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { scheduleRechargedReminder, cancelRechargedReminder } from '../../utils/bloodReminder';
+import { AreaPickerModal } from '../../components/blood/AreaPickerModal';
 import type { BloodRequest } from '../../types/database';
 
 const GROUPS: BloodRequest['blood_group'][] = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
@@ -27,6 +28,7 @@ export function DonorRegisterScreen({ navigation }: any) {
 
   const [group, setGroup] = useState<BloodRequest['blood_group'] | null>(null);
   const [area, setArea] = useState('');
+  const [areaModalVisible, setAreaModalVisible] = useState(false);
   const [phone, setPhone] = useState('');
   const [lastDonated, setLastDonated] = useState('');
   const [gender, setGender] = useState<'male' | 'female'>('male');
@@ -218,7 +220,19 @@ export function DonorRegisterScreen({ navigation }: any) {
           {t.blood2.whoGuidelineNote}
         </Text>
 
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.blood2.area}</Text>
+        <View style={styles.labelRow}>
+          <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>{t.blood2.area}</Text>
+          <TouchableOpacity
+            onPress={() => setAreaModalVisible(true)}
+            style={styles.pickAreaBtn}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Icon name="pin" size={12} color={SectorColors.blood} />
+            <Text style={[styles.pickAreaTxt, { color: SectorColors.blood, fontFamily: FontFamily.jakartaBold }]}>
+              {t.blood2.pickAreaAction}
+            </Text>
+          </TouchableOpacity>
+        </View>
         <TextInput
           style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
           value={area}
@@ -264,6 +278,12 @@ export function DonorRegisterScreen({ navigation }: any) {
         <View style={{ height: 30 }} />
       </ScrollView>
       )}
+      <AreaPickerModal
+        visible={areaModalVisible}
+        onClose={() => setAreaModalVisible(false)}
+        selectedArea={area}
+        onSelectArea={setArea}
+      />
     </SafeAreaView>
   );
 }
@@ -306,6 +326,25 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     marginTop: 18,
     marginLeft: 2,
+  } as any,
+
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 18,
+    marginBottom: 8,
+    marginHorizontal: 2,
+  } as ViewStyle,
+
+  pickAreaBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  } as ViewStyle,
+
+  pickAreaTxt: {
+    fontSize: 11.5,
   } as any,
 
   groupGrid: {

@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
-  RefreshControl, Alert, type ViewStyle,
+  RefreshControl, Alert, TextInput, type ViewStyle, type TextStyle,
 } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -23,13 +24,14 @@ import {
   getDonorContact, getRequesterContact, type DonorWithName,
 } from '../../services/bloodService';
 import { ContactSheet } from '../../components/ui/ContactSheet';
+import { AreaPickerModal } from '../../components/blood/AreaPickerModal';
+import { QUICK_CAMPUS_AREAS } from '../../constants/dhakaAreas';
 import type { BloodRequest, Donor } from '../../types/database';
 
 type Tab = 'requests' | 'donors';
 
 const BLOOD_COLOR = SectorColors.blood;
 const BLOOD_BG    = `${SectorColors.blood}1e`;
-const AREA_OPTIONS = ['All', 'Mirpur', 'Kurmitola', 'DMCH', 'Dhanmondi', 'Uttara'];
 
 // Urgency tones from theme tokens (dark-mode aware via C)
 function urgencyTone(C: any, urgency: string): { fg: string; bg: string } {
@@ -57,6 +59,8 @@ export function BloodScreen({ navigation }: any) {
   const [tab, setTab] = useState<Tab>('requests');
   const [groupFilter, setGroupFilter] = useState('All');
   const [areaFilter, setAreaFilter] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [areaModalVisible, setAreaModalVisible] = useState(false);
   const [requests, setRequests] = useState<BloodRequest[]>([]);
   const [donors, setDonors]     = useState<DonorWithName[]>([]);
   const [myDonor, setMyDonor]   = useState<Donor | null>(null);
@@ -68,6 +72,21 @@ export function BloodScreen({ navigation }: any) {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [loadState, setLoadState] = useState<'loading' | 'error' | 'ready'>('loading');
   const [contactTarget, setContactTarget] = useState<{ name: string; phone: string; title?: string } | null>(null);
+
+  const areaCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    if (tab === 'requests') {
+      requests.forEach(r => {
+        if (r.area) counts[r.area] = (counts[r.area] ?? 0) + 1;
+        if (r.hospital) counts[r.hospital] = (counts[r.hospital] ?? 0) + 1;
+      });
+    } else {
+      donors.forEach(d => {
+        if (d.area) counts[d.area] = (counts[d.area] ?? 0) + 1;
+      });
+    }
+    return counts;
+  }, [tab, requests, donors]);
 
   const load = useCallback(async () => {
     const [res, savedGender] = await Promise.all([
@@ -210,26 +229,97 @@ export function BloodScreen({ navigation }: any) {
     );
   }
 
-  // Filter requests and donors by group and area
+  // Filter requests and donors by group, area, and search query
   const filteredRequests = requests.filter(r => {
     const matchesGroup = groupFilter === 'All' || r.blood_group === groupFilter;
     const matchesArea = areaFilter === 'All' ||
       (r.area && r.area.toLowerCase().includes(areaFilter.toLowerCase())) ||
       (r.hospital && r.hospital.toLowerCase().includes(areaFilter.toLowerCase()));
-    return matchesGroup && matchesArea;
+    const q = searchQuery.trim().toLowerCase();
+    const matchesQuery = !q ||
+      (r.patient && r.patient.toLowerCase().includes(q)) ||
+      (r.hospital && r.hospital.toLowerCase().includes(q)) ||
+      (r.area && r.area.toLowerCase().includes(q)) ||
+      r.blood_group.toLowerCase().includes(q);
+    return matchesGroup && matchesArea && matchesQuery;
   });
 
   const filteredDonors = donors.filter(d => {
     const matchesGroup = groupFilter === 'All' || d.blood_group === groupFilter;
     const matchesArea = areaFilter === 'All' ||
       (d.area && d.area.toLowerCase().includes(areaFilter.toLowerCase()));
-    return matchesGroup && matchesArea;
+    const q = searchQuery.trim().toLowerCase();
+    const name = (d as any).profiles?.full_name?.toLowerCase() || '';
+    const matchesQuery = !q ||
+      name.includes(q) ||
+      (d.area && d.area.toLowerCase().includes(q)) ||
+      d.blood_group.toLowerCase().includes(q);
+    return matchesGroup && matchesArea && matchesQuery;
   });
 
   // Group donors by blood type
   const donorGroups: Record<string, number> = {};
   donors.forEach(d => { donorGroups[d.blood_group] = (donorGroups[d.blood_group] ?? 0) + 1; });
   const bloodTypes = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
+
+  function renderAreaChips(contentContainerStyle?: any) {
+    const isCustomActive = areaFilter !== 'All' && !QUICK_CAMPUS_AREAS.includes(areaFilter);
+    return (
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={{ flexGrow: 0 }}
+        contentContainerStyle={contentContainerStyle}
+      >
+        {isCustomActive && (
+          <TouchableOpacity
+            style={[styles.areaChip, { backgroundColor: SectorColors.blood, borderColor: SectorColors.blood }]}
+            onPress={() => setAreaFilter('All')}
+            activeOpacity={0.75}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+              <Icon name="pin" size={12} color="#fff" />
+              <Text style={[styles.areaChipTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                {areaFilter}
+              </Text>
+              <Feather name="x" size={12} color="#fff" />
+            </View>
+          </TouchableOpacity>
+        )}
+
+        {QUICK_CAMPUS_AREAS.map(a => {
+          const on = areaFilter === a;
+          const label = a === 'All' ? t.blood2.filterLocationAll : a;
+          return (
+            <TouchableOpacity
+              key={a}
+              style={[styles.areaChip, on
+                ? { backgroundColor: C.brand, borderColor: C.brand }
+                : { backgroundColor: C.surface, borderColor: C.border }]}
+              onPress={() => setAreaFilter(a)}
+              activeOpacity={0.75}
+            >
+              <Text style={[styles.areaChipTxt, { color: on ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                {label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+
+        <TouchableOpacity
+          style={[styles.allAreasTrigger, { backgroundColor: C.surface, borderColor: C.border }]}
+          onPress={() => setAreaModalVisible(true)}
+          activeOpacity={0.75}
+        >
+          <Icon name="pin" size={12} color={SectorColors.blood} />
+          <Text style={[styles.allAreasTriggerTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+            {t.blood2.allAreasBtn}
+          </Text>
+          <Feather name="chevron-down" size={13} color={C.textMuted} />
+        </TouchableOpacity>
+      </ScrollView>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -351,6 +441,25 @@ export function BloodScreen({ navigation }: any) {
         })}
       </View>
 
+      {/* Universal In-Screen Search Bar */}
+      <View style={{ paddingHorizontal: Layout.screenPadding, marginBottom: 8 }}>
+        <View style={[styles.searchBar, { backgroundColor: C.surface, borderColor: C.border }]}>
+          <Feather name="search" size={15} color={C.textMuted} />
+          <TextInput
+            style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+            placeholder={t.blood2.searchAreaPlaceholder}
+            placeholderTextColor={C.textMuted}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Feather name="x" size={14} color={C.textMuted} />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
       {/* Filter Bars - on requests tab only */}
       {tab === 'requests' && (
         <>
@@ -379,31 +488,7 @@ export function BloodScreen({ navigation }: any) {
             })}
           </ScrollView>
 
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={{ flexGrow: 0 }}
-            contentContainerStyle={[styles.areaChips, { paddingHorizontal: Layout.screenPadding }]}
-          >
-            {AREA_OPTIONS.map(a => {
-              const on = areaFilter === a;
-              const label = a === 'All' ? t.blood2.filterLocationAll : a;
-              return (
-                <TouchableOpacity
-                  key={a}
-                  style={[styles.areaChip, on
-                    ? { backgroundColor: C.brand, borderColor: C.brand }
-                    : { backgroundColor: C.surface, borderColor: C.border }]}
-                  onPress={() => setAreaFilter(a)}
-                  activeOpacity={0.75}
-                >
-                  <Text style={[styles.areaChipTxt, { color: on ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                    {label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
+          {renderAreaChips([styles.areaChips, { paddingHorizontal: Layout.screenPadding }])}
         </>
       )}
 
@@ -549,34 +634,9 @@ export function BloodScreen({ navigation }: any) {
             </View>
 
             {/* Area proximity filter for donors */}
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={{ flexGrow: 0, marginBottom: 12 }}
-              contentContainerStyle={{ gap: 6, paddingVertical: 2 }}
-            >
-              {AREA_OPTIONS.map(a => {
-                const on = areaFilter === a;
-                const label = a === 'All' ? t.blood2.filterLocationAll : a;
-                return (
-                  <TouchableOpacity
-                    key={a}
-                    style={[
-                      styles.areaChip,
-                      on
-                        ? { backgroundColor: C.brand, borderColor: C.brand }
-                        : { backgroundColor: C.surface, borderColor: C.border },
-                    ]}
-                    onPress={() => setAreaFilter(a)}
-                    activeOpacity={0.75}
-                  >
-                    <Text style={[styles.areaChipTxt, { color: on ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                      {label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
+            <View style={{ marginBottom: 12 }}>
+              {renderAreaChips({ gap: 6, paddingVertical: 2 })}
+            </View>
 
             {/* Donor list */}
             {filteredDonors.length === 0 ? (
@@ -652,12 +712,46 @@ export function BloodScreen({ navigation }: any) {
         name={contactTarget?.name ?? ''}
         phone={contactTarget?.phone}
       />
+      <AreaPickerModal
+        visible={areaModalVisible}
+        onClose={() => setAreaModalVisible(false)}
+        selectedArea={areaFilter}
+        onSelectArea={setAreaFilter}
+        areaCounts={areaCounts}
+      />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    height: 42,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+  } as ViewStyle,
+  searchInput: {
+    flex: 1,
+    fontSize: 13.5,
+    paddingVertical: 0,
+  } as TextStyle,
+  allAreasTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    flexShrink: 0,
+  } as ViewStyle,
+  allAreasTriggerTxt: {
+    fontSize: 12,
+  } as TextStyle,
   actRow: { flexDirection: 'row', gap: 8, paddingTop: 8, paddingBottom: 4 } as ViewStyle,
   actBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, height: 40, borderRadius: 12 } as ViewStyle,
   actBtnTxt: { fontSize: 13 } as any,

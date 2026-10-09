@@ -424,6 +424,13 @@ export const bn: Dict = {
     updateDonorTitle: "ডোনার তথ্য আপডেট",
     updateLocationPhone: "তথ্য আপডেট",
     showingGroupFilter: (group: string) => `${group} ডোনার ফিল্টার করা · রিসেট করতে ট্যাপ করুন`,
+    searchAreaPlaceholder: "এলাকা, হাসপাতাল বা ডোনার খুঁজুন...",
+    allAreasBtn: "সব এলাকা (৪৫+)",
+    selectAreaTitle: "ঢাকার এলাকাসমূহ",
+    selectAreaSub: "হাসপাতাল বা বসবাসের এলাকা নির্বাচন করুন",
+    searchAreaInput: "এলাকা খুঁজুন (যেমন মিরপুর, গুলশান, ঢামেক)...",
+    clearAreaFilter: "ফিল্টার মুছুন",
+    pickAreaAction: "ঢাকার তালিকা থেকে বাছুন",
   },
 
   bus2: {
