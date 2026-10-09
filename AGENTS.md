@@ -396,9 +396,20 @@ Whenever the user instructs to "update memorys", the agent MUST synchronously up
 - **Quick Actions Row:** Strictly contains the 4 core campus actions: `Reports`, `Bus`, `Study`, and `Medical`.
 - **Zero Misplaced Tool Promos:** Document tools (PDF Maker, Cover Page Generator) must never be inserted on the Home screen. Home must stay clean and jump directly to `My Reports` and `Recent Alerts`.
 
-### 17.2 Settings Screen Scope (`SettingsScreen.tsx`)
-- **Settings Only:** Settings is strictly reserved for user account management and app preferences (`Dark Mode`, `Language`, `Notifications`, `Share App`, `About`, `Change Password`, `Sign Out`).
-- **Zero Utility Dumps:** Utility tools or document generators must never be embedded inside Settings.
+### 17.2 Settings & Notification Architecture (`SettingsScreen.tsx` & `NotifSettingsScreen.tsx`)
+- **Standalone Card Layout:** Settings items are structured as independent floating cards (`borderRadius: 16`, `borderWidth: 1`, `marginBottom: 10`, `padding: 14`) with tinted squircle icons, bold titles, and subtitles. Monolithic grouped tables and hairline dividers are strictly forbidden.
+- **Data & Cache Manager:** Dedicated card backed by `storageService.ts` that calculates temporary working file cache (PDF Maker thumbnails & working files, people roster memory cache), safely purges cache without de-authenticating the user, and provides 1-tap navigation to Android system App Info via `Linking.openSettings()`.
+- **Optimized Sync:** Battery-optimized background sync toggle persisted in `app.optSync` storage.
+- **Role-Aware Dashboards & Workspaces:** Admin accounts get an `Admin Dashboard` quick access card to management hubs; Staff accounts get a `Staff Workspace` quick access card to assigned maintenance tasks.
+- **Notifications Screen Parity (`NotifSettingsScreen.tsx`):**
+  - OS-Level Permission Alert: Displays an amber banner (`Notifications are disabled in your phone settings`) with an `[Open Settings]` button linking directly to Android's App Info when push permissions are blocked.
+  - Subtitle: "Manage your notification preferences. Turn off what you don't need."
+  - Sector-Level Standalone Cards: Every sector is an independent card with expandable channel pills (`Push` / `In-app`).
+  - Role-Tailored Sector Filtering:
+    - Student: all 18 sectors.
+    - Staff: maintenance & campus essentials (`reports`, `announce`, `bus`, `prayer`, `medical`, `blood`, `market`, `ride`), omitting academic/student-only channels.
+    - Admin: all campus management sectors, omitting student-exclusive private channels (`messages`, `directory`, `coverpage`).
+- **Zero Utility Dumps:** Utility tools or document generators (e.g. Cover Page Generator) remain organized in Explore -> Academics and are not dumped in Settings.
 
 ### 17.3 Explore Screen Categories & Accordion UX (`ExploreScreen.tsx` & `CollapsibleSection.tsx`)
 - **Categorization:** High-level grouping matches the web sidebar:
