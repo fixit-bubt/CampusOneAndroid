@@ -69,8 +69,8 @@ export function HomeScreen({ navigation }: any) {
       <TopBar
         profile={profile}
         unread={unread}
+        onSearch={() => navigation.navigate('Explore')}
         onBell={() => navigation.navigate('Notifications')}
-        onAvatar={() => navigation.navigate('Profile')}
       />
 
       <ScrollView

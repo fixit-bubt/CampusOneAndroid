@@ -38,6 +38,9 @@ export const en = {
   topbar: {
     greeting: 'Good morning,',
     langLabel: 'EN',
+    tagline: 'Full campus in one app',
+    adminSubtitle: 'Campus Administration',
+    staffSubtitle: 'Staff Workspace',
   },
 
   landing: {

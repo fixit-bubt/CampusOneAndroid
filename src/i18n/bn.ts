@@ -39,6 +39,9 @@ export const bn: Dict = {
   topbar: {
     greeting: 'গুড সকাল,',
     langLabel: 'বাং',
+    tagline: 'এক অ্যাপে পুরো ক্যাম্পাস',
+    adminSubtitle: 'ক্যাম্পাস প্রশাসন',
+    staffSubtitle: 'স্টাফ ওয়ার্কস্পেস',
   },
 
   landing: {
