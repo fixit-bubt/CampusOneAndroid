@@ -336,6 +336,12 @@ The mobile and web applications are actively pitched and presented to BUBT admin
 - Never use hardcoded light pastel constants (`Accent.tealBg = #e4f5f4`, `greenBg = #e8f8f0`, `grayBg = #f0f2f6`) on cards or badges in dark mode.
 - Use `pillBg(fgHex, isDark)` from `src/theme/colors.ts`, generating `${fgHex}2e` on dark and `${fgHex}18` on light.
 
+### 13.8 Unified Blood Group Matrix Grid & Emergency Hero Action (`BloodScreen.tsx`)
+- **Prominent Emergency Hero Bar:** `Request blood` is rendered as a full-width high-priority emergency action bar directly below `SubBar` for instant life-saving triage access.
+- **Symmetrical 8-Box Grid on Both Tabs:** Both 'Requests' and 'Donors' tabs share the exact same 4×2 interactive blood group matrix card (`A+`, `A-`, `B+`, `B-`, `O+`, `O-`, `AB+`, `AB-`).
+- **Zero Horizontal Chip Scrollbars:** Completely eliminated messy horizontal scrolling carousels.
+- **Live Emergency Counts:** Displays live counts of active requests and available donors per blood group; tapping any cell toggles filtering with a clear active filter indicator and empty state reset button.
+
 ---
 
 ## 14. Official Logo & Brand Assets (Google Play Ready)
