@@ -15,13 +15,12 @@ interface TopBarProps {
   profile?: Profile | null;
   title?: string;
   unread?: number;
-  onSearch?: () => void;
   onBell?: () => void;
   onAvatar?: () => void;
   right?: React.ReactNode;
 }
 
-export function TopBar({ profile, title, unread = 0, onSearch, onBell, right }: TopBarProps) {
+export function TopBar({ profile, title, unread = 0, onBell, right }: TopBarProps) {
   const { C, isDark } = useTheme();
   const t = useT();
 
@@ -86,43 +85,25 @@ export function TopBar({ profile, title, unread = 0, onSearch, onBell, right }: 
         </View>
       </View>
 
-      <View style={styles.actionGroup}>
-        {right ? (
-          right
-        ) : (
-          <>
-            {onSearch && (
-              <TouchableOpacity
-                onPress={onSearch}
-                style={[styles.iconBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
-                activeOpacity={0.75}
-                accessibilityLabel="Search campus"
-                accessibilityRole="button"
-                hitSlop={4}
-              >
-                <Icon name="search" size={18} color={C.text2} />
-              </TouchableOpacity>
-            )}
-            {onBell && (
-              <TouchableOpacity
-                onPress={onBell}
-                style={[styles.iconBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
-                activeOpacity={0.75}
-                accessibilityLabel={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'}
-                accessibilityRole="button"
-                hitSlop={4}
-              >
-                <Icon name="bell" size={19} color={C.text2} />
-                {unread > 0 && (
-                  <View style={[styles.badge, { backgroundColor: C.danger }]}>
-                    <Text style={styles.badgeTxt}>{unread > 9 ? '9+' : unread}</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-            )}
-          </>
-        )}
-      </View>
+      {right ? (
+        right
+      ) : onBell ? (
+        <TouchableOpacity
+          onPress={onBell}
+          style={[styles.iconBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+          activeOpacity={0.75}
+          accessibilityLabel={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'}
+          accessibilityRole="button"
+          hitSlop={4}
+        >
+          <Icon name="bell" size={19} color={C.text2} />
+          {unread > 0 && (
+            <View style={[styles.badge, { backgroundColor: C.danger }]}>
+              <Text style={styles.badgeTxt}>{unread > 9 ? '9+' : unread}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      ) : null}
     </View>
   );
 }
