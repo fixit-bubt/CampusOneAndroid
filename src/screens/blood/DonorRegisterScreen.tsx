@@ -282,7 +282,8 @@ export function DonorRegisterScreen({ navigation }: any) {
         visible={areaModalVisible}
         onClose={() => setAreaModalVisible(false)}
         selectedArea={area}
-        onSelectArea={setArea}
+        onSelectArea={selected => setArea(selected === 'All' ? '' : selected)}
+        allowAll={false}
       />
     </SafeAreaView>
   );

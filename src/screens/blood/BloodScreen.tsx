@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
-  RefreshControl, Alert, TextInput, type ViewStyle, type TextStyle,
+  RefreshControl, Alert, TextInput, Keyboard, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -59,6 +59,7 @@ export function BloodScreen({ navigation }: any) {
   const [groupFilter, setGroupFilter] = useState('All');
   const [areaFilter, setAreaFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef<TextInput>(null);
   const [areaModalVisible, setAreaModalVisible] = useState(false);
   const [requests, setRequests] = useState<BloodRequest[]>([]);
   const [donors, setDonors]     = useState<DonorWithName[]>([]);
@@ -396,60 +397,81 @@ export function BloodScreen({ navigation }: any) {
       {/* Unified Search & Dhaka Area Trigger Row */}
       <View style={[styles.searchAreaRow, { paddingHorizontal: Layout.screenPadding }]}>
         <View style={[styles.searchBar, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <Feather name="search" size={14} color={C.textMuted} />
+          <TouchableOpacity
+            onPress={() => searchInputRef.current?.focus()}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 8 }}
+          >
+            <Feather name="search" size={15} color={C.textMuted} />
+          </TouchableOpacity>
           <TextInput
+            ref={searchInputRef}
             style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-            placeholder={tab === 'requests' ? 'Search hospital or patient...' : 'Search donor or area...'}
+            placeholder={tab === 'requests' ? 'Search hospital, patient, area...' : 'Search donor, area...'}
             placeholderTextColor={C.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
+            returnKeyType="search"
+            onSubmitEditing={() => Keyboard.dismiss()}
           />
           {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Feather name="x" size={13} color={C.textMuted} />
+            <TouchableOpacity
+              onPress={() => setSearchQuery('')}
+              hitSlop={{ top: 10, bottom: 10, left: 8, right: 10 }}
+            >
+              <Feather name="x" size={14} color={C.textMuted} />
             </TouchableOpacity>
           )}
         </View>
 
-        <TouchableOpacity
+        <View
           style={[
             styles.areaPickerTrigger,
             areaFilter !== 'All'
               ? { backgroundColor: SectorColors.blood, borderColor: SectorColors.blood }
               : { backgroundColor: C.surface, borderColor: C.border },
           ]}
-          onPress={() => setAreaModalVisible(true)}
-          activeOpacity={0.75}
         >
-          <Icon name="pin" size={12} color={areaFilter !== 'All' ? '#fff' : SectorColors.blood} />
-          <Text
-            style={[
-              styles.areaPickerTriggerTxt,
-              { color: areaFilter !== 'All' ? '#fff' : C.text, fontFamily: FontFamily.jakartaBold },
-            ]}
-            numberOfLines={1}
+          <TouchableOpacity
+            style={styles.areaPickerBtn}
+            onPress={() => setAreaModalVisible(true)}
+            activeOpacity={0.75}
           >
-            {areaFilter === 'All' ? t.blood2.filterLocationAll : areaFilter}
-          </Text>
+            <Icon name="pin" size={12} color={areaFilter !== 'All' ? '#fff' : SectorColors.blood} />
+            <Text
+              style={[
+                styles.areaPickerTriggerTxt,
+                { color: areaFilter !== 'All' ? '#fff' : C.text, fontFamily: FontFamily.jakartaBold },
+              ]}
+              numberOfLines={1}
+            >
+              {areaFilter === 'All' ? t.blood2.filterLocationAll : areaFilter}
+            </Text>
+          </TouchableOpacity>
           {areaFilter !== 'All' ? (
             <TouchableOpacity
-              onPress={(e) => {
-                e.stopPropagation();
-                setAreaFilter('All');
-              }}
+              onPress={() => setAreaFilter('All')}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              style={styles.areaClearBtn}
             >
-              <Feather name="x" size={12} color="#fff" />
+              <Feather name="x" size={13} color="#fff" />
             </TouchableOpacity>
           ) : (
-            <Feather name="chevron-down" size={12} color={C.textMuted} />
+            <TouchableOpacity
+              onPress={() => setAreaModalVisible(true)}
+              hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }}
+              style={styles.areaClearBtn}
+            >
+              <Feather name="chevron-down" size={12} color={C.textMuted} />
+            </TouchableOpacity>
           )}
-        </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
         {loadState === 'loading' && requests.length === 0 && donors.length === 0 ? (
@@ -769,6 +791,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   } as ViewStyle,
   searchBar: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
@@ -779,23 +802,36 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   searchInput: {
     flex: 1,
+    height: '100%',
     fontSize: 13,
     paddingVertical: 0,
   } as TextStyle,
   areaPickerTrigger: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
     height: 42,
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     borderRadius: 12,
     borderWidth: 1,
     maxWidth: 145,
   } as ViewStyle,
+  areaPickerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    flex: 1,
+    height: '100%',
+  } as ViewStyle,
   areaPickerTriggerTxt: {
-    fontSize: 12.5,
+    fontSize: 12,
     flexShrink: 1,
   } as TextStyle,
+  areaClearBtn: {
+    paddingLeft: 4,
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  } as ViewStyle,
   miniBloodBadge: {
     width: 34,
     height: 34,

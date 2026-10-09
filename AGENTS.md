@@ -342,6 +342,12 @@ The mobile and web applications are actively pitched and presented to BUBT admin
 - **Zero Horizontal Chip Scrollbars:** Completely eliminated messy horizontal scrolling carousels.
 - **Live Emergency Counts:** Displays live counts of active requests and available donors per blood group; tapping any cell toggles filtering with a clear active filter indicator and empty state reset button.
 
+### 13.9 Blood Donation Search & Dhaka Area Architecture (`BloodScreen.tsx`, `AreaPickerModal.tsx`)
+- **Native Touch Focus & No Nested Touchables:** The unified search bar uses a native `<View style={styles.searchBar}>` with `flex: 1` and `height: 42`, containing a touchable search icon, full-height `TextInput`, and instant clear button. Never wrap `TextInput` inside an outer `TouchableOpacity` on Android, which intercepts responder focus.
+- **Dhaka Area Filter Trigger:** Split into two discrete, non-nested touch targets (`styles.areaPickerBtn` and `styles.areaClearBtn`), completely avoiding React Native Android nested touch responder bugs (`stopPropagation` failures).
+- **Search Auto-Reset & Dismiss Controls:** `AreaPickerModal` auto-resets its search input upon opening (`visible` hook), supports `returnKeyType="search"`, and enables `keyboardDismissMode="on-drag"`.
+- **Form Area Picker vs Filter Picker:** `AreaPickerModal` supports `allowAll={false}` for registration/request forms (`BloodRequestScreen`, `DonorRegisterScreen`) to prevent users from accidentally selecting "All Areas" as a physical address, while keeping `allowAll={true}` on `BloodScreen` for filtering.
+
 ---
 
 ## 14. Official Logo & Brand Assets (Google Play Ready)

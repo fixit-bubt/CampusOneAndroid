@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, Modal,
-  ScrollView, StyleSheet, type ViewStyle, type TextStyle,
+  ScrollView, StyleSheet, Keyboard, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
@@ -17,6 +17,7 @@ interface AreaPickerModalProps {
   onSelectArea: (area: string) => void;
   title?: string;
   areaCounts?: Record<string, number>;
+  allowAll?: boolean;
 }
 
 export function AreaPickerModal({
@@ -26,10 +27,16 @@ export function AreaPickerModal({
   onSelectArea,
   title,
   areaCounts,
+  allowAll = true,
 }: AreaPickerModalProps) {
   const { C } = useTheme();
   const t = useT();
   const [search, setSearch] = useState('');
+  const searchInputRef = useRef<TextInput>(null);
+
+  useEffect(() => {
+    if (visible) setSearch('');
+  }, [visible]);
 
   const filteredAreas = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -109,14 +116,22 @@ export function AreaPickerModal({
 
           {/* Search Box */}
           <View style={[styles.searchBox, { backgroundColor: C.surface2, borderColor: C.border }]}>
-            <Feather name="search" size={15} color={C.textMuted} />
+            <TouchableOpacity
+              onPress={() => searchInputRef.current?.focus()}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Feather name="search" size={15} color={C.textMuted} />
+            </TouchableOpacity>
             <TextInput
+              ref={searchInputRef}
               style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
               placeholder={t.blood2.searchAreaInput}
               placeholderTextColor={C.textMuted}
               value={search}
               onChangeText={setSearch}
               autoCorrect={false}
+              returnKeyType="search"
+              onSubmitEditing={() => Keyboard.dismiss()}
             />
             {search.length > 0 && (
               <TouchableOpacity onPress={() => setSearch('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
@@ -126,34 +141,36 @@ export function AreaPickerModal({
           </View>
 
           {/* Quick Clear / All Button */}
-          <View style={styles.quickBar}>
-            <TouchableOpacity
-              style={[
-                styles.quickAllBtn,
-                !isFiltered
-                  ? { backgroundColor: SectorColors.blood, borderColor: SectorColors.blood }
-                  : { backgroundColor: C.surface2, borderColor: C.border },
-              ]}
-              onPress={handleClear}
-              activeOpacity={0.75}
-            >
-              <Text style={[styles.quickAllTxt, { color: !isFiltered ? '#fff' : C.text, fontFamily: FontFamily.jakartaBold }]}>
-                {t.blood2.filterLocationAll}
-              </Text>
-            </TouchableOpacity>
-            {isFiltered && (
+          {allowAll && (
+            <View style={styles.quickBar}>
               <TouchableOpacity
-                style={[styles.clearBtn, { borderColor: C.border }]}
+                style={[
+                  styles.quickAllBtn,
+                  !isFiltered
+                    ? { backgroundColor: SectorColors.blood, borderColor: SectorColors.blood }
+                    : { backgroundColor: C.surface2, borderColor: C.border },
+                ]}
                 onPress={handleClear}
                 activeOpacity={0.75}
               >
-                <Feather name="rotate-ccw" size={12} color={C.textMuted} />
-                <Text style={[styles.clearTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                  {t.blood2.clearAreaFilter}
+                <Text style={[styles.quickAllTxt, { color: !isFiltered ? '#fff' : C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  {t.blood2.filterLocationAll}
                 </Text>
               </TouchableOpacity>
-            )}
-          </View>
+              {isFiltered && (
+                <TouchableOpacity
+                  style={[styles.clearBtn, { borderColor: C.border }]}
+                  onPress={handleClear}
+                  activeOpacity={0.75}
+                >
+                  <Feather name="rotate-ccw" size={12} color={C.textMuted} />
+                  <Text style={[styles.clearTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                    {t.blood2.clearAreaFilter}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
 
           {/* Area List */}
           <ScrollView
@@ -161,6 +178,7 @@ export function AreaPickerModal({
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
           >
             {/* Custom query option if not matched exactly */}
             {search.trim().length > 1 && !DHAKA_AREAS.some(a => a.name.toLowerCase() === search.trim().toLowerCase()) && (
@@ -314,6 +332,7 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   searchInput: {
     flex: 1,
+    height: '100%',
     fontSize: 13.5,
     paddingVertical: 0,
   } as TextStyle,
