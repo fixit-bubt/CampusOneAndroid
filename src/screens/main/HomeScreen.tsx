@@ -5,7 +5,6 @@ import {
   RefreshControl, ActivityIndicator, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
@@ -13,11 +12,10 @@ import { TopBar } from '../../components/layout/TopBar';
 import { CampusToday } from '../../components/CampusToday';
 import { SectorIcon } from '../../components/ui/SectorIcon';
 import { Icon } from '../../components/ui/Icon';
-import { Avatar } from '../../components/ui/Avatar';
-import { FontFamily, Layout, Spacing, Radius, Accent, darken } from '../../theme';
-import { SectorColors, type SectorKey } from '../../theme';
+import { FontFamily, Layout, Accent } from '../../theme';
+import { type SectorKey } from '../../theme';
 import { getMyReports } from '../../services/reportsService';
-import { getMyNotifications, type Notification } from '../../services/notificationsService';
+import { getMyNotifications } from '../../services/notificationsService';
 import type { Report } from '../../types/database';
 
 // quick-action sectors (labels live in src/i18n)
@@ -37,33 +35,6 @@ const STATUS_TONE: Record<string, string> = {
   Open: Accent.amber, 'In Progress': Accent.blue, Resolved: Accent.green,
   Rejected: Accent.red, Closed: Accent.slate,
 };
-
-function NotifRow({ n, C, onPress }: { n: Notification; C: any; onPress: () => void }) {
-  const sector = (n.sector as SectorKey) in SectorColors ? (n.sector as SectorKey) : 'announce';
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      style={[styles.notifRow, !n.read && { backgroundColor: C.brand50 }]}
-      activeOpacity={0.75}
-    >
-      <SectorIcon sector={sector} size="sm" />
-      <View style={styles.notifBody}>
-        <Text
-          style={[styles.notifTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}
-          numberOfLines={1}
-        >
-          {n.title}
-        </Text>
-        <Text
-          style={[styles.notifText, { color: C.text2, fontFamily: FontFamily.jakartaRegular }]}
-          numberOfLines={2}
-        >
-          {n.body}
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
-}
 
 function ReportRow({ r, C, onPress }: { r: Report; C: any; onPress: () => void }) {
   const t = useT();
@@ -109,7 +80,6 @@ export function HomeScreen({ navigation }: any) {
   const t = useT();
 
   const [reports, setReports]     = useState<Report[]>([]);
-  const [notifs, setNotifs]       = useState<Notification[]>([]);
   const [unread, setUnread]       = useState(0);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -121,7 +91,6 @@ export function HomeScreen({ navigation }: any) {
     ]);
     if (rRes.ok) setReports(rRes.data.slice(0, 2));
     if (nRes.ok) {
-      setNotifs(nRes.data);
       setUnread(nRes.data.filter(n => !n.read).length);
     }
   }, [user, profile]);
@@ -142,8 +111,6 @@ export function HomeScreen({ navigation }: any) {
     );
   }
 
-  const recentAlerts = notifs.slice(0, 2);
-
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <TopBar
@@ -160,35 +127,8 @@ export function HomeScreen({ navigation }: any) {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />
         }
       >
-        {/* Spotlight card */}
-        <LinearGradient
-          colors={[Accent.blue, darken(Accent.blue)]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.spotlight}
-        >
-          <View style={styles.spotBell}>
-            <Icon name="bell" size={24} color="#fff" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.spotCount, { fontFamily: FontFamily.jakartaExtraBold }]}>
-              {t.home.newAlerts(unread)}
-            </Text>
-            <Text style={[styles.spotSub, { fontFamily: FontFamily.jakartaMedium }]}>
-              {t.home.alertsFrom}
-            </Text>
-          </View>
-          <TouchableOpacity
-            style={styles.spotBtn}
-            onPress={() => navigation.navigate('Notifications')}
-            activeOpacity={0.8}
-          >
-            <Icon name="chevR" size={20} color="#fff" />
-          </TouchableOpacity>
-        </LinearGradient>
-
         {/* Quick actions */}
-        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
+        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold, marginTop: 14 }]}>
           {t.home.quickActions}
         </Text>
         <View style={styles.quickGrid}>
@@ -248,36 +188,6 @@ export function HomeScreen({ navigation }: any) {
           </View>
         )}
 
-        {/* Recent Alerts */}
-        <View style={[styles.sectionHeader, { marginTop: 24 }]}>
-          <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold, marginTop: 0 }]}>
-            {t.home.recentAlerts}
-          </Text>
-          <TouchableOpacity
-            style={styles.newBtn}
-            onPress={() => navigation.navigate('Notifications')}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.newBtnText, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
-              {t.common.seeAll}
-            </Text>
-            <Icon name="chevR" size={15} color={C.brand} />
-          </TouchableOpacity>
-        </View>
-
-        {recentAlerts.length === 0 ? (
-          <EmptyCard icon="bell" text={t.home.noAlerts} C={C} />
-        ) : (
-          <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
-            {recentAlerts.map((n, i) => (
-              <View key={n.id}>
-                {i > 0 && <View style={[styles.divider, { backgroundColor: C.border }]} />}
-                <NotifRow n={n} C={C} onPress={() => navigation.navigate('NotifDetail', { notification: n })} />
-              </View>
-            ))}
-          </View>
-        )}
-
         <CampusToday navigation={navigation} />
 
         <View style={{ height: 20 }} />
@@ -290,52 +200,6 @@ const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
 
   scroll: { paddingBottom: 20 } as ViewStyle,
-
-  // Spotlight
-  spotlight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    padding: 16,
-    borderRadius: 18,
-    marginTop: 12,
-    shadowColor: Accent.blue,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.32,
-    shadowRadius: 14,
-    elevation: 8,
-  } as ViewStyle,
-
-  spotBell: {
-    width: 50,
-    height: 50,
-    borderRadius: 15,
-    backgroundColor: 'rgba(255,255,255,0.16)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  } as ViewStyle,
-
-  spotCount: {
-    fontSize: 14.5,
-    lineHeight: 19,
-    color: '#fff',
-  } as any,
-
-  spotSub: {
-    fontSize: 12.5,
-    color: 'rgba(255,255,255,0.85)',
-    marginTop: 2,
-  } as any,
-
-  spotBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 11,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  } as ViewStyle,
 
   // Section
   sectionLabel: {
@@ -392,24 +256,6 @@ const styles = StyleSheet.create({
   } as ViewStyle,
 
   divider: { height: StyleSheet.hairlineWidth } as ViewStyle,
-
-  // Notif row
-  notifRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    padding: 13,
-  } as ViewStyle,
-
-  notifBody: { flex: 1 } as ViewStyle,
-
-  notifTitle: { fontSize: 13.5 } as any,
-
-  notifText: {
-    fontSize: 12,
-    marginTop: 2,
-    lineHeight: 17,
-  } as any,
 
   // Report row
   reportRow: {
