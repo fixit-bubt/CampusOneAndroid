@@ -418,6 +418,11 @@ You will be registered as an available ${group} donor.`,
     livesSavedImpact: (n: number) => `Up to ${n * 3} lives impacted`,
     filterLocationAll: "All Areas",
     registerError: "Could not register. Please try again.",
+    bloodGroupPermanent: "Blood group is permanent once registered.",
+    bloodGroupLockedNote: "Blood group is biological and cannot be changed.",
+    updateDonorTitle: "Update Donor Info",
+    updateLocationPhone: "Update Info",
+    showingGroupFilter: (group: string) => `Showing ${group} donors · Tap to clear`,
   },
 
   bus2: {

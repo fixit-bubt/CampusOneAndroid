@@ -419,6 +419,11 @@ export const bn: Dict = {
     livesSavedImpact: (n: number) => `সর্বোচ্চ ${n * 3} জনের জীবন বাঁচানো সম্ভব`,
     filterLocationAll: "সব এলাকা",
     registerError: "নিবন্ধন করা যায়নি। আবার চেষ্টা করুন।",
+    bloodGroupPermanent: "রক্তের গ্রুপ একবার নিবন্ধিত হলে স্থায়ী হয়।",
+    bloodGroupLockedNote: "রক্তের গ্রুপ জন্মগত ও স্থায়ী, পরিবর্তন করা যায় না।",
+    updateDonorTitle: "ডোনার তথ্য আপডেট",
+    updateLocationPhone: "তথ্য আপডেট",
+    showingGroupFilter: (group: string) => `${group} ডোনার ফিল্টার করা · রিসেট করতে ট্যাপ করুন`,
   },
 
   bus2: {

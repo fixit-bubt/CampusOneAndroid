@@ -124,7 +124,7 @@ export function DonorRegisterScreen({ navigation }: any) {
     }
   }
 
-  const screenTitle = isRegistered ? t.blood2.editDonorTitle : t.blood2.registerAsDonorTitle;
+  const screenTitle = isRegistered ? t.blood2.updateDonorTitle : t.blood2.registerAsDonorTitle;
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -141,27 +141,57 @@ export function DonorRegisterScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.blood2.yourBloodGroup}</Text>
-        <View style={styles.groupGrid}>
-          {GROUPS.map(g => {
-            const on = group === g;
-            return (
-              <TouchableOpacity
-                key={g}
-                style={[styles.groupBtn, {
-                  backgroundColor: on ? SectorColors.blood : 'transparent',
-                  borderColor: on ? 'transparent' : C.border,
-                }]}
-                onPress={() => setGroup(g)}
-                activeOpacity={0.75}
-              >
-                <Text style={[styles.groupTxt, { color: on ? '#fff' : C.text2, fontFamily: FontFamily.jakartaExtraBold }]}>
-                  {g}
+        {isRegistered ? (
+          <View style={[styles.lockedCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <View style={[styles.lockedBadge, { backgroundColor: SectorColors.blood + '20' }]}>
+              <Text style={[styles.lockedGroupTxt, { color: SectorColors.blood, fontFamily: FontFamily.jakartaExtraBold }]}>
+                {group}
+              </Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={[styles.lockedTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  {group} {t.blood2.donorsTab}
                 </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+                <View style={[styles.permPill, { backgroundColor: C.successBg }]}>
+                  <Text style={[styles.permTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
+                    Verified
+                  </Text>
+                </View>
+              </View>
+              <Text style={[styles.lockedNote, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+                {t.blood2.bloodGroupLockedNote}
+              </Text>
+            </View>
+          </View>
+        ) : (
+          <>
+            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.blood2.yourBloodGroup}</Text>
+            <View style={styles.groupGrid}>
+              {GROUPS.map(g => {
+                const on = group === g;
+                return (
+                  <TouchableOpacity
+                    key={g}
+                    style={[styles.groupBtn, {
+                      backgroundColor: on ? SectorColors.blood : 'transparent',
+                      borderColor: on ? 'transparent' : C.border,
+                    }]}
+                    onPress={() => setGroup(g)}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={[styles.groupTxt, { color: on ? '#fff' : C.text2, fontFamily: FontFamily.jakartaExtraBold }]}>
+                      {g}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <Text style={[styles.consent, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+              {t.blood2.bloodGroupPermanent}
+            </Text>
+          </>
+        )}
 
         <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.blood2.recoveryStandard}</Text>
         <View style={styles.genderRow}>
@@ -242,6 +272,33 @@ const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
   centerLoad: { flex: 1, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
   scroll: { paddingTop: 12, paddingBottom: 20 } as ViewStyle,
+
+  lockedCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginTop: 6,
+    marginBottom: 4,
+  } as ViewStyle,
+  lockedBadge: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  lockedGroupTxt: { fontSize: 16 } as any,
+  lockedTitle: { fontSize: 14 } as any,
+  lockedNote: { fontSize: 11.5, marginTop: 2 } as any,
+  permPill: {
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 999,
+  } as ViewStyle,
+  permTxt: { fontSize: 10 } as any,
 
   label: {
     fontSize: 11,
