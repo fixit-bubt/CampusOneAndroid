@@ -12,19 +12,30 @@ export interface BloodFeed {
   requests: BloodRequest[];
   donors: DonorWithName[];
   respondedIds: Set<string>;
+  myDonor: Donor | null;
+  myDonationCount: number;
+}
+
+export interface MyDonorData {
+  donor: Donor | null;
+  phone: string | null;
 }
 
 // Feed hides fulfilled requests and ages out anything older than 21 days
 // (nothing auto-expires them server-side).
 export async function getBloodFeed(userId: string | undefined): Promise<ServiceResult<BloodFeed>> {
   const staleCutoff = new Date(Date.now() - 21 * 86400000).toISOString();
-  const [rRes, dRes, pRes] = await Promise.all([
+  const [rRes, dRes, pRes, mRes, countRes] = await Promise.all([
     supabase.from('blood_requests').select('*')
       .is('fulfilled_at', null)
       .gte('created_at', staleCutoff)
       .order('created_at', { ascending: false }).limit(30),
     supabase.from('donors').select('*').limit(50),
     supabase.from('blood_pledges').select('request_id').eq('donor_id', userId ?? ''),
+    userId ? supabase.from('donors').select('*').eq('user_id', userId).maybeSingle() : Promise.resolve({ data: null, error: null }),
+    userId
+      ? supabase.from('blood_pledges').select('*', { count: 'exact', head: true }).eq('donor_id', userId).not('fulfilled_at', 'is', null)
+      : Promise.resolve({ count: 0, error: null }),
   ]);
   if (rRes.error || dRes.error) return { ok: false, error: (rRes.error ?? dRes.error)!.message };
   // Donor names come from the roster RPC: profiles RLS exposes only the
@@ -40,6 +51,24 @@ export async function getBloodFeed(userId: string | undefined): Promise<ServiceR
       requests: (rRes.data ?? []) as BloodRequest[],
       donors: donors as DonorWithName[],
       respondedIds: new Set((pRes.data ?? []).map(p => p.request_id)),
+      myDonor: ((mRes?.data as Donor) ?? (userId ? ((dRes.data ?? []).find((d: any) => d.user_id === userId) as Donor) : null)) ?? null,
+      myDonationCount: countRes?.count ?? 0,
+    },
+  };
+}
+
+export async function getMyDonor(userId: string): Promise<ServiceResult<MyDonorData>> {
+  const [dRes, pRes] = await Promise.all([
+    supabase.from('donors').select('*').eq('user_id', userId).maybeSingle(),
+    supabase.from('profiles').select('whatsapp, phone').eq('id', userId).maybeSingle(),
+  ]);
+  if (dRes.error) return { ok: false, error: dRes.error.message };
+  const phone = pRes.data?.whatsapp || pRes.data?.phone || null;
+  return {
+    ok: true,
+    data: {
+      donor: (dRes.data as Donor) ?? null,
+      phone,
     },
   };
 }

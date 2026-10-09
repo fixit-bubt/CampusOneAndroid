@@ -21,6 +21,7 @@ const ICON_MAP: Record<string, React.ComponentProps<typeof Feather>['name']> = {
   check:    'check',
   checkAll: 'check-circle',
   plus:     'plus',
+  edit:     'edit-2',
   logout:   'log-out',
   annex:    'external-link',
   // Content

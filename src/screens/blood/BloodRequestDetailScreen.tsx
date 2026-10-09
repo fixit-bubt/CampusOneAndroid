@@ -120,19 +120,32 @@ export function BloodRequestDetailScreen({ route, navigation }: any) {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
-        {req && (
-          <View style={[styles.reqCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <View style={[styles.groupBadge, { backgroundColor: `${BLOOD}1e` }]}>
-              <Text style={[styles.groupTxt, { color: BLOOD, fontFamily: FontFamily.jakartaExtraBold }]}>{req.blood_group}</Text>
+        {req && (() => {
+          const isPlatelet = req.patient?.includes('[Platelets]') || req.hospital?.toLowerCase().includes('platelet');
+          const displayPatient = req.patient?.replace(/\[Platelets\]/g, '').trim() || req.patient;
+          return (
+            <View style={[styles.reqCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+              <View style={[styles.groupBadge, { backgroundColor: `${BLOOD}1e` }]}>
+                <Text style={[styles.groupTxt, { color: BLOOD, fontFamily: FontFamily.jakartaExtraBold }]}>{req.blood_group}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                  <Text style={[styles.reqPatient, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>{displayPatient}</Text>
+                  {isPlatelet && (
+                    <View style={[styles.plateletPill, { backgroundColor: C.warnBg }]}>
+                      <Text style={[styles.plateletTxt, { color: C.warn, fontFamily: FontFamily.jakartaBold }]}>
+                        ⚡ {t.blood2.denguePlateletUrgent}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={[styles.reqSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
+                  {req.hospital} · {t.blood2.unitsNeeded(req.area, req.units)}
+                </Text>
+              </View>
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.reqPatient, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>{req.patient}</Text>
-              <Text style={[styles.reqSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
-                {req.hospital} · {t.blood2.unitsNeeded(req.area, req.units)}
-              </Text>
-            </View>
-          </View>
-        )}
+          );
+        })()}
 
         {req && !req.fulfilled_at && (
           <TouchableOpacity
@@ -232,4 +245,6 @@ const styles = StyleSheet.create({
   empty: { alignItems: 'center', paddingVertical: 40, gap: 12 } as ViewStyle,
   emptyIcon: { width: 60, height: 60, borderRadius: 20, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
   emptySub: { fontSize: 13.5 } as any,
+  plateletPill: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 } as ViewStyle,
+  plateletTxt: { fontSize: 10 } as any,
 });

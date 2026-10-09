@@ -33,6 +33,7 @@ export function BloodRequestScreen({ navigation }: any) {
   const [hospital, setHospital] = useState('');
   const [area, setArea] = useState('');
   const [urgency, setUrgency] = useState<BloodRequest['urgency']>('Today');
+  const [isPlatelets, setIsPlatelets] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const canSubmit = group !== null && patient.trim() && hospital.trim();
@@ -41,10 +42,11 @@ export function BloodRequestScreen({ navigation }: any) {
     if (!canSubmit || !user) return;
     setLoading(true);
     try {
+      const finalPatient = isPlatelets ? `[Platelets] ${patient.trim()}` : patient.trim();
       const { error } = await supabase.from('blood_requests').insert({
         blood_group:  group,
         units:        parseInt(units, 10) || 1,
-        patient:      patient.trim(),
+        patient:      finalPatient,
         hospital:     hospital.trim(),
         area:         area.trim() || 'Near campus',
         urgency,
@@ -155,6 +157,36 @@ export function BloodRequestScreen({ navigation }: any) {
           placeholderTextColor={C.textMuted}
         />
 
+        {/* Dengue Platelet (Apheresis) Toggle Card */}
+        <TouchableOpacity
+          style={[styles.plateletCard, {
+            backgroundColor: isPlatelets ? C.warnBg : C.surface,
+            borderColor: isPlatelets ? C.warn : C.border,
+          }]}
+          onPress={() => setIsPlatelets(!isPlatelets)}
+          activeOpacity={0.8}
+        >
+          <View style={styles.plateletLeft}>
+            <View style={[styles.plateletIcon, { backgroundColor: isPlatelets ? C.warn : C.surface2 }]}>
+              <Icon name="blood" size={16} color={isPlatelets ? '#fff' : C.textMuted} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.plateletTitle, { color: isPlatelets ? C.warn : C.text, fontFamily: FontFamily.jakartaBold }]}>
+                {t.blood2.denguePlateletUrgent} (Apheresis)
+              </Text>
+              <Text style={[styles.plateletDesc, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+                {t.blood2.denguePlateletNote}
+              </Text>
+            </View>
+          </View>
+          <View style={[styles.checkbox, {
+            backgroundColor: isPlatelets ? C.warn : 'transparent',
+            borderColor: isPlatelets ? C.warn : C.border,
+          }]}>
+            {isPlatelets && <Icon name="check" size={12} color="#fff" />}
+          </View>
+        </TouchableOpacity>
+
         {/* Submit */}
         <TouchableOpacity
           style={[styles.submitBtn, { backgroundColor: canSubmit ? SectorColors.blood : C.surface2, opacity: loading ? 0.6 : 1 }]}
@@ -164,7 +196,7 @@ export function BloodRequestScreen({ navigation }: any) {
         >
           <Icon name="blood" size={18} color={canSubmit ? '#fff' : C.textMuted} />
           <Text style={[styles.submitText, { color: canSubmit ? '#fff' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-            Post Request
+            {t.blood2.postRequest}
           </Text>
         </TouchableOpacity>
 
@@ -237,6 +269,51 @@ const styles = StyleSheet.create({
   } as ViewStyle,
 
   segTxt: { fontSize: 12 } as any,
+
+  plateletCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginTop: 18,
+    gap: 10,
+  } as ViewStyle,
+
+  plateletLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  } as ViewStyle,
+
+  plateletIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+
+  plateletTitle: {
+    fontSize: 13,
+  } as any,
+
+  plateletDesc: {
+    fontSize: 11,
+    marginTop: 2,
+    lineHeight: 15,
+  } as any,
+
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
 
   submitBtn: {
     flexDirection: 'row',

@@ -480,3 +480,35 @@ Whenever the user instructs to "update memorys", the agent MUST synchronously up
   - User profile is accessed via the dedicated bottom navigation `Settings` tab.
   - Language and dark/light theme switching are housed inside `SettingsScreen.tsx`.
   - Top bar remains focused on varsity identity and instant alert notifications.
+
+---
+
+## 20. Blood Donation Life-Saving Engine & Clinical Architecture
+
+### 20.1 Clinical Standards & Safety
+- **Gender-Aware Medical Cooldown (WHO Standard):** Enforces a 90-day recovery window for male donors and a 120-day recovery window for female donors to preserve iron reserves and prevent microcytic anemia (`DONATION_WAIT_DAYS_MALE = 90`, `DONATION_WAIT_DAYS_FEMALE = 120` in `src/utils/blood.ts`).
+- **Zero-Migration Gender Storage:** Donor gender preference is persisted via `AsyncStorage` (`@donor_gender_${user.id}`), keeping the client fully type-safe without modifying the live database schema.
+
+### 20.2 Native Recharged Push Alarms (`bloodReminder.ts`)
+- **AlarmManager Integration:** Automatically schedules on-device notifications via `expo-notifications` (`scheduleNotificationAsync`) using `BLOOD_RECHARGE_NOTIFICATION_ID`.
+- **Zero Backend Cost:** Operates 100% on-device, incurring $0 in backend compute or FCM costs, and triggers deterministically even when offline.
+- **Trigger Points:** Armed upon donor registration/profile update and whenever the donor marks donation via `markDonatedToday()`.
+
+### 20.3 Personal Donation & Lives Saved Impact Tracker
+- **Lifetime Recognition:** Backed by `blood_pledges.fulfilled_at` counted in `getBloodFeed()` (`myDonationCount`).
+- **UI Presentation:** Displays an impact badge (`🏅 X donations recorded · Up to Y lives impacted`) on the donor status card, celebrating lifetime contribution (1 whole blood unit impacts up to 3 lives).
+
+### 20.4 Hospital / Area Proximity Filtering
+- **Dhaka Transit Optimization:** Filters feed and donor catalog by high-volume hospital corridors (`All Areas`, `Mirpur (Near Campus)`, `Kurmitola`, `DMCH / Central`, `Dhanmondi`, `Uttara`), helping users find the closest eligible donor in Dhaka traffic.
+
+### 20.5 Dengue Platelet Mode (Apheresis)
+- **Clinical Apheresis Protocol:** Platelet donors replenish cells within 72 hours, allowing safe donation every 14 days.
+- **Request Tagging:** `BloodRequestScreen.tsx` provides a dedicated `Dengue Platelet (Apheresis)` toggle, tagging the request with `[Platelets]`.
+- **Feed UI:** Displays an amber `⚡ Platelet Emergency` badge on matching requests.
+
+### 20.6 Targeted Cross-Compatibility Notification Engine
+- **Migration:** `supabase/migrations/20261010000000_blood_compatibility_notifications.sql`.
+- **Compatibility Function:** `compatible_donor_groups(p_group)` maps clinical recipient blood groups to eligible donor types (e.g. A+ receives from A+, A-, O+, O-; AB+ receives from all 8 groups; O- receives only O-).
+- **Trigger:** `trg_notify_blood_request` alerts all compatible, currently-eligible donors, factoring in the 14-day recovery window for platelet requests.
+- **SecOps Compliance:** Explicitly revokes anon execution permissions on all database functions.
+

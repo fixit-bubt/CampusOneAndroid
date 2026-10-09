@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
@@ -15,17 +16,20 @@ import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
 import { donorEligibility } from '../../utils/blood';
+import { scheduleRechargedReminder } from '../../utils/bloodReminder';
+import { localToday } from '../../utils/format';
 import {
   getBloodFeed, pledgeToRequest, markDonatedToday as markDonated,
   getDonorContact, getRequesterContact, type DonorWithName,
 } from '../../services/bloodService';
 import { ContactSheet } from '../../components/ui/ContactSheet';
-import type { BloodRequest } from '../../types/database';
+import type { BloodRequest, Donor } from '../../types/database';
 
 type Tab = 'requests' | 'donors';
 
 const BLOOD_COLOR = SectorColors.blood;
 const BLOOD_BG    = `${SectorColors.blood}1e`;
+const AREA_OPTIONS = ['All', 'Mirpur', 'Kurmitola', 'DMCH', 'Dhanmondi', 'Uttara'];
 
 // Urgency tones from theme tokens (dark-mode aware via C)
 function urgencyTone(C: any, urgency: string): { fg: string; bg: string } {
@@ -52,8 +56,12 @@ export function BloodScreen({ navigation }: any) {
   const t = useT();
   const [tab, setTab] = useState<Tab>('requests');
   const [groupFilter, setGroupFilter] = useState('All');
+  const [areaFilter, setAreaFilter] = useState('All');
   const [requests, setRequests] = useState<BloodRequest[]>([]);
   const [donors, setDonors]     = useState<DonorWithName[]>([]);
+  const [myDonor, setMyDonor]   = useState<Donor | null>(null);
+  const [myDonationCount, setMyDonationCount] = useState(0);
+  const [myGender, setMyGender] = useState<'male' | 'female'>('male');
   const [refreshing, setRefreshing] = useState(false);
   const toast = useToast();
   const [respondedIds, setRespondedIds] = useState<Set<string>>(new Set());
@@ -62,13 +70,31 @@ export function BloodScreen({ navigation }: any) {
   const [contactTarget, setContactTarget] = useState<{ name: string; phone: string; title?: string } | null>(null);
 
   const load = useCallback(async () => {
-    const res = await getBloodFeed(user?.id);
+    const [res, savedGender] = await Promise.all([
+      getBloodFeed(user?.id),
+      user?.id ? AsyncStorage.getItem(`@donor_gender_${user.id}`) : Promise.resolve(null),
+    ]);
+    const gender = (savedGender === 'female' || savedGender === 'male') ? savedGender : 'male';
+    if (savedGender === 'female' || savedGender === 'male') {
+      setMyGender(savedGender);
+    }
     if (!res.ok) { setLoadState('error'); return; }
     setRequests(res.data.requests);
     setDonors(res.data.donors);
     setRespondedIds(res.data.respondedIds);
+    setMyDonor(res.data.myDonor ?? null);
+    setMyDonationCount(res.data.myDonationCount ?? 0);
     setLoadState('ready');
-  }, [user?.id]);
+
+    if (res.data.myDonor?.last_donated) {
+      scheduleRechargedReminder(
+        res.data.myDonor.last_donated,
+        gender,
+        t.blood2.rechargedNotificationTitle,
+        t.blood2.rechargedNotificationBody,
+      );
+    }
+  }, [user?.id, t.blood2.rechargedNotificationTitle, t.blood2.rechargedNotificationBody]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -125,7 +151,7 @@ export function BloodScreen({ navigation }: any) {
     }
   }
 
-  // Donor stamps their own last-donation date; resets the 90-day clock.
+  // Donor stamps their own last-donation date; resets the recovery clock.
   function markDonatedToday() {
     Alert.alert(t.blood2.markDonatedTitle, t.blood2.markDonatedBody, [
       { text: t.common.cancel, style: 'cancel' },
@@ -135,6 +161,12 @@ export function BloodScreen({ navigation }: any) {
           if (!user) return;
           const res = await markDonated(user.id);
           if (!res.ok) { toast({ type: 'error', title: t.common.error, message: res.error }); return; }
+          await scheduleRechargedReminder(
+            localToday(),
+            myGender,
+            t.blood2.rechargedNotificationTitle,
+            t.blood2.rechargedNotificationBody,
+          );
           toast({ type: 'success', title: t.blood2.markedDonatedTitle, message: t.blood2.markedDonatedBody });
           load();
         },
@@ -178,11 +210,26 @@ export function BloodScreen({ navigation }: any) {
     );
   }
 
+  // Filter requests and donors by group and area
+  const filteredRequests = requests.filter(r => {
+    const matchesGroup = groupFilter === 'All' || r.blood_group === groupFilter;
+    const matchesArea = areaFilter === 'All' ||
+      (r.area && r.area.toLowerCase().includes(areaFilter.toLowerCase())) ||
+      (r.hospital && r.hospital.toLowerCase().includes(areaFilter.toLowerCase()));
+    return matchesGroup && matchesArea;
+  });
+
+  const filteredDonors = donors.filter(d => {
+    const matchesGroup = groupFilter === 'All' || d.blood_group === groupFilter;
+    const matchesArea = areaFilter === 'All' ||
+      (d.area && d.area.toLowerCase().includes(areaFilter.toLowerCase()));
+    return matchesGroup && matchesArea;
+  });
+
   // Group donors by blood type
   const donorGroups: Record<string, number> = {};
   donors.forEach(d => { donorGroups[d.blood_group] = (donorGroups[d.blood_group] ?? 0) + 1; });
   const bloodTypes = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
-
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -203,10 +250,58 @@ export function BloodScreen({ navigation }: any) {
           onPress={() => navigation.navigate('DonorRegister')}
           activeOpacity={0.85}
         >
-          <Icon name="plus" size={15} color={C.text} />
-          <Text style={[styles.actBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.blood2.registerAsDonorBtn}</Text>
+          <Icon name={myDonor ? 'edit' : 'plus'} size={15} color={C.text} />
+          <Text style={[styles.actBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+            {myDonor ? t.blood2.donorProfileBtn : t.blood2.registerAsDonorBtn}
+          </Text>
         </TouchableOpacity>
       </View>
+
+      {/* If registered, show your donor status banner right below action buttons */}
+      {myDonor && (
+        <View style={[styles.myStatusCard, { backgroundColor: C.surface, borderColor: C.border, marginHorizontal: Layout.screenPadding }]}>
+          <View style={styles.myStatusLeft}>
+            <GroupBadge group={myDonor.blood_group} size={38} />
+            <View style={{ flex: 1 }}>
+              <View style={styles.myStatusHeader}>
+                <Text style={[styles.myStatusTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  {t.blood2.myDonorStatusTitle}
+                </Text>
+                {(() => {
+                  const { eligible, daysLeft } = donorEligibility(myDonor.last_donated, myGender);
+                  return (
+                    <View style={[styles.eligPill, { backgroundColor: eligible ? C.successBg : C.warnBg }]}>
+                      <Text style={[styles.eligTxt, { color: eligible ? C.success : C.warn, fontFamily: FontFamily.jakartaBold }]}>
+                        {eligible ? t.blood2.eligible : t.blood2.eligibleInDays(daysLeft)}
+                      </Text>
+                    </View>
+                  );
+                })()}
+              </View>
+              <Text style={[styles.myStatusMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
+                {t.blood2.donorMeta(myDonor.area, myDonor.last_donated ?? t.blood2.never)}
+              </Text>
+              {myDonationCount > 0 && (
+                <View style={[styles.impactPill, { backgroundColor: BLOOD_BG }]}>
+                  <Text style={[styles.impactTxt, { color: BLOOD_COLOR, fontFamily: FontFamily.jakartaBold }]}>
+                    🏅 {t.blood2.donationsCount(myDonationCount)} · {t.blood2.livesSavedImpact(myDonationCount)}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+          <TouchableOpacity
+            style={[styles.myStatusEditBtn, { backgroundColor: C.surface2 }]}
+            onPress={() => navigation.navigate('DonorRegister')}
+            activeOpacity={0.75}
+          >
+            <Icon name="edit" size={13} color={C.text} />
+            <Text style={[styles.myStatusEditTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              {t.blood2.edit}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       <View style={[styles.chips, { paddingHorizontal: Layout.screenPadding }]}>
         {(['requests', 'donors'] as Tab[]).map(tb => (
@@ -252,6 +347,33 @@ export function BloodScreen({ navigation }: any) {
         })}
       </ScrollView>
 
+      {/* Area proximity filter */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={{ flexGrow: 0 }}
+        contentContainerStyle={[styles.areaChips, { paddingHorizontal: Layout.screenPadding }]}
+      >
+        {AREA_OPTIONS.map(a => {
+          const on = areaFilter === a;
+          const label = a === 'All' ? t.blood2.filterLocationAll : a;
+          return (
+            <TouchableOpacity
+              key={a}
+              style={[styles.areaChip, on
+                ? { backgroundColor: C.brand, borderColor: C.brand }
+                : { backgroundColor: C.surface, borderColor: C.border }]}
+              onPress={() => setAreaFilter(a)}
+              activeOpacity={0.75}
+            >
+              <Text style={[styles.areaChipTxt, { color: on ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                {label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
@@ -263,71 +385,91 @@ export function BloodScreen({ navigation }: any) {
           <LoadError onRetry={load} />
         ) : tab === 'requests' ? (
           <View style={styles.list}>
-            {requests.filter(r => groupFilter === 'All' || r.blood_group === groupFilter).map(r => {
-              const { fg, bg } = urgencyTone(C, r.urgency);
-              return (
-                <View key={r.id} style={[styles.reqCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-                  <View style={styles.reqTop}>
-                    <GroupBadge group={r.blood_group} />
-                    <View style={styles.reqBody}>
-                      <Text style={[styles.reqTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                        {r.patient}
-                      </Text>
-                      <View style={styles.reqLoc}>
-                        <Icon name="pin" size={13} color={C.textMuted} />
-                        <Text style={[styles.reqLocTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                          {r.hospital}
-                        </Text>
+            {filteredRequests.length === 0 ? (
+              <View style={[styles.emptyWrap, { backgroundColor: C.surface, borderColor: C.border }]}>
+                <Icon name="blood" size={30} color={C.textMuted} />
+                <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                  {t.common.noResults}
+                </Text>
+              </View>
+            ) : (
+              filteredRequests.map(r => {
+                const { fg, bg } = urgencyTone(C, r.urgency);
+                const isPlatelet = r.patient?.includes('[Platelets]') || r.hospital?.toLowerCase().includes('platelet');
+                const displayPatient = r.patient?.replace(/\[Platelets\]/g, '').trim() || r.patient;
+                return (
+                  <View key={r.id} style={[styles.reqCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+                    <View style={styles.reqTop}>
+                      <GroupBadge group={r.blood_group} />
+                      <View style={styles.reqBody}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                          <Text style={[styles.reqTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                            {displayPatient}
+                          </Text>
+                          {isPlatelet && (
+                            <View style={[styles.plateletPill, { backgroundColor: C.warnBg }]}>
+                              <Text style={[styles.plateletTxt, { color: C.warn, fontFamily: FontFamily.jakartaBold }]}>
+                                ⚡ {t.blood2.denguePlateletUrgent}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                        <View style={styles.reqLoc}>
+                          <Icon name="pin" size={13} color={C.textMuted} />
+                          <Text style={[styles.reqLocTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+                            {r.hospital}
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={[styles.urgencyPill, { backgroundColor: bg }]}>
+                        <View style={[styles.urgencyDot, { backgroundColor: fg }]} />
+                        <Text style={[styles.urgencyTxt, { color: fg, fontFamily: FontFamily.jakartaBold }]}>{r.urgency}</Text>
                       </View>
                     </View>
-                    <View style={[styles.urgencyPill, { backgroundColor: bg }]}>
-                      <View style={[styles.urgencyDot, { backgroundColor: fg }]} />
-                      <Text style={[styles.urgencyTxt, { color: fg, fontFamily: FontFamily.jakartaBold }]}>{r.urgency}</Text>
+                    <View style={styles.reqMeta}>
+                      <Text style={[styles.reqMetaTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                        {t.blood2.unitsNeeded(r.area, r.units)}
+                      </Text>
                     </View>
+                    {r.requester_id === user?.id ? (
+                      <TouchableOpacity
+                        style={[styles.pledgeBtn, { backgroundColor: C.surface2 }]}
+                        onPress={() => navigation.navigate('BloodRequestDetail', { requestId: r.id })}
+                        activeOpacity={0.75}
+                      >
+                        <Icon name="directory" size={15} color={C.text2} />
+                        <Text style={[styles.pledgeTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                          {t.blood2.manageResponses}
+                        </Text>
+                      </TouchableOpacity>
+                    ) : respondedIds.has(r.id) ? (
+                      <TouchableOpacity
+                        style={[styles.pledgeBtn, { backgroundColor: C.successBg }]}
+                        onPress={() => revealRequester(r)}
+                        activeOpacity={0.75}
+                        disabled={busyId === r.id}
+                      >
+                        <Icon name="phone" size={15} color={C.success} />
+                        <Text style={[styles.pledgeTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
+                          {busyId === r.id ? '…' : t.blood2.viewRequesterContact}
+                        </Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity
+                        style={[styles.pledgeBtn, { backgroundColor: BLOOD_BG }]}
+                        onPress={() => handleHelpPress(r)}
+                        activeOpacity={0.75}
+                      >
+                        <Icon name="blood" size={16} color={BLOOD_COLOR} />
+                        <Text style={[styles.pledgeTxt, { color: BLOOD_COLOR, fontFamily: FontFamily.jakartaBold }]}>
+                          {t.blood2.iCanHelp}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
-                  <View style={styles.reqMeta}>
-                    <Text style={[styles.reqMetaTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                      {t.blood2.unitsNeeded(r.area, r.units)}
-                    </Text>
-                  </View>
-                  {r.requester_id === user?.id ? (
-                    <TouchableOpacity
-                      style={[styles.pledgeBtn, { backgroundColor: C.surface2 }]}
-                      onPress={() => navigation.navigate('BloodRequestDetail', { requestId: r.id })}
-                      activeOpacity={0.75}
-                    >
-                      <Icon name="directory" size={15} color={C.text2} />
-                      <Text style={[styles.pledgeTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                        {t.blood2.manageResponses}
-                      </Text>
-                    </TouchableOpacity>
-                  ) : respondedIds.has(r.id) ? (
-                    <TouchableOpacity
-                      style={[styles.pledgeBtn, { backgroundColor: C.successBg }]}
-                      onPress={() => revealRequester(r)}
-                      activeOpacity={0.75}
-                      disabled={busyId === r.id}
-                    >
-                      <Icon name="phone" size={15} color={C.success} />
-                      <Text style={[styles.pledgeTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
-                        {busyId === r.id ? '…' : t.blood2.viewRequesterContact}
-                      </Text>
-                    </TouchableOpacity>
-                  ) : (
-                    <TouchableOpacity
-                      style={[styles.pledgeBtn, { backgroundColor: BLOOD_BG }]}
-                      onPress={() => handleHelpPress(r)}
-                      activeOpacity={0.75}
-                    >
-                      <Icon name="blood" size={16} color={BLOOD_COLOR} />
-                      <Text style={[styles.pledgeTxt, { color: BLOOD_COLOR, fontFamily: FontFamily.jakartaBold }]}>
-                        {t.blood2.iCanHelp}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              );
-            })}
+                );
+              })
+            )}
           </View>
         ) : (
           <View>
@@ -349,58 +491,68 @@ export function BloodScreen({ navigation }: any) {
             </View>
 
             {/* Donor list */}
-            <View style={[styles.donorList, { backgroundColor: C.surface, borderColor: C.border }]}>
-              {donors.filter(d => groupFilter === 'All' || d.blood_group === groupFilter).map((d, i) => {
-                const { eligible, daysLeft } = donorEligibility(d.last_donated);
-                const isMe = d.user_id === user?.id;
-                return (
-                <View key={d.user_id}>
-                  {i > 0 && <View style={[styles.divider, { backgroundColor: C.border }]} />}
-                  <View style={[styles.donorRow, !eligible && { opacity: 0.6 }]}>
-                    <Avatar name={(d as any).profiles?.full_name} size="sm" />
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.donorName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                        {(d as any).profiles?.full_name ?? t.blood2.anonymous}{isMe ? ` ${t.blood2.youTag}` : ''}
-                      </Text>
-                      <Text style={[styles.donorMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                        {t.blood2.donorMeta(d.area, d.last_donated ?? t.blood2.never)}
-                      </Text>
-                      <View style={[styles.eligPill, { backgroundColor: eligible ? C.successBg : C.warnBg }]}>
-                        <Text style={[styles.eligTxt, { color: eligible ? C.success : C.warn, fontFamily: FontFamily.jakartaBold }]}>
-                          {eligible ? t.blood2.eligible : t.blood2.eligibleInDays(daysLeft)}
-                        </Text>
+            {filteredDonors.length === 0 ? (
+              <View style={[styles.emptyWrap, { backgroundColor: C.surface, borderColor: C.border }]}>
+                <Icon name="blood" size={30} color={C.textMuted} />
+                <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                  {t.common.noResults}
+                </Text>
+              </View>
+            ) : (
+              <View style={[styles.donorList, { backgroundColor: C.surface, borderColor: C.border }]}>
+                {filteredDonors.map((d, i) => {
+                  const { eligible, daysLeft } = donorEligibility(d.last_donated);
+                  const isMe = d.user_id === user?.id;
+                  return (
+                    <View key={d.user_id}>
+                      {i > 0 && <View style={[styles.divider, { backgroundColor: C.border }]} />}
+                      <View style={[styles.donorRow, !eligible && { opacity: 0.6 }]}>
+                        <Avatar name={(d as any).profiles?.full_name} size="sm" />
+                        <View style={{ flex: 1 }}>
+                          <Text style={[styles.donorName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                            {(d as any).profiles?.full_name ?? t.blood2.anonymous}{isMe ? ` ${t.blood2.youTag}` : ''}
+                          </Text>
+                          <Text style={[styles.donorMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+                            {t.blood2.donorMeta(d.area, d.last_donated ?? t.blood2.never)}
+                          </Text>
+                          <View style={[styles.eligPill, { backgroundColor: eligible ? C.successBg : C.warnBg }]}>
+                            <Text style={[styles.eligTxt, { color: eligible ? C.success : C.warn, fontFamily: FontFamily.jakartaBold }]}>
+                              {eligible ? t.blood2.eligible : t.blood2.eligibleInDays(daysLeft)}
+                            </Text>
+                          </View>
+                        </View>
+                        <GroupBadge group={d.blood_group} size={34} />
+                        {isMe ? (
+                          <TouchableOpacity
+                            style={[styles.contactBtn, { backgroundColor: C.successBg }]}
+                            onPress={markDonatedToday}
+                            activeOpacity={0.75}
+                          >
+                            <Text style={[styles.contactTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
+                              {t.blood2.iDonated}
+                            </Text>
+                          </TouchableOpacity>
+                        ) : (
+                          <TouchableOpacity
+                            style={[styles.contactBtn, {
+                              backgroundColor: eligible ? BLOOD_BG : C.surface2,
+                              opacity: busyId === d.user_id ? 0.5 : 1,
+                            }]}
+                            onPress={() => revealContact(d.user_id, (d as any).profiles?.full_name)}
+                            activeOpacity={0.75}
+                            disabled={busyId === d.user_id || !eligible}
+                          >
+                            <Text style={[styles.contactTxt, { color: eligible ? BLOOD_COLOR : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                              {busyId === d.user_id ? '…' : t.blood2.contact}
+                            </Text>
+                          </TouchableOpacity>
+                        )}
                       </View>
                     </View>
-                    <GroupBadge group={d.blood_group} size={34} />
-                    {isMe ? (
-                      <TouchableOpacity
-                        style={[styles.contactBtn, { backgroundColor: C.successBg }]}
-                        onPress={markDonatedToday}
-                        activeOpacity={0.75}
-                      >
-                        <Text style={[styles.contactTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
-                          {t.blood2.iDonated}
-                        </Text>
-                      </TouchableOpacity>
-                    ) : (
-                      <TouchableOpacity
-                        style={[styles.contactBtn, {
-                          backgroundColor: eligible ? BLOOD_BG : C.surface2,
-                          opacity: busyId === d.user_id ? 0.5 : 1,
-                        }]}
-                        onPress={() => revealContact(d.user_id, (d as any).profiles?.full_name)}
-                        activeOpacity={0.75}
-                        disabled={busyId === d.user_id || !eligible}
-                      >
-                        <Text style={[styles.contactTxt, { color: eligible ? BLOOD_COLOR : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                          {busyId === d.user_id ? '…' : t.blood2.contact}
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                </View>
-              );})}
-            </View>
+                  );
+                })}
+              </View>
+            )}
           </View>
         )}
         <View style={{ height: 12 }} />
@@ -460,4 +612,37 @@ const styles = StyleSheet.create({
   donorMeta: { fontSize: 12, marginTop: 2 } as any,
   contactBtn: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 } as ViewStyle,
   contactTxt: { fontSize: 11 } as any,
+  myStatusCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginTop: 6,
+    marginBottom: 4,
+    gap: 10,
+  } as ViewStyle,
+  myStatusLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 } as ViewStyle,
+  myStatusHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' } as ViewStyle,
+  myStatusTitle: { fontSize: 13 } as any,
+  myStatusMeta: { fontSize: 11.5, marginTop: 2 } as any,
+  myStatusEditBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+  } as ViewStyle,
+  myStatusEditTxt: { fontSize: 12 } as any,
+  areaChips: { flexDirection: 'row', gap: 6, paddingBottom: 8 } as ViewStyle,
+  areaChip: { paddingHorizontal: 12, paddingVertical: 5.5, borderRadius: 999, borderWidth: 1 } as ViewStyle,
+  areaChipTxt: { fontSize: 11.5 } as any,
+  plateletPill: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 } as ViewStyle,
+  plateletTxt: { fontSize: 10 } as any,
+  impactPill: { alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, marginTop: 4 } as ViewStyle,
+  impactTxt: { fontSize: 11 } as any,
+  emptyWrap: { padding: 32, borderRadius: 16, borderWidth: 1, alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 8 } as ViewStyle,
+  emptyTxt: { fontSize: 13 } as any,
 });
