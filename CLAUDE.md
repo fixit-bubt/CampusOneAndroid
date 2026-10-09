@@ -461,6 +461,22 @@ Whenever the user instructs to "update memorys", the agent MUST synchronously up
   - `StudyHubScreen`: Academic catalogue management, intake/section provisioning, and CR review.
   - `ManageClubsScreen`: Club creation, status toggle, and atomic presidential assignment (`club_set_president` RPC).
 
+---
 
+## 19. Varsity Top App Bar Architecture (`TopBar.tsx`)
 
-
+- **Option B Implementation:** Replaced the legacy cluttered top bar (avatar circle `MM`, "Good morning Monir" greeting, language `EN` toggle, theme `Sun/Moon` toggle) with a unified, institution-grade Varsity Top Bar across all roles (`HomeScreen.tsx`, `AdminDashboardScreen.tsx`, and `StaffDashboardScreen.tsx`).
+- **Brand Presentation:**
+  - 32dp `LogoMark` with university insignia.
+  - Two-tone wordmark: `Campus` in primary text color (`C.text`) + `One` in `#10b981` (emerald green).
+  - Role-aware badge pill:
+    - Admin: `ADMIN` emerald badge (`#e6f7ef` bg in light, `rgba(16, 185, 129, 0.16)` in dark) + Subtitle: "Campus Administration".
+    - Staff: `STAFF` amber badge (`#fef3c7` bg in light, `rgba(245, 158, 11, 0.16)` in dark) + Subtitle: "Staff Workspace".
+    - Student: Subtitle "Full campus in one app" (matches web app tagline).
+- **Action Buttons:**
+  - Quick Search `[🔍]` (`40×40dp`, triggers `navigation.navigate('Explore')` to jump to campus search and feature directory).
+  - Notification Bell `[🔔]` (`40×40dp` with live unread badge, triggers `navigation.navigate('Notifications')`).
+- **Clean Separation of Concerns:**
+  - User profile is accessed via the dedicated bottom navigation `Settings` tab.
+  - Language and dark/light theme switching are housed inside `SettingsScreen.tsx`.
+  - Top bar remains focused on varsity identity, instant discovery, and alert notifications.
