@@ -1,8 +1,9 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, Modal,
   StyleSheet, Switch, ActivityIndicator, Share, Linking, type ViewStyle,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
@@ -15,6 +16,12 @@ import { FontFamily, Layout } from '../../theme';
 import { useApp } from '../../store/appStore';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../components/ui/Toast';
+import {
+  getAppCacheSize,
+  clearAppCache,
+  formatBytes,
+  openSystemAppSettings,
+} from '../../services/storageService';
 
 const ROLE_TOKEN = { student: 'roleStudent', staff: 'roleStaff', admin: 'roleAdmin' } as const;
 
@@ -23,7 +30,7 @@ function hexAlpha(hex: string, a: number): string {
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
 }
 
-interface SettingRowProps {
+interface SettingCardProps {
   icon: string;
   iconColor?: string;
   label: string;
@@ -33,20 +40,26 @@ interface SettingRowProps {
   C: any;
 }
 
-function SettingRow({ icon, iconColor, label, sub, right, onPress, C }: SettingRowProps) {
+function SettingCard({ icon, iconColor, label, sub, right, onPress, C }: SettingCardProps) {
   const Wrapper: any = onPress ? TouchableOpacity : View;
   return (
     <Wrapper
-      style={[styles.row, { backgroundColor: C.surface }]}
+      style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}
       onPress={onPress}
-      activeOpacity={0.65}
+      activeOpacity={onPress ? 0.7 : 1}
     >
-      <View style={[styles.rowIconWrap, { backgroundColor: (iconColor ?? C.brand) + '18' }]}>
-        <Icon name={icon as any} size={17} color={iconColor ?? C.brand} />
+      <View style={[styles.cardIconWrap, { backgroundColor: (iconColor ?? C.brand) + '18' }]}>
+        <Icon name={icon as any} size={18} color={iconColor ?? C.brand} />
       </View>
-      <View style={styles.rowBody}>
-        <Text style={[styles.rowLabel, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>{label}</Text>
-        {sub ? <Text style={[styles.rowSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{sub}</Text> : null}
+      <View style={styles.cardBody}>
+        <Text style={[styles.cardLabel, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>
+          {label}
+        </Text>
+        {sub ? (
+          <Text style={[styles.cardSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+            {sub}
+          </Text>
+        ) : null}
       </View>
       {right ?? (onPress ? <Feather name="chevron-right" size={18} color={C.textMuted} /> : null)}
     </Wrapper>
@@ -57,7 +70,7 @@ export function SettingsScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
   const t = useT();
   const toast = useToast();
-  const { profile, user, signOut, deleteAccount } = useAuth();
+  const { profile, signOut, deleteAccount } = useAuth();
   const { isDark: appDark, toggleTheme, lang, toggleLang } = useApp();
 
   const role = profile?.role ?? 'student';
@@ -67,6 +80,13 @@ export function SettingsScreen({ navigation }: any) {
     student: t.mainx.roleStudent, staff: t.mainx.roleStaff, admin: t.mainx.roleAdmin,
   };
 
+  const [optSync, setOptSync] = useState(true);
+  const [dataCacheOpen, setDataCacheOpen] = useState(false);
+  const [cacheBytes, setCacheBytes] = useState(0);
+  const [clearingCache, setClearingCache] = useState(false);
+
+  const [aboutOpen, setAboutOpen] = useState(false);
+
   const [pwOpen, setPwOpen] = useState(false);
   const [pwNew, setPwNew] = useState('');
   const [pwConfirm, setPwConfirm] = useState('');
@@ -75,13 +95,54 @@ export function SettingsScreen({ navigation }: any) {
   const [delOpen, setDelOpen] = useState(false);
   const [delBusy, setDelBusy] = useState(false);
 
+  useEffect(() => {
+    AsyncStorage.getItem('app.optSync')
+      .then(v => {
+        if (v !== null) setOptSync(v === 'true');
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleToggleOptSync = (v: boolean) => {
+    setOptSync(v);
+    AsyncStorage.setItem('app.optSync', String(v)).catch(() => {});
+  };
+
+  const refreshCacheSize = useCallback(async () => {
+    const bytes = await getAppCacheSize();
+    setCacheBytes(bytes);
+  }, []);
+
+  useEffect(() => {
+    if (dataCacheOpen) {
+      refreshCacheSize();
+    }
+  }, [dataCacheOpen, refreshCacheSize]);
+
+  const handleClearCache = async () => {
+    if (clearingCache) return;
+    setClearingCache(true);
+    await clearAppCache();
+    await refreshCacheSize();
+    setClearingCache(false);
+    toast({ type: 'success', title: t.mainx.done, message: t.mainx.cacheCleared });
+  };
+
+  const handleCheckUpdates = () => {
+    toast({
+      type: 'info',
+      title: t.mainx.upToDateTitle,
+      message: t.mainx.upToDateMsg,
+    });
+  };
+
   const handleDeleteAccount = useCallback(async () => {
     if (delBusy) return;
     setDelBusy(true);
     try {
       await deleteAccount();
       setDelOpen(false);
-      toast({ type: 'success', title: 'Done', message: t.mainx.accountDeleted });
+      toast({ type: 'success', title: t.mainx.done, message: t.mainx.accountDeleted });
     } catch (err: any) {
       setDelBusy(false);
       toast({ type: 'error', title: 'Error', message: err?.message || 'Could not delete account' });
@@ -98,7 +159,7 @@ export function SettingsScreen({ navigation }: any) {
     if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }
     setPwOpen(false);
     setPwNew(''); setPwConfirm('');
-    toast({ type: 'success', title: 'Done', message: t.mainx.passwordUpdated });
+    toast({ type: 'success', title: t.mainx.done, message: t.mainx.passwordUpdated });
   }, [pwNew, pwConfirm, pwBusy, t, toast]);
 
   return (
@@ -113,7 +174,7 @@ export function SettingsScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
       >
-        {/* Profile card - tappable */}
+        {/* Profile Card */}
         <TouchableOpacity
           style={[styles.profileCard, { backgroundColor: C.surface, borderColor: C.border }]}
           onPress={() => navigation.navigate('Profile')}
@@ -137,128 +198,322 @@ export function SettingsScreen({ navigation }: any) {
           <Feather name="chevron-right" size={20} color={C.textMuted} />
         </TouchableOpacity>
 
-        {/* General */}
-        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
-          GENERAL
-        </Text>
-        <View style={[styles.group, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <SettingRow
-            icon="moon" iconColor={C.text2} label="Dark Mode" C={C}
-            right={
-              <Switch value={appDark} onValueChange={toggleTheme}
-                trackColor={{ false: C.surface3, true: C.brand + '66' }}
-                thumbColor={appDark ? C.brand : C.white} />
-            }
-          />
-          <View style={[styles.divider, { backgroundColor: C.border }]} />
-          <SettingRow
-            icon="globe" iconColor={C.text2}
-            label="Language"
-            sub={lang === 'en' ? 'English' : 'বাংলা'}
+        {/* Role Workspace Quick Access (Staff / Admin) */}
+        {role === 'admin' && (
+          <SettingCard
+            icon="sliders"
+            iconColor={roleHex}
+            label="Admin Dashboard"
+            sub="Manage users, staff, reports, and campus modules"
             C={C}
-            right={
-              <Switch value={lang === 'bn'} onValueChange={toggleLang}
-                trackColor={{ false: C.surface3, true: C.brand + '66' }}
-                thumbColor={lang === 'bn' ? C.brand : C.white} />
-            }
+            onPress={() => navigation.navigate('AdminDashboard')}
           />
-          <View style={[styles.divider, { backgroundColor: C.border }]} />
-          <SettingRow
-            icon="bell" iconColor={C.text2} label="Notifications" C={C}
-            onPress={() => navigation.navigate('NotifSettings')}
-          />
-        </View>
+        )}
 
-        {/* Legal & Policies */}
+        {role === 'staff' && (
+          <SettingCard
+            icon="wrench"
+            iconColor={roleHex}
+            label="Staff Workspace"
+            sub="View assigned maintenance tasks and reports"
+            C={C}
+            onPress={() => navigation.navigate('StaffDashboard')}
+          />
+        )}
+
+        {/* Section: APP SETTINGS */}
         <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
-          {t.mainx.legalSection}
+          {t.mainx.appSettingsSection}
         </Text>
-        <View style={[styles.group, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <SettingRow
-            icon="shield" iconColor={C.brand} label={t.mainx.privacyPolicy} sub={t.mainx.privacyPolicySub} C={C}
-            onPress={() => navigation.navigate('PrivacyPolicy')}
-          />
-          <View style={[styles.divider, { backgroundColor: C.border }]} />
-          <SettingRow
-            icon="fileText" iconColor={C.brand} label={t.mainx.termsOfService} sub={t.mainx.termsOfServiceSub} C={C}
-            onPress={() => navigation.navigate('TermsOfService')}
-          />
-        </View>
 
-        {/* Help & Support */}
+        <SettingCard
+          icon="bell"
+          iconColor={C.brand}
+          label="Notifications"
+          sub={t.mainx.notificationsSub}
+          C={C}
+          onPress={() => navigation.navigate('NotifSettings')}
+        />
+
+        <SettingCard
+          icon="refreshCw"
+          iconColor="#8b5cf6"
+          label={t.mainx.optSync}
+          sub={t.mainx.optSyncSub}
+          C={C}
+          right={
+            <Switch
+              value={optSync}
+              onValueChange={handleToggleOptSync}
+              trackColor={{ false: C.surface3, true: C.brand + '66' }}
+              thumbColor={optSync ? C.brand : C.white}
+            />
+          }
+        />
+
+        <SettingCard
+          icon="database"
+          iconColor="#0284c7"
+          label={t.mainx.dataAndCache}
+          sub={t.mainx.dataAndCacheSub}
+          C={C}
+          onPress={() => setDataCacheOpen(true)}
+        />
+
+        <SettingCard
+          icon="moon"
+          iconColor="#6366f1"
+          label="Dark Mode"
+          sub={t.mainx.darkModeSub(appDark)}
+          C={C}
+          right={
+            <Switch
+              value={appDark}
+              onValueChange={toggleTheme}
+              trackColor={{ false: C.surface3, true: C.brand + '66' }}
+              thumbColor={appDark ? C.brand : C.white}
+            />
+          }
+        />
+
+        <SettingCard
+          icon="globe"
+          iconColor="#10b981"
+          label="Language"
+          sub={t.mainx.languageSub(lang === 'bn')}
+          C={C}
+          right={
+            <Switch
+              value={lang === 'bn'}
+              onValueChange={toggleLang}
+              trackColor={{ false: C.surface3, true: C.brand + '66' }}
+              thumbColor={lang === 'bn' ? C.brand : C.white}
+            />
+          }
+        />
+
+        <SettingCard
+          icon="downloadCloud"
+          iconColor="#f59e0b"
+          label={t.mainx.checkForUpdates}
+          sub={t.mainx.checkForUpdatesSub}
+          C={C}
+          onPress={handleCheckUpdates}
+        />
+
+        {/* Section: SUPPORT & LEGAL */}
         <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
           {t.mainx.supportSection}
         </Text>
-        <View style={[styles.group, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <SettingRow
-            icon="mail" iconColor={C.brand} label={t.mainx.contactSupport} sub={t.mainx.contactSupportSub} C={C}
-            onPress={() => Linking.openURL('mailto:campusone.bubt@gmail.com?subject=CampusOne%20Support')}
-          />
-          <View style={[styles.divider, { backgroundColor: C.border }]} />
-          <SettingRow
-            icon="handshake" iconColor={C.text2} label="Share App" C={C}
-            onPress={() => Share.share({ message: 'Check out CampusOne - your university companion app!' })}
-          />
-          <View style={[styles.divider, { backgroundColor: C.border }]} />
-          <SettingRow
-            icon="award" iconColor={C.text2} label={t.mainx.appVersion} sub="CampusOne v1.0.0 (Build 1)" C={C}
-          />
-        </View>
 
-        {/* Account */}
+        <SettingCard
+          icon="share"
+          iconColor="#3b82f6"
+          label="Share App"
+          sub="Share CampusOne with your friends"
+          C={C}
+          onPress={() => Share.share({ message: 'Check out CampusOne - BUBT campus companion app!' })}
+        />
+
+        <SettingCard
+          icon="shield"
+          iconColor={C.brand}
+          label={t.mainx.privacyPolicy}
+          sub={t.mainx.privacyPolicySub}
+          C={C}
+          onPress={() => navigation.navigate('PrivacyPolicy')}
+        />
+
+        <SettingCard
+          icon="fileText"
+          iconColor={C.brand}
+          label={t.mainx.termsOfService}
+          sub={t.mainx.termsOfServiceSub}
+          C={C}
+          onPress={() => navigation.navigate('TermsOfService')}
+        />
+
+        <SettingCard
+          icon="info"
+          iconColor="#8b5cf6"
+          label={t.mainx.aboutApp}
+          sub={t.mainx.aboutAppSub}
+          C={C}
+          onPress={() => setAboutOpen(true)}
+        />
+
+        <SettingCard
+          icon="mail"
+          iconColor={C.brand}
+          label={t.mainx.contactSupport}
+          sub={t.mainx.contactSupportSub}
+          C={C}
+          onPress={() => Linking.openURL('mailto:campusone.bubt@gmail.com?subject=CampusOne%20Support')}
+        />
+
+        {/* Section: ACCOUNT */}
         <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
           ACCOUNT
         </Text>
-        <View style={[styles.group, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <SettingRow
-            icon="key" iconColor={C.text2} label={t.mainx.changePassword} C={C}
-            onPress={() => setPwOpen(true)}
-          />
-          <View style={[styles.divider, { backgroundColor: C.border }]} />
-          <TouchableOpacity
-            style={styles.row}
-            onPress={signOut}
-            activeOpacity={0.65}
-          >
-            <View style={[styles.rowIconWrap, { backgroundColor: C.textMuted + '18' }]}>
-              <Icon name="logout" size={17} color={C.text2} />
-            </View>
-            <Text style={[styles.rowLabel, { color: C.text, fontFamily: FontFamily.jakartaSemiBold, flex: 1 }]}>
-              {t.mainx.signOut}
-            </Text>
-          </TouchableOpacity>
-          <View style={[styles.divider, { backgroundColor: C.border }]} />
-          <TouchableOpacity
-            style={styles.row}
-            onPress={() => setDelOpen(true)}
-            activeOpacity={0.65}
-          >
-            <View style={[styles.rowIconWrap, { backgroundColor: C.danger + '18' }]}>
-              <Icon name="trash" size={17} color={C.danger} />
-            </View>
-            <View style={styles.rowBody}>
-              <Text style={[styles.rowLabel, { color: C.danger, fontFamily: FontFamily.jakartaSemiBold }]}>
-                {t.mainx.deleteAccount}
-              </Text>
-              <Text style={[styles.rowSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                {t.mainx.deleteAccountSub}
-              </Text>
-            </View>
-            <Feather name="chevron-right" size={18} color={C.textMuted} />
-          </TouchableOpacity>
-        </View>
+
+        <SettingCard
+          icon="key"
+          iconColor={C.text2}
+          label={t.mainx.changePassword}
+          sub="Update your login password"
+          C={C}
+          onPress={() => setPwOpen(true)}
+        />
+
+        <SettingCard
+          icon="logout"
+          iconColor={C.text2}
+          label={t.mainx.signOut}
+          sub="Log out of this device"
+          C={C}
+          onPress={signOut}
+        />
+
+        <SettingCard
+          icon="trash"
+          iconColor={C.danger}
+          label={t.mainx.deleteAccount}
+          sub={t.mainx.deleteAccountSub}
+          C={C}
+          onPress={() => setDelOpen(true)}
+        />
 
         <View style={{ height: 32 }} />
       </ScrollView>
 
+      {/* Data & Cache Sheet Modal */}
+      <Modal visible={dataCacheOpen} transparent animationType="slide" onRequestClose={() => setDataCacheOpen(false)}>
+        <TouchableOpacity style={styles.sheetOverlay} activeOpacity={1} onPress={() => setDataCacheOpen(false)} />
+        <View style={[styles.sheetContent, { backgroundColor: C.surface }]}>
+          <View style={styles.sheetHeaderRow}>
+            <View style={[styles.sheetIconWrap, { backgroundColor: '#0284c718' }]}>
+              <Icon name="database" size={22} color="#0284c7" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+                {t.mainx.dataAndCache}
+              </Text>
+              <Text style={[styles.sheetSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                {t.mainx.dataAndCacheSub}
+              </Text>
+            </View>
+          </View>
+
+          <View style={[styles.cacheInfoBox, { backgroundColor: C.bg, borderColor: C.border }]}>
+            <View style={styles.cacheInfoRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.cacheInfoLabel, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  {t.mainx.cacheSize}
+                </Text>
+                <Text style={[styles.cacheInfoDesc, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                  {t.mainx.clearCacheSub}
+                </Text>
+              </View>
+              <View style={[styles.sizeBadge, { backgroundColor: C.surface2 }]}>
+                <Text style={[styles.sizeBadgeTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+                  {formatBytes(cacheBytes)}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.primaryBtn, { backgroundColor: C.brand, opacity: clearingCache ? 0.7 : 1 }]}
+            onPress={handleClearCache}
+            disabled={clearingCache}
+            activeOpacity={0.8}
+          >
+            {clearingCache ? (
+              <ActivityIndicator color={C.white} size="small" />
+            ) : (
+              <View style={styles.btnRow}>
+                <Feather name="trash-2" size={17} color={C.white} />
+                <Text style={[styles.btnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>
+                  {t.mainx.clearCache}
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.outlineBtn, { borderColor: C.border }]}
+            onPress={openSystemAppSettings}
+            activeOpacity={0.7}
+          >
+            <View style={styles.btnRow}>
+              <Feather name="external-link" size={16} color={C.text} />
+              <Text style={[styles.outlineBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>
+                {t.mainx.systemStorage}
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.cancelBtn, { borderColor: C.border }]}
+            onPress={() => setDataCacheOpen(false)}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.cancelBtnTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaSemiBold }]}>
+              {t.mainx.cancel}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
+
+      {/* About CampusOne Modal */}
+      <Modal visible={aboutOpen} transparent animationType="slide" onRequestClose={() => setAboutOpen(false)}>
+        <TouchableOpacity style={styles.sheetOverlay} activeOpacity={1} onPress={() => setAboutOpen(false)} />
+        <View style={[styles.sheetContent, { backgroundColor: C.surface }]}>
+          <View style={[styles.aboutIconWrap, { backgroundColor: C.brand + '18' }]}>
+            <Icon name="award" size={28} color={C.brand} />
+          </View>
+          <Text style={[styles.aboutTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+            CampusOne
+          </Text>
+          <Text style={[styles.aboutVersion, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+            Version 1.0.0 (Release Build 1)
+          </Text>
+          <Text style={[styles.aboutDesc, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
+            {t.mainx.aboutAppDesc}
+          </Text>
+
+          <View style={[styles.aboutMetaBox, { backgroundColor: C.bg, borderColor: C.border }]}>
+            <Text style={[styles.aboutMetaLine, { color: C.textMuted, fontFamily: FontFamily.jakartaSemiBold }]}>
+              Institution: Bangladesh University of Business & Technology
+            </Text>
+            <Text style={[styles.aboutMetaLine, { color: C.textMuted, fontFamily: FontFamily.jakartaSemiBold }]}>
+              Department: Computer Science & Engineering (CSE)
+            </Text>
+            <Text style={[styles.aboutMetaLine, { color: C.textMuted, fontFamily: FontFamily.jakartaSemiBold }]}>
+              Capstone Thesis Project
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.primaryBtn, { backgroundColor: C.brand, marginTop: 16 }]}
+            onPress={() => setAboutOpen(false)}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.btnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>
+              {t.common.done ?? 'Done'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
+
       {/* Change password sheet */}
       <Modal visible={pwOpen} transparent animationType="slide" onRequestClose={() => setPwOpen(false)}>
-        <TouchableOpacity style={styles.pwOverlay} activeOpacity={1} onPress={() => setPwOpen(false)} />
-        <View style={[styles.pwSheet, { backgroundColor: C.surface }]}>
-          <Text style={[styles.pwTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+        <TouchableOpacity style={styles.sheetOverlay} activeOpacity={1} onPress={() => setPwOpen(false)} />
+        <View style={[styles.sheetContent, { backgroundColor: C.surface }]}>
+          <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
             {t.mainx.changePassword}
           </Text>
-          <Text style={[styles.pwSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+          <Text style={[styles.sheetSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium, marginBottom: 14 }]}>
             {t.mainx.pwAtLeast8}
           </Text>
           <PasswordInput
@@ -272,7 +527,7 @@ export function SettingsScreen({ navigation }: any) {
             placeholder={t.mainx.confirmNewPasswordPlaceholder} placeholderTextColor={C.textMuted}
           />
           <TouchableOpacity
-            style={[styles.pwBtn, { backgroundColor: C.brand, opacity: pwBusy ? 0.6 : 1 }]}
+            style={[styles.primaryBtn, { backgroundColor: C.brand, opacity: pwBusy ? 0.6 : 1, marginTop: 8 }]}
             onPress={changePassword}
             disabled={pwBusy}
             activeOpacity={0.8}
@@ -280,29 +535,39 @@ export function SettingsScreen({ navigation }: any) {
             {pwBusy
               ? <ActivityIndicator color={C.white} size="small" />
               : (
-                <Text style={[styles.pwBtnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>
+                <Text style={[styles.btnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>
                   {t.mainx.updatePassword}
                 </Text>
               )}
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.cancelBtn, { borderColor: C.border }]}
+            onPress={() => setPwOpen(false)}
+            disabled={pwBusy}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.cancelBtnTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaSemiBold }]}>
+              {t.mainx.cancel}
+            </Text>
           </TouchableOpacity>
         </View>
       </Modal>
 
       {/* Delete account confirmation sheet */}
       <Modal visible={delOpen} transparent animationType="slide" onRequestClose={() => !delBusy && setDelOpen(false)}>
-        <TouchableOpacity style={styles.pwOverlay} activeOpacity={1} onPress={() => !delBusy && setDelOpen(false)} />
-        <View style={[styles.pwSheet, { backgroundColor: C.surface }]}>
+        <TouchableOpacity style={styles.sheetOverlay} activeOpacity={1} onPress={() => !delBusy && setDelOpen(false)} />
+        <View style={[styles.sheetContent, { backgroundColor: C.surface }]}>
           <View style={[styles.delIconWrap, { backgroundColor: C.danger + '18' }]}>
             <Feather name="trash-2" size={24} color={C.danger} />
           </View>
-          <Text style={[styles.pwTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold, marginTop: 12 }]}>
+          <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold, marginTop: 12, textAlign: 'center' }]}>
             {t.mainx.deleteAccountTitle}
           </Text>
           <Text style={[styles.delWarningText, { color: C.text2, fontFamily: FontFamily.jakartaRegular }]}>
             {t.mainx.deleteAccountWarning}
           </Text>
           <TouchableOpacity
-            style={[styles.delBtn, { backgroundColor: C.danger, opacity: delBusy ? 0.6 : 1 }]}
+            style={[styles.primaryBtn, { backgroundColor: C.danger, opacity: delBusy ? 0.6 : 1 }]}
             onPress={handleDeleteAccount}
             disabled={delBusy}
             activeOpacity={0.8}
@@ -310,7 +575,7 @@ export function SettingsScreen({ navigation }: any) {
             {delBusy
               ? <ActivityIndicator color="#fff" size="small" />
               : (
-                <Text style={[styles.pwBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                <Text style={[styles.btnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
                   {t.mainx.deleteAccountConfirmBtn}
                 </Text>
               )}
@@ -354,53 +619,148 @@ const styles = StyleSheet.create({
   roleDot: { width: 6, height: 6, borderRadius: 3 } as ViewStyle,
   roleText: { fontSize: 11.5 } as any,
 
-  sectionLabel: { fontSize: 11, letterSpacing: 0.8, marginTop: 24, marginBottom: 9, marginLeft: 4 } as any,
+  sectionLabel: { fontSize: 11, letterSpacing: 0.8, marginTop: 22, marginBottom: 10, marginLeft: 4 } as any,
 
-  group: { borderRadius: 16, borderWidth: 1, overflow: 'hidden' } as ViewStyle,
-  divider: { height: StyleSheet.hairlineWidth, marginLeft: 52 } as ViewStyle,
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 13,
+    paddingHorizontal: 15,
+    paddingVertical: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 10,
+  } as ViewStyle,
+  cardIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  cardBody: { flex: 1 } as ViewStyle,
+  cardLabel: { fontSize: 14.5 } as any,
+  cardSub: { fontSize: 11.5, marginTop: 2 } as any,
 
-  row: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    paddingHorizontal: 14, paddingVertical: 13,
+  sheetOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' } as ViewStyle,
+  sheetContent: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: Layout.screenPadding,
+    paddingTop: 20,
+    paddingBottom: 34,
   } as ViewStyle,
-  rowIconWrap: {
-    width: 34, height: 34, borderRadius: 10,
-    alignItems: 'center', justifyContent: 'center',
+  sheetHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 16,
   } as ViewStyle,
-  rowBody: { flex: 1 } as ViewStyle,
-  rowLabel: { fontSize: 14.5 } as any,
-  rowSub: { fontSize: 11.5, marginTop: 1 } as any,
+  sheetIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  sheetTitle: { fontSize: 17 } as any,
+  sheetSub: { fontSize: 12.5, marginTop: 3 } as any,
 
-  pwOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' } as ViewStyle,
-  pwSheet: {
-    borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    paddingHorizontal: Layout.screenPadding, paddingTop: 20, paddingBottom: 34,
+  cacheInfoBox: {
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 14,
+    marginBottom: 16,
   } as ViewStyle,
-  pwTitle: { fontSize: 17 } as any,
-  pwSub: { fontSize: 12.5, marginTop: 3, marginBottom: 14 } as any,
-  pwField: { height: 46, borderRadius: 12, borderWidth: 1, paddingHorizontal: 13, fontSize: 14, marginBottom: 10 } as any,
-  pwBtn: { height: 50, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginTop: 8 } as ViewStyle,
-  pwBtnTxt: { fontSize: 15 } as any,
+  cacheInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  } as ViewStyle,
+  cacheInfoLabel: { fontSize: 14 } as any,
+  cacheInfoDesc: { fontSize: 12, marginTop: 2 } as any,
+  sizeBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+  } as ViewStyle,
+  sizeBadgeTxt: { fontSize: 13 } as any,
+
+  btnRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  } as ViewStyle,
+  primaryBtn: {
+    height: 48,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  } as ViewStyle,
+  btnTxt: { fontSize: 14.5 } as any,
+
+  outlineBtn: {
+    height: 46,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  } as ViewStyle,
+  outlineBtnTxt: { fontSize: 14 } as any,
+
+  cancelBtn: {
+    height: 46,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  cancelBtnTxt: { fontSize: 14 } as any,
+
+  aboutIconWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    marginBottom: 12,
+  } as ViewStyle,
+  aboutTitle: { fontSize: 20, textAlign: 'center' } as any,
+  aboutVersion: { fontSize: 13, textAlign: 'center', marginTop: 4, marginBottom: 12 } as any,
+  aboutDesc: { fontSize: 13, lineHeight: 19, textAlign: 'center', marginBottom: 16 } as any,
+  aboutMetaBox: {
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 14,
+    gap: 6,
+  } as ViewStyle,
+  aboutMetaLine: { fontSize: 12 } as any,
+
+  pwField: {
+    height: 46,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 13,
+    fontSize: 14,
+    marginBottom: 10,
+  } as any,
 
   delIconWrap: {
-    width: 48, height: 48, borderRadius: 16,
-    alignItems: 'center', justifyContent: 'center',
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
     alignSelf: 'center',
   } as ViewStyle,
   delWarningText: {
-    fontSize: 13.5, lineHeight: 20,
-    marginTop: 8, marginBottom: 20,
-  } as any,
-  delBtn: {
-    height: 50, borderRadius: 14,
-    alignItems: 'center', justifyContent: 'center',
-  } as ViewStyle,
-  cancelBtn: {
-    height: 48, borderRadius: 14, borderWidth: 1,
-    alignItems: 'center', justifyContent: 'center',
-    marginTop: 10,
-  } as ViewStyle,
-  cancelBtnTxt: {
-    fontSize: 14.5,
+    fontSize: 13.5,
+    lineHeight: 20,
+    marginTop: 8,
+    marginBottom: 20,
+    textAlign: 'center',
   } as any,
 });

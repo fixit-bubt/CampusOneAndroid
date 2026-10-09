@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, Switch, StyleSheet,
-  type ViewStyle,
+  Linking, type ViewStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -42,15 +42,12 @@ const SECTORS: { id: SectorKey; label: string; desc: string }[] = [
 type SectorPref = { enabled: boolean; push: boolean; email: boolean; inapp: boolean };
 type ChanKey = 'push' | 'email' | 'inapp';
 
-// What the device-registration state means to someone reading the screen. Until
-// this says "on", nothing arrives while the app is closed, whatever the toggles
-// below say.
 function pushStatusCopy(s: PushStatus): { title: string; sub: string; bad: boolean } {
   switch (s.state) {
     case 'ok':
       return { title: 'Push is on for this device', sub: 'Notifications arrive even when the app is closed', bad: false };
     case 'denied':
-      return { title: 'Notifications are blocked', sub: 'Allow notifications for CampusOne in your phone settings, then retry', bad: true };
+      return { title: 'Notifications are disabled in your phone settings', sub: 'Allow notifications for CampusOne in phone settings to receive alerts', bad: true };
     case 'unsupported':
       return { title: 'Push unavailable on this device', sub: s.message ?? 'This device cannot receive push notifications', bad: true };
     case 'error':
@@ -67,11 +64,13 @@ function defaultPref(): SectorPref {
 export function NotifSettingsScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
   const { user, profile } = useAuth();
-  // Messaging is student-only, so don't offer staff/admin a toggle for a sector
-  // that can never fire for them.
-  const visibleSectors = profile?.role === 'student'
-    ? SECTORS
-    : SECTORS.filter(s => s.id !== 'messages');
+  const role = profile?.role ?? 'student';
+  const visibleSectors =
+    role === 'staff'
+      ? SECTORS.filter(s => ['reports', 'announce', 'bus', 'prayer', 'medical', 'blood', 'market', 'ride'].includes(s.id))
+      : role === 'admin'
+        ? SECTORS.filter(s => s.id !== 'messages' && s.id !== 'directory' && s.id !== 'coverpage')
+        : SECTORS;
   const t = useT();
   const [paused, setPaused] = useState(false);
   const [quiet, setQuiet] = useState(false);
@@ -103,14 +102,10 @@ export function NotifSettingsScreen({ navigation }: any) {
     }
     if (data) {
       const rows = data as any[];
-      // Master toggles persisted as special rows - pull them out first.
       const pausedRow = rows.find(p => p.sector === '_paused');
       const quietRow  = rows.find(p => p.sector === '_quiet');
       if (pausedRow) setPaused(pausedRow.enabled);
       if (quietRow)  setQuiet(quietRow.enabled);
-      // Merge into existing prefs via a functional updater so `prefs` does NOT
-      // need to be a dependency - depending on it here recreates `load`, which
-      // re-fires useFocusEffect and refetches forever while the screen is open.
       setPrefs(prev => {
         const updated = { ...prev };
         rows.forEach(p => {
@@ -128,7 +123,7 @@ export function NotifSettingsScreen({ navigation }: any) {
       { user_id: user.id, sector, enabled: on },
       { onConflict: 'user_id,sector' },
     );
-    if (error) load(); // failed write → re-sync UI to DB truth
+    if (error) load();
   }
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -141,7 +136,7 @@ export function NotifSettingsScreen({ navigation }: any) {
       { user_id: user.id, sector: sectorId, ...next },
       { onConflict: 'user_id,sector' },
     );
-    if (error) load(); // failed write → re-sync UI to DB truth
+    if (error) load();
   }
 
   const onCount = visibleSectors.filter(s => prefs[s.id]?.enabled).length;
@@ -158,8 +153,10 @@ export function NotifSettingsScreen({ navigation }: any) {
         { onConflict: 'user_id,sector' },
       )
     ));
-    if (results.some(r => r.error)) load(); // any failed write → re-sync
+    if (results.some(r => r.error)) load();
   }
+
+  const isDenied = push.state === 'denied';
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -173,34 +170,64 @@ export function NotifSettingsScreen({ navigation }: any) {
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Device push registration - the gate everything else sits behind */}
-        {(() => {
-          const copy = pushStatusCopy(push);
-          const tone = copy.bad ? C.danger : push.state === 'ok' ? C.success : C.textMuted;
-          const toneBg = copy.bad ? C.dangerBg : push.state === 'ok' ? C.successBg : C.surface2;
-          return (
-            <View style={[styles.settingCard, { backgroundColor: C.surface, borderColor: copy.bad ? C.danger : C.border }]}>
-              <View style={styles.settingRow}>
-                <View style={[styles.settingIcon, { backgroundColor: toneBg }]}>
-                  {copy.bad
-                    ? <Icon name="bellOff" size={22} color={tone} />
-                    : <Feather name="smartphone" size={21} color={tone} />}
-                </View>
-                <View style={styles.settingBody}>
-                  <Text style={[styles.settingTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{copy.title}</Text>
-                  <Text style={[styles.settingSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{copy.sub}</Text>
-                </View>
-                {copy.bad && (
-                  <TouchableOpacity onPress={retryPush} disabled={retrying} style={{ padding: 4 }} activeOpacity={0.75}>
-                    <Text style={[styles.toggleAll, { color: C.brand, fontFamily: FontFamily.jakartaBold, opacity: retrying ? 0.4 : 1 }]}>
-                      {t.common.retry}
-                    </Text>
-                  </TouchableOpacity>
-                )}
+        {/* If notifications are blocked/denied in phone settings, show prominent warning banner */}
+        {isDenied ? (
+          <View style={[styles.warningBanner, { backgroundColor: isDark ? '#261b0c' : '#fff8ed', borderColor: '#f59e0b' }]}>
+            <View style={styles.warningHeader}>
+              <Feather name="alert-triangle" size={22} color="#f59e0b" style={{ marginRight: 10, marginTop: 1 }} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.warningTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  {t.notif.permDisabledTitle}
+                </Text>
+                <Text style={[styles.warningSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                  {t.notif.permDisabledSub}
+                </Text>
               </View>
             </View>
-          );
-        })()}
+            <TouchableOpacity
+              style={styles.openSettingsBtn}
+              onPress={() => Linking.openSettings()}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.openSettingsBtnText, { fontFamily: FontFamily.jakartaBold }]}>
+                {t.notif.openSettingsBtn}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          (() => {
+            const copy = pushStatusCopy(push);
+            const tone = copy.bad ? C.danger : push.state === 'ok' ? C.success : C.textMuted;
+            const toneBg = copy.bad ? C.dangerBg : push.state === 'ok' ? C.successBg : C.surface2;
+            return (
+              <View style={[styles.settingCard, { backgroundColor: C.surface, borderColor: copy.bad ? C.danger : C.border }]}>
+                <View style={styles.settingRow}>
+                  <View style={[styles.settingIcon, { backgroundColor: toneBg }]}>
+                    {copy.bad
+                      ? <Icon name="bellOff" size={22} color={tone} />
+                      : <Feather name="smartphone" size={21} color={tone} />}
+                  </View>
+                  <View style={styles.settingBody}>
+                    <Text style={[styles.settingTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{copy.title}</Text>
+                    <Text style={[styles.settingSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{copy.sub}</Text>
+                  </View>
+                  {copy.bad && (
+                    <TouchableOpacity onPress={retryPush} disabled={retrying} style={{ padding: 4 }} activeOpacity={0.75}>
+                      <Text style={[styles.toggleAll, { color: C.brand, fontFamily: FontFamily.jakartaBold, opacity: retrying ? 0.4 : 1 }]}>
+                        {t.common.retry}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+            );
+          })()
+        )}
+
+        {/* Subtitle helper copy */}
+        <Text style={[styles.pageSubtitle, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+          {t.notif.prefsSubtitle}
+        </Text>
 
         {/* Master pause */}
         <View style={[styles.settingCard, { backgroundColor: C.surface, borderColor: C.border }]}>
@@ -211,8 +238,8 @@ export function NotifSettingsScreen({ navigation }: any) {
               <Icon name={paused ? 'bellOff' : 'bell'} size={22} color={paused ? C.danger : C.brand} />
             </View>
             <View style={styles.settingBody}>
-              <Text style={[styles.settingTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Pause all</Text>
-              <Text style={[styles.settingSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>Stop all notifications temporarily</Text>
+              <Text style={[styles.settingTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.notif.pauseAll}</Text>
+              <Text style={[styles.settingSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{t.notif.pauseAllSub}</Text>
             </View>
             <Switch
               value={paused}
@@ -230,8 +257,8 @@ export function NotifSettingsScreen({ navigation }: any) {
               <Icon name="clock" size={22} color={Accent.purple} />
             </View>
             <View style={styles.settingBody}>
-              <Text style={[styles.settingTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Quiet hours</Text>
-              <Text style={[styles.settingSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>Silence notifications 10PM – 7AM</Text>
+              <Text style={[styles.settingTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.notif.quietHours}</Text>
+              <Text style={[styles.settingSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{t.notif.quietHoursSub}</Text>
             </View>
             <Switch
               value={quiet}
@@ -246,9 +273,9 @@ export function NotifSettingsScreen({ navigation }: any) {
         {/* Categories header */}
         <View style={styles.catsHeader}>
           <View>
-            <Text style={[styles.catsTitle, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>CATEGORIES</Text>
+            <Text style={[styles.catsTitle, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>{t.notif.categories}</Text>
             <Text style={[styles.catsSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-              {onCount} on · tap to expand channels
+              {t.notif.onCount(onCount)}
             </Text>
           </View>
           <TouchableOpacity onPress={() => toggleAll(!allOn)} style={{ padding: 4 }} activeOpacity={0.75}>
@@ -258,58 +285,81 @@ export function NotifSettingsScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
 
-        {/* Sector list */}
-        <View style={[styles.sectorsCard, { backgroundColor: C.surface, borderColor: C.border, opacity: paused ? 0.5 : 1 }]}>
-          {visibleSectors.map((s, i) => {
-            const p = prefs[s.id] ?? defaultPref();
-            const isOpen = expanded === s.id;
-            return (
-              <View key={s.id}>
-                {i > 0 && <View style={[styles.divider, { backgroundColor: C.border }]} />}
-                <View style={[styles.sectorRow, { paddingBottom: isOpen ? 4 : 13 }]}>
-                  <TouchableOpacity
-                    style={styles.sectorMain}
-                    onPress={() => setExpanded(isOpen ? null : s.id)}
-                    activeOpacity={0.75}
-                  >
-                    <SectorIcon sector={s.id} size="sm" />
-                    <View style={styles.sectorBody}>
-                      <Text style={[styles.sectorTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{s.label}</Text>
-                      <Text style={[styles.sectorDesc, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{s.desc}</Text>
-                    </View>
-                  </TouchableOpacity>
-                  <Switch
-                    value={p.enabled}
-                    onValueChange={val => savePref(s.id, { enabled: val })}
-                    disabled={paused}
-                    trackColor={{ false: C.border, true: C.brand }}
-                    thumbColor="#fff"
-                  />
-                </View>
-
-                {isOpen && p.enabled && (
-                  <View style={styles.chanRow}>
-                    {(['push', 'inapp'] as ChanKey[]).map(ch => (
-                      <TouchableOpacity
-                        key={ch}
-                        style={[styles.chanPill, p[ch]
-                          ? { backgroundColor: C.brand, borderColor: C.brand }
-                          : { backgroundColor: 'transparent', borderColor: C.border }]}
-                        onPress={() => savePref(s.id, { [ch]: !p[ch] })}
-                        activeOpacity={0.75}
-                      >
-                        <Feather name={ch === 'push' ? 'smartphone' : 'bell'} size={15} color={p[ch] ? '#fff' : C.textMuted} />
-                        <Text style={[styles.chanTxt, { color: p[ch] ? '#fff' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                          {ch === 'push' ? t.notif.chanPush : t.notif.chanInapp}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
+        {/* Standalone Sector Cards (Each category is its own rounded card) */}
+        {visibleSectors.map((s) => {
+          const p = prefs[s.id] ?? defaultPref();
+          const isOpen = expanded === s.id;
+          return (
+            <View
+              key={s.id}
+              style={[
+                styles.sectorCard,
+                {
+                  backgroundColor: C.surface,
+                  borderColor: C.border,
+                  opacity: paused ? 0.6 : 1,
+                },
+              ]}
+            >
+              <View style={[styles.sectorRow, { paddingBottom: isOpen ? 6 : 14 }]}>
+                <TouchableOpacity
+                  style={styles.sectorMain}
+                  onPress={() => setExpanded(isOpen ? null : s.id)}
+                  activeOpacity={0.75}
+                >
+                  <SectorIcon sector={s.id} size="sm" />
+                  <View style={styles.sectorBody}>
+                    <Text style={[styles.sectorTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                      {s.label}
+                    </Text>
+                    <Text style={[styles.sectorDesc, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                      {s.desc}
+                    </Text>
                   </View>
-                )}
+                </TouchableOpacity>
+                <Switch
+                  value={p.enabled}
+                  onValueChange={val => savePref(s.id, { enabled: val })}
+                  disabled={paused}
+                  trackColor={{ false: C.border, true: C.brand }}
+                  thumbColor="#fff"
+                />
               </View>
-            );
-          })}
-        </View>
+
+              {isOpen && p.enabled && (
+                <View style={styles.chanRow}>
+                  {(['push', 'inapp'] as ChanKey[]).map(ch => (
+                    <TouchableOpacity
+                      key={ch}
+                      style={[
+                        styles.chanPill,
+                        p[ch]
+                          ? { backgroundColor: C.brand, borderColor: C.brand }
+                          : { backgroundColor: 'transparent', borderColor: C.border },
+                      ]}
+                      onPress={() => savePref(s.id, { [ch]: !p[ch] })}
+                      activeOpacity={0.75}
+                    >
+                      <Feather
+                        name={ch === 'push' ? 'smartphone' : 'bell'}
+                        size={14}
+                        color={p[ch] ? '#fff' : C.textMuted}
+                      />
+                      <Text
+                        style={[
+                          styles.chanTxt,
+                          { color: p[ch] ? '#fff' : C.textMuted, fontFamily: FontFamily.jakartaBold },
+                        ]}
+                      >
+                        {ch === 'push' ? t.notif.chanPush : t.notif.chanInapp}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
+          );
+        })}
 
         <View style={{ height: 30 }} />
       </ScrollView>
@@ -321,24 +371,115 @@ const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
   scroll: { paddingTop: 12, paddingBottom: 20 } as ViewStyle,
   errorText: { fontSize: 13, marginHorizontal: 20, marginTop: 8 } as any,
-  settingCard: { borderRadius: 16, borderWidth: 1, overflow: 'hidden', marginBottom: 10 } as ViewStyle,
-  settingRow: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 14 } as ViewStyle,
-  settingIcon: { width: 44, height: 44, borderRadius: 13, alignItems: 'center', justifyContent: 'center', flexShrink: 0 } as ViewStyle,
+  warningBanner: {
+    borderRadius: 16,
+    borderWidth: 1.5,
+    padding: 16,
+    marginBottom: 12,
+  } as ViewStyle,
+  warningHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 14,
+  } as ViewStyle,
+  warningTitle: {
+    fontSize: 14.5,
+    lineHeight: 20,
+  } as any,
+  warningSub: {
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 3,
+  } as any,
+  openSettingsBtn: {
+    backgroundColor: '#f59e0b',
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  openSettingsBtnText: {
+    color: '#000',
+    fontSize: 14,
+  } as any,
+  pageSubtitle: {
+    fontSize: 12.5,
+    lineHeight: 18,
+    marginBottom: 12,
+    marginTop: 2,
+  } as any,
+  settingCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: 'hidden',
+    marginBottom: 10,
+  } as ViewStyle,
+  settingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    padding: 14,
+  } as ViewStyle,
+  settingIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  } as ViewStyle,
   settingBody: { flex: 1 } as ViewStyle,
   settingTitle: { fontSize: 14.5 } as any,
   settingSub: { fontSize: 12, marginTop: 2 } as any,
-  catsHeader: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 16, marginBottom: 9 } as ViewStyle,
+  catsHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    marginTop: 16,
+    marginBottom: 10,
+  } as ViewStyle,
   catsTitle: { fontSize: 11, letterSpacing: 0.6 } as any,
-  catsSub: { fontSize: 12.5, marginTop: 3 } as any,
+  catsSub: { fontSize: 12, marginTop: 2 } as any,
   toggleAll: { fontSize: 13 } as any,
-  sectorsCard: { borderRadius: 16, borderWidth: 1, overflow: 'hidden' } as ViewStyle,
-  sectorRow: { flexDirection: 'row', alignItems: 'flex-start', paddingHorizontal: 14, paddingTop: 13, gap: 14 } as ViewStyle,
-  sectorMain: { flexDirection: 'row', alignItems: 'center', gap: 14, flex: 1 } as ViewStyle,
+  sectorCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 10,
+    overflow: 'hidden',
+  } as ViewStyle,
+  sectorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingTop: 14,
+    gap: 12,
+  } as ViewStyle,
+  sectorMain: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  } as ViewStyle,
   sectorBody: { flex: 1 } as ViewStyle,
-  sectorTitle: { fontSize: 14 } as any,
-  sectorDesc: { fontSize: 12, marginTop: 1 } as any,
-  chanRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', paddingHorizontal: 16, paddingBottom: 14, paddingLeft: 64 } as ViewStyle,
-  chanPill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 13, paddingVertical: 8, borderRadius: 999, borderWidth: 1 } as ViewStyle,
-  chanTxt: { fontSize: 13 } as any,
-  divider: { height: StyleSheet.hairlineWidth } as ViewStyle,
+  sectorTitle: { fontSize: 14.5 } as any,
+  sectorDesc: { fontSize: 12, marginTop: 2 } as any,
+  chanRow: {
+    flexDirection: 'row',
+    gap: 8,
+    flexWrap: 'wrap',
+    paddingHorizontal: 14,
+    paddingBottom: 12,
+    paddingLeft: 56,
+  } as ViewStyle,
+  chanPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 999,
+    borderWidth: 1,
+  } as ViewStyle,
+  chanTxt: { fontSize: 12.5 } as any,
 });
+
