@@ -395,7 +395,7 @@ Whenever the user instructs to "update memorys", the agent MUST synchronously up
 ### 17.1 Home Screen Integrity (`HomeScreen.tsx`)
 - **Zero Redundant Clutter:** Notifications belong strictly in the dedicated top-right **Bell Icon** (with live unread badge count) linking to `NotificationsScreen`. Redundant legacy notification banners and large repetitive list cards are eliminated from the Home screen.
 - **Home Screen Flow (Student):**
-  1. TopBar (Avatar, Greeting, Language switch, Theme toggle, Bell Icon with live unread badge).
+  1. TopBar (Varsity LogoMark insignia, CampusOne brand text, role-aware subtitle / badge, and single Notification Bell with live unread badge).
   2. Hero Auto-Changing Banner (`HomeHeroBanner.tsx`): 4.2s auto-rotating carousel of announcements and events strictly gated to photo attachments with fallback varsity assets.
   3. Three Luxury Status Strips (`HomeStatusStrips.tsx`):
      - Reports Strip: Indigo blueprint gradient with Open, In Progress, Resolved counters linking to `MyReports`.
