@@ -498,8 +498,13 @@ Whenever the user instructs to "update memorys", the agent MUST synchronously up
 - **Lifetime Recognition:** Backed by `blood_pledges.fulfilled_at` counted in `getBloodFeed()` (`myDonationCount`).
 - **UI Presentation:** Displays an impact badge (`🏅 X donations recorded · Up to Y lives impacted`) on the donor status card, celebrating lifetime contribution (1 whole blood unit impacts up to 3 lives).
 
-### 20.4 Hospital / Area Proximity Filtering
-- **Dhaka Transit Optimization:** Filters feed and donor catalog by high-volume hospital corridors (`All Areas`, `Mirpur (Near Campus)`, `Kurmitola`, `DMCH / Central`, `Dhanmondi`, `Uttara`), helping users find the closest eligible donor in Dhaka traffic.
+### 20.4 Dhaka 45+ Areas Catalog & Searchable Area Sheet (`dhakaAreas.ts` & `AreaPickerModal.tsx`)
+- **Master Area Catalog:** Complete dictionary of 45+ Dhaka neighborhoods and medical hubs categorized into 6 zones (`Mirpur & Campus`, `Medical Hubs`, `North Dhaka`, `Central & West Dhaka`, `East Dhaka`, `South & Old Dhaka`, and `Suburbs`).
+- **Elimination of Endless Sliding:** Solves the 40-chip horizontal swipe problem by keeping 5 high-frequency campus hubs (`All`, `Mirpur`, `DMCH`, `Kurmitola`, `Dhanmondi`, `Uttara`) and providing an `[ 📍 All Areas (45+) ▾ ]` button.
+- **Searchable Bottom Sheet Modal:** Tapping `All Areas` opens `AreaPickerModal` with instant search as you type, zone grouping, real-time live donor/request count pills, custom landmark support, and 1-tap clear.
+- **Active Area Highlighting:** When an area outside the quick list is selected (e.g. `Banani`), it pins as the primary active crimson chip (`📍 Banani ✕`) with 1-tap dismiss.
+- **Universal Search Bar:** An in-screen search bar filters across area, hospital, patient, and donor names simultaneously in real time.
+- **Unified Registration & Posting:** `DonorRegisterScreen.tsx` and `BloodRequestScreen.tsx` feature a 1-tap `[ 📍 Select from Dhaka Areas ]` picker to guarantee zero spelling errors.
 
 ### 20.5 Dengue Platelet Mode (Apheresis)
 - **Clinical Apheresis Protocol:** Platelet donors replenish cells within 72 hours, allowing safe donation every 14 days.
