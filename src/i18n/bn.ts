@@ -365,6 +365,8 @@ export const bn: Dict = {
     viewRequesterContact: "অনুরোধকারীর যোগাযোগ দেখুন",
     iCanHelp: "আমি সাহায্য করতে পারি",
     availableDonors: "উপলব্ধ ডোনার",
+    requestsByGroup: "গ্রুপ অনুযায়ী জরুরি রক্তের অনুরোধ",
+    showingGroupRequests: (group: string) => `${group} গ্রুপের অনুরোধ দেখানো হচ্ছে · রিসেট করতে ট্যাপ করুন`,
     anonymous: "নামহীন",
     donorMeta: (area: string, last: string) => `${area} · সর্বশেষ: ${last}`,
     never: "কখনো না",

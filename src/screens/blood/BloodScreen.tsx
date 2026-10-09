@@ -256,6 +256,10 @@ export function BloodScreen({ navigation }: any) {
     return matchesGroup && matchesArea && matchesQuery;
   });
 
+  // Group requests by blood type
+  const requestGroups: Record<string, number> = {};
+  requests.forEach(r => { requestGroups[r.blood_group] = (requestGroups[r.blood_group] ?? 0) + 1; });
+
   // Group donors by blood type
   const donorGroups: Record<string, number> = {};
   donors.forEach(d => { donorGroups[d.blood_group] = (donorGroups[d.blood_group] ?? 0) + 1; });
@@ -263,22 +267,21 @@ export function BloodScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-      <SubBar
-        title={t.blood2.bloodDonation}
-        onBack={() => navigation.goBack()}
-        rightSlot={
-          <TouchableOpacity
-            style={[styles.headerReqBtn, { backgroundColor: SectorColors.blood }]}
-            onPress={() => navigation.navigate('BloodRequest')}
-            activeOpacity={0.85}
-          >
-            <Icon name="blood" size={13} color="#fff" />
-            <Text style={[styles.headerReqTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
-              {t.blood2.requestBloodBtn}
-            </Text>
-          </TouchableOpacity>
-        }
-      />
+      <SubBar title={t.blood2.bloodDonation} onBack={() => navigation.goBack()} />
+
+      {/* Prominent Emergency Request Blood Bar */}
+      <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 6, paddingBottom: 2 }}>
+        <TouchableOpacity
+          style={[styles.actBtn, { backgroundColor: SectorColors.blood }]}
+          onPress={() => navigation.navigate('BloodRequest')}
+          activeOpacity={0.85}
+        >
+          <Icon name="blood" size={15} color="#fff" />
+          <Text style={[styles.actBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+            {t.blood2.requestBloodBtn}
+          </Text>
+        </TouchableOpacity>
+      </View>
 
       {/* Donor Status / Registration Banner */}
       {myDonor ? (
@@ -444,34 +447,6 @@ export function BloodScreen({ navigation }: any) {
         </TouchableOpacity>
       </View>
 
-      {/* Blood Group Filter Bar (Single clean row on Requests tab) */}
-      {tab === 'requests' && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={{ flexGrow: 0 }}
-          contentContainerStyle={[styles.groupChips, { paddingHorizontal: Layout.screenPadding }]}
-        >
-          {['All', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(g => {
-            const on = groupFilter === g;
-            return (
-              <TouchableOpacity
-                key={g}
-                style={[styles.groupChip, on
-                  ? { backgroundColor: SectorColors.blood, borderColor: SectorColors.blood }
-                  : { backgroundColor: C.surface, borderColor: C.border }]}
-                onPress={() => setGroupFilter(g)}
-                activeOpacity={0.75}
-              >
-                <Text style={[styles.groupChipTxt, { color: on ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                  {g}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      )}
-
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
@@ -483,6 +458,50 @@ export function BloodScreen({ navigation }: any) {
           <LoadError onRetry={load} />
         ) : tab === 'requests' ? (
           <View style={styles.list}>
+            {/* Blood type requests summary & interactive filter */}
+            <View style={[styles.summaryCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                <Text style={[styles.summaryTitle, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginBottom: 0 }]}>
+                  {t.blood2.requestsByGroup}
+                </Text>
+                {groupFilter !== 'All' && (
+                  <TouchableOpacity
+                    onPress={() => setGroupFilter('All')}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+                  >
+                    <Text style={{ fontSize: 11.5, color: SectorColors.blood, fontFamily: FontFamily.jakartaBold }}>
+                      {t.blood2.showingGroupRequests(groupFilter)}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+              <View style={styles.summaryGrid}>
+                {bloodTypes.map(g => {
+                  const on = groupFilter === g;
+                  const count = requestGroups[g] ?? 0;
+                  return (
+                    <TouchableOpacity
+                      key={g}
+                      style={[
+                        styles.summaryCell,
+                        { backgroundColor: on ? `${SectorColors.blood}20` : count > 0 ? `${SectorColors.blood}10` : C.surface2 },
+                        on && { borderColor: SectorColors.blood, borderWidth: 1.5 },
+                      ]}
+                      onPress={() => setGroupFilter(on ? 'All' : g)}
+                      activeOpacity={0.75}
+                    >
+                      <Text style={[styles.summaryCellGroup, { color: SectorColors.blood }]}>{g}</Text>
+                      <Text style={[styles.summaryCellNum, { color: on || count > 0 ? SectorColors.blood : C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+                        {count}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
+            {/* Request list */}
             {filteredRequests.length === 0 ? (
               <View style={[styles.emptyWrap, { backgroundColor: C.surface, borderColor: C.border }]}>
                 <Icon name="blood" size={30} color={C.textMuted} />
@@ -732,16 +751,16 @@ export function BloodScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
-  headerReqBtn: {
+  actBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
+    justifyContent: 'center',
+    gap: 7,
+    height: 44,
+    borderRadius: 12,
   } as ViewStyle,
-  headerReqTxt: {
-    fontSize: 12.5,
+  actBtnTxt: {
+    fontSize: 13.5,
   } as any,
   searchAreaRow: {
     flexDirection: 'row',
@@ -811,18 +830,6 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   } as ViewStyle,
   tabBadgeTxt: { fontSize: 11 } as any,
-  groupChips: { flexDirection: 'row', gap: 6, paddingBottom: 6 } as ViewStyle,
-  groupChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-    borderWidth: 1,
-    flexShrink: 0,
-    minWidth: 42,
-    alignItems: 'center',
-    justifyContent: 'center',
-  } as ViewStyle,
-  groupChipTxt: { fontSize: 12 } as any,
   eligPill: { alignSelf: 'flex-start', paddingHorizontal: 7, paddingVertical: 2.5, borderRadius: 999, marginTop: 4 } as ViewStyle,
   eligTxt: { fontSize: 10 } as any,
   scroll: { paddingTop: 4, paddingBottom: 20 } as ViewStyle,
