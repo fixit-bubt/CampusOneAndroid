@@ -474,9 +474,9 @@ Whenever the user instructs to "update memorys", the agent MUST synchronously up
     - Staff: `STAFF` amber badge (`#fef3c7` bg in light, `rgba(245, 158, 11, 0.16)` in dark) + Subtitle: "Staff Workspace".
     - Student: Subtitle "Full campus in one app" (matches web app tagline).
 - **Action Buttons:**
-  - Quick Search `[🔍]` (`40×40dp`, triggers `navigation.navigate('Explore')` to jump to campus search and feature directory).
   - Notification Bell `[🔔]` (`40×40dp` with live unread badge, triggers `navigation.navigate('Notifications')`).
+  - Redundant search button removed to eliminate duplicate navigation to the permanently present bottom Explore tab, matching the sibling web app (`AppShell.jsx`) mobile header 1:1.
 - **Clean Separation of Concerns:**
   - User profile is accessed via the dedicated bottom navigation `Settings` tab.
   - Language and dark/light theme switching are housed inside `SettingsScreen.tsx`.
-  - Top bar remains focused on varsity identity, instant discovery, and alert notifications.
+  - Top bar remains focused on varsity identity and instant alert notifications.
