@@ -16,7 +16,7 @@ import type { SectorKey } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
-import { watchPushStatus, registerPushToken, type PushStatus } from '../../lib/push';
+import { watchPushStatus, registerPushToken, syncPushPermission, type PushStatus } from '../../lib/push';
 
 const SECTORS: { id: SectorKey; label: string; desc: string }[] = [
   { id: 'reports',   label: 'Reports',       desc: 'Campus maintenance issues' },
@@ -87,12 +87,13 @@ export function NotifSettingsScreen({ navigation }: any) {
   const checkOsPermission = useCallback(async () => {
     try {
       const perm = await Notifications.getPermissionsAsync();
-      const denied = perm.status !== 'granted' || !perm.granted;
-      setOsDisabled(denied);
+      const isAllowed = perm.granted || perm.status === 'granted';
+      setOsDisabled(!isAllowed);
+      syncPushPermission().catch(() => {});
     } catch {
-      setOsDisabled(push.state === 'denied');
+      setOsDisabled(false);
     }
-  }, [push.state]);
+  }, []);
 
   useEffect(() => watchPushStatus(setPush), []);
 
@@ -132,11 +133,15 @@ export function NotifSettingsScreen({ navigation }: any) {
 
   useEffect(() => {
     checkOsPermission();
-    const sub = AppState.addEventListener('change', state => {
+    const handleAppState = (state: string) => {
       if (state === 'active') {
         checkOsPermission();
+        const t1 = setTimeout(checkOsPermission, 300);
+        const t2 = setTimeout(checkOsPermission, 800);
+        return () => { clearTimeout(t1); clearTimeout(t2); };
       }
-    });
+    };
+    const sub = AppState.addEventListener('change', handleAppState);
     return () => sub.remove();
   }, [checkOsPermission]);
 
@@ -184,7 +189,7 @@ export function NotifSettingsScreen({ navigation }: any) {
     if (results.some(r => r.error)) load();
   }
 
-  const isDenied = osDisabled || push.state === 'denied';
+  const isDenied = osDisabled;
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -222,11 +227,11 @@ export function NotifSettingsScreen({ navigation }: any) {
               </Text>
             </TouchableOpacity>
           </View>
-        ) : (
+        ) : !isDenied && (push.state === 'error' || push.state === 'unsupported') ? (
           (() => {
             const copy = pushStatusCopy(push);
-            const tone = copy.bad ? C.danger : push.state === 'ok' ? C.success : C.textMuted;
-            const toneBg = copy.bad ? C.dangerBg : push.state === 'ok' ? C.successBg : C.surface2;
+            const tone = C.danger;
+            const toneBg = C.dangerBg;
             return (
               <View style={[styles.settingCard, { backgroundColor: C.surface, borderColor: copy.bad ? C.danger : C.border }]}>
                 <View style={styles.settingRow}>
@@ -250,7 +255,7 @@ export function NotifSettingsScreen({ navigation }: any) {
               </View>
             );
           })()
-        )}
+        ) : null}
 
         {/* Subtitle helper copy */}
         <Text style={[styles.pageSubtitle, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>

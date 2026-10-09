@@ -101,8 +101,11 @@ export function SettingsScreen({ navigation }: any) {
   const checkNotifPerm = useCallback(async () => {
     try {
       const perm = await Notifications.getPermissionsAsync();
-      setNotifDisabled(perm.status !== 'granted' || !perm.granted);
-    } catch {}
+      const isAllowed = perm.granted || perm.status === 'granted';
+      setNotifDisabled(!isAllowed);
+    } catch {
+      setNotifDisabled(false);
+    }
   }, []);
 
   useFocusEffect(
@@ -113,9 +116,15 @@ export function SettingsScreen({ navigation }: any) {
 
   useEffect(() => {
     checkNotifPerm();
-    const sub = AppState.addEventListener('change', s => {
-      if (s === 'active') checkNotifPerm();
-    });
+    const handleAppState = (s: string) => {
+      if (s === 'active') {
+        checkNotifPerm();
+        const t1 = setTimeout(checkNotifPerm, 300);
+        const t2 = setTimeout(checkNotifPerm, 800);
+        return () => { clearTimeout(t1); clearTimeout(t2); };
+      }
+    };
+    const sub = AppState.addEventListener('change', handleAppState);
     return () => sub.remove();
   }, [checkNotifPerm]);
 

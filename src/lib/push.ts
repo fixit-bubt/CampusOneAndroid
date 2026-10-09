@@ -102,6 +102,30 @@ export async function registerPushToken(): Promise<void> {
   }
 }
 
+// Synchronize push status with actual operating system permissions.
+// If notifications are permitted and status is not yet 'ok', registers the push token.
+// If notifications are disabled in phone settings, marks status as 'denied'.
+export async function syncPushPermission(): Promise<boolean> {
+  try {
+    if (!Device.isDevice) {
+      setStatus({ state: 'unsupported', message: 'Emulators cannot receive push notifications.' });
+      return false;
+    }
+    const perm = await Notifications.getPermissionsAsync();
+    const isAllowed = perm.granted || perm.status === 'granted';
+    if (!isAllowed) {
+      setStatus({ state: 'denied' });
+      return false;
+    }
+    if (status.state !== 'ok') {
+      await registerPushToken();
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // FCM rotates a device's token (app update, restore, cleared data). Without
 // this the stored token goes stale, FCM starts rejecting it, send-push prunes
 // it, and the device stops getting notifications until the next sign-in.
