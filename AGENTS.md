@@ -409,6 +409,7 @@ Whenever the user instructs to "update memorys", the agent MUST synchronously up
     - Student: all 18 sectors.
     - Staff: maintenance & campus essentials (`reports`, `announce`, `bus`, `prayer`, `medical`, `blood`, `market`, `ride`), omitting academic/student-only channels.
     - Admin: all campus management sectors, omitting student-exclusive private channels (`messages`, `directory`, `coverpage`).
+- **Live OS Permission Reactivity:** In `SettingsScreen.tsx` and `NotifSettingsScreen.tsx`, never rely solely on startup permission state. Always query `Notifications.getPermissionsAsync()` on focus (`useFocusEffect`) and app resume (`AppState.addEventListener('change', state => state === 'active')`). When notifications are disabled at the OS level, `SettingsScreen.tsx` flags the Notifications row with an amber alert triangle (`#f59e0b`) and subtitle `"Notifications disabled in phone settings"`, and `NotifSettingsScreen.tsx` displays the warning banner with `[Open Settings]`. Re-enabling permissions in Android settings automatically clears the warning without requiring an app restart.
 - **Zero Utility Dumps:** Utility tools or document generators (e.g. Cover Page Generator) remain organized in Explore -> Academics and are not dumped in Settings.
 
 ### 17.3 Explore Screen Categories & Accordion UX (`ExploreScreen.tsx` & `CollapsibleSection.tsx`)
