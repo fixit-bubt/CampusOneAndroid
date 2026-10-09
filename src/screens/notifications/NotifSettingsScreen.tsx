@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, Switch, StyleSheet,
-  Linking, type ViewStyle,
+  Linking, AppState, type ViewStyle,
 } from 'react-native';
+import * as Notifications from 'expo-notifications';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -81,14 +82,19 @@ export function NotifSettingsScreen({ navigation }: any) {
   );
   const [push, setPush] = useState<PushStatus>({ state: 'pending' });
   const [retrying, setRetrying] = useState(false);
+  const [osDisabled, setOsDisabled] = useState(false);
+
+  const checkOsPermission = useCallback(async () => {
+    try {
+      const perm = await Notifications.getPermissionsAsync();
+      const denied = perm.status !== 'granted' || !perm.granted;
+      setOsDisabled(denied);
+    } catch {
+      setOsDisabled(push.state === 'denied');
+    }
+  }, [push.state]);
 
   useEffect(() => watchPushStatus(setPush), []);
-
-  async function retryPush() {
-    setRetrying(true);
-    await registerPushToken();
-    setRetrying(false);
-  }
 
   const load = useCallback(async () => {
     setLoadError(null);
@@ -117,6 +123,30 @@ export function NotifSettingsScreen({ navigation }: any) {
     }
   }, [user?.id]);
 
+  useFocusEffect(
+    useCallback(() => {
+      load();
+      checkOsPermission();
+    }, [load, checkOsPermission])
+  );
+
+  useEffect(() => {
+    checkOsPermission();
+    const sub = AppState.addEventListener('change', state => {
+      if (state === 'active') {
+        checkOsPermission();
+      }
+    });
+    return () => sub.remove();
+  }, [checkOsPermission]);
+
+  async function retryPush() {
+    setRetrying(true);
+    await registerPushToken();
+    await checkOsPermission();
+    setRetrying(false);
+  }
+
   async function saveMaster(sector: '_paused' | '_quiet', on: boolean) {
     if (!user?.id) return;
     const { error } = await supabase.from('notif_prefs').upsert(
@@ -125,8 +155,6 @@ export function NotifSettingsScreen({ navigation }: any) {
     );
     if (error) load();
   }
-
-  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   async function savePref(sectorId: string, update: Partial<SectorPref>) {
     if (!user?.id) return;
@@ -156,7 +184,7 @@ export function NotifSettingsScreen({ navigation }: any) {
     if (results.some(r => r.error)) load();
   }
 
-  const isDenied = push.state === 'denied';
+  const isDenied = osDisabled || push.state === 'denied';
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>

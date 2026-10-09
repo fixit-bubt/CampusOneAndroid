@@ -1,9 +1,11 @@
 import { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, Modal,
-  StyleSheet, Switch, ActivityIndicator, Share, Linking, type ViewStyle,
+  StyleSheet, Switch, ActivityIndicator, Share, Linking, AppState, type ViewStyle,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
+import * as Notifications from 'expo-notifications';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
@@ -84,6 +86,7 @@ export function SettingsScreen({ navigation }: any) {
   const [dataCacheOpen, setDataCacheOpen] = useState(false);
   const [cacheBytes, setCacheBytes] = useState(0);
   const [clearingCache, setClearingCache] = useState(false);
+  const [notifDisabled, setNotifDisabled] = useState(false);
 
   const [aboutOpen, setAboutOpen] = useState(false);
 
@@ -94,6 +97,27 @@ export function SettingsScreen({ navigation }: any) {
 
   const [delOpen, setDelOpen] = useState(false);
   const [delBusy, setDelBusy] = useState(false);
+
+  const checkNotifPerm = useCallback(async () => {
+    try {
+      const perm = await Notifications.getPermissionsAsync();
+      setNotifDisabled(perm.status !== 'granted' || !perm.granted);
+    } catch {}
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      checkNotifPerm();
+    }, [checkNotifPerm])
+  );
+
+  useEffect(() => {
+    checkNotifPerm();
+    const sub = AppState.addEventListener('change', s => {
+      if (s === 'active') checkNotifPerm();
+    });
+    return () => sub.remove();
+  }, [checkNotifPerm]);
 
   useEffect(() => {
     AsyncStorage.getItem('app.optSync')
@@ -228,9 +252,17 @@ export function SettingsScreen({ navigation }: any) {
 
         <SettingCard
           icon="bell"
-          iconColor={C.brand}
+          iconColor={notifDisabled ? '#f59e0b' : C.brand}
           label="Notifications"
-          sub={t.mainx.notificationsSub}
+          sub={notifDisabled ? 'Notifications disabled in phone settings' : t.mainx.notificationsSub}
+          right={
+            notifDisabled ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Feather name="alert-triangle" size={16} color="#f59e0b" />
+                <Feather name="chevron-right" size={18} color={C.textMuted} />
+              </View>
+            ) : undefined
+          }
           C={C}
           onPress={() => navigation.navigate('NotifSettings')}
         />
