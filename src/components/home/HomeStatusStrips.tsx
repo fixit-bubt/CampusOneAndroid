@@ -33,13 +33,19 @@ export function HomeStatusStrips() {
   const [busRoutes, setBusRoutes] = useState<BusRouteData[]>([]);
   const [savedBusRoutes, setSavedBusRoutes] = useState<string[]>([]);
   const [prayerList, setPrayerList] = useState<PrayerItem[]>([]);
+  const [bloodStats, setBloodStats] = useState<{
+    urgent: number;
+    total: number;
+    donors: number;
+  }>({ urgent: 0, total: 0, donors: 0 });
   const [tick, setTick] = useState(0);
 
   // Initial and refresh data fetch
   const loadData = useCallback(async () => {
     if (!user) return;
     try {
-      const [repRes, busRes, savedBusRes, prayRes] = await Promise.all([
+      const staleCutoff = new Date(Date.now() - 21 * 86400000).toISOString();
+      const [repRes, busRes, savedBusRes, prayRes, bloodReqRes, donorsRes] = await Promise.all([
         getMyReports(user.id),
         supabase
           .from('bus_routes')
@@ -53,6 +59,14 @@ export function HomeStatusStrips() {
           .from('prayer_times')
           .select('en, azan, key')
           .order('sort'),
+        supabase
+          .from('blood_requests')
+          .select('id, urgency')
+          .is('fulfilled_at', null)
+          .gte('created_at', staleCutoff),
+        supabase
+          .from('donors')
+          .select('id', { count: 'exact', head: true }),
       ]);
 
       if (repRes.ok) {
@@ -74,6 +88,15 @@ export function HomeStatusStrips() {
         setPrayerList(
           prayRes.data.filter((p: any) => p.key !== 'jummah')
         );
+      }
+      if (bloodReqRes.data) {
+        const reqs = bloodReqRes.data;
+        const urgent = reqs.filter((r: any) => r.urgency === 'Urgent').length;
+        const total = reqs.length;
+        const donors = donorsRes.count ?? 0;
+        setBloodStats({ urgent, total, donors });
+      } else if (donorsRes.count !== null && donorsRes.count !== undefined) {
+        setBloodStats((prev) => ({ ...prev, donors: donorsRes.count ?? 0 }));
       }
     } catch {
       // quiet fallback
@@ -355,6 +378,77 @@ export function HomeStatusStrips() {
           </View>
         </LinearGradient>
       </View>
+
+      {/* 4. Blood Donation Strip (Midnight Crimson Theme) */}
+      <View style={styles.stripWrapper}>
+        <LinearGradient
+          colors={['#200508', '#2d090e', '#190306']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={[styles.strip, styles.bloodBorder]}
+        >
+          {/* Left Title Button */}
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate('Blood')}
+            style={[styles.leftPill, styles.bloodDivider]}
+          >
+            <Text style={styles.pillText}>Blood</Text>
+            <Feather name="chevron-right" size={13} color="rgba(251, 113, 133, 0.85)" />
+          </TouchableOpacity>
+
+          {/* 3 Metric Columns */}
+          <View style={styles.metricsRow}>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => navigation.navigate('Blood')}
+              style={styles.metricCol}
+            >
+              <Text
+                style={[
+                  styles.metricVal,
+                  { color: bloodStats.urgent > 0 ? '#fb7185' : '#fda4af' },
+                ]}
+              >
+                {bloodStats.urgent}
+              </Text>
+              <Text style={[styles.metricSub, { color: 'rgba(254, 205, 211, 0.7)' }]}>
+                Urgent
+              </Text>
+            </TouchableOpacity>
+
+            <View style={[styles.verticalDivider, styles.bloodDivider]} />
+
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => navigation.navigate('Blood')}
+              style={styles.metricCol}
+            >
+              <Text style={[styles.metricVal, { color: '#ffffff' }]}>
+                {bloodStats.total}
+              </Text>
+              <Text style={[styles.metricSub, { color: 'rgba(254, 205, 211, 0.7)' }]}>
+                Needed
+              </Text>
+            </TouchableOpacity>
+
+            <View style={[styles.verticalDivider, styles.bloodDivider]} />
+
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => navigation.navigate('Blood')}
+              style={styles.metricCol}
+            >
+              <Text style={[styles.metricVal, { color: '#fecdd3' }]}>
+                {bloodStats.donors}
+              </Text>
+              <Text style={[styles.metricSub, { color: 'rgba(254, 205, 211, 0.7)' }]}>
+                Donors
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </LinearGradient>
+      </View>
     </View>
   );
 }
@@ -394,6 +488,12 @@ const styles = StyleSheet.create({
   },
   prayerDivider: {
     borderColor: 'rgba(16, 185, 129, 0.25)',
+  },
+  bloodBorder: {
+    borderColor: 'rgba(225, 29, 72, 0.4)',
+  },
+  bloodDivider: {
+    borderColor: 'rgba(225, 29, 72, 0.28)',
   },
   leftPill: {
     width: 82,

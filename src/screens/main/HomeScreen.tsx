@@ -82,7 +82,7 @@ export function HomeScreen({ navigation }: any) {
         {/* 1. Hero Auto-Changing Announcement & Event Banner */}
         <HomeHeroBanner key={`banner-${refreshKey}`} />
 
-        {/* 2. Three Luxury Status Strips (Reports, Bus, Prayer) */}
+        {/* 2. Luxury Status Strips (Reports, Bus, Prayer, Blood) */}
         <HomeStatusStrips key={`strips-${refreshKey}`} />
 
         {/* 3. Browse Lost & Found Action Card */}
@@ -107,8 +107,8 @@ export function HomeScreen({ navigation }: any) {
           <Feather name="arrow-right" size={17} color={C.textMuted} />
         </TouchableOpacity>
 
-        {/* 4. Campus Today Highlights (Jobs, Blood requests, campus updates) */}
-        <CampusToday navigation={navigation} hide={['bus', 'prayer']} />
+        {/* 4. Campus Today Highlights (Jobs, campus updates) */}
+        <CampusToday navigation={navigation} hide={['bus', 'prayer', 'blood']} />
 
         <View style={{ height: 24 }} />
       </ScrollView>
