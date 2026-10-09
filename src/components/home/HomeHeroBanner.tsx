@@ -26,13 +26,48 @@ export interface BannerSlide {
   params?: any;
 }
 
+const BANNERS_MAP: Record<string, ImageSourcePropType> = {
+  'blood-drive.jpg': require('../../../assets/banners/blood-drive.jpg'),
+  'convocation-2026.jpg': require('../../../assets/banners/convocation-2026.jpg'),
+  'exam-routine.jpg': require('../../../assets/banners/exam-routine.jpg'),
+  'hackathon-2026.jpg': require('../../../assets/banners/hackathon-2026.jpg'),
+};
+
+export function resolveBannerSource(
+  rawUrl?: string,
+  fallbackLocal?: ImageSourcePropType
+): ImageSourcePropType | null {
+  if (!rawUrl && !fallbackLocal) return null;
+  if (!rawUrl && fallbackLocal) return fallbackLocal;
+
+  const cleaned = (rawUrl ?? '').trim();
+  const filename = cleaned.split('/').pop()?.split('?')[0] || '';
+
+  // 1. Matches bundled local varsity asset
+  if (filename && BANNERS_MAP[filename]) {
+    return BANNERS_MAP[filename];
+  }
+
+  // 2. Full remote web URL
+  if (cleaned.startsWith('http://') || cleaned.startsWith('https://')) {
+    return { uri: cleaned };
+  }
+
+  // 3. Relative web path from database seed (e.g. /events/... or /announcements/...)
+  if (cleaned.startsWith('/')) {
+    return { uri: `https://campus-theta.vercel.app${cleaned}` };
+  }
+
+  return fallbackLocal ?? null;
+}
+
 const FALLBACK_SLIDES: BannerSlide[] = [
   {
     id: 'fallback-blood',
     type: 'Event',
     title: 'Voluntary Blood Donation Drive & Free Health Camp',
     subtitle: 'Building 2 Main Lobby · 10:00',
-    localImage: require('../../../assets/banners/blood-drive.jpg'),
+    localImage: BANNERS_MAP['blood-drive.jpg'],
     route: 'Blood',
   },
   {
@@ -40,7 +75,7 @@ const FALLBACK_SLIDES: BannerSlide[] = [
     type: 'Notice',
     title: 'Tri-Semester Final Examination Routine Published',
     subtitle: 'Examination Controller Department',
-    localImage: require('../../../assets/banners/exam-routine.jpg'),
+    localImage: BANNERS_MAP['exam-routine.jpg'],
     route: 'RoutinesBrowse',
   },
   {
@@ -48,7 +83,7 @@ const FALLBACK_SLIDES: BannerSlide[] = [
     type: 'Notice',
     title: '10th Convocation Ceremony - Registration Open',
     subtitle: 'Office of the Registrar · Graduating Students',
-    localImage: require('../../../assets/banners/convocation-2026.jpg'),
+    localImage: BANNERS_MAP['convocation-2026.jpg'],
     route: 'Announcements',
   },
   {
@@ -56,7 +91,7 @@ const FALLBACK_SLIDES: BannerSlide[] = [
     type: 'Event',
     title: 'Innovate & Code: BUBT Inter-University Hackathon 2026',
     subtitle: 'Campus Auditorium & CSE Lab 402 · 09:30 AM',
-    localImage: require('../../../assets/banners/hackathon-2026.jpg'),
+    localImage: BANNERS_MAP['hackathon-2026.jpg'],
     route: 'EventsBrowse',
   },
 ];
@@ -186,11 +221,15 @@ export function HomeHeroBanner() {
           onPress={handlePress}
           style={styles.card}
         >
-          {activeSlide.imageUri ? (
-            <Image source={{ uri: activeSlide.imageUri }} style={styles.bgImage} />
-          ) : activeSlide.localImage ? (
-            <Image source={activeSlide.localImage} style={styles.bgImage} />
-          ) : null}
+          {(() => {
+            const imgSource = resolveBannerSource(
+              activeSlide.imageUri,
+              activeSlide.localImage
+            );
+            return imgSource ? (
+              <Image source={imgSource} style={styles.bgImage} />
+            ) : null;
+          })()}
 
           {/* Gradient Scrim for guaranteed contrast */}
           <LinearGradient
