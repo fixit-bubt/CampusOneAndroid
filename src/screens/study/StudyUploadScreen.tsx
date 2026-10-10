@@ -17,6 +17,8 @@ import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../components/ui/Toast';
 import { uploadFile } from '../../utils/storage';
+import { isImageFile } from '../../utils/imageCompress';
+import { MAX_FILE_SIZE_MB } from '../../constants/app';
 
 const FILE_TYPES = [
   { id: 'materials', label: 'Materials' },
@@ -92,6 +94,16 @@ export function StudyUploadScreen({ route, navigation }: any) {
     });
     if (result.canceled || !result.assets || result.assets.length === 0) return;
     const asset = result.assets[0];
+    const size = asset.size ?? 0;
+    const isImg = isImageFile(asset.name, asset.mimeType);
+    if (!isImg && size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+      toast({
+        type: 'error',
+        title: t.common.error,
+        message: `File exceeds ${MAX_FILE_SIZE_MB}MB limit. Please compress or select a smaller document.`,
+      });
+      return;
+    }
     setPickedFile({ uri: asset.uri, name: asset.name, mimeType: asset.mimeType, size: asset.size });
     if (!name.trim()) {
       // Pre-fill name from filename (strip extension)
@@ -105,14 +117,16 @@ export function StudyUploadScreen({ route, navigation }: any) {
     try {
       let storagePath: string | null = null;
       if (pickedFile) {
-        const ext = pickedFile.name.split('.').pop() ?? 'bin';
+        const isImg = isImageFile(pickedFile.name, pickedFile.mimeType);
+        const ext = isImg ? 'jpg' : (pickedFile.name.split('.').pop() ?? 'bin');
         storagePath = `${courseId}/${Date.now()}_${name.trim().replace(/\s+/g, '_')}.${ext}`;
         // uploadFile reads real bytes via the SDK 56 File API; fetch().blob() on
         // a content:// URI can silently upload 0 bytes in RN.
         // study-materials is a private bucket → bucketIsPublic=false, store the path.
         const up = await uploadFile(
           'study-materials', pickedFile.uri, storagePath,
-          pickedFile.mimeType ?? 'application/octet-stream', false,
+          isImg ? 'image/jpeg' : (pickedFile.mimeType ?? 'application/octet-stream'), false,
+          isImg ? { preset: 'document' } : undefined
         );
         if (!up.success) throw new Error(up.error);
       }

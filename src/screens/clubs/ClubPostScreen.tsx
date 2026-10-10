@@ -45,9 +45,11 @@ export function ClubPostScreen({ route, navigation }: any) {
     const asset = result.assets[0];
     setUploading(true);
     try {
-      const ext = asset.uri.split('.').pop()?.toLowerCase() ?? 'jpg';
-      const contentType = ext === 'png' ? 'image/png' : 'image/jpeg';
-      const up = await uploadFile('photos', asset.uri, `clubs/${user!.id}/${Date.now()}.${ext}`, contentType);
+      const up = await uploadFile('photos', asset.uri, `clubs/${user!.id}/${Date.now()}.jpg`, 'image/jpeg', true, {
+        preset: 'standard',
+        knownWidth: asset.width,
+        knownHeight: asset.height,
+      });
       if (!up.success) throw new Error(up.error);
       setPhotoUri(up.url);
     } catch {

@@ -14,7 +14,7 @@ import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { uploadFile } from '../../utils/storage';
-import { BUCKETS } from '../../constants/app';
+import { BUCKETS, MAX_FILE_SIZE_MB } from '../../constants/app';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
 import type { Announcement } from '../../types/database';
@@ -81,9 +81,11 @@ export function AnnouncePostScreen({ navigation }: any) {
     const asset = result.assets[0];
     setUploadingImg(true);
     try {
-      const ext = asset.uri.split('.').pop()?.toLowerCase() ?? 'jpg';
-      const contentType = ext === 'png' ? 'image/png' : 'image/jpeg';
-      const up = await uploadFile(BUCKETS.attachments, asset.uri, `announcements/${user!.id}/${Date.now()}.${ext}`, contentType);
+      const up = await uploadFile(BUCKETS.attachments, asset.uri, `announcements/${user!.id}/${Date.now()}.jpg`, 'image/jpeg', true, {
+        preset: 'standard',
+        knownWidth: asset.width,
+        knownHeight: asset.height,
+      });
       if (!up.success) throw new Error(up.error);
       setImageUri(up.url);
     } catch {
@@ -97,6 +99,11 @@ export function AnnouncePostScreen({ navigation }: any) {
     const result = await DocumentPicker.getDocumentAsync({ type: 'application/pdf', copyToCacheDirectory: true });
     if (result.canceled || !result.assets?.[0]) return;
     const asset = result.assets[0];
+    const size = asset.size ?? 0;
+    if (size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+      toast({ type: 'error', title: t.common.error, message: `PDF document exceeds ${MAX_FILE_SIZE_MB}MB limit.` });
+      return;
+    }
     setUploadingPdf(true);
     try {
       const safeName = asset.name.replace(/\s+/g, '_');

@@ -89,7 +89,7 @@ export function ManageFacultyScreen({ navigation }: any) {
     try {
       let photoUrl: string | undefined;
       if (photoUri) {
-        const up = await uploadFile(BUCKETS.photos, photoUri, `faculty/${target.id}/${Date.now()}.jpg`, 'image/jpeg');
+        const up = await uploadFile(BUCKETS.photos, photoUri, `faculty/${target.id}/${Date.now()}.jpg`, 'image/jpeg', true, { preset: 'avatar' });
         if (!up.success) { toast({ type: 'error', title: t.common.error, message: up.error }); return; }
         photoUrl = up.url;
       }

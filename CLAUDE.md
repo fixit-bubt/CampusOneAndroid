@@ -314,7 +314,20 @@ The mobile and web applications are actively pitched and presented to BUBT admin
   - `BloodScreen.tsx`: Triggered upon donor contact reveal (`donor_contact`) and urgent patient requester contact reveal.
   - `LostFoundDetailScreen.tsx`: Triggered upon approved claim contact unlock (`claim_contact`).
 
-### 13.2 Visual Media Pipeline & Attachments
+### 13.2 Visual Media Pipeline & Upload Storage Control
+- **Automated Compression Engine (`src/utils/imageCompress.ts`):**
+  - Powered by `expo-image-manipulator` (`SaveFormat.JPEG`) with aspect-ratio preserving downscaling and EXIF normalization.
+  - Presets:
+    - `avatar`: Max dimension 512px, 0.80 quality (~30-60 KB). Used for Profile avatars (`ProfileScreen`) and faculty portraits (`ManageFacultyScreen`).
+    - `standard`: Max dimension 1440px, 0.75 quality (~150-300 KB). Used for Maintenance reports (`ReportFormScreen`), Marketplace listings (`MarketPostScreen`), Lost & Found (`PostItemFormScreen`, `LostFoundDetailScreen`), Club posts (`ClubPostScreen`), and Announcement flyers (`AnnouncePostScreen`).
+    - `document`: Max dimension 1800px, 0.82 quality (~250-500 KB). Used for Routine schedule sheets (`RoutinesBrowseScreen`) and whiteboard/notebook notes (`StudyUploadScreen`).
+    - `compact`: Max dimension 1024px, 0.70 quality (~80-150 KB). Used for AI assistant query attachments (`ChatbotScreen`).
+  - Fallback Resilience: Gracefully falls back to uncompressed URI on any unexpected image parser failure; never crashes or blocks user submissions.
+- **Storage Layer Auto-Compression (`src/utils/storage.ts`):**
+  - `uploadFile`: Inspects MIME type / extension; automatically routes images through `compressImage` with appropriate preset before reading bytes.
+  - `uploadPhoto`: Auto-resolves preset by folder (`avatars` -> `avatar`, `chatbot` -> `compact`, `routines` -> `document`, else `standard`).
+  - `uploadProof`: Auto-compresses claim proof photos with `standard` preset.
+  - Pre-Upload Size Guards: Rejects documents exceeding `MAX_FILE_SIZE_MB` (10MB) and images exceeding `MAX_IMAGE_SIZE_MB` (5MB).
 - **Lost & Found Photos:**
   - `LostFoundBrowseScreen.tsx`: Render 52×52 rounded cover thumbnail with category icon fallback.
   - `LostFoundDetailScreen.tsx`: Render 190dp hero image card with anchored status badge (`Lost` in crimson / `Found` in emerald).

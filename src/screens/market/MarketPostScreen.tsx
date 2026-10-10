@@ -205,10 +205,8 @@ export function MarketPostScreen({ route, navigation }: any) {
     if (!user) return;
     setUploading(true);
     try {
-      const ext = uri.split('.').pop()?.toLowerCase() ?? 'jpg';
-      const fileName = `${user.id}_${Date.now()}.${ext}`;
-      const contentType = ext === 'png' ? 'image/png' : 'image/jpeg';
-      const res = await uploadFile('photos', uri, `marketplace/${user.id}/${fileName}`, contentType);
+      const fileName = `${user.id}_${Date.now()}.jpg`;
+      const res = await uploadFile('photos', uri, `marketplace/${user.id}/${fileName}`, 'image/jpeg', true, { preset: 'standard' });
       if (!res.success) throw new Error(res.error);
       setPhotoUri(res.url);
     } catch {

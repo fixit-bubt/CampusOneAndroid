@@ -1,6 +1,11 @@
 import { donorEligibility, DONATION_WAIT_DAYS, DONATION_WAIT_DAYS_FEMALE } from '../blood';
+import { localToday } from '../format';
 
-const daysAgo = (n: number) => new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
+const daysAgo = (n: number) => {
+  const [y, m, d] = localToday().split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d - n));
+  return dt.toISOString().slice(0, 10);
+};
 
 describe('donorEligibility', () => {
   it('is eligible with no recorded donation', () => {
@@ -43,7 +48,7 @@ describe('donorEligibility', () => {
   });
 
   it('calculates exactly 90 days left if donated today', () => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = localToday();
     const r = donorEligibility(today);
     expect(r.eligible).toBe(false);
     expect(r.daysLeft).toBe(90);

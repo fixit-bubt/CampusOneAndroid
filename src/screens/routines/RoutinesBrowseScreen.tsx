@@ -17,8 +17,11 @@ import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { supabase } from '../../lib/supabase';
 import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 import { uploadFile } from '../../utils/storage';
+import { isImageFile } from '../../utils/imageCompress';
+import { MAX_FILE_SIZE_MB } from '../../constants/app';
 import { formatRelativeTime } from '../../utils/format';
 import { openUrl } from '../../utils/link';
+import { useToast } from '../../components/ui/Toast';
 import { FontFamily, FontSize, Layout, Radius, Spacing, SectorColors } from '../../theme';
 
 interface Routine {
@@ -41,6 +44,7 @@ export function RoutinesBrowseScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
   const { user, profile } = useAuth();
   const t = useT();
+  const toast = useToast();
   const canPost = profile?.role === 'admin' || profile?.role === 'staff';
 
   const [tab, setTab] = useState<Tab>('class');
@@ -115,8 +119,14 @@ export function RoutinesBrowseScreen({ navigation }: any) {
       type: ['application/pdf', 'image/*'],
       copyToCacheDirectory: true,
     });
-    if (result.canceled) return;
+    if (result.canceled || !result.assets?.[0]) return;
     const asset = result.assets[0];
+    const isImg = isImageFile(asset.name ?? '', asset.mimeType);
+    const size = asset.size ?? 0;
+    if (!isImg && size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+      toast({ type: 'error', title: t.common.error, message: `Document exceeds ${MAX_FILE_SIZE_MB}MB limit.` });
+      return;
+    }
     setPickedFile({ uri: asset.uri, name: asset.name ?? 'file', mimeType: asset.mimeType ?? 'application/octet-stream' });
   }
 
@@ -128,15 +138,23 @@ export function RoutinesBrowseScreen({ navigation }: any) {
       let imageUrl: string | null = null;
 
       if (pickedFile) {
-        const ext = pickedFile.name.split('.').pop() ?? 'bin';
+        const isImg = isImageFile(pickedFile.name, pickedFile.mimeType);
+        const ext = isImg ? 'jpg' : (pickedFile.name.split('.').pop() ?? 'bin');
         const safeName = fTitle.trim().replace(/[^a-zA-Z0-9_-]/g, '_');
         // 'photos' is a public bucket with an open authenticated-upload policy;
         // study-materials is private and its RLS requires a uid-prefixed path, so a
         // routines/ path there is denied. Routine sheets are public reference data.
         const storagePath = `routines/${user.id}/${Date.now()}_${safeName}.${ext}`;
-        const up = await uploadFile('photos', pickedFile.uri, storagePath, pickedFile.mimeType, true);
+        const up = await uploadFile(
+          'photos',
+          pickedFile.uri,
+          storagePath,
+          isImg ? 'image/jpeg' : pickedFile.mimeType,
+          true,
+          isImg ? { preset: 'document' } : undefined
+        );
         if (!up.success) throw new Error(up.error);
-        if (pickedFile.mimeType.startsWith('image/')) {
+        if (isImg) {
           imageUrl = up.url;
         } else {
           fileUrl = up.url;
