@@ -26,9 +26,10 @@ const RIDE_COLOR = SectorColors.ride;
 const RIDE_BG    = `${SectorColors.ride}1e`;
 
 const VEHICLE_META: Record<string, { icon: string; label: string }> = {
-  Car:  { icon: '🚗', label: 'Car'  },
-  CNG:  { icon: '🛺', label: 'CNG'  },
-  Bike: { icon: '🏍️', label: 'Bike' },
+  Car:      { icon: '🚗', label: 'Car'      },
+  CNG:      { icon: '🛺', label: 'CNG'      },
+  Bike:     { icon: '🏍️', label: 'Bike'     },
+  Rickshaw: { icon: '🚲', label: 'Rickshaw' },
 };
 
 function formatDepartureLabel(dateStr: string, timeStr: string, t: any): string {

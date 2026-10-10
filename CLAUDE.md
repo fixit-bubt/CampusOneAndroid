@@ -791,19 +791,27 @@ The following screens contain segmented control bars slated for this animated pa
 - **Database Migrations:**
   - `20261012000000_rides_enhancements.sql`: Mutual cancellation RLS (`ride_req_delete`), admin select (`ride_req_select`), notification triggers (`trg_notify_ride_request_event`, `trg_notify_ride_cancelled`).
   - `20261012000001_rides_expiry_fix.sql`: `set_ride_expires_at` calculates `greatest(scheduled + 3h, now() + 3h)` so newly posted rides never expire instantly upon creation.
+  - `20261012000002_rides_rickshaw_and_request.sql`: Adds `'Rickshaw'` to `rides_vehicle_check` and introduces `post_type text NOT NULL DEFAULT 'offer' CHECK (post_type IN ('offer', 'request'))` with index `idx_rides_post_type`.
 
 ### 25.2 Key Features & Enhancements
-1. **Hero Action Bar:** Replaces the small header plus icon with a prominent full-width `[+ Offer a Ride]` button (`SectorColors.ride`, 44dp height) matching `LostFoundBrowseScreen` and `BloodScreen`.
+1. **Hero Action Bar (Dual Buttons):** Replaces the cramped header plus icon with prominent side-by-side action buttons: `[+ Offer Ride]` (`SectorColors.ride`, emerald) and `[+ Request Ride]` (amber accent), matching `LostFoundBrowseScreen` and `BloodScreen`.
 2. **Animated Segmented Track Bar:** Unified rounded track container (`surface2`, `borderRadius: 14`) with native spring sliding indicator (`Animated.View`) across 4 tabs: `All` (Ride Cyan `#6e8b1f`), `To Campus` (Emerald `#16a34a`), `From Campus` (Royal Blue `#2563eb`), and `My Rides` (Violet `#8b5cf6`).
 3. **Dedicated "My Rides" Tab:** Live badge counter showing total active rides. Surfaces both rides the user is offering as a driver (with booked passenger counts) and rides the user booked as a passenger (with seat status), immune to public departure cutoff filters.
-4. **Smart Posting Time & Expiry Safeguard:** Automatically defaults to tomorrow 08:00 AM when posting in the evening (after 6 PM), or upcoming hour today. Validates that departure time is not in the past.
-5. **Full-Width Cards:** Driver avatar, name, department, vehicle badge (`🚗 Car`, `🛺 CNG`, `🏍️ Bike`), humanized departure ("Today · 8:00 AM", "Tomorrow · 5:00 PM"), and fare.
-6. **Mutual Cancellation:** Passengers can cancel their seat booking at any time with alert confirmation. Drivers can remove individual passengers directly from the seat requests list.
-7. **Direct Contact & Navigation:**
+4. **Rickshaw & Multi-Vehicle Commute:**
+   - Supported vehicles: `Car` (`🚗`), `CNG` (`🛺`), `Bike` (`🏍️`), and `Rickshaw` (`🚲`).
+   - Rickshaw accommodates 1-2 passengers, perfectly matching Mirpur 1, 2, 10, and Sony Cinema varsity commutes.
+5. **Passenger "Need a Ride" Requests (`post_type: 'request'`):**
+   - Students without vehicles can post ride requests specifying pickup, destination, seats needed, departure time, and max budget.
+   - Dual post type toggle in `RidePostScreen.tsx` dynamically switches seat limits, labels, and placeholders.
+   - Cards display distinct badges: `🚗 Offer` (emerald) vs `🙋 Need Ride` (amber) with direct driver/passenger contact flow.
+6. **Smart Posting Time & Expiry Safeguard:** Automatically defaults to tomorrow 08:00 AM when posting in the evening (after 6 PM), or upcoming hour today. Validates that departure time is not in the past.
+7. **Full-Width Cards:** Driver avatar, name, department, vehicle badge, humanized departure ("Today · 8:00 AM", "Tomorrow · 5:00 PM"), and fare/budget.
+8. **Mutual Cancellation:** Passengers can cancel their seat booking at any time with alert confirmation. Drivers can remove individual passengers directly from the seat requests list.
+9. **Direct Contact & Navigation:**
    - Native `ContactSheet.tsx` integration with one-tap WhatsApp launcher, phone dialer, copy number, and in-app chat fallback.
    - Level 1 "Open in Maps" intent opening pickup/meeting point in Google Maps without battery drain or Play Store location permission hurdles.
-8. **Campus Today Commute Widget:** `CampusToday.tsx` surfaces upcoming rides with available seats directly on the Home screen.
-9. **Web Parity:** `fixit-campus/src/screens/rides/Rides.jsx` and `store.jsx` updated with matching seat cancellation, passenger removal, and Google Maps integration.
+10. **Campus Today Commute Widget:** `CampusToday.tsx` surfaces upcoming rides with available seats directly on the Home screen.
+11. **Web Parity:** `fixit-campus/src/screens/rides/Rides.jsx` and `store.jsx` updated with Rickshaw vehicle, post_type filtering, dual action buttons, seat cancellation, passenger removal, and Google Maps integration.
 
 
 

@@ -48,9 +48,10 @@ export type Listing = Omit<Tables<'listings'>, 'condition' | 'category' | 'statu
   status: 'Available' | 'Sold';
 };
 
-export type Ride = Omit<Tables<'rides'>, 'direction' | 'vehicle'> & {
+export type Ride = Omit<Tables<'rides'>, 'direction' | 'vehicle' | 'post_type'> & {
   direction: 'To Campus' | 'From Campus';
-  vehicle: 'Car' | 'CNG' | 'Bike';
+  vehicle: 'Car' | 'CNG' | 'Bike' | 'Rickshaw';
+  post_type: 'offer' | 'request';
 };
 
 export type BloodGroup = 'A+' | 'A-' | 'B+' | 'B-' | 'O+' | 'O-' | 'AB+' | 'AB-';

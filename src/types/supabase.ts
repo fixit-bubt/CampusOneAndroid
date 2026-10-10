@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -2326,6 +2326,7 @@ export type Database = {
           time: string
           updated_at: string
           vehicle: string
+          post_type: string
         }
         Insert: {
           code?: string
@@ -2344,6 +2345,7 @@ export type Database = {
           time: string
           updated_at?: string
           vehicle: string
+          post_type?: string
         }
         Update: {
           code?: string
@@ -2362,6 +2364,7 @@ export type Database = {
           time?: string
           updated_at?: string
           vehicle?: string
+          post_type?: string
         }
         Relationships: [
           {

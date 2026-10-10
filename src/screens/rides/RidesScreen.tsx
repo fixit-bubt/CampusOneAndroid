@@ -40,9 +40,10 @@ const TAB_COLORS: Record<TabKey, { fg: string }> = {
 };
 
 const VEHICLE_META: Record<string, { icon: string; label: string }> = {
-  Car:  { icon: '🚗', label: 'Car'  },
-  CNG:  { icon: '🛺', label: 'CNG'  },
-  Bike: { icon: '🏍️', label: 'Bike' },
+  Car:      { icon: '🚗', label: 'Car'      },
+  CNG:      { icon: '🛺', label: 'CNG'      },
+  Bike:     { icon: '🏍️', label: 'Bike'     },
+  Rickshaw: { icon: '🚲', label: 'Rickshaw' },
 };
 
 function isRideDeparted(dateStr: string, timeStr: string): boolean {
@@ -263,16 +264,34 @@ export function RidesScreen({ navigation }: any) {
         message="Showing cached campus rides. Connect to the internet to request seats or post rides."
       />
 
-      {/* Prominent Hero Action Bar (Parity with Lost & Found / Blood Donation) */}
-      <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 6, paddingBottom: 4 }}>
+      {/* Prominent Hero Action Bar: Offer Ride vs Request Ride */}
+      <View style={styles.heroRow}>
         <TouchableOpacity
           style={[styles.actBtn, { backgroundColor: RIDE_COLOR }]}
-          onPress={() => navigation.navigate('RidePost')}
+          onPress={() => navigation.navigate('RidePost', { postType: 'offer' })}
           activeOpacity={0.85}
         >
-          <Feather name="plus-circle" size={16} color="#fff" />
+          <Feather name="plus-circle" size={15} color="#fff" />
           <Text style={[styles.actBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
-            {t.rides2.offerRideBtn ?? 'Offer a Ride'}
+            Offer Ride
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.actBtn,
+            {
+              backgroundColor: isDark ? 'rgba(139, 92, 246, 0.16)' : '#f5f0ff',
+              borderColor: isDark ? 'rgba(139, 92, 246, 0.45)' : '#d8b4fe',
+              borderWidth: 1,
+            },
+          ]}
+          onPress={() => navigation.navigate('RidePost', { postType: 'request' })}
+          activeOpacity={0.85}
+        >
+          <Feather name="user-check" size={15} color={isDark ? '#c4b5fd' : '#7c3aed'} />
+          <Text style={[styles.actBtnTxt, { color: isDark ? '#c4b5fd' : '#7c3aed', fontFamily: FontFamily.jakartaBold }]}>
+            Request Ride
           </Text>
         </TouchableOpacity>
       </View>
@@ -387,15 +406,26 @@ export function RidesScreen({ navigation }: any) {
                 </Text>
               </TouchableOpacity>
             ) : tab === 'mine' ? (
-              <TouchableOpacity
-                style={[styles.clearBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
-                onPress={() => navigation.navigate('RidePost')}
-                activeOpacity={0.75}
-              >
-                <Text style={[styles.clearBtnTxt, { color: RIDE_COLOR, fontFamily: FontFamily.jakartaBold }]}>
-                  Offer a Ride
-                </Text>
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
+                <TouchableOpacity
+                  style={[styles.clearBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+                  onPress={() => navigation.navigate('RidePost', { postType: 'offer' })}
+                  activeOpacity={0.75}
+                >
+                  <Text style={[styles.clearBtnTxt, { color: RIDE_COLOR, fontFamily: FontFamily.jakartaBold }]}>
+                    Offer Ride
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.clearBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+                  onPress={() => navigation.navigate('RidePost', { postType: 'request' })}
+                  activeOpacity={0.75}
+                >
+                  <Text style={[styles.clearBtnTxt, { color: '#8b5cf6', fontFamily: FontFamily.jakartaBold }]}>
+                    Request Ride
+                  </Text>
+                </TouchableOpacity>
+              </View>
             ) : null}
           </View>
         ) : (
@@ -404,6 +434,7 @@ export function RidesScreen({ navigation }: any) {
               const taken = takenCounts[r.id] ?? 0;
               const isRequested = requestedIds.has(r.id);
               const isOwnRide = r.driver_id === user?.id;
+              const isPassengerRequest = r.post_type === 'request';
               const seatsLeft = r.seats_total - taken;
               const isFull = seatsLeft <= 0 && !isRequested;
               const departureText = formatDepartureLabel(r.date, r.time, t);
@@ -422,15 +453,28 @@ export function RidesScreen({ navigation }: any) {
                       <Text style={[styles.routeTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]} numberOfLines={1}>
                         {r.origin} → {r.destination}
                       </Text>
-                      {/* Vehicle & Time Row */}
+                      {/* Vehicle & Type & Time Row */}
                       <View style={styles.subMetaRow}>
+                        {isPassengerRequest ? (
+                          <View style={[styles.typePill, { backgroundColor: isDark ? 'rgba(139, 92, 246, 0.2)' : '#f3effe' }]}>
+                            <Text style={[styles.typePillTxt, { color: isDark ? '#c4b5fd' : '#7c3aed', fontFamily: FontFamily.jakartaBold }]}>
+                              🙋 Need Ride
+                            </Text>
+                          </View>
+                        ) : (
+                          <View style={[styles.typePill, { backgroundColor: RIDE_BG }]}>
+                            <Text style={[styles.typePillTxt, { color: RIDE_COLOR, fontFamily: FontFamily.jakartaBold }]}>
+                              🚗 Offer
+                            </Text>
+                          </View>
+                        )}
                         <View style={[styles.vehPill, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : C.surface2 }]}>
                           <Text style={[styles.vehTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
                             {vMeta.icon} {vMeta.label}
                           </Text>
                         </View>
-                        <View style={[styles.dirPill, { backgroundColor: RIDE_BG }]}>
-                          <Text style={[styles.dirPillTxt, { color: RIDE_COLOR, fontFamily: FontFamily.jakartaBold }]}>
+                        <View style={[styles.dirPill, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : C.surface2 }]}>
+                          <Text style={[styles.dirPillTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
                             {r.direction === 'To Campus' ? (t.rides2.toCampus ?? 'To Campus') : (t.rides2.fromCampus ?? 'From Campus')}
                           </Text>
                         </View>
@@ -452,13 +496,15 @@ export function RidesScreen({ navigation }: any) {
                     </Text>
                   ) : null}
 
-                  {/* Driver & seats row */}
+                  {/* Driver / Passenger Identity & seats row */}
                   <View style={styles.driverRow}>
                     <View style={styles.driverIdentity}>
                       <Avatar name={r.driver_name} size="xs" />
                       <View style={{ minWidth: 0 }}>
-                        <Text style={[styles.driverName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                          {isOwnRide ? (t.rides2.driver ?? 'You') : (r.driver_name ?? t.rides2.driverFallback)}
+                        <Text style={[styles.driverName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                          {isOwnRide
+                            ? (isPassengerRequest ? 'You (Passenger)' : 'You (Driver)')
+                            : (r.driver_name ?? (isPassengerRequest ? 'Passenger' : t.rides2.driverFallback))}
                         </Text>
                         {r.driver_dept ? (
                           <Text style={[styles.driverDept, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
@@ -469,12 +515,42 @@ export function RidesScreen({ navigation }: any) {
                     </View>
 
                     <Text style={[styles.seatsCount, { color: isFull ? C.danger : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                      {isFull ? (t.rides2.full ?? 'Full') : `${Math.max(seatsLeft, 0)} ${t.rides2.seatsLeftCount(Math.max(seatsLeft, 0))}`}
+                      {isPassengerRequest
+                        ? `${r.seats_total} seat${r.seats_total === 1 ? '' : 's'} needed`
+                        : isFull
+                        ? (t.rides2.full ?? 'Full')
+                        : `${Math.max(seatsLeft, 0)} ${t.rides2.seatsLeftCount(Math.max(seatsLeft, 0))}`}
                     </Text>
                   </View>
 
                   {/* Action Button & Status */}
-                  {isOwnRide ? (
+                  {isPassengerRequest ? (
+                    isOwnRide ? (
+                      <View style={[styles.ownRideBadge, { backgroundColor: C.surface2 }]}>
+                        <Text style={[styles.ownRideTxt, { color: '#8b5cf6', fontFamily: FontFamily.jakartaBold }]}>
+                          Your Ride Request · Tap to manage
+                        </Text>
+                      </View>
+                    ) : (
+                      <TouchableOpacity
+                        style={[
+                          styles.requestBtn,
+                          {
+                            backgroundColor: isDark ? 'rgba(139, 92, 246, 0.2)' : '#f5f0ff',
+                            borderColor: isDark ? 'rgba(139, 92, 246, 0.5)' : '#d8b4fe',
+                            borderWidth: 1,
+                          },
+                        ]}
+                        onPress={() => navigation.navigate('RideDetail', { rideId: r.id })}
+                        activeOpacity={0.75}
+                      >
+                        <Feather name="message-circle" size={15} color={isDark ? '#c4b5fd' : '#7c3aed'} />
+                        <Text style={[styles.requestBtnTxt, { color: isDark ? '#c4b5fd' : '#7c3aed', fontFamily: FontFamily.jakartaBold }]}>
+                          Offer a Lift / Contact Rider
+                        </Text>
+                      </TouchableOpacity>
+                    )
+                  ) : isOwnRide ? (
                     <View style={[styles.ownRideBadge, { backgroundColor: C.surface2 }]}>
                       <Text style={[styles.ownRideTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
                         {t.rides2.manageMyRide ?? 'Manage My Ride'} · {taken}/{r.seats_total} Booked
@@ -529,17 +605,25 @@ export function RidesScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
 
+  heroRow: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingHorizontal: Layout.screenPadding,
+    paddingTop: 6,
+    paddingBottom: 4,
+  } as ViewStyle,
   actBtn: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: 7,
     height: 44,
     borderRadius: 12,
   } as ViewStyle,
   actBtnTxt: {
-    fontSize: 13.5,
-  } as any,
+    fontSize: 13,
+  } as TextStyle,
 
   tabContainer: {
     flexDirection: 'row',
@@ -630,6 +714,12 @@ const styles = StyleSheet.create({
     gap: 6,
     marginTop: 6,
   },
+  typePill: {
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  typePillTxt: { fontSize: 10.5 } as TextStyle,
   vehPill: {
     paddingHorizontal: 8,
     paddingVertical: 3,
