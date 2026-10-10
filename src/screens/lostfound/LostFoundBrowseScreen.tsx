@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Image,
-  RefreshControl, Keyboard, Modal, type ViewStyle, type TextStyle,
+  RefreshControl, Keyboard, Modal, KeyboardAvoidingView, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -364,53 +364,42 @@ export function LostFoundBrowseScreen({ navigation }: any) {
           )}
         </View>
 
-        {/* Filters Trigger Button */}
-        <View
+        {/* Filters Trigger Button (Prominent 44dp, never squashed) */}
+        <TouchableOpacity
           style={[
-            styles.filterTriggerWrap,
+            styles.filterBtn,
             appliedFiltersCount > 0
               ? { backgroundColor: `${SectorColors.lostfound}18`, borderColor: SectorColors.lostfound }
               : { backgroundColor: C.surface, borderColor: C.border },
           ]}
+          onPress={openFilterModal}
+          activeOpacity={0.75}
         >
-          <TouchableOpacity
-            style={styles.filterTriggerBtn}
-            onPress={openFilterModal}
-            activeOpacity={0.75}
+          <Feather
+            name="sliders"
+            size={15}
+            color={appliedFiltersCount > 0 ? SectorColors.lostfound : C.text2}
+          />
+          <Text
+            style={[
+              styles.filterBtnTxt,
+              {
+                color: appliedFiltersCount > 0 ? SectorColors.lostfound : C.text,
+                fontFamily: FontFamily.jakartaBold,
+              },
+            ]}
+            numberOfLines={1}
           >
-            <Feather
-              name="sliders"
-              size={14}
-              color={appliedFiltersCount > 0 ? SectorColors.lostfound : C.text2}
-            />
-            <Text
-              style={[
-                styles.filterTriggerTxt,
-                {
-                  color: appliedFiltersCount > 0 ? SectorColors.lostfound : C.text,
-                  fontFamily: FontFamily.jakartaBold,
-                },
-              ]}
-              numberOfLines={1}
-            >
-              {categoryFilter !== 'All' ? categoryFilter : t.lf.filterBtn}
-            </Text>
-            {appliedFiltersCount > 0 && (
-              <View style={[styles.filterCountBadge, { backgroundColor: SectorColors.lostfound }]}>
-                <Text style={styles.filterCountBadgeTxt}>{appliedFiltersCount}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-          {appliedFiltersCount > 0 && (
-            <TouchableOpacity
-              onPress={() => { setCategoryFilter('All'); setStatusFilter('Open'); }}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              style={styles.filterClearBtn}
-            >
-              <Feather name="x" size={13} color={SectorColors.lostfound} />
-            </TouchableOpacity>
+            {categoryFilter !== 'All' ? categoryFilter : t.lf.filterBtn}
+          </Text>
+          {appliedFiltersCount > 0 ? (
+            <View style={[styles.filterCountBadge, { backgroundColor: SectorColors.lostfound }]}>
+              <Text style={styles.filterCountBadgeTxt}>{appliedFiltersCount}</Text>
+            </View>
+          ) : (
+            <Feather name="chevron-down" size={13} color={C.textMuted} />
           )}
-        </View>
+        </TouchableOpacity>
       </View>
 
       {/* Main Feed of Cards (Starts Immediately Below Single Row) */}
@@ -478,20 +467,36 @@ export function LostFoundBrowseScreen({ navigation }: any) {
         animationType="slide"
         onRequestClose={() => setFilterModalVisible(false)}
       >
-        <TouchableOpacity
+        <KeyboardAvoidingView
           style={styles.sheetOverlay}
-          activeOpacity={1}
-          onPress={() => setFilterModalVisible(false)}
+          behavior="padding"
         >
-          <View
-            style={[styles.sheetContent, { backgroundColor: C.surface, borderColor: C.border }]}
-            onStartShouldSetResponder={() => true}
-          >
+          {/* Backdrop (dismiss on tap outside) */}
+          <TouchableOpacity
+            style={styles.sheetBackdrop}
+            activeOpacity={1}
+            onPress={() => setFilterModalVisible(false)}
+          />
+
+          <View style={[styles.sheetContent, { backgroundColor: C.surface, borderColor: C.border }]}>
+            {/* Grab Handle */}
+            <View style={[styles.sheetHandle, { backgroundColor: C.border }]} />
+
             {/* Sheet Header */}
             <View style={styles.sheetHeader}>
-              <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                {t.lf.filtersTitle}
-              </Text>
+              <View style={styles.sheetHeaderLeft}>
+                <View style={[styles.sheetHeaderIcon, { backgroundColor: `${SectorColors.lostfound}1e` }]}>
+                  <Feather name="sliders" size={16} color={SectorColors.lostfound} />
+                </View>
+                <View>
+                  <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    {t.lf.filtersTitle}
+                  </Text>
+                  <Text style={[styles.sheetSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                    {filteredList.length} items matching
+                  </Text>
+                </View>
+              </View>
               <TouchableOpacity
                 onPress={() => setFilterModalVisible(false)}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -619,7 +624,7 @@ export function LostFoundBrowseScreen({ navigation }: any) {
               </TouchableOpacity>
             </View>
           </View>
-        </TouchableOpacity>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );
@@ -677,7 +682,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    height: 42,
+    height: 44,
     borderRadius: 12,
     borderWidth: 1,
     paddingHorizontal: 12,
@@ -689,30 +694,26 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   } as TextStyle,
 
-  filterTriggerWrap: {
+  filterBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 42,
-    paddingHorizontal: 10,
+    justifyContent: 'center',
+    gap: 6,
+    height: 44,
+    paddingHorizontal: 13,
     borderRadius: 12,
     borderWidth: 1,
-    maxWidth: 140,
+    flexShrink: 0,
+    minWidth: 96,
   } as ViewStyle,
-  filterTriggerBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    flex: 1,
-    height: '100%',
-  } as ViewStyle,
-  filterTriggerTxt: {
-    fontSize: 12,
-    flexShrink: 1,
+  filterBtnTxt: {
+    fontSize: 12.5,
   } as TextStyle,
   filterCountBadge: {
-    width: 17,
-    height: 17,
-    borderRadius: 8.5,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    paddingHorizontal: 4,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
@@ -721,12 +722,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontFamily: FontFamily.jakartaBold,
   } as TextStyle,
-  filterClearBtn: {
-    paddingLeft: 4,
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-  } as ViewStyle,
 
   scroll: { paddingTop: 2, paddingBottom: 24 } as ViewStyle,
 
@@ -833,16 +828,30 @@ const styles = StyleSheet.create({
   /* Bottom Sheet Modal Styles */
   sheetOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
     justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+  } as ViewStyle,
+  sheetBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  } as ViewStyle,
+  sheetHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 12,
   } as ViewStyle,
   sheetContent: {
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
-    borderTopWidth: 1,
-    paddingTop: 16,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderWidth: 1,
+    paddingTop: 10,
     paddingHorizontal: Layout.screenPadding,
-    maxHeight: '80%',
+    maxHeight: '82%',
   } as ViewStyle,
   sheetHeader: {
     flexDirection: 'row',
@@ -850,8 +859,24 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingBottom: 14,
   } as ViewStyle,
+  sheetHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  } as ViewStyle,
+  sheetHeaderIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
   sheetTitle: {
-    fontSize: 17,
+    fontSize: 16,
+  } as TextStyle,
+  sheetSub: {
+    fontSize: 11.5,
+    marginTop: 1,
   } as TextStyle,
   sheetCloseBtn: {
     width: 32,
