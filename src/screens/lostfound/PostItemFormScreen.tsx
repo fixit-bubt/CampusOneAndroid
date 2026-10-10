@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet, Image,
-  TextInput, KeyboardAvoidingView, Platform, ActivityIndicator,
-  type ViewStyle,
+  TextInput, KeyboardAvoidingView, ActivityIndicator, Modal,
+  type ViewStyle, type TextStyle,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout , SectorColors, Accent } from '../../theme';
+import { FontFamily, Layout, SectorColors, Accent, pillBg } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { localToday } from '../../utils/format';
 import { rankMatches, type MatchItem } from '../../utils/lostFoundMatch';
@@ -23,6 +24,17 @@ const LF_CATS: { id: LostFoundItem['category']; icon: string; fg: string; en: st
   { id: 'Electronics', icon: 'phone',  fg: SectorColors.lostfound, en: 'Electronics' },
   { id: 'Documents',   icon: 'layers', fg: Accent.green, en: 'Documents' },
   { id: 'Other',       icon: 'inbox',  fg: Accent.slate, en: 'Other' },
+];
+
+const QUICK_LOCATIONS = [
+  'Library',
+  'Cafeteria',
+  'Building 2',
+  'Room 402',
+  'Exam Hall',
+  'Mosque',
+  'Computer Lab',
+  'Campus Grounds',
 ];
 
 function hexAlpha(hex: string, a: number) {
@@ -46,6 +58,7 @@ export function PostItemFormScreen({ route, navigation }: any) {
   const [err, setErr]     = useState('');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [existingPhotoUrl, setExistingPhotoUrl] = useState<string | null>(null);
+  const [photoPickerVisible, setPhotoPickerVisible] = useState(false);
   const [matches, setMatches] = useState<MatchItem[]>([]);
 
   // Pre-fill fields when editing an existing item
@@ -74,8 +87,6 @@ export function PostItemFormScreen({ route, navigation }: any) {
     const q = title.trim();
     if (!cat || q.length < 3 || !user) { setMatches([]); return; }
     const oppType = type === 'Lost' ? 'Found' : 'Lost';
-    // `cancelled` covers a request already in flight - clearTimeout alone only
-    // cancels a still-pending debounce, so a slow older response could land last.
     let cancelled = false;
     const handle = setTimeout(async () => {
       const { data } = await supabase
@@ -94,7 +105,26 @@ export function PostItemFormScreen({ route, navigation }: any) {
     return () => { cancelled = true; clearTimeout(handle); };
   }, [cat, title, desc, type, user, editId]);
 
-  async function pickPhoto() {
+  async function takePhotoWithCamera() {
+    setPhotoPickerVisible(false);
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      setErr('Permission to access camera is required');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setPhotoUri(result.assets[0].uri);
+    }
+  }
+
+  async function pickFromGallery() {
+    setPhotoPickerVisible(false);
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
       setErr('Permission to access photo library is required');
@@ -170,51 +200,72 @@ export function PostItemFormScreen({ route, navigation }: any) {
         >
           {/* Type toggle: Lost / Found */}
           <Text style={[styles.label, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold, marginTop: 4 }]}>
-            Type
+            {t.lf.typeLabel}
           </Text>
           <View style={[styles.typeToggle, { backgroundColor: C.surface2, borderColor: C.border }]}>
-            {(['Lost', 'Found'] as const).map(t => (
-              <TouchableOpacity
-                key={t}
-                style={[
-                  styles.typeBtn,
-                  type === t && {
-                    backgroundColor: C.surface,
-                    shadowColor: '#000', shadowOpacity: 0.07, shadowRadius: 4, shadowOffset: { width: 0, height: 1 }, elevation: 2,
-                  },
-                ]}
-                onPress={() => setType(t)}
-                activeOpacity={0.75}
-              >
-                <View style={[styles.typeDot, { backgroundColor: t === 'Lost' ? C.danger : C.success }]} />
-                <Text style={[styles.typeTxt, { color: type === t ? C.text : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                  {t}
-                </Text>
-              </TouchableOpacity>
-            ))}
+            {(['Lost', 'Found'] as const).map(tOpt => {
+              const active = type === tOpt;
+              const isLost = tOpt === 'Lost';
+              const activeBg = isLost ? C.dangerBg : C.successBg;
+              const activeBorder = isLost ? C.danger : C.success;
+              const activeFg = isLost ? C.danger : C.success;
+              return (
+                <TouchableOpacity
+                  key={tOpt}
+                  style={[
+                    styles.typeBtn,
+                    active && {
+                      backgroundColor: activeBg,
+                      borderColor: activeBorder,
+                      borderWidth: 1.5,
+                      elevation: 1,
+                    },
+                  ]}
+                  onPress={() => setType(tOpt)}
+                  activeOpacity={0.75}
+                >
+                  <View style={[styles.typeDot, { backgroundColor: activeFg }]} />
+                  <Text style={[styles.typeTxt, { color: active ? activeFg : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                    {tOpt === 'Lost' ? t.lf.lost : t.lf.found}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
 
-          {/* Category */}
+          {/* Category: 2x2 Symmetrical Grid */}
           <Text style={[styles.label, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>
-            Category
+            {t.lf.categoryLabel}
           </Text>
           <View style={styles.catGrid}>
             {LF_CATS.map(c => {
               const on = cat === c.id;
               const fg = c.fg;
-              const bg = hexAlpha(c.fg, isDark ? 0.18 : 0.1);
+              const bg = pillBg(fg, isDark);
+              const label = c.id === 'Personal' ? t.lf.catPersonal
+                : c.id === 'Electronics' ? t.lf.catElectronics
+                : c.id === 'Documents' ? t.lf.catDocuments
+                : t.lf.catOther;
+
               return (
                 <TouchableOpacity
                   key={c.id}
-                  style={[styles.catOpt, { backgroundColor: on ? bg : C.surface, borderColor: on ? fg : C.border, borderWidth: on ? 1.5 : 1 }]}
+                  style={[
+                    styles.catCard,
+                    {
+                      backgroundColor: on ? bg : C.surface,
+                      borderColor: on ? fg : C.border,
+                      borderWidth: on ? 1.5 : 1,
+                    },
+                  ]}
                   onPress={() => setCat(c.id)}
                   activeOpacity={0.75}
                 >
-                  <View style={[styles.catIcon, { backgroundColor: bg }]}>
+                  <View style={[styles.catIcon, { backgroundColor: on ? `${fg}28` : bg }]}>
                     <Icon name={c.icon} size={16} color={fg} />
                   </View>
-                  <Text style={[styles.catLabel, { color: on ? fg : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                    {c.en}
+                  <Text style={[styles.catLabel, { color: on ? fg : C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    {label}
                   </Text>
                 </TouchableOpacity>
               );
@@ -231,28 +282,31 @@ export function PostItemFormScreen({ route, navigation }: any) {
             placeholderTextColor={C.textMuted}
           />
 
-          {/* Pre-post match hint */}
+          {/* Pre-post smart match hint */}
           {matches.length > 0 && (
-            <View style={[styles.matchWrap, { backgroundColor: C.surface2, borderColor: C.border }]}>
-              <Text style={[styles.matchHead, { color: C.text2, fontFamily: FontFamily.jakartaExtraBold }]}>
-                {t.lostfound.possibleMatches.toUpperCase()}
-              </Text>
-              <Text style={[styles.matchSub2, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                {t.lostfound.possibleMatchesSub}
+            <View style={[styles.matchWrap, { backgroundColor: isDark ? 'rgba(217, 135, 11, 0.14)' : '#fffbeb', borderColor: Accent.amber }]}>
+              <View style={styles.matchHeaderRow}>
+                <Feather name="alert-circle" size={15} color={Accent.amber} />
+                <Text style={[styles.matchHead, { color: Accent.amber, fontFamily: FontFamily.jakartaExtraBold }]}>
+                  {t.lf.possibleMatchAlert.toUpperCase()}
+                </Text>
+              </View>
+              <Text style={[styles.matchSub2, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
+                {t.lf.possibleMatchAlertSub}
               </Text>
               {matches.map(m => {
                 const mc = LF_CATS.find(c => c.id === m.category) ?? LF_CATS[LF_CATS.length - 1];
                 return (
                   <TouchableOpacity
                     key={m.id}
-                    style={styles.matchRow}
+                    style={[styles.matchRow, { backgroundColor: C.surface, borderColor: C.border }]}
                     onPress={() => navigation.navigate('LostFoundDetail', { itemId: m.id })}
                     activeOpacity={0.75}
                   >
                     <View style={[styles.matchIcon, { backgroundColor: hexAlpha(mc.fg, 0.14) }]}>
                       <Icon name={mc.icon} size={15} color={mc.fg} />
                     </View>
-                    <View style={{ flex: 1 }}>
+                    <View style={{ flex: 1, minWidth: 0 }}>
                       <Text style={[styles.matchName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>{m.title}</Text>
                       <Text style={[styles.matchLoc, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>{m.location}</Text>
                     </View>
@@ -272,6 +326,33 @@ export function PostItemFormScreen({ route, navigation }: any) {
             placeholder={t.lf.locationPlaceholder}
             placeholderTextColor={C.textMuted}
           />
+
+          {/* Quick Location Chips */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.quickLocRow}
+          >
+            {QUICK_LOCATIONS.map(place => (
+              <TouchableOpacity
+                key={place}
+                style={[
+                  styles.quickLocChip,
+                  {
+                    backgroundColor: loc === place ? (isDark ? 'rgba(255,255,255,0.1)' : C.surface2) : C.surface,
+                    borderColor: loc === place ? C.text : C.border,
+                  },
+                ]}
+                onPress={() => setLoc(place)}
+                activeOpacity={0.75}
+              >
+                <Feather name="map-pin" size={11} color={loc === place ? C.text : C.textMuted} />
+                <Text style={[styles.quickLocTxt, { color: loc === place ? C.text : C.text2, fontFamily: FontFamily.jakartaMedium }]}>
+                  {place}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
 
           {/* Description */}
           <Text style={[styles.label, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>{t.lf.descriptionLabel}</Text>
@@ -294,7 +375,7 @@ export function PostItemFormScreen({ route, navigation }: any) {
               <View style={styles.photoActions}>
                 <TouchableOpacity
                   style={[styles.photoBtn, { backgroundColor: C.surface2 }]}
-                  onPress={pickPhoto}
+                  onPress={() => setPhotoPickerVisible(true)}
                   activeOpacity={0.75}
                 >
                   <Icon name="image" size={14} color={C.text} />
@@ -313,10 +394,10 @@ export function PostItemFormScreen({ route, navigation }: any) {
           ) : (
             <TouchableOpacity
               style={[styles.photoUploadBtn, { borderColor: C.border, backgroundColor: C.surface }]}
-              onPress={pickPhoto}
+              onPress={() => setPhotoPickerVisible(true)}
               activeOpacity={0.75}
             >
-              <Icon name="camera" size={20} color={C.brand} />
+              <Feather name="camera" size={18} color={SectorColors.lostfound} />
               <Text style={[styles.photoUploadTxt, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>
                 Add Photo (Optional)
               </Text>
@@ -325,8 +406,16 @@ export function PostItemFormScreen({ route, navigation }: any) {
 
           {!!err && <Text style={[styles.errText, { color: C.danger }]}>{err}</Text>}
 
+          {/* Submit button with dynamic type-aware label & tint */}
           <TouchableOpacity
-            style={[styles.submitBtn, { backgroundColor: C.brand, opacity: ok ? 1 : 0.5, marginTop: 22 }]}
+            style={[
+              styles.submitBtn,
+              {
+                backgroundColor: type === 'Lost' ? C.danger : C.success,
+                opacity: ok ? 1 : 0.5,
+                marginTop: 22,
+              },
+            ]}
             onPress={handleSubmit}
             disabled={!ok || busy}
             activeOpacity={0.85}
@@ -336,7 +425,9 @@ export function PostItemFormScreen({ route, navigation }: any) {
             ) : (
               <View style={styles.btnRow}>
                 <Icon name="check" size={18} color="#fff" />
-                <Text style={[styles.btnTxt, { fontFamily: FontFamily.jakartaBold }]}>{isEdit ? t.lf.saveChanges : t.lf.postItem}</Text>
+                <Text style={[styles.btnTxt, { fontFamily: FontFamily.jakartaBold }]}>
+                  {isEdit ? t.lf.saveChanges : (type === 'Lost' ? t.lf.postLostBtn : t.lf.postFoundBtn)}
+                </Text>
               </View>
             )}
           </TouchableOpacity>
@@ -344,22 +435,74 @@ export function PostItemFormScreen({ route, navigation }: any) {
           <View style={{ height: 28 }} />
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Photo Picker Source Modal (Camera vs Gallery) */}
+      <Modal
+        visible={photoPickerVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPhotoPickerVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.pickerModalOverlay}
+          activeOpacity={1}
+          onPress={() => setPhotoPickerVisible(false)}
+        >
+          <View style={[styles.pickerModalSheet, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <Text style={[styles.pickerModalTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              {t.lf.selectPhotoSource}
+            </Text>
+
+            <TouchableOpacity
+              style={[styles.pickerModalOpt, { backgroundColor: C.surface2 }]}
+              onPress={takePhotoWithCamera}
+              activeOpacity={0.75}
+            >
+              <Feather name="camera" size={18} color={SectorColors.lostfound} />
+              <Text style={[styles.pickerModalOptTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                {t.lf.takePhoto}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.pickerModalOpt, { backgroundColor: C.surface2 }]}
+              onPress={pickFromGallery}
+              activeOpacity={0.75}
+            >
+              <Feather name="image" size={18} color={Accent.blue} />
+              <Text style={[styles.pickerModalOptTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                {t.lf.chooseGallery}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.pickerCancelBtn}
+              onPress={() => setPhotoPickerVisible(false)}
+              activeOpacity={0.75}
+            >
+              <Text style={[styles.pickerCancelTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                {t.common.cancel}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
-  content: { paddingTop: 12, paddingBottom: 20 } as ViewStyle,
+  content: { paddingTop: 10, paddingBottom: 24 } as ViewStyle,
 
-  label: { fontSize: 13, marginBottom: 8, marginTop: 16 } as any,
+  label: { fontSize: 13, marginBottom: 8, marginTop: 16 } as TextStyle,
 
   typeToggle: {
     flexDirection: 'row',
     borderRadius: 14,
     borderWidth: 1,
-    padding: 5,
-    gap: 5,
+    padding: 4,
+    gap: 4,
   } as ViewStyle,
 
   typeBtn: {
@@ -367,75 +510,119 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 9,
-    borderRadius: 10,
+    gap: 7,
+    paddingVertical: 10,
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor: 'transparent',
   } as ViewStyle,
 
   typeDot: { width: 8, height: 8, borderRadius: 4 } as ViewStyle,
-  typeTxt: { fontSize: 14 } as any,
+  typeTxt: { fontSize: 14 } as TextStyle,
 
-  catGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 } as ViewStyle,
+  catGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 9,
+  } as ViewStyle,
 
-  catOpt: {
+  catCard: {
+    width: '48.5%',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
     paddingHorizontal: 12,
-    paddingVertical: 9,
-    borderRadius: 13,
+    paddingVertical: 11,
+    borderRadius: 14,
   } as ViewStyle,
 
   catIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 9,
+    width: 32,
+    height: 32,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
 
-  catLabel: { fontSize: 13 } as any,
+  catLabel: { fontSize: 13 } as TextStyle,
 
-  matchWrap: { marginTop: 14, borderRadius: 14, borderWidth: 1, padding: 12 } as ViewStyle,
-  matchHead: { fontSize: 11, letterSpacing: 0.6 } as any,
-  matchSub2: { fontSize: 12, marginTop: 3, marginBottom: 6, lineHeight: 16 } as any,
-  matchRow: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 8 } as ViewStyle,
+  matchWrap: {
+    marginTop: 14,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    padding: 13,
+  } as ViewStyle,
+  matchHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  } as ViewStyle,
+  matchHead: { fontSize: 12, letterSpacing: 0.5 } as TextStyle,
+  matchSub2: { fontSize: 12, marginTop: 4, marginBottom: 8, lineHeight: 17 } as TextStyle,
+  matchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 11,
+    padding: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 6,
+  } as ViewStyle,
   matchIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
-  matchName: { fontSize: 13.5 } as any,
-  matchLoc: { fontSize: 11.5, marginTop: 1 } as any,
+  matchName: { fontSize: 13.5 } as TextStyle,
+  matchLoc: { fontSize: 11.5, marginTop: 1 } as TextStyle,
 
   input: {
-    height: 50,
-    borderRadius: 14,
+    height: 48,
+    borderRadius: 13,
     borderWidth: 1.5,
     paddingHorizontal: 14,
-    fontSize: 15,
-  } as any,
+    fontSize: 14.5,
+  } as TextStyle,
+
+  quickLocRow: {
+    flexDirection: 'row',
+    gap: 6,
+    paddingTop: 8,
+    paddingBottom: 2,
+  } as ViewStyle,
+  quickLocChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5.5,
+    borderRadius: 10,
+    borderWidth: 1,
+  } as ViewStyle,
+  quickLocTxt: {
+    fontSize: 11.5,
+  } as TextStyle,
 
   textarea: {
-    borderRadius: 14,
+    borderRadius: 13,
     borderWidth: 1.5,
     paddingHorizontal: 14,
-    paddingTop: 13,
-    fontSize: 15,
-    minHeight: 110,
-  } as any,
+    paddingTop: 12,
+    fontSize: 14.5,
+    minHeight: 100,
+  } as TextStyle,
 
-  errText: { fontSize: 13, marginTop: 8 } as any,
+  errText: { fontSize: 13, marginTop: 8 } as TextStyle,
 
   submitBtn: {
-    height: 52,
-    borderRadius: 16,
+    height: 50,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
 
   btnRow: { flexDirection: 'row', alignItems: 'center', gap: 8 } as ViewStyle,
-  btnTxt: { fontSize: 15, color: '#fff' } as any,
+  btnTxt: { fontSize: 15, color: '#fff' } as TextStyle,
 
   photoUploadBtn: {
-    height: 52,
-    borderRadius: 14,
+    height: 50,
+    borderRadius: 13,
     borderWidth: 1.5,
     borderStyle: 'dashed',
     flexDirection: 'row',
@@ -443,7 +630,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
   } as ViewStyle,
-  photoUploadTxt: { fontSize: 13.5 } as any,
+  photoUploadTxt: { fontSize: 13.5 } as TextStyle,
 
   photoCard: {
     borderRadius: 14,
@@ -468,5 +655,42 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     borderRadius: 9,
   } as ViewStyle,
-  photoBtnTxt: { fontSize: 12 } as any,
+  photoBtnTxt: { fontSize: 12 } as TextStyle,
+
+  pickerModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+    padding: 16,
+  } as ViewStyle,
+  pickerModalSheet: {
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 18,
+    gap: 10,
+  } as ViewStyle,
+  pickerModalTitle: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 6,
+  } as TextStyle,
+  pickerModalOpt: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 9,
+    height: 48,
+    borderRadius: 13,
+  } as ViewStyle,
+  pickerModalOptTxt: {
+    fontSize: 14,
+  } as TextStyle,
+  pickerCancelBtn: {
+    alignItems: 'center',
+    paddingVertical: 8,
+    marginTop: 2,
+  } as ViewStyle,
+  pickerCancelTxt: {
+    fontSize: 13.5,
+  } as TextStyle,
 });

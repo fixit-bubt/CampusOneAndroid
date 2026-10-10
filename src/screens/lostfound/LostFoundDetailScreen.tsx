@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet, Image,
-  TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, type ViewStyle,
+  TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Modal, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
@@ -79,6 +80,7 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
   const [busy, setBusy] = useState(false);
   const [deciding, setDeciding] = useState<string | null>(null);
   const [contactSheetOpen, setContactSheetOpen] = useState(false);
+  const [fullscreenPhotoVisible, setFullscreenPhotoVisible] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
 
   const isMine = item?.poster_id === user?.id;
@@ -298,7 +300,12 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
           keyboardShouldPersistTaps="handled"
         >
         {/* Large category thumb / photo */}
-        <View style={[styles.thumbLg, { backgroundColor: bg }]}>
+        <TouchableOpacity
+          style={[styles.thumbLg, { backgroundColor: bg }]}
+          onPress={() => item.photo_url && setFullscreenPhotoVisible(true)}
+          activeOpacity={item.photo_url ? 0.9 : 1}
+          disabled={!item.photo_url}
+        >
           {item.photo_url ? (
             <Image
               source={{ uri: item.photo_url }}
@@ -314,7 +321,15 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
               {item.type}
             </Text>
           </View>
-        </View>
+          {item.photo_url ? (
+            <View style={styles.zoomHint}>
+              <Feather name="maximize-2" size={11} color="#fff" />
+              <Text style={[styles.zoomHintTxt, { fontFamily: FontFamily.jakartaMedium }]}>
+                {t.lf.viewFullPhoto}
+              </Text>
+            </View>
+          ) : null}
+        </TouchableOpacity>
 
         <Text style={[styles.title, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
           {item.title}
@@ -650,6 +665,44 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
           email={contact.email}
         />
       )}
+
+      {/* Full-screen Photo Viewer Modal */}
+      <Modal
+        visible={fullscreenPhotoVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setFullscreenPhotoVisible(false)}
+      >
+        <View style={styles.modalBg}>
+          <SafeAreaView style={styles.modalSafe}>
+            <View style={styles.modalTopBar}>
+              <Text style={[styles.modalTitle, { fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                {item.title}
+              </Text>
+              <TouchableOpacity
+                onPress={() => setFullscreenPhotoVisible(false)}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                style={styles.modalCloseBtn}
+              >
+                <Feather name="x" size={20} color="#fff" />
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity
+              style={styles.modalImgContainer}
+              activeOpacity={1}
+              onPress={() => setFullscreenPhotoVisible(false)}
+            >
+              {item.photo_url ? (
+                <Image
+                  source={{ uri: item.photo_url }}
+                  style={styles.modalFullImg}
+                  resizeMode="contain"
+                />
+              ) : null}
+            </TouchableOpacity>
+          </SafeAreaView>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -838,4 +891,60 @@ const styles = StyleSheet.create({
 
   btnRow: { flexDirection: 'row', alignItems: 'center', gap: 8 } as ViewStyle,
   btnTxt: { fontSize: 15 } as any,
+
+  zoomHint: {
+    position: 'absolute',
+    bottom: 10,
+    right: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    paddingHorizontal: 9,
+    paddingVertical: 4.5,
+    borderRadius: 20,
+  } as ViewStyle,
+  zoomHintTxt: {
+    color: '#fff',
+    fontSize: 11,
+  } as any,
+
+  modalBg: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.94)',
+  } as ViewStyle,
+  modalSafe: {
+    flex: 1,
+  } as ViewStyle,
+  modalTopBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Layout.screenPadding,
+    paddingVertical: 12,
+  } as ViewStyle,
+  modalTitle: {
+    color: '#fff',
+    fontSize: 16,
+    flex: 1,
+    marginRight: 16,
+  } as TextStyle,
+  modalCloseBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  modalImgContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+  } as ViewStyle,
+  modalFullImg: {
+    width: '100%',
+    height: '100%',
+  } as any,
 });

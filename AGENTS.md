@@ -579,3 +579,35 @@ Whenever the user instructs to "update memorys", the agent MUST synchronously up
 - **Peer-to-Peer Services:** Market listings, ride shares, lost and found items, and blood donor requests display cached feeds. Action mutations (contact reveal RPCs, seat booking, claim posting, pledges) are safely guarded with warning toasts when offline.
 - **Messaging & Notifications:** Message history, DM channels, read states, and notifications are cached locally, allowing students to review past conversations without internet.
 - **Web & AI Guards:** BUBT Annex portal shows a dedicated offline fallback card with a retry button instead of a broken webview. AI Chatbot displays cached conversation history and graceful offline notifications.
+
+---
+
+## 22. Lost & Found Varsity Architecture & Ergonomics
+
+### 22.1 Hero Action Bar & Header Ergonomics (`LostFoundBrowseScreen.tsx`)
+- **Prohibition:** Eliminates cramped corner `[+]` icon from `SubBar.rightSlot`.
+- **Hero Action Bar:** Positioned directly below the header in the primary thumb strike zone. 44dp height, `borderRadius: 12`, `SectorColors.lostfound` (`#c77d1a`) background, 13.5px bold white text with `plus-circle` icon: `"+ Report Lost or Found Item"`.
+- **Role Scoping:** Only displayed for students (`isStudent`), matching campus permission rules.
+
+### 22.2 Unified Segmented Track Switcher (`LostFoundBrowseScreen.tsx`)
+- **Full-Width Track Container:** `C.surface2` track with 4 tabs: `All`, `Lost`, `Found`, `My Posts`.
+- **Live Badge Counters:** Real-time item count badges per tab that dynamically track active items.
+- **Visual Parity:** Matches `BloodScreen` and `HomeCommunityUpdates` 1:1.
+
+### 22.3 Unified Search Bar & Quick Categories
+- **Zero-Lag Native Search:** Direct native `<View>` with 42dp height, search icon, full-height `TextInput`, and instant clear `✕`. Searches across item title, room/building location, description, and category with `keyboardDismissMode="on-drag"` and `keyboardShouldPersistTaps="handled"`.
+- **Horizontal Category Quick Chips:** 1-tap filtering across `All`, `Personal`, `Electronics`, `Documents`, and `Other` with semantic icons and theme-safe `pillBg` tinting.
+- **Active Status Filter:** Quick filter between `Active only` (default), `Resolved only`, and `All`.
+- **Interactive Empty State:** High-contrast empty state with 1-tap `[Reset Filters]` button when queries match 0 items.
+
+### 22.4 Full-Screen Photo Viewer (`LostFoundDetailScreen.tsx`)
+- **Tap-to-View Modal:** Tapping the 190dp hero image card opens a full-screen image modal (`rgba(0,0,0,0.94)` background, close button `✕`, title header, and `resizeMode="contain"` uncropped view), allowing students to inspect fine details like student ID numbers, serial codes, marks, or room numbers.
+- **Zoom Hint Badge:** Anchored `Tap to view full photo` pill with `maximize-2` icon on the hero banner.
+
+### 22.5 Post Item Form Ergonomics (`PostItemFormScreen.tsx`)
+- **High-Contrast Type Selector:** Soft crimson tint for `Lost` (`C.dangerBg`, border `C.danger`) and soft emerald tint for `Found` (`C.successBg`, border `C.success`).
+- **Symmetrical 2×2 Category Grid:** Balanced 2-column cards with squircle icon boxes and active borders.
+- **Camera & Gallery Photo Picker:** Action sheet supporting both direct camera capture (`takePhotoWithCamera`) and media library selection (`pickFromGallery`).
+- **Campus Location Quick Chips:** 1-tap campus location chips (`Library`, `Cafeteria`, `Building 2`, `Room 402`, `Exam Hall`, `Mosque`, `Computer Lab`, `Campus Grounds`).
+- **Smart Pre-Post Match Banner:** Amber alert card with lightbulb icon alerting students if a matching item was already reported before submission.
+- **Dynamic Action Button:** Dynamic type-aware colors and labels (`Post Lost Report` in crimson vs `Post Found Item` in emerald).
