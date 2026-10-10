@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
-  RefreshControl, Alert, TextInput, Keyboard, type ViewStyle, type TextStyle,
+  RefreshControl, Alert, TextInput, Keyboard, Animated, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -54,10 +54,44 @@ function GroupBadge({ group, size = 46 }: { group: string; size?: number }) {
 }
 
 export function BloodScreen({ navigation }: any) {
-  const { C } = useTheme();
+  const { C, isDark } = useTheme();
   const { user } = useAuth();
   const t = useT();
   const [tab, setTab] = useState<Tab>('requests');
+
+  // Segmented track animated indicator & theme colors
+  const animIndex = useRef(new Animated.Value(0)).current;
+  const [trackWidth, setTrackWidth] = useState(0);
+
+  const tabIndexMap: Record<Tab, number> = useMemo(
+    () => ({ requests: 0, donors: 1 }),
+    []
+  );
+
+  useEffect(() => {
+    const idx = tabIndexMap[tab] ?? 0;
+    Animated.spring(animIndex, {
+      toValue: idx,
+      tension: 68,
+      friction: 10,
+      useNativeDriver: true,
+    }).start();
+  }, [tab, animIndex, tabIndexMap]);
+
+  const TAB_COLORS: Record<Tab, { fg: string; bg: string }> = useMemo(
+    () => ({
+      requests: {
+        fg: C.danger, // Crimson (#d63d35)
+        bg: isDark ? 'rgba(214, 61, 53, 0.18)' : '#FEE2E2',
+      },
+      donors: {
+        fg: C.success, // Emerald (#16a34a)
+        bg: isDark ? 'rgba(22, 163, 74, 0.18)' : '#DCFCE7',
+      },
+    }),
+    [C.danger, C.success, isDark]
+  );
+
   const [groupFilter, setGroupFilter] = useState('All');
   const [areaFilter, setAreaFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
@@ -322,6 +356,14 @@ export function BloodScreen({ navigation }: any) {
   donors.forEach(d => { donorGroups[d.blood_group] = (donorGroups[d.blood_group] ?? 0) + 1; });
   const bloodTypes = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
 
+  const TRACK_PADDING = 3;
+  const innerTrackWidth = Math.max(0, trackWidth - TRACK_PADDING * 2);
+  const tabWidth = innerTrackWidth > 0 ? innerTrackWidth / 2 : 0;
+  const translateX = animIndex.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, tabWidth],
+  });
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar title={t.blood2.bloodDonation} onBack={() => navigation.goBack()} />
@@ -427,26 +469,67 @@ export function BloodScreen({ navigation }: any) {
         </TouchableOpacity>
       )}
 
-      {/* Segmented Tab Switcher */}
-      <View style={[styles.tabContainer, { backgroundColor: C.surface2 }]}>
+      {/* Unified Segmented Tab Switcher with Native Spring Animation & Colors */}
+      <View
+        style={[styles.tabContainer, { backgroundColor: C.surface2 }]}
+        onLayout={e => setTrackWidth(e.nativeEvent.layout.width)}
+      >
+        {tabWidth > 0 && (
+          <Animated.View
+            style={[
+              styles.activeIndicator,
+              {
+                width: tabWidth,
+                transform: [{ translateX }],
+                backgroundColor: C.surface,
+                borderColor: isDark ? `${TAB_COLORS[tab].fg}55` : `${TAB_COLORS[tab].fg}35`,
+              },
+            ]}
+          />
+        )}
         {(['requests', 'donors'] as Tab[]).map(tb => {
           const active = tab === tb;
+          const cfg = TAB_COLORS[tb];
+          const count = tb === 'requests' ? requests.length : donors.length;
           return (
             <TouchableOpacity
               key={tb}
-              style={[
-                styles.tabBtn,
-                active && { backgroundColor: C.surface, elevation: 1 },
-              ]}
+              style={styles.tabBtn}
               onPress={() => setTab(tb)}
-              activeOpacity={0.8}
+              activeOpacity={0.75}
             >
-              <Text style={[styles.tabBtnTxt, { color: active ? C.text : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+              <Text
+                style={[
+                  styles.tabBtnTxt,
+                  {
+                    color: active ? cfg.fg : C.textMuted,
+                    fontFamily: FontFamily.jakartaBold,
+                  },
+                ]}
+                numberOfLines={1}
+              >
                 {tb === 'requests' ? t.blood2.requestsTab : t.blood2.donorsTab}
               </Text>
-              <View style={[styles.tabBadge, { backgroundColor: active ? `${SectorColors.blood}20` : C.border }]}>
-                <Text style={[styles.tabBadgeTxt, { color: active ? SectorColors.blood : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                  {tb === 'requests' ? requests.length : donors.length}
+              <View
+                style={[
+                  styles.tabBadge,
+                  {
+                    backgroundColor: active
+                      ? cfg.bg
+                      : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.border),
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.tabBadgeTxt,
+                    {
+                      color: active ? cfg.fg : C.textMuted,
+                      fontFamily: FontFamily.jakartaBold,
+                    },
+                  ]}
+                >
+                  {count}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -904,11 +987,25 @@ const styles = StyleSheet.create({
   } as any,
   tabContainer: {
     flexDirection: 'row',
-    borderRadius: 12,
+    borderRadius: 14,
     padding: 3,
     marginHorizontal: Layout.screenPadding,
     marginTop: 6,
     marginBottom: 8,
+    position: 'relative',
+  } as ViewStyle,
+  activeIndicator: {
+    position: 'absolute',
+    top: 3,
+    left: 3,
+    bottom: 3,
+    borderRadius: 11,
+    borderWidth: 1.5,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1.5 },
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
   } as ViewStyle,
   tabBtn: {
     flex: 1,
@@ -917,7 +1014,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     paddingVertical: 8,
-    borderRadius: 10,
+    borderRadius: 11,
+    zIndex: 1,
   } as ViewStyle,
   tabBtnTxt: { fontSize: 13 } as any,
   tabBadge: {

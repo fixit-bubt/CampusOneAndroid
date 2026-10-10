@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   ScrollView,
   StyleSheet,
   ActivityIndicator,
+  Animated,
   type ViewStyle,
   type ImageSourcePropType,
 } from 'react-native';
@@ -131,6 +132,48 @@ export function HomeCommunityUpdates() {
   const { C, isDark } = useTheme();
 
   const [activeTab, setActiveTab] = useState<CommunityTab>('All');
+
+  // Segmented track animated indicator & theme colors
+  const animIndex = useRef(new Animated.Value(0)).current;
+  const [trackWidth, setTrackWidth] = useState(0);
+
+  const tabIndexMap: Record<CommunityTab, number> = useMemo(
+    () => ({ All: 0, Notices: 1, Clubs: 2, Events: 3 }),
+    []
+  );
+
+  useEffect(() => {
+    const idx = tabIndexMap[activeTab] ?? 0;
+    Animated.spring(animIndex, {
+      toValue: idx,
+      tension: 68,
+      friction: 10,
+      useNativeDriver: true,
+    }).start();
+  }, [activeTab, animIndex, tabIndexMap]);
+
+  const TAB_COLORS: Record<CommunityTab, { fg: string; bg: string }> = useMemo(
+    () => ({
+      All: {
+        fg: C.brand,
+        bg: isDark ? 'rgba(37, 99, 235, 0.18)' : '#DBEAFE',
+      },
+      Notices: {
+        fg: SectorColors.announce,
+        bg: isDark ? 'rgba(234, 88, 12, 0.18)' : '#FFEDD5',
+      },
+      Clubs: {
+        fg: SectorColors.clubs,
+        bg: isDark ? 'rgba(5, 150, 105, 0.18)' : '#D1FAE5',
+      },
+      Events: {
+        fg: SectorColors.events,
+        bg: isDark ? 'rgba(139, 92, 246, 0.18)' : '#EDE9FE',
+      },
+    }),
+    [C.brand, isDark]
+  );
+
   const [items, setItems] = useState<CommunityItem[]>(DEFAULT_NEWS);
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
@@ -291,6 +334,14 @@ export function HomeCommunityUpdates() {
     { id: 'Events', label: 'Events', icon: 'calendar', color: SectorColors.events },
   ];
 
+  const TRACK_PADDING = 3;
+  const innerTrackWidth = Math.max(0, trackWidth - TRACK_PADDING * 2);
+  const tabWidth = innerTrackWidth > 0 ? innerTrackWidth / 4 : 0;
+  const translateX = animIndex.interpolate({
+    inputRange: [0, 1, 2, 3],
+    outputRange: [0, tabWidth, tabWidth * 2, tabWidth * 3],
+  });
+
   return (
     <View style={styles.container}>
       {/* Section Header */}
@@ -309,42 +360,47 @@ export function HomeCommunityUpdates() {
         </View>
       </View>
 
-      {/* Segmented Tab Switcher (Matches BloodScreen Segmented Tabs) */}
-      <View style={[styles.tabContainer, { backgroundColor: C.surface2, borderColor: C.border }]}>
+      {/* Segmented Tab Switcher with Native Spring Animation & Colors */}
+      <View
+        style={[styles.tabContainer, { backgroundColor: C.surface2 }]}
+        onLayout={e => setTrackWidth(e.nativeEvent.layout.width)}
+      >
+        {tabWidth > 0 && (
+          <Animated.View
+            style={[
+              styles.activeIndicator,
+              {
+                width: tabWidth,
+                transform: [{ translateX }],
+                backgroundColor: C.surface,
+                borderColor: isDark ? `${TAB_COLORS[activeTab].fg}55` : `${TAB_COLORS[activeTab].fg}35`,
+              },
+            ]}
+          />
+        )}
         {tabs.map((tab) => {
           const active = activeTab === tab.id;
           const count = counts[tab.id];
-          const activeBadgeBg = isDark ? `${tab.color}30` : `${tab.color}1a`;
+          const cfg = TAB_COLORS[tab.id];
 
           return (
             <TouchableOpacity
               key={tab.id}
-              style={[
-                styles.tabBtn,
-                active && {
-                  backgroundColor: C.surface,
-                  borderColor: isDark ? C.border2 : 'rgba(0,0,0,0.06)',
-                  elevation: 2,
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 2,
-                },
-              ]}
+              style={styles.tabBtn}
               onPress={() => setActiveTab(tab.id)}
-              activeOpacity={0.8}
+              activeOpacity={0.75}
             >
               <Feather
                 name={tab.icon}
                 size={12}
-                color={active ? tab.color : C.textMuted}
+                color={active ? cfg.fg : C.textMuted}
               />
               <Text
                 style={[
                   styles.tabBtnTxt,
                   {
-                    color: active ? C.text : C.textMuted,
-                    fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                    color: active ? cfg.fg : C.textMuted,
+                    fontFamily: FontFamily.jakartaBold,
                   },
                 ]}
                 numberOfLines={1}
@@ -357,7 +413,9 @@ export function HomeCommunityUpdates() {
                 style={[
                   styles.tabBadge,
                   {
-                    backgroundColor: active ? activeBadgeBg : isDark ? C.surface : C.border,
+                    backgroundColor: active
+                      ? cfg.bg
+                      : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.border),
                   },
                 ]}
               >
@@ -365,7 +423,7 @@ export function HomeCommunityUpdates() {
                   style={[
                     styles.tabBadgeTxt,
                     {
-                      color: active ? tab.color : C.textMuted,
+                      color: active ? cfg.fg : C.textMuted,
                       fontFamily: FontFamily.jakartaBold,
                     },
                   ]}
@@ -578,11 +636,25 @@ const styles = StyleSheet.create({
 
   tabContainer: {
     flexDirection: 'row',
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 14,
     padding: 3,
     marginBottom: 10,
     marginTop: 2,
+    position: 'relative',
+  } as ViewStyle,
+
+  activeIndicator: {
+    position: 'absolute',
+    top: 3,
+    left: 3,
+    bottom: 3,
+    borderRadius: 11,
+    borderWidth: 1.5,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1.5 },
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
   } as ViewStyle,
 
   tabBtn: {
@@ -590,11 +662,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 5,
+    gap: 4,
     paddingVertical: 7,
-    borderRadius: 9,
-    borderWidth: 1,
-    borderColor: 'transparent',
+    borderRadius: 11,
+    zIndex: 1,
   } as ViewStyle,
 
   tabBtnTxt: {

@@ -660,15 +660,16 @@ Segmented tab switcher tracks are used throughout CampusOne to toggle between co
 ### 23.3 Comprehensive CampusOne Segmented Track Catalog
 The following screens contain segmented control bars slated for this animated pattern:
 1. **Lost & Found (`LostFoundBrowseScreen.tsx`):** `All` (Sector Amber) · `Lost` (Crimson) · `Found` (Emerald) · `My Posts` (Violet) [Implemented].
-2. **Blood Donation (`BloodScreen.tsx`):** `Requests` (Blood Crimson) vs `Donors` (Medical Cyan / Emerald) (2 tabs).
-3. **Student Jobs (`JobsBrowseScreen.tsx`):** `Open` (Emerald) · `Closing Soon` (Amber) · `Expired` (Slate) · `Saved` (Rose/Pink) (4 tabs).
-4. **Marketplace (`MarketScreen.tsx`):** `All Listings` (Slate/Brand) vs `My Listings` (Market Amber) (2 tabs).
-5. **Campus Rides (`RidesScreen.tsx`):** `All` (Ride Cyan) · `To Campus` (Emerald) · `From Campus` (Royal Blue) (3 tabs).
-6. **Campus Events (`EventsBrowseScreen.tsx`):** `Upcoming` (Violet) vs `Past` (Muted Slate) (2 tabs).
-7. **Class & Exam Routines (`RoutinesBrowseScreen.tsx`):** `Class Routines` (Indigo) vs `Exam Routines` (Orange) (2 tabs).
-8. **Study Hub Course Details (`CourseDetailScreen.tsx`):** `Materials` (Amber) · `Questions` (Blue) · `Books` (Emerald) · `Saved` (Violet) (4 tabs).
-9. **Campus Issues & Reports (`CampusIssuesScreen.tsx`, `MyReportsScreen.tsx`, `AssignedToMeScreen.tsx`, `AllReportsScreen.tsx`):** Status switchers (`All` · `Open` · `In Progress` · `Resolved`).
-10. **Notifications (`NotificationsScreen.tsx`):** `All` (Slate) vs `Unread` (Crimson) (2 tabs).
-11. **Club Details (`ClubDetailScreen.tsx`):** `Feed` (Club Accent) vs `Members` (Indigo) (2 tabs).
-12. **Admin Management (`ManageStaffScreen.tsx` & `JobsModerateScreen.tsx`):** `Staff` vs `Admins` (2 tabs), `Reported` vs `Removed` (2 tabs).
+2. **Blood Donation (`BloodScreen.tsx`):** `Requests` (Blood Crimson `#d63d35`) vs `Donors` (Medical Emerald `#16a34a`) [Implemented].
+3. **Home Community Updates (`HomeCommunityUpdates.tsx`):** `All` (Brand Blue `#2563eb`) · `Notices` (Announce Orange `#ea580c`) · `Clubs` (Emerald `#059669`) · `Events` (Violet `#8b5cf6`) [Implemented].
+4. **Student Jobs (`JobsBrowseScreen.tsx`):** `Open` (Emerald) · `Closing Soon` (Amber) · `Expired` (Slate) · `Saved` (Rose/Pink) (4 tabs).
+5. **Marketplace (`MarketScreen.tsx`):** `All Listings` (Slate/Brand) vs `My Listings` (Market Amber) (2 tabs).
+6. **Campus Rides (`RidesScreen.tsx`):** `All` (Ride Cyan) · `To Campus` (Emerald) · `From Campus` (Royal Blue) (3 tabs).
+7. **Campus Events (`EventsBrowseScreen.tsx`):** `Upcoming` (Violet) vs `Past` (Muted Slate) (2 tabs).
+8. **Class & Exam Routines (`RoutinesBrowseScreen.tsx`):** `Class Routines` (Indigo) vs `Exam Routines` (Orange) (2 tabs).
+9. **Study Hub Course Details (`CourseDetailScreen.tsx`):** `Materials` (Amber) · `Questions` (Blue) · `Books` (Emerald) · `Saved` (Violet) (4 tabs).
+10. **Campus Issues & Reports (`CampusIssuesScreen.tsx`, `MyReportsScreen.tsx`, `AssignedToMeScreen.tsx`, `AllReportsScreen.tsx`):** Status switchers (`All` · `Open` · `In Progress` · `Resolved`).
+11. **Notifications (`NotificationsScreen.tsx`):** `All` (Slate) vs `Unread` (Crimson) (2 tabs).
+12. **Club Details (`ClubDetailScreen.tsx`):** `Feed` (Club Accent) vs `Members` (Indigo) (2 tabs).
+13. **Admin Management (`ManageStaffScreen.tsx` & `JobsModerateScreen.tsx`):** `Staff` vs `Admins` (2 tabs), `Reported` vs `Removed` (2 tabs).
 
