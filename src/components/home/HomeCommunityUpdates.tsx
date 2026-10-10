@@ -298,78 +298,74 @@ export function HomeCommunityUpdates() {
         </View>
       </View>
 
-      {/* Luxury Filter Pills Row */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.pillsScroll}
-      >
+      {/* Segmented Tab Switcher (Matches BloodScreen Segmented Tabs) */}
+      <View style={[styles.tabContainer, { backgroundColor: C.surface2, borderColor: C.border }]}>
         {tabs.map((tab) => {
-          const isActive = activeTab === tab.id;
+          const active = activeTab === tab.id;
           const count = counts[tab.id];
-
-          let pillBg = C.surface;
-          let pillBorder = C.border;
-          let textColor = C.textMuted;
-          let iconColor = C.textMuted;
-          let countColor = C.textMuted;
-
-          if (isActive) {
-            if (tab.id === 'All') {
-              pillBg = isDark ? C.surface2 : '#0f172a';
-              pillBorder = isDark ? C.text2 : '#0f172a';
-              textColor = isDark ? C.text : C.white;
-              iconColor = isDark ? C.text : C.white;
-              countColor = isDark ? C.textMuted : 'rgba(255,255,255,0.7)';
-            } else {
-              pillBg = isDark ? `${tab.color}1e` : `${tab.color}14`;
-              pillBorder = tab.color;
-              textColor = tab.color;
-              iconColor = tab.color;
-              countColor = tab.color;
-            }
-          }
+          const activeBadgeBg = isDark ? `${tab.color}30` : `${tab.color}1a`;
 
           return (
             <TouchableOpacity
               key={tab.id}
-              activeOpacity={0.75}
-              onPress={() => setActiveTab(tab.id)}
               style={[
-                styles.pill,
-                {
-                  backgroundColor: pillBg,
-                  borderColor: pillBorder,
+                styles.tabBtn,
+                active && {
+                  backgroundColor: C.surface,
+                  borderColor: isDark ? C.border2 : 'rgba(0,0,0,0.06)',
+                  elevation: 2,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 2,
                 },
               ]}
+              onPress={() => setActiveTab(tab.id)}
+              activeOpacity={0.8}
             >
-              <Feather name={tab.icon} size={13} color={iconColor} />
+              <Feather
+                name={tab.icon}
+                size={12}
+                color={active ? tab.color : C.textMuted}
+              />
               <Text
                 style={[
-                  styles.pillLabel,
+                  styles.tabBtnTxt,
                   {
-                    color: textColor,
-                    fontFamily: isActive ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                    color: active ? C.text : C.textMuted,
+                    fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
                   },
                 ]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.85}
               >
                 {tab.label}
               </Text>
-              <Text
+              <View
                 style={[
-                  styles.pillCount,
+                  styles.tabBadge,
                   {
-                    color: countColor,
-                    fontFamily: FontFamily.jakartaBold,
+                    backgroundColor: active ? activeBadgeBg : isDark ? C.surface : C.border,
                   },
                 ]}
               >
-                · {count}
-              </Text>
+                <Text
+                  style={[
+                    styles.tabBadgeTxt,
+                    {
+                      color: active ? tab.color : C.textMuted,
+                      fontFamily: FontFamily.jakartaBold,
+                    },
+                  ]}
+                >
+                  {count}
+                </Text>
+              </View>
             </TouchableOpacity>
           );
         })}
-      </ScrollView>
+      </View>
 
       {/* Feed List */}
       {loading ? (
@@ -569,29 +565,42 @@ const styles = StyleSheet.create({
     fontSize: 10.5,
   },
 
-  pillsScroll: {
+  tabContainer: {
     flexDirection: 'row',
-    gap: 8,
-    paddingBottom: 10,
-    paddingHorizontal: 2,
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 3,
+    marginBottom: 10,
+    marginTop: 2,
   } as ViewStyle,
 
-  pill: {
-    height: 34,
-    borderRadius: 17,
-    borderWidth: 1,
-    paddingHorizontal: 12,
+  tabBtn: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    justifyContent: 'center',
+    gap: 5,
+    paddingVertical: 7,
+    borderRadius: 9,
+    borderWidth: 1,
+    borderColor: 'transparent',
   } as ViewStyle,
 
-  pillLabel: {
+  tabBtnTxt: {
     fontSize: 12,
   },
 
-  pillCount: {
-    fontSize: 11,
+  tabBadge: {
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 999,
+    minWidth: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+
+  tabBadgeTxt: {
+    fontSize: 10.5,
   },
 
   loadingBox: {
