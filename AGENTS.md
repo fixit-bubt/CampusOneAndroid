@@ -594,11 +594,15 @@ Whenever the user instructs to "update memorys", the agent MUST synchronously up
 - **Live Badge Counters:** Real-time item count badges per tab that dynamically track active items.
 - **Visual Parity:** Matches `BloodScreen` and `HomeCommunityUpdates` 1:1.
 
-### 22.3 Unified Search Bar & Quick Categories
-- **Zero-Lag Native Search:** Direct native `<View>` with 42dp height, search icon, full-height `TextInput`, and instant clear `✕`. Searches across item title, room/building location, description, and category with `keyboardDismissMode="on-drag"` and `keyboardShouldPersistTaps="handled"`.
-- **Horizontal Category Quick Chips:** 1-tap filtering across `All`, `Personal`, `Electronics`, `Documents`, and `Other` with semantic icons and theme-safe `pillBg` tinting.
-- **Active Status Filter:** Quick filter between `Active only` (default), `Resolved only`, and `All`.
-- **Interactive Empty State:** High-contrast empty state with 1-tap `[Reset Filters]` button when queries match 0 items.
+### 22.3 Unified Single-Row Search & Bottom Sheet Filter Modal (`LostFoundBrowseScreen.tsx`)
+- **Zero Loose Chips Clutter:** Completely eliminates cluttered horizontal scrolling category chips and loose status pills from the main feed screen.
+- **Single 42dp Row:** Search input on the left (`flex: 1`, search icon, full-height `TextInput`, instant clear `✕`) paired side-by-side with a compact `Filters` button on the right (matching `BloodScreen` search + area trigger architecture).
+- **Active Filter Pill:** When filters are active (e.g. `category !== 'All'` or `status !== 'Open'`), the filter button highlights in sector amber (`${SectorColors.lostfound}18`), displays a filter count badge (e.g. `1`), and has a 1-tap `✕` clear button without needing to open the modal.
+- **Filter Bottom Sheet Modal:** Tapping `Filters` opens a sleek bottom sheet organized into two distinct sections:
+  - **STATUS:** `Active (Open only)` (default), `Resolved only`, `All (Active & Resolved)`.
+  - **CATEGORY:** `All Categories`, `Personal`, `Electronics`, `Documents`, and `Other` with semantic squircle icon boxes, descriptive hints, and real-time category counts.
+  - **Sheet Actions:** 1-tap `Reset` and `Apply Filters`.
+- **Feed Direct Placement:** The item card feed begins immediately beneath the single search/filter row with clean visual hierarchy.
 
 ### 22.4 Full-Screen Photo Viewer (`LostFoundDetailScreen.tsx`)
 - **Tap-to-View Modal:** Tapping the 190dp hero image card opens a full-screen image modal (`rgba(0,0,0,0.94)` background, close button `✕`, title header, and `resizeMode="contain"` uncropped view), allowing students to inspect fine details like student ID numbers, serial codes, marks, or room numbers.

@@ -832,6 +832,18 @@ export const bn: Dict = {
     quickLocations: "দ্রুত অবস্থান",
     viewFullPhoto: "পুরো ছবি দেখতে ট্যাপ করুন",
     myPosts: "আমার পোস্ট",
+    filtersTitle: "ফিল্টার",
+    filterBtn: "ফিল্টার",
+    applyFilters: "প্রয়োগ করুন",
+    reset: "রিসেট",
+    statusLabel: "স্ট্যাটাস",
+    statusOpenOnly: "সক্রিয় (কেবল উন্মুক্ত)",
+    statusResolvedOnly: "কেবল মীমাংসিত",
+    statusAllOnly: "সব (সক্রিয় ও মীমাংসিত)",
+    catPersonalHint: "আইডি কার্ড, মানিব্যাগ, চাবি, ব্যাগ",
+    catElectronicsHint: "ফোন, ল্যাপটপ, চার্জার, ক্যালকুলেটর",
+    catDocumentsHint: "প্রবেশপত্র, সনদ, ফাইল, নোট",
+    catOtherHint: "ছাতা, পোশাক, পানির বোতল, অন্যান্য",
   },
 
   mainx: {
