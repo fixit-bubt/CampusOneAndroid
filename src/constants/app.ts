@@ -50,7 +50,50 @@ export const JOB_TYPES: Record<string, string> = {
   internship: 'Internship',
   part_time: 'Part-time',
   full_time: 'Full-time',
+  on_campus: 'On-Campus',
+  tuition: 'Tuition',
+  freelance: 'Freelance / Gig',
 };
+
+// Job compensation types
+export const COMPENSATION_TYPES: Record<string, string> = {
+  paid: 'Paid / Stipend',
+  conveyance: 'Conveyance Only',
+  unpaid: 'Unpaid / Experience',
+  negotiable: 'Negotiable',
+};
+
+// University departments for job targeting
+export const JOB_DEPARTMENTS = [
+  { code: 'ALL', label: 'All Departments' },
+  { code: 'CSE', label: 'CSE' },
+  { code: 'EEE', label: 'EEE' },
+  { code: 'BBA', label: 'BBA' },
+  { code: 'ENG', label: 'English' },
+  { code: 'LAW', label: 'Law' },
+  { code: 'ECO', label: 'Economics' },
+  { code: 'MATH', label: 'Mathematics' },
+  { code: 'TEX', label: 'Textile' },
+  { code: 'CIVIL', label: 'Civil' },
+] as const;
+
+// Common Dhaka locations for campus jobs & tuition
+export const DHAKA_AREAS = [
+  'Mirpur-1',
+  'Mirpur-2',
+  'Mirpur-10',
+  'Mirpur-11',
+  'Mirpur-12',
+  'Mirpur-14',
+  'Rupnagar / BUBT Campus',
+  'Pallabi',
+  'Uttara',
+  'Dhanmondi',
+  'Mohakhali / Banani',
+  'Gulshan',
+  'Farmgate',
+  'Remote / Online',
+] as const;
 
 // Work modes
 export const WORK_MODES: Record<string, string> = {

@@ -17,6 +17,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
+import { adminRestoreJobListing } from '../../services/jobsService';
 
 const JOBS_COLOR = SectorColors.jobs;
 
@@ -65,8 +66,8 @@ export function JobsModerateScreen({ navigation }: any) {
   }
 
   async function restore(j: JobRow) {
-    const { error } = await supabase.rpc('job_admin_restore', { p_code: j.code });
-    if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
+    const res = await adminRestoreJobListing(j.code);
+    if (!res.success) { toast({ type: 'error', title: t.common.error, message: res.error }); return; }
     load();
   }
 

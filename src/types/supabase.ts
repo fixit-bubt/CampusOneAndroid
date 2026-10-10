@@ -1378,6 +1378,70 @@ export type Database = {
           },
         ]
       }
+      job_applications: {
+        Row: {
+          contact_phone: string | null
+          cover_note: string | null
+          created_at: string
+          id: string
+          job_id: string
+          resume_url: string | null
+          status: string
+          student_dept: string | null
+          student_id: string
+          student_name: string
+          updated_at: string
+        }
+        Insert: {
+          contact_phone?: string | null
+          cover_note?: string | null
+          created_at?: string
+          id?: string
+          job_id: string
+          resume_url?: string | null
+          status?: string
+          student_dept?: string | null
+          student_id: string
+          student_name: string
+          updated_at?: string
+        }
+        Update: {
+          contact_phone?: string | null
+          cover_note?: string | null
+          created_at?: string
+          id?: string
+          job_id?: string
+          resume_url?: string | null
+          status?: string
+          student_dept?: string | null
+          student_id?: string
+          student_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_applications_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_applications_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_applications_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       job_bookmarks: {
         Row: {
           created_at: string
@@ -1473,21 +1537,27 @@ export type Database = {
           apply_file_url: string | null
           apply_method: string
           apply_value: string | null
+          area_name: string | null
           club_id: string | null
           code: string
           company: string
+          compensation_type: string | null
           created_at: string
           deadline: string
           deleted_at: string | null
+          department_code: string | null
           description: string
           id: string
+          is_alumni_referral: boolean | null
           job_type: string
           location: string
+          min_semester: number | null
           posted_by: string
           posted_by_name: string
           removed_by: string | null
           removed_reason: string | null
           requirements: string | null
+          skills: string[] | null
           stipend: string | null
           title: string
           updated_at: string
@@ -1498,21 +1568,27 @@ export type Database = {
           apply_file_url?: string | null
           apply_method: string
           apply_value?: string | null
+          area_name?: string | null
           club_id?: string | null
           code?: string
           company: string
+          compensation_type?: string | null
           created_at?: string
           deadline: string
           deleted_at?: string | null
+          department_code?: string | null
           description: string
           id?: string
+          is_alumni_referral?: boolean | null
           job_type: string
           location: string
+          min_semester?: number | null
           posted_by: string
           posted_by_name: string
           removed_by?: string | null
           removed_reason?: string | null
           requirements?: string | null
+          skills?: string[] | null
           stipend?: string | null
           title: string
           updated_at?: string
@@ -1523,21 +1599,27 @@ export type Database = {
           apply_file_url?: string | null
           apply_method?: string
           apply_value?: string | null
+          area_name?: string | null
           club_id?: string | null
           code?: string
           company?: string
+          compensation_type?: string | null
           created_at?: string
           deadline?: string
           deleted_at?: string | null
+          department_code?: string | null
           description?: string
           id?: string
+          is_alumni_referral?: boolean | null
           job_type?: string
           location?: string
+          min_semester?: number | null
           posted_by?: string
           posted_by_name?: string
           removed_by?: string | null
           removed_reason?: string | null
           requirements?: string | null
+          skills?: string[] | null
           stipend?: string | null
           title?: string
           updated_at?: string
@@ -1590,8 +1672,10 @@ export type Database = {
           created_at: string
           description: string
           id: string
+          meetup_spot: string | null
           negotiable: boolean
           photo_url: string | null
+          photos: string[] | null
           price: number
           seller_id: string
           status: string
@@ -1606,8 +1690,10 @@ export type Database = {
           created_at?: string
           description: string
           id?: string
+          meetup_spot?: string | null
           negotiable?: boolean
           photo_url?: string | null
+          photos?: string[] | null
           price: number
           seller_id: string
           status?: string
@@ -1622,8 +1708,10 @@ export type Database = {
           created_at?: string
           description?: string
           id?: string
+          meetup_spot?: string | null
           negotiable?: boolean
           photo_url?: string | null
+          photos?: string[] | null
           price?: number
           seller_id?: string
           status?: string
@@ -2321,12 +2409,12 @@ export type Database = {
           id: string
           notes: string | null
           origin: string
+          post_type: string
           recurring: string[]
           seats_total: number
           time: string
           updated_at: string
           vehicle: string
-          post_type: string
         }
         Insert: {
           code?: string
@@ -2340,12 +2428,12 @@ export type Database = {
           id?: string
           notes?: string | null
           origin: string
+          post_type?: string
           recurring?: string[]
           seats_total: number
           time: string
           updated_at?: string
           vehicle: string
-          post_type?: string
         }
         Update: {
           code?: string
@@ -2359,12 +2447,12 @@ export type Database = {
           id?: string
           notes?: string | null
           origin?: string
+          post_type?: string
           recurring?: string[]
           seats_total?: number
           time?: string
           updated_at?: string
           vehicle?: string
-          post_type?: string
         }
         Relationships: [
           {

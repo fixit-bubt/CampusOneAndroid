@@ -149,7 +149,7 @@ The live Supabase database (`xhgpxvyqrufbbuivttmi`) is the single source of trut
 | **Blood Pledges** | `blood_pledges` | Columns: `request_id`, `donor_id`. Used when a student pledges "I can help". |
 | **Events** | `events` | Date column is `date` (NOT `event_date`); location is `venue` (NOT `location`). Whitelist: `event_organizers`. |
 | **Clubs** | `clubs` & `club_posts` | `clubs.about` (NOT `description`), filter `is_active = true`. Posts: `club_posts.body` (NOT `content`), `author_id`. |
-| **Jobs** | `jobs` | **NO status column**. Removed jobs have `deleted_at IS NOT NULL`. Withdraw a job by setting `deleted_at = now()`. |
+| **Jobs** | `jobs` & `job_applications` | **NO status column on jobs**. Removed jobs have `deleted_at IS NOT NULL`. Withdraw a job by setting `deleted_at = now()`. Types: `internship`, `tuition`, `on_campus`, `part_time`, `full_time`, `freelance`. Applications tracked in `job_applications` (`submitted`, `viewed`, `shortlisted`, `rejected`) with RLS & notification triggers. |
 | **Reports** | `reports` | Columns: `code`, `reporter_id`, `assigned_staff_id`, `status` (`'Open'`, `'In Progress'`, `'Resolved'`, `'Rejected'`, `'Closed'`). Trade assignment matches `profiles.expertise`. |
 | **Connections** | `connections` | `requester_id`, `addressee_id`, `status` (`'pending'`, `'accepted'`). Contact reveal via `student_profile_detail(p_target_id)` RPC. Atomic disconnect via `disconnect_student(p_target_id)` RPC. Event notification trigger `trg_notify_connection_event` for alerts and lockscreen push. |
 | **Medical** | `doctors` & `appointments` | Clinic is walk-in / directory only. Doctors: `room`. Appointments: `student_id`, `slot`, `date`. |

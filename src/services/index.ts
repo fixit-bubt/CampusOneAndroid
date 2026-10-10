@@ -3,3 +3,4 @@ export * from './reportsService';
 export * from './profileService';
 export * from './notificationsService';
 export * from './marketService';
+export * from './jobsService';

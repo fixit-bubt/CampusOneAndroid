@@ -135,8 +135,8 @@ const TOOLS = [
         parameters: {
           type: 'object',
           properties: {
-            jobType: { type: 'string', enum: ['internship', 'part_time', 'full_time'] },
-            query: { type: 'string', description: 'Free-text match against the job title, e.g. "developer"' },
+            jobType: { type: 'string', enum: ['internship', 'tuition', 'on_campus', 'part_time', 'full_time', 'freelance'] },
+            query: { type: 'string', description: 'Free-text match against the job title, e.g. "developer" or "math tuition"' },
           },
         },
       },
@@ -320,14 +320,14 @@ async function runTool(
   }
 
   if (name === 'get_jobs') {
-    const jobType = ['internship', 'part_time', 'full_time'].includes(args.jobType as string) ? (args.jobType as string) : '';
+    const jobType = ['internship', 'tuition', 'on_campus', 'part_time', 'full_time', 'freelance'].includes(args.jobType as string) ? (args.jobType as string) : '';
     const query = str(args.query);
     const today = new Date().toISOString().slice(0, 10);
     let filter = `&deadline=gte.${today}`;
     if (jobType) filter += `&job_type=eq.${encodeURIComponent(jobType)}`;
     if (query) filter += `&title=ilike.*${encodeURIComponent(escLike(query))}*`;
     const rows = await get(
-      `jobs?select=title,company,job_type,work_mode,location,stipend,deadline,apply_method,apply_value${filter}&order=deadline.asc&limit=10`,
+      `jobs?select=title,company,job_type,work_mode,location,area_name,department_code,stipend,deadline,apply_method,apply_value,skills${filter}&order=deadline.asc&limit=10`,
     );
     return { jobs: rows };
   }

@@ -79,10 +79,20 @@ export type Faculty = Tables<'faculty'>;
 
 export type Department = Tables<'departments'>;
 
-export type Job = Omit<Tables<'jobs'>, 'job_type' | 'work_mode' | 'apply_method'> & {
-  job_type: 'internship' | 'part_time' | 'full_time';
+export type Job = Omit<Tables<'jobs'>, 'job_type' | 'work_mode' | 'apply_method' | 'compensation_type'> & {
+  job_type: 'internship' | 'part_time' | 'full_time' | 'on_campus' | 'tuition' | 'freelance';
   work_mode: 'onsite' | 'remote' | 'hybrid';
   apply_method: 'link' | 'email' | 'file';
+  compensation_type?: 'paid' | 'conveyance' | 'unpaid' | 'negotiable' | null;
+  department_code?: string | null;
+  area_name?: string | null;
+  skills?: string[] | null;
+  is_alumni_referral?: boolean | null;
+  min_semester?: number | null;
+};
+
+export type JobApplication = Omit<Tables<'job_applications'>, 'status'> & {
+  status: 'submitted' | 'viewed' | 'shortlisted' | 'rejected';
 };
 
 export type Club = Omit<Tables<'clubs'>, 'category'> & {
