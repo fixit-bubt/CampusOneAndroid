@@ -10,7 +10,8 @@ import {
   type ViewStyle, type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
@@ -50,16 +51,88 @@ export interface Student {
   connState: ConnState;
 }
 
-const DEPARTMENTS = [
-  { id: 'All', name: 'All Departments', sub: 'Campus-wide search' },
-  { id: 'CSE', name: 'Computer Science & Engineering', sub: 'Faculty of Engineering & Applied Sciences' },
-  { id: 'EEE', name: 'Electrical & Electronic Engineering', sub: 'Faculty of Engineering & Applied Sciences' },
-  { id: 'BBA', name: 'Business Administration', sub: 'Faculty of Business' },
-  { id: 'Law', name: 'Department of Law', sub: 'Faculty of Law' },
-  { id: 'English', name: 'Department of English', sub: 'Faculty of Arts & Humanities' },
-  { id: 'Civil', name: 'Civil Engineering', sub: 'Faculty of Engineering & Applied Sciences' },
-  { id: 'Textile', name: 'Textile Engineering', sub: 'Faculty of Engineering & Applied Sciences' },
-  { id: 'Economics', name: 'Department of Economics', sub: 'Faculty of Social Sciences' },
+export interface DepartmentItem {
+  id: string;
+  code: string;
+  name: string;
+  faculty: string;
+  icon: React.ComponentProps<typeof Feather>['name'];
+  color: string;
+}
+
+const DEPARTMENTS: DepartmentItem[] = [
+  {
+    id: 'All',
+    code: 'All',
+    name: 'All Departments',
+    faculty: 'Campus-wide peer discovery',
+    icon: 'globe',
+    color: '#2563EB',
+  },
+  {
+    id: 'CSE',
+    code: 'CSE',
+    name: 'Computer Science & Engineering',
+    faculty: 'Faculty of Engineering & Applied Sciences',
+    icon: 'cpu',
+    color: '#0891B2',
+  },
+  {
+    id: 'EEE',
+    code: 'EEE',
+    name: 'Electrical & Electronic Engineering',
+    faculty: 'Faculty of Engineering & Applied Sciences',
+    icon: 'zap',
+    color: '#D97706',
+  },
+  {
+    id: 'BBA',
+    code: 'BBA',
+    name: 'Business Administration',
+    faculty: 'Faculty of Business',
+    icon: 'briefcase',
+    color: '#059669',
+  },
+  {
+    id: 'Law',
+    code: 'Law',
+    name: 'Department of Law',
+    faculty: 'Faculty of Law',
+    icon: 'shield',
+    color: '#E11D48',
+  },
+  {
+    id: 'English',
+    code: 'English',
+    name: 'Department of English',
+    faculty: 'Faculty of Arts & Humanities',
+    icon: 'book-open',
+    color: '#7C3AED',
+  },
+  {
+    id: 'Civil',
+    code: 'Civil',
+    name: 'Civil Engineering',
+    faculty: 'Faculty of Engineering & Applied Sciences',
+    icon: 'compass',
+    color: '#EA580C',
+  },
+  {
+    id: 'Textile',
+    code: 'Textile',
+    name: 'Textile Engineering',
+    faculty: 'Faculty of Engineering & Applied Sciences',
+    icon: 'layers',
+    color: '#DB2777',
+  },
+  {
+    id: 'Economics',
+    code: 'Economics',
+    name: 'Department of Economics',
+    faculty: 'Faculty of Social Sciences',
+    icon: 'trending-up',
+    color: '#4F46E5',
+  },
 ];
 
 const STATUS_MAP: Record<string, ConnState> = {
@@ -71,6 +144,7 @@ const STATUS_MAP: Record<string, ConnState> = {
 
 export function DirectoryScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
   const { user, profile } = useAuth();
   const { reload: reloadMessages } = useMessages();
   const t = useT();
@@ -87,6 +161,23 @@ export function DirectoryScreen({ navigation }: any) {
   const [isOffline, setIsOffline] = useState(false);
   const [actionBusy, setActionBusy] = useState<Record<string, boolean>>({});
   const [contactStudent, setContactStudent] = useState<Student | null>(null);
+
+  // Real-time student counts per department
+  const deptCounts = useMemo(() => {
+    const map: Record<string, number> = { ALL: students.length };
+    students.forEach(s => {
+      const d = s.department?.toUpperCase();
+      if (d) {
+        map[d] = (map[d] ?? 0) + 1;
+      }
+    });
+    return map;
+  }, [students]);
+
+  const currentDept = useMemo(
+    () => DEPARTMENTS.find(d => d.id.toLowerCase() === selectedDept.toLowerCase()) ?? DEPARTMENTS[0],
+    [selectedDept]
+  );
 
   // Segmented track native spring animation & width tracking
   const animIndex = useRef(new Animated.Value(0)).current;
@@ -421,25 +512,7 @@ export function DirectoryScreen({ navigation }: any) {
                 })}
               </View>
 
-              {/* Search Bar */}
-              <View style={[styles.searchBar, { backgroundColor: C.surface2, borderColor: C.border }]}>
-                <Icon name="search" size={17} color={C.textMuted} />
-                <TextInput
-                  style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
-                  placeholder={t.directory2.searchPlaceholderFull}
-                  placeholderTextColor={C.textMuted}
-                  value={query}
-                  onChangeText={setQuery}
-                  autoCapitalize="none"
-                />
-                {query.length > 0 && (
-                  <TouchableOpacity onPress={() => setQuery('')} hitSlop={8}>
-                    <Icon name="x" size={16} color={C.textMuted} />
-                  </TouchableOpacity>
-                )}
-              </View>
-
-              {/* Structured Dual Control Bar (Option 1: My Section + Department Picker) */}
+              {/* Structured Dual Control Bar (Option A: Sub-filters directly under Tabs) */}
               {tab === 'all' && (
                 <View style={styles.dualBarRow}>
                   {/* Left: My Section Cohort Button */}
@@ -494,7 +567,7 @@ export function DirectoryScreen({ navigation }: any) {
                     </View>
                   )}
 
-                  {/* Right: Department Picker Button */}
+                  {/* Right: Department Picker Button with Dynamic Signature Emblem */}
                   <TouchableOpacity
                     style={[
                       styles.dualBarBtn,
@@ -502,8 +575,8 @@ export function DirectoryScreen({ navigation }: any) {
                         ? [
                             styles.dualBarBtnActive,
                             {
-                              backgroundColor: isDark ? 'rgba(37, 99, 235, 0.18)' : C.brand50,
-                              borderColor: C.brand,
+                              backgroundColor: isDark ? `${currentDept.color}22` : `${currentDept.color}14`,
+                              borderColor: isDark ? `${currentDept.color}66` : currentDept.color,
                             },
                           ]
                         : [styles.dualBarBtnInactive, { backgroundColor: C.surface, borderColor: C.border }],
@@ -511,16 +584,16 @@ export function DirectoryScreen({ navigation }: any) {
                     onPress={() => setDeptModalVisible(true)}
                     activeOpacity={0.75}
                   >
-                    <Icon
-                      name="award"
+                    <Feather
+                      name={currentDept.icon}
                       size={14}
-                      color={selectedDept !== 'All' ? (isDark ? '#60a5fa' : C.brand) : C.text2}
+                      color={selectedDept !== 'All' ? (isDark ? '#fff' : currentDept.color) : C.text2}
                     />
                     <Text
                       style={[
                         styles.dualBarTxt,
                         {
-                          color: selectedDept !== 'All' ? (isDark ? '#60a5fa' : C.brand) : C.text,
+                          color: selectedDept !== 'All' ? (isDark ? '#fff' : currentDept.color) : C.text,
                           fontFamily: FontFamily.jakartaBold,
                         },
                       ]}
@@ -531,11 +604,29 @@ export function DirectoryScreen({ navigation }: any) {
                     <Icon
                       name="chevD"
                       size={14}
-                      color={selectedDept !== 'All' ? (isDark ? '#60a5fa' : C.brand) : C.textMuted}
+                      color={selectedDept !== 'All' ? (isDark ? '#fff' : currentDept.color) : C.textMuted}
                     />
                   </TouchableOpacity>
                 </View>
               )}
+
+              {/* Search Bar (Directly Above Results Feed) */}
+              <View style={[styles.searchBar, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                <Icon name="search" size={17} color={C.textMuted} />
+                <TextInput
+                  style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
+                  placeholder={t.directory2.searchPlaceholderFull}
+                  placeholderTextColor={C.textMuted}
+                  value={query}
+                  onChangeText={setQuery}
+                  autoCapitalize="none"
+                />
+                {query.length > 0 && (
+                  <TouchableOpacity onPress={() => setQuery('')} hitSlop={8}>
+                    <Icon name="x" size={16} color={C.textMuted} />
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
           }
           ListEmptyComponent={
@@ -715,7 +806,7 @@ export function DirectoryScreen({ navigation }: any) {
       <Modal
         visible={deptModalVisible}
         transparent
-        animationType="fade"
+        animationType="slide"
         onRequestClose={() => setDeptModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
@@ -724,29 +815,70 @@ export function DirectoryScreen({ navigation }: any) {
             activeOpacity={1}
             onPress={() => setDeptModalVisible(false)}
           />
-          <View style={[styles.modalSheet, { backgroundColor: C.surface, borderColor: C.border }]}>
+          <View
+            style={[
+              styles.modalSheet,
+              {
+                backgroundColor: C.surface,
+                borderColor: C.border,
+                paddingBottom: Math.max(insets.bottom, 20),
+              },
+            ]}
+          >
             <View style={[styles.modalHandle, { backgroundColor: C.border }]} />
+
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                Select Department
-              </Text>
+              <View style={styles.modalHeaderLeft}>
+                <View
+                  style={[
+                    styles.modalHeaderIcon,
+                    { backgroundColor: isDark ? 'rgba(37, 99, 235, 0.2)' : 'rgba(37, 99, 235, 0.1)' },
+                  ]}
+                >
+                  <Feather name="grid" size={17} color={SectorColors.directory} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.modalTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    Select Department
+                  </Text>
+                  <Text style={[styles.modalSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                    {students.length} students enrolled · 9 faculties
+                  </Text>
+                </View>
+              </View>
+
               <TouchableOpacity
                 onPress={() => setDeptModalVisible(false)}
-                hitSlop={8}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                style={[styles.modalCloseBtn, { backgroundColor: C.surface2 }]}
               >
-                <Icon name="x" size={18} color={C.textMuted} />
+                <Feather name="x" size={16} color={C.text} />
               </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 420 }}>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              style={{ maxHeight: 440 }}
+              contentContainerStyle={{ paddingBottom: 10 }}
+            >
               {DEPARTMENTS.map(d => {
-                const active = selectedDept === d.id;
+                const active = selectedDept.toLowerCase() === d.id.toLowerCase();
+                const count = deptCounts[d.id.toUpperCase()] ?? (d.id === 'All' ? students.length : 0);
+                const fg = d.color;
+                const iconBg = isDark ? `${fg}24` : `${fg}15`;
+
                 return (
                   <TouchableOpacity
                     key={d.id}
                     style={[
-                      styles.deptRow,
-                      active && { backgroundColor: C.surface2 },
+                      styles.deptCard,
+                      {
+                        backgroundColor: active
+                          ? (isDark ? 'rgba(255, 255, 255, 0.04)' : `${fg}08`)
+                          : C.surface,
+                        borderColor: active ? fg : C.border,
+                        borderWidth: active ? 1.5 : 1,
+                      },
                     ]}
                     onPress={() => {
                       setSelectedDept(d.id);
@@ -754,30 +886,67 @@ export function DirectoryScreen({ navigation }: any) {
                     }}
                     activeOpacity={0.75}
                   >
-                    <View style={styles.deptLeft}>
-                      <Icon
-                        name="award"
-                        size={15}
-                        color={active ? C.brand : C.textMuted}
-                      />
-                      <View>
+                    <View style={[styles.deptIconBox, { backgroundColor: iconBg }]}>
+                      <Feather name={d.icon} size={19} color={fg} />
+                    </View>
+
+                    <View style={styles.deptInfo}>
+                      <View style={styles.deptTitleRow}>
+                        <Text style={[styles.deptCodeTxt, { color: fg, fontFamily: FontFamily.jakartaBold }]}>
+                          {d.code}
+                        </Text>
+                        <Text style={[styles.deptDot, { color: C.textMuted }]}>·</Text>
                         <Text
                           style={[
-                            styles.deptTxt,
+                            styles.deptNameTxt,
                             {
-                              color: active ? C.brand : C.text,
-                              fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                              color: active ? C.text : C.text,
+                              fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaSemiBold,
+                            },
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {d.name}
+                        </Text>
+                      </View>
+                      <Text
+                        style={[styles.deptFacultyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}
+                        numberOfLines={1}
+                      >
+                        {d.faculty}
+                      </Text>
+                    </View>
+
+                    <View style={styles.deptRight}>
+                      <View
+                        style={[
+                          styles.deptCountBadge,
+                          {
+                            backgroundColor: active
+                              ? (isDark ? `${fg}30` : `${fg}18`)
+                              : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2),
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.deptCountTxt,
+                            {
+                              color: active ? fg : C.textMuted,
+                              fontFamily: FontFamily.jakartaBold,
                             },
                           ]}
                         >
-                          {d.id === 'All' ? d.name : `${d.id} · ${d.name}`}
-                        </Text>
-                        <Text style={[styles.deptSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                          {d.sub}
+                          {count}
                         </Text>
                       </View>
+
+                      {active && (
+                        <View style={[styles.deptCheckPill, { backgroundColor: fg }]}>
+                          <Feather name="check" size={11} color="#fff" />
+                        </View>
+                      )}
                     </View>
-                    {active && <Icon name="check" size={16} color={C.brand} />}
                   </TouchableOpacity>
                 );
               })}
@@ -853,23 +1022,12 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   tabBadgeTxt: { fontSize: 10.5 } as any,
 
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 9,
-    paddingHorizontal: 14,
-    borderRadius: 14,
-    borderWidth: 1,
-    marginBottom: 9,
-  } as ViewStyle,
-  searchInput: { flex: 1, fontSize: 14, paddingVertical: 11 } as TextStyle,
-
-  /* Option 1: Dual Control Bar */
+  /* Option A: Dual Control Bar Directly Below Tabs */
   dualBarRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 4,
+    marginBottom: 8,
   } as ViewStyle,
   dualBarBtn: {
     flex: 1,
@@ -889,6 +1047,18 @@ const styles = StyleSheet.create({
   dualBarTxt: {
     fontSize: 12.5,
   } as TextStyle,
+
+  /* Search Bar Directly Above Feed */
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginBottom: 10,
+  } as ViewStyle,
+  searchInput: { flex: 1, fontSize: 14, paddingVertical: 11 } as TextStyle,
 
   emptyLoading: { paddingVertical: 40, alignItems: 'center' } as ViewStyle,
   emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 48, paddingHorizontal: 24 } as ViewStyle,
@@ -1018,44 +1188,108 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingTop: 10,
     paddingHorizontal: Layout.screenPadding,
-    paddingBottom: 28,
+    maxHeight: '85%',
   } as ViewStyle,
   modalHandle: {
     width: 36,
     height: 4,
     borderRadius: 2,
     alignSelf: 'center',
-    marginBottom: 14,
+    marginBottom: 12,
   } as ViewStyle,
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    paddingBottom: 14,
   } as ViewStyle,
-  modalTitle: {
-    fontSize: 16,
-  } as TextStyle,
-  deptRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-    borderRadius: 12,
-    marginBottom: 2,
-  } as ViewStyle,
-  deptLeft: {
+  modalHeaderLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     flex: 1,
   } as ViewStyle,
-  deptTxt: {
-    fontSize: 13.5,
+  modalHeaderIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  modalTitle: {
+    fontSize: 16,
   } as TextStyle,
-  deptSub: {
-    fontSize: 11,
+  modalSub: {
+    fontSize: 11.5,
     marginTop: 1,
   } as TextStyle,
+  modalCloseBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+
+  deptCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 11,
+    padding: 11,
+    borderRadius: 14,
+    marginBottom: 8,
+  } as ViewStyle,
+  deptIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  } as ViewStyle,
+  deptInfo: {
+    flex: 1,
+    minWidth: 0,
+  } as ViewStyle,
+  deptTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  } as ViewStyle,
+  deptCodeTxt: {
+    fontSize: 13.5,
+  } as TextStyle,
+  deptDot: {
+    fontSize: 12,
+  } as TextStyle,
+  deptNameTxt: {
+    fontSize: 13,
+    flex: 1,
+  } as TextStyle,
+  deptFacultyTxt: {
+    fontSize: 11,
+    marginTop: 2,
+  } as TextStyle,
+
+  deptRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexShrink: 0,
+  } as ViewStyle,
+  deptCountBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  } as ViewStyle,
+  deptCountTxt: {
+    fontSize: 11,
+  } as TextStyle,
+  deptCheckPill: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
 });
