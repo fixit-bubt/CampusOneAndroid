@@ -252,9 +252,13 @@ export function MarketDetailScreen({ route, navigation }: any) {
   const isSold = listing.status === 'Sold';
   const isFree = (listing.price ?? 0) === 0;
 
-  // Condition color
+  // Condition color & localized label
   const condColor = listing.condition === 'New' ? '#059669' : listing.condition === 'Like New' ? '#2563EB' : '#64748B';
   const condBg = isDark ? `${condColor}2e` : `${condColor}14`;
+  const condLabel = listing.condition === 'New' ? t.market2.condNew : listing.condition === 'Like New' ? t.market2.condLikeNew : listing.condition === 'Used' ? t.market2.condUsed : (listing.condition ?? '');
+  const displayCatLabel = listing.category && !MK_CATS[listing.category.toLowerCase()]
+    ? listing.category
+    : (t.market2 as any)[`cat${catMeta.label.replace(/\s+/g, '')}`] ?? catMeta.label;
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -344,13 +348,13 @@ export function MarketDetailScreen({ route, navigation }: any) {
           <View style={[styles.pill, { backgroundColor: C.surface2 }]}>
             <Feather name={catMeta.icon} size={12} color={catMeta.fg} />
             <Text style={[styles.pillTxt, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>
-              {catMeta.label}
+              {displayCatLabel}
             </Text>
           </View>
 
           <View style={[styles.pill, { backgroundColor: condBg }]}>
             <Text style={[styles.pillTxt, { color: condColor, fontFamily: FontFamily.jakartaBold }]}>
-              {listing.condition}
+              {condLabel}
             </Text>
           </View>
 
@@ -406,7 +410,7 @@ export function MarketDetailScreen({ route, navigation }: any) {
         </Text>
         <TouchableOpacity
           style={[styles.sellerCard, { backgroundColor: C.surface, borderColor: C.border }]}
-          onPress={() => navigation.navigate('StudentProfile', { studentId: listing.seller_id })}
+          onPress={() => navigation.navigate('StudentProfile', { studentId: listing.seller_id, id: listing.seller_id })}
           activeOpacity={0.8}
         >
           <Avatar name={sellerProfile?.full_name ?? undefined} size="md" />

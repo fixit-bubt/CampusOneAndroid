@@ -827,6 +827,10 @@ The following screens contain segmented control bars slated for this animated pa
     - Performance composite indexes: `idx_listings_feed` on `(status, created_at desc)`, `idx_listings_course_code` on `(course_code)`, and `idx_listings_category` on `(category)`.
     - Additive physical meetup column: `meetup_spot text`.
     - Additive multi-photo column: `photos text[] DEFAULT '{}'`.
+  - `20261013020000_marketplace_360_hardening.sql`:
+    - Loosened restrictive `listings_category_check` to support custom categories (`char_length(category) >= 2`).
+    - Defensive idempotency on `meetup_spot text` and `photos text[] DEFAULT '{}'`.
+    - Performance composite indexes: `idx_listings_feed`, `idx_listings_category`, `idx_listings_course_code`, and `idx_listings_meetup_spot`.
 
 ### 26.2 Key Features & Enhancements
 1. **Prominent Hero Action Bar & Header Decluttering:**
@@ -880,5 +884,13 @@ The following screens contain segmented control bars slated for this animated pa
     - Synchronous cache invalidation across all mutations (`create`, `edit`, `sold`, `relist`, `delete`).
 14. **Native Sharing:**
     - Integrated native `Share.share` generating formatted listing summary for campus WhatsApp and social groups.
+15. **360° Marketplace Bug-Hunting & Hardening:**
+    - **Postgres Category Constraint Fix:** Loosened restrictive `check (category in (...))` from migration `0016` which broke new drafting/lab gear items and student custom category entries. Migration `20261013020000_marketplace_360_hardening.sql` safely replaced it with `check (char_length(category) >= 2)`, fully applied and verified on Supabase backend `xhgpxvyqrufbbuivttmi`.
+    - **Custom Category Feed Aggregation:** Unified feed counting and category filtering so custom-named categories dynamically map under "Other" filter badges without ever being hidden from campus feeds.
+    - **Price Sanitization:** Added strict regex sanitization `/[^0-9]/g` in `MarketPostScreen.tsx` preventing `NaN` crashing integer Postgres check constraints.
+    - **Upload Race Protection:** Added active upload state locks (`!uploading`) with `ActivityIndicator` feedback on image cards and submit buttons preventing premature form submission while photos are in-flight.
+    - **Edit Form Custom Category Roundtrip:** Fixed `MarketPostScreen.tsx` to pre-populate custom category text and set category dropdown to `'Other'` when editing custom-categorized listings.
+    - **Dual Photo Sync:** Populated both `photo_url` and `photos: [photoUri]` array upon creation and editing for backward compatibility and multi-photo array integrity.
+    - **Detail & Card Localization:** Localized condition badges on both feed cards and item detail cards (`Brand New`, `Like New`, `Used`) across English and Bengali with proper contrast.
 
 

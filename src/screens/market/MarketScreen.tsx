@@ -209,10 +209,24 @@ export function MarketScreen({ navigation }: any) {
   // Category counts
   const categoryCounts = useMemo(() => {
     const map: Record<string, number> = { all: listings.length };
+    const knownIds = new Set(CATEGORIES.filter(c => c.id !== 'all' && c.id !== 'Other').map(c => c.id.toLowerCase()));
+    let otherCount = 0;
+
     listings.forEach(l => {
-      const cat = l.category;
-      if (cat) map[cat] = (map[cat] ?? 0) + 1;
+      const cat = l.category?.trim();
+      if (!cat) return;
+      const lower = cat.toLowerCase();
+      if (knownIds.has(lower)) {
+        const standardCat = CATEGORIES.find(c => c.id.toLowerCase() === lower)?.id;
+        if (standardCat) {
+          map[standardCat] = (map[standardCat] ?? 0) + 1;
+        }
+      } else {
+        otherCount++;
+      }
     });
+
+    map['Other'] = otherCount;
     return map;
   }, [listings]);
 
@@ -243,6 +257,10 @@ export function MarketScreen({ navigation }: any) {
       })
       .filter(l => {
         if (category === 'all') return true;
+        if (category.toLowerCase() === 'other') {
+          const isStandard = CATEGORIES.some(c => c.id !== 'all' && c.id !== 'Other' && c.id.toLowerCase() === l.category?.toLowerCase());
+          return !isStandard;
+        }
         return l.category?.toLowerCase() === category.toLowerCase();
       })
       .filter(l => {
@@ -304,12 +322,13 @@ export function MarketScreen({ navigation }: any) {
   const renderItem = useCallback(({ item }: { item: Listing }) => {
     const isSold = item.status === 'Sold';
     const isFavorite = savedIds.has(item.id);
-    const catMeta = CATEGORIES.find(c => c.id.toLowerCase() === item.category?.toLowerCase()) ?? CATEGORIES[5];
+    const catMeta = CATEGORIES.find(c => c.id.toLowerCase() === item.category?.toLowerCase()) ?? CATEGORIES[CATEGORIES.length - 1];
     const seller = peopleMap[item.seller_id];
     const isFree = (item.price ?? 0) === 0;
 
     const condColor = item.condition === 'New' ? '#059669' : item.condition === 'Like New' ? '#2563EB' : '#64748B';
     const condBg = isDark ? `${condColor}2e` : `${condColor}14`;
+    const condLabel = item.condition === 'New' ? t.market2.condNew : item.condition === 'Like New' ? t.market2.condLikeNew : item.condition === 'Used' ? t.market2.condUsed : item.condition;
 
     const sellerName = seller?.full_name ? seller.full_name.split(' ')[0] : t.market2.verifiedStudent;
     const sellerDept = seller?.department ? ` · ${seller.department}` : '';
@@ -348,7 +367,7 @@ export function MarketScreen({ navigation }: any) {
             ) : item.condition ? (
               <View style={[styles.condBadge, { backgroundColor: condBg, borderColor: condColor }]}>
                 <Text style={[styles.condText, { color: condColor, fontFamily: FontFamily.jakartaBold }]}>
-                  {item.condition}
+                  {condLabel}
                 </Text>
               </View>
             ) : <View />}

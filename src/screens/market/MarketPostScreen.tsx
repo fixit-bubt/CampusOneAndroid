@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView, Switch, KeyboardAvoidingView,
-  StyleSheet, Image, Modal, Animated, Dimensions, type ViewStyle, type TextStyle,
+  StyleSheet, Image, Modal, Animated, Dimensions, ActivityIndicator, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -66,10 +66,13 @@ export function MarketPostScreen({ route, navigation }: any) {
 
   const isEdit = !!listing;
   const initialPrice = listing?.price !== undefined ? listing.price : null;
+  const isKnownCat = listing?.category ? CATEGORIES.some(c => c.id.toLowerCase() === listing.category.toLowerCase() && c.id !== 'Other') : true;
+  const initialCat = listing ? (isKnownCat ? listing.category : 'Other') : 'Books';
+  const initialCustomCat = listing && !isKnownCat ? listing.category : '';
 
   // Form states
-  const [cat, setCat] = useState<string>(listing?.category ?? 'Books');
-  const [customCat, setCustomCat] = useState('');
+  const [cat, setCat] = useState<string>(initialCat);
+  const [customCat, setCustomCat] = useState(initialCustomCat);
   const [title, setTitle] = useState(listing?.title ?? '');
   const [isFree, setIsFree] = useState(initialPrice === 0);
   const [price, setPrice] = useState(initialPrice !== null && initialPrice > 0 ? String(initialPrice) : '');
@@ -142,8 +145,9 @@ export function MarketPostScreen({ route, navigation }: any) {
   }, [currentCategoryMeta, t]);
 
   // Submission validation
-  const validPrice = isFree ? true : Number(price) > 0;
-  const canSubmit = cat.length > 0 && title.trim().length >= 2 && validPrice;
+  const cleanPriceNum = isFree ? 0 : parseInt(price.replace(/[^0-9]/g, ''), 10);
+  const validPrice = isFree ? true : (!isNaN(cleanPriceNum) && cleanPriceNum > 0);
+  const canSubmit = cat.length > 0 && title.trim().length >= 2 && validPrice && !uploading;
 
   // Course code only applies to study materials
   const showCourse = cat === 'Books' || cat === 'Notes';
@@ -241,10 +245,10 @@ export function MarketPostScreen({ route, navigation }: any) {
 
   // Save / Post listing
   async function handleSubmit() {
-    if (!canSubmit || !user || loading) return;
+    if (!canSubmit || !user || loading || uploading) return;
     setLoading(true);
     try {
-      const numericPrice = isFree ? 0 : parseInt(price, 10);
+      const numericPrice = isFree ? 0 : (parseInt(price.replace(/[^0-9]/g, ''), 10) || 0);
       const finalCategory = cat === 'Other' && customCat.trim() ? customCat.trim() : cat;
 
       const payload: any = {
@@ -255,6 +259,7 @@ export function MarketPostScreen({ route, navigation }: any) {
         negotiable:  isFree ? false : negotiable,
         description: desc.trim(),
         photo_url:   photoUri ?? null,
+        photos:      photoUri ? [photoUri] : [],
         course_code: showCourse ? (courseCode.trim().toUpperCase() || null) : null,
         meetup_spot: meetupSpot.trim() || null,
         seller_id:   user.id,
@@ -395,7 +400,11 @@ export function MarketPostScreen({ route, navigation }: any) {
                 disabled={uploading}
                 activeOpacity={0.75}
               >
-                <Feather name="camera" size={24} color={MARKET_COLOR} />
+                {uploading ? (
+                  <ActivityIndicator size="small" color={MARKET_COLOR} />
+                ) : (
+                  <Feather name="camera" size={24} color={MARKET_COLOR} />
+                )}
                 <Text style={[styles.photoPlaceholderTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
                   {uploading ? t.market2.uploading : t.market2.tapToAddPhoto}
                 </Text>
@@ -584,15 +593,30 @@ export function MarketPostScreen({ route, navigation }: any) {
           <TouchableOpacity
             style={[
               styles.submitBtn,
-              { backgroundColor: canSubmit ? MARKET_COLOR : C.surface2, opacity: loading ? 0.6 : 1 },
+              {
+                backgroundColor: canSubmit ? MARKET_COLOR : C.surface2,
+                opacity: (loading || uploading) ? 0.7 : 1,
+              },
             ]}
             onPress={handleSubmit}
-            disabled={!canSubmit || loading}
+            disabled={!canSubmit || loading || uploading}
             activeOpacity={0.85}
           >
-            <Feather name={isEdit ? 'check' : 'plus-circle'} size={18} color="#fff" />
-            <Text style={[styles.submitBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
-              {loading ? t.common.save : isEdit ? t.market2.saveChanges : t.market2.postListing}
+            {loading || uploading ? (
+              <ActivityIndicator color={canSubmit ? '#fff' : C.textMuted} size="small" />
+            ) : (
+              <Feather name={isEdit ? 'check' : 'plus-circle'} size={18} color={canSubmit ? '#fff' : C.textMuted} />
+            )}
+            <Text
+              style={[
+                styles.submitBtnTxt,
+                {
+                  color: canSubmit ? '#fff' : C.textMuted,
+                  fontFamily: FontFamily.jakartaBold,
+                },
+              ]}
+            >
+              {uploading ? 'Uploading photo…' : loading ? t.common.save : isEdit ? t.market2.saveChanges : t.market2.postListing}
             </Text>
           </TouchableOpacity>
         </ScrollView>
