@@ -1,96 +1,81 @@
 import { useState } from 'react';
 import {
-  View, Text, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView, Platform,
-  StyleSheet, type ViewStyle,
+  View, Text, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView,
+  StyleSheet, type ViewStyle, type TextStyle,
 } from 'react-native';
-import { useToast } from '../../components/ui/Toast';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Feather } from '@expo/vector-icons';
+import { useToast } from '../../components/ui/Toast';
 import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
 import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout , SectorColors } from '../../theme';
+import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
-import { isValidDate } from '../../utils/format';
+import { localToday, formatDate, formatTime } from '../../utils/format';
 import type { Ride } from '../../types/database';
 
-const VEHICLES: { id: Ride['vehicle']; label: string }[] = [
-  { id: 'Car',  label: 'Car' },
-  { id: 'CNG',  label: 'CNG' },
-  { id: 'Bike', label: 'Bike' },
+const RIDE_COLOR = SectorColors.ride;
+
+const VEHICLES: { id: Ride['vehicle']; label: string; icon: string; maxSeats: number; defaultSeats: number }[] = [
+  { id: 'Car',  label: 'Car',  icon: '🚗', maxSeats: 4, defaultSeats: 3 },
+  { id: 'CNG',  label: 'CNG',  icon: '🛺', maxSeats: 3, defaultSeats: 2 },
+  { id: 'Bike', label: 'Bike', icon: '🏍️', maxSeats: 1, defaultSeats: 1 },
 ];
 
-const DIRECTIONS: { id: Ride['direction']; label: string }[] = [
-  { id: 'To Campus',   label: 'To Campus' },
-  { id: 'From Campus', label: 'From Campus' },
-];
+const QUICK_HUBS = ['Mirpur 10', 'Uttara', 'Shyamoli', 'Dhanmondi', 'Kalyanpur', 'Mohammadpur'];
 
-function SegControl<T extends string>({
-  options, value, onChange, C,
-}: { options: { id: T; label: string }[]; value: T; onChange: (v: T) => void; C: any }) {
-  return (
-    <View style={[segStyles.row, { backgroundColor: C.surface2, borderColor: C.border }]}>
-      {options.map(o => {
-        const on = o.id === value;
-        return (
-          <TouchableOpacity
-            key={o.id}
-            style={[segStyles.btn, on && { backgroundColor: C.brand }]}
-            onPress={() => onChange(o.id)}
-            activeOpacity={0.75}
-          >
-            <Text style={[segStyles.txt, { color: on ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-              {o.label}
-            </Text>
-          </TouchableOpacity>
-        );
-      })}
-    </View>
-  );
+const TIME_PRESETS = ['07:30', '08:00', '08:30', '09:00', '13:00', '16:30'];
+
+function localTomorrow(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  const off = d.getTimezoneOffset() * 60000;
+  return new Date(d.getTime() - off).toISOString().split('T')[0];
 }
 
-const segStyles = StyleSheet.create({
-  row: {
-    flexDirection: 'row' as const,
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 4,
-    gap: 4,
-  },
-  btn: {
-    flex: 1,
-    alignItems: 'center' as const,
-    paddingVertical: 9,
-    borderRadius: 9,
-  },
-  txt: { fontSize: 13.5 } as any,
-});
-
 export function RidePostScreen({ navigation }: any) {
-  const { C } = useTheme();
+  const { C, isDark } = useTheme();
   const t = useT();
   const { user } = useAuth();
-
   const toast = useToast();
+
   const [vehicle, setVehicle] = useState<Ride['vehicle']>('Car');
   const [direction, setDirection] = useState<Ride['direction']>('To Campus');
   const [from, setFrom] = useState('');
-  const [to, setTo] = useState('');
-  const [date, setDate] = useState('');
-  const [time, setTime] = useState('');
-  const [seats, setSeats] = useState('3');
-  const [fare, setFare] = useState('');
+  const [to, setTo] = useState('BUBT Campus');
+  const [dateChoice, setDateChoice] = useState<'today' | 'tomorrow'>('today');
+  const [time, setTime] = useState('08:00');
+  const [seats, setSeats] = useState(3);
+  const [fare, setFare] = useState('60');
   const [notes, setNotes] = useState('');
-  const [recurring, setRecurring] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const DOW = ['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-  function toggleDay(d: string) {
-    setRecurring(prev => (prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d]));
+  const currentVehicleConfig = VEHICLES.find(v => v.id === vehicle) ?? VEHICLES[0];
+
+  function handleVehicleSelect(v: Ride['vehicle']) {
+    setVehicle(v);
+    const cfg = VEHICLES.find(item => item.id === v);
+    if (cfg) {
+      setSeats(Math.min(seats, cfg.maxSeats) || cfg.defaultSeats);
+    }
   }
 
-  const canSubmit = from.trim() && to.trim() && date.trim() && fare.trim();
+  function handleDirectionSelect(dir: Ride['direction']) {
+    setDirection(dir);
+    if (dir === 'To Campus') {
+      setTo('BUBT Campus');
+      if (from === 'BUBT Campus') setFrom('');
+    } else {
+      setFrom('BUBT Campus');
+      if (to === 'BUBT Campus') setTo('');
+    }
+  }
+
+  const selectedDate = dateChoice === 'today' ? localToday() : localTomorrow();
+
+  const canSubmit = from.trim() && to.trim() && fare.trim();
 
   async function handleSubmit() {
     if (!canSubmit || !user || loading) return;
@@ -99,11 +84,13 @@ export function RidePostScreen({ navigation }: any) {
       toast({ type: 'error', title: t.rides2.invalidFareTitle, message: t.rides2.invalidFareBody });
       return;
     }
-    const timePart = time.trim() || '08:00';
-    if (!isValidDate(date)) {
-      toast({ type: 'error', title: t.rides2.invalidDateTitle, message: t.rides2.invalidDateBody });
-      return;
+
+    // Normalize time to HH:MM with leading zero
+    let timePart = time.trim() || '08:00';
+    if (/^\d:\d{2}$/.test(timePart)) {
+      timePart = '0' + timePart;
     }
+
     setLoading(true);
     try {
       const { error } = await supabase.from('rides').insert({
@@ -112,17 +99,19 @@ export function RidePostScreen({ navigation }: any) {
         vehicle:     vehicle,
         origin:      from.trim(),
         destination: to.trim(),
-        date:        date.trim(),
+        date:        selectedDate,
         time:        timePart,
-        seats_total: parseInt(seats, 10) || 1,
+        seats_total: Math.max(1, Math.min(seats, currentVehicleConfig.maxSeats)),
         fare:        parsedFare,
         notes:       notes.trim() || null,
-        recurring:   recurring,
+        recurring:   [],
       });
+
       if (error) throw error;
+      toast({ type: 'success', title: 'Ride Posted', message: 'Your campus ride is now visible to students.' });
       navigation.goBack();
-    } catch {
-      toast({ type: 'error', title: t.common.error, message: t.rides2.postFailed });
+    } catch (err: any) {
+      toast({ type: 'error', title: t.common.error, message: err?.message || t.rides2.postFailed });
     } finally {
       setLoading(false);
     }
@@ -133,181 +122,372 @@ export function RidePostScreen({ navigation }: any) {
       <SubBar title={t.rides2.offerRideTitle} onBack={() => navigation.goBack()} />
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
-      <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
-        showsVerticalScrollIndicator={false}
-        keyboardDismissMode="on-drag"
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* Vehicle */}
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.rides2.vehicle}</Text>
-        <SegControl options={VEHICLES} value={vehicle} onChange={setVehicle} C={C} />
-
-        {/* Direction */}
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.rides2.direction}</Text>
-        <SegControl options={DIRECTIONS} value={direction} onChange={setDirection} C={C} />
-
-        {/* From */}
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.rides2.from}</Text>
-        <TextInput
-          style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-          value={from}
-          onChangeText={setFrom}
-          placeholder={t.rides2.fromPlaceholder}
-          placeholderTextColor={C.textMuted}
-        />
-
-        {/* To */}
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.rides2.to}</Text>
-        <TextInput
-          style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-          value={to}
-          onChangeText={setTo}
-          placeholder={t.rides2.toPlaceholder}
-          placeholderTextColor={C.textMuted}
-        />
-
-        {/* Date + Time */}
-        <View style={styles.row}>
-          <View style={styles.halfField}>
-            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>{t.rides2.date}</Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-              value={date}
-              onChangeText={setDate}
-              placeholder={t.rides2.datePlaceholder}
-              placeholderTextColor={C.textMuted}
-            />
-          </View>
-          <View style={styles.halfField}>
-            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>{t.rides2.time}</Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-              value={time}
-              onChangeText={setTime}
-              placeholder={t.rides2.timePlaceholder}
-              placeholderTextColor={C.textMuted}
-            />
-          </View>
-        </View>
-
-        {/* Seats + Fare */}
-        <View style={styles.row}>
-          <View style={styles.halfField}>
-            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>{t.rides2.seats}</Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-              value={seats}
-              onChangeText={t => setSeats(t.replace(/\D/g, ''))}
-              keyboardType="numeric"
-              placeholderTextColor={C.textMuted}
-            />
-          </View>
-          <View style={styles.halfField}>
-            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>{t.rides2.fareTk}</Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-              value={fare}
-              onChangeText={t => setFare(t.replace(/\D/g, ''))}
-              keyboardType="numeric"
-              placeholder="60"
-              placeholderTextColor={C.textMuted}
-            />
-          </View>
-        </View>
-
-        {/* Repeats on (optional) */}
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.rides2.repeatsOnOptional}</Text>
-        <View style={styles.dayRow}>
-          {DOW.map(d => {
-            const on = recurring.includes(d);
-            return (
-              <TouchableOpacity
-                key={d}
-                style={[styles.dayChip, on
-                  ? { backgroundColor: C.brand, borderColor: C.brand }
-                  : { backgroundColor: C.surface, borderColor: C.border }]}
-                onPress={() => toggleDay(d)}
-                activeOpacity={0.75}
-              >
-                <Text style={[styles.dayTxt, { color: on ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>{d}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        {/* Notes (optional) */}
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.rides2.notesOptional}</Text>
-        <TextInput
-          style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium, height: 70, paddingTop: 12 }]}
-          value={notes}
-          onChangeText={setNotes}
-          placeholder={t.rides2.notesPlaceholder}
-          placeholderTextColor={C.textMuted}
-          multiline
-          textAlignVertical="top"
-        />
-
-        {/* Submit */}
-        <TouchableOpacity
-          style={[styles.submitBtn, { backgroundColor: canSubmit ? C.brand : C.surface2, opacity: loading ? 0.6 : 1 }]}
-          onPress={handleSubmit}
-          disabled={!canSubmit || loading}
-          activeOpacity={0.8}
+        <ScrollView
+          contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
+          showsVerticalScrollIndicator={false}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
         >
-          <Icon name="check" size={18} color={canSubmit ? C.white : C.textMuted} />
-          <Text style={[styles.submitText, { color: canSubmit ? C.white : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-            {t.rides2.offerRide}
+          {/* 1. Vehicle Selection */}
+          <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+            {t.rides2.vehicle ?? 'VEHICLE'}
           </Text>
-        </TouchableOpacity>
+          <View style={styles.vehicleRow}>
+            {VEHICLES.map(v => {
+              const on = vehicle === v.id;
+              return (
+                <TouchableOpacity
+                  key={v.id}
+                  style={[
+                    styles.vehicleCard,
+                    {
+                      backgroundColor: on ? (isDark ? 'rgba(110, 139, 31, 0.2)' : '#f4f8e6') : C.surface,
+                      borderColor: on ? RIDE_COLOR : C.border,
+                    },
+                  ]}
+                  onPress={() => handleVehicleSelect(v.id)}
+                  activeOpacity={0.75}
+                >
+                  <Text style={styles.vehicleIcon}>{v.icon}</Text>
+                  <Text style={[styles.vehicleLabel, { color: on ? RIDE_COLOR : C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    {v.label}
+                  </Text>
+                  <Text style={[styles.vehicleSeatsHint, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                    Max {v.maxSeats}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
 
-        <View style={{ height: 30 }} />
-      </ScrollView>
+          {/* 2. Direction Selection */}
+          <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+            {t.rides2.direction ?? 'DIRECTION'}
+          </Text>
+          <View style={[styles.dirToggle, { backgroundColor: C.surface, borderColor: C.border }]}>
+            {(['To Campus', 'From Campus'] as const).map(dir => {
+              const on = direction === dir;
+              return (
+                <TouchableOpacity
+                  key={dir}
+                  style={[styles.dirBtn, on && { backgroundColor: C.brand }]}
+                  onPress={() => handleDirectionSelect(dir)}
+                  activeOpacity={0.75}
+                >
+                  <Text style={[styles.dirBtnTxt, { color: on ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                    {dir === 'To Campus' ? (t.rides2.toCampus ?? 'To Campus') : (t.rides2.fromCampus ?? 'From Campus')}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* 3. Route: From & To */}
+          <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+            {t.rides2.from ?? 'FROM'}
+          </Text>
+          <TextInput
+            style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+            value={from}
+            onChangeText={setFrom}
+            placeholder={t.rides2.fromPlaceholder ?? 'e.g. Shyamoli'}
+            placeholderTextColor={C.textMuted}
+          />
+
+          {/* Quick Hub Chips */}
+          <View style={styles.chipRow}>
+            {QUICK_HUBS.map(hub => (
+              <TouchableOpacity
+                key={hub}
+                style={[styles.hubChip, { backgroundColor: C.surface2, borderColor: C.border }]}
+                onPress={() => {
+                  if (direction === 'To Campus') setFrom(hub);
+                  else setTo(hub);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.hubChipTxt, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
+                  {hub}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+            {t.rides2.to ?? 'TO'}
+          </Text>
+          <TextInput
+            style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+            value={to}
+            onChangeText={setTo}
+            placeholder={t.rides2.toPlaceholder ?? 'e.g. BUBT Campus'}
+            placeholderTextColor={C.textMuted}
+          />
+
+          {/* 4. Date Choice (Today / Tomorrow) */}
+          <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+            {t.rides2.date ?? 'DATE'}
+          </Text>
+          <View style={styles.dateRow}>
+            {(['today', 'tomorrow'] as const).map(choice => {
+              const on = dateChoice === choice;
+              const label = choice === 'today' ? (t.rides2.todayText ?? 'Today') : (t.rides2.tomorrowText ?? 'Tomorrow');
+              const dStr = choice === 'today' ? localToday() : localTomorrow();
+              return (
+                <TouchableOpacity
+                  key={choice}
+                  style={[
+                    styles.dateChip,
+                    {
+                      backgroundColor: on ? C.brand : C.surface,
+                      borderColor: on ? C.brand : C.border,
+                    },
+                  ]}
+                  onPress={() => setDateChoice(choice)}
+                  activeOpacity={0.75}
+                >
+                  <Text style={[styles.dateChipTxt, { color: on ? '#fff' : C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    {label} ({formatDate(dStr)})
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* 5. Departure Time */}
+          <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+            {t.rides2.time ?? 'DEPARTURE TIME'}
+          </Text>
+          <TextInput
+            style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+            value={time}
+            onChangeText={setTime}
+            placeholder="08:00"
+            placeholderTextColor={C.textMuted}
+          />
+
+          <View style={styles.chipRow}>
+            {TIME_PRESETS.map(preset => (
+              <TouchableOpacity
+                key={preset}
+                style={[
+                  styles.timePresetChip,
+                  {
+                    backgroundColor: time === preset ? RIDE_COLOR : C.surface2,
+                    borderColor: time === preset ? RIDE_COLOR : C.border,
+                  },
+                ]}
+                onPress={() => setTime(preset)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.timePresetTxt, { color: time === preset ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                  {formatTime(preset)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* 6. Seats & Fare Row */}
+          <View style={styles.sideBySideRow}>
+            {/* Seats Stepper */}
+            <View style={styles.halfCol}>
+              <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                {t.rides2.seats ?? 'SEATS'}
+              </Text>
+              <View style={[styles.stepper, { backgroundColor: C.surface, borderColor: C.border }]}>
+                <TouchableOpacity
+                  style={styles.stepBtn}
+                  onPress={() => setSeats(s => Math.max(1, s - 1))}
+                  activeOpacity={0.7}
+                >
+                  <Feather name="minus" size={16} color={C.text} />
+                </TouchableOpacity>
+                <Text style={[styles.stepVal, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+                  {seats}
+                </Text>
+                <TouchableOpacity
+                  style={styles.stepBtn}
+                  onPress={() => setSeats(s => Math.min(currentVehicleConfig.maxSeats, s + 1))}
+                  activeOpacity={0.7}
+                >
+                  <Feather name="plus" size={16} color={C.text} />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Fare Input */}
+            <View style={styles.halfCol}>
+              <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                {t.rides2.fareTk ?? 'FARE (৳)'}
+              </Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaBold }]}
+                value={fare}
+                onChangeText={t => setFare(t.replace(/\D/g, ''))}
+                keyboardType="numeric"
+                placeholder="60"
+                placeholderTextColor={C.textMuted}
+              />
+            </View>
+          </View>
+
+          {/* 7. Meeting Spot / Notes */}
+          <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+            {t.rides2.meetingSpot ?? 'MEETING POINT / NOTES (OPTIONAL)'}
+          </Text>
+          <TextInput
+            style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium, height: 58, paddingTop: 10 }]}
+            value={notes}
+            onChangeText={setNotes}
+            placeholder={t.rides2.meetingSpotPlaceholder ?? 'e.g. Opposite Fire Station Gate'}
+            placeholderTextColor={C.textMuted}
+            multiline
+          />
+
+          {/* 8. Submit Button */}
+          <TouchableOpacity
+            style={[
+              styles.submitBtn,
+              {
+                backgroundColor: canSubmit ? RIDE_COLOR : C.surface2,
+                opacity: loading ? 0.6 : 1,
+              },
+            ]}
+            onPress={handleSubmit}
+            disabled={!canSubmit || loading}
+            activeOpacity={0.85}
+          >
+            <Icon name="check" size={18} color={canSubmit ? C.white : C.textMuted} />
+            <Text style={[styles.submitText, { color: canSubmit ? C.white : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+              {t.rides2.offerRide ?? 'Post Campus Ride'}
+            </Text>
+          </TouchableOpacity>
+
+          <View style={{ height: 36 }} />
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1 } as ViewStyle,
-  scroll: { paddingTop: 12, paddingBottom: 20 } as ViewStyle,
+  safe: { flex: 1 },
+  scroll: { paddingTop: 10, paddingBottom: 24 },
 
-  label: {
+  sectionLabel: {
     fontSize: 11,
-    letterSpacing: 0.7,
-    marginBottom: 8,
-    marginTop: 18,
-    marginLeft: 2,
-  } as any,
+    letterSpacing: 0.8,
+    marginTop: 16,
+    marginBottom: 7,
+  } as TextStyle,
+
+  vehicleRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  vehicleCard: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderRadius: 14,
+    borderWidth: 1.5,
+  },
+  vehicleIcon: { fontSize: 24, marginBottom: 4 },
+  vehicleLabel: { fontSize: 13 } as TextStyle,
+  vehicleSeatsHint: { fontSize: 11, marginTop: 2 } as TextStyle,
+
+  dirToggle: {
+    flexDirection: 'row',
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 3,
+    gap: 4,
+  },
+  dirBtn: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderRadius: 9,
+  },
+  dirBtnTxt: { fontSize: 13 } as TextStyle,
 
   input: {
-    height: 48,
+    height: 46,
     borderRadius: 12,
     borderWidth: 1,
     paddingHorizontal: 14,
-    fontSize: 14.5,
-  } as any,
+    fontSize: 14,
+  } as TextStyle,
 
-  row: {
+  chipRow: {
     flexDirection: 'row',
-    gap: 10,
-    marginTop: 18,
-  } as ViewStyle,
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 7,
+  },
+  hubChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  hubChipTxt: { fontSize: 11.5 } as TextStyle,
 
-  halfField: { flex: 1 } as ViewStyle,
-  dayRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 } as ViewStyle,
-  dayChip: { paddingHorizontal: 11, paddingVertical: 7, borderRadius: 999, borderWidth: 1 } as ViewStyle,
-  dayTxt: { fontSize: 12 } as any,
+  dateRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  dateChip: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    minHeight: 44,
+  },
+  dateChipTxt: { fontSize: 12.5 } as TextStyle,
+
+  timePresetChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  timePresetTxt: { fontSize: 11.5 } as TextStyle,
+
+  sideBySideRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  halfCol: { flex: 1 },
+
+  stepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    height: 46,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 4,
+  },
+  stepBtn: {
+    width: 38,
+    height: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+  },
+  stepVal: { fontSize: 16 } as TextStyle,
 
   submitBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    height: 52,
+    height: 50,
     borderRadius: 14,
-    marginTop: 22,
-  } as ViewStyle,
-
-  submitText: { fontSize: 15 } as any,
+    marginTop: 24,
+  },
+  submitText: { fontSize: 15 } as TextStyle,
 });

@@ -37,7 +37,7 @@ export function CampusToday({ navigation, hide }: { navigation: any; hide?: stri
 
     const staleCutoff = new Date(Date.now() - 21 * 86400000).toISOString();
 
-    const [busRes, prayerRes, annRes, evRes, jobsRes, bloodRes] = await Promise.all([
+    const [busRes, prayerRes, annRes, evRes, jobsRes, bloodRes, ridesRes] = await Promise.all([
       supabase.from('bus_routes').select('name, to_departures').eq('active', true),
       supabase.from('prayer_times').select('en, azan').order('sort'),
       supabase.from('announcements').select('title').is('deleted_at', null).order('pinned', { ascending: false }).order('created_at', { ascending: false }).limit(1),
@@ -47,6 +47,11 @@ export function CampusToday({ navigation, hide }: { navigation: any; hide?: stri
         .eq('urgency', 'Urgent')
         .is('fulfilled_at', null)
         .gte('created_at', staleCutoff),
+      supabase.from('rides').select('id, origin, destination, time, date, seats_total, vehicle')
+        .gte('date', todayISO)
+        .order('date')
+        .order('time')
+        .limit(4),
     ]);
 
     const out: WidgetData[] = [];
@@ -66,6 +71,22 @@ export function CampusToday({ navigation, hide }: { navigation: any; hide?: stri
         title: `${fmtTime(`${Math.floor(b.mins / 60)}:${b.mins % 60}`)} to campus`,
         sub: b.name,
         route: 'Bus',
+      });
+    }
+
+    // Available campus rides
+    const availableRide = (ridesRes.data ?? []).find((r: any) => {
+      if (r.date === todayISO && r.time) {
+        return toMinutes(r.time) >= nowMins;
+      }
+      return true;
+    });
+    if (availableRide) {
+      out.push({
+        sector: 'ride',
+        title: `${availableRide.origin} → ${availableRide.destination}`,
+        sub: `${fmtTime(availableRide.time)} · ${availableRide.vehicle} (${availableRide.seats_total} seat${availableRide.seats_total === 1 ? '' : 's'})`,
+        route: 'Rides',
       });
     }
 

@@ -17,6 +17,7 @@ const DIRECT: Record<string, { screen: string; key: string }> = {
   job:          { screen: 'JobDetail',          key: 'jobId'          },
   // study material/question notifications carry the course UUID.
   study_course: { screen: 'CourseDetail',       key: 'courseId'       },
+  ride:         { screen: 'RideDetail',         key: 'rideId'         },
 };
 
 export async function resolveNotifTarget(

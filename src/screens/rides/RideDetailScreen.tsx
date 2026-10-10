@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Alert, type ViewStyle,
+  ActivityIndicator, Alert, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -13,32 +13,54 @@ import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout , SectorColors } from '../../theme';
+import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { fetchPeople } from '../../services/peopleService';
 import { useAuth } from '../../store/authStore';
 import { getCache, CacheKeys } from '../../services/cacheService';
 import { ContactSheet } from '../../components/ui/ContactSheet';
+import { formatPrice, formatDate, formatTime, localToday } from '../../utils/format';
+import { openUrl, waHref } from '../../utils/link';
 
 const RIDE_COLOR = SectorColors.ride;
 const RIDE_BG    = `${SectorColors.ride}1e`;
 
+const VEHICLE_META: Record<string, { icon: string; label: string }> = {
+  Car:  { icon: '🚗', label: 'Car'  },
+  CNG:  { icon: '🛺', label: 'CNG'  },
+  Bike: { icon: '🏍️', label: 'Bike' },
+};
+
+function formatDepartureLabel(dateStr: string, timeStr: string, t: any): string {
+  const isToday = dateStr === localToday();
+  const timeFormatted = timeStr ? formatTime(timeStr) : '';
+  const dayPrefix = isToday ? (t.rides2.todayText ?? 'Today') : formatDate(dateStr);
+  return timeFormatted ? `${dayPrefix} · ${timeFormatted}` : dayPrefix;
+}
+
 export function RideDetailScreen({ route, navigation }: any) {
-  const { C } = useTheme();
+  const { C, isDark } = useTheme();
   const t = useT();
   const toast = useToast();
   const { user, profile } = useAuth();
   const isAdmin = profile?.role === 'admin';
   const { rideId } = route.params ?? {};
+
   const [ride, setRide] = useState<any>(null);
   const [loadFailed, setLoadFailed] = useState(false);
-  const [driverName, setDriverName] = useState<string | null>(null);
-  const [contact, setContact] = useState<{ whatsapp: string } | null>(null);
+  const [driverInfo, setDriverInfo] = useState<{ full_name?: string; department?: string; id?: string } | null>(null);
+  const [contact, setContact] = useState<{ whatsapp: string; name?: string } | null>(null);
   const [requested, setRequested] = useState(false);
   const [takenCount, setTakenCount] = useState(0);
-  const [requesters, setRequesters] = useState<{ requester_id: string; full_name: string; whatsapp?: string | null }[]>([]);
-  const [contactTarget, setContactTarget] = useState<{ name: string; phone: string } | null>(null);
+  const [requesters, setRequesters] = useState<{
+    requester_id: string;
+    full_name: string;
+    department?: string;
+    whatsapp?: string | null;
+  }[]>([]);
+  const [contactTarget, setContactTarget] = useState<{ name: string; phone?: string; id?: string } | null>(null);
   const [isOffline, setIsOffline] = useState(false);
+  const [actionBusy, setActionBusy] = useState(false);
 
   const load = useCallback(async () => {
     if (!rideId) { setLoadFailed(true); return; }
@@ -47,7 +69,7 @@ export function RideDetailScreen({ route, navigation }: any) {
     const cached = cachedRides?.find(r => r.id === rideId);
     if (cached) {
       setRide(cached);
-      setDriverName(cached.driver_name ?? null);
+      setDriverInfo({ full_name: cached.driver_name, department: cached.driver_dept, id: cached.driver_id });
     }
 
     try {
@@ -90,17 +112,27 @@ export function RideDetailScreen({ route, navigation }: any) {
 
       setIsOffline(false);
       setRide(rideRes.data);
-      const people = await fetchPeople([
+
+      const targetIds = [
         rideRes.data.driver_id,
         ...((takenRes.data as any[]) ?? []).map(r => r.requester_id),
-      ]);
-      setDriverName(people[rideRes.data.driver_id]?.full_name ?? null);
+      ];
+      const people = await fetchPeople(targetIds);
+      const drv = people[rideRes.data.driver_id];
+      setDriverInfo({
+        full_name: drv?.full_name,
+        department: drv?.department ?? undefined,
+        id: rideRes.data.driver_id,
+      });
+
       if (rideRes.data.driver_id === user?.id && takenRes.data) {
         setRequesters((takenRes.data as any[]).map(r => ({
           requester_id: r.requester_id,
-          full_name: people[r.requester_id]?.full_name ?? t.rides2.unknown,
+          full_name: people[r.requester_id]?.full_name ?? (t.rides2.unknown ?? 'Student'),
+          department: people[r.requester_id]?.department ?? undefined,
         })));
       }
+
       if (reqRes.data) {
         setRequested(true);
         const { data: c } = await supabase.rpc('ride_contact', {
@@ -109,7 +141,10 @@ export function RideDetailScreen({ route, navigation }: any) {
         });
         const row = Array.isArray(c) ? c[0] : c;
         if (row) setContact(row);
+      } else {
+        setRequested(false);
       }
+
       const cnt = (countRes.data ?? []).find((c: any) => c.ride_id === rideId);
       setTakenCount(cnt ? Number(cnt.taken) : 0);
     } catch {
@@ -136,7 +171,7 @@ export function RideDetailScreen({ route, navigation }: any) {
     if (row?.whatsapp) {
       setRequesters(prev => prev.map(r => (r.requester_id === requesterId ? { ...r, whatsapp: row.whatsapp } : r)));
       const person = requesters.find(r => r.requester_id === requesterId);
-      setContactTarget({ name: person?.full_name ?? t.rides2.contact, phone: row.whatsapp });
+      setContactTarget({ name: person?.full_name ?? (t.rides2.contact ?? 'Student'), phone: row.whatsapp, id: requesterId });
     } else {
       toast({ type: 'info', title: t.rides2.noContactTitle, message: t.rides2.noContactBody });
     }
@@ -147,33 +182,41 @@ export function RideDetailScreen({ route, navigation }: any) {
       toast({ type: 'info', title: 'Offline Mode', message: 'Internet connection required to delete ride.' });
       return;
     }
-    Alert.alert('Delete this ride?', 'Your seat requests will be discarded.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete', style: 'destructive',
-        onPress: async () => {
-          const { error } = await supabase.from('rides').delete().eq('id', rideId);
-          if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }
-          navigation.goBack();
+    Alert.alert(
+      t.rides2.deleteOwnTitle ?? 'Delete this ride?',
+      t.rides2.deleteOwnBody ?? 'Your seat requests will be discarded.',
+      [
+        { text: t.common.cancel ?? 'Cancel', style: 'cancel' },
+        {
+          text: t.common.delete ?? 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            const { error } = await supabase.from('rides').delete().eq('id', rideId);
+            if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
+            navigation.goBack();
+          },
         },
-      },
-    ]);
+      ]
+    );
   }
 
   async function requestRide() {
-    if (!user || requested || !ride) return;
+    if (!user || requested || !ride || actionBusy) return;
     if (isOffline) {
       toast({ type: 'info', title: 'Offline Mode', message: 'Internet connection required to request a ride.' });
       return;
     }
+    setActionBusy(true);
     const { error } = await supabase
       .from('ride_requests')
       .insert({ ride_id: rideId, requester_id: user.id });
+
+    setActionBusy(false);
     if (!error || error.code === '23505') {
       const isDup = !!error && error.code === '23505';
       setRequested(true);
-      // Only count a brand-new request; a duplicate (23505) was already counted.
       if (!isDup) setTakenCount(c => c + 1);
+
       const { data: c } = await supabase.rpc('ride_contact', {
         p_code:   ride.code,
         p_target: ride.driver_id,
@@ -182,12 +225,88 @@ export function RideDetailScreen({ route, navigation }: any) {
       if (row) {
         setContact(row);
         if (row.whatsapp) {
-          setContactTarget({ name: driverName ?? t.rides2.driver, phone: row.whatsapp });
+          setContactTarget({ name: driverInfo?.full_name ?? (t.rides2.driverFallback ?? 'Driver'), phone: row.whatsapp, id: ride.driver_id });
         }
       }
+      toast({ type: 'success', title: t.rides2.requestSent, message: 'Driver has been notified.' });
     } else {
-      toast({ type: 'error', title: 'Error', message: error.message });
+      toast({ type: 'error', title: t.common.error, message: error.message });
     }
+  }
+
+  function cancelMySeat() {
+    if (!user || actionBusy) return;
+    if (isOffline) {
+      toast({ type: 'info', title: 'Offline Mode', message: 'Internet connection required to cancel seat.' });
+      return;
+    }
+
+    Alert.alert(
+      t.rides2.cancelConfirmTitle ?? 'Cancel Seat?',
+      t.rides2.cancelConfirmBody ?? 'Your reserved seat will be released for other students.',
+      [
+        { text: t.common.cancel ?? 'Cancel', style: 'cancel' },
+        {
+          text: 'Yes, Release Seat',
+          style: 'destructive',
+          onPress: async () => {
+            setActionBusy(true);
+            const { error } = await supabase
+              .from('ride_requests')
+              .delete()
+              .eq('ride_id', rideId)
+              .eq('requester_id', user.id);
+
+            setActionBusy(false);
+            if (error) {
+              toast({ type: 'error', title: t.common.error, message: error.message });
+              return;
+            }
+            setRequested(false);
+            setContact(null);
+            setTakenCount(c => Math.max(c - 1, 0));
+            toast({ type: 'success', title: t.rides2.cancelSuccess ?? 'Seat request cancelled' });
+          },
+        },
+      ]
+    );
+  }
+
+  function removeRider(requesterId: string, riderName: string) {
+    if (!user || actionBusy) return;
+    if (isOffline) {
+      toast({ type: 'info', title: 'Offline Mode', message: 'Internet connection required to remove rider.' });
+      return;
+    }
+
+    Alert.alert(
+      t.rides2.removeRiderTitle ?? 'Remove Passenger?',
+      `${t.rides2.removeRiderBody ?? 'This seat will become available for other students.'} (${riderName})`,
+      [
+        { text: t.common.cancel ?? 'Cancel', style: 'cancel' },
+        {
+          text: t.common.delete ?? 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            setActionBusy(true);
+            const { error } = await supabase
+              .from('ride_requests')
+              .delete()
+              .eq('ride_id', rideId)
+              .eq('requester_id', requesterId);
+
+            setActionBusy(false);
+            if (error) {
+              toast({ type: 'error', title: t.common.error, message: error.message });
+              return;
+            }
+            setRequesters(prev => prev.filter(r => r.requester_id !== requesterId));
+            setTakenCount(c => Math.max(c - 1, 0));
+            toast({ type: 'success', title: 'Passenger removed' });
+          },
+        },
+      ]
+    );
   }
 
   function adminDelete() {
@@ -195,17 +314,28 @@ export function RideDetailScreen({ route, navigation }: any) {
       toast({ type: 'info', title: 'Offline Mode', message: 'Internet connection required to delete ride.' });
       return;
     }
-    Alert.alert('Delete ride', 'Remove this ride post permanently?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete', style: 'destructive',
-        onPress: async () => {
-          const { error } = await supabase.from('rides').delete().eq('id', rideId);
-          if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }
-          navigation.goBack();
+    Alert.alert(
+      t.rides2.adminDeleteTitle ?? 'Delete ride',
+      t.rides2.adminDeleteBody ?? 'Remove this ride post permanently?',
+      [
+        { text: t.common.cancel ?? 'Cancel', style: 'cancel' },
+        {
+          text: t.common.delete ?? 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            const { error } = await supabase.from('rides').delete().eq('id', rideId);
+            if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
+            navigation.goBack();
+          },
         },
-      },
-    ]);
+      ]
+    );
+  }
+
+  function openGoogleMaps() {
+    if (!ride) return;
+    const query = encodeURIComponent(`${ride.origin}, Dhaka`);
+    openUrl(`https://www.google.com/maps/search/?api=1&query=${query}`);
   }
 
   if (!ride) {
@@ -224,7 +354,8 @@ export function RideDetailScreen({ route, navigation }: any) {
   const isOwnRide = ride.driver_id === user?.id;
   const seatsLeft = (ride.seats_total ?? 0) - takenCount;
   const isFull = seatsLeft <= 0 && !requested;
-  const departureLabel = ride.date && ride.time ? `${ride.date} ${ride.time}` : ride.date ?? 'N/A';
+  const departureText = formatDepartureLabel(ride.date, ride.time, t);
+  const vMeta = VEHICLE_META[ride.vehicle] ?? { icon: '🚗', label: ride.vehicle };
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -237,88 +368,131 @@ export function RideDetailScreen({ route, navigation }: any) {
         contentContainerStyle={[styles.content, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
+        {/* Header Hero */}
         <View style={styles.header}>
           <View style={[styles.thumb, { backgroundColor: RIDE_BG }]}>
-            <Icon name="ride" size={28} color={RIDE_COLOR} />
+            <Icon name="ride" size={26} color={RIDE_COLOR} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[styles.route, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]} numberOfLines={2}>
               {ride.origin} → {ride.destination}
             </Text>
+            <View style={styles.badgeRow}>
+              <View style={[styles.pill, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : C.surface2 }]}>
+                <Text style={[styles.pillTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                  {vMeta.icon} {vMeta.label}
+                </Text>
+              </View>
+              <View style={[styles.pill, { backgroundColor: RIDE_BG }]}>
+                <Text style={[styles.pillTxt, { color: RIDE_COLOR, fontFamily: FontFamily.jakartaBold }]}>
+                  {ride.direction === 'To Campus' ? (t.rides2.toCampus ?? 'To Campus') : (t.rides2.fromCampus ?? 'From Campus')}
+                </Text>
+              </View>
+              {ride.code ? (
+                <View style={[styles.pill, { backgroundColor: C.surface2 }]}>
+                  <Text style={[styles.pillTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                    {ride.code}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
             <Text style={[styles.subTime, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-              {departureLabel}
+              🕒 {departureText}
             </Text>
           </View>
-          <Text style={[styles.fare, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-            ৳{ride.fare}
-          </Text>
         </View>
 
         {/* Info grid */}
         <View style={[styles.infoGrid, { backgroundColor: C.surface, borderColor: C.border }]}>
           <View style={styles.infoCell}>
-            <Text style={[styles.infoCellLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{t.rides2.seatsLeftLabel}</Text>
-            <Text style={[styles.infoCellTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-              {isFull ? t.rides2.full : `${Math.max(seatsLeft, 0)} / ${ride.seats_total}`}
+            <Text style={[styles.infoCellLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+              {t.rides2.seatsLeftLabel}
+            </Text>
+            <Text style={[styles.infoCellTxt, { color: isFull ? C.danger : C.text, fontFamily: FontFamily.jakartaBold }]}>
+              {isFull ? (t.rides2.full ?? 'Full') : `${Math.max(seatsLeft, 0)} / ${ride.seats_total}`}
             </Text>
           </View>
           <View style={[styles.infoCell, { borderLeftWidth: 1, borderLeftColor: C.border }]}>
-            <Text style={[styles.infoCellLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{t.rides2.farePerSeat}</Text>
+            <Text style={[styles.infoCellLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+              {t.rides2.farePerSeat}
+            </Text>
             <Text style={[styles.infoCellTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-              ৳{ride.fare}
+              {formatPrice(ride.fare)}
             </Text>
           </View>
         </View>
 
-        {/* Driver card */}
-        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>{t.rides2.driver}</Text>
-        <TouchableOpacity
-          style={[styles.driverCard, { backgroundColor: C.surface, borderColor: requested && contact?.whatsapp ? SectorColors.ride : C.border }]}
-          disabled={!contact?.whatsapp}
-          onPress={() => contact?.whatsapp && setContactTarget({ name: driverName ?? t.rides2.driver, phone: contact.whatsapp })}
-          activeOpacity={0.8}
-        >
-          <Avatar name={driverName ?? undefined} size="sm" />
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.driverName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-              {driverName ?? t.rides2.unknown}
+        {/* Driver Section */}
+        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
+          {t.rides2.driver ?? 'DRIVER'}
+        </Text>
+        <View style={[styles.driverCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+          <Avatar name={driverInfo?.full_name} size="md" />
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={[styles.driverName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+              {driverInfo?.full_name ?? (t.rides2.unknown ?? 'Driver')}
             </Text>
-            {requested && contact?.whatsapp && (
+            {driverInfo?.department ? (
+              <Text style={[styles.driverDept, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                {driverInfo.department}
+              </Text>
+            ) : null}
+            {requested && contact?.whatsapp ? (
               <View style={styles.contactRow}>
                 <Feather name="phone" size={13} color={C.textMuted} />
                 <Text style={[styles.contactTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>
                   {contact.whatsapp}
                 </Text>
               </View>
-            )}
-            {requested && !contact?.whatsapp && (
-              <Text style={[styles.contactTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium, marginTop: 4 }]}>
-                {t.rides2.requestSentNotified}
-              </Text>
-            )}
+            ) : null}
           </View>
-          {requested && contact?.whatsapp && (
-            <View style={[styles.callIconBtn, { backgroundColor: C.successBg }]}>
-              <Feather name="phone" size={15} color={C.success} />
-            </View>
-          )}
-        </TouchableOpacity>
 
-        {/* Notes + recurring */}
+          {/* If requested and contact available, direct action */}
+          {requested && contact?.whatsapp ? (
+            <TouchableOpacity
+              style={[styles.callBtn, { backgroundColor: C.successBg }]}
+              onPress={() => setContactTarget({ name: driverInfo?.full_name ?? (t.rides2.driverFallback ?? 'Driver'), phone: contact.whatsapp, id: ride.driver_id })}
+              activeOpacity={0.8}
+            >
+              <Feather name="phone" size={15} color={C.success} />
+            </TouchableOpacity>
+          ) : null}
+        </View>
+
+        {/* Pickup & Maps Button */}
+        <View style={styles.mapsRow}>
+          <TouchableOpacity
+            style={[styles.mapsBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+            onPress={openGoogleMaps}
+            activeOpacity={0.75}
+          >
+            <Feather name="map-pin" size={14} color={C.brand} />
+            <Text style={[styles.mapsBtnTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+              {t.rides2.openInMaps ?? 'Open in Maps'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Notes (if present) */}
         {ride.notes ? (
           <>
-            <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>{t.rides2.notes}</Text>
-            <View style={[styles.driverCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-              <Text style={[styles.contactTxt, { color: C.text2, fontFamily: FontFamily.jakartaMedium, fontSize: 13, lineHeight: 19 }]}>
+            <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
+              {t.rides2.notes ?? 'NOTES'}
+            </Text>
+            <View style={[styles.notesCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+              <Text style={[styles.notesTxt, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
                 {ride.notes}
               </Text>
             </View>
           </>
         ) : null}
-        {Array.isArray(ride.recurring) && ride.recurring.length > 0 && (
+
+        {/* Recurring routine pills (if present) */}
+        {Array.isArray(ride.recurring) && ride.recurring.length > 0 ? (
           <>
-            <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>{t.rides2.repeats}</Text>
+            <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
+              {t.rides2.repeats ?? 'REPEATS'}
+            </Text>
             <View style={styles.dayRow}>
               {ride.recurring.map((d: string) => (
                 <View key={d} style={[styles.dayPill, { backgroundColor: RIDE_BG }]}>
@@ -327,17 +501,17 @@ export function RideDetailScreen({ route, navigation }: any) {
               ))}
             </View>
           </>
-        )}
+        ) : null}
 
-        {/* Driver-only: seat requests with contact reveal */}
+        {/* Driver Section: Seat Requesters */}
         {isOwnRide && (
           <>
             <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
-              {t.rides2.seatRequests(requesters.length)} ({requesters.length})
+              {t.rides2.seatRequests?.(requesters.length) ?? 'PASSENGERS'} ({requesters.length})
             </Text>
             {requesters.length === 0 ? (
-              <Text style={[styles.contactTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                {t.rides2.noRequestsYet}
+              <Text style={[styles.emptyRidersTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                {t.rides2.noRequestsYet ?? 'No passengers yet.'}
               </Text>
             ) : (
               <View style={[styles.reqCard, { backgroundColor: C.surface, borderColor: C.border }]}>
@@ -346,30 +520,50 @@ export function RideDetailScreen({ route, navigation }: any) {
                     {i > 0 && <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: C.border }} />}
                     <View style={styles.reqRow}>
                       <Avatar name={r.full_name} size="sm" />
-                      <Text style={[styles.driverName, { color: C.text, fontFamily: FontFamily.jakartaBold, flex: 1 }]} numberOfLines={1}>
-                        {r.full_name}
-                      </Text>
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <Text style={[styles.riderName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                          {r.full_name}
+                        </Text>
+                        {r.department ? (
+                          <Text style={[styles.riderDept, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                            {r.department}
+                          </Text>
+                        ) : null}
+                      </View>
+
+                      {/* Contact / Reveal */}
                       {r.whatsapp ? (
                         <TouchableOpacity
-                          style={[styles.revealBtn, { backgroundColor: C.successBg }]}
-                          onPress={() => setContactTarget({ name: r.full_name, phone: r.whatsapp! })}
+                          style={[styles.smallBtn, { backgroundColor: C.successBg }]}
+                          onPress={() => setContactTarget({ name: r.full_name, phone: r.whatsapp!, id: r.requester_id })}
                           activeOpacity={0.75}
                         >
                           <Feather name="phone" size={12} color={C.success} />
-                          <Text style={[styles.revealTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
+                          <Text style={[styles.smallBtnTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
                             {r.whatsapp}
                           </Text>
                         </TouchableOpacity>
                       ) : (
                         <TouchableOpacity
-                          style={[styles.revealBtn, { backgroundColor: C.surface2 }]}
+                          style={[styles.smallBtn, { backgroundColor: C.surface2 }]}
                           onPress={() => revealRequester(r.requester_id)}
                           activeOpacity={0.75}
                         >
                           <Feather name="phone" size={12} color={C.text2} />
-                          <Text style={[styles.revealTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>{t.rides2.contact}</Text>
+                          <Text style={[styles.smallBtnTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                            {t.rides2.contact ?? 'Contact'}
+                          </Text>
                         </TouchableOpacity>
                       )}
+
+                      {/* Remove Rider Button */}
+                      <TouchableOpacity
+                        style={[styles.removeBtn, { backgroundColor: C.dangerBg }]}
+                        onPress={() => removeRider(r.requester_id, r.full_name)}
+                        activeOpacity={0.75}
+                      >
+                        <Feather name="x" size={14} color={C.danger} />
+                      </TouchableOpacity>
                     </View>
                   </View>
                 ))}
@@ -377,103 +571,330 @@ export function RideDetailScreen({ route, navigation }: any) {
             )}
 
             <TouchableOpacity
-              style={[styles.actionBtn, { backgroundColor: C.dangerBg, marginTop: 16 }]}
+              style={[styles.deleteRideBtn, { backgroundColor: C.dangerBg, borderColor: C.danger }]}
               onPress={deleteOwnRide}
               activeOpacity={0.85}
             >
               <Icon name="trash" size={16} color={C.danger} />
-              <Text style={[styles.actionTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>{t.rides2.deleteMyRide}</Text>
+              <Text style={[styles.deleteRideTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
+                {t.rides2.deleteMyRide ?? 'Delete My Ride'}
+              </Text>
             </TouchableOpacity>
           </>
         )}
 
-        {/* Action */}
+        {/* Passenger Booking Actions */}
         {!isOwnRide && (
           requested ? (
-            <View style={[styles.requestedBanner, { backgroundColor: C.successBg }]}>
-              <Feather name="check-circle" size={17} color={C.success} />
-              <Text style={[styles.requestedTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
-                {t.rides2.rideRequestedShown}
-              </Text>
+            <View style={styles.bookedActionBlock}>
+              <View style={[styles.confirmedBanner, { backgroundColor: C.successBg }]}>
+                <Feather name="check-circle" size={18} color={C.success} />
+                <Text style={[styles.confirmedTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
+                  {t.rides2.seatBooked ?? 'Seat Reserved'}
+                </Text>
+              </View>
+
+              {/* Instant WhatsApp Driver Button */}
+              {contact?.whatsapp ? (
+                <TouchableOpacity
+                  style={[styles.whatsappBtn, { backgroundColor: '#25D366' }]}
+                  onPress={() => {
+                    const wa = waHref(contact.whatsapp);
+                    if (wa) openUrl(wa);
+                  }}
+                  activeOpacity={0.85}
+                >
+                  <Feather name="message-circle" size={18} color="#fff" />
+                  <Text style={[styles.whatsappBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                    Chat on WhatsApp
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
+
+              {/* Cancel Seat Request Button */}
+              <TouchableOpacity
+                style={[styles.cancelSeatBtn, { borderColor: C.danger }]}
+                onPress={cancelMySeat}
+                disabled={actionBusy}
+                activeOpacity={0.8}
+              >
+                <Feather name="x-circle" size={16} color={C.danger} />
+                <Text style={[styles.cancelSeatTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
+                  {t.rides2.cancelSeat ?? 'Cancel Seat Request'}
+                </Text>
+              </TouchableOpacity>
             </View>
           ) : (
             <TouchableOpacity
-              style={[styles.actionBtn, {
-                backgroundColor: isFull ? C.surface2 : RIDE_COLOR,
-                opacity: isFull ? 0.6 : 1,
-              }]}
+              style={[
+                styles.actionBtn,
+                {
+                  backgroundColor: isFull ? C.surface2 : RIDE_COLOR,
+                  opacity: isFull ? 0.6 : 1,
+                },
+              ]}
               onPress={requestRide}
-              disabled={isFull}
+              disabled={isFull || actionBusy}
               activeOpacity={0.85}
             >
-              <Icon name="ride" size={17} color={isFull ? C.textMuted : C.white} />
-              <Text style={[styles.actionTxt, { color: isFull ? C.textMuted : C.white, fontFamily: FontFamily.jakartaBold }]}>
-                {isFull ? t.rides2.rideFull : t.rides2.requestRide}
-              </Text>
+              {actionBusy ? (
+                <ActivityIndicator color={isFull ? C.textMuted : C.white} size="small" />
+              ) : (
+                <>
+                  <Icon name="ride" size={17} color={isFull ? C.textMuted : C.white} />
+                  <Text style={[styles.actionTxt, { color: isFull ? C.textMuted : C.white, fontFamily: FontFamily.jakartaBold }]}>
+                    {isFull ? (t.rides2.rideFull ?? 'Ride Full') : (t.rides2.requestRide ?? 'Request a Seat')}
+                  </Text>
+                </>
+              )}
             </TouchableOpacity>
           )
         )}
 
-        {/* Admin moderation */}
+        {/* Admin Moderation */}
         {!isOwnRide && isAdmin && (
           <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: C.dangerBg, marginTop: 10 }]}
+            style={[styles.deleteRideBtn, { backgroundColor: C.dangerBg, marginTop: 12 }]}
             onPress={adminDelete}
             activeOpacity={0.85}
           >
             <Icon name="trash" size={16} color={C.danger} />
-            <Text style={[styles.actionTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>{t.rides2.deleteRideAdmin}</Text>
+            <Text style={[styles.deleteRideTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
+              {t.rides2.deleteRideAdmin ?? 'Delete Ride (Admin)'}
+            </Text>
           </TouchableOpacity>
         )}
 
-        <View style={{ height: 26 }} />
+        <View style={{ height: 32 }} />
       </ScrollView>
+
+      {/* Standard ContactSheet with in-app messaging fallback */}
       <ContactSheet
         visible={!!contactTarget}
         onClose={() => setContactTarget(null)}
-        title={t.rides2.contact}
+        title={t.rides2.contact ?? 'Contact'}
         name={contactTarget?.name ?? ''}
         phone={contactTarget?.phone}
+        inAppChatAction={
+          contactTarget?.id
+            ? () => {
+                const targetId = contactTarget.id!;
+                const targetName = contactTarget.name;
+                setContactTarget(null);
+                navigation.navigate('MessageThread', { kind: 'dm', id: targetId, title: targetName });
+              }
+            : undefined
+        }
       />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1 } as ViewStyle,
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
-  content: { paddingTop: 16, paddingBottom: 20 } as ViewStyle,
+  safe: { flex: 1 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  content: { paddingTop: 14, paddingBottom: 24 },
 
-  header: { flexDirection: 'row', alignItems: 'flex-start', gap: 13 } as ViewStyle,
-  thumb: { width: 54, height: 54, borderRadius: 16, alignItems: 'center', justifyContent: 'center', flexShrink: 0 } as ViewStyle,
-  route: { fontSize: 17, lineHeight: 24 } as any,
-  subTime: { fontSize: 12, marginTop: 3 } as any,
-  fare: { fontSize: 18, flexShrink: 0 } as any,
+  header: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  thumb: {
+    width: 50,
+    height: 50,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  route: {
+    fontSize: 17,
+    lineHeight: 24,
+  } as TextStyle,
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 6,
+  },
+  pill: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  pillTxt: { fontSize: 11 } as TextStyle,
+  subTime: {
+    fontSize: 12.5,
+    marginTop: 6,
+  } as TextStyle,
 
-  infoGrid: { flexDirection: 'row', borderRadius: 14, borderWidth: 1, overflow: 'hidden', marginTop: 16 } as ViewStyle,
-  infoCell: { flex: 1, padding: 12 } as ViewStyle,
-  infoCellLabel: { fontSize: 11, marginBottom: 4 } as any,
-  infoCellTxt: { fontSize: 14 } as any,
+  infoGrid: {
+    flexDirection: 'row',
+    borderRadius: 14,
+    borderWidth: 1,
+    overflow: 'hidden',
+    marginTop: 16,
+  },
+  infoCell: { flex: 1, padding: 12 },
+  infoCellLabel: { fontSize: 11, marginBottom: 4 } as TextStyle,
+  infoCellTxt: { fontSize: 15 } as TextStyle,
 
-  sectionLabel: { fontSize: 11, letterSpacing: 0.8, marginTop: 18, marginBottom: 8 } as any,
+  sectionLabel: {
+    fontSize: 11,
+    letterSpacing: 0.8,
+    marginTop: 18,
+    marginBottom: 8,
+  } as TextStyle,
 
-  driverCard: { flexDirection: 'row', alignItems: 'center', gap: 11, padding: 14, borderRadius: 14, borderWidth: 1 } as ViewStyle,
-  driverName: { fontSize: 14 } as any,
-  callIconBtn: { width: 36, height: 36, borderRadius: 11, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
-  contactRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 } as ViewStyle,
-  contactTxt: { fontSize: 12 } as any,
+  driverCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  driverName: { fontSize: 14.5 } as TextStyle,
+  driverDept: { fontSize: 12, marginTop: 2 } as TextStyle,
+  contactRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 4,
+  },
+  contactTxt: { fontSize: 12.5 } as TextStyle,
+  callBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
-  requestedBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 14, borderRadius: 14, marginTop: 18 } as ViewStyle,
-  requestedTxt: { fontSize: 13, flex: 1 } as any,
+  mapsRow: {
+    marginTop: 10,
+  },
+  mapsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    height: 42,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  mapsBtnTxt: { fontSize: 13 } as TextStyle,
 
-  actionBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: 14, marginTop: 20 } as ViewStyle,
-  actionTxt: { fontSize: 15 } as any,
+  notesCard: {
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  notesTxt: {
+    fontSize: 13,
+    lineHeight: 19,
+  } as TextStyle,
 
-  dayRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 } as ViewStyle,
-  dayPill: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999 } as ViewStyle,
-  dayTxt: { fontSize: 11.5 } as any,
-  reqCard: { borderRadius: 14, borderWidth: 1, overflow: 'hidden' } as ViewStyle,
-  reqRow: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12 } as ViewStyle,
-  revealBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 9 } as ViewStyle,
-  revealTxt: { fontSize: 11.5 } as any,
+  dayRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  dayPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+  },
+  dayTxt: { fontSize: 11.5 } as TextStyle,
+
+  emptyRidersTxt: {
+    fontSize: 13,
+    marginVertical: 4,
+  } as TextStyle,
+  reqCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  reqRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 12,
+  },
+  riderName: { fontSize: 13.5 } as TextStyle,
+  riderDept: { fontSize: 11, marginTop: 2 } as TextStyle,
+  smallBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 8,
+  },
+  smallBtnTxt: { fontSize: 11.5 } as TextStyle,
+  removeBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  bookedActionBlock: {
+    marginTop: 20,
+    gap: 10,
+  },
+  confirmedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    height: 46,
+    borderRadius: 12,
+  },
+  confirmedTxt: { fontSize: 14 } as TextStyle,
+  whatsappBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    height: 48,
+    borderRadius: 12,
+  },
+  whatsappBtnTxt: { fontSize: 14 } as TextStyle,
+  cancelSeatBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    height: 46,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  cancelSeatTxt: { fontSize: 13.5 } as TextStyle,
+
+  actionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    height: 50,
+    borderRadius: 14,
+    marginTop: 22,
+  },
+  actionTxt: { fontSize: 15 } as TextStyle,
+
+  deleteRideBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    height: 46,
+    borderRadius: 12,
+    marginTop: 18,
+  },
+  deleteRideTxt: { fontSize: 14 } as TextStyle,
 });

@@ -782,3 +782,29 @@ The following screens contain segmented control bars slated for this animated pa
 7. **Cache Mutation Sync:** `syncDirectoryCache` in `connectionsService.ts` ensures `CacheKeys.DIRECTORY(uid)` in `AsyncStorage` updates immediately upon connect, cancel, accept, decline, and disconnect.
 8. **Web Parity:** `StudentDirectory.jsx` and `store.jsx` synchronize DM roster upon accept/disconnect via `loadMessages()` and match tokenized search filtering.
 
+---
+
+## 25. Campus Rides (Ride Share) Modernization & Polish
+
+### 25.1 Architecture & Core Components
+- **Screens & Components:** `RidesScreen.tsx`, `RideDetailScreen.tsx`, `RidePostScreen.tsx`, `CampusToday.tsx` (Mobile) and `Rides.jsx`, `store.jsx` (Web).
+- **Database Migration (`20261012000000_rides_enhancements.sql`):**
+  - Mutual deletion RLS policy on `ride_requests` (`ride_req_delete`): passengers can cancel seat requests, drivers can remove passengers.
+  - Admin view RLS policy on `ride_requests` (`ride_req_select`).
+  - Triggers: `trg_notify_ride_request_event` (notifies driver on seat booking, notifies passenger if removed) and `trg_notify_ride_cancelled` (notifies all booked passengers when driver deletes a ride).
+  - Timezone-safe Asia/Dhaka expiry trigger `set_ride_expires_at`.
+
+### 25.2 Key Features & Enhancements
+1. **Clutter-Free Feed:** Minimalist search bar, direction filter tabs (`All`, `To Campus`, `From Campus`), and departure filtering (`isRideDeparted`) that hides past morning rides on the current day.
+2. **Full-Width Cards:** Driver avatar, name, department, vehicle badge (`🚗 Car`, `🛺 CNG`, `🏍️ Bike`), humanized departure ("Today at 8:00 AM", "Tomorrow at 5:00 PM"), and fare.
+3. **Mutual Cancellation:** Passengers can cancel their seat booking at any time with alert confirmation. Drivers can remove individual passengers directly from the seat requests list.
+4. **Direct Contact & Navigation:**
+   - Native `ContactSheet.tsx` integration with one-tap WhatsApp launcher, phone dialer, copy number, and in-app chat fallback.
+   - Level 1 "Open in Maps" intent opening pickup/meeting point in Google Maps without battery drain or Play Store location permission hurdles.
+5. **Streamlined Ride Posting:**
+   - 3 large vehicle selector buttons with automatic seat limits (Bike max 1, CNG max 3, Car max 4).
+   - One-tap date chips (`Today` / `Tomorrow`), time presets (`07:30`, `08:00`, `08:30`, `09:00`, `13:00`, `16:30`), and quick transit hub chips (Mirpur 10, Uttara, Shyamoli, Dhanmondi, Kalyanpur, Mohammadpur).
+6. **Campus Today Commute Widget:** `CampusToday.tsx` surfaces upcoming rides with available seats directly on the Home screen.
+7. **Web Parity:** `fixit-campus/src/screens/rides/Rides.jsx` and `store.jsx` updated with matching seat cancellation, passenger removal, and Google Maps integration.
+
+
