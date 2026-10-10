@@ -90,6 +90,13 @@ function addDhakaDays(days: number): string {
   return d.toISOString().split('T')[0];
 }
 
+function semesterChipLabel(sem: number, anyLabel: string) {
+  if (sem === 1) return anyLabel;
+  if (sem === 2) return '2nd+';
+  if (sem === 3) return '3rd+';
+  return `${sem}th+`;
+}
+
 export function JobPostScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
   const t = useT();
@@ -118,6 +125,16 @@ export function JobPostScreen({ navigation }: any) {
   const [myClubs, setMyClubs] = useState<{ id: string; name: string }[]>([]);
   const [clubId, setClubId] = useState<string | null>(null);
 
+  // Permission guard: ensure only authorized posters can access
+  useEffect(() => {
+    supabase.rpc('can_post_jobs').then(({ data }) => {
+      if (data === false) {
+        toast({ type: 'error', title: t.jobs2.accessDenied, message: 'You do not have permission to post jobs or circulars.' });
+        navigation.goBack();
+      }
+    });
+  }, [navigation, toast, t]);
+
   // Clubs the user leads (president/vp)
   useEffect(() => {
     if (!user) return;
@@ -144,6 +161,28 @@ export function JobPostScreen({ navigation }: any) {
     (applyMethod === 'file' ? !!pickedFile : applyValue.trim().length > 0);
 
   const dhakaToday = localToday();
+
+  const jobTypes: { id: Job['job_type']; label: string }[] = [
+    { id: 'internship', label: t.jobs2?.internship ?? 'Internship' },
+    { id: 'tuition',    label: t.jobs2?.tuition ?? 'Tuition' },
+    { id: 'on_campus',  label: t.jobs2?.onCampus ?? 'On-Campus' },
+    { id: 'part_time',  label: t.jobs2?.partTime ?? 'Part-time' },
+    { id: 'full_time',  label: t.jobs2?.fullTime ?? 'Full-time' },
+    { id: 'freelance',  label: t.jobs2?.freelance ?? 'Freelance' },
+  ];
+
+  const modes: { id: Job['work_mode']; label: string }[] = [
+    { id: 'onsite', label: t.jobs2?.onsite ?? 'On-site' },
+    { id: 'remote', label: t.jobs2?.remote ?? 'Remote' },
+    { id: 'hybrid', label: t.jobs2?.hybrid ?? 'Hybrid' },
+  ];
+
+  const compensationOptions: { id: NonNullable<Job['compensation_type']>; label: string }[] = [
+    { id: 'paid',        label: t.jobs2?.paid ?? 'Paid / Stipend' },
+    { id: 'conveyance',  label: t.jobs2?.conveyance ?? 'Conveyance' },
+    { id: 'negotiable',  label: t.jobs2?.negotiable ?? 'Negotiable' },
+    { id: 'unpaid',      label: t.jobs2?.unpaid ?? 'Experience' },
+  ];
 
   async function pickPdfFile() {
     try {
@@ -178,9 +217,32 @@ export function JobPostScreen({ navigation }: any) {
   async function handleSubmit() {
     if (!canSubmit || !user || loading) return;
 
-    if (deadline.trim() && !isValidDate(deadline)) {
-      toast({ type: 'error', title: t.common.error, message: t.common.invalidDate });
-      return;
+    if (deadline.trim()) {
+      if (!isValidDate(deadline)) {
+        toast({ type: 'error', title: t.common.error, message: t.common.invalidDate });
+        return;
+      }
+      if (deadline.trim() < dhakaToday) {
+        toast({ type: 'error', title: t.common.error, message: t.jobs2?.deadlinePast ?? 'Deadline cannot be in the past.' });
+        return;
+      }
+    }
+
+    if (applyMethod === 'email') {
+      const emailTrimmed = applyValue.trim();
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(emailTrimmed)) {
+        toast({ type: 'error', title: t.common.error, message: 'Please enter a valid email address.' });
+        return;
+      }
+    }
+
+    if (applyMethod === 'link') {
+      const linkTrimmed = applyValue.trim();
+      if (!linkTrimmed.includes('.')) {
+        toast({ type: 'error', title: t.common.error, message: 'Please enter a valid application URL.' });
+        return;
+      }
     }
 
     setLoading(true);
@@ -319,7 +381,7 @@ export function JobPostScreen({ navigation }: any) {
             {t.jobs2.type}
           </Text>
           <View style={styles.typeGrid}>
-            {JOB_TYPES.map(jt => {
+            {jobTypes.map(jt => {
               const on = jobType === jt.id;
               return (
                 <TouchableOpacity
@@ -343,7 +405,7 @@ export function JobPostScreen({ navigation }: any) {
 
           {/* Target Department Filter */}
           <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-            TARGET DEPARTMENT
+            {t.jobs2?.targetDept ?? 'TARGET DEPARTMENT'}
           </Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }} contentContainerStyle={{ gap: 7, paddingVertical: 2 }}>
             {JOB_DEPARTMENTS.map(dept => {
@@ -361,7 +423,7 @@ export function JobPostScreen({ navigation }: any) {
                   activeOpacity={0.75}
                 >
                   <Text style={[styles.deptChipTxt, { color: on ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                    {dept.label}
+                    {dept.code === 'ALL' ? (t.jobs2?.allDepts ?? dept.label) : dept.label}
                   </Text>
                 </TouchableOpacity>
               );
@@ -372,14 +434,14 @@ export function JobPostScreen({ navigation }: any) {
           <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
             {t.jobs2.workMode}
           </Text>
-          <SegControl options={MODES} value={workMode} onChange={setWorkMode} C={C} />
+          <SegControl options={modes} value={workMode} onChange={setWorkMode} C={C} />
 
           {/* Compensation Model */}
           <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-            COMPENSATION & SALARY
+            {t.jobs2?.salaryLabel ?? 'COMPENSATION & SALARY'}
           </Text>
           <SegControl
-            options={COMPENSATION_OPTIONS}
+            options={compensationOptions}
             value={compensationType}
             onChange={setCompensationType}
             C={C}
@@ -437,7 +499,7 @@ export function JobPostScreen({ navigation }: any) {
           <View style={styles.row}>
             <View style={styles.halfField}>
               <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>
-                MIN SEMESTER
+                {t.jobs2?.minSemester ?? 'MIN SEMESTER'}
               </Text>
               <View style={{ flexDirection: 'row', gap: 6, marginTop: 4 }}>
                 {[1, 3, 5, 7].map(sem => {
@@ -455,7 +517,7 @@ export function JobPostScreen({ navigation }: any) {
                       activeOpacity={0.75}
                     >
                       <Text style={[styles.semChipTxt, { color: on ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                        {sem === 1 ? 'Any' : `${sem}th+`}
+                        {semesterChipLabel(sem, t.jobs2?.anySemester ?? 'Any')}
                       </Text>
                     </TouchableOpacity>
                   );
@@ -465,7 +527,7 @@ export function JobPostScreen({ navigation }: any) {
 
             <View style={styles.halfField}>
               <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>
-                ALUMNI REFERRAL
+                {t.jobs2?.alumniReferral ?? 'ALUMNI REFERRAL'}
               </Text>
               <TouchableOpacity
                 style={[
@@ -479,7 +541,7 @@ export function JobPostScreen({ navigation }: any) {
               >
                 <Feather name="award" size={15} color={isAlumniReferral ? Accent.gold : C.textMuted} />
                 <Text style={[styles.alumniToggleTxt, { color: isAlumniReferral ? Accent.gold : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                  {isAlumniReferral ? 'Alumni Job' : 'Regular'}
+                  {isAlumniReferral ? (t.jobs2?.alumniReferral ?? 'Alumni Job') : 'Regular'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -487,7 +549,7 @@ export function JobPostScreen({ navigation }: any) {
 
           {/* Skills Required */}
           <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-            SKILLS / SUBJECTS (COMMA SEPARATED)
+            {t.jobs2?.requiredSkills ?? 'SKILLS / SUBJECTS (COMMA SEPARATED)'}
           </Text>
           <TextInput
             style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
@@ -557,7 +619,7 @@ export function JobPostScreen({ navigation }: any) {
 
           {/* How to Apply */}
           <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-            HOW TO APPLY
+            {t.jobs2?.applyTitle ?? 'HOW TO APPLY'}
           </Text>
           <SegControl
             options={APPLY_METHODS}
@@ -617,7 +679,7 @@ export function JobPostScreen({ navigation }: any) {
                 >
                   <Feather name="upload" size={18} color={C.brand} />
                   <Text style={[styles.filePickTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
-                    Upload Circular PDF
+                    {t.jobs2?.uploadResume ?? 'Upload Circular PDF'}
                   </Text>
                 </TouchableOpacity>
               )}
@@ -640,7 +702,7 @@ export function JobPostScreen({ navigation }: any) {
               <>
                 <Icon name="check" size={18} color={canSubmit ? '#fff' : C.textMuted} />
                 <Text style={[styles.submitText, { color: canSubmit ? '#fff' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                  Post Listing
+                  {t.jobs2?.postListing ?? 'Post Listing'}
                 </Text>
               </>
             )}

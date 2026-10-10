@@ -52,13 +52,19 @@ function jobStatusTone(C: any, t: any, k: JobStatus, isDark?: boolean): { label:
   }
 }
 
-function appStatusTone(C: any, status: JobApplication['status']) {
+function appStatusTone(C: any, t: any, status: JobApplication['status']) {
   switch (status) {
-    case 'shortlisted': return { label: 'Shortlisted 🎉', fg: C.success, bg: C.successBg };
-    case 'viewed':      return { label: 'Viewed by Recruiter', fg: C.info, bg: C.infoBg };
-    case 'rejected':    return { label: 'Not Selected', fg: Accent.slate, bg: 'rgba(100, 116, 139, 0.12)' };
-    default:            return { label: 'Application Submitted', fg: C.brand, bg: `${SectorColors.jobs}1a` };
+    case 'shortlisted': return { label: t.jobs2?.candidateShortlisted ?? 'Shortlisted 🎉', fg: C.success, bg: C.successBg };
+    case 'viewed':      return { label: t.jobs2?.candidateViewed ?? 'Viewed by Recruiter', fg: C.info, bg: C.infoBg };
+    case 'rejected':    return { label: t.jobs2?.candidateRejected ?? 'Not Selected', fg: Accent.slate, bg: 'rgba(100, 116, 139, 0.12)' };
+    default:            return { label: t.jobs2?.applicationSubmitted ?? 'Application Submitted', fg: C.brand, bg: `${SectorColors.jobs}1a` };
   }
+}
+
+function formatSemester(sem?: number | null, t?: any): string {
+  if (!sem || sem <= 1) return t?.jobs2?.anySemester ?? 'Any Semester';
+  const ord = sem === 1 ? '1st' : sem === 2 ? '2nd' : sem === 3 ? '3rd' : `${sem}th`;
+  return `${ord} Sem+`;
 }
 
 const REPORT_REASONS = ['Spam', 'Scam', 'Expired', 'Inappropriate'];
@@ -121,6 +127,21 @@ export function JobDetailScreen({ route, navigation }: any) {
   }, [jobId, user?.id]);
 
   useFocusEffect(useCallback(() => { loadJob(); }, [loadJob]));
+
+  // When poster opens candidate list, automatically update submitted applications to viewed
+  useEffect(() => {
+    if (viewApplicantsOpen && jobApplications.length > 0) {
+      const unviewed = jobApplications.filter(a => a.status === 'submitted');
+      if (unviewed.length > 0) {
+        unviewed.forEach(app => {
+          updateApplicationStatus(app.id, 'viewed');
+        });
+        setJobApplications(prev =>
+          prev.map(a => (a.status === 'submitted' ? { ...a, status: 'viewed' } : a))
+        );
+      }
+    }
+  }, [viewApplicantsOpen, jobApplications]);
 
   async function handleToggleSave() {
     if (!user || !job) return;
@@ -249,7 +270,7 @@ export function JobDetailScreen({ route, navigation }: any) {
       setApplyModalOpen(false);
       setApplicantCoverNote('');
       setApplicantResume(null);
-      toast({ type: 'success', title: 'Application Submitted!', message: 'The recruiter has been notified.' });
+      toast({ type: 'success', title: t.jobs2?.applicationSubmitted ?? 'Application Submitted!', message: 'The recruiter has been notified.' });
     } catch (e: any) {
       toast({ type: 'error', title: t.common.error, message: e?.message ?? 'Failed to apply' });
     } finally {
@@ -259,22 +280,26 @@ export function JobDetailScreen({ route, navigation }: any) {
 
   function handleWithdrawApp() {
     if (!myApplication) return;
-    Alert.alert('Withdraw Application', 'Are you sure you want to withdraw your application?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Withdraw',
-        style: 'destructive',
-        onPress: async () => {
-          const res = await withdrawJobApplication(myApplication.id);
-          if (!res.success) {
-            toast({ type: 'error', title: t.common.error, message: res.error });
-            return;
-          }
-          setMyApplication(null);
-          toast({ type: 'info', title: 'Application Withdrawn' });
+    Alert.alert(
+      t.jobs2?.withdrawApplication ?? 'Withdraw Application',
+      t.jobs2?.withdrawApplicationConfirm ?? 'Are you sure you want to withdraw your application?',
+      [
+        { text: t.common.cancel, style: 'cancel' },
+        {
+          text: t.jobs2?.withdrawBtn ?? 'Withdraw',
+          style: 'destructive',
+          onPress: async () => {
+            const res = await withdrawJobApplication(myApplication.id);
+            if (!res.success) {
+              toast({ type: 'error', title: t.common.error, message: res.error });
+              return;
+            }
+            setMyApplication(null);
+            toast({ type: 'info', title: 'Application Withdrawn' });
+          },
         },
-      },
-    ]);
+      ]
+    );
   }
 
   async function handleUpdateCandidateStatus(appId: string, newStatus: 'shortlisted' | 'rejected') {
@@ -305,13 +330,18 @@ export function JobDetailScreen({ route, navigation }: any) {
   const isOwn = job.posted_by === user?.id;
   const isRemoved = computedStatus === 'removed';
   const isExpired = computedStatus === 'expired';
-  const daysLeft = daysRemainingLabel(job.deadline);
-  const myAppTone = myApplication ? appStatusTone(C, myApplication.status) : null;
+  const daysLeft = daysRemainingLabel(job.deadline, {
+    today: t.jobs2?.closesToday,
+    tomorrow: t.jobs2?.closesTomorrow,
+    inDays: t.jobs2?.closesInDays,
+    closed: t.jobs2?.closedOn,
+  });
+  const myAppTone = myApplication ? appStatusTone(C, t, myApplication.status) : null;
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar
-        title="Jobs"
+        title={t.jobs2?.jobsTitle ?? "Jobs"}
         onBack={() => navigation.goBack()}
         rightSlot={
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -377,7 +407,7 @@ export function JobDetailScreen({ route, navigation }: any) {
             <View style={[styles.alumniBadge, { backgroundColor: isDark ? 'rgba(234, 179, 8, 0.2)' : '#fef9c3', borderColor: Accent.gold }]}>
               <Feather name="award" size={12} color={Accent.gold} />
               <Text style={[styles.alumniBadgeTxt, { color: Accent.gold, fontFamily: FontFamily.jakartaBold }]}>
-                BUBT Alumni Referral
+                {t.jobs2?.bubtAlumni ?? 'BUBT Alumni Referral'}
               </Text>
             </View>
           )}
@@ -410,7 +440,7 @@ export function JobDetailScreen({ route, navigation }: any) {
               <View style={styles.specsVal}>
                 <Feather name="dollar-sign" size={13} color={C.textMuted} />
                 <Text style={[styles.specsValTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                  {job.stipend ?? 'Negotiable'}
+                  {job.stipend ?? t.jobs2?.negotiable ?? 'Negotiable'}
                 </Text>
               </View>
             </View>
@@ -419,24 +449,24 @@ export function JobDetailScreen({ route, navigation }: any) {
           <View style={[styles.specsRow, { borderTopWidth: 1, borderTopColor: C.border }]}>
             <View style={styles.specsCell}>
               <Text style={[styles.specsLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                TARGET DEPT
+                {t.jobs2?.targetDept ?? 'TARGET DEPT'}
               </Text>
               <View style={styles.specsVal}>
                 <Feather name="book" size={13} color={C.textMuted} />
                 <Text style={[styles.specsValTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                  {job.department_code === 'ALL' || !job.department_code ? 'All Departments' : `Dept: ${job.department_code}`}
+                  {job.department_code === 'ALL' || !job.department_code ? (t.jobs2?.allDepts ?? 'All Departments') : `Dept: ${job.department_code}`}
                 </Text>
               </View>
             </View>
 
             <View style={[styles.specsCell, { borderLeftWidth: 1, borderLeftColor: C.border }]}>
               <Text style={[styles.specsLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                MIN SEMESTER
+                {t.jobs2?.minSemester ?? 'MIN SEMESTER'}
               </Text>
               <View style={styles.specsVal}>
                 <Feather name="layers" size={13} color={C.textMuted} />
                 <Text style={[styles.specsValTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                  {job.min_semester && job.min_semester > 1 ? `${job.min_semester}th Sem+` : 'Any Semester'}
+                  {formatSemester(job.min_semester, t)}
                 </Text>
               </View>
             </View>
@@ -447,7 +477,7 @@ export function JobDetailScreen({ route, navigation }: any) {
         {job.skills && job.skills.length > 0 && (
           <View style={{ marginTop: 14 }}>
             <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
-              REQUIRED SKILLS / SUBJECTS
+              {t.jobs2?.requiredSkills ?? 'REQUIRED SKILLS / SUBJECTS'}
             </Text>
             <View style={styles.skillsRow}>
               {job.skills.map((skill: string, idx: number) => (
@@ -463,7 +493,7 @@ export function JobDetailScreen({ route, navigation }: any) {
 
         {/* Shared By / Recruiter Card */}
         <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
-          SHARED BY
+          {t.jobs2?.sharedBy ?? 'SHARED BY'}
         </Text>
         <View style={[styles.posterCard, { backgroundColor: C.surface, borderColor: C.border }]}>
           <Avatar name={poster?.full_name || job.posted_by_name} size="md" />
@@ -501,7 +531,7 @@ export function JobDetailScreen({ route, navigation }: any) {
           <View style={[styles.candidatesBanner, { backgroundColor: C.surface, borderColor: C.border }]}>
             <View style={{ flex: 1 }}>
               <Text style={[styles.candidatesBannerTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                Candidates Applied
+                {t.jobs2?.candidatesApplied ?? 'Candidates Applied'}
               </Text>
               <Text style={[styles.candidatesBannerSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
                 {jobApplications.length} application{jobApplications.length === 1 ? '' : 's'} received
@@ -513,7 +543,7 @@ export function JobDetailScreen({ route, navigation }: any) {
               activeOpacity={0.8}
             >
               <Text style={[styles.viewCandidatesTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
-                View Candidates
+                {t.jobs2?.viewCandidates ?? 'View Candidates'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -544,7 +574,7 @@ export function JobDetailScreen({ route, navigation }: any) {
             >
               <Feather name="x-circle" size={14} color={C.textMuted} />
               <Text style={[styles.withdrawAppTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                Withdraw Application
+                {t.jobs2?.withdrawApplication ?? 'Withdraw Application'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -725,104 +755,106 @@ export function JobDetailScreen({ route, navigation }: any) {
       <Modal visible={applyModalOpen} transparent animationType="slide" onRequestClose={() => setApplyModalOpen(false)}>
         <KeyboardAvoidingView style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }} behavior="padding">
           <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setApplyModalOpen(false)} />
-          <View style={[styles.sheet, { backgroundColor: C.surface }]}>
+          <View style={[styles.sheet, { backgroundColor: C.surface, maxHeight: '85%' }]}>
             <View style={styles.sheetHandle} />
-            <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-              Apply for {job.title}
-            </Text>
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+                {t.jobs2?.applyNow ? `${t.jobs2.applyNow} · ${job.title}` : `Apply for ${job.title}`}
+              </Text>
 
-            {/* Applicant Summary */}
-            <View style={[styles.applicantSummaryCard, { backgroundColor: C.surface2, borderColor: C.border }]}>
-              <Avatar name={profile?.full_name || 'BUBT'} size="sm" />
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <Text style={[styles.applicantName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                  {profile?.full_name || 'BUBT Student'}
-                </Text>
-                <Text style={[styles.applicantDept, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                  {profile?.department || 'BUBT'} · ID: {profile?.student_id || 'Student'}
-                </Text>
-              </View>
-            </View>
-
-            {/* Contact Phone */}
-            <Text style={[styles.inputLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-              CONTACT PHONE / WHATSAPP
-            </Text>
-            <TextInput
-              style={[styles.modalInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-              value={applicantPhone}
-              onChangeText={setApplicantPhone}
-              placeholder="e.g. 01700000000"
-              placeholderTextColor={C.textMuted}
-              keyboardType="phone-pad"
-            />
-
-            {/* Resume Upload */}
-            <Text style={[styles.inputLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-              RESUME / CV (PDF)
-            </Text>
-            {applicantResume ? (
-              <View style={[styles.resumePickedCard, { backgroundColor: C.bg, borderColor: C.border }]}>
-                <Feather name="file-text" size={18} color={SectorColors.jobs} />
+              {/* Applicant Summary */}
+              <View style={[styles.applicantSummaryCard, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                <Avatar name={profile?.full_name || 'BUBT'} size="sm" />
                 <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={[styles.resumeNameTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                    {applicantResume.name}
+                  <Text style={[styles.applicantName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    {profile?.full_name || 'BUBT Student'}
                   </Text>
-                  {applicantResume.size ? (
-                    <Text style={[styles.resumeSizeTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                      {formatFileSize(applicantResume.size)}
-                    </Text>
-                  ) : null}
+                  <Text style={[styles.applicantDept, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                    {profile?.department || 'BUBT'} · ID: {profile?.student_id || 'Student'}
+                  </Text>
                 </View>
-                <TouchableOpacity onPress={() => setApplicantResume(null)} hitSlop={8}>
-                  <Feather name="x" size={17} color={C.textMuted} />
-                </TouchableOpacity>
               </View>
-            ) : (
-              <TouchableOpacity
-                style={[styles.resumePickBtn, { backgroundColor: C.bg, borderColor: C.border }]}
-                onPress={handlePickResume}
-                activeOpacity={0.75}
-              >
-                <Feather name="upload" size={16} color={C.brand} />
-                <Text style={[styles.resumePickTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
-                  Upload Resume PDF
-                </Text>
-              </TouchableOpacity>
-            )}
 
-            {/* Short Pitch / Cover Note */}
-            <Text style={[styles.inputLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-              SHORT COVER NOTE (OPTIONAL)
-            </Text>
-            <TextInput
-              style={[styles.modalTextarea, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-              value={applicantCoverNote}
-              onChangeText={setApplicantCoverNote}
-              placeholder="Briefly describe your relevant skills or experience..."
-              placeholderTextColor={C.textMuted}
-              multiline
-              textAlignVertical="top"
-            />
+              {/* Contact Phone */}
+              <Text style={[styles.inputLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                {t.jobs2?.contactPhone ?? 'CONTACT PHONE / WHATSAPP'}
+              </Text>
+              <TextInput
+                style={[styles.modalInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                value={applicantPhone}
+                onChangeText={setApplicantPhone}
+                placeholder="e.g. 01700000000"
+                placeholderTextColor={C.textMuted}
+                keyboardType="phone-pad"
+              />
 
-            {/* Submit Application Button */}
-            <TouchableOpacity
-              style={[styles.actionBtn, { backgroundColor: C.brand, opacity: applying ? 0.6 : 1, marginTop: 16 }]}
-              onPress={handleApply}
-              disabled={applying}
-              activeOpacity={0.85}
-            >
-              {applying ? (
-                <ActivityIndicator color="#fff" />
+              {/* Resume Upload */}
+              <Text style={[styles.inputLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                {t.jobs2?.resumePdf ?? 'RESUME / CV (PDF)'}
+              </Text>
+              {applicantResume ? (
+                <View style={[styles.resumePickedCard, { backgroundColor: C.bg, borderColor: C.border }]}>
+                  <Feather name="file-text" size={18} color={SectorColors.jobs} />
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={[styles.resumeNameTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                      {applicantResume.name}
+                    </Text>
+                    {applicantResume.size ? (
+                      <Text style={[styles.resumeSizeTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                        {formatFileSize(applicantResume.size)}
+                      </Text>
+                    ) : null}
+                  </View>
+                  <TouchableOpacity onPress={() => setApplicantResume(null)} hitSlop={8}>
+                    <Feather name="x" size={17} color={C.textMuted} />
+                  </TouchableOpacity>
+                </View>
               ) : (
-                <>
-                  <Icon name="check" size={18} color="#fff" />
-                  <Text style={[styles.actionTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
-                    Submit Application
+                <TouchableOpacity
+                  style={[styles.resumePickBtn, { backgroundColor: C.bg, borderColor: C.border }]}
+                  onPress={handlePickResume}
+                  activeOpacity={0.75}
+                >
+                  <Feather name="upload" size={16} color={C.brand} />
+                  <Text style={[styles.resumePickTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+                    {t.jobs2?.uploadResume ?? 'Upload Resume PDF'}
                   </Text>
-                </>
+                </TouchableOpacity>
               )}
-            </TouchableOpacity>
+
+              {/* Short Pitch / Cover Note */}
+              <Text style={[styles.inputLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                {t.jobs2?.coverNoteOptional ?? 'SHORT COVER NOTE (OPTIONAL)'}
+              </Text>
+              <TextInput
+                style={[styles.modalTextarea, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                value={applicantCoverNote}
+                onChangeText={setApplicantCoverNote}
+                placeholder="Briefly describe your relevant skills or experience..."
+                placeholderTextColor={C.textMuted}
+                multiline
+                textAlignVertical="top"
+              />
+
+              {/* Submit Application Button */}
+              <TouchableOpacity
+                style={[styles.actionBtn, { backgroundColor: C.brand, opacity: applying ? 0.6 : 1, marginTop: 16 }]}
+                onPress={handleApply}
+                disabled={applying}
+                activeOpacity={0.85}
+              >
+                {applying ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <>
+                    <Icon name="check" size={18} color="#fff" />
+                    <Text style={[styles.actionTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                      {t.jobs2?.submitApplication ?? 'Submit Application'}
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
           </View>
         </KeyboardAvoidingView>
       </Modal>
@@ -835,7 +867,7 @@ export function JobDetailScreen({ route, navigation }: any) {
             <View style={styles.sheetHandle} />
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
               <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold, marginBottom: 0 }]}>
-                Candidates ({jobApplications.length})
+                {t.jobs2?.candidatesApplied ?? 'Candidates'} ({jobApplications.length})
               </Text>
               <TouchableOpacity onPress={() => setViewApplicantsOpen(false)} hitSlop={8}>
                 <Feather name="x" size={20} color={C.textMuted} />
@@ -846,12 +878,12 @@ export function JobDetailScreen({ route, navigation }: any) {
               {jobApplications.length === 0 ? (
                 <View style={{ paddingVertical: 40, alignItems: 'center' }}>
                   <Text style={{ color: C.textMuted, fontFamily: FontFamily.jakartaMedium }}>
-                    No candidates have applied yet.
+                    {t.jobs2?.noCandidatesYet ?? 'No candidates have applied yet.'}
                   </Text>
                 </View>
               ) : (
                 jobApplications.map(app => {
-                  const tone = appStatusTone(C, app.status);
+                  const tone = appStatusTone(C, t, app.status);
                   return (
                     <View key={app.id} style={[styles.candidateCard, { backgroundColor: C.bg, borderColor: C.border }]}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
@@ -886,7 +918,7 @@ export function JobDetailScreen({ route, navigation }: any) {
                           >
                             <Feather name="file-text" size={14} color={SectorColors.jobs} />
                             <Text style={[styles.candidateActionTxt, { color: SectorColors.jobs, fontFamily: FontFamily.jakartaBold }]}>
-                              View Resume
+                              {t.jobs2?.viewResume ?? 'View Resume'}
                             </Text>
                           </TouchableOpacity>
                         )}
@@ -904,7 +936,7 @@ export function JobDetailScreen({ route, navigation }: any) {
                         >
                           <Feather name="phone" size={14} color={C.brand} />
                           <Text style={[styles.candidateActionTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
-                            Contact
+                            {t.jobs2?.contact ?? 'Contact'}
                           </Text>
                         </TouchableOpacity>
 
@@ -916,7 +948,7 @@ export function JobDetailScreen({ route, navigation }: any) {
                           >
                             <Feather name="check" size={14} color={C.success} />
                             <Text style={[styles.candidateActionTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
-                              Shortlist
+                              {t.jobs2?.shortlist ?? 'Shortlist'}
                             </Text>
                           </TouchableOpacity>
                         )}
@@ -929,7 +961,7 @@ export function JobDetailScreen({ route, navigation }: any) {
                           >
                             <Feather name="x" size={14} color={C.danger} />
                             <Text style={[styles.candidateActionTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
-                              Reject
+                              {t.jobs2?.reject ?? 'Reject'}
                             </Text>
                           </TouchableOpacity>
                         )}

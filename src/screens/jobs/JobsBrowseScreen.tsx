@@ -42,12 +42,12 @@ function jobStatusTone(C: any, t: any, k: JobStatus, isDark?: boolean): { label:
   }
 }
 
-function appStatusTone(C: any, status: JobApplication['status']) {
+function appStatusTone(C: any, t: any, status: JobApplication['status']) {
   switch (status) {
-    case 'shortlisted': return { label: 'Shortlisted 🎉', fg: C.success, bg: C.successBg };
-    case 'viewed':      return { label: 'Viewed by Recruiter', fg: C.info, bg: C.infoBg };
-    case 'rejected':    return { label: 'Not Selected', fg: Accent.slate, bg: 'rgba(100, 116, 139, 0.12)' };
-    default:            return { label: 'Submitted', fg: C.brand, bg: `${SectorColors.jobs}1a` };
+    case 'shortlisted': return { label: t.jobs2?.candidateShortlisted ?? 'Shortlisted 🎉', fg: C.success, bg: C.successBg };
+    case 'viewed':      return { label: t.jobs2?.candidateViewed ?? 'Viewed by Recruiter', fg: C.info, bg: C.infoBg };
+    case 'rejected':    return { label: t.jobs2?.candidateRejected ?? 'Not Selected', fg: Accent.slate, bg: 'rgba(100, 116, 139, 0.12)' };
+    default:            return { label: t.jobs2?.applicationSubmitted ?? 'Submitted', fg: C.brand, bg: `${SectorColors.jobs}1a` };
   }
 }
 
@@ -60,14 +60,17 @@ const TYPE_COLORS: Record<string, string> = {
   freelance:  '#ec4899',
 };
 
-const TYPE_LABELS: Record<string, string> = {
-  internship: 'Internship',
-  tuition:    'Tuition',
-  on_campus:  'On-Campus',
-  part_time:  'Part-time',
-  full_time:  'Full-time',
-  freelance:  'Freelance',
-};
+function getTypeLabel(t: any, type: string): string {
+  switch (type) {
+    case 'internship': return t.jobs2?.internship ?? 'Internship';
+    case 'tuition':    return t.jobs2?.tuition ?? 'Tuition';
+    case 'on_campus':  return t.jobs2?.onCampus ?? 'On-Campus';
+    case 'part_time':  return t.jobs2?.partTime ?? 'Part-time';
+    case 'full_time':  return t.jobs2?.fullTime ?? 'Full-time';
+    case 'freelance':  return t.jobs2?.freelance ?? 'Freelance';
+    default:           return type;
+  }
+}
 
 type MainTab = 'browse' | 'saved' | 'my_applications';
 type StatusFilter = 'open' | 'closing' | 'expired';
@@ -154,15 +157,22 @@ export function JobsBrowseScreen({ navigation }: any) {
   // Check job posting permissions to match RLS
   useEffect(() => {
     if (!user) { setCanPost(false); return; }
-    if (isAdmin) { setCanPost(true); return; }
+    if (isAdmin || profile?.role === 'staff') { setCanPost(true); return; }
     (async () => {
+      try {
+        const { data, error } = await supabase.rpc('can_post_jobs');
+        if (!error && typeof data === 'boolean') {
+          setCanPost(data);
+          return;
+        }
+      } catch {}
       const [org, lead] = await Promise.all([
         supabase.from('event_organizers').select('user_id').eq('user_id', user.id).limit(1),
         supabase.from('club_members').select('role').eq('user_id', user.id).in('role', ['president', 'vp']).limit(1),
       ]);
       setCanPost(!!(org.data?.length || lead.data?.length));
     })();
-  }, [user?.id, isAdmin]);
+  }, [user?.id, isAdmin, profile?.role]);
 
   async function onRefresh() {
     setRefreshing(true);
@@ -253,26 +263,26 @@ export function JobsBrowseScreen({ navigation }: any) {
     return deptFiltered.filter(j => computeJobStatus(j) === statusFilter);
   }, [deptFiltered, savedIds, mainTab, statusFilter]);
 
-  const TYPE_OPTIONS: { id: TypeFilter; label: string }[] = [
-    { id: 'all',        label: 'All Types' },
-    { id: 'internship', label: 'Internships' },
-    { id: 'tuition',    label: 'Tuition' },
-    { id: 'on_campus',  label: 'On-Campus' },
-    { id: 'part_time',  label: 'Part-time' },
-    { id: 'full_time',  label: 'Full-time' },
-    { id: 'freelance',  label: 'Freelance' },
-  ];
+  const TYPE_OPTIONS: { id: TypeFilter; label: string }[] = useMemo(() => [
+    { id: 'all',        label: t.jobs2?.allTypes ?? 'All Types' },
+    { id: 'internship', label: t.jobs2?.internship ?? 'Internships' },
+    { id: 'tuition',    label: t.jobs2?.tuition ?? 'Tuition' },
+    { id: 'on_campus',  label: t.jobs2?.onCampus ?? 'On-Campus' },
+    { id: 'part_time',  label: t.jobs2?.partTime ?? 'Part-time' },
+    { id: 'full_time',  label: t.jobs2?.fullTime ?? 'Full-time' },
+    { id: 'freelance',  label: t.jobs2?.freelance ?? 'Freelance' },
+  ], [t]);
 
   const currentTypeLabel = useMemo(() => {
     const found = TYPE_OPTIONS.find(o => o.id === typeFilter);
-    return found ? found.label : 'All Types';
-  }, [typeFilter]);
+    return found ? found.label : (t.jobs2?.allTypes ?? 'All Types');
+  }, [TYPE_OPTIONS, typeFilter, t]);
 
   const currentDeptLabel = useMemo(() => {
-    if (deptFilter === 'ALL') return 'All Departments';
+    if (deptFilter === 'ALL') return t.jobs2?.allDepts ?? 'All Departments';
     const found = JOB_DEPARTMENTS.find(d => d.code === deptFilter);
     return found ? found.label : deptFilter;
-  }, [deptFilter]);
+  }, [deptFilter, t]);
 
   // Main track interpolation
   const TRACK_PADDING = 3;
@@ -294,7 +304,7 @@ export function JobsBrowseScreen({ navigation }: any) {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar
-        title="Jobs"
+        title={t.jobs2?.jobsTitle ?? "Jobs"}
         onBack={() => navigation.goBack()}
         rightSlot={
           (canPost || isAdmin) ? (
@@ -343,9 +353,9 @@ export function JobsBrowseScreen({ navigation }: any) {
           )}
 
           {[
-            { id: 'browse' as MainTab, label: 'Browse', count: deptFiltered.length },
-            { id: 'saved' as MainTab, label: 'Saved', count: savedIds.size },
-            { id: 'my_applications' as MainTab, label: 'Applications', count: applications.length },
+            { id: 'browse' as MainTab, label: t.jobs2?.browseTab ?? 'Browse', count: deptFiltered.length },
+            { id: 'saved' as MainTab, label: t.jobs2?.savedTab ?? 'Saved', count: savedIds.size },
+            { id: 'my_applications' as MainTab, label: t.jobs2?.applicationsTab ?? 'Applications', count: applications.length },
           ].map(tb => {
             const active = mainTab === tb.id;
             return (
@@ -586,10 +596,10 @@ export function JobsBrowseScreen({ navigation }: any) {
             <View style={styles.empty}>
               <Icon name="jobs" size={28} color={C.textMuted} />
               <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                No Applications Yet
+                {t.jobs2?.noApplicationsYet ?? 'No Applications Yet'}
               </Text>
               <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                Find internships, campus rides, or tuition jobs and apply with 1 tap!
+                {t.jobs2?.noApplicationsSub ?? 'Find internships, campus jobs, or tuition opportunities and apply with 1 tap!'}
               </Text>
               <TouchableOpacity
                 style={[styles.exploreBtn, { backgroundColor: C.brand }]}
@@ -597,14 +607,14 @@ export function JobsBrowseScreen({ navigation }: any) {
                 activeOpacity={0.8}
               >
                 <Text style={[styles.exploreBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
-                  Browse Opportunities
+                  {t.jobs2?.browseOpportunities ?? 'Browse Opportunities'}
                 </Text>
               </TouchableOpacity>
             </View>
           ) : (
             <View style={styles.list}>
               {applications.map(app => {
-                const tone = appStatusTone(C, app.status);
+                const tone = appStatusTone(C, t, app.status);
                 const jobTitle = app.job?.title || 'Job Listing';
                 const companyName = app.job?.company || 'Company';
                 return (
@@ -662,11 +672,11 @@ export function JobsBrowseScreen({ navigation }: any) {
           <View style={styles.empty}>
             <Icon name="jobs" size={28} color={C.textMuted} />
             <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-              {mainTab === 'saved' ? 'No Saved Jobs' : t.common.noResults}
+              {mainTab === 'saved' ? (t.jobs2?.noSavedJobs ?? 'No Saved Jobs') : t.common.noResults}
             </Text>
             {mainTab === 'saved' && (
               <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                Star any job listing to quickly access it here.
+                {t.jobs2?.noSavedJobsSub ?? 'Star any job listing to quickly access it here.'}
               </Text>
             )}
           </View>
@@ -679,7 +689,12 @@ export function JobsBrowseScreen({ navigation }: any) {
               const isSaved = savedIds.has(j.id);
               const typeColor = TYPE_COLORS[j.job_type] ?? Accent.teal;
               const typeBg = pillBg(typeColor, isDark);
-              const daysLeft = daysRemainingLabel(j.deadline);
+              const daysLeft = daysRemainingLabel(j.deadline, {
+                today: t.jobs2?.closesToday,
+                tomorrow: t.jobs2?.closesTomorrow,
+                inDays: t.jobs2?.closesInDays,
+                closed: t.jobs2?.closedOn,
+              });
 
               return (
                 <View key={j.id} style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
@@ -710,7 +725,7 @@ export function JobsBrowseScreen({ navigation }: any) {
 
                         <View style={[styles.catBadge, { backgroundColor: typeBg }]}>
                           <Text style={[styles.catBadgeTxt, { color: typeColor, fontFamily: FontFamily.jakartaBold }]}>
-                            {TYPE_LABELS[j.job_type] ?? j.job_type}
+                            {getTypeLabel(t, j.job_type)}
                           </Text>
                         </View>
 
@@ -734,7 +749,7 @@ export function JobsBrowseScreen({ navigation }: any) {
                           <View style={[styles.alumniBadgeSmall, { backgroundColor: isDark ? 'rgba(234, 179, 8, 0.2)' : '#fef9c3' }]}>
                             <Feather name="award" size={11} color={Accent.gold} />
                             <Text style={[styles.alumniBadgeSmallTxt, { color: Accent.gold, fontFamily: FontFamily.jakartaBold }]}>
-                              Alumni
+                              {t.jobs2?.alumniReferral ?? 'Alumni'}
                             </Text>
                           </View>
                         )}

@@ -38,19 +38,30 @@ export function computeJobStatus(job: { deadline?: string | null; deleted_at?: s
 /**
  * Human-friendly days remaining label in Asia/Dhaka time.
  */
-export function daysRemainingLabel(deadline?: string | null): string {
+export function daysRemainingLabel(
+  deadline?: string | null,
+  labels?: {
+    today?: string;
+    tomorrow?: string;
+    inDays?: (d: number) => string;
+    closed?: (formatted: string) => string;
+  }
+): string {
   if (!deadline) return '';
   const today = localToday();
-  if (deadline < today) return `Closed ${formatDate(deadline)}`;
+  const formatted = formatDate(deadline);
+  if (deadline < today) {
+    return labels?.closed ? labels.closed(formatted) : `Closed ${formatted}`;
+  }
 
   const todayMs = new Date(`${today}T00:00:00Z`).getTime();
   const deadlineMs = new Date(`${deadline}T00:00:00Z`).getTime();
   const days = Math.round((deadlineMs - todayMs) / 86400000);
 
-  if (days <= 0) return 'Closes today';
-  if (days === 1) return 'Closes tomorrow';
-  if (days <= 14) return `Closes in ${days} days`;
-  return `Closes ${formatDate(deadline)}`;
+  if (days <= 0) return labels?.today ?? 'Closes today';
+  if (days === 1) return labels?.tomorrow ?? 'Closes tomorrow';
+  if (days <= 14) return labels?.inDays ? labels.inDays(days) : `Closes in ${days} days`;
+  return labels?.closed ? labels.closed(formatted) : `Closes ${formatted}`;
 }
 
 /**

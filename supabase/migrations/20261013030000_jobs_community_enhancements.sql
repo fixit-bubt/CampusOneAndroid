@@ -97,13 +97,14 @@ declare
 begin
   select * into v_job from public.jobs where id = new.job_id;
   if v_job.id is not null and v_job.posted_by <> new.student_id then
-    insert into public.notifications (user_id, title, body, ref_type, ref_id)
+    insert into public.notifications (user_id, sector, title, body, reference_id, reference_type)
     values (
       v_job.posted_by,
+      'jobs',
       'New Job Application',
       new.student_name || ' applied for ' || v_job.title,
-      'job',
-      v_job.id::text
+      v_job.id::text,
+      'job'
     );
   end if;
   return new;
@@ -124,13 +125,14 @@ begin
   if new.status = 'shortlisted' and (old.status is distinct from new.status) then
     select * into v_job from public.jobs where id = new.job_id;
     if v_job.id is not null then
-      insert into public.notifications (user_id, title, body, ref_type, ref_id)
+      insert into public.notifications (user_id, sector, title, body, reference_id, reference_type)
       values (
         new.student_id,
+        'jobs',
         'Application Shortlisted!',
         'You have been shortlisted for ' || v_job.title || ' at ' || v_job.company,
-        'job',
-        v_job.id::text
+        v_job.id::text,
+        'job'
       );
     end if;
   end if;
