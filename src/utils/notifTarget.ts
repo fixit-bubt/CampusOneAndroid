@@ -44,10 +44,12 @@ export async function resolveNotifTarget(
   if (refType === 'blood_request') {
     return { screen: 'Blood' };
   }
-  // Connection request/accepted - the alerts list has inline accept/decline;
-  // a tap just lands on the Directory where incoming requests are shown.
-  if (refType === 'connection_request' || refType === 'connection_accepted') {
-    return { screen: 'Directory' };
+  // Connection request/accepted - land on specific Directory tabs.
+  if (refType === 'connection_request') {
+    return { screen: 'Directory', params: { tab: 'requests' } };
+  }
+  if (refType === 'connection_accepted') {
+    return { screen: 'Directory', params: { tab: 'connections' } };
   }
   // DM notification - reference_id is the sender's id. Open their thread.
   if (refType === 'dm') {

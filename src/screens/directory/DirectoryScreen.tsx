@@ -142,7 +142,7 @@ const STATUS_MAP: Record<string, ConnState> = {
   none: 'none',
 };
 
-export function DirectoryScreen({ navigation }: any) {
+export function DirectoryScreen({ route, navigation }: any) {
   const { C, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const { user, profile } = useAuth();
@@ -150,7 +150,12 @@ export function DirectoryScreen({ navigation }: any) {
   const t = useT();
   const toast = useToast();
 
-  const [tab, setTab] = useState<TabKey>('all');
+  const paramTab = (route?.params?.tab ?? route?.params?.initialTab) as TabKey | undefined;
+  const initialTab: TabKey = paramTab && (paramTab === 'all' || paramTab === 'connections' || paramTab === 'requests')
+    ? paramTab
+    : 'all';
+
+  const [tab, setTab] = useState<TabKey>(initialTab);
   const [query, setQuery] = useState('');
   const [selectedDept, setSelectedDept] = useState('All');
   const [deptModalVisible, setDeptModalVisible] = useState(false);
@@ -161,6 +166,14 @@ export function DirectoryScreen({ navigation }: any) {
   const [isOffline, setIsOffline] = useState(false);
   const [actionBusy, setActionBusy] = useState<Record<string, boolean>>({});
   const [contactStudent, setContactStudent] = useState<Student | null>(null);
+
+  // Sync tab if route params change while mounted
+  useEffect(() => {
+    const target = (route?.params?.tab ?? route?.params?.initialTab) as TabKey | undefined;
+    if (target && (target === 'all' || target === 'connections' || target === 'requests')) {
+      setTab(target);
+    }
+  }, [route?.params?.tab, route?.params?.initialTab]);
 
   // Real-time student counts per department
   const deptCounts = useMemo(() => {
@@ -366,7 +379,14 @@ export function DirectoryScreen({ navigation }: any) {
     if (tab === 'connections') {
       list = list.filter(s => s.connState === 'connected');
     } else if (tab === 'requests') {
-      list = list.filter(s => s.connState === 'incoming' || s.connState === 'requested');
+      // Prioritize urgent incoming requests over outgoing requests, then alphabetical
+      list = list
+        .filter(s => s.connState === 'incoming' || s.connState === 'requested')
+        .sort((a, b) => {
+          if (a.connState === 'incoming' && b.connState !== 'incoming') return -1;
+          if (a.connState !== 'incoming' && b.connState === 'incoming') return 1;
+          return a.full_name.localeCompare(b.full_name);
+        });
     }
 
     // Classmates shortcut
@@ -379,19 +399,26 @@ export function DirectoryScreen({ navigation }: any) {
       list = list.filter(s => s.department?.toLowerCase() === selectedDept.toLowerCase());
     }
 
-    // Multi-attribute search query
-    const q = query.trim().toLowerCase();
-    if (q) {
+    // Multi-token composite search query (e.g. "CSE 49", "49-5", "CR", "O+")
+    const tokens = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    if (tokens.length > 0) {
       list = list.filter(s => {
-        return (
-          (s.full_name && s.full_name.toLowerCase().includes(q)) ||
-          (s.department && s.department.toLowerCase().includes(q)) ||
-          (s.intake && s.intake.toLowerCase().includes(q)) ||
-          (s.section && s.section.toLowerCase().includes(q)) ||
-          (s.blood_group && s.blood_group.toLowerCase().includes(q)) ||
-          (s.student_id && s.student_id.toLowerCase().includes(q)) ||
-          (s.program && s.program.toLowerCase().includes(q))
-        );
+        const haystack = [
+          s.full_name,
+          s.department,
+          s.intake ? `intake ${s.intake} ${s.intake}` : '',
+          s.section ? `section ${s.section} sec ${s.section}` : '',
+          s.intake && s.section ? `${s.intake}-${s.section} ${s.intake}/${s.section}` : '',
+          s.blood_group,
+          s.student_id,
+          s.program,
+          s.is_cr ? 'cr class representative' : '',
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+
+        return tokens.every(tok => haystack.includes(tok));
       });
     }
 
@@ -651,6 +678,22 @@ export function DirectoryScreen({ navigation }: any) {
                     ? t.directory2.noRequestsSub
                     : 'Try a different search term or clear filters.'}
                 </Text>
+                {(query.length > 0 || selectedDept !== 'All' || classmatesOnly) && (
+                  <TouchableOpacity
+                    style={[styles.clearFilterBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+                    onPress={() => {
+                      setQuery('');
+                      setSelectedDept('All');
+                      setClassmatesOnly(false);
+                    }}
+                    activeOpacity={0.75}
+                  >
+                    <Icon name="x" size={13} color={C.brand} />
+                    <Text style={[styles.clearFilterTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+                      Clear filters
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
             )
           }
@@ -1064,6 +1107,17 @@ const styles = StyleSheet.create({
   emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 48, paddingHorizontal: 24 } as ViewStyle,
   emptyTitle: { fontSize: 16, marginTop: 12, textAlign: 'center' } as TextStyle,
   emptySub: { fontSize: 13, textAlign: 'center', marginTop: 4, lineHeight: 18 } as TextStyle,
+  clearFilterBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+  } as ViewStyle,
+  clearFilterTxt: { fontSize: 13 } as TextStyle,
 
   card: { padding: 13, borderRadius: 16, borderWidth: 1 } as ViewStyle,
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: 12 } as ViewStyle,

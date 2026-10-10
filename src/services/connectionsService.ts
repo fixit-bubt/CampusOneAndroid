@@ -2,6 +2,7 @@
 
 import { supabase } from '../lib/supabase';
 import type { ServiceResult } from './authService';
+import { getCache, setCache, CacheKeys } from './cacheService';
 
 export type ConnStatus = 'none' | 'pending_outgoing' | 'pending_incoming' | 'accepted';
 
@@ -19,6 +20,41 @@ export interface StudentDetail {
   status: ConnStatus;
   email?: string | null;
   whatsapp?: string | null;
+}
+
+// Synchronize directory cache in AsyncStorage when mutual states change
+export async function syncDirectoryCache(
+  studentId: string,
+  newState: 'none' | 'requested' | 'incoming' | 'connected',
+  extra?: { email?: string | null; whatsapp?: string | null }
+): Promise<void> {
+  try {
+    const { data: auth } = await supabase.auth.getUser();
+    const uid = auth.user?.id;
+    if (!uid) return;
+    const cacheKey = CacheKeys.DIRECTORY(uid);
+    const cached = await getCache<any[]>(cacheKey);
+    if (!cached || !Array.isArray(cached)) return;
+
+    const updated = cached.map(s => {
+      if (s.id === studentId) {
+        return {
+          ...s,
+          connState: newState,
+          status:
+            newState === 'connected' ? 'accepted' :
+            newState === 'requested' ? 'pending_outgoing' :
+            newState === 'incoming' ? 'pending_incoming' :
+            'none',
+          ...(extra ?? {}),
+        };
+      }
+      return s;
+    });
+    await setCache(cacheKey, updated);
+  } catch {
+    // Non-fatal cache sync fallback
+  }
 }
 
 // Current state of incoming requests from these requesters.
@@ -63,6 +99,7 @@ export async function sendConnectionRequest(targetId: string): Promise<ServiceRe
     status: 'pending',
   });
   if (error) return { ok: false, error: error.message };
+  await syncDirectoryCache(targetId, 'requested');
   return { ok: true, data: null };
 }
 
@@ -82,6 +119,7 @@ export async function cancelConnectionRequest(targetId: string): Promise<Service
 
   if (error) return { ok: false, error: error.message };
   if (!data || data.length === 0) return { ok: false, error: 'Request is no longer pending.' };
+  await syncDirectoryCache(targetId, 'none');
   return { ok: true, data: null };
 }
 
@@ -112,6 +150,7 @@ export async function respondConnection(
 
   if (error) return { ok: false, error: error.message };
   if (!data || data.length === 0) return { ok: false, error: 'This request is no longer pending.' };
+  await syncDirectoryCache(requesterId, accept ? 'connected' : 'none');
   return { ok: true, data: null };
 }
 
@@ -129,9 +168,11 @@ export async function disconnectStudent(targetId: string): Promise<ServiceResult
       .eq('status', 'accepted')
       .or(`and(requester_id.eq.${uid},addressee_id.eq.${targetId}),and(requester_id.eq.${targetId},addressee_id.eq.${uid})`);
     if (delErr) return { ok: false, error: delErr.message };
+    await syncDirectoryCache(targetId, 'none', { email: null, whatsapp: null });
     return { ok: true, data: null };
   }
   if (!data) return { ok: false, error: 'Connection not found or already removed.' };
+  await syncDirectoryCache(targetId, 'none', { email: null, whatsapp: null });
   return { ok: true, data: null };
 }
 
