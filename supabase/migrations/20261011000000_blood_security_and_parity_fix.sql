@@ -10,6 +10,7 @@
 -- 1. donor_contact(p_user_id)
 -- Strictly enforce that p_user_id is in public.donors.
 -- Returns both name and whatsapp to maintain parity across mobile and web.
+drop function if exists public.donor_contact(uuid);
 create or replace function public.donor_contact(p_user_id uuid)
 returns table (name text, whatsapp text)
 language sql stable security definer set search_path = public
@@ -25,6 +26,7 @@ grant execute on function public.donor_contact(uuid) to authenticated;
 
 -- 2. blood_requester_contact(p_code)
 -- Returns name and whatsapp of requester to a donor who pledged.
+drop function if exists public.blood_requester_contact(text);
 create or replace function public.blood_requester_contact(p_code text)
 returns table (name text, whatsapp text)
 language sql stable security definer set search_path = public
@@ -58,3 +60,4 @@ create policy blood_pledge_insert on public.blood_pledges for insert to authenti
 create index if not exists blood_requests_active_created_idx
   on public.blood_requests (created_at desc)
   where fulfilled_at is null;
+

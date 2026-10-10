@@ -556,6 +556,29 @@ Whenever the user instructs to "update memorys", the agent MUST synchronously up
 
 - **Automatic 90/120-Day Cooldown Display:** Eligibility is derived automatically from `last_donated` (`Eligible` green badge vs `Eligible in Xd` countdown). Donors do not need to manually edit anything to become eligible. When eligible, a 1-tap `I donated today` action resets the recovery clock and arms the recharged reminder.
 
+### 20.8 360° Forensic Audit, Security Hardening & Web Parity
+- **IDOR Remediation (`donor_contact` RPC):**
+  - Patched security vulnerability where `donor_contact(p_user_id)` exposed contact details without verifying donor registry status. Added strict inner join on `public.donors` so non-donors' numbers cannot be harvested.
+  - Returns `table(name text, whatsapp text)` ensuring full schema parity with the web client.
+  - Explicitly revoked execute permissions from `anon` and `public`; granted exclusively to `authenticated`.
+  - Migration: `supabase/migrations/20261011000000_blood_security_and_parity_fix.sql` (pushed to Supabase).
+- **`blood_pledges` Security Hardening:**
+  - Insert RLS policy checks caller's presence in `public.donors` (`donor_id = auth.uid() and exists (select 1 from public.donors where user_id = auth.uid())`). Prevents non-donors from harvesting requester contact numbers by submitting unauthorized pledges.
+- **Query Performance & Indexing:**
+  - Added partial index `blood_requests_active_created_idx` on `public.blood_requests(created_at desc) where fulfilled_at is null` for instantaneous feed queries.
+- **Timezone Drift Remediation (Dhaka UTC+6):**
+  - Fixed midnight calendar math in `donorEligibility()` using `Date.UTC(y, m - 1, d)` and `localToday()` to eliminate 1-day drift during 00:00-06:00 Dhaka hours.
+  - Aligned on-device recharge push alarms in `bloodReminder.ts` to 10:00 AM daytime Dhaka time (04:00 AM UTC).
+- **Cross-Group Biological Compatibility (`isBloodCompatible`):**
+  - Replaced strict string equality with biological compatibility rules across mobile (`src/utils/blood.ts`) and web (`fixit-campus/src/screens/blood/Blood.jsx`). Universal donors (e.g. O- donating to all groups; O+ donating to A+, B+, AB+, O+) can respond and pledge ("I can donate").
+- **Web Student Dashboard Parity:**
+  - In `fixit-campus/src/screens/student/StudentDashboard.jsx`, corrected filter from invalid columns (`b.urgency === "Immediate" || b.status === "open"`) to `b.urgency === "Urgent" || b.urgency === "Today"` and properly mapped `b.group` and `b.createdAt`.
+- **Android 15 Edge-to-Edge & Exact Selection:**
+  - In `AreaPickerModal.tsx`, added `useSafeAreaInsets` bottom padding to clear the gesture pill in edge-to-edge mode.
+  - Fixed selection check to exact match (`selectedArea.trim().toLowerCase() === item.name.trim().toLowerCase()`), preventing all 8 Mirpur variations from checking simultaneously.
+- **Cache Invalidation Lifecycle:**
+  - Automated invalidation of `CacheKeys.BLOOD_FEED(userId)` and `CacheKeys.HOME_STATUS(userId)` upon request posting, donor registration/updates, and request fulfillment.
+
 ---
 
 ## 21. Full-App Offline Caching & Stale-While-Revalidate (SWR) Architecture
