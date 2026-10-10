@@ -4,7 +4,7 @@
 // hidden raster engine, one page at a time so tiles appear as they land
 // instead of the screen freezing until the last one.
 import { useEffect, useRef, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, type ViewStyle } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, KeyboardAvoidingView, type ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
@@ -171,10 +171,13 @@ export function ToolOrganizeScreen({ navigation }: any) {
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar title={t.pdfmaker.tools.organizeTitle} onBack={() => navigation.goBack()} />
       {host}
-      <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
-        showsVerticalScrollIndicator={false}
-      >
+      <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+        <ScrollView
+          contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
+          showsVerticalScrollIndicator={false}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+        >
         {!file ? (
           <>
             <TouchableOpacity
@@ -297,7 +300,8 @@ export function ToolOrganizeScreen({ navigation }: any) {
           </>
         )}
         <View style={{ height: 24 }} />
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

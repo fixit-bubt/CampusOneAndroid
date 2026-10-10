@@ -2,7 +2,7 @@
 // study_books. Questions carry an exam tag and a CR-verifiable badge; books can
 // be external links or files. Files open in an in-app browser tab; members can
 // bookmark, search, filter by exam, and sort. CRs verify/delete entries.
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
   ActivityIndicator, Alert, type ViewStyle,
@@ -83,10 +83,22 @@ export function CourseDetailScreen({ route, navigation }: any) {
   const [forSale, setForSale] = useState<any[]>([]);
 
   // Controls
+  const scrollRef = useRef<ScrollView>(null);
   const [showSearch, setShowSearch] = useState(false);
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<Sort>('new');
   const [examFilter, setExamFilter] = useState<string>('All');
+
+  const toggleSearch = () => {
+    setShowSearch(s => {
+      const next = !s;
+      if (next) {
+        setTimeout(() => scrollRef.current?.scrollTo({ y: 0, animated: true }), 100);
+      }
+      return next;
+    });
+    setQuery('');
+  };
 
   const load = useCallback(async () => {
     if (!courseId) { setLoading(false); return; }
@@ -265,7 +277,7 @@ export function CourseDetailScreen({ route, navigation }: any) {
         onBack={() => navigation.goBack()}
         rightSlot={
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <TouchableOpacity style={styles.iconBtn} onPress={() => { setShowSearch(s => !s); setQuery(''); }} activeOpacity={0.75}>
+            <TouchableOpacity style={styles.iconBtn} onPress={toggleSearch} activeOpacity={0.75}>
               <Feather name={showSearch ? 'x' : 'search'} size={20} color={C.text} />
             </TouchableOpacity>
             <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('StudyUpload', { courseId, courseCode: course.code, courseTitle: course.name })} activeOpacity={0.75}>
@@ -276,8 +288,10 @@ export function CourseDetailScreen({ route, navigation }: any) {
       />
 
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
+        keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
       >
         <Text style={[styles.title, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{course.name}</Text>

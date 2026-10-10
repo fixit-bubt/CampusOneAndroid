@@ -100,10 +100,11 @@ export function RegisterScreen({ navigation }: Props) {
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior="padding"
       >
         <ScrollView
           contentContainerStyle={[styles.content, { paddingHorizontal: Layout.screenPadding }]}
+          keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps="handled"
         >
           {/* Brand */}

@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, Modal,
-  ScrollView, StyleSheet, Keyboard, type ViewStyle, type TextStyle,
+  ScrollView, StyleSheet, Keyboard, KeyboardAvoidingView, Platform,
+  type ViewStyle, type TextStyle,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
@@ -80,7 +81,10 @@ export function AreaPickerModal({
       animationType="slide"
       onRequestClose={onClose}
     >
-      <View style={styles.overlay}>
+      <KeyboardAvoidingView
+        style={styles.overlay}
+        behavior="padding"
+      >
         <TouchableOpacity
           style={styles.backdrop}
           activeOpacity={1}
@@ -255,7 +259,7 @@ export function AreaPickerModal({
             <View style={{ height: 28 }} />
           </ScrollView>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

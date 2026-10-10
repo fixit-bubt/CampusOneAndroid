@@ -269,7 +269,7 @@ export function MessageThread({ route, navigation }: any) {
       ) : (
         <KeyboardAvoidingView
           style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior="padding"
           keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
         >
           {rendered.length === 0 ? (
@@ -358,7 +358,7 @@ export function MessageThread({ route, navigation }: any) {
 
       {/* Edit modal */}
       <Modal visible={!!editTarget} transparent animationType="fade" onRequestClose={() => setEditTarget(null)}>
-        <View style={styles.editOverlay}>
+        <KeyboardAvoidingView behavior="padding" style={styles.editOverlay}>
           <View style={[styles.editCard, { backgroundColor: C.surface }]}>
             <Text style={[styles.editTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{t.messages.editTitle}</Text>
             <TextInput
@@ -378,7 +378,7 @@ export function MessageThread({ route, navigation }: any) {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );

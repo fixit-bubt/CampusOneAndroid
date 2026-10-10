@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView,
-  StyleSheet, type ViewStyle,
+  StyleSheet, KeyboardAvoidingView, Platform, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
@@ -67,11 +67,12 @@ export function BloodRequestScreen({ navigation }: any) {
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar title={t.blood2.requestBlood} onBack={() => navigation.goBack()} />
 
-      <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
+        <ScrollView
+          contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
         {/* Blood group grid */}
         <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.blood2.bloodGroup}</Text>
         <View style={styles.groupGrid}>
@@ -216,6 +217,7 @@ export function BloodRequestScreen({ navigation }: any) {
 
         <View style={{ height: 30 }} />
       </ScrollView>
+    </KeyboardAvoidingView>
       <AreaPickerModal
         visible={areaModalVisible}
         onClose={() => setAreaModalVisible(false)}

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
-  Modal, RefreshControl, ActivityIndicator, type ViewStyle, type TextStyle,
+  Modal, RefreshControl, ActivityIndicator, KeyboardAvoidingView, Platform, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -285,39 +285,41 @@ export function ManageClubsScreen({ navigation }: any) {
 
       {/* Assign president sheet */}
       <Modal visible={!!presTarget} transparent animationType="slide" onRequestClose={() => setPresTarget(null)}>
-        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setPresTarget(null)} />
-        <View style={[styles.sheet, { backgroundColor: C.surface }]}>
-          <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-            {t.clubs.assignPresident} - {presTarget?.name}
-          </Text>
-          <View style={[styles.searchBar, { backgroundColor: C.bg, borderColor: C.border }]}>
-            <Icon name="search" size={16} color={C.textMuted} />
-            <TextInput
-              style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
-              placeholder={t.common.search + '...'}
-              placeholderTextColor={C.textMuted}
-              value={query}
-              onChangeText={setQuery}
-              autoFocus
-            />
-          </View>
-          <ScrollView style={{ maxHeight: 320 }} keyboardShouldPersistTaps="handled">
-            {results.map(r => (
-              <TouchableOpacity key={r.id} style={styles.resultRow} onPress={() => assignPresident(r.id)} activeOpacity={0.7}>
-                <Avatar uri={r.avatar_url} name={r.full_name} size="sm" />
-                <Text style={[styles.name, { color: C.text, fontFamily: FontFamily.jakartaBold, flex: 1 }]} numberOfLines={1}>
-                  {r.full_name}
+        <KeyboardAvoidingView style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' }} behavior="padding">
+          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setPresTarget(null)} />
+          <View style={[styles.sheet, { backgroundColor: C.surface }]}>
+            <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+              {t.clubs.assignPresident} - {presTarget?.name}
+            </Text>
+            <View style={[styles.searchBar, { backgroundColor: C.bg, borderColor: C.border }]}>
+              <Icon name="search" size={16} color={C.textMuted} />
+              <TextInput
+                style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
+                placeholder={t.common.search + '...'}
+                placeholderTextColor={C.textMuted}
+                value={query}
+                onChangeText={setQuery}
+                autoFocus
+              />
+            </View>
+            <ScrollView style={{ maxHeight: 320 }} keyboardShouldPersistTaps="handled">
+              {results.map(r => (
+                <TouchableOpacity key={r.id} style={styles.resultRow} onPress={() => assignPresident(r.id)} activeOpacity={0.7}>
+                  <Avatar uri={r.avatar_url} name={r.full_name} size="sm" />
+                  <Text style={[styles.name, { color: C.text, fontFamily: FontFamily.jakartaBold, flex: 1 }]} numberOfLines={1}>
+                    {r.full_name}
+                  </Text>
+                  <Feather name="user-check" size={16} color={C.brand} />
+                </TouchableOpacity>
+              ))}
+              {query.trim().length >= 2 && results.length === 0 && (
+                <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium, textAlign: 'center', paddingVertical: 18 }]}>
+                  {t.common.noResults}
                 </Text>
-                <Feather name="user-check" size={16} color={C.brand} />
-              </TouchableOpacity>
-            ))}
-            {query.trim().length >= 2 && results.length === 0 && (
-              <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium, textAlign: 'center', paddingVertical: 18 }]}>
-                {t.common.noResults}
-              </Text>
-            )}
-          </ScrollView>
-        </View>
+              )}
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );

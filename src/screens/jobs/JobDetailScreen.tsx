@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet,
-  ActivityIndicator, Modal, Alert, type ViewStyle,
+  ActivityIndicator, Modal, Alert, KeyboardAvoidingView, Platform, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -299,27 +299,29 @@ export function JobDetailScreen({ route, navigation }: any) {
 
       {/* Admin remove sheet */}
       <Modal visible={removeOpen} transparent animationType="slide" onRequestClose={() => setRemoveOpen(false)}>
-        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setRemoveOpen(false)} />
-        <View style={[styles.sheet, { backgroundColor: C.surface }]}>
-          <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{t.jobs2.removeListing}</Text>
-          <TextInput
-            style={[styles.removeInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-            value={removeReason}
-            onChangeText={setRemoveReason}
-            placeholder={t.jobs2.removeReasonPlaceholder}
-            placeholderTextColor={C.textMuted}
-            multiline
-          />
-          <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: C.danger, opacity: removeReason.trim() ? 1 : 0.5, marginTop: 14 }]}
-            onPress={adminRemove}
-            disabled={!removeReason.trim()}
-            activeOpacity={0.85}
-          >
-            <Feather name="slash" size={17} color="#fff" />
-            <Text style={[styles.actionTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>{t.jobs2.removeListing}</Text>
-          </TouchableOpacity>
-        </View>
+        <KeyboardAvoidingView style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' }} behavior="padding">
+          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setRemoveOpen(false)} />
+          <View style={[styles.sheet, { backgroundColor: C.surface }]}>
+            <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{t.jobs2.removeListing}</Text>
+            <TextInput
+              style={[styles.removeInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+              value={removeReason}
+              onChangeText={setRemoveReason}
+              placeholder={t.jobs2.removeReasonPlaceholder}
+              placeholderTextColor={C.textMuted}
+              multiline
+            />
+            <TouchableOpacity
+              style={[styles.actionBtn, { backgroundColor: C.danger, opacity: removeReason.trim() ? 1 : 0.5, marginTop: 14 }]}
+              onPress={adminRemove}
+              disabled={!removeReason.trim()}
+              activeOpacity={0.85}
+            >
+              <Feather name="slash" size={17} color="#fff" />
+              <Text style={[styles.actionTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>{t.jobs2.removeListing}</Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Report bottom sheet */}

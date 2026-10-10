@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView, Modal,
-  StyleSheet, Switch, ActivityIndicator, type ViewStyle,
+  StyleSheet, Switch, ActivityIndicator, KeyboardAvoidingView, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -164,7 +164,7 @@ function AddSheet({ C, onClose, onAdd, t }: { C: any; onClose: () => void; onAdd
 
   return (
     <Modal visible animationType="slide" transparent onRequestClose={onClose}>
-      <View style={sheetStyles.overlay}>
+      <KeyboardAvoidingView behavior="padding" style={sheetStyles.overlay}>
         <TouchableOpacity style={{ flex: 1 }} onPress={onClose} />
         <View style={[sheetStyles.sheet, { backgroundColor: C.surface }]}>
           <View style={[sheetStyles.handle, { backgroundColor: C.border }]} />
@@ -213,7 +213,7 @@ function AddSheet({ C, onClose, onAdd, t }: { C: any; onClose: () => void; onAdd
             <Text style={[sheetStyles.submitTxt, { color: ok ? '#fff' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.mainx.addToProfile}</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -494,10 +494,13 @@ export function ProfileScreen({ navigation }: any) {
         </TouchableOpacity>
       </View>
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
-      >
+      <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
+        >
         {/* Hero card */}
         <View style={[styles.hero, { backgroundColor: C.surface, borderColor: C.border }]}>
           <View style={[styles.heroBand, { backgroundColor: C.brand50 }]} />
@@ -697,7 +700,8 @@ export function ProfileScreen({ navigation }: any) {
         )}
 
         <View style={{ height: 32 }} />
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       {addSheetOpen && (
         <AddSheet C={C} t={t} onClose={() => setAddSheetOpen(false)} onAdd={addAccomplishment} />

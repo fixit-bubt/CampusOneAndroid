@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
-  Modal, Switch, ActivityIndicator, type ViewStyle, type TextStyle,
+  Modal, Switch, ActivityIndicator, KeyboardAvoidingView, Platform, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -180,61 +180,63 @@ export function ManageFacultyScreen({ navigation }: any) {
 
       {/* Edit sheet */}
       <Modal visible={!!target} transparent animationType="slide" onRequestClose={() => setTarget(null)}>
-        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setTarget(null)} />
-        <View style={[styles.sheet, { backgroundColor: C.surface }]}>
-          <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-            <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-              {target?.name}
-            </Text>
-
-            <TouchableOpacity style={styles.photoRow} onPress={pickPhoto} activeOpacity={0.75}>
-              <Avatar uri={photoUri ?? target?.photo_url} name={target?.name} size="lg" />
-              <Text style={[styles.photoHint, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
-                {photoUri ? t.manage.photoSelected : t.manage.changePhoto}
+        <KeyboardAvoidingView style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' }} behavior="padding">
+          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setTarget(null)} />
+          <View style={[styles.sheet, { backgroundColor: C.surface }]}>
+            <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+              <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+                {target?.name}
               </Text>
-            </TouchableOpacity>
 
-            <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.emailLabel}</Text>
-            <TextInput
-              style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-              value={email} onChangeText={setEmail} placeholder={t.manage.emailUniversityPlaceholder} placeholderTextColor={C.textMuted}
-              autoCapitalize="none" keyboardType="email-address"
-            />
-            <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.phoneLabel}</Text>
-            <TextInput
-              style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-              value={phone} onChangeText={setPhone} placeholder="+8801..." placeholderTextColor={C.textMuted}
-              keyboardType="phone-pad"
-            />
-            <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.designationLabel}</Text>
-            <TextInput
-              style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-              value={designation} onChangeText={setDesignation} placeholder={t.manage.designationPlaceholder} placeholderTextColor={C.textMuted}
-            />
-            <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.researchInterestsLabel}</Text>
-            <TextInput
-              style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-              value={interests} onChangeText={setInterests} placeholder={t.manage.researchInterestsPlaceholder} placeholderTextColor={C.textMuted}
-            />
+              <TouchableOpacity style={styles.photoRow} onPress={pickPhoto} activeOpacity={0.75}>
+                <Avatar uri={photoUri ?? target?.photo_url} name={target?.name} size="lg" />
+                <Text style={[styles.photoHint, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+                  {photoUri ? t.manage.photoSelected : t.manage.changePhoto}
+                </Text>
+              </TouchableOpacity>
 
-            <View style={styles.toggleRow}>
-              <Text style={[styles.toggleLbl, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>{t.manage.onLeave}</Text>
-              <Switch value={onLeave} onValueChange={setOnLeave} trackColor={{ true: C.brand }} />
-            </View>
+              <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.emailLabel}</Text>
+              <TextInput
+                style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                value={email} onChangeText={setEmail} placeholder={t.manage.emailUniversityPlaceholder} placeholderTextColor={C.textMuted}
+                autoCapitalize="none" keyboardType="email-address"
+              />
+              <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.phoneLabel}</Text>
+              <TextInput
+                style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                value={phone} onChangeText={setPhone} placeholder="+8801..." placeholderTextColor={C.textMuted}
+                keyboardType="phone-pad"
+              />
+              <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.designationLabel}</Text>
+              <TextInput
+                style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                value={designation} onChangeText={setDesignation} placeholder={t.manage.designationPlaceholder} placeholderTextColor={C.textMuted}
+              />
+              <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.researchInterestsLabel}</Text>
+              <TextInput
+                style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                value={interests} onChangeText={setInterests} placeholder={t.manage.researchInterestsPlaceholder} placeholderTextColor={C.textMuted}
+              />
 
-            <TouchableOpacity
-              style={[styles.saveBtn, { backgroundColor: C.brand, opacity: saving ? 0.6 : 1 }]}
-              onPress={save}
-              disabled={saving}
-              activeOpacity={0.8}
-            >
-              {saving
-                ? <ActivityIndicator color={C.white} size="small" />
-                : <Text style={[styles.saveTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>{t.manage.saveChanges}</Text>}
-            </TouchableOpacity>
-            <View style={{ height: 8 }} />
-          </ScrollView>
-        </View>
+              <View style={styles.toggleRow}>
+                <Text style={[styles.toggleLbl, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>{t.manage.onLeave}</Text>
+                <Switch value={onLeave} onValueChange={setOnLeave} trackColor={{ true: C.brand }} />
+              </View>
+
+              <TouchableOpacity
+                style={[styles.saveBtn, { backgroundColor: C.brand, opacity: saving ? 0.6 : 1 }]}
+                onPress={save}
+                disabled={saving}
+                activeOpacity={0.8}
+              >
+                {saving
+                  ? <ActivityIndicator color={C.white} size="small" />
+                  : <Text style={[styles.saveTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>{t.manage.saveChanges}</Text>}
+              </TouchableOpacity>
+              <View style={{ height: 8 }} />
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );

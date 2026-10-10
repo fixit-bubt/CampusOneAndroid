@@ -30,6 +30,7 @@ export function Screen({ children, scrollable = false, keyboardAvoid = false, no
       style={{ flex: 1 }}
       contentContainerStyle={[padding, { paddingBottom: Layout.bottomPadding }, style]}
       showsVerticalScrollIndicator={false}
+      keyboardDismissMode="on-drag"
       keyboardShouldPersistTaps="handled"
     >
       {children}
@@ -39,7 +40,7 @@ export function Screen({ children, scrollable = false, keyboardAvoid = false, no
   );
 
   const body = keyboardAvoid ? (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
       {inner}
     </KeyboardAvoidingView>
   ) : (

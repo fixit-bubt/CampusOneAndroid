@@ -245,7 +245,7 @@ export function ChatbotScreen({ navigation, route }: any) {
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior="padding"
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
         {loadingHistory ? (
@@ -255,6 +255,7 @@ export function ChatbotScreen({ navigation, route }: any) {
         ) : rendered.length === 0 ? (
           <ScrollView
             contentContainerStyle={styles.emptyContainer}
+            keyboardDismissMode="on-drag"
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
@@ -294,6 +295,7 @@ export function ChatbotScreen({ navigation, route }: any) {
             keyExtractor={(m) => m.id}
             contentContainerStyle={{ paddingHorizontal: Layout.screenPadding, paddingVertical: 12 }}
             showsVerticalScrollIndicator={false}
+            keyboardDismissMode="on-drag"
             keyboardShouldPersistTaps="handled"
             renderItem={({ item }) => renderBubble(item)}
           />

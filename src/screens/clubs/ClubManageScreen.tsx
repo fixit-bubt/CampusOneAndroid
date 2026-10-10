@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
-  Modal, ActivityIndicator, type ViewStyle, type TextStyle,
+  Modal, ActivityIndicator, KeyboardAvoidingView, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
@@ -118,10 +118,13 @@ export function ClubManageScreen({ route, navigation }: any) {
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar title={t.clubs2.manageClub} onBack={() => navigation.goBack()} />
 
-      <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
-        showsVerticalScrollIndicator={false}
-      >
+      <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+        <ScrollView
+          contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
+          showsVerticalScrollIndicator={false}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+        >
         {/* Club details section */}
         <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>{t.clubs2.clubDetailsSection}</Text>
 
@@ -231,7 +234,8 @@ export function ClubManageScreen({ route, navigation }: any) {
         )}
 
         <View style={{ height: 26 }} />
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* Confirm transfer modal */}
       <Modal visible={!!confirm} transparent animationType="slide" onRequestClose={() => setConfirm(null)}>

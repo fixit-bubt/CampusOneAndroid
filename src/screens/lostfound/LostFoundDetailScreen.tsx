@@ -6,7 +6,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet, Image,
-  TextInput, ActivityIndicator, Alert, type ViewStyle,
+  TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, type ViewStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -258,10 +258,13 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar title="Lost & Found" onBack={() => navigation.goBack()} />
-      <ScrollView
-        contentContainerStyle={[styles.content, { paddingHorizontal: Layout.screenPadding }]}
-        showsVerticalScrollIndicator={false}
-      >
+      <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+        <ScrollView
+          contentContainerStyle={[styles.content, { paddingHorizontal: Layout.screenPadding }]}
+          showsVerticalScrollIndicator={false}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+        >
         {/* Large category thumb / photo */}
         <View style={[styles.thumbLg, { backgroundColor: bg }]}>
           {item.photo_url ? (
@@ -603,7 +606,8 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
         )}
 
         <View style={{ height: 26 }} />
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
       {contact && (
         <ContactSheet
           visible={contactSheetOpen}

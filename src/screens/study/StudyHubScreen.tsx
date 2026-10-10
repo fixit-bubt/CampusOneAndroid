@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView, Switch, Modal,
-  StyleSheet, Alert, type ViewStyle,
+  StyleSheet, Alert, KeyboardAvoidingView, Platform, type ViewStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -183,7 +183,7 @@ function CreateSheet({ visible, C, depts, onClose, onSubmit }: { visible: boolea
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={sheetStyles.overlay}>
+      <KeyboardAvoidingView style={sheetStyles.overlay} behavior="padding">
         <TouchableOpacity style={{ flex: 1 }} onPress={() => { reset(); onClose(); }} />
         <View style={[sheetStyles.sheet, { backgroundColor: C.surface }]}>
           <View style={[sheetStyles.handle, { backgroundColor: C.border }]} />
@@ -246,7 +246,7 @@ function CreateSheet({ visible, C, depts, onClose, onSubmit }: { visible: boolea
             <Text style={[sheetStyles.submitTxt, { color: ok ? '#fff' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.study2.submitRequest}</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -256,7 +256,7 @@ function RejectSheet({ visible, C, onClose, onReject }: { visible: boolean; C: a
   const [note, setNote] = useState('');
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={sheetStyles.overlay}>
+      <KeyboardAvoidingView style={sheetStyles.overlay} behavior="padding">
         <TouchableOpacity style={{ flex: 1 }} onPress={onClose} />
         <View style={[sheetStyles.sheet, { backgroundColor: C.surface }]}>
           <View style={[sheetStyles.handle, { backgroundColor: C.border }]} />
@@ -276,7 +276,7 @@ function RejectSheet({ visible, C, onClose, onReject }: { visible: boolean; C: a
             <Text style={[sheetStyles.submitTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>{t.study2.rejectRequest}</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -1377,6 +1377,7 @@ export function StudyHubScreen({ navigation }: any) {
         contentContainerStyle={[s.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
       >
         {isAdmin
           ? renderAdminQueue()
@@ -1419,7 +1420,7 @@ export function StudyHubScreen({ navigation }: any) {
 
       {/* Admin: add intake */}
       <Modal visible={addIntakeOpen} animationType="slide" transparent onRequestClose={() => setAddIntakeOpen(false)}>
-        <View style={sheetStyles.overlay}>
+        <KeyboardAvoidingView style={sheetStyles.overlay} behavior="padding">
           <TouchableOpacity style={{ flex: 1 }} onPress={() => setAddIntakeOpen(false)} />
           <View style={[sheetStyles.sheet, { backgroundColor: C.surface }]}>
             <View style={[sheetStyles.handle, { backgroundColor: C.border }]} />
@@ -1439,12 +1440,12 @@ export function StudyHubScreen({ navigation }: any) {
               <Text style={[sheetStyles.submitTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>{t.study2.addIntake}</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Admin: add section */}
       <Modal visible={!!addSectionFor} animationType="slide" transparent onRequestClose={() => setAddSectionFor(null)}>
-        <View style={sheetStyles.overlay}>
+        <KeyboardAvoidingView style={sheetStyles.overlay} behavior="padding">
           <TouchableOpacity style={{ flex: 1 }} onPress={() => setAddSectionFor(null)} />
           <View style={[sheetStyles.sheet, { backgroundColor: C.surface }]}>
             <View style={[sheetStyles.handle, { backgroundColor: C.border }]} />
@@ -1459,12 +1460,12 @@ export function StudyHubScreen({ navigation }: any) {
               <Text style={[sheetStyles.submitTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>{t.study2.addSection}</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Admin: assign CR */}
       <Modal visible={!!setCrFor} animationType="slide" transparent onRequestClose={() => setSetCrFor(null)}>
-        <View style={sheetStyles.overlay}>
+        <KeyboardAvoidingView style={sheetStyles.overlay} behavior="padding">
           <TouchableOpacity style={{ flex: 1 }} onPress={() => setSetCrFor(null)} />
           <View style={[sheetStyles.sheet, { backgroundColor: C.surface, maxHeight: '70%' }]}>
             <View style={[sheetStyles.handle, { backgroundColor: C.border }]} />
@@ -1491,7 +1492,7 @@ export function StudyHubScreen({ navigation }: any) {
                 ))}
             </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );

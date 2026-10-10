@@ -106,9 +106,12 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
 
 Expo SDK 56 enforces Android 15 edge-to-edge mode. This breaks two standard React Native conventions:
 
-### 6.1 KeyboardAvoidingView on Android
-- **Old Broken Pattern:** `behavior={Platform.OS === 'ios' ? 'padding' : undefined}` relies on native `adjustResize`, which fails in edge-to-edge mode.
-- **Rule:** Use `behavior="height"` on Android (or handle insets via `react-native-safe-area-context`).
+### 6.1 Keyboard Handling & KeyboardAvoidingView across Android & iOS
+- **`app.json` Configuration:** `"softwareKeyboardLayoutMode": "resize"` is explicitly configured in `expo.android`.
+- **The `behavior="height"` Trap:** In React Native's `KeyboardAvoidingView.js`, `behavior="height"` forcibly sets `flex: 0` and recalculates an explicit height. In Android 15 edge-to-edge mode (Expo SDK 56), this collapses flex containers, zeros offsets, and causes the soft keyboard to obstruct search boxes and inputs.
+- **The Standard Rule:** ALWAYS use `behavior="padding"` across all screens on both iOS and Android. It maintains `flex: 1` and applies `paddingBottom: keyboardHeight` smoothly.
+- **Modals & Bottom Sheets:** React Native's `<Modal>` opens in a separate native Android window. Outer screen wrappers do not protect inputs inside modals. Every Modal with text inputs or search fields MUST contain an internal `<KeyboardAvoidingView behavior="padding" style={styles.overlay}>`.
+- **Scroll & Touch Ergonomics:** Lists and scroll containers (`FlatList`, `ScrollView`) must configure `keyboardShouldPersistTaps="handled"` and `keyboardDismissMode="on-drag"` so search result taps are never swallowed by an open keyboard.
 
 ### 6.2 Inverted FlatList Empty States
 - **Old Broken Pattern:** Wrapping `ListEmptyComponent` in `transform: [{ scaleY: -1 }]` renders upside-down or mirrored text on modern React Native Fabric architecture.

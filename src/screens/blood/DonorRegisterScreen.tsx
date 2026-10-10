@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView,
-  StyleSheet, ActivityIndicator, type ViewStyle,
+  StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
@@ -137,12 +137,12 @@ export function DonorRegisterScreen({ navigation }: any) {
           <ActivityIndicator size="small" color={C.brand} />
         </View>
       ) : (
-
-      <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
+          <ScrollView
+            contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
         {isRegistered ? (
           <View style={[styles.lockedCard, { backgroundColor: C.surface, borderColor: C.border }]}>
             <View style={[styles.lockedBadge, { backgroundColor: SectorColors.blood + '20' }]}>
@@ -275,8 +275,9 @@ export function DonorRegisterScreen({ navigation }: any) {
           </Text>
         </TouchableOpacity>
 
-        <View style={{ height: 30 }} />
-      </ScrollView>
+          <View style={{ height: 30 }} />
+        </ScrollView>
+      </KeyboardAvoidingView>
       )}
       <AreaPickerModal
         visible={areaModalVisible}

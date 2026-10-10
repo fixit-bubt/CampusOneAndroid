@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView, StyleSheet,
-  RefreshControl, Alert, Modal, ActivityIndicator, type ViewStyle,
+  RefreshControl, Alert, Modal, ActivityIndicator, KeyboardAvoidingView, Platform, type ViewStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -381,89 +381,93 @@ export function ManageUsersScreen({ navigation }: any) {
       </Modal>
 
       {/* Create account sheet */}
-      <Modal visible={createOpen} transparent animationType="slide" onRequestClose={() => setCreateOpen(false)}>
-        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => { setCreateOpen(false); resetCreateForm(); }} />
-        <View style={[styles.sheet, { backgroundColor: C.surface }]}>
-          <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-            {t.manage.createAccount}
-          </Text>
-          <Text style={[styles.sheetSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-            {t.manage.createAccountSub}
-          </Text>
+      <Modal visible={createOpen} transparent animationType="slide" onRequestClose={() => { setCreateOpen(false); resetCreateForm(); }}>
+        <KeyboardAvoidingView style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' }} behavior="padding">
+          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => { setCreateOpen(false); resetCreateForm(); }} />
+          <View style={[styles.sheet, { backgroundColor: C.surface }]}>
+            <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+              {t.manage.createAccount}
+            </Text>
+            <Text style={[styles.sheetSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+              {t.manage.createAccountSub}
+            </Text>
 
-          <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.fullNameLabel}</Text>
-          <TextInput
-            style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-            value={cName} onChangeText={setCName} placeholder={t.manage.fullNamePlaceholder} placeholderTextColor={C.textMuted}
-          />
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.fullNameLabel}</Text>
+              <TextInput
+                style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                value={cName} onChangeText={setCName} placeholder={t.manage.fullNamePlaceholder} placeholderTextColor={C.textMuted}
+              />
 
-          <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.emailLabel}</Text>
-          <TextInput
-            style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-            value={cEmail} onChangeText={setCEmail} placeholder={t.manage.emailUniversityPlaceholder} placeholderTextColor={C.textMuted}
-            autoCapitalize="none" keyboardType="email-address"
-          />
+              <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.emailLabel}</Text>
+              <TextInput
+                style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                value={cEmail} onChangeText={setCEmail} placeholder={t.manage.emailUniversityPlaceholder} placeholderTextColor={C.textMuted}
+                autoCapitalize="none" keyboardType="email-address"
+              />
 
-          <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.passwordMin6Label}</Text>
-          <PasswordInput
-            style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-            value={cPassword} onChangeText={setCPassword} placeholder="••••••" placeholderTextColor={C.textMuted}
-          />
+              <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.passwordMin6Label}</Text>
+              <PasswordInput
+                style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                value={cPassword} onChangeText={setCPassword} placeholder="••••••" placeholderTextColor={C.textMuted}
+              />
 
-          <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.roleLabel}</Text>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            {(['student', 'staff', 'admin'] as const).map(r => {
-              const sel = cRole === r;
-              return (
-                <TouchableOpacity
-                  key={r}
-                  style={[styles.roleChip, { backgroundColor: sel ? C.brand : C.bg, borderColor: sel ? C.brand : C.border }]}
-                  onPress={() => setCRole(r)}
-                  activeOpacity={0.75}
-                >
-                  <Text style={{ fontSize: 13, color: sel ? '#fff' : C.text, fontFamily: FontFamily.jakartaBold }}>
-                    {r.charAt(0).toUpperCase() + r.slice(1)}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-
-          {cRole === 'staff' && (
-            <>
-              <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.tradeOptionalLabel}</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7 }}>
-                {TRADES.map(t => {
-                  const sel = cTrade === t;
+              <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.roleLabel}</Text>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                {(['student', 'staff', 'admin'] as const).map(r => {
+                  const sel = cRole === r;
                   return (
                     <TouchableOpacity
-                      key={t}
+                      key={r}
                       style={[styles.roleChip, { backgroundColor: sel ? C.brand : C.bg, borderColor: sel ? C.brand : C.border }]}
-                      onPress={() => setCTrade(sel ? null : t)}
+                      onPress={() => setCRole(r)}
                       activeOpacity={0.75}
                     >
-                      <Text style={{ fontSize: 12, color: sel ? '#fff' : C.text, fontFamily: FontFamily.jakartaBold }}>{t}</Text>
+                      <Text style={{ fontSize: 13, color: sel ? '#fff' : C.text, fontFamily: FontFamily.jakartaBold }}>
+                        {r.charAt(0).toUpperCase() + r.slice(1)}
+                      </Text>
                     </TouchableOpacity>
                   );
                 })}
               </View>
-            </>
-          )}
 
-          <TouchableOpacity
-            style={[styles.createBtn, { backgroundColor: createOk ? C.brand : C.surface2, opacity: createOk ? 1 : 0.55 }]}
-            disabled={!createOk || creating}
-            onPress={submitCreate}
-            activeOpacity={0.8}
-          >
-            {creating
-              ? <ActivityIndicator color="#fff" size="small" />
-              : <Feather name="user-plus" size={16} color={createOk ? '#fff' : C.textMuted} />}
-            <Text style={[styles.createBtnTxt, { color: createOk ? '#fff' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-              {t.manage.createAccount}
-            </Text>
-          </TouchableOpacity>
-        </View>
+              {cRole === 'staff' && (
+                <>
+                  <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.tradeOptionalLabel}</Text>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7 }}>
+                    {TRADES.map(t => {
+                      const sel = cTrade === t;
+                      return (
+                        <TouchableOpacity
+                          key={t}
+                          style={[styles.roleChip, { backgroundColor: sel ? C.brand : C.bg, borderColor: sel ? C.brand : C.border }]}
+                          onPress={() => setCTrade(sel ? null : t)}
+                          activeOpacity={0.75}
+                        >
+                          <Text style={{ fontSize: 12, color: sel ? '#fff' : C.text, fontFamily: FontFamily.jakartaBold }}>{t}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </>
+              )}
+
+              <TouchableOpacity
+                style={[styles.createBtn, { backgroundColor: createOk ? C.brand : C.surface2, opacity: createOk ? 1 : 0.55 }]}
+                disabled={!createOk || creating}
+                onPress={submitCreate}
+                activeOpacity={0.8}
+              >
+                {creating
+                  ? <ActivityIndicator color="#fff" size="small" />
+                  : <Feather name="user-plus" size={16} color={createOk ? '#fff' : C.textMuted} />}
+                <Text style={[styles.createBtnTxt, { color: createOk ? '#fff' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                  {t.manage.createAccount}
+                </Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Toast */}

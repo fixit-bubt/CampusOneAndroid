@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, Modal, ScrollView,
-  StyleSheet, RefreshControl, type ViewStyle,
+  StyleSheet, RefreshControl, KeyboardAvoidingView, Platform, type ViewStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -219,7 +219,7 @@ export function BusScreen({ navigation }: any) {
 
       {/* Admin: add/edit route */}
       <Modal visible={!!form} transparent animationType="slide" onRequestClose={() => setForm(null)}>
-        <View style={styles.overlay}>
+        <KeyboardAvoidingView style={styles.overlay} behavior="padding">
           <TouchableOpacity style={{ flex: 1 }} onPress={() => setForm(null)} />
           <View style={[styles.sheet, { backgroundColor: C.surface }]}>
             <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
@@ -253,7 +253,7 @@ export function BusScreen({ navigation }: any) {
               <Text style={[styles.sheetBtnTxt, { fontFamily: FontFamily.jakartaBold }]}>{t.bus2.saveRoute}</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );

@@ -262,6 +262,8 @@ export function RoutinesBrowseScreen({ navigation }: any) {
         data={filtered}
         keyExtractor={i => i.id}
         renderItem={renderRoutine}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ paddingHorizontal: Layout.screenPadding, paddingBottom: 32 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
         ListEmptyComponent={
@@ -273,7 +275,7 @@ export function RoutinesBrowseScreen({ navigation }: any) {
 
       {/* Post modal */}
       <Modal visible={modalVisible} animationType="slide" transparent>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
+        <KeyboardAvoidingView behavior="padding" style={styles.modalOverlay}>
           <View style={[styles.modalSheet, { backgroundColor: C.surface }]}>
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -284,7 +286,12 @@ export function RoutinesBrowseScreen({ navigation }: any) {
               </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              keyboardDismissMode="on-drag"
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={{ paddingBottom: 24 }}
+            >
               <Text style={[styles.fieldLabel, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
                 {t.routines2.type}
               </Text>

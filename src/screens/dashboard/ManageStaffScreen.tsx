@@ -5,7 +5,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView, StyleSheet,
-  RefreshControl, Alert, Modal, ActivityIndicator, type ViewStyle,
+  RefreshControl, Alert, Modal, ActivityIndicator, KeyboardAvoidingView, Platform, type ViewStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -215,71 +215,75 @@ export function ManageStaffScreen({ navigation }: any) {
 
       {/* Add sheet - role locked to the active tab */}
       <Modal visible={addOpen} transparent animationType="slide" onRequestClose={() => setAddOpen(false)}>
-        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setAddOpen(false)} />
-        <View style={[styles.sheet, { backgroundColor: C.surface }]}>
-          <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-            {tab === 'staff' ? t.manage.addStaff : t.manage.addAdmin}
-          </Text>
-          <Text style={[styles.sheetSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-            {tab === 'staff'
-              ? t.manage.addStaffSub
-              : t.manage.addAdminSub}
-          </Text>
-
-          <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.fullNameLabel}</Text>
-          <TextInput
-            style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-            value={name} onChangeText={setName} placeholder={t.manage.fullNamePlaceholder} placeholderTextColor={C.textMuted}
-          />
-
-          <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.emailLabel}</Text>
-          <TextInput
-            style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-            value={email} onChangeText={setEmail} placeholder={t.manage.emailUniversityPlaceholder} placeholderTextColor={C.textMuted}
-            autoCapitalize="none" keyboardType="email-address"
-          />
-
-          <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.passwordMin6Label}</Text>
-          <PasswordInput
-            style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-            value={password} onChangeText={setPassword} placeholder="••••••" placeholderTextColor={C.textMuted}
-          />
-
-          {tab === 'staff' && (
-            <>
-              <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.tradeOptionalLabel}</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7 }}>
-                {TRADES.map(t => {
-                  const sel = trade === t;
-                  return (
-                    <TouchableOpacity
-                      key={t}
-                      style={[styles.chip, { backgroundColor: sel ? C.brand : C.bg, borderColor: sel ? C.brand : C.border }]}
-                      onPress={() => setTrade(sel ? null : t)}
-                      activeOpacity={0.75}
-                    >
-                      <Text style={{ fontSize: 12, color: sel ? C.white : C.text, fontFamily: FontFamily.jakartaBold }}>{t}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </>
-          )}
-
-          <TouchableOpacity
-            style={[styles.createBtn, { backgroundColor: formOk ? C.brand : C.surface2, opacity: formOk ? 1 : 0.55 }]}
-            disabled={!formOk || creating}
-            onPress={submitAdd}
-            activeOpacity={0.8}
-          >
-            {creating
-              ? <ActivityIndicator color={C.white} size="small" />
-              : <Feather name="user-plus" size={16} color={formOk ? C.white : C.textMuted} />}
-            <Text style={[styles.createBtnTxt, { color: formOk ? C.white : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-              {tab === 'staff' ? t.manage.createStaffAccount : t.manage.createAdminAccount}
+        <KeyboardAvoidingView style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' }} behavior="padding">
+          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setAddOpen(false)} />
+          <View style={[styles.sheet, { backgroundColor: C.surface }]}>
+            <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+              {tab === 'staff' ? t.manage.addStaff : t.manage.addAdmin}
             </Text>
-          </TouchableOpacity>
-        </View>
+            <Text style={[styles.sheetSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+              {tab === 'staff'
+                ? t.manage.addStaffSub
+                : t.manage.addAdminSub}
+            </Text>
+
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.fullNameLabel}</Text>
+              <TextInput
+                style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                value={name} onChangeText={setName} placeholder={t.manage.fullNamePlaceholder} placeholderTextColor={C.textMuted}
+              />
+
+              <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.emailLabel}</Text>
+              <TextInput
+                style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                value={email} onChangeText={setEmail} placeholder={t.manage.emailUniversityPlaceholder} placeholderTextColor={C.textMuted}
+                autoCapitalize="none" keyboardType="email-address"
+              />
+
+              <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.passwordMin6Label}</Text>
+              <PasswordInput
+                style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                value={password} onChangeText={setPassword} placeholder="••••••" placeholderTextColor={C.textMuted}
+              />
+
+              {tab === 'staff' && (
+                <>
+                  <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.tradeOptionalLabel}</Text>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7 }}>
+                    {TRADES.map(t => {
+                      const sel = trade === t;
+                      return (
+                        <TouchableOpacity
+                          key={t}
+                          style={[styles.chip, { backgroundColor: sel ? C.brand : C.bg, borderColor: sel ? C.brand : C.border }]}
+                          onPress={() => setTrade(sel ? null : t)}
+                          activeOpacity={0.75}
+                        >
+                          <Text style={{ fontSize: 12, color: sel ? C.white : C.text, fontFamily: FontFamily.jakartaBold }}>{t}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </>
+              )}
+
+              <TouchableOpacity
+                style={[styles.createBtn, { backgroundColor: formOk ? C.brand : C.surface2, opacity: formOk ? 1 : 0.55 }]}
+                disabled={!formOk || creating}
+                onPress={submitAdd}
+                activeOpacity={0.8}
+              >
+                {creating
+                  ? <ActivityIndicator color={C.white} size="small" />
+                  : <Feather name="user-plus" size={16} color={formOk ? C.white : C.textMuted} />}
+                <Text style={[styles.createBtnTxt, { color: formOk ? C.white : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                  {tab === 'staff' ? t.manage.createStaffAccount : t.manage.createAdminAccount}
+                </Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );

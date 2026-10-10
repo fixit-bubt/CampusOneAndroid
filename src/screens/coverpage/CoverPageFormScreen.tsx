@@ -421,8 +421,13 @@ export function CoverPageFormScreen({ navigation }: any) {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar title={t.coverpage2.title} onBack={() => navigation.goBack()} />
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]} showsVerticalScrollIndicator={false}>
+      <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+        <ScrollView
+          contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
+          showsVerticalScrollIndicator={false}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+        >
 
           {/* Doc type tabs */}
           <View style={styles.typeRow}>
