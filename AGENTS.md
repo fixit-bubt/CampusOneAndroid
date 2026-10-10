@@ -596,12 +596,12 @@ Whenever the user instructs to "update memorys", the agent MUST synchronously up
 
 ### 22.3 Unified Single-Row Search & Bottom Sheet Filter Modal (`LostFoundBrowseScreen.tsx`)
 - **Zero Loose Chips Clutter:** Completely eliminates cluttered horizontal scrolling category chips and loose status pills from the main feed screen.
-- **Single 42dp Row:** Search input on the left (`flex: 1`, search icon, full-height `TextInput`, instant clear `✕`) paired side-by-side with a compact `Filters` button on the right (matching `BloodScreen` search + area trigger architecture).
-- **Active Filter Pill:** When filters are active (e.g. `category !== 'All'` or `status !== 'Open'`), the filter button highlights in sector amber (`${SectorColors.lostfound}18`), displays a filter count badge (e.g. `1`), and has a 1-tap `✕` clear button without needing to open the modal.
+- **Single 44dp Row:** Search input on the left (`flex: 1`, search icon, full-height `TextInput`, instant clear `✕`) paired side-by-side with a prominent 44dp `Filters` button on the right (`minWidth: 96`, `flexShrink: 0`, matching `BloodScreen` search + area trigger architecture).
+- **Active Filter Pill:** When filters are active (e.g. `category !== 'All'` or `status !== 'Open'`), the filter button highlights in sector amber (`${SectorColors.lostfound}18`), displays a filter count badge (e.g. `1`), and opens the modal to adjust or reset.
 - **Filter Bottom Sheet Modal:** Tapping `Filters` opens a sleek bottom sheet organized into two distinct sections:
-  - **STATUS:** `Active (Open only)` (default), `Resolved only`, `All (Active & Resolved)`.
+  - **STATUS:** Symmetrical card/bar rows for `Active (Open only)` (default), `Resolved only`, and `All (Active & Resolved)` with squircle status icons (`clock`, `check-circle`, `layers`), descriptive hints, and real-time status counts matching category rows 1:1.
   - **CATEGORY:** `All Categories`, `Personal`, `Electronics`, `Documents`, and `Other` with semantic squircle icon boxes, descriptive hints, and real-time category counts.
-  - **Sheet Actions:** 1-tap `Reset` and `Apply Filters`.
+  - **Sheet Actions:** Equal 50/50 split buttons: styled soft-crimson `Reset` button (`C.dangerBg`, border, `rotate-ccw` icon) paired with solid sector-amber `Apply Filters` (check icon).
 - **Feed Direct Placement:** The item card feed begins immediately beneath the single search/filter row with clean visual hierarchy.
 
 ### 22.4 Full-Screen Photo Viewer (`LostFoundDetailScreen.tsx`)

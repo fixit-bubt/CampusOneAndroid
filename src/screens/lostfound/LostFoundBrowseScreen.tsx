@@ -207,6 +207,15 @@ export function LostFoundBrowseScreen({ navigation }: any) {
     return map;
   }, [items]);
 
+  // Status counts for modal
+  const statusCounts = useMemo(() => {
+    return {
+      Open: items.filter(i => i.status === 'Open').length,
+      Resolved: items.filter(i => i.status === 'Resolved').length,
+      All: items.length,
+    };
+  }, [items]);
+
   const q = searchQuery.trim().toLowerCase();
 
   const filteredList = useMemo(() => {
@@ -277,10 +286,34 @@ export function LostFoundBrowseScreen({ navigation }: any) {
     { id: 'mine', label: t.lf.myPosts },
   ];
 
-  const STATUS_OPTIONS: { id: StatusFilter; label: string }[] = [
-    { id: 'Open', label: t.lf.statusOpenOnly },
-    { id: 'Resolved', label: t.lf.statusResolvedOnly },
-    { id: 'All', label: t.lf.statusAllOnly },
+  const STATUS_OPTIONS: {
+    id: StatusFilter;
+    label: string;
+    hint: string;
+    icon: string;
+    fg: string;
+  }[] = [
+    {
+      id: 'Open',
+      label: t.lf.statusOpenOnly,
+      hint: t.lf.statusOpenHint,
+      icon: 'clock',
+      fg: SectorColors.lostfound,
+    },
+    {
+      id: 'Resolved',
+      label: t.lf.statusResolvedOnly,
+      hint: t.lf.statusResolvedHint,
+      icon: 'check-circle',
+      fg: C.success,
+    },
+    {
+      id: 'All',
+      label: t.lf.statusAllOnly,
+      hint: t.lf.statusAllHint,
+      icon: 'layers',
+      fg: Accent.blue,
+    },
   ];
 
   return (
@@ -507,37 +540,48 @@ export function LostFoundBrowseScreen({ navigation }: any) {
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 16 }}>
-              {/* Section 1: STATUS */}
+              {/* Section 1: STATUS (Card/Bar design matching categories) */}
               <Text style={[styles.sheetSectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
                 {t.lf.statusLabel}
               </Text>
-              <View style={styles.statusSegment}>
+              <View style={styles.catOptionsList}>
                 {STATUS_OPTIONS.map(s => {
                   const selected = draftStatus === s.id;
+                  const fg = s.fg;
+                  const bg = pillBg(fg, isDark);
+
                   return (
                     <TouchableOpacity
                       key={s.id}
                       style={[
-                        styles.statusOptionRow,
-                        { backgroundColor: selected ? (isDark ? 'rgba(255,255,255,0.08)' : C.surface2) : 'transparent' },
+                        styles.catOptionRow,
+                        {
+                          backgroundColor: selected ? bg : C.surface,
+                          borderColor: selected ? fg : C.border,
+                          borderWidth: selected ? 1.5 : 1,
+                        },
                       ]}
                       onPress={() => setDraftStatus(s.id)}
                       activeOpacity={0.75}
                     >
-                      <View style={[styles.radioCircle, { borderColor: selected ? SectorColors.lostfound : C.border }]}>
-                        {selected && <View style={[styles.radioDot, { backgroundColor: SectorColors.lostfound }]} />}
+                      <View style={[styles.catOptionIcon, { backgroundColor: selected ? `${fg}28` : bg }]}>
+                        <Feather name={s.icon as any} size={16} color={fg} />
                       </View>
-                      <Text
-                        style={[
-                          styles.statusOptionTxt,
-                          {
-                            color: selected ? C.text : C.text2,
-                            fontFamily: selected ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                          },
-                        ]}
-                      >
-                        {s.label}
-                      </Text>
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <Text style={[styles.catOptionTitle, { color: selected ? fg : C.text, fontFamily: FontFamily.jakartaBold }]}>
+                          {s.label}
+                        </Text>
+                        {s.hint && (
+                          <Text style={[styles.catOptionHint, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
+                            {s.hint}
+                          </Text>
+                        )}
+                      </View>
+                      <View style={[styles.catOptionCount, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : C.surface2 }]}>
+                        <Text style={[styles.catOptionCountTxt, { color: selected ? fg : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                          {statusCounts[s.id] ?? 0}
+                        </Text>
+                      </View>
                     </TouchableOpacity>
                   );
                 })}
@@ -602,14 +646,21 @@ export function LostFoundBrowseScreen({ navigation }: any) {
               </View>
             </ScrollView>
 
-            {/* Sheet Actions */}
+            {/* Sheet Actions (Equal 50/50 Symmetrical Buttons with Colored Reset) */}
             <View style={[styles.sheetActionsRow, { borderTopColor: C.border }]}>
               <TouchableOpacity
-                style={[styles.sheetResetBtn, { backgroundColor: C.surface2 }]}
+                style={[
+                  styles.sheetResetBtn,
+                  {
+                    backgroundColor: isDark ? 'rgba(214, 61, 53, 0.14)' : '#FEE2E2',
+                    borderColor: isDark ? 'rgba(214, 61, 53, 0.35)' : '#FCA5A5',
+                  },
+                ]}
                 onPress={resetDraftFilters}
                 activeOpacity={0.75}
               >
-                <Text style={[styles.sheetResetTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                <Feather name="rotate-ccw" size={14} color={C.danger} />
+                <Text style={[styles.sheetResetTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
                   {t.lf.reset}
                 </Text>
               </TouchableOpacity>
@@ -618,6 +669,7 @@ export function LostFoundBrowseScreen({ navigation }: any) {
                 onPress={applyFilters}
                 activeOpacity={0.85}
               >
+                <Feather name="check" size={15} color="#fff" />
                 <Text style={[styles.sheetApplyTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
                   {t.lf.applyFilters}
                 </Text>
@@ -892,33 +944,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   } as TextStyle,
 
-  statusSegment: {
-    gap: 6,
-  } as ViewStyle,
-  statusOptionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 12,
-  } as ViewStyle,
-  radioCircle: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    borderWidth: 1.5,
-    alignItems: 'center',
-    justifyContent: 'center',
-  } as ViewStyle,
-  radioDot: {
-    width: 9,
-    height: 9,
-    borderRadius: 4.5,
-  } as ViewStyle,
-  statusOptionTxt: {
-    fontSize: 13.5,
-  } as TextStyle,
+
 
   catOptionsList: {
     gap: 7,
@@ -964,20 +990,25 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 44,
     borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 6,
   } as ViewStyle,
   sheetResetTxt: {
     fontSize: 13.5,
   } as TextStyle,
   sheetApplyBtn: {
-    flex: 2,
+    flex: 1,
     height: 44,
     borderRadius: 12,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 6,
   } as ViewStyle,
   sheetApplyTxt: {
-    fontSize: 14,
+    fontSize: 13.5,
   } as TextStyle,
 });
