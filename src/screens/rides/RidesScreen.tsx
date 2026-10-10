@@ -17,7 +17,7 @@ import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { fetchPeople } from '../../services/peopleService';
-import { localToday, formatTime, formatPrice, formatDate } from '../../utils/format';
+import { localToday, nowDhakaMinutes, formatTime, formatPrice, formatDate } from '../../utils/format';
 import { useAuth } from '../../store/authStore';
 import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 import type { Ride as RideRow } from '../../types/database';
@@ -52,8 +52,7 @@ function isRideDeparted(dateStr: string, timeStr: string): boolean {
   if (dateStr === today && timeStr) {
     const [h, m] = timeStr.split(':').map(Number);
     if (Number.isFinite(h) && Number.isFinite(m)) {
-      const now = new Date();
-      const curMins = now.getHours() * 60 + now.getMinutes();
+      const curMins = nowDhakaMinutes();
       const rideMins = h * 60 + m;
       // Filter out rides that departed more than 15 minutes ago
       return rideMins + 15 < curMins;
@@ -79,6 +78,7 @@ export function RidesScreen({ navigation }: any) {
   const [requestedIds, setRequestedIds] = useState<Set<string>>(new Set());
   const [takenCounts, setTakenCounts] = useState<Record<string, number>>({});
   const [tab, setTab] = useState<TabKey>('all');
+  const [postTypeFilter, setPostTypeFilter] = useState<'all' | 'offer' | 'request'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -179,6 +179,11 @@ export function RidesScreen({ navigation }: any) {
       toast({ type: 'info', title: 'Offline Mode', message: 'Internet connection required to request a ride.' });
       return;
     }
+    const target = rides.find(r => r.id === rideId);
+    if (target?.post_type === 'request') {
+      navigation.navigate('RideDetail', { rideId });
+      return;
+    }
     if (requestedIds.has(rideId)) return;
     const { error } = await supabase.from('ride_requests').insert({ ride_id: rideId, requester_id: user.id });
     if (error) {
@@ -209,14 +214,29 @@ export function RidesScreen({ navigation }: any) {
     { id: 'mine', label: t.rides2.myRidesTab ?? 'My Rides' },
   ];
 
+  // Base counts for post types (All, Offers, Requests) in current tab
+  const postCounts = useMemo(() => {
+    let base = rides;
+    if (tab === 'mine') {
+      base = base.filter(r => r.driver_id === user?.id || requestedIds.has(r.id));
+    } else if (tab === 'to') {
+      base = base.filter(r => r.direction === 'To Campus' && (!isRideDeparted(r.date, r.time) || r.driver_id === user?.id || requestedIds.has(r.id)));
+    } else if (tab === 'from') {
+      base = base.filter(r => r.direction === 'From Campus' && (!isRideDeparted(r.date, r.time) || r.driver_id === user?.id || requestedIds.has(r.id)));
+    } else {
+      base = base.filter(r => !isRideDeparted(r.date, r.time) || r.driver_id === user?.id || requestedIds.has(r.id));
+    }
+    const offers = base.filter(r => (r.post_type ?? 'offer') === 'offer').length;
+    const requests = base.filter(r => r.post_type === 'request').length;
+    return { all: base.length, offers, requests };
+  }, [rides, tab, user?.id, requestedIds]);
+
   // Filter pipeline
   const filteredRides = useMemo(() => {
     let list = rides;
 
     // 1. Tab filter
     if (tab === 'mine') {
-      // In "My Rides", show both rides offered by user and rides requested by user!
-      // NEVER filter out departed rides in My Rides so the user can always see/manage them!
       list = list.filter(r => r.driver_id === user?.id || requestedIds.has(r.id));
     } else if (tab === 'to') {
       list = list.filter(r => r.direction === 'To Campus');
@@ -225,11 +245,15 @@ export function RidesScreen({ navigation }: any) {
       list = list.filter(r => r.direction === 'From Campus');
       list = list.filter(r => !isRideDeparted(r.date, r.time) || r.driver_id === user?.id || requestedIds.has(r.id));
     } else {
-      // 'all'
       list = list.filter(r => !isRideDeparted(r.date, r.time) || r.driver_id === user?.id || requestedIds.has(r.id));
     }
 
-    // 2. Search query
+    // 2. Post type filter (All, Offers, Requests)
+    if (postTypeFilter !== 'all') {
+      list = list.filter(r => (r.post_type ?? 'offer') === postTypeFilter);
+    }
+
+    // 3. Search query
     const q = searchQuery.trim().toLowerCase();
     if (q) {
       list = list.filter(r =>
@@ -242,7 +266,7 @@ export function RidesScreen({ navigation }: any) {
     }
 
     return list;
-  }, [rides, tab, searchQuery, user?.id, requestedIds]);
+  }, [rides, tab, postTypeFilter, searchQuery, user?.id, requestedIds]);
 
   const TRACK_PADDING = 3;
   const innerTrackWidth = Math.max(0, trackWidth - TRACK_PADDING * 2);
@@ -349,6 +373,83 @@ export function RidesScreen({ navigation }: any) {
             </TouchableOpacity>
           )}
         </View>
+      </View>
+
+      {/* Post Type Filters (All, Offers, Requests) */}
+      <View style={[styles.filterRow, { paddingHorizontal: Layout.screenPadding }]}>
+        <TouchableOpacity
+          style={[
+            styles.filterChip,
+            {
+              backgroundColor: postTypeFilter === 'all' ? (isDark ? 'rgba(255,255,255,0.12)' : C.surface2) : 'transparent',
+              borderColor: postTypeFilter === 'all' ? C.brand : C.border,
+            },
+          ]}
+          onPress={() => setPostTypeFilter('all')}
+          activeOpacity={0.75}
+        >
+          <Text
+            style={[
+              styles.filterChipTxt,
+              {
+                color: postTypeFilter === 'all' ? C.text : C.textMuted,
+                fontFamily: postTypeFilter === 'all' ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+              },
+            ]}
+          >
+            {t.common.all ?? 'All'} ({postCounts.all})
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.filterChip,
+            {
+              backgroundColor: postTypeFilter === 'offer' ? `${RIDE_COLOR}18` : 'transparent',
+              borderColor: postTypeFilter === 'offer' ? RIDE_COLOR : C.border,
+            },
+          ]}
+          onPress={() => setPostTypeFilter('offer')}
+          activeOpacity={0.75}
+        >
+          <Text style={{ fontSize: 11 }}>🚗</Text>
+          <Text
+            style={[
+              styles.filterChipTxt,
+              {
+                color: postTypeFilter === 'offer' ? RIDE_COLOR : C.textMuted,
+                fontFamily: postTypeFilter === 'offer' ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+              },
+            ]}
+          >
+            {t.rides2.offers ?? 'Offers'} ({postCounts.offers})
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.filterChip,
+            {
+              backgroundColor: postTypeFilter === 'request' ? (isDark ? 'rgba(139, 92, 246, 0.22)' : '#f3effe') : 'transparent',
+              borderColor: postTypeFilter === 'request' ? '#8b5cf6' : C.border,
+            },
+          ]}
+          onPress={() => setPostTypeFilter('request')}
+          activeOpacity={0.75}
+        >
+          <Text style={{ fontSize: 11 }}>🙋</Text>
+          <Text
+            style={[
+              styles.filterChipTxt,
+              {
+                color: postTypeFilter === 'request' ? (isDark ? '#c4b5fd' : '#7c3aed') : C.textMuted,
+                fontFamily: postTypeFilter === 'request' ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+              },
+            ]}
+          >
+            {t.rides2.needRide ?? 'Requests'} ({postCounts.requests})
+          </Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -789,4 +890,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   clearBtnTxt: { fontSize: 12.5 } as TextStyle,
+  filterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingTop: 2,
+    paddingBottom: 8,
+  },
+  filterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  filterChipTxt: { fontSize: 12 } as TextStyle,
 });

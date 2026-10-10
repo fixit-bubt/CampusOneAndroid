@@ -13,7 +13,7 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
-import { localToday, formatDate, formatTime } from '../../utils/format';
+import { localToday, nowDhakaMinutes, formatDate, formatTime } from '../../utils/format';
 import type { Ride } from '../../types/database';
 
 const RIDE_COLOR = SectorColors.ride;
@@ -139,10 +139,21 @@ const TIME_PERIODS: TimePeriod[] = [
 ];
 
 function localTomorrow(): string {
-  const d = new Date();
-  d.setDate(d.getDate() + 1);
-  const off = d.getTimezoneOffset() * 60000;
-  return new Date(d.getTime() - off).toISOString().split('T')[0];
+  try {
+    const d = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Dhaka',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+    return formatter.format(d);
+  } catch {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    const off = d.getTimezoneOffset() * 60000;
+    return new Date(d.getTime() - off).toISOString().split('T')[0];
+  }
 }
 
 function formatShortDate(iso: string): string {
@@ -160,8 +171,8 @@ function getShiftLabel(timeStr: string): string {
 }
 
 function getInitialDateTime(): { defaultDate: 'today' | 'tomorrow'; defaultTime: string } {
-  const now = new Date();
-  const currentHour = now.getHours();
+  const dhakaMins = nowDhakaMinutes();
+  const currentHour = Math.floor(dhakaMins / 60);
   // If it's evening (after 6 PM / 18:00), default to tomorrow morning 08:00
   if (currentHour >= 18) {
     return { defaultDate: 'tomorrow', defaultTime: '08:00' };
@@ -296,14 +307,15 @@ export function RidePostScreen({ route, navigation }: any) {
 
   function handleDateChoice(choice: 'today' | 'tomorrow') {
     setDateChoice(choice);
-    const now = new Date();
+    const dhakaMins = nowDhakaMinutes();
+    const currentHour = Math.floor(dhakaMins / 60);
     if (choice === 'tomorrow') {
-      if (!time || time === `${String((now.getHours() + 1) % 24).padStart(2, '0')}:00`) {
+      if (!time || time === `${String((currentHour + 1) % 24).padStart(2, '0')}:00`) {
         setTime('08:00');
       }
     } else {
-      if (now.getHours() >= 18 && time === '08:00') {
-        const nextHour = Math.min(23, now.getHours() + 1);
+      if (currentHour >= 18 && time === '08:00') {
+        const nextHour = Math.min(23, currentHour + 1);
         setTime(`${String(nextHour).padStart(2, '0')}:00`);
       }
     }
@@ -387,8 +399,7 @@ export function RidePostScreen({ route, navigation }: any) {
     // Validate that a ride scheduled for Today hasn't already departed
     const [h, m] = timePart.split(':').map(Number);
     if (selectedDate === localToday() && Number.isFinite(h) && Number.isFinite(m)) {
-      const now = new Date();
-      const curMins = now.getHours() * 60 + now.getMinutes();
+      const curMins = nowDhakaMinutes();
       const rideMins = h * 60 + m;
       if (rideMins < curMins - 15) {
         toast({
@@ -402,7 +413,7 @@ export function RidePostScreen({ route, navigation }: any) {
 
     const calculatedSeats = postType === 'offer'
       ? Math.max(1, Math.min(seats, currentVehicleConfig.maxSeats))
-      : Math.max(1, Math.min(seats, 2));
+      : Math.max(1, Math.min(seats, 4));
 
     setLoading(true);
     try {
@@ -852,7 +863,7 @@ export function RidePostScreen({ route, navigation }: any) {
                 </Text>
                 <TouchableOpacity
                   style={styles.stepBtn}
-                  onPress={() => setSeats(s => isOffer ? Math.min(currentVehicleConfig.maxSeats, s + 1) : Math.min(2, s + 1))}
+                  onPress={() => setSeats(s => isOffer ? Math.min(currentVehicleConfig.maxSeats, s + 1) : Math.min(4, s + 1))}
                   activeOpacity={0.7}
                 >
                   <Feather name="plus" size={16} color={C.text} />

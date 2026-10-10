@@ -76,11 +76,34 @@ export function bloodGroupSlug(bg: string): string {
   return bg.replace('+', 'pos').replace('-', 'neg').toLowerCase();
 }
 
-/** Local YYYY-MM-DD for "today" (avoids the UTC off-by-one for UTC+6 users). */
+/** Local YYYY-MM-DD in Asia/Dhaka timezone (avoids the UTC off-by-one). */
 export function localToday(): string {
-  const d = new Date();
-  const off = d.getTimezoneOffset() * 60000;
-  return new Date(d.getTime() - off).toISOString().split('T')[0];
+  try {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Dhaka' }).format(new Date());
+  } catch {
+    const d = new Date();
+    const off = d.getTimezoneOffset() * 60000;
+    return new Date(d.getTime() - off).toISOString().split('T')[0];
+  }
+}
+
+/** Current minutes of the day (0..1439) in Asia/Dhaka timezone. */
+export function nowDhakaMinutes(): number {
+  try {
+    const f = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Dhaka',
+      hour12: false,
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+    const parts = f.formatToParts(new Date());
+    const h = parseInt(parts.find(p => p.type === 'hour')?.value ?? '0', 10);
+    const m = parseInt(parts.find(p => p.type === 'minute')?.value ?? '0', 10);
+    return h * 60 + m;
+  } catch {
+    const now = new Date();
+    return now.getHours() * 60 + now.getMinutes();
+  }
 }
 
 /**

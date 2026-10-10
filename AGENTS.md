@@ -831,6 +831,19 @@ The following screens contain segmented control bars slated for this animated pa
 12. **Campus Today Commute Widget:** `CampusToday.tsx` surfaces upcoming rides with available seats directly on the Home screen.
 13. **Web Parity:** `fixit-campus/src/screens/rides/Rides.jsx` and `store.jsx` updated with Rickshaw vehicle, post_type filtering, single hero button, seat cancellation, passenger removal, and Google Maps integration.
 
+### 25.3 360° Bug Hunt, Security Hardening & Parity Overhaul
+- **Database Hardening Migration (`20261013010000_rides_360_hardening.sql`):**
+  - **`ride_contact(p_code, p_target)`:** Expanded lookup to resolve either by alphanumeric `code` or UUID `id::text`. Added permission branch enabling authenticated students to retrieve passenger contact details (`profiles.full_name`, `profiles.whatsapp`) directly on `post_type = 'request'` without requiring a pre-existing row in `ride_requests` (which is impossible for passenger posts).
+  - **Expiry Notification Filter (`notify_ride_cancelled`):** Gated trigger execution so lazy background cleanup (`delete_expired_rides()`) never issues false "Ride cancelled by driver" push alerts for completed/past rides. Notifications now strictly fire only for active/future rides (`old.expires_at > now()`) when deleted by an authenticated user (`auth.uid() IS NOT NULL`).
+  - **Driver Alert on Seat Cancellation (`notify_ride_request_event`):** Added notification branch so that when a passenger voluntarily cancels their own reservation (`auth.uid() = old.requester_id`), the driver receives an instant `'Seat Cancelled'` notification.
+  - **Trigger Expansion (`set_ride_expires_at`):** Trigger configured `BEFORE INSERT OR UPDATE OF date, time` so schedule adjustments correctly recalculate expiration.
+  - **Capacity Protection (`ride_req_insert` RLS):** Enforced that seat reservations are permitted exclusively on `post_type = 'offer'`.
+- **Mobile Frontend Hardening:**
+  - **`RideDetailScreen.tsx`:** Full contextual handling for passenger requests (`post_type === 'request'`). Renders "PASSENGER" role badge, "Seats needed", "Budget", dedicated "Offer a Lift / Contact Passenger" action bar with native `ContactSheet` and in-app `MessageThread` navigation, and customized delete prompt for passenger requests. In-app DM is always accessible regardless of WhatsApp presence.
+  - **`RidesScreen.tsx`:** Filter chips row (`All`, `🚗 Offers`, `🙋 Requests`) with live counts, Dhaka timezone departure cutoff using `nowDhakaMinutes()`, and request ride guard redirecting to detail screen.
+  - **`RidePostScreen.tsx`:** Asia/Dhaka normalization via `nowDhakaMinutes()` for `localTomorrow()`, `getInitialDateTime()`, `handleDateChoice()`, and `handleSubmit()`. Relaxed passenger request seat cap from 2 to 4 to match web carpooling parity.
+  - **Bilingual i18n:** Complete English and Bengali translation keys in `en.ts` and `bn.ts`.
+
 ---
 
 ## 26. Student Marketplace Modernization, Performance & Full-Fledged Overhaul
