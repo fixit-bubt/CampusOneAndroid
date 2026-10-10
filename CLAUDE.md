@@ -815,5 +815,55 @@ The following screens contain segmented control bars slated for this animated pa
 10. **Campus Today Commute Widget:** `CampusToday.tsx` surfaces upcoming rides with available seats directly on the Home screen.
 11. **Web Parity:** `fixit-campus/src/screens/rides/Rides.jsx` and `store.jsx` updated with Rickshaw vehicle, post_type filtering, single hero button, seat cancellation, passenger removal, and Google Maps integration.
 
+---
+
+## 26. Student Marketplace Modernization, Performance & Full-Fledged Overhaul
+
+### 26.1 Architecture & Core Components
+- **Screens & Components:** `MarketScreen.tsx`, `MarketDetailScreen.tsx`, `MarketPostScreen.tsx` (Mobile).
+- **Services:** `marketService.ts` (saved listings / wishlist in `@c1_saved_listings`, `openListingDmThread`, `updateListingStatus`, `deleteListingRow`), `cacheService.ts` (`CacheKeys.MARKET_LISTINGS`), `peopleService.ts` (`fetchPeople`).
+- **Database Migrations:**
+  - `20261013000000_marketplace_enhancements.sql`:
+    - Performance composite indexes: `idx_listings_feed` on `(status, created_at desc)`, `idx_listings_course_code` on `(course_code)`, and `idx_listings_category` on `(category)`.
+    - Additive physical meetup column: `meetup_spot text`.
+    - Additive multi-photo column: `photos text[] DEFAULT '{}'`.
+
+### 26.2 Key Features & Enhancements
+1. **Spring-Animated Segmented Control Bar:**
+   - 4-tab sliding pill track matching `BloodScreen` and `DirectoryScreen` (`All Items`, `Available`, `My Items`, `Saved`).
+   - Driven by native spring interpolation (`tension: 68, friction: 10, useNativeDriver: true`) with dynamic track measurement via `onLayout`.
+   - Dynamic badge counters on each tab.
+2. **High-Performance Virtualized 2-Column Grid:**
+   - Replaced un-virtualized `ScrollView` + `.map()` with `<FlatList numColumns={2}>`.
+   - Dynamic card width calculated per screen size (`cardWidth = (screenWidth - padding * 2 - gap) / 2`).
+   - Cards display 4:3 cover photo or themed category icon, condition tag (`New`, `Like New`, `Used`), condition-colored badge, favorite heart, price formatted in BDT, negotiable tag, handover spot, and seller avatar with name and cohort.
+3. **Wishlist & Saved Items (Local Persistence):**
+   - 1-tap heart toggle on cards and detail screen with spring pop micro-animation.
+   - Saved IDs persisted in `@c1_saved_listings` via `AsyncStorage` for instant offline access.
+4. **Direct In-App Chat Integration (`open_dm_thread`):**
+   - Primary "Message Seller" CTA on `MarketDetailScreen` calls `open_dm_thread('listing', code, seller_id)`, unlocking a 90-day symmetric DM grant.
+   - Seamlessly opens `MessageThread` with seller's name without requiring prior phone number sharing or social connection approval.
+   - Secondary "Contact Info" button opens `ContactSheet.tsx` for WhatsApp / Direct phone call if opted-in via `show_whatsapp`.
+5. **Hero Image Lightbox & Tap-to-Zoom:**
+   - Tapping the listing image opens a full-screen zoomable lightbox modal with dark backdrop and close action.
+6. **Verified Student Seller Card:**
+   - Displays seller avatar, verified checkmark, full name, and academic department (loaded via `fetchPeople`).
+   - 1-tap navigation opens `StudentProfileScreen` (`{ studentId: seller_id }`).
+7. **Free / Community Giveaway Mode (0 ৳):**
+   - Dedicated toggle in `MarketPostScreen` allows students to donate lecture notes, textbooks, and sheets for 0 ৳ with a prominent green "Free · Giveaway" badge.
+   - Frontend validation accepts 0 ৳ when free mode is active.
+8. **Handover Location Spotting:**
+   - Dedicated meetup spot selector (`Cafeteria`, `Library`, `Building 2 Lobby`, `Main Gate`, `Flexible`) or custom entry.
+   - Renders map-pin badge on cards and prominent handover card on detail screen.
+9. **Course Cross-Referencing:**
+   - Course codes auto-capitalized and linked to Study Hub (`CourseDetailScreen`).
+10. **Listing Lifecycle & Owner Controls:**
+    - Confirmation alerts for "Mark as Sold" and ability to "Mark Available" (re-list).
+    - Status preservation on edit so sold items are not inadvertently revived.
+    - Synchronous cache invalidation across all mutations (`create`, `edit`, `sold`, `relist`, `delete`).
+11. **Native Sharing:**
+    - Integrated native `Share.share` generating formatted listing summary for campus WhatsApp and social groups.
+
+
 
 

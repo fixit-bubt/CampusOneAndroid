@@ -46,6 +46,8 @@ export type Listing = Omit<Tables<'listings'>, 'condition' | 'category' | 'statu
   condition: 'New' | 'Like New' | 'Used';
   category: 'Books' | 'Electronics' | 'Furniture' | 'Notes' | 'Other';
   status: 'Available' | 'Sold';
+  meetup_spot?: string | null;
+  photos?: string[] | null;
 };
 
 export type Ride = Omit<Tables<'rides'>, 'direction' | 'vehicle' | 'post_type'> & {
