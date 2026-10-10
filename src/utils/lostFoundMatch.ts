@@ -22,7 +22,10 @@ const MATCH_STOPWORDS = new Set([
 
 export function matchTokens(text: string | null): Set<string> {
   return new Set(
-    (text || '').toLowerCase().split(/[^a-z0-9]+/).filter(w => w.length >= 3 && !MATCH_STOPWORDS.has(w)),
+    (text || '')
+      .toLowerCase()
+      .split(/[^\p{L}\p{M}\p{N}]+/u)
+      .filter(w => w.length >= 2 && !MATCH_STOPWORDS.has(w)),
   );
 }
 
@@ -44,6 +47,7 @@ export function rankMatches(
       descTokens.forEach(tk => { if (iAll.has(tk)) score += 1; });
       return { item: i, score };
     })
+    .filter(x => x.score > 0)
     .sort((a, b) => b.score - a.score || (b.item.created_at || '').localeCompare(a.item.created_at || ''))
     .slice(0, limit)
     .map(x => x.item);

@@ -620,6 +620,31 @@ Whenever the user instructs to "update memorys", the agent MUST synchronously up
 - **Smart Pre-Post Match Banner:** Amber alert card with lightbulb icon alerting students if a matching item was already reported before submission.
 - **Dynamic Action Button:** Dynamic type-aware colors and labels (`Post Lost Report` in crimson vs `Post Found Item` in emerald).
 
+### 22.6 Complete 360-Degree Bug Audit & Robustness Hardening
+- **Unicode Indic / Bengali Pre-Post Matching (`lostFoundMatch.ts`):**
+  - Uses `/[^\p{L}\p{M}\p{N}]+/u` token splitting to support Indic script without severing vowel marks (`\p{M}`) from base consonants (`\p{L}`).
+  - Lowered minimum token length threshold to >= 2 characters to match short terms (e.g., "ID", "বই").
+  - Explicitly filters out 0-score items (`filter(x => x.score > 0)`) in `rankMatches()` to eliminate false-positive suggestions.
+- **Item Owner Controls & SWR Cache Synchronization (`LostFoundDetailScreen.tsx`):**
+  - Added dedicated Edit Post action routing directly to `PostItemFormScreen` with pre-filled state.
+  - Implemented 1-tap `Mark as Resolved` and soft-delete (`deleted_at = now()`) with confirmation alerts and immediate optimistic SWR cache updates (`CacheKeys.LOST_FOUND`).
+  - Replaced isolated `timeAgo` helper with standardized `formatRelativeTime(iso)`.
+  - Added dedicated `LoadError` retry boundary distinguishing 404 (`PGRST116`) from network errors.
+- **Claimant Lifecycle, Anti-Lockout & Race Prevention:**
+  - Separated `myActiveClaim` (`'Pending' | 'Approved'`) from `myRejectedClaim` (`'Rejected'`) so claimants whose submissions are rejected are no longer locked out and can re-submit with clarified details.
+  - Handled duplicate constraint error `23505` with friendly guidance.
+  - Automatic storage rollback: cleans up uploaded proof from private `proofs` bucket if the subsequent database insert fails.
+  - Row-level decision locks (`decidingClaimId`) preventing concurrent double-tap race conditions on claim approval/rejection.
+  - Secured proof photo viewer to ensure only authenticated Supabase Storage URLs are opened.
+- **Android 15 Edge-to-Edge & Ergonomics:**
+  - Added `useSafeAreaInsets` bottom padding to photo picker and filter modals (`Math.max(insets.bottom, 18)`).
+  - Configured `keyboardShouldPersistTaps="handled"` on horizontal location scroll views.
+  - Guaranteed >= 42-44dp touch targets across all filter chips and action buttons.
+- **Database Moderation Migration (`20261010010000_lost_found_security_and_moderation.sql`):**
+  - Added `guard_item_update` trigger on `lost_found_items` to protect immutable fields and prevent reopening resolved items with approved claims.
+  - Updated RLS policies (`items_select`, `items_update`) to enable admin moderation.
+  - Sanitized push notification lockscreen text to prevent leaking private item details.
+
 ---
 
 ## 23. Native Spring Animated Segmented Track Pattern

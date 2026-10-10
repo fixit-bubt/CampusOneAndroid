@@ -4,7 +4,7 @@ import {
   RefreshControl, Keyboard, Modal, KeyboardAvoidingView, Animated, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
@@ -15,6 +15,7 @@ import { FontFamily, Layout, SectorColors, Accent, pillBg } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { getCache, setCache, CacheKeys } from '../../services/cacheService';
+import { formatRelativeTime } from '../../utils/format';
 import type { LostFoundItem } from '../../types/database';
 import { useT } from '../../i18n';
 
@@ -43,13 +44,6 @@ const CATEGORIES: { id: CategoryFilter; icon: string; fg: string }[] = [
   { id: 'Documents', icon: 'layers', fg: Accent.green },
   { id: 'Other', icon: 'inbox', fg: Accent.slate },
 ];
-
-function timeAgo(iso: string): string {
-  const secs = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-  if (secs < 3600) return `${Math.max(1, Math.floor(secs / 60))}m ago`;
-  if (secs < 86400) return `${Math.floor(secs / 3600)}h ago`;
-  return `${Math.floor(secs / 86400)}d ago`;
-}
 
 function LFCard({
   item,
@@ -93,7 +87,7 @@ function LFCard({
           </Text>
           <Text style={[styles.cardDot, { color: C.textMuted }]}>·</Text>
           <Text style={[styles.cardTimeTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-            {timeAgo(item.created_at)}
+            {formatRelativeTime(item.created_at)}
           </Text>
         </View>
         <View style={styles.cardMeta}>
@@ -109,7 +103,7 @@ function LFCard({
             </Text>
           </View>
           {isResolved && (
-            <View style={[styles.resolvedBadge, { backgroundColor: isDark ? 'rgba(18, 145, 94, 0.2)' : '#e3f5ec' }]}>
+            <View style={[styles.resolvedBadge, { backgroundColor: isDark ? 'rgba(18, 145, 94, 0.2)' : C.successBg }]}>
               <Feather name="check" size={11} color={C.success} />
               <Text style={[styles.resolvedBadgeTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
                 {resolvedLabel}
@@ -126,6 +120,7 @@ function LFCard({
 export function LostFoundBrowseScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
   const { user, profile } = useAuth();
+  const insets = useSafeAreaInsets();
   const isStudent = profile?.role === 'student';
   const t = useT();
 
@@ -173,21 +168,23 @@ export function LostFoundBrowseScreen({ navigation }: any) {
       },
       Lost: {
         fg: C.danger, // Crimson (#d63d35)
-        bg: isDark ? 'rgba(214, 61, 53, 0.18)' : '#FEE2E2',
+        bg: isDark ? 'rgba(214, 61, 53, 0.18)' : C.dangerBg,
       },
       Found: {
         fg: C.success, // Emerald (#16a34a)
-        bg: isDark ? 'rgba(22, 163, 74, 0.18)' : '#DCFCE7',
+        bg: isDark ? 'rgba(22, 163, 74, 0.18)' : C.successBg,
       },
       mine: {
         fg: '#8B5CF6', // Purple (#8B5CF6)
-        bg: isDark ? 'rgba(139, 92, 246, 0.18)' : '#EDE9FE',
+        bg: isDark ? 'rgba(139, 92, 246, 0.18)' : 'rgba(139, 92, 246, 0.12)',
       },
     }),
-    [C.danger, C.success, isDark]
+    [C.danger, C.dangerBg, C.success, C.successBg, isDark]
   );
 
   const load = useCallback(async () => {
+    if (profile && !isStudent && profile.role !== 'admin') return;
+
     // 1. Optimistic cache load
     const cached = await getCache<LostFoundItem[]>(CacheKeys.LOST_FOUND);
     if (cached && cached.length > 0) {
@@ -218,7 +215,7 @@ export function LostFoundBrowseScreen({ navigation }: any) {
       if (!cached || cached.length === 0) setLoadState('error');
       setIsOffline(true);
     }
-  }, []);
+  }, [isStudent, profile]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -235,7 +232,7 @@ export function LostFoundBrowseScreen({ navigation }: any) {
       all: base.length,
       Lost: base.filter(i => i.type === 'Lost').length,
       Found: base.filter(i => i.type === 'Found').length,
-      mine: items.filter(i => i.poster_id === user?.id).length,
+      mine: base.filter(i => i.poster_id === user?.id).length,
     };
   }, [items, statusFilter, user?.id]);
 
@@ -479,7 +476,7 @@ export function LostFoundBrowseScreen({ navigation }: any) {
           {searchQuery.length > 0 && (
             <TouchableOpacity
               onPress={() => setSearchQuery('')}
-              hitSlop={{ top: 10, bottom: 10, left: 8, right: 10 }}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             >
               <Feather name="x" size={14} color={C.textMuted} />
             </TouchableOpacity>
@@ -600,7 +597,7 @@ export function LostFoundBrowseScreen({ navigation }: any) {
             onPress={() => setFilterModalVisible(false)}
           />
 
-          <View style={[styles.sheetContent, { backgroundColor: C.surface, borderColor: C.border }]}>
+          <View style={[styles.sheetContent, { backgroundColor: C.surface, borderColor: C.border, paddingBottom: Math.max(insets.bottom, 18) }]}>
             {/* Grab Handle */}
             <View style={[styles.sheetHandle, { backgroundColor: C.border }]} />
 
@@ -741,8 +738,8 @@ export function LostFoundBrowseScreen({ navigation }: any) {
                 style={[
                   styles.sheetResetBtn,
                   {
-                    backgroundColor: isDark ? 'rgba(214, 61, 53, 0.14)' : '#FEE2E2',
-                    borderColor: isDark ? 'rgba(214, 61, 53, 0.35)' : '#FCA5A5',
+                    backgroundColor: isDark ? 'rgba(214, 61, 53, 0.14)' : C.dangerBg,
+                    borderColor: isDark ? 'rgba(214, 61, 53, 0.35)' : `${C.danger}40`,
                   },
                 ]}
                 onPress={resetDraftFilters}
@@ -815,6 +812,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 5,
     paddingVertical: 8,
+    minHeight: 42,
     borderRadius: 11,
     zIndex: 1,
   } as ViewStyle,
@@ -972,9 +970,11 @@ const styles = StyleSheet.create({
   resetBtn: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 6,
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 10,
+    minHeight: 42,
     borderRadius: 12,
     borderWidth: 1,
     marginTop: 10,

@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet, Image,
-  TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Modal, type ViewStyle, type TextStyle,
+  TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Modal, RefreshControl,
+  type ViewStyle, type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,15 +14,17 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
+import { LoadError } from '../../components/ui/LoadState';
 import { FontFamily, Layout, SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { fetchPeople } from '../../services/peopleService';
-import { getCache, CacheKeys } from '../../services/cacheService';
+import { getCache, setCache, CacheKeys } from '../../services/cacheService';
+import { formatRelativeTime } from '../../utils/format';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
 import { openUrl, waHref } from '../../utils/link';
 import { rankMatches, type MatchItem } from '../../utils/lostFoundMatch';
-import { uploadProof, getSignedUrl } from '../../utils/storage';
+import { uploadProof, deleteFile, getSignedUrl } from '../../utils/storage';
 import { ContactSheet } from '../../components/ui/ContactSheet';
 import { BUCKETS } from '../../constants/app';
 import type { LostFoundItem } from '../../types/database';
@@ -32,13 +35,6 @@ const CAT_COLOR: Record<string, string> = {
 const CAT_ICON: Record<string, string> = {
   Personal: 'user', Electronics: 'phone', Documents: 'layers', Other: 'inbox',
 };
-
-function timeAgo(iso: string): string {
-  const secs = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-  if (secs < 3600) return `${Math.max(1, Math.floor(secs / 60))} min ago`;
-  if (secs < 86400) return `${Math.floor(secs / 3600)} hrs ago`;
-  return `${Math.floor(secs / 86400)} days ago`;
-}
 
 interface ClaimRow {
   id: string;
@@ -70,6 +66,8 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
   const toast = useToast();
   const [item, setItem] = useState<LostFoundItem | null>(null);
   const [notFound, setNotFound] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [poster, setPoster] = useState<{ full_name: string; avatar_url: string | null } | null>(null);
   const [claims, setClaims] = useState<ClaimRow[]>([]);
   const [matches, setMatches] = useState<MatchItem[]>([]);
@@ -84,10 +82,15 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
   const [isOffline, setIsOffline] = useState(false);
 
   const isMine = item?.poster_id === user?.id;
-  const myClaim = claims.find(c => c.claimant_id === user?.id) ?? null;
+  const myApprovedClaim = claims.find(c => c.claimant_id === user?.id && c.status === 'Approved') ?? null;
+  const myPendingClaim = claims.find(c => c.claimant_id === user?.id && c.status === 'Pending') ?? null;
+  const myActiveClaim = myApprovedClaim || myPendingClaim;
+  const myRejectedClaim = claims.find(c => c.claimant_id === user?.id && c.status === 'Rejected') ?? null;
+  const myClaim = myActiveClaim || myRejectedClaim;
 
   const load = useCallback(async () => {
     if (!id) return;
+    setLoadError(false);
 
     // 1. Optimistic cache load
     const cachedItems = await getCache<LostFoundItem[]>(CacheKeys.LOST_FOUND);
@@ -119,11 +122,17 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
           setIsOffline(true);
           return;
         }
-        setNotFound(true);
+        if (itemRes.error?.code === 'PGRST116') {
+          setNotFound(true);
+        } else {
+          setLoadError(true);
+        }
         return;
       }
 
       setIsOffline(false);
+      setNotFound(false);
+      setLoadError(false);
       const people = await fetchPeople([
         (itemRes.data as any)?.poster_id,
         ...((claimsRes.data as any[]) ?? []).map(c => c.claimant_id),
@@ -160,10 +169,16 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
       if (cached) {
         setIsOffline(true);
       } else {
-        setNotFound(true);
+        setLoadError(true);
       }
     }
   }, [id]);
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  }
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -217,7 +232,14 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
       proof_url: proofPath,
     });
     setBusy(false);
-    if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
+    if (error) {
+      if (proofPath) {
+        await deleteFile(BUCKETS.proofs, proofPath).catch(() => {});
+      }
+      const friendlyMsg = error.code === '23505' ? t.lf.claimDuplicateErr : error.message;
+      toast({ type: 'error', title: t.common.error, message: friendlyMsg });
+      return;
+    }
     setShowClaim(false);
     setClaimNote('');
     setProofUri(null);
@@ -229,6 +251,7 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
       toast({ type: 'info', title: 'Offline Mode', message: 'Internet connection required to review claims.' });
       return;
     }
+    if (deciding) return;
     const approve = status === 'Approved';
     Alert.alert(
       approve ? t.lostfound.approveConfirmTitle : t.lostfound.rejectConfirmTitle,
@@ -240,10 +263,84 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
           style: approve ? 'default' : 'destructive',
           onPress: async () => {
             setDeciding(claim.id);
-            const { error } = await supabase.from('claims').update({ status }).eq('id', claim.id);
-            setDeciding(null);
-            if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
+            try {
+              const { error } = await supabase.from('claims').update({ status }).eq('id', claim.id);
+              if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
+              if (approve && item) {
+                const cached = await getCache<LostFoundItem[]>(CacheKeys.LOST_FOUND);
+                if (cached) {
+                  await setCache(CacheKeys.LOST_FOUND, cached.map(i => i.id === item.id ? { ...i, status: 'Resolved' } : i));
+                }
+              }
+              await load();
+            } finally {
+              setDeciding(null);
+            }
+          },
+        },
+      ],
+    );
+  }
+
+  function handleMarkResolved() {
+    if (!item || !isMine || item.status !== 'Open') return;
+    Alert.alert(
+      t.lf.markResolvedTitle,
+      t.lf.markResolvedBody,
+      [
+        { text: t.common.cancel, style: 'cancel' },
+        {
+          text: t.lf.markResolvedBtn,
+          onPress: async () => {
+            setBusy(true);
+            const { error } = await supabase
+              .from('lost_found_items')
+              .update({ status: 'Resolved' })
+              .eq('id', item.id);
+            setBusy(false);
+            if (error) {
+              toast({ type: 'error', title: t.common.error, message: error.message });
+              return;
+            }
+            const cached = await getCache<LostFoundItem[]>(CacheKeys.LOST_FOUND);
+            if (cached) {
+              await setCache(CacheKeys.LOST_FOUND, cached.map(i => i.id === item.id ? { ...i, status: 'Resolved' } : i));
+            }
+            toast({ type: 'success', title: t.common.done, message: t.lf.markResolvedSuccess });
             await load();
+          },
+        },
+      ],
+    );
+  }
+
+  function handleDeleteItem() {
+    if (!item || !isMine) return;
+    Alert.alert(
+      t.lf.deletePostTitle,
+      t.lf.deletePostBody,
+      [
+        { text: t.common.cancel, style: 'cancel' },
+        {
+          text: t.lf.deletePost,
+          style: 'destructive',
+          onPress: async () => {
+            setBusy(true);
+            const { error } = await supabase
+              .from('lost_found_items')
+              .update({ deleted_at: new Date().toISOString() })
+              .eq('id', item.id);
+            setBusy(false);
+            if (error) {
+              toast({ type: 'error', title: t.common.error, message: error.message });
+              return;
+            }
+            const cached = await getCache<LostFoundItem[]>(CacheKeys.LOST_FOUND);
+            if (cached) {
+              await setCache(CacheKeys.LOST_FOUND, cached.filter(i => i.id !== item.id));
+            }
+            toast({ type: 'success', title: t.common.done, message: t.lf.deleteSuccess });
+            navigation.goBack();
           },
         },
       ],
@@ -252,10 +349,15 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
 
   async function viewProof(claim: ClaimRow) {
     if (!claim.proof_url) return;
-    // Old rows may hold a full URL; new rows hold a private-bucket path.
-    const url = claim.proof_url.startsWith('http')
-      ? claim.proof_url
-      : await getSignedUrl(BUCKETS.proofs, claim.proof_url);
+    let url: string | null = null;
+    if (claim.proof_url.startsWith('https://xhgpxvyqrufbbuivttmi.supabase.co/')) {
+      url = claim.proof_url;
+    } else if (!claim.proof_url.startsWith('http')) {
+      url = await getSignedUrl(BUCKETS.proofs, claim.proof_url);
+    } else {
+      toast({ type: 'error', title: t.common.error, message: 'Invalid proof URL source.' });
+      return;
+    }
     if (url) openUrl(url);
     else toast({ type: 'error', title: t.common.error, message: t.common.loadingError });
   }
@@ -267,9 +369,13 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
         <SubBar title="Lost & Found" onBack={() => navigation.goBack()} />
         <View style={styles.center}>
-          {notFound
-            ? <Text style={{ color: C.textMuted, fontFamily: FontFamily.jakartaMedium }}>{t.common.notFound}</Text>
-            : <ActivityIndicator color={C.brand} />}
+          {notFound ? (
+            <Text style={{ color: C.textMuted, fontFamily: FontFamily.jakartaMedium }}>{t.common.notFound}</Text>
+          ) : loadError ? (
+            <LoadError onRetry={load} />
+          ) : (
+            <ActivityIndicator color={C.brand} />
+          )}
         </View>
       </SafeAreaView>
     );
@@ -298,6 +404,7 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
           showsVerticalScrollIndicator={false}
           keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps="handled"
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={SectorColors.lostfound} />}
         >
         {/* Large category thumb / photo */}
         <TouchableOpacity
@@ -365,7 +472,7 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
             <View style={styles.infoVal}>
               <Icon name="clock" size={13} color={C.textMuted} />
               <Text style={[styles.infoTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>
-                {timeAgo(item.created_at)}
+                {formatRelativeTime(item.created_at)}
               </Text>
             </View>
           </View>
@@ -383,6 +490,56 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
             </Text>
           </View>
         </View>
+
+        {/* Owner Management Controls */}
+        {isMine && (
+          <View style={[styles.ownerCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <View style={styles.ownerHeader}>
+              <Feather name="shield" size={13} color={C.textMuted} />
+              <Text style={[styles.ownerTitle, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                {t.dash.manage.toUpperCase()}
+              </Text>
+            </View>
+            <View style={styles.ownerActionsRow}>
+              <TouchableOpacity
+                style={[styles.ownerBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+                onPress={() => navigation.navigate('LostFoundEdit', { itemId: item.id })}
+                activeOpacity={0.75}
+              >
+                <Feather name="edit-2" size={13} color={C.text} />
+                <Text style={[styles.ownerBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  {t.lf.editPost}
+                </Text>
+              </TouchableOpacity>
+
+              {!resolved && (
+                <TouchableOpacity
+                  style={[styles.ownerBtn, { backgroundColor: C.successBg, borderColor: C.success }]}
+                  onPress={handleMarkResolved}
+                  disabled={busy}
+                  activeOpacity={0.75}
+                >
+                  <Feather name="check-circle" size={13} color={C.success} />
+                  <Text style={[styles.ownerBtnTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
+                    {t.lf.markResolvedBtn}
+                  </Text>
+                </TouchableOpacity>
+              )}
+
+              <TouchableOpacity
+                style={[styles.ownerBtn, { backgroundColor: C.dangerBg, borderColor: C.danger }]}
+                onPress={handleDeleteItem}
+                disabled={busy}
+                activeOpacity={0.75}
+              >
+                <Feather name="trash-2" size={13} color={C.danger} />
+                <Text style={[styles.ownerBtnTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
+                  {t.lf.deletePost}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
 
         {resolved && (
           <View style={[styles.resolvedBanner, { backgroundColor: C.successBg }]}>
@@ -455,7 +612,7 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
                         {m.title}
                       </Text>
                       <Text style={[styles.matchSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                        {m.type} · {m.location} · {timeAgo(m.created_at)}
+                        {m.type} · {m.location} · {formatRelativeTime(m.created_at)}
                       </Text>
                     </View>
                     <Icon name="chevR" size={18} color={C.textMuted} />
@@ -485,11 +642,11 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
                       <View style={styles.claimTop}>
                         <Avatar uri={cl.profiles?.avatar_url} name={cl.profiles?.full_name} size="sm" />
                         <View style={{ flex: 1, minWidth: 0 }}>
-                          <Text style={[styles.byName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                          <Text style={[styles.byName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                             {cl.profiles?.full_name ?? t.lf.student}
                           </Text>
                           <Text style={[styles.bySub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                            {timeAgo(cl.created_at)}
+                            {formatRelativeTime(cl.created_at)}
                           </Text>
                         </View>
                         <View style={[styles.claimBadge, { backgroundColor: badge.bgc }]}>
@@ -519,8 +676,9 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
                             <TouchableOpacity
                               style={[styles.claimBtn, { backgroundColor: C.dangerBg }]}
                               onPress={() => decide(cl, 'Rejected')}
-                              disabled={deciding === cl.id}
+                              disabled={!!deciding}
                               activeOpacity={0.75}
+                              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                             >
                               <Text style={[styles.claimBtnTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
                                 {t.lostfound.reject}
@@ -529,8 +687,9 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
                             <TouchableOpacity
                               style={[styles.claimBtn, { backgroundColor: C.success }]}
                               onPress={() => decide(cl, 'Approved')}
-                              disabled={deciding === cl.id}
+                              disabled={!!deciding}
                               activeOpacity={0.8}
+                              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                             >
                               {deciding === cl.id
                                 ? <ActivityIndicator size="small" color={C.white} />
@@ -551,26 +710,51 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
           </>
         )}
 
-        {/* Claimant: my claim status */}
-        {!isMine && myClaim && (
+        {/* Claimant: active claim status (Approved or Pending) */}
+        {!isMine && myActiveClaim && (
           <View style={[styles.myClaimCard, {
-            backgroundColor: myClaim.status === 'Approved' ? C.successBg : myClaim.status === 'Rejected' ? C.dangerBg : C.warnBg,
+            backgroundColor: myActiveClaim.status === 'Approved' ? C.successBg : C.warnBg,
           }]}>
             <Icon
-              name={myClaim.status === 'Approved' ? 'check' : myClaim.status === 'Rejected' ? 'x' : 'clock'}
+              name={myActiveClaim.status === 'Approved' ? 'check' : 'clock'}
               size={16}
-              color={claimBadge(myClaim.status).fg}
+              color={claimBadge(myActiveClaim.status).fg}
             />
-            <Text style={[styles.myClaimTxt, { color: claimBadge(myClaim.status).fg, fontFamily: FontFamily.jakartaBold }]}>
-              {myClaim.status === 'Approved' ? t.lostfound.claimStatusApproved
-                : myClaim.status === 'Rejected' ? t.lostfound.claimStatusRejected
-                : t.lostfound.claimStatusPending}
+            <Text style={[styles.myClaimTxt, { color: claimBadge(myActiveClaim.status).fg, fontFamily: FontFamily.jakartaBold }]}>
+              {myActiveClaim.status === 'Approved' ? t.lostfound.claimStatusApproved : t.lostfound.claimStatusPending}
             </Text>
           </View>
         )}
 
+        {/* Claimant: rejected claim notice with resubmission offer */}
+        {!isMine && !myActiveClaim && myRejectedClaim && !showClaim && (
+          <View style={[styles.myRejectedCard, { backgroundColor: C.dangerBg, borderColor: C.danger }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9 }}>
+              <Icon name="x" size={16} color={C.danger} />
+              <Text style={[styles.myClaimTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
+                {t.lostfound.claimStatusRejected}
+              </Text>
+            </View>
+            <Text style={[styles.claimResubmitSub, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
+              {t.lf.claimResubmitHint}
+            </Text>
+            {!resolved && (
+              <TouchableOpacity
+                style={[styles.resubmitBtn, { backgroundColor: C.surface, borderColor: C.danger }]}
+                onPress={() => setShowClaim(true)}
+                activeOpacity={0.8}
+              >
+                <Feather name="refresh-cw" size={13} color={C.danger} />
+                <Text style={[styles.resubmitBtnTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
+                  {t.lf.resubmitClaim}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
         {/* Claimant: submit claim */}
-        {!resolved && !isMine && !myClaim && (
+        {!resolved && !isMine && !myActiveClaim && (
           showClaim ? (
             <View style={styles.claimBox}>
               <TextInput
@@ -663,6 +847,7 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
           name={contact.full_name}
           phone={contact.whatsapp}
           email={contact.email}
+          avatarUri={contact.avatar_url}
         />
       )}
 
@@ -834,12 +1019,49 @@ const styles = StyleSheet.create({
   claimBtn: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 5,
     paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 9,
+    paddingVertical: 8,
+    minHeight: 40,
+    minWidth: 76,
+    borderRadius: 10,
   } as ViewStyle,
-  claimBtnTxt: { fontSize: 12 } as any,
+  claimBtnTxt: { fontSize: 12.5 } as any,
+
+  ownerCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 13,
+    marginTop: 14,
+  } as ViewStyle,
+  ownerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 10,
+  } as ViewStyle,
+  ownerTitle: {
+    fontSize: 11,
+    letterSpacing: 0.6,
+  } as TextStyle,
+  ownerActionsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  } as ViewStyle,
+  ownerBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    height: 42,
+    borderRadius: 10,
+    borderWidth: 1,
+  } as ViewStyle,
+  ownerBtnTxt: {
+    fontSize: 12.5,
+  } as TextStyle,
 
   myClaimCard: {
     flexDirection: 'row',
@@ -850,6 +1072,31 @@ const styles = StyleSheet.create({
     marginTop: 18,
   } as ViewStyle,
   myClaimTxt: { flex: 1, fontSize: 13, lineHeight: 18 } as any,
+
+  myRejectedCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 13,
+    marginTop: 18,
+    gap: 8,
+  } as ViewStyle,
+  claimResubmitSub: {
+    fontSize: 12,
+    lineHeight: 17,
+  } as TextStyle,
+  resubmitBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    height: 40,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginTop: 4,
+  } as ViewStyle,
+  resubmitBtnTxt: {
+    fontSize: 12.5,
+  } as TextStyle,
 
   claimBox: { marginTop: 18 } as ViewStyle,
 

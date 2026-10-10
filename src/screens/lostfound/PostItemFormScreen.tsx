@@ -5,7 +5,7 @@ import {
   type ViewStyle, type TextStyle,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
@@ -16,6 +16,7 @@ import { supabase } from '../../lib/supabase';
 import { localToday } from '../../utils/format';
 import { rankMatches, type MatchItem } from '../../utils/lostFoundMatch';
 import { uploadPhoto } from '../../utils/storage';
+import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 import type { LostFoundItem } from '../../types/database';
 import { useT } from '../../i18n';
 
@@ -45,6 +46,7 @@ function hexAlpha(hex: string, a: number) {
 export function PostItemFormScreen({ route, navigation }: any) {
   const { C, isDark } = useTheme();
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const t = useT();
   const editId: string | undefined = route.params?.itemId;
   const isEdit = !!editId;
@@ -150,13 +152,16 @@ export function PostItemFormScreen({ route, navigation }: any) {
     let photoUrl: string | null = existingPhotoUrl;
     if (photoUri) {
       const up = await uploadPhoto(photoUri, 'lostfound', user.id);
-      if (up.success) {
-        photoUrl = up.url;
+      if (!up.success) {
+        setBusy(false);
+        setErr(t.lf.photoUploadFail || 'Failed to upload photo. Please check your connection and try again.');
+        return;
       }
+      photoUrl = up.url;
     }
-    let error: any;
+
     if (isEdit) {
-      ({ error } = await supabase
+      const { data, error } = await supabase
         .from('lost_found_items')
         .update({
           type,
@@ -166,25 +171,57 @@ export function PostItemFormScreen({ route, navigation }: any) {
           location:    loc.trim() || 'Campus',
           photo_url:   photoUrl,
         })
-        .eq('id', editId));
+        .eq('id', editId)
+        .select()
+        .single();
+
+      setBusy(false);
+      if (error) {
+        setErr(error.message);
+      } else {
+        if (data) {
+          const cached = await getCache<LostFoundItem[]>(CacheKeys.LOST_FOUND);
+          if (cached) {
+            await setCache(
+              CacheKeys.LOST_FOUND,
+              cached.map(item => item.id === editId ? (data as LostFoundItem) : item)
+            );
+          }
+        }
+        navigation.goBack();
+      }
     } else {
-      ({ error } = await supabase.from('lost_found_items').insert({
-        type,
-        title:       title.trim(),
-        category:    cat,
-        description: desc.trim() || title.trim(),
-        location:    loc.trim() || 'Campus',
-        item_date:   localToday(),
-        status:      'Open',
-        poster_id:   user.id,
-        photo_url:   photoUrl,
-      }));
-    }
-    setBusy(false);
-    if (error) {
-      setErr(error.message);
-    } else {
-      navigation.goBack();
+      const { data, error } = await supabase
+        .from('lost_found_items')
+        .insert({
+          type,
+          title:       title.trim(),
+          category:    cat,
+          description: desc.trim() || title.trim(),
+          location:    loc.trim() || 'Campus',
+          item_date:   localToday(),
+          status:      'Open',
+          poster_id:   user.id,
+          photo_url:   photoUrl,
+        })
+        .select()
+        .single();
+
+      setBusy(false);
+      if (error) {
+        setErr(error.message);
+      } else {
+        if (data) {
+          const cached = await getCache<LostFoundItem[]>(CacheKeys.LOST_FOUND);
+          if (cached) {
+            await setCache(
+              CacheKeys.LOST_FOUND,
+              [data as LostFoundItem, ...cached.filter(i => i.id !== data.id)]
+            );
+          }
+        }
+        navigation.goBack();
+      }
     }
   }
 
@@ -331,6 +368,7 @@ export function PostItemFormScreen({ route, navigation }: any) {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
             contentContainerStyle={styles.quickLocRow}
           >
             {QUICK_LOCATIONS.map(place => (
@@ -448,7 +486,7 @@ export function PostItemFormScreen({ route, navigation }: any) {
           activeOpacity={1}
           onPress={() => setPhotoPickerVisible(false)}
         >
-          <View style={[styles.pickerModalSheet, { backgroundColor: C.surface, borderColor: C.border }]}>
+          <View style={[styles.pickerModalSheet, { backgroundColor: C.surface, borderColor: C.border, paddingBottom: Math.max(insets.bottom, 18) }]}>
             <Text style={[styles.pickerModalTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
               {t.lf.selectPhotoSource}
             </Text>
@@ -512,6 +550,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 7,
     paddingVertical: 10,
+    minHeight: 44,
     borderRadius: 11,
     borderWidth: 1,
     borderColor: 'transparent',
@@ -590,13 +629,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 5.5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    minHeight: 38,
     borderRadius: 10,
     borderWidth: 1,
   } as ViewStyle,
   quickLocTxt: {
-    fontSize: 11.5,
+    fontSize: 12,
   } as TextStyle,
 
   textarea: {
@@ -651,8 +691,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingHorizontal: 13,
+    paddingVertical: 8,
+    minHeight: 38,
     borderRadius: 9,
   } as ViewStyle,
   photoBtnTxt: { fontSize: 12 } as TextStyle,
