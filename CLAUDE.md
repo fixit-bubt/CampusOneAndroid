@@ -795,54 +795,25 @@ The following screens contain segmented control bars slated for this animated pa
 
 ### 25.2 Key Features & Enhancements
 1. **Hero Action Bar (Option 1):** Single prominent full-width `[+ Post a Campus Ride]` button (`SectorColors.ride`, 44dp height) matching `LostFoundBrowseScreen` and `BloodScreen` 1:1. Tapping it opens the post screen where the student picks Offer or Request via the animated slider.
-2. **Animated Segmented Track Bars (Browse & Post Screens):**
+2. **Animated Segmented Track Bar (Browse & Post Screens):**
    - **Browse Screen (`RidesScreen.tsx`):** Unified rounded track container (`surface2`, `borderRadius: 14`) with native spring sliding indicator (`Animated.View`) across 4 tabs: `All` (Ride Cyan `#6e8b1f`), `To Campus` (Emerald `#16a34a`), `From Campus` (Royal Blue `#2563eb`), and `My Rides` (Violet `#8b5cf6`).
-   - **Post Screen (`RidePostScreen.tsx`):** Three synchronized native spring sliding segmented tracks (`tension: 68, friction: 10, useNativeDriver: true`):
-     - **Post Type:** Seamless sliding pill between `Offer Ride (Driver)` and `Need Ride (Passenger)`. SubBar header remains steady ("Post a Ride") with zero jumpiness.
-     - **Direction:** Segmented sliding pill between `To Campus` (`arrow-up-right`) and `From Campus` (`arrow-down-left`).
-     - **Date:** Segmented sliding pill between `Today · [Date]` and `Tomorrow · [Date]` with calendar icon.
-3. **2-Bar Location Architecture & 58 All-Dhaka Transit Areas (`RidePostScreen.tsx`):**
-   - **Main Screen 2 Dedicated Location Bars:** Replaced disconnected trigger cards with 2 unified inline bars (`Pickup Location / From` and `Destination / To`). Each bar contains an inline text input for freeform custom entry + a dedicated right-aligned `[ Pick Area ▾ ]` button.
-   - **Modal 2-Bar Animated Category Switcher:** Slide-up bottom sheet features a high-visibility 2-bar category switcher with the exact same native spring sliding indicator animation (`tension: 68, friction: 10, useNativeDriver: true`) as the main screen tracks:
-     - `🏛️ Mirpur & Campus (14)`: Immediate campus transit hubs (Mirpur 1, 2, 6, 10, 11, 12, 14, Sony Cinema, Rainkhola, Technical, ECB Chattar, DOHS, Pallabi, Rupnagar).
-     - `🏙️ Greater Dhaka (44)`: Cross-metropolitan transit corridors (Uttara, Dhanmondi, Farmgate, Gulshan 1 & 2, Banani, Badda, Rampura, Motijheel, Old Dhaka, Savar, etc.).
-   - **Streamlined Sheet Ergonomics:** Removed redundant internal target switchers and internal custom location inputs. Users can type any custom location directly on the main screen bars or tap the instant "Use &ldquo;[query]&rdquo;" custom card if typing in the search bar.
-   - **Keyboard & Edge-to-Edge:** Protected inside `<KeyboardAvoidingView behavior="padding">` for Android 15 edge-to-edge compatibility with `keyboardShouldPersistTaps="handled"`.
-4. **Directory-Style Departure Time Bottom Sheet Modal (`RidePostScreen.tsx`):**
-   - Sleek trigger card (`[ 🕒 DEPARTURE TIME & VARSITY SHIFT ... ▾ ]`) with live formatted 12-hour preview badge and shift classification.
-   - Slide-up native `<Modal>` bottom sheet matching `DirectoryScreen.tsx` 1:1.
-   - 3 BUBT varsity shifts (Morning, Afternoon, Evening Return) with schedule cards, class times, and active checkmark circle.
-   - Manual exact time input bar (`HH:MM`) with `[ Set Time ]` button, protected inside `<KeyboardAvoidingView behavior="padding">` for Android 15 edge-to-edge keyboard ergonomics.
-   - Selecting a shift preset immediately sets the time and smoothly closes the modal sheet.
-5. **Dedicated "My Rides" Tab:** Live badge counter showing total active rides. Surfaces both rides the user is offering as a driver (with booked passenger counts) and rides the user booked as a passenger (with seat status), immune to public departure cutoff filters.
-6. **Rickshaw & Multi-Vehicle Commute:**
+   - **Post Screen (`RidePostScreen.tsx`):** Animated segmented sliding track container (native spring physics) smoothly transitioning between `[ 🚗 Offer Ride (Driver) ]` and `[ 🙋 Need Ride (Passenger) ]`. SubBar header remains steady ("Post a Ride") with zero jumpiness.
+3. **Dedicated "My Rides" Tab:** Live badge counter showing total active rides. Surfaces both rides the user is offering as a driver (with booked passenger counts) and rides the user booked as a passenger (with seat status), immune to public departure cutoff filters.
+4. **Rickshaw & Multi-Vehicle Commute:**
    - Supported vehicles: `Car` (`🚗`), `CNG` (`🛺`), `Bike` (`🏍️`), and `Rickshaw` (true 3-wheeled vector icon via `MaterialCommunityIcons` `rickshaw`, never a 2-wheel bicycle).
    - Rickshaw accommodates 1-2 passengers, perfectly matching Mirpur 1, 2, 10, and Sony Cinema varsity commutes.
-7. **Passenger "Need a Ride" Requests (`post_type: 'request'`):**
+5. **Passenger "Need a Ride" Requests (`post_type: 'request'`):**
    - Students without vehicles can post ride requests specifying pickup, destination, seats needed, departure time, and max budget.
    - Dual post type toggle in `RidePostScreen.tsx` dynamically switches seat limits, labels, and placeholders with smooth spring pill animation.
    - Cards display distinct badges: `🚗 Offer` (emerald) vs `🙋 Need Ride` (amber) with direct driver/passenger contact flow.
-8. **Smart Posting Time & Expiry Safeguard:** Automatically defaults to tomorrow 08:00 AM when posting in the evening (after 6 PM), or upcoming hour today. Validates that departure time is not in the past.
-9. **Full-Width Cards:** Driver avatar, name, department, vehicle badge, humanized departure ("Today · 8:00 AM", "Tomorrow · 5:00 PM"), and fare/budget.
-10. **Mutual Cancellation:** Passengers can cancel their seat booking at any time with alert confirmation. Drivers can remove individual passengers directly from the seat requests list.
-11. **Direct Contact & Navigation:**
-    - Native `ContactSheet.tsx` integration with one-tap WhatsApp launcher, phone dialer, copy number, and in-app chat fallback.
-    - Level 1 "Open in Maps" intent opening pickup/meeting point in Google Maps without battery drain or Play Store location permission hurdles.
-12. **Campus Today Commute Widget:** `CampusToday.tsx` surfaces upcoming rides with available seats directly on the Home screen.
-13. **Web Parity:** `fixit-campus/src/screens/rides/Rides.jsx` and `store.jsx` updated with Rickshaw vehicle, post_type filtering, single hero button, seat cancellation, passenger removal, and Google Maps integration.
-
-### 25.3 360° Bug Hunt, Security Hardening & Parity Overhaul
-- **Database Hardening Migration (`20261013010000_rides_360_hardening.sql`):**
-  - **`ride_contact(p_code, p_target)`:** Expanded lookup to resolve either by alphanumeric `code` or UUID `id::text`. Added permission branch enabling authenticated students to retrieve passenger contact details (`profiles.full_name`, `profiles.whatsapp`) directly on `post_type = 'request'` without requiring a pre-existing row in `ride_requests` (which is impossible for passenger posts).
-  - **Expiry Notification Filter (`notify_ride_cancelled`):** Gated trigger execution so lazy background cleanup (`delete_expired_rides()`) never issues false "Ride cancelled by driver" push alerts for completed/past rides. Notifications now strictly fire only for active/future rides (`old.expires_at > now()`) when deleted by an authenticated user (`auth.uid() IS NOT NULL`).
-  - **Driver Alert on Seat Cancellation (`notify_ride_request_event`):** Added notification branch so that when a passenger voluntarily cancels their own reservation (`auth.uid() = old.requester_id`), the driver receives an instant `'Seat Cancelled'` notification.
-  - **Trigger Expansion (`set_ride_expires_at`):** Trigger configured `BEFORE INSERT OR UPDATE OF date, time` so schedule adjustments correctly recalculate expiration.
-  - **Capacity Protection (`ride_req_insert` RLS):** Enforced that seat reservations are permitted exclusively on `post_type = 'offer'`.
-- **Mobile Frontend Hardening:**
-  - **`RideDetailScreen.tsx`:** Full contextual handling for passenger requests (`post_type === 'request'`). Renders "PASSENGER" role badge, "Seats needed", "Budget", dedicated "Offer a Lift / Contact Passenger" action bar with native `ContactSheet` and in-app `MessageThread` navigation, and customized delete prompt for passenger requests. In-app DM is always accessible regardless of WhatsApp presence.
-  - **`RidesScreen.tsx`:** Filter chips row (`All`, `🚗 Offers`, `🙋 Requests`) with live counts, Dhaka timezone departure cutoff using `nowDhakaMinutes()`, and request ride guard redirecting to detail screen.
-  - **`RidePostScreen.tsx`:** Asia/Dhaka normalization via `nowDhakaMinutes()` for `localTomorrow()`, `getInitialDateTime()`, `handleDateChoice()`, and `handleSubmit()`. Relaxed passenger request seat cap from 2 to 4 to match web carpooling parity.
-  - **Bilingual i18n:** Complete English and Bengali translation keys in `en.ts` and `bn.ts`.
+6. **Smart Posting Time & Expiry Safeguard:** Automatically defaults to tomorrow 08:00 AM when posting in the evening (after 6 PM), or upcoming hour today. Validates that departure time is not in the past.
+7. **Full-Width Cards:** Driver avatar, name, department, vehicle badge, humanized departure ("Today · 8:00 AM", "Tomorrow · 5:00 PM"), and fare/budget.
+8. **Mutual Cancellation:** Passengers can cancel their seat booking at any time with alert confirmation. Drivers can remove individual passengers directly from the seat requests list.
+9. **Direct Contact & Navigation:**
+   - Native `ContactSheet.tsx` integration with one-tap WhatsApp launcher, phone dialer, copy number, and in-app chat fallback.
+   - Level 1 "Open in Maps" intent opening pickup/meeting point in Google Maps without battery drain or Play Store location permission hurdles.
+10. **Campus Today Commute Widget:** `CampusToday.tsx` surfaces upcoming rides with available seats directly on the Home screen.
+11. **Web Parity:** `fixit-campus/src/screens/rides/Rides.jsx` and `store.jsx` updated with Rickshaw vehicle, post_type filtering, single hero button, seat cancellation, passenger removal, and Google Maps integration.
 
 ---
 
@@ -858,41 +829,51 @@ The following screens contain segmented control bars slated for this animated pa
     - Additive multi-photo column: `photos text[] DEFAULT '{}'`.
 
 ### 26.2 Key Features & Enhancements
-1. **Spring-Animated Segmented Control Bar:**
-   - 4-tab sliding pill track matching `BloodScreen` and `DirectoryScreen` (`All Items`, `Available`, `My Items`, `Saved`).
-   - Driven by native spring interpolation (`tension: 68, friction: 10, useNativeDriver: true`) with dynamic track measurement via `onLayout`.
-   - Dynamic badge counters on each tab.
-2. **High-Performance Virtualized 2-Column Grid:**
-   - Replaced un-virtualized `ScrollView` + `.map()` with `<FlatList numColumns={2}>`.
-   - Dynamic card width calculated per screen size (`cardWidth = (screenWidth - padding * 2 - gap) / 2`).
-   - Cards display 4:3 cover photo or themed category icon, condition tag (`New`, `Like New`, `Used`), condition-colored badge, favorite heart, price formatted in BDT, negotiable tag, handover spot, and seller avatar with name and cohort.
-3. **Wishlist & Saved Items (Local Persistence):**
+1. **Prominent Hero Action Bar & Header Decluttering:**
+   - Dedicated full-width 44dp emerald action bar (`[ + Sell an Item ]`) positioned directly below the header with `plus-circle` icon, matching `BloodScreen` and `RidesScreen`.
+   - Removed cramped sell buttons from the top `SubBar`, keeping navigation standard and uncluttered.
+2. **Spring-Animated Segmented Control Bar:**
+   - 3-tab sliding card track matching `BloodScreen` and `DirectoryScreen` (`All Items`, `My Listings`, `Saved`).
+   - Driven by native spring interpolation (`tension: 68, friction: 10, useNativeDriver: true`) inside a sunken `C.surface2` tray (`borderRadius: 14`) with elevated `C.surface` card indicator (`borderRadius: 11`).
+   - Live badge counters on each tab.
+3. **Structured Dual Control Bar & Category Sheet Modal:**
+   - Dual button control row matching `DirectoryScreen`:
+     - Left: `[ All ]` quick reset button to view all campus items.
+     - Right: `[ Category ∨ ]` dynamic selector button.
+   - Tapping category opens a rich bottom sheet modal displaying category icons, full titles, subtitle descriptions, active checkmarks, and live item counts (exact parity with Directory's `DepartmentModal`).
+4. **Search Row & Secondary Filter Sheet:**
+   - Positioned directly above the product feed for optimal thumb-zone reach.
+   - `[ Filter ]` button displays an emerald active dot indicator when secondary filters are applied.
+   - Tapping filter opens a bottom sheet modal featuring:
+     - Sort by: Newest First, Price: Low to High, Price: High to Low.
+     - Availability: "Hide Sold Items" toggle switch.
+     - Price Presets: All, Free / Giveaway, Under 300 ৳, 300 - 800 ৳, 800+ ৳.
+     - Condition: All, Brand New, Like New, Used.
+     - Reset and Apply action buttons.
+5. **High-Performance Virtualized 2-Column Grid:**
+   - `<FlatList numColumns={2}>` with dynamic card width.
+   - Cards display 4:3 cover photo or themed category icon, condition tag (`New`, `Like New`, `Used`), condition-colored badge, favorite heart, price formatted in BDT, negotiable / fixed tag, relative timestamp freshness (`2h ago`, `Yesterday`), handover spot, and seller avatar with name and department cohort (`morshed · CSE`).
+   - Dimmed opacity and centered `SOLD` badge overlay for sold listings.
+6. **In-App Direct Chat Context Inflow (`open_dm_thread`):**
+   - Primary "Message Seller" CTA on `MarketDetailScreen` calls `open_dm_thread('listing', code, seller_id)`.
+   - Passes `initialText` pre-filled with: `"Hi, I'm interested in your listing: [Title] ([Price]). Is this still available?"`.
+   - Secondary "Contact Info" button opens `ContactSheet.tsx` for WhatsApp / Direct phone call if opted-in via `show_whatsapp`.
+7. **Wishlist & Saved Items (Local Persistence):**
    - 1-tap heart toggle on cards and detail screen with spring pop micro-animation.
    - Saved IDs persisted in `@c1_saved_listings` via `AsyncStorage` for instant offline access.
-4. **Direct In-App Chat Integration (`open_dm_thread`):**
-   - Primary "Message Seller" CTA on `MarketDetailScreen` calls `open_dm_thread('listing', code, seller_id)`, unlocking a 90-day symmetric DM grant.
-   - Seamlessly opens `MessageThread` with seller's name without requiring prior phone number sharing or social connection approval.
-   - Secondary "Contact Info" button opens `ContactSheet.tsx` for WhatsApp / Direct phone call if opted-in via `show_whatsapp`.
-5. **Hero Image Lightbox & Tap-to-Zoom:**
+8. **Hero Image Lightbox & Tap-to-Zoom:**
    - Tapping the listing image opens a full-screen zoomable lightbox modal with dark backdrop and close action.
-6. **Verified Student Seller Card:**
-   - Displays seller avatar, verified checkmark, full name, and academic department (loaded via `fetchPeople`).
-   - 1-tap navigation opens `StudentProfileScreen` (`{ studentId: seller_id }`).
-7. **Free / Community Giveaway Mode (0 ৳):**
-   - Dedicated toggle in `MarketPostScreen` allows students to donate lecture notes, textbooks, and sheets for 0 ৳ with a prominent green "Free · Giveaway" badge.
-   - Frontend validation accepts 0 ৳ when free mode is active.
-8. **Handover Location Spotting:**
-   - Dedicated meetup spot selector (`Cafeteria`, `Library`, `Building 2 Lobby`, `Main Gate`, `Flexible`) or custom entry.
-   - Renders map-pin badge on cards and prominent handover card on detail screen.
-9. **Course Cross-Referencing:**
-   - Course codes auto-capitalized and linked to Study Hub (`CourseDetailScreen`).
-10. **Listing Lifecycle & Owner Controls:**
+9. **Free / Community Giveaway Mode (0 ৳):**
+   - Prominent emerald `FREE` badge on feed cards and detail screen for community donations and senior pass-downs.
+10. **Handover Location Spotting:**
+    - Dedicated meetup spot selector (`Cafeteria`, `Library`, `Building 2 Lobby`, `Main Gate`, `Flexible`).
+11. **Course Cross-Referencing:**
+    - Course codes auto-capitalized and linked to Study Hub (`CourseDetailScreen`).
+12. **Listing Lifecycle & Owner Controls:**
     - Confirmation alerts for "Mark as Sold" and ability to "Mark Available" (re-list).
     - Status preservation on edit so sold items are not inadvertently revived.
     - Synchronous cache invalidation across all mutations (`create`, `edit`, `sold`, `relist`, `delete`).
-11. **Native Sharing:**
+13. **Native Sharing:**
     - Integrated native `Share.share` generating formatted listing summary for campus WhatsApp and social groups.
-
-
 
 

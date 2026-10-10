@@ -43,7 +43,7 @@ export function MessageThread({ route, navigation }: any) {
     dmPartners, myClubs, mySections, loading, reload,
   } = useMessages();
 
-  const [text, setText] = useState('');
+  const [text, setText] = useState(route.params?.initialText ?? '');
   const [sending, setSending] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);

@@ -136,10 +136,13 @@ export function MarketDetailScreen({ route, navigation }: any) {
         toast({ type: 'error', title: t.common.error, message: res.error ?? 'Could not start conversation' });
         return;
       }
+      const priceLabel = (listing.price ?? 0) === 0 ? 'Free' : `৳ ${listing.price}`;
+      const introText = `Hi, I'm interested in your listing "${listing.title}" (${priceLabel}). Is this still available?`;
       navigation.navigate('MessageThread', {
         kind: 'dm',
         id: listing.seller_id,
         title: sellerProfile?.full_name ?? t.market2.seller,
+        initialText: introText,
       });
     } catch (e: any) {
       toast({ type: 'error', title: t.common.error, message: e?.message ?? 'Failed to open message thread' });

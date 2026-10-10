@@ -2,49 +2,71 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   RefreshControl, Image, ActivityIndicator, Animated, FlatList,
-  Dimensions, type ViewStyle, type TextStyle,
+  Modal, ScrollView, Switch, Dimensions, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
-import { FontFamily, Layout, Accent, SectorColors, LightColors } from '../../theme';
+import { FontFamily, Layout, Accent, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 import { fetchPeople, type Person } from '../../services/peopleService';
 import { getSavedListingIds, toggleSavedListing } from '../../services/marketService';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
+import { formatRelativeTime, formatPrice } from '../../utils/format';
 import type { Listing } from '../../types/database';
 
-type Tab = 'all' | 'available' | 'mine' | 'saved';
+type Tab = 'all' | 'mine' | 'saved';
 type PricePreset = 'all' | 'free' | 'under300' | '300to800' | '800plus';
+type ConditionPreset = 'all' | 'New' | 'Like New' | 'Used';
 
 const MARKET_COLOR = SectorColors.market;
 
-const CATEGORIES: { id: string; icon: keyof typeof Feather.glyphMap; fg: string; labelKey: string }[] = [
-  { id: 'all',         icon: 'grid',      fg: MARKET_COLOR,  labelKey: 'all'            },
-  { id: 'Books',       icon: 'book-open', fg: Accent.blue,   labelKey: 'catBooks'       },
-  { id: 'Electronics', icon: 'cpu',       fg: Accent.purple, labelKey: 'catElectronics' },
-  { id: 'Notes',       icon: 'file-text', fg: Accent.teal,   labelKey: 'catNotes'       },
-  { id: 'Furniture',   icon: 'layers',    fg: Accent.amber,  labelKey: 'catFurniture'   },
-  { id: 'Other',       icon: 'package',   fg: Accent.slate,  labelKey: 'catOther'       },
+interface CategoryMeta {
+  id: string;
+  icon: keyof typeof Feather.glyphMap;
+  fg: string;
+  labelKey: string;
+  subKey: string;
+}
+
+const CATEGORIES: CategoryMeta[] = [
+  { id: 'all',         icon: 'grid',      fg: MARKET_COLOR,  labelKey: 'all',            subKey: 'catAllSub'         },
+  { id: 'Books',       icon: 'book-open', fg: Accent.blue,   labelKey: 'catBooks',       subKey: 'catBooksSub'       },
+  { id: 'Electronics', icon: 'cpu',       fg: Accent.purple, labelKey: 'catElectronics', subKey: 'catElectronicsSub' },
+  { id: 'Notes',       icon: 'file-text', fg: Accent.teal,   labelKey: 'catNotes',       subKey: 'catNotesSub'       },
+  { id: 'Furniture',   icon: 'layers',    fg: Accent.amber,  labelKey: 'catFurniture',   subKey: 'catFurnitureSub'   },
+  { id: 'Other',       icon: 'package',   fg: Accent.slate,  labelKey: 'catOther',       subKey: 'catOtherSub'       },
 ];
 
 export function MarketScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
   const t = useT();
   const { user } = useAuth();
 
+  // Primary filters
   const [tab, setTab] = useState<Tab>('all');
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('all');
+
+  // Secondary filters (inside modal)
   const [pricePreset, setPricePreset] = useState<PricePreset>('all');
+  const [conditionFilter, setConditionFilter] = useState<ConditionPreset>('all');
   const [sortBy, setSortBy] = useState<'newest' | 'asc' | 'desc'>('newest');
+  const [hideSold, setHideSold] = useState(true);
+
+  // Modals
+  const [categoryModalVisible, setCategoryModalVisible] = useState(false);
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
+
+  // Data states
   const [listings, setListings] = useState<Listing[]>([]);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [peopleMap, setPeopleMap] = useState<Record<string, Person>>({});
@@ -56,17 +78,17 @@ export function MarketScreen({ navigation }: any) {
   const [trackWidth, setTrackWidth] = useState(0);
   const animIndex = useRef(new Animated.Value(0)).current;
 
-  const TABS: Tab[] = useMemo(() => ['all', 'available', 'mine', 'saved'], []);
+  const tabIndexMap: Record<Tab, number> = useMemo(() => ({ all: 0, mine: 1, saved: 2 }), []);
 
   useEffect(() => {
-    const idx = TABS.indexOf(tab);
+    const idx = tabIndexMap[tab] ?? 0;
     Animated.spring(animIndex, {
-      toValue: idx >= 0 ? idx : 0,
+      toValue: idx,
       tension: 68,
       friction: 10,
       useNativeDriver: true,
     }).start();
-  }, [tab, animIndex, TABS]);
+  }, [tab, animIndex, tabIndexMap]);
 
   // Load saved listing IDs from AsyncStorage
   const loadSavedIds = useCallback(async () => {
@@ -75,12 +97,10 @@ export function MarketScreen({ navigation }: any) {
   }, []);
 
   const load = useCallback(async () => {
-    // 1. Instant cache load
     const cached = await getCache<Listing[]>(CacheKeys.MARKET_LISTINGS);
     if (cached && cached.length > 0) {
       setListings(cached);
       setLoading(false);
-      // Background resolve sellers for cached listings
       const sellerIds = Array.from(new Set(cached.map(l => l.seller_id)));
       fetchPeople(sellerIds).then(people => {
         setPeopleMap(prev => ({ ...prev, ...people }));
@@ -89,7 +109,6 @@ export function MarketScreen({ navigation }: any) {
 
     await loadSavedIds();
 
-    // 2. Fetch fresh
     const { data, error } = await supabase
       .from('listings')
       .select('*')
@@ -111,7 +130,6 @@ export function MarketScreen({ navigation }: any) {
     setCache(CacheKeys.MARKET_LISTINGS, freshList);
     setLoading(false);
 
-    // Resolve sellers roster for clean avatars and intakes
     const sellerIds = Array.from(new Set(freshList.map(l => l.seller_id)));
     if (sellerIds.length > 0) {
       const people = await fetchPeople(sellerIds);
@@ -127,26 +145,35 @@ export function MarketScreen({ navigation }: any) {
     setRefreshing(false);
   }
 
-  // Toggle favorite with micro-interaction
   async function handleToggleFavorite(id: string) {
-    const { saved, ids } = await toggleSavedListing(id);
+    const { ids } = await toggleSavedListing(id);
     setSavedIds(new Set(ids));
   }
 
-  // Reset all filters
-  const hasActiveFilters = query.trim().length > 0 || category !== 'all' || pricePreset !== 'all' || sortBy !== 'newest';
   function handleResetFilters() {
     setQuery('');
     setCategory('all');
     setPricePreset('all');
+    setConditionFilter('all');
     setSortBy('newest');
+    setHideSold(true);
   }
+
+  const hasSecondaryFilters =
+    pricePreset !== 'all' ||
+    conditionFilter !== 'all' ||
+    sortBy !== 'newest' ||
+    !hideSold;
+
+  const hasAnyActiveFilters =
+    query.trim().length > 0 ||
+    category !== 'all' ||
+    hasSecondaryFilters;
 
   // Counts for tabs
   const counts = useMemo(() => {
     return {
       all: listings.length,
-      available: listings.filter(l => l.status === 'Available').length,
       mine: listings.filter(l => l.seller_id === user?.id).length,
       saved: listings.filter(l => savedIds.has(l.id)).length,
     };
@@ -162,19 +189,38 @@ export function MarketScreen({ navigation }: any) {
     return map;
   }, [listings]);
 
+  // Current category metadata
+  const currentCategoryMeta = useMemo(() => {
+    return CATEGORIES.find(c => c.id.toLowerCase() === category.toLowerCase()) ?? CATEGORIES[0];
+  }, [category]);
+
+  const currentCategoryLabel = useMemo(() => {
+    if (currentCategoryMeta.id === 'all') return t.market2.allCategories;
+    return (t.market2 as any)[currentCategoryMeta.labelKey] ?? currentCategoryMeta.id;
+  }, [currentCategoryMeta, t]);
+
   // Filtered & sorted list
   const filteredListings = useMemo(() => {
     const q = query.trim().toLowerCase();
     return listings
       .filter(l => {
-        if (tab === 'available') return l.status === 'Available';
         if (tab === 'mine') return l.seller_id === user?.id;
         if (tab === 'saved') return savedIds.has(l.id);
         return true;
       })
       .filter(l => {
+        if (hideSold && tab !== 'mine') {
+          return l.status !== 'Sold';
+        }
+        return true;
+      })
+      .filter(l => {
         if (category === 'all') return true;
         return l.category?.toLowerCase() === category.toLowerCase();
+      })
+      .filter(l => {
+        if (conditionFilter === 'all') return true;
+        return l.condition === conditionFilter;
       })
       .filter(l => {
         if (pricePreset === 'free') return (l.price ?? 0) === 0;
@@ -196,17 +242,29 @@ export function MarketScreen({ navigation }: any) {
         if (sortBy === 'desc') return (b.price ?? 0) - (a.price ?? 0);
         return 0;
       });
-  }, [listings, tab, user?.id, savedIds, category, pricePreset, query, sortBy]);
-
-  const SORT_ORDER = ['newest', 'asc', 'desc'] as const;
-  const cycleSort = () => setSortBy(prev => SORT_ORDER[(SORT_ORDER.indexOf(prev) + 1) % 3]);
-  const sortLabel = sortBy === 'asc' ? t.market2.sortPriceAsc : sortBy === 'desc' ? t.market2.sortPriceDesc : t.market2.sortNewest;
-  const sortIcon = sortBy === 'asc' ? 'arrow-up' : sortBy === 'desc' ? 'arrow-down' : 'clock';
+  }, [listings, tab, user?.id, savedIds, hideSold, category, conditionFilter, pricePreset, query, sortBy]);
 
   // Responsive 2-column calculation
   const screenWidth = Dimensions.get('window').width;
   const cardGap = 11;
   const cardWidth = Math.floor((screenWidth - Layout.screenPadding * 2 - cardGap) / 2);
+
+  const TABS: { id: Tab; label: string; count: number }[] = useMemo(
+    () => [
+      { id: 'all', label: t.common.all, count: counts.all },
+      { id: 'mine', label: t.market2.myListings, count: counts.mine },
+      { id: 'saved', label: t.market2.savedListings, count: counts.saved },
+    ],
+    [t, counts]
+  );
+
+  const TRACK_PADDING = 3;
+  const innerTrackWidth = Math.max(0, trackWidth - TRACK_PADDING * 2);
+  const tabWidth = innerTrackWidth > 0 ? innerTrackWidth / 3 : 0;
+  const translateX = animIndex.interpolate({
+    inputRange: [0, 1, 2],
+    outputRange: [0, tabWidth, tabWidth * 2],
+  });
 
   // Render individual listing card
   const renderItem = useCallback(({ item }: { item: Listing }) => {
@@ -216,13 +274,24 @@ export function MarketScreen({ navigation }: any) {
     const seller = peopleMap[item.seller_id];
     const isFree = (item.price ?? 0) === 0;
 
-    // Condition color
     const condColor = item.condition === 'New' ? '#059669' : item.condition === 'Like New' ? '#2563EB' : '#64748B';
     const condBg = isDark ? `${condColor}2e` : `${condColor}14`;
 
+    const sellerName = seller?.full_name ? seller.full_name.split(' ')[0] : t.market2.verifiedStudent;
+    const sellerDept = seller?.department ? ` · ${seller.department}` : '';
+    const timeAgo = formatRelativeTime(item.created_at);
+
     return (
       <TouchableOpacity
-        style={[styles.card, { width: cardWidth, backgroundColor: C.surface, borderColor: C.border }]}
+        style={[
+          styles.card,
+          {
+            width: cardWidth,
+            backgroundColor: C.surface,
+            borderColor: C.border,
+            opacity: isSold ? 0.75 : 1,
+          },
+        ]}
         onPress={() => navigation.navigate('MarketDetail', { listingId: item.id, id: item.id })}
         activeOpacity={0.8}
       >
@@ -231,19 +300,27 @@ export function MarketScreen({ navigation }: any) {
           {item.photo_url ? (
             <Image source={{ uri: item.photo_url }} style={styles.cardImg} resizeMode="cover" />
           ) : (
-            <Feather name={catMeta.icon} size={38} color={catMeta.fg} />
+            <Feather name={catMeta.icon} size={36} color={catMeta.fg} />
           )}
 
-          {/* Top Row Badges: Condition on Left, Heart on Right */}
+          {/* Top Badges */}
           <View style={styles.thumbTopRow}>
-            <View style={[styles.condBadge, { backgroundColor: condBg, borderColor: condColor }]}>
-              <Text style={[styles.condText, { color: condColor, fontFamily: FontFamily.jakartaBold }]}>
-                {item.condition}
-              </Text>
-            </View>
+            {isFree ? (
+              <View style={[styles.condBadge, { backgroundColor: '#10b981', borderColor: '#059669' }]}>
+                <Text style={[styles.condText, { color: '#fff', fontFamily: FontFamily.jakartaExtraBold }]}>
+                  FREE
+                </Text>
+              </View>
+            ) : item.condition ? (
+              <View style={[styles.condBadge, { backgroundColor: condBg, borderColor: condColor }]}>
+                <Text style={[styles.condText, { color: condColor, fontFamily: FontFamily.jakartaBold }]}>
+                  {item.condition}
+                </Text>
+              </View>
+            ) : <View />}
 
             <TouchableOpacity
-              style={[styles.heartBtn, { backgroundColor: isDark ? 'rgba(15,23,42,0.75)' : 'rgba(255,255,255,0.9)' }]}
+              style={[styles.heartBtn, { backgroundColor: isDark ? 'rgba(15,23,42,0.75)' : 'rgba(255,255,255,0.92)' }]}
               onPress={() => handleToggleFavorite(item.id)}
               hitSlop={8}
               activeOpacity={0.7}
@@ -271,29 +348,41 @@ export function MarketScreen({ navigation }: any) {
 
         {/* Card Body */}
         <View style={styles.cardBody}>
-          {/* Price & Badges */}
+          {/* Price & Relative Time */}
           <View style={styles.priceRow}>
             {isFree ? (
-              <View style={[styles.freeBadge, { backgroundColor: '#16a34a' }]}>
-                <Text style={[styles.freeText, { fontFamily: FontFamily.jakartaExtraBold }]}>
-                  {t.market2.free}
-                </Text>
-              </View>
+              <Text style={[styles.freePriceTxt, { color: '#059669', fontFamily: FontFamily.jakartaExtraBold }]}>
+                FREE
+              </Text>
             ) : (
-              <Text style={[styles.priceText, { color: isSold ? C.textMuted : C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-                ৳{(item.price ?? 0).toLocaleString('en-US')}
+              <Text style={[styles.priceText, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+                {formatPrice(item.price ?? 0)}
               </Text>
             )}
 
-            {item.negotiable && !isFree && (
-              <Text style={[styles.negotiableText, { color: Accent.teal, fontFamily: FontFamily.jakartaSemiBold }]}>
-                {t.market2.negotiable}
-              </Text>
-            )}
+            <Text style={[styles.timeAgoTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+              {timeAgo}
+            </Text>
           </View>
 
+          {/* Negotiable or Fixed Label */}
+          <Text
+            style={[
+              styles.negotiableText,
+              {
+                color: item.negotiable ? '#059669' : C.textMuted,
+                fontFamily: FontFamily.jakartaSemiBold,
+              },
+            ]}
+          >
+            {item.negotiable ? t.market2.negotiable : t.market2.fixedPrice}
+          </Text>
+
           {/* Title */}
-          <Text style={[styles.titleText, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={2}>
+          <Text
+            style={[styles.titleText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}
+            numberOfLines={2}
+          >
             {item.title}
           </Text>
 
@@ -319,7 +408,7 @@ export function MarketScreen({ navigation }: any) {
           <View style={[styles.sellerRow, { borderTopColor: C.border }]}>
             <Avatar name={seller?.full_name ?? undefined} size="xs" />
             <Text style={[styles.sellerName, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-              {seller?.full_name ? seller.full_name.split(' ')[0] : t.market2.verifiedStudent}
+              {sellerName}{sellerDept}
             </Text>
           </View>
         </View>
@@ -327,116 +416,181 @@ export function MarketScreen({ navigation }: any) {
     );
   }, [cardWidth, savedIds, peopleMap, isDark, C, navigation, t]);
 
-  const tabWidth = trackWidth > 0 ? trackWidth / TABS.length : 0;
-  const indicatorTranslateX = animIndex.interpolate({
-    inputRange: [0, 1, 2, 3],
-    outputRange: [0, tabWidth, tabWidth * 2, tabWidth * 3],
-  });
-
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-      <SubBar
-        title={t.market2.marketplace}
-        onBack={() => navigation.goBack()}
-        rightSlot={
-          <TouchableOpacity
-            style={[styles.postBtn, { backgroundColor: MARKET_COLOR }]}
-            onPress={() => navigation.navigate('MarketPost')}
-            activeOpacity={0.8}
-          >
-            <Feather name="plus" size={16} color="#fff" />
-            <Text style={[styles.postBtnText, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
-              {t.market2.sellItem}
-            </Text>
-          </TouchableOpacity>
-        }
-      />
+      {/* 1. Clean Top Header */}
+      <SubBar title={t.market2.marketplace} onBack={() => navigation.goBack()} />
 
       {/* Main Container */}
       <View style={{ flex: 1 }}>
-        {/* Offline Banner */}
         <OfflineBanner visible={isOffline} onRetry={load} />
 
-        {/* 1. Animated Segmented Track */}
-        <View style={[styles.trackWrapper, { paddingHorizontal: Layout.screenPadding }]}>
-          <View
-            style={[styles.track, { backgroundColor: C.surface, borderColor: C.border }]}
-            onLayout={e => setTrackWidth(e.nativeEvent.layout.width)}
+        {/* 2. Prominent Emerald Hero Action Bar */}
+        <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 4, paddingBottom: 6 }}>
+          <TouchableOpacity
+            style={[styles.heroActBtn, { backgroundColor: MARKET_COLOR }]}
+            onPress={() => navigation.navigate('MarketPost')}
+            activeOpacity={0.85}
           >
-            {trackWidth > 0 && (
-              <Animated.View
-                style={[
-                  styles.indicator,
-                  {
-                    width: tabWidth,
-                    backgroundColor: MARKET_COLOR,
-                    transform: [{ translateX: indicatorTranslateX }],
-                  },
-                ]}
-              />
-            )}
+            <Feather name="plus-circle" size={16} color="#fff" />
+            <Text style={[styles.heroActBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+              {t.market2.sellItem}
+            </Text>
+          </TouchableOpacity>
+        </View>
 
-            {TABS.map(tb => {
-              const active = tab === tb;
-              const count = counts[tb];
-              const label =
-                tb === 'all'
-                  ? t.common.all
-                  : tb === 'available'
-                  ? t.market2.availableListings
-                  : tb === 'mine'
-                  ? t.market2.myListings
-                  : t.market2.savedListings;
+        {/* 3. Segmented Tab Switcher (Card Animation matching Blood & Directory) */}
+        <View
+          style={[styles.tabContainer, { backgroundColor: C.surface2 }]}
+          onLayout={e => setTrackWidth(e.nativeEvent.layout.width)}
+        >
+          {tabWidth > 0 && (
+            <Animated.View
+              style={[
+                styles.activeIndicator,
+                {
+                  width: tabWidth,
+                  transform: [{ translateX }],
+                  backgroundColor: C.surface,
+                  borderColor: isDark ? `${MARKET_COLOR}55` : `${MARKET_COLOR}35`,
+                },
+              ]}
+            />
+          )}
 
-              return (
-                <TouchableOpacity
-                  key={tb}
-                  style={styles.tabBtn}
-                  onPress={() => setTab(tb)}
-                  activeOpacity={0.8}
+          {TABS.map(tItem => {
+            const active = tab === tItem.id;
+            return (
+              <TouchableOpacity
+                key={tItem.id}
+                style={styles.tabBtn}
+                onPress={() => setTab(tItem.id)}
+                activeOpacity={0.75}
+              >
+                <Text
+                  style={[
+                    styles.tabBtnTxt,
+                    {
+                      color: active ? MARKET_COLOR : C.textMuted,
+                      fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                    },
+                  ]}
+                  numberOfLines={1}
                 >
-                  <Text
+                  {tItem.label}
+                </Text>
+                {tItem.count > 0 && (
+                  <View
                     style={[
-                      styles.tabBtnText,
+                      styles.tabBadge,
                       {
-                        color: active ? '#fff' : C.text2,
-                        fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaSemiBold,
+                        backgroundColor: active
+                          ? `${MARKET_COLOR}22`
+                          : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.border),
                       },
                     ]}
                   >
-                    {label}
-                  </Text>
-                  {count > 0 && (
-                    <View
+                    <Text
                       style={[
-                        styles.tabBadge,
+                        styles.tabBadgeTxt,
                         {
-                          backgroundColor: active ? 'rgba(255,255,255,0.25)' : C.surface2,
+                          color: active ? MARKET_COLOR : C.textMuted,
+                          fontFamily: FontFamily.jakartaBold,
                         },
                       ]}
                     >
-                      <Text
-                        style={[
-                          styles.tabBadgeText,
-                          {
-                            color: active ? '#fff' : C.textMuted,
-                            fontFamily: FontFamily.jakartaBold,
-                          },
-                        ]}
-                      >
-                        {count}
-                      </Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+                      {tItem.count}
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
-        {/* 2. Search & Sort Bar */}
-        <View style={[styles.searchSection, { paddingHorizontal: Layout.screenPadding }]}>
-          <View style={[styles.searchBar, { backgroundColor: C.surface2, borderColor: C.border }]}>
+        {/* 4. Structured Dual Control Bar (Matches Directory Screen) */}
+        <View style={styles.dualBarRow}>
+          {/* Left: Quick 'All' Reset Button */}
+          <TouchableOpacity
+            style={[
+              styles.dualBarBtn,
+              category === 'all'
+                ? [
+                    styles.dualBarBtnActive,
+                    {
+                      backgroundColor: isDark ? `${MARKET_COLOR}22` : `${MARKET_COLOR}14`,
+                      borderColor: isDark ? `${MARKET_COLOR}66` : MARKET_COLOR,
+                    },
+                  ]
+                : [styles.dualBarBtnInactive, { backgroundColor: C.surface, borderColor: C.border }],
+            ]}
+            onPress={() => setCategory('all')}
+            activeOpacity={0.75}
+          >
+            <Feather
+              name="grid"
+              size={14}
+              color={category === 'all' ? (isDark ? '#fff' : MARKET_COLOR) : C.text2}
+            />
+            <Text
+              style={[
+                styles.dualBarTxt,
+                {
+                  color: category === 'all' ? (isDark ? '#fff' : MARKET_COLOR) : C.text,
+                  fontFamily: FontFamily.jakartaBold,
+                },
+              ]}
+              numberOfLines={1}
+            >
+              {t.common.all}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Right: Category Picker Dropdown Button */}
+          <TouchableOpacity
+            style={[
+              styles.dualBarBtn,
+              category !== 'all'
+                ? [
+                    styles.dualBarBtnActive,
+                    {
+                      backgroundColor: isDark ? `${currentCategoryMeta.fg}22` : `${currentCategoryMeta.fg}14`,
+                      borderColor: isDark ? `${currentCategoryMeta.fg}66` : currentCategoryMeta.fg,
+                    },
+                  ]
+                : [styles.dualBarBtnInactive, { backgroundColor: C.surface, borderColor: C.border }],
+            ]}
+            onPress={() => setCategoryModalVisible(true)}
+            activeOpacity={0.75}
+          >
+            <Feather
+              name={currentCategoryMeta.icon}
+              size={14}
+              color={category !== 'all' ? (isDark ? '#fff' : currentCategoryMeta.fg) : C.text2}
+            />
+            <Text
+              style={[
+                styles.dualBarTxt,
+                {
+                  color: category !== 'all' ? (isDark ? '#fff' : currentCategoryMeta.fg) : C.text,
+                  fontFamily: FontFamily.jakartaBold,
+                },
+              ]}
+              numberOfLines={1}
+            >
+              {currentCategoryLabel}
+            </Text>
+            <Icon
+              name="chevD"
+              size={14}
+              color={category !== 'all' ? (isDark ? '#fff' : currentCategoryMeta.fg) : C.textMuted}
+            />
+          </TouchableOpacity>
+        </View>
+
+        {/* 5. Search Bar & Secondary Filter Trigger */}
+        <View style={styles.searchRow}>
+          <View style={[styles.searchBar, { backgroundColor: C.surface, borderColor: C.border }]}>
             <Icon name="search" size={16} color={C.textMuted} />
             <TextInput
               style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
@@ -444,132 +598,67 @@ export function MarketScreen({ navigation }: any) {
               placeholderTextColor={C.textMuted}
               value={query}
               onChangeText={setQuery}
+              autoCapitalize="none"
             />
             {query.length > 0 && (
-              <TouchableOpacity onPress={() => setQuery('')} hitSlop={8}>
-                <Feather name="x" size={15} color={C.textMuted} />
+              <TouchableOpacity onPress={() => setQuery('')} hitSlop={8} style={{ padding: 4 }}>
+                <Feather name="x" size={14} color={C.textMuted} />
               </TouchableOpacity>
             )}
           </View>
 
           <TouchableOpacity
-            style={[styles.sortBtn, { backgroundColor: C.surface, borderColor: C.border }]}
-            onPress={cycleSort}
+            style={[
+              styles.filterTriggerBtn,
+              hasSecondaryFilters
+                ? { backgroundColor: isDark ? `${MARKET_COLOR}22` : `${MARKET_COLOR}14`, borderColor: MARKET_COLOR }
+                : { backgroundColor: C.surface, borderColor: C.border },
+            ]}
+            onPress={() => setFilterModalVisible(true)}
             activeOpacity={0.75}
           >
-            <Feather name={sortIcon as any} size={13} color={C.text2} />
-            <Text style={[styles.sortTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
-              {sortLabel}
+            <Feather
+              name="sliders"
+              size={14}
+              color={hasSecondaryFilters ? MARKET_COLOR : C.text2}
+            />
+            <Text
+              style={[
+                styles.filterTriggerTxt,
+                {
+                  color: hasSecondaryFilters ? MARKET_COLOR : C.text2,
+                  fontFamily: FontFamily.jakartaBold,
+                },
+              ]}
+            >
+              Filter
             </Text>
+            {hasSecondaryFilters && (
+              <View style={[styles.filterActiveDot, { backgroundColor: MARKET_COLOR }]} />
+            )}
           </TouchableOpacity>
         </View>
 
-        {/* 3. Category Carousel */}
-        <View style={styles.catSection}>
-          <FlatList
-            horizontal
-            data={CATEGORIES}
-            keyExtractor={item => item.id}
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={[styles.catList, { paddingHorizontal: Layout.screenPadding }]}
-            renderItem={({ item }) => {
-              const active = category.toLowerCase() === item.id.toLowerCase();
-              const count = categoryCounts[item.id] ?? 0;
-              const label = item.id === 'all' ? t.common.all : (t.market2 as any)[item.labelKey] ?? item.id;
-              const activeBg = isDark ? `${item.fg}33` : `${item.fg}18`;
-
-              return (
-                <TouchableOpacity
-                  style={[
-                    styles.catChip,
-                    active
-                      ? { backgroundColor: activeBg, borderColor: item.fg }
-                      : { backgroundColor: C.surface, borderColor: C.border },
-                  ]}
-                  onPress={() => setCategory(item.id)}
-                  activeOpacity={0.75}
-                >
-                  <Feather name={item.icon} size={13} color={active ? item.fg : C.textMuted} />
-                  <Text
-                    style={[
-                      styles.catChipTxt,
-                      {
-                        color: active ? item.fg : C.text2,
-                        fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                      },
-                    ]}
-                  >
-                    {label}
-                  </Text>
-                  {count > 0 && (
-                    <Text style={[styles.catCount, { color: active ? item.fg : C.textMuted, opacity: 0.8 }]}>
-                      {count}
-                    </Text>
-                  )}
-                </TouchableOpacity>
-              );
-            }}
-          />
-        </View>
-
-        {/* 4. Quick Price Filters & Reset Button */}
-        <View style={[styles.filterBar, { paddingHorizontal: Layout.screenPadding }]}>
-          <FlatList
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            data={[
-              { id: 'all', label: t.common.all },
-              { id: 'free', label: t.market2.free },
-              { id: 'under300', label: t.market2.priceUnder300 },
-              { id: '300to800', label: t.market2.price300to800 },
-              { id: '800plus', label: t.market2.price800plus },
-            ]}
-            keyExtractor={p => p.id}
-            contentContainerStyle={{ gap: 6, alignItems: 'center' }}
-            renderItem={({ item }) => {
-              const on = pricePreset === item.id;
-              return (
-                <TouchableOpacity
-                  style={[
-                    styles.priceChip,
-                    on
-                      ? { backgroundColor: C.surface2, borderColor: C.text }
-                      : { backgroundColor: C.surface, borderColor: C.border },
-                  ]}
-                  onPress={() => setPricePreset(item.id as PricePreset)}
-                  activeOpacity={0.75}
-                >
-                  <Text
-                    style={[
-                      styles.priceChipTxt,
-                      {
-                        color: on ? C.text : C.textMuted,
-                        fontFamily: on ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                      },
-                    ]}
-                  >
-                    {item.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            }}
-          />
-
-          {hasActiveFilters && (
+        {/* Active Filter Clear Tag */}
+        {hasAnyActiveFilters && (
+          <View style={styles.activeFilterNoticeRow}>
+            <Text style={[styles.filterCountTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+              {filteredListings.length} {filteredListings.length === 1 ? 'item found' : 'items found'}
+            </Text>
             <TouchableOpacity
-              style={[styles.resetBtn, { backgroundColor: isDark ? 'rgba(239,68,68,0.18)' : 'rgba(239,68,68,0.1)' }]}
+              style={[styles.clearPill, { backgroundColor: C.surface2, borderColor: C.border }]}
               onPress={handleResetFilters}
-              activeOpacity={0.7}
+              activeOpacity={0.75}
             >
-              <Feather name="rotate-ccw" size={12} color="#ef4444" />
-              <Text style={[styles.resetTxt, { color: '#ef4444', fontFamily: FontFamily.jakartaBold }]}>
+              <Feather name="rotate-ccw" size={11} color={C.brand} />
+              <Text style={[styles.clearPillTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
                 {t.market2.clearFilters}
               </Text>
             </TouchableOpacity>
-          )}
-        </View>
+          </View>
+        )}
 
-        {/* 5. Virtualized 2-Column Grid */}
+        {/* 6. Virtualized 2-Column Grid */}
         {loading && listings.length === 0 ? (
           <View style={styles.centerBox}>
             <ActivityIndicator size="large" color={MARKET_COLOR} />
@@ -614,7 +703,7 @@ export function MarketScreen({ navigation }: any) {
                 <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                   {t.market2.noItemsAvailable}
                 </Text>
-                {hasActiveFilters && (
+                {hasAnyActiveFilters && (
                   <TouchableOpacity
                     style={[styles.emptyActionBtn, { backgroundColor: C.surface2 }]}
                     onPress={handleResetFilters}
@@ -645,6 +734,386 @@ export function MarketScreen({ navigation }: any) {
           />
         )}
       </View>
+
+      {/* 7. Category Bottom Sheet Modal (Exact Match to Directory Screen) */}
+      <Modal
+        visible={categoryModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setCategoryModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setCategoryModalVisible(false)}
+          />
+          <View
+            style={[
+              styles.modalSheet,
+              {
+                backgroundColor: C.surface,
+                borderColor: C.border,
+                paddingBottom: Math.max(insets.bottom, 20),
+              },
+            ]}
+          >
+            <View style={[styles.modalHandle, { backgroundColor: C.border }]} />
+
+            <View style={styles.modalHeader}>
+              <View style={styles.modalHeaderLeft}>
+                <View
+                  style={[
+                    styles.modalHeaderIcon,
+                    { backgroundColor: isDark ? `${MARKET_COLOR}25` : `${MARKET_COLOR}15` },
+                  ]}
+                >
+                  <Feather name="grid" size={17} color={MARKET_COLOR} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.modalTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    {t.market2.selectCategory}
+                  </Text>
+                  <Text style={[styles.modalSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                    {t.market2.categorySubtitle(listings.length)}
+                  </Text>
+                </View>
+              </View>
+
+              <TouchableOpacity
+                onPress={() => setCategoryModalVisible(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                style={[styles.modalCloseBtn, { backgroundColor: C.surface2 }]}
+              >
+                <Feather name="x" size={16} color={C.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              style={{ maxHeight: 440 }}
+              contentContainerStyle={{ paddingBottom: 10 }}
+            >
+              {CATEGORIES.map(c => {
+                const active = category.toLowerCase() === c.id.toLowerCase();
+                const count = categoryCounts[c.id] ?? (c.id === 'all' ? listings.length : 0);
+                const fg = c.fg;
+                const iconBg = isDark ? `${fg}24` : `${fg}15`;
+                const label = c.id === 'all' ? t.market2.allCategories : (t.market2 as any)[c.labelKey] ?? c.id;
+                const sub = (t.market2 as any)[c.subKey] ?? '';
+
+                return (
+                  <TouchableOpacity
+                    key={c.id}
+                    style={[
+                      styles.modalItemCard,
+                      {
+                        backgroundColor: active
+                          ? (isDark ? 'rgba(255, 255, 255, 0.04)' : `${fg}08`)
+                          : C.surface,
+                        borderColor: active ? fg : C.border,
+                        borderWidth: active ? 1.5 : 1,
+                      },
+                    ]}
+                    onPress={() => {
+                      setCategory(c.id);
+                      setCategoryModalVisible(false);
+                    }}
+                    activeOpacity={0.75}
+                  >
+                    <View style={[styles.modalItemIconBox, { backgroundColor: iconBg }]}>
+                      <Feather name={c.icon} size={18} color={fg} />
+                    </View>
+
+                    <View style={styles.modalItemInfo}>
+                      <Text
+                        style={[
+                          styles.modalItemNameTxt,
+                          {
+                            color: active ? fg : C.text,
+                            fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaSemiBold,
+                          },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {label}
+                      </Text>
+                      {sub.length > 0 && (
+                        <Text
+                          style={[styles.modalItemSubTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}
+                          numberOfLines={1}
+                        >
+                          {sub}
+                        </Text>
+                      )}
+                    </View>
+
+                    <View style={styles.modalItemRight}>
+                      <View
+                        style={[
+                          styles.modalCountBadge,
+                          {
+                            backgroundColor: active
+                              ? (isDark ? `${fg}30` : `${fg}18`)
+                              : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2),
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.modalCountTxt,
+                            {
+                              color: active ? fg : C.textMuted,
+                              fontFamily: FontFamily.jakartaBold,
+                            },
+                          ]}
+                        >
+                          {count}
+                        </Text>
+                      </View>
+
+                      {active && (
+                        <View style={[styles.modalCheckCircle, { backgroundColor: fg }]}>
+                          <Feather name="check" size={11} color="#fff" />
+                        </View>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* 8. Secondary Filter & Sort Bottom Sheet Modal */}
+      <Modal
+        visible={filterModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setFilterModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setFilterModalVisible(false)}
+          />
+          <View
+            style={[
+              styles.modalSheet,
+              {
+                backgroundColor: C.surface,
+                borderColor: C.border,
+                paddingBottom: Math.max(insets.bottom, 20),
+              },
+            ]}
+          >
+            <View style={[styles.modalHandle, { backgroundColor: C.border }]} />
+
+            <View style={styles.modalHeader}>
+              <View style={styles.modalHeaderLeft}>
+                <View
+                  style={[
+                    styles.modalHeaderIcon,
+                    { backgroundColor: isDark ? `${MARKET_COLOR}25` : `${MARKET_COLOR}15` },
+                  ]}
+                >
+                  <Feather name="sliders" size={17} color={MARKET_COLOR} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.modalTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    {t.market2.filterAndSort}
+                  </Text>
+                  <Text style={[styles.modalSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                    {t.market2.filterSubtitle}
+                  </Text>
+                </View>
+              </View>
+
+              <TouchableOpacity
+                onPress={() => setFilterModalVisible(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                style={[styles.modalCloseBtn, { backgroundColor: C.surface2 }]}
+              >
+                <Feather name="x" size={16} color={C.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 440 }}>
+              {/* Sort By Section */}
+              <Text style={[styles.sectionHeading, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                {t.market2.sortBy}
+              </Text>
+              <View style={styles.chipRow}>
+                {[
+                  { id: 'newest', label: t.market2.sortNewest, icon: 'clock' },
+                  { id: 'asc', label: t.market2.sortPriceAsc, icon: 'arrow-up' },
+                  { id: 'desc', label: t.market2.sortPriceDesc, icon: 'arrow-down' },
+                ].map(s => {
+                  const on = sortBy === s.id;
+                  return (
+                    <TouchableOpacity
+                      key={s.id}
+                      style={[
+                        styles.sheetChip,
+                        on
+                          ? { backgroundColor: `${MARKET_COLOR}20`, borderColor: MARKET_COLOR }
+                          : { backgroundColor: C.surface2, borderColor: C.border },
+                      ]}
+                      onPress={() => setSortBy(s.id as any)}
+                      activeOpacity={0.75}
+                    >
+                      <Feather name={s.icon as any} size={13} color={on ? MARKET_COLOR : C.text2} />
+                      <Text
+                        style={[
+                          styles.sheetChipTxt,
+                          {
+                            color: on ? MARKET_COLOR : C.text,
+                            fontFamily: on ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                          },
+                        ]}
+                      >
+                        {s.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {/* Availability Section */}
+              <Text style={[styles.sectionHeading, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 14 }]}>
+                {t.market2.availability}
+              </Text>
+              <View
+                style={[
+                  styles.switchRowCard,
+                  { backgroundColor: C.surface2, borderColor: C.border },
+                ]}
+              >
+                <View style={{ flex: 1, marginRight: 12 }}>
+                  <Text style={[styles.switchTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    {t.market2.hideSold}
+                  </Text>
+                  <Text style={[styles.switchSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                    {t.market2.hideSoldSubtitle}
+                  </Text>
+                </View>
+                <Switch
+                  value={hideSold}
+                  onValueChange={setHideSold}
+                  trackColor={{ false: C.border, true: MARKET_COLOR }}
+                  thumbColor="#fff"
+                />
+              </View>
+
+              {/* Price Range Section */}
+              <Text style={[styles.sectionHeading, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 14 }]}>
+                {t.market2.priceRange}
+              </Text>
+              <View style={styles.chipRow}>
+                {[
+                  { id: 'all', label: t.common.all },
+                  { id: 'free', label: t.market2.free },
+                  { id: 'under300', label: t.market2.priceUnder300 },
+                  { id: '300to800', label: t.market2.price300to800 },
+                  { id: '800plus', label: t.market2.price800plus },
+                ].map(p => {
+                  const on = pricePreset === p.id;
+                  return (
+                    <TouchableOpacity
+                      key={p.id}
+                      style={[
+                        styles.sheetChip,
+                        on
+                          ? { backgroundColor: `${MARKET_COLOR}20`, borderColor: MARKET_COLOR }
+                          : { backgroundColor: C.surface2, borderColor: C.border },
+                      ]}
+                      onPress={() => setPricePreset(p.id as PricePreset)}
+                      activeOpacity={0.75}
+                    >
+                      <Text
+                        style={[
+                          styles.sheetChipTxt,
+                          {
+                            color: on ? MARKET_COLOR : C.text,
+                            fontFamily: on ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                          },
+                        ]}
+                      >
+                        {p.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {/* Condition Section */}
+              <Text style={[styles.sectionHeading, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 14 }]}>
+                {t.market2.condition}
+              </Text>
+              <View style={styles.chipRow}>
+                {[
+                  { id: 'all', label: t.common.all },
+                  { id: 'New', label: t.market2.condNew },
+                  { id: 'Like New', label: t.market2.condLikeNew },
+                  { id: 'Used', label: t.market2.condUsed },
+                ].map(c => {
+                  const on = conditionFilter === c.id;
+                  return (
+                    <TouchableOpacity
+                      key={c.id}
+                      style={[
+                        styles.sheetChip,
+                        on
+                          ? { backgroundColor: `${MARKET_COLOR}20`, borderColor: MARKET_COLOR }
+                          : { backgroundColor: C.surface2, borderColor: C.border },
+                      ]}
+                      onPress={() => setConditionFilter(c.id as ConditionPreset)}
+                      activeOpacity={0.75}
+                    >
+                      <Text
+                        style={[
+                          styles.sheetChipTxt,
+                          {
+                            color: on ? MARKET_COLOR : C.text,
+                            fontFamily: on ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                          },
+                        ]}
+                      >
+                        {c.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {/* Action Buttons */}
+              <View style={styles.filterActionsRow}>
+                <TouchableOpacity
+                  style={[styles.sheetResetBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+                  onPress={handleResetFilters}
+                  activeOpacity={0.75}
+                >
+                  <Text style={[styles.sheetResetTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                    {t.market2.resetFilters}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.sheetApplyBtn, { backgroundColor: MARKET_COLOR }]}
+                  onPress={() => setFilterModalVisible(false)}
+                  activeOpacity={0.85}
+                >
+                  <Text style={[styles.sheetApplyTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                    {t.market2.applyFilters}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -652,53 +1121,88 @@ export function MarketScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
 
-  postBtn: {
+  // Prominent Hero Action Bar
+  heroActBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 18,
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 11,
+    borderRadius: 12,
   } as ViewStyle,
-  postBtnText: { fontSize: 13 } as any,
+  heroActBtnTxt: {
+    fontSize: 14,
+    letterSpacing: 0.1,
+  } as any,
 
-  trackWrapper: { marginTop: 4, marginBottom: 8 } as ViewStyle,
-  track: {
+  // Segmented Tab Switcher (Matches Blood & Directory)
+  tabContainer: {
     flexDirection: 'row',
-    height: 42,
-    borderRadius: 21,
-    borderWidth: 1,
+    borderRadius: 14,
     padding: 3,
+    marginHorizontal: Layout.screenPadding,
+    marginBottom: 8,
     position: 'relative',
-    overflow: 'hidden',
   } as ViewStyle,
-  indicator: {
+  activeIndicator: {
     position: 'absolute',
     top: 3,
+    left: 3,
     bottom: 3,
-    borderRadius: 18,
+    borderRadius: 11,
+    borderWidth: 1.5,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1.5 },
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
   } as ViewStyle,
   tabBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
-    zIndex: 2,
+    paddingVertical: 9,
+    gap: 5,
+    zIndex: 1,
   } as ViewStyle,
-  tabBtnText: { fontSize: 12.5 } as any,
+  tabBtnTxt: { fontSize: 13 } as any,
   tabBadge: {
     paddingHorizontal: 6,
     paddingVertical: 1,
     borderRadius: 10,
   } as ViewStyle,
-  tabBadgeText: { fontSize: 10.5 } as any,
+  tabBadgeTxt: { fontSize: 10.5 } as any,
 
-  searchSection: {
+  // Dual Control Bar (Matches Directory)
+  dualBarRow: {
+    flexDirection: 'row',
+    gap: 9,
+    marginHorizontal: Layout.screenPadding,
+    marginBottom: 8,
+  } as ViewStyle,
+  dualBarBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+  } as ViewStyle,
+  dualBarBtnActive: {} as ViewStyle,
+  dualBarBtnInactive: {} as ViewStyle,
+  dualBarTxt: { fontSize: 12.5 } as any,
+
+  // Search & Filter Row (Directly above feed)
+  searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 8,
+    marginHorizontal: Layout.screenPadding,
+    marginBottom: 6,
   } as ViewStyle,
   searchBar: {
     flex: 1,
@@ -706,71 +1210,61 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     paddingHorizontal: 12,
-    height: 40,
-    borderRadius: 12,
+    height: 38,
+    borderRadius: 11,
     borderWidth: 1,
   } as ViewStyle,
   searchInput: {
     flex: 1,
-    fontSize: 13.5,
+    fontSize: 13,
     paddingVertical: 0,
   } as TextStyle,
-  sortBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    height: 40,
-    paddingHorizontal: 11,
-    borderRadius: 12,
-    borderWidth: 1,
-  } as ViewStyle,
-  sortTxt: { fontSize: 12 } as any,
-
-  catSection: { marginBottom: 8 } as ViewStyle,
-  catList: { gap: 6 } as ViewStyle,
-  catChip: {
+  filterTriggerBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 11,
-    paddingVertical: 7,
-    borderRadius: 18,
+    height: 38,
+    paddingHorizontal: 12,
+    borderRadius: 11,
     borderWidth: 1,
+    position: 'relative',
   } as ViewStyle,
-  catChipTxt: { fontSize: 12 } as any,
-  catCount: { fontSize: 11, fontFamily: FontFamily.jakartaBold } as any,
+  filterTriggerTxt: { fontSize: 12.5 } as any,
+  filterActiveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginLeft: 2,
+  } as ViewStyle,
 
-  filterBar: {
+  // Notice & Reset Pill Row
+  activeFilterNoticeRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginHorizontal: Layout.screenPadding,
+    marginBottom: 8,
+    paddingTop: 2,
   } as ViewStyle,
-  priceChip: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 14,
-    borderWidth: 1,
-  } as ViewStyle,
-  priceChipTxt: { fontSize: 11.5 } as any,
-  resetBtn: {
+  filterCountTxt: { fontSize: 11.5 } as any,
+  clearPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-    borderRadius: 12,
-    marginLeft: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    borderWidth: 1,
   } as ViewStyle,
-  resetTxt: { fontSize: 11 } as any,
+  clearPillTxt: { fontSize: 11 } as any,
 
   listContent: {
     paddingBottom: 28,
   } as ViewStyle,
 
-  // Card Structure
+  // 2-Column Product Card
   card: {
-    borderRadius: 16,
+    borderRadius: 15,
     borderWidth: 1,
     overflow: 'hidden',
     marginBottom: 11,
@@ -799,7 +1293,7 @@ const styles = StyleSheet.create({
   condBadge: {
     paddingHorizontal: 7,
     paddingVertical: 2.5,
-    borderRadius: 8,
+    borderRadius: 7,
     borderWidth: 1,
   } as ViewStyle,
   condText: { fontSize: 9.5 } as any,
@@ -824,34 +1318,29 @@ const styles = StyleSheet.create({
   soldBadge: {
     paddingHorizontal: 12,
     paddingVertical: 4,
-    borderRadius: 16,
+    borderRadius: 14,
     backgroundColor: '#fff',
   } as ViewStyle,
   soldBadgeText: { fontSize: 11 } as any,
 
   cardBody: {
     padding: 10,
-    gap: 4,
+    gap: 3,
   } as ViewStyle,
   priceRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 2,
   } as ViewStyle,
-  priceText: { fontSize: 15.5 } as any,
-  freeBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-  } as ViewStyle,
-  freeText: { color: '#fff', fontSize: 11 } as any,
-  negotiableText: { fontSize: 10.5 } as any,
+  priceText: { fontSize: 15 } as any,
+  freePriceTxt: { fontSize: 14 } as any,
+  timeAgoTxt: { fontSize: 10 } as any,
+  negotiableText: { fontSize: 10 } as any,
   titleText: {
     fontSize: 12.5,
     lineHeight: 17,
     height: 34,
-    marginTop: 2,
+    marginTop: 1,
   } as any,
 
   metaRow: {
@@ -865,14 +1354,14 @@ const styles = StyleSheet.create({
     paddingVertical: 1.5,
     borderRadius: 5,
   } as ViewStyle,
-  coursePillText: { fontSize: 10 } as any,
-  spotText: { fontSize: 10.5, flex: 1 } as any,
+  coursePillText: { fontSize: 9.5 } as any,
+  spotText: { fontSize: 10, flex: 1 } as any,
 
   sellerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginTop: 5,
+    marginTop: 4,
     paddingTop: 6,
     borderTopWidth: StyleSheet.hairlineWidth,
   } as ViewStyle,
@@ -893,9 +1382,9 @@ const styles = StyleSheet.create({
     paddingBottom: 60,
   } as ViewStyle,
   emptyIconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
@@ -905,8 +1394,157 @@ const styles = StyleSheet.create({
   emptyActionBtn: {
     marginTop: 8,
     paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 20,
+    paddingVertical: 9,
+    borderRadius: 18,
   } as ViewStyle,
   emptyActionTxt: { fontSize: 13 } as any,
+
+  // Bottom Sheet Modal Shared Styles (Exact Directory Parity)
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+  } as ViewStyle,
+  modalBackdrop: {
+    ...StyleSheet.absoluteFill as any,
+  } as ViewStyle,
+  modalSheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    paddingTop: 8,
+    paddingHorizontal: 18,
+  } as ViewStyle,
+  modalHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 12,
+  } as ViewStyle,
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  } as ViewStyle,
+  modalHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  } as ViewStyle,
+  modalHeaderIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  modalTitle: { fontSize: 17 } as any,
+  modalSub: { fontSize: 12, marginTop: 1 } as any,
+  modalCloseBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+
+  // Category Sheet Items
+  modalItemCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 12,
+    borderRadius: 14,
+    marginBottom: 8,
+  } as ViewStyle,
+  modalItemIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  modalItemInfo: { flex: 1 } as ViewStyle,
+  modalItemNameTxt: { fontSize: 14 } as any,
+  modalItemSubTxt: { fontSize: 11.5, marginTop: 2 } as any,
+  modalItemRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  } as ViewStyle,
+  modalCountBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+  } as ViewStyle,
+  modalCountTxt: { fontSize: 11.5 } as any,
+  modalCheckCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+
+  // Filter Sheet Elements
+  sectionHeading: {
+    fontSize: 11,
+    letterSpacing: 0.6,
+    marginBottom: 8,
+  } as any,
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 7,
+  } as ViewStyle,
+  sheetChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 12,
+    borderWidth: 1,
+  } as ViewStyle,
+  sheetChipTxt: { fontSize: 12 } as any,
+
+  switchRowCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+  } as ViewStyle,
+  switchTitle: { fontSize: 13.5 } as any,
+  switchSub: { fontSize: 11.5, marginTop: 2 } as any,
+
+  filterActionsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 20,
+    marginBottom: 10,
+  } as ViewStyle,
+  sheetResetBtn: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+  } as ViewStyle,
+  sheetResetTxt: { fontSize: 13 } as any,
+  sheetApplyBtn: {
+    flex: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 14,
+  } as ViewStyle,
+  sheetApplyTxt: { fontSize: 13 } as any,
 });

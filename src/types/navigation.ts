@@ -84,7 +84,7 @@ export type AppStackParams = {
   NotifSettings:  undefined;
 
   // Messages
-  MessageThread:  { kind: import('../services/messagesService').MsgKind; id: string; title: string };
+  MessageThread:  { kind: import('../services/messagesService').MsgKind; id: string; title: string; initialText?: string };
 
   // Faculty
   Faculty:        undefined;
