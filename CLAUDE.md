@@ -801,17 +801,16 @@ The following screens contain segmented control bars slated for this animated pa
      - **Post Type:** Seamless sliding pill between `Offer Ride (Driver)` and `Need Ride (Passenger)`. SubBar header remains steady ("Post a Ride") with zero jumpiness.
      - **Direction:** Segmented sliding pill between `To Campus` (`arrow-up-right`) and `From Campus` (`arrow-down-left`).
      - **Date:** Segmented sliding pill between `Today · [Date]` and `Tomorrow · [Date]` with calendar icon.
-3. **Organized Commute Hubs & Addresses:**
-   - Structured into clean regional clusters instead of an unorganized chip dump:
-     - **Nearby & Mirpur Area:** Mirpur 10, Mirpur 2, Sony Cinema, Rainkhola, Mirpur 1, Technical.
-     - **Major Dhaka Corridors:** Uttara, Shyamoli, Kalyanpur, Farmgate, Dhanmondi, Mohammadpur, Agargaon.
-   - Live selection highlight with accent border, background tint, and active checkmark (`✓`) matching the current pickup or drop-off location.
-4. **Organized Departure Times & BUBT Varsity Commute Shifts:**
-   - Grouped by varsity class schedule into structured categories:
-     - **Morning Shift (Class Arrivals):** 07:30, 08:00, 08:30, 09:00, 10:00.
-     - **Afternoon (Midday Schedule):** 12:00, 13:00, 14:30, 16:00.
-     - **Evening & Return Commutes):** 16:30, 17:30, 18:00, 19:30, 21:00.
-   - Interactive time input row with clock icon and live 12-hour formatted preview pill (e.g. `08:30 AM`). Active selection checkmark (`✓`) on selected shift presets.
+3. **Expandable Commute Hubs Dropdown Bar (`RidePostScreen.tsx`):**
+   - Compact, single-row 48dp trigger bar (`[ 📍 Popular Commute Hubs (13 areas) ▾ ]`) replacing permanent chip blocks.
+   - Dynamic label updates when selected (`[ 📍 Pickup/Drop-off: Mirpur 10  ✓ ▾ ]`).
+   - Smooth accordion toggle revealing organized categories: Nearby & Mirpur Area vs Major Dhaka Corridors.
+   - Selecting any hub immediately sets the location and collapses the menu automatically to keep the screen clean.
+4. **Expandable Departure Time Dropdown Bar (`RidePostScreen.tsx`):**
+   - Single-row 48dp trigger bar (`[ 🕒 08:30 AM · Morning Shift  ▾ ]`) replacing permanent chip walls.
+   - Live formatted 12-hour preview badge and shift classification.
+   - Smooth accordion toggle revealing the 3 BUBT commute shifts (Morning, Afternoon, Evening Return) alongside an exact manual custom time input (`HH:MM`).
+   - Selecting a shift preset immediately sets the time and collapses the menu automatically.
 5. **Dedicated "My Rides" Tab:** Live badge counter showing total active rides. Surfaces both rides the user is offering as a driver (with booked passenger counts) and rides the user booked as a passenger (with seat status), immune to public departure cutoff filters.
 6. **Rickshaw & Multi-Vehicle Commute:**
    - Supported vehicles: `Car` (`🚗`), `CNG` (`🛺`), `Bike` (`🏍️`), and `Rickshaw` (true 3-wheeled vector icon via `MaterialCommunityIcons` `rickshaw`, never a 2-wheel bicycle).
