@@ -85,3 +85,4 @@ $$;
 
 revoke execute on function public.notify_claim_received() from public, anon;
 grant execute on function public.notify_claim_received() to authenticated;
+
