@@ -801,16 +801,18 @@ The following screens contain segmented control bars slated for this animated pa
      - **Post Type:** Seamless sliding pill between `Offer Ride (Driver)` and `Need Ride (Passenger)`. SubBar header remains steady ("Post a Ride") with zero jumpiness.
      - **Direction:** Segmented sliding pill between `To Campus` (`arrow-up-right`) and `From Campus` (`arrow-down-left`).
      - **Date:** Segmented sliding pill between `Today · [Date]` and `Tomorrow · [Date]` with calendar icon.
-3. **Expandable Commute Hubs Dropdown Bar (`RidePostScreen.tsx`):**
-   - Compact, single-row 48dp trigger bar (`[ 📍 Popular Commute Hubs (13 areas) ▾ ]`) replacing permanent chip blocks.
-   - Dynamic label updates when selected (`[ 📍 Pickup/Drop-off: Mirpur 10  ✓ ▾ ]`).
-   - Smooth accordion toggle revealing organized categories: Nearby & Mirpur Area vs Major Dhaka Corridors.
-   - Selecting any hub immediately sets the location and collapses the menu automatically to keep the screen clean.
-4. **Expandable Departure Time Dropdown Bar (`RidePostScreen.tsx`):**
-   - Single-row 48dp trigger bar (`[ 🕒 08:30 AM · Morning Shift  ▾ ]`) replacing permanent chip walls.
-   - Live formatted 12-hour preview badge and shift classification.
-   - Smooth accordion toggle revealing the 3 BUBT commute shifts (Morning, Afternoon, Evening Return) alongside an exact manual custom time input (`HH:MM`).
-   - Selecting a shift preset immediately sets the time and collapses the menu automatically.
+3. **Directory-Style Commute Hubs Bottom Sheet Modal (`RidePostScreen.tsx`):**
+   - Sleek trigger card (`[ 📍 POPULAR PICKUP HUBS ... ▾ ]`) with icon box, hub label, and active selection badge, replacing permanent chip walls.
+   - Slide-up native `<Modal>` bottom sheet matching `DirectoryScreen.tsx` (`Select Department`) 1:1 (semi-transparent backdrop, drag handle, header with icon tile and close button).
+   - 13 Mirpur & Dhaka commuter hubs organized into Nearby & Mirpur Area vs Major Dhaka Corridors.
+   - Each hub rendered as a full card with 38×38 squircle icon tile, bold title, transit description, and right-aligned checkmark circle (`✓`).
+   - Selecting any hub immediately sets the location and smoothly closes the modal sheet.
+4. **Directory-Style Departure Time Bottom Sheet Modal (`RidePostScreen.tsx`):**
+   - Sleek trigger card (`[ 🕒 DEPARTURE TIME & VARSITY SHIFT ... ▾ ]`) with live formatted 12-hour preview badge and shift classification.
+   - Slide-up native `<Modal>` bottom sheet matching `DirectoryScreen.tsx` 1:1.
+   - 3 BUBT varsity shifts (Morning, Afternoon, Evening Return) with schedule cards, class times, and active checkmark circle.
+   - Manual exact time input bar (`HH:MM`) with `[ Set Time ]` button, protected inside `<KeyboardAvoidingView behavior="padding">` for Android 15 edge-to-edge keyboard ergonomics.
+   - Selecting a shift preset immediately sets the time and smoothly closes the modal sheet.
 5. **Dedicated "My Rides" Tab:** Live badge counter showing total active rides. Surfaces both rides the user is offering as a driver (with booked passenger counts) and rides the user booked as a passenger (with seat status), immune to public departure cutoff filters.
 6. **Rickshaw & Multi-Vehicle Commute:**
    - Supported vehicles: `Car` (`🚗`), `CNG` (`🛺`), `Bike` (`🏍️`), and `Rickshaw` (true 3-wheeled vector icon via `MaterialCommunityIcons` `rickshaw`, never a 2-wheel bicycle).

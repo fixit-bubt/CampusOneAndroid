@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView,
-  StyleSheet, Animated, type ViewStyle, type TextStyle,
+  StyleSheet, Animated, Modal, type ViewStyle, type TextStyle,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useToast } from '../../components/ui/Toast';
 import { useTheme } from '../../hooks/useTheme';
@@ -25,44 +25,69 @@ const VEHICLES: { id: Ride['vehicle']; label: string; icon: string; maxSeats: nu
   { id: 'Car',      label: 'Car',      icon: '🚗', maxSeats: 4, defaultSeats: 3 },
 ];
 
+interface HubItem {
+  name: string;
+  desc: string;
+  icon: keyof typeof Feather.glyphMap;
+}
+
 interface HubGroup {
   category: string;
   icon: keyof typeof Feather.glyphMap;
-  hubs: string[];
+  hubs: HubItem[];
 }
 
 const HUB_GROUPS: HubGroup[] = [
   {
     category: 'Nearby & Mirpur Area',
     icon: 'map-pin',
-    hubs: ['Mirpur 10', 'Mirpur 2', 'Sony Cinema', 'Rainkhola', 'Mirpur 1', 'Technical'],
+    hubs: [
+      { name: 'Mirpur 10', desc: 'Metro Rail station · Main Mirpur roundabout', icon: 'navigation' },
+      { name: 'Mirpur 2', desc: 'Sony Square · Commerce College road', icon: 'map-pin' },
+      { name: 'Sony Cinema', desc: 'Sony Square roundabout & food corridor', icon: 'film' },
+      { name: 'Rainkhola', desc: 'Zoo road entrance · Close to campus', icon: 'compass' },
+      { name: 'Mirpur 1', desc: 'Muktodhara roundabout · Darussalam link', icon: 'map-pin' },
+      { name: 'Technical', desc: 'Technical intersection · Gabtoli highway', icon: 'git-merge' },
+    ],
   },
   {
     category: 'Major Dhaka Corridors',
     icon: 'compass',
-    hubs: ['Uttara', 'Shyamoli', 'Kalyanpur', 'Farmgate', 'Dhanmondi', 'Mohammadpur', 'Agargaon'],
+    hubs: [
+      { name: 'Uttara', desc: 'House Building / Rajlakshmi / Sector 7', icon: 'map' },
+      { name: 'Shyamoli', desc: 'Shyamoli Square · Ring Road footbridge', icon: 'map-pin' },
+      { name: 'Kalyanpur', desc: 'Bus stand · Rokeya Sarani transit', icon: 'navigation' },
+      { name: 'Farmgate', desc: 'Ananda Cinema · Metro Rail station', icon: 'map-pin' },
+      { name: 'Dhanmondi', desc: 'Russel Square / Shimanto Square / R#27', icon: 'navigation' },
+      { name: 'Mohammadpur', desc: 'Town Hall / Shia Masjid / Ring Road', icon: 'map-pin' },
+      { name: 'Agargaon', desc: 'Passport Office · Biman Bhaban Metro', icon: 'compass' },
+    ],
   },
 ];
 
 interface TimePeriod {
   title: string;
+  desc: string;
   icon: keyof typeof Feather.glyphMap;
   times: string[];
 }
 
 const TIME_PERIODS: TimePeriod[] = [
   {
-    title: 'Morning Shift (Class Arrivals)',
+    title: 'Morning Shift',
+    desc: 'Varsity class arrivals & morning lab sessions',
     icon: 'sunrise',
     times: ['07:30', '08:00', '08:30', '09:00', '10:00'],
   },
   {
-    title: 'Afternoon (Midday Schedule)',
+    title: 'Afternoon Shift',
+    desc: 'Midday schedule & afternoon lectures',
     icon: 'sun',
     times: ['12:00', '13:00', '14:30', '16:00'],
   },
   {
     title: 'Evening & Return Commutes',
+    desc: 'Return trips & evening batch commute',
     icon: 'sunset',
     times: ['16:30', '17:30', '18:00', '19:30', '21:00'],
   },
@@ -104,6 +129,7 @@ function getInitialDateTime(): { defaultDate: 'today' | 'tomorrow'; defaultTime:
 
 export function RidePostScreen({ route, navigation }: any) {
   const { C, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
   const t = useT();
   const { user } = useAuth();
   const toast = useToast();
@@ -123,8 +149,8 @@ export function RidePostScreen({ route, navigation }: any) {
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const [showHubsDropdown, setShowHubsDropdown] = useState(false);
-  const [showTimeDropdown, setShowTimeDropdown] = useState(false);
+  const [hubModalVisible, setHubModalVisible] = useState(false);
+  const [timeModalVisible, setTimeModalVisible] = useState(false);
 
   const isOffer = postType === 'offer';
   const accentColor = isOffer ? RIDE_COLOR : '#8b5cf6';
@@ -524,123 +550,62 @@ export function RidePostScreen({ route, navigation }: any) {
             placeholderTextColor={C.textMuted}
           />
 
-          {/* Places Dropdown Trigger Bar */}
+          {/* Hub Picker Trigger Bar (Opens Bottom Sheet Modal) */}
           <TouchableOpacity
             style={[
-              styles.dropdownTriggerBar,
+              styles.pickerTriggerCard,
               {
-                backgroundColor: showHubsDropdown
-                  ? (isDark ? 'rgba(110, 139, 31, 0.14)' : (isOffer ? '#f4f8e6' : '#f5f0ff'))
-                  : C.surface,
-                borderColor: showHubsDropdown ? accentColor : C.border,
+                backgroundColor: C.surface,
+                borderColor: activeHub ? accentColor : C.border,
               },
             ]}
-            onPress={() => setShowHubsDropdown(open => !open)}
+            onPress={() => setHubModalVisible(true)}
             activeOpacity={0.75}
           >
-            <View style={styles.dropdownLeftCol}>
-              <Feather name="map-pin" size={15} color={accentColor} />
-              <Text
+            <View style={styles.pickerTriggerLeft}>
+              <View
                 style={[
-                  styles.dropdownTriggerTitle,
-                  {
-                    color: activeHub ? C.text : C.textMuted,
-                    fontFamily: activeHub ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                  },
+                  styles.pickerTriggerIconBox,
+                  { backgroundColor: isDark ? `${accentColor}24` : `${accentColor}15` },
                 ]}
-                numberOfLines={1}
               >
-                {activeHub
-                  ? `${direction === 'To Campus' ? 'Pickup' : 'Drop-off'}: ${activeHub}`
-                  : 'Popular Commute Hubs (13 areas)'}
-              </Text>
+                <Feather name="map-pin" size={17} color={accentColor} />
+              </View>
+              <View style={styles.pickerTriggerContent}>
+                <Text style={[styles.pickerTriggerLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                  {direction === 'To Campus' ? 'POPULAR PICKUP HUBS' : 'POPULAR DESTINATION HUBS'}
+                </Text>
+                <Text
+                  style={[
+                    styles.pickerTriggerValue,
+                    {
+                      color: activeHub ? C.text : C.textMuted,
+                      fontFamily: activeHub ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                    },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {activeHub
+                    ? `${activeHub} · Selected`
+                    : 'Choose from 13 Mirpur & Dhaka hubs…'}
+                </Text>
+              </View>
             </View>
-            <View style={styles.dropdownRightCol}>
+
+            <View style={styles.pickerTriggerRight}>
               {activeHub ? (
                 <View
                   style={[
-                    styles.activeMiniBadge,
-                    {
-                      backgroundColor: isDark
-                        ? 'rgba(110, 139, 31, 0.22)'
-                        : (isOffer ? '#e8f3cb' : '#eee5ff'),
-                    },
+                    styles.activeBadgeCircle,
+                    { backgroundColor: isDark ? `${accentColor}30` : `${accentColor}18` },
                   ]}
                 >
-                  <Feather name="check" size={11} color={accentColor} />
+                  <Feather name="check" size={12} color={accentColor} />
                 </View>
               ) : null}
-              <Feather
-                name={showHubsDropdown ? 'chevron-up' : 'chevron-down'}
-                size={16}
-                color={showHubsDropdown ? accentColor : C.textMuted}
-              />
+              <Feather name="chevron-down" size={18} color={C.textMuted} />
             </View>
           </TouchableOpacity>
-
-          {/* Expandable Hubs Menu */}
-          {showHubsDropdown && (
-            <View style={[styles.dropdownMenuContainer, { backgroundColor: C.surface, borderColor: C.border }]}>
-              <View style={styles.dropdownMenuHeader}>
-                <Text style={[styles.subSectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                  {direction === 'To Campus' ? 'SELECT PICKUP POINT' : 'SELECT DROP-OFF DESTINATION'}
-                </Text>
-                <TouchableOpacity onPress={() => setShowHubsDropdown(false)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                  <Text style={[styles.dropdownCloseTxt, { color: accentColor, fontFamily: FontFamily.jakartaBold }]}>Done</Text>
-                </TouchableOpacity>
-              </View>
-
-              {HUB_GROUPS.map(group => (
-                <View key={group.category} style={styles.hubGroupBlock}>
-                  <View style={styles.hubCategoryTitleRow}>
-                    <Feather name={group.icon} size={11} color={C.textMuted} />
-                    <Text style={[styles.hubCategoryTitle, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                      {group.category.toUpperCase()}
-                    </Text>
-                  </View>
-                  <View style={styles.chipRow}>
-                    {group.hubs.map(hub => {
-                      const isSelected = activeHub.trim().toLowerCase() === hub.toLowerCase();
-                      return (
-                        <TouchableOpacity
-                          key={hub}
-                          style={[
-                            styles.hubChip,
-                            {
-                              backgroundColor: isSelected
-                                ? (isDark ? 'rgba(110, 139, 31, 0.22)' : (isOffer ? '#f2f7e4' : '#f5f0ff'))
-                                : C.surface2,
-                              borderColor: isSelected ? accentColor : C.border,
-                            },
-                          ]}
-                          onPress={() => {
-                            handleHubSelect(hub);
-                            setShowHubsDropdown(false);
-                          }}
-                          activeOpacity={0.7}
-                        >
-                          {isSelected && (
-                            <Feather name="check" size={11} color={accentColor} style={{ marginRight: 3 }} />
-                          )}
-                          <Text
-                            style={[
-                              styles.hubChipTxt,
-                              {
-                                color: isSelected ? accentColor : C.text2,
-                                fontFamily: isSelected ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                              },
-                            ]}
-                          >
-                            {hub}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                </View>
-              ))}
-            </View>
-          )}
 
           {/* 4. Date Choice (Animated Segmented Track) */}
           <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
@@ -715,41 +680,48 @@ export function RidePostScreen({ route, navigation }: any) {
             </TouchableOpacity>
           </View>
 
-          {/* 5. Departure Time Dropdown Bar */}
+          {/* 5. Departure Time Picker Trigger Bar */}
           <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
             {isOffer ? (t.rides2.time ?? 'DEPARTURE TIME') : 'WHEN DO YOU NEED THE RIDE?'}
           </Text>
 
           <TouchableOpacity
             style={[
-              styles.dropdownTriggerBar,
+              styles.pickerTriggerCard,
               {
-                backgroundColor: showTimeDropdown
-                  ? (isDark ? 'rgba(110, 139, 31, 0.14)' : (isOffer ? '#f4f8e6' : '#f5f0ff'))
-                  : C.surface,
-                borderColor: showTimeDropdown ? accentColor : C.border,
+                backgroundColor: C.surface,
+                borderColor: accentColor,
               },
             ]}
-            onPress={() => setShowTimeDropdown(open => !open)}
+            onPress={() => setTimeModalVisible(true)}
             activeOpacity={0.75}
           >
-            <View style={styles.dropdownLeftCol}>
-              <Feather name="clock" size={15} color={accentColor} />
-              <Text
+            <View style={styles.pickerTriggerLeft}>
+              <View
                 style={[
-                  styles.dropdownTriggerTitle,
-                  {
-                    color: time ? C.text : C.textMuted,
-                    fontFamily: FontFamily.jakartaBold,
-                  },
+                  styles.pickerTriggerIconBox,
+                  { backgroundColor: isDark ? `${accentColor}24` : `${accentColor}15` },
                 ]}
-                numberOfLines={1}
               >
-                {time ? `${formatTime(time)} · ${getShiftLabel(time)}` : 'Select Departure Time'}
-              </Text>
+                <Feather name="clock" size={17} color={accentColor} />
+              </View>
+              <View style={styles.pickerTriggerContent}>
+                <Text style={[styles.pickerTriggerLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                  DEPARTURE TIME & VARSITY SHIFT
+                </Text>
+                <Text
+                  style={[
+                    styles.pickerTriggerValue,
+                    { color: C.text, fontFamily: FontFamily.jakartaBold },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {formatTime(time)} · {getShiftLabel(time)}
+                </Text>
+              </View>
             </View>
 
-            <View style={styles.dropdownRightCol}>
+            <View style={styles.pickerTriggerRight}>
               <View
                 style={[
                   styles.timePreviewBadge,
@@ -762,99 +734,12 @@ export function RidePostScreen({ route, navigation }: any) {
                 ]}
               >
                 <Text style={[styles.timePreviewTxt, { color: accentColor, fontFamily: FontFamily.jakartaBold }]}>
-                  {time ? formatTime(time) : '08:00 AM'}
+                  {formatTime(time)}
                 </Text>
               </View>
-              <Feather
-                name={showTimeDropdown ? 'chevron-up' : 'chevron-down'}
-                size={16}
-                color={showTimeDropdown ? accentColor : C.textMuted}
-              />
+              <Feather name="chevron-down" size={18} color={C.textMuted} />
             </View>
           </TouchableOpacity>
-
-          {/* Expandable Time Menu */}
-          {showTimeDropdown && (
-            <View style={[styles.dropdownMenuContainer, { backgroundColor: C.surface, borderColor: C.border }]}>
-              <View style={styles.dropdownMenuHeader}>
-                <Text style={[styles.subSectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                  COMMUTE SHIFTS OR CUSTOM TIME
-                </Text>
-                <TouchableOpacity onPress={() => setShowTimeDropdown(false)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                  <Text style={[styles.dropdownCloseTxt, { color: accentColor, fontFamily: FontFamily.jakartaBold }]}>Done</Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Custom Exact Time Input */}
-              <View style={[styles.customTimeRow, { backgroundColor: C.surface2, borderColor: C.border }]}>
-                <Feather name="edit-2" size={13} color={C.textMuted} style={{ marginLeft: 6, marginRight: 4 }} />
-                <Text style={[styles.customTimeLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>Custom:</Text>
-                <TextInput
-                  style={[styles.customTimeInput, { color: C.text, fontFamily: FontFamily.jakartaBold }]}
-                  value={time}
-                  onChangeText={setTime}
-                  placeholder="08:00"
-                  placeholderTextColor={C.textMuted}
-                  keyboardType="numbers-and-punctuation"
-                  maxLength={5}
-                />
-                <Text style={[styles.customTimeHint, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                  (24h HH:MM)
-                </Text>
-              </View>
-
-              {/* Organized Time Shifts */}
-              {TIME_PERIODS.map(period => (
-                <View key={period.title} style={styles.timePeriodBlock}>
-                  <View style={styles.timePeriodTitleRow}>
-                    <Feather name={period.icon} size={11} color={C.textMuted} />
-                    <Text style={[styles.timePeriodTitle, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                      {period.title.toUpperCase()}
-                    </Text>
-                  </View>
-                  <View style={styles.chipRow}>
-                    {period.times.map(preset => {
-                      const isSelected = time === preset;
-                      return (
-                        <TouchableOpacity
-                          key={preset}
-                          style={[
-                            styles.timePresetChip,
-                            {
-                              backgroundColor: isSelected
-                                ? (isDark ? 'rgba(110, 139, 31, 0.22)' : (isOffer ? '#f2f7e4' : '#f5f0ff'))
-                                : C.surface2,
-                              borderColor: isSelected ? accentColor : C.border,
-                            },
-                          ]}
-                          onPress={() => {
-                            setTime(preset);
-                            setShowTimeDropdown(false);
-                          }}
-                          activeOpacity={0.7}
-                        >
-                          {isSelected && (
-                            <Feather name="check" size={11} color={accentColor} style={{ marginRight: 3 }} />
-                          )}
-                          <Text
-                            style={[
-                              styles.timePresetTxt,
-                              {
-                                color: isSelected ? accentColor : C.text2,
-                                fontFamily: isSelected ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                              },
-                            ]}
-                          >
-                            {formatTime(preset)}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                </View>
-              ))}
-            </View>
-          )}
 
           {/* 6. Seats & Fare Row */}
           <View style={styles.sideBySideRow}>
@@ -939,6 +824,300 @@ export function RidePostScreen({ route, navigation }: any) {
           <View style={{ height: 28 }} />
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* 1. Commute Hubs Bottom Sheet Modal */}
+      <Modal
+        visible={hubModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setHubModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setHubModalVisible(false)}
+          />
+          <View
+            style={[
+              styles.modalSheet,
+              {
+                backgroundColor: C.surface,
+                borderColor: C.border,
+                paddingBottom: Math.max(insets.bottom, 20),
+              },
+            ]}
+          >
+            <View style={[styles.modalHandle, { backgroundColor: C.border }]} />
+
+            <View style={styles.modalHeader}>
+              <View style={styles.modalHeaderLeft}>
+                <View
+                  style={[
+                    styles.modalHeaderIcon,
+                    { backgroundColor: isDark ? `${accentColor}24` : `${accentColor}15` },
+                  ]}
+                >
+                  <Feather name="map-pin" size={18} color={accentColor} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.modalTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    {direction === 'To Campus' ? 'Select Pickup Hub' : 'Select Destination Hub'}
+                  </Text>
+                  <Text style={[styles.modalSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                    13 popular hubs across Mirpur & Dhaka
+                  </Text>
+                </View>
+              </View>
+
+              <TouchableOpacity
+                onPress={() => setHubModalVisible(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                style={[styles.modalCloseBtn, { backgroundColor: C.surface2 }]}
+              >
+                <Feather name="x" size={16} color={C.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              style={{ maxHeight: 460 }}
+              contentContainerStyle={{ paddingBottom: 16 }}
+            >
+              {HUB_GROUPS.map(group => (
+                <View key={group.category} style={styles.modalGroupBlock}>
+                  <View style={styles.modalGroupTitleRow}>
+                    <Feather name={group.icon} size={12} color={C.textMuted} />
+                    <Text style={[styles.modalGroupTitle, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                      {group.category.toUpperCase()}
+                    </Text>
+                  </View>
+
+                  {group.hubs.map(hub => {
+                    const active = activeHub.trim().toLowerCase() === hub.name.toLowerCase();
+                    return (
+                      <TouchableOpacity
+                        key={hub.name}
+                        style={[
+                          styles.modalCard,
+                          {
+                            backgroundColor: active
+                              ? (isDark ? 'rgba(255, 255, 255, 0.04)' : `${accentColor}0a`)
+                              : C.surface,
+                            borderColor: active ? accentColor : C.border,
+                            borderWidth: active ? 1.5 : 1,
+                          },
+                        ]}
+                        onPress={() => {
+                          handleHubSelect(hub.name);
+                          setHubModalVisible(false);
+                        }}
+                        activeOpacity={0.75}
+                      >
+                        <View
+                          style={[
+                            styles.modalCardIconBox,
+                            { backgroundColor: isDark ? `${accentColor}24` : `${accentColor}15` },
+                          ]}
+                        >
+                          <Feather name={hub.icon} size={18} color={accentColor} />
+                        </View>
+
+                        <View style={styles.modalCardInfo}>
+                          <Text
+                            style={[
+                              styles.modalCardTitle,
+                              {
+                                color: active ? accentColor : C.text,
+                                fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaSemiBold,
+                              },
+                            ]}
+                          >
+                            {hub.name}
+                          </Text>
+                          <Text
+                            style={[styles.modalCardSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}
+                            numberOfLines={1}
+                          >
+                            {hub.desc}
+                          </Text>
+                        </View>
+
+                        {active && (
+                          <View style={[styles.modalCheckCircle, { backgroundColor: accentColor }]}>
+                            <Feather name="check" size={13} color="#fff" />
+                          </View>
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* 2. Departure Time Bottom Sheet Modal */}
+      <Modal
+        visible={timeModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setTimeModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setTimeModalVisible(false)}
+          />
+          <KeyboardAvoidingView behavior="padding" style={{ width: '100%', justifyContent: 'flex-end' }}>
+            <View
+              style={[
+                styles.modalSheet,
+                {
+                  backgroundColor: C.surface,
+                  borderColor: C.border,
+                  paddingBottom: Math.max(insets.bottom, 20),
+                },
+              ]}
+            >
+              <View style={[styles.modalHandle, { backgroundColor: C.border }]} />
+
+              <View style={styles.modalHeader}>
+                <View style={styles.modalHeaderLeft}>
+                  <View
+                    style={[
+                      styles.modalHeaderIcon,
+                      { backgroundColor: isDark ? `${accentColor}24` : `${accentColor}15` },
+                    ]}
+                  >
+                    <Feather name="clock" size={18} color={accentColor} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.modalTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                      Select Departure Time
+                    </Text>
+                    <Text style={[styles.modalSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                      BUBT varsity commute shifts & class arrivals
+                    </Text>
+                  </View>
+                </View>
+
+                <TouchableOpacity
+                  onPress={() => setTimeModalVisible(false)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  style={[styles.modalCloseBtn, { backgroundColor: C.surface2 }]}
+                >
+                  <Feather name="x" size={16} color={C.text} />
+                </TouchableOpacity>
+              </View>
+
+              {/* Exact Manual Time Input Bar at top of modal */}
+              <View style={[styles.modalCustomTimeBar, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                <Feather name="edit-3" size={15} color={accentColor} style={{ marginLeft: 10, marginRight: 6 }} />
+                <Text style={[styles.modalCustomTimeLabel, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  Custom:
+                </Text>
+                <TextInput
+                  style={[styles.modalCustomTimeInput, { color: C.text, fontFamily: FontFamily.jakartaBold }]}
+                  value={time}
+                  onChangeText={setTime}
+                  placeholder="08:00"
+                  placeholderTextColor={C.textMuted}
+                  keyboardType="numbers-and-punctuation"
+                  maxLength={5}
+                />
+                <TouchableOpacity
+                  style={[styles.modalCustomTimeApplyBtn, { backgroundColor: accentColor }]}
+                  onPress={() => setTimeModalVisible(false)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.modalCustomTimeApplyTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                    Set Time
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView
+                showsVerticalScrollIndicator={false}
+                style={{ maxHeight: 420 }}
+                contentContainerStyle={{ paddingBottom: 16 }}
+              >
+                {TIME_PERIODS.map(period => (
+                  <View key={period.title} style={styles.modalGroupBlock}>
+                    <View style={styles.modalGroupTitleRow}>
+                      <Feather name={period.icon} size={12} color={C.textMuted} />
+                      <Text style={[styles.modalGroupTitle, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                        {period.title.toUpperCase()}
+                      </Text>
+                    </View>
+
+                    {period.times.map(tPreset => {
+                      const active = time === tPreset;
+                      return (
+                        <TouchableOpacity
+                          key={tPreset}
+                          style={[
+                            styles.modalCard,
+                            {
+                              backgroundColor: active
+                                ? (isDark ? 'rgba(255, 255, 255, 0.04)' : `${accentColor}0a`)
+                                : C.surface,
+                              borderColor: active ? accentColor : C.border,
+                              borderWidth: active ? 1.5 : 1,
+                            },
+                          ]}
+                          onPress={() => {
+                            setTime(tPreset);
+                            setTimeModalVisible(false);
+                          }}
+                          activeOpacity={0.75}
+                        >
+                          <View
+                            style={[
+                              styles.modalCardIconBox,
+                              { backgroundColor: isDark ? `${accentColor}24` : `${accentColor}15` },
+                            ]}
+                          >
+                            <Feather name={period.icon} size={18} color={accentColor} />
+                          </View>
+
+                          <View style={styles.modalCardInfo}>
+                            <Text
+                              style={[
+                                styles.modalCardTitle,
+                                {
+                                  color: active ? accentColor : C.text,
+                                  fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaSemiBold,
+                                },
+                              ]}
+                            >
+                              {formatTime(tPreset)}
+                            </Text>
+                            <Text
+                              style={[styles.modalCardSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}
+                              numberOfLines={1}
+                            >
+                              {period.desc}
+                            </Text>
+                          </View>
+
+                          {active && (
+                            <View style={[styles.modalCheckCircle, { backgroundColor: accentColor }]}>
+                              <Feather name="check" size={13} color="#fff" />
+                            </View>
+                          )}
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
+          </KeyboardAvoidingView>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1026,109 +1205,59 @@ const styles = StyleSheet.create({
     marginTop: 4,
   } as ViewStyle,
 
-  dropdownTriggerBar: {
+  /* Picker Trigger Cards */
+  pickerTriggerCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    minHeight: 48,
-    borderRadius: 13,
+    minHeight: 56,
+    borderRadius: 14,
     borderWidth: 1.2,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 9,
     marginTop: 8,
     marginBottom: 6,
   } as ViewStyle,
-  dropdownLeftCol: {
+  pickerTriggerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 9,
+    gap: 11,
     flex: 1,
     paddingRight: 8,
   } as ViewStyle,
-  dropdownTriggerTitle: {
-    fontSize: 13,
+  pickerTriggerIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  } as ViewStyle,
+  pickerTriggerContent: {
     flex: 1,
+    minWidth: 0,
+  } as ViewStyle,
+  pickerTriggerLabel: {
+    fontSize: 10,
+    letterSpacing: 0.5,
+    marginBottom: 2,
   } as TextStyle,
-  dropdownRightCol: {
+  pickerTriggerValue: {
+    fontSize: 13.5,
+  } as TextStyle,
+  pickerTriggerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
+    flexShrink: 0,
   } as ViewStyle,
-  activeMiniBadge: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+  activeBadgeCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
-
-  dropdownMenuContainer: {
-    borderRadius: 14,
-    borderWidth: 1,
-    padding: 12,
-    marginTop: 2,
-    marginBottom: 10,
-    gap: 10,
-  } as ViewStyle,
-  dropdownMenuHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 2,
-  } as ViewStyle,
-  subSectionLabel: {
-    fontSize: 10.5,
-    letterSpacing: 0.5,
-  } as TextStyle,
-  dropdownCloseTxt: {
-    fontSize: 12.5,
-  } as TextStyle,
-
-  hubGroupBlock: {
-    gap: 4,
-  } as ViewStyle,
-  hubCategoryTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    marginTop: 2,
-  } as ViewStyle,
-  hubCategoryTitle: {
-    fontSize: 10,
-    letterSpacing: 0.5,
-  } as TextStyle,
-  hubChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-    borderWidth: 1,
-    minHeight: 30,
-  } as ViewStyle,
-  hubChipTxt: { fontSize: 11.5 } as TextStyle,
-
-  customTimeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: 38,
-    borderRadius: 10,
-    borderWidth: 1,
-    paddingHorizontal: 8,
-    gap: 6,
-  } as ViewStyle,
-  customTimeLabel: {
-    fontSize: 12,
-  } as TextStyle,
-  customTimeInput: {
-    fontSize: 13,
-    minWidth: 50,
-    paddingVertical: 0,
-    paddingHorizontal: 4,
-  } as TextStyle,
-  customTimeHint: {
-    fontSize: 10.5,
-  } as TextStyle,
 
   timePreviewBadge: {
     paddingHorizontal: 8,
@@ -1140,29 +1269,148 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
   } as TextStyle,
 
-  timePeriodBlock: {
-    gap: 4,
+  /* Bottom Sheet Modals (Matching DirectoryScreen 1:1) */
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
   } as ViewStyle,
-  timePeriodTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    marginTop: 2,
+  modalBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   } as ViewStyle,
-  timePeriodTitle: {
-    fontSize: 10,
-    letterSpacing: 0.5,
-  } as TextStyle,
-  timePresetChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 11,
-    paddingVertical: 6,
-    borderRadius: 999,
+  modalSheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     borderWidth: 1,
-    minHeight: 30,
+    paddingTop: 10,
+    paddingHorizontal: Layout.screenPadding,
+    maxHeight: '85%',
   } as ViewStyle,
-  timePresetTxt: { fontSize: 12 } as TextStyle,
+  modalHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 12,
+  } as ViewStyle,
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: 12,
+  } as ViewStyle,
+  modalHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  } as ViewStyle,
+  modalHeaderIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  modalTitle: {
+    fontSize: 16,
+  } as TextStyle,
+  modalSub: {
+    fontSize: 11.5,
+    marginTop: 1,
+  } as TextStyle,
+  modalCloseBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+
+  modalCustomTimeBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 42,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    marginBottom: 12,
+    gap: 6,
+  } as ViewStyle,
+  modalCustomTimeLabel: {
+    fontSize: 12,
+  } as TextStyle,
+  modalCustomTimeInput: {
+    flex: 1,
+    fontSize: 14,
+    paddingVertical: 0,
+    paddingHorizontal: 4,
+  } as TextStyle,
+  modalCustomTimeApplyBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  modalCustomTimeApplyTxt: {
+    fontSize: 12,
+  } as TextStyle,
+
+  modalGroupBlock: {
+    marginBottom: 12,
+    gap: 6,
+  } as ViewStyle,
+  modalGroupTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 2,
+    marginTop: 4,
+  } as ViewStyle,
+  modalGroupTitle: {
+    fontSize: 10.5,
+    letterSpacing: 0.6,
+  } as TextStyle,
+
+  modalCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 11,
+    padding: 11,
+    borderRadius: 14,
+  } as ViewStyle,
+  modalCardIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  } as ViewStyle,
+  modalCardInfo: {
+    flex: 1,
+    minWidth: 0,
+  } as ViewStyle,
+  modalCardTitle: {
+    fontSize: 13.5,
+  } as TextStyle,
+  modalCardSub: {
+    fontSize: 11,
+    marginTop: 2,
+  } as TextStyle,
+  modalCheckCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  } as ViewStyle,
 
   sideBySideRow: {
     flexDirection: 'row',
