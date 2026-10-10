@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
-  RefreshControl, Alert, type ViewStyle, type TextStyle,
+  RefreshControl, Alert, Animated, Modal, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
@@ -75,6 +75,7 @@ type TypeFilter = 'all' | 'internship' | 'tuition' | 'on_campus' | 'part_time' |
 
 export function JobsBrowseScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
   const { user, profile } = useAuth();
   const t = useT();
   const toast = useToast();
@@ -93,6 +94,40 @@ export function JobsBrowseScreen({ navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
+
+  // Dropdown bottom sheet modals
+  const [typeModalVisible, setTypeModalVisible] = useState(false);
+  const [deptModalVisible, setDeptModalVisible] = useState(false);
+
+  // Animated sliding tab indicator for Main Tabs (Browse | Saved | Applications)
+  const [mainTrackWidth, setMainTrackWidth] = useState(0);
+  const mainAnimIndex = useRef(new Animated.Value(0)).current;
+  const mainIndexMap: Record<MainTab, number> = useMemo(() => ({ browse: 0, saved: 1, my_applications: 2 }), []);
+
+  useEffect(() => {
+    const idx = mainIndexMap[mainTab] ?? 0;
+    Animated.spring(mainAnimIndex, {
+      toValue: idx,
+      tension: 68,
+      friction: 10,
+      useNativeDriver: true,
+    }).start();
+  }, [mainTab, mainAnimIndex, mainIndexMap]);
+
+  // Animated sliding indicator for Status Tabs (Open | Closing Soon | Expired)
+  const [statusTrackWidth, setStatusTrackWidth] = useState(0);
+  const statusAnimIndex = useRef(new Animated.Value(0)).current;
+  const statusIndexMap: Record<StatusFilter, number> = useMemo(() => ({ open: 0, closing: 1, expired: 2 }), []);
+
+  useEffect(() => {
+    const idx = statusIndexMap[statusFilter] ?? 0;
+    Animated.spring(statusAnimIndex, {
+      toValue: idx,
+      tension: 68,
+      friction: 10,
+      useNativeDriver: true,
+    }).start();
+  }, [statusFilter, statusAnimIndex, statusIndexMap]);
 
   const load = useCallback(async () => {
     const [jobsRes, appsRes] = await Promise.all([
@@ -228,6 +263,34 @@ export function JobsBrowseScreen({ navigation }: any) {
     { id: 'freelance',  label: 'Freelance' },
   ];
 
+  const currentTypeLabel = useMemo(() => {
+    const found = TYPE_OPTIONS.find(o => o.id === typeFilter);
+    return found ? found.label : 'All Types';
+  }, [typeFilter]);
+
+  const currentDeptLabel = useMemo(() => {
+    if (deptFilter === 'ALL') return 'All Departments';
+    const found = JOB_DEPARTMENTS.find(d => d.code === deptFilter);
+    return found ? found.label : deptFilter;
+  }, [deptFilter]);
+
+  // Main track interpolation
+  const TRACK_PADDING = 3;
+  const innerMainTrackWidth = Math.max(0, mainTrackWidth - TRACK_PADDING * 2);
+  const mainTabWidth = innerMainTrackWidth > 0 ? innerMainTrackWidth / 3 : 0;
+  const mainTranslateX = mainAnimIndex.interpolate({
+    inputRange: [0, 1, 2],
+    outputRange: [0, mainTabWidth, mainTabWidth * 2],
+  });
+
+  // Status track interpolation
+  const innerStatusTrackWidth = Math.max(0, statusTrackWidth - TRACK_PADDING * 2);
+  const statusTabWidth = innerStatusTrackWidth > 0 ? innerStatusTrackWidth / 3 : 0;
+  const statusTranslateX = statusAnimIndex.interpolate({
+    inputRange: [0, 1, 2],
+    outputRange: [0, statusTabWidth, statusTabWidth * 2],
+  });
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar
@@ -259,44 +322,153 @@ export function JobsBrowseScreen({ navigation }: any) {
         }
       />
 
-      {/* Top Segmented Navigation: Browse | Saved | My Applications */}
-      <View style={[styles.segContainer, { backgroundColor: C.surface, borderColor: C.border }]}>
-        <TouchableOpacity
-          style={[styles.segTab, mainTab === 'browse' && { backgroundColor: C.brand }]}
-          onPress={() => setMainTab('browse')}
-          activeOpacity={0.75}
+      {/* 1. Animated Main Tab Switcher (Browse | Saved | Applications) */}
+      <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 6 }}>
+        <View
+          style={[styles.tabTrack, { backgroundColor: C.surface2 }]}
+          onLayout={e => setMainTrackWidth(e.nativeEvent.layout.width)}
         >
-          <Text style={[styles.segTabTxt, { color: mainTab === 'browse' ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-            Browse
-          </Text>
-        </TouchableOpacity>
+          {mainTabWidth > 0 && (
+            <Animated.View
+              style={[
+                styles.tabIndicator,
+                {
+                  width: mainTabWidth,
+                  backgroundColor: C.surface,
+                  borderColor: isDark ? `${JOB_COLOR}55` : `${JOB_COLOR}35`,
+                  transform: [{ translateX: mainTranslateX }],
+                },
+              ]}
+            />
+          )}
 
-        <TouchableOpacity
-          style={[styles.segTab, mainTab === 'saved' && { backgroundColor: C.brand }]}
-          onPress={() => setMainTab('saved')}
-          activeOpacity={0.75}
-        >
-          <Text style={[styles.segTabTxt, { color: mainTab === 'saved' ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-            Saved ({savedIds.size})
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.segTab, mainTab === 'my_applications' && { backgroundColor: C.brand }]}
-          onPress={() => setMainTab('my_applications')}
-          activeOpacity={0.75}
-        >
-          <Text style={[styles.segTabTxt, { color: mainTab === 'my_applications' ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-            My Applications ({applications.length})
-          </Text>
-        </TouchableOpacity>
+          {[
+            { id: 'browse' as MainTab, label: 'Browse', count: deptFiltered.length },
+            { id: 'saved' as MainTab, label: 'Saved', count: savedIds.size },
+            { id: 'my_applications' as MainTab, label: 'Applications', count: applications.length },
+          ].map(tb => {
+            const active = mainTab === tb.id;
+            return (
+              <TouchableOpacity
+                key={tb.id}
+                style={styles.tabBtn}
+                onPress={() => setMainTab(tb.id)}
+                activeOpacity={0.75}
+              >
+                <Text
+                  style={[
+                    styles.tabBtnTxt,
+                    {
+                      color: active ? JOB_COLOR : C.textMuted,
+                      fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                    },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {tb.label}
+                </Text>
+                {tb.count > 0 && (
+                  <View
+                    style={[
+                      styles.tabBadge,
+                      {
+                        backgroundColor: active
+                          ? `${JOB_COLOR}22`
+                          : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.border),
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.tabBadgeTxt,
+                        {
+                          color: active ? JOB_COLOR : C.textMuted,
+                          fontFamily: FontFamily.jakartaBold,
+                        },
+                      ]}
+                    >
+                      {tb.count}
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </View>
 
-      {/* Search Bar (Visible on Browse & Saved) */}
+      {/* 2. Animated Status Switcher (Open | Closing Soon | Expired) */}
+      {mainTab === 'browse' && (
+        <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 8 }}>
+          <View
+            style={[styles.statusTrack, { backgroundColor: C.surface2 }]}
+            onLayout={e => setStatusTrackWidth(e.nativeEvent.layout.width)}
+          >
+            {statusTabWidth > 0 && (
+              <Animated.View
+                style={[
+                  styles.tabIndicator,
+                  {
+                    width: statusTabWidth,
+                    backgroundColor: C.surface,
+                    borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : C.border,
+                    transform: [{ translateX: statusTranslateX }],
+                  },
+                ]}
+              />
+            )}
+
+            {[
+              { id: 'open' as StatusFilter, label: 'Open', count: browseCounts.open, fg: Accent.teal },
+              { id: 'closing' as StatusFilter, label: 'Closing Soon', count: browseCounts.closing, fg: C.warn },
+              { id: 'expired' as StatusFilter, label: 'Expired', count: browseCounts.expired, fg: Accent.slate },
+            ].map(st => {
+              const active = statusFilter === st.id;
+              return (
+                <TouchableOpacity
+                  key={st.id}
+                  style={styles.tabBtn}
+                  onPress={() => setStatusFilter(st.id)}
+                  activeOpacity={0.75}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                    <View style={[styles.statusDotSmall, { backgroundColor: st.fg }]} />
+                    <Text
+                      style={[
+                        styles.statusBtnTxt,
+                        {
+                          color: active ? C.text : C.textMuted,
+                          fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                        },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {st.label}
+                    </Text>
+                  </View>
+                  <Text
+                    style={[
+                      styles.statusCountTxt,
+                      {
+                        color: active ? st.fg : C.textMuted,
+                        fontFamily: FontFamily.jakartaBold,
+                      },
+                    ]}
+                  >
+                    ({st.count})
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+      )}
+
+      {/* 3. Search Bar (Browse & Saved) */}
       {mainTab !== 'my_applications' && (
-        <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 6 }}>
-          <View style={[styles.searchBar, { backgroundColor: C.surface2 }]}>
-            <Icon name="search" size={17} color={C.textMuted} />
+        <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 8 }}>
+          <View style={[styles.searchBar, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <Icon name="search" size={16} color={C.textMuted} />
             <TextInput
               style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
               placeholder={t.jobs.searchPlaceholder}
@@ -313,121 +485,85 @@ export function JobsBrowseScreen({ navigation }: any) {
         </View>
       )}
 
-      {/* Status Filter Chips (For Browse Mode) */}
-      {mainTab === 'browse' && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={{ flexGrow: 0 }}
-          contentContainerStyle={[styles.tabs, { paddingHorizontal: Layout.screenPadding }]}
-        >
-          {[
-            { id: 'open' as StatusFilter, label: t.jobs.open, count: browseCounts.open },
-            { id: 'closing' as StatusFilter, label: t.jobs.closingSoon, count: browseCounts.closing },
-            { id: 'expired' as StatusFilter, label: t.jobs.expired, count: browseCounts.expired },
-          ].map(tb => {
-            const on = statusFilter === tb.id;
-            return (
-              <TouchableOpacity
-                key={tb.id}
-                style={[
-                  styles.chip,
-                  on
-                    ? { backgroundColor: C.brand, borderColor: C.brand }
-                    : { backgroundColor: C.surface, borderColor: C.border },
-                ]}
-                onPress={() => setStatusFilter(tb.id)}
-                activeOpacity={0.75}
-              >
-                <Text style={[styles.chipTxt, { color: on ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                  {tb.label}
-                </Text>
-                <Text
-                  style={[
-                    styles.chipCount,
-                    { color: on ? 'rgba(255,255,255,0.7)' : C.textMuted, fontFamily: FontFamily.jakartaBold },
-                  ]}
-                >
-                  {tb.count}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      )}
-
-      {/* Job Type Sub-filter Row (Browse & Saved) */}
+      {/* 4. Dropdowns Row: Job Type & Department (Replacing Horizontal Scrolling Pills) */}
       {mainTab !== 'my_applications' && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={{ flexGrow: 0 }}
-          contentContainerStyle={[styles.subFilterRow, { paddingHorizontal: Layout.screenPadding }]}
-        >
-          {TYPE_OPTIONS.map(opt => {
-            const on = typeFilter === opt.id;
-            return (
-              <TouchableOpacity
-                key={opt.id}
-                style={[
-                  styles.typePill,
-                  on
-                    ? { backgroundColor: isDark ? 'rgba(14, 156, 138, 0.25)' : '#e0f4f0', borderColor: JOB_COLOR }
-                    : { backgroundColor: C.surface2, borderColor: 'transparent' },
-                ]}
-                onPress={() => setTypeFilter(opt.id)}
-                activeOpacity={0.75}
-              >
-                <Text
-                  style={[
-                    styles.typePillTxt,
-                    { color: on ? JOB_COLOR : C.textMuted, fontFamily: FontFamily.jakartaBold },
-                  ]}
-                >
-                  {opt.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      )}
+        <View style={[styles.dualBarRow, { paddingHorizontal: Layout.screenPadding, paddingTop: 8, paddingBottom: 4 }]}>
+          {/* Job Type Dropdown Button */}
+          <TouchableOpacity
+            style={[
+              styles.dualBarBtn,
+              typeFilter !== 'all'
+                ? {
+                    backgroundColor: isDark ? 'rgba(14, 156, 138, 0.18)' : '#e0f4f0',
+                    borderColor: SectorColors.jobs,
+                  }
+                : { backgroundColor: C.surface, borderColor: C.border },
+            ]}
+            onPress={() => setTypeModalVisible(true)}
+            activeOpacity={0.75}
+          >
+            <Feather
+              name="briefcase"
+              size={13}
+              color={typeFilter !== 'all' ? SectorColors.jobs : C.textMuted}
+            />
+            <Text
+              style={[
+                styles.dualBarTxt,
+                {
+                  color: typeFilter !== 'all' ? SectorColors.jobs : C.text,
+                  fontFamily: FontFamily.jakartaBold,
+                },
+              ]}
+              numberOfLines={1}
+            >
+              {currentTypeLabel}
+            </Text>
+            <Feather
+              name="chevron-down"
+              size={13}
+              color={typeFilter !== 'all' ? SectorColors.jobs : C.textMuted}
+            />
+          </TouchableOpacity>
 
-      {/* Department Sub-filter Row (Browse & Saved) */}
-      {mainTab !== 'my_applications' && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={{ flexGrow: 0 }}
-          contentContainerStyle={[styles.subFilterRow, { paddingHorizontal: Layout.screenPadding, paddingTop: 0, paddingBottom: 8 }]}
-        >
-          {JOB_DEPARTMENTS.map(dept => {
-            const on = deptFilter === dept.code;
-            const isUserDept = profile?.department && dept.label.toLowerCase().includes(profile.department.toLowerCase());
-            return (
-              <TouchableOpacity
-                key={dept.code}
-                style={[
-                  styles.deptPill,
-                  on
-                    ? { backgroundColor: C.brand, borderColor: C.brand }
-                    : { backgroundColor: C.surface, borderColor: C.border },
-                ]}
-                onPress={() => setDeptFilter(dept.code)}
-                activeOpacity={0.75}
-              >
-                <Text
-                  style={[
-                    styles.deptPillTxt,
-                    { color: on ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold },
-                  ]}
-                >
-                  {dept.code === 'ALL' ? 'All Depts' : dept.label}
-                  {isUserDept && !on ? ' •' : ''}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+          {/* Department Dropdown Button */}
+          <TouchableOpacity
+            style={[
+              styles.dualBarBtn,
+              deptFilter !== 'ALL'
+                ? {
+                    backgroundColor: isDark ? 'rgba(14, 156, 138, 0.18)' : '#e0f4f0',
+                    borderColor: SectorColors.jobs,
+                  }
+                : { backgroundColor: C.surface, borderColor: C.border },
+            ]}
+            onPress={() => setDeptModalVisible(true)}
+            activeOpacity={0.75}
+          >
+            <Feather
+              name="book-open"
+              size={13}
+              color={deptFilter !== 'ALL' ? SectorColors.jobs : C.textMuted}
+            />
+            <Text
+              style={[
+                styles.dualBarTxt,
+                {
+                  color: deptFilter !== 'ALL' ? SectorColors.jobs : C.text,
+                  fontFamily: FontFamily.jakartaBold,
+                },
+              ]}
+              numberOfLines={1}
+            >
+              {currentDeptLabel}
+            </Text>
+            <Feather
+              name="chevron-down"
+              size={13}
+              color={deptFilter !== 'ALL' ? SectorColors.jobs : C.textMuted}
+            />
+          </TouchableOpacity>
+        </View>
       )}
 
       {/* Main Content Scroll View */}
@@ -641,6 +777,202 @@ export function JobsBrowseScreen({ navigation }: any) {
         )}
         <View style={{ height: 24 }} />
       </ScrollView>
+
+      {/* Modal 1: Filter by Job Type (Bottom Sheet Dropdown) */}
+      <Modal
+        visible={typeModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setTypeModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setTypeModalVisible(false)}
+          />
+          <View
+            style={[
+              styles.modalSheet,
+              {
+                backgroundColor: C.surface,
+                borderColor: C.border,
+                paddingBottom: Math.max(insets.bottom, 20),
+              },
+            ]}
+          >
+            <View style={styles.sheetHandle} />
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+                Filter by Job Type
+              </Text>
+              <TouchableOpacity
+                onPress={() => setTypeModalVisible(false)}
+                style={[styles.modalCloseBtn, { backgroundColor: C.surface2 }]}
+              >
+                <Feather name="x" size={16} color={C.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 420 }}>
+              {TYPE_OPTIONS.map(opt => {
+                const selected = typeFilter === opt.id;
+                const count = opt.id === 'all'
+                  ? deptFiltered.length
+                  : deptFiltered.filter(j => j.job_type === opt.id).length;
+                return (
+                  <TouchableOpacity
+                    key={opt.id}
+                    style={[
+                      styles.modalOptionItem,
+                      { borderColor: C.border },
+                      selected && {
+                        backgroundColor: isDark ? 'rgba(14, 156, 138, 0.15)' : '#e0f4f0',
+                        borderColor: SectorColors.jobs,
+                      },
+                    ]}
+                    onPress={() => {
+                      setTypeFilter(opt.id);
+                      setTypeModalVisible(false);
+                    }}
+                    activeOpacity={0.75}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text
+                        style={[
+                          styles.modalOptionTxt,
+                          {
+                            color: selected ? SectorColors.jobs : C.text,
+                            fontFamily: selected ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                          },
+                        ]}
+                      >
+                        {opt.label}
+                      </Text>
+                    </View>
+                    <Text
+                      style={[
+                        styles.modalOptionCount,
+                        {
+                          color: selected ? SectorColors.jobs : C.textMuted,
+                          fontFamily: FontFamily.jakartaBold,
+                        },
+                      ]}
+                    >
+                      {count}
+                    </Text>
+                    {selected && <Feather name="check" size={16} color={SectorColors.jobs} style={{ marginLeft: 6 }} />}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal 2: Target Department (Bottom Sheet Dropdown) */}
+      <Modal
+        visible={deptModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setDeptModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setDeptModalVisible(false)}
+          />
+          <View
+            style={[
+              styles.modalSheet,
+              {
+                backgroundColor: C.surface,
+                borderColor: C.border,
+                paddingBottom: Math.max(insets.bottom, 20),
+              },
+            ]}
+          >
+            <View style={styles.sheetHandle} />
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+                Target Department
+              </Text>
+              <TouchableOpacity
+                onPress={() => setDeptModalVisible(false)}
+                style={[styles.modalCloseBtn, { backgroundColor: C.surface2 }]}
+              >
+                <Feather name="x" size={16} color={C.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 420 }}>
+              {JOB_DEPARTMENTS.map(dept => {
+                const selected = deptFilter === dept.code;
+                const isUserDept = profile?.department && dept.label.toLowerCase().includes(profile.department.toLowerCase());
+                const count = dept.code === 'ALL'
+                  ? typeFiltered.length
+                  : typeFiltered.filter(
+                      j => j.department_code === dept.code || j.department_code === 'ALL' || !j.department_code
+                    ).length;
+                return (
+                  <TouchableOpacity
+                    key={dept.code}
+                    style={[
+                      styles.modalOptionItem,
+                      { borderColor: C.border },
+                      selected && {
+                        backgroundColor: isDark ? 'rgba(14, 156, 138, 0.15)' : '#e0f4f0',
+                        borderColor: SectorColors.jobs,
+                      },
+                    ]}
+                    onPress={() => {
+                      setDeptFilter(dept.code);
+                      setDeptModalVisible(false);
+                    }}
+                    activeOpacity={0.75}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Text
+                          style={[
+                            styles.modalOptionTxt,
+                            {
+                              color: selected ? SectorColors.jobs : C.text,
+                              fontFamily: selected ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                            },
+                          ]}
+                        >
+                          {dept.code === 'ALL' ? 'All Departments' : dept.label}
+                        </Text>
+                        {isUserDept && (
+                          <View style={[styles.myDeptBadge, { backgroundColor: isDark ? 'rgba(14, 156, 138, 0.25)' : '#e0f4f0' }]}>
+                            <Text style={[styles.myDeptBadgeTxt, { color: SectorColors.jobs, fontFamily: FontFamily.jakartaBold }]}>
+                              Your Dept
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                    <Text
+                      style={[
+                        styles.modalOptionCount,
+                        {
+                          color: selected ? SectorColors.jobs : C.textMuted,
+                          fontFamily: FontFamily.jakartaBold,
+                        },
+                      ]}
+                    >
+                      {count}
+                    </Text>
+                    {selected && <Feather name="check" size={16} color={SectorColors.jobs} style={{ marginLeft: 6 }} />}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -648,37 +980,176 @@ export function JobsBrowseScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
 
-  segContainer: {
+  // Animated Tab Track (Browse | Saved | Applications)
+  tabTrack: {
+    height: 44,
+    borderRadius: 14,
     flexDirection: 'row',
-    marginHorizontal: Layout.screenPadding,
-    marginTop: 8,
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 3,
-    gap: 4,
-  } as ViewStyle,
-  segTab: {
-    flex: 1,
     alignItems: 'center',
-    paddingVertical: 8,
-    borderRadius: 9,
+    padding: 3,
+    position: 'relative',
   } as ViewStyle,
-  segTabTxt: {
+  tabIndicator: {
+    position: 'absolute',
+    top: 3,
+    bottom: 3,
+    left: 3,
+    borderRadius: 11,
+    borderWidth: 1,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1.5 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+  } as ViewStyle,
+  tabBtn: {
+    flex: 1,
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 6,
+    zIndex: 1,
+  } as ViewStyle,
+  tabBtnTxt: {
     fontSize: 12.5,
   } as any,
+  tabBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 10,
+    minWidth: 18,
+    alignItems: 'center',
+  } as ViewStyle,
+  tabBadgeTxt: {
+    fontSize: 10.5,
+  } as any,
 
-  tabs: { flexDirection: 'row', gap: 8, paddingTop: 10, paddingBottom: 6 } as ViewStyle,
-  subFilterRow: { flexDirection: 'row', gap: 6, paddingTop: 6, paddingBottom: 6 } as ViewStyle,
-  searchBar: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 14, borderRadius: 14 } as ViewStyle,
-  searchInput: { flex: 1, fontSize: 15, paddingVertical: 11 } as TextStyle,
-  chip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 13, paddingVertical: 7, borderRadius: 20, borderWidth: 1 } as ViewStyle,
-  chipTxt: { fontSize: 12.5 } as any,
-  chipCount: { fontSize: 12 } as any,
-  typePill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, borderWidth: 1 } as ViewStyle,
-  typePillTxt: { fontSize: 11.5 } as any,
-  deptPill: { paddingHorizontal: 11, paddingVertical: 5, borderRadius: 14, borderWidth: 1 } as ViewStyle,
-  deptPillTxt: { fontSize: 11.5 } as any,
-  scroll: { paddingTop: 4, paddingBottom: 24 } as ViewStyle,
+  // Animated Status Track (Open | Closing Soon | Expired)
+  statusTrack: {
+    height: 38,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 3,
+    position: 'relative',
+  } as ViewStyle,
+  statusDotSmall: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  } as ViewStyle,
+  statusBtnTxt: {
+    fontSize: 12,
+  } as any,
+  statusCountTxt: {
+    fontSize: 11,
+  } as any,
+
+  // Search Bar
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+    paddingHorizontal: 14,
+    height: 44,
+    borderRadius: 13,
+    borderWidth: 1,
+  } as ViewStyle,
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    paddingVertical: 8,
+  } as TextStyle,
+
+  // Dual Dropdown Buttons Row
+  dualBarRow: {
+    flexDirection: 'row',
+    gap: 9,
+  } as ViewStyle,
+  dualBarBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    height: 38,
+    borderRadius: 11,
+    borderWidth: 1,
+    gap: 6,
+  } as ViewStyle,
+  dualBarTxt: {
+    flex: 1,
+    fontSize: 12,
+  } as any,
+
+  // Dropdown Modal Sheets
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+  } as ViewStyle,
+  modalBackdrop: {
+    flex: 1,
+  } as ViewStyle,
+  modalSheet: {
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    borderTopWidth: 1,
+    paddingHorizontal: 18,
+    paddingTop: 12,
+  } as ViewStyle,
+  sheetHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(128, 128, 128, 0.4)',
+    alignSelf: 'center',
+    marginBottom: 12,
+  } as ViewStyle,
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  } as ViewStyle,
+  modalTitle: {
+    fontSize: 16,
+    letterSpacing: -0.2,
+  } as any,
+  modalCloseBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  modalOptionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    borderRadius: 13,
+    borderWidth: 1,
+    marginBottom: 8,
+  } as ViewStyle,
+  modalOptionTxt: {
+    fontSize: 13.5,
+  } as any,
+  modalOptionCount: {
+    fontSize: 12,
+  } as any,
+  myDeptBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  } as ViewStyle,
+  myDeptBadgeTxt: {
+    fontSize: 10,
+  } as any,
+
+  // List & Cards
+  scroll: { paddingTop: 6, paddingBottom: 28 } as ViewStyle,
   list: { gap: 10 } as ViewStyle,
   card: { flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 16, borderWidth: 1 } as ViewStyle,
   cardMain: { flexDirection: 'row', alignItems: 'center', gap: 13, flex: 1, minWidth: 0 } as ViewStyle,
