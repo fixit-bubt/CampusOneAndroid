@@ -8,8 +8,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
+import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { FontFamily, Layout, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 
@@ -40,8 +42,17 @@ export function ClubsScreen({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadErr, setLoadErr] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
 
   const load = useCallback(async () => {
+    // 1. Instant cache load
+    const cached = await getCache<Club[]>(CacheKeys.CLUBS);
+    if (cached && cached.length > 0) {
+      setClubs(cached);
+      setLoading(false);
+    }
+
+    // 2. Fetch fresh
     const [clubsRes, countsRes] = await Promise.all([
       supabase
         .from('clubs')
@@ -53,8 +64,19 @@ export function ClubsScreen({ navigation }: any) {
       // member rows of clubs the current user has joined).
       supabase.rpc('club_member_counts'),
     ]);
-    if (clubsRes.error) { setLoadErr(true); setLoading(false); return; }
+
+    if (clubsRes.error) {
+      if (cached && cached.length > 0) {
+        setIsOffline(true);
+      } else {
+        setLoadErr(true);
+      }
+      setLoading(false);
+      return;
+    }
+
     setLoadErr(false);
+    setIsOffline(false);
     const countMap: Record<string, number> = {};
     (countsRes.data ?? []).forEach((r: any) => { countMap[r.club_id] = Number(r.members); });
     if (clubsRes.data) {
@@ -64,6 +86,7 @@ export function ClubsScreen({ navigation }: any) {
         user_role: c.club_members?.find((m: any) => m.user_id === user?.id)?.role ?? null,
       }));
       setClubs(mapped as Club[]);
+      setCache(CacheKeys.CLUBS, mapped as Club[]);
     }
     setLoading(false);
   }, [user?.id]);
@@ -84,6 +107,7 @@ export function ClubsScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
+        <OfflineBanner visible={isOffline} onRetry={load} />
         {loading && clubs.length === 0 ? (
           <ActivityIndicator style={{ marginTop: 40 }} color={C.brand} />
         ) : loadErr && clubs.length === 0 ? (

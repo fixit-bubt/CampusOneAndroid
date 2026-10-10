@@ -553,5 +553,29 @@ Whenever the user instructs to "update memorys", the agent MUST synchronously up
 - **Non-Collapsing Filter Chips:** All horizontal filter chips (`groupChip`, `areaChip`) use `flexShrink: 0` and explicit padding. This prevents Android Yoga flexbox from collapsing chips into ellipses (`...`) or dashes (`-`).
 - **Interactive Available Donors Grid:** On the Donors tab, the 8-cell `Available Donors` summary card doubles as the blood group filter. Tapping any blood type highlights it and filters the roster, eliminating redundant horizontal chip rows.
 - **Blood Group Immutability & Permanent Lock:** In `DonorRegisterScreen.tsx`, once a student registers their blood group, the blood type is locked as a verified badge (`O+ Verified · Permanent`). Registered donors can only update their Area and WhatsApp contact number, preventing accidental or dangerous blood type alteration.
+
 - **Automatic 90/120-Day Cooldown Display:** Eligibility is derived automatically from `last_donated` (`Eligible` green badge vs `Eligible in Xd` countdown). Donors do not need to manually edit anything to become eligible. When eligible, a 1-tap `I donated today` action resets the recovery clock and arms the recharged reminder.
 
+---
+
+## 21. Full-App Offline Caching & Stale-While-Revalidate (SWR) Architecture
+
+### 21.1 Offline Engine Core (`src/services/cacheService.ts`)
+- **Dual-Layer Architecture:** Fast in-memory RAM cache backed by persistent `@react-native-async-storage/async-storage` (v2.2.0). Zero external npm dependencies added.
+- **Cache Contract:** `getCache<T>(key, maxAgeMs?)` returns stale data instantly while background queries fetch the latest network records. `setCache<T>(key, data)` writes synchronously to memory and asynchronously to disk.
+- **Eviction & Safety:** JSON parsing failures or disk errors fail silently to `null` without crashing the render tree.
+
+### 21.2 Cold-Start & Auth Gate Unlocking
+- **Profile Offline Persistence:** In `authStore.ts`, profiles are cached under `@c1_profile_${userId}` on every successful fetch. On cold boots without internet, the app reads the cached profile, avoiding the `profileError` screen lock in `RootNavigator.tsx`.
+- **People Roster Persistence:** In `peopleService.ts`, the directory profiles roster is cached to `@c1_people_roster`. Display names across rides, listings, reports, and blood requests resolve instantly instead of showing blank initials when offline.
+
+### 21.3 Offline UI Feedback (`OfflineBanner.tsx`)
+- Non-intrusive status strip rendered across feeds when data is served from local cache during network outages.
+- Clear, polite indication that cached information is displayed and will automatically refresh when internet connection resumes.
+
+### 21.4 Feature-Level SWR & Offline Protection
+- **Academic & Reference:** Bus schedules, prayer times, class routines, academic calendar, faculty roster, and medical center directory load instantly from cache and work in signal-dead zones (such as campus basements and transit buses).
+- **Feeds & Communities:** Announcements, campus events, active clubs, student jobs, and home status strips load from cache instantly.
+- **Peer-to-Peer Services:** Market listings, ride shares, lost and found items, and blood donor requests display cached feeds. Action mutations (contact reveal RPCs, seat booking, claim posting, pledges) are safely guarded with warning toasts when offline.
+- **Messaging & Notifications:** Message history, DM channels, read states, and notifications are cached locally, allowing students to review past conversations without internet.
+- **Web & AI Guards:** BUBT Annex portal shows a dedicated offline fallback card with a retry button instead of a broken webview. AI Chatbot displays cached conversation history and graceful offline notifications.

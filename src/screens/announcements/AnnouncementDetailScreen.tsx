@@ -9,6 +9,7 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout, Accent, pillBg } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { getCache, CacheKeys } from '../../services/cacheService';
 import { openUrl } from '../../utils/link';
 import { useT } from '../../i18n';
 import { useAuth } from '../../store/authStore';
@@ -37,26 +38,38 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
   const { user } = useAuth();
   const t = useT();
   // Hooks must run unconditionally - no early return before them.
-  const { announcementId } = route.params ?? {};
-  const id = announcementId;
+  const { announcementId, id: paramId } = route.params ?? {};
+  const id = announcementId || paramId;
   const [item, setItem] = useState<Announcement | null>(null);
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
     if (!id) { setNotFound(true); return; }
     (async () => {
+      // Check cache first
+      const cached = await getCache<Announcement[]>(CacheKeys.ANNOUNCEMENTS);
+      const found = cached?.find(a => a.id === id);
+      if (found) setItem(found);
+
       const { data, error } = await supabase
         .from('announcements')
         .select('*')
         .eq('id', id)
         .maybeSingle();
-      if (error || !data) { if (error) console.error('announcement detail fetch:', error.message); setNotFound(true); return; }
+      if (error || !data) {
+        if (!found) {
+          if (error) console.error('announcement detail fetch:', error.message);
+          setNotFound(true);
+        }
+        return;
+      }
       setItem(data as Announcement);
       // Opening counts as read.
       if (user) {
-        await supabase
+        supabase
           .from('announcement_reads')
-          .upsert({ announcement_id: id, user_id: user.id }, { onConflict: 'announcement_id,user_id' });
+          .upsert({ announcement_id: id, user_id: user.id }, { onConflict: 'announcement_id,user_id' })
+          .then(() => {}, () => {});
       }
     })();
   }, [id, user?.id]);

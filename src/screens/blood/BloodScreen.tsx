@@ -12,6 +12,7 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { SkeletonList, LoadError } from '../../components/ui/LoadState';
+import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { FontFamily, Layout, SectorColors, Accent } from '../../theme';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
@@ -23,6 +24,7 @@ import {
   getBloodFeed, pledgeToRequest, markDonatedToday as markDonated,
   getDonorContact, getRequesterContact, type DonorWithName,
 } from '../../services/bloodService';
+import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 import { ContactSheet } from '../../components/ui/ContactSheet';
 import { AreaPickerModal } from '../../components/blood/AreaPickerModal';
 import type { BloodRequest, Donor } from '../../types/database';
@@ -72,6 +74,7 @@ export function BloodScreen({ navigation }: any) {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [loadState, setLoadState] = useState<'loading' | 'error' | 'ready'>('loading');
   const [contactTarget, setContactTarget] = useState<{ name: string; phone: string; title?: string } | null>(null);
+  const [isOffline, setIsOffline] = useState(false);
 
   const areaCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -89,29 +92,66 @@ export function BloodScreen({ navigation }: any) {
   }, [tab, requests, donors]);
 
   const load = useCallback(async () => {
-    const [res, savedGender] = await Promise.all([
-      getBloodFeed(user?.id),
-      user?.id ? AsyncStorage.getItem(`@donor_gender_${user.id}`) : Promise.resolve(null),
-    ]);
-    const gender = (savedGender === 'female' || savedGender === 'male') ? savedGender : 'male';
-    if (savedGender === 'female' || savedGender === 'male') {
-      setMyGender(savedGender);
+    // 1. Optimistic cache load
+    const cacheKey = CacheKeys.BLOOD_FEED(user?.id ?? 'anon');
+    const cached = await getCache<{
+      requests: BloodRequest[];
+      donors: DonorWithName[];
+      respondedIds: string[];
+      myDonor: Donor | null;
+      myDonationCount: number;
+    }>(cacheKey);
+    if (cached) {
+      setRequests(cached.requests);
+      setDonors(cached.donors);
+      setRespondedIds(new Set(cached.respondedIds));
+      setMyDonor(cached.myDonor);
+      setMyDonationCount(cached.myDonationCount);
+      setLoadState('ready');
     }
-    if (!res.ok) { setLoadState('error'); return; }
-    setRequests(res.data.requests);
-    setDonors(res.data.donors);
-    setRespondedIds(res.data.respondedIds);
-    setMyDonor(res.data.myDonor ?? null);
-    setMyDonationCount(res.data.myDonationCount ?? 0);
-    setLoadState('ready');
 
-    if (res.data.myDonor?.last_donated) {
-      scheduleRechargedReminder(
-        res.data.myDonor.last_donated,
-        gender,
-        t.blood2.rechargedNotificationTitle,
-        t.blood2.rechargedNotificationBody,
-      );
+    // 2. Network sync
+    try {
+      const [res, savedGender] = await Promise.all([
+        getBloodFeed(user?.id),
+        user?.id ? AsyncStorage.getItem(`@donor_gender_${user.id}`) : Promise.resolve(null),
+      ]);
+      const gender = (savedGender === 'female' || savedGender === 'male') ? savedGender : 'male';
+      if (savedGender === 'female' || savedGender === 'male') {
+        setMyGender(savedGender);
+      }
+      if (!res.ok) {
+        if (!cached) setLoadState('error');
+        setIsOffline(true);
+        return;
+      }
+      setIsOffline(false);
+      setRequests(res.data.requests);
+      setDonors(res.data.donors);
+      setRespondedIds(res.data.respondedIds);
+      setMyDonor(res.data.myDonor ?? null);
+      setMyDonationCount(res.data.myDonationCount ?? 0);
+      setLoadState('ready');
+
+      setCache(cacheKey, {
+        requests: res.data.requests,
+        donors: res.data.donors,
+        respondedIds: Array.from(res.data.respondedIds),
+        myDonor: res.data.myDonor ?? null,
+        myDonationCount: res.data.myDonationCount ?? 0,
+      });
+
+      if (res.data.myDonor?.last_donated) {
+        scheduleRechargedReminder(
+          res.data.myDonor.last_donated,
+          gender,
+          t.blood2.rechargedNotificationTitle,
+          t.blood2.rechargedNotificationBody,
+        );
+      }
+    } catch {
+      if (!cached) setLoadState('error');
+      setIsOffline(true);
     }
   }, [user?.id, t.blood2.rechargedNotificationTitle, t.blood2.rechargedNotificationBody]);
 
@@ -125,6 +165,10 @@ export function BloodScreen({ navigation }: any) {
 
   async function revealContact(donorUserId: string, donorName?: string | null) {
     if (!user || busyId) return;
+    if (isOffline) {
+      toast({ type: 'info', title: 'Offline Mode', message: 'Internet connection required to view donor contacts.' });
+      return;
+    }
     setBusyId(donorUserId);
     try {
       const res = await getDonorContact(donorUserId);
@@ -149,6 +193,10 @@ export function BloodScreen({ navigation }: any) {
   // Pledged donors may see the requester's contact (consent-by-posting)
   async function revealRequester(r: BloodRequest) {
     if (!user || busyId) return;
+    if (isOffline) {
+      toast({ type: 'info', title: 'Offline Mode', message: 'Internet connection required to view requester contacts.' });
+      return;
+    }
     setBusyId(r.id);
     try {
       const res = await getRequesterContact(r.code);
@@ -172,6 +220,10 @@ export function BloodScreen({ navigation }: any) {
 
   // Donor stamps their own last-donation date; resets the recovery clock.
   function markDonatedToday() {
+    if (isOffline) {
+      toast({ type: 'info', title: 'Offline Mode', message: 'Internet connection required to update donation date.' });
+      return;
+    }
     Alert.alert(t.blood2.markDonatedTitle, t.blood2.markDonatedBody, [
       { text: t.common.cancel, style: 'cancel' },
       {
@@ -196,6 +248,10 @@ export function BloodScreen({ navigation }: any) {
   function handleHelpPress(r: BloodRequest) {
     if (!user) {
       toast({ type: 'info', title: t.blood2.signInRequired, message: t.blood2.signInToRespond });
+      return;
+    }
+    if (isOffline) {
+      toast({ type: 'info', title: 'Offline Mode', message: 'Internet connection required to pledge blood donation.' });
       return;
     }
     if (respondedIds.has(r.id)) {
@@ -269,6 +325,10 @@ export function BloodScreen({ navigation }: any) {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar title={t.blood2.bloodDonation} onBack={() => navigation.goBack()} />
+      <OfflineBanner
+        visible={isOffline}
+        message="Showing cached blood requests and donor directory. Connect to internet to respond or reveal contacts."
+      />
 
       {/* Prominent Emergency Request Blood Bar */}
       <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 6, paddingBottom: 2 }}>

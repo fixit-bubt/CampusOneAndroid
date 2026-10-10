@@ -7,6 +7,7 @@
 // directory_profiles() is a SECURITY DEFINER view of just the display fields;
 // route every cross-user name through here instead of touching profiles.
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
 
 export interface Person {
@@ -18,6 +19,7 @@ export interface Person {
 }
 
 const TTL_MS = 5 * 60 * 1000;
+const STORAGE_KEY = '@c1_people_roster';
 
 let cache: Record<string, Person> | null = null;
 let cachedAt = 0;
@@ -29,12 +31,23 @@ export function clearPeople(): void {
   cache = null;
   cachedAt = 0;
   inflight = null;
+  AsyncStorage.removeItem(STORAGE_KEY).catch(() => {});
 }
 
 // The whole roster, keyed by id. Concurrent callers share one request.
 export async function loadPeople(force = false): Promise<Record<string, Person>> {
   if (!force && cache && Date.now() - cachedAt < TTL_MS) return cache;
   if (!force && inflight) return inflight;
+
+  // On cold start, load cached roster if available
+  if (!cache) {
+    try {
+      const raw = await AsyncStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        cache = JSON.parse(raw);
+      }
+    } catch {}
+  }
 
   inflight = (async () => {
     const { data, error } = await supabase.rpc('directory_profiles');
@@ -51,11 +64,14 @@ export async function loadPeople(force = false): Promise<Record<string, Person>>
     }
     cache = map;
     cachedAt = Date.now();
+    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(map)).catch(() => {});
     return map;
   })();
 
   try {
     return await inflight;
+  } catch {
+    return cache ?? {};
   } finally {
     inflight = null;
   }

@@ -9,8 +9,10 @@ import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
+import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { FontFamily, Layout , Accent, LightColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 
@@ -52,8 +54,17 @@ export function MarketScreen({ navigation }: any) {
   const [listings, setListings] = useState<Listing[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isOffline, setIsOffline] = useState(false);
 
   const load = useCallback(async () => {
+    // 1. Instant cache load
+    const cached = await getCache<Listing[]>(CacheKeys.MARKET_LISTINGS);
+    if (cached && cached.length > 0) {
+      setListings(cached);
+      setLoading(false);
+    }
+
+    // 2. Fetch fresh
     const { data, error } = await supabase
       .from('listings')
       .select('*')
@@ -62,7 +73,18 @@ export function MarketScreen({ navigation }: any) {
       .order('status', { ascending: true })
       .order('created_at', { ascending: false })
       .limit(60);
-    if (!error && data) setListings(data as Listing[]);
+
+    if (error || !data) {
+      if (cached && cached.length > 0) {
+        setIsOffline(true);
+      }
+      setLoading(false);
+      return;
+    }
+
+    setIsOffline(false);
+    setListings(data as Listing[]);
+    setCache(CacheKeys.MARKET_LISTINGS, data as Listing[]);
     setLoading(false);
   }, []);
 
@@ -206,6 +228,7 @@ export function MarketScreen({ navigation }: any) {
         keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
+        <OfflineBanner visible={isOffline} onRetry={load} />
         {loading && listings.length === 0 ? (
           <ActivityIndicator style={{ marginTop: 60 }} color={C.brand} />
         ) : list.length === 0 ? (

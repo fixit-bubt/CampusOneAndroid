@@ -16,6 +16,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { FontFamily, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { localToday, formatDate } from '../../utils/format';
+import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 
 export type CommunityTab = 'All' | 'Notices' | 'Clubs' | 'Events';
 
@@ -135,6 +136,13 @@ export function HomeCommunityUpdates() {
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async () => {
+    // 1. Instant cache load
+    const cached = await getCache<CommunityItem[]>(CacheKeys.HOME_UPDATES);
+    if (cached && cached.length > 0) {
+      setItems(cached);
+      setLoading(false);
+    }
+
     try {
       const today = localToday();
       const [annRes, evRes, clubPostsRes] = await Promise.all([
@@ -240,11 +248,14 @@ export function HomeCommunityUpdates() {
         }
         list.sort((a, b) => (b.rawDate || '').localeCompare(a.rawDate || ''));
         setItems(list);
-      } else {
+        setCache(CacheKeys.HOME_UPDATES, list);
+      } else if (!cached || cached.length === 0) {
         setItems(DEFAULT_NEWS);
       }
     } catch {
-      setItems(DEFAULT_NEWS);
+      if (!cached || cached.length === 0) {
+        setItems(DEFAULT_NEWS);
+      }
     } finally {
       setLoading(false);
     }

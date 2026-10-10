@@ -10,6 +10,7 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout, SectorColors, darken } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { getCache, CacheKeys } from '../../services/cacheService';
 import type { BusRoute } from '../../types/database';
 
 export function BusDetailScreen({ route, navigation }: any) {
@@ -22,8 +23,16 @@ export function BusDetailScreen({ route, navigation }: any) {
   useEffect(() => {
     if (!id) { setFailed(true); return; }
     (async () => {
+      // Check cache first
+      const cached = await getCache<BusRoute[]>(CacheKeys.BUS_ROUTES);
+      const found = cached?.find(r => r.id === id);
+      if (found) setBusRoute(found);
+
       const { data, error } = await supabase.from('bus_routes').select('*').eq('id', id).maybeSingle();
-      if (error || !data) { setFailed(true); return; }
+      if (error || !data) {
+        if (!found) setFailed(true);
+        return;
+      }
       setBusRoute(data as BusRoute);
     })();
   }, [id]);

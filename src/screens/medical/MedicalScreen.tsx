@@ -8,8 +8,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
+import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { FontFamily, Layout , SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 import { useT } from '../../i18n';
 
 const MED_COLOR = SectorColors.medical;
@@ -50,10 +52,27 @@ export function MedicalScreen({ navigation }: any) {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isOffline, setIsOffline] = useState(false);
 
   const load = useCallback(async () => {
+    const cached = await getCache<Doctor[]>(CacheKeys.DOCTORS);
+    if (cached && cached.length > 0) {
+      setDoctors(cached);
+      setLoading(false);
+    }
+
     const { data, error } = await supabase.from('doctors').select('*').eq('active', true).order('name').limit(100);
-    if (!error && data) setDoctors(data as Doctor[]);
+    if (error || !data) {
+      if (cached && cached.length > 0) {
+        setIsOffline(true);
+      }
+      setLoading(false);
+      return;
+    }
+
+    setIsOffline(false);
+    setDoctors(data as Doctor[]);
+    setCache(CacheKeys.DOCTORS, data as Doctor[]);
     setLoading(false);
   }, []);
 
@@ -76,6 +95,7 @@ export function MedicalScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
+        <OfflineBanner visible={isOffline} onRetry={load} />
         {loading && doctors.length === 0 ? (
           <ActivityIndicator style={{ marginTop: 40 }} color={C.brand} />
         ) : doctors.length === 0 ? (

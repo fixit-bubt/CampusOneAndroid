@@ -13,8 +13,10 @@ import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { SkeletonList, LoadError } from '../../components/ui/LoadState';
+import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 import type { BusRoute } from '../../types/database';
 
 const BUS_COLOR = SectorColors.bus;
@@ -56,17 +58,47 @@ export function BusScreen({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
   const [form, setForm] = useState<RouteForm | null>(null);
 
   const load = useCallback(async () => {
+    // 1. Instant cache load
+    const cachedRoutes = await getCache<BusRoute[]>(CacheKeys.BUS_ROUTES);
+    if (cachedRoutes && cachedRoutes.length > 0) {
+      setRoutes(cachedRoutes);
+      setLoading(false);
+    }
+    if (user?.id) {
+      const cachedSaved = await getCache<string[]>(CacheKeys.SAVED_BUS_ROUTES(user.id));
+      if (cachedSaved) setSavedIds(new Set(cachedSaved));
+    }
+
+    // 2. Fetch fresh
     const [routesRes, savedRes] = await Promise.all([
       supabase.from('bus_routes').select('*').eq('active', true).order('name').limit(50),
       supabase.from('saved_bus_routes').select('route_id').eq('user_id', user?.id ?? '').limit(50),
     ]);
-    if (routesRes.error) { setLoadFailed(true); setLoading(false); return; }
+
+    if (routesRes.error) {
+      if (!cachedRoutes || cachedRoutes.length === 0) {
+        setLoadFailed(true);
+      } else {
+        setIsOffline(true);
+      }
+      setLoading(false);
+      return;
+    }
+
     setLoadFailed(false);
+    setIsOffline(false);
     setRoutes(routesRes.data as BusRoute[]);
-    if (savedRes.data) setSavedIds(new Set(savedRes.data.map((r: any) => r.route_id)));
+    setCache(CacheKeys.BUS_ROUTES, routesRes.data as BusRoute[]);
+
+    if (savedRes.data) {
+      const ids = savedRes.data.map((r: any) => r.route_id);
+      setSavedIds(new Set(ids));
+      if (user?.id) setCache(CacheKeys.SAVED_BUS_ROUTES(user.id), ids);
+    }
     setLoading(false);
   }, [user?.id]);
 
@@ -161,6 +193,7 @@ export function BusScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
+        <OfflineBanner visible={isOffline} onRetry={load} />
         {loading ? (
           <SkeletonList />
         ) : loadFailed ? (

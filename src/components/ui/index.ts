@@ -6,3 +6,4 @@ export { Avatar } from './Avatar';
 export { SectorIcon } from './SectorIcon';
 export { Icon } from './Icon';
 export { CollapsibleSection } from './CollapsibleSection';
+export { OfflineBanner } from './OfflineBanner';

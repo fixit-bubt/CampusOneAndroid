@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView, type WebViewNavigation } from 'react-native-webview';
+import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { Icon } from '../../components/ui/Icon';
 import { LoadError } from '../../components/ui/LoadState';
@@ -95,7 +96,26 @@ export function AnnexPortalScreen() {
       )}
 
       {error ? (
-        <LoadError onRetry={retry} />
+        <View style={styles.offlineWrap}>
+          <View style={[styles.offlineIconBox, { backgroundColor: C.surface2 }]}>
+            <Feather name="wifi-off" size={30} color={C.textMuted} />
+          </View>
+          <Text style={[styles.offlineTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+            Portal Unavailable Offline
+          </Text>
+          <Text style={[styles.offlineSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+            An active internet connection is required to load BUBT Annex portal. Connect to Wi-Fi or mobile data and try again.
+          </Text>
+          <TouchableOpacity
+            style={[styles.retryBtn, { backgroundColor: C.brand }]}
+            onPress={retry}
+            activeOpacity={0.85}
+          >
+            <Text style={[styles.retryTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+              Retry Connection
+            </Text>
+          </TouchableOpacity>
+        </View>
       ) : (
         <View style={{ flex: 1 }}>
           <WebView
@@ -160,4 +180,40 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
+  offlineWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 28,
+  } as ViewStyle,
+  offlineIconBox: {
+    width: 60,
+    height: 60,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  } as ViewStyle,
+  offlineTitle: {
+    fontSize: 18,
+    letterSpacing: -0.2,
+    marginBottom: 8,
+    textAlign: 'center',
+  } as any,
+  offlineSub: {
+    fontSize: 13,
+    lineHeight: 19,
+    textAlign: 'center',
+    marginBottom: 20,
+  } as any,
+  retryBtn: {
+    height: 44,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  retryTxt: {
+    fontSize: 14,
+  } as any,
 });

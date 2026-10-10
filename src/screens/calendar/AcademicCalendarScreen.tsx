@@ -11,7 +11,9 @@ import { useT } from '../../i18n';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { Pill } from '../../components/ui/Pill';
+import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { supabase } from '../../lib/supabase';
+import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 import { openUrl } from '../../utils/link';
 import { FontFamily, FontSize, Layout, Radius, Spacing, SectorColors, Accent } from '../../theme';
 
@@ -68,6 +70,7 @@ export function AcademicCalendarScreen({ navigation }: any) {
   const month = yearMonth[1];
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editEvent, setEditEvent] = useState<CalendarEvent | null>(null);
 
@@ -80,14 +83,30 @@ export function AcademicCalendarScreen({ navigation }: any) {
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
+    const calKey = `${CacheKeys.ACADEMIC_CALENDAR}_${year}_${month}`;
+    const cached = await getCache<CalendarEvent[]>(calKey);
+    if (cached && cached.length > 0) {
+      setEvents(cached);
+    }
+
     const monthStart = `${year}-${String(month + 1).padStart(2, '0')}-01`;
     const monthEnd = `${year}-${String(month + 1).padStart(2, '0')}-${getDaysInMonth(year, month)}`;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('academic_calendar')
       .select('*')
       .or(`and(event_date.gte.${monthStart},event_date.lte.${monthEnd}),and(end_date.gte.${monthStart},event_date.lt.${monthStart})`)
       .order('event_date', { ascending: true });
-    setEvents((data as CalendarEvent[]) ?? []);
+
+    if (error || !data) {
+      if (cached && cached.length > 0) {
+        setIsOffline(true);
+      }
+      return;
+    }
+
+    setIsOffline(false);
+    setEvents(data as CalendarEvent[]);
+    setCache(calKey, data as CalendarEvent[]);
   }, [year, month]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -229,6 +248,9 @@ export function AcademicCalendarScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
+        <View style={{ paddingHorizontal: Layout.screenPadding }}>
+          <OfflineBanner visible={isOffline} onRetry={load} />
+        </View>
         {/* Month picker */}
         <View style={[styles.monthRow, { paddingHorizontal: Layout.screenPadding }]}>
           <TouchableOpacity onPress={prevMonth} hitSlop={12}>

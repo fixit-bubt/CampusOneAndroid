@@ -9,6 +9,7 @@ import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
+import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
@@ -16,6 +17,7 @@ import { FontFamily, Layout , SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { fetchPeople } from '../../services/peopleService';
 import { useAuth } from '../../store/authStore';
+import { getCache, CacheKeys } from '../../services/cacheService';
 import { ContactSheet } from '../../components/ui/ContactSheet';
 
 const RIDE_COLOR = SectorColors.ride;
@@ -36,61 +38,96 @@ export function RideDetailScreen({ route, navigation }: any) {
   const [takenCount, setTakenCount] = useState(0);
   const [requesters, setRequesters] = useState<{ requester_id: string; full_name: string; whatsapp?: string | null }[]>([]);
   const [contactTarget, setContactTarget] = useState<{ name: string; phone: string } | null>(null);
+  const [isOffline, setIsOffline] = useState(false);
 
   const load = useCallback(async () => {
     if (!rideId) { setLoadFailed(true); return; }
-    const [rideRes, reqRes, takenRes, countRes] = await Promise.all([
-      supabase
-        .from('rides')
-        .select('*')
-        .eq('id', rideId)
-        .maybeSingle(),
-      supabase
-        .from('ride_requests')
-        .select('ride_id')
-        .eq('ride_id', rideId)
-        .eq('requester_id', user?.id ?? '')
-        .maybeSingle(),
-      // RLS only returns the driver's own ride rows here; used for requester names.
-      supabase
-        .from('ride_requests')
-        .select('requester_id')
-        .eq('ride_id', rideId),
-      // Authoritative seat count (row SELECT is restricted, so count via RPC).
-      supabase.rpc('ride_request_counts'),
-    ]);
-    if (rideRes.error) { toast({ type: 'error', title: t.common.error }); setLoadFailed(true); return; }
-    if (!rideRes.data) { setLoadFailed(true); return; }
-    setRide(rideRes.data);
-    // Driver/requester names via the roster RPC - profiles RLS returns only the
-    // caller's own row, so an embed here resolves to null for everyone else.
-    const people = await fetchPeople([
-      rideRes.data.driver_id,
-      ...((takenRes.data as any[]) ?? []).map(r => r.requester_id),
-    ]);
-    setDriverName(people[rideRes.data.driver_id]?.full_name ?? null);
-    if (rideRes.data.driver_id === user?.id && takenRes.data) {
-      setRequesters((takenRes.data as any[]).map(r => ({
-        requester_id: r.requester_id,
-        full_name: people[r.requester_id]?.full_name ?? t.rides2.unknown,
-      })));
+
+    const cachedRides = await getCache<any[]>(CacheKeys.RIDES);
+    const cached = cachedRides?.find(r => r.id === rideId);
+    if (cached) {
+      setRide(cached);
+      setDriverName(cached.driver_name ?? null);
     }
-    if (reqRes.data) {
-      setRequested(true);
-      const { data: c } = await supabase.rpc('ride_contact', {
-        p_code:   rideRes.data.code,
-        p_target: rideRes.data.driver_id,
-      });
-      const row = Array.isArray(c) ? c[0] : c;
-      if (row) setContact(row);
+
+    try {
+      const [rideRes, reqRes, takenRes, countRes] = await Promise.all([
+        supabase
+          .from('rides')
+          .select('*')
+          .eq('id', rideId)
+          .maybeSingle(),
+        supabase
+          .from('ride_requests')
+          .select('ride_id')
+          .eq('ride_id', rideId)
+          .eq('requester_id', user?.id ?? '')
+          .maybeSingle(),
+        supabase
+          .from('ride_requests')
+          .select('requester_id')
+          .eq('ride_id', rideId),
+        supabase.rpc('ride_request_counts'),
+      ]);
+
+      if (rideRes.error || !rideRes.data) {
+        if (cached) {
+          setIsOffline(true);
+          const cachedCounts = await getCache<Record<string, number>>(CacheKeys.RIDES_TAKEN);
+          if (cachedCounts && cachedCounts[rideId] !== undefined) {
+            setTakenCount(cachedCounts[rideId]);
+          }
+          const cachedReq = user?.id ? await getCache<string[]>(CacheKeys.RIDES_REQUESTED(user.id)) : null;
+          if (cachedReq && cachedReq.includes(rideId)) {
+            setRequested(true);
+          }
+          return;
+        }
+        toast({ type: 'error', title: t.common.error });
+        setLoadFailed(true);
+        return;
+      }
+
+      setIsOffline(false);
+      setRide(rideRes.data);
+      const people = await fetchPeople([
+        rideRes.data.driver_id,
+        ...((takenRes.data as any[]) ?? []).map(r => r.requester_id),
+      ]);
+      setDriverName(people[rideRes.data.driver_id]?.full_name ?? null);
+      if (rideRes.data.driver_id === user?.id && takenRes.data) {
+        setRequesters((takenRes.data as any[]).map(r => ({
+          requester_id: r.requester_id,
+          full_name: people[r.requester_id]?.full_name ?? t.rides2.unknown,
+        })));
+      }
+      if (reqRes.data) {
+        setRequested(true);
+        const { data: c } = await supabase.rpc('ride_contact', {
+          p_code:   rideRes.data.code,
+          p_target: rideRes.data.driver_id,
+        });
+        const row = Array.isArray(c) ? c[0] : c;
+        if (row) setContact(row);
+      }
+      const cnt = (countRes.data ?? []).find((c: any) => c.ride_id === rideId);
+      setTakenCount(cnt ? Number(cnt.taken) : 0);
+    } catch {
+      if (cached) {
+        setIsOffline(true);
+      } else {
+        setLoadFailed(true);
+      }
     }
-    const cnt = (countRes.data ?? []).find((c: any) => c.ride_id === rideId);
-    setTakenCount(cnt ? Number(cnt.taken) : 0);
   }, [rideId, user?.id, toast, t]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   async function revealRequester(requesterId: string) {
+    if (isOffline) {
+      toast({ type: 'info', title: 'Offline Mode', message: 'Internet connection required to view requester contacts.' });
+      return;
+    }
     const { data } = await supabase.rpc('ride_contact', {
       p_code:   ride.code,
       p_target: requesterId,
@@ -106,6 +143,10 @@ export function RideDetailScreen({ route, navigation }: any) {
   }
 
   function deleteOwnRide() {
+    if (isOffline) {
+      toast({ type: 'info', title: 'Offline Mode', message: 'Internet connection required to delete ride.' });
+      return;
+    }
     Alert.alert('Delete this ride?', 'Your seat requests will be discarded.', [
       { text: 'Cancel', style: 'cancel' },
       {
@@ -121,6 +162,10 @@ export function RideDetailScreen({ route, navigation }: any) {
 
   async function requestRide() {
     if (!user || requested || !ride) return;
+    if (isOffline) {
+      toast({ type: 'info', title: 'Offline Mode', message: 'Internet connection required to request a ride.' });
+      return;
+    }
     const { error } = await supabase
       .from('ride_requests')
       .insert({ ride_id: rideId, requester_id: user.id });
@@ -146,6 +191,10 @@ export function RideDetailScreen({ route, navigation }: any) {
   }
 
   function adminDelete() {
+    if (isOffline) {
+      toast({ type: 'info', title: 'Offline Mode', message: 'Internet connection required to delete ride.' });
+      return;
+    }
     Alert.alert('Delete ride', 'Remove this ride post permanently?', [
       { text: 'Cancel', style: 'cancel' },
       {
@@ -180,6 +229,10 @@ export function RideDetailScreen({ route, navigation }: any) {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar title={t.rides2.rideDetailTitle} onBack={() => navigation.goBack()} />
+      <OfflineBanner
+        visible={isOffline}
+        message="Showing cached ride details. Connect to the internet to request seats or view contacts."
+      />
       <ScrollView
         contentContainerStyle={[styles.content, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}

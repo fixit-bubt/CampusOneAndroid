@@ -9,9 +9,11 @@ import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { SkeletonList, LoadError } from '../../components/ui/LoadState';
+import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { FontFamily, Layout, SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
+import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 import type { LostFoundItem } from '../../types/database';
 import { useT } from '../../i18n';
 
@@ -80,17 +82,39 @@ export function LostFoundBrowseScreen({ navigation }: any) {
   const [filter, setFilter] = useState<Filter>('all');
   const [refreshing, setRefreshing] = useState(false);
   const [loadState, setLoadState] = useState<'loading' | 'error' | 'ready'>('loading');
+  const [isOffline, setIsOffline] = useState(false);
 
   const load = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('lost_found_items')
-      .select('*')
-      .is('deleted_at', null)
-      .order('created_at', { ascending: false })
-      .limit(50);
-    if (error) { setLoadState('error'); return; }
-    if (data) setItems(data as LostFoundItem[]);
-    setLoadState('ready');
+    // 1. Optimistic cache load
+    const cached = await getCache<LostFoundItem[]>(CacheKeys.LOST_FOUND);
+    if (cached && cached.length > 0) {
+      setItems(cached);
+      setLoadState('ready');
+    }
+
+    // 2. Network sync
+    try {
+      const { data, error } = await supabase
+        .from('lost_found_items')
+        .select('*')
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (error) {
+        if (!cached || cached.length === 0) setLoadState('error');
+        setIsOffline(true);
+        return;
+      }
+      setIsOffline(false);
+      if (data) {
+        setItems(data as LostFoundItem[]);
+        setCache(CacheKeys.LOST_FOUND, data);
+      }
+      setLoadState('ready');
+    } catch {
+      if (!cached || cached.length === 0) setLoadState('error');
+      setIsOffline(true);
+    }
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -134,6 +158,11 @@ export function LostFoundBrowseScreen({ navigation }: any) {
             </TouchableOpacity>
           ) : undefined
         }
+      />
+
+      <OfflineBanner
+        visible={isOffline}
+        message="Showing cached lost & found items. Connect to the internet to post items or submit claims."
       />
 
       {/* Filter chips */}

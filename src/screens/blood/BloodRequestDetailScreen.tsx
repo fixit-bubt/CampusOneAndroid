@@ -12,7 +12,10 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { LoadError } from '../../components/ui/LoadState';
+import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { FontFamily, Layout, SectorColors } from '../../theme';
+import { useAuth } from '../../store/authStore';
+import { getCache, CacheKeys } from '../../services/cacheService';
 import { donorEligibility } from '../../utils/blood';
 import {
   getRequest, getResponders, confirmDonation, markRequestFulfilled, type Pledge,
@@ -24,6 +27,7 @@ export function BloodRequestDetailScreen({ route, navigation }: any) {
   const { C } = useTheme();
   const t = useT();
   const toast = useToast();
+  const { user } = useAuth();
   const { requestId } = route.params ?? {};
 
   const [req, setReq] = useState<any>(null);
@@ -32,19 +36,48 @@ export function BloodRequestDetailScreen({ route, navigation }: any) {
   const [loadFailed, setLoadFailed] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [isOffline, setIsOffline] = useState(false);
 
   const load = useCallback(async () => {
     if (!requestId) { setLoadFailed(true); setLoading(false); return; }
-    const [reqRes, plRes] = await Promise.all([
-      getRequest(requestId),
-      getResponders(requestId),
-    ]);
-    if (!reqRes.ok || !reqRes.data) { setLoadFailed(true); setLoading(false); return; }
-    setLoadFailed(false);
-    setReq(reqRes.data);
-    if (plRes.ok) setPledges(plRes.data);
-    setLoading(false);
-  }, [requestId]);
+
+    const cacheKey = CacheKeys.BLOOD_FEED(user?.id ?? 'anon');
+    const cachedFeed = await getCache<{ requests: any[] }>(cacheKey);
+    const cached = cachedFeed?.requests?.find(r => r.id === requestId);
+    if (cached) {
+      setReq(cached);
+      setLoading(false);
+    }
+
+    try {
+      const [reqRes, plRes] = await Promise.all([
+        getRequest(requestId),
+        getResponders(requestId),
+      ]);
+      if (!reqRes.ok || !reqRes.data) {
+        if (cached) {
+          setIsOffline(true);
+          setLoading(false);
+          return;
+        }
+        setLoadFailed(true);
+        setLoading(false);
+        return;
+      }
+      setIsOffline(false);
+      setLoadFailed(false);
+      setReq(reqRes.data);
+      if (plRes.ok) setPledges(plRes.data);
+      setLoading(false);
+    } catch {
+      if (cached) {
+        setIsOffline(true);
+      } else {
+        setLoadFailed(true);
+      }
+      setLoading(false);
+    }
+  }, [requestId, user?.id]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -55,6 +88,10 @@ export function BloodRequestDetailScreen({ route, navigation }: any) {
   }
 
   function confirmDonated(p: Pledge) {
+    if (isOffline) {
+      toast({ type: 'info', title: 'Offline Mode', message: 'Internet connection required to confirm donation.' });
+      return;
+    }
     Alert.alert(
       t.blood2.confirmDonatedTitle,
       t.blood2.confirmDonatedBody(p.full_name ?? t.blood2.anonymous),
@@ -79,6 +116,10 @@ export function BloodRequestDetailScreen({ route, navigation }: any) {
   }
 
   function markFulfilled() {
+    if (isOffline) {
+      toast({ type: 'info', title: 'Offline Mode', message: 'Internet connection required to mark request fulfilled.' });
+      return;
+    }
     Alert.alert(t.blood2.markFulfilledTitle, t.blood2.markFulfilledBody, [
       { text: t.common.cancel, style: 'cancel' },
       {
@@ -94,7 +135,7 @@ export function BloodRequestDetailScreen({ route, navigation }: any) {
     ]);
   }
 
-  if (loading) {
+  if (loading && !req) {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
         <SubBar title={t.blood2.responders} onBack={() => navigation.goBack()} />
@@ -103,7 +144,7 @@ export function BloodRequestDetailScreen({ route, navigation }: any) {
     );
   }
 
-  if (loadFailed) {
+  if (loadFailed && !req) {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
         <SubBar title={t.blood2.responders} onBack={() => navigation.goBack()} />
@@ -115,6 +156,10 @@ export function BloodRequestDetailScreen({ route, navigation }: any) {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar title={t.blood2.responders} onBack={() => navigation.goBack()} />
+      <OfflineBanner
+        visible={isOffline}
+        message="Showing cached blood request details. Connect to internet to confirm donation or mark fulfilled."
+      />
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}

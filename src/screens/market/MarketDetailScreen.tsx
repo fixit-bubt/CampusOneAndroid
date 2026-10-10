@@ -12,6 +12,7 @@ import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout , Accent, LightColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { getCache, CacheKeys } from '../../services/cacheService';
 import { personName } from '../../services/peopleService';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
@@ -32,7 +33,8 @@ export function MarketDetailScreen({ route, navigation }: any) {
   const t = useT();
   const toast = useToast();
   const isAdmin = profile?.role === 'admin';
-  const { listingId } = route.params ?? {};
+  const { listingId, id: paramId } = route.params ?? {};
+  const id = listingId || paramId;
   const [listing, setListing] = useState<any>(null);
   const [failed, setFailed] = useState(false);
   const [sellerName, setSellerName] = useState<string | null>(null);
@@ -41,17 +43,29 @@ export function MarketDetailScreen({ route, navigation }: any) {
   const [contactSheetOpen, setContactSheetOpen] = useState(false);
 
   const load = useCallback(async () => {
-    if (!listingId) { setFailed(true); return; }
+    if (!id) { setFailed(true); return; }
+
+    // Check cache first
+    const cached = await getCache<any[]>(CacheKeys.MARKET_LISTINGS);
+    const found = cached?.find(l => l.id === id);
+    if (found) {
+      setListing(found);
+      personName(found.seller_id).then(name => setSellerName(name));
+    }
+
     const { data: l, error } = await supabase
       .from('listings')
       .select('*')
-      .eq('id', listingId)
+      .eq('id', id)
       .single();
-    if (error || !l) { setFailed(true); return; }
+    if (error || !l) {
+      if (!found) setFailed(true);
+      return;
+    }
     setListing(l);
     // Seller name via the roster RPC - profiles RLS returns only my own row.
     setSellerName(await personName((l as any).seller_id));
-  }, [listingId]);
+  }, [id]);
 
   // Refresh on focus so returning from the edit screen (MarketPost) shows the
   // updated title/price/description/photo instead of stale pre-edit data.
@@ -60,7 +74,7 @@ export function MarketDetailScreen({ route, navigation }: any) {
   async function revealContact() {
     if (!listing) return;
     const { data: c, error } = await supabase.rpc('listing_contact', { p_code: listing.code });
-    if (error) { toast({ type: 'error', title: t.common.error }); return; }
+    if (error) { toast({ type: 'error', title: t.common.error, message: 'Connect to internet to reveal contact' }); return; }
     setRevealed(true);
     const row = Array.isArray(c) ? c[0] : c;
     if (row) {

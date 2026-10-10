@@ -9,9 +9,11 @@ import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
+import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { FontFamily, Layout, Accent, pillBg } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
+import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
 import { connectErrorKey } from '../../services/connectionsService';
@@ -38,20 +40,36 @@ export function DirectoryScreen({ navigation }: any) {
   const [query, setQuery] = useState('');
   const [students, setStudents] = useState<Student[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
 
   const load = useCallback(async () => {
     if (!user?.id) return;
-    // student_directory() already returns an authoritative per-row status; use it
-    // as the single source instead of re-deriving from a second connections query
-    // (the two could disagree and contradict StudentProfile).
-    const { data: profiles } = await supabase.rpc('student_directory');
-    const STATUS_MAP: Record<string, ConnState> = {
-      accepted: 'connected', pending_outgoing: 'requested', pending_incoming: 'incoming',
-    };
-    setStudents((profiles ?? []).map((p: any) => ({
-      ...p,
-      connState: STATUS_MAP[p.status as string] ?? 'none',
-    })));
+    const cacheKey = CacheKeys.DIRECTORY(user.id);
+
+    // 1. Optimistic cache load
+    const cached = await getCache<Student[]>(cacheKey);
+    if (cached && cached.length) setStudents(cached);
+
+    // 2. Network sync
+    try {
+      const { data: profiles, error } = await supabase.rpc('student_directory');
+      if (error) {
+        if (cached && cached.length) setIsOffline(true);
+        return;
+      }
+      setIsOffline(false);
+      const STATUS_MAP: Record<string, ConnState> = {
+        accepted: 'connected', pending_outgoing: 'requested', pending_incoming: 'incoming',
+      };
+      const rows = (profiles ?? []).map((p: any) => ({
+        ...p,
+        connState: STATUS_MAP[p.status as string] ?? 'none',
+      }));
+      setStudents(rows);
+      setCache(cacheKey, rows);
+    } catch {
+      if (cached && cached.length) setIsOffline(true);
+    }
   }, [user?.id]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -64,6 +82,10 @@ export function DirectoryScreen({ navigation }: any) {
 
   async function handleConn(studentId: string, action: 'connect' | 'accept' | 'decline') {
     if (!user) return;
+    if (isOffline) {
+      toast({ type: 'info', title: 'Offline Mode', message: 'Internet connection required to manage connection requests.' });
+      return;
+    }
     // Each mutation can be rejected by RLS / dedupe trigger; on error re-sync
     // from the DB instead of optimistically showing a false success state.
     if (action === 'connect') {
@@ -97,6 +119,10 @@ export function DirectoryScreen({ navigation }: any) {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar title={t.sectors.directory} onBack={() => navigation.goBack()} />
+      <OfflineBanner
+        visible={isOffline}
+        message="Showing cached student directory. Connect to internet to send or accept connection requests."
+      />
 
       <FlatList
         data={filtered}

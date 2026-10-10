@@ -6,6 +6,7 @@ import { Feather } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { getMyReports } from '../../services/reportsService';
+import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 import type { Report } from '../../types/database';
 import {
   nextDeparture,
@@ -43,6 +44,23 @@ export function HomeStatusStrips() {
   // Initial and refresh data fetch
   const loadData = useCallback(async () => {
     if (!user) return;
+
+    // 1. Instant cache load
+    const cached = await getCache<{
+      reports: Report[];
+      busRoutes: BusRouteData[];
+      savedBusRoutes: string[];
+      prayerList: PrayerItem[];
+      bloodStats: { urgent: number; total: number; donors: number };
+    }>(CacheKeys.HOME_STATUS(user.id));
+    if (cached) {
+      if (cached.reports) setReports(cached.reports);
+      if (cached.busRoutes) setBusRoutes(cached.busRoutes);
+      if (cached.savedBusRoutes) setSavedBusRoutes(cached.savedBusRoutes);
+      if (cached.prayerList) setPrayerList(cached.prayerList);
+      if (cached.bloodStats) setBloodStats(cached.bloodStats);
+    }
+
     try {
       const staleCutoff = new Date(Date.now() - 21 * 86400000).toISOString();
       const [repRes, busRes, savedBusRes, prayRes, bloodReqRes, donorsRes] = await Promise.all([
@@ -69,35 +87,43 @@ export function HomeStatusStrips() {
           .select('*', { count: 'exact', head: true }),
       ]);
 
-      if (repRes.ok) {
-        setReports(repRes.data);
-      }
-      if (busRes.data) {
-        setBusRoutes(
-          busRes.data.map((r: any) => ({
+      const nextReports = repRes.ok ? repRes.data : (cached?.reports ?? []);
+      const nextBusRoutes = busRes.data
+        ? busRes.data.map((r: any) => ({
             id: r.id,
             name: r.name,
             to_departures: r.to_departures ?? [],
           }))
-        );
-      }
-      if (savedBusRes.data) {
-        setSavedBusRoutes(savedBusRes.data.map((r: any) => r.route_id));
-      }
-      if (prayRes.data) {
-        setPrayerList(
-          prayRes.data.filter((p: any) => p.key !== 'jummah')
-        );
-      }
+        : (cached?.busRoutes ?? []);
+      const nextSavedBus = savedBusRes.data
+        ? savedBusRes.data.map((r: any) => r.route_id)
+        : (cached?.savedBusRoutes ?? []);
+      const nextPrayer = prayRes.data
+        ? prayRes.data.filter((p: any) => p.key !== 'jummah')
+        : (cached?.prayerList ?? []);
+
+      let nextBlood = cached?.bloodStats ?? { urgent: 0, total: 0, donors: 0 };
       if (bloodReqRes.data) {
         const reqs = bloodReqRes.data;
         const urgent = reqs.filter((r: any) => r.urgency === 'Urgent').length;
         const total = reqs.length;
         const donors = donorsRes.count ?? 0;
-        setBloodStats({ urgent, total, donors });
-      } else if (donorsRes.count !== null && donorsRes.count !== undefined) {
-        setBloodStats((prev) => ({ ...prev, donors: donorsRes.count ?? 0 }));
+        nextBlood = { urgent, total, donors };
       }
+
+      setReports(nextReports);
+      setBusRoutes(nextBusRoutes);
+      setSavedBusRoutes(nextSavedBus);
+      setPrayerList(nextPrayer);
+      setBloodStats(nextBlood);
+
+      setCache(CacheKeys.HOME_STATUS(user.id), {
+        reports: nextReports,
+        busRoutes: nextBusRoutes,
+        savedBusRoutes: nextSavedBus,
+        prayerList: nextPrayer,
+        bloodStats: nextBlood,
+      });
     } catch {
       // quiet fallback
     }

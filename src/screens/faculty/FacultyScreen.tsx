@@ -14,8 +14,10 @@ import { useT } from '../../i18n';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { useToast } from '../../components/ui/Toast';
+import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { FontFamily, Layout, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 import { useAuth } from '../../store/authStore';
 import {
   FACULTY_ACCENT, BRANCH_ICON, BRANCH_ORDER, shortDept, sortFaculty, interestsOf,
@@ -34,8 +36,22 @@ export function FacultyScreen({ navigation }: any) {
   const [faculty, setFaculty] = useState<FacultyMember[]>([]);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [refreshing, setRefreshing] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
 
   const load = useCallback(async () => {
+    // 1. Instant cache load
+    const [cachedDepts, cachedFac] = await Promise.all([
+      getCache<Department[]>(CacheKeys.FACULTY_DEPTS),
+      getCache<FacultyMember[]>(CacheKeys.FACULTY_LIST),
+    ]);
+    if (cachedDepts && cachedDepts.length > 0) setDepartments(cachedDepts);
+    if (cachedFac && cachedFac.length > 0) setFaculty(cachedFac);
+    if (user?.id) {
+      const cachedBookmarks = await getCache<string[]>(CacheKeys.FACULTY_BOOKMARKS(user.id));
+      if (cachedBookmarks) setSavedIds(new Set(cachedBookmarks));
+    }
+
+    // 2. Fetch fresh
     const [deptRes, facRes, savedRes] = await Promise.all([
       supabase.from('departments').select('id, name, branch, chairman').limit(50),
       supabase.from('faculty')
@@ -44,9 +60,28 @@ export function FacultyScreen({ navigation }: any) {
         .limit(1000),
       supabase.from('faculty_bookmarks').select('faculty_id').eq('user_id', user?.id ?? '').limit(1000),
     ]);
-    if (deptRes.data) setDepartments(deptRes.data as Department[]);
-    if (facRes.data) setFaculty(facRes.data as FacultyMember[]);
-    if (savedRes.data) setSavedIds(new Set(savedRes.data.map((s: any) => s.faculty_id)));
+
+    if (deptRes.error || facRes.error) {
+      if ((cachedDepts && cachedDepts.length > 0) || (cachedFac && cachedFac.length > 0)) {
+        setIsOffline(true);
+      }
+      return;
+    }
+
+    setIsOffline(false);
+    if (deptRes.data) {
+      setDepartments(deptRes.data as Department[]);
+      setCache(CacheKeys.FACULTY_DEPTS, deptRes.data as Department[]);
+    }
+    if (facRes.data) {
+      setFaculty(facRes.data as FacultyMember[]);
+      setCache(CacheKeys.FACULTY_LIST, facRes.data as FacultyMember[]);
+    }
+    if (savedRes.data) {
+      const ids = savedRes.data.map((s: any) => s.faculty_id);
+      setSavedIds(new Set(ids));
+      if (user?.id) setCache(CacheKeys.FACULTY_BOOKMARKS(user.id), ids);
+    }
   }, [user?.id]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -162,6 +197,7 @@ export function FacultyScreen({ navigation }: any) {
         keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
+        <OfflineBanner visible={isOffline} onRetry={load} />
         <Text style={[styles.subtitle, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
           {t.faculty2.directorySubtitle(faculty.length, departments.length)}
         </Text>

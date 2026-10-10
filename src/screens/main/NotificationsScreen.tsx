@@ -11,8 +11,10 @@ import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { SectorIcon } from '../../components/ui/SectorIcon';
 import { Icon } from '../../components/ui/Icon';
+import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { FontFamily, Layout } from '../../theme';
 import { SectorColors, type SectorKey } from '../../theme';
+import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 import {
   getMyNotifications, markAllRead, markRead,
   type Notification,
@@ -120,22 +122,37 @@ export function NotificationsScreen({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
   const [handled, setHandled]   = useState<Record<string, 'accepted' | 'declined'>>({});
   const [connStates, setConnStates] = useState<Record<string, 'pending' | 'accepted' | 'gone'>>({});
+  const [isOffline, setIsOffline] = useState(false);
 
   const load = useCallback(async () => {
-    const res = await getMyNotifications(50);
-    if (!res.ok) return;
-    setNotifs(res.data);
-    // Resolve the live state of each connection-request notification so the
-    // inline buttons reflect reality after a remount instead of re-offering a
-    // request that was already accepted/declined.
-    const reqIds = Array.from(new Set(
-      res.data
-        .filter(n => n.reference_type === 'connection_request' && n.reference_id)
-        .map(n => n.reference_id as string),
-    ));
-    const st = await getConnectionStates(reqIds);
-    if (st.ok) setConnStates(st.data);
-  }, []);
+    const cacheKey = CacheKeys.NOTIFICATIONS(user?.id ?? 'anon');
+
+    // 1. Optimistic cache load
+    const cached = await getCache<Notification[]>(cacheKey);
+    if (cached && cached.length) setNotifs(cached);
+
+    // 2. Network sync
+    try {
+      const res = await getMyNotifications(50);
+      if (!res.ok) {
+        if (cached && cached.length) setIsOffline(true);
+        return;
+      }
+      setIsOffline(false);
+      setNotifs(res.data);
+      if (user?.id) setCache(cacheKey, res.data);
+
+      const reqIds = Array.from(new Set(
+        res.data
+          .filter(n => n.reference_type === 'connection_request' && n.reference_id)
+          .map(n => n.reference_id as string),
+      ));
+      const st = await getConnectionStates(reqIds);
+      if (st.ok) setConnStates(st.data);
+    } catch {
+      if (cached && cached.length) setIsOffline(true);
+    }
+  }, [user?.id]);
 
   // Reload every time the screen regains focus so new notifications appear
   // without a manual pull-to-refresh.
@@ -149,13 +166,17 @@ export function NotificationsScreen({ navigation }: any) {
 
   async function handleMarkAll() {
     if (!user?.id) return;
+    if (isOffline) {
+      toast({ type: 'info', title: 'Offline Mode', message: 'Internet connection required to mark notifications as read.' });
+      return;
+    }
     const res = await markAllRead(user.id);
     if (!res.ok) { toast({ type: 'error', title: t.common.error, message: res.error }); return; }
     setNotifs(n => n.map(x => ({ ...x, read: true })));
   }
 
   async function handleOpen(n: Notification) {
-    if (!n.read) {
+    if (!n.read && !isOffline) {
       const res = await markRead(n.id);
       if (res.ok) setNotifs(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x));
     }
@@ -166,6 +187,10 @@ export function NotificationsScreen({ navigation }: any) {
   // the requester's user id). Accept unlocks DMs; decline removes the request.
   async function respond(n: Notification, accept: boolean) {
     if (!n.reference_id) return;
+    if (isOffline) {
+      toast({ type: 'info', title: 'Offline Mode', message: 'Internet connection required to respond to connection request.' });
+      return;
+    }
     const res = await respondConnection(n.reference_id, accept);
     if (!res.ok) { toast({ type: 'error', title: t.common.error, message: res.error }); return; }
     setHandled(prev => ({ ...prev, [n.id]: accept ? 'accepted' : 'declined' }));
@@ -223,6 +248,11 @@ export function NotificationsScreen({ navigation }: any) {
             </TouchableOpacity>
           </View>
         }
+      />
+
+      <OfflineBanner
+        visible={isOffline}
+        message="Showing cached notifications."
       />
 
       {/* Filter chips */}

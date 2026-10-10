@@ -13,7 +13,9 @@ import { useT } from '../../i18n';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { Pill } from '../../components/ui/Pill';
+import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { supabase } from '../../lib/supabase';
+import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 import { uploadFile } from '../../utils/storage';
 import { formatRelativeTime } from '../../utils/format';
 import { openUrl } from '../../utils/link';
@@ -45,6 +47,7 @@ export function RoutinesBrowseScreen({ navigation }: any) {
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [search, setSearch] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
 
   // Form
@@ -58,11 +61,28 @@ export function RoutinesBrowseScreen({ navigation }: any) {
   const [posting, setPosting] = useState(false);
 
   const load = useCallback(async () => {
-    const { data } = await supabase
+    // 1. Instant cache load
+    const cached = await getCache<Routine[]>(CacheKeys.ROUTINES);
+    if (cached && cached.length > 0) {
+      setRoutines(cached);
+    }
+
+    // 2. Fetch fresh
+    const { data, error } = await supabase
       .from('routines')
       .select('*')
       .order('created_at', { ascending: false });
-    setRoutines((data as Routine[]) ?? []);
+
+    if (error || !data) {
+      if (cached && cached.length > 0) {
+        setIsOffline(true);
+      }
+      return;
+    }
+
+    setIsOffline(false);
+    setRoutines(data as Routine[]);
+    setCache(CacheKeys.ROUTINES, data as Routine[]);
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -258,6 +278,9 @@ export function RoutinesBrowseScreen({ navigation }: any) {
       </View>
 
       {/* List */}
+      <View style={{ paddingHorizontal: Layout.screenPadding }}>
+        <OfflineBanner visible={isOffline} onRetry={load} />
+      </View>
       <FlatList
         data={filtered}
         keyExtractor={i => i.id}

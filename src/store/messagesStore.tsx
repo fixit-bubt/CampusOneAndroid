@@ -10,6 +10,7 @@ import { AppState } from 'react-native';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './authStore';
+import { getCache, setCache } from '../services/cacheService';
 import {
   fetchMessages, fetchReads, fetchBlocks, fetchDmPartners,
   fetchConversation, fetchOlder, searchConversation,
@@ -71,35 +72,84 @@ export function MessagesProvider({ children }: { children: React.ReactNode }) {
       setMessages([]); setReads({}); setBlocked([]); setDmPartners([]); setMyClubs([]); setMySections([]);
       return;
     }
+    const cacheKey = `messages_bundle_${myId}`;
+
+    // 1. Optimistic cache load
+    const cached = await getCache<{
+      messages: Message[];
+      reads: Record<string, string>;
+      blocked: string[];
+      dmPartners: string[];
+      myClubs: ClubChat[];
+      mySections: SectionChat[];
+    }>(cacheKey);
+
+    if (cached) {
+      setMessages(cached.messages);
+      setReads(cached.reads);
+      setBlocked(cached.blocked);
+      setDmPartners(cached.dmPartners);
+      setMyClubs(cached.myClubs);
+      setMySections(cached.mySections);
+    }
+
+    // 2. Network sync
     setLoading(true);
-    const [mRes, rRes, bRes, pRes, clubRes, secRes] = await Promise.all([
-      fetchMessages(),
-      fetchReads(),
-      fetchBlocks(myId),
-      fetchDmPartners(myId),
-      supabase.from('club_members').select('clubs(id, name, is_active)').eq('user_id', myId),
-      supabase.from('study_section_members')
-        .select('study_sections(id, number, study_intakes(number))')
-        .eq('user_id', myId).eq('status', 'approved'),
-    ]);
-    if (mRes.ok) setMessages(prev => mergeMessages(prev, mRes.data));
-    if (rRes.ok) setReads(rRes.data);
-    if (bRes.ok) setBlocked(bRes.data);
-    if (pRes.ok) setDmPartners(pRes.data);
-    if (clubRes.data) {
-      const clubs = (clubRes.data as any[])
-        .map(r => r.clubs).filter(c => c && c.is_active !== false)
-        .map(c => ({ id: c.id as string, name: (c.name as string) ?? 'Club' }));
-      setMyClubs(clubs);
+    try {
+      const [mRes, rRes, bRes, pRes, clubRes, secRes] = await Promise.all([
+        fetchMessages(),
+        fetchReads(),
+        fetchBlocks(myId),
+        fetchDmPartners(myId),
+        supabase.from('club_members').select('clubs(id, name, is_active)').eq('user_id', myId),
+        supabase.from('study_section_members')
+          .select('study_sections(id, number, study_intakes(number))')
+          .eq('user_id', myId).eq('status', 'approved'),
+      ]);
+
+      let nextMessages = cached?.messages ?? [];
+      let nextReads = cached?.reads ?? {};
+      let nextBlocked = cached?.blocked ?? [];
+      let nextDm = cached?.dmPartners ?? [];
+      let nextClubs = cached?.myClubs ?? [];
+      let nextSecs = cached?.mySections ?? [];
+
+      if (mRes.ok) {
+        setMessages(prev => {
+          nextMessages = mergeMessages(prev, mRes.data);
+          return nextMessages;
+        });
+      }
+      if (rRes.ok) { setReads(rRes.data); nextReads = rRes.data; }
+      if (bRes.ok) { setBlocked(bRes.data); nextBlocked = bRes.data; }
+      if (pRes.ok) { setDmPartners(pRes.data); nextDm = pRes.data; }
+      if (clubRes.data) {
+        nextClubs = (clubRes.data as any[])
+          .map(r => r.clubs).filter(c => c && c.is_active !== false)
+          .map(c => ({ id: c.id as string, name: (c.name as string) ?? 'Club' }));
+        setMyClubs(nextClubs);
+      }
+      if (secRes.data) {
+        nextSecs = (secRes.data as any[]).map(r => r.study_sections).filter(Boolean).map(s => ({
+          id: s.id as string,
+          label: `Intake ${s.study_intakes?.number ?? '?'} · Section ${s.number ?? '?'}`,
+        }));
+        setMySections(nextSecs);
+      }
+
+      setCache(cacheKey, {
+        messages: nextMessages,
+        reads: nextReads,
+        blocked: nextBlocked,
+        dmPartners: nextDm,
+        myClubs: nextClubs,
+        mySections: nextSecs,
+      });
+    } catch {
+      // offline: kept cached conversations
+    } finally {
+      setLoading(false);
     }
-    if (secRes.data) {
-      const secs = (secRes.data as any[]).map(r => r.study_sections).filter(Boolean).map(s => ({
-        id: s.id as string,
-        label: `Intake ${s.study_intakes?.number ?? '?'} · Section ${s.number ?? '?'}`,
-      }));
-      setMySections(secs);
-    }
-    setLoading(false);
   }, [myId, isStudent]);
 
   useEffect(() => { reload(); }, [reload]);
@@ -111,9 +161,19 @@ export function MessagesProvider({ children }: { children: React.ReactNode }) {
     if (catchTimer.current) clearTimeout(catchTimer.current);
     catchTimer.current = setTimeout(async () => {
       const res = await fetchMessages();
-      if (res.ok) setMessages(prev => mergeMessages(prev, res.data));
+      if (res.ok) {
+        setMessages(prev => {
+          const merged = mergeMessages(prev, res.data);
+          if (myId) {
+            getCache<any>(`messages_bundle_${myId}`).then(cached => {
+              if (cached) setCache(`messages_bundle_${myId}`, { ...cached, messages: merged });
+            });
+          }
+          return merged;
+        });
+      }
     }, 800);
-  }, []);
+  }, [myId]);
 
   // ---- realtime: one private channel per conversation topic ---------------
   const myTopics = useMemo(() => {

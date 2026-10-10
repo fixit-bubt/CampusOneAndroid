@@ -12,8 +12,10 @@ import { Feather } from '@expo/vector-icons';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { SkeletonList, LoadError } from '../../components/ui/LoadState';
+import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { FontFamily, Layout , SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 import { localToday } from '../../utils/format';
 import type { Event } from '../../types/database';
 
@@ -90,10 +92,17 @@ export function EventsBrowseScreen({ navigation }: any) {
   const [monthOffset, setMonthOffset] = useState(0); // 0 = current month
   const [refreshing, setRefreshing] = useState(false);
   const [loadState, setLoadState] = useState<'loading' | 'error' | 'ready'>('loading');
+  const [isOffline, setIsOffline] = useState(false);
 
   const load = useCallback(async () => {
-    // Fetch upcoming and past separately. A single ascending limit(50) let past
-    // events fill the quota and silently drop genuinely upcoming ones.
+    // 1. Instant cache load
+    const cached = await getCache<Event[]>(CacheKeys.EVENTS);
+    if (cached && cached.length > 0) {
+      setEvents(cached);
+      setLoadState('ready');
+    }
+
+    // 2. Fetch fresh
     const today = localToday();
     const [upRes, pastRes] = await Promise.all([
       supabase.from('events').select('*').gte('date', today).order('date', { ascending: true }).limit(50),
@@ -101,10 +110,18 @@ export function EventsBrowseScreen({ navigation }: any) {
     ]);
     if (upRes.error || pastRes.error) {
       console.error('events fetch:', upRes.error?.message ?? pastRes.error?.message);
-      setLoadState('error');
+      if (cached && cached.length > 0) {
+        setIsOffline(true);
+        setLoadState('ready');
+      } else {
+        setLoadState('error');
+      }
       return;
     }
-    setEvents([...(upRes.data ?? []), ...(pastRes.data ?? [])] as Event[]);
+    const combined = [...(upRes.data ?? []), ...(pastRes.data ?? [])] as Event[];
+    setIsOffline(false);
+    setEvents(combined);
+    setCache(CacheKeys.EVENTS, combined);
     setLoadState('ready');
   }, []);
 
@@ -194,6 +211,7 @@ export function EventsBrowseScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
+        <OfflineBanner visible={isOffline} onRetry={load} />
         {loadState === 'loading' && events.length === 0 ? (
           <SkeletonList />
         ) : loadState === 'error' && events.length === 0 ? (

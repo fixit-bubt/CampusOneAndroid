@@ -10,9 +10,11 @@ import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { SkeletonList, LoadError } from '../../components/ui/LoadState';
+import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { useToast } from '../../components/ui/Toast';
 import { FontFamily, Layout, SectorColors, Accent, pillBg } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import type { Job as JobRow } from '../../types/database';
@@ -69,16 +71,47 @@ export function JobsBrowseScreen({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
 
   const load = useCallback(async () => {
+    // 1. Instant cache load
+    const cachedJobs = await getCache<Job[]>(CacheKeys.JOBS);
+    if (cachedJobs && cachedJobs.length > 0) {
+      setJobs(cachedJobs);
+      setLoading(false);
+    }
+    if (user?.id) {
+      const cachedBookmarks = await getCache<string[]>(CacheKeys.JOB_BOOKMARKS(user.id));
+      if (cachedBookmarks) setSavedIds(new Set(cachedBookmarks));
+    }
+
+    // 2. Fetch fresh
     const [jobsRes, savedRes] = await Promise.all([
       supabase.from('jobs').select('*').is('deleted_at', null).order('created_at', { ascending: false }).limit(50),
       supabase.from('job_bookmarks').select('job_id').eq('user_id', user?.id ?? '').limit(200),
     ]);
-    if (jobsRes.error) { setLoadFailed(true); setLoading(false); return; }
+
+    if (jobsRes.error) {
+      if (cachedJobs && cachedJobs.length > 0) {
+        setIsOffline(true);
+      } else {
+        setLoadFailed(true);
+      }
+      setLoading(false);
+      return;
+    }
+
     setLoadFailed(false);
-    if (jobsRes.data) setJobs(jobsRes.data as Job[]);
-    if (savedRes.data) setSavedIds(new Set(savedRes.data.map((s: any) => s.job_id)));
+    setIsOffline(false);
+    if (jobsRes.data) {
+      setJobs(jobsRes.data as Job[]);
+      setCache(CacheKeys.JOBS, jobsRes.data as Job[]);
+    }
+    if (savedRes.data) {
+      const bIds = savedRes.data.map((s: any) => s.job_id);
+      setSavedIds(new Set(bIds));
+      if (user?.id) setCache(CacheKeys.JOB_BOOKMARKS(user.id), bIds);
+    }
     setLoading(false);
   }, [user?.id]);
 
@@ -221,6 +254,7 @@ export function JobsBrowseScreen({ navigation }: any) {
         keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
+        <OfflineBanner visible={isOffline} onRetry={load} />
         {loading && jobs.length === 0 ? (
           <SkeletonList />
         ) : loadFailed && jobs.length === 0 ? (

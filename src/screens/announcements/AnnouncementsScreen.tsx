@@ -9,8 +9,10 @@ import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
+import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { FontFamily, Layout, Accent, pillBg } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 import { useToast } from '../../components/ui/Toast';
 import { useT } from '../../i18n';
 import type { Announcement } from '../../types/database';
@@ -93,8 +95,20 @@ export function AnnouncementsScreen({ navigation }: any) {
   const [priority, setPriority] = useState('All');
   const [dept, setDept] = useState('All');
   const [refreshing, setRefreshing] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
 
   const load = useCallback(async () => {
+    // 1. Instant cache load
+    const cached = await getCache<Announcement[]>(CacheKeys.ANNOUNCEMENTS);
+    if (cached && cached.length > 0) {
+      setItems(cached);
+    }
+    if (user?.id) {
+      const cachedReads = await getCache<string[]>(CacheKeys.ANNOUNCEMENT_READS(user.id));
+      if (cachedReads) setReadIds(new Set(cachedReads));
+    }
+
+    // 2. Fetch fresh
     const [aRes, rRes] = await Promise.all([
       supabase
         .from('announcements')
@@ -106,10 +120,25 @@ export function AnnouncementsScreen({ navigation }: any) {
       // RLS returns only my own read rows.
       supabase.from('announcement_reads').select('announcement_id').limit(500),
     ]);
-    if (aRes.error) { console.error('announcements fetch:', aRes.error.message); return; }
-    if (aRes.data) setItems(aRes.data as Announcement[]);
-    if (rRes.data) setReadIds(new Set(rRes.data.map((r: any) => r.announcement_id)));
-  }, []);
+
+    if (aRes.error) {
+      if (cached && cached.length > 0) {
+        setIsOffline(true);
+      }
+      return;
+    }
+
+    setIsOffline(false);
+    if (aRes.data) {
+      setItems(aRes.data as Announcement[]);
+      setCache(CacheKeys.ANNOUNCEMENTS, aRes.data as Announcement[]);
+    }
+    if (rRes.data) {
+      const rIds = rRes.data.map((r: any) => r.announcement_id);
+      setReadIds(new Set(rIds));
+      if (user?.id) setCache(CacheKeys.ANNOUNCEMENT_READS(user.id), rIds);
+    }
+  }, [user?.id]);
 
   useEffect(() => {
     const unsub = navigation.addListener('focus', load);
@@ -215,6 +244,7 @@ export function AnnouncementsScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
+        <OfflineBanner visible={isOffline} onRetry={load} />
         {filtered.length === 0 ? (
           <View style={styles.empty}>
             <Icon name="announce" size={28} color={C.textMuted} />

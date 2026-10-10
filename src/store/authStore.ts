@@ -2,12 +2,16 @@
 // Wrap the app in <AuthProvider>, then call useAuth() anywhere.
 
 import React, { createContext, useContext, useEffect, useReducer, useRef } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { unregisterPushToken } from '../lib/push';
 import { setMonitoringUser } from '../lib/monitoring';
 import { clearPeople } from '../services/peopleService';
+import { clearAllCache } from '../services/cacheService';
 import type { Profile } from '../types/database';
+
+const CACHED_PROFILE_KEY = (uid: string) => `@c1_profile_${uid}`;
 
 interface AuthState {
   session: Session | null;
@@ -85,17 +89,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Initial session check
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(async ({ data }) => {
       dispatch({ type: 'SET_SESSION', session: data.session });
-      if (data.session?.user?.id) fetchProfile(data.session.user.id);
+      const uid = data.session?.user?.id;
+      if (uid) {
+        // Pre-load cached profile for instant cold start and offline access
+        try {
+          const cachedRaw = await AsyncStorage.getItem(CACHED_PROFILE_KEY(uid));
+          if (cachedRaw) {
+            dispatch({ type: 'SET_PROFILE', profile: JSON.parse(cachedRaw) });
+          }
+        } catch {}
+        fetchProfile(uid);
+      }
     });
 
     // Listen for auth changes
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
       dispatch({ type: 'SET_SESSION', session });
       setMonitoringUser(session?.user.id ?? null);
       if (session?.user?.id) {
-        fetchProfile(session.user.id);
+        const uid = session.user.id;
+        try {
+          const cachedRaw = await AsyncStorage.getItem(CACHED_PROFILE_KEY(uid));
+          if (cachedRaw) {
+            dispatch({ type: 'SET_PROFILE', profile: JSON.parse(cachedRaw) });
+          }
+        } catch {}
+        fetchProfile(uid);
       } else {
         dispatch({ type: 'SIGN_OUT' });
       }
@@ -113,12 +134,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .single();
     if (myReq !== reqIdRef.current) return; // a newer fetch superseded this one
     if (error || !data) {
-      console.error('fetchProfile failed:', error?.message ?? 'Profile not found');
-      // Do NOT mark the profile as loaded-with-null; that silently drops
-      // admin/staff into the student UI. Surface an error for retry instead.
-      dispatch({ type: 'PROFILE_ERROR' });
+      // Check if we have a cached profile before surfacing PROFILE_ERROR
+      let hasCached = false;
+      try {
+        const cachedRaw = await AsyncStorage.getItem(CACHED_PROFILE_KEY(userId));
+        if (cachedRaw) {
+          dispatch({ type: 'SET_PROFILE', profile: JSON.parse(cachedRaw) });
+          hasCached = true;
+        }
+      } catch {}
+
+      if (!hasCached && !state.profile) {
+        console.error('fetchProfile failed without cache:', error?.message ?? 'Profile not found');
+        // Do NOT mark the profile as loaded-with-null; that silently drops
+        // admin/staff into the student UI. Surface an error for retry instead.
+        dispatch({ type: 'PROFILE_ERROR' });
+      }
       return;
     }
+    // Persist latest profile for offline launches
+    try {
+      await AsyncStorage.setItem(CACHED_PROFILE_KEY(userId), JSON.stringify(data));
+    } catch {}
     dispatch({ type: 'SET_PROFILE', profile: data as Profile });
   }
 
@@ -151,6 +188,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function signOut() {
     reqIdRef.current++; // invalidate any in-flight profile fetch
     clearPeople();      // drop the cached roster so the next account starts fresh
+    clearAllCache();    // drop feature cache on sign-out
+    if (state.user?.id) {
+      AsyncStorage.removeItem(CACHED_PROFILE_KEY(state.user.id)).catch(() => {});
+    }
     await unregisterPushToken(); // stop pushes to this device (shared phones)
     try {
       await supabase.auth.signOut();
@@ -165,6 +206,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function deleteAccount() {
     reqIdRef.current++;
     clearPeople();
+    clearAllCache();
+    if (state.user?.id) {
+      AsyncStorage.removeItem(CACHED_PROFILE_KEY(state.user.id)).catch(() => {});
+    }
     await unregisterPushToken().catch(() => {});
     const { error } = await supabase.rpc('delete_own_account');
     if (error) {

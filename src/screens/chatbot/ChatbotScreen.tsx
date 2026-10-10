@@ -19,6 +19,7 @@ import { useToast } from '../../components/ui/Toast';
 import { SubBar } from '../../components/layout/TopBar';
 import { FontFamily, Layout } from '../../theme';
 import { uploadPhoto } from '../../utils/storage';
+import { getCache, setCache } from '../../services/cacheService';
 import {
   askChatbotStream, loadChatHistory, saveChatMessage, createConversation, deleteConversation, type ChatTurn,
 } from '../../services/chatbotService';
@@ -77,8 +78,19 @@ export function ChatbotScreen({ navigation, route }: any) {
 
   useEffect(() => {
     if (!initialConversationId) { setLoadingHistory(false); return; }
+    const cacheKey = `chat_history_${initialConversationId}`;
+    getCache<Bubble[]>(cacheKey).then((cached) => {
+      if (cached && cached.length) {
+        setMessages(cached);
+        setLoadingHistory(false);
+      }
+    });
     loadChatHistory(initialConversationId).then((res) => {
-      if (res.ok) setMessages(res.data.map((m) => ({ id: m.id, role: m.role, text: m.text, imageUrl: m.imageUrl })));
+      if (res.ok) {
+        const bubbles = res.data.map((m) => ({ id: m.id, role: m.role, text: m.text, imageUrl: m.imageUrl }));
+        setMessages(bubbles);
+        setCache(cacheKey, bubbles);
+      }
       setLoadingHistory(false);
     });
     // Mount-only: this screen instance is pinned to one conversation - a
@@ -166,15 +178,25 @@ export function ChatbotScreen({ navigation, route }: any) {
       onDone: (fullText) => {
         setSending(false);
         setWaitingFirstToken(false);
-        setMessages((prev) => [...prev.filter((m) => m.id !== streamId), { id: streamId, role: 'model', text: fullText }]);
+        const finalBubble: Bubble = { id: streamId, role: 'model', text: fullText };
+        setMessages((prev) => {
+          const next = [...prev.filter((m) => m.id !== streamId), finalBubble];
+          if (convId) setCache(`chat_history_${convId}`, next);
+          return next;
+        });
         if (convId) saveChatMessage(user.id, convId, 'model', fullText);
       },
       onError: (message) => {
         setSending(false);
         setWaitingFirstToken(false);
+        const low = (message ?? '').toLowerCase();
+        const isNet = low.includes('network') || low.includes('fetch') || low.includes('offline') || low.includes('failed to fetch');
+        const displayErr = isNet
+          ? 'CampusOne AI assistant is unavailable offline. Connect to the internet to ask questions or analyze images.'
+          : `Couldn't reach the assistant: ${message}`;
         setMessages((prev) => [
           ...prev.filter((m) => m.id !== streamId),
-          { id: `local-${seq.current++}`, role: 'model', text: `Couldn't reach the assistant: ${message}`, isError: true },
+          { id: `local-${seq.current++}`, role: 'model', text: displayErr, isError: true },
         ]);
       },
     }, imageBase64 ? { base64: imageBase64, mimeType: 'image/jpeg' } : undefined);

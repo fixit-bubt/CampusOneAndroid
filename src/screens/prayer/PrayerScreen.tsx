@@ -13,8 +13,10 @@ import { useT } from '../../i18n';
 import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { SkeletonList, LoadError } from '../../components/ui/LoadState';
+import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { FontFamily, Layout , SectorColors, darken } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 
 const PRAYER_GREEN = SectorColors.prayer;
 
@@ -84,20 +86,51 @@ export function PrayerScreen({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
   const [view, setView] = useState<'today' | 'month'>('today');
   const [editPrayer, setEditPrayer] = useState<PrayerTime | null>(null);
   const [jamaatInput, setJamaatInput] = useState('');
   const [musEdit, setMusEdit] = useState<{ id: number | null; name: string; floor_desc: string } | null>(null);
 
   const load = useCallback(async () => {
+    // 1. Instant cache load
+    const [cachedPrayers, cachedMus] = await Promise.all([
+      getCache<PrayerTime[]>(CacheKeys.PRAYER_TIMES),
+      getCache<Musallah[]>(CacheKeys.MUSALLAH_LOCATIONS),
+    ]);
+    if (cachedPrayers && cachedPrayers.length > 0) {
+      setPrayers(cachedPrayers);
+      setLoading(false);
+    }
+    if (cachedMus && cachedMus.length > 0) {
+      setMusallah(cachedMus);
+    }
+
+    // 2. Fetch fresh
     const [prayersRes, musRes] = await Promise.all([
       supabase.from('prayer_times').select('*').order('sort'),
       supabase.from('musallah_locations').select('*').order('sort'),
     ]);
-    if (prayersRes.error) { setLoadFailed(true); setLoading(false); return; }
+
+    if (prayersRes.error) {
+      if (!cachedPrayers || cachedPrayers.length === 0) {
+        setLoadFailed(true);
+      } else {
+        setIsOffline(true);
+      }
+      setLoading(false);
+      return;
+    }
+
     setLoadFailed(false);
+    setIsOffline(false);
     setPrayers(prayersRes.data as PrayerTime[]);
-    if (musRes.data) setMusallah(musRes.data as Musallah[]);
+    setCache(CacheKeys.PRAYER_TIMES, prayersRes.data as PrayerTime[]);
+
+    if (musRes.data) {
+      setMusallah(musRes.data as Musallah[]);
+      setCache(CacheKeys.MUSALLAH_LOCATIONS, musRes.data as Musallah[]);
+    }
     setLoading(false);
   }, []);
 
@@ -163,6 +196,7 @@ export function PrayerScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
+        <OfflineBanner visible={isOffline} onRetry={load} />
         {/* Loading / error / empty states */}
         {loading ? (
           <SkeletonList />

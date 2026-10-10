@@ -12,11 +12,13 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { useToast } from '../../components/ui/Toast';
+import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { FontFamily, Layout , SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { fetchPeople } from '../../services/peopleService';
 import { localToday } from '../../utils/format';
 import { useAuth } from '../../store/authStore';
+import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 import type { Ride as RideRow } from '../../types/database';
 
 const RIDE_COLOR = SectorColors.ride;
@@ -36,46 +38,72 @@ export function RidesScreen({ navigation }: any) {
   const [direction, setDirection] = useState<'all' | 'to' | 'from'>('all');
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isOffline, setIsOffline] = useState(false);
 
   const load = useCallback(async () => {
-    // Prune expired rides server-side before listing.
-    await supabase.rpc('delete_expired_rides').then(() => {}, () => {});
-    const [ridesRes, reqRes, countRes] = await Promise.all([
-      supabase
-        .from('rides')
-        .select('*')
-        .gte('date', localToday())
-        .order('date')
-        .order('time')
-        .limit(30),
-      supabase.from('ride_requests').select('ride_id').eq('requester_id', user?.id ?? ''),
-      // Row SELECT on ride_requests is restricted; aggregate seat counts come from this RPC.
-      supabase.rpc('ride_request_counts'),
+    // 1. Optimistic cache load
+    const [cachedRides, cachedCounts, cachedReq] = await Promise.all([
+      getCache<Ride[]>(CacheKeys.RIDES),
+      getCache<Record<string, number>>(CacheKeys.RIDES_TAKEN),
+      user?.id ? getCache<string[]>(CacheKeys.RIDES_REQUESTED(user.id)) : Promise.resolve(null),
     ]);
-    if (ridesRes.error) {
-      toast({ type: 'error', title: t.common.error });
+    if (cachedRides && cachedRides.length > 0) {
+      setRides(cachedRides);
+      if (cachedCounts) setTakenCounts(cachedCounts);
+      if (cachedReq) setRequestedIds(new Set(cachedReq));
       setLoading(false);
-      return;
     }
-    // Driver names via the roster RPC - profiles RLS hides every row but mine.
-    const people = await fetchPeople((ridesRes.data ?? []).map((r: any) => r.driver_id));
-    const rows = (ridesRes.data ?? []).map((r: any) => ({
-      ...r,
-      driver_name: people[r.driver_id]?.full_name,
-    })) as Ride[];
-    setRides(rows);
-    // A failed count fetch previously left every ride showing as fully
-    // available (0 taken) instead of an accurate seat count - warn instead
-    // of silently showing wrong availability.
-    if (countRes.error) {
-      toast({ type: 'error', title: t.common.error, message: 'Seat availability may be out of date.' });
-    } else {
+
+    // 2. Network sync
+    try {
+      await supabase.rpc('delete_expired_rides').then(() => {}, () => {});
+      const [ridesRes, reqRes, countRes] = await Promise.all([
+        supabase
+          .from('rides')
+          .select('*')
+          .gte('date', localToday())
+          .order('date')
+          .order('time')
+          .limit(30),
+        supabase.from('ride_requests').select('ride_id').eq('requester_id', user?.id ?? ''),
+        supabase.rpc('ride_request_counts'),
+      ]);
+
+      if (ridesRes.error) {
+        if (!cachedRides || cachedRides.length === 0) {
+          toast({ type: 'error', title: t.common.error });
+        }
+        setIsOffline(true);
+        setLoading(false);
+        return;
+      }
+
+      setIsOffline(false);
+      const people = await fetchPeople((ridesRes.data ?? []).map((r: any) => r.driver_id));
+      const rows = (ridesRes.data ?? []).map((r: any) => ({
+        ...r,
+        driver_name: people[r.driver_id]?.full_name,
+      })) as Ride[];
+      setRides(rows);
+      setCache(CacheKeys.RIDES, rows);
+
       const map: Record<string, number> = {};
-      (countRes.data ?? []).forEach((c: any) => { map[c.ride_id] = Number(c.taken); });
-      setTakenCounts(map);
+      if (!countRes.error && countRes.data) {
+        (countRes.data ?? []).forEach((c: any) => { map[c.ride_id] = Number(c.taken); });
+        setTakenCounts(map);
+        setCache(CacheKeys.RIDES_TAKEN, map);
+      }
+
+      if (reqRes.data) {
+        const reqList = reqRes.data.map((r: any) => r.ride_id);
+        setRequestedIds(new Set(reqList));
+        if (user?.id) setCache(CacheKeys.RIDES_REQUESTED(user.id), reqList);
+      }
+    } catch {
+      setIsOffline(true);
+    } finally {
+      setLoading(false);
     }
-    if (reqRes.data) setRequestedIds(new Set(reqRes.data.map((r: any) => r.ride_id)));
-    setLoading(false);
   }, [user?.id, toast, t]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -88,6 +116,10 @@ export function RidesScreen({ navigation }: any) {
 
   async function requestRide(rideId: string) {
     if (!user) return;
+    if (isOffline) {
+      toast({ type: 'info', title: 'Offline Mode', message: 'Internet connection required to request a ride.' });
+      return;
+    }
     if (requestedIds.has(rideId)) return;
     const { error } = await supabase.from('ride_requests').insert({ ride_id: rideId, requester_id: user.id });
     if (error && error.code !== '23505') {
@@ -113,6 +145,11 @@ export function RidesScreen({ navigation }: any) {
             <Feather name="plus" size={22} color={C.text} />
           </TouchableOpacity>
         }
+      />
+
+      <OfflineBanner
+        visible={isOffline}
+        message="Showing cached campus rides. Connect to the internet to request seats or post rides."
       />
 
       {/* Direction filter */}

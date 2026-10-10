@@ -11,11 +11,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
+import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
+import { getCache, setCache } from '../../services/cacheService';
 import { openInApp } from '../../utils/link';
 import { formatFileSize, formatRelativeTime } from '../../utils/format';
 
@@ -81,6 +83,7 @@ export function CourseDetailScreen({ route, navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [openingId, setOpeningId] = useState<string | null>(null);
   const [forSale, setForSale] = useState<any[]>([]);
+  const [isOffline, setIsOffline] = useState(false);
 
   // Controls
   const scrollRef = useRef<ScrollView>(null);
@@ -102,64 +105,102 @@ export function CourseDetailScreen({ route, navigation }: any) {
 
   const load = useCallback(async () => {
     if (!courseId) { setLoading(false); return; }
-    setLoading(true);
-    const [courseRes, matRes, qbRes, bookRes] = await Promise.all([
-      supabase.from('study_courses').select('*').eq('id', courseId).maybeSingle(),
-      supabase.from('study_materials').select('*').eq('course_id', courseId).order('created_at', { ascending: false }),
-      supabase.from('study_question_bank').select('*').eq('course_id', courseId).order('created_at', { ascending: false }),
-      supabase.from('study_books').select('*').eq('course_id', courseId).order('created_at', { ascending: false }),
-    ]);
-    if (courseRes.data) {
-      setCourse(courseRes.data);
-      if (user) {
-        const { data: me } = await supabase
-          .from('study_section_members')
-          .select('role')
-          .eq('section_id', courseRes.data.section_id)
-          .eq('user_id', user.id)
-          .eq('status', 'approved')
-          .maybeSingle();
-        setIsCR(me?.role === 'cr' || profile?.role === 'admin');
+
+    const cacheKey = `course_detail_${courseId}`;
+    const cached = await getCache<{
+      course: any;
+      materials: Entry[];
+      questions: Entry[];
+      books: Entry[];
+      saved: string[];
+    }>(cacheKey);
+
+    if (cached) {
+      setCourse(cached.course);
+      setMaterials(cached.materials);
+      setQuestions(cached.questions);
+      setBooks(cached.books);
+      setSaved(new Set(cached.saved));
+      setLoading(false);
+    }
+
+    try {
+      const [courseRes, matRes, qbRes, bookRes] = await Promise.all([
+        supabase.from('study_courses').select('*').eq('id', courseId).maybeSingle(),
+        supabase.from('study_materials').select('*').eq('course_id', courseId).order('created_at', { ascending: false }),
+        supabase.from('study_question_bank').select('*').eq('course_id', courseId).order('created_at', { ascending: false }),
+        supabase.from('study_books').select('*').eq('course_id', courseId).order('created_at', { ascending: false }),
+      ]);
+
+      if (!courseRes.data && !cached) {
+        setLoading(false);
+        return;
       }
-    }
-    const mats = ((matRes.data ?? []) as any[]).map(r => ({ ...r, table: 'study_materials' as const }));
-    const qs   = ((qbRes.data ?? []) as any[]).map(r => ({ ...r, table: 'study_question_bank' as const }));
-    const bks  = ((bookRes.data ?? []) as any[]).map(r => ({ ...r, table: 'study_books' as const }));
-    setMaterials(mats);
-    setQuestions(qs);
-    setBooks(bks);
 
-    // My bookmarks for these items (RLS already scopes to me).
-    const ids = [...mats, ...qs, ...bks].map(e => e.id);
-    if (user && ids.length) {
-      const { data: bm } = await supabase.from('study_bookmarks').select('item_id').in('item_id', ids);
-      setSaved(new Set((bm ?? []).map((b: any) => b.item_id)));
-    } else {
-      setSaved(new Set());
-    }
+      setIsOffline(false);
+      if (courseRes.data) {
+        setCourse(courseRes.data);
+        if (user) {
+          const { data: me } = await supabase
+            .from('study_section_members')
+            .select('role')
+            .eq('section_id', courseRes.data.section_id)
+            .eq('user_id', user.id)
+            .eq('status', 'approved')
+            .maybeSingle();
+          setIsCR(me?.role === 'cr' || profile?.role === 'admin');
+        }
+      }
 
-    // Marketplace listings tagged with this course code (case/space-insensitive).
-    const code: string | undefined = courseRes.data?.code;
-    if (code) {
-      const norm = (s: string) => (s ?? '').toLowerCase().replace(/\s+/g, '');
-      const raw = code.trim();
-      const nospace = raw.replace(/\s+/g, '');
-      // Match server-side (case-insensitive, spaced + unspaced) and order newest
-      // first - a client-side cap would silently blank the strip once the
-      // marketplace grows past it.
-      const { data: listings } = await supabase
-        .from('listings')
-        .select('id, title, price, course_code, status')
-        .eq('status', 'Available')
-        .or(`course_code.ilike.${raw},course_code.ilike.${nospace}`)
-        .order('created_at', { ascending: false })
-        .limit(20);
-      const n = norm(code);
-      setForSale(((listings ?? []) as any[]).filter(l => norm(l.course_code) === n));
-    } else {
-      setForSale([]);
+      const mats = ((matRes.data ?? []) as any[]).map(r => ({ ...r, table: 'study_materials' as const }));
+      const qs   = ((qbRes.data ?? []) as any[]).map(r => ({ ...r, table: 'study_question_bank' as const }));
+      const bks  = ((bookRes.data ?? []) as any[]).map(r => ({ ...r, table: 'study_books' as const }));
+      setMaterials(mats);
+      setQuestions(qs);
+      setBooks(bks);
+
+      // My bookmarks for these items (RLS already scopes to me).
+      const ids = [...mats, ...qs, ...bks].map(e => e.id);
+      let savedList: string[] = [];
+      if (user && ids.length) {
+        const { data: bm } = await supabase.from('study_bookmarks').select('item_id').in('item_id', ids);
+        savedList = (bm ?? []).map((b: any) => b.item_id);
+        setSaved(new Set(savedList));
+      } else {
+        setSaved(new Set());
+      }
+
+      setCache(cacheKey, {
+        course: courseRes.data ?? cached?.course,
+        materials: mats,
+        questions: qs,
+        books: bks,
+        saved: savedList,
+      });
+
+      // Marketplace listings tagged with this course code
+      const code: string | undefined = courseRes.data?.code;
+      if (code) {
+        const norm = (s: string) => (s ?? '').toLowerCase().replace(/\s+/g, '');
+        const raw = code.trim();
+        const nospace = raw.replace(/\s+/g, '');
+        const { data: listings } = await supabase
+          .from('listings')
+          .select('id, title, price, course_code, status')
+          .eq('status', 'Available')
+          .or(`course_code.ilike.${raw},course_code.ilike.${nospace}`)
+          .order('created_at', { ascending: false })
+          .limit(20);
+        const n = norm(code);
+        setForSale(((listings ?? []) as any[]).filter(l => norm(l.course_code) === n));
+      } else {
+        setForSale([]);
+      }
+    } catch {
+      if (cached) setIsOffline(true);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [courseId, user, profile?.role]);
 
   // 'focus' also fires on first mount, so this covers the initial load too.
@@ -170,6 +211,10 @@ export function CourseDetailScreen({ route, navigation }: any) {
 
   async function openEntry(f: Entry) {
     if (openingId) return;
+    if (isOffline && !f.url) {
+      toast({ type: 'info', title: 'Offline Mode', message: 'Internet connection required to download or view remote files.' });
+      return;
+    }
     if (f.url) { openInApp(f.url); return; }
     if (!f.storage_path) return;
     setOpeningId(f.id);
@@ -185,6 +230,10 @@ export function CourseDetailScreen({ route, navigation }: any) {
   }
 
   async function toggleSaved(f: Entry) {
+    if (isOffline) {
+      toast({ type: 'info', title: 'Offline Mode', message: 'Internet connection required to update bookmarks.' });
+      return;
+    }
     const isSaved = saved.has(f.id);
     // Optimistic
     setSaved(prev => {
@@ -285,6 +334,11 @@ export function CourseDetailScreen({ route, navigation }: any) {
             </TouchableOpacity>
           </View>
         }
+      />
+
+      <OfflineBanner
+        visible={isOffline}
+        message="Showing cached course materials. Connect to the internet to download new files or bookmark."
       />
 
       <ScrollView

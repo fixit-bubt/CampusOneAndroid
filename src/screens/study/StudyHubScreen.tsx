@@ -14,9 +14,11 @@ import { useT } from '../../i18n';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { Avatar } from '../../components/ui/Avatar';
+import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { FontFamily, Layout , SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { fetchPeople, loadPeople } from '../../services/peopleService';
+import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 
 const STUDY_COLOR = SectorColors.study;
 
@@ -362,6 +364,7 @@ export function StudyHubScreen({ navigation }: any) {
   const [startVoteOpen, setStartVoteOpen] = useState(false);
   const [rejectId, setRejectId] = useState<string | null>(null);
   const [codeInput, setCodeInput] = useState('');
+  const [isOffline, setIsOffline] = useState(false);
   const toastRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function flash(msg: string) {
@@ -399,37 +402,60 @@ export function StudyHubScreen({ navigation }: any) {
 
   const load = useCallback(async () => {
     if (!user) return;
-    // Fetch my approved section membership (joined to intake + department for display)
-    const { data: mems, error: memErr } = await supabase
-      .from('study_section_members')
-      .select('role, study_sections(id, intake_id, number, join_code, is_public, study_intakes(number, is_public, departments(name)))')
-      .eq('user_id', user.id)
-      .eq('status', 'approved')
-      .order('role', { ascending: true })
-      .order('created_at', { ascending: true })
-      .limit(1);
+    const cacheKey = `study_my_section_${user.id}`;
 
-    if (memErr) { console.warn('load membership:', memErr.message); }
+    // 1. Optimistic cache load
+    const cachedStudy = await getCache<{ sec: SectionRow | null; persona: Persona; courses: Course[] }>(cacheKey);
+    if (cachedStudy) {
+      if (cachedStudy.sec) setMySection(cachedStudy.sec);
+      setPersona(cachedStudy.persona);
+      setCourses(cachedStudy.courses);
+    }
 
-    const mem = mems?.[0];
-    const sec = mem ? mapSection(mem.study_sections, mem.role) : null;
-    if (sec) {
-      setMySection(sec);
-      setPersona(mem!.role === 'cr' ? 'cr' : 'member');
-      const { data: coursesData, error: coursesErr } = await supabase
-        .from('study_courses').select('*').eq('section_id', sec.id).order('code');
-      if (coursesErr) { console.warn('load courses:', coursesErr.message); }
-      setCourses((coursesData ?? []) as Course[]);
-    } else {
-      // check pending section-creation request
-      const { data: req } = await supabase
-        .from('study_section_requests')
-        .select('id')
-        .eq('requester_id', user.id)
-        .eq('status', 'pending')
-        .maybeSingle();
-      setPersona(req ? 'pendingcreate' : 'notjoined');
-      setCourses([]);
+    // 2. Network sync
+    try {
+      // Fetch my approved section membership (joined to intake + department for display)
+      const { data: mems, error: memErr } = await supabase
+        .from('study_section_members')
+        .select('role, study_sections(id, intake_id, number, join_code, is_public, study_intakes(number, is_public, departments(name)))')
+        .eq('user_id', user.id)
+        .eq('status', 'approved')
+        .order('role', { ascending: true })
+        .order('created_at', { ascending: true })
+        .limit(1);
+
+      if (memErr) {
+        if (cachedStudy) setIsOffline(true);
+        return;
+      }
+
+      setIsOffline(false);
+      const mem = mems?.[0];
+      const sec = mem ? mapSection(mem.study_sections, mem.role) : null;
+      if (sec) {
+        setMySection(sec);
+        const resolvedPersona: Persona = mem!.role === 'cr' ? 'cr' : 'member';
+        setPersona(resolvedPersona);
+        const { data: coursesData } = await supabase
+          .from('study_courses').select('*').eq('section_id', sec.id).order('code');
+        const cList = (coursesData ?? []) as Course[];
+        setCourses(cList);
+        setCache(cacheKey, { sec, persona: resolvedPersona, courses: cList });
+      } else {
+        // check pending section-creation request
+        const { data: req } = await supabase
+          .from('study_section_requests')
+          .select('id')
+          .eq('requester_id', user.id)
+          .eq('status', 'pending')
+          .maybeSingle();
+        const resolvedPersona: Persona = req ? 'pendingcreate' : 'notjoined';
+        setPersona(resolvedPersona);
+        setCourses([]);
+        setCache(cacheKey, { sec: null, persona: resolvedPersona, courses: [] });
+      }
+    } catch {
+      if (cachedStudy) setIsOffline(true);
     }
   }, [user]);
 
@@ -459,13 +485,23 @@ export function StudyHubScreen({ navigation }: any) {
   }
 
   async function loadPublicSections() {
-    const { data, error } = await supabase
-      .from('study_sections')
-      .select('id, intake_id, number, join_code, is_public, study_intakes(number, is_public, departments(name))')
-      .eq('is_public', true)
-      .order('created_at');
-    if (error) { console.warn('loadPublicSections:', error.message); return; }
-    if (data) setSections(data.map((r: any) => mapSection(r)).filter(Boolean) as SectionRow[]);
+    const cached = await getCache<SectionRow[]>(CacheKeys.STUDY_COURSES);
+    if (cached && cached.length) setSections(cached);
+    try {
+      const { data, error } = await supabase
+        .from('study_sections')
+        .select('id, intake_id, number, join_code, is_public, study_intakes(number, is_public, departments(name))')
+        .eq('is_public', true)
+        .order('created_at');
+      if (error) { console.warn('loadPublicSections:', error.message); return; }
+      if (data) {
+        const rows = data.map((r: any) => mapSection(r)).filter(Boolean) as SectionRow[];
+        setSections(rows);
+        setCache(CacheKeys.STUDY_COURSES, rows);
+      }
+    } catch {
+      // offline fallback already loaded
+    }
   }
 
   async function loadJoinReqs() {
@@ -682,8 +718,14 @@ export function StudyHubScreen({ navigation }: any) {
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   useEffect(() => {
+    getCache<Dept[]>(CacheKeys.STUDY_DEPTS).then(c => { if (c && c.length) setDepartments(c); });
     supabase.from('departments').select('id, name').order('name')
-      .then(({ data }) => { if (data) setDepartments(data as Dept[]); });
+      .then(({ data }) => {
+        if (data) {
+          setDepartments(data as Dept[]);
+          setCache(CacheKeys.STUDY_DEPTS, data);
+        }
+      });
   }, []);
 
   useEffect(() => {
@@ -728,6 +770,10 @@ export function StudyHubScreen({ navigation }: any) {
 
   async function joinByCode() {
     if (codeInput.trim().length < 4 || !user) return;
+    if (isOffline) {
+      toast({ type: 'info', title: 'Offline Mode', message: 'Internet connection required to join section.' });
+      return;
+    }
     const code = codeInput.trim().toUpperCase();
     const { data, error } = await supabase.rpc('join_section_by_code', { p_code: code });
     const res = data as RpcResult;
@@ -742,6 +788,10 @@ export function StudyHubScreen({ navigation }: any) {
 
   async function requestJoin(sectionId: string) {
     if (!user) return;
+    if (isOffline) {
+      toast({ type: 'info', title: 'Offline Mode', message: 'Internet connection required to request section join.' });
+      return;
+    }
     const { error } = await supabase
       .from('study_section_members')
       .insert({ section_id: sectionId, user_id: user.id, role: 'member', status: 'pending' });
@@ -1372,6 +1422,10 @@ export function StudyHubScreen({ navigation }: any) {
   return (
     <SafeAreaView style={[s.safe, { backgroundColor: C.bg }]}>
       <SubBar title={barTitle} onBack={handleBack} />
+      <OfflineBanner
+        visible={isOffline}
+        message="Showing cached study hub courses and materials."
+      />
 
       <ScrollView
         contentContainerStyle={[s.scroll, { paddingHorizontal: Layout.screenPadding }]}

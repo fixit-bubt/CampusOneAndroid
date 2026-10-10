@@ -15,6 +15,7 @@ import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout , SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { getCache, CacheKeys } from '../../services/cacheService';
 import { openUrl } from '../../utils/link';
 import { localToday } from '../../utils/format';
 import type { Event } from '../../types/database';
@@ -43,8 +44,8 @@ export function EventDetailScreen({ route, navigation }: any) {
   const t = useT();
   const toast = useToast();
   // Hooks must run unconditionally - keep all of them above any early return.
-  const { eventId } = route.params ?? {};
-  const id = eventId;
+  const { eventId, id: paramId } = route.params ?? {};
+  const id = eventId || paramId;
   const [event, setEvent] = useState<Event | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [going, setGoing] = useState(false);
@@ -63,19 +64,33 @@ export function EventDetailScreen({ route, navigation }: any) {
 
   const load = useCallback(async () => {
     if (!id) { setNotFound(true); return; }
+
+    // Check cache first
+    const cached = await getCache<Event[]>(CacheKeys.EVENTS);
+    const found = cached?.find(e => e.id === id);
+    if (found) setEvent(found);
+
     try {
       const [evRes, rsvpRes, countRes] = await Promise.all([
         supabase.from('events').select('*').eq('id', id).maybeSingle(),
         user ? supabase.from('event_rsvps').select('user_id').eq('event_id', id).eq('user_id', user.id).maybeSingle() : Promise.resolve({ data: null, error: null }),
         supabase.from('event_rsvps').select('user_id', { count: 'exact', head: true }).eq('event_id', id),
       ]);
-      if (evRes.error || !evRes.data) { if (evRes.error) console.error('event detail fetch:', evRes.error.message); setNotFound(true); return; }
+      if (evRes.error || !evRes.data) {
+        if (!found) {
+          if (evRes.error) console.error('event detail fetch:', evRes.error.message);
+          setNotFound(true);
+        }
+        return;
+      }
       setEvent(evRes.data as Event);
       setGoing(!!rsvpRes.data);
       setGoingCount(countRes.count ?? 0);
     } catch (e) {
-      console.error('EventDetail load:', e);
-      setNotFound(true);
+      if (!found) {
+        console.error('EventDetail load:', e);
+        setNotFound(true);
+      }
     }
   }, [id, user?.id]);
 

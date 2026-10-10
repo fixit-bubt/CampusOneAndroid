@@ -1,8 +1,3 @@
-// Lost & Found item detail - full claims flow.
-// Claimant: submit claim/notify with optional proof photo, track its status,
-// see the poster's contact once approved. Poster: review incoming claims,
-// view proof, approve (unlocks contacts both ways + auto-resolves the item
-// via the resolve_item_on_approval DB trigger) or reject.
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet, Image,
@@ -16,9 +11,11 @@ import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
+import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { FontFamily, Layout, SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { fetchPeople } from '../../services/peopleService';
+import { getCache, CacheKeys } from '../../services/cacheService';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
 import { openUrl, waHref } from '../../utils/link';
@@ -82,64 +79,87 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
   const [busy, setBusy] = useState(false);
   const [deciding, setDeciding] = useState<string | null>(null);
   const [contactSheetOpen, setContactSheetOpen] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
 
   const isMine = item?.poster_id === user?.id;
   const myClaim = claims.find(c => c.claimant_id === user?.id) ?? null;
 
   const load = useCallback(async () => {
     if (!id) return;
-    const [itemRes, claimsRes] = await Promise.all([
-      supabase
-        .from('lost_found_items')
-        .select('*')
-        .eq('id', id)
-        .single(),
-      // RLS scopes this automatically: poster sees all claims on the item,
-      // a claimant sees only their own.
-      supabase
-        .from('claims')
-        .select('*')
-        .eq('item_id', id)
-        .order('created_at', { ascending: false }),
-    ]);
-    // Poster/claimant names come from the roster RPC: profiles RLS only opens up
-    // once a claim is approved, so before that an embed shows nobody.
-    const people = await fetchPeople([
-      (itemRes.data as any)?.poster_id,
-      ...((claimsRes.data as any[]) ?? []).map(c => c.claimant_id),
-    ]);
-    const named = (uid: string) => people[uid]
-      ? { full_name: people[uid].full_name, avatar_url: people[uid].avatar_url }
-      : null;
-    let loaded: LostFoundItem | null = null;
-    if (itemRes.data) {
+
+    // 1. Optimistic cache load
+    const cachedItems = await getCache<LostFoundItem[]>(CacheKeys.LOST_FOUND);
+    const cached = cachedItems?.find(i => i.id === id);
+    if (cached) {
+      setItem(cached);
+      const people = await fetchPeople([cached.poster_id]);
+      if (people[cached.poster_id]) {
+        setPoster({ full_name: people[cached.poster_id].full_name, avatar_url: people[cached.poster_id].avatar_url });
+      }
+    }
+
+    try {
+      const [itemRes, claimsRes] = await Promise.all([
+        supabase
+          .from('lost_found_items')
+          .select('*')
+          .eq('id', id)
+          .single(),
+        supabase
+          .from('claims')
+          .select('*')
+          .eq('item_id', id)
+          .order('created_at', { ascending: false }),
+      ]);
+
+      if (itemRes.error || !itemRes.data) {
+        if (cached) {
+          setIsOffline(true);
+          return;
+        }
+        setNotFound(true);
+        return;
+      }
+
+      setIsOffline(false);
+      const people = await fetchPeople([
+        (itemRes.data as any)?.poster_id,
+        ...((claimsRes.data as any[]) ?? []).map(c => c.claimant_id),
+      ]);
+      const named = (uid: string) => people[uid]
+        ? { full_name: people[uid].full_name, avatar_url: people[uid].avatar_url }
+        : null;
+      let loaded: LostFoundItem | null = null;
       loaded = itemRes.data as LostFoundItem;
       setItem(loaded);
       setPoster(named((itemRes.data as any).poster_id));
-    } else {
-      setNotFound(true);
-    }
-    if (claimsRes.data) {
-      setClaims((claimsRes.data as any[]).map(c => ({ ...c, profiles: named(c.claimant_id) })) as ClaimRow[]);
-    }
 
-    // Possible matches: opposite type, same category, still open. Only worth
-    // computing while the item itself is unresolved.
-    if (loaded && loaded.status === 'Open') {
-      const oppType = loaded.type === 'Lost' ? 'Found' : 'Lost';
-      const { data: cand } = await supabase
-        .from('lost_found_items')
-        .select('id, title, description, type, category, status, created_at, poster_id, location')
-        .eq('type', oppType)
-        .eq('category', loaded.category)
-        .eq('status', 'Open')
-        .is('deleted_at', null)
-        .neq('id', loaded.id)
-        .order('created_at', { ascending: false })
-        .limit(40);
-      setMatches(rankMatches(loaded, (cand ?? []) as MatchItem[]));
-    } else {
-      setMatches([]);
+      if (claimsRes.data) {
+        setClaims((claimsRes.data as any[]).map(c => ({ ...c, profiles: named(c.claimant_id) })) as ClaimRow[]);
+      }
+
+      if (loaded && loaded.status === 'Open') {
+        const oppType = loaded.type === 'Lost' ? 'Found' : 'Lost';
+        const { data: cand } = await supabase
+          .from('lost_found_items')
+          .select('id, title, description, type, category, status, created_at, poster_id, location')
+          .eq('type', oppType)
+          .eq('category', loaded.category)
+          .eq('status', 'Open')
+          .is('deleted_at', null)
+          .neq('id', loaded.id)
+          .order('created_at', { ascending: false })
+          .limit(40);
+        setMatches(rankMatches(loaded, (cand ?? []) as MatchItem[]));
+      } else {
+        setMatches([]);
+      }
+    } catch {
+      if (cached) {
+        setIsOffline(true);
+      } else {
+        setNotFound(true);
+      }
     }
   }, [id]);
 
@@ -173,6 +193,10 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
   }
 
   async function handleClaim() {
+    if (isOffline) {
+      toast({ type: 'info', title: 'Offline Mode', message: 'Internet connection required to submit a claim.' });
+      return;
+    }
     const msg = claimNote.trim();
     if (busy || !item || !user) return;
     if (msg.length < 10) { toast({ type: 'error', title: t.common.error, message: t.lostfound.messageTooShort }); return; }
@@ -199,6 +223,10 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
   }
 
   function decide(claim: ClaimRow, status: 'Approved' | 'Rejected') {
+    if (isOffline) {
+      toast({ type: 'info', title: 'Offline Mode', message: 'Internet connection required to review claims.' });
+      return;
+    }
     const approve = status === 'Approved';
     Alert.alert(
       approve ? t.lostfound.approveConfirmTitle : t.lostfound.rejectConfirmTitle,
@@ -258,6 +286,10 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar title="Lost & Found" onBack={() => navigation.goBack()} />
+      <OfflineBanner
+        visible={isOffline}
+        message="Showing cached item details. Connect to the internet to submit claims or manage item."
+      />
       <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
         <ScrollView
           contentContainerStyle={[styles.content, { paddingHorizontal: Layout.screenPadding }]}
