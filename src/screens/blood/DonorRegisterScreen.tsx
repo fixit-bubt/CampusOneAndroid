@@ -13,6 +13,8 @@ import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { getMyDonor } from '../../services/bloodService';
+import { removeCache, CacheKeys } from '../../services/cacheService';
+import { isValidDate, localToday } from '../../utils/format';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { scheduleRechargedReminder, cancelRechargedReminder } from '../../utils/bloodReminder';
 import { AreaPickerModal } from '../../components/blood/AreaPickerModal';
@@ -75,16 +77,23 @@ export function DonorRegisterScreen({ navigation }: any) {
   const canSubmit = group !== null && area.trim();
 
   async function handleSubmit() {
-    if (!canSubmit || !user) return;
+    if (!user) {
+      toast({ type: 'info', title: t.blood2.signInRequired, message: t.blood2.signInToRespond });
+      return;
+    }
+    if (!canSubmit) return;
     setLoading(true);
     try {
-      // last_donated is a DATE column - only send a valid YYYY-MM-DD, else null.
+      // last_donated is a DATE column - validate valid past/today YYYY-MM-DD
       const ld = lastDonated.trim();
-      const lastDonatedDate = /^\d{4}-\d{2}-\d{2}$/.test(ld) ? ld : null;
-      if (ld && !lastDonatedDate) {
-        toast({ type: 'error', title: t.common.error, message: `${t.blood2.lastDonatedOptional}: YYYY-MM-DD` });
-        setLoading(false);
-        return;
+      let lastDonatedDate: string | null = null;
+      if (ld) {
+        if (!isValidDate(ld, true) || ld > localToday()) {
+          toast({ type: 'error', title: t.common.error, message: `${t.blood2.lastDonatedOptional}: YYYY-MM-DD (today or past)` });
+          setLoading(false);
+          return;
+        }
+        lastDonatedDate = ld;
       }
       // Registering as a donor is consent to be reached. donor_contact only
       // reveals the number when show_whatsapp is true, so opt in here.
@@ -117,7 +126,12 @@ export function DonorRegisterScreen({ navigation }: any) {
         await cancelRechargedReminder();
       }
 
-      await refreshProfile();
+      await Promise.all([
+        removeCache(CacheKeys.BLOOD_FEED(user.id)),
+        removeCache(CacheKeys.HOME_STATUS(user.id)),
+        refreshProfile(),
+      ]);
+      toast({ type: 'success', title: isRegistered ? t.blood2.updateDonorBtn : t.blood2.registerAsDonorBtnFull, message: 'Donor information saved successfully.' });
       navigation.goBack();
     } catch {
       toast({ type: 'error', title: t.common.error, message: t.blood2.registerError });
@@ -142,6 +156,7 @@ export function DonorRegisterScreen({ navigation }: any) {
             contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
           >
         {isRegistered ? (
           <View style={[styles.lockedCard, { backgroundColor: C.surface, borderColor: C.border }]}>

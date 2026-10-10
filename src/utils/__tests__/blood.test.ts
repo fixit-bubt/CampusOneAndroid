@@ -41,4 +41,32 @@ describe('donorEligibility', () => {
   it('treats an unparseable date as eligible rather than blocking', () => {
     expect(donorEligibility('not-a-date')).toEqual({ eligible: true, daysLeft: 0, waitDays: DONATION_WAIT_DAYS });
   });
+
+  it('calculates exactly 90 days left if donated today', () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const r = donorEligibility(today);
+    expect(r.eligible).toBe(false);
+    expect(r.daysLeft).toBe(90);
+  });
+});
+
+describe('isBloodCompatible', () => {
+  const { isBloodCompatible } = require('../blood');
+
+  it('correctly matches ABO/Rh compatible donors', () => {
+    // O- is universal red cell donor
+    expect(isBloodCompatible('O-', 'A+')).toBe(true);
+    expect(isBloodCompatible('O-', 'B+')).toBe(true);
+    expect(isBloodCompatible('O-', 'AB+')).toBe(true);
+    expect(isBloodCompatible('O-', 'O-')).toBe(true);
+
+    // AB+ is universal recipient
+    expect(isBloodCompatible('A+', 'AB+')).toBe(true);
+    expect(isBloodCompatible('B-', 'AB+')).toBe(true);
+
+    // Incompatible pairs
+    expect(isBloodCompatible('A+', 'B+')).toBe(false);
+    expect(isBloodCompatible('B+', 'A-')).toBe(false);
+    expect(isBloodCompatible('AB+', 'O+')).toBe(false);
+  });
 });

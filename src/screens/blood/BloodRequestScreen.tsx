@@ -12,6 +12,7 @@ import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../components/ui/Toast';
+import { removeCache, CacheKeys } from '../../services/cacheService';
 import { AreaPickerModal } from '../../components/blood/AreaPickerModal';
 import type { BloodRequest } from '../../types/database';
 
@@ -41,13 +42,18 @@ export function BloodRequestScreen({ navigation }: any) {
   const canSubmit = group !== null && patient.trim() && hospital.trim();
 
   async function handleSubmit() {
-    if (!canSubmit || !user) return;
+    if (!user) {
+      toast({ type: 'info', title: t.blood2.signInRequired, message: t.blood2.signInToRespond });
+      return;
+    }
+    if (!canSubmit) return;
     setLoading(true);
     try {
       const finalPatient = isPlatelets ? `[Platelets] ${patient.trim()}` : patient.trim();
+      const parsedUnits = Math.max(1, Math.min(10, parseInt(units, 10) || 1));
       const { error } = await supabase.from('blood_requests').insert({
         blood_group:  group,
-        units:        parseInt(units, 10) || 1,
+        units:        parsedUnits,
         patient:      finalPatient,
         hospital:     hospital.trim(),
         area:         area.trim() || 'Near campus',
@@ -55,6 +61,11 @@ export function BloodRequestScreen({ navigation }: any) {
         requester_id: user.id,
       });
       if (error) throw error;
+      await Promise.all([
+        removeCache(CacheKeys.BLOOD_FEED(user.id)),
+        removeCache(CacheKeys.HOME_STATUS(user.id)),
+      ]);
+      toast({ type: 'success', title: t.blood2.thankYou, message: 'Emergency blood request posted.' });
       navigation.goBack();
     } catch {
       toast({ type: 'error', title: t.common.error, message: t.blood2.postRequestError });
@@ -72,6 +83,7 @@ export function BloodRequestScreen({ navigation }: any) {
           contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
         >
         {/* Blood group grid */}
         <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.blood2.bloodGroup}</Text>

@@ -35,13 +35,18 @@ export function CampusToday({ navigation, hide }: { navigation: any; hide?: stri
     const todayISO = localToday();
     const nowMins = new Date().getHours() * 60 + new Date().getMinutes();
 
+    const staleCutoff = new Date(Date.now() - 21 * 86400000).toISOString();
+
     const [busRes, prayerRes, annRes, evRes, jobsRes, bloodRes] = await Promise.all([
       supabase.from('bus_routes').select('name, to_departures').eq('active', true),
       supabase.from('prayer_times').select('en, azan').order('sort'),
       supabase.from('announcements').select('title').is('deleted_at', null).order('pinned', { ascending: false }).order('created_at', { ascending: false }).limit(1),
       supabase.from('events').select('title, date').gte('date', todayISO).order('date').limit(1),
       supabase.from('jobs').select('id', { count: 'exact', head: true }).is('deleted_at', null).gte('deadline', todayISO),
-      supabase.from('blood_requests').select('id', { count: 'exact', head: true }).eq('urgency', 'Urgent'),
+      supabase.from('blood_requests').select('id', { count: 'exact', head: true })
+        .eq('urgency', 'Urgent')
+        .is('fulfilled_at', null)
+        .gte('created_at', staleCutoff),
     ]);
 
     const out: WidgetData[] = [];

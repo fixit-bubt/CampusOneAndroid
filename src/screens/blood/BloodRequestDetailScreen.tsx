@@ -15,7 +15,7 @@ import { LoadError } from '../../components/ui/LoadState';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { FontFamily, Layout, SectorColors } from '../../theme';
 import { useAuth } from '../../store/authStore';
-import { getCache, CacheKeys } from '../../services/cacheService';
+import { getCache, removeCache, CacheKeys } from '../../services/cacheService';
 import { donorEligibility } from '../../utils/blood';
 import {
   getRequest, getResponders, confirmDonation, markRequestFulfilled, type Pledge,
@@ -36,6 +36,7 @@ export function BloodRequestDetailScreen({ route, navigation }: any) {
   const [loadFailed, setLoadFailed] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [fulfilling, setFulfilling] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
 
   const load = useCallback(async () => {
@@ -125,11 +126,22 @@ export function BloodRequestDetailScreen({ route, navigation }: any) {
       {
         text: t.blood2.markFulfilledConfirm,
         onPress: async () => {
-          // RLS blood_req_update lets the requester update their own row.
-          const res = await markRequestFulfilled(requestId);
-          if (!res.ok) { toast({ type: 'error', title: t.common.error, message: res.error }); return; }
-          toast({ type: 'success', title: t.blood2.fulfilledTitle, message: t.blood2.fulfilledBody });
-          navigation.goBack();
+          setFulfilling(true);
+          try {
+            // RLS blood_req_update lets the requester update their own row.
+            const res = await markRequestFulfilled(requestId);
+            if (!res.ok) { toast({ type: 'error', title: t.common.error, message: res.error }); return; }
+            if (user?.id) {
+              await Promise.all([
+                removeCache(CacheKeys.BLOOD_FEED(user.id)),
+                removeCache(CacheKeys.HOME_STATUS(user.id)),
+              ]);
+            }
+            toast({ type: 'success', title: t.blood2.fulfilledTitle, message: t.blood2.fulfilledBody });
+            navigation.goBack();
+          } finally {
+            setFulfilling(false);
+          }
         },
       },
     ]);
@@ -194,13 +206,14 @@ export function BloodRequestDetailScreen({ route, navigation }: any) {
 
         {req && !req.fulfilled_at && (
           <TouchableOpacity
-            style={[styles.fulfillBtn, { borderColor: C.success }]}
+            style={[styles.fulfillBtn, { borderColor: C.success, opacity: fulfilling ? 0.6 : 1 }]}
             onPress={markFulfilled}
+            disabled={fulfilling}
             activeOpacity={0.85}
           >
             <Icon name="checkAll" size={16} color={C.success} />
             <Text style={[styles.fulfillTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
-              {t.blood2.markFulfilled}
+              {fulfilling ? '…' : t.blood2.markFulfilled}
             </Text>
           </TouchableOpacity>
         )}

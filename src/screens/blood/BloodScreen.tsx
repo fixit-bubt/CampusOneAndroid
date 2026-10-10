@@ -17,7 +17,7 @@ import { FontFamily, Layout, SectorColors, Accent } from '../../theme';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
-import { donorEligibility } from '../../utils/blood';
+import { donorEligibility, isBloodCompatible } from '../../utils/blood';
 import { scheduleRechargedReminder } from '../../utils/bloodReminder';
 import { localToday } from '../../utils/format';
 import {
@@ -81,15 +81,15 @@ export function BloodScreen({ navigation }: any) {
   const TAB_COLORS: Record<Tab, { fg: string; bg: string }> = useMemo(
     () => ({
       requests: {
-        fg: C.danger, // Crimson (#d63d35)
-        bg: isDark ? 'rgba(214, 61, 53, 0.18)' : '#FEE2E2',
+        fg: C.danger,
+        bg: C.dangerBg,
       },
       donors: {
-        fg: C.success, // Emerald (#16a34a)
-        bg: isDark ? 'rgba(22, 163, 74, 0.18)' : '#DCFCE7',
+        fg: C.success,
+        bg: C.successBg,
       },
     }),
-    [C.danger, C.success, isDark]
+    [C.danger, C.dangerBg, C.success, C.successBg]
   );
 
   const [groupFilter, setGroupFilter] = useState('All');
@@ -198,7 +198,11 @@ export function BloodScreen({ navigation }: any) {
   }
 
   async function revealContact(donorUserId: string, donorName?: string | null) {
-    if (!user || busyId) return;
+    if (!user) {
+      toast({ type: 'info', title: t.blood2.signInRequired, message: t.blood2.signInToRespond });
+      return;
+    }
+    if (busyId) return;
     if (isOffline) {
       toast({ type: 'info', title: 'Offline Mode', message: 'Internet connection required to view donor contacts.' });
       return;
@@ -210,13 +214,13 @@ export function BloodScreen({ navigation }: any) {
         toast({ type: 'error', title: t.common.error, message: t.blood2.revealContactError });
         return;
       }
-      if (!res.data) {
+      if (!res.data?.whatsapp) {
         toast({ type: 'info', title: t.blood2.notAvailable, message: t.blood2.notShared });
         return;
       }
       setContactTarget({
-        name: donorName ?? t.blood2.contact,
-        phone: res.data,
+        name: res.data.name ?? donorName ?? t.blood2.contact,
+        phone: res.data.whatsapp,
         title: t.blood2.donorsTab,
       });
     } finally {
@@ -226,7 +230,11 @@ export function BloodScreen({ navigation }: any) {
 
   // Pledged donors may see the requester's contact (consent-by-posting)
   async function revealRequester(r: BloodRequest) {
-    if (!user || busyId) return;
+    if (!user) {
+      toast({ type: 'info', title: t.blood2.signInRequired, message: t.blood2.signInToRespond });
+      return;
+    }
+    if (busyId) return;
     if (isOffline) {
       toast({ type: 'info', title: 'Offline Mode', message: 'Internet connection required to view requester contacts.' });
       return;
@@ -245,7 +253,7 @@ export function BloodScreen({ navigation }: any) {
       setContactTarget({
         name: res.data.name ?? r.patient ?? t.blood2.requester,
         phone: res.data.whatsapp,
-        title: `${r.blood_group} - ${r.patient}`,
+        title: `${r.blood_group} · ${r.patient}`,
       });
     } finally {
       setBusyId(null);
@@ -288,6 +296,25 @@ export function BloodScreen({ navigation }: any) {
       toast({ type: 'info', title: 'Offline Mode', message: 'Internet connection required to pledge blood donation.' });
       return;
     }
+    if (!myDonor) {
+      Alert.alert(
+        t.blood2.registerAsDonorTitle,
+        'Please register as a campus blood donor first before offering help.',
+        [
+          { text: t.common.cancel, style: 'cancel' },
+          { text: t.blood2.registerAsDonorBtn, onPress: () => navigation.navigate('DonorRegister') },
+        ]
+      );
+      return;
+    }
+    if (!isBloodCompatible(myDonor.blood_group, r.blood_group)) {
+      toast({
+        type: 'info',
+        title: 'Group Incompatible',
+        message: `Your registered group (${myDonor.blood_group}) cannot donate to ${r.blood_group}.`,
+      });
+      return;
+    }
     if (respondedIds.has(r.id)) {
       toast({ type: 'info', title: t.blood2.alreadyResponded, message: t.blood2.alreadyOfferedHelp });
       return;
@@ -311,6 +338,13 @@ export function BloodScreen({ navigation }: any) {
               });
               toast({ type: 'error', title: t.common.error, message: t.blood2.submitResponseError });
             } else {
+              const cacheKey = CacheKeys.BLOOD_FEED(user.id);
+              const cached = await getCache<any>(cacheKey);
+              if (cached) {
+                const setIds = new Set(cached.respondedIds ?? []);
+                setIds.add(r.id);
+                setCache(cacheKey, { ...cached, respondedIds: Array.from(setIds) });
+              }
               toast({ type: 'success', title: t.blood2.thankYou, message: t.blood2.pledgedToHelp(r.blood_group) });
             }
           },
@@ -413,7 +447,7 @@ export function BloodScreen({ navigation }: any) {
               </View>
               <Text style={[styles.myStatusMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
                 {myDonor.last_donated ? `Last: ${myDonor.last_donated}` : t.blood2.never}
-                {myDonationCount > 0 ? ` · ${myDonationCount} donations` : ''}
+                {myDonationCount > 0 ? ` · ${t.blood2.donationsCount(myDonationCount)}` : ''}
               </Text>
             </View>
           </View>
@@ -726,7 +760,8 @@ export function BloodScreen({ navigation }: any) {
                     </View>
                     <View style={styles.reqMeta}>
                       <Text style={[styles.reqMetaTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                        {t.blood2.unitsNeeded(r.area, r.units)}
+                        {t.blood2.unitsNeeded(r.area || 'Near campus', r.units)}
+                        {(r as any).pledge_count > 0 ? ` · ${(r as any).pledge_count} ${(r as any).pledge_count === 1 ? 'donor offered help' : 'donors offered help'}` : ''}
                       </Text>
                     </View>
                     {r.requester_id === user?.id ? (
@@ -846,13 +881,13 @@ export function BloodScreen({ navigation }: any) {
                     <View key={d.user_id}>
                       {i > 0 && <View style={[styles.divider, { backgroundColor: C.border }]} />}
                       <View style={[styles.donorRow, !eligible && { opacity: 0.6 }]}>
-                        <Avatar name={(d as any).profiles?.full_name} size="sm" />
+                        <Avatar name={(d as any).profiles?.full_name} uri={(d as any).profiles?.avatar_url} size="sm" />
                         <View style={{ flex: 1 }}>
                           <Text style={[styles.donorName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                             {(d as any).profiles?.full_name ?? t.blood2.anonymous}{isMe ? ` ${t.blood2.youTag}` : ''}
                           </Text>
                           <Text style={[styles.donorMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                            {t.blood2.donorMeta(d.area, d.last_donated ?? t.blood2.never)}
+                            {t.blood2.donorMeta(d.area || 'BUBT', d.last_donated ?? t.blood2.never)}
                           </Text>
                           <View style={[styles.eligPill, { backgroundColor: eligible ? C.successBg : C.warnBg }]}>
                             <Text style={[styles.eligTxt, { color: eligible ? C.success : C.warn, fontFamily: FontFamily.jakartaBold }]}>
@@ -862,15 +897,18 @@ export function BloodScreen({ navigation }: any) {
                         </View>
                         <GroupBadge group={d.blood_group} size={34} />
                         {isMe ? (
-                          <TouchableOpacity
-                            style={[styles.contactBtn, { backgroundColor: C.successBg }]}
-                            onPress={markDonatedToday}
-                            activeOpacity={0.75}
-                          >
-                            <Text style={[styles.contactTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
-                              {t.blood2.iDonated}
-                            </Text>
-                          </TouchableOpacity>
+                          eligible && d.last_donated !== localToday() ? (
+                            <TouchableOpacity
+                              style={[styles.contactBtn, { backgroundColor: C.successBg }]}
+                              onPress={markDonatedToday}
+                              activeOpacity={0.75}
+                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            >
+                              <Text style={[styles.contactTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
+                                {t.blood2.iDonated}
+                              </Text>
+                            </TouchableOpacity>
+                          ) : null
                         ) : (
                           <TouchableOpacity
                             style={[styles.contactBtn, {
@@ -880,6 +918,7 @@ export function BloodScreen({ navigation }: any) {
                             onPress={() => revealContact(d.user_id, (d as any).profiles?.full_name)}
                             activeOpacity={0.75}
                             disabled={busyId === d.user_id || !eligible}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                           >
                             <Text style={[styles.contactTxt, { color: eligible ? BLOOD_COLOR : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
                               {busyId === d.user_id ? '…' : t.blood2.contact}
@@ -1041,7 +1080,7 @@ const styles = StyleSheet.create({
   urgencyTxt: { fontSize: 11 } as any,
   reqMeta: { marginTop: 8 } as ViewStyle,
   reqMetaTxt: { fontSize: 12 } as any,
-  pledgeBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 40, borderRadius: 12, marginTop: 12 } as ViewStyle,
+  pledgeBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 44, borderRadius: 12, marginTop: 12 } as ViewStyle,
   pledgeTxt: { fontSize: 13 } as any,
   summaryCard: { padding: 14, borderRadius: 16, borderWidth: 1, marginBottom: 12 } as ViewStyle,
   summaryTitle: { fontSize: 11, letterSpacing: 0.5, marginBottom: 10 } as any,
@@ -1054,7 +1093,7 @@ const styles = StyleSheet.create({
   donorRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 13 } as ViewStyle,
   donorName: { fontSize: 14 } as any,
   donorMeta: { fontSize: 12, marginTop: 2 } as any,
-  contactBtn: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 } as ViewStyle,
+  contactBtn: { minHeight: 38, justifyContent: 'center', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 } as ViewStyle,
   contactTxt: { fontSize: 11 } as any,
   myStatusCard: {
     flexDirection: 'row',
@@ -1072,14 +1111,16 @@ const styles = StyleSheet.create({
   myStatusTitle: { fontSize: 13 } as any,
   myStatusMeta: { fontSize: 11, marginTop: 1 } as any,
   myStatusEditBtn: {
-    width: 32,
-    height: 32,
+    width: 36,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 8,
   } as ViewStyle,
   statusDonatedBtn: {
-    paddingHorizontal: 9,
+    minHeight: 36,
+    justifyContent: 'center',
+    paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 8,
   } as ViewStyle,

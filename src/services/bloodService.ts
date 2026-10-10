@@ -6,10 +6,10 @@ import { localToday } from '../utils/format';
 import type { ServiceResult } from './authService';
 import type { BloodRequest, Donor } from '../types/database';
 
-export type DonorWithName = Donor & { profiles: { full_name: string } | null };
+export type DonorWithName = Donor & { profiles: { full_name: string; avatar_url: string | null } | null };
 
 export interface BloodFeed {
-  requests: BloodRequest[];
+  requests: (BloodRequest & { pledge_count?: number })[];
   donors: DonorWithName[];
   respondedIds: Set<string>;
   myDonor: Donor | null;
@@ -25,32 +25,47 @@ export interface MyDonorData {
 // (nothing auto-expires them server-side).
 export async function getBloodFeed(userId: string | undefined): Promise<ServiceResult<BloodFeed>> {
   const staleCutoff = new Date(Date.now() - 21 * 86400000).toISOString();
-  const [rRes, dRes, pRes, mRes, countRes] = await Promise.all([
+  const [rRes, dRes, pRes, mRes, countRes, allPledgesRes] = await Promise.all([
     supabase.from('blood_requests').select('*')
       .is('fulfilled_at', null)
       .gte('created_at', staleCutoff)
-      .order('created_at', { ascending: false }).limit(30),
-    supabase.from('donors').select('*').limit(50),
-    supabase.from('blood_pledges').select('request_id').eq('donor_id', userId ?? ''),
+      .order('created_at', { ascending: false }).limit(40),
+    supabase.from('donors').select('*').order('created_at', { ascending: false }),
+    userId
+      ? supabase.from('blood_pledges').select('request_id').eq('donor_id', userId)
+      : Promise.resolve({ data: [], error: null }),
     userId ? supabase.from('donors').select('*').eq('user_id', userId).maybeSingle() : Promise.resolve({ data: null, error: null }),
     userId
       ? supabase.from('blood_pledges').select('*', { count: 'exact', head: true }).eq('donor_id', userId).not('fulfilled_at', 'is', null)
       : Promise.resolve({ count: 0, error: null }),
+    supabase.from('blood_pledges').select('request_id'),
   ]);
   if (rRes.error || dRes.error) return { ok: false, error: (rRes.error ?? dRes.error)!.message };
-  // Donor names come from the roster RPC: profiles RLS exposes only the
+
+  // Calculate pledge counts per request for parity with web
+  const pledgeCounts: Record<string, number> = {};
+  ((allPledgesRes?.data ?? []) as any[]).forEach(p => {
+    pledgeCounts[p.request_id] = (pledgeCounts[p.request_id] ?? 0) + 1;
+  });
+
+  const requests = ((rRes.data ?? []) as BloodRequest[]).map(r => ({
+    ...r,
+    pledge_count: pledgeCounts[r.id] ?? 0,
+  }));
+
+  // Donor names and avatar photos come from the roster RPC: profiles RLS exposes only the
   // caller's own row, so embedding it leaves every other donor nameless.
   const people = await fetchPeople((dRes.data ?? []).map((d: any) => d.user_id));
   const donors = ((dRes.data ?? []) as any[]).map(d => ({
     ...d,
-    profiles: people[d.user_id] ? { full_name: people[d.user_id].full_name } : null,
+    profiles: people[d.user_id] ? { full_name: people[d.user_id].full_name, avatar_url: people[d.user_id].avatar_url } : null,
   }));
   return {
     ok: true,
     data: {
-      requests: (rRes.data ?? []) as BloodRequest[],
+      requests,
       donors: donors as DonorWithName[],
-      respondedIds: new Set((pRes.data ?? []).map(p => p.request_id)),
+      respondedIds: new Set((pRes.data ?? []).map((p: any) => p.request_id)),
       myDonor: ((mRes?.data as Donor) ?? (userId ? ((dRes.data ?? []).find((d: any) => d.user_id === userId) as Donor) : null)) ?? null,
       myDonationCount: countRes?.count ?? 0,
     },
@@ -74,7 +89,10 @@ export async function getMyDonor(userId: string): Promise<ServiceResult<MyDonorD
 }
 
 export async function pledgeToRequest(requestId: string, userId: string): Promise<ServiceResult<null>> {
-  const { error } = await supabase.from('blood_pledges').insert({ request_id: requestId, donor_id: userId });
+  const { error } = await supabase.from('blood_pledges').upsert(
+    { request_id: requestId, donor_id: userId },
+    { onConflict: 'request_id,donor_id', ignoreDuplicates: true }
+  );
   if (error) return { ok: false, error: error.message };
   return { ok: true, data: null };
 }
@@ -82,19 +100,22 @@ export async function pledgeToRequest(requestId: string, userId: string): Promis
 // Donor stamps their own last-donation date (RLS allows own-row updates);
 // resets the 90-day eligibility clock.
 export async function markDonatedToday(userId: string): Promise<ServiceResult<null>> {
-  const { error } = await supabase.from('donors')
+  const { data, error } = await supabase.from('donors')
     .update({ last_donated: localToday() })
-    .eq('user_id', userId);
+    .eq('user_id', userId)
+    .select('user_id');
   if (error) return { ok: false, error: error.message };
+  if (!data || data.length === 0) return { ok: false, error: 'Donor profile not found. Please register first.' };
   return { ok: true, data: null };
 }
 
-// donor_contact returns json { whatsapp } and only when the donor opted in.
-export async function getDonorContact(donorUserId: string): Promise<ServiceResult<string | null>> {
+// donor_contact returns table(name, whatsapp)
+export async function getDonorContact(donorUserId: string): Promise<ServiceResult<{ name: string | null; whatsapp: string | null } | null>> {
   const { data, error } = await supabase.rpc('donor_contact', { p_user_id: donorUserId });
   if (error) return { ok: false, error: error.message };
-  const row = (Array.isArray(data) ? data[0] : data) as { whatsapp?: string | null } | null;
-  return { ok: true, data: row?.whatsapp ?? null };
+  const row = (Array.isArray(data) ? data[0] : data) as { name?: string | null; whatsapp?: string | null } | null;
+  if (!row) return { ok: true, data: null };
+  return { ok: true, data: { name: row.name ?? null, whatsapp: row.whatsapp ?? null } };
 }
 
 // Requester contact is only revealed to donors who pledged (consent-by-pledge).

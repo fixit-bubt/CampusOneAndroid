@@ -25,10 +25,10 @@ export async function scheduleRechargedReminder(
   const isFemale = gender ? gender.toLowerCase() === 'female' : false;
   const waitDays = isFemale ? DONATION_WAIT_DAYS_FEMALE : DONATION_WAIT_DAYS_MALE;
 
-  const then = new Date(lastDonatedDate).getTime();
-  if (isNaN(then)) return;
-
-  const rechargeTime = then + waitDays * 86400000;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(lastDonatedDate)) return;
+  const [y, m, d] = lastDonatedDate.split('-').map(Number);
+  // Target 10:00 AM Dhaka time (04:00 AM UTC) to avoid waking sleeping students
+  const rechargeTime = Date.UTC(y, m - 1, d, 4, 0, 0) + waitDays * 86400000;
   const secondsLeft = Math.floor((rechargeTime - Date.now()) / 1000);
 
   if (secondsLeft > 0) {

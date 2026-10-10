@@ -5,6 +5,7 @@ import {
   type ViewStyle, type TextStyle,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { Icon } from '../ui/Icon';
 import { FontFamily, Layout, SectorColors } from '../../theme';
@@ -32,6 +33,7 @@ export function AreaPickerModal({
 }: AreaPickerModalProps) {
   const { C } = useTheme();
   const t = useT();
+  const insets = useSafeAreaInsets();
   const [search, setSearch] = useState('');
   const searchInputRef = useRef<TextInput>(null);
 
@@ -90,7 +92,7 @@ export function AreaPickerModal({
           activeOpacity={1}
           onPress={onClose}
         />
-        <View style={[styles.sheet, { backgroundColor: C.surface, borderColor: C.border }]}>
+        <View style={[styles.sheet, { backgroundColor: C.surface, borderColor: C.border, paddingBottom: Math.max(insets.bottom, 16) }]}>
           {/* Grab Handle */}
           <View style={[styles.handle, { backgroundColor: C.border }]} />
 
@@ -211,8 +213,7 @@ export function AreaPickerModal({
                 </Text>
                 <View style={[styles.zoneCard, { backgroundColor: C.surface2, borderColor: C.border }]}>
                   {grouped[zone].map((item, idx) => {
-                    const isSelected = selectedArea.toLowerCase() === item.name.toLowerCase() ||
-                      (selectedArea !== 'All' && item.name.toLowerCase().includes(selectedArea.toLowerCase()));
+                    const isSelected = selectedArea.trim().toLowerCase() === item.name.trim().toLowerCase();
                     const count = areaCounts ? areaCounts[item.name] : undefined;
 
                     return (
