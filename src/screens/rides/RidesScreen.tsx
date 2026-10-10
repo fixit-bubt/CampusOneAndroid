@@ -98,6 +98,20 @@ export function RidesScreen({ navigation }: any) {
     }).start();
   }, [tab, animIndex]);
 
+  // Animated sliding indicator for post type filters (All, Offers, Need Ride)
+  const [postTrackWidth, setPostTrackWidth] = useState(0);
+  const postAnimIndex = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const idx = ['all', 'offer', 'request'].indexOf(postTypeFilter);
+    Animated.spring(postAnimIndex, {
+      toValue: idx >= 0 ? idx : 0,
+      useNativeDriver: true,
+      tension: 68,
+      friction: 10,
+    }).start();
+  }, [postTypeFilter, postAnimIndex]);
+
   const load = useCallback(async () => {
     // 1. Optimistic cache load
     const [cachedRides, cachedCounts, cachedReq] = await Promise.all([
@@ -276,6 +290,21 @@ export function RidesScreen({ navigation }: any) {
     outputRange: [0, tabWidth, tabWidth * 2, tabWidth * 3],
   });
 
+  const innerPostTrackWidth = Math.max(0, postTrackWidth - TRACK_PADDING * 2);
+  const postTabWidth = innerPostTrackWidth > 0 ? innerPostTrackWidth / 3 : 0;
+  const postTranslateX = postAnimIndex.interpolate({
+    inputRange: [0, 1, 2],
+    outputRange: [0, postTabWidth, postTabWidth * 2],
+  });
+
+  const POST_FILTER_TABS = useMemo(() => [
+    { id: 'all' as const,     label: t.common.all ?? 'All',            icon: undefined, color: C.text,                border: isDark ? `${C.brand}55` : `${C.brand}35` },
+    { id: 'offer' as const,   label: t.rides2.offers ?? 'Offers',      icon: '🚗',      color: RIDE_COLOR,            border: isDark ? `${RIDE_COLOR}55` : `${RIDE_COLOR}35` },
+    { id: 'request' as const, label: t.rides2.needRide ?? 'Need Ride', icon: '🙋',      color: isDark ? '#c4b5fd' : '#7c3aed', border: isDark ? 'rgba(139, 92, 246, 0.55)' : 'rgba(139, 92, 246, 0.35)' },
+  ], [t, C.text, C.brand, isDark]);
+
+  const activePostFilter = POST_FILTER_TABS.find(item => item.id === postTypeFilter) ?? POST_FILTER_TABS[0];
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar
@@ -375,81 +404,79 @@ export function RidesScreen({ navigation }: any) {
         </View>
       </View>
 
-      {/* Post Type Filters (All, Offers, Requests) */}
-      <View style={[styles.filterRow, { paddingHorizontal: Layout.screenPadding }]}>
-        <TouchableOpacity
-          style={[
-            styles.filterChip,
-            {
-              backgroundColor: postTypeFilter === 'all' ? (isDark ? 'rgba(255,255,255,0.12)' : C.surface2) : 'transparent',
-              borderColor: postTypeFilter === 'all' ? C.brand : C.border,
-            },
-          ]}
-          onPress={() => setPostTypeFilter('all')}
-          activeOpacity={0.75}
-        >
-          <Text
+      {/* Unified Segmented Post Type Filter Bar (All, Offers, Need Ride) with Native Spring Animation */}
+      <View
+        style={[styles.postFilterContainer, { backgroundColor: C.surface2 }]}
+        onLayout={e => setPostTrackWidth(e.nativeEvent.layout.width)}
+      >
+        {postTabWidth > 0 && (
+          <Animated.View
             style={[
-              styles.filterChipTxt,
+              styles.postFilterIndicator,
               {
-                color: postTypeFilter === 'all' ? C.text : C.textMuted,
-                fontFamily: postTypeFilter === 'all' ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                width: postTabWidth,
+                transform: [{ translateX: postTranslateX }],
+                backgroundColor: C.surface,
+                borderColor: activePostFilter.border,
               },
             ]}
-          >
-            {t.common.all ?? 'All'} ({postCounts.all})
-          </Text>
-        </TouchableOpacity>
+          />
+        )}
+        {POST_FILTER_TABS.map(item => {
+          const active = postTypeFilter === item.id;
+          const count = item.id === 'all'
+            ? postCounts.all
+            : item.id === 'offer'
+            ? postCounts.offers
+            : postCounts.requests;
 
-        <TouchableOpacity
-          style={[
-            styles.filterChip,
-            {
-              backgroundColor: postTypeFilter === 'offer' ? `${RIDE_COLOR}18` : 'transparent',
-              borderColor: postTypeFilter === 'offer' ? RIDE_COLOR : C.border,
-            },
-          ]}
-          onPress={() => setPostTypeFilter('offer')}
-          activeOpacity={0.75}
-        >
-          <Text style={{ fontSize: 11 }}>🚗</Text>
-          <Text
-            style={[
-              styles.filterChipTxt,
-              {
-                color: postTypeFilter === 'offer' ? RIDE_COLOR : C.textMuted,
-                fontFamily: postTypeFilter === 'offer' ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-              },
-            ]}
-          >
-            {t.rides2.offers ?? 'Offers'} ({postCounts.offers})
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.filterChip,
-            {
-              backgroundColor: postTypeFilter === 'request' ? (isDark ? 'rgba(139, 92, 246, 0.22)' : '#f3effe') : 'transparent',
-              borderColor: postTypeFilter === 'request' ? '#8b5cf6' : C.border,
-            },
-          ]}
-          onPress={() => setPostTypeFilter('request')}
-          activeOpacity={0.75}
-        >
-          <Text style={{ fontSize: 11 }}>🙋</Text>
-          <Text
-            style={[
-              styles.filterChipTxt,
-              {
-                color: postTypeFilter === 'request' ? (isDark ? '#c4b5fd' : '#7c3aed') : C.textMuted,
-                fontFamily: postTypeFilter === 'request' ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-              },
-            ]}
-          >
-            {t.rides2.needRide ?? 'Requests'} ({postCounts.requests})
-          </Text>
-        </TouchableOpacity>
+          return (
+            <TouchableOpacity
+              key={item.id}
+              style={styles.postFilterBtn}
+              onPress={() => setPostTypeFilter(item.id)}
+              activeOpacity={0.75}
+            >
+              {item.icon ? (
+                <Text style={styles.postFilterIcon}>{item.icon}</Text>
+              ) : null}
+              <Text
+                style={[
+                  styles.postFilterBtnTxt,
+                  {
+                    color: active ? item.color : C.textMuted,
+                    fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                  },
+                ]}
+                numberOfLines={1}
+              >
+                {item.label}
+              </Text>
+              <View
+                style={[
+                  styles.postFilterBadge,
+                  {
+                    backgroundColor: active
+                      ? (isDark ? `${item.color}25` : `${item.color}15`)
+                      : (isDark ? 'rgba(255, 255, 255, 0.08)' : C.surface),
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.postFilterBadgeTxt,
+                    {
+                      color: active ? item.color : C.textMuted,
+                      fontFamily: FontFamily.jakartaBold,
+                    },
+                  ]}
+                >
+                  {count}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
       <ScrollView
@@ -890,21 +917,51 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   clearBtnTxt: { fontSize: 12.5 } as TextStyle,
-  filterRow: {
+  postFilterContainer: {
+    flexDirection: 'row',
+    borderRadius: 14,
+    padding: 3,
+    marginHorizontal: Layout.screenPadding,
+    marginTop: 2,
+    marginBottom: 8,
+    position: 'relative',
+  } as ViewStyle,
+  postFilterIndicator: {
+    position: 'absolute',
+    top: 3,
+    left: 3,
+    bottom: 3,
+    borderRadius: 11,
+    borderWidth: 1.5,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1.5 },
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
+  } as ViewStyle,
+  postFilterBtn: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingTop: 2,
-    paddingBottom: 8,
-  },
-  filterChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    borderWidth: 1,
-  },
-  filterChipTxt: { fontSize: 12 } as TextStyle,
+    justifyContent: 'center',
+    gap: 4,
+    paddingVertical: 7,
+    minHeight: 38,
+    borderRadius: 11,
+    zIndex: 1,
+  } as ViewStyle,
+  postFilterIcon: {
+    fontSize: 11,
+  } as TextStyle,
+  postFilterBtnTxt: {
+    fontSize: 12,
+  } as TextStyle,
+  postFilterBadge: {
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 999,
+  } as ViewStyle,
+  postFilterBadgeTxt: {
+    fontSize: 10,
+  } as TextStyle,
 });

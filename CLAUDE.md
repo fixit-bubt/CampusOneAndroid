@@ -796,7 +796,9 @@ The following screens contain segmented control bars slated for this animated pa
 ### 25.2 Key Features & Enhancements
 1. **Hero Action Bar (Option 1):** Single prominent full-width `[+ Post a Campus Ride]` button (`SectorColors.ride`, 44dp height) matching `LostFoundBrowseScreen` and `BloodScreen` 1:1. Tapping it opens the post screen where the student picks Offer or Request via the animated slider.
 2. **Animated Segmented Track Bar (Browse & Post Screens):**
-   - **Browse Screen (`RidesScreen.tsx`):** Unified rounded track container (`surface2`, `borderRadius: 14`) with native spring sliding indicator (`Animated.View`) across 4 tabs: `All` (Ride Cyan `#6e8b1f`), `To Campus` (Emerald `#16a34a`), `From Campus` (Royal Blue `#2563eb`), and `My Rides` (Violet `#8b5cf6`).
+   - **Browse Screen (`RidesScreen.tsx`):**
+     - **Route Tab Switcher:** Unified rounded track container (`surface2`, `borderRadius: 14`) with native spring sliding indicator (`Animated.View`) across 4 tabs: `All` (Ride Cyan `#6e8b1f`), `To Campus` (Emerald `#16a34a`), `From Campus` (Royal Blue `#2563eb`), and `My Rides` (Violet `#8b5cf6`).
+     - **Post Type Filter Bar (Below Search):** Unified rounded segmented track container (`surface2`, `borderRadius: 14`, `marginTop: 2`, `marginBottom: 8`) with native spring sliding indicator (`Animated.View`) across 3 filters: `All` (Brand), `Offers` (🚗 `#6e8b1f`), and `Need Ride` (🙋 Violet `#8b5cf6`). Replaced previous loose chips with a smooth physical card slider, live reactive count badges, and bilingual translation support.
    - **Post Screen (`RidePostScreen.tsx`):** Animated segmented sliding track container (native spring physics) smoothly transitioning between `[ 🚗 Offer Ride (Driver) ]` and `[ 🙋 Need Ride (Passenger) ]`. SubBar header remains steady ("Post a Ride") with zero jumpiness.
 3. **Dedicated "My Rides" Tab:** Live badge counter showing total active rides. Surfaces both rides the user is offering as a driver (with booked passenger counts) and rides the user booked as a passenger (with seat status), immune to public departure cutoff filters.
 4. **Rickshaw & Multi-Vehicle Commute:**
