@@ -1,4 +1,4 @@
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.15"
+    PostgrestVersion: "14.5"
   }
   graphql_public: {
     Tables: {
@@ -948,6 +948,79 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      dm_grants: {
+        Row: {
+          context_id: string
+          context_type: string
+          created_at: string
+          created_by: string
+          expires_at: string
+          peer_high: string
+          peer_low: string
+        }
+        Insert: {
+          context_id: string
+          context_type: string
+          created_at?: string
+          created_by: string
+          expires_at?: string
+          peer_high: string
+          peer_low: string
+        }
+        Update: {
+          context_id?: string
+          context_type?: string
+          created_at?: string
+          created_by?: string
+          expires_at?: string
+          peer_high?: string
+          peer_low?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dm_grants_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dm_grants_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dm_grants_peer_high_fkey"
+            columns: ["peer_high"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dm_grants_peer_high_fkey"
+            columns: ["peer_high"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dm_grants_peer_low_fkey"
+            columns: ["peer_low"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dm_grants_peer_low_fkey"
+            columns: ["peer_low"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       doctors: {
         Row: {
@@ -1936,6 +2009,7 @@ export type Database = {
       profiles: {
         Row: {
           address: string | null
+          allow_dms: boolean
           avatar_url: string | null
           blood_group: string | null
           created_at: string
@@ -1947,6 +2021,7 @@ export type Database = {
           id: string
           intake: string | null
           phone: string | null
+          pinned_tools: Json
           program: string | null
           role: string
           section: string | null
@@ -1957,6 +2032,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          allow_dms?: boolean
           avatar_url?: string | null
           blood_group?: string | null
           created_at?: string
@@ -1968,6 +2044,7 @@ export type Database = {
           id: string
           intake?: string | null
           phone?: string | null
+          pinned_tools?: Json
           program?: string | null
           role?: string
           section?: string | null
@@ -1978,6 +2055,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          allow_dms?: boolean
           avatar_url?: string | null
           blood_group?: string | null
           created_at?: string
@@ -1989,6 +2067,7 @@ export type Database = {
           id?: string
           intake?: string | null
           phone?: string | null
+          pinned_tools?: Json
           program?: string | null
           role?: string
           section?: string | null
@@ -2295,6 +2374,46 @@ export type Database = {
           {
             foreignKeyName: "rides_driver_id_fkey"
             columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      routine_pins: {
+        Row: {
+          created_at: string
+          routine_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          routine_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          routine_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "routine_pins_routine_id_fkey"
+            columns: ["routine_id"]
+            isOneToOne: false
+            referencedRelation: "routines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "routine_pins_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "routine_pins_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
@@ -3241,7 +3360,6 @@ export type Database = {
       }
     }
     Functions: {
-      delete_own_account: { Args: Record<PropertyKey, never>; Returns: boolean }
       approve_section_request: { Args: { p_request_id: string }; Returns: Json }
       blood_requester_contact: {
         Args: { p_code: string }
@@ -3327,12 +3445,14 @@ export type Database = {
         }
         Returns: undefined
       }
+      compatible_donor_groups: { Args: { p_group: string }; Returns: string[] }
       confirm_blood_donation: {
         Args: { p_donor_id: string; p_request_id: string }
         Returns: Json
       }
       decline_report: { Args: { p_report_id: string }; Returns: Json }
       delete_expired_rides: { Args: never; Returns: undefined }
+      delete_own_account: { Args: never; Returns: boolean }
       directory_profiles: {
         Args: never
         Returns: {
@@ -3343,8 +3463,15 @@ export type Database = {
           role: string
         }[]
       }
+      disconnect_student: { Args: { p_target_id: string }; Returns: boolean }
       dm_can_send: { Args: { other: string }; Returns: boolean }
-      donor_contact: { Args: { p_user_id: string }; Returns: Json }
+      donor_contact: {
+        Args: { p_user_id: string }
+        Returns: {
+          name: string
+          whatsapp: string
+        }[]
+      }
       donor_pledges_for_request: {
         Args: { p_request_id: string }
         Returns: {
@@ -3370,6 +3497,7 @@ export type Database = {
       }
       is_staff_or_admin: { Args: never; Returns: boolean }
       is_student: { Args: never; Returns: boolean }
+      is_student_id: { Args: { p_id: string }; Returns: boolean }
       job_admin_remove: {
         Args: { p_code: string; p_reason: string }
         Returns: undefined
@@ -3387,6 +3515,10 @@ export type Database = {
           name: string
           whatsapp: string
         }[]
+      }
+      open_dm_thread: {
+        Args: { p_code: string; p_context_type: string; p_target: string }
+        Returns: boolean
       }
       register_push_token: {
         Args: { p_platform?: string; p_token: string }
@@ -3432,9 +3564,29 @@ export type Database = {
           full_name: string
           id: string
           intake: string
+          is_cr: boolean
           program: string
           section: string
           status: string
+          student_id: string
+          whatsapp: string
+        }[]
+      }
+      student_profile_detail: {
+        Args: { p_target_id: string }
+        Returns: {
+          avatar_url: string
+          blood_group: string
+          department: string
+          email: string
+          full_name: string
+          id: string
+          intake: string
+          is_cr: boolean
+          program: string
+          section: string
+          status: string
+          student_id: string
           whatsapp: string
         }[]
       }
@@ -3475,12 +3627,15 @@ export type Database = {
           created_at: string | null
           file_size_limit: number | null
           id: string
+          lifecycle_configuration: Json | null
+          lifecycle_configuration_generation: string | null
           name: string
           owner: string | null
           owner_id: string | null
           public: boolean | null
           type: Database["storage"]["Enums"]["buckettype"]
           updated_at: string | null
+          versioning_status: string
         }
         Insert: {
           allowed_mime_types?: string[] | null
@@ -3488,12 +3643,15 @@ export type Database = {
           created_at?: string | null
           file_size_limit?: number | null
           id: string
+          lifecycle_configuration?: Json | null
+          lifecycle_configuration_generation?: string | null
           name: string
           owner?: string | null
           owner_id?: string | null
           public?: boolean | null
           type?: Database["storage"]["Enums"]["buckettype"]
           updated_at?: string | null
+          versioning_status?: string
         }
         Update: {
           allowed_mime_types?: string[] | null
@@ -3501,12 +3659,15 @@ export type Database = {
           created_at?: string | null
           file_size_limit?: number | null
           id?: string
+          lifecycle_configuration?: Json | null
+          lifecycle_configuration_generation?: string | null
           name?: string
           owner?: string | null
           owner_id?: string | null
           public?: boolean | null
           type?: Database["storage"]["Enums"]["buckettype"]
           updated_at?: string | null
+          versioning_status?: string
         }
         Relationships: []
       }
@@ -3584,9 +3745,12 @@ export type Database = {
       }
       objects: {
         Row: {
+          archived_at: string | null
           bucket_id: string | null
           created_at: string | null
           id: string
+          is_delete_marker: boolean
+          is_versioned: boolean
           last_accessed_at: string | null
           metadata: Json | null
           name: string | null
@@ -3598,9 +3762,12 @@ export type Database = {
           version: string | null
         }
         Insert: {
+          archived_at?: string | null
           bucket_id?: string | null
           created_at?: string | null
           id?: string
+          is_delete_marker?: boolean
+          is_versioned?: boolean
           last_accessed_at?: string | null
           metadata?: Json | null
           name?: string | null
@@ -3612,9 +3779,12 @@ export type Database = {
           version?: string | null
         }
         Update: {
+          archived_at?: string | null
           bucket_id?: string | null
           created_at?: string | null
           id?: string
+          is_delete_marker?: boolean
+          is_versioned?: boolean
           last_accessed_at?: string | null
           metadata?: Json | null
           name?: string | null
@@ -3805,7 +3975,7 @@ export type Database = {
         Returns: string
       }
       get_size_by_bucket: {
-        Args: never
+        Args: { delete_markers?: string; noncurrent_versions?: string }
         Returns: {
           bucket_id: string
           size: number
@@ -3819,6 +3989,7 @@ export type Database = {
           next_key_token?: string
           next_upload_token?: string
           prefix_param: string
+          raw_prefix_param?: string
         }
         Returns: {
           created_at: string
@@ -3829,28 +4000,38 @@ export type Database = {
       list_objects_with_delimiter: {
         Args: {
           _bucket_id: string
+          delete_markers?: string
           delimiter_param: string
           max_keys?: number
           next_token?: string
+          next_token_archived_at?: string
+          next_token_version?: string
+          noncurrent_versions?: string
           prefix_param: string
           sort_order?: string
           start_after?: string
         }
         Returns: {
+          archived_at: string
           created_at: string
           id: string
+          is_delete_marker: boolean
+          is_versioned: boolean
           last_accessed_at: string
           metadata: Json
           name: string
           updated_at: string
+          version: string
         }[]
       }
       operation: { Args: never; Returns: string }
       search: {
         Args: {
           bucketname: string
+          delete_markers?: string
           levels?: number
           limits?: number
+          noncurrent_versions?: string
           offsets?: number
           prefix: string
           search?: string
@@ -3858,16 +4039,22 @@ export type Database = {
           sortorder?: string
         }
         Returns: {
+          archived_at: string
           created_at: string
           id: string
+          is_delete_marker: boolean
+          is_versioned: boolean
           last_accessed_at: string
           metadata: Json
           name: string
           updated_at: string
+          version: string
         }[]
       }
       search_by_timestamp: {
         Args: {
+          delete_markers?: string
+          noncurrent_versions?: string
           p_bucket_id: string
           p_level: number
           p_limit: number
@@ -3876,36 +4063,50 @@ export type Database = {
           p_sort_column_after: string
           p_sort_order: string
           p_start_after: string
+          p_start_after_version?: string
         }
         Returns: {
+          archived_at: string
           created_at: string
           id: string
+          is_delete_marker: boolean
+          is_versioned: boolean
           key: string
           last_accessed_at: string
           metadata: Json
           name: string
           updated_at: string
+          version: string
         }[]
       }
       search_v2: {
         Args: {
           bucket_name: string
+          delete_markers?: string
           levels?: number
           limits?: number
+          noncurrent_versions?: string
           prefix: string
           sort_column?: string
           sort_column_after?: string
           sort_order?: string
           start_after?: string
+          start_after_archived_at?: string
+          start_after_is_continuation?: boolean
+          start_after_version?: string
         }
         Returns: {
+          archived_at: string
           created_at: string
           id: string
+          is_delete_marker: boolean
+          is_versioned: boolean
           key: string
           last_accessed_at: string
           metadata: Json
           name: string
           updated_at: string
+          version: string
         }[]
       }
     }
@@ -3926,12 +4127,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3955,11 +4156,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3980,11 +4181,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -4005,11 +4206,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -4022,11 +4223,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

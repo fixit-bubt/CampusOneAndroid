@@ -1,18 +1,27 @@
-// Connections Service - respond to incoming connection requests from the alerts
-// list (the Directory/Profile screens still own the request/send flow).
+// Connections Service - manage connection requests, responses, and mutual peer states.
 
 import { supabase } from '../lib/supabase';
 import type { ServiceResult } from './authService';
 
-// Accept or decline a pending request from `requesterId` addressed to me.
-// Accept flips it to accepted (which fires the connection-accepted notification
-// to the requester and unlocks DMs); decline hard-deletes the pending row so
-// either side can start over later. Returns a friendly error if the request is
-// no longer pending (already handled / withdrawn).
-// Current state of incoming requests from these requesters. The alerts list uses
-// this so it never re-offers Accept/Decline for a request that was already
-// handled (those buttons would fail with "no longer pending"). No row = the
-// request was declined or withdrawn.
+export type ConnStatus = 'none' | 'pending_outgoing' | 'pending_incoming' | 'accepted';
+
+export interface StudentDetail {
+  id: string;
+  full_name: string;
+  avatar_url?: string | null;
+  department?: string | null;
+  program?: string | null;
+  intake?: string | null;
+  section?: string | null;
+  blood_group?: string | null;
+  student_id?: string | null;
+  is_cr?: boolean;
+  status: ConnStatus;
+  email?: string | null;
+  whatsapp?: string | null;
+}
+
+// Current state of incoming requests from these requesters.
 export async function getConnectionStates(
   requesterIds: string[],
 ): Promise<ServiceResult<Record<string, 'pending' | 'accepted' | 'gone'>>> {
@@ -37,12 +46,46 @@ export async function getConnectionStates(
   return { ok: true, data: map };
 }
 
-// The dedupe trigger raises a raw Postgres message; map it to a dictionary key
-// so the screens can show a translated reason instead of the SQL text.
+// Map database duplicate error to dictionary key
 export function connectErrorKey(dbMessage: string): 'alreadyLinked' | 'connectFailed' {
   return /already exists/i.test(dbMessage) ? 'alreadyLinked' : 'connectFailed';
 }
 
+// Send a connection request to target student
+export async function sendConnectionRequest(targetId: string): Promise<ServiceResult<null>> {
+  const { data: auth } = await supabase.auth.getUser();
+  const uid = auth.user?.id;
+  if (!uid) return { ok: false, error: 'You must be signed in.' };
+
+  const { error } = await supabase.from('connections').insert({
+    requester_id: uid,
+    addressee_id: targetId,
+    status: 'pending',
+  });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, data: null };
+}
+
+// Cancel an outgoing connection request you previously sent
+export async function cancelConnectionRequest(targetId: string): Promise<ServiceResult<null>> {
+  const { data: auth } = await supabase.auth.getUser();
+  const uid = auth.user?.id;
+  if (!uid) return { ok: false, error: 'You must be signed in.' };
+
+  const { data, error } = await supabase
+    .from('connections')
+    .delete()
+    .eq('requester_id', uid)
+    .eq('addressee_id', targetId)
+    .eq('status', 'pending')
+    .select('id');
+
+  if (error) return { ok: false, error: error.message };
+  if (!data || data.length === 0) return { ok: false, error: 'Request is no longer pending.' };
+  return { ok: true, data: null };
+}
+
+// Accept or decline a pending request from requesterId
 export async function respondConnection(
   requesterId: string,
   accept: boolean,
@@ -70,4 +113,33 @@ export async function respondConnection(
   if (error) return { ok: false, error: error.message };
   if (!data || data.length === 0) return { ok: false, error: 'This request is no longer pending.' };
   return { ok: true, data: null };
+}
+
+// Disconnect from an accepted student connection
+export async function disconnectStudent(targetId: string): Promise<ServiceResult<null>> {
+  const { data: auth } = await supabase.auth.getUser();
+  const uid = auth.user?.id;
+  if (!uid) return { ok: false, error: 'You must be signed in.' };
+
+  const { data, error } = await supabase.rpc('disconnect_student', { p_target_id: targetId });
+  if (error) {
+    const { error: delErr } = await supabase
+      .from('connections')
+      .delete()
+      .eq('status', 'accepted')
+      .or(`and(requester_id.eq.${uid},addressee_id.eq.${targetId}),and(requester_id.eq.${targetId},addressee_id.eq.${uid})`);
+    if (delErr) return { ok: false, error: delErr.message };
+    return { ok: true, data: null };
+  }
+  if (!data) return { ok: false, error: 'Connection not found or already removed.' };
+  return { ok: true, data: null };
+}
+
+// Fetch single-student profile detail (optimized RPC lookup)
+export async function fetchStudentProfileDetail(studentId: string): Promise<ServiceResult<StudentDetail | null>> {
+  const { data, error } = await supabase.rpc('student_profile_detail', { p_target_id: studentId });
+  if (error) return { ok: false, error: error.message };
+  const list = data as unknown as StudentDetail[];
+  const row = (list && list.length > 0) ? list[0] : null;
+  return { ok: true, data: row };
 }

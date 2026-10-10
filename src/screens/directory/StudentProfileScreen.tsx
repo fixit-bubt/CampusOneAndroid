@@ -1,10 +1,10 @@
 // Read-only public profile for another student, opened from the Directory.
-// Mirrors the directory's privacy model: contact (email / WhatsApp) is shown
-// only when the two students are connected. Connection actions reuse the same
-// connections-table logic as DirectoryScreen and are gated by RLS.
+// Contact details (email / WhatsApp) are unlocked only when the two students
+// are mutually connected. Uses ContactSheet for dialer, WhatsApp, and email actions.
+
 import { useState, useEffect, useCallback } from 'react';
 import {
-  View, Text, TouchableOpacity, ScrollView, StyleSheet,
+  View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert,
   type ViewStyle, type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,11 +15,17 @@ import { useMessages } from '../../store/messagesStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
+import { ContactSheet } from '../../components/ui/ContactSheet';
 import { useToast } from '../../components/ui/Toast';
-import { connectErrorKey } from '../../services/connectionsService';
-import { FontFamily, Layout, Accent, pillBg } from '../../theme';
-import { supabase } from '../../lib/supabase';
-import { openUrl, waHref } from '../../utils/link';
+import {
+  connectErrorKey,
+  sendConnectionRequest,
+  cancelConnectionRequest,
+  respondConnection,
+  disconnectStudent,
+  fetchStudentProfileDetail,
+} from '../../services/connectionsService';
+import { FontFamily, Layout, Accent, SectorColors, pillBg } from '../../theme';
 
 export type ConnState = 'none' | 'requested' | 'incoming' | 'connected';
 
@@ -28,14 +34,17 @@ export interface DirectoryStudent {
   full_name: string;
   avatar_url?: string | null;
   department?: string | null;
+  program?: string | null;
   intake?: string | null;
   section?: string | null;
+  blood_group?: string | null;
+  student_id?: string | null;
+  is_cr?: boolean;
   email?: string | null;
   whatsapp?: string | null;
   connState: ConnState;
 }
 
-// RPC status_label → local connState
 const STATUS_MAP: Record<string, ConnState> = {
   accepted: 'connected',
   pending_outgoing: 'requested',
@@ -52,49 +61,99 @@ export function StudentProfileScreen({ route, navigation }: any) {
 
   const initial: DirectoryStudent = route.params?.student;
   const [student, setStudent] = useState<DirectoryStudent>(initial);
+  const [contactOpen, setContactOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
 
-  // Refetch fresh status + contact (email/whatsapp appear only once connected).
+  // Single-profile lookup RPC - fast, lightweight, and bandwidth-efficient
   const refresh = useCallback(async () => {
     if (!initial?.id) return;
-    const { data } = await supabase.rpc('student_directory');
-    const row = (data ?? []).find((p: any) => p.id === initial.id);
-    if (row) {
+    const res = await fetchStudentProfileDetail(initial.id);
+    if (res.ok && res.data) {
       setStudent({
-        ...row,
-        connState: STATUS_MAP[row.status as string] ?? 'none',
+        ...res.data,
+        connState: STATUS_MAP[res.data.status] ?? 'none',
       });
     }
   }, [initial?.id]);
 
-  useEffect(() => { refresh(); }, [refresh]);
-
-  async function handleConn(action: 'connect' | 'accept' | 'decline') {
-    if (!user || !student) return;
-    if (action === 'connect') {
-      const { error } = await supabase.from('connections').insert({ requester_id: user.id, addressee_id: student.id, status: 'pending' });
-      if (error) {
-        toast({ type: 'error', title: t.common.error, message: t.directory2[connectErrorKey(error.message)] });
-        await refresh();
-        return;
-      }
-      setStudent(s => ({ ...s, connState: 'requested' }));
-      toast({ type: 'success', title: t.directory2.requestSent });
-    } else if (action === 'accept') {
-      const { data: upd, error } = await supabase.from('connections').update({ status: 'accepted' })
-        .eq('requester_id', student.id).eq('addressee_id', user.id).eq('status', 'pending').select('requester_id');
-      if (error || !upd || upd.length === 0) { await refresh(); return; }
-      setStudent(s => ({ ...s, connState: 'connected' }));
-      // Accepting unlocks a DM - refresh the messages roster so the new partner
-      // is reachable before the "Message" button is tapped.
-      reloadMessages();
-    } else {
-      const { data: del, error } = await supabase.from('connections').delete()
-        .eq('requester_id', student.id).eq('addressee_id', user.id).eq('status', 'pending').select('requester_id');
-      if (error || !del || del.length === 0) { await refresh(); return; }
-      setStudent(s => ({ ...s, connState: 'none' }));
-    }
-    // Pull fresh contact details once the connection state settles.
+  useEffect(() => {
     refresh();
+  }, [refresh]);
+
+  async function handleConnect() {
+    if (!user || !student || busy) return;
+    setBusy(true);
+    const res = await sendConnectionRequest(student.id);
+    setBusy(false);
+    if (!res.ok) {
+      toast({ type: 'error', title: t.common.error, message: t.directory2[connectErrorKey(res.error)] });
+      await refresh();
+      return;
+    }
+    setStudent(s => ({ ...s, connState: 'requested' }));
+    toast({ type: 'success', title: t.directory2.requestSent });
+  }
+
+  async function handleCancelRequest() {
+    if (!user || !student || busy) return;
+    setBusy(true);
+    const res = await cancelConnectionRequest(student.id);
+    setBusy(false);
+    if (!res.ok) {
+      toast({ type: 'error', title: t.common.error, message: res.error });
+      await refresh();
+      return;
+    }
+    setStudent(s => ({ ...s, connState: 'none' }));
+    toast({ type: 'info', title: t.directory2.requestCancelled });
+  }
+
+  async function handleRespond(accept: boolean) {
+    if (!user || !student || busy) return;
+    setBusy(true);
+    const res = await respondConnection(student.id, accept);
+    setBusy(false);
+    if (!res.ok) {
+      toast({ type: 'error', title: t.common.error, message: res.error });
+      await refresh();
+      return;
+    }
+    if (accept) {
+      setStudent(s => ({ ...s, connState: 'connected' }));
+      reloadMessages();
+      toast({ type: 'success', title: t.directory2.connected });
+    } else {
+      setStudent(s => ({ ...s, connState: 'none' }));
+      toast({ type: 'info', title: t.directory2.declined });
+    }
+    refresh();
+  }
+
+  function confirmDisconnect() {
+    Alert.alert(
+      t.directory2.disconnectTitle,
+      t.directory2.disconnectConfirm(student.full_name),
+      [
+        { text: t.common.cancel, style: 'cancel' },
+        {
+          text: t.directory2.disconnect,
+          style: 'destructive',
+          onPress: async () => {
+            setBusy(true);
+            const res = await disconnectStudent(student.id);
+            setBusy(false);
+            if (!res.ok) {
+              toast({ type: 'error', title: t.common.error, message: res.error });
+              return;
+            }
+            setStudent(s => ({ ...s, connState: 'none', email: null, whatsapp: null }));
+            reloadMessages();
+            toast({ type: 'info', title: t.directory2.disconnected });
+            refresh();
+          },
+        },
+      ]
+    );
   }
 
   if (!student) {
@@ -105,12 +164,11 @@ export function StudentProfileScreen({ route, navigation }: any) {
     );
   }
 
-  const meta = [student.department, student.intake, student.section]
-    .map(v => (v ?? '').trim())
+  const metaParts = [student.department, student.intake ? `Intake ${student.intake}` : null, student.section ? `Sec ${student.section}` : null]
     .filter(Boolean)
     .join(' · ');
+
   const connected = student.connState === 'connected';
-  const waLink = waHref(student.whatsapp);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -120,23 +178,51 @@ export function StudentProfileScreen({ route, navigation }: any) {
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header card */}
+        {/* Main Identity Hero Card */}
         <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <View style={styles.headRow}>
+          <View style={styles.heroRow}>
             <Avatar uri={student.avatar_url} name={student.full_name} size="xl" />
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={[styles.name, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
                 {student.full_name}
               </Text>
-              {meta.length > 0 && (
+
+              {metaParts.length > 0 && (
                 <Text style={[styles.meta, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={2}>
-                  {meta}
+                  {metaParts}
                 </Text>
               )}
+
+              {connected && student.student_id ? (
+                <Text style={[styles.studentIdTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                  {t.directory2.studentId}: {student.student_id}
+                </Text>
+              ) : null}
+
+              {/* Varsity Badges (CR, Blood Group) */}
+              <View style={styles.badgeRow}>
+                {student.is_cr ? (
+                  <View style={[styles.crBadge, { backgroundColor: '#fef3c7', borderColor: '#fde68a' }]}>
+                    <Icon name="award" size={12} color="#b45309" />
+                    <Text style={[styles.crBadgeTxt, { color: '#b45309', fontFamily: FontFamily.jakartaBold }]}>
+                      {t.directory2.classRep}
+                    </Text>
+                  </View>
+                ) : null}
+
+                {student.blood_group ? (
+                  <View style={[styles.bloodBadge, { backgroundColor: '#fee2e2', borderColor: '#fca5a5' }]}>
+                    <Icon name="blood" size={11} color="#b91c1c" />
+                    <Text style={[styles.bloodBadgeTxt, { color: '#b91c1c', fontFamily: FontFamily.jakartaBold }]}>
+                      {student.blood_group}
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
             </View>
           </View>
 
-          {/* Connection state / action */}
+          {/* Connection Actions Container */}
           <View style={styles.connArea}>
             {student.connState === 'connected' && (
               <View style={styles.connectedRow}>
@@ -158,18 +244,34 @@ export function StudentProfileScreen({ route, navigation }: any) {
                 </TouchableOpacity>
               </View>
             )}
+
             {student.connState === 'requested' && (
-              <View style={[styles.statePill, { backgroundColor: C.warnBg }]}>
-                <View style={[styles.stateDot, { backgroundColor: C.warn }]} />
-                <Text style={[styles.statePillTxt, { color: C.warn, fontFamily: FontFamily.jakartaBold }]}>
-                  {t.directory2.requested}
-                </Text>
+              <View style={styles.requestedRow}>
+                <View style={[styles.statePill, { backgroundColor: C.warnBg }]}>
+                  <View style={[styles.stateDot, { backgroundColor: C.warn }]} />
+                  <Text style={[styles.statePillTxt, { color: C.warn, fontFamily: FontFamily.jakartaBold }]}>
+                    {t.directory2.requested}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={[styles.cancelBtn, { borderColor: C.border, backgroundColor: C.surface2 }]}
+                  onPress={handleCancelRequest}
+                  disabled={busy}
+                  activeOpacity={0.7}
+                >
+                  <Icon name="x" size={14} color={C.text2} />
+                  <Text style={[styles.cancelBtnTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                    {t.directory2.cancelRequest}
+                  </Text>
+                </TouchableOpacity>
               </View>
             )}
+
             {student.connState === 'none' && (
               <TouchableOpacity
                 style={[styles.fullBtn, { backgroundColor: C.brand }]}
-                onPress={() => handleConn('connect')}
+                onPress={handleConnect}
+                disabled={busy}
                 activeOpacity={0.85}
               >
                 <Icon name="userPlus" size={16} color="#fff" />
@@ -178,6 +280,7 @@ export function StudentProfileScreen({ route, navigation }: any) {
                 </Text>
               </TouchableOpacity>
             )}
+
             {student.connState === 'incoming' && (
               <>
                 <Text style={[styles.wants, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
@@ -186,7 +289,8 @@ export function StudentProfileScreen({ route, navigation }: any) {
                 <View style={styles.actionRow}>
                   <TouchableOpacity
                     style={[styles.halfBtn, { backgroundColor: C.brand }]}
-                    onPress={() => handleConn('accept')}
+                    onPress={() => handleRespond(true)}
+                    disabled={busy}
                     activeOpacity={0.85}
                   >
                     <Icon name="check" size={15} color="#fff" />
@@ -196,7 +300,8 @@ export function StudentProfileScreen({ route, navigation }: any) {
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.halfBtn, { backgroundColor: C.surface2, borderColor: C.border, borderWidth: 1 }]}
-                    onPress={() => handleConn('decline')}
+                    onPress={() => handleRespond(false)}
+                    disabled={busy}
                     activeOpacity={0.85}
                   >
                     <Icon name="x" size={15} color={C.text} />
@@ -210,48 +315,50 @@ export function StudentProfileScreen({ route, navigation }: any) {
           </View>
         </View>
 
-        {/* Contact - only when connected */}
+        {/* Contact Details Card */}
         <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border, marginTop: 12 }]}>
           <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
             {t.directory2.contact}
           </Text>
 
           {!connected ? (
-            <Text style={[styles.lockedTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-              {t.directory2.connectToSeeContact}
-            </Text>
-          ) : student.email || waLink ? (
-            <>
-              {student.email && (
-                <>
-                  <TouchableOpacity
-                    style={[styles.emailBtn, { backgroundColor: Accent.blue }]}
-                    onPress={() => openUrl(`mailto:${student.email}`)}
-                    activeOpacity={0.8}
-                  >
-                    <Icon name="mail" size={15} color="#fff" />
-                    <Text style={[styles.emailBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
-                      {t.directory2.email}
-                    </Text>
-                  </TouchableOpacity>
-                  <Text style={[styles.emailAddr, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+            <View style={styles.lockedArea}>
+              <Icon name="shield" size={17} color={C.textMuted} />
+              <Text style={[styles.lockedTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                {t.directory2.connectToSeeContact}
+              </Text>
+            </View>
+          ) : student.email || student.whatsapp ? (
+            <View style={styles.contactDetailsArea}>
+              <TouchableOpacity
+                style={[styles.contactCardBtn, { backgroundColor: SectorColors.directory }]}
+                onPress={() => setContactOpen(true)}
+                activeOpacity={0.85}
+              >
+                <Icon name="phone" size={16} color="#fff" />
+                <Text style={[styles.contactCardBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                  View Full Contact Options
+                </Text>
+              </TouchableOpacity>
+
+              {student.email ? (
+                <View style={[styles.infoRow, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                  <Icon name="mail" size={15} color={C.text2} />
+                  <Text style={[styles.infoVal, { color: C.text, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
                     {student.email}
                   </Text>
-                </>
-              )}
-              {waLink && (
-                <TouchableOpacity
-                  style={[styles.waBtn, { backgroundColor: C.success }]}
-                  onPress={() => openUrl(waLink)}
-                  activeOpacity={0.8}
-                >
-                  <Icon name="phone" size={14} color="#fff" />
-                  <Text style={[styles.waBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
-                    {t.directory2.whatsapp}
+                </View>
+              ) : null}
+
+              {student.whatsapp ? (
+                <View style={[styles.infoRow, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                  <Icon name="chat" size={15} color={C.success} />
+                  <Text style={[styles.infoVal, { color: C.text, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                    {student.whatsapp} (WhatsApp)
                   </Text>
-                </TouchableOpacity>
-              )}
-            </>
+                </View>
+              ) : null}
+            </View>
           ) : (
             <Text style={[styles.lockedTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
               {t.directory2.noContactShared}
@@ -259,22 +366,66 @@ export function StudentProfileScreen({ route, navigation }: any) {
           )}
         </View>
 
-        <View style={{ height: 24 }} />
+        {/* Safety & Disconnect Option */}
+        {connected && (
+          <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border, marginTop: 12 }]}>
+            <TouchableOpacity
+              style={styles.disconnectBtn}
+              onPress={confirmDisconnect}
+              activeOpacity={0.7}
+            >
+              <Icon name="trash" size={15} color={C.danger} />
+              <Text style={[styles.disconnectTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
+                {t.directory2.disconnect}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        <View style={{ height: 28 }} />
       </ScrollView>
+
+      {/* Standardized ContactSheet Component (AGENTS.md 13.1) */}
+      <ContactSheet
+        visible={contactOpen}
+        name={student.full_name}
+        roleSubtitle={metaParts}
+        avatarUri={student.avatar_url}
+        phone={student.whatsapp}
+        email={student.email}
+        inAppChatAction={() => {
+          setContactOpen(false);
+          navigation.navigate('MessageThread', { kind: 'dm', id: student.id, title: student.full_name });
+        }}
+        onClose={() => setContactOpen(false)}
+      />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
-  scroll: { paddingTop: 10, paddingBottom: 20 } as ViewStyle,
+  scroll: { paddingTop: 10, paddingBottom: 24 } as ViewStyle,
 
   card: { borderRadius: 16, borderWidth: 1, padding: 15 } as ViewStyle,
   cardTitle: { fontSize: 14 } as TextStyle,
 
-  headRow: { flexDirection: 'row', alignItems: 'center', gap: 14 } as ViewStyle,
+  heroRow: { flexDirection: 'row', alignItems: 'center', gap: 14 } as ViewStyle,
   name: { fontSize: 18, letterSpacing: -0.01 } as TextStyle,
   meta: { fontSize: 13, marginTop: 3 } as TextStyle,
+  studentIdTxt: { fontSize: 12, marginTop: 2 } as TextStyle,
+
+  badgeRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 7 } as ViewStyle,
+  crBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: 7, paddingVertical: 2.5, borderRadius: 6, borderWidth: 1,
+  } as ViewStyle,
+  crBadgeTxt: { fontSize: 11 } as TextStyle,
+  bloodBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: 7, paddingVertical: 2.5, borderRadius: 6, borderWidth: 1,
+  } as ViewStyle,
+  bloodBadgeTxt: { fontSize: 11 } as TextStyle,
 
   connArea: { marginTop: 14 } as ViewStyle,
   statePill: {
@@ -283,12 +434,20 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   stateDot: { width: 7, height: 7, borderRadius: 3.5 } as ViewStyle,
   statePillTxt: { fontSize: 12.5 } as TextStyle,
+
   connectedRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 } as ViewStyle,
   msgBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingHorizontal: 16, paddingVertical: 9, borderRadius: 12,
   } as ViewStyle,
   msgBtnTxt: { fontSize: 13 } as TextStyle,
+
+  requestedRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 } as ViewStyle,
+  cancelBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10, borderWidth: 1,
+  } as ViewStyle,
+  cancelBtnTxt: { fontSize: 12 } as TextStyle,
 
   wants: { fontSize: 13, marginBottom: 9 } as TextStyle,
   fullBtn: {
@@ -304,18 +463,22 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   halfBtnTxt: { fontSize: 13.5 } as TextStyle,
 
-  lockedTxt: { fontSize: 12.5, lineHeight: 18, marginTop: 11 } as TextStyle,
+  lockedArea: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 } as ViewStyle,
+  lockedTxt: { fontSize: 12.5, lineHeight: 18 } as TextStyle,
 
-  emailBtn: {
+  contactDetailsArea: { marginTop: 11, gap: 8 } as ViewStyle,
+  contactCardBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7,
-    height: 44, borderRadius: 12, marginTop: 11,
+    height: 44, borderRadius: 12, marginBottom: 2,
   } as ViewStyle,
-  emailBtnTxt: { fontSize: 13.5 } as TextStyle,
-  emailAddr: { fontSize: 11.5, textAlign: 'center', marginTop: 7 } as TextStyle,
+  contactCardBtnTxt: { fontSize: 13.5 } as TextStyle,
 
-  waBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7,
-    height: 42, borderRadius: 11, marginTop: 9,
+  infoRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    paddingHorizontal: 12, paddingVertical: 10, borderRadius: 10, borderWidth: 1,
   } as ViewStyle,
-  waBtnTxt: { fontSize: 13 } as TextStyle,
+  infoVal: { fontSize: 13, flex: 1 } as TextStyle,
+
+  disconnectBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingVertical: 4 } as ViewStyle,
+  disconnectTxt: { fontSize: 13 } as TextStyle,
 });
