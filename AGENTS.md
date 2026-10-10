@@ -844,13 +844,12 @@ The following screens contain segmented control bars slated for this animated pa
    - Expanded Categories: Books & Textbooks, Electronics & Accessories, Notes & Study Material, Drafting & Drawing Kits, Lab Coats & Safety Equipment, and Other Campus Items (supports custom category naming).
 4. **Search Row & Secondary Filter Sheet:**
    - Positioned directly above the product feed for optimal thumb-zone reach.
-   - `[ Filter ]` button displays an emerald active dot indicator when secondary filters are applied.
-   - Tapping filter opens a bottom sheet modal featuring:
-     - Sort by: Newest First, Price: Low to High, Price: High to Low.
+   - `[ Filter ]` button styled with prominent emerald green accent and active state indicator.
+   - Tapping filter opens a clean, uncluttered bottom sheet modal featuring:
+     - Sort By: Single segmented bar with spring-animated sliding card indicator (`Newest`, `Price: Low to High`, `Price: High to Low`).
      - Availability: "Hide Sold Items" toggle switch.
-     - Price Presets: All, Free / Giveaway, Under 300 ৳, 300 - 800 ৳, 800+ ৳.
-     - Condition: All, Brand New, Like New, Used.
-     - Reset and Apply action buttons.
+     - Condition: Single segmented bar with spring-animated sliding card indicator (`All`, `Brand New`, `Like New`, `Used`).
+     - Action Buttons: Symmetrical equal-width action buttons: `[ Reset Filters ]` (flex: 1) and `[ Apply Filters ]` (flex: 1).
 5. **High-Performance Virtualized 2-Column Grid:**
    - `<FlatList numColumns={2}>` with dynamic card width.
    - Cards display 4:3 cover photo or themed category icon, condition tag (`New`, `Like New`, `Used`), condition-colored badge, favorite heart, price formatted in BDT, negotiable / fixed tag, relative timestamp freshness (`2h ago`, `Yesterday`), handover spot, and seller avatar with name and department cohort (`morshed · CSE`).

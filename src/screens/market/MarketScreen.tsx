@@ -23,7 +23,6 @@ import { formatRelativeTime, formatPrice } from '../../utils/format';
 import type { Listing } from '../../types/database';
 
 type Tab = 'all' | 'mine' | 'saved';
-type PricePreset = 'all' | 'free' | 'under300' | '300to800' | '800plus';
 type ConditionPreset = 'all' | 'New' | 'Like New' | 'Used';
 
 const MARKET_COLOR = SectorColors.market;
@@ -59,7 +58,6 @@ export function MarketScreen({ navigation }: any) {
   const [category, setCategory] = useState('all');
 
   // Secondary filters (inside modal)
-  const [pricePreset, setPricePreset] = useState<PricePreset>('all');
   const [conditionFilter, setConditionFilter] = useState<ConditionPreset>('all');
   const [sortBy, setSortBy] = useState<'newest' | 'asc' | 'desc'>('newest');
   const [hideSold, setHideSold] = useState(true);
@@ -79,7 +77,6 @@ export function MarketScreen({ navigation }: any) {
   // Animated sliding tab indicator
   const [trackWidth, setTrackWidth] = useState(0);
   const animIndex = useRef(new Animated.Value(0)).current;
-
   const tabIndexMap: Record<Tab, number> = useMemo(() => ({ all: 0, mine: 1, saved: 2 }), []);
 
   useEffect(() => {
@@ -91,6 +88,36 @@ export function MarketScreen({ navigation }: any) {
       useNativeDriver: true,
     }).start();
   }, [tab, animIndex, tabIndexMap]);
+
+  // Animated sliding sort indicator
+  const [sortTrackWidth, setSortTrackWidth] = useState(0);
+  const sortAnimIndex = useRef(new Animated.Value(0)).current;
+  const sortIndexMap: Record<'newest' | 'asc' | 'desc', number> = useMemo(() => ({ newest: 0, asc: 1, desc: 2 }), []);
+
+  useEffect(() => {
+    const idx = sortIndexMap[sortBy] ?? 0;
+    Animated.spring(sortAnimIndex, {
+      toValue: idx,
+      tension: 68,
+      friction: 10,
+      useNativeDriver: true,
+    }).start();
+  }, [sortBy, sortAnimIndex, sortIndexMap]);
+
+  // Animated sliding condition indicator
+  const [condTrackWidth, setCondTrackWidth] = useState(0);
+  const condAnimIndex = useRef(new Animated.Value(0)).current;
+  const condIndexMap: Record<ConditionPreset, number> = useMemo(() => ({ all: 0, New: 1, 'Like New': 2, Used: 3 }), []);
+
+  useEffect(() => {
+    const idx = condIndexMap[conditionFilter] ?? 0;
+    Animated.spring(condAnimIndex, {
+      toValue: idx,
+      tension: 68,
+      friction: 10,
+      useNativeDriver: true,
+    }).start();
+  }, [conditionFilter, condAnimIndex, condIndexMap]);
 
   // Load saved listing IDs from AsyncStorage
   const loadSavedIds = useCallback(async () => {
@@ -155,14 +182,12 @@ export function MarketScreen({ navigation }: any) {
   function handleResetFilters() {
     setQuery('');
     setCategory('all');
-    setPricePreset('all');
     setConditionFilter('all');
     setSortBy('newest');
     setHideSold(true);
   }
 
   const hasSecondaryFilters =
-    pricePreset !== 'all' ||
     conditionFilter !== 'all' ||
     sortBy !== 'newest' ||
     !hideSold;
@@ -225,13 +250,6 @@ export function MarketScreen({ navigation }: any) {
         return l.condition === conditionFilter;
       })
       .filter(l => {
-        if (pricePreset === 'free') return (l.price ?? 0) === 0;
-        if (pricePreset === 'under300') return (l.price ?? 0) > 0 && (l.price ?? 0) < 300;
-        if (pricePreset === '300to800') return (l.price ?? 0) >= 300 && (l.price ?? 0) <= 800;
-        if (pricePreset === '800plus') return (l.price ?? 0) > 800;
-        return true;
-      })
-      .filter(l => {
         if (!q) return true;
         const haystack = [l.title, l.description, l.category, l.course_code, l.meetup_spot]
           .filter(Boolean)
@@ -244,7 +262,7 @@ export function MarketScreen({ navigation }: any) {
         if (sortBy === 'desc') return (b.price ?? 0) - (a.price ?? 0);
         return 0;
       });
-  }, [listings, tab, user?.id, savedIds, hideSold, category, conditionFilter, pricePreset, query, sortBy]);
+  }, [listings, tab, user?.id, savedIds, hideSold, category, conditionFilter, query, sortBy]);
 
   // Responsive 2-column calculation
   const screenWidth = Dimensions.get('window').width;
@@ -266,6 +284,20 @@ export function MarketScreen({ navigation }: any) {
   const translateX = animIndex.interpolate({
     inputRange: [0, 1, 2],
     outputRange: [0, tabWidth, tabWidth * 2],
+  });
+
+  const innerSortTrackWidth = Math.max(0, sortTrackWidth - TRACK_PADDING * 2);
+  const sortWidth = innerSortTrackWidth > 0 ? innerSortTrackWidth / 3 : 0;
+  const sortTranslateX = sortAnimIndex.interpolate({
+    inputRange: [0, 1, 2],
+    outputRange: [0, sortWidth, sortWidth * 2],
+  });
+
+  const innerCondTrackWidth = Math.max(0, condTrackWidth - TRACK_PADDING * 2);
+  const condWidth = innerCondTrackWidth > 0 ? innerCondTrackWidth / 4 : 0;
+  const condTranslateX = condAnimIndex.interpolate({
+    inputRange: [0, 1, 2, 3],
+    outputRange: [0, condWidth, condWidth * 2, condWidth * 3],
   });
 
   // Render individual listing card
@@ -613,8 +645,14 @@ export function MarketScreen({ navigation }: any) {
             style={[
               styles.filterTriggerBtn,
               hasSecondaryFilters
-                ? { backgroundColor: isDark ? `${MARKET_COLOR}22` : `${MARKET_COLOR}14`, borderColor: MARKET_COLOR }
-                : { backgroundColor: C.surface, borderColor: C.border },
+                ? {
+                    backgroundColor: MARKET_COLOR,
+                    borderColor: MARKET_COLOR,
+                  }
+                : {
+                    backgroundColor: isDark ? 'rgba(5, 150, 105, 0.16)' : 'rgba(5, 150, 105, 0.08)',
+                    borderColor: isDark ? 'rgba(5, 150, 105, 0.45)' : 'rgba(5, 150, 105, 0.35)',
+                  },
             ]}
             onPress={() => setFilterModalVisible(true)}
             activeOpacity={0.75}
@@ -622,13 +660,13 @@ export function MarketScreen({ navigation }: any) {
             <Feather
               name="sliders"
               size={14}
-              color={hasSecondaryFilters ? MARKET_COLOR : C.text2}
+              color={hasSecondaryFilters ? '#fff' : MARKET_COLOR}
             />
             <Text
               style={[
                 styles.filterTriggerTxt,
                 {
-                  color: hasSecondaryFilters ? MARKET_COLOR : C.text2,
+                  color: hasSecondaryFilters ? '#fff' : MARKET_COLOR,
                   fontFamily: FontFamily.jakartaBold,
                 },
               ]}
@@ -636,7 +674,7 @@ export function MarketScreen({ navigation }: any) {
               Filter
             </Text>
             {hasSecondaryFilters && (
-              <View style={[styles.filterActiveDot, { backgroundColor: MARKET_COLOR }]} />
+              <View style={[styles.filterActiveDot, { backgroundColor: '#fff' }]} />
             )}
           </TouchableOpacity>
         </View>
@@ -942,39 +980,52 @@ export function MarketScreen({ navigation }: any) {
               </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 440 }}>
-              {/* Sort By Section */}
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 460 }}>
+              {/* Sort By Section (Animated Bar) */}
               <Text style={[styles.sectionHeading, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
                 {t.market2.sortBy}
               </Text>
-              <View style={styles.chipRow}>
+              <View
+                style={[styles.segTrack, { backgroundColor: C.surface2 }]}
+                onLayout={e => setSortTrackWidth(e.nativeEvent.layout.width)}
+              >
+                {sortWidth > 0 && (
+                  <Animated.View
+                    style={[
+                      styles.segIndicator,
+                      {
+                        width: sortWidth,
+                        transform: [{ translateX: sortTranslateX }],
+                        backgroundColor: C.surface,
+                        borderColor: isDark ? `${MARKET_COLOR}55` : `${MARKET_COLOR}35`,
+                      },
+                    ]}
+                  />
+                )}
+
                 {[
                   { id: 'newest', label: t.market2.sortNewest, icon: 'clock' },
                   { id: 'asc', label: t.market2.sortPriceAsc, icon: 'arrow-up' },
                   { id: 'desc', label: t.market2.sortPriceDesc, icon: 'arrow-down' },
                 ].map(s => {
-                  const on = sortBy === s.id;
+                  const active = sortBy === s.id;
                   return (
                     <TouchableOpacity
                       key={s.id}
-                      style={[
-                        styles.sheetChip,
-                        on
-                          ? { backgroundColor: `${MARKET_COLOR}20`, borderColor: MARKET_COLOR }
-                          : { backgroundColor: C.surface2, borderColor: C.border },
-                      ]}
+                      style={styles.segBtn}
                       onPress={() => setSortBy(s.id as any)}
                       activeOpacity={0.75}
                     >
-                      <Feather name={s.icon as any} size={13} color={on ? MARKET_COLOR : C.text2} />
+                      <Feather name={s.icon as any} size={12} color={active ? MARKET_COLOR : C.textMuted} />
                       <Text
                         style={[
-                          styles.sheetChipTxt,
+                          styles.segBtnTxt,
                           {
-                            color: on ? MARKET_COLOR : C.text,
-                            fontFamily: on ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                            color: active ? MARKET_COLOR : C.textMuted,
+                            fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
                           },
                         ]}
+                        numberOfLines={1}
                       >
                         {s.label}
                       </Text>
@@ -1009,79 +1060,51 @@ export function MarketScreen({ navigation }: any) {
                 />
               </View>
 
-              {/* Price Range Section */}
-              <Text style={[styles.sectionHeading, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 14 }]}>
-                {t.market2.priceRange}
-              </Text>
-              <View style={styles.chipRow}>
-                {[
-                  { id: 'all', label: t.common.all },
-                  { id: 'free', label: t.market2.free },
-                  { id: 'under300', label: t.market2.priceUnder300 },
-                  { id: '300to800', label: t.market2.price300to800 },
-                  { id: '800plus', label: t.market2.price800plus },
-                ].map(p => {
-                  const on = pricePreset === p.id;
-                  return (
-                    <TouchableOpacity
-                      key={p.id}
-                      style={[
-                        styles.sheetChip,
-                        on
-                          ? { backgroundColor: `${MARKET_COLOR}20`, borderColor: MARKET_COLOR }
-                          : { backgroundColor: C.surface2, borderColor: C.border },
-                      ]}
-                      onPress={() => setPricePreset(p.id as PricePreset)}
-                      activeOpacity={0.75}
-                    >
-                      <Text
-                        style={[
-                          styles.sheetChipTxt,
-                          {
-                            color: on ? MARKET_COLOR : C.text,
-                            fontFamily: on ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                          },
-                        ]}
-                      >
-                        {p.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-
-              {/* Condition Section */}
+              {/* Condition Section (Animated Bar) */}
               <Text style={[styles.sectionHeading, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 14 }]}>
                 {t.market2.condition}
               </Text>
-              <View style={styles.chipRow}>
+              <View
+                style={[styles.segTrack, { backgroundColor: C.surface2 }]}
+                onLayout={e => setCondTrackWidth(e.nativeEvent.layout.width)}
+              >
+                {condWidth > 0 && (
+                  <Animated.View
+                    style={[
+                      styles.segIndicator,
+                      {
+                        width: condWidth,
+                        transform: [{ translateX: condTranslateX }],
+                        backgroundColor: C.surface,
+                        borderColor: isDark ? `${MARKET_COLOR}55` : `${MARKET_COLOR}35`,
+                      },
+                    ]}
+                  />
+                )}
+
                 {[
                   { id: 'all', label: t.common.all },
                   { id: 'New', label: t.market2.condNew },
                   { id: 'Like New', label: t.market2.condLikeNew },
                   { id: 'Used', label: t.market2.condUsed },
                 ].map(c => {
-                  const on = conditionFilter === c.id;
+                  const active = conditionFilter === c.id;
                   return (
                     <TouchableOpacity
                       key={c.id}
-                      style={[
-                        styles.sheetChip,
-                        on
-                          ? { backgroundColor: `${MARKET_COLOR}20`, borderColor: MARKET_COLOR }
-                          : { backgroundColor: C.surface2, borderColor: C.border },
-                      ]}
+                      style={styles.segBtn}
                       onPress={() => setConditionFilter(c.id as ConditionPreset)}
                       activeOpacity={0.75}
                     >
                       <Text
                         style={[
-                          styles.sheetChipTxt,
+                          styles.segBtnTxt,
                           {
-                            color: on ? MARKET_COLOR : C.text,
-                            fontFamily: on ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                            color: active ? MARKET_COLOR : C.textMuted,
+                            fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
                           },
                         ]}
+                        numberOfLines={1}
                       >
                         {c.label}
                       </Text>
@@ -1090,7 +1113,7 @@ export function MarketScreen({ navigation }: any) {
                 })}
               </View>
 
-              {/* Action Buttons */}
+              {/* Action Buttons (Both flex: 1 for equal size) */}
               <View style={styles.filterActionsRow}>
                 <TouchableOpacity
                   style={[styles.sheetResetBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
@@ -1499,21 +1522,38 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
     marginBottom: 8,
   } as any,
-  chipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 7,
-  } as ViewStyle,
-  sheetChip: {
+  segTrack: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 12,
-    borderWidth: 1,
+    height: 42,
+    borderRadius: 13,
+    padding: 3,
+    position: 'relative',
+    marginBottom: 4,
   } as ViewStyle,
-  sheetChipTxt: { fontSize: 12 } as any,
+  segIndicator: {
+    position: 'absolute',
+    top: 3,
+    left: 3,
+    bottom: 3,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1.5 },
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
+  } as ViewStyle,
+  segBtn: {
+    flex: 1,
+    height: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    zIndex: 1,
+  } as ViewStyle,
+  segBtnTxt: { fontSize: 12 } as any,
 
   switchRowCard: {
     flexDirection: 'row',
@@ -1528,24 +1568,24 @@ const styles = StyleSheet.create({
 
   filterActionsRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 12,
     marginTop: 20,
     marginBottom: 10,
   } as ViewStyle,
   sheetResetBtn: {
     flex: 1,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
     borderRadius: 14,
     borderWidth: 1,
   } as ViewStyle,
   sheetResetTxt: { fontSize: 13 } as any,
   sheetApplyBtn: {
-    flex: 2,
+    flex: 1,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
     borderRadius: 14,
   } as ViewStyle,
   sheetApplyTxt: { fontSize: 13 } as any,
