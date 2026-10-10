@@ -908,4 +908,40 @@ The following screens contain segmented control bars slated for this animated pa
     - **Dual Photo Sync:** Populated both `photo_url` and `photos: [photoUri]` array upon creation and editing for backward compatibility and multi-photo array integrity.
     - **Detail & Card Localization:** Localized condition badges on both feed cards and item detail cards (`Brand New`, `Like New`, `Used`) across English and Bengali with proper contrast.
 
+### 13.4 Campus Jobs & Internships Hub (Community Parity & Architecture)
+
+The Jobs & Internships module (`JobsBrowseScreen.tsx`, `JobDetailScreen.tsx`, `JobPostScreen.tsx`, `src/services/jobsService.ts`) connects BUBT students with verified internships, campus tutoring/tuitions, on-campus student work, part-time jobs, and freelance opportunities.
+
+1. **Expanded Job Types & Taxonomy:**
+   - 6 Core Types: `internship`, `tuition`, `on_campus`, `part_time`, `full_time`, `freelance`.
+   - Department Targeting: Filter and target by academic department (`department_code`: `CSE`, `EEE`, `BBA`, `LAW`, `ENG`, `TEXTILE`, `ALL`).
+   - Dhaka Area Integration: Presets matching `ALL_DHAKA_COMMUTE_AREAS` (Mirpur, Uttara, Dhanmondi, etc.) stored in `area_name`.
+   - Compensation Models: `Paid`, `Unpaid`, `Stipend`, `Negotiable` with explicit salary text.
+   - Student Level Targeting: `min_semester` (1–12) to ensure applicants meet senior year or prerequisite thresholds.
+   - Alumni Referral Tag: `is_alumni_referral` boolean flag highlighting postings referred by verified BUBT alumni.
+   - Skill Tags & Circular Attachment: Dynamic skill chips (`skills[]`) and optional PDF circular uploads (`circular_url` stored in Supabase `photos` bucket).
+2. **Application Pipeline (`public.job_applications`):**
+   - Direct In-App Applications: Students submit applications with a cover note and optional resume/CV attachment (`resume_url`).
+   - Lifecycle States: `'submitted'`, `'viewed'`, `'shortlisted'`, `'rejected'`.
+   - RLS Enforcement: Applicants can view/insert their own applications; recruiters/posters can view applications and update applicant statuses for their own jobs.
+   - Realtime Triggers: Database triggers notify the recruiter upon new application submission (`trg_notify_job_application`) and notify the applicant upon status advancement (`trg_notify_application_status`).
+3. **Browse UI Overhaul & Anti-Clutter Design (`JobsBrowseScreen.tsx`):**
+   - **Spring-Animated Main Tabs:** Single segmented bar with spring-animated sliding pill indicator (`tension: 68, friction: 10, useNativeDriver: true`) switching between `Browse`, `Saved`, and `My Applications`.
+   - **Spring-Animated Status Switcher:** Sliding indicator across `Open`, `Closing Soon` (≤ 3 days left), and `Expired`.
+   - **Dual Dropdown Filter Row:** Clean horizontal row replacing stacked scrolling bars:
+     - Left: `[ Type ∨ ]` opens a native bottom-sheet modal with job types, post counts, and active checkmarks.
+     - Right: `[ Dept ∨ ]` opens a native bottom-sheet modal with departments, featuring a "Your Dept" highlight badge.
+   - Active filter indicators display accent pills when non-default criteria are active.
+   - FAB button `[ + Post Job ]` elevated with theme shadow and colors.
+4. **Detailed Job View & Poster Controls (`JobDetailScreen.tsx`):**
+   - **Dhaka Countdown:** Deterministic deadline calculation using `localToday()` to avoid UTC midnight shifts.
+   - **4-Cell Specs Grid:** Compensation, Workplace Mode, Min Semester, and Referral badges.
+   - **Direct Recruiter Contact:** Integrated `ContactSheet.tsx` for 1-tap phone calls, WhatsApp messages, emails, and in-app chat.
+   - **Poster Candidate Management Sheet:** Post owners can review applicants, read cover notes, open resumes, and shortlist/reject candidates directly in the screen.
+5. **Offline Storage & Caching (`jobsService.ts`):**
+   - Bookmarks saved in `@c1_saved_jobs` via `AsyncStorage` with optimistic state toggling.
+   - Cache invalidation across create, edit, application, and withdraw operations.
+6. **Gemini AI Grounding:**
+   - Grounding tool in `supabase/functions/chat/index.ts` allowing the Gemini assistant to provide accurate, live answers for student queries about open internships, tuitions, and deadlines.
+
 
