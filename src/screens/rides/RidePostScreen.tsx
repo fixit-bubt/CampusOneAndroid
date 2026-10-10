@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView,
-  StyleSheet, Animated, Modal, type ViewStyle, type TextStyle,
+  Keyboard, StyleSheet, Animated, Modal, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -319,6 +319,7 @@ export function RidePostScreen({ route, navigation }: any) {
   }
 
   function handleAreaSelect(areaName: string) {
+    Keyboard.dismiss();
     if (targetField === 'from') {
       setFrom(areaName);
     } else {
@@ -328,6 +329,7 @@ export function RidePostScreen({ route, navigation }: any) {
   }
 
   function handleApplyCustomLocation() {
+    Keyboard.dismiss();
     const trimmed = customLocationText.trim();
     if (!trimmed) return;
     if (targetField === 'from') {
@@ -1130,6 +1132,11 @@ export function RidePostScreen({ route, navigation }: any) {
                   onChangeText={setSearchArea}
                   autoCorrect={false}
                   returnKeyType="search"
+                  onSubmitEditing={() => {
+                    if (searchArea.trim()) {
+                      handleAreaSelect(searchArea.trim());
+                    }
+                  }}
                 />
                 {searchArea.length > 0 && (
                   <TouchableOpacity onPress={() => setSearchArea('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
