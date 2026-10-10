@@ -619,3 +619,56 @@ Whenever the user instructs to "update memorys", the agent MUST synchronously up
 - **Campus Location Quick Chips:** 1-tap campus location chips (`Library`, `Cafeteria`, `Building 2`, `Room 402`, `Exam Hall`, `Mosque`, `Computer Lab`, `Campus Grounds`).
 - **Smart Pre-Post Match Banner:** Amber alert card with lightbulb icon alerting students if a matching item was already reported before submission.
 - **Dynamic Action Button:** Dynamic type-aware colors and labels (`Post Lost Report` in crimson vs `Post Found Item` in emerald).
+
+---
+
+## 23. Native Spring Animated Segmented Track Pattern
+
+### 23.1 Design Principles & Visual Standard
+Segmented tab switcher tracks are used throughout CampusOne to toggle between core data feeds (e.g. Lost & Found tabs, Blood Requests vs Donors, Job types, Routine categories). To eliminate static transitions and give every tab its own distinctive institutional personality:
+- **Zero-Latency Sliding Pill:** An elevated floating indicator glides fluidly beneath active options with physical spring dynamics (`Animated.spring`).
+- **Dynamic Thematic Color Identity:** Rather than a uniform monochrome highlight, each tab defines its own semantic foreground and soft background tint (e.g. Danger Crimson for requests/lost, Success Emerald for recovered/donors/open, Violet for personal/my posts, Sector Accents for general feeds).
+- **Responsive Geometry:** Automatically adapts to 2, 3, or 4 tab segments using layout callbacks (`onLayout`).
+
+### 23.2 Mathematical Specification & Spring Physics
+- **Track Padding:** `TRACK_PADDING = 3`
+- **Inner Track Width:** `innerTrackWidth = Math.max(0, trackWidth - TRACK_PADDING * 2)`
+- **Dynamic Segment Width:** `tabWidth = innerTrackWidth > 0 ? innerTrackWidth / N : 0` (where `N` is the number of tabs)
+- **Native Translation:**
+  ```tsx
+  const translateX = animIndex.interpolate({
+    inputRange: [0, 1, ..., N - 1],
+    outputRange: [0, tabWidth, ..., tabWidth * (N - 1)],
+  });
+  ```
+- **Physics Calibration:**
+  ```tsx
+  Animated.spring(animIndex, {
+    toValue: activeIndex,
+    tension: 68,
+    friction: 10,
+    useNativeDriver: true,
+  }).start();
+  ```
+- **Elevated Indicator Design Tokens:**
+  - `position: 'absolute'`, `top: 3`, `left: 3`, `bottom: 3`
+  - `borderRadius: 11`, `borderWidth: 1.5`, `elevation: 2`
+  - `shadowColor: '#000'`, `shadowOffset: { width: 0, height: 1.5 }`, `shadowOpacity: 0.12`, `shadowRadius: 3`
+  - `backgroundColor: C.surface`, `borderColor: isDark ? `${cfg.fg}55` : `${cfg.fg}35``
+- **Badge Counters:** Live count badges dynamically light up in the active tab's soft background tint (`${cfg.fg}18` or `rgba(..., 0.18)`) and text color (`cfg.fg`). Inactive badges render subtle neutral borders/surfaces.
+
+### 23.3 Comprehensive CampusOne Segmented Track Catalog
+The following screens contain segmented control bars slated for this animated pattern:
+1. **Lost & Found (`LostFoundBrowseScreen.tsx`):** `All` (Sector Amber) · `Lost` (Crimson) · `Found` (Emerald) · `My Posts` (Violet) [Implemented].
+2. **Blood Donation (`BloodScreen.tsx`):** `Requests` (Blood Crimson) vs `Donors` (Medical Cyan / Emerald) (2 tabs).
+3. **Student Jobs (`JobsBrowseScreen.tsx`):** `Open` (Emerald) · `Closing Soon` (Amber) · `Expired` (Slate) · `Saved` (Rose/Pink) (4 tabs).
+4. **Marketplace (`MarketScreen.tsx`):** `All Listings` (Slate/Brand) vs `My Listings` (Market Amber) (2 tabs).
+5. **Campus Rides (`RidesScreen.tsx`):** `All` (Ride Cyan) · `To Campus` (Emerald) · `From Campus` (Royal Blue) (3 tabs).
+6. **Campus Events (`EventsBrowseScreen.tsx`):** `Upcoming` (Violet) vs `Past` (Muted Slate) (2 tabs).
+7. **Class & Exam Routines (`RoutinesBrowseScreen.tsx`):** `Class Routines` (Indigo) vs `Exam Routines` (Orange) (2 tabs).
+8. **Study Hub Course Details (`CourseDetailScreen.tsx`):** `Materials` (Amber) · `Questions` (Blue) · `Books` (Emerald) · `Saved` (Violet) (4 tabs).
+9. **Campus Issues & Reports (`CampusIssuesScreen.tsx`, `MyReportsScreen.tsx`, `AssignedToMeScreen.tsx`, `AllReportsScreen.tsx`):** Status switchers (`All` · `Open` · `In Progress` · `Resolved`).
+10. **Notifications (`NotificationsScreen.tsx`):** `All` (Slate) vs `Unread` (Crimson) (2 tabs).
+11. **Club Details (`ClubDetailScreen.tsx`):** `Feed` (Club Accent) vs `Members` (Indigo) (2 tabs).
+12. **Admin Management (`ManageStaffScreen.tsx` & `JobsModerateScreen.tsx`):** `Staff` vs `Admins` (2 tabs), `Reported` vs `Removed` (2 tabs).
+
