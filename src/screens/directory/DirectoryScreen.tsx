@@ -1,12 +1,13 @@
 // Student Directory - university-wide peer discovery network.
-// Features: segmented discovery (All Students / My Connections / Requests),
-// smart cohort matching (My Classmates), department filtering, CR badges,
-// blood group indicators, and instant contact reveal via ContactSheet.
+// Features: segmented discovery (All Students / My Connections / Requests) with
+// native spring animation, structured dual control bar (My Section + Department picker),
+// CR badges, blood group indicators, and instant contact reveal via ContactSheet.
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet,
-  ScrollView, RefreshControl, ActivityIndicator, type ViewStyle, type TextStyle,
+  Modal, Animated, RefreshControl, ActivityIndicator, ScrollView,
+  type ViewStyle, type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -49,7 +50,17 @@ export interface Student {
   connState: ConnState;
 }
 
-const DEPARTMENTS = ['All', 'CSE', 'EEE', 'BBA', 'Law', 'English', 'Civil', 'Textile', 'Economics'];
+const DEPARTMENTS = [
+  { id: 'All', name: 'All Departments', sub: 'Campus-wide search' },
+  { id: 'CSE', name: 'Computer Science & Engineering', sub: 'Faculty of Engineering & Applied Sciences' },
+  { id: 'EEE', name: 'Electrical & Electronic Engineering', sub: 'Faculty of Engineering & Applied Sciences' },
+  { id: 'BBA', name: 'Business Administration', sub: 'Faculty of Business' },
+  { id: 'Law', name: 'Department of Law', sub: 'Faculty of Law' },
+  { id: 'English', name: 'Department of English', sub: 'Faculty of Arts & Humanities' },
+  { id: 'Civil', name: 'Civil Engineering', sub: 'Faculty of Engineering & Applied Sciences' },
+  { id: 'Textile', name: 'Textile Engineering', sub: 'Faculty of Engineering & Applied Sciences' },
+  { id: 'Economics', name: 'Department of Economics', sub: 'Faculty of Social Sciences' },
+];
 
 const STATUS_MAP: Record<string, ConnState> = {
   accepted: 'connected',
@@ -68,6 +79,7 @@ export function DirectoryScreen({ navigation }: any) {
   const [tab, setTab] = useState<TabKey>('all');
   const [query, setQuery] = useState('');
   const [selectedDept, setSelectedDept] = useState('All');
+  const [deptModalVisible, setDeptModalVisible] = useState(false);
   const [classmatesOnly, setClassmatesOnly] = useState(false);
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(false);
@@ -75,6 +87,25 @@ export function DirectoryScreen({ navigation }: any) {
   const [isOffline, setIsOffline] = useState(false);
   const [actionBusy, setActionBusy] = useState<Record<string, boolean>>({});
   const [contactStudent, setContactStudent] = useState<Student | null>(null);
+
+  // Segmented track native spring animation & width tracking
+  const animIndex = useRef(new Animated.Value(0)).current;
+  const [trackWidth, setTrackWidth] = useState(0);
+
+  const tabIndexMap: Record<TabKey, number> = useMemo(
+    () => ({ all: 0, connections: 1, requests: 2 }),
+    []
+  );
+
+  useEffect(() => {
+    const idx = tabIndexMap[tab] ?? 0;
+    Animated.spring(animIndex, {
+      toValue: idx,
+      tension: 68,
+      friction: 10,
+      useNativeDriver: true,
+    }).start();
+  }, [tab, animIndex, tabIndexMap]);
 
   const isHidden = profile?.directory_visible === false;
 
@@ -209,6 +240,33 @@ export function DirectoryScreen({ navigation }: any) {
   const connectedCount = useMemo(() => students.filter(s => s.connState === 'connected').length, [students]);
   const requestsTotal = incomingCount + outgoingCount;
 
+  // Segmented track dimensions
+  const TRACK_PADDING = 3;
+  const innerTrackWidth = Math.max(0, trackWidth - TRACK_PADDING * 2);
+  const tabWidth = innerTrackWidth > 0 ? innerTrackWidth / 3 : 0;
+  const translateX = animIndex.interpolate({
+    inputRange: [0, 1, 2],
+    outputRange: [0, tabWidth, tabWidth * 2],
+  });
+
+  const TAB_COLORS: Record<TabKey, { fg: string; bg: string }> = useMemo(
+    () => ({
+      all: { fg: SectorColors.directory, bg: `${SectorColors.directory}18` },
+      connections: { fg: Accent.teal, bg: pillBg(Accent.teal, isDark) },
+      requests: { fg: incomingCount > 0 ? C.danger : C.warn, bg: incomingCount > 0 ? C.dangerBg : C.warnBg },
+    }),
+    [C.danger, C.dangerBg, C.warn, C.warnBg, isDark, incomingCount]
+  );
+
+  const TABS: { id: TabKey; label: string; count: number }[] = useMemo(
+    () => [
+      { id: 'all', label: t.directory2.tabAll, count: students.length },
+      { id: 'connections', label: t.directory2.tabConnections, count: connectedCount },
+      { id: 'requests', label: t.directory2.tabRequests, count: requestsTotal },
+    ],
+    [t.directory2, students.length, connectedCount, requestsTotal]
+  );
+
   // Filter pipeline
   const filteredStudents = useMemo(() => {
     let list = students;
@@ -293,51 +351,74 @@ export function DirectoryScreen({ navigation }: any) {
           ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
           ListHeaderComponent={
             <View style={styles.headerBlock}>
-              {/* Segmented Track Switcher */}
-              <View style={[styles.tabTrack, { backgroundColor: C.surface2, borderColor: C.border }]}>
-                <TouchableOpacity
-                  style={[styles.tabBtn, tab === 'all' && [styles.tabBtnActive, { backgroundColor: C.surface }]]}
-                  onPress={() => setTab('all')}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.tabTxt, { color: tab === 'all' ? C.text : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                    {t.directory2.tabAll}
-                  </Text>
-                </TouchableOpacity>
+              {/* Native Spring Animated Segmented Track Switcher */}
+              <View
+                style={[styles.tabContainer, { backgroundColor: C.surface2 }]}
+                onLayout={e => setTrackWidth(e.nativeEvent.layout.width)}
+              >
+                {tabWidth > 0 && (
+                  <Animated.View
+                    style={[
+                      styles.activeIndicator,
+                      {
+                        width: tabWidth,
+                        transform: [{ translateX }],
+                        backgroundColor: C.surface,
+                        borderColor: isDark ? `${TAB_COLORS[tab].fg}55` : `${TAB_COLORS[tab].fg}35`,
+                      },
+                    ]}
+                  />
+                )}
+                {TABS.map(tItem => {
+                  const active = tab === tItem.id;
+                  const cfg = TAB_COLORS[tItem.id];
 
-                <TouchableOpacity
-                  style={[styles.tabBtn, tab === 'connections' && [styles.tabBtnActive, { backgroundColor: C.surface }]]}
-                  onPress={() => setTab('connections')}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.tabTxt, { color: tab === 'connections' ? C.text : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                    {t.directory2.tabConnections}
-                  </Text>
-                  {connectedCount > 0 && (
-                    <View style={[styles.countPill, { backgroundColor: pillBg(Accent.teal, isDark) }]}>
-                      <Text style={[styles.countPillTxt, { color: Accent.teal, fontFamily: FontFamily.jakartaBold }]}>
-                        {connectedCount}
+                  return (
+                    <TouchableOpacity
+                      key={tItem.id}
+                      style={styles.tabBtn}
+                      onPress={() => setTab(tItem.id)}
+                      activeOpacity={0.75}
+                    >
+                      <Text
+                        style={[
+                          styles.tabBtnTxt,
+                          {
+                            color: active ? cfg.fg : C.textMuted,
+                            fontFamily: FontFamily.jakartaBold,
+                          },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {tItem.label}
                       </Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.tabBtn, tab === 'requests' && [styles.tabBtnActive, { backgroundColor: C.surface }]]}
-                  onPress={() => setTab('requests')}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.tabTxt, { color: tab === 'requests' ? C.text : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                    {t.directory2.tabRequests}
-                  </Text>
-                  {requestsTotal > 0 && (
-                    <View style={[styles.countPill, { backgroundColor: incomingCount > 0 ? C.brand : C.warnBg }]}>
-                      <Text style={[styles.countPillTxt, { color: incomingCount > 0 ? '#fff' : C.warn, fontFamily: FontFamily.jakartaBold }]}>
-                        {requestsTotal}
-                      </Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
+                      {tItem.count > 0 && (
+                        <View
+                          style={[
+                            styles.tabBadge,
+                            {
+                              backgroundColor: active
+                                ? cfg.bg
+                                : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.border),
+                            },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.tabBadgeTxt,
+                              {
+                                color: active ? cfg.fg : C.textMuted,
+                                fontFamily: FontFamily.jakartaBold,
+                              },
+                            ]}
+                          >
+                            {tItem.count}
+                          </Text>
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
 
               {/* Search Bar */}
@@ -358,50 +439,101 @@ export function DirectoryScreen({ navigation }: any) {
                 )}
               </View>
 
-              {/* Filter Chips (Visible in 'all' tab) */}
+              {/* Structured Dual Control Bar (Option 1: My Section + Department Picker) */}
               {tab === 'all' && (
-                <View style={styles.chipsBlock}>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsScroll}>
-                    {/* Smart Classmates Chip */}
-                    {hasCohort && (
-                      <TouchableOpacity
+                <View style={styles.dualBarRow}>
+                  {/* Left: My Section Cohort Button */}
+                  {hasCohort ? (
+                    <TouchableOpacity
+                      style={[
+                        styles.dualBarBtn,
+                        classmatesOnly
+                          ? [
+                              styles.dualBarBtnActive,
+                              {
+                                backgroundColor: isDark ? 'rgba(245, 158, 11, 0.18)' : '#fef3c7',
+                                borderColor: isDark ? 'rgba(245, 158, 11, 0.45)' : '#fde68a',
+                              },
+                            ]
+                          : [styles.dualBarBtnInactive, { backgroundColor: C.surface, borderColor: C.border }],
+                      ]}
+                      onPress={() => setClassmatesOnly(!classmatesOnly)}
+                      activeOpacity={0.75}
+                    >
+                      <Icon
+                        name={classmatesOnly ? 'check' : 'sparkle'}
+                        size={14}
+                        color={classmatesOnly ? (isDark ? '#fbbf24' : '#b45309') : C.text2}
+                      />
+                      <Text
                         style={[
-                          styles.chip,
-                          classmatesOnly
-                            ? [styles.chipActive, { backgroundColor: '#fef3c7', borderColor: '#fde68a' }]
-                            : [styles.chipInactive, { backgroundColor: C.surface, borderColor: C.border }],
+                          styles.dualBarTxt,
+                          {
+                            color: classmatesOnly ? (isDark ? '#fbbf24' : '#b45309') : C.text,
+                            fontFamily: FontFamily.jakartaBold,
+                          },
                         ]}
-                        onPress={() => setClassmatesOnly(!classmatesOnly)}
-                        activeOpacity={0.7}
+                        numberOfLines={1}
                       >
-                        <Text style={[styles.chipTxt, { color: classmatesOnly ? '#b45309' : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                          ✨ {t.directory2.myClassmatesChip(profile!.intake!, profile!.section!)}
-                        </Text>
-                      </TouchableOpacity>
-                    )}
+                        {classmatesOnly
+                          ? `My Sec (${profile!.intake}-${profile!.section})`
+                          : `✨ My Sec (${profile!.intake}-${profile!.section})`}
+                      </Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <View
+                      style={[
+                        styles.dualBarBtn,
+                        styles.dualBarBtnInactive,
+                        { backgroundColor: C.surface, borderColor: C.border, opacity: 0.5 },
+                      ]}
+                    >
+                      <Text style={[styles.dualBarTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                        No Section Set
+                      </Text>
+                    </View>
+                  )}
 
-                    {/* Department Pills */}
-                    {DEPARTMENTS.map(dept => {
-                      const active = selectedDept === dept;
-                      return (
-                        <TouchableOpacity
-                          key={dept}
-                          style={[
-                            styles.chip,
-                            active
-                              ? [styles.chipActive, { backgroundColor: C.brand, borderColor: C.brand }]
-                              : [styles.chipInactive, { backgroundColor: C.surface, borderColor: C.border }],
-                          ]}
-                          onPress={() => setSelectedDept(dept)}
-                          activeOpacity={0.7}
-                        >
-                          <Text style={[styles.chipTxt, { color: active ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                            {dept === 'All' ? t.directory2.allDepts : dept}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </ScrollView>
+                  {/* Right: Department Picker Button */}
+                  <TouchableOpacity
+                    style={[
+                      styles.dualBarBtn,
+                      selectedDept !== 'All'
+                        ? [
+                            styles.dualBarBtnActive,
+                            {
+                              backgroundColor: isDark ? 'rgba(37, 99, 235, 0.18)' : C.brand50,
+                              borderColor: C.brand,
+                            },
+                          ]
+                        : [styles.dualBarBtnInactive, { backgroundColor: C.surface, borderColor: C.border }],
+                    ]}
+                    onPress={() => setDeptModalVisible(true)}
+                    activeOpacity={0.75}
+                  >
+                    <Icon
+                      name="award"
+                      size={14}
+                      color={selectedDept !== 'All' ? (isDark ? '#60a5fa' : C.brand) : C.text2}
+                    />
+                    <Text
+                      style={[
+                        styles.dualBarTxt,
+                        {
+                          color: selectedDept !== 'All' ? (isDark ? '#60a5fa' : C.brand) : C.text,
+                          fontFamily: FontFamily.jakartaBold,
+                        },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {selectedDept === 'All' ? 'All Depts' : selectedDept}
+                    </Text>
+                    <Icon
+                      name="chevD"
+                      size={14}
+                      color={selectedDept !== 'All' ? (isDark ? '#60a5fa' : C.brand) : C.textMuted}
+                    />
+                  </TouchableOpacity>
                 </View>
               )}
             </View>
@@ -579,6 +711,81 @@ export function DirectoryScreen({ navigation }: any) {
         />
       )}
 
+      {/* Department Picker Bottom Sheet Modal */}
+      <Modal
+        visible={deptModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDeptModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setDeptModalVisible(false)}
+          />
+          <View style={[styles.modalSheet, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <View style={[styles.modalHandle, { backgroundColor: C.border }]} />
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                Select Department
+              </Text>
+              <TouchableOpacity
+                onPress={() => setDeptModalVisible(false)}
+                hitSlop={8}
+              >
+                <Icon name="x" size={18} color={C.textMuted} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 420 }}>
+              {DEPARTMENTS.map(d => {
+                const active = selectedDept === d.id;
+                return (
+                  <TouchableOpacity
+                    key={d.id}
+                    style={[
+                      styles.deptRow,
+                      active && { backgroundColor: C.surface2 },
+                    ]}
+                    onPress={() => {
+                      setSelectedDept(d.id);
+                      setDeptModalVisible(false);
+                    }}
+                    activeOpacity={0.75}
+                  >
+                    <View style={styles.deptLeft}>
+                      <Icon
+                        name="award"
+                        size={15}
+                        color={active ? C.brand : C.textMuted}
+                      />
+                      <View>
+                        <Text
+                          style={[
+                            styles.deptTxt,
+                            {
+                              color: active ? C.brand : C.text,
+                              fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                            },
+                          ]}
+                        >
+                          {d.id === 'All' ? d.name : `${d.id} · ${d.name}`}
+                        </Text>
+                        <Text style={[styles.deptSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+                          {d.sub}
+                        </Text>
+                      </View>
+                    </View>
+                    {active && <Icon name="check" size={16} color={C.brand} />}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
       {/* Standardized ContactSheet for One-Tap Call, WhatsApp, Mail, DM */}
       {contactStudent ? (
         <ContactSheet
@@ -606,35 +813,45 @@ const styles = StyleSheet.create({
 
   headerBlock: { marginBottom: 12 } as ViewStyle,
 
-  tabTrack: {
+  /* Animated Segmented Track */
+  tabContainer: {
     flexDirection: 'row',
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 14,
     padding: 3,
     marginBottom: 10,
+    position: 'relative',
+  } as ViewStyle,
+  activeIndicator: {
+    position: 'absolute',
+    top: 3,
+    left: 3,
+    bottom: 3,
+    borderRadius: 11,
+    borderWidth: 1.5,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1.5 },
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
   } as ViewStyle,
   tabBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: 5,
     paddingVertical: 8,
-    borderRadius: 9,
+    minHeight: 42,
+    borderRadius: 11,
+    zIndex: 1,
   } as ViewStyle,
-  tabBtnActive: {
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 1,
-  } as ViewStyle,
-  tabTxt: { fontSize: 13 } as TextStyle,
-  countPill: {
+  tabBtnTxt: { fontSize: 12.5 } as any,
+  tabBadge: {
     paddingHorizontal: 6,
     paddingVertical: 1.5,
-    borderRadius: 10,
+    borderRadius: 999,
   } as ViewStyle,
-  countPillTxt: { fontSize: 11 } as TextStyle,
+  tabBadgeTxt: { fontSize: 10.5 } as any,
 
   searchBar: {
     flexDirection: 'row',
@@ -643,21 +860,35 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 14,
     borderWidth: 1,
-    marginBottom: 10,
+    marginBottom: 9,
   } as ViewStyle,
   searchInput: { flex: 1, fontSize: 14, paddingVertical: 11 } as TextStyle,
 
-  chipsBlock: { marginBottom: 4 } as ViewStyle,
-  chipsScroll: { gap: 7 } as ViewStyle,
-  chip: {
-    paddingHorizontal: 13,
-    paddingVertical: 7,
-    borderRadius: 20,
-    borderWidth: 1,
+  /* Option 1: Dual Control Bar */
+  dualBarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
   } as ViewStyle,
-  chipActive: {} as ViewStyle,
-  chipInactive: {} as ViewStyle,
-  chipTxt: { fontSize: 12.5 } as TextStyle,
+  dualBarBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    height: 42,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+  } as ViewStyle,
+  dualBarBtnActive: {
+    elevation: 1,
+  } as ViewStyle,
+  dualBarBtnInactive: {} as ViewStyle,
+  dualBarTxt: {
+    fontSize: 12.5,
+  } as TextStyle,
 
   emptyLoading: { paddingVertical: 40, alignItems: 'center' } as ViewStyle,
   emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 48, paddingHorizontal: 24 } as ViewStyle,
@@ -767,4 +998,64 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   } as ViewStyle,
   hiddenBtnTxt: { fontSize: 14 } as TextStyle,
+
+  /* Department Bottom Sheet Modal */
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+  } as ViewStyle,
+  modalBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  } as ViewStyle,
+  modalSheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderWidth: 1,
+    paddingTop: 10,
+    paddingHorizontal: Layout.screenPadding,
+    paddingBottom: 28,
+  } as ViewStyle,
+  modalHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 14,
+  } as ViewStyle,
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  } as ViewStyle,
+  modalTitle: {
+    fontSize: 16,
+  } as TextStyle,
+  deptRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    marginBottom: 2,
+  } as ViewStyle,
+  deptLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  } as ViewStyle,
+  deptTxt: {
+    fontSize: 13.5,
+  } as TextStyle,
+  deptSub: {
+    fontSize: 11,
+    marginTop: 1,
+  } as TextStyle,
 });
