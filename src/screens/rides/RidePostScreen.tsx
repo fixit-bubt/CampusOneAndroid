@@ -25,15 +25,60 @@ const VEHICLES: { id: Ride['vehicle']; label: string; icon: string; maxSeats: nu
   { id: 'Car',      label: 'Car',      icon: '🚗', maxSeats: 4, defaultSeats: 3 },
 ];
 
-const QUICK_HUBS = ['Mirpur 10', 'Mirpur 2', 'Uttara', 'Shyamoli', 'Dhanmondi', 'Kalyanpur', 'Mohammadpur'];
+interface HubGroup {
+  category: string;
+  icon: keyof typeof Feather.glyphMap;
+  hubs: string[];
+}
 
-const TIME_PRESETS = ['07:30', '08:00', '08:30', '09:00', '13:00', '16:30', '18:00', '21:30'];
+const HUB_GROUPS: HubGroup[] = [
+  {
+    category: 'Nearby & Mirpur Area',
+    icon: 'map-pin',
+    hubs: ['Mirpur 10', 'Mirpur 2', 'Sony Cinema', 'Rainkhola', 'Mirpur 1', 'Technical'],
+  },
+  {
+    category: 'Major Dhaka Corridors',
+    icon: 'compass',
+    hubs: ['Uttara', 'Shyamoli', 'Kalyanpur', 'Farmgate', 'Dhanmondi', 'Mohammadpur', 'Agargaon'],
+  },
+];
+
+interface TimePeriod {
+  title: string;
+  icon: keyof typeof Feather.glyphMap;
+  times: string[];
+}
+
+const TIME_PERIODS: TimePeriod[] = [
+  {
+    title: 'Morning Shift (Class Arrivals)',
+    icon: 'sunrise',
+    times: ['07:30', '08:00', '08:30', '09:00', '10:00'],
+  },
+  {
+    title: 'Afternoon (Midday Schedule)',
+    icon: 'sun',
+    times: ['12:00', '13:00', '14:30', '16:00'],
+  },
+  {
+    title: 'Evening & Return Commutes',
+    icon: 'sunset',
+    times: ['16:30', '17:30', '18:00', '19:30', '21:00'],
+  },
+];
 
 function localTomorrow(): string {
   const d = new Date();
   d.setDate(d.getDate() + 1);
   const off = d.getTimezoneOffset() * 60000;
   return new Date(d.getTime() - off).toISOString().split('T')[0];
+}
+
+function formatShortDate(iso: string): string {
+  const d = new Date(iso);
+  if (!iso || isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
 
 function getInitialDateTime(): { defaultDate: 'today' | 'tomorrow'; defaultTime: string } {
@@ -70,7 +115,11 @@ export function RidePostScreen({ route, navigation }: any) {
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Animated segmented toggle for Offer vs Request
+  const isOffer = postType === 'offer';
+  const accentColor = isOffer ? RIDE_COLOR : '#8b5cf6';
+  const TRACK_PADDING = 3;
+
+  // 1. Post Type (Offer vs Request)
   const animIndex = useRef(new Animated.Value(initialPostType === 'request' ? 1 : 0)).current;
   const [trackWidth, setTrackWidth] = useState(0);
 
@@ -83,12 +132,51 @@ export function RidePostScreen({ route, navigation }: any) {
     }).start();
   }, [postType, animIndex]);
 
-  const TRACK_PADDING = 3;
   const innerTrackWidth = Math.max(0, trackWidth - TRACK_PADDING * 2);
   const tabWidth = innerTrackWidth > 0 ? innerTrackWidth / 2 : 0;
   const translateX = animIndex.interpolate({
     inputRange: [0, 1],
     outputRange: [0, tabWidth],
+  });
+
+  // 2. Direction (To Campus vs From Campus)
+  const dirAnimIndex = useRef(new Animated.Value(direction === 'From Campus' ? 1 : 0)).current;
+  const [dirTrackWidth, setDirTrackWidth] = useState(0);
+
+  useEffect(() => {
+    Animated.spring(dirAnimIndex, {
+      toValue: direction === 'From Campus' ? 1 : 0,
+      tension: 68,
+      friction: 10,
+      useNativeDriver: true,
+    }).start();
+  }, [direction, dirAnimIndex]);
+
+  const dirInnerTrackWidth = Math.max(0, dirTrackWidth - TRACK_PADDING * 2);
+  const dirTabWidth = dirInnerTrackWidth > 0 ? dirInnerTrackWidth / 2 : 0;
+  const dirTranslateX = dirAnimIndex.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, dirTabWidth],
+  });
+
+  // 3. Date Choice (Today vs Tomorrow)
+  const dateAnimIndex = useRef(new Animated.Value(dateChoice === 'tomorrow' ? 1 : 0)).current;
+  const [dateTrackWidth, setDateTrackWidth] = useState(0);
+
+  useEffect(() => {
+    Animated.spring(dateAnimIndex, {
+      toValue: dateChoice === 'tomorrow' ? 1 : 0,
+      tension: 68,
+      friction: 10,
+      useNativeDriver: true,
+    }).start();
+  }, [dateChoice, dateAnimIndex]);
+
+  const dateInnerTrackWidth = Math.max(0, dateTrackWidth - TRACK_PADDING * 2);
+  const dateTabWidth = dateInnerTrackWidth > 0 ? dateInnerTrackWidth / 2 : 0;
+  const dateTranslateX = dateAnimIndex.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, dateTabWidth],
   });
 
   const currentVehicleConfig = VEHICLES.find(v => v.id === vehicle) ?? VEHICLES[0];
@@ -124,6 +212,16 @@ export function RidePostScreen({ route, navigation }: any) {
     } else {
       setFrom('BUBT Campus');
       if (to === 'BUBT Campus') setTo('');
+    }
+  }
+
+  const activeHub = direction === 'To Campus' ? from : to;
+
+  function handleHubSelect(hub: string) {
+    if (direction === 'To Campus') {
+      setFrom(hub);
+    } else {
+      setTo(hub);
     }
   }
 
@@ -198,8 +296,6 @@ export function RidePostScreen({ route, navigation }: any) {
     }
   }
 
-  const isOffer = postType === 'offer';
-
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar
@@ -216,13 +312,13 @@ export function RidePostScreen({ route, navigation }: any) {
         >
           {/* Post Type Segmented Animated Track Bar */}
           <View
-            style={[styles.typeToggleTrack, { backgroundColor: C.surface2 }]}
+            style={[styles.segmentedTrack, { backgroundColor: C.surface2 }]}
             onLayout={e => setTrackWidth(e.nativeEvent.layout.width)}
           >
             {tabWidth > 0 && (
               <Animated.View
                 style={[
-                  styles.typeToggleIndicator,
+                  styles.slidingIndicator,
                   {
                     width: tabWidth,
                     transform: [{ translateX }],
@@ -236,7 +332,7 @@ export function RidePostScreen({ route, navigation }: any) {
             )}
 
             <TouchableOpacity
-              style={styles.typeTabBtn}
+              style={styles.segmentedTabBtn}
               onPress={() => {
                 setPostType('offer');
                 if (fare === '40') setFare('50');
@@ -246,7 +342,7 @@ export function RidePostScreen({ route, navigation }: any) {
               <Feather name="navigation" size={14} color={isOffer ? RIDE_COLOR : C.textMuted} />
               <Text
                 style={[
-                  styles.typeTabBtnTxt,
+                  styles.segmentedTabTxt,
                   {
                     color: isOffer ? RIDE_COLOR : C.textMuted,
                     fontFamily: isOffer ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
@@ -258,7 +354,7 @@ export function RidePostScreen({ route, navigation }: any) {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.typeTabBtn}
+              style={styles.segmentedTabBtn}
               onPress={() => {
                 setPostType('request');
                 if (fare === '50') setFare('40');
@@ -268,7 +364,7 @@ export function RidePostScreen({ route, navigation }: any) {
               <Feather name="user-check" size={14} color={!isOffer ? '#8b5cf6' : C.textMuted} />
               <Text
                 style={[
-                  styles.typeTabBtnTxt,
+                  styles.segmentedTabTxt,
                   {
                     color: !isOffer ? '#8b5cf6' : C.textMuted,
                     fontFamily: !isOffer ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
@@ -287,7 +383,6 @@ export function RidePostScreen({ route, navigation }: any) {
           <View style={styles.vehicleRow}>
             {VEHICLES.map(v => {
               const on = vehicle === v.id;
-              const accentColor = isOffer ? RIDE_COLOR : '#8b5cf6';
               return (
                 <TouchableOpacity
                   key={v.id}
@@ -324,26 +419,75 @@ export function RidePostScreen({ route, navigation }: any) {
             })}
           </View>
 
-          {/* 2. Direction Selection */}
+          {/* 2. Direction Selection (Animated Segmented Track) */}
           <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
             {t.rides2.direction ?? 'DIRECTION'}
           </Text>
-          <View style={[styles.dirToggle, { backgroundColor: C.surface, borderColor: C.border }]}>
-            {(['To Campus', 'From Campus'] as const).map(dir => {
-              const on = direction === dir;
-              return (
-                <TouchableOpacity
-                  key={dir}
-                  style={[styles.dirBtn, on && { backgroundColor: isOffer ? RIDE_COLOR : '#8b5cf6' }]}
-                  onPress={() => handleDirectionSelect(dir)}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[styles.dirBtnTxt, { color: on ? '#fff' : C.text, fontFamily: FontFamily.jakartaBold }]}>
-                    {dir === 'To Campus' ? (t.rides2.toCampus ?? 'To Campus') : (t.rides2.fromCampus ?? 'From Campus')}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
+          <View
+            style={[styles.segmentedTrack, { backgroundColor: C.surface2 }]}
+            onLayout={e => setDirTrackWidth(e.nativeEvent.layout.width)}
+          >
+            {dirTabWidth > 0 && (
+              <Animated.View
+                style={[
+                  styles.slidingIndicator,
+                  {
+                    width: dirTabWidth,
+                    transform: [{ translateX: dirTranslateX }],
+                    backgroundColor: C.surface,
+                    borderColor: isDark
+                      ? (isOffer ? `${RIDE_COLOR}55` : '#8b5cf655')
+                      : (isOffer ? `${RIDE_COLOR}35` : '#8b5cf635'),
+                  },
+                ]}
+              />
+            )}
+
+            <TouchableOpacity
+              style={styles.segmentedTabBtn}
+              onPress={() => handleDirectionSelect('To Campus')}
+              activeOpacity={0.75}
+            >
+              <Feather
+                name="arrow-up-right"
+                size={14}
+                color={direction === 'To Campus' ? accentColor : C.textMuted}
+              />
+              <Text
+                style={[
+                  styles.segmentedTabTxt,
+                  {
+                    color: direction === 'To Campus' ? accentColor : C.textMuted,
+                    fontFamily: direction === 'To Campus' ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                  },
+                ]}
+              >
+                {t.rides2.toCampus ?? 'To Campus'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.segmentedTabBtn}
+              onPress={() => handleDirectionSelect('From Campus')}
+              activeOpacity={0.75}
+            >
+              <Feather
+                name="arrow-down-left"
+                size={14}
+                color={direction === 'From Campus' ? accentColor : C.textMuted}
+              />
+              <Text
+                style={[
+                  styles.segmentedTabTxt,
+                  {
+                    color: direction === 'From Campus' ? accentColor : C.textMuted,
+                    fontFamily: direction === 'From Campus' ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                  },
+                ]}
+              >
+                {t.rides2.fromCampus ?? 'From Campus'}
+              </Text>
+            </TouchableOpacity>
           </View>
 
           {/* 3. Origin & Destination */}
@@ -358,25 +502,6 @@ export function RidePostScreen({ route, navigation }: any) {
             placeholderTextColor={C.textMuted}
           />
 
-          {/* Quick Hub Chips */}
-          <View style={styles.chipRow}>
-            {QUICK_HUBS.map(hub => (
-              <TouchableOpacity
-                key={hub}
-                style={[styles.hubChip, { backgroundColor: C.surface2, borderColor: C.border }]}
-                onPress={() => {
-                  if (direction === 'To Campus') setFrom(hub);
-                  else setTo(hub);
-                }}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.hubChipTxt, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
-                  {hub}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
           <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
             {t.rides2.to ?? 'TO'}
           </Text>
@@ -388,71 +513,220 @@ export function RidePostScreen({ route, navigation }: any) {
             placeholderTextColor={C.textMuted}
           />
 
-          {/* 4. Date Choice (Today / Tomorrow) */}
+          {/* Organized Commute Hubs */}
+          <View style={styles.hubContainer}>
+            <View style={styles.hubHeaderRow}>
+              <Text style={[styles.subSectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                {direction === 'To Campus' ? 'POPULAR PICKUP HUBS' : 'POPULAR DESTINATION HUBS'}
+              </Text>
+              {activeHub.trim().length > 0 && (
+                <Text style={[styles.hubActiveNotice, { color: accentColor, fontFamily: FontFamily.jakartaMedium }]}>
+                  Selected: {activeHub}
+                </Text>
+              )}
+            </View>
+
+            {HUB_GROUPS.map(group => (
+              <View key={group.category} style={styles.hubGroupBlock}>
+                <View style={styles.hubCategoryTitleRow}>
+                  <Feather name={group.icon} size={11} color={C.textMuted} />
+                  <Text style={[styles.hubCategoryTitle, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                    {group.category.toUpperCase()}
+                  </Text>
+                </View>
+                <View style={styles.chipRow}>
+                  {group.hubs.map(hub => {
+                    const isSelected = activeHub.trim().toLowerCase() === hub.toLowerCase();
+                    return (
+                      <TouchableOpacity
+                        key={hub}
+                        style={[
+                          styles.hubChip,
+                          {
+                            backgroundColor: isSelected
+                              ? (isDark ? 'rgba(110, 139, 31, 0.22)' : (isOffer ? '#f2f7e4' : '#f5f0ff'))
+                              : C.surface2,
+                            borderColor: isSelected ? accentColor : C.border,
+                          },
+                        ]}
+                        onPress={() => handleHubSelect(hub)}
+                        activeOpacity={0.7}
+                      >
+                        {isSelected && (
+                          <Feather name="check" size={11} color={accentColor} style={{ marginRight: 3 }} />
+                        )}
+                        <Text
+                          style={[
+                            styles.hubChipTxt,
+                            {
+                              color: isSelected ? accentColor : C.text2,
+                              fontFamily: isSelected ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                            },
+                          ]}
+                        >
+                          {hub}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            ))}
+          </View>
+
+          {/* 4. Date Choice (Animated Segmented Track) */}
           <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
             {t.rides2.date ?? 'DATE'}
           </Text>
-          <View style={styles.dateRow}>
-            {(['today', 'tomorrow'] as const).map(choice => {
-              const on = dateChoice === choice;
-              const label = choice === 'today' ? (t.rides2.todayText ?? 'Today') : (t.rides2.tomorrowText ?? 'Tomorrow');
-              const dStr = choice === 'today' ? localToday() : localTomorrow();
-              const accentBg = isOffer ? RIDE_COLOR : '#8b5cf6';
-              return (
-                <TouchableOpacity
-                  key={choice}
-                  style={[
-                    styles.dateChip,
-                    {
-                      backgroundColor: on ? accentBg : C.surface,
-                      borderColor: on ? accentBg : C.border,
-                    },
-                  ]}
-                  onPress={() => handleDateChoice(choice)}
-                  activeOpacity={0.75}
-                >
-                  <Text style={[styles.dateChipTxt, { color: on ? '#fff' : C.text, fontFamily: FontFamily.jakartaBold }]}>
-                    {label} ({formatDate(dStr)})
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
+          <View
+            style={[styles.segmentedTrack, { backgroundColor: C.surface2 }]}
+            onLayout={e => setDateTrackWidth(e.nativeEvent.layout.width)}
+          >
+            {dateTabWidth > 0 && (
+              <Animated.View
+                style={[
+                  styles.slidingIndicator,
+                  {
+                    width: dateTabWidth,
+                    transform: [{ translateX: dateTranslateX }],
+                    backgroundColor: C.surface,
+                    borderColor: isDark
+                      ? (isOffer ? `${RIDE_COLOR}55` : '#8b5cf655')
+                      : (isOffer ? `${RIDE_COLOR}35` : '#8b5cf635'),
+                  },
+                ]}
+              />
+            )}
+
+            <TouchableOpacity
+              style={styles.segmentedTabBtn}
+              onPress={() => handleDateChoice('today')}
+              activeOpacity={0.75}
+            >
+              <Feather
+                name="calendar"
+                size={13}
+                color={dateChoice === 'today' ? accentColor : C.textMuted}
+              />
+              <Text
+                style={[
+                  styles.segmentedTabTxt,
+                  {
+                    color: dateChoice === 'today' ? accentColor : C.textMuted,
+                    fontFamily: dateChoice === 'today' ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                  },
+                ]}
+                numberOfLines={1}
+              >
+                {(t.rides2.todayText ?? 'Today')} · {formatShortDate(localToday())}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.segmentedTabBtn}
+              onPress={() => handleDateChoice('tomorrow')}
+              activeOpacity={0.75}
+            >
+              <Feather
+                name="calendar"
+                size={13}
+                color={dateChoice === 'tomorrow' ? accentColor : C.textMuted}
+              />
+              <Text
+                style={[
+                  styles.segmentedTabTxt,
+                  {
+                    color: dateChoice === 'tomorrow' ? accentColor : C.textMuted,
+                    fontFamily: dateChoice === 'tomorrow' ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                  },
+                ]}
+                numberOfLines={1}
+              >
+                {(t.rides2.tomorrowText ?? 'Tomorrow')} · {formatShortDate(localTomorrow())}
+              </Text>
+            </TouchableOpacity>
           </View>
 
-          {/* 5. Departure Time */}
+          {/* 5. Departure Time & Commute Shifts */}
           <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
             {isOffer ? (t.rides2.time ?? 'DEPARTURE TIME') : 'WHEN DO YOU NEED THE RIDE?'}
           </Text>
-          <TextInput
-            style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-            value={time}
-            onChangeText={setTime}
-            placeholder="08:00"
-            placeholderTextColor={C.textMuted}
-          />
+          <View style={[styles.timeInputRow, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <Feather name="clock" size={16} color={C.textMuted} style={{ marginLeft: 12, marginRight: 8 }} />
+            <TextInput
+              style={[styles.timeTextInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+              value={time}
+              onChangeText={setTime}
+              placeholder="08:00"
+              placeholderTextColor={C.textMuted}
+            />
+            {time.trim().length > 0 && (
+              <View
+                style={[
+                  styles.timePreviewBadge,
+                  {
+                    backgroundColor: isDark
+                      ? 'rgba(110, 139, 31, 0.18)'
+                      : (isOffer ? '#f2f7e4' : '#f5f0ff'),
+                    borderColor: isDark ? 'transparent' : (isOffer ? `${RIDE_COLOR}40` : '#8b5cf640'),
+                  },
+                ]}
+              >
+                <Text style={[styles.timePreviewTxt, { color: accentColor, fontFamily: FontFamily.jakartaBold }]}>
+                  {formatTime(time)}
+                </Text>
+              </View>
+            )}
+          </View>
 
-          <View style={styles.chipRow}>
-            {TIME_PRESETS.map(preset => {
-              const accentColor = isOffer ? RIDE_COLOR : '#8b5cf6';
-              return (
-                <TouchableOpacity
-                  key={preset}
-                  style={[
-                    styles.timePresetChip,
-                    {
-                      backgroundColor: time === preset ? accentColor : C.surface2,
-                      borderColor: time === preset ? accentColor : C.border,
-                    },
-                  ]}
-                  onPress={() => setTime(preset)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.timePresetTxt, { color: time === preset ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                    {formatTime(preset)}
+          {/* Organized Time Shifts */}
+          <View style={styles.timeContainer}>
+            {TIME_PERIODS.map(period => (
+              <View key={period.title} style={styles.timePeriodBlock}>
+                <View style={styles.timePeriodTitleRow}>
+                  <Feather name={period.icon} size={11} color={C.textMuted} />
+                  <Text style={[styles.timePeriodTitle, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                    {period.title.toUpperCase()}
                   </Text>
-                </TouchableOpacity>
-              );
-            })}
+                </View>
+                <View style={styles.chipRow}>
+                  {period.times.map(preset => {
+                    const isSelected = time === preset;
+                    return (
+                      <TouchableOpacity
+                        key={preset}
+                        style={[
+                          styles.timePresetChip,
+                          {
+                            backgroundColor: isSelected
+                              ? (isDark ? 'rgba(110, 139, 31, 0.22)' : (isOffer ? '#f2f7e4' : '#f5f0ff'))
+                              : C.surface2,
+                            borderColor: isSelected ? accentColor : C.border,
+                          },
+                        ]}
+                        onPress={() => setTime(preset)}
+                        activeOpacity={0.7}
+                      >
+                        {isSelected && (
+                          <Feather name="check" size={11} color={accentColor} style={{ marginRight: 3 }} />
+                        )}
+                        <Text
+                          style={[
+                            styles.timePresetTxt,
+                            {
+                              color: isSelected ? accentColor : C.text2,
+                              fontFamily: isSelected ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                            },
+                          ]}
+                        >
+                          {formatTime(preset)}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            ))}
           </View>
 
           {/* 6. Seats & Fare Row */}
@@ -546,14 +820,14 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { paddingTop: 6, paddingBottom: 24 },
 
-  typeToggleTrack: {
+  segmentedTrack: {
     flexDirection: 'row',
     borderRadius: 14,
     padding: 3,
-    marginBottom: 16,
+    marginBottom: 12,
     position: 'relative',
   } as ViewStyle,
-  typeToggleIndicator: {
+  slidingIndicator: {
     position: 'absolute',
     top: 3,
     bottom: 3,
@@ -566,18 +840,20 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
   } as ViewStyle,
-  typeTabBtn: {
+  segmentedTabBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 7,
+    gap: 6,
     paddingVertical: 10,
     borderRadius: 11,
     minHeight: 44,
     zIndex: 1,
   } as ViewStyle,
-  typeTabBtnTxt: { fontSize: 13 } as TextStyle,
+  segmentedTabTxt: {
+    fontSize: 12.5,
+  } as TextStyle,
 
   sectionLabel: {
     fontSize: 11,
@@ -603,23 +879,6 @@ const styles = StyleSheet.create({
   vehicleLabel: { fontSize: 12.5 } as TextStyle,
   vehicleSeatsHint: { fontSize: 10.5, marginTop: 1 } as TextStyle,
 
-  dirToggle: {
-    flexDirection: 'row',
-    borderRadius: 12,
-    borderWidth: 1,
-    overflow: 'hidden',
-    padding: 3,
-  } as ViewStyle,
-  dirBtn: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 9,
-    borderRadius: 9,
-    minHeight: 42,
-  } as ViewStyle,
-  dirBtnTxt: { fontSize: 13 } as TextStyle,
-
   input: {
     height: 46,
     borderRadius: 12,
@@ -637,36 +896,102 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 6,
-    marginTop: 7,
+    marginTop: 4,
   } as ViewStyle,
+
+  hubContainer: {
+    marginTop: 12,
+    marginBottom: 6,
+    gap: 10,
+  } as ViewStyle,
+  hubHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 2,
+  } as ViewStyle,
+  subSectionLabel: {
+    fontSize: 10.5,
+    letterSpacing: 0.5,
+  } as TextStyle,
+  hubActiveNotice: {
+    fontSize: 11,
+  } as TextStyle,
+  hubGroupBlock: {
+    gap: 4,
+  } as ViewStyle,
+  hubCategoryTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 2,
+  } as ViewStyle,
+  hubCategoryTitle: {
+    fontSize: 10,
+    letterSpacing: 0.5,
+  } as TextStyle,
   hubChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingVertical: 6,
     borderRadius: 999,
     borderWidth: 1,
+    minHeight: 30,
   } as ViewStyle,
   hubChipTxt: { fontSize: 11.5 } as TextStyle,
 
-  dateRow: {
+  timeInputRow: {
     flexDirection: 'row',
-    gap: 8,
-  } as ViewStyle,
-  dateChip: {
-    flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
+    height: 46,
     borderRadius: 12,
     borderWidth: 1,
-    minHeight: 44,
+    overflow: 'hidden',
   } as ViewStyle,
-  dateChipTxt: { fontSize: 12.5 } as TextStyle,
+  timeTextInput: {
+    flex: 1,
+    height: 46,
+    paddingHorizontal: 6,
+    fontSize: 14,
+  } as TextStyle,
+  timePreviewBadge: {
+    marginRight: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+  } as ViewStyle,
+  timePreviewTxt: {
+    fontSize: 11.5,
+  } as TextStyle,
 
+  timeContainer: {
+    marginTop: 10,
+    marginBottom: 6,
+    gap: 10,
+  } as ViewStyle,
+  timePeriodBlock: {
+    gap: 4,
+  } as ViewStyle,
+  timePeriodTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 2,
+  } as ViewStyle,
+  timePeriodTitle: {
+    fontSize: 10,
+    letterSpacing: 0.5,
+  } as TextStyle,
   timePresetChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 11,
     paddingVertical: 6,
     borderRadius: 999,
     borderWidth: 1,
+    minHeight: 30,
   } as ViewStyle,
   timePresetTxt: { fontSize: 12 } as TextStyle,
 
