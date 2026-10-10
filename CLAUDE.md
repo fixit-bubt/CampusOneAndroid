@@ -801,12 +801,15 @@ The following screens contain segmented control bars slated for this animated pa
      - **Post Type:** Seamless sliding pill between `Offer Ride (Driver)` and `Need Ride (Passenger)`. SubBar header remains steady ("Post a Ride") with zero jumpiness.
      - **Direction:** Segmented sliding pill between `To Campus` (`arrow-up-right`) and `From Campus` (`arrow-down-left`).
      - **Date:** Segmented sliding pill between `Today · [Date]` and `Tomorrow · [Date]` with calendar icon.
-3. **Directory-Style Commute Hubs Bottom Sheet Modal (`RidePostScreen.tsx`):**
-   - Sleek trigger card (`[ 📍 POPULAR PICKUP HUBS ... ▾ ]`) with icon box, hub label, and active selection badge, replacing permanent chip walls.
-   - Slide-up native `<Modal>` bottom sheet matching `DirectoryScreen.tsx` (`Select Department`) 1:1 (semi-transparent backdrop, drag handle, header with icon tile and close button).
-   - 13 Mirpur & Dhaka commuter hubs organized into Nearby & Mirpur Area vs Major Dhaka Corridors.
-   - Each hub rendered as a full card with 38×38 squircle icon tile, bold title, transit description, and right-aligned checkmark circle (`✓`).
-   - Selecting any hub immediately sets the location and smoothly closes the modal sheet.
+3. **Comprehensive All-Dhaka Commute Areas (58 Areas) & Custom Location Modal (`RidePostScreen.tsx`):**
+   - Dual input ergonomics: direct text inputs on the main form paired with quick `map-pin` launcher buttons and a full trigger card (`[ 📍 ALL DHAKA DESTINATIONS & PICKUP AREAS ... ▾ ]`).
+   - Slide-up native `<Modal>` bottom sheet matching `DirectoryScreen.tsx` (`Select Department`) 1:1, wrapped in `<KeyboardAvoidingView behavior="padding">` for Android 15 edge-to-edge.
+   - **Target Switcher:** Segmented 2-tab track toggling between `Pickup (From)` and `Destination (To)` directly inside the modal.
+   - **Custom Location Input Bar:** Top input bar with `[ Set Location ]` button for manual landmark/address entry (e.g. specific gate, road, or building).
+   - **Live Search Bar:** Instant real-time filtering across all 58 Dhaka areas (English & Bengali names).
+   - **Custom Match Card:** Prominently offers "Use custom location: [query]" if typed text doesn't match a listed area.
+   - **Zone Quick Filter Chips:** Horizontal scrolling pills (`All`, `Mirpur & Campus`, `North Dhaka`, `Central & West`, `East Dhaka`, `South & Old`, `Suburbs`).
+   - **58 Comprehensive Dhaka Transit Areas:** Full metropolitan coverage including all Mirpur sectors, Dhanmondi, Uttara, Banani, Gulshan 1 & 2, Baridhara, Bashundhara R/A, Badda, Rampura, Motijheel, Old Dhaka, Savar, Gabtoli, and major Metro Rail hubs with Bengali names and transit descriptions.
 4. **Directory-Style Departure Time Bottom Sheet Modal (`RidePostScreen.tsx`):**
    - Sleek trigger card (`[ 🕒 DEPARTURE TIME & VARSITY SHIFT ... ▾ ]`) with live formatted 12-hour preview badge and shift classification.
    - Slide-up native `<Modal>` bottom sheet matching `DirectoryScreen.tsx` 1:1.
