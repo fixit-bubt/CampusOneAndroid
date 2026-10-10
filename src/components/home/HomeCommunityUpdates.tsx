@@ -98,6 +98,19 @@ const DEFAULT_NEWS: CommunityItem[] = [
     route: 'Announcements',
   },
   {
+    id: 'def-club',
+    category: 'Club Update',
+    source: 'BUBT IT Club',
+    title: 'Spring Executive Panel & Workshop Series Announced',
+    body: 'Join hands-on sessions in Cloud Architecture, Competitive Programming, and UI/UX Design this semester.',
+    date: 'Oct 12, 2026',
+    rawDate: '2026-10-12',
+    imageSource: null,
+    sectorColor: SectorColors.clubs,
+    icon: 'users',
+    route: 'Clubs',
+  },
+  {
     id: 'def-blood',
     category: 'Event',
     source: 'Rover Scout Group',
@@ -118,6 +131,7 @@ export function HomeCommunityUpdates() {
 
   const [activeTab, setActiveTab] = useState<CommunityTab>('All');
   const [items, setItems] = useState<CommunityItem[]>(DEFAULT_NEWS);
+  const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async () => {
@@ -195,7 +209,8 @@ export function HomeCommunityUpdates() {
       // 3. Club Posts
       if (clubPostsRes.data && clubPostsRes.data.length > 0) {
         clubPostsRes.data.forEach((cp: any) => {
-          const clubName = cp.clubs?.name || 'Campus Club';
+          const clubData = Array.isArray(cp.clubs) ? cp.clubs[0] : cp.clubs;
+          const clubName = clubData?.name || 'Campus Club';
           list.push({
             id: `club-${cp.id}`,
             category: 'Club Update',
@@ -204,17 +219,25 @@ export function HomeCommunityUpdates() {
             body: cp.body || 'Latest news and activities from registered student clubs.',
             date: cp.created_at ? formatDate(cp.created_at) : 'Recent',
             rawDate: cp.created_at ? cp.created_at.split('T')[0] : '',
-            imageSource: resolveNewsImage(cp.image_url || cp.clubs?.cover_url),
+            imageSource: resolveNewsImage(cp.image_url || clubData?.cover_url),
             sectorColor: SectorColors.clubs,
             icon: 'users',
             route: 'ClubDetail',
-            params: { clubId: cp.club_id },
+            params: { clubId: cp.club_id, id: cp.club_id },
           });
         });
       }
 
       if (list.length > 0) {
-        // Sort descending by rawDate
+        // If fewer than 4 items, merge defaults to keep the feed engaging
+        if (list.length < 4) {
+          const existingTitles = new Set(list.map((i) => i.title.toLowerCase()));
+          DEFAULT_NEWS.forEach((d) => {
+            if (!existingTitles.has(d.title.toLowerCase())) {
+              list.push(d);
+            }
+          });
+        }
         list.sort((a, b) => (b.rawDate || '').localeCompare(a.rawDate || ''));
         setItems(list);
       } else {
@@ -385,8 +408,13 @@ export function HomeCommunityUpdates() {
                   },
                 ]}
               >
-                {item.imageSource ? (
-                  <Image source={item.imageSource} style={styles.thumbImage} resizeMode="cover" />
+                {item.imageSource && !failedImages[item.id] ? (
+                  <Image
+                    source={item.imageSource}
+                    style={styles.thumbImage}
+                    resizeMode="cover"
+                    onError={() => setFailedImages((prev) => ({ ...prev, [item.id]: true }))}
+                  />
                 ) : (
                   <View
                     style={[

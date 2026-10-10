@@ -348,6 +348,22 @@ The mobile and web applications are actively pitched and presented to BUBT admin
 - **Search Auto-Reset & Dismiss Controls:** `AreaPickerModal` auto-resets its search input upon opening (`visible` hook), supports `returnKeyType="search"`, and enables `keyboardDismissMode="on-drag"`.
 - **Form Area Picker vs Filter Picker:** `AreaPickerModal` supports `allowAll={false}` for registration/request forms (`BloodRequestScreen`, `DonorRegisterScreen`) to prevent users from accidentally selecting "All Areas" as a physical address, while keeping `allowAll={true}` on `BloodScreen` for filtering.
 
+### 13.10 Student Home Dashboard: Frequently Used Tools & Community Updates (`HomeScreen.tsx`)
+- **Frequently Used Academic Tools (`HomeFrequentTools.tsx`):**
+  - Replaced the standalone Lost & Found action card on Home with a 4-square grid row:
+    1. Study Hub (`StudyHub`, `SectorColors.study`)
+    2. Routines (`RoutinesBrowse`, `SectorColors.routines`)
+    3. Cover Page (`CoverPageForm`, `SectorColors.coverpage`)
+    4. CGPA Calc (`Cgpa`, `#0e9c8a`)
+  - Features theme-aware icon tint boxes (`bgTint`, `borderTint`), `adjustsFontSizeToFit` + `minimumFontScale={0.85}` safety to prevent ellipsis truncation across all Android screen sizes and display scales, and 1-tap muscle-memory navigation.
+- **Dynamic Community Updates Feed (`HomeCommunityUpdates.tsx`):**
+  - Replaced the redundant `CampusToday` carousel on Student Home with a unified campus news feed aggregating notices (`announcements`), upcoming events (`events`), and club updates (`club_posts`).
+  - **Sector-Accented Luxury Capsules:** Filter pills (`All`, `Notices`, `Clubs`, `Events`) with Feather micro-icons (`layers`, `bell`, `users`, `calendar`), real-time count badges, and sector-specific active glow/tints (`#3e7de0` notice blue, `#8b5cf0` club purple, `#e0568a` event coral, and high-contrast dark capsule for `All`).
+  - **Visual Media Pipeline & Fallback Resolution:** Resolves bundled varsity banner assets (`hackathon-2026.jpg`, `convocation-2026.jpg`, `exam-routine.jpg`, `blood-drive.jpg`) or remote URLs, equipped with native `onError` fallback to styled sector icon boxes.
+  - **Robust PostgREST Relations & Fallback Merge:** Normalizes array/object `cp.clubs` relation join and guarantees at least 4 feed items via fallback merge if database entries are sparse.
+  - **Detail Routing:** 1-tap navigation directly to `AnnouncementDetail`, `EventDetail`, or `ClubDetail`.
+- **Role Scoping:** `CampusToday` is retained exclusively for `StaffDashboardScreen` and `AdminDashboardScreen` where it continues to serve as an at-a-glance operational status widget. Lost & Found remains 100% accessible in the `Explore` tab.
+
 ---
 
 ## 14. Official Logo & Brand Assets (Google Play Ready)

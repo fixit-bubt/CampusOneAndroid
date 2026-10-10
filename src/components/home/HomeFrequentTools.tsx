@@ -96,6 +96,8 @@ export function HomeFrequentTools() {
                   },
                 ]}
                 numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.85}
               >
                 {tool.title}
               </Text>
