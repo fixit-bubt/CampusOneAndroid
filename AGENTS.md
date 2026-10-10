@@ -758,3 +758,27 @@ The following screens contain segmented control bars slated for this animated pa
 12. **Club Details (`ClubDetailScreen.tsx`):** `Feed` (Club Accent) vs `Members` (Indigo) (2 tabs).
 13. **Admin Management (`ManageStaffScreen.tsx` & `JobsModerateScreen.tsx`):** `Staff` vs `Admins` (2 tabs), `Reported` vs `Removed` (2 tabs).
 
+---
+
+## 24. Student Directory Architecture & Bug-Hunting Hardening
+
+### 24.1 Architecture & Core Components
+- **Screens:** `DirectoryScreen.tsx`, `StudentProfileScreen.tsx` (Mobile) and `StudentDirectory.jsx` (Web).
+- **Services:** `connectionsService.ts`, `peopleService.ts` (Mobile) and `store.jsx` (Web).
+- **Database Functions & Triggers:**
+  - `student_directory()` RPC: Returns visible students (`id <> uid`) with cohort info, `is_cr`, `blood_group`, `status`, and conditionally revealed `email` and `whatsapp`.
+  - `student_profile_detail(p_target_id)` RPC: Single-student profile lookup bypassing full directory table scan.
+  - `disconnect_student(p_target_id)` RPC: Mutual atomic removal of accepted connections.
+  - `trg_notify_connection_event`: Automatic trigger on `connections` table fanning events out to in-app notifications and FCM push (`connection_request`, `connection_accepted`).
+  - `connections_delete` RLS: Allows mutual deletion when `status IN ('pending', 'accepted')`.
+
+### 24.2 360° Hardening & Bug Fixes
+1. **Dynamic Route Param Integration:** `DirectoryScreen` accepts `route.params.tab` and `route.params.initialTab`, automatically switching to the requested tab with spring animation on notification press or deep link.
+2. **Notification Deep Link Targeting:** `notifTarget.ts` routes `connection_request` directly to `{ tab: 'requests' }` and `connection_accepted` to `{ tab: 'connections' }`.
+3. **Requests Tab Priority Sorting:** Urgent incoming connection requests (`connState === 'incoming'`) always sort to the top of the Requests tab ahead of pending outgoing requests.
+4. **Multi-Token Composite Search:** Search queries are tokenized by whitespace (`q.split(/\s+/)`), matching across name, department, intake, section, intake-section combo, blood group, student ID, and CR badges on both mobile and web.
+5. **Instant Filter Reset:** Single-tap "Clear filters" action rendered inside empty states whenever search query, department, or classmates filter is active.
+6. **StudentProfile Param Fallback & Offline Resilience:** `StudentProfileScreen` supports `route.params?.student?.id ?? route.params?.studentId ?? route.params?.id`, displays loading spinner on cold lookup, gracefully renders empty state if hidden or deleted, and provides offline protection with `OfflineBanner`.
+7. **Cache Mutation Sync:** `syncDirectoryCache` in `connectionsService.ts` ensures `CacheKeys.DIRECTORY(uid)` in `AsyncStorage` updates immediately upon connect, cancel, accept, decline, and disconnect.
+8. **Web Parity:** `StudentDirectory.jsx` and `store.jsx` synchronize DM roster upon accept/disconnect via `loadMessages()` and match tokenized search filtering.
+
