@@ -1,7 +1,7 @@
-import { useState, useCallback, useRef, useMemo } from 'react';
+import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Image,
-  RefreshControl, Keyboard, Modal, KeyboardAvoidingView, type ViewStyle, type TextStyle,
+  RefreshControl, Keyboard, Modal, KeyboardAvoidingView, Animated, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -145,6 +145,47 @@ export function LostFoundBrowseScreen({ navigation }: any) {
   const [isOffline, setIsOffline] = useState(false);
 
   const searchInputRef = useRef<TextInput>(null);
+
+  // Segmented track animated indicator & theme colors
+  const animIndex = useRef(new Animated.Value(0)).current;
+  const [trackWidth, setTrackWidth] = useState(0);
+
+  const tabIndexMap: Record<TabFilter, number> = useMemo(
+    () => ({ all: 0, Lost: 1, Found: 2, mine: 3 }),
+    []
+  );
+
+  useEffect(() => {
+    const idx = tabIndexMap[filter] ?? 0;
+    Animated.spring(animIndex, {
+      toValue: idx,
+      tension: 68,
+      friction: 10,
+      useNativeDriver: true,
+    }).start();
+  }, [filter, animIndex, tabIndexMap]);
+
+  const TAB_COLORS: Record<TabFilter, { fg: string; bg: string }> = useMemo(
+    () => ({
+      all: {
+        fg: SectorColors.lostfound, // Amber (#c77d1a)
+        bg: `${SectorColors.lostfound}18`,
+      },
+      Lost: {
+        fg: C.danger, // Crimson (#d63d35)
+        bg: isDark ? 'rgba(214, 61, 53, 0.18)' : '#FEE2E2',
+      },
+      Found: {
+        fg: C.success, // Emerald (#16a34a)
+        bg: isDark ? 'rgba(22, 163, 74, 0.18)' : '#DCFCE7',
+      },
+      mine: {
+        fg: '#8B5CF6', // Purple (#8B5CF6)
+        bg: isDark ? 'rgba(139, 92, 246, 0.18)' : '#EDE9FE',
+      },
+    }),
+    [C.danger, C.success, isDark]
+  );
 
   const load = useCallback(async () => {
     // 1. Optimistic cache load
@@ -316,6 +357,14 @@ export function LostFoundBrowseScreen({ navigation }: any) {
     },
   ];
 
+  const TRACK_PADDING = 3;
+  const innerTrackWidth = Math.max(0, trackWidth - TRACK_PADDING * 2);
+  const tabWidth = innerTrackWidth > 0 ? innerTrackWidth / 4 : 0;
+  const translateX = animIndex.interpolate({
+    inputRange: [0, 1, 2, 3],
+    outputRange: [0, tabWidth, tabWidth * 2, tabWidth * 3],
+  });
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar title={t.lf.title} onBack={() => navigation.goBack()} />
@@ -341,25 +390,65 @@ export function LostFoundBrowseScreen({ navigation }: any) {
         </View>
       )}
 
-      {/* Unified Segmented Track Switcher */}
-      <View style={[styles.tabContainer, { backgroundColor: C.surface2 }]}>
+      {/* Unified Segmented Track Switcher with Native Spring Animation & Colors */}
+      <View
+        style={[styles.tabContainer, { backgroundColor: C.surface2 }]}
+        onLayout={e => setTrackWidth(e.nativeEvent.layout.width)}
+      >
+        {tabWidth > 0 && (
+          <Animated.View
+            style={[
+              styles.activeIndicator,
+              {
+                width: tabWidth,
+                transform: [{ translateX }],
+                backgroundColor: C.surface,
+                borderColor: isDark ? `${TAB_COLORS[filter].fg}55` : `${TAB_COLORS[filter].fg}35`,
+              },
+            ]}
+          />
+        )}
         {TABS.map(tItem => {
           const active = filter === tItem.id;
+          const cfg = TAB_COLORS[tItem.id];
           return (
             <TouchableOpacity
               key={tItem.id}
-              style={[
-                styles.tabBtn,
-                active && { backgroundColor: C.surface, elevation: 1 },
-              ]}
+              style={styles.tabBtn}
               onPress={() => setFilter(tItem.id)}
-              activeOpacity={0.8}
+              activeOpacity={0.75}
             >
-              <Text style={[styles.tabBtnTxt, { color: active ? C.text : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+              <Text
+                style={[
+                  styles.tabBtnTxt,
+                  {
+                    color: active ? cfg.fg : C.textMuted,
+                    fontFamily: FontFamily.jakartaBold,
+                  },
+                ]}
+                numberOfLines={1}
+              >
                 {tItem.label}
               </Text>
-              <View style={[styles.tabBadge, { backgroundColor: active ? `${SectorColors.lostfound}20` : C.border }]}>
-                <Text style={[styles.tabBadgeTxt, { color: active ? SectorColors.lostfound : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+              <View
+                style={[
+                  styles.tabBadge,
+                  {
+                    backgroundColor: active
+                      ? cfg.bg
+                      : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.border),
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.tabBadgeTxt,
+                    {
+                      color: active ? cfg.fg : C.textMuted,
+                      fontFamily: FontFamily.jakartaBold,
+                    },
+                  ]}
+                >
                   {counts[tItem.id]}
                 </Text>
               </View>
@@ -699,28 +788,43 @@ const styles = StyleSheet.create({
 
   tabContainer: {
     flexDirection: 'row',
-    borderRadius: 12,
+    borderRadius: 14,
     padding: 3,
     marginHorizontal: Layout.screenPadding,
     marginTop: 6,
     marginBottom: 8,
+    position: 'relative',
+  } as ViewStyle,
+  activeIndicator: {
+    position: 'absolute',
+    top: 3,
+    left: 3,
+    bottom: 3,
+    borderRadius: 11,
+    borderWidth: 1.5,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1.5 },
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
   } as ViewStyle,
   tabBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: 5,
     paddingVertical: 8,
-    borderRadius: 10,
+    borderRadius: 11,
+    zIndex: 1,
   } as ViewStyle,
-  tabBtnTxt: { fontSize: 13 } as any,
+  tabBtnTxt: { fontSize: 12.5 } as any,
   tabBadge: {
-    paddingHorizontal: 7,
+    paddingHorizontal: 6,
     paddingVertical: 1.5,
     borderRadius: 999,
   } as ViewStyle,
-  tabBadgeTxt: { fontSize: 11 } as any,
+  tabBadgeTxt: { fontSize: 10.5 } as any,
 
   searchFilterRow: {
     flexDirection: 'row',

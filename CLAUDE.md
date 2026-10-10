@@ -589,10 +589,14 @@ Whenever the user instructs to "update memorys", the agent MUST synchronously up
 - **Hero Action Bar:** Positioned directly below the header in the primary thumb strike zone. 44dp height, `borderRadius: 12`, `SectorColors.lostfound` (`#c77d1a`) background, 13.5px bold white text with `plus-circle` icon: `"+ Report Lost or Found Item"`.
 - **Role Scoping:** Only displayed for students (`isStudent`), matching campus permission rules.
 
-### 22.2 Unified Segmented Track Switcher (`LostFoundBrowseScreen.tsx`)
-- **Full-Width Track Container:** `C.surface2` track with 4 tabs: `All`, `Lost`, `Found`, `My Posts`.
-- **Live Badge Counters:** Real-time item count badges per tab that dynamically track active items.
-- **Visual Parity:** Matches `BloodScreen` and `HomeCommunityUpdates` 1:1.
+### 22.2 Unified Segmented Track Switcher & Native Spring Animation (`LostFoundBrowseScreen.tsx`)
+- **Native Spring Animated Indicator:** Floating surface pill with subtle elevation and accent border that glides smoothly across the track under the user's finger using native 60fps driver (`Animated.spring`).
+- **Dynamic Thematic Color Identity per Tab:**
+  - `All`: Sector Amber (`#c77d1a`) text and soft badge tint.
+  - `Lost`: Vibrant Crimson (`#d63d35` / `C.danger`) text and badge tint indicating missing items.
+  - `Found`: Fresh Emerald (`#16a34a` / `C.success`) text and badge tint indicating recovered items.
+  - `My Posts`: Royal Violet (`#8b5cf6`) text and badge tint for personal reports.
+- **Live Badge Counters:** Real-time dynamic count chips per tab tracking active items with themed colors.
 
 ### 22.3 Unified Single-Row Search & Bottom Sheet Filter Modal (`LostFoundBrowseScreen.tsx`)
 - **Zero Loose Chips Clutter:** Completely eliminates cluttered horizontal scrolling category chips and loose status pills from the main feed screen.
