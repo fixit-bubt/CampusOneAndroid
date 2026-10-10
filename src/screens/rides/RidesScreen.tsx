@@ -1,7 +1,8 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
-  RefreshControl, ActivityIndicator, TextInput, type ViewStyle, type TextStyle,
+  RefreshControl, ActivityIndicator, TextInput, Animated,
+  type ViewStyle, type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -13,7 +14,7 @@ import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { useToast } from '../../components/ui/Toast';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
-import { FontFamily, Layout, SectorColors, pillBg } from '../../theme';
+import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { fetchPeople } from '../../services/peopleService';
 import { localToday, formatTime, formatPrice, formatDate } from '../../utils/format';
@@ -27,6 +28,15 @@ const RIDE_BG    = `${SectorColors.ride}1e`;
 type Ride = RideRow & {
   driver_name?: string;
   driver_dept?: string;
+};
+
+type TabKey = 'all' | 'to' | 'from' | 'mine';
+
+const TAB_COLORS: Record<TabKey, { fg: string }> = {
+  all:  { fg: RIDE_COLOR },
+  to:   { fg: '#16a34a' },
+  from: { fg: '#2563eb' },
+  mine: { fg: '#8b5cf6' },
 };
 
 const VEHICLE_META: Record<string, { icon: string; label: string }> = {
@@ -67,11 +77,25 @@ export function RidesScreen({ navigation }: any) {
   const [rides, setRides] = useState<Ride[]>([]);
   const [requestedIds, setRequestedIds] = useState<Set<string>>(new Set());
   const [takenCounts, setTakenCounts] = useState<Record<string, number>>({});
-  const [direction, setDirection] = useState<'all' | 'to' | 'from'>('all');
+  const [tab, setTab] = useState<TabKey>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isOffline, setIsOffline] = useState(false);
+
+  // Animated sliding indicator
+  const [trackWidth, setTrackWidth] = useState(0);
+  const animIndex = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const idx = ['all', 'to', 'from', 'mine'].indexOf(tab);
+    Animated.spring(animIndex, {
+      toValue: idx >= 0 ? idx : 0,
+      useNativeDriver: true,
+      tension: 68,
+      friction: 10,
+    }).start();
+  }, [tab, animIndex]);
 
   const load = useCallback(async () => {
     // 1. Optimistic cache load
@@ -97,7 +121,7 @@ export function RidesScreen({ navigation }: any) {
           .gte('date', localToday())
           .order('date')
           .order('time')
-          .limit(40),
+          .limit(60),
         supabase.from('ride_requests').select('ride_id').eq('requester_id', user?.id ?? ''),
         supabase.rpc('ride_request_counts'),
       ]);
@@ -171,57 +195,140 @@ export function RidesScreen({ navigation }: any) {
     toast({ type: 'success', title: t.rides2.requestSent, message: 'Driver has been notified.' });
   }
 
-  // Filter pipeline: Direction + Search + Departed cutoff
+  // Count user's active rides (both offered and requested)
+  const myRidesCount = useMemo(() => {
+    return rides.filter(r => r.driver_id === user?.id || requestedIds.has(r.id)).length;
+  }, [rides, user?.id, requestedIds]);
+
+  // Tab definitions
+  const TABS: { id: TabKey; label: string }[] = [
+    { id: 'all',  label: t.rides2.allRides ?? t.common.all },
+    { id: 'to',   label: t.rides2.toCampus ?? 'To Campus' },
+    { id: 'from', label: t.rides2.fromCampus ?? 'From Campus' },
+    { id: 'mine', label: t.rides2.myRidesTab ?? 'My Rides' },
+  ];
+
+  // Filter pipeline
   const filteredRides = useMemo(() => {
     let list = rides;
 
-    // Filter out already departed morning rides
-    list = list.filter(r => !isRideDeparted(r.date, r.time));
-
-    // Direction filter
-    if (direction === 'to') {
+    // 1. Tab filter
+    if (tab === 'mine') {
+      // In "My Rides", show both rides offered by user and rides requested by user!
+      // NEVER filter out departed rides in My Rides so the user can always see/manage them!
+      list = list.filter(r => r.driver_id === user?.id || requestedIds.has(r.id));
+    } else if (tab === 'to') {
       list = list.filter(r => r.direction === 'To Campus');
-    } else if (direction === 'from') {
+      list = list.filter(r => !isRideDeparted(r.date, r.time) || r.driver_id === user?.id || requestedIds.has(r.id));
+    } else if (tab === 'from') {
       list = list.filter(r => r.direction === 'From Campus');
+      list = list.filter(r => !isRideDeparted(r.date, r.time) || r.driver_id === user?.id || requestedIds.has(r.id));
+    } else {
+      // 'all'
+      list = list.filter(r => !isRideDeparted(r.date, r.time) || r.driver_id === user?.id || requestedIds.has(r.id));
     }
 
-    // Search query
+    // 2. Search query
     const q = searchQuery.trim().toLowerCase();
     if (q) {
       list = list.filter(r =>
         (r.origin && r.origin.toLowerCase().includes(q)) ||
         (r.destination && r.destination.toLowerCase().includes(q)) ||
-        (r.notes && r.notes.toLowerCase().includes(q)) ||
         (r.driver_name && r.driver_name.toLowerCase().includes(q)) ||
-        (r.vehicle && r.vehicle.toLowerCase().includes(q))
+        (r.vehicle && r.vehicle.toLowerCase().includes(q)) ||
+        (r.notes && r.notes.toLowerCase().includes(q))
       );
     }
 
     return list;
-  }, [rides, direction, searchQuery]);
+  }, [rides, tab, searchQuery, user?.id, requestedIds]);
+
+  const TRACK_PADDING = 3;
+  const innerTrackWidth = Math.max(0, trackWidth - TRACK_PADDING * 2);
+  const tabWidth = innerTrackWidth > 0 ? innerTrackWidth / 4 : 0;
+  const translateX = animIndex.interpolate({
+    inputRange: [0, 1, 2, 3],
+    outputRange: [0, tabWidth, tabWidth * 2, tabWidth * 3],
+  });
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar
         title={t.rides2.rideShareTitle}
         onBack={() => navigation.goBack()}
-        rightSlot={
-          <TouchableOpacity
-            style={styles.iconBtn}
-            onPress={() => navigation.navigate('RidePost')}
-            activeOpacity={0.75}
-            accessibilityRole="button"
-            accessibilityLabel="Offer a ride"
-          >
-            <Feather name="plus" size={22} color={C.text} />
-          </TouchableOpacity>
-        }
       />
 
       <OfflineBanner
         visible={isOffline}
         message="Showing cached campus rides. Connect to the internet to request seats or post rides."
       />
+
+      {/* Prominent Hero Action Bar (Parity with Lost & Found / Blood Donation) */}
+      <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 6, paddingBottom: 4 }}>
+        <TouchableOpacity
+          style={[styles.actBtn, { backgroundColor: RIDE_COLOR }]}
+          onPress={() => navigation.navigate('RidePost')}
+          activeOpacity={0.85}
+        >
+          <Feather name="plus-circle" size={16} color="#fff" />
+          <Text style={[styles.actBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+            {t.rides2.offerRideBtn ?? 'Offer a Ride'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Unified Segmented Track Switcher with Native Spring Animation & Colors */}
+      <View
+        style={[styles.tabContainer, { backgroundColor: C.surface2 }]}
+        onLayout={e => setTrackWidth(e.nativeEvent.layout.width)}
+      >
+        {tabWidth > 0 && (
+          <Animated.View
+            style={[
+              styles.activeIndicator,
+              {
+                width: tabWidth,
+                transform: [{ translateX }],
+                backgroundColor: C.surface,
+                borderColor: isDark ? `${TAB_COLORS[tab].fg}55` : `${TAB_COLORS[tab].fg}35`,
+              },
+            ]}
+          />
+        )}
+        {TABS.map(tItem => {
+          const active = tab === tItem.id;
+          const cfg = TAB_COLORS[tItem.id];
+          const isMine = tItem.id === 'mine';
+          return (
+            <TouchableOpacity
+              key={tItem.id}
+              style={styles.tabBtn}
+              onPress={() => setTab(tItem.id)}
+              activeOpacity={0.75}
+            >
+              <Text
+                style={[
+                  styles.tabBtnTxt,
+                  {
+                    color: active ? cfg.fg : C.textMuted,
+                    fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                  },
+                ]}
+                numberOfLines={1}
+              >
+                {tItem.label}
+              </Text>
+              {isMine && myRidesCount > 0 && (
+                <View style={[styles.tabBadge, { backgroundColor: active ? `${cfg.fg}22` : C.surface }]}>
+                  <Text style={[styles.tabBadgeTxt, { color: active ? cfg.fg : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                    {myRidesCount}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </View>
 
       {/* Clutter-Free Search Bar */}
       <View style={[styles.searchWrapper, { paddingHorizontal: Layout.screenPadding }]}>
@@ -243,34 +350,6 @@ export function RidesScreen({ navigation }: any) {
         </View>
       </View>
 
-      {/* Direction filter chips */}
-      <View style={[styles.dirRow, { paddingHorizontal: Layout.screenPadding }]}>
-        {([
-          ['all', t.rides2.allRides ?? t.common.all],
-          ['to', t.rides2.toCampus],
-          ['from', t.rides2.fromCampus],
-        ] as const).map(([id, label]) => {
-          const on = direction === id;
-          return (
-            <TouchableOpacity
-              key={id}
-              style={[
-                styles.dirChip,
-                on
-                  ? { backgroundColor: C.brand, borderColor: C.brand }
-                  : { backgroundColor: C.surface, borderColor: C.border },
-              ]}
-              onPress={() => setDirection(id)}
-              activeOpacity={0.75}
-            >
-              <Text style={[styles.dirTxt, { color: on ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                {label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
@@ -284,12 +363,20 @@ export function RidesScreen({ navigation }: any) {
           <View style={styles.empty}>
             <Icon name="ride" size={32} color={C.textMuted} />
             <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-              {searchQuery ? t.common.noResults : t.rides2.noRidesTitle}
+              {searchQuery
+                ? t.common.noResults
+                : tab === 'mine'
+                ? (t.rides2.noMyRidesTitle ?? 'No Rides Yet')
+                : (t.rides2.noRidesTitle ?? 'No rides available')}
             </Text>
             <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-              {searchQuery ? 'Try clearing your search query' : t.rides2.noRidesSub}
+              {searchQuery
+                ? 'Try clearing your search query'
+                : tab === 'mine'
+                ? (t.rides2.noMyRidesSub ?? "You haven't offered or requested any rides yet.")
+                : (t.rides2.noRidesSub ?? 'No campus rides currently posted for this route.')}
             </Text>
-            {searchQuery.length > 0 && (
+            {searchQuery.length > 0 ? (
               <TouchableOpacity
                 style={[styles.clearBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
                 onPress={() => setSearchQuery('')}
@@ -299,7 +386,17 @@ export function RidesScreen({ navigation }: any) {
                   Clear search
                 </Text>
               </TouchableOpacity>
-            )}
+            ) : tab === 'mine' ? (
+              <TouchableOpacity
+                style={[styles.clearBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+                onPress={() => navigation.navigate('RidePost')}
+                activeOpacity={0.75}
+              >
+                <Text style={[styles.clearBtnTxt, { color: RIDE_COLOR, fontFamily: FontFamily.jakartaBold }]}>
+                  Offer a Ride
+                </Text>
+              </TouchableOpacity>
+            ) : null}
           </View>
         ) : (
           <View style={styles.list}>
@@ -360,11 +457,11 @@ export function RidesScreen({ navigation }: any) {
                     <View style={styles.driverIdentity}>
                       <Avatar name={r.driver_name} size="xs" />
                       <View style={{ minWidth: 0 }}>
-                        <Text style={[styles.driverName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                          {r.driver_name ?? t.rides2.driverFallback}
+                        <Text style={[styles.driverName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                          {isOwnRide ? (t.rides2.driver ?? 'You') : (r.driver_name ?? t.rides2.driverFallback)}
                         </Text>
                         {r.driver_dept ? (
-                          <Text style={[styles.driverDept, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                          <Text style={[styles.driverDept, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
                             {r.driver_dept}
                           </Text>
                         ) : null}
@@ -376,18 +473,18 @@ export function RidesScreen({ navigation }: any) {
                     </Text>
                   </View>
 
-                  {/* Action Button */}
+                  {/* Action Button & Status */}
                   {isOwnRide ? (
                     <View style={[styles.ownRideBadge, { backgroundColor: C.surface2 }]}>
                       <Text style={[styles.ownRideTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
-                        {t.rides2.manageMyRide ?? 'Manage My Ride'}
+                        {t.rides2.manageMyRide ?? 'Manage My Ride'} · {taken}/{r.seats_total} Booked
                       </Text>
                     </View>
                   ) : isRequested ? (
                     <View style={[styles.requestedBanner, { backgroundColor: C.successBg }]}>
                       <Feather name="check" size={15} color={C.success} />
                       <Text style={[styles.requestedTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
-                        {t.rides2.seatBooked ?? 'Seat Booked · Tap for Details'}
+                        {t.rides2.seatBooked ?? 'Seat Booked'} · Tap for Details
                       </Text>
                     </View>
                   ) : (
@@ -431,7 +528,61 @@ export function RidesScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  searchWrapper: { paddingTop: 6, paddingBottom: 6 },
+
+  actBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    height: 44,
+    borderRadius: 12,
+  } as ViewStyle,
+  actBtnTxt: {
+    fontSize: 13.5,
+  } as any,
+
+  tabContainer: {
+    flexDirection: 'row',
+    borderRadius: 14,
+    padding: 3,
+    marginHorizontal: Layout.screenPadding,
+    marginTop: 6,
+    marginBottom: 8,
+    position: 'relative',
+  } as ViewStyle,
+  activeIndicator: {
+    position: 'absolute',
+    top: 3,
+    left: 3,
+    bottom: 3,
+    borderRadius: 11,
+    borderWidth: 1.5,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1.5 },
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
+  } as ViewStyle,
+  tabBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingVertical: 8,
+    minHeight: 40,
+    borderRadius: 11,
+    zIndex: 1,
+  } as ViewStyle,
+  tabBtnTxt: { fontSize: 12 } as any,
+  tabBadge: {
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 999,
+  } as ViewStyle,
+  tabBadgeTxt: { fontSize: 10 } as any,
+
+  searchWrapper: { paddingTop: 2, paddingBottom: 6 },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -446,22 +597,6 @@ const styles = StyleSheet.create({
     fontSize: 13.5,
     paddingVertical: 0,
   } as TextStyle,
-
-  dirRow: {
-    flexDirection: 'row',
-    gap: 7,
-    paddingVertical: 6,
-    paddingBottom: 10,
-  },
-  dirChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 999,
-    borderWidth: 1,
-    minHeight: 38,
-    justifyContent: 'center',
-  },
-  dirTxt: { fontSize: 12.5 } as TextStyle,
 
   scroll: { paddingTop: 4, paddingBottom: 24 },
   list: { gap: 12 },
@@ -565,12 +700,6 @@ const styles = StyleSheet.create({
   },
   ownRideTxt: { fontSize: 13 } as TextStyle,
 
-  iconBtn: {
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   empty: {
     alignItems: 'center',
     paddingTop: 60,

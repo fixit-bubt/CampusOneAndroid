@@ -26,7 +26,7 @@ const VEHICLES: { id: Ride['vehicle']; label: string; icon: string; maxSeats: nu
 
 const QUICK_HUBS = ['Mirpur 10', 'Uttara', 'Shyamoli', 'Dhanmondi', 'Kalyanpur', 'Mohammadpur'];
 
-const TIME_PRESETS = ['07:30', '08:00', '08:30', '09:00', '13:00', '16:30'];
+const TIME_PRESETS = ['07:30', '08:00', '08:30', '09:00', '13:00', '16:30', '18:00', '21:30'];
 
 function localTomorrow(): string {
   const d = new Date();
@@ -35,18 +35,33 @@ function localTomorrow(): string {
   return new Date(d.getTime() - off).toISOString().split('T')[0];
 }
 
+function getInitialDateTime(): { defaultDate: 'today' | 'tomorrow'; defaultTime: string } {
+  const now = new Date();
+  const currentHour = now.getHours();
+  // If it's evening (after 6 PM / 18:00), default to tomorrow morning 08:00
+  if (currentHour >= 18) {
+    return { defaultDate: 'tomorrow', defaultTime: '08:00' };
+  }
+  // Otherwise, default to the next upcoming hour today
+  const nextHour = (currentHour + 1) % 24;
+  const timeStr = `${String(nextHour).padStart(2, '0')}:00`;
+  return { defaultDate: 'today', defaultTime: timeStr };
+}
+
 export function RidePostScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
   const t = useT();
   const { user } = useAuth();
   const toast = useToast();
 
+  const initialSchedule = getInitialDateTime();
+
   const [vehicle, setVehicle] = useState<Ride['vehicle']>('Car');
   const [direction, setDirection] = useState<Ride['direction']>('To Campus');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('BUBT Campus');
-  const [dateChoice, setDateChoice] = useState<'today' | 'tomorrow'>('today');
-  const [time, setTime] = useState('08:00');
+  const [dateChoice, setDateChoice] = useState<'today' | 'tomorrow'>(initialSchedule.defaultDate);
+  const [time, setTime] = useState(initialSchedule.defaultTime);
   const [seats, setSeats] = useState(3);
   const [fare, setFare] = useState('60');
   const [notes, setNotes] = useState('');
@@ -59,6 +74,22 @@ export function RidePostScreen({ navigation }: any) {
     const cfg = VEHICLES.find(item => item.id === v);
     if (cfg) {
       setSeats(Math.min(seats, cfg.maxSeats) || cfg.defaultSeats);
+    }
+  }
+
+  function handleDateChoice(choice: 'today' | 'tomorrow') {
+    setDateChoice(choice);
+    const now = new Date();
+    if (choice === 'tomorrow') {
+      if (!time || time === `${String((now.getHours() + 1) % 24).padStart(2, '0')}:00`) {
+        setTime('08:00');
+      }
+    } else {
+      // If switching back to today and it's already evening, suggest upcoming time
+      if (now.getHours() >= 18 && time === '08:00') {
+        const nextHour = Math.min(23, now.getHours() + 1);
+        setTime(`${String(nextHour).padStart(2, '0')}:00`);
+      }
     }
   }
 
@@ -89,6 +120,22 @@ export function RidePostScreen({ navigation }: any) {
     let timePart = time.trim() || '08:00';
     if (/^\d:\d{2}$/.test(timePart)) {
       timePart = '0' + timePart;
+    }
+
+    // Validate that a ride scheduled for Today hasn't already departed
+    const [h, m] = timePart.split(':').map(Number);
+    if (selectedDate === localToday() && Number.isFinite(h) && Number.isFinite(m)) {
+      const now = new Date();
+      const curMins = now.getHours() * 60 + now.getMinutes();
+      const rideMins = h * 60 + m;
+      if (rideMins < curMins - 15) {
+        toast({
+          type: 'info',
+          title: 'Departure Time Passed',
+          message: 'The departure time has already passed for today. Please pick a future time or select Tomorrow.',
+        });
+        return;
+      }
     }
 
     setLoading(true);
@@ -243,7 +290,7 @@ export function RidePostScreen({ navigation }: any) {
                       borderColor: on ? C.brand : C.border,
                     },
                   ]}
-                  onPress={() => setDateChoice(choice)}
+                  onPress={() => handleDateChoice(choice)}
                   activeOpacity={0.75}
                 >
                   <Text style={[styles.dateChipTxt, { color: on ? '#fff' : C.text, fontFamily: FontFamily.jakartaBold }]}>

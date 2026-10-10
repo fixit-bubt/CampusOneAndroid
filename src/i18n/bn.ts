@@ -1549,6 +1549,10 @@ export const bn: Dict = {
     todayText: "আজ",
     tomorrowText: "আগামীকাল",
     seatBooked: "সিট সংরক্ষিত",
+    myRidesTab: "আমার রাইড",
+    offerRideBtn: "রাইড অফার করুন",
+    noMyRidesTitle: "কোনো রাইড নেই",
+    noMyRidesSub: "আপনি এখনও কোনো রাইড অফার করেননি বা সিট বুক করেননি।",
   },
 
   study2: {

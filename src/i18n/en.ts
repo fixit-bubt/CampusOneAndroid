@@ -1548,6 +1548,10 @@ You will be registered as an available ${group} donor.`,
     todayText: "Today",
     tomorrowText: "Tomorrow",
     seatBooked: "Seat Booked",
+    myRidesTab: "My Rides",
+    offerRideBtn: "Offer a Ride",
+    noMyRidesTitle: "No Rides Yet",
+    noMyRidesSub: "You haven't offered or requested any rides yet.",
   },
 
   study2: {
