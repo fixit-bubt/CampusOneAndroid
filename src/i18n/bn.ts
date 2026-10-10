@@ -1504,6 +1504,8 @@ export const bn: Dict = {
     rideFull: "রাইড পূর্ণ",
     requestRide: "রাইড অনুরোধ করুন",
     deleteRideAdmin: "রাইড মুছুন (অ্যাডমিন)",
+    postRideTitle: "রাইড পোস্ট করুন",
+    postRideHeroBtn: "ক্যাম্পাস রাইড পোস্ট করুন",
     offerRideTitle: "রাইড অফার করুন",
     invalidFareTitle: "অবৈধ ভাড়া",
     invalidFareBody: "একটি বৈধ ভাড়ার পরিমাণ লিখুন।",

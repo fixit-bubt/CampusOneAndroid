@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView,
-  StyleSheet, type ViewStyle, type TextStyle,
+  StyleSheet, Animated, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Feather } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useToast } from '../../components/ui/Toast';
 import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
@@ -69,6 +69,27 @@ export function RidePostScreen({ route, navigation }: any) {
   const [fare, setFare] = useState('40');
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Animated segmented toggle for Offer vs Request
+  const animIndex = useRef(new Animated.Value(initialPostType === 'request' ? 1 : 0)).current;
+  const [trackWidth, setTrackWidth] = useState(0);
+
+  useEffect(() => {
+    Animated.spring(animIndex, {
+      toValue: postType === 'request' ? 1 : 0,
+      tension: 68,
+      friction: 10,
+      useNativeDriver: true,
+    }).start();
+  }, [postType, animIndex]);
+
+  const TRACK_PADDING = 3;
+  const innerTrackWidth = Math.max(0, trackWidth - TRACK_PADDING * 2);
+  const tabWidth = innerTrackWidth > 0 ? innerTrackWidth / 2 : 0;
+  const translateX = animIndex.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, tabWidth],
+  });
 
   const currentVehicleConfig = VEHICLES.find(v => v.id === vehicle) ?? VEHICLES[0];
 
@@ -182,7 +203,7 @@ export function RidePostScreen({ route, navigation }: any) {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar
-        title={isOffer ? (t.rides2.offerRideTitle ?? 'Offer a Ride') : 'Request a Ride'}
+        title={t.rides2.postRideTitle ?? 'Post a Ride'}
         onBack={() => navigation.goBack()}
       />
 
@@ -193,26 +214,42 @@ export function RidePostScreen({ route, navigation }: any) {
           keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps="handled"
         >
-          {/* Post Type Segmented Toggle */}
-          <View style={[styles.typeToggle, { backgroundColor: C.surface, borderColor: C.border }]}>
+          {/* Post Type Segmented Animated Track Bar */}
+          <View
+            style={[styles.typeToggleTrack, { backgroundColor: C.surface2 }]}
+            onLayout={e => setTrackWidth(e.nativeEvent.layout.width)}
+          >
+            {tabWidth > 0 && (
+              <Animated.View
+                style={[
+                  styles.typeToggleIndicator,
+                  {
+                    width: tabWidth,
+                    transform: [{ translateX }],
+                    backgroundColor: C.surface,
+                    borderColor: isDark
+                      ? (isOffer ? `${RIDE_COLOR}55` : '#8b5cf655')
+                      : (isOffer ? `${RIDE_COLOR}35` : '#8b5cf635'),
+                  },
+                ]}
+              />
+            )}
+
             <TouchableOpacity
-              style={[
-                styles.typeBtn,
-                isOffer && { backgroundColor: RIDE_COLOR },
-              ]}
+              style={styles.typeTabBtn}
               onPress={() => {
                 setPostType('offer');
                 if (fare === '40') setFare('50');
               }}
-              activeOpacity={0.8}
+              activeOpacity={0.75}
             >
-              <Feather name="navigation" size={15} color={isOffer ? '#fff' : C.textMuted} />
+              <Feather name="navigation" size={14} color={isOffer ? RIDE_COLOR : C.textMuted} />
               <Text
                 style={[
-                  styles.typeBtnTxt,
+                  styles.typeTabBtnTxt,
                   {
-                    color: isOffer ? '#fff' : C.textMuted,
-                    fontFamily: FontFamily.jakartaBold,
+                    color: isOffer ? RIDE_COLOR : C.textMuted,
+                    fontFamily: isOffer ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
                   },
                 ]}
               >
@@ -221,23 +258,20 @@ export function RidePostScreen({ route, navigation }: any) {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[
-                styles.typeBtn,
-                !isOffer && { backgroundColor: '#8b5cf6' },
-              ]}
+              style={styles.typeTabBtn}
               onPress={() => {
                 setPostType('request');
                 if (fare === '50') setFare('40');
               }}
-              activeOpacity={0.8}
+              activeOpacity={0.75}
             >
-              <Feather name="user-check" size={15} color={!isOffer ? '#fff' : C.textMuted} />
+              <Feather name="user-check" size={14} color={!isOffer ? '#8b5cf6' : C.textMuted} />
               <Text
                 style={[
-                  styles.typeBtnTxt,
+                  styles.typeTabBtnTxt,
                   {
-                    color: !isOffer ? '#fff' : C.textMuted,
-                    fontFamily: FontFamily.jakartaBold,
+                    color: !isOffer ? '#8b5cf6' : C.textMuted,
+                    fontFamily: !isOffer ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
                   },
                 ]}
               >
@@ -269,7 +303,16 @@ export function RidePostScreen({ route, navigation }: any) {
                   onPress={() => handleVehicleSelect(v.id)}
                   activeOpacity={0.75}
                 >
-                  <Text style={styles.vehicleIcon}>{v.icon}</Text>
+                  {v.id === 'Rickshaw' ? (
+                    <MaterialCommunityIcons
+                      name="rickshaw"
+                      size={26}
+                      color={on ? accentColor : (isDark ? '#a3e635' : '#4d7c0f')}
+                      style={{ marginBottom: 4 }}
+                    />
+                  ) : (
+                    <Text style={styles.vehicleIcon}>{v.icon}</Text>
+                  )}
                   <Text style={[styles.vehicleLabel, { color: on ? accentColor : C.text, fontFamily: FontFamily.jakartaBold }]}>
                     {v.label}
                   </Text>
@@ -503,14 +546,27 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { paddingTop: 6, paddingBottom: 24 },
 
-  typeToggle: {
+  typeToggleTrack: {
     flexDirection: 'row',
     borderRadius: 14,
-    borderWidth: 1,
     padding: 3,
-    marginBottom: 14,
+    marginBottom: 16,
+    position: 'relative',
   } as ViewStyle,
-  typeBtn: {
+  typeToggleIndicator: {
+    position: 'absolute',
+    top: 3,
+    bottom: 3,
+    left: 3,
+    borderRadius: 11,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  } as ViewStyle,
+  typeTabBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
@@ -519,8 +575,9 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 11,
     minHeight: 44,
+    zIndex: 1,
   } as ViewStyle,
-  typeBtnTxt: { fontSize: 13 } as TextStyle,
+  typeTabBtnTxt: { fontSize: 13 } as TextStyle,
 
   sectionLabel: {
     fontSize: 11,

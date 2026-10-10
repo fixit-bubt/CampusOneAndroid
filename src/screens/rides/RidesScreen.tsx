@@ -6,7 +6,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { Feather } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
 import { SubBar } from '../../components/layout/TopBar';
@@ -264,34 +264,16 @@ export function RidesScreen({ navigation }: any) {
         message="Showing cached campus rides. Connect to the internet to request seats or post rides."
       />
 
-      {/* Prominent Hero Action Bar: Offer Ride vs Request Ride */}
-      <View style={styles.heroRow}>
+      {/* Prominent Hero Action Bar (Option 1: Parity with Blood Donation & Lost/Found) */}
+      <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 6, paddingBottom: 4 }}>
         <TouchableOpacity
-          style={[styles.actBtn, { backgroundColor: RIDE_COLOR }]}
+          style={[styles.heroActBtn, { backgroundColor: RIDE_COLOR }]}
           onPress={() => navigation.navigate('RidePost', { postType: 'offer' })}
           activeOpacity={0.85}
         >
-          <Feather name="plus-circle" size={15} color="#fff" />
-          <Text style={[styles.actBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
-            Offer Ride
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.actBtn,
-            {
-              backgroundColor: isDark ? 'rgba(139, 92, 246, 0.16)' : '#f5f0ff',
-              borderColor: isDark ? 'rgba(139, 92, 246, 0.45)' : '#d8b4fe',
-              borderWidth: 1,
-            },
-          ]}
-          onPress={() => navigation.navigate('RidePost', { postType: 'request' })}
-          activeOpacity={0.85}
-        >
-          <Feather name="user-check" size={15} color={isDark ? '#c4b5fd' : '#7c3aed'} />
-          <Text style={[styles.actBtnTxt, { color: isDark ? '#c4b5fd' : '#7c3aed', fontFamily: FontFamily.jakartaBold }]}>
-            Request Ride
+          <Feather name="plus-circle" size={16} color="#fff" />
+          <Text style={[styles.heroActBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+            {t.rides2.postRideHeroBtn ?? 'Post a Campus Ride'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -468,9 +450,14 @@ export function RidesScreen({ navigation }: any) {
                             </Text>
                           </View>
                         )}
-                        <View style={[styles.vehPill, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : C.surface2 }]}>
+                        <View style={[styles.vehPill, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : C.surface2, flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
+                          {r.vehicle === 'Rickshaw' ? (
+                            <MaterialCommunityIcons name="rickshaw" size={13} color={C.text2} />
+                          ) : (
+                            <Text style={{ fontSize: 11 }}>{vMeta.icon}</Text>
+                          )}
                           <Text style={[styles.vehTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                            {vMeta.icon} {vMeta.label}
+                            {vMeta.label}
                           </Text>
                         </View>
                         <View style={[styles.dirPill, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : C.surface2 }]}>
@@ -605,24 +592,21 @@ export function RidesScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
 
-  heroRow: {
-    flexDirection: 'row',
-    gap: 10,
-    paddingHorizontal: Layout.screenPadding,
-    paddingTop: 6,
-    paddingBottom: 4,
-  } as ViewStyle,
-  actBtn: {
-    flex: 1,
+  heroActBtn: {
+    height: 44,
+    borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 7,
-    height: 44,
-    borderRadius: 12,
+    gap: 8,
+    shadowColor: RIDE_COLOR,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.22,
+    shadowRadius: 5,
+    elevation: 3,
   } as ViewStyle,
-  actBtnTxt: {
-    fontSize: 13,
+  heroActBtnTxt: {
+    fontSize: 14,
   } as TextStyle,
 
   tabContainer: {

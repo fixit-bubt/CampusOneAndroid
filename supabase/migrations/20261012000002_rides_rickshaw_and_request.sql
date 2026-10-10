@@ -15,3 +15,4 @@ alter table public.rides add column if not exists post_type text not null defaul
 
 -- Create index for filtering by post_type
 create index if not exists idx_rides_post_type on public.rides (post_type);
+

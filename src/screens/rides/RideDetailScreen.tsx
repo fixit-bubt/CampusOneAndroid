@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { Feather } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
@@ -379,9 +379,14 @@ export function RideDetailScreen({ route, navigation }: any) {
               {ride.origin} → {ride.destination}
             </Text>
             <View style={styles.badgeRow}>
-              <View style={[styles.pill, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : C.surface2 }]}>
+              <View style={[styles.pill, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : C.surface2, flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
+                {ride.vehicle === 'Rickshaw' ? (
+                  <MaterialCommunityIcons name="rickshaw" size={13} color={C.text2} />
+                ) : (
+                  <Text style={{ fontSize: 11 }}>{vMeta.icon}</Text>
+                )}
                 <Text style={[styles.pillTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                  {vMeta.icon} {vMeta.label}
+                  {vMeta.label}
                 </Text>
               </View>
               <View style={[styles.pill, { backgroundColor: RIDE_BG }]}>
