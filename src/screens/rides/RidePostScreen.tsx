@@ -264,6 +264,26 @@ export function RidePostScreen({ route, navigation }: any) {
     outputRange: [0, dateTabWidth],
   });
 
+  // 4. Modal Category Switcher (Mirpur & Campus vs Greater Dhaka)
+  const catAnimIndex = useRef(new Animated.Value(locationCategory === 'dhaka' ? 1 : 0)).current;
+  const [catTrackWidth, setCatTrackWidth] = useState(0);
+
+  useEffect(() => {
+    Animated.spring(catAnimIndex, {
+      toValue: locationCategory === 'dhaka' ? 1 : 0,
+      tension: 68,
+      friction: 10,
+      useNativeDriver: true,
+    }).start();
+  }, [locationCategory, catAnimIndex]);
+
+  const catInnerTrackWidth = Math.max(0, catTrackWidth - TRACK_PADDING * 2);
+  const catTabWidth = catInnerTrackWidth > 0 ? catInnerTrackWidth / 2 : 0;
+  const catTranslateX = catAnimIndex.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, catTabWidth],
+  });
+
   const currentVehicleConfig = VEHICLES.find(v => v.id === vehicle) ?? VEHICLES[0];
 
   function handleVehicleSelect(v: Ride['vehicle']) {
@@ -305,7 +325,9 @@ export function RidePostScreen({ route, navigation }: any) {
   function openLocationModal(field: 'from' | 'to') {
     setTargetField(field);
     setSearchArea('');
-    setLocationCategory(field === 'from' ? 'mirpur' : 'dhaka');
+    const targetCat = field === 'from' ? 'mirpur' : 'dhaka';
+    setLocationCategory(targetCat);
+    catAnimIndex.setValue(targetCat === 'dhaka' ? 1 : 0);
     setHubModalVisible(true);
   }
 
@@ -978,24 +1000,29 @@ export function RidePostScreen({ route, navigation }: any) {
                 )}
               </View>
 
-              {/* 2. The 2-Bar Category Switcher */}
-              <View style={[styles.categorySwitcherTrack, { backgroundColor: C.surface2 }]}>
+              {/* 2. The 2-Bar Category Switcher with Spring Sliding Animation */}
+              <View
+                style={[styles.categorySwitcherTrack, { backgroundColor: C.surface2 }]}
+                onLayout={e => setCatTrackWidth(e.nativeEvent.layout.width)}
+              >
+                {catTabWidth > 0 && (
+                  <Animated.View
+                    style={[
+                      styles.categorySlidingIndicator,
+                      {
+                        width: catTabWidth,
+                        transform: [{ translateX: catTranslateX }],
+                        backgroundColor: C.surface,
+                        borderColor: isDark ? `${accentColor}55` : `${accentColor}35`,
+                      },
+                    ]}
+                  />
+                )}
+
                 <TouchableOpacity
-                  style={[
-                    styles.categorySwitcherBtn,
-                    locationCategory === 'mirpur' && {
-                      backgroundColor: C.surface,
-                      borderColor: isDark ? `${accentColor}55` : `${accentColor}35`,
-                      borderWidth: 1.2,
-                      elevation: 2,
-                      shadowColor: '#000',
-                      shadowOffset: { width: 0, height: 1 },
-                      shadowOpacity: 0.1,
-                      shadowRadius: 2,
-                    },
-                  ]}
+                  style={styles.categorySwitcherBtn}
                   onPress={() => setLocationCategory('mirpur')}
-                  activeOpacity={0.8}
+                  activeOpacity={0.75}
                 >
                   <Feather
                     name="map-pin"
@@ -1019,14 +1046,14 @@ export function RidePostScreen({ route, navigation }: any) {
                       {
                         backgroundColor: locationCategory === 'mirpur'
                           ? (isDark ? `${accentColor}25` : `${accentColor}18`)
-                          : C.surface,
+                          : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)'),
                       },
                     ]}
                   >
                     <Text
                       style={[
                         styles.categoryMiniBadgeTxt,
-                        { color: locationCategory === 'mirpur' ? accentColor : C.textMuted },
+                        { color: locationCategory === 'mirpur' ? accentColor : C.textMuted, fontFamily: FontFamily.jakartaBold },
                       ]}
                     >
                       14
@@ -1035,21 +1062,9 @@ export function RidePostScreen({ route, navigation }: any) {
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[
-                    styles.categorySwitcherBtn,
-                    locationCategory === 'dhaka' && {
-                      backgroundColor: C.surface,
-                      borderColor: isDark ? `${accentColor}55` : `${accentColor}35`,
-                      borderWidth: 1.2,
-                      elevation: 2,
-                      shadowColor: '#000',
-                      shadowOffset: { width: 0, height: 1 },
-                      shadowOpacity: 0.1,
-                      shadowRadius: 2,
-                    },
-                  ]}
+                  style={styles.categorySwitcherBtn}
                   onPress={() => setLocationCategory('dhaka')}
-                  activeOpacity={0.8}
+                  activeOpacity={0.75}
                 >
                   <Feather
                     name="compass"
@@ -1073,14 +1088,14 @@ export function RidePostScreen({ route, navigation }: any) {
                       {
                         backgroundColor: locationCategory === 'dhaka'
                           ? (isDark ? `${accentColor}25` : `${accentColor}18`)
-                          : C.surface,
+                          : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)'),
                       },
                     ]}
                   >
                     <Text
                       style={[
                         styles.categoryMiniBadgeTxt,
-                        { color: locationCategory === 'dhaka' ? accentColor : C.textMuted },
+                        { color: locationCategory === 'dhaka' ? accentColor : C.textMuted, fontFamily: FontFamily.jakartaBold },
                       ]}
                     >
                       44
@@ -1715,10 +1730,23 @@ const styles = StyleSheet.create({
   /* 2-Bar Category Switcher (Modal) */
   categorySwitcherTrack: {
     flexDirection: 'row',
-    borderRadius: 12,
+    borderRadius: 13,
     padding: 3,
     marginBottom: 10,
-    gap: 4,
+    position: 'relative',
+  } as ViewStyle,
+  categorySlidingIndicator: {
+    position: 'absolute',
+    top: 3,
+    bottom: 3,
+    left: 3,
+    borderRadius: 10,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 2,
   } as ViewStyle,
   categorySwitcherBtn: {
     flex: 1,
@@ -1728,6 +1756,7 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     borderRadius: 10,
     gap: 6,
+    zIndex: 1,
   } as ViewStyle,
   categorySwitcherTxt: {
     fontSize: 12.5,

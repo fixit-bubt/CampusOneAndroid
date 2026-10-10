@@ -803,7 +803,7 @@ The following screens contain segmented control bars slated for this animated pa
      - **Date:** Segmented sliding pill between `Today · [Date]` and `Tomorrow · [Date]` with calendar icon.
 3. **2-Bar Location Architecture & 58 All-Dhaka Transit Areas (`RidePostScreen.tsx`):**
    - **Main Screen 2 Dedicated Location Bars:** Replaced disconnected trigger cards with 2 unified inline bars (`Pickup Location / From` and `Destination / To`). Each bar contains an inline text input for freeform custom entry + a dedicated right-aligned `[ Pick Area ▾ ]` button.
-   - **Modal 2-Bar Category Switcher:** Slide-up bottom sheet features a high-visibility 2-bar category switcher replacing the 7 horizontal scrolling chips:
+   - **Modal 2-Bar Animated Category Switcher:** Slide-up bottom sheet features a high-visibility 2-bar category switcher with the exact same native spring sliding indicator animation (`tension: 68, friction: 10, useNativeDriver: true`) as the main screen tracks:
      - `🏛️ Mirpur & Campus (14)`: Immediate campus transit hubs (Mirpur 1, 2, 6, 10, 11, 12, 14, Sony Cinema, Rainkhola, Technical, ECB Chattar, DOHS, Pallabi, Rupnagar).
      - `🏙️ Greater Dhaka (44)`: Cross-metropolitan transit corridors (Uttara, Dhanmondi, Farmgate, Gulshan 1 & 2, Banani, Badda, Rampura, Motijheel, Old Dhaka, Savar, etc.).
    - **Streamlined Sheet Ergonomics:** Removed redundant internal target switchers and internal custom location inputs. Users can type any custom location directly on the main screen bars or tap the instant "Use &ldquo;[query]&rdquo;" custom card if typing in the search bar.
