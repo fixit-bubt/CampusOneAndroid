@@ -41,6 +41,8 @@ const CATEGORIES: CategoryMeta[] = [
   { id: 'Books',       icon: 'book-open', fg: Accent.blue,   labelKey: 'catBooks',       subKey: 'catBooksSub'       },
   { id: 'Electronics', icon: 'cpu',       fg: Accent.purple, labelKey: 'catElectronics', subKey: 'catElectronicsSub' },
   { id: 'Notes',       icon: 'file-text', fg: Accent.teal,   labelKey: 'catNotes',       subKey: 'catNotesSub'       },
+  { id: 'Drafting',    icon: 'edit-3',    fg: '#f59e0b',     labelKey: 'catDrafting',    subKey: 'catDraftingSub'    },
+  { id: 'LabGear',     icon: 'shield',    fg: '#10b981',     labelKey: 'catLabGear',     subKey: 'catLabGearSub'     },
   { id: 'Furniture',   icon: 'layers',    fg: Accent.amber,  labelKey: 'catFurniture',   subKey: 'catFurnitureSub'   },
   { id: 'Other',       icon: 'package',   fg: Accent.slate,  labelKey: 'catOther',       subKey: 'catOtherSub'       },
 ];

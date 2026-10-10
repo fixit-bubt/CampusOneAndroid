@@ -34,6 +34,8 @@ const MK_CATS: Record<string, { icon: keyof typeof Feather.glyphMap; fg: string;
   electronics: { icon: 'cpu',       fg: Accent.purple, label: 'Electronics' },
   furniture:   { icon: 'layers',    fg: Accent.amber,  label: 'Furniture'   },
   notes:       { icon: 'file-text', fg: Accent.teal,   label: 'Notes'       },
+  drafting:    { icon: 'edit-3',    fg: '#f59e0b',     label: 'Drafting'    },
+  labgear:     { icon: 'shield',    fg: '#10b981',     label: 'Lab Gear'    },
   other:       { icon: 'package',   fg: Accent.slate,  label: 'Other'       },
 };
 

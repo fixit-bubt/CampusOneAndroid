@@ -44,7 +44,7 @@ export type Event = Omit<Tables<'events'>, 'category'> & {
 
 export type Listing = Omit<Tables<'listings'>, 'condition' | 'category' | 'status'> & {
   condition: 'New' | 'Like New' | 'Used';
-  category: 'Books' | 'Electronics' | 'Furniture' | 'Notes' | 'Other';
+  category: string;
   status: 'Available' | 'Sold';
   meetup_spot?: string | null;
   photos?: string[] | null;

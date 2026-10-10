@@ -841,6 +841,7 @@ The following screens contain segmented control bars slated for this animated pa
      - Left: `[ All ]` quick reset button to view all campus items.
      - Right: `[ Category ∨ ]` dynamic selector button.
    - Tapping category opens a rich bottom sheet modal displaying category icons, full titles, subtitle descriptions, active checkmarks, and live item counts (exact parity with Directory's `DepartmentModal`).
+   - Expanded Categories: Books & Textbooks, Electronics & Accessories, Notes & Study Material, Drafting & Drawing Kits, Lab Coats & Safety Equipment, and Other Campus Items (supports custom category naming).
 4. **Search Row & Secondary Filter Sheet:**
    - Positioned directly above the product feed for optimal thumb-zone reach.
    - `[ Filter ]` button displays an emerald active dot indicator when secondary filters are applied.
@@ -865,15 +866,20 @@ The following screens contain segmented control bars slated for this animated pa
    - Tapping the listing image opens a full-screen zoomable lightbox modal with dark backdrop and close action.
 9. **Free / Community Giveaway Mode (0 ৳):**
    - Prominent emerald `FREE` badge on feed cards and detail screen for community donations and senior pass-downs.
-10. **Handover Location Spotting:**
-    - Dedicated meetup spot selector (`Cafeteria`, `Library`, `Building 2 Lobby`, `Main Gate`, `Flexible`).
-11. **Course Cross-Referencing:**
+10. **Handover Location Spotting & Dhaka Area Picker:**
+    - Dedicated interactive location bar opening a full bottom sheet area picker.
+    - Dual spring tabs: `Campus & Mirpur` (12 campus spots: Cafeteria, Library, Bldg 1/2/3 lobbies, Main Gate, etc.) and `Greater Dhaka` (44 commute areas: Uttara, Dhanmondi, Farmgate, Mohakhali, Gulshan, Banani, etc., sharing `ALL_DHAKA_COMMUTE_AREAS`).
+    - Live search query filter across names, Bengali script names, and descriptions, plus custom area input.
+11. **Spring-Animated Condition Bar:**
+    - Interactive 3-option condition switcher in `MarketPostScreen.tsx` (`Brand New | Like New | Used`).
+    - Driven by elevated indicator card with native spring interpolation (`tension: 68, friction: 10`) matching the design system standard.
+12. **Course Cross-Referencing:**
     - Course codes auto-capitalized and linked to Study Hub (`CourseDetailScreen`).
-12. **Listing Lifecycle & Owner Controls:**
+13. **Listing Lifecycle & Owner Controls:**
     - Confirmation alerts for "Mark as Sold" and ability to "Mark Available" (re-list).
     - Status preservation on edit so sold items are not inadvertently revived.
     - Synchronous cache invalidation across all mutations (`create`, `edit`, `sold`, `relist`, `delete`).
-13. **Native Sharing:**
+14. **Native Sharing:**
     - Integrated native `Share.share` generating formatted listing summary for campus WhatsApp and social groups.
 
 
