@@ -33,14 +33,9 @@ export interface CommuteAreaItem {
   icon: keyof typeof Feather.glyphMap;
 }
 
-export const ZONE_TABS = [
-  'All',
-  'Mirpur & Campus',
-  'North Dhaka',
-  'Central & West',
-  'East Dhaka',
-  'South & Old',
-  'Suburbs',
+export const LOCATION_CATEGORIES = [
+  { id: 'mirpur', label: 'Mirpur & Campus', count: 14, icon: 'map-pin' as const },
+  { id: 'dhaka',  label: 'Greater Dhaka',   count: 44, icon: 'compass' as const },
 ] as const;
 
 export const ALL_DHAKA_COMMUTE_AREAS: CommuteAreaItem[] = [
@@ -201,9 +196,8 @@ export function RidePostScreen({ route, navigation }: any) {
 
   const [hubModalVisible, setHubModalVisible] = useState(false);
   const [targetField, setTargetField] = useState<'from' | 'to'>('from');
-  const [customLocationText, setCustomLocationText] = useState('');
   const [searchArea, setSearchArea] = useState('');
-  const [selectedZone, setSelectedZone] = useState<string>('All');
+  const [locationCategory, setLocationCategory] = useState<'mirpur' | 'dhaka'>('mirpur');
   const [timeModalVisible, setTimeModalVisible] = useState(false);
 
   const isOffer = postType === 'offer';
@@ -308,13 +302,10 @@ export function RidePostScreen({ route, navigation }: any) {
 
   const activeHub = direction === 'To Campus' ? from : to;
 
-  function openLocationModal(field?: 'from' | 'to') {
-    const chosen = field ?? (direction === 'To Campus' ? 'from' : 'to');
-    setTargetField(chosen);
-    const currentVal = chosen === 'from' ? from : to;
-    setCustomLocationText(currentVal === 'BUBT Campus' ? '' : currentVal);
+  function openLocationModal(field: 'from' | 'to') {
+    setTargetField(field);
     setSearchArea('');
-    setSelectedZone('All');
+    setLocationCategory(field === 'from' ? 'mirpur' : 'dhaka');
     setHubModalVisible(true);
   }
 
@@ -328,32 +319,21 @@ export function RidePostScreen({ route, navigation }: any) {
     setHubModalVisible(false);
   }
 
-  function handleApplyCustomLocation() {
-    Keyboard.dismiss();
-    const trimmed = customLocationText.trim();
-    if (!trimmed) return;
-    if (targetField === 'from') {
-      setFrom(trimmed);
-    } else {
-      setTo(trimmed);
-    }
-    setHubModalVisible(false);
-  }
-
   const filteredAreas = useMemo(() => {
     const q = searchArea.trim().toLowerCase();
-    let list = ALL_DHAKA_COMMUTE_AREAS;
-    if (selectedZone !== 'All') {
-      list = list.filter(a => a.zone === selectedZone);
+    if (q) {
+      return ALL_DHAKA_COMMUTE_AREAS.filter(a =>
+        a.name.toLowerCase().includes(q) ||
+        (a.nameBn && a.nameBn.includes(q)) ||
+        a.zone.toLowerCase().includes(q) ||
+        a.desc.toLowerCase().includes(q)
+      );
     }
-    if (!q) return list;
-    return list.filter(a =>
-      a.name.toLowerCase().includes(q) ||
-      (a.nameBn && a.nameBn.includes(q)) ||
-      a.zone.toLowerCase().includes(q) ||
-      a.desc.toLowerCase().includes(q)
-    );
-  }, [searchArea, selectedZone]);
+    if (locationCategory === 'mirpur') {
+      return ALL_DHAKA_COMMUTE_AREAS.filter(a => a.zone === 'Mirpur & Campus');
+    }
+    return ALL_DHAKA_COMMUTE_AREAS.filter(a => a.zone !== 'Mirpur & Campus');
+  }, [searchArea, locationCategory]);
 
   const groupedAreas = useMemo(() => {
     const map: Record<string, CommuteAreaItem[]> = {};
@@ -629,103 +609,72 @@ export function RidePostScreen({ route, navigation }: any) {
             </TouchableOpacity>
           </View>
 
-          {/* 3. Origin & Destination */}
+          {/* 3. Origin & Destination: 2 Dedicated Location Bars */}
+          {/* Bar 1: Pickup Location (From) */}
           <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-            {isOffer ? (t.rides2.from ?? 'PICKUP POINT / FROM') : 'YOUR LOCATION / FROM'}
+            {isOffer ? (t.rides2.from ?? 'PICKUP LOCATION / FROM') : 'YOUR LOCATION / FROM'}
           </Text>
-          <View style={styles.inputWithAction}>
+          <View style={[styles.locationBarContainer, { backgroundColor: C.surface, borderColor: from ? accentColor : C.border }]}>
+            <View style={styles.locationBarLeftIcon}>
+              <Feather name="navigation" size={16} color={accentColor} />
+            </View>
             <TextInput
-              style={[styles.inputFlex, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+              style={[styles.locationBarInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
               value={from}
               onChangeText={setFrom}
-              placeholder={isOffer ? (t.rides2.fromPlaceholder ?? 'e.g. Mirpur 10') : 'e.g. Mirpur 2, Sony Cinema'}
+              placeholder={isOffer ? (t.rides2.fromPlaceholder ?? 'e.g. Mirpur 10, Sony Square, or custom…') : 'e.g. Mirpur 2, Sony Cinema, or custom…'}
               placeholderTextColor={C.textMuted}
             />
             <TouchableOpacity
-              style={[styles.inputActionBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+              style={[
+                styles.locationBarPickBtn,
+                {
+                  backgroundColor: isDark ? `${accentColor}22` : `${accentColor}14`,
+                  borderColor: isDark ? `${accentColor}44` : `${accentColor}28`,
+                },
+              ]}
               onPress={() => openLocationModal('from')}
               activeOpacity={0.75}
             >
-              <Feather name="map-pin" size={16} color={accentColor} />
+              <Text style={[styles.locationBarPickTxt, { color: accentColor, fontFamily: FontFamily.jakartaBold }]}>
+                Pick Area
+              </Text>
+              <Feather name="chevron-down" size={13} color={accentColor} />
             </TouchableOpacity>
           </View>
 
+          {/* Bar 2: Destination (To) */}
           <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-            {t.rides2.to ?? 'TO'}
+            {t.rides2.to ?? 'DESTINATION / TO'}
           </Text>
-          <View style={styles.inputWithAction}>
+          <View style={[styles.locationBarContainer, { backgroundColor: C.surface, borderColor: to ? accentColor : C.border }]}>
+            <View style={styles.locationBarLeftIcon}>
+              <Feather name="map-pin" size={16} color={accentColor} />
+            </View>
             <TextInput
-              style={[styles.inputFlex, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+              style={[styles.locationBarInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
               value={to}
               onChangeText={setTo}
-              placeholder={t.rides2.toPlaceholder ?? 'e.g. BUBT Campus'}
+              placeholder={t.rides2.toPlaceholder ?? 'e.g. BUBT Campus, Uttara, Dhanmondi…'}
               placeholderTextColor={C.textMuted}
             />
             <TouchableOpacity
-              style={[styles.inputActionBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+              style={[
+                styles.locationBarPickBtn,
+                {
+                  backgroundColor: isDark ? `${accentColor}22` : `${accentColor}14`,
+                  borderColor: isDark ? `${accentColor}44` : `${accentColor}28`,
+                },
+              ]}
               onPress={() => openLocationModal('to')}
               activeOpacity={0.75}
             >
-              <Feather name="map-pin" size={16} color={accentColor} />
+              <Text style={[styles.locationBarPickTxt, { color: accentColor, fontFamily: FontFamily.jakartaBold }]}>
+                Pick Area
+              </Text>
+              <Feather name="chevron-down" size={13} color={accentColor} />
             </TouchableOpacity>
           </View>
-
-          {/* Dhaka Locations & Hubs Trigger Bar (Opens Bottom Sheet Modal) */}
-          <TouchableOpacity
-            style={[
-              styles.pickerTriggerCard,
-              {
-                backgroundColor: C.surface,
-                borderColor: activeHub ? accentColor : C.border,
-              },
-            ]}
-            onPress={() => openLocationModal()}
-            activeOpacity={0.75}
-          >
-            <View style={styles.pickerTriggerLeft}>
-              <View
-                style={[
-                  styles.pickerTriggerIconBox,
-                  { backgroundColor: isDark ? `${accentColor}24` : `${accentColor}15` },
-                ]}
-              >
-                <Feather name="map-pin" size={17} color={accentColor} />
-              </View>
-              <View style={styles.pickerTriggerContent}>
-                <Text style={[styles.pickerTriggerLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                  {direction === 'To Campus' ? 'PICKUP LOCATION / ALL DHAKA AREAS' : 'DESTINATION / ALL DHAKA AREAS'}
-                </Text>
-                <Text
-                  style={[
-                    styles.pickerTriggerValue,
-                    {
-                      color: activeHub ? C.text : C.textMuted,
-                      fontFamily: activeHub ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                    },
-                  ]}
-                  numberOfLines={1}
-                >
-                  {activeHub
-                    ? `${activeHub} · Selected`
-                    : 'Browse 58+ Dhaka areas or enter custom location…'}
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.pickerTriggerRight}>
-              {activeHub ? (
-                <View
-                  style={[
-                    styles.activeBadgeCircle,
-                    { backgroundColor: isDark ? `${accentColor}30` : `${accentColor}18` },
-                  ]}
-                >
-                  <Feather name="check" size={12} color={accentColor} />
-                </View>
-              ) : null}
-              <Feather name="chevron-down" size={18} color={C.textMuted} />
-            </View>
-          </TouchableOpacity>
 
           {/* 4. Date Choice (Animated Segmented Track) */}
           <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
@@ -991,7 +940,7 @@ export function RidePostScreen({ route, navigation }: any) {
                       {targetField === 'from' ? 'Select Pickup Point' : 'Select Destination'}
                     </Text>
                     <Text style={[styles.modalSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                      58 Dhaka areas & custom landmark options
+                      Choose from Mirpur hubs or Greater Dhaka areas
                     </Text>
                   </View>
                 </View>
@@ -1005,128 +954,12 @@ export function RidePostScreen({ route, navigation }: any) {
                 </TouchableOpacity>
               </View>
 
-              {/* Target Switcher: Pickup vs Destination */}
-              <View style={[styles.targetSwitcherTrack, { backgroundColor: C.surface2 }]}>
-                <TouchableOpacity
-                  style={[
-                    styles.targetSwitcherBtn,
-                    targetField === 'from' && {
-                      backgroundColor: C.surface,
-                      borderColor: accentColor,
-                      borderWidth: 1.2,
-                      shadowColor: '#000',
-                      shadowOffset: { width: 0, height: 1 },
-                      shadowOpacity: 0.1,
-                      shadowRadius: 2,
-                      elevation: 2,
-                    },
-                  ]}
-                  onPress={() => {
-                    setTargetField('from');
-                    setCustomLocationText(from === 'BUBT Campus' ? '' : from);
-                  }}
-                  activeOpacity={0.8}
-                >
-                  <Feather name="navigation" size={13} color={targetField === 'from' ? accentColor : C.textMuted} />
-                  <Text
-                    style={[
-                      styles.targetSwitcherTxt,
-                      {
-                        color: targetField === 'from' ? accentColor : C.textMuted,
-                        fontFamily: targetField === 'from' ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                      },
-                    ]}
-                  >
-                    Pickup (From)
-                  </Text>
-                  {from ? (
-                    <View style={[styles.targetMiniDot, { backgroundColor: accentColor }]} />
-                  ) : null}
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.targetSwitcherBtn,
-                    targetField === 'to' && {
-                      backgroundColor: C.surface,
-                      borderColor: accentColor,
-                      borderWidth: 1.2,
-                      shadowColor: '#000',
-                      shadowOffset: { width: 0, height: 1 },
-                      shadowOpacity: 0.1,
-                      shadowRadius: 2,
-                      elevation: 2,
-                    },
-                  ]}
-                  onPress={() => {
-                    setTargetField('to');
-                    setCustomLocationText(to === 'BUBT Campus' ? '' : to);
-                  }}
-                  activeOpacity={0.8}
-                >
-                  <Feather name="map-pin" size={13} color={targetField === 'to' ? accentColor : C.textMuted} />
-                  <Text
-                    style={[
-                      styles.targetSwitcherTxt,
-                      {
-                        color: targetField === 'to' ? accentColor : C.textMuted,
-                        fontFamily: targetField === 'to' ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                      },
-                    ]}
-                  >
-                    Destination (To)
-                  </Text>
-                  {to ? (
-                    <View style={[styles.targetMiniDot, { backgroundColor: accentColor }]} />
-                  ) : null}
-                </TouchableOpacity>
-              </View>
-
-              {/* 1. Custom Location Option Input Bar */}
-              <View style={[styles.modalCustomLocationBar, { backgroundColor: C.surface2, borderColor: C.border }]}>
-                <Feather name="edit-3" size={15} color={accentColor} />
-                <TextInput
-                  style={[styles.modalCustomLocationInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                  placeholder={`Custom ${targetField === 'from' ? 'pickup point' : 'destination'}, road, or gate…`}
-                  placeholderTextColor={C.textMuted}
-                  value={customLocationText}
-                  onChangeText={setCustomLocationText}
-                  returnKeyType="done"
-                  onSubmitEditing={handleApplyCustomLocation}
-                />
-                <TouchableOpacity
-                  style={[
-                    styles.modalCustomLocationApplyBtn,
-                    {
-                      backgroundColor: customLocationText.trim() ? accentColor : C.surface,
-                      borderColor: customLocationText.trim() ? accentColor : C.border,
-                      borderWidth: 1,
-                    },
-                  ]}
-                  onPress={handleApplyCustomLocation}
-                  disabled={!customLocationText.trim()}
-                  activeOpacity={0.75}
-                >
-                  <Text
-                    style={[
-                      styles.modalCustomLocationApplyTxt,
-                      {
-                        color: customLocationText.trim() ? '#fff' : C.textMuted,
-                        fontFamily: FontFamily.jakartaBold,
-                      },
-                    ]}
-                  >
-                    Set Location
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* 2. Live Search Box for 58+ Dhaka Areas */}
+              {/* 1. Live Search Box */}
               <View style={[styles.modalSearchBox, { backgroundColor: C.surface2, borderColor: C.border }]}>
                 <Feather name="search" size={15} color={C.textMuted} />
                 <TextInput
                   style={[styles.modalSearchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                  placeholder="Search 58+ Dhaka areas (e.g. Uttara, Dhanmondi, Badda)…"
+                  placeholder="Search any Dhaka area, landmark, or metro station…"
                   placeholderTextColor={C.textMuted}
                   value={searchArea}
                   onChangeText={setSearchArea}
@@ -1145,51 +978,121 @@ export function RidePostScreen({ route, navigation }: any) {
                 )}
               </View>
 
-              {/* 3. Zone Filter Horizontal Scroll */}
-              <View style={{ marginBottom: 10 }}>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.zoneScrollContent}
+              {/* 2. The 2-Bar Category Switcher */}
+              <View style={[styles.categorySwitcherTrack, { backgroundColor: C.surface2 }]}>
+                <TouchableOpacity
+                  style={[
+                    styles.categorySwitcherBtn,
+                    locationCategory === 'mirpur' && {
+                      backgroundColor: C.surface,
+                      borderColor: isDark ? `${accentColor}55` : `${accentColor}35`,
+                      borderWidth: 1.2,
+                      elevation: 2,
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 1 },
+                      shadowOpacity: 0.1,
+                      shadowRadius: 2,
+                    },
+                  ]}
+                  onPress={() => setLocationCategory('mirpur')}
+                  activeOpacity={0.8}
                 >
-                  {ZONE_TABS.map(zone => {
-                    const active = selectedZone === zone;
-                    return (
-                      <TouchableOpacity
-                        key={zone}
-                        style={[
-                          styles.zoneFilterChip,
-                          {
-                            backgroundColor: active
-                              ? (isDark ? `${accentColor}28` : `${accentColor}18`)
-                              : C.surface2,
-                            borderColor: active ? accentColor : C.border,
-                          },
-                        ]}
-                        onPress={() => setSelectedZone(zone)}
-                        activeOpacity={0.75}
-                      >
-                        <Text
-                          style={[
-                            styles.zoneFilterChipTxt,
-                            {
-                              color: active ? accentColor : C.textMuted,
-                              fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                            },
-                          ]}
-                        >
-                          {zone}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </ScrollView>
+                  <Feather
+                    name="map-pin"
+                    size={14}
+                    color={locationCategory === 'mirpur' ? accentColor : C.textMuted}
+                  />
+                  <Text
+                    style={[
+                      styles.categorySwitcherTxt,
+                      {
+                        color: locationCategory === 'mirpur' ? accentColor : C.textMuted,
+                        fontFamily: locationCategory === 'mirpur' ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                      },
+                    ]}
+                  >
+                    Mirpur & Campus
+                  </Text>
+                  <View
+                    style={[
+                      styles.categoryMiniBadge,
+                      {
+                        backgroundColor: locationCategory === 'mirpur'
+                          ? (isDark ? `${accentColor}25` : `${accentColor}18`)
+                          : C.surface,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.categoryMiniBadgeTxt,
+                        { color: locationCategory === 'mirpur' ? accentColor : C.textMuted },
+                      ]}
+                    >
+                      14
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.categorySwitcherBtn,
+                    locationCategory === 'dhaka' && {
+                      backgroundColor: C.surface,
+                      borderColor: isDark ? `${accentColor}55` : `${accentColor}35`,
+                      borderWidth: 1.2,
+                      elevation: 2,
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 1 },
+                      shadowOpacity: 0.1,
+                      shadowRadius: 2,
+                    },
+                  ]}
+                  onPress={() => setLocationCategory('dhaka')}
+                  activeOpacity={0.8}
+                >
+                  <Feather
+                    name="compass"
+                    size={14}
+                    color={locationCategory === 'dhaka' ? accentColor : C.textMuted}
+                  />
+                  <Text
+                    style={[
+                      styles.categorySwitcherTxt,
+                      {
+                        color: locationCategory === 'dhaka' ? accentColor : C.textMuted,
+                        fontFamily: locationCategory === 'dhaka' ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                      },
+                    ]}
+                  >
+                    Greater Dhaka
+                  </Text>
+                  <View
+                    style={[
+                      styles.categoryMiniBadge,
+                      {
+                        backgroundColor: locationCategory === 'dhaka'
+                          ? (isDark ? `${accentColor}25` : `${accentColor}18`)
+                          : C.surface,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.categoryMiniBadgeTxt,
+                        { color: locationCategory === 'dhaka' ? accentColor : C.textMuted },
+                      ]}
+                    >
+                      44
+                    </Text>
+                  </View>
+                </TouchableOpacity>
               </View>
 
-              {/* 4. Scrollable Areas List */}
+              {/* 3. Scrollable Areas List */}
               <ScrollView
                 showsVerticalScrollIndicator={false}
-                style={{ maxHeight: 360 }}
+                style={{ maxHeight: 420 }}
                 contentContainerStyle={{ paddingBottom: 24 }}
                 keyboardShouldPersistTaps="handled"
                 keyboardDismissMode="on-drag"
@@ -1772,19 +1675,70 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   } as TextStyle,
 
-  /* Zone Horizontal Filter Scroll */
-  zoneScrollContent: {
-    gap: 6,
-    paddingVertical: 2,
+  /* Location Bars (Main Screen) */
+  locationBarContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 52,
+    borderRadius: 14,
+    borderWidth: 1.2,
+    paddingLeft: 12,
+    paddingRight: 6,
+    marginBottom: 8,
+    gap: 8,
   } as ViewStyle,
-  zoneFilterChip: {
-    paddingHorizontal: 11,
-    paddingVertical: 5,
-    borderRadius: 999,
+  locationBarLeftIcon: {
+    width: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  } as ViewStyle,
+  locationBarInput: {
+    flex: 1,
+    fontSize: 14,
+    paddingVertical: 0,
+  } as TextStyle,
+  locationBarPickBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 38,
+    paddingHorizontal: 12,
+    borderRadius: 10,
     borderWidth: 1,
+    gap: 4,
+    flexShrink: 0,
   } as ViewStyle,
-  zoneFilterChipTxt: {
-    fontSize: 11,
+  locationBarPickTxt: {
+    fontSize: 12.5,
+  } as TextStyle,
+
+  /* 2-Bar Category Switcher (Modal) */
+  categorySwitcherTrack: {
+    flexDirection: 'row',
+    borderRadius: 12,
+    padding: 3,
+    marginBottom: 10,
+    gap: 4,
+  } as ViewStyle,
+  categorySwitcherBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 9,
+    borderRadius: 10,
+    gap: 6,
+  } as ViewStyle,
+  categorySwitcherTxt: {
+    fontSize: 12.5,
+  } as TextStyle,
+  categoryMiniBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 999,
+  } as ViewStyle,
+  categoryMiniBadgeTxt: {
+    fontSize: 10.5,
   } as TextStyle,
 
   /* Custom Search Card fallback */
