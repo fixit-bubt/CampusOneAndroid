@@ -1,13 +1,15 @@
 // Shared faculty kit - types, sorting, branch icons, badges, and the
-// teacher card used by the directory, department, and saved views.
+// high-density teacher card used by the directory, department, and saved views.
 import {
   View, Text, TouchableOpacity, StyleSheet,
   type ViewStyle, type TextStyle,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Avatar } from '../../components/ui/Avatar';
-import { FontFamily, SectorColors } from '../../theme';
+import { Icon } from '../../components/ui/Icon';
+import { FontFamily, SectorColors, pillBg, Radius } from '../../theme';
 import { openUrl } from '../../utils/link';
+import { useT } from '../../i18n';
 import type { Colors } from '../../theme';
 
 export const FACULTY_ACCENT = SectorColors.faculty;
@@ -18,20 +20,31 @@ export interface FacultyMember {
   name: string;
   designation: string;
   email: string | null;
+  phone?: string | null;
+  photo_url: string | null;
+  short_code?: string | null;
+  room_number?: string | null;
+  building?: string | null;
+  floor?: string | null;
+  counseling_hours?: string | null;
+  blood_group?: string | null;
+  scopus_url?: string | null;
+  is_accepting_research?: boolean;
   research_interests: string[] | null;
+  qualifications?: string[] | null;
+  profile_url?: string | null;
   on_leave: boolean;
   is_chairman: boolean;
-  photo_url: string | null;
 }
 
 export interface Department {
   id: string;
   name: string;
   branch: string;
+  dept_number: string;
   chairman: string | null;
 }
 
-// Only branches that exist are shown.
 export const BRANCH_ORDER = [
   'Engineering & Applied Sciences',
   'Business',
@@ -80,20 +93,89 @@ export function interestsOf(f: FacultyMember): string[] {
   return Array.isArray(f.research_interests) ? f.research_interests.filter(Boolean) : [];
 }
 
+// Counseling status calculated against Dhaka time (UTC+6)
+export function getCounselingStatus(counselingHours?: string | null, onLeave?: boolean): {
+  active: boolean;
+  label: string;
+  tone: 'success' | 'info' | 'warn' | 'muted';
+} | null {
+  if (onLeave) {
+    return { active: false, label: 'On study leave', tone: 'warn' };
+  }
+  if (!counselingHours || !counselingHours.trim()) return null;
+
+  const now = new Date();
+  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+  const dhaka = new Date(utc + 3600000 * 6);
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const todayStr = days[dhaka.getDay()];
+  const currentMins = dhaka.getHours() * 60 + dhaka.getMinutes();
+
+  const lower = counselingHours.toLowerCase();
+  const isToday = lower.includes(todayStr.toLowerCase());
+
+  const timeMatch = counselingHours.match(/(\d{1,2}):?(\d{2})?\s*(AM|PM)\s*[-–]\s*(\d{1,2}):?(\d{2})?\s*(AM|PM)/i);
+  if (timeMatch && isToday) {
+    let startH = parseInt(timeMatch[1], 10);
+    const startM = parseInt(timeMatch[2] || '0', 10);
+    const startAmpm = timeMatch[3].toUpperCase();
+    if (startAmpm === 'PM' && startH < 12) startH += 12;
+    if (startAmpm === 'AM' && startH === 12) startH = 0;
+    const startTotal = startH * 60 + startM;
+
+    let endH = parseInt(timeMatch[4], 10);
+    const endM = parseInt(timeMatch[5] || '0', 10);
+    const endAmpm = timeMatch[6].toUpperCase();
+    if (endAmpm === 'PM' && endH < 12) endH += 12;
+    if (endAmpm === 'AM' && endH === 12) endH = 0;
+    const endTotal = endH * 60 + endM;
+
+    if (currentMins >= startTotal && currentMins <= endTotal) {
+      const remaining = endTotal - currentMins;
+      return {
+        active: true,
+        label: remaining <= 60 ? `Counseling now (${remaining}m left)` : 'Counseling available now',
+        tone: 'success',
+      };
+    }
+    if (currentMins < startTotal) {
+      return {
+        active: false,
+        label: `Counseling today at ${timeMatch[1]}:${timeMatch[2] || '00'} ${startAmpm}`,
+        tone: 'info',
+      };
+    }
+  }
+
+  if (isToday) {
+    return { active: false, label: 'Counseling scheduled today', tone: 'info' };
+  }
+
+  const firstSlot = counselingHours.split('|')[0].trim();
+  return { active: false, label: firstSlot, tone: 'muted' };
+}
+
 export function PersonBadges({ f, C }: { f: FacultyMember; C: Colors }) {
-  if (!f.is_chairman && !f.on_leave) return null;
+  const t = useT();
+  if (!f.is_chairman && !f.on_leave && !f.blood_group) return null;
   return (
     <View style={styles.badges}>
       {f.is_chairman && (
         <View style={[styles.badge, { backgroundColor: C.infoBg }]}>
           <Feather name="star" size={11} color={C.info} />
-          <Text style={[styles.badgeTxt, { color: C.info, fontFamily: FontFamily.jakartaBold }]}>Chairman</Text>
+          <Text style={[styles.badgeTxt, { color: C.info, fontFamily: FontFamily.jakartaBold }]}>{t.faculty2.chairmanBadge}</Text>
         </View>
       )}
       {f.on_leave && (
         <View style={[styles.badge, { backgroundColor: C.warnBg }]}>
           <Feather name="send" size={11} color={C.warn} />
-          <Text style={[styles.badgeTxt, { color: C.warn, fontFamily: FontFamily.jakartaBold }]}>On leave</Text>
+          <Text style={[styles.badgeTxt, { color: C.warn, fontFamily: FontFamily.jakartaBold }]}>{t.manage.onLeave}</Text>
+        </View>
+      )}
+      {f.blood_group && (
+        <View style={[styles.badge, { backgroundColor: C.dangerBg }]}>
+          <Feather name="droplet" size={11} color={C.danger} />
+          <Text style={[styles.badgeTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>{f.blood_group}</Text>
         </View>
       )}
     </View>
@@ -106,33 +188,109 @@ interface FacultyCardProps {
   saved: boolean;
   onToggleSave: () => void;
   onOpen: () => void;
+  onContact?: () => void;
   C: Colors;
   goldColor: string;
+  isDark?: boolean;
 }
 
-export function FacultyCard({ f, deptName, saved, onToggleSave, onOpen, C, goldColor }: FacultyCardProps) {
+export function FacultyCard({
+  f,
+  deptName,
+  saved,
+  onToggleSave,
+  onOpen,
+  onContact,
+  C,
+  goldColor,
+  isDark = false,
+}: FacultyCardProps) {
+  const t = useT();
   const interests = interestsOf(f);
+  const status = getCounselingStatus(f.counseling_hours, f.on_leave);
+  const location = [f.building, f.room_number ? `Room ${f.room_number}` : null, f.floor ? `(${f.floor})` : null]
+    .filter(Boolean)
+    .join(' · ');
+
   return (
-    <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
+    <TouchableOpacity
+      style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}
+      onPress={onOpen}
+      activeOpacity={0.8}
+    >
       <View style={styles.cardTop}>
-        <TouchableOpacity onPress={onOpen} activeOpacity={0.75}>
+        <View style={styles.avatarWrap}>
           <Avatar uri={f.photo_url} name={f.name} size="md" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.cardBody} onPress={onOpen} activeOpacity={0.75}>
-          <Text style={[styles.cardName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-            {f.name}
-          </Text>
-          <Text style={[styles.cardDesig, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-            {f.designation}
-          </Text>
-          {deptName ? (
-            <Text style={[styles.cardDept, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-              {shortDept(deptName)}
+          {status?.active && (
+            <View style={[styles.activeDot, { backgroundColor: C.success, borderColor: C.surface }]} />
+          )}
+        </View>
+
+        <View style={styles.cardBody}>
+          <View style={styles.titleRow}>
+            <Text style={[styles.cardName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+              {f.name}
             </Text>
+            {f.short_code ? (
+              <View style={[styles.codeBadge, { backgroundColor: `${FACULTY_ACCENT}18` }]}>
+                <Text style={[styles.codeBadgeTxt, { color: FACULTY_ACCENT, fontFamily: FontFamily.jakartaExtraBold }]}>
+                  {f.short_code}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+
+          <Text style={[styles.cardDesig, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+            {f.designation}{deptName ? ` · ${shortDept(deptName)}` : ''}
+          </Text>
+
+          {location.length > 0 ? (
+            <View style={styles.locRow}>
+              <Icon name="pin" size={12} color={C.textMuted} />
+              <Text style={[styles.locTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
+                {location}
+              </Text>
+            </View>
           ) : null}
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.saveBtn} onPress={onToggleSave} activeOpacity={0.75} hitSlop={6}>
-          <Feather name="star" size={19} color={saved ? goldColor : C.textMuted} />
+
+          {status ? (
+            <View
+              style={[
+                styles.statusPill,
+                status.tone === 'success' && { backgroundColor: C.successBg },
+                status.tone === 'warn' && { backgroundColor: C.warnBg },
+                status.tone === 'info' && { backgroundColor: C.infoBg },
+                status.tone === 'muted' && { backgroundColor: C.surface2 },
+              ]}
+            >
+              <View
+                style={[
+                  styles.statusDot,
+                  status.tone === 'success' && { backgroundColor: C.success },
+                  status.tone === 'warn' && { backgroundColor: C.warn },
+                  status.tone === 'info' && { backgroundColor: C.info },
+                  status.tone === 'muted' && { backgroundColor: C.textMuted },
+                ]}
+              />
+              <Text
+                style={[
+                  styles.statusTxt,
+                  status.tone === 'success' && { color: C.success },
+                  status.tone === 'warn' && { color: C.warn },
+                  status.tone === 'info' && { color: C.info },
+                  status.tone === 'muted' && { color: C.textMuted },
+                  { fontFamily: FontFamily.jakartaBold },
+                ]}
+                numberOfLines={1}
+              >
+                {status.label}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+
+        <TouchableOpacity style={styles.saveBtn} onPress={onToggleSave} activeOpacity={0.75} hitSlop={8}>
+          <Feather name="star" size={18} color={saved ? goldColor : C.textMuted} />
         </TouchableOpacity>
       </View>
 
@@ -141,60 +299,167 @@ export function FacultyCard({ f, deptName, saved, onToggleSave, onOpen, C, goldC
       {interests.length > 0 && (
         <View style={styles.pills}>
           {interests.slice(0, 3).map(i => (
-            <View key={i} style={[styles.pill, { backgroundColor: `${FACULTY_ACCENT}1a` }]}>
-              <Text style={[styles.pillTxt, { color: FACULTY_ACCENT, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>{i}</Text>
+            <View key={i} style={[styles.pill, { backgroundColor: `${FACULTY_ACCENT}14` }]}>
+              <Text style={[styles.pillTxt, { color: FACULTY_ACCENT, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                {i}
+              </Text>
             </View>
           ))}
           {interests.length > 3 && (
             <View style={[styles.pill, { backgroundColor: C.surface2 }]}>
-              <Text style={[styles.pillTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>+{interests.length - 3}</Text>
+              <Text style={[styles.pillTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                +{interests.length - 3}
+              </Text>
             </View>
           )}
         </View>
       )}
 
       <View style={[styles.cardFoot, { borderTopColor: C.border }]}>
-        {f.email ? (
-          <TouchableOpacity
-            style={styles.emailLink}
-            onPress={() => openUrl(`mailto:${f.email}`)}
-            activeOpacity={0.7}
-          >
-            <Feather name="mail" size={13} color={C.textMuted} />
-            <Text style={[styles.emailTxt, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>Email</Text>
-          </TouchableOpacity>
-        ) : (
-          <Text style={[styles.emailTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>No email listed</Text>
-        )}
-        <TouchableOpacity
-          style={[styles.profileBtn, { backgroundColor: C.surface2 }]}
-          onPress={onOpen}
-          activeOpacity={0.75}
-        >
-          <Text style={[styles.profileBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Profile</Text>
-          <Feather name="arrow-right" size={13} color={C.text} />
-        </TouchableOpacity>
+        <View style={styles.footActions}>
+          {f.email ? (
+            <TouchableOpacity
+              style={[styles.footActionBtn, { backgroundColor: C.surface2 }]}
+              onPress={() => openUrl(`mailto:${f.email}`)}
+              activeOpacity={0.7}
+            >
+              <Feather name="mail" size={13} color={C.text2} />
+              <Text style={[styles.footActionTxt, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>{t.faculty2.email}</Text>
+            </TouchableOpacity>
+          ) : null}
+
+          {onContact ? (
+            <TouchableOpacity
+              style={[styles.footActionBtn, { backgroundColor: C.surface2 }]}
+              onPress={onContact}
+              activeOpacity={0.7}
+            >
+              <Feather name="phone" size={13} color={C.text2} />
+              <Text style={[styles.footActionTxt, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>{t.faculty2.contact}</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
+
+        <Icon name="chevR" size={16} color={C.textMuted} />
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: 16, borderWidth: 1, padding: 13 } as ViewStyle,
-  cardTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 11 } as ViewStyle,
-  cardBody: { flex: 1, minWidth: 0 } as ViewStyle,
-  cardName: { fontSize: 14.5 } as TextStyle,
-  cardDesig: { fontSize: 12, marginTop: 2 } as TextStyle,
-  cardDept: { fontSize: 11.5, marginTop: 1 } as TextStyle,
-  saveBtn: { padding: 4 } as ViewStyle,
+  card: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 14,
+    marginBottom: 10,
+  } as ViewStyle,
+  cardTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  } as ViewStyle,
+  avatarWrap: {
+    position: 'relative',
+  } as ViewStyle,
+  activeDot: {
+    position: 'absolute',
+    bottom: -1,
+    right: -1,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 2,
+  } as ViewStyle,
+  cardBody: {
+    flex: 1,
+    minWidth: 0,
+  } as ViewStyle,
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+  } as ViewStyle,
+  cardName: {
+    fontSize: 15,
+    flexShrink: 1,
+  } as TextStyle,
+  codeBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  } as ViewStyle,
+  codeBadgeTxt: {
+    fontSize: 10.5,
+    letterSpacing: 0.4,
+  } as TextStyle,
+  cardDesig: {
+    fontSize: 12.5,
+    marginTop: 2,
+  } as TextStyle,
+  locRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 4,
+  } as ViewStyle,
+  locTxt: {
+    fontSize: 11.5,
+  } as TextStyle,
+  statusPill: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    marginTop: 6,
+  } as ViewStyle,
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  } as ViewStyle,
+  statusTxt: {
+    fontSize: 11,
+  } as TextStyle,
+  saveBtn: {
+    padding: 4,
+  } as ViewStyle,
 
-  badges: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 9 } as ViewStyle,
-  badge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 3.5, borderRadius: 999 } as ViewStyle,
-  badgeTxt: { fontSize: 11 } as TextStyle,
+  badges: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 8,
+  } as ViewStyle,
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+  } as ViewStyle,
+  badgeTxt: {
+    fontSize: 11,
+  } as TextStyle,
 
-  pills: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 9 } as ViewStyle,
-  pill: { paddingHorizontal: 9, paddingVertical: 3.5, borderRadius: 999, maxWidth: '100%' } as ViewStyle,
-  pillTxt: { fontSize: 11 } as TextStyle,
+  pills: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 9,
+  } as ViewStyle,
+  pill: {
+    paddingHorizontal: 9,
+    paddingVertical: 3.5,
+    borderRadius: 999,
+    maxWidth: '100%',
+  } as ViewStyle,
+  pillTxt: {
+    fontSize: 11,
+  } as TextStyle,
 
   cardFoot: {
     flexDirection: 'row',
@@ -204,8 +469,20 @@ const styles = StyleSheet.create({
     marginTop: 11,
     paddingTop: 10,
   } as ViewStyle,
-  emailLink: { flexDirection: 'row', alignItems: 'center', gap: 5 } as ViewStyle,
-  emailTxt: { fontSize: 12 } as TextStyle,
-  profileBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10 } as ViewStyle,
-  profileBtnTxt: { fontSize: 12.5 } as TextStyle,
+  footActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  } as ViewStyle,
+  footActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+    borderRadius: 8,
+  } as ViewStyle,
+  footActionTxt: {
+    fontSize: 12,
+  } as TextStyle,
 });

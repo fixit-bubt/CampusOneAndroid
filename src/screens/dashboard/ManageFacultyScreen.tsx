@@ -1,9 +1,11 @@
-// Admin-only. Search the scraped faculty list and patch the fields the scraper
-// can't know: email, phone, designation, research interests, on-leave flag, photo.
+// Admin-only. Manage BUBT faculty directory: 1-tap live website crawler sync,
+// manual overrides for office rooms, building, floor, counseling hours,
+// teacher initial routine codes (DALM, SR), photos, and research flags.
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
-  Modal, Switch, ActivityIndicator, KeyboardAvoidingView, Platform, type ViewStyle, type TextStyle,
+  Modal, Switch, ActivityIndicator, KeyboardAvoidingView, Platform,
+  type ViewStyle, type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,25 +15,44 @@ import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout } from '../../theme';
+import { FontFamily, Layout, Accent, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
-import type { TablesUpdate } from '../../types/supabase';
+import type { TablesUpdate, TablesInsert } from '../../types/supabase';
 import { useAuth } from '../../store/authStore';
 import { uploadFile } from '../../utils/storage';
 import { BUCKETS } from '../../constants/app';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
+import { formatRelativeTime } from '../../utils/format';
 
 interface FacultyRow {
   id: string;
   name: string;
   designation: string;
+  department_id: string;
   email: string | null;
   phone: string | null;
   photo_url: string | null;
+  short_code: string | null;
+  room_number: string | null;
+  building: string | null;
+  floor: string | null;
+  counseling_hours: string | null;
+  blood_group: string | null;
+  is_accepting_research: boolean;
   research_interests: string[] | null;
   on_leave: boolean;
-  departments?: { name: string } | null;
+  departments?: { id: string; name: string } | null;
+}
+
+interface SyncLog {
+  id: string;
+  started_at: string;
+  completed_at: string | null;
+  status: string;
+  total_scanned: number;
+  new_added: number;
+  promotions_updated: number;
 }
 
 const shortDept = (name?: string | null) => (name ?? '').replace(/^Department of\s+/i, '');
@@ -41,36 +62,91 @@ export function ManageFacultyScreen({ navigation }: any) {
   const { profile } = useAuth();
   const t = useT();
   const toast = useToast();
+
   const [list, setList] = useState<FacultyRow[]>([]);
+  const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
   const [query, setQuery] = useState('');
   const [target, setTarget] = useState<FacultyRow | null>(null);
+  const [isNewTeacher, setIsNewTeacher] = useState(false);
 
-  // Edit form
+  // Sync state
+  const [syncing, setSyncing] = useState(false);
+  const [syncModalVisible, setSyncModalVisible] = useState(false);
+  const [lastSyncLog, setLastSyncLog] = useState<SyncLog | null>(null);
+  const [syncResult, setSyncResult] = useState<any>(null);
+
+  // Edit form state
+  const [name, setName] = useState('');
+  const [departmentId, setDepartmentId] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [designation, setDesignation] = useState('');
+  const [shortCode, setShortCode] = useState('');
+  const [building, setBuilding] = useState('');
+  const [roomNumber, setRoomNumber] = useState('');
+  const [floor, setFloor] = useState('');
+  const [counselingHours, setCounselingHours] = useState('');
+  const [bloodGroup, setBloodGroup] = useState('');
   const [interests, setInterests] = useState('');
   const [onLeave, setOnLeave] = useState(false);
+  const [isAcceptingResearch, setIsAcceptingResearch] = useState(true);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
-    const { data } = await supabase
-      .from('faculty')
-      .select('id, name, designation, email, phone, photo_url, research_interests, on_leave, departments(name)')
-      .order('name');
-    if (data) setList(data as any[]);
+    const [facRes, deptRes, logRes] = await Promise.all([
+      supabase
+        .from('faculty')
+        .select('id, name, designation, department_id, email, phone, photo_url, short_code, room_number, building, floor, counseling_hours, blood_group, is_accepting_research, research_interests, on_leave, departments(id, name)')
+        .order('name'),
+      supabase.from('departments').select('id, name').order('name'),
+      supabase.from('faculty_sync_logs').select('*').order('started_at', { ascending: false }).limit(1),
+    ]);
+
+    if (facRes.data) setList(facRes.data as any[]);
+    if (deptRes.data) setDepartments(deptRes.data as any[]);
+    if (logRes.data && logRes.data[0]) setLastSyncLog(logRes.data[0] as unknown as SyncLog);
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   function openEdit(f: FacultyRow) {
+    setIsNewTeacher(false);
     setTarget(f);
+    setName(f.name);
+    setDepartmentId(f.department_id);
     setEmail(f.email ?? '');
     setPhone(f.phone ?? '');
     setDesignation(f.designation ?? '');
+    setShortCode(f.short_code ?? '');
+    setBuilding(f.building ?? '');
+    setRoomNumber(f.room_number ?? '');
+    setFloor(f.floor ?? '');
+    setCounselingHours(f.counseling_hours ?? '');
+    setBloodGroup(f.blood_group ?? '');
     setInterests(Array.isArray(f.research_interests) ? f.research_interests.join(', ') : '');
     setOnLeave(f.on_leave);
+    setIsAcceptingResearch(f.is_accepting_research ?? true);
+    setPhotoUri(null);
+  }
+
+  function openCreate() {
+    setIsNewTeacher(true);
+    setTarget({} as any);
+    setName('');
+    setDepartmentId(departments[0]?.id || '');
+    setEmail('');
+    setPhone('');
+    setDesignation('Lecturer');
+    setShortCode('');
+    setBuilding('Building 2');
+    setRoomNumber('');
+    setFloor('');
+    setCounselingHours('');
+    setBloodGroup('');
+    setInterests('');
+    setOnLeave(false);
+    setIsAcceptingResearch(true);
     setPhotoUri(null);
   }
 
@@ -83,28 +159,76 @@ export function ManageFacultyScreen({ navigation }: any) {
     if (!result.canceled && result.assets[0]) setPhotoUri(result.assets[0].uri);
   }
 
+  async function triggerLiveSync() {
+    setSyncing(true);
+    setSyncResult(null);
+    setSyncModalVisible(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('sync-faculty');
+      if (error) {
+        toast({ type: 'error', title: 'Sync Failed', message: error.message });
+        setSyncResult({ error: error.message });
+      } else {
+        setSyncResult(data);
+        toast({ type: 'success', title: 'Live Sync Finished', message: `Scanned ${data?.total_scanned || 0} profiles` });
+        await load();
+      }
+    } catch (err: any) {
+      toast({ type: 'error', title: 'Sync Error', message: err.message });
+      setSyncResult({ error: err.message });
+    } finally {
+      setSyncing(false);
+    }
+  }
+
   async function save() {
-    if (!target || saving) return;
+    if (saving) return;
+    if (!name.trim()) {
+      toast({ type: 'error', title: 'Please provide teacher name' });
+      return;
+    }
     setSaving(true);
     try {
       let photoUrl: string | undefined;
+      const targetId = isNewTeacher ? `new_${Date.now()}` : target?.id;
+
       if (photoUri) {
-        const up = await uploadFile(BUCKETS.photos, photoUri, `faculty/${target.id}/${Date.now()}.jpg`, 'image/jpeg', true, { preset: 'avatar' });
+        const up = await uploadFile(BUCKETS.photos, photoUri, `faculty/${targetId}/${Date.now()}.jpg`, 'image/jpeg', true, { preset: 'avatar' });
         if (!up.success) { toast({ type: 'error', title: t.common.error, message: up.error }); return; }
         photoUrl = up.url;
       }
-      const payload: TablesUpdate<'faculty'> = {
+
+      const payload: any = {
+        name: name.trim(),
+        department_id: departmentId || target?.department_id,
         email: email.trim() || null,
         phone: phone.trim() || null,
-        designation: designation.trim() || target.designation,
+        designation: designation.trim() || 'Lecturer',
+        short_code: shortCode.trim().toUpperCase() || null,
+        building: building.trim() || null,
+        room_number: roomNumber.trim() || null,
+        floor: floor.trim() || null,
+        counseling_hours: counselingHours.trim() || null,
+        blood_group: bloodGroup.trim().toUpperCase() || null,
+        is_accepting_research: isAcceptingResearch,
         research_interests: interests.trim()
           ? interests.split(',').map(s => s.trim()).filter(Boolean)
           : [],
         on_leave: onLeave,
       };
+
       if (photoUrl) payload.photo_url = photoUrl;
-      const { error } = await supabase.from('faculty').update(payload).eq('id', target.id);
-      if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
+
+      if (isNewTeacher) {
+        const { error } = await supabase.from('faculty').insert(payload);
+        if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
+        toast({ type: 'success', title: 'Teacher Added', message: `${name} added to directory` });
+      } else if (target) {
+        const { error } = await supabase.from('faculty').update(payload).eq('id', target.id);
+        if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
+        toast({ type: 'success', title: 'Changes Saved', message: `${name} updated` });
+      }
+
       setTarget(null);
       await load();
     } finally {
@@ -125,98 +249,278 @@ export function ManageFacultyScreen({ navigation }: any) {
 
   const q = query.trim().toLowerCase();
   const filtered = q
-    ? list.filter(f => [f.name, f.designation, f.departments?.name].filter(Boolean).join(' ').toLowerCase().includes(q))
+    ? list.filter(f =>
+        [f.name, f.short_code, f.designation, f.departments?.name, f.room_number]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase()
+          .includes(q))
     : list;
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-      <SubBar title={t.manage.manageFaculty} onBack={() => navigation.goBack()} />
-
-      <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 8 }}>
-        <View style={[styles.searchBar, { backgroundColor: C.surface2 }]}>
-          <Icon name="search" size={17} color={C.textMuted} />
-          <TextInput
-            style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
-            placeholder={t.manage.facultySearchPlaceholder}
-            placeholderTextColor={C.textMuted}
-            value={query}
-            onChangeText={setQuery}
-          />
-        </View>
-      </View>
+      <SubBar
+        title={t.manage.manageFaculty}
+        onBack={() => navigation.goBack()}
+        rightSlot={
+          <TouchableOpacity
+            style={[styles.addBtn, { backgroundColor: SectorColors.faculty }]}
+            onPress={openCreate}
+            activeOpacity={0.8}
+          >
+            <Feather name="plus" size={14} color="#fff" />
+            <Text style={[styles.addBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>Add</Text>
+          </TouchableOpacity>
+        }
+      />
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
       >
+        {/* Live Website Automated Sync Card */}
+        <View style={[styles.syncCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+          <View style={styles.syncCardTop}>
+            <View style={[styles.syncIconWrap, { backgroundColor: `${SectorColors.faculty}14` }]}>
+              <Feather name="refresh-cw" size={18} color={SectorColors.faculty} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.syncTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                {t.manage.bubtLiveSyncTitle}
+              </Text>
+              <Text style={[styles.syncSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+                {lastSyncLog
+                  ? `Last crawl: ${formatRelativeTime(lastSyncLog.started_at)} · Scanned ${lastSyncLog.total_scanned} profiles`
+                  : 'Automated crawler for all 13 BUBT departments'}
+              </Text>
+            </View>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.syncActionBtn, { backgroundColor: SectorColors.faculty }]}
+            onPress={triggerLiveSync}
+            disabled={syncing}
+            activeOpacity={0.85}
+          >
+            {syncing ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <>
+                <Feather name="globe" size={15} color="#fff" />
+                <Text style={[styles.syncActionTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                  {t.manage.syncNowBtn}
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {/* Search */}
+        <View style={[styles.searchBar, { backgroundColor: C.surface2, marginTop: 12, marginBottom: 12 }]}>
+          <Icon name="search" size={17} color={C.textMuted} />
+          <TextInput
+            style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
+            placeholder={t.faculty2.searchPlaceholderExpanded}
+            placeholderTextColor={C.textMuted}
+            value={query}
+            onChangeText={setQuery}
+          />
+          {query.length > 0 && (
+            <TouchableOpacity onPress={() => setQuery('')} hitSlop={8}>
+              <Feather name="x" size={16} color={C.textMuted} />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        <Text style={[styles.listMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+          {filtered.length} TEACHER{filtered.length === 1 ? '' : 'S'}
+        </Text>
+
         <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
           {filtered.slice(0, 80).map((f, i) => (
             <View key={f.id}>
               {i > 0 && <View style={[styles.divider, { backgroundColor: C.border }]} />}
-              <View style={styles.row}>
+              <TouchableOpacity
+                style={styles.row}
+                onPress={() => openEdit(f)}
+                activeOpacity={0.7}
+              >
                 <Avatar uri={f.photo_url} name={f.name} size="sm" />
                 <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={[styles.name, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                    {f.name}
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Text style={[styles.name, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                      {f.name}
+                    </Text>
+                    {f.short_code ? (
+                      <View style={[styles.shortBadge, { backgroundColor: C.surface2 }]}>
+                        <Text style={[styles.shortBadgeTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
+                          {f.short_code}
+                        </Text>
+                      </View>
+                    ) : null}
+                  </View>
                   <Text style={[styles.meta, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
                     {f.designation} · {shortDept(f.departments?.name)}
+                    {f.room_number ? ` · Rm ${f.room_number}` : ''}
                   </Text>
                 </View>
+
                 {!f.photo_url && (
                   <View style={[styles.noPhoto, { backgroundColor: C.warnBg }]}>
-                    <Text style={[styles.noPhotoTxt, { color: C.warn, fontFamily: FontFamily.jakartaBold }]}>{t.manage.noPhoto}</Text>
+                    <Text style={[styles.noPhotoTxt, { color: C.warn, fontFamily: FontFamily.jakartaBold }]}>No photo</Text>
                   </View>
                 )}
-                <TouchableOpacity onPress={() => openEdit(f)} hitSlop={8} activeOpacity={0.7}>
-                  <Feather name="edit-2" size={16} color={C.text2} />
-                </TouchableOpacity>
-              </View>
+                <Feather name="edit-2" size={15} color={C.text2} />
+              </TouchableOpacity>
             </View>
           ))}
         </View>
-        <View style={{ height: 16 }} />
+        <View style={{ height: 28 }} />
       </ScrollView>
 
-      {/* Edit sheet */}
+      {/* Sync Status Modal */}
+      <Modal visible={syncModalVisible} transparent animationType="fade" onRequestClose={() => setSyncModalVisible(false)}>
+        <View style={styles.syncOverlay}>
+          <View style={[styles.syncReportCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <View style={[styles.syncIconBig, { backgroundColor: `${SectorColors.faculty}15` }]}>
+              {syncing ? (
+                <ActivityIndicator color={SectorColors.faculty} size="large" />
+              ) : syncResult?.error ? (
+                <Feather name="alert-triangle" size={28} color={C.danger} />
+              ) : (
+                <Feather name="check-circle" size={28} color={C.success} />
+              )}
+            </View>
+
+            <Text style={[styles.syncReportTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              {syncing ? t.manage.crawlingTitle : syncResult?.error ? t.manage.syncFailed : t.manage.syncCompleted}
+            </Text>
+
+            <Text style={[styles.syncReportDesc, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+              {syncing
+                ? t.manage.crawlingDesc
+                : syncResult?.error
+                ? syncResult.error
+                : `Successfully scanned ${syncResult?.total_scanned || 0} profiles.\n` +
+                  `• ${syncResult?.new_added || 0} new teachers added\n` +
+                  `• ${syncResult?.promotions_updated || 0} rank promotions updated\n` +
+                  `• ${syncResult?.photos_updated || 0} photos refreshed\n` +
+                  `Duration: ${((syncResult?.duration_ms || 0) / 1000).toFixed(1)}s`}
+            </Text>
+
+            {!syncing && (
+              <TouchableOpacity
+                style={[styles.closeReportBtn, { backgroundColor: C.surface2 }]}
+                onPress={() => setSyncModalVisible(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.closeReportTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  Done
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Edit & Create Sheet */}
       <Modal visible={!!target} transparent animationType="slide" onRequestClose={() => setTarget(null)}>
-        <KeyboardAvoidingView style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' }} behavior="padding">
+        <KeyboardAvoidingView style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }} behavior="padding">
           <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setTarget(null)} />
           <View style={[styles.sheet, { backgroundColor: C.surface }]}>
+            <View style={[styles.sheetHandle, { backgroundColor: C.border }]} />
             <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
               <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-                {target?.name}
+                {isNewTeacher ? t.manage.addFacultyMember : name || target?.name}
               </Text>
 
               <TouchableOpacity style={styles.photoRow} onPress={pickPhoto} activeOpacity={0.75}>
-                <Avatar uri={photoUri ?? target?.photo_url} name={target?.name} size="lg" />
+                <Avatar uri={photoUri ?? target?.photo_url} name={name || target?.name} size="lg" />
                 <Text style={[styles.photoHint, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
                   {photoUri ? t.manage.photoSelected : t.manage.changePhoto}
                 </Text>
               </TouchableOpacity>
 
+              <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>FULL NAME</Text>
+              <TextInput
+                style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                value={name} onChangeText={setName} placeholder="Prof. Dr. / Md. ..." placeholderTextColor={C.textMuted}
+              />
+
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>ROUTINE INITIAL</Text>
+                  <TextInput
+                    style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                    value={shortCode} onChangeText={setShortCode} placeholder="DALM / SR" placeholderTextColor={C.textMuted}
+                    autoCapitalize="characters"
+                  />
+                </View>
+
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>BLOOD GROUP</Text>
+                  <TextInput
+                    style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                    value={bloodGroup} onChangeText={setBloodGroup} placeholder="A+ / B+ / AB+" placeholderTextColor={C.textMuted}
+                    autoCapitalize="characters"
+                  />
+                </View>
+              </View>
+
+              <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>DESIGNATION</Text>
+              <TextInput
+                style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                value={designation} onChangeText={setDesignation} placeholder="Assistant Professor / Lecturer" placeholderTextColor={C.textMuted}
+              />
+
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>CAMPUS BUILDING</Text>
+                  <TextInput
+                    style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                    value={building} onChangeText={setBuilding} placeholder="Building 2" placeholderTextColor={C.textMuted}
+                  />
+                </View>
+
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>ROOM NUMBER</Text>
+                  <TextInput
+                    style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                    value={roomNumber} onChangeText={setRoomNumber} placeholder="405" placeholderTextColor={C.textMuted}
+                  />
+                </View>
+              </View>
+
+              <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>COUNSELING HOURS (CH/TuH)</Text>
+              <TextInput
+                style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                value={counselingHours} onChangeText={setCounselingHours} placeholder="Sun & Tue: 11:30 AM - 1:00 PM" placeholderTextColor={C.textMuted}
+              />
+
               <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.emailLabel}</Text>
               <TextInput
                 style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                value={email} onChangeText={setEmail} placeholder={t.manage.emailUniversityPlaceholder} placeholderTextColor={C.textMuted}
+                value={email} onChangeText={setEmail} placeholder="teacher@bubt.edu.bd" placeholderTextColor={C.textMuted}
                 autoCapitalize="none" keyboardType="email-address"
               />
+
               <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.phoneLabel}</Text>
               <TextInput
                 style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                 value={phone} onChangeText={setPhone} placeholder="+8801..." placeholderTextColor={C.textMuted}
                 keyboardType="phone-pad"
               />
-              <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.designationLabel}</Text>
-              <TextInput
-                style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                value={designation} onChangeText={setDesignation} placeholder={t.manage.designationPlaceholder} placeholderTextColor={C.textMuted}
-              />
+
               <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.researchInterestsLabel}</Text>
               <TextInput
                 style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                value={interests} onChangeText={setInterests} placeholder={t.manage.researchInterestsPlaceholder} placeholderTextColor={C.textMuted}
+                value={interests} onChangeText={setInterests} placeholder="AI, Machine Learning, IoT..." placeholderTextColor={C.textMuted}
               />
+
+              <View style={styles.toggleRow}>
+                <Text style={[styles.toggleLbl, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>Accepting Paper Mentorship</Text>
+                <Switch value={isAcceptingResearch} onValueChange={setIsAcceptingResearch} trackColor={{ true: SectorColors.faculty }} />
+              </View>
 
               <View style={styles.toggleRow}>
                 <Text style={[styles.toggleLbl, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>{t.manage.onLeave}</Text>
@@ -224,16 +528,16 @@ export function ManageFacultyScreen({ navigation }: any) {
               </View>
 
               <TouchableOpacity
-                style={[styles.saveBtn, { backgroundColor: C.brand, opacity: saving ? 0.6 : 1 }]}
+                style={[styles.saveBtn, { backgroundColor: SectorColors.faculty, opacity: saving ? 0.6 : 1 }]}
                 onPress={save}
                 disabled={saving}
                 activeOpacity={0.8}
               >
                 {saving
-                  ? <ActivityIndicator color={C.white} size="small" />
-                  : <Text style={[styles.saveTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>{t.manage.saveChanges}</Text>}
+                  ? <ActivityIndicator color="#fff" size="small" />
+                  : <Text style={[styles.saveTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>{isNewTeacher ? 'Create Faculty Member' : t.manage.saveChanges}</Text>}
               </TouchableOpacity>
-              <View style={{ height: 8 }} />
+              <View style={{ height: 20 }} />
             </ScrollView>
           </View>
         </KeyboardAvoidingView>
@@ -245,35 +549,119 @@ export function ManageFacultyScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
-  scroll: { paddingTop: 10, paddingBottom: 20 } as ViewStyle,
+  scroll: { paddingTop: 8, paddingBottom: 24 } as ViewStyle,
+
+  addBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+    borderRadius: 8,
+  } as ViewStyle,
+  addBtnTxt: { fontSize: 12.5 } as TextStyle,
+
+  syncCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 14,
+  } as ViewStyle,
+  syncCardTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    marginBottom: 12,
+  } as ViewStyle,
+  syncIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  syncTitle: { fontSize: 14.5 } as TextStyle,
+  syncSub: { fontSize: 12, marginTop: 2 } as TextStyle,
+  syncActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    height: 42,
+    borderRadius: 11,
+  } as ViewStyle,
+  syncActionTxt: { fontSize: 13 } as TextStyle,
 
   searchBar: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 14, borderRadius: 14 } as ViewStyle,
-  searchInput: { flex: 1, fontSize: 15, paddingVertical: 11 } as TextStyle,
+  searchInput: { flex: 1, fontSize: 14.5, paddingVertical: 11 } as TextStyle,
+
+  listMeta: { fontSize: 11, letterSpacing: 0.8, marginBottom: 8 } as TextStyle,
 
   card: { borderRadius: 16, borderWidth: 1, overflow: 'hidden' } as ViewStyle,
   divider: { height: StyleSheet.hairlineWidth } as ViewStyle,
   row: { flexDirection: 'row', alignItems: 'center', gap: 11, padding: 12, paddingHorizontal: 14 } as ViewStyle,
   name: { fontSize: 14 } as TextStyle,
+  shortBadge: { paddingHorizontal: 5, paddingVertical: 1.5, borderRadius: 5 } as ViewStyle,
+  shortBadgeTxt: { fontSize: 10 } as TextStyle,
   meta: { fontSize: 11.5, marginTop: 2 } as TextStyle,
   noPhoto: { paddingHorizontal: 7, paddingVertical: 3, borderRadius: 999, marginRight: 4 } as ViewStyle,
   noPhotoTxt: { fontSize: 9.5 } as TextStyle,
 
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' } as ViewStyle,
   sheet: {
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: Layout.screenPadding,
-    paddingTop: 20,
+    paddingTop: 12,
     paddingBottom: 30,
-    maxHeight: '85%',
+    maxHeight: '90%',
   } as ViewStyle,
-  sheetTitle: { fontSize: 17, marginBottom: 10 } as TextStyle,
-  photoRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 6 } as ViewStyle,
+  sheetHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 16,
+  } as ViewStyle,
+  sheetTitle: { fontSize: 17, marginBottom: 12 } as TextStyle,
+  photoRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 10 } as ViewStyle,
   photoHint: { fontSize: 13 } as TextStyle,
-  fieldLabel: { fontSize: 11, letterSpacing: 0.7, marginTop: 12, marginBottom: 6 } as TextStyle,
-  field: { height: 46, borderRadius: 12, borderWidth: 1, paddingHorizontal: 13, fontSize: 14 } as TextStyle,
-  toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 16 } as ViewStyle,
-  toggleLbl: { fontSize: 14 } as TextStyle,
-  saveBtn: { height: 50, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginTop: 18 } as ViewStyle,
-  saveTxt: { fontSize: 15 } as TextStyle,
+  fieldLabel: { fontSize: 10.5, letterSpacing: 0.7, marginTop: 11, marginBottom: 5 } as TextStyle,
+  field: { height: 44, borderRadius: 12, borderWidth: 1, paddingHorizontal: 13, fontSize: 13.5 } as TextStyle,
+  toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 } as ViewStyle,
+  toggleLbl: { fontSize: 13.5 } as TextStyle,
+  saveBtn: { height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginTop: 18 } as ViewStyle,
+  saveTxt: { fontSize: 14.5 } as TextStyle,
+
+  syncOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  } as ViewStyle,
+  syncReportCard: {
+    width: '100%',
+    maxWidth: 340,
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 24,
+    alignItems: 'center',
+  } as ViewStyle,
+  syncIconBig: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+  } as ViewStyle,
+  syncReportTitle: { fontSize: 17, textAlign: 'center' } as TextStyle,
+  syncReportDesc: { fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 8, marginBottom: 18 } as TextStyle,
+  closeReportBtn: {
+    width: '100%',
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  closeReportTxt: { fontSize: 14 } as TextStyle,
 });

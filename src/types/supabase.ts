@@ -1278,6 +1278,14 @@ export type Database = {
           scholar_url: string | null
           updated_at: string
           website_url: string | null
+          short_code: string | null
+          room_number: string | null
+          building: string | null
+          floor: string | null
+          counseling_hours: string | null
+          blood_group: string | null
+          scopus_url: string | null
+          is_accepting_research: boolean
         }
         Insert: {
           created_at?: string
@@ -1301,6 +1309,14 @@ export type Database = {
           scholar_url?: string | null
           updated_at?: string
           website_url?: string | null
+          short_code?: string | null
+          room_number?: string | null
+          building?: string | null
+          floor?: string | null
+          counseling_hours?: string | null
+          blood_group?: string | null
+          scopus_url?: string | null
+          is_accepting_research?: boolean
         }
         Update: {
           created_at?: string
@@ -1324,6 +1340,14 @@ export type Database = {
           scholar_url?: string | null
           updated_at?: string
           website_url?: string | null
+          short_code?: string | null
+          room_number?: string | null
+          building?: string | null
+          floor?: string | null
+          counseling_hours?: string | null
+          blood_group?: string | null
+          scopus_url?: string | null
+          is_accepting_research?: boolean
         }
         Relationships: [
           {
@@ -1377,6 +1401,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      faculty_sync_logs: {
+        Row: {
+          id: string
+          triggered_by: string
+          status: string
+          total_scanned: number
+          new_added: number
+          promotions_updated: number
+          photos_updated: number
+          details: Json | null
+          error_message: string | null
+          duration_ms: number | null
+          started_at: string
+          completed_at: string | null
+        }
+        Insert: {
+          id?: string
+          triggered_by?: string
+          status?: string
+          total_scanned?: number
+          new_added?: number
+          promotions_updated?: number
+          photos_updated?: number
+          details?: Json | null
+          error_message?: string | null
+          duration_ms?: number | null
+          started_at?: string
+          completed_at?: string | null
+        }
+        Update: {
+          id?: string
+          triggered_by?: string
+          status?: string
+          total_scanned?: number
+          new_added?: number
+          promotions_updated?: number
+          photos_updated?: number
+          details?: Json | null
+          error_message?: string | null
+          duration_ms?: number | null
+          started_at?: string
+          completed_at?: string | null
+        }
+        Relationships: []
       }
       job_applications: {
         Row: {

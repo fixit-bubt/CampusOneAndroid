@@ -1,9 +1,9 @@
 // Faculty - one department's roster.
 // Header: branch icon tile, dept name, branch · count, chair line.
 // Search appears when the roster is bigger than 6. Chairman sorts first.
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import {
-  View, Text, TextInput, ScrollView, StyleSheet,
+  View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
   RefreshControl, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
@@ -14,6 +14,7 @@ import { useT } from '../../i18n';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { useToast } from '../../components/ui/Toast';
+import { ContactSheet } from '../../components/ui/ContactSheet';
 import { FontFamily, Layout, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
@@ -23,7 +24,7 @@ import {
 } from './facultyShared';
 
 export function FacultyDeptScreen({ route, navigation }: any) {
-  const { C } = useTheme();
+  const { C, isDark } = useTheme();
   const t = useT();
   const toast = useToast();
   const { user } = useAuth();
@@ -33,12 +34,13 @@ export function FacultyDeptScreen({ route, navigation }: any) {
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [query, setQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [contactTeacher, setContactTeacher] = useState<FacultyMember | null>(null);
 
   const load = useCallback(async () => {
     const [deptRes, facRes, savedRes] = await Promise.all([
-      supabase.from('departments').select('id, name, branch, chairman').eq('id', deptId).single(),
+      supabase.from('departments').select('id, name, branch, dept_number, chairman').eq('id', deptId).single(),
       supabase.from('faculty')
-        .select('id, department_id, name, designation, email, research_interests, on_leave, is_chairman, photo_url')
+        .select('id, department_id, name, designation, email, phone, short_code, room_number, building, floor, counseling_hours, blood_group, scopus_url, is_accepting_research, research_interests, on_leave, is_chairman, photo_url')
         .eq('department_id', deptId),
       supabase.from('faculty_bookmarks').select('faculty_id').eq('user_id', user?.id ?? ''),
     ]);
@@ -75,7 +77,9 @@ export function FacultyDeptScreen({ route, navigation }: any) {
   const list = q
     ? roster.filter(f =>
         f.name.toLowerCase().includes(q) ||
+        (f.short_code && f.short_code.toLowerCase().includes(q)) ||
         f.designation.toLowerCase().includes(q) ||
+        (f.room_number && f.room_number.toLowerCase().includes(q)) ||
         interestsOf(f).some(i => i.toLowerCase().includes(q)))
     : roster;
 
@@ -93,7 +97,7 @@ export function FacultyDeptScreen({ route, navigation }: any) {
         {/* Dept header */}
         {dept && (
           <View style={styles.header}>
-            <View style={[styles.tile, { backgroundColor: `${FACULTY_ACCENT}1a` }]}>
+            <View style={[styles.tile, { backgroundColor: `${FACULTY_ACCENT}14` }]}>
               <Feather name={BRANCH_ICON[dept.branch] ?? 'book-open'} size={22} color={FACULTY_ACCENT} />
             </View>
             <View style={{ flex: 1, minWidth: 0 }}>
@@ -101,7 +105,7 @@ export function FacultyDeptScreen({ route, navigation }: any) {
                 {shortDept(dept.name)}
               </Text>
               <Text style={[styles.deptMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                {dept.branch} · {t.faculty2.teacherCount(roster.length)}
+                {dept.branch} · {roster.length} teacher{roster.length === 1 ? '' : 's'}
               </Text>
               {dept.chairman ? (
                 <Text style={[styles.chair, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
@@ -112,17 +116,22 @@ export function FacultyDeptScreen({ route, navigation }: any) {
           </View>
         )}
 
-        {/* Search (only worth showing for bigger rosters) */}
-        {roster.length > 6 && (
+        {/* Search */}
+        {roster.length > 4 && (
           <View style={[styles.searchBar, { backgroundColor: C.surface2 }]}>
             <Icon name="search" size={17} color={C.textMuted} />
             <TextInput
               style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
-              placeholder={t.faculty2.searchInDept(shortDept(dept?.name) || t.faculty2.departmentLower)}
+              placeholder={t.faculty2.searchInDept(shortDept(dept?.name) || t.faculty2.departmentFallback)}
               placeholderTextColor={C.textMuted}
               value={query}
               onChangeText={setQuery}
             />
+            {query.length > 0 && (
+              <TouchableOpacity onPress={() => setQuery('')} hitSlop={8}>
+                <Feather name="x" size={16} color={C.textMuted} />
+              </TouchableOpacity>
+            )}
           </View>
         )}
 
@@ -130,7 +139,7 @@ export function FacultyDeptScreen({ route, navigation }: any) {
           <View style={styles.empty}>
             <Feather name="search" size={28} color={C.textMuted} />
             <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-              No teachers found
+              {t.faculty2.noTeachersFound}
             </Text>
           </View>
         ) : (
@@ -142,15 +151,32 @@ export function FacultyDeptScreen({ route, navigation }: any) {
                 saved={savedIds.has(f.id)}
                 onToggleSave={() => toggleSave(f.id)}
                 onOpen={() => navigation.navigate('FacultyProfile', { facultyId: f.id })}
+                onContact={() => setContactTeacher(f)}
                 C={C}
                 goldColor={Accent.gold}
+                isDark={isDark}
               />
             ))}
           </View>
         )}
 
-        <View style={{ height: 16 }} />
+        <View style={{ height: 24 }} />
       </ScrollView>
+
+      {/* Institutional Contact Sheet */}
+      {contactTeacher && (
+        <ContactSheet
+          visible={!!contactTeacher}
+          name={contactTeacher.name}
+          title={contactTeacher.designation}
+          roleSubtitle={dept?.name}
+          avatarUri={contactTeacher.photo_url}
+          phone={contactTeacher.phone}
+          email={contactTeacher.email}
+          whatsAppMessage={`Hello ${contactTeacher.name}, I am a student of BUBT contacting you regarding academic consultation.`}
+          onClose={() => setContactTeacher(null)}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -165,8 +191,15 @@ const styles = StyleSheet.create({
   deptMeta: { fontSize: 12, marginTop: 2 } as TextStyle,
   chair: { fontSize: 12.5, marginTop: 4 } as TextStyle,
 
-  searchBar: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 14, borderRadius: 14, marginBottom: 12 } as ViewStyle,
-  searchInput: { flex: 1, fontSize: 15, paddingVertical: 13 } as TextStyle,
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+    marginBottom: 12,
+  } as ViewStyle,
+  searchInput: { flex: 1, fontSize: 14.5, paddingVertical: 12 } as TextStyle,
 
   list: { gap: 10 } as ViewStyle,
   empty: { alignItems: 'center', paddingTop: 50, gap: 8 } as ViewStyle,
