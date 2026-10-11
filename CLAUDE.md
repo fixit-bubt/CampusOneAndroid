@@ -444,6 +444,14 @@ The mobile and web applications are actively pitched and presented to BUBT admin
   - Enforces WHO blood donation recovery intervals: 90 days for males and 120 days for females (`scheduleRechargedReminder` in `src/utils/bloodReminder.ts` taking user's `gender`).
 - **Direct WhatsApp Coordination:**
   - `ContactSheet.tsx` supports optional `whatsAppMessage` prop, routing pre-composed emergency details (`Assalamu Alaikum, I saw your urgent blood request on CampusOne for [Blood Group] at [Hospital]...`) directly into WhatsApp chat.
+- **In-App Direct Messaging & Privacy Protection:**
+  - Integrated `inAppChatAction` into `ContactSheet.tsx` across all blood contact touchpoints:
+    1. Requesters can message pledged responders in `BloodRequestDetailScreen.tsx` via `openBloodDmThread(code, donorId)`.
+    2. Pledged donors can message the requester in `BloodScreen.tsx` via `openBloodDmThread(code, requesterId)`.
+    3. Students in urgent need can message registered donors directly from the donor catalog in `BloodScreen.tsx` via `openDonorDmThread(donorUserId)`.
+  - Backed by SECURITY DEFINER RPC `open_dm_thread(p_code, p_context_type, p_target)` granting 90-day DM access in `public.dm_grants` (`context_type in ('blood', 'donor')`).
+  - Pre-fills the `MessageThread` composer with relevant emergency details (blood group, patient name, hospital).
+  - Enables privacy-preserving coordination for donors who withheld their WhatsApp/phone numbers from the public registry.
 
 ---
 

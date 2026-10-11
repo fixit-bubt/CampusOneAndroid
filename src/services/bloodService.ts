@@ -182,3 +182,40 @@ export async function markRequestFulfilled(requestId: string): Promise<ServiceRe
   if (!data || data.length === 0) return { ok: false, error: 'Not allowed to update this request.' };
   return { ok: true, data: null };
 }
+
+/**
+ * Grants 90-day direct messaging access between blood requester and pledged donor
+ * via the database's `open_dm_thread` RPC.
+ */
+export async function openBloodDmThread(code: string, targetUserId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { data, error } = await supabase.rpc('open_dm_thread', {
+      p_context_type: 'blood',
+      p_code: code,
+      p_target: targetUserId,
+    });
+    if (error) return { success: false, error: error.message };
+    return { success: !!data };
+  } catch (e: any) {
+    return { success: false, error: e?.message ?? 'Failed to open message thread' };
+  }
+}
+
+/**
+ * Grants 90-day direct messaging access to an eligible blood donor from the directory
+ * via the database's `open_dm_thread` RPC.
+ */
+export async function openDonorDmThread(targetUserId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { data, error } = await supabase.rpc('open_dm_thread', {
+      p_context_type: 'donor',
+      p_code: targetUserId,
+      p_target: targetUserId,
+    });
+    if (error) return { success: false, error: error.message };
+    return { success: !!data };
+  } catch (e: any) {
+    return { success: false, error: e?.message ?? 'Failed to open message thread' };
+  }
+}
+

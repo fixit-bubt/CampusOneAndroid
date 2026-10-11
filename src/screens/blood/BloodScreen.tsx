@@ -28,7 +28,8 @@ import { scheduleRechargedReminder } from '../../utils/bloodReminder';
 import { localToday, formatRelativeTime } from '../../utils/format';
 import {
   getBloodFeed, pledgeToRequest, markDonatedToday as markDonated,
-  getDonorContact, getRequesterContact, type DonorWithName,
+  getDonorContact, getRequesterContact, openBloodDmThread, openDonorDmThread,
+  type DonorWithName,
 } from '../../services/bloodService';
 import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 import { ContactSheet } from '../../components/ui/ContactSheet';
@@ -172,7 +173,13 @@ export function BloodScreen({ route, navigation }: any) {
   const [respondedIds, setRespondedIds] = useState<Set<string>>(new Set());
   const [busyId, setBusyId] = useState<string | null>(null);
   const [loadState, setLoadState] = useState<'loading' | 'error' | 'ready'>('loading');
-  const [contactTarget, setContactTarget] = useState<{ name: string; phone: string; title?: string; message?: string } | null>(null);
+  const [contactTarget, setContactTarget] = useState<{
+    name: string;
+    phone?: string | null;
+    title?: string;
+    message?: string;
+    inAppChatAction?: () => void;
+  } | null>(null);
   const [isOffline, setIsOffline] = useState(false);
 
   const areaCounts = useMemo(() => {
@@ -273,16 +280,39 @@ export function BloodScreen({ route, navigation }: any) {
         toast({ type: 'error', title: t.common.error, message: t.blood2.revealContactError });
         return;
       }
-      if (!res.data?.whatsapp) {
-        toast({ type: 'info', title: t.blood2.notAvailable, message: t.blood2.notShared });
+      const donorDisplayName = res.data?.name ?? donorName ?? t.blood2.contact;
+      const phoneNum = res.data?.whatsapp ?? null;
+      if (!phoneNum && donorUserId === user.id) {
+        toast({ type: 'info', title: 'Self Profile', message: 'This is your own donor profile.' });
         return;
       }
       const prefill = `Salam, I found your profile on the CampusOne Blood Registry (${donorName || 'Donor'}). Are you currently available to donate?`;
+
+      const handleInAppChat = async () => {
+        if (donorUserId === user.id) return;
+        try {
+          const dmRes = await openDonorDmThread(donorUserId);
+          if (!dmRes.success) {
+            toast({ type: 'error', title: t.common.error, message: dmRes.error ?? 'Could not start conversation' });
+            return;
+          }
+          navigation.navigate('MessageThread', {
+            kind: 'dm',
+            id: donorUserId,
+            title: donorDisplayName,
+            initialText: prefill,
+          });
+        } catch (e: any) {
+          toast({ type: 'error', title: t.common.error, message: e?.message ?? 'Failed to open message thread' });
+        }
+      };
+
       setContactTarget({
-        name: res.data.name ?? donorName ?? t.blood2.contact,
-        phone: res.data.whatsapp,
+        name: donorDisplayName,
+        phone: phoneNum,
         title: t.blood2.donorsTab,
         message: prefill,
+        inAppChatAction: donorUserId !== user.id ? handleInAppChat : undefined,
       });
     } finally {
       setBusyId(null);
@@ -307,17 +337,36 @@ export function BloodScreen({ route, navigation }: any) {
         toast({ type: 'error', title: t.common.error, message: t.blood2.revealContactError });
         return;
       }
-      if (!res.data?.whatsapp) {
-        toast({ type: 'info', title: t.blood2.notAvailable, message: t.blood2.contactDonorsOnly });
-        return;
-      }
+      const requesterDisplayName = res.data?.name ?? r.patient ?? t.blood2.requester;
+      const phoneNum = res.data?.whatsapp ?? null;
       const cleanPatient = (r.patient ?? 'patient').replace(/\[Platelets\]/g, '').trim();
       const prefill = `Salam, I saw your CampusOne blood request for ${cleanPatient} at ${r.hospital || 'the hospital'}. I am an ${r.blood_group} donor and ready to help. Where can I meet you?`;
+
+      const handleInAppChat = async () => {
+        if (!r.requester_id || r.requester_id === user.id) return;
+        try {
+          const dmRes = await openBloodDmThread(r.code, r.requester_id);
+          if (!dmRes.success) {
+            toast({ type: 'error', title: t.common.error, message: dmRes.error ?? 'Could not start conversation' });
+            return;
+          }
+          navigation.navigate('MessageThread', {
+            kind: 'dm',
+            id: r.requester_id,
+            title: requesterDisplayName,
+            initialText: prefill,
+          });
+        } catch (e: any) {
+          toast({ type: 'error', title: t.common.error, message: e?.message ?? 'Failed to open message thread' });
+        }
+      };
+
       setContactTarget({
-        name: res.data.name ?? r.patient ?? t.blood2.requester,
-        phone: res.data.whatsapp,
+        name: requesterDisplayName,
+        phone: phoneNum,
         title: `${r.blood_group} · ${r.patient}`,
         message: prefill,
+        inAppChatAction: r.requester_id && r.requester_id !== user.id ? handleInAppChat : undefined,
       });
     } finally {
       setBusyId(null);
@@ -1313,6 +1362,7 @@ export function BloodScreen({ route, navigation }: any) {
         name={contactTarget?.name ?? ''}
         phone={contactTarget?.phone}
         whatsAppMessage={contactTarget?.message}
+        inAppChatAction={contactTarget?.inAppChatAction}
       />
       <AreaPickerModal
         visible={areaModalVisible}

@@ -26,7 +26,7 @@ import {
 import { formatRelativeTime } from '../../utils/format';
 import {
   getRequest, getResponders, confirmDonation, markRequestFulfilled,
-  getDonorContact, type Pledge,
+  getDonorContact, openBloodDmThread, type Pledge,
 } from '../../services/bloodService';
 import { ContactSheet } from '../../components/ui/ContactSheet';
 
@@ -87,7 +87,13 @@ export function BloodRequestDetailScreen({ route, navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [busyContactId, setBusyContactId] = useState<string | null>(null);
-  const [contactTarget, setContactTarget] = useState<{ name: string; phone: string; title?: string; message?: string } | null>(null);
+  const [contactTarget, setContactTarget] = useState<{
+    name: string;
+    phone?: string | null;
+    title?: string;
+    message?: string;
+    inAppChatAction?: () => void;
+  } | null>(null);
   const [fulfilling, setFulfilling] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
 
@@ -153,17 +159,36 @@ export function BloodRequestDetailScreen({ route, navigation }: any) {
         toast({ type: 'error', title: t.common.error, message: t.blood2.revealContactError });
         return;
       }
-      if (!res.data?.whatsapp) {
-        toast({ type: 'info', title: t.blood2.notAvailable, message: 'This donor has not provided a contact number.' });
-        return;
-      }
+      const donorDisplayName = res.data?.name ?? p.full_name ?? t.blood2.anonymous;
+      const phoneNum = res.data?.whatsapp ?? null;
       const cleanPatient = (req?.patient ?? 'our patient').replace(/\[Platelets\]/g, '').trim();
-      const prefill = `Salam ${res.data.name || p.full_name || 'Brother/Sister'}, thank you for offering to donate ${p.blood_group || 'blood'} for ${cleanPatient} at ${req?.hospital || 'the hospital'}. Where can we coordinate to meet?`;
+      const prefill = `Salam ${res.data?.name || p.full_name || 'Brother/Sister'}, thank you for offering to donate ${p.blood_group || 'blood'} for ${cleanPatient} at ${req?.hospital || 'the hospital'}. Where can we coordinate to meet?`;
+
+      const handleInAppChat = async () => {
+        if (!req || !user || p.donor_id === user.id) return;
+        try {
+          const dmRes = await openBloodDmThread(req.code, p.donor_id);
+          if (!dmRes.success) {
+            toast({ type: 'error', title: t.common.error, message: dmRes.error ?? 'Could not start conversation' });
+            return;
+          }
+          navigation.navigate('MessageThread', {
+            kind: 'dm',
+            id: p.donor_id,
+            title: donorDisplayName,
+            initialText: prefill,
+          });
+        } catch (e: any) {
+          toast({ type: 'error', title: t.common.error, message: e?.message ?? 'Failed to open message thread' });
+        }
+      };
+
       setContactTarget({
-        name: res.data.name ?? p.full_name ?? t.blood2.anonymous,
-        phone: res.data.whatsapp,
+        name: donorDisplayName,
+        phone: phoneNum,
         title: p.blood_group ? `${p.blood_group} Donor` : 'Blood Donor',
         message: prefill,
+        inAppChatAction: p.donor_id !== user?.id ? handleInAppChat : undefined,
       });
     } finally {
       setBusyContactId(null);
@@ -556,10 +581,11 @@ export function BloodRequestDetailScreen({ route, navigation }: any) {
       <ContactSheet
         visible={contactTarget !== null}
         onClose={() => setContactTarget(null)}
-        phone={contactTarget?.phone ?? ''}
+        phone={contactTarget?.phone}
         name={contactTarget?.name ?? ''}
         title={contactTarget?.title}
         whatsAppMessage={contactTarget?.message}
+        inAppChatAction={contactTarget?.inAppChatAction}
       />
     </SafeAreaView>
   );
