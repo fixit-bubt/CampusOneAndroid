@@ -1146,11 +1146,14 @@ The Faculty directory is modernized into an institutional tool providing automat
   - *Faculty of Arts & Humanities* (`book-open`, English)
   - *Faculty of Social Sciences* (`globe`, Economics, Mathematics & Statistics)
   - *Faculty of Law* (`shield`, Law & Justice)
-- **Level 2 (Department Listing):** Drilling into a faculty category reveals its departments as full-width bars with breadcrumb back navigation (`Back to Faculties`).
+- **Level 2 (Department Listing):** Drilling into a faculty category reveals its constituent departments as full-width bars.
+- **Hardware & Gesture Back Navigation:** Android `BackHandler` and `SubBar` back action automatically pop the drilled category view (`setSelectedCategory(null)`) returning to the 5 Faculty Categories list instead of exiting the screen. Redundant in-screen back buttons removed.
 - **Level 3 (Department Roster):** `FacultyDeptScreen.tsx` renders faculty members as compact `TeacherBar`s. Tapping opens `FacultyProfileScreen.tsx` for full dossier, contact options, and counseling schedules.
 
-### 30.8 Dropdown Selector Bars & Segmented Switcher Polish
-- **Dropdown Selector Bars:** Full-width institutional selector bars for Department and Publication Domain in both *Research Mentors* and *My Teachers* tabs, opening clean bottom sheet pickers with checkmarks and teacher counts.
+### 30.8 Dropdown Selector Bars, Bottom Sheet Bars & Tab Performance
+- **Dropdown Selector Bars:** Full-width institutional selector bars for Department and Publication Domain in both *Research Mentors* and *My Teachers* tabs.
+- **Modal Bar Layout:** Inside both *Select Department* and *Select Publication Domain* bottom sheets, items are rendered as distinct, rounded bars (`styles.pickerBar`) with icon tiles, bold titles, subtitle counts, and checkmark indicators (replacing flat list rows).
+- **Tab Switching Zero-Lag Windowing:** Renders an initial slice of 25 mentors (`INITIAL_RENDER_LIMIT = 25`) with a "Show more" button, and decouples research domain aggregation from active mode. Tab switching runs at 60fps without JS thread frame drops.
 - **Header App Logo:** SubBar top app bar right slot uses the official `<LogoMark size={28} shadow={false} />` (star icon removed).
 - **Segmented Switcher Sizing:** 3-tab switcher (`Departments`, `Research Mentors`, `My Teachers`) scaled to match `HomeCommunityUpdates` dimensions (`borderRadius: 16`, `padding: 4`, `paddingVertical: 10`, `borderRadius: 13`, `fontSize: 13`).
 
