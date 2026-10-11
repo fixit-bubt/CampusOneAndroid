@@ -447,7 +447,10 @@ export function ProfileScreen({ navigation }: any) {
       if (pickedAvatar) {
         const up = await uploadPhoto(pickedAvatar, 'avatars', user.id);
         if (up.success) {
-          await supabase.from('profiles').update({ avatar_url: up.url }).eq('id', user.id);
+          const { error: avErr } = await supabase.from('profiles').update({ avatar_url: up.url }).eq('id', user.id);
+          if (avErr) {
+            toast({ type: 'info', title: 'Saved', message: 'Profile saved, but avatar could not be updated.' });
+          }
         } else {
           toast({ type: 'info', title: 'Saved', message: 'Profile saved. Photo upload failed - please try the photo again later.' });
         }

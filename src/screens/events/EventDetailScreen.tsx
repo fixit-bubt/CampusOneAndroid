@@ -210,7 +210,7 @@ export function EventDetailScreen({ route, navigation }: any) {
               </Text>
             </View>
             <Text style={[styles.infoSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-              {event.time}{event.end_time ? ` – ${event.end_time}` : ''}
+              {event.time}{event.end_time ? ` - ${event.end_time}` : ''}
             </Text>
           </View>
           <View style={styles.infoCell}>

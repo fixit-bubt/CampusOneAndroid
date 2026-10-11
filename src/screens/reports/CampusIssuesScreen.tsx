@@ -5,7 +5,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, FlatList, StyleSheet,
-  RefreshControl, type ViewStyle, type TextStyle,
+  RefreshControl, Platform, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -108,6 +108,10 @@ export function CampusIssuesScreen({ navigation }: any) {
       <FlatList
         data={filtered}
         keyExtractor={r => r.id}
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
+        windowSize={5}
+        removeClippedSubviews={Platform.OS === 'android'}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
@@ -131,7 +135,7 @@ export function CampusIssuesScreen({ navigation }: any) {
               )}
             </View>
 
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.chips}>
               {STATUSES.map(s => {
                 const on = filter === s;
                 const count = counts[s] ?? 0;

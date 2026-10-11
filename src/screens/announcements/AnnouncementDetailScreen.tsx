@@ -44,18 +44,20 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
+    let active = true;
     if (!id) { setNotFound(true); return; }
     (async () => {
       // Check cache first
       const cached = await getCache<Announcement[]>(CacheKeys.ANNOUNCEMENTS);
       const found = cached?.find(a => a.id === id);
-      if (found) setItem(found);
+      if (found && active) setItem(found);
 
       const { data, error } = await supabase
         .from('announcements')
         .select('*')
         .eq('id', id)
         .maybeSingle();
+      if (!active) return;
       if (error || !data) {
         if (!found) {
           if (error) console.error('announcement detail fetch:', error.message);
@@ -72,6 +74,9 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
           .then(() => {}, () => {});
       }
     })();
+    return () => {
+      active = false;
+    };
   }, [id, user?.id]);
 
   if (!item) {

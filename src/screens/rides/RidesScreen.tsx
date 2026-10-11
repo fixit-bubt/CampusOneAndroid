@@ -36,7 +36,7 @@ const TAB_COLORS: Record<TabKey, { fg: string }> = {
   all:  { fg: RIDE_COLOR },
   to:   { fg: '#16a34a' },
   from: { fg: '#2563eb' },
-  mine: { fg: '#8b5cf6' },
+  mine: { fg: RIDE_COLOR },
 };
 
 const VEHICLE_META: Record<string, { icon: string; label: string }> = {
@@ -531,7 +531,7 @@ export function RidesScreen({ navigation }: any) {
                   onPress={() => navigation.navigate('RidePost', { postType: 'request' })}
                   activeOpacity={0.75}
                 >
-                  <Text style={[styles.clearBtnTxt, { color: '#8b5cf6', fontFamily: FontFamily.jakartaBold }]}>
+                  <Text style={[styles.clearBtnTxt, { color: RIDE_COLOR, fontFamily: FontFamily.jakartaBold }]}>
                     Request Ride
                   </Text>
                 </TouchableOpacity>
@@ -642,7 +642,7 @@ export function RidesScreen({ navigation }: any) {
                   {isPassengerRequest ? (
                     isOwnRide ? (
                       <View style={[styles.ownRideBadge, { backgroundColor: C.surface2 }]}>
-                        <Text style={[styles.ownRideTxt, { color: '#8b5cf6', fontFamily: FontFamily.jakartaBold }]}>
+                        <Text style={[styles.ownRideTxt, { color: RIDE_COLOR, fontFamily: FontFamily.jakartaBold }]}>
                           Your Ride Request · Tap to manage
                         </Text>
                       </View>

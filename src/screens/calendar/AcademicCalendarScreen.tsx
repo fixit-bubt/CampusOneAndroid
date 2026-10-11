@@ -15,6 +15,7 @@ import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { supabase } from '../../lib/supabase';
 import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 import { openUrl } from '../../utils/link';
+import { localToday } from '../../utils/format';
 import { FontFamily, FontSize, Layout, Radius, Spacing, SectorColors, Accent } from '../../theme';
 
 // Official academic-calendar PDF, served from the campus web app.
@@ -64,8 +65,10 @@ export function AcademicCalendarScreen({ navigation }: any) {
   const t = useT();
   const isAdmin = profile?.role === 'admin';
 
-  const [now] = useState(() => new Date());
-  const [yearMonth, setYearMonth] = useState<[number, number]>([now.getFullYear(), now.getMonth()]);
+  const [yearMonth, setYearMonth] = useState<[number, number]>(() => {
+    const [y, m] = localToday().split('-').map(Number);
+    return [y, m - 1];
+  });
   const year = yearMonth[0];
   const month = yearMonth[1];
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -150,7 +153,10 @@ export function AcademicCalendarScreen({ navigation }: any) {
     return { eventsByDate: ebd, weeks: wks };
   }, [events, daysInMonth, firstDay]);
 
-  const todayDay = now.getFullYear() === year && now.getMonth() === month ? now.getDate() : -1;
+  const todayDay = useMemo(() => {
+    const [y, m, d] = localToday().split('-').map(Number);
+    return y === year && m - 1 === month ? d : -1;
+  }, [year, month]);
 
   function openAdd() {
     setEditEvent(null);

@@ -20,7 +20,7 @@ import { BUBT_LOGO_CREST, BUBT_LOGO_HEADER } from './logos';
 
 type DocType = 'assignment' | 'lab_report' | 'project_report' | 'index_page' | 'internship_report';
 type TemplateStyle = 'default' | 'classic' | 'premium' | 'minimal' | 'modern';
-type Member = { name: string; id: string };
+type Member = { key?: string; name: string; id: string };
 
 const DOC_TYPES: DocType[] = ['assignment', 'lab_report', 'project_report', 'index_page', 'internship_report'];
 const TEMPLATES: TemplateStyle[] = ['default', 'classic', 'premium', 'minimal', 'modern'];
@@ -310,7 +310,7 @@ export function CoverPageFormScreen({ navigation }: any) {
   const [teacherName, setTeacherName] = useState('');
   const [teacherDesig, setTeacherDesig] = useState('');
   const [teacherDept, setTeacherDept] = useState('');
-  const [members, setMembers] = useState<Member[]>([{ name: profile?.full_name ?? '', id: '' }]);
+  const [members, setMembers] = useState<Member[]>([{ key: 'm-0', name: profile?.full_name ?? '', id: '' }]);
   const [dateOfSubmission, setDateOfSubmission] = useState(localToday());
   const [generating, setGenerating] = useState(false);
 
@@ -376,7 +376,7 @@ export function CoverPageFormScreen({ navigation }: any) {
   function updateMember(i: number, patch: Partial<Member>) {
     setMembers(prev => prev.map((m, idx) => idx === i ? { ...m, ...patch } : m));
   }
-  function addMember() { setMembers(prev => [...prev, { name: '', id: '' }]); }
+  function addMember() { setMembers(prev => [...prev, { key: `m-${Date.now()}-${prev.length}`, name: '', id: '' }]); }
   function removeMember(i: number) { setMembers(prev => prev.filter((_, idx) => idx !== i)); }
 
   const filteredFaculty = facultySearch
@@ -541,7 +541,7 @@ export function CoverPageFormScreen({ navigation }: any) {
             <>
               <Sec icon="user" label="Group Members" C={C} count={members.length} />
               {members.map((m, i) => (
-                <View key={i} style={hStyles.row}>
+                <View key={m.key ?? `m-${i}`} style={hStyles.row}>
                   <View style={{ flex: 1.4 }}>
                     <IconField icon="user" C={C} value={m.name} onChange={v => updateMember(i, { name: v })} placeholder={`Member ${i + 1} Name`} />
                   </View>

@@ -462,18 +462,21 @@ export function StudyHubScreen({ navigation }: any) {
   async function loadAdminQueue() {
     const { data, error } = await supabase
       .from('study_section_requests')
-      .select('*, profiles:profiles!requester_id(full_name), departments:department_id(name)')
+      .select('*, departments:department_id(name)')
       .eq('status', 'pending')
       .order('created_at');
     if (error) { console.warn('loadAdminQueue:', error.message); return; }
     if (data) {
+      const requesterIds = (data as any[]).map(r => r.requester_id).filter(Boolean);
+      const people = await fetchPeople(requesterIds);
       setAdminReqs(data.map((r: any) => {
-        const prof = one<any>(r.profiles);
+        const prof = people[r.requester_id];
         const dept = one<any>(r.departments);
+        const name = prof?.full_name ?? 'Unknown';
         return {
           id: r.id,
-          full_name: prof?.full_name ?? 'Unknown',
-          initials: (prof?.full_name ?? '??').split(' ').slice(0, 2).map((w: string) => w[0]).join(''),
+          full_name: name,
+          initials: name.split(' ').slice(0, 2).map((w: string) => w[0]).join(''),
           department: dept?.name ?? '',
           intake: r.intake_number,
           section_label: String(r.section_number),
@@ -1491,7 +1494,7 @@ export function StudyHubScreen({ navigation }: any) {
             <Text style={[sheetStyles.flabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.study2.yearsOptional}</Text>
             <TextInput
               style={[sheetStyles.input, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-              value={yearsInput} onChangeText={setYearsInput} placeholder="2023–2024" placeholderTextColor={C.textMuted}
+              value={yearsInput} onChangeText={setYearsInput} placeholder="2023-2024" placeholderTextColor={C.textMuted}
             />
             <TouchableOpacity style={[sheetStyles.submitBtn, { backgroundColor: C.brand }]} onPress={addIntake} activeOpacity={0.8}>
               <Icon name="plus" size={17} color="#fff" />

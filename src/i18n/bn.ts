@@ -1461,7 +1461,7 @@ export const bn: Dict = {
     availableNow: "এখন উপলব্ধ",
     notAvailableNow: "এখন উপলব্ধ নয়",
     walkInHours: "আজকের সময়ের মধ্যে সরাসরি আসুন",
-    hoursRange: (start: string, end: string) => `সময়: ${start} – ${end}`,
+    hoursRange: (start: string, end: string) => `সময়: ${start} - ${end}`,
     schedule: "সময়সূচি",
     dutyDays: "ডিউটির দিন",
     hours: "সময়",
