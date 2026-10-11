@@ -30,3 +30,4 @@ select cron.schedule(
   );
   $$
 );
+

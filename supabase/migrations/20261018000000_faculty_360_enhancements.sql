@@ -79,3 +79,4 @@ set short_code = 'MMA',
     floor = '3rd Floor',
     counseling_hours = 'Sun & Tue: 2:00 PM - 3:30 PM'
 where name ilike '%Aminur Rahaman%';
+
