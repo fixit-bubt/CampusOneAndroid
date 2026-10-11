@@ -996,5 +996,15 @@ The Jobs & Internships module (`JobsBrowseScreen.tsx`, `JobDetailScreen.tsx`, `J
 - **Requester Response Management Sheet (`BloodRequestDetailScreen.tsx`):**
   - Requesters can view all responding donors, check 90-day eligibility, tap the phone icon to open `ContactSheet` for 1-tap call/WhatsApp, and confirm donation.
 
+### 27.5 Universal 90-Day Standard & Donor Form Streamlining (`DonorRegisterScreen.tsx`)
+- **Removal of Gender / Recovery Interval Confusion:**
+  - Completely removed the previous `RECOVERY INTERVAL (WHO STANDARD)` gender toggle and WHO female anemia disclaimer text.
+  - Standardized on the universal 90-day (3-month) donation interval across all campus donors.
+  - Eliminated local `@donor_gender_${user.id}` device storage; simplified `donorEligibility` and `scheduleRechargedReminder` to zero-config defaults.
+- **Visual Polish & Institutional Card Refinements:**
+  - Replaced awkward `{group} Donors` title on registered profiles with clean `Blood Group: {group}` accompanied by the green `Verified` badge.
+  - Replaced the raw text box and tiny red link with a full-width tappable **Living Area Selector Card** opening `AreaPickerModal` with 152 Dhaka areas and instant search.
+  - Added quick-action date helper pills (`Today` and `Clear`) for the optional Last Donated date field.
+
 
 

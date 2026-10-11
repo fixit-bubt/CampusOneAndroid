@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView,
-  StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, type ViewStyle,
+  StyleSheet, ActivityIndicator, KeyboardAvoidingView, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
@@ -15,7 +16,6 @@ import { supabase } from '../../lib/supabase';
 import { getMyDonor } from '../../services/bloodService';
 import { removeCache, CacheKeys } from '../../services/cacheService';
 import { isValidDate, localToday } from '../../utils/format';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { scheduleRechargedReminder, cancelRechargedReminder } from '../../utils/bloodReminder';
 import { AreaPickerModal } from '../../components/blood/AreaPickerModal';
 import type { BloodRequest } from '../../types/database';
@@ -23,7 +23,7 @@ import type { BloodRequest } from '../../types/database';
 const GROUPS: BloodRequest['blood_group'][] = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
 export function DonorRegisterScreen({ navigation }: any) {
-  const { C } = useTheme();
+  const { C, isDark } = useTheme();
   const { user, refreshProfile } = useAuth();
   const t = useT();
   const toast = useToast();
@@ -33,7 +33,6 @@ export function DonorRegisterScreen({ navigation }: any) {
   const [areaModalVisible, setAreaModalVisible] = useState(false);
   const [phone, setPhone] = useState('');
   const [lastDonated, setLastDonated] = useState('');
-  const [gender, setGender] = useState<'male' | 'female'>('male');
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [isRegistered, setIsRegistered] = useState(false);
@@ -46,14 +45,8 @@ export function DonorRegisterScreen({ navigation }: any) {
         return;
       }
       try {
-        const [res, savedGender] = await Promise.all([
-          getMyDonor(user.id),
-          AsyncStorage.getItem(`@donor_gender_${user.id}`),
-        ]);
+        const res = await getMyDonor(user.id);
         if (active) {
-          if (savedGender === 'female' || savedGender === 'male') {
-            setGender(savedGender);
-          }
           if (res.ok && res.data) {
             if (res.data.donor) {
               setIsRegistered(true);
@@ -110,7 +103,6 @@ export function DonorRegisterScreen({ navigation }: any) {
           last_donated: lastDonatedDate,
         }, { onConflict: 'user_id' }),
         supabase.from('profiles').update(profilePatch).eq('id', user.id),
-        AsyncStorage.setItem(`@donor_gender_${user.id}`, gender),
       ]);
       if (donorRes.error) throw donorRes.error;
       if (profileRes.error) throw profileRes.error;
@@ -118,7 +110,7 @@ export function DonorRegisterScreen({ navigation }: any) {
       if (lastDonatedDate) {
         await scheduleRechargedReminder(
           lastDonatedDate,
-          gender,
+          'male',
           t.blood2.rechargedNotificationTitle,
           t.blood2.rechargedNotificationBody,
         );
@@ -168,7 +160,7 @@ export function DonorRegisterScreen({ navigation }: any) {
             <View style={{ flex: 1 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Text style={[styles.lockedTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                  {group} {t.blood2.donorsTab}
+                  Blood Group: {group}
                 </Text>
                 <View style={[styles.permPill, { backgroundColor: C.successBg }]}>
                   <Text style={[styles.permTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
@@ -210,51 +202,52 @@ export function DonorRegisterScreen({ navigation }: any) {
           </>
         )}
 
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.blood2.recoveryStandard}</Text>
-        <View style={styles.genderRow}>
-          {(['male', 'female'] as const).map(g => {
-            const on = gender === g;
-            return (
-              <TouchableOpacity
-                key={g}
-                style={[styles.genderBtn, {
-                  backgroundColor: on ? SectorColors.blood : 'transparent',
-                  borderColor: on ? 'transparent' : C.border,
-                }]}
-                onPress={() => setGender(g)}
-                activeOpacity={0.75}
-              >
-                <Text style={[styles.genderTxt, { color: on ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                  {g === 'male' ? t.blood2.male90d : t.blood2.female120d}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-        <Text style={[styles.consent, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-          {t.blood2.whoGuidelineNote}
-        </Text>
-
-        <View style={styles.labelRow}>
-          <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>{t.blood2.area}</Text>
-          <TouchableOpacity
-            onPress={() => setAreaModalVisible(true)}
-            style={styles.pickAreaBtn}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.blood2.area}</Text>
+        <TouchableOpacity
+          style={[
+            styles.selectorCard,
+            {
+              backgroundColor: C.surface,
+              borderColor: area ? SectorColors.blood : C.border,
+            },
+          ]}
+          onPress={() => setAreaModalVisible(true)}
+          activeOpacity={0.75}
+        >
+          <View
+            style={[
+              styles.selectorIconBox,
+              {
+                backgroundColor: area ? `${SectorColors.blood}16` : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2),
+              },
+            ]}
           >
-            <Icon name="pin" size={12} color={SectorColors.blood} />
-            <Text style={[styles.pickAreaTxt, { color: SectorColors.blood, fontFamily: FontFamily.jakartaBold }]}>
-              {t.blood2.pickAreaAction}
+            <Icon name="pin" size={15} color={area ? SectorColors.blood : C.textMuted} />
+          </View>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text
+              style={[
+                styles.selectorValueTxt,
+                {
+                  color: area ? C.text : C.textMuted,
+                  fontFamily: FontFamily.jakartaBold,
+                },
+              ]}
+              numberOfLines={1}
+            >
+              {area || t.blood2.areaPlaceholder}
             </Text>
-          </TouchableOpacity>
-        </View>
-        <TextInput
-          style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-          value={area}
-          onChangeText={setArea}
-          placeholder={t.blood2.areaPlaceholder}
-          placeholderTextColor={C.textMuted}
-        />
+            <Text
+              style={[
+                styles.selectorSubTxt,
+                { color: C.textMuted, fontFamily: FontFamily.jakartaRegular },
+              ]}
+            >
+              {area ? 'Tap to change area' : 'Select from 152 Dhaka areas'}
+            </Text>
+          </View>
+          <Feather name="chevron-down" size={16} color={C.textMuted} />
+        </TouchableOpacity>
 
         <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.blood2.phoneWhatsapp}</Text>
         <TextInput
@@ -269,7 +262,33 @@ export function DonorRegisterScreen({ navigation }: any) {
           {t.blood2.whatsappConsent}
         </Text>
 
-        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.blood2.lastDonatedOptional}</Text>
+        <View style={styles.labelRow}>
+          <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>
+            {t.blood2.lastDonatedOptional}
+          </Text>
+          <View style={{ flexDirection: 'row', gap: 6 }}>
+            <TouchableOpacity
+              style={[styles.quickDateBtn, { backgroundColor: C.surface2 }]}
+              onPress={() => setLastDonated(localToday())}
+              activeOpacity={0.75}
+            >
+              <Text style={[styles.quickDateTxt, { color: SectorColors.blood, fontFamily: FontFamily.jakartaBold }]}>
+                Today
+              </Text>
+            </TouchableOpacity>
+            {lastDonated.length > 0 && (
+              <TouchableOpacity
+                style={[styles.quickDateBtn, { backgroundColor: C.surface2 }]}
+                onPress={() => setLastDonated('')}
+                activeOpacity={0.75}
+              >
+                <Text style={[styles.quickDateTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                  Clear
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
         <TextInput
           style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
           value={lastDonated}
@@ -354,15 +373,38 @@ const styles = StyleSheet.create({
     marginHorizontal: 2,
   } as ViewStyle,
 
-  pickAreaBtn: {
+  selectorCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderRadius: 13,
+    borderWidth: 1,
+    gap: 10,
   } as ViewStyle,
+  selectorIconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  selectorValueTxt: {
+    fontSize: 13.5,
+  } as TextStyle,
+  selectorSubTxt: {
+    fontSize: 11,
+    marginTop: 1,
+  } as TextStyle,
 
-  pickAreaTxt: {
-    fontSize: 11.5,
-  } as any,
+  quickDateBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  } as ViewStyle,
+  quickDateTxt: {
+    fontSize: 11,
+  } as TextStyle,
 
   groupGrid: {
     flexDirection: 'row',
@@ -401,20 +443,4 @@ const styles = StyleSheet.create({
   } as ViewStyle,
 
   submitText: { fontSize: 15 } as any,
-
-  genderRow: {
-    flexDirection: 'row',
-    gap: 8,
-  } as ViewStyle,
-
-  genderBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 10,
-    borderWidth: 1.5,
-  } as ViewStyle,
-
-  genderTxt: { fontSize: 13 } as any,
 });

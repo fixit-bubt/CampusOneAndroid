@@ -159,7 +159,6 @@ export function BloodScreen({ navigation }: any) {
   const [donors, setDonors]     = useState<DonorWithName[]>([]);
   const [myDonor, setMyDonor]   = useState<Donor | null>(null);
   const [myDonationCount, setMyDonationCount] = useState(0);
-  const [myGender, setMyGender] = useState<'male' | 'female'>('male');
   const [refreshing, setRefreshing] = useState(false);
   const toast = useToast();
   const [respondedIds, setRespondedIds] = useState<Set<string>>(new Set());
@@ -204,14 +203,7 @@ export function BloodScreen({ navigation }: any) {
 
     // 2. Network sync
     try {
-      const [res, savedGender] = await Promise.all([
-        getBloodFeed(user?.id),
-        user?.id ? AsyncStorage.getItem(`@donor_gender_${user.id}`) : Promise.resolve(null),
-      ]);
-      const gender = (savedGender === 'female' || savedGender === 'male') ? savedGender : 'male';
-      if (savedGender === 'female' || savedGender === 'male') {
-        setMyGender(savedGender);
-      }
+      const res = await getBloodFeed(user?.id);
       if (!res.ok) {
         if (!cached) setLoadState('error');
         setIsOffline(true);
@@ -236,7 +228,7 @@ export function BloodScreen({ navigation }: any) {
       if (res.data.myDonor?.last_donated) {
         scheduleRechargedReminder(
           res.data.myDonor.last_donated,
-          gender,
+          'male',
           t.blood2.rechargedNotificationTitle,
           t.blood2.rechargedNotificationBody,
         );
@@ -248,6 +240,7 @@ export function BloodScreen({ navigation }: any) {
   }, [user?.id, t.blood2.rechargedNotificationTitle, t.blood2.rechargedNotificationBody]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
+
 
   async function onRefresh() {
     setRefreshing(true);
@@ -334,7 +327,7 @@ export function BloodScreen({ navigation }: any) {
           if (!res.ok) { toast({ type: 'error', title: t.common.error, message: res.error }); return; }
           await scheduleRechargedReminder(
             localToday(),
-            myGender,
+            'male',
             t.blood2.rechargedNotificationTitle,
             t.blood2.rechargedNotificationBody,
           );
@@ -528,7 +521,7 @@ export function BloodScreen({ navigation }: any) {
                   {myDonor.area ? myDonor.area : t.blood2.myDonorStatusTitle}
                 </Text>
                 {(() => {
-                  const { eligible, daysLeft } = donorEligibility(myDonor.last_donated, myGender);
+                  const { eligible, daysLeft } = donorEligibility(myDonor.last_donated);
                   return (
                     <View style={[styles.eligPill, { backgroundColor: eligible ? C.successBg : C.warnBg, marginTop: 0 }]}>
                       <Text style={[styles.eligTxt, { color: eligible ? C.success : C.warn, fontFamily: FontFamily.jakartaBold }]}>
@@ -546,7 +539,7 @@ export function BloodScreen({ navigation }: any) {
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             {(() => {
-              const { eligible } = donorEligibility(myDonor.last_donated, myGender);
+              const { eligible } = donorEligibility(myDonor.last_donated);
               if (!eligible || myDonor.last_donated === localToday()) return null;
               return (
                 <TouchableOpacity
@@ -1231,7 +1224,7 @@ export function BloodScreen({ navigation }: any) {
               <View style={[styles.donorList, { backgroundColor: C.surface, borderColor: C.border }]}>
                 {filteredDonors.map((d, i) => {
                   const isMe = d.user_id === user?.id;
-                  const { eligible, daysLeft } = isMe ? donorEligibility(d.last_donated, myGender) : donorEligibility(d.last_donated);
+                  const { eligible, daysLeft } = donorEligibility(d.last_donated);
                   return (
                     <View key={d.user_id}>
                       {i > 0 && <View style={[styles.divider, { backgroundColor: C.border }]} />}
