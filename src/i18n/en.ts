@@ -778,6 +778,12 @@ You will be registered as an available ${group} donor.`,
     counselingTodayAt: (time: string) => `Counseling today at ${time}`,
     counselingScheduledToday: "Counseling scheduled today",
     chairmanBadge: "Chairman",
+    allDomains: "All Domains",
+    selectDepartment: "Select Department",
+    selectDomain: "Select Publication Domain",
+    allFaculties: "All Faculties",
+    backToFaculties: "Back to Faculties",
+    departmentsCount: (n: number) => `${n} department${n === 1 ? '' : 's'}`,
   },
 
   jobs2: {

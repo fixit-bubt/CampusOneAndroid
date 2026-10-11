@@ -146,7 +146,7 @@ Deno.serve(async (req: Request) => {
     // 5. Scrape Department Rosters
     for (const d of departmentSlugs) {
       try {
-        const deptUrl = `${BUBT_BASE}/department/${d.slug}`;
+        const deptUrl = `${BUBT_BASE}/department/${d.slug}/faculty`;
         const deptRes = await fetch(deptUrl, {
           headers: { 'User-Agent': 'CampusOne-Sync/1.0 (Academic Bot; BUBT Mobile)' },
         });
@@ -163,29 +163,37 @@ Deno.serve(async (req: Request) => {
         }
         if (!deptId) continue;
 
-        // Extract faculty cards:
-        // class="faculty-card ...", profile url contains "/faculty/profile/{code}", img contains photo, name in alt
-        const cardRegex = /<div[^>]*class="[^"]*faculty-card[^"]*"[\s\S]*?<img[^>]*src="([^"]*)"[^>]*alt="([^"]*)"[\s\S]*?<p[^>]*>([\s\S]*?)<\/p>[\s\S]*?<a[^>]*href="([^"]*\/faculty\/profile\/([^"]+))"/gi;
+        // Parse faculty card chunks
+        const cardChunks = deptHtml.split(/class="faculty-card\b/);
+        for (let i = 1; i < cardChunks.length; i++) {
+          const chunk = cardChunks[i];
+          const linkMatch = chunk.match(/href="([^"]*\/faculty\/profile\/([^"]+))"/i);
+          if (!linkMatch) continue; // Skip non-faculty staff
 
-        let match: RegExpExecArray | null;
-        while ((match = cardRegex.exec(deptHtml)) !== null) {
           totalScanned++;
-          const photoUrl = match[1]?.trim() || null;
-          const name = match[2]?.trim();
-          let rawDesig = match[3]?.replace(/<[^>]+>/g, '').trim() || 'Lecturer';
-          const profileUrl = match[4]?.trim() || null;
-          const shortCode = match[5]?.trim().toUpperCase() || null;
+          const profileUrl = linkMatch[1]?.trim();
+          const shortCode = linkMatch[2]?.trim().toUpperCase();
 
-          // Clean designation: remove department suffix if present
+          const imgMatch = chunk.match(/<img[^>]+src="([^">]+)"/i);
+          const altMatch = chunk.match(/<img[^>]+alt="([^">]+)"/i);
+          const nameMatch = chunk.match(/<h3[^>]*class="[^"]*faculty-name[^"]*"[^>]*>([\s\S]*?)<\/h3>/i);
+          const name = (nameMatch ? nameMatch[1] : altMatch ? altMatch[1] : '').replace(/<[^>]+>/g, '').trim();
+          if (!name) continue;
+
+          const photoUrl = imgMatch ? imgMatch[1].trim() : null;
+
+          const desigMatch = chunk.match(/<p[^>]*class="[^"]*(?:bg-indigo|faculty-designation)[^"]*"[^>]*>([\s\S]*?)<\/p>/i);
+          let rawDesig = desigMatch ? desigMatch[1].replace(/<[^>]+>/g, '').trim() : 'Lecturer';
           if (rawDesig.includes(' - ')) rawDesig = rawDesig.split(' - ')[0].trim();
           if (rawDesig.includes(' — ')) rawDesig = rawDesig.split(' — ')[0].trim();
 
-          const onLeave = rawDesig.toLowerCase().includes('leave');
+          const onLeave = /on leave|study leave|lien/i.test(chunk);
+          const isChairman = /chairman|head of/i.test(chunk) || /chairman/i.test(rawDesig);
 
           // Check existing faculty row
           const { data: existing } = await supabase
             .from('faculty')
-            .select('id, designation, photo_url, short_code, blood_group')
+            .select('id, designation, photo_url, short_code, on_leave, is_chairman')
             .eq('department_id', deptId)
             .ilike('name', name)
             .maybeSingle();
@@ -203,7 +211,8 @@ Deno.serve(async (req: Request) => {
               updates.designation = rawDesig;
               promotionsUpdated++;
             }
-            if (onLeave) updates.on_leave = true;
+            if (onLeave !== existing.on_leave) updates.on_leave = onLeave;
+            if (isChairman !== existing.is_chairman) updates.is_chairman = isChairman;
 
             await supabase.from('faculty').update(updates).eq('id', existing.id);
           } else {
@@ -216,6 +225,7 @@ Deno.serve(async (req: Request) => {
               photo_url: photoUrl,
               profile_url: profileUrl,
               on_leave: onLeave,
+              is_chairman: isChairman,
               research_interests: [],
               qualifications: [],
               data_source: 'main_site',

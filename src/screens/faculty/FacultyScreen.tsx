@@ -1,10 +1,11 @@
-// Faculty Directory - browse departments grouped by branch, search by
-// teacher initial routine codes (DALM, SR, SAM), filter research mentors
+// Faculty Directory - browse departments grouped by faculty categories,
+// search by teacher initial routine codes (DALM, SR, SAM), filter research mentors
 // for paper publication, and manage saved teachers.
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
-  RefreshControl, Animated, type ViewStyle, type TextStyle,
+  RefreshControl, Animated, Modal, FlatList, KeyboardAvoidingView, Platform,
+  type ViewStyle, type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,22 +14,24 @@ import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
+import { LogoMark } from '../../components/ui/Logo';
 import { useToast } from '../../components/ui/Toast';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { ContactSheet } from '../../components/ui/ContactSheet';
-import { FontFamily, Layout, Accent, pillBg, Radius } from '../../theme';
+import { FontFamily, Layout, Accent, Radius } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 import { useAuth } from '../../store/authStore';
 import {
-  FACULTY_ACCENT, BRANCH_ICON, BRANCH_ORDER, shortDept, sortFaculty, interestsOf,
-  FacultyCard, type FacultyMember, type Department,
+  FACULTY_ACCENT, BRANCH_ICON, shortDept, sortFaculty, interestsOf,
+  FACULTY_CATEGORIES, type FacultyCategory, TeacherBar,
+  type FacultyMember, type Department,
 } from './facultyShared';
 
 type TabMode = 'all' | 'mentors' | 'saved';
 
 export function FacultyScreen({ navigation }: any) {
-  const { C, isDark } = useTheme();
+  const { C } = useTheme();
   const t = useT();
   const toast = useToast();
   const { user } = useAuth();
@@ -37,6 +40,11 @@ export function FacultyScreen({ navigation }: any) {
   const [query, setQuery] = useState('');
   const [selectedDeptId, setSelectedDeptId] = useState<string>('All');
   const [interest, setInterest] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<FacultyCategory | null>(null);
+
+  // Modals for dropdown bars
+  const [deptPickerVisible, setDeptPickerVisible] = useState(false);
+  const [domainPickerVisible, setDomainPickerVisible] = useState(false);
 
   const [departments, setDepartments] = useState<Department[]>([]);
   const [faculty, setFaculty] = useState<FacultyMember[]>([]);
@@ -47,7 +55,7 @@ export function FacultyScreen({ navigation }: any) {
   // Active teacher for ContactSheet
   const [contactTeacher, setContactTeacher] = useState<FacultyMember | null>(null);
 
-  // Segmented animated indicator
+  // Segmented animated indicator matching HomeCommunityUpdates
   const animIndex = useRef(new Animated.Value(0)).current;
   const [trackWidth, setTrackWidth] = useState(0);
 
@@ -166,25 +174,13 @@ export function FacultyScreen({ navigation }: any) {
       cur.n += 1;
       counts.set(key, cur);
     }));
-    return [...counts.values()].sort((a, b) => b.n - a.n).slice(0, 12);
+    return [...counts.values()].sort((a, b) => b.n - a.n).slice(0, 20);
   }, [faculty, researchMentors, mode]);
 
-  // Departments grouped by branch
-  const branches = useMemo(() => {
-    const byBranch: Record<string, Department[]> = {};
-    departments.forEach(d => { (byBranch[d.branch] ??= []).push(d); });
-    const order = [...BRANCH_ORDER, ...Object.keys(byBranch).filter(b => !BRANCH_ORDER.includes(b))];
-    return order
-      .filter(b => byBranch[b])
-      .map(b => ({
-        branch: b,
-        depts: byBranch[b].sort((a, c) => (countByDept[c.id] || 0) - (countByDept[a.id] || 0)),
-      }));
-  }, [departments, countByDept]);
-
   const q = query.trim().toLowerCase();
-  const isSearchActive = q.length > 0 || !!interest || selectedDeptId !== 'All' || mode !== 'all';
+  const isSearchActive = q.length > 0;
 
+  // Filtered teachers list for Mentors, Saved, or Active Search
   const results = useMemo(() => {
     let list = faculty;
 
@@ -209,11 +205,24 @@ export function FacultyScreen({ navigation }: any) {
         (f.short_code && f.short_code.toLowerCase().includes(q)) ||
         f.designation.toLowerCase().includes(q) ||
         (f.room_number && f.room_number.toLowerCase().includes(q)) ||
-        interestsOf(f).some(i => i.toLowerCase().includes(q)));
+        interestsOf(f).some(i => i.toLowerCase().includes(q)) ||
+        (deptById[f.department_id]?.name && deptById[f.department_id]?.name.toLowerCase().includes(q)));
     }
 
     return sortFaculty(list);
-  }, [faculty, researchMentors, q, interest, selectedDeptId, mode, savedIds]);
+  }, [faculty, researchMentors, q, interest, selectedDeptId, mode, savedIds, deptById]);
+
+  // Departments under current selected category
+  const selectedCategoryDepts = useMemo(() => {
+    if (!selectedCategory) return [];
+    return departments
+      .filter(d => selectedCategory.branches.includes(d.branch))
+      .sort((a, b) => (countByDept[b.id] || 0) - (countByDept[a.id] || 0));
+  }, [selectedCategory, departments, countByDept]);
+
+  const selectedCategoryTeachers = useMemo(() => {
+    return selectedCategoryDepts.reduce((sum, d) => sum + (countByDept[d.id] || 0), 0);
+  }, [selectedCategoryDepts, countByDept]);
 
   function clearFilters() {
     setQuery('');
@@ -221,7 +230,8 @@ export function FacultyScreen({ navigation }: any) {
     setSelectedDeptId('All');
   }
 
-  const segmentWidth = trackWidth > 0 ? trackWidth / 3 : 0;
+  // Sizing matched to HomeCommunityUpdates tab switcher
+  const segmentWidth = trackWidth > 0 ? (trackWidth - 8) / 3 : 0;
   const translateX = animIndex.interpolate({
     inputRange: [0, 1, 2],
     outputRange: [0, segmentWidth, segmentWidth * 2],
@@ -229,23 +239,17 @@ export function FacultyScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
+      {/* Top App Bar with Official App Logo */}
       <SubBar
         title="Faculty Directory"
-        onBack={() => navigation.goBack()}
-        rightSlot={
-          <TouchableOpacity
-            style={[styles.savedBtn, mode === 'saved'
-              ? { backgroundColor: `${Accent.gold}24` }
-              : { backgroundColor: C.surface2 }]}
-            onPress={() => setMode(m => m === 'saved' ? 'all' : 'saved')}
-            activeOpacity={0.75}
-          >
-            <Feather name="star" size={14} color={mode === 'saved' ? Accent.gold : C.text2} />
-            <Text style={[styles.savedBtnTxt, { color: mode === 'saved' ? Accent.gold : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-              {savedIds.size}
-            </Text>
-          </TouchableOpacity>
-        }
+        onBack={() => {
+          if (selectedCategory && mode === 'all' && !isSearchActive) {
+            setSelectedCategory(null);
+          } else {
+            navigation.goBack();
+          }
+        }}
+        rightSlot={<LogoMark size={28} shadow={false} />}
       />
 
       <ScrollView
@@ -257,7 +261,7 @@ export function FacultyScreen({ navigation }: any) {
       >
         <OfflineBanner visible={isOffline} onRetry={load} />
 
-        {/* Animated Segmented Tabs */}
+        {/* 3-Segmented Tabs Switcher styled to match HomeCommunityUpdates */}
         <View
           style={[styles.tabTrack, { backgroundColor: C.surface2 }]}
           onLayout={e => setTrackWidth(e.nativeEvent.layout.width)}
@@ -267,8 +271,9 @@ export function FacultyScreen({ navigation }: any) {
               style={[
                 styles.tabIndicator,
                 {
-                  width: segmentWidth - 4,
+                  width: segmentWidth,
                   backgroundColor: C.surface,
+                  borderColor: C.border,
                   transform: [{ translateX }],
                 },
               ]}
@@ -277,7 +282,10 @@ export function FacultyScreen({ navigation }: any) {
 
           <TouchableOpacity
             style={styles.tabItem}
-            onPress={() => setMode('all')}
+            onPress={() => {
+              setMode('all');
+              setSelectedCategory(null);
+            }}
             activeOpacity={0.8}
           >
             <Text
@@ -327,10 +335,17 @@ export function FacultyScreen({ navigation }: any) {
             >
               {t.faculty2.tabMyTeachers}
             </Text>
+            {savedIds.size > 0 && (
+              <View style={[styles.tabBadge, { backgroundColor: `${Accent.gold}22` }]}>
+                <Text style={[styles.tabBadgeTxt, { color: Accent.gold, fontFamily: FontFamily.jakartaBold }]}>
+                  {savedIds.size}
+                </Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
 
-        {/* Search Bar matching initial routine codes and names */}
+        {/* Global Search Bar (names, initial codes, rooms) */}
         <View style={[styles.searchBar, { backgroundColor: C.surface2 }]}>
           <Icon name="search" size={17} color={C.textMuted} />
           <TextInput
@@ -347,130 +362,275 @@ export function FacultyScreen({ navigation }: any) {
           )}
         </View>
 
-        {/* Mode-Specific Banner */}
-        {mode === 'mentors' && (
-          <View style={[styles.bannerCard, { backgroundColor: `${FACULTY_ACCENT}12`, borderColor: `${FACULTY_ACCENT}30` }]}>
-            <View style={styles.bannerRow}>
-              <Feather name="award" size={18} color={FACULTY_ACCENT} />
-              <Text style={[styles.bannerTitle, { color: FACULTY_ACCENT, fontFamily: FontFamily.jakartaBold }]}>
-                {t.faculty2.mentorsBannerTitle}
-              </Text>
-            </View>
-            <Text style={[styles.bannerDesc, { color: C.text2, fontFamily: FontFamily.jakartaRegular }]}>
-              {t.faculty2.mentorsBannerDesc}
-            </Text>
-          </View>
-        )}
-
-        {/* Department Quick Filter Scroll */}
-        {mode !== 'all' || isSearchActive ? (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.deptChipRow}
-          >
-            <TouchableOpacity
-              style={[
-                styles.deptChip,
-                selectedDeptId === 'All'
-                  ? { backgroundColor: C.text, borderColor: C.text }
-                  : { backgroundColor: C.surface, borderColor: C.border },
-              ]}
-              onPress={() => setSelectedDeptId('All')}
-              activeOpacity={0.75}
-            >
-              <Text
-                style={[
-                  styles.deptChipTxt,
-                  { color: selectedDeptId === 'All' ? C.bg : C.text2, fontFamily: FontFamily.jakartaBold },
-                ]}
-              >
-                {t.faculty2.allDepartments}
-              </Text>
-            </TouchableOpacity>
-
-            {departments.map(d => {
-              const active = selectedDeptId === d.id;
-              return (
+        {/* =========================================================================
+            TAB 1: DEPARTMENTS HIERARCHY (Faculty Categories -> Departments -> Teachers)
+           ========================================================================= */}
+        {mode === 'all' && !isSearchActive && (
+          <>
+            {!selectedCategory ? (
+              // Level 1: Faculty Categories as full-width bars
+              <View style={styles.list}>
+                {FACULTY_CATEGORIES.map(cat => {
+                  const catDepts = departments.filter(d => cat.branches.includes(d.branch));
+                  const catTeacherCount = catDepts.reduce((sum, d) => sum + (countByDept[d.id] || 0), 0);
+                  return (
+                    <TouchableOpacity
+                      key={cat.id}
+                      style={[styles.categoryBar, { backgroundColor: C.surface, borderColor: C.border }]}
+                      onPress={() => setSelectedCategory(cat)}
+                      activeOpacity={0.75}
+                    >
+                      <View style={[styles.categoryIconTile, { backgroundColor: `${FACULTY_ACCENT}12` }]}>
+                        <Feather name={cat.icon} size={22} color={FACULTY_ACCENT} />
+                      </View>
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <Text style={[styles.categoryTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                          {cat.name}
+                        </Text>
+                        <Text style={[styles.categorySubtitle, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                          {t.faculty2.departmentsCount(catDepts.length)} · {catTeacherCount} teachers
+                        </Text>
+                        <Text style={[styles.categoryDesc, { color: C.text2, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
+                          {cat.description}
+                        </Text>
+                      </View>
+                      <Icon name="chevR" size={17} color={C.textMuted} />
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            ) : (
+              // Level 2: Inside Selected Faculty Category -> Departments as full-width bars
+              <View>
                 <TouchableOpacity
-                  key={d.id}
-                  style={[
-                    styles.deptChip,
-                    active
-                      ? { backgroundColor: FACULTY_ACCENT, borderColor: FACULTY_ACCENT }
-                      : { backgroundColor: C.surface, borderColor: C.border },
-                  ]}
-                  onPress={() => setSelectedDeptId(active ? 'All' : d.id)}
+                  style={[styles.backToCatBar, { backgroundColor: C.surface2 }]}
+                  onPress={() => setSelectedCategory(null)}
                   activeOpacity={0.75}
                 >
-                  <Text
-                    style={[
-                      styles.deptChipTxt,
-                      { color: active ? C.white : C.text2, fontFamily: FontFamily.jakartaBold },
-                    ]}
-                  >
-                    {d.dept_number ? `${d.dept_number} · ` : ''}{shortDept(d.name)}
+                  <Feather name="arrow-left" size={15} color={FACULTY_ACCENT} />
+                  <Text style={[styles.backToCatTxt, { color: FACULTY_ACCENT, fontFamily: FontFamily.jakartaBold }]}>
+                    {t.faculty2.backToFaculties}
                   </Text>
                 </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        ) : null}
 
-        {/* Research Area Chips */}
-        {popularInterests.length > 0 && (mode === 'mentors' || query.length > 0) && (
-          <View style={styles.interestsContainer}>
-            <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
-              {mode === 'mentors' ? t.faculty2.filterByDomain : t.faculty2.browseResearchAreas}
-            </Text>
-            <View style={styles.chips}>
-              {popularInterests.map(it => {
-                const active = !!interest && interest.toLowerCase() === it.label.toLowerCase();
-                return (
-                  <TouchableOpacity
-                    key={it.label}
-                    style={[
-                      styles.chip,
-                      active
-                        ? { backgroundColor: FACULTY_ACCENT, borderColor: FACULTY_ACCENT }
-                        : { backgroundColor: C.surface, borderColor: C.border },
-                    ]}
-                    onPress={() => setInterest(active ? null : it.label)}
-                    activeOpacity={0.75}
-                  >
-                    <Text
-                      style={[
-                        styles.chipTxt,
-                        { color: active ? C.white : C.text2, fontFamily: FontFamily.jakartaBold },
-                      ]}
-                    >
-                      {it.label}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.chipCount,
-                        { color: active ? 'rgba(255,255,255,0.75)' : C.textMuted, fontFamily: FontFamily.jakartaBold },
-                      ]}
-                    >
-                      {it.n}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
+                <View style={styles.catHeader}>
+                  <Text style={[styles.catHeaderTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    {selectedCategory.name}
+                  </Text>
+                  <Text style={[styles.catHeaderSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                    {selectedCategoryDepts.length} departments · {selectedCategoryTeachers} teachers
+                  </Text>
+                </View>
+
+                <View style={styles.list}>
+                  {selectedCategoryDepts.map(d => {
+                    const count = countByDept[d.id] || 0;
+                    return (
+                      <TouchableOpacity
+                        key={d.id}
+                        style={[styles.deptBar, { backgroundColor: C.surface, borderColor: C.border }]}
+                        onPress={() => navigation.navigate('FacultyDept', { deptId: d.id })}
+                        activeOpacity={0.75}
+                      >
+                        <View style={[styles.deptBarTile, { backgroundColor: `${FACULTY_ACCENT}12` }]}>
+                          <Feather name={BRANCH_ICON[d.branch] ?? 'book-open'} size={20} color={FACULTY_ACCENT} />
+                        </View>
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <Text style={[styles.deptBarName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                            {shortDept(d.name)}
+                          </Text>
+                          <Text style={[styles.deptBarMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                            {count} teachers{d.chairman ? ` · ${d.chairman.split('(')[0].trim()}` : ''}
+                          </Text>
+                        </View>
+                        <Icon name="chevR" size={17} color={C.textMuted} />
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
+          </>
+        )}
+
+        {/* =========================================================================
+            TAB 2: RESEARCH MENTORS (Dropdown Bars for Department & Domain)
+           ========================================================================= */}
+        {mode === 'mentors' && !isSearchActive && (
+          <View>
+            {/* Mentors Banner */}
+            <View style={[styles.bannerCard, { backgroundColor: `${FACULTY_ACCENT}12`, borderColor: `${FACULTY_ACCENT}30` }]}>
+              <View style={styles.bannerRow}>
+                <Feather name="award" size={18} color={FACULTY_ACCENT} />
+                <Text style={[styles.bannerTitle, { color: FACULTY_ACCENT, fontFamily: FontFamily.jakartaBold }]}>
+                  {t.faculty2.mentorsBannerTitle}
+                </Text>
+              </View>
+              <Text style={[styles.bannerDesc, { color: C.text2, fontFamily: FontFamily.jakartaRegular }]}>
+                {t.faculty2.mentorsBannerDesc}
+              </Text>
             </View>
+
+            {/* Department Dropdown Bar */}
+            <TouchableOpacity
+              style={[styles.dropdownBar, { backgroundColor: C.surface, borderColor: C.border }]}
+              onPress={() => setDeptPickerVisible(true)}
+              activeOpacity={0.75}
+            >
+              <View style={[styles.dropdownIconTile, { backgroundColor: `${FACULTY_ACCENT}14` }]}>
+                <Feather name="layers" size={17} color={FACULTY_ACCENT} />
+              </View>
+              <View style={styles.dropdownBody}>
+                <Text style={[styles.dropdownLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                  {t.faculty2.selectDepartment}
+                </Text>
+                <Text style={[styles.dropdownValue, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                  {selectedDeptId === 'All'
+                    ? t.faculty2.allDepartments
+                    : (shortDept(deptById[selectedDeptId]?.name) || t.faculty2.allDepartments)}
+                </Text>
+              </View>
+              <Feather name="chevron-down" size={18} color={C.textMuted} />
+            </TouchableOpacity>
+
+            {/* Publication Domain Dropdown Bar */}
+            <TouchableOpacity
+              style={[styles.dropdownBar, { backgroundColor: C.surface, borderColor: C.border }]}
+              onPress={() => setDomainPickerVisible(true)}
+              activeOpacity={0.75}
+            >
+              <View style={[styles.dropdownIconTile, { backgroundColor: `${FACULTY_ACCENT}14` }]}>
+                <Feather name="award" size={17} color={FACULTY_ACCENT} />
+              </View>
+              <View style={styles.dropdownBody}>
+                <Text style={[styles.dropdownLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                  {t.faculty2.selectDomain}
+                </Text>
+                <Text style={[styles.dropdownValue, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                  {interest ? interest : t.faculty2.allDomains}
+                </Text>
+              </View>
+              <Feather name="chevron-down" size={18} color={C.textMuted} />
+            </TouchableOpacity>
+
+            {/* Mentors Results Header */}
+            <View style={styles.resultsHead}>
+              <Text style={[styles.resultsTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                {results.length} mentor{results.length === 1 ? '' : 's'}
+                {interest ? ` · ${interest}` : ''}
+              </Text>
+              {(selectedDeptId !== 'All' || !!interest) && (
+                <TouchableOpacity onPress={clearFilters} hitSlop={8}>
+                  <Text style={[styles.clearTxt, { color: FACULTY_ACCENT, fontFamily: FontFamily.jakartaBold }]}>
+                    {t.faculty2.resetFilters}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* Mentors Roster rendered as compact TeacherBar */}
+            {results.length === 0 ? (
+              <View style={styles.empty}>
+                <Feather name="award" size={28} color={C.textMuted} />
+                <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                  {t.faculty2.noMatchingTeachers}
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.list}>
+                {results.map(f => (
+                  <TeacherBar
+                    key={f.id}
+                    f={f}
+                    deptName={deptById[f.department_id]?.name}
+                    saved={savedIds.has(f.id)}
+                    onToggleSave={() => toggleSave(f.id)}
+                    onOpen={() => navigation.navigate('FacultyProfile', { facultyId: f.id })}
+                    C={C}
+                    goldColor={Accent.gold}
+                  />
+                ))}
+              </View>
+            )}
           </View>
         )}
 
-        {/* Results Stream OR Department Branches */}
-        {isSearchActive ? (
-          <>
+        {/* =========================================================================
+            TAB 3: MY TEACHERS (Department Dropdown Bar + Saved TeacherBars)
+           ========================================================================= */}
+        {mode === 'saved' && !isSearchActive && (
+          <View>
+            {/* Department Dropdown Bar for Saved Teachers */}
+            <TouchableOpacity
+              style={[styles.dropdownBar, { backgroundColor: C.surface, borderColor: C.border }]}
+              onPress={() => setDeptPickerVisible(true)}
+              activeOpacity={0.75}
+            >
+              <View style={[styles.dropdownIconTile, { backgroundColor: `${Accent.gold}18` }]}>
+                <Feather name="layers" size={17} color={Accent.gold} />
+              </View>
+              <View style={styles.dropdownBody}>
+                <Text style={[styles.dropdownLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                  {t.faculty2.selectDepartment}
+                </Text>
+                <Text style={[styles.dropdownValue, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                  {selectedDeptId === 'All'
+                    ? t.faculty2.allDepartments
+                    : (shortDept(deptById[selectedDeptId]?.name) || t.faculty2.allDepartments)}
+                </Text>
+              </View>
+              <Feather name="chevron-down" size={18} color={C.textMuted} />
+            </TouchableOpacity>
+
             <View style={styles.resultsHead}>
               <Text style={[styles.resultsTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                {results.length} teacher{results.length === 1 ? '' : 's'}
-                {interest ? ` in ${interest}` : ''}
-                {mode === 'saved' ? ' · saved' : ''}
+                {results.length} saved teacher{results.length === 1 ? '' : 's'}
               </Text>
-              <TouchableOpacity onPress={clearFilters} hitSlop={8}>
+              {selectedDeptId !== 'All' && (
+                <TouchableOpacity onPress={() => setSelectedDeptId('All')} hitSlop={8}>
+                  <Text style={[styles.clearTxt, { color: FACULTY_ACCENT, fontFamily: FontFamily.jakartaBold }]}>
+                    {t.faculty2.resetFilters}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {results.length === 0 ? (
+              <View style={styles.empty}>
+                <Feather name="star" size={32} color={Accent.gold} />
+                <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                  {t.faculty2.noSavedTeachersEmpty}
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.list}>
+                {results.map(f => (
+                  <TeacherBar
+                    key={f.id}
+                    f={f}
+                    deptName={deptById[f.department_id]?.name}
+                    saved={savedIds.has(f.id)}
+                    onToggleSave={() => toggleSave(f.id)}
+                    onOpen={() => navigation.navigate('FacultyProfile', { facultyId: f.id })}
+                    C={C}
+                    goldColor={Accent.gold}
+                  />
+                ))}
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* =========================================================================
+            SEARCH RESULTS STREAM (When typing query)
+           ========================================================================= */}
+        {isSearchActive && (
+          <View>
+            <View style={styles.resultsHead}>
+              <Text style={[styles.resultsTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                {results.length} teacher{results.length === 1 ? '' : 's'} found
+              </Text>
+              <TouchableOpacity onPress={() => setQuery('')} hitSlop={8}>
                 <Text style={[styles.clearTxt, { color: FACULTY_ACCENT, fontFamily: FontFamily.jakartaBold }]}>
                   {t.faculty2.resetFilters}
                 </Text>
@@ -481,69 +641,240 @@ export function FacultyScreen({ navigation }: any) {
               <View style={styles.empty}>
                 <Feather name="search" size={28} color={C.textMuted} />
                 <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                  {mode === 'saved' && !q
-                    ? t.faculty2.noSavedTeachersEmpty
-                    : t.faculty2.noMatchingTeachers}
+                  {t.faculty2.noMatchingTeachers}
                 </Text>
               </View>
             ) : (
               <View style={styles.list}>
                 {results.map(f => (
-                  <FacultyCard
+                  <TeacherBar
                     key={f.id}
                     f={f}
                     deptName={deptById[f.department_id]?.name}
                     saved={savedIds.has(f.id)}
                     onToggleSave={() => toggleSave(f.id)}
                     onOpen={() => navigation.navigate('FacultyProfile', { facultyId: f.id })}
-                    onContact={() => setContactTeacher(f)}
                     C={C}
                     goldColor={Accent.gold}
-                    isDark={isDark}
                   />
                 ))}
               </View>
             )}
-          </>
-        ) : (
-          branches.map(({ branch, depts }) => (
-            <View key={branch}>
-              <Text style={[styles.branchTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                {branch}
-              </Text>
-              <View style={styles.list}>
-                {depts.map(d => {
-                  const count = countByDept[d.id] || 0;
-                  return (
-                    <TouchableOpacity
-                      key={d.id}
-                      style={[styles.deptCard, { backgroundColor: C.surface, borderColor: C.border }]}
-                      onPress={() => navigation.navigate('FacultyDept', { deptId: d.id })}
-                      activeOpacity={0.75}
-                    >
-                      <View style={[styles.deptTile, { backgroundColor: `${FACULTY_ACCENT}14` }]}>
-                        <Feather name={BRANCH_ICON[d.branch] ?? 'book-open'} size={19} color={FACULTY_ACCENT} />
-                      </View>
-                      <View style={{ flex: 1, minWidth: 0 }}>
-                        <Text style={[styles.deptName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                          {shortDept(d.name)}
-                        </Text>
-                        <Text style={[styles.deptCount, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                          {count} teacher{count === 1 ? '' : 's'}
-                          {d.chairman ? ` · ${d.chairman.split('(')[0].trim()}` : ''}
-                        </Text>
-                      </View>
-                      <Icon name="chevR" size={17} color={C.textMuted} />
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
-          ))
+          </View>
         )}
 
         <View style={{ height: 28 }} />
       </ScrollView>
+
+      {/* =========================================================================
+          DEPARTMENT PICKER BOTTOM SHEET MODAL
+         ========================================================================= */}
+      <Modal
+        visible={deptPickerVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setDeptPickerVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.modalOverlay}
+        >
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setDeptPickerVisible(false)}
+          />
+          <View style={[styles.sheetCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <View style={styles.sheetHandle}>
+              <View style={[styles.sheetHandleBar, { backgroundColor: C.border }]} />
+            </View>
+
+            <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              {t.faculty2.selectDepartment}
+            </Text>
+
+            <ScrollView
+              style={{ maxHeight: 380 }}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              {/* All Departments Option */}
+              <TouchableOpacity
+                style={[
+                  styles.pickerRow,
+                  { borderBottomColor: C.border },
+                  selectedDeptId === 'All' && { backgroundColor: `${FACULTY_ACCENT}10` },
+                ]}
+                onPress={() => {
+                  setSelectedDeptId('All');
+                  setDeptPickerVisible(false);
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.pickerIconTile, { backgroundColor: `${FACULTY_ACCENT}14` }]}>
+                  <Feather name="layers" size={16} color={FACULTY_ACCENT} />
+                </View>
+                <Text style={[styles.pickerRowText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  {t.faculty2.allDepartments}
+                </Text>
+                {selectedDeptId === 'All' && (
+                  <Feather name="check" size={18} color={FACULTY_ACCENT} />
+                )}
+              </TouchableOpacity>
+
+              {departments.map(d => {
+                const count = mode === 'mentors'
+                  ? researchMentors.filter(f => f.department_id === d.id).length
+                  : (countByDept[d.id] || 0);
+                const active = selectedDeptId === d.id;
+
+                return (
+                  <TouchableOpacity
+                    key={d.id}
+                    style={[
+                      styles.pickerRow,
+                      { borderBottomColor: C.border },
+                      active && { backgroundColor: `${FACULTY_ACCENT}10` },
+                    ]}
+                    onPress={() => {
+                      setSelectedDeptId(d.id);
+                      setDeptPickerVisible(false);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.pickerIconTile, { backgroundColor: `${FACULTY_ACCENT}14` }]}>
+                      <Feather name={BRANCH_ICON[d.branch] ?? 'book-open'} size={16} color={FACULTY_ACCENT} />
+                    </View>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={[styles.pickerRowText, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                        {shortDept(d.name)}
+                      </Text>
+                      <Text style={[styles.pickerRowSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                        {d.branch} · {count} {mode === 'mentors' ? 'mentors' : 'teachers'}
+                      </Text>
+                    </View>
+                    {active && (
+                      <Feather name="check" size={18} color={FACULTY_ACCENT} />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            <TouchableOpacity
+              style={[styles.sheetCloseBtn, { borderColor: C.border }]}
+              onPress={() => setDeptPickerVisible(false)}
+            >
+              <Text style={[styles.sheetCloseTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                Close
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* =========================================================================
+          PUBLICATION DOMAIN PICKER BOTTOM SHEET MODAL
+         ========================================================================= */}
+      <Modal
+        visible={domainPickerVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setDomainPickerVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.modalOverlay}
+        >
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setDomainPickerVisible(false)}
+          />
+          <View style={[styles.sheetCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <View style={styles.sheetHandle}>
+              <View style={[styles.sheetHandleBar, { backgroundColor: C.border }]} />
+            </View>
+
+            <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              {t.faculty2.selectDomain}
+            </Text>
+
+            <ScrollView
+              style={{ maxHeight: 380 }}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              {/* All Domains Option */}
+              <TouchableOpacity
+                style={[
+                  styles.pickerRow,
+                  { borderBottomColor: C.border },
+                  !interest && { backgroundColor: `${FACULTY_ACCENT}10` },
+                ]}
+                onPress={() => {
+                  setInterest(null);
+                  setDomainPickerVisible(false);
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.pickerIconTile, { backgroundColor: `${FACULTY_ACCENT}14` }]}>
+                  <Feather name="award" size={16} color={FACULTY_ACCENT} />
+                </View>
+                <Text style={[styles.pickerRowText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  {t.faculty2.allDomains}
+                </Text>
+                {!interest && (
+                  <Feather name="check" size={18} color={FACULTY_ACCENT} />
+                )}
+              </TouchableOpacity>
+
+              {popularInterests.map(it => {
+                const active = !!interest && interest.toLowerCase() === it.label.toLowerCase();
+                return (
+                  <TouchableOpacity
+                    key={it.label}
+                    style={[
+                      styles.pickerRow,
+                      { borderBottomColor: C.border },
+                      active && { backgroundColor: `${FACULTY_ACCENT}10` },
+                    ]}
+                    onPress={() => {
+                      setInterest(it.label);
+                      setDomainPickerVisible(false);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.pickerIconTile, { backgroundColor: `${FACULTY_ACCENT}14` }]}>
+                      <Feather name="bookmark" size={16} color={FACULTY_ACCENT} />
+                    </View>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={[styles.pickerRowText, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                        {it.label}
+                      </Text>
+                      <Text style={[styles.pickerRowSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                        {it.n} research mentor{it.n === 1 ? '' : 's'}
+                      </Text>
+                    </View>
+                    {active && (
+                      <Feather name="check" size={18} color={FACULTY_ACCENT} />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            <TouchableOpacity
+              style={[styles.sheetCloseBtn, { borderColor: C.border }]}
+              onPress={() => setDomainPickerVisible(false)}
+            >
+              <Text style={[styles.sheetCloseTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                Close
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
 
       {/* Institutional Contact Sheet */}
       {contactTeacher && (
@@ -567,55 +898,184 @@ const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
   scroll: { paddingTop: 6, paddingBottom: 24 } as ViewStyle,
 
-  savedBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 11,
-    paddingVertical: 6,
-    borderRadius: 10,
-  } as ViewStyle,
-  savedBtnTxt: { fontSize: 12.5 } as TextStyle,
-
+  // Tab switcher matching HomeCommunityUpdates
   tabTrack: {
-    position: 'relative',
     flexDirection: 'row',
-    height: 40,
-    borderRadius: 12,
-    padding: 2,
+    borderRadius: 16,
+    padding: 4,
     marginBottom: 12,
+    marginTop: 4,
+    position: 'relative',
   } as ViewStyle,
+
   tabIndicator: {
     position: 'absolute',
-    top: 2,
-    bottom: 2,
-    left: 2,
-    borderRadius: 10,
+    top: 4,
+    left: 4,
+    bottom: 4,
+    borderRadius: 13,
+    borderWidth: 1.5,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1.5 },
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
   } as ViewStyle,
+
   tabItem: {
     flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 5,
+    paddingVertical: 10,
+    borderRadius: 13,
     zIndex: 1,
   } as ViewStyle,
+
   tabText: {
-    fontSize: 12.5,
+    fontSize: 13,
   } as TextStyle,
 
+  tabBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 999,
+    minWidth: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  tabBadgeTxt: {
+    fontSize: 11,
+  } as TextStyle,
+
+  // Search input
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 9,
     paddingHorizontal: 14,
     borderRadius: 14,
-    marginBottom: 10,
+    marginBottom: 12,
   } as ViewStyle,
   searchInput: {
     flex: 1,
     fontSize: 14.5,
-    paddingVertical: 12,
+    paddingVertical: 11,
   } as TextStyle,
 
+  // Faculty category full-width bars
+  categoryBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 13,
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 10,
+  } as ViewStyle,
+  categoryIconTile: {
+    width: 46,
+    height: 46,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  categoryTitle: {
+    fontSize: 14.5,
+  } as TextStyle,
+  categorySubtitle: {
+    fontSize: 12,
+    marginTop: 2,
+  } as TextStyle,
+  categoryDesc: {
+    fontSize: 11.5,
+    marginTop: 2,
+  } as TextStyle,
+
+  // Drilled category view
+  backToCatBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderRadius: 10,
+    alignSelf: 'flex-start',
+    marginBottom: 12,
+  } as ViewStyle,
+  backToCatTxt: {
+    fontSize: 12.5,
+  } as TextStyle,
+
+  catHeader: {
+    marginBottom: 12,
+  } as ViewStyle,
+  catHeaderTitle: {
+    fontSize: 17,
+  } as TextStyle,
+  catHeaderSub: {
+    fontSize: 12.5,
+    marginTop: 2,
+  } as TextStyle,
+
+  // Department bars under category
+  deptBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 13,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginBottom: 8,
+  } as ViewStyle,
+  deptBarTile: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  deptBarName: {
+    fontSize: 14,
+  } as TextStyle,
+  deptBarMeta: {
+    fontSize: 11.5,
+    marginTop: 2,
+  } as TextStyle,
+
+  // Full-width dropdown selector bars
+  dropdownBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginBottom: 10,
+  } as ViewStyle,
+  dropdownIconTile: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  dropdownBody: {
+    flex: 1,
+    minWidth: 0,
+  } as ViewStyle,
+  dropdownLabel: {
+    fontSize: 11,
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
+  } as TextStyle,
+  dropdownValue: {
+    fontSize: 13.5,
+    marginTop: 2,
+  } as TextStyle,
+
+  // Banner card
   bannerCard: {
     borderRadius: 14,
     borderWidth: 1,
@@ -636,82 +1096,24 @@ const styles = StyleSheet.create({
     lineHeight: 17,
   } as TextStyle,
 
-  deptChipRow: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingVertical: 4,
-    marginBottom: 10,
-  } as ViewStyle,
-  deptChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 999,
-    borderWidth: 1,
-  } as ViewStyle,
-  deptChipTxt: {
-    fontSize: 12,
-  } as TextStyle,
-
-  interestsContainer: {
-    marginBottom: 12,
-  } as ViewStyle,
-  sectionLabel: {
-    fontSize: 10.5,
-    letterSpacing: 0.8,
-    marginTop: 4,
-    marginBottom: 8,
-  } as TextStyle,
-  chips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 7,
-  } as ViewStyle,
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 11,
-    paddingVertical: 6,
-    borderRadius: 999,
-    borderWidth: 1,
-  } as ViewStyle,
-  chipTxt: { fontSize: 11.5 } as TextStyle,
-  chipCount: { fontSize: 10.5 } as TextStyle,
-
+  // Results header
   resultsHead: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 8,
+    marginTop: 4,
     marginBottom: 10,
   } as ViewStyle,
-  resultsTxt: { fontSize: 12.5 } as TextStyle,
-  clearTxt: { fontSize: 12.5 } as TextStyle,
-
-  branchTitle: {
-    fontSize: 14.5,
-    marginTop: 18,
-    marginBottom: 9,
+  resultsTxt: {
+    fontSize: 12.5,
   } as TextStyle,
-  list: { gap: 10 } as ViewStyle,
+  clearTxt: {
+    fontSize: 12.5,
+  } as TextStyle,
 
-  deptCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    padding: 13,
-    borderRadius: 16,
-    borderWidth: 1,
+  list: {
+    gap: 2,
   } as ViewStyle,
-  deptTile: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  } as ViewStyle,
-  deptName: { fontSize: 14 } as TextStyle,
-  deptCount: { fontSize: 11.5, marginTop: 2 } as TextStyle,
 
   empty: {
     alignItems: 'center',
@@ -719,5 +1121,75 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 20,
   } as ViewStyle,
-  emptyTxt: { fontSize: 13.5, textAlign: 'center', lineHeight: 19 } as TextStyle,
+  emptyTxt: {
+    fontSize: 13.5,
+    textAlign: 'center',
+    lineHeight: 19,
+  } as TextStyle,
+
+  // Bottom sheet modal styles
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  } as ViewStyle,
+  modalBackdrop: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+  } as ViewStyle,
+  sheetCard: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderTopWidth: 1,
+    paddingHorizontal: Layout.screenPadding,
+    paddingBottom: Layout.screenPadding + 10,
+    maxHeight: '80%',
+  } as ViewStyle,
+  sheetHandle: {
+    alignItems: 'center',
+    paddingVertical: 10,
+  } as ViewStyle,
+  sheetHandleBar: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+  } as ViewStyle,
+  sheetTitle: {
+    fontSize: 17,
+    textAlign: 'center',
+    marginBottom: 14,
+  } as TextStyle,
+  pickerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  } as ViewStyle,
+  pickerIconTile: {
+    width: 34,
+    height: 34,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  pickerRowText: {
+    fontSize: 14,
+  } as TextStyle,
+  pickerRowSub: {
+    fontSize: 11.5,
+    marginTop: 2,
+  } as TextStyle,
+  sheetCloseBtn: {
+    height: 44,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 14,
+  } as ViewStyle,
+  sheetCloseTxt: {
+    fontSize: 14.5,
+  } as TextStyle,
 });

@@ -7,12 +7,64 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, SectorColors, pillBg, Radius } from '../../theme';
+import { FontFamily, SectorColors, pillBg, Radius, Accent } from '../../theme';
 import { openUrl } from '../../utils/link';
 import { useT } from '../../i18n';
 import type { Colors } from '../../theme';
 
 export const FACULTY_ACCENT = SectorColors.faculty;
+
+export interface FacultyCategory {
+  id: string;
+  name: string;
+  shortName: string;
+  icon: keyof typeof Feather.glyphMap;
+  branches: string[];
+  description: string;
+}
+
+export const FACULTY_CATEGORIES: FacultyCategory[] = [
+  {
+    id: 'engineering',
+    name: 'Faculty of Engineering & Applied Sciences',
+    shortName: 'Engineering & Applied Sciences',
+    icon: 'cpu',
+    branches: ['Engineering & Applied Sciences'],
+    description: 'CSE, EEE, Civil, Textile & Data Science',
+  },
+  {
+    id: 'business',
+    name: 'Faculty of Business',
+    shortName: 'Business',
+    icon: 'briefcase',
+    branches: ['Business'],
+    description: 'Management, Accounting, Marketing & Finance',
+  },
+  {
+    id: 'arts_humanities',
+    name: 'Faculty of Arts & Humanities',
+    shortName: 'Arts & Humanities',
+    icon: 'book-open',
+    branches: ['Arts & Humanities'],
+    description: 'Department of English',
+  },
+  {
+    id: 'social_sciences',
+    name: 'Faculty of Social Sciences',
+    shortName: 'Social Sciences',
+    icon: 'globe',
+    branches: ['Social Sciences', 'Science / Social Sciences'],
+    description: 'Economics, Mathematics & Statistics',
+  },
+  {
+    id: 'law',
+    name: 'Faculty of Law',
+    shortName: 'Law',
+    icon: 'shield',
+    branches: ['Law'],
+    description: 'Department of Law & Justice',
+  },
+];
 
 export interface FacultyMember {
   id: string;
@@ -179,6 +231,110 @@ export function PersonBadges({ f, C }: { f: FacultyMember; C: Colors }) {
         </View>
       )}
     </View>
+  );
+}
+
+export interface TeacherBarProps {
+  f: FacultyMember;
+  deptName?: string | null;
+  saved?: boolean;
+  onToggleSave?: () => void;
+  onOpen: () => void;
+  C: Colors;
+  goldColor?: string;
+}
+
+export function TeacherBar({
+  f,
+  deptName,
+  saved,
+  onToggleSave,
+  onOpen,
+  C,
+  goldColor = Accent.gold,
+}: TeacherBarProps) {
+  const t = useT();
+  const status = getCounselingStatus(f.counseling_hours, f.on_leave);
+  const location = [f.building, f.room_number ? `Rm ${f.room_number}` : null].filter(Boolean).join(' · ');
+
+  return (
+    <TouchableOpacity
+      style={[styles.teacherBar, { backgroundColor: C.surface, borderColor: C.border }]}
+      onPress={onOpen}
+      activeOpacity={0.75}
+    >
+      <View style={styles.barAvatarWrap}>
+        <Avatar uri={f.photo_url} name={f.name} size="md" />
+        {status?.active && (
+          <View style={[styles.activeDot, { backgroundColor: C.success, borderColor: C.surface }]} />
+        )}
+      </View>
+
+      <View style={styles.barBody}>
+        <View style={styles.barNameRow}>
+          <Text style={[styles.barName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+            {f.name}
+          </Text>
+          {f.short_code ? (
+            <View style={[styles.codeBadge, { backgroundColor: `${FACULTY_ACCENT}16` }]}>
+              <Text style={[styles.codeBadgeTxt, { color: FACULTY_ACCENT, fontFamily: FontFamily.jakartaExtraBold }]}>
+                {f.short_code}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+
+        <Text style={[styles.barDesig, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+          {f.designation}{deptName ? ` · ${shortDept(deptName)}` : ''}
+        </Text>
+
+        <View style={styles.barMetaRow}>
+          {f.is_chairman ? (
+            <View style={[styles.miniBadge, { backgroundColor: C.infoBg }]}>
+              <Feather name="star" size={10} color={C.info} />
+              <Text style={[styles.miniBadgeTxt, { color: C.info, fontFamily: FontFamily.jakartaBold }]}>
+                {t.faculty2.chairmanBadge}
+              </Text>
+            </View>
+          ) : null}
+
+          {f.on_leave ? (
+            <View style={[styles.miniBadge, { backgroundColor: C.warnBg }]}>
+              <Text style={[styles.miniBadgeTxt, { color: C.warn, fontFamily: FontFamily.jakartaBold }]}>
+                {t.manage.onLeave}
+              </Text>
+            </View>
+          ) : null}
+
+          {status?.active ? (
+            <View style={[styles.miniBadge, { backgroundColor: C.successBg }]}>
+              <Text style={[styles.miniBadgeTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
+                {t.faculty2.counselingAvailableNow}
+              </Text>
+            </View>
+          ) : null}
+
+          {location.length > 0 && !f.on_leave && (
+            <View style={styles.barLocRow}>
+              <Icon name="pin" size={11} color={C.textMuted} />
+              <Text style={[styles.barLocTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
+                {location}
+              </Text>
+            </View>
+          )}
+        </View>
+      </View>
+
+      <View style={styles.barRightSlot}>
+        {onToggleSave && saved !== undefined ? (
+          <TouchableOpacity style={styles.starTouch} onPress={onToggleSave} hitSlop={10} activeOpacity={0.7}>
+            <Feather name="star" size={17} color={saved ? goldColor : C.textMuted} />
+          </TouchableOpacity>
+        ) : (
+          <Icon name="chevR" size={16} color={C.textMuted} />
+        )}
+      </View>
+    </TouchableOpacity>
   );
 }
 
@@ -485,4 +641,69 @@ const styles = StyleSheet.create({
   footActionTxt: {
     fontSize: 12,
   } as TextStyle,
+
+  teacherBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginBottom: 8,
+    gap: 12,
+  } as ViewStyle,
+  barAvatarWrap: {
+    position: 'relative',
+  } as ViewStyle,
+  barBody: {
+    flex: 1,
+    minWidth: 0,
+    justifyContent: 'center',
+  } as ViewStyle,
+  barNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  } as ViewStyle,
+  barName: {
+    fontSize: 14.5,
+    flexShrink: 1,
+  } as TextStyle,
+  barDesig: {
+    fontSize: 12,
+    marginTop: 2,
+  } as TextStyle,
+  barMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 5,
+  } as ViewStyle,
+  miniBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 6,
+  } as ViewStyle,
+  miniBadgeTxt: {
+    fontSize: 10,
+  } as TextStyle,
+  barLocRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  } as ViewStyle,
+  barLocTxt: {
+    fontSize: 11,
+  } as TextStyle,
+  barRightSlot: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingLeft: 4,
+  } as ViewStyle,
+  starTouch: {
+    padding: 6,
+  } as ViewStyle,
 });

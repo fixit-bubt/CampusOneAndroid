@@ -1136,8 +1136,23 @@ The Faculty directory is modernized into an institutional tool providing automat
 - **Draft Paper Proposal Modal:** Formats a structured academic email populated with student name, intake, and section from the caller's CampusOne profile, launching the native email client with subject and body pre-filled.
 
 ### 30.6 Design System & Institutional Standards
-- **High-Density Institutional Cards (`FacultyCard`):** Displays avatar, presence dot, initial code badge, designation, office location, counseling status pill, research pills, and direct `ContactSheet` launcher.
+- **High-Density Institutional Cards (`FacultyCard` & `TeacherBar`):** Displays avatar, presence dot, initial code badge, designation, office location, counseling status pill, research pills, and direct `ContactSheet` launcher.
 - **Bilingual Internationalization:** Full translation key parity in `src/i18n/en.ts` and `src/i18n/bn.ts` (`faculty2` and `manage` namespaces).
+
+### 30.7 Faculty Categories Drilling Hierarchy (`FacultyScreen.tsx` & `FacultyDeptScreen.tsx`)
+- **Level 1 (Faculty Categories):** Full-width bars representing the 5 official BUBT Faculties:
+  - *Faculty of Engineering & Applied Sciences* (`cpu`, CSE, EEE, Civil, Textile, Data Science)
+  - *Faculty of Business* (`briefcase`, Management, Accounting, Marketing, Finance)
+  - *Faculty of Arts & Humanities* (`book-open`, English)
+  - *Faculty of Social Sciences* (`globe`, Economics, Mathematics & Statistics)
+  - *Faculty of Law* (`shield`, Law & Justice)
+- **Level 2 (Department Listing):** Drilling into a faculty category reveals its departments as full-width bars with breadcrumb back navigation (`Back to Faculties`).
+- **Level 3 (Department Roster):** `FacultyDeptScreen.tsx` renders faculty members as compact `TeacherBar`s. Tapping opens `FacultyProfileScreen.tsx` for full dossier, contact options, and counseling schedules.
+
+### 30.8 Dropdown Selector Bars & Segmented Switcher Polish
+- **Dropdown Selector Bars:** Full-width institutional selector bars for Department and Publication Domain in both *Research Mentors* and *My Teachers* tabs, opening clean bottom sheet pickers with checkmarks and teacher counts.
+- **Header App Logo:** SubBar top app bar right slot uses the official `<LogoMark size={28} shadow={false} />` (star icon removed).
+- **Segmented Switcher Sizing:** 3-tab switcher (`Departments`, `Research Mentors`, `My Teachers`) scaled to match `HomeCommunityUpdates` dimensions (`borderRadius: 16`, `padding: 4`, `paddingVertical: 10`, `borderRadius: 13`, `fontSize: 13`).
 
 
 

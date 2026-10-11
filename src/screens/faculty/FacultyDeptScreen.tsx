@@ -14,13 +14,12 @@ import { useT } from '../../i18n';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { useToast } from '../../components/ui/Toast';
-import { ContactSheet } from '../../components/ui/ContactSheet';
 import { FontFamily, Layout, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import {
   FACULTY_ACCENT, BRANCH_ICON, shortDept, sortFaculty, interestsOf,
-  FacultyCard, type FacultyMember, type Department,
+  TeacherBar, type FacultyMember, type Department,
 } from './facultyShared';
 
 export function FacultyDeptScreen({ route, navigation }: any) {
@@ -34,7 +33,6 @@ export function FacultyDeptScreen({ route, navigation }: any) {
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [query, setQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
-  const [contactTeacher, setContactTeacher] = useState<FacultyMember | null>(null);
 
   const load = useCallback(async () => {
     const [deptRes, facRes, savedRes] = await Promise.all([
@@ -145,16 +143,15 @@ export function FacultyDeptScreen({ route, navigation }: any) {
         ) : (
           <View style={styles.list}>
             {list.map(f => (
-              <FacultyCard
+              <TeacherBar
                 key={f.id}
                 f={f}
+                deptName={dept?.name}
                 saved={savedIds.has(f.id)}
                 onToggleSave={() => toggleSave(f.id)}
                 onOpen={() => navigation.navigate('FacultyProfile', { facultyId: f.id })}
-                onContact={() => setContactTeacher(f)}
                 C={C}
                 goldColor={Accent.gold}
-                isDark={isDark}
               />
             ))}
           </View>
@@ -162,21 +159,6 @@ export function FacultyDeptScreen({ route, navigation }: any) {
 
         <View style={{ height: 24 }} />
       </ScrollView>
-
-      {/* Institutional Contact Sheet */}
-      {contactTeacher && (
-        <ContactSheet
-          visible={!!contactTeacher}
-          name={contactTeacher.name}
-          title={contactTeacher.designation}
-          roleSubtitle={dept?.name}
-          avatarUri={contactTeacher.photo_url}
-          phone={contactTeacher.phone}
-          email={contactTeacher.email}
-          whatsAppMessage={`Hello ${contactTeacher.name}, I am a student of BUBT contacting you regarding academic consultation.`}
-          onClose={() => setContactTeacher(null)}
-        />
-      )}
     </SafeAreaView>
   );
 }

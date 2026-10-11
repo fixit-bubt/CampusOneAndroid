@@ -779,6 +779,12 @@ export const bn: Dict = {
     counselingTodayAt: (time: string) => `আজ কাউন্সেলিং সময়: ${time}`,
     counselingScheduledToday: "আজ কাউন্সেলিং নির্ধারিত রয়েছে",
     chairmanBadge: "চেয়ারম্যান",
+    allDomains: "সকল ক্ষেত্র",
+    selectDepartment: "বিভাগ নির্বাচন করুন",
+    selectDomain: "প্রকাশনার ক্ষেত্র নির্বাচন করুন",
+    allFaculties: "সকল ফ্যাকাল্টি",
+    backToFaculties: "ফ্যাকাল্টি তালিকায় ফিরুন",
+    departmentsCount: (n: number) => `${n} টি বিভাগ`,
   },
 
   jobs2: {
