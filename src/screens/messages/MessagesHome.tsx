@@ -102,6 +102,49 @@ export function MessagesHome({ navigation }: any) {
   }
   rows.sort((a, b) => (b.lastAt - a.lastAt) || a.title.localeCompare(b.title));
 
+  const renderRow = useCallback(({ item: r }: { item: Row }) => {
+    const last = lastByConv[r.key];
+    return (
+      <TouchableOpacity
+        style={styles.row}
+        onPress={() => navigation.navigate('MessageThread', { kind: r.kind, id: r.id, title: r.title })}
+        activeOpacity={0.7}
+      >
+        {r.isGroup ? (
+          <View style={[styles.groupIcon, { backgroundColor: C.surface2 }]}>
+            <Feather name={r.kind === 'club' ? 'users' : 'book-open'} size={19} color={C.brand} />
+          </View>
+        ) : (
+          <Avatar uri={r.avatarUri} name={r.avatarName} size="md" />
+        )}
+        <View style={styles.rowBody}>
+          <View style={styles.rowTop}>
+            <Text style={[styles.rowTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+              {r.title}
+            </Text>
+            {last && (
+              <Text style={[styles.rowTime, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                {timeAgo(last.createdAt)}
+              </Text>
+            )}
+          </View>
+          <View style={styles.rowBottom}>
+            <Text style={[styles.rowSub, { color: r.unread > 0 ? C.text2 : C.textMuted, fontFamily: r.unread > 0 ? FontFamily.jakartaBold : FontFamily.jakartaMedium }]} numberOfLines={1}>
+              {r.subtitle || ' '}
+            </Text>
+            {r.unread > 0 && (
+              <View style={[styles.badge, { backgroundColor: C.brand }]}>
+                <Text style={[styles.badgeTxt, { color: C.white, fontFamily: FontFamily.jakartaExtraBold }]}>
+                  {r.unread > 9 ? '9+' : r.unread}
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  }, [lastByConv, navigation, C]);
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <View style={[styles.header, { paddingHorizontal: Layout.screenPadding }]}>
@@ -112,6 +155,9 @@ export function MessagesHome({ navigation }: any) {
       <FlatList
         data={rows}
         keyExtractor={r => r.key}
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={5}
         contentContainerStyle={{ paddingHorizontal: Layout.screenPadding, paddingTop: 6, paddingBottom: 24 }}
         showsVerticalScrollIndicator={false}
         ItemSeparatorComponent={() => <View style={[styles.divider, { backgroundColor: C.border }]} />}
@@ -130,48 +176,7 @@ export function MessagesHome({ navigation }: any) {
             </View>
           </View>
         }
-        renderItem={({ item: r }) => {
-          const last = lastByConv[r.key];
-          return (
-            <TouchableOpacity
-              style={styles.row}
-              onPress={() => navigation.navigate('MessageThread', { kind: r.kind, id: r.id, title: r.title })}
-              activeOpacity={0.7}
-            >
-              {r.isGroup ? (
-                <View style={[styles.groupIcon, { backgroundColor: C.surface2 }]}>
-                  <Feather name={r.kind === 'club' ? 'users' : 'book-open'} size={19} color={C.brand} />
-                </View>
-              ) : (
-                <Avatar uri={r.avatarUri} name={r.avatarName} size="md" />
-              )}
-              <View style={styles.rowBody}>
-                <View style={styles.rowTop}>
-                  <Text style={[styles.rowTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                    {r.title}
-                  </Text>
-                  {last && (
-                    <Text style={[styles.rowTime, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                      {timeAgo(last.createdAt)}
-                    </Text>
-                  )}
-                </View>
-                <View style={styles.rowBottom}>
-                  <Text style={[styles.rowSub, { color: r.unread > 0 ? C.text2 : C.textMuted, fontFamily: r.unread > 0 ? FontFamily.jakartaBold : FontFamily.jakartaMedium }]} numberOfLines={1}>
-                    {r.subtitle || ' '}
-                  </Text>
-                  {r.unread > 0 && (
-                    <View style={[styles.badge, { backgroundColor: C.brand }]}>
-                      <Text style={[styles.badgeTxt, { color: C.white, fontFamily: FontFamily.jakartaExtraBold }]}>
-                        {r.unread > 9 ? '9+' : r.unread}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              </View>
-            </TouchableOpacity>
-          );
-        }}
+        renderItem={renderRow}
       />
     </SafeAreaView>
   );

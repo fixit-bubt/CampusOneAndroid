@@ -157,6 +157,7 @@ export function AllReportsScreen({ navigation }: any) {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
         style={{ flexGrow: 0 }}
         contentContainerStyle={[styles.chips, { paddingHorizontal: Layout.screenPadding }]}
       >
@@ -187,6 +188,7 @@ export function AllReportsScreen({ navigation }: any) {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
         style={{ flexGrow: 0 }}
         contentContainerStyle={[styles.catChips, { paddingHorizontal: Layout.screenPadding }]}
       >

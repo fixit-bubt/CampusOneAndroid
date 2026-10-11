@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView, StyleSheet,
   RefreshControl, Alert, Modal, ActivityIndicator, KeyboardAvoidingView, Platform, type ViewStyle,
@@ -36,6 +36,13 @@ export function ManageUsersScreen({ navigation }: any) {
   const [toast, setToast] = useState(false);
   const showToast = useToast();
   const [expertiseTarget, setExpertiseTarget] = useState<Profile | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
 
   // Assign-position pickers (student rows only)
   const [crFor, setCrFor] = useState<Profile | null>(null);
@@ -90,8 +97,9 @@ export function ManageUsersScreen({ navigation }: any) {
             setUsers(prev => prev.map(x => x.id === u.id ? { ...x, role: next } : x));
             const { error } = await supabase.from('profiles').update({ role: next }).eq('id', u.id);
             if (error) { showToast({ type: 'error', title: t.common.error, message: error.message }); await load(); return; }
+            if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
             setToast(true);
-            setTimeout(() => setToast(false), 1500);
+            toastTimerRef.current = setTimeout(() => setToast(false), 1500);
           },
         },
       ]
@@ -103,8 +111,9 @@ export function ManageUsersScreen({ navigation }: any) {
     setExpertiseTarget(null);
     const { error } = await supabase.from('profiles').update({ expertise: value }).eq('id', u.id);
     if (error) { showToast({ type: 'error', title: t.common.error, message: error.message }); await load(); return; }
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     setToast(true);
-    setTimeout(() => setToast(false), 1500);
+    toastTimerRef.current = setTimeout(() => setToast(false), 1500);
   }
 
   async function openCr(u: Profile) {

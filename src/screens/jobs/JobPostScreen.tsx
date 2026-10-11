@@ -84,10 +84,9 @@ interface PickedCircular {
 }
 
 function addDhakaDays(days: number): string {
-  const today = localToday();
-  const d = new Date(`${today}T00:00:00Z`);
-  d.setDate(d.getDate() + days);
-  return d.toISOString().split('T')[0];
+  const [y, m, d] = localToday().split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d + days));
+  return dt.toISOString().split('T')[0];
 }
 
 function semesterChipLabel(sem: number, anyLabel: string) {
@@ -127,8 +126,8 @@ export function JobPostScreen({ navigation }: any) {
 
   // Permission guard: ensure only authorized posters can access
   useEffect(() => {
-    supabase.rpc('can_post_jobs').then(({ data }) => {
-      if (data === false) {
+    supabase.rpc('can_post_jobs').then(({ data, error }) => {
+      if (error || data !== true) {
         toast({ type: 'error', title: t.jobs2.accessDenied, message: 'You do not have permission to post jobs or circulars.' });
         navigation.goBack();
       }

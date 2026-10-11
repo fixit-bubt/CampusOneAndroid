@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   RefreshControl, Image, ActivityIndicator, Animated, FlatList,
-  Modal, ScrollView, Switch, Dimensions, type ViewStyle, type TextStyle,
+  Modal, ScrollView, Switch, Dimensions, Platform, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -782,6 +782,10 @@ export function MarketScreen({ navigation }: any) {
             keyExtractor={item => item.id}
             renderItem={renderItem}
             numColumns={2}
+            initialNumToRender={6}
+            maxToRenderPerBatch={6}
+            windowSize={5}
+            removeClippedSubviews={Platform.OS === 'android'}
             columnWrapperStyle={{ gap: cardGap, paddingHorizontal: Layout.screenPadding }}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}

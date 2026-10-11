@@ -3,7 +3,7 @@
 // conversationId param (from ChatbotHistoryScreen), or a fresh blank one
 // otherwise - created lazily in the DB on the first message actually sent,
 // so browsing in and backing out never leaves an empty chat behind.
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView,
   ScrollView, Platform, ActivityIndicator, StyleSheet, Alert, Image, type ViewStyle, type TextStyle, type ImageStyle,
@@ -217,7 +217,7 @@ export function ChatbotScreen({ navigation, route }: any) {
     ]);
   }
 
-  function renderBubble(m: Bubble) {
+  const renderItem = useCallback(({ item: m }: { item: Bubble }) => {
     const mine = m.role === 'user';
     const bubbleStyle = mine
       ? { backgroundColor: C.brand }
@@ -236,9 +236,9 @@ export function ChatbotScreen({ navigation, route }: any) {
         </View>
       </View>
     );
-  }
+  }, [C]);
 
-  const rendered = [...messages].reverse();
+  const rendered = useMemo(() => [...messages].reverse(), [messages]);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -315,11 +315,14 @@ export function ChatbotScreen({ navigation, route }: any) {
             inverted
             data={rendered}
             keyExtractor={(m) => m.id}
+            initialNumToRender={15}
+            maxToRenderPerBatch={10}
+            windowSize={5}
             contentContainerStyle={{ paddingHorizontal: Layout.screenPadding, paddingVertical: 12 }}
             showsVerticalScrollIndicator={false}
             keyboardDismissMode="on-drag"
             keyboardShouldPersistTaps="handled"
-            renderItem={({ item }) => renderBubble(item)}
+            renderItem={renderItem}
           />
         )}
 

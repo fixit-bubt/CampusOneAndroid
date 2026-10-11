@@ -7,7 +7,7 @@ import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet,
   Modal, Animated, RefreshControl, ActivityIndicator, ScrollView,
-  type ViewStyle, type TextStyle,
+  Platform, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -425,6 +425,168 @@ export function DirectoryScreen({ route, navigation }: any) {
     return list;
   }, [students, tab, classmatesOnly, selectedDept, query, profile?.intake, profile?.section]);
 
+  const renderStudentItem = useCallback(({ item: s }: { item: Student }) => {
+    const isBusy = !!actionBusy[s.id];
+    const metaParts = [s.department, s.intake ? `Intake ${s.intake}` : null, s.section ? `Sec ${s.section}` : null]
+      .filter(Boolean)
+      .join(' · ');
+
+    return (
+      <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
+        <View style={styles.cardTop}>
+          <TouchableOpacity
+            style={styles.identity}
+            onPress={() => navigation.navigate('StudentProfile', { student: s })}
+            activeOpacity={0.7}
+          >
+            <Avatar uri={s.avatar_url} name={s.full_name} size="md" />
+            <View style={styles.cardBody}>
+              <Text style={[styles.cardName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                {s.full_name}
+              </Text>
+
+              {metaParts.length > 0 && (
+                <Text style={[styles.cardMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                  {metaParts}
+                </Text>
+              )}
+
+              {/* Badges: CR + Blood */}
+              <View style={styles.cardBadges}>
+                {s.is_cr ? (
+                  <View
+                    style={[
+                      styles.miniCrBadge,
+                      {
+                        backgroundColor: isDark ? 'rgba(245, 158, 11, 0.2)' : '#fef3c7',
+                        borderColor: isDark ? 'rgba(245, 158, 11, 0.4)' : '#fde68a',
+                      },
+                    ]}
+                  >
+                    <Text style={[styles.miniCrTxt, { color: isDark ? '#fbbf24' : '#b45309', fontFamily: FontFamily.jakartaBold }]}>
+                      CR
+                    </Text>
+                  </View>
+                ) : null}
+
+                {s.blood_group ? (
+                  <View
+                    style={[
+                      styles.miniBloodBadge,
+                      {
+                        backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : '#fee2e2',
+                        borderColor: isDark ? 'rgba(239, 68, 68, 0.4)' : '#fca5a5',
+                      },
+                    ]}
+                  >
+                    <Text style={[styles.miniBloodTxt, { color: isDark ? '#f87171' : '#b91c1c', fontFamily: FontFamily.jakartaBold }]}>
+                      {s.blood_group}
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
+            </View>
+          </TouchableOpacity>
+
+          {/* Right Action based on Tab and Status */}
+          {tab === 'connections' ? (
+            <View style={styles.connActionsRow}>
+              <TouchableOpacity
+                style={[styles.smallIconBtn, { backgroundColor: C.brand }]}
+                onPress={() => navigation.navigate('MessageThread', { kind: 'dm', id: s.id, title: s.full_name })}
+                activeOpacity={0.8}
+              >
+                <Icon name="chat" size={14} color="#fff" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.smallIconBtn, { backgroundColor: C.surface2, borderColor: C.border, borderWidth: 1 }]}
+                onPress={() => setContactStudent(s)}
+                activeOpacity={0.8}
+              >
+                <Icon name="phone" size={14} color={C.text} />
+              </TouchableOpacity>
+            </View>
+          ) : s.connState === 'connected' ? (
+            <TouchableOpacity
+              style={[styles.connPillBtn, { backgroundColor: pillBg(Accent.teal, isDark) }]}
+              onPress={() => setContactStudent(s)}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.connDot, { backgroundColor: Accent.teal }]} />
+              <Text style={[styles.connTxt, { color: Accent.teal, fontFamily: FontFamily.jakartaBold }]}>
+                {t.directory2.connected}
+              </Text>
+            </TouchableOpacity>
+          ) : s.connState === 'requested' ? (
+            <View style={styles.requestedBox}>
+              <View style={[styles.connPill, { backgroundColor: C.warnBg }]}>
+                <View style={[styles.connDot, { backgroundColor: C.warn }]} />
+                <Text style={[styles.connTxt, { color: C.warn, fontFamily: FontFamily.jakartaBold }]}>
+                  {t.directory2.requested}
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.cancelLink, { borderColor: C.border }]}
+                onPress={() => handleCancel(s.id)}
+                disabled={isBusy}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.cancelLinkTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                  {t.directory2.cancelRequest}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : s.connState === 'none' ? (
+            <TouchableOpacity
+              style={[styles.connectBtn, { backgroundColor: C.brand, opacity: isBusy ? 0.6 : 1 }]}
+              onPress={() => handleConnect(s.id)}
+              disabled={isBusy}
+              activeOpacity={0.85}
+            >
+              <Icon name="userPlus" size={14} color="#fff" />
+              <Text style={[styles.connectTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                {t.directory2.connect}
+              </Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
+
+        {/* Incoming Request Notification Row */}
+        {s.connState === 'incoming' && (
+          <View style={[styles.incomingArea, { borderTopColor: C.border }]}>
+            <Text style={[styles.wantsToConnect, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+              {t.directory2.wantsToConnect}
+            </Text>
+            <View style={styles.incomingActions}>
+              <TouchableOpacity
+                style={[styles.halfActionBtn, { backgroundColor: C.brand, opacity: isBusy ? 0.6 : 1 }]}
+                onPress={() => handleAccept(s.id)}
+                disabled={isBusy}
+                activeOpacity={0.85}
+              >
+                <Icon name="check" size={14} color="#fff" />
+                <Text style={[styles.halfBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                  {t.directory2.accept}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.halfActionBtn, { backgroundColor: C.surface2, borderColor: C.border, borderWidth: 1 }]}
+                onPress={() => handleDecline(s.id)}
+                disabled={isBusy}
+                activeOpacity={0.85}
+              >
+                <Icon name="x" size={14} color={C.text} />
+                <Text style={[styles.halfBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  {t.directory2.decline}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+      </View>
+    );
+  }, [actionBusy, C, navigation, tab, isDark, t, handleCancel, handleConnect, handleAccept, handleDecline, setContactStudent]);
+
   const hasCohort = !!(profile?.intake && profile?.section);
 
   return (
@@ -461,6 +623,10 @@ export function DirectoryScreen({ route, navigation }: any) {
         <FlatList
           data={filteredStudents}
           keyExtractor={s => s.id}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={7}
+          removeClippedSubviews={Platform.OS === 'android'}
           contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
           showsVerticalScrollIndicator={false}
           keyboardDismissMode="on-drag"
@@ -697,151 +863,7 @@ export function DirectoryScreen({ route, navigation }: any) {
               </View>
             )
           }
-          renderItem={({ item: s }) => {
-            const isBusy = !!actionBusy[s.id];
-            const metaParts = [s.department, s.intake ? `Intake ${s.intake}` : null, s.section ? `Sec ${s.section}` : null]
-              .filter(Boolean)
-              .join(' · ');
-
-            return (
-              <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
-                <View style={styles.cardTop}>
-                  <TouchableOpacity
-                    style={styles.identity}
-                    onPress={() => navigation.navigate('StudentProfile', { student: s })}
-                    activeOpacity={0.7}
-                  >
-                    <Avatar uri={s.avatar_url} name={s.full_name} size="md" />
-                    <View style={styles.cardBody}>
-                      <Text style={[styles.cardName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                        {s.full_name}
-                      </Text>
-
-                      {metaParts.length > 0 && (
-                        <Text style={[styles.cardMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                          {metaParts}
-                        </Text>
-                      )}
-
-                      {/* Badges: CR + Blood */}
-                      <View style={styles.cardBadges}>
-                        {s.is_cr ? (
-                          <View style={[styles.miniCrBadge, { backgroundColor: '#fef3c7', borderColor: '#fde68a' }]}>
-                            <Text style={[styles.miniCrTxt, { color: '#b45309', fontFamily: FontFamily.jakartaBold }]}>
-                              CR
-                            </Text>
-                          </View>
-                        ) : null}
-
-                        {s.blood_group ? (
-                          <View style={[styles.miniBloodBadge, { backgroundColor: '#fee2e2', borderColor: '#fca5a5' }]}>
-                            <Text style={[styles.miniBloodTxt, { color: '#b91c1c', fontFamily: FontFamily.jakartaBold }]}>
-                              {s.blood_group}
-                            </Text>
-                          </View>
-                        ) : null}
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-
-                  {/* Right Action based on Tab and Status */}
-                  {tab === 'connections' ? (
-                    <View style={styles.connActionsRow}>
-                      <TouchableOpacity
-                        style={[styles.smallIconBtn, { backgroundColor: C.brand }]}
-                        onPress={() => navigation.navigate('MessageThread', { kind: 'dm', id: s.id, title: s.full_name })}
-                        activeOpacity={0.8}
-                      >
-                        <Icon name="chat" size={14} color="#fff" />
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[styles.smallIconBtn, { backgroundColor: C.surface2, borderColor: C.border, borderWidth: 1 }]}
-                        onPress={() => setContactStudent(s)}
-                        activeOpacity={0.8}
-                      >
-                        <Icon name="phone" size={14} color={C.text} />
-                      </TouchableOpacity>
-                    </View>
-                  ) : s.connState === 'connected' ? (
-                    <TouchableOpacity
-                      style={[styles.connPillBtn, { backgroundColor: pillBg(Accent.teal, isDark) }]}
-                      onPress={() => setContactStudent(s)}
-                      activeOpacity={0.8}
-                    >
-                      <View style={[styles.connDot, { backgroundColor: Accent.teal }]} />
-                      <Text style={[styles.connTxt, { color: Accent.teal, fontFamily: FontFamily.jakartaBold }]}>
-                        {t.directory2.connected}
-                      </Text>
-                    </TouchableOpacity>
-                  ) : s.connState === 'requested' ? (
-                    <View style={styles.requestedBox}>
-                      <View style={[styles.connPill, { backgroundColor: C.warnBg }]}>
-                        <View style={[styles.connDot, { backgroundColor: C.warn }]} />
-                        <Text style={[styles.connTxt, { color: C.warn, fontFamily: FontFamily.jakartaBold }]}>
-                          {t.directory2.requested}
-                        </Text>
-                      </View>
-                      <TouchableOpacity
-                        style={[styles.cancelLink, { borderColor: C.border }]}
-                        onPress={() => handleCancel(s.id)}
-                        disabled={isBusy}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={[styles.cancelLinkTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                          {t.directory2.cancelRequest}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  ) : s.connState === 'none' ? (
-                    <TouchableOpacity
-                      style={[styles.connectBtn, { backgroundColor: C.brand, opacity: isBusy ? 0.6 : 1 }]}
-                      onPress={() => handleConnect(s.id)}
-                      disabled={isBusy}
-                      activeOpacity={0.85}
-                    >
-                      <Icon name="userPlus" size={14} color="#fff" />
-                      <Text style={[styles.connectTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
-                        {t.directory2.connect}
-                      </Text>
-                    </TouchableOpacity>
-                  ) : null}
-                </View>
-
-                {/* Incoming Request Notification Row */}
-                {s.connState === 'incoming' && (
-                  <View style={[styles.incomingArea, { borderTopColor: C.border }]}>
-                    <Text style={[styles.wantsToConnect, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
-                      {t.directory2.wantsToConnect}
-                    </Text>
-                    <View style={styles.incomingActions}>
-                      <TouchableOpacity
-                        style={[styles.halfActionBtn, { backgroundColor: C.brand, opacity: isBusy ? 0.6 : 1 }]}
-                        onPress={() => handleAccept(s.id)}
-                        disabled={isBusy}
-                        activeOpacity={0.85}
-                      >
-                        <Icon name="check" size={14} color="#fff" />
-                        <Text style={[styles.halfBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
-                          {t.directory2.accept}
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[styles.halfActionBtn, { backgroundColor: C.surface2, borderColor: C.border, borderWidth: 1 }]}
-                        onPress={() => handleDecline(s.id)}
-                        disabled={isBusy}
-                        activeOpacity={0.85}
-                      >
-                        <Icon name="x" size={14} color={C.text} />
-                        <Text style={[styles.halfBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                          {t.directory2.decline}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                )}
-              </View>
-            );
-          }}
+          renderItem={renderStudentItem}
         />
       )}
 

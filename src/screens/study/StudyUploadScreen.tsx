@@ -26,6 +26,15 @@ const FILE_TYPES = [
   { id: 'books',     label: 'Books' },
 ];
 
+const ALLOWED_MIME_TYPES = [
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-powerpoint',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'image/*',
+];
+
 // Must match the DB CHECK constraints exactly.
 const MATERIAL_TYPES = ['Class Note', 'Lecture Slide', 'Assignment', 'Reference', 'Lab Manual'];
 const BOOK_KINDS = ['Textbook', 'Reference', 'Syllabus'];
@@ -89,7 +98,7 @@ export function StudyUploadScreen({ route, navigation }: any) {
 
   async function pickFile() {
     const result = await DocumentPicker.getDocumentAsync({
-      type: '*/*',
+      type: ALLOWED_MIME_TYPES,
       copyToCacheDirectory: true,
     });
     if (result.canceled || !result.assets || result.assets.length === 0) return;

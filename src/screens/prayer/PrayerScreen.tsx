@@ -17,6 +17,8 @@ import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { FontFamily, Layout , SectorColors, darken } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { getCache, setCache, CacheKeys } from '../../services/cacheService';
+import { nowDhakaMinutes } from '../../utils/transitPrayer';
+import { localToday } from '../../utils/format';
 
 const PRAYER_GREEN = SectorColors.prayer;
 
@@ -48,9 +50,9 @@ interface Musallah {
 }
 
 function computeNext(prayers: PrayerTime[]): PrayerTime | undefined {
-  const now = new Date();
-  const isToday = (p: PrayerTime) => p.key !== 'jummah' || now.getDay() === 5;
-  const nowMins = now.getHours() * 60 + now.getMinutes();
+  const isFriday = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Dhaka', weekday: 'short' }).format(new Date()) === 'Fri';
+  const isToday = (p: PrayerTime) => p.key !== 'jummah' || isFriday;
+  const nowMins = nowDhakaMinutes();
   const todayNext = prayers.find(p => {
     if (!isToday(p)) return false;
     const [h = 0, m = 0] = p.azan.split(':').map(Number);
@@ -65,11 +67,10 @@ function computeNext(prayers: PrayerTime[]): PrayerTime | undefined {
 function timeUntil(timeStr: string): string {
   const [hh, mm] = timeStr.split(':').map(Number);
   if (isNaN(hh) || isNaN(mm)) return '';
-  const now = new Date();
-  const target = new Date(now);
-  target.setHours(hh, mm, 0, 0);
-  if (target <= now) target.setDate(target.getDate() + 1);
-  const diff = Math.floor((target.getTime() - now.getTime()) / 60000);
+  const targetMins = (hh % 24) * 60 + mm;
+  const nowMins = nowDhakaMinutes();
+  let diff = targetMins - nowMins;
+  if (diff <= 0) diff += 24 * 60; // wraps to tomorrow
   const h = Math.floor(diff / 60);
   const m = diff % 60;
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
@@ -286,11 +287,11 @@ export function PrayerScreen({ navigation }: any) {
               ))}
             </View>
             {(() => {
-              const now = new Date();
-              const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+              const [curY, curM, curD] = localToday().split('-').map(Number);
+              const daysInMonth = new Date(Date.UTC(curY, curM, 0)).getUTCDate();
               const rows = [];
               for (let d = 1; d <= daysInMonth; d++) {
-                const isToday = d === now.getDate();
+                const isToday = d === curD;
                 rows.push(
                   <View key={d}>
                     <View style={[styles.divider, { backgroundColor: C.border }]} />

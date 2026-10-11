@@ -591,10 +591,14 @@ export function StudyHubScreen({ navigation }: any) {
 
   async function assignCR(sectionId: string, userId: string) {
     // One CR per section: demote the current CR before promoting the new one.
-    await supabase
+    const { error: demoteErr } = await supabase
       .from('study_section_members')
       .update({ role: 'member' })
       .eq('section_id', sectionId).eq('role', 'cr').neq('user_id', userId);
+    if (demoteErr) {
+      toast({ type: 'error', title: 'Error', message: demoteErr.message });
+      return;
+    }
     const { error } = await supabase
       .from('study_section_members')
       .upsert(

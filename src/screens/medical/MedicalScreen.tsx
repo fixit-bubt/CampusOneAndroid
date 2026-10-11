@@ -13,6 +13,7 @@ import { FontFamily, Layout , SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 import { useT } from '../../i18n';
+import { nowDhakaMinutes, dhakaWeekday } from '../../utils/transitPrayer';
 
 const MED_COLOR = SectorColors.medical;
 const MED_BG    = `${SectorColors.medical}1e`;
@@ -36,12 +37,11 @@ function toMins(s: string | null | undefined, fallback: number): number {
 
 function isOnDuty(doc: Doctor): boolean {
   if (!doc.active) return false;
-  const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const now = new Date();
-  if (!doc.days?.includes(DAY_NAMES[now.getDay()])) return false;
+  const currentDay = dhakaWeekday();
+  if (!doc.days?.includes(currentDay)) return false;
   const start = toMins(doc.start_time, 0);
   const end = toMins(doc.end_time, 24 * 60 - 1);
-  const nowMins = now.getHours() * 60 + now.getMinutes();
+  const nowMins = nowDhakaMinutes();
   // Handle overnight shifts (end before start wraps past midnight).
   return start <= end ? (nowMins >= start && nowMins <= end) : (nowMins >= start || nowMins <= end);
 }

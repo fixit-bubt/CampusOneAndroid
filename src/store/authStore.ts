@@ -3,6 +3,7 @@
 
 import React, { createContext, useContext, useEffect, useReducer, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { unregisterPushToken } from '../lib/push';
@@ -11,7 +12,36 @@ import { clearPeople } from '../services/peopleService';
 import { clearAllCache } from '../services/cacheService';
 import type { Profile } from '../types/database';
 
+const SECURE_PROFILE_KEY = (uid: string) => `c1_profile_${uid}`;
 const CACHED_PROFILE_KEY = (uid: string) => `@c1_profile_${uid}`;
+
+async function getCachedProfile(uid: string): Promise<Profile | null> {
+  try {
+    const raw = await SecureStore.getItemAsync(SECURE_PROFILE_KEY(uid));
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  try {
+    const fallback = await AsyncStorage.getItem(CACHED_PROFILE_KEY(uid));
+    if (fallback) return JSON.parse(fallback);
+  } catch {}
+  return null;
+}
+
+async function setCachedProfile(uid: string, profile: Profile): Promise<void> {
+  const json = JSON.stringify(profile);
+  try {
+    await SecureStore.setItemAsync(SECURE_PROFILE_KEY(uid), json);
+  } catch {}
+}
+
+async function clearCachedProfile(uid: string): Promise<void> {
+  try {
+    await SecureStore.deleteItemAsync(SECURE_PROFILE_KEY(uid));
+  } catch {}
+  try {
+    await AsyncStorage.removeItem(CACHED_PROFILE_KEY(uid));
+  } catch {}
+}
 
 interface AuthState {
   session: Session | null;
@@ -94,12 +124,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const uid = data.session?.user?.id;
       if (uid) {
         // Pre-load cached profile for instant cold start and offline access
-        try {
-          const cachedRaw = await AsyncStorage.getItem(CACHED_PROFILE_KEY(uid));
-          if (cachedRaw) {
-            dispatch({ type: 'SET_PROFILE', profile: JSON.parse(cachedRaw) });
-          }
-        } catch {}
+        getCachedProfile(uid).then((cached) => {
+          if (cached) dispatch({ type: 'SET_PROFILE', profile: cached });
+        });
         fetchProfile(uid);
       }
     });
@@ -110,12 +137,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setMonitoringUser(session?.user.id ?? null);
       if (session?.user?.id) {
         const uid = session.user.id;
-        try {
-          const cachedRaw = await AsyncStorage.getItem(CACHED_PROFILE_KEY(uid));
-          if (cachedRaw) {
-            dispatch({ type: 'SET_PROFILE', profile: JSON.parse(cachedRaw) });
-          }
-        } catch {}
+        getCachedProfile(uid).then((cached) => {
+          if (cached) dispatch({ type: 'SET_PROFILE', profile: cached });
+        });
         fetchProfile(uid);
       } else {
         dispatch({ type: 'SIGN_OUT' });
@@ -136,13 +160,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error || !data) {
       // Check if we have a cached profile before surfacing PROFILE_ERROR
       let hasCached = false;
-      try {
-        const cachedRaw = await AsyncStorage.getItem(CACHED_PROFILE_KEY(userId));
-        if (cachedRaw) {
-          dispatch({ type: 'SET_PROFILE', profile: JSON.parse(cachedRaw) });
-          hasCached = true;
-        }
-      } catch {}
+      const cached = await getCachedProfile(userId);
+      if (cached) {
+        dispatch({ type: 'SET_PROFILE', profile: cached });
+        hasCached = true;
+      }
 
       if (!hasCached && !state.profile) {
         console.error('fetchProfile failed without cache:', error?.message ?? 'Profile not found');
@@ -153,9 +175,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     // Persist latest profile for offline launches
-    try {
-      await AsyncStorage.setItem(CACHED_PROFILE_KEY(userId), JSON.stringify(data));
-    } catch {}
+    await setCachedProfile(userId, data as Profile);
     dispatch({ type: 'SET_PROFILE', profile: data as Profile });
   }
 
@@ -190,7 +210,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     clearPeople();      // drop the cached roster so the next account starts fresh
     clearAllCache();    // drop feature cache on sign-out
     if (state.user?.id) {
-      AsyncStorage.removeItem(CACHED_PROFILE_KEY(state.user.id)).catch(() => {});
+      clearCachedProfile(state.user.id);
     }
     await unregisterPushToken(); // stop pushes to this device (shared phones)
     try {
@@ -208,7 +228,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     clearPeople();
     clearAllCache();
     if (state.user?.id) {
-      AsyncStorage.removeItem(CACHED_PROFILE_KEY(state.user.id)).catch(() => {});
+      clearCachedProfile(state.user.id);
     }
     await unregisterPushToken().catch(() => {});
     const { error } = await supabase.rpc('delete_own_account');

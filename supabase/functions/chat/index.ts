@@ -473,13 +473,25 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Client-supplied history is untrusted — this endpoint is callable by any
-    // authenticated user directly, not just through the app. Drop malformed
-    // entries rather than letting a bad role/oversized text 400 the Gemini call.
-    const history = (Array.isArray(p.history) ? p.history : [])
+    const rawHistory = (Array.isArray(p.history) ? p.history : [])
       .filter((h): h is HistoryTurn =>
         (h?.role === 'user' || h?.role === 'model') && typeof h?.text === 'string' && h.text.length > 0 && h.text.length <= 4000)
       .slice(-20);
+
+    const history: HistoryTurn[] = [];
+    for (const turn of rawHistory) {
+      if (history.length === 0) {
+        if (turn.role === 'user') history.push(turn);
+      } else {
+        const last = history[history.length - 1];
+        if (last.role !== turn.role) {
+          history.push(turn);
+        }
+      }
+    }
+    if (history.length > 0 && history[history.length - 1].role === 'user') {
+      history.pop();
+    }
 
     // Only the CURRENT turn's image is sent to Gemini — past images in
     // history aren't re-fetched and re-attached on every later message, to

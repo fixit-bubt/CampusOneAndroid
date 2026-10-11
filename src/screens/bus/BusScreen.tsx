@@ -17,6 +17,7 @@ import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { getCache, setCache, CacheKeys } from '../../services/cacheService';
+import { minutesToHHMM, nowDhakaMinutes } from '../../utils/transitPrayer';
 import type { BusRoute } from '../../types/database';
 
 const BUS_COLOR = SectorColors.bus;
@@ -167,8 +168,7 @@ export function BusScreen({ navigation }: any) {
   }
 
   function nextDeparture(route: BusRoute): string {
-    const now = new Date();
-    const hhmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const hhmm = minutesToHHMM(nowDhakaMinutes());
     const upcoming = (route.to_departures ?? []).find(d => d > hhmm);
     const chosen = upcoming ?? (route.to_departures ?? [])[0];
     return chosen ? format12Hour(chosen) : '--:--';

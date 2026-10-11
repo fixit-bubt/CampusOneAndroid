@@ -47,10 +47,8 @@ export function ResetPasswordScreen({ route, navigation }: Props) {
     setNote('');
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(addr);
-      // Don't leak whether the email exists - always advance to the code step.
-      if (error && !/rate|limit/i.test(error.message)) {
-        setErr(error.message);
-      } else if (error) {
+      // Don't leak whether the email exists - always advance to the code step unless rate limited.
+      if (error && /rate|limit/i.test(error.message)) {
         setErr(t.auth.resetTooMany);
       } else {
         setStep('verify');

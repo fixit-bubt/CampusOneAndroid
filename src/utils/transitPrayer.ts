@@ -24,6 +24,10 @@ export function nowDhakaMinutes(): number {
   return (hour % 24) * 60 + minute;
 }
 
+export function dhakaWeekday(date: Date = new Date()): string {
+  return new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Dhaka', weekday: 'short' }).format(date);
+}
+
 export function toMinutes(hhmm: string): number {
   if (!hhmm) return 0;
   const [h = 0, m = 0] = hhmm.split(':').map(Number);

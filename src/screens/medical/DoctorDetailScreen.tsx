@@ -8,9 +8,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout , SectorColors } from '../../theme';
+import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useT } from '../../i18n';
+import { nowDhakaMinutes, dhakaWeekday } from '../../utils/transitPrayer';
 
 const MED_COLOR = SectorColors.medical;
 const MED_BG    = `${SectorColors.medical}1e`;
@@ -34,12 +35,11 @@ function toMins(s: string | null | undefined, fallback: number): number {
 
 function isOnDuty(doc: Doctor): boolean {
   if (!doc.active) return false;
-  const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const now = new Date();
-  if (!doc.days?.includes(DAY_NAMES[now.getDay()])) return false;
+  const currentDay = dhakaWeekday();
+  if (!doc.days?.includes(currentDay)) return false;
   const start = toMins(doc.start_time, 0);
   const end = toMins(doc.end_time, 24 * 60 - 1);
-  const nowMins = now.getHours() * 60 + now.getMinutes();
+  const nowMins = nowDhakaMinutes();
   // Handle overnight shifts (end before start wraps past midnight).
   return start <= end ? (nowMins >= start && nowMins <= end) : (nowMins >= start || nowMins <= end);
 }
@@ -67,12 +67,23 @@ export function DoctorDetailScreen({ route, navigation }: any) {
   const onDuty = doctor ? isOnDuty(doctor) : false;
 
   useEffect(() => {
-    if (!doctorId) { setFailed(true); return; }
+    let active = true;
+    if (!doctorId) {
+      setFailed(true);
+      return;
+    }
     (async () => {
       const { data, error } = await supabase.from('doctors').select('*').eq('id', doctorId).maybeSingle();
-      if (error || !data) { setFailed(true); return; }
+      if (!active) return;
+      if (error || !data) {
+        setFailed(true);
+        return;
+      }
       setDoctor(data as Doctor);
     })();
+    return () => {
+      active = false;
+    };
   }, [doctorId]);
 
   if (!doctor) {
