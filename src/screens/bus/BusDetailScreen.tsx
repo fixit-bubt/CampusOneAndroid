@@ -11,6 +11,7 @@ import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout, SectorColors, darken } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { getCache, CacheKeys } from '../../services/cacheService';
+import { nowDhakaMinutes, minutesToHHMM } from '../../utils/transitPrayer';
 import type { BusRoute } from '../../types/database';
 
 export function BusDetailScreen({ route, navigation }: any) {
@@ -51,15 +52,14 @@ export function BusDetailScreen({ route, navigation }: any) {
   }
 
   function nextDeparture(): string {
-    const now = new Date();
-    const hhmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const hhmm = minutesToHHMM(nowDhakaMinutes());
     const upcoming = (busRoute?.to_departures ?? []).find(d => d > hhmm);
     return upcoming ?? (busRoute?.to_departures ?? [])[0] ?? '--:--';
   }
 
   const next = nextDeparture();
-  const stops = busRoute.stops;
-  const legs = (busRoute?.leg_mins ?? []);
+  const stops = busRoute?.stops ?? [];
+  const legs = busRoute?.leg_mins ?? [];
 
   let cumulative = 0;
   const rows = stops.map((s, i) => {

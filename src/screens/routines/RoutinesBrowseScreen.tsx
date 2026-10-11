@@ -188,7 +188,11 @@ export function RoutinesBrowseScreen({ navigation }: any) {
       {
         text: t.common.delete, style: 'destructive',
         onPress: async () => {
-          await supabase.from('routines').delete().eq('id', r.id);
+          const { error } = await supabase.from('routines').delete().eq('id', r.id);
+          if (error) {
+            Alert.alert(t.common.error, error.message);
+            return;
+          }
           load();
         },
       },

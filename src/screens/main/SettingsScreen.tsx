@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import {
-  View, Text, TouchableOpacity, ScrollView, Modal,
+  View, Text, TouchableOpacity, ScrollView, Modal, KeyboardAvoidingView,
   StyleSheet, Switch, ActivityIndicator, Share, Linking, AppState, type ViewStyle,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -549,49 +549,51 @@ export function SettingsScreen({ navigation }: any) {
 
       {/* Change password sheet */}
       <Modal visible={pwOpen} transparent animationType="slide" onRequestClose={() => setPwOpen(false)}>
-        <TouchableOpacity style={styles.sheetOverlay} activeOpacity={1} onPress={() => setPwOpen(false)} />
-        <View style={[styles.sheetContent, { backgroundColor: C.surface }]}>
-          <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-            {t.mainx.changePassword}
-          </Text>
-          <Text style={[styles.sheetSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium, marginBottom: 14 }]}>
-            {t.mainx.pwAtLeast8}
-          </Text>
-          <PasswordInput
-            style={[styles.pwField, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-            value={pwNew} onChangeText={setPwNew}
-            placeholder={t.mainx.newPasswordPlaceholder} placeholderTextColor={C.textMuted}
-          />
-          <PasswordInput
-            style={[styles.pwField, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-            value={pwConfirm} onChangeText={setPwConfirm}
-            placeholder={t.mainx.confirmNewPasswordPlaceholder} placeholderTextColor={C.textMuted}
-          />
-          <TouchableOpacity
-            style={[styles.primaryBtn, { backgroundColor: C.brand, opacity: pwBusy ? 0.6 : 1, marginTop: 8 }]}
-            onPress={changePassword}
-            disabled={pwBusy}
-            activeOpacity={0.8}
-          >
-            {pwBusy
-              ? <ActivityIndicator color={C.white} size="small" />
-              : (
-                <Text style={[styles.btnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>
-                  {t.mainx.updatePassword}
-                </Text>
-              )}
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.cancelBtn, { borderColor: C.border }]}
-            onPress={() => setPwOpen(false)}
-            disabled={pwBusy}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.cancelBtnTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaSemiBold }]}>
-              {t.mainx.cancel}
+        <KeyboardAvoidingView behavior="padding" style={styles.sheetOverlay}>
+          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setPwOpen(false)} />
+          <View style={[styles.sheetContent, { backgroundColor: C.surface }]}>
+            <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+              {t.mainx.changePassword}
             </Text>
-          </TouchableOpacity>
-        </View>
+            <Text style={[styles.sheetSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium, marginBottom: 14 }]}>
+              {t.mainx.pwAtLeast8}
+            </Text>
+            <PasswordInput
+              style={[styles.pwField, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+              value={pwNew} onChangeText={setPwNew}
+              placeholder={t.mainx.newPasswordPlaceholder} placeholderTextColor={C.textMuted}
+            />
+            <PasswordInput
+              style={[styles.pwField, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+              value={pwConfirm} onChangeText={setPwConfirm}
+              placeholder={t.mainx.confirmNewPasswordPlaceholder} placeholderTextColor={C.textMuted}
+            />
+            <TouchableOpacity
+              style={[styles.primaryBtn, { backgroundColor: C.brand, opacity: pwBusy ? 0.6 : 1, marginTop: 8 }]}
+              onPress={changePassword}
+              disabled={pwBusy}
+              activeOpacity={0.8}
+            >
+              {pwBusy
+                ? <ActivityIndicator color={C.white} size="small" />
+                : (
+                  <Text style={[styles.btnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>
+                    {t.mainx.updatePassword}
+                  </Text>
+                )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.cancelBtn, { borderColor: C.border }]}
+              onPress={() => setPwOpen(false)}
+              disabled={pwBusy}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.cancelBtnTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaSemiBold }]}>
+                {t.mainx.cancel}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Delete account confirmation sheet */}

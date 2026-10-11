@@ -750,17 +750,18 @@ export function MarketPostScreen({ route, navigation }: any) {
       >
         <View style={styles.modalOverlay}>
           <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setLocationModalOpen(false)} />
-          <View
-            style={[
-              styles.modalSheet,
-              {
-                backgroundColor: C.surface,
-                borderColor: C.border,
-                paddingBottom: Math.max(insets.bottom, 20),
-                maxHeight: '88%',
-              },
-            ]}
-          >
+          <KeyboardAvoidingView behavior="padding" style={{ width: '100%', justifyContent: 'flex-end' }}>
+            <View
+              style={[
+                styles.modalSheet,
+                {
+                  backgroundColor: C.surface,
+                  borderColor: C.border,
+                  paddingBottom: Math.max(insets.bottom, 20),
+                  maxHeight: '88%',
+                },
+              ]}
+            >
             <View style={[styles.modalHandle, { backgroundColor: C.border }]} />
 
             {/* Header */}
@@ -874,7 +875,12 @@ export function MarketPostScreen({ route, navigation }: any) {
             )}
 
             {/* List of Locations */}
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 16 }}>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 16 }}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="on-drag"
+            >
               {locTab === 'campus' ? (
                 filteredCampusSpots.map((spot, i) => {
                   const on = meetupSpot === spot.name;
@@ -960,8 +966,9 @@ export function MarketPostScreen({ route, navigation }: any) {
               )}
             </ScrollView>
           </View>
-        </View>
-      </Modal>
+        </KeyboardAvoidingView>
+      </View>
+    </Modal>
     </SafeAreaView>
   );
 }

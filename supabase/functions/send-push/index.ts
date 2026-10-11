@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
     );
     const cfg = (await cfgRes.json()) as { value: string }[];
     const expected = cfg?.[0]?.value;
-    if (expected && req.headers.get('x-push-secret') !== expected) {
+    if (!expected || req.headers.get('x-push-secret') !== expected) {
       return new Response('forbidden', { status: 403 });
     }
 

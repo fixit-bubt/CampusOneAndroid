@@ -119,7 +119,7 @@ export function StudyUploadScreen({ route, navigation }: any) {
       if (pickedFile) {
         const isImg = isImageFile(pickedFile.name, pickedFile.mimeType);
         const ext = isImg ? 'jpg' : (pickedFile.name.split('.').pop() ?? 'bin');
-        storagePath = `${courseId}/${Date.now()}_${name.trim().replace(/\s+/g, '_')}.${ext}`;
+        storagePath = `${user.id}/${courseId}/${Date.now()}_${name.trim().replace(/\s+/g, '_')}.${ext}`;
         // uploadFile reads real bytes via the SDK 56 File API; fetch().blob() on
         // a content:// URI can silently upload 0 bytes in RN.
         // study-materials is a private bucket → bucketIsPublic=false, store the path.

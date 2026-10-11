@@ -159,7 +159,7 @@ const TOOLS = [
 // LIKE/ILIKE metacharacters in user-supplied search text must be escaped so a
 // literal % or _ doesn't turn into a wildcard (same rule as messagesService).
 function escLike(s: string): string {
-  return s.replace(/[\\%_]/g, (c) => `\\${c}`);
+  return s.replace(/[\\%_(),]/g, (c) => `\\${c}`);
 }
 
 // Department filters below do a plain ilike substring match against the
@@ -204,6 +204,21 @@ async function supaGet(supabaseUrl: string, anonKey: string, authHeader: string,
 
 const RATE_LIMIT_MAX = 6; // user turns per RATE_LIMIT_WINDOW_MS, per user
 const RATE_LIMIT_WINDOW_MS = 60_000;
+
+const userRequestTimestamps = new Map<string, number[]>();
+
+function checkInMemoryRateLimit(uid: string): boolean {
+  const now = Date.now();
+  const cutoff = now - RATE_LIMIT_WINDOW_MS;
+  const timestamps = (userRequestTimestamps.get(uid) ?? []).filter((t) => t > cutoff);
+  if (timestamps.length >= RATE_LIMIT_MAX) {
+    userRequestTimestamps.set(uid, timestamps);
+    return false;
+  }
+  timestamps.push(now);
+  userRequestTimestamps.set(uid, timestamps);
+  return true;
+}
 
 // Reuses chatbot_messages (already logged by the client for history) as the
 // rate-limit ledger — no separate table needed. RLS scopes this to the
@@ -442,6 +457,13 @@ Deno.serve(async (req) => {
     if (!message && !hasImage) return new Response(JSON.stringify({ error: 'message or image required' }), { status: 400 });
     if (message.length > 4000) return new Response(JSON.stringify({ error: 'message too long (max 4000 chars)' }), { status: 400 });
     if (imageBase64.length > MAX_IMAGE_BASE64_CHARS) return new Response(JSON.stringify({ error: 'image too large' }), { status: 400 });
+
+    if (!checkInMemoryRateLimit(uid)) {
+      return new Response(
+        JSON.stringify({ error: "You're sending messages too fast — wait a moment and try again." }),
+        { status: 429 },
+      );
+    }
 
     const recentCount = await recentUserMessageCount(supabaseUrl, anonKey, authHeader);
     if (recentCount >= RATE_LIMIT_MAX) {

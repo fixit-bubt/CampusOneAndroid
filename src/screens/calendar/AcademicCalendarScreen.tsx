@@ -201,7 +201,11 @@ export function AcademicCalendarScreen({ navigation }: any) {
       {
         text: t.common.delete, style: 'destructive',
         onPress: async () => {
-          await supabase.from('academic_calendar').delete().eq('id', ev.id);
+          const { error } = await supabase.from('academic_calendar').delete().eq('id', ev.id);
+          if (error) {
+            Alert.alert(t.common.error, error.message);
+            return;
+          }
           load();
         },
       },

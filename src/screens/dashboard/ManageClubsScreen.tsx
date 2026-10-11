@@ -231,56 +231,58 @@ export function ManageClubsScreen({ navigation }: any) {
 
       {/* Create club sheet */}
       <Modal visible={createOpen} transparent animationType="slide" onRequestClose={() => setCreateOpen(false)}>
-        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setCreateOpen(false)} />
-        <View style={[styles.sheet, { backgroundColor: C.surface }]}>
-          <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-            {t.clubs.newClub}
-          </Text>
-          <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.clubs.clubName}</Text>
-          <TextInput
-            style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-            value={name} onChangeText={setName} placeholder={t.manage.clubNamePlaceholder} placeholderTextColor={C.textMuted}
-          />
-          <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.clubs.tagline}</Text>
-          <TextInput
-            style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-            value={tagline} onChangeText={setTagline} placeholder={t.manage.taglinePlaceholder} placeholderTextColor={C.textMuted}
-          />
-          <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.clubs.category}</Text>
-          <View style={styles.catRow}>
-            {CATEGORIES.map(c => {
-              const on = category === c;
-              return (
-                <TouchableOpacity
-                  key={c}
-                  style={[styles.catChip, on
-                    ? { backgroundColor: C.brand, borderColor: C.brand }
-                    : { backgroundColor: C.bg, borderColor: C.border }]}
-                  onPress={() => setCategory(c)}
-                  activeOpacity={0.75}
-                >
-                  <Text style={[styles.catChipTxt, { color: on ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                    {c.charAt(0).toUpperCase() + c.slice(1)}
+        <KeyboardAvoidingView behavior="padding" style={styles.overlay}>
+          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setCreateOpen(false)} />
+          <View style={[styles.sheet, { backgroundColor: C.surface }]}>
+            <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+              {t.clubs.newClub}
+            </Text>
+            <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.clubs.clubName}</Text>
+            <TextInput
+              style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+              value={name} onChangeText={setName} placeholder={t.manage.clubNamePlaceholder} placeholderTextColor={C.textMuted}
+            />
+            <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.clubs.tagline}</Text>
+            <TextInput
+              style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+              value={tagline} onChangeText={setTagline} placeholder={t.manage.taglinePlaceholder} placeholderTextColor={C.textMuted}
+            />
+            <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.clubs.category}</Text>
+            <View style={styles.catRow}>
+              {CATEGORIES.map(c => {
+                const on = category === c;
+                return (
+                  <TouchableOpacity
+                    key={c}
+                    style={[styles.catChip, on
+                      ? { backgroundColor: C.brand, borderColor: C.brand }
+                      : { backgroundColor: C.bg, borderColor: C.border }]}
+                    onPress={() => setCategory(c)}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={[styles.catChipTxt, { color: on ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                      {c.charAt(0).toUpperCase() + c.slice(1)}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <TouchableOpacity
+              style={[styles.createBtn, { backgroundColor: C.brand, opacity: name.trim() && !creating ? 1 : 0.55 }]}
+              onPress={createClub}
+              disabled={!name.trim() || creating}
+              activeOpacity={0.8}
+            >
+              {creating
+                ? <ActivityIndicator color={C.white} size="small" />
+                : (
+                  <Text style={[styles.createBtnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>
+                    {t.clubs.newClub}
                   </Text>
-                </TouchableOpacity>
-              );
-            })}
+                )}
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            style={[styles.createBtn, { backgroundColor: C.brand, opacity: name.trim() && !creating ? 1 : 0.55 }]}
-            onPress={createClub}
-            disabled={!name.trim() || creating}
-            activeOpacity={0.8}
-          >
-            {creating
-              ? <ActivityIndicator color={C.white} size="small" />
-              : (
-                <Text style={[styles.createBtnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>
-                  {t.clubs.newClub}
-                </Text>
-              )}
-          </TouchableOpacity>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Assign president sheet */}

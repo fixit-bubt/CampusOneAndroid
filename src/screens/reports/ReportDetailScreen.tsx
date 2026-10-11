@@ -155,7 +155,11 @@ export function ReportDetailScreen({ route, navigation }: any) {
       {
         text: 'Delete', style: 'destructive',
         onPress: async () => {
-          await supabase.from('reports').update({ deleted_at: new Date().toISOString() }).eq('id', report.id);
+          const { error } = await supabase.from('reports').update({ deleted_at: new Date().toISOString() }).eq('id', report.id);
+          if (error) {
+            toast({ type: 'error', title: t.common.error, message: error.message });
+            return;
+          }
           navigation.goBack();
         },
       },
