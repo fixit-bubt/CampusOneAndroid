@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, Modal,
   ScrollView, StyleSheet, Keyboard, KeyboardAvoidingView,
-  type ViewStyle, type TextStyle,
+  Animated, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,6 +20,7 @@ interface AreaPickerModalProps {
   title?: string;
   areaCounts?: Record<string, number>;
   allowAll?: boolean;
+  initialTab?: 'all' | 'hospital' | 'area';
 }
 
 type TypeFilterTab = 'all' | 'hospital' | 'area';
@@ -32,20 +33,40 @@ export function AreaPickerModal({
   title,
   areaCounts,
   allowAll = true,
+  initialTab = 'all',
 }: AreaPickerModalProps) {
   const { C, isDark } = useTheme();
   const t = useT();
   const insets = useSafeAreaInsets();
   const [search, setSearch] = useState('');
-  const [activeTab, setActiveTab] = useState<TypeFilterTab>('all');
+  const [activeTab, setActiveTab] = useState<TypeFilterTab>(initialTab);
+  const [trackWidth, setTrackWidth] = useState(0);
   const searchInputRef = useRef<TextInput>(null);
+
+  const initialIndex = initialTab === 'hospital' ? 1 : initialTab === 'area' ? 2 : 0;
+  const slideAnim = useRef(new Animated.Value(initialIndex)).current;
 
   useEffect(() => {
     if (visible) {
       setSearch('');
-      setActiveTab('all');
+      const startingTab = initialTab || 'all';
+      setActiveTab(startingTab);
+      const startingIdx = startingTab === 'hospital' ? 1 : startingTab === 'area' ? 2 : 0;
+      slideAnim.setValue(startingIdx);
     }
-  }, [visible]);
+  }, [visible, initialTab]);
+
+  function switchTab(tab: TypeFilterTab) {
+    setActiveTab(tab);
+    const targetIdx = tab === 'hospital' ? 1 : tab === 'area' ? 2 : 0;
+    Animated.spring(slideAnim, {
+      toValue: targetIdx,
+      useNativeDriver: true,
+      tension: 65,
+      friction: 9,
+    }).start();
+  }
+
 
   // Count totals for badges
   const totalHospitals = useMemo(() => DHAKA_AREAS.filter(a => a.type === 'hospital').length, []);
@@ -169,17 +190,35 @@ export function AreaPickerModal({
             )}
           </View>
 
-          {/* Single Clean Segment Filter Tabs (All / Hospitals / Areas) */}
-          <View style={styles.segmentTrack}>
+          {/* Single Clean Segment Filter Tabs (All / Hospitals / Areas) with Smooth Sliding Indicator */}
+          <View
+            style={[styles.segmentTrack, { backgroundColor: C.surface2, borderColor: C.border }]}
+            onLayout={e => setTrackWidth(e.nativeEvent.layout.width)}
+          >
+            {trackWidth > 0 && (
+              <Animated.View
+                style={[
+                  styles.segmentIndicator,
+                  {
+                    width: (trackWidth - 6) / 3,
+                    backgroundColor: SectorColors.blood,
+                    transform: [
+                      {
+                        translateX: slideAnim.interpolate({
+                          inputRange: [0, 1, 2],
+                          outputRange: [0, (trackWidth - 6) / 3, ((trackWidth - 6) / 3) * 2],
+                        }),
+                      },
+                    ],
+                  },
+                ]}
+              />
+            )}
+
             <TouchableOpacity
-              style={[
-                styles.segmentBtn,
-                activeTab === 'all'
-                  ? [styles.segmentBtnActive, { backgroundColor: SectorColors.blood, borderColor: SectorColors.blood }]
-                  : [styles.segmentBtnInactive, { backgroundColor: C.surface2, borderColor: C.border }],
-              ]}
-              onPress={() => setActiveTab('all')}
-              activeOpacity={0.75}
+              style={styles.segmentBtn}
+              onPress={() => switchTab('all')}
+              activeOpacity={0.8}
             >
               <Text
                 style={[
@@ -192,14 +231,9 @@ export function AreaPickerModal({
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[
-                styles.segmentBtn,
-                activeTab === 'hospital'
-                  ? [styles.segmentBtnActive, { backgroundColor: SectorColors.blood, borderColor: SectorColors.blood }]
-                  : [styles.segmentBtnInactive, { backgroundColor: C.surface2, borderColor: C.border }],
-              ]}
-              onPress={() => setActiveTab('hospital')}
-              activeOpacity={0.75}
+              style={styles.segmentBtn}
+              onPress={() => switchTab('hospital')}
+              activeOpacity={0.8}
             >
               <Feather
                 name="activity"
@@ -217,14 +251,9 @@ export function AreaPickerModal({
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[
-                styles.segmentBtn,
-                activeTab === 'area'
-                  ? [styles.segmentBtnActive, { backgroundColor: SectorColors.blood, borderColor: SectorColors.blood }]
-                  : [styles.segmentBtnInactive, { backgroundColor: C.surface2, borderColor: C.border }],
-              ]}
-              onPress={() => setActiveTab('area')}
-              activeOpacity={0.75}
+              style={styles.segmentBtn}
+              onPress={() => switchTab('area')}
+              activeOpacity={0.8}
             >
               <Icon
                 name="pin"
@@ -533,24 +562,39 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   } as TextStyle,
 
-  // Single Segment Bar
+  // Single Segment Bar with Sliding Indicator
   segmentTrack: {
     flexDirection: 'row',
-    gap: 8,
+    height: 42,
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 3,
     marginBottom: 12,
+    position: 'relative',
+    alignItems: 'center',
+  } as ViewStyle,
+  segmentIndicator: {
+    position: 'absolute',
+    top: 3,
+    bottom: 3,
+    left: 3,
+    borderRadius: 9,
+    shadowColor: SectorColors.blood,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
   } as ViewStyle,
   segmentBtn: {
     flex: 1,
+    height: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 5,
-    paddingVertical: 8,
-    borderRadius: 10,
-    borderWidth: 1,
+    borderRadius: 9,
+    zIndex: 1,
   } as ViewStyle,
-  segmentBtnActive: {} as ViewStyle,
-  segmentBtnInactive: {} as ViewStyle,
   segmentBtnTxt: {
     fontSize: 11.5,
   } as TextStyle,
