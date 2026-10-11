@@ -4,7 +4,8 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
-  RefreshControl, Animated, Modal, FlatList, KeyboardAvoidingView, Platform,
+  RefreshControl, Animated, Modal, KeyboardAvoidingView, Platform,
+  BackHandler,
   type ViewStyle, type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
@@ -30,8 +31,10 @@ import {
 
 type TabMode = 'all' | 'mentors' | 'saved';
 
+const INITIAL_RENDER_LIMIT = 25;
+
 export function FacultyScreen({ navigation }: any) {
-  const { C } = useTheme();
+  const { C, isDark } = useTheme();
   const t = useT();
   const toast = useToast();
   const { user } = useAuth();
@@ -41,6 +44,9 @@ export function FacultyScreen({ navigation }: any) {
   const [selectedDeptId, setSelectedDeptId] = useState<string>('All');
   const [interest, setInterest] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<FacultyCategory | null>(null);
+
+  // Pagination limit to eliminate tab-switch lag
+  const [visibleLimit, setVisibleLimit] = useState(INITIAL_RENDER_LIMIT);
 
   // Modals for dropdown bars
   const [deptPickerVisible, setDeptPickerVisible] = useState(false);
@@ -73,6 +79,37 @@ export function FacultyScreen({ navigation }: any) {
       useNativeDriver: true,
     }).start();
   }, [mode, modeIndexMap, animIndex]);
+
+  // Reset pagination when switching tabs or changing filters
+  useEffect(() => {
+    setVisibleLimit(INITIAL_RENDER_LIMIT);
+  }, [mode, selectedDeptId, interest, query]);
+
+  // Handle hardware & gesture back button on Android
+  useEffect(() => {
+    const onBackPress = () => {
+      if (domainPickerVisible) {
+        setDomainPickerVisible(false);
+        return true;
+      }
+      if (deptPickerVisible) {
+        setDeptPickerVisible(false);
+        return true;
+      }
+      if (query.length > 0) {
+        setQuery('');
+        return true;
+      }
+      if (selectedCategory && mode === 'all') {
+        setSelectedCategory(null);
+        return true;
+      }
+      return false;
+    };
+
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => sub.remove();
+  }, [selectedCategory, mode, query, deptPickerVisible, domainPickerVisible]);
 
   const load = useCallback(async () => {
     // 1. Instant cache load
@@ -163,19 +200,18 @@ export function FacultyScreen({ navigation }: any) {
     );
   }, [faculty]);
 
-  // Top research domains for paper collaboration
+  // Top research domains memoized strictly against researchMentors to eliminate tab lag
   const popularInterests = useMemo(() => {
     const counts = new Map<string, { label: string; n: number }>();
-    const source = mode === 'mentors' ? researchMentors : faculty;
-    source.forEach(f => interestsOf(f).forEach(i => {
+    researchMentors.forEach(f => interestsOf(f).forEach(i => {
       const key = i.trim().toLowerCase();
       if (!key) return;
       const cur = counts.get(key) ?? { label: i.trim(), n: 0 };
       cur.n += 1;
       counts.set(key, cur);
     }));
-    return [...counts.values()].sort((a, b) => b.n - a.n).slice(0, 20);
-  }, [faculty, researchMentors, mode]);
+    return [...counts.values()].sort((a, b) => b.n - a.n).slice(0, 25);
+  }, [researchMentors]);
 
   const q = query.trim().toLowerCase();
   const isSearchActive = q.length > 0;
@@ -212,6 +248,11 @@ export function FacultyScreen({ navigation }: any) {
     return sortFaculty(list);
   }, [faculty, researchMentors, q, interest, selectedDeptId, mode, savedIds, deptById]);
 
+  // Sliced results for fast, 60fps rendering
+  const displayedResults = useMemo(() => {
+    return results.slice(0, visibleLimit);
+  }, [results, visibleLimit]);
+
   // Departments under current selected category
   const selectedCategoryDepts = useMemo(() => {
     if (!selectedCategory) return [];
@@ -243,7 +284,9 @@ export function FacultyScreen({ navigation }: any) {
       <SubBar
         title="Faculty Directory"
         onBack={() => {
-          if (selectedCategory && mode === 'all' && !isSearchActive) {
+          if (query.length > 0) {
+            setQuery('');
+          } else if (selectedCategory && mode === 'all') {
             setSelectedCategory(null);
           } else {
             navigation.goBack();
@@ -401,18 +444,8 @@ export function FacultyScreen({ navigation }: any) {
               </View>
             ) : (
               // Level 2: Inside Selected Faculty Category -> Departments as full-width bars
+              // (Redundant in-screen back button removed per user request)
               <View>
-                <TouchableOpacity
-                  style={[styles.backToCatBar, { backgroundColor: C.surface2 }]}
-                  onPress={() => setSelectedCategory(null)}
-                  activeOpacity={0.75}
-                >
-                  <Feather name="arrow-left" size={15} color={FACULTY_ACCENT} />
-                  <Text style={[styles.backToCatTxt, { color: FACULTY_ACCENT, fontFamily: FontFamily.jakartaBold }]}>
-                    {t.faculty2.backToFaculties}
-                  </Text>
-                </TouchableOpacity>
-
                 <View style={styles.catHeader}>
                   <Text style={[styles.catHeaderTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                     {selectedCategory.name}
@@ -528,7 +561,7 @@ export function FacultyScreen({ navigation }: any) {
               )}
             </View>
 
-            {/* Mentors Roster rendered as compact TeacherBar */}
+            {/* Mentors Roster rendered as compact TeacherBar with smooth windowing */}
             {results.length === 0 ? (
               <View style={styles.empty}>
                 <Feather name="award" size={28} color={C.textMuted} />
@@ -538,7 +571,7 @@ export function FacultyScreen({ navigation }: any) {
               </View>
             ) : (
               <View style={styles.list}>
-                {results.map(f => (
+                {displayedResults.map(f => (
                   <TeacherBar
                     key={f.id}
                     f={f}
@@ -550,6 +583,19 @@ export function FacultyScreen({ navigation }: any) {
                     goldColor={Accent.gold}
                   />
                 ))}
+
+                {results.length > visibleLimit && (
+                  <TouchableOpacity
+                    style={[styles.loadMoreBar, { backgroundColor: C.surface, borderColor: C.border }]}
+                    onPress={() => setVisibleLimit(prev => prev + 25)}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={[styles.loadMoreTxt, { color: FACULTY_ACCENT, fontFamily: FontFamily.jakartaBold }]}>
+                      Show more ({results.length - visibleLimit} remaining)
+                    </Text>
+                    <Feather name="chevron-down" size={16} color={FACULTY_ACCENT} />
+                  </TouchableOpacity>
+                )}
               </View>
             )}
           </View>
@@ -604,7 +650,7 @@ export function FacultyScreen({ navigation }: any) {
               </View>
             ) : (
               <View style={styles.list}>
-                {results.map(f => (
+                {displayedResults.map(f => (
                   <TeacherBar
                     key={f.id}
                     f={f}
@@ -616,6 +662,19 @@ export function FacultyScreen({ navigation }: any) {
                     goldColor={Accent.gold}
                   />
                 ))}
+
+                {results.length > visibleLimit && (
+                  <TouchableOpacity
+                    style={[styles.loadMoreBar, { backgroundColor: C.surface, borderColor: C.border }]}
+                    onPress={() => setVisibleLimit(prev => prev + 25)}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={[styles.loadMoreTxt, { color: FACULTY_ACCENT, fontFamily: FontFamily.jakartaBold }]}>
+                      Show more ({results.length - visibleLimit} remaining)
+                    </Text>
+                    <Feather name="chevron-down" size={16} color={FACULTY_ACCENT} />
+                  </TouchableOpacity>
+                )}
               </View>
             )}
           </View>
@@ -646,7 +705,7 @@ export function FacultyScreen({ navigation }: any) {
               </View>
             ) : (
               <View style={styles.list}>
-                {results.map(f => (
+                {displayedResults.map(f => (
                   <TeacherBar
                     key={f.id}
                     f={f}
@@ -658,6 +717,19 @@ export function FacultyScreen({ navigation }: any) {
                     goldColor={Accent.gold}
                   />
                 ))}
+
+                {results.length > visibleLimit && (
+                  <TouchableOpacity
+                    style={[styles.loadMoreBar, { backgroundColor: C.surface, borderColor: C.border }]}
+                    onPress={() => setVisibleLimit(prev => prev + 25)}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={[styles.loadMoreTxt, { color: FACULTY_ACCENT, fontFamily: FontFamily.jakartaBold }]}>
+                      Show more ({results.length - visibleLimit} remaining)
+                    </Text>
+                    <Feather name="chevron-down" size={16} color={FACULTY_ACCENT} />
+                  </TouchableOpacity>
+                )}
               </View>
             )}
           </View>
@@ -667,7 +739,7 @@ export function FacultyScreen({ navigation }: any) {
       </ScrollView>
 
       {/* =========================================================================
-          DEPARTMENT PICKER BOTTOM SHEET MODAL
+          DEPARTMENT PICKER BOTTOM SHEET MODAL (Bars Layout)
          ========================================================================= */}
       <Modal
         visible={deptPickerVisible}
@@ -694,31 +766,66 @@ export function FacultyScreen({ navigation }: any) {
             </Text>
 
             <ScrollView
-              style={{ maxHeight: 380 }}
+              style={{ maxHeight: 420 }}
+              contentContainerStyle={{ paddingBottom: 10 }}
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled"
             >
-              {/* All Departments Option */}
+              {/* All Departments Bar */}
               <TouchableOpacity
                 style={[
-                  styles.pickerRow,
-                  { borderBottomColor: C.border },
-                  selectedDeptId === 'All' && { backgroundColor: `${FACULTY_ACCENT}10` },
+                  styles.pickerBar,
+                  {
+                    backgroundColor: selectedDeptId === 'All'
+                      ? (isDark ? 'rgba(79, 70, 229, 0.16)' : 'rgba(79, 70, 229, 0.08)')
+                      : C.surface2,
+                    borderColor: selectedDeptId === 'All' ? FACULTY_ACCENT : C.border,
+                  },
                 ]}
                 onPress={() => {
                   setSelectedDeptId('All');
                   setDeptPickerVisible(false);
                 }}
-                activeOpacity={0.7}
+                activeOpacity={0.75}
               >
-                <View style={[styles.pickerIconTile, { backgroundColor: `${FACULTY_ACCENT}14` }]}>
-                  <Feather name="layers" size={16} color={FACULTY_ACCENT} />
+                <View
+                  style={[
+                    styles.pickerIconTile,
+                    {
+                      backgroundColor: selectedDeptId === 'All'
+                        ? FACULTY_ACCENT
+                        : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)'),
+                    },
+                  ]}
+                >
+                  <Feather
+                    name="layers"
+                    size={17}
+                    color={selectedDeptId === 'All' ? '#fff' : FACULTY_ACCENT}
+                  />
                 </View>
-                <Text style={[styles.pickerRowText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                  {t.faculty2.allDepartments}
-                </Text>
-                {selectedDeptId === 'All' && (
-                  <Feather name="check" size={18} color={FACULTY_ACCENT} />
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text
+                    style={[
+                      styles.pickerBarText,
+                      {
+                        color: selectedDeptId === 'All' ? FACULTY_ACCENT : C.text,
+                        fontFamily: FontFamily.jakartaBold,
+                      },
+                    ]}
+                  >
+                    {t.faculty2.allDepartments}
+                  </Text>
+                  <Text style={[styles.pickerBarSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                    All 13 BUBT academic departments
+                  </Text>
+                </View>
+                {selectedDeptId === 'All' ? (
+                  <View style={[styles.checkCircle, { backgroundColor: FACULTY_ACCENT }]}>
+                    <Feather name="check" size={13} color="#fff" />
+                  </View>
+                ) : (
+                  <View style={[styles.emptyCircle, { borderColor: C.border }]} />
                 )}
               </TouchableOpacity>
 
@@ -732,29 +839,59 @@ export function FacultyScreen({ navigation }: any) {
                   <TouchableOpacity
                     key={d.id}
                     style={[
-                      styles.pickerRow,
-                      { borderBottomColor: C.border },
-                      active && { backgroundColor: `${FACULTY_ACCENT}10` },
+                      styles.pickerBar,
+                      {
+                        backgroundColor: active
+                          ? (isDark ? 'rgba(79, 70, 229, 0.16)' : 'rgba(79, 70, 229, 0.08)')
+                          : C.surface2,
+                        borderColor: active ? FACULTY_ACCENT : C.border,
+                      },
                     ]}
                     onPress={() => {
                       setSelectedDeptId(d.id);
                       setDeptPickerVisible(false);
                     }}
-                    activeOpacity={0.7}
+                    activeOpacity={0.75}
                   >
-                    <View style={[styles.pickerIconTile, { backgroundColor: `${FACULTY_ACCENT}14` }]}>
-                      <Feather name={BRANCH_ICON[d.branch] ?? 'book-open'} size={16} color={FACULTY_ACCENT} />
+                    <View
+                      style={[
+                        styles.pickerIconTile,
+                        {
+                          backgroundColor: active
+                            ? FACULTY_ACCENT
+                            : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)'),
+                        },
+                      ]}
+                    >
+                      <Feather
+                        name={BRANCH_ICON[d.branch] ?? 'book-open'}
+                        size={17}
+                        color={active ? '#fff' : FACULTY_ACCENT}
+                      />
                     </View>
                     <View style={{ flex: 1, minWidth: 0 }}>
-                      <Text style={[styles.pickerRowText, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                      <Text
+                        style={[
+                          styles.pickerBarText,
+                          {
+                            color: active ? FACULTY_ACCENT : C.text,
+                            fontFamily: FontFamily.jakartaBold,
+                          },
+                        ]}
+                        numberOfLines={1}
+                      >
                         {shortDept(d.name)}
                       </Text>
-                      <Text style={[styles.pickerRowSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                      <Text style={[styles.pickerBarSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
                         {d.branch} · {count} {mode === 'mentors' ? 'mentors' : 'teachers'}
                       </Text>
                     </View>
-                    {active && (
-                      <Feather name="check" size={18} color={FACULTY_ACCENT} />
+                    {active ? (
+                      <View style={[styles.checkCircle, { backgroundColor: FACULTY_ACCENT }]}>
+                        <Feather name="check" size={13} color="#fff" />
+                      </View>
+                    ) : (
+                      <View style={[styles.emptyCircle, { borderColor: C.border }]} />
                     )}
                   </TouchableOpacity>
                 );
@@ -774,7 +911,7 @@ export function FacultyScreen({ navigation }: any) {
       </Modal>
 
       {/* =========================================================================
-          PUBLICATION DOMAIN PICKER BOTTOM SHEET MODAL
+          PUBLICATION DOMAIN PICKER BOTTOM SHEET MODAL (Bars Layout)
          ========================================================================= */}
       <Modal
         visible={domainPickerVisible}
@@ -801,31 +938,66 @@ export function FacultyScreen({ navigation }: any) {
             </Text>
 
             <ScrollView
-              style={{ maxHeight: 380 }}
+              style={{ maxHeight: 420 }}
+              contentContainerStyle={{ paddingBottom: 10 }}
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled"
             >
-              {/* All Domains Option */}
+              {/* All Domains Bar */}
               <TouchableOpacity
                 style={[
-                  styles.pickerRow,
-                  { borderBottomColor: C.border },
-                  !interest && { backgroundColor: `${FACULTY_ACCENT}10` },
+                  styles.pickerBar,
+                  {
+                    backgroundColor: !interest
+                      ? (isDark ? 'rgba(79, 70, 229, 0.16)' : 'rgba(79, 70, 229, 0.08)')
+                      : C.surface2,
+                    borderColor: !interest ? FACULTY_ACCENT : C.border,
+                  },
                 ]}
                 onPress={() => {
                   setInterest(null);
                   setDomainPickerVisible(false);
                 }}
-                activeOpacity={0.7}
+                activeOpacity={0.75}
               >
-                <View style={[styles.pickerIconTile, { backgroundColor: `${FACULTY_ACCENT}14` }]}>
-                  <Feather name="award" size={16} color={FACULTY_ACCENT} />
+                <View
+                  style={[
+                    styles.pickerIconTile,
+                    {
+                      backgroundColor: !interest
+                        ? FACULTY_ACCENT
+                        : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)'),
+                    },
+                  ]}
+                >
+                  <Feather
+                    name="award"
+                    size={17}
+                    color={!interest ? '#fff' : FACULTY_ACCENT}
+                  />
                 </View>
-                <Text style={[styles.pickerRowText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                  {t.faculty2.allDomains}
-                </Text>
-                {!interest && (
-                  <Feather name="check" size={18} color={FACULTY_ACCENT} />
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text
+                    style={[
+                      styles.pickerBarText,
+                      {
+                        color: !interest ? FACULTY_ACCENT : C.text,
+                        fontFamily: FontFamily.jakartaBold,
+                      },
+                    ]}
+                  >
+                    {t.faculty2.allDomains}
+                  </Text>
+                  <Text style={[styles.pickerBarSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                    All publication topics & research areas
+                  </Text>
+                </View>
+                {!interest ? (
+                  <View style={[styles.checkCircle, { backgroundColor: FACULTY_ACCENT }]}>
+                    <Feather name="check" size={13} color="#fff" />
+                  </View>
+                ) : (
+                  <View style={[styles.emptyCircle, { borderColor: C.border }]} />
                 )}
               </TouchableOpacity>
 
@@ -835,29 +1007,59 @@ export function FacultyScreen({ navigation }: any) {
                   <TouchableOpacity
                     key={it.label}
                     style={[
-                      styles.pickerRow,
-                      { borderBottomColor: C.border },
-                      active && { backgroundColor: `${FACULTY_ACCENT}10` },
+                      styles.pickerBar,
+                      {
+                        backgroundColor: active
+                          ? (isDark ? 'rgba(79, 70, 229, 0.16)' : 'rgba(79, 70, 229, 0.08)')
+                          : C.surface2,
+                        borderColor: active ? FACULTY_ACCENT : C.border,
+                      },
                     ]}
                     onPress={() => {
                       setInterest(it.label);
                       setDomainPickerVisible(false);
                     }}
-                    activeOpacity={0.7}
+                    activeOpacity={0.75}
                   >
-                    <View style={[styles.pickerIconTile, { backgroundColor: `${FACULTY_ACCENT}14` }]}>
-                      <Feather name="bookmark" size={16} color={FACULTY_ACCENT} />
+                    <View
+                      style={[
+                        styles.pickerIconTile,
+                        {
+                          backgroundColor: active
+                            ? FACULTY_ACCENT
+                            : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)'),
+                        },
+                      ]}
+                    >
+                      <Feather
+                        name="bookmark"
+                        size={17}
+                        color={active ? '#fff' : FACULTY_ACCENT}
+                      />
                     </View>
                     <View style={{ flex: 1, minWidth: 0 }}>
-                      <Text style={[styles.pickerRowText, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                      <Text
+                        style={[
+                          styles.pickerBarText,
+                          {
+                            color: active ? FACULTY_ACCENT : C.text,
+                            fontFamily: FontFamily.jakartaBold,
+                          },
+                        ]}
+                        numberOfLines={1}
+                      >
                         {it.label}
                       </Text>
-                      <Text style={[styles.pickerRowSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                      <Text style={[styles.pickerBarSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
                         {it.n} research mentor{it.n === 1 ? '' : 's'}
                       </Text>
                     </View>
-                    {active && (
-                      <Feather name="check" size={18} color={FACULTY_ACCENT} />
+                    {active ? (
+                      <View style={[styles.checkCircle, { backgroundColor: FACULTY_ACCENT }]}>
+                        <Feather name="check" size={13} color="#fff" />
+                      </View>
+                    ) : (
+                      <View style={[styles.emptyCircle, { borderColor: C.border }]} />
                     )}
                   </TouchableOpacity>
                 );
@@ -993,30 +1195,18 @@ const styles = StyleSheet.create({
     marginTop: 2,
   } as TextStyle,
 
-  // Drilled category view
-  backToCatBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    borderRadius: 10,
-    alignSelf: 'flex-start',
-    marginBottom: 12,
-  } as ViewStyle,
-  backToCatTxt: {
-    fontSize: 12.5,
-  } as TextStyle,
-
+  // Drilled category view header (clean title and count without redundant back button)
   catHeader: {
-    marginBottom: 12,
+    marginBottom: 14,
+    paddingHorizontal: 2,
   } as ViewStyle,
   catHeaderTitle: {
-    fontSize: 17,
+    fontSize: 18,
+    letterSpacing: -0.2,
   } as TextStyle,
   catHeaderSub: {
     fontSize: 12.5,
-    marginTop: 2,
+    marginTop: 3,
   } as TextStyle,
 
   // Department bars under category
@@ -1115,6 +1305,23 @@ const styles = StyleSheet.create({
     gap: 2,
   } as ViewStyle,
 
+  // Pagination Load More Bar
+  loadMoreBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 13,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginTop: 6,
+    marginBottom: 10,
+  } as ViewStyle,
+  loadMoreTxt: {
+    fontSize: 13,
+  } as TextStyle,
+
   empty: {
     alignItems: 'center',
     paddingTop: 50,
@@ -1134,7 +1341,7 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   modalBackdrop: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
   } as ViewStyle,
   sheetCard: {
     borderTopLeftRadius: 24,
@@ -1142,7 +1349,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     paddingHorizontal: Layout.screenPadding,
     paddingBottom: Layout.screenPadding + 10,
-    maxHeight: '80%',
+    maxHeight: '82%',
   } as ViewStyle,
   sheetHandle: {
     alignItems: 'center',
@@ -1158,36 +1365,52 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 14,
   } as TextStyle,
-  pickerRow: {
+
+  // Institutional bars for picker modal items
+  pickerBar: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    borderRadius: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginBottom: 8,
   } as ViewStyle,
   pickerIconTile: {
-    width: 34,
-    height: 34,
-    borderRadius: 8,
+    width: 38,
+    height: 38,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
-  pickerRowText: {
+  pickerBarText: {
     fontSize: 14,
   } as TextStyle,
-  pickerRowSub: {
+  pickerBarSub: {
     fontSize: 11.5,
     marginTop: 2,
   } as TextStyle,
+  checkCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  emptyCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1.5,
+  } as ViewStyle,
+
   sheetCloseBtn: {
     height: 44,
     borderRadius: Radius.md,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 14,
+    marginTop: 10,
   } as ViewStyle,
   sheetCloseTxt: {
     fontSize: 14.5,
