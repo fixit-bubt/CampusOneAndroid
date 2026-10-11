@@ -25,6 +25,18 @@ const URGENCIES: { id: BloodRequest['urgency']; label: string }[] = [
   { id: 'This week', label: 'This week' },
 ];
 
+const MEDICAL_REASONS = [
+  { id: 'Emergency Surgery',      label: '🚨 Surgery',    labelBn: 'সার্জারি' },
+  { id: 'Dengue / Platelets',     label: '🦟 Dengue',     labelBn: 'ডেঙ্গু' },
+  { id: 'Accident / Trauma',      label: '🚑 Accident',   labelBn: 'দুর্ঘটনা' },
+  { id: 'Childbirth / C-Section', label: '👶 Delivery',   labelBn: 'প্রসব / সিজার' },
+  { id: 'Thalassemia',           label: '🩸 Thalassemia', labelBn: 'থ্যালাসেমিয়া' },
+  { id: 'ICU Critical Care',     label: '🏥 ICU Care',   labelBn: 'আইসিইউ' },
+  { id: 'General / Other',        label: '🩺 Other',      labelBn: 'অন্যান্য' },
+];
+
+const AFFILIATIONS = ['BUBT Student', 'Faculty / Staff', 'Family Member', 'General Patient'];
+
 export function BloodRequestScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
   const { user } = useAuth();
@@ -33,7 +45,13 @@ export function BloodRequestScreen({ navigation }: any) {
 
   const [group, setGroup] = useState<BloodRequest['blood_group'] | null>(null);
   const [units, setUnits] = useState('1');
-  const [patient, setPatient] = useState('');
+
+  // Professional Patient & Case Information
+  const [patientName, setPatientName] = useState('');
+  const [medicalReason, setMedicalReason] = useState<string>('');
+  const [cabinBed, setCabinBed] = useState('');
+  const [affiliation, setAffiliation] = useState('BUBT Student');
+
   const [hospital, setHospital] = useState('');
   const [area, setArea] = useState('');
   const [urgency, setUrgency] = useState<BloodRequest['urgency']>('Today');
@@ -46,7 +64,7 @@ export function BloodRequestScreen({ navigation }: any) {
   const [customHospitalMode, setCustomHospitalMode] = useState(false);
   const [customAreaMode, setCustomAreaMode] = useState(false);
 
-  // Urgency Sliding Pill Animation
+  // Urgency Sliding Pill Animation with Snappy Tension
   const initialUrgencyIdx = urgency === 'Urgent' ? 0 : urgency === 'Today' ? 1 : 2;
   const urgencyAnim = useRef(new Animated.Value(initialUrgencyIdx)).current;
   const [segWidth, setSegWidth] = useState(0);
@@ -57,8 +75,8 @@ export function BloodRequestScreen({ navigation }: any) {
     Animated.spring(urgencyAnim, {
       toValue: targetIdx,
       useNativeDriver: true,
-      tension: 65,
-      friction: 9,
+      tension: 130,
+      friction: 8,
     }).start();
   }
 
@@ -78,7 +96,33 @@ export function BloodRequestScreen({ navigation }: any) {
       Animated.spring(scaleAnim, {
         toValue: 1,
         friction: 4,
-        tension: 100,
+        tension: 130,
+        useNativeDriver: true,
+      }).start();
+    }
+  }
+
+  // Medical Reason Spring Tactile Bounce Animation
+  const reasonScales = useRef(
+    MEDICAL_REASONS.reduce((acc, r) => {
+      acc[r.id] = new Animated.Value(1);
+      return acc;
+    }, {} as Record<string, Animated.Value>)
+  ).current;
+
+  function handleSelectReason(reasonId: string) {
+    const next = medicalReason === reasonId ? '' : reasonId;
+    setMedicalReason(next);
+    if (next === 'Dengue / Platelets') {
+      setIsPlatelets(true);
+    }
+    const scaleAnim = reasonScales[reasonId];
+    if (scaleAnim) {
+      scaleAnim.setValue(0.85);
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 4,
+        tension: 130,
         useNativeDriver: true,
       }).start();
     }
@@ -109,7 +153,7 @@ export function BloodRequestScreen({ navigation }: any) {
     }
   }
 
-  const canSubmit = group !== null && patient.trim() && hospital.trim();
+  const canSubmit = group !== null && patientName.trim().length > 0 && hospital.trim().length > 0;
 
   async function handleSubmit() {
     if (!user) {
@@ -119,8 +163,21 @@ export function BloodRequestScreen({ navigation }: any) {
     if (!canSubmit) return;
     setLoading(true);
     try {
-      const finalPatient = isPlatelets ? `[Platelets] ${patient.trim()}` : patient.trim();
+      // Assemble professional clinical patient summary
+      let fullPatient = patientName.trim();
+      if (medicalReason) {
+        fullPatient += ` · ${medicalReason}`;
+      }
+      const metaTags: string[] = [];
+      if (cabinBed.trim()) metaTags.push(cabinBed.trim());
+      if (affiliation && affiliation !== 'General Patient') metaTags.push(affiliation);
+      if (metaTags.length > 0) {
+        fullPatient += ` (${metaTags.join(', ')})`;
+      }
+
+      const finalPatient = isPlatelets ? `[Platelets] ${fullPatient}` : fullPatient;
       const parsedUnits = Math.max(1, Math.min(10, parseInt(units, 10) || 1));
+
       const { error } = await supabase.from('blood_requests').insert({
         blood_group:  group,
         units:        parsedUnits,
@@ -157,7 +214,7 @@ export function BloodRequestScreen({ navigation }: any) {
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
         >
-          {/* Blood group grid with tactile bounce animation */}
+          {/* Blood group grid with snappy bounce animation */}
           <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
             {t.blood2.bloodGroup}
           </Text>
@@ -198,7 +255,7 @@ export function BloodRequestScreen({ navigation }: any) {
             })}
           </View>
 
-          {/* Units + Urgency with Sliding Pill Indicator */}
+          {/* Units + Urgency with Snappy Sliding Indicator */}
           <View style={styles.row}>
             <View style={[styles.halfField, { flex: 1 }]}>
               <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>
@@ -263,17 +320,128 @@ export function BloodRequestScreen({ navigation }: any) {
             </View>
           </View>
 
-          {/* Patient */}
-          <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-            {t.blood2.patient}
-          </Text>
-          <TextInput
-            style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-            value={patient}
-            onChangeText={setPatient}
-            placeholder={t.blood2.patientPlaceholder}
-            placeholderTextColor={C.textMuted}
-          />
+          {/* Professional Clinical Patient & Case Information */}
+          <View style={[styles.sectionCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <View style={styles.sectionHeader}>
+              <View style={[styles.sectionIconBox, { backgroundColor: `${SectorColors.blood}16` }]}>
+                <Feather name="user" size={15} color={SectorColors.blood} />
+              </View>
+              <View>
+                <Text style={[styles.sectionTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  PATIENT & CLINICAL DETAILS
+                </Text>
+                <Text style={[styles.sectionSubtitle, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+                  Medical context ensures urgent donor dispatch
+                </Text>
+              </View>
+            </View>
+
+            {/* Patient Name */}
+            <Text style={[styles.miniFieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+              PATIENT FULL NAME *
+            </Text>
+            <View style={[styles.inputWithIcon, { backgroundColor: C.surface2, borderColor: C.border }]}>
+              <Feather name="user-check" size={15} color={C.textMuted} />
+              <TextInput
+                style={[styles.innerInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                value={patientName}
+                onChangeText={setPatientName}
+                placeholder="e.g. Sadia Sultana, Md. Rafiq"
+                placeholderTextColor={C.textMuted}
+              />
+            </View>
+
+            {/* Medical Reason / Case Selector */}
+            <Text style={[styles.miniFieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 14 }]}>
+              CASE REASON / REQUIREMENT
+            </Text>
+            <View style={styles.reasonsGrid}>
+              {MEDICAL_REASONS.map(r => {
+                const isSelected = medicalReason === r.id;
+                return (
+                  <Animated.View
+                    key={r.id}
+                    style={{ transform: [{ scale: reasonScales[r.id] || 1 }] }}
+                  >
+                    <TouchableOpacity
+                      style={[
+                        styles.reasonPill,
+                        {
+                          backgroundColor: isSelected ? SectorColors.blood : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2),
+                          borderColor: isSelected ? SectorColors.blood : C.border,
+                        },
+                      ]}
+                      onPress={() => handleSelectReason(r.id)}
+                      activeOpacity={0.7}
+                    >
+                      <Text
+                        style={[
+                          styles.reasonTxt,
+                          {
+                            color: isSelected ? '#fff' : C.text,
+                            fontFamily: isSelected ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                          },
+                        ]}
+                      >
+                        {r.label}
+                      </Text>
+                    </TouchableOpacity>
+                  </Animated.View>
+                );
+              })}
+            </View>
+
+            {/* Cabin / Bed / ICU Details */}
+            <Text style={[styles.miniFieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 14 }]}>
+              CABIN / WARD / BED NO. (OPTIONAL)
+            </Text>
+            <View style={[styles.inputWithIcon, { backgroundColor: C.surface2, borderColor: C.border }]}>
+              <Feather name="map-pin" size={15} color={C.textMuted} />
+              <TextInput
+                style={[styles.innerInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                value={cabinBed}
+                onChangeText={setCabinBed}
+                placeholder="e.g. Cabin 402, ICU Bed-3, OT Ward"
+                placeholderTextColor={C.textMuted}
+              />
+            </View>
+
+            {/* Affiliation Pills */}
+            <Text style={[styles.miniFieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 14 }]}>
+              PATIENT AFFILIATION
+            </Text>
+            <View style={styles.affiliationRow}>
+              {AFFILIATIONS.map(aff => {
+                const on = affiliation === aff;
+                return (
+                  <TouchableOpacity
+                    key={aff}
+                    style={[
+                      styles.affPill,
+                      {
+                        backgroundColor: on ? `${SectorColors.blood}20` : (isDark ? 'rgba(255, 255, 255, 0.05)' : C.surface2),
+                        borderColor: on ? SectorColors.blood : C.border,
+                      },
+                    ]}
+                    onPress={() => setAffiliation(aff)}
+                    activeOpacity={0.75}
+                  >
+                    <Text
+                      style={[
+                        styles.affTxt,
+                        {
+                          color: on ? SectorColors.blood : C.textMuted,
+                          fontFamily: on ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                        },
+                      ]}
+                    >
+                      {aff}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
 
           {/* Hospital Dropdown System */}
           <View style={styles.labelRow}>
@@ -331,7 +499,7 @@ export function BloodRequestScreen({ navigation }: any) {
                   {hospital || 'Select hospital or medical center...'}
                 </Text>
                 <Text style={[styles.dropdownHint, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                  {hospital ? 'Tap to change hospital' : '100+ Dhaka hospitals & institutes'}
+                  {hospital ? 'Tap to change hospital' : '108 Dhaka hospitals & institutes'}
                 </Text>
               </View>
               <View style={styles.dropdownRight}>
@@ -406,7 +574,7 @@ export function BloodRequestScreen({ navigation }: any) {
                   {area || 'Select residential area or zone...'}
                 </Text>
                 <Text style={[styles.dropdownHint, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                  {area ? 'Tap to change area' : '140+ Dhaka neighborhoods'}
+                  {area ? 'Tap to change area' : '144 Dhaka neighborhoods'}
                 </Text>
               </View>
               <View style={styles.dropdownRight}>
@@ -587,6 +755,96 @@ const styles = StyleSheet.create({
   } as ViewStyle,
 
   segTxt: { fontSize: 12 } as TextStyle,
+
+  // Professional Patient Section
+  sectionCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 14,
+    marginTop: 18,
+  } as ViewStyle,
+
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 14,
+  } as ViewStyle,
+
+  sectionIconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+
+  sectionTitle: {
+    fontSize: 12,
+    letterSpacing: 0.6,
+  } as TextStyle,
+
+  sectionSubtitle: {
+    fontSize: 11,
+    marginTop: 1,
+  } as TextStyle,
+
+  miniFieldLabel: {
+    fontSize: 10.5,
+    letterSpacing: 0.5,
+    marginBottom: 6,
+  } as TextStyle,
+
+  inputWithIcon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    height: 44,
+    borderRadius: 11,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+  } as ViewStyle,
+
+  innerInput: {
+    flex: 1,
+    fontSize: 13.5,
+    height: '100%',
+    paddingVertical: 0,
+  } as TextStyle,
+
+  reasonsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  } as ViewStyle,
+
+  reasonPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 6.5,
+    borderRadius: 9,
+    borderWidth: 1,
+  } as ViewStyle,
+
+  reasonTxt: {
+    fontSize: 11.5,
+  } as TextStyle,
+
+  affiliationRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  } as ViewStyle,
+
+  affPill: {
+    paddingHorizontal: 9,
+    paddingVertical: 5.5,
+    borderRadius: 8,
+    borderWidth: 1,
+  } as ViewStyle,
+
+  affTxt: {
+    fontSize: 11,
+  } as TextStyle,
 
   // Dropdown Selector Cards
   dropdownCard: {

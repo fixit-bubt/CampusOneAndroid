@@ -73,11 +73,55 @@ export function BloodScreen({ navigation }: any) {
     const idx = tabIndexMap[tab] ?? 0;
     Animated.spring(animIndex, {
       toValue: idx,
-      tension: 68,
-      friction: 10,
+      tension: 120,
+      friction: 8,
       useNativeDriver: true,
     }).start();
   }, [tab, animIndex, tabIndexMap]);
+
+  const bloodTypes = useMemo(() => ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'], []);
+
+  const requestGroupScales = useRef(
+    ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'].reduce((acc, g) => {
+      acc[g] = new Animated.Value(1);
+      return acc;
+    }, {} as Record<string, Animated.Value>)
+  ).current;
+
+  const donorGroupScales = useRef(
+    ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'].reduce((acc, g) => {
+      acc[g] = new Animated.Value(1);
+      return acc;
+    }, {} as Record<string, Animated.Value>)
+  ).current;
+
+  function handleRequestGroupPress(g: string) {
+    setGroupFilter(prev => (prev === g ? 'All' : g));
+    const anim = requestGroupScales[g];
+    if (anim) {
+      anim.setValue(0.82);
+      Animated.spring(anim, {
+        toValue: 1,
+        friction: 4,
+        tension: 130,
+        useNativeDriver: true,
+      }).start();
+    }
+  }
+
+  function handleDonorGroupPress(g: string) {
+    setGroupFilter(prev => (prev === g ? 'All' : g));
+    const anim = donorGroupScales[g];
+    if (anim) {
+      anim.setValue(0.82);
+      Animated.spring(anim, {
+        toValue: 1,
+        friction: 4,
+        tension: 130,
+        useNativeDriver: true,
+      }).start();
+    }
+  }
 
   const TAB_COLORS: Record<Tab, { fg: string; bg: string }> = useMemo(
     () => ({
@@ -365,56 +409,66 @@ export function BloodScreen({ navigation }: any) {
     return short || areaFilter;
   }, [areaFilter, t.blood2.filterLocationAll]);
 
-  // Filter requests and donors by group, area, and search query
-  const filteredRequests = requests.filter(r => {
-    const matchesGroup = groupFilter === 'All' || r.blood_group === groupFilter;
-    const baseFilter = areaFilter === 'All' ? '' : areaFilter.split('(')[0].trim().toLowerCase();
-    const matchesArea = areaFilter === 'All' ||
-      (r.area && (
-        r.area.toLowerCase().includes(areaFilter.toLowerCase()) ||
-        areaFilter.toLowerCase().includes(r.area.toLowerCase()) ||
-        (baseFilter.length > 2 && r.area.toLowerCase().includes(baseFilter))
-      )) ||
-      (r.hospital && (
-        r.hospital.toLowerCase().includes(areaFilter.toLowerCase()) ||
-        areaFilter.toLowerCase().includes(r.hospital.toLowerCase()) ||
-        (baseFilter.length > 2 && r.hospital.toLowerCase().includes(baseFilter))
-      ));
-    const q = searchQuery.trim().toLowerCase();
-    const matchesQuery = !q ||
-      (r.patient && r.patient.toLowerCase().includes(q)) ||
-      (r.hospital && r.hospital.toLowerCase().includes(q)) ||
-      (r.area && r.area.toLowerCase().includes(q)) ||
-      r.blood_group.toLowerCase().includes(q);
-    return matchesGroup && matchesArea && matchesQuery;
-  });
+  // Memoize filtered requests
+  const filteredRequests = useMemo(() => {
+    return requests.filter(r => {
+      const matchesGroup = groupFilter === 'All' || r.blood_group === groupFilter;
+      const baseFilter = areaFilter === 'All' ? '' : areaFilter.split('(')[0].trim().toLowerCase();
+      const matchesArea = areaFilter === 'All' ||
+        (r.area && (
+          r.area.toLowerCase().includes(areaFilter.toLowerCase()) ||
+          areaFilter.toLowerCase().includes(r.area.toLowerCase()) ||
+          (baseFilter.length > 2 && r.area.toLowerCase().includes(baseFilter))
+        )) ||
+        (r.hospital && (
+          r.hospital.toLowerCase().includes(areaFilter.toLowerCase()) ||
+          areaFilter.toLowerCase().includes(r.hospital.toLowerCase()) ||
+          (baseFilter.length > 2 && r.hospital.toLowerCase().includes(baseFilter))
+        ));
+      const q = searchQuery.trim().toLowerCase();
+      const matchesQuery = !q ||
+        (r.patient && r.patient.toLowerCase().includes(q)) ||
+        (r.hospital && r.hospital.toLowerCase().includes(q)) ||
+        (r.area && r.area.toLowerCase().includes(q)) ||
+        r.blood_group.toLowerCase().includes(q);
+      return matchesGroup && matchesArea && matchesQuery;
+    });
+  }, [requests, groupFilter, areaFilter, searchQuery]);
 
-  const filteredDonors = donors.filter(d => {
-    const matchesGroup = groupFilter === 'All' || d.blood_group === groupFilter;
-    const baseFilter = areaFilter === 'All' ? '' : areaFilter.split('(')[0].trim().toLowerCase();
-    const matchesArea = areaFilter === 'All' ||
-      (d.area && (
-        d.area.toLowerCase().includes(areaFilter.toLowerCase()) ||
-        areaFilter.toLowerCase().includes(d.area.toLowerCase()) ||
-        (baseFilter.length > 2 && d.area.toLowerCase().includes(baseFilter))
-      ));
-    const q = searchQuery.trim().toLowerCase();
-    const name = (d as any).profiles?.full_name?.toLowerCase() || '';
-    const matchesQuery = !q ||
-      name.includes(q) ||
-      (d.area && d.area.toLowerCase().includes(q)) ||
-      d.blood_group.toLowerCase().includes(q);
-    return matchesGroup && matchesArea && matchesQuery;
-  });
+  // Memoize filtered donors
+  const filteredDonors = useMemo(() => {
+    return donors.filter(d => {
+      const matchesGroup = groupFilter === 'All' || d.blood_group === groupFilter;
+      const baseFilter = areaFilter === 'All' ? '' : areaFilter.split('(')[0].trim().toLowerCase();
+      const matchesArea = areaFilter === 'All' ||
+        (d.area && (
+          d.area.toLowerCase().includes(areaFilter.toLowerCase()) ||
+          areaFilter.toLowerCase().includes(d.area.toLowerCase()) ||
+          (baseFilter.length > 2 && d.area.toLowerCase().includes(baseFilter))
+        ));
+      const q = searchQuery.trim().toLowerCase();
+      const name = (d as any).profiles?.full_name?.toLowerCase() || '';
+      const matchesQuery = !q ||
+        name.includes(q) ||
+        (d.area && d.area.toLowerCase().includes(q)) ||
+        d.blood_group.toLowerCase().includes(q);
+      return matchesGroup && matchesArea && matchesQuery;
+    });
+  }, [donors, groupFilter, areaFilter, searchQuery]);
 
-  // Group requests by blood type
-  const requestGroups: Record<string, number> = {};
-  requests.forEach(r => { requestGroups[r.blood_group] = (requestGroups[r.blood_group] ?? 0) + 1; });
+  // Memoize request groups
+  const requestGroups = useMemo(() => {
+    const map: Record<string, number> = {};
+    requests.forEach(r => { map[r.blood_group] = (map[r.blood_group] ?? 0) + 1; });
+    return map;
+  }, [requests]);
 
-  // Group donors by blood type
-  const donorGroups: Record<string, number> = {};
-  donors.forEach(d => { donorGroups[d.blood_group] = (donorGroups[d.blood_group] ?? 0) + 1; });
-  const bloodTypes = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
+  // Memoize donor groups
+  const donorGroups = useMemo(() => {
+    const map: Record<string, number> = {};
+    donors.forEach(d => { map[d.blood_group] = (map[d.blood_group] ?? 0) + 1; });
+    return map;
+  }, [donors]);
 
   const TRACK_PADDING = 3;
   const innerTrackWidth = Math.max(0, trackWidth - TRACK_PADDING * 2);
@@ -749,21 +803,28 @@ export function BloodScreen({ navigation }: any) {
                   const on = groupFilter === g;
                   const count = requestGroups[g] ?? 0;
                   return (
-                    <TouchableOpacity
+                    <Animated.View
                       key={g}
                       style={[
-                        styles.summaryCell,
-                        { backgroundColor: on ? `${SectorColors.blood}20` : count > 0 ? `${SectorColors.blood}10` : C.surface2 },
-                        on && { borderColor: SectorColors.blood, borderWidth: 1.5 },
+                        styles.summaryCellWrapper,
+                        { transform: [{ scale: requestGroupScales[g] || 1 }] },
                       ]}
-                      onPress={() => setGroupFilter(on ? 'All' : g)}
-                      activeOpacity={0.75}
                     >
-                      <Text style={[styles.summaryCellGroup, { color: SectorColors.blood }]}>{g}</Text>
-                      <Text style={[styles.summaryCellNum, { color: on || count > 0 ? SectorColors.blood : C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-                        {count}
-                      </Text>
-                    </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          styles.summaryCell,
+                          { backgroundColor: on ? `${SectorColors.blood}20` : count > 0 ? `${SectorColors.blood}10` : C.surface2 },
+                          on && { borderColor: SectorColors.blood, borderWidth: 1.5 },
+                        ]}
+                        onPress={() => handleRequestGroupPress(g)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[styles.summaryCellGroup, { color: SectorColors.blood }]}>{g}</Text>
+                        <Text style={[styles.summaryCellNum, { color: on || count > 0 ? SectorColors.blood : C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+                          {count}
+                        </Text>
+                      </TouchableOpacity>
+                    </Animated.View>
                   );
                 })}
               </View>
@@ -797,7 +858,14 @@ export function BloodScreen({ navigation }: any) {
               filteredRequests.map(r => {
                 const { fg, bg } = urgencyTone(C, r.urgency);
                 const isPlatelet = r.patient?.includes('[Platelets]') || r.hospital?.toLowerCase().includes('platelet');
-                const displayPatient = r.patient?.replace(/\[Platelets\]/g, '').trim() || r.patient;
+                const rawPatient = r.patient?.replace(/\[Platelets\]/g, '').trim() || r.patient || '';
+                let patientName = rawPatient;
+                let caseReason = '';
+                if (rawPatient.includes(' · ')) {
+                  const parts = rawPatient.split(' · ');
+                  patientName = parts[0];
+                  caseReason = parts.slice(1).join(' · ');
+                }
                 return (
                   <View key={r.id} style={[styles.reqCard, { backgroundColor: C.surface, borderColor: C.border }]}>
                     <View style={styles.reqTop}>
@@ -805,12 +873,19 @@ export function BloodScreen({ navigation }: any) {
                       <View style={styles.reqBody}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                           <Text style={[styles.reqTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                            {displayPatient}
+                            {patientName}
                           </Text>
                           {isPlatelet && (
                             <View style={[styles.plateletPill, { backgroundColor: C.warnBg }]}>
                               <Text style={[styles.plateletTxt, { color: C.warn, fontFamily: FontFamily.jakartaBold }]}>
                                 ⚡ {t.blood2.denguePlateletUrgent}
+                              </Text>
+                            </View>
+                          )}
+                          {caseReason.length > 0 && (
+                            <View style={[styles.casePill, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : C.surface2, borderColor: C.border }]}>
+                              <Text style={[styles.caseTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                                {caseReason}
                               </Text>
                             </View>
                           )}
@@ -897,21 +972,28 @@ export function BloodScreen({ navigation }: any) {
                 {bloodTypes.map(g => {
                   const on = groupFilter === g;
                   return (
-                    <TouchableOpacity
+                    <Animated.View
                       key={g}
                       style={[
-                        styles.summaryCell,
-                        { backgroundColor: on ? `${SectorColors.blood}20` : C.surface2 },
-                        on && { borderColor: SectorColors.blood, borderWidth: 1.5 },
+                        styles.summaryCellWrapper,
+                        { transform: [{ scale: donorGroupScales[g] || 1 }] },
                       ]}
-                      onPress={() => setGroupFilter(on ? 'All' : g)}
-                      activeOpacity={0.75}
                     >
-                      <Text style={[styles.summaryCellGroup, { color: SectorColors.blood }]}>{g}</Text>
-                      <Text style={[styles.summaryCellNum, { color: on ? SectorColors.blood : C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-                        {donorGroups[g] ?? 0}
-                      </Text>
-                    </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          styles.summaryCell,
+                          { backgroundColor: on ? `${SectorColors.blood}20` : C.surface2 },
+                          on && { borderColor: SectorColors.blood, borderWidth: 1.5 },
+                        ]}
+                        onPress={() => handleDonorGroupPress(g)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[styles.summaryCellGroup, { color: SectorColors.blood }]}>{g}</Text>
+                        <Text style={[styles.summaryCellNum, { color: on ? SectorColors.blood : C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+                          {donorGroups[g] ?? 0}
+                        </Text>
+                      </TouchableOpacity>
+                    </Animated.View>
                   );
                 })}
               </View>
@@ -1178,9 +1260,12 @@ const styles = StyleSheet.create({
   summaryCard: { padding: 14, borderRadius: 16, borderWidth: 1, marginBottom: 12 } as ViewStyle,
   summaryTitle: { fontSize: 11, letterSpacing: 0.5, marginBottom: 10 } as any,
   summaryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 } as ViewStyle,
-  summaryCell: { width: '22%', alignItems: 'center', paddingVertical: 8, borderRadius: 10 } as ViewStyle,
+  summaryCellWrapper: { width: '22%' } as ViewStyle,
+  summaryCell: { width: '100%', alignItems: 'center', paddingVertical: 8, borderRadius: 10 } as ViewStyle,
   summaryCellGroup: { fontSize: 13, fontFamily: FontFamily.jakartaExtraBold } as any,
   summaryCellNum: { fontSize: 15, marginTop: 2 } as any,
+  casePill: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6, borderWidth: 1 } as ViewStyle,
+  caseTxt: { fontSize: 10.5 } as any,
   donorList: { borderRadius: 16, borderWidth: 1, overflow: 'hidden' } as ViewStyle,
   divider: { height: StyleSheet.hairlineWidth } as ViewStyle,
   donorRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 13 } as ViewStyle,
