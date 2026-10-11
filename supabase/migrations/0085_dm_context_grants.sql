@@ -116,6 +116,7 @@ grant  execute on function public.dm_can_send(uuid) to authenticated;
 --   item    → poster <-> claimant of an APPROVED claim        (matched-claim)
 --   blood   → requester <-> a donor who pledged               (blood_*_contact)
 -- Returns true on success; raises a readable exception otherwise.
+drop function if exists public.open_dm_thread(text, text, uuid);
 create or replace function public.open_dm_thread(
   p_context_type text,
   p_code         text,

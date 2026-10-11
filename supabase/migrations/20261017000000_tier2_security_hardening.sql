@@ -25,8 +25,9 @@ create policy study_qb_insert on public.study_question_bank
   );
 
 -- 2. Ride Contact Privacy Guard (Respects show_whatsapp for all post types)
+drop function if exists public.ride_contact(text, uuid);
 create or replace function public.ride_contact(p_code text, p_target uuid)
-returns table(full_name text, phone text)
+returns table(name text, whatsapp text)
 language plpgsql
 security definer
 set search_path = public
@@ -44,7 +45,7 @@ begin
   select id, driver_id, coalesce(post_type, 'offer')
   into v_ride_id, v_driver, v_post_type
   from public.rides
-  where code = upper(trim(p_code));
+  where code = upper(trim(p_code)) or id::text = p_code;
 
   if v_ride_id is null then
     return;
@@ -105,3 +106,4 @@ grant execute on function public.ride_contact(text, uuid) to authenticated;
 -- 3. Lock down email_is_registered from anon enumeration
 revoke execute on function public.email_is_registered(text) from public, anon;
 grant execute on function public.email_is_registered(text) to authenticated;
+

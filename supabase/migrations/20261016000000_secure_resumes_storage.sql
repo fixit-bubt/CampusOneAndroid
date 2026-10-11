@@ -26,8 +26,9 @@ create policy "job-circulars: applicant or poster resume read"
       or exists (
         select 1 from public.job_applications a
         join public.jobs j on j.id = a.job_id
-        where a.applicant_id = ((storage.foldername(name))[2])::uuid
-          and j.poster_id = auth.uid()
+        where a.student_id = ((storage.foldername(name))[2])::uuid
+          and j.posted_by = auth.uid()
       )
     )
   );
+

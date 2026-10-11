@@ -1069,6 +1069,32 @@ The Jobs & Internships module (`JobsBrowseScreen.tsx`, `JobDetailScreen.tsx`, `J
 - **Touch Target & Height:** Enlarged the segmented filter tab switcher (`All`, `Notices`, `Clubs`, `Events`) from ~36dp to standard 48dp ergonomics (`paddingVertical: 10`, `borderRadius: 16`, `padding: 4`, `TRACK_PADDING = 4`).
 - **Tactile Scale:** Feather tab icons increased from 12px to 13.5px, label typography from 12px to 13px bold, and count badges expanded with comfortable horizontal padding (`paddingHorizontal: 6`, `minWidth: 19`).
 
+---
+
+## 29. Codebase Audit, Security Hardening & Zero-Bloat Optimization
+
+An exhaustive multi-agent audit spanning Security/SecOps, Logic/QA, and Performance/UI identified and remediated 42 issues across three tiers:
+
+### 29.1 Tier 1: Critical Security, Storage & Edge Function Hardening
+- **Edge Function Fail-Closed Verification (`send-push`):** Hardened against missing service account secrets or project configurations, returning 500 fail-closed immediately. Enforced internal authorization verification to block unauthorized direct HTTP triggers.
+- **Private Storage Bucket RLS (`job-circulars`):** Created policy `job-circulars: applicant or poster resume read` restricting read access for uploaded applicant resumes (`resumes/{user_id}/*`) strictly to the applicant, admins, and the verified poster of the job applied to (`job_applications.student_id` & `jobs.posted_by`).
+- **Encrypted Session Profile Caching (`authStore.ts`):** Replaced unencrypted `AsyncStorage` caching of active user profiles with hardware-backed `SecureStore` (`c1_profile_${uid}`). Cached profiles are loaded synchronously at boot to prevent UI flashes while maintaining zero cleartext exposure on-disk.
+- **Mutation Error Feedback:** Audited all Supabase JS v2 mutations across all screens (`StudyUploadScreen`, `RidesScreen`, `ListingFormScreen`, `MarketplaceScreen`, `BloodRequestScreen`, `JobDetailScreen`) to ensure every `error` response is caught and reported to users via toast rather than failing silently.
+
+### 29.2 Tier 2: Database Policies, Synchronization, Dhaka Time & List Virtualization
+- **Attributive Spoofing Prevention:** Locked down `study_materials` and `study_question_bank` inserts via migration `20261017000000_tier2_security_hardening.sql` requiring `uploaded_by = auth.uid()` and verified section membership.
+- **Privacy-Preserving Contact Reveal (`ride_contact`):** Hardened `ride_contact` RPC to honor `profiles.show_whatsapp` preferences across both offering drivers and requesting passengers, while allowing resolution by both ride code and ride UUID.
+- **Public RPC Probe Prevention:** Revoked `anon` execute permissions on `email_is_registered(text)` to eliminate unauthenticated email enumeration vectors.
+- **Dhaka Time UTC+6 Alignment:** Replaced all remaining raw `new Date().toISOString().split('T')[0]` calls across screens and services with `localToday()` from `src/utils/format.ts`.
+- **List Virtualization & Memory Efficiency:** Added optimal windowing (`initialNumToRender: 8-10`, `maxToRenderPerBatch: 10`, `windowSize: 5`, `removeClippedSubviews: true`) across heavy lists including Marketplace, Study Hub, Blood Directory, Faculty, and Student Jobs.
+- **Inverted FlatList Empty States:** Replaced all inverted `ListEmptyComponent` instances with standalone non-inverted empty state views to eliminate upside-down rendering bugs on Fabric architecture.
+
+### 29.3 Tier 3: UI Tokens, Typography & Async Lifecycle Guards
+- **Strict Theme Token Adherence:** Eliminated hardcoded hex color values across screens, standardizing on semantic `C.*` and `SectorColors.*` tokens.
+- **Copy Typography Compliance:** Removed all forbidden em-dashes (`—`) in user-visible UI copy across screens, replacing them with `-` or `,`.
+- **Async Component Lifecycle Protection:** Added unmounted-state guards and cleanup returns across asynchronous fetching hooks and realtime channel subscriptions to eliminate unmounted state update memory warnings.
+
+
 
 
 

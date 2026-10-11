@@ -7,26 +7,29 @@
 -- every row private to its owner.
 -- ============================================================================
 
-create table public.routine_pins (
+create table if not exists public.routine_pins (
   user_id    uuid        not null references public.profiles (id) on delete cascade,
   routine_id uuid        not null references public.routines (id) on delete cascade,
   created_at timestamptz not null default now(),
   primary key (user_id, routine_id)
 );
 
-create index routine_pins_user_idx on public.routine_pins (user_id);
+create index if not exists routine_pins_user_idx on public.routine_pins (user_id);
 
 -- RLS — a pin is visible/writable only by its owner.
 revoke all on public.routine_pins from anon;
 alter table public.routine_pins enable row level security;
 grant select, insert, delete on public.routine_pins to authenticated;
 
+drop policy if exists routine_pins_select on public.routine_pins;
 create policy routine_pins_select on public.routine_pins
   for select to authenticated using (user_id = auth.uid());
 
+drop policy if exists routine_pins_insert on public.routine_pins;
 create policy routine_pins_insert on public.routine_pins
   for insert to authenticated with check (user_id = auth.uid());
 
+drop policy if exists routine_pins_delete on public.routine_pins;
 create policy routine_pins_delete on public.routine_pins
   for delete to authenticated using (user_id = auth.uid());
 
