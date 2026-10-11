@@ -17,9 +17,15 @@ import { FontFamily, Layout, SectorColors, Accent } from '../../theme';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
-import { donorEligibility, isBloodCompatible } from '../../utils/blood';
+import {
+  donorEligibility,
+  isBloodCompatible,
+  parseBloodRequestMeta,
+  getMedicalReasonIcon,
+  getAffiliationIcon,
+} from '../../utils/blood';
 import { scheduleRechargedReminder } from '../../utils/bloodReminder';
-import { localToday } from '../../utils/format';
+import { localToday, formatRelativeTime } from '../../utils/format';
 import {
   getBloodFeed, pledgeToRequest, markDonatedToday as markDonated,
   getDonorContact, getRequesterContact, type DonorWithName,
@@ -49,6 +55,47 @@ function GroupBadge({ group, size = 46 }: { group: string; size?: number }) {
     <View style={[styles.groupBadge, { width: size, height: size, borderRadius: size * 0.28 }]}>
       <Text style={[styles.groupText, { fontSize: size * 0.34, color: BLOOD_COLOR, fontFamily: FontFamily.jakartaExtraBold }]}>
         {group}
+      </Text>
+    </View>
+  );
+}
+
+function RequestBloodBadge({ group, isPlatelet }: { group: string; isPlatelet?: boolean }) {
+  return (
+    <View
+      style={[
+        styles.reqBloodBadge,
+        {
+          backgroundColor: isPlatelet
+            ? 'rgba(234, 179, 8, 0.12)'
+            : 'rgba(214, 61, 53, 0.12)',
+          borderColor: isPlatelet
+            ? 'rgba(234, 179, 8, 0.35)'
+            : 'rgba(214, 61, 53, 0.28)',
+        },
+      ]}
+    >
+      <Text
+        style={[
+          styles.reqBloodGroupTxt,
+          {
+            color: isPlatelet ? '#eab308' : SectorColors.blood,
+            fontFamily: FontFamily.jakartaExtraBold,
+          },
+        ]}
+      >
+        {group}
+      </Text>
+      <Text
+        style={[
+          styles.reqBloodTypeLabel,
+          {
+            color: isPlatelet ? '#ca8a04' : SectorColors.blood,
+            fontFamily: FontFamily.jakartaBold,
+          },
+        ]}
+      >
+        {isPlatelet ? 'PLATELETS' : 'BLOOD'}
       </Text>
     </View>
   );
@@ -816,90 +863,292 @@ export function BloodScreen({ navigation }: any) {
               </View>
             ) : (
               filteredRequests.map(r => {
-                const { fg, bg } = urgencyTone(C, r.urgency);
-                const isPlatelet = r.patient?.includes('[Platelets]') || r.hospital?.toLowerCase().includes('platelet');
-                const rawPatient = r.patient?.replace(/\[Platelets\]/g, '').trim() || r.patient || '';
-                let patientName = rawPatient;
-                let caseReason = '';
-                if (rawPatient.includes(' · ')) {
-                  const parts = rawPatient.split(' · ');
-                  patientName = parts[0];
-                  caseReason = parts.slice(1).join(' · ');
-                }
+                const meta = parseBloodRequestMeta(r.patient, r.hospital, r.units);
+                const pledgeCount = (r as any).pledge_count || 0;
+                const unitsLeft = Math.max(0, meta.unitCount - pledgeCount);
+                const isOwn = r.requester_id === user?.id;
+                const hasPledged = respondedIds.has(r.id);
+                const { fg: urgencyFg, bg: urgencyBg } = urgencyTone(C, r.urgency);
+                const relativeTime = r.created_at ? formatRelativeTime(r.created_at) : '';
+
                 return (
-                  <View key={r.id} style={[styles.reqCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-                    <View style={styles.reqTop}>
-                      <GroupBadge group={r.blood_group} />
-                      <View style={styles.reqBody}>
+                  <View
+                    key={r.id}
+                    style={[
+                      styles.reqCard,
+                      {
+                        backgroundColor: C.surface,
+                        borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : C.border,
+                      },
+                    ]}
+                  >
+                    {/* Top Row: Blood Group Badge + Patient / Affiliation / Time + Urgency */}
+                    <View style={styles.cardHeaderRow}>
+                      <RequestBloodBadge group={r.blood_group} isPlatelet={meta.isPlatelet} />
+
+                      <View style={styles.cardHeaderCenter}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                          <Text style={[styles.reqTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                            {patientName}
+                          <Text
+                            style={[
+                              styles.patientNameTxt,
+                              { color: C.text, fontFamily: FontFamily.jakartaBold },
+                            ]}
+                            numberOfLines={1}
+                          >
+                            {meta.patientName}
                           </Text>
-                          {isPlatelet && (
-                            <View style={[styles.plateletPill, { backgroundColor: C.warnBg }]}>
-                              <Text style={[styles.plateletTxt, { color: C.warn, fontFamily: FontFamily.jakartaBold }]}>
-                                ⚡ {t.blood2.denguePlateletUrgent}
-                              </Text>
-                            </View>
-                          )}
-                          {caseReason.length > 0 && (
-                            <View style={[styles.casePill, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : C.surface2, borderColor: C.border }]}>
-                              <Text style={[styles.caseTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                                {caseReason}
+                          {meta.affiliation && (
+                            <View
+                              style={[
+                                styles.affBadge,
+                                {
+                                  backgroundColor: isDark ? 'rgba(56, 189, 248, 0.12)' : 'rgba(14, 165, 233, 0.09)',
+                                  borderColor: isDark ? 'rgba(56, 189, 248, 0.28)' : 'rgba(14, 165, 233, 0.22)',
+                                },
+                              ]}
+                            >
+                              <Text
+                                style={[
+                                  styles.affBadgeTxt,
+                                  {
+                                    color: isDark ? '#38bdf8' : '#0284c7',
+                                    fontFamily: FontFamily.jakartaBold,
+                                  },
+                                ]}
+                                numberOfLines={1}
+                              >
+                                {getAffiliationIcon(meta.affiliation)} {meta.affiliation}
                               </Text>
                             </View>
                           )}
                         </View>
-                        <View style={styles.reqLoc}>
-                          <Icon name="pin" size={13} color={C.textMuted} />
-                          <Text style={[styles.reqLocTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                            {r.hospital}
-                          </Text>
-                        </View>
+
+                        {relativeTime ? (
+                          <View style={styles.timeRow}>
+                            <Feather name="clock" size={11} color={C.textMuted} />
+                            <Text
+                              style={[
+                                styles.timeTxt,
+                                { color: C.textMuted, fontFamily: FontFamily.jakartaRegular },
+                              ]}
+                            >
+                              Posted {relativeTime}
+                            </Text>
+                          </View>
+                        ) : null}
                       </View>
-                      <View style={[styles.urgencyPill, { backgroundColor: bg }]}>
-                        <View style={[styles.urgencyDot, { backgroundColor: fg }]} />
-                        <Text style={[styles.urgencyTxt, { color: fg, fontFamily: FontFamily.jakartaBold }]}>{r.urgency}</Text>
+
+                      {/* Urgency Pill */}
+                      <View style={[styles.urgencyPill, { backgroundColor: urgencyBg }]}>
+                        <View style={[styles.urgencyDot, { backgroundColor: urgencyFg }]} />
+                        <Text
+                          style={[
+                            styles.urgencyTxt,
+                            { color: urgencyFg, fontFamily: FontFamily.jakartaBold },
+                          ]}
+                        >
+                          {r.urgency === 'Urgent' ? '🚨 Urgent' : r.urgency === 'Today' ? '⏰ Today' : r.urgency}
+                        </Text>
                       </View>
                     </View>
-                    <View style={styles.reqMeta}>
-                      <Text style={[styles.reqMetaTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                        {t.blood2.unitsNeeded(r.area || 'Near campus', r.units)}
-                        {(r as any).pledge_count > 0 ? ` · ${(r as any).pledge_count} ${(r as any).pledge_count === 1 ? 'donor offered help' : 'donors offered help'}` : ''}
+
+                    {/* Clinical Details Row: Bags Needed Badge + Medical Case Reason Badge + Platelets */}
+                    <View style={styles.clinicalBadgesRow}>
+                      <View
+                        style={[
+                          styles.unitBadge,
+                          {
+                            backgroundColor: isDark ? 'rgba(214, 61, 53, 0.16)' : 'rgba(214, 61, 53, 0.10)',
+                            borderColor: isDark ? 'rgba(214, 61, 53, 0.35)' : 'rgba(214, 61, 53, 0.24)',
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.unitBadgeTxt,
+                            { color: SectorColors.blood, fontFamily: FontFamily.jakartaBold },
+                          ]}
+                        >
+                          🩸 {meta.unitCount} {meta.unitCount === 1 ? 'Bag Needed' : 'Bags Needed'}
+                        </Text>
+                      </View>
+
+                      {meta.medicalReason && (
+                        <View
+                          style={[
+                            styles.caseBadge,
+                            {
+                              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : C.surface2,
+                              borderColor: C.border,
+                            },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.caseBadgeTxt,
+                              { color: C.text2, fontFamily: FontFamily.jakartaMedium },
+                            ]}
+                            numberOfLines={1}
+                          >
+                            {getMedicalReasonIcon(meta.medicalReason)} {meta.medicalReason}
+                          </Text>
+                        </View>
+                      )}
+
+                      {meta.isPlatelet && (
+                        <View
+                          style={[
+                            styles.caseBadge,
+                            {
+                              backgroundColor: isDark ? 'rgba(234, 179, 8, 0.14)' : 'rgba(234, 179, 8, 0.10)',
+                              borderColor: isDark ? 'rgba(234, 179, 8, 0.35)' : 'rgba(234, 179, 8, 0.25)',
+                            },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.caseBadgeTxt,
+                              { color: isDark ? '#facc15' : '#b45309', fontFamily: FontFamily.jakartaBold },
+                            ]}
+                          >
+                            ⚡ Platelets (প্লাটিলেট)
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+
+                    {/* Hospital & Area Box */}
+                    <View
+                      style={[
+                        styles.locationBox,
+                        {
+                          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.035)' : C.surface2,
+                          borderColor: isDark ? 'rgba(255, 255, 255, 0.06)' : C.border,
+                        },
+                      ]}
+                    >
+                      <View style={styles.locationLine}>
+                        <View style={[styles.locIconSquare, { backgroundColor: isDark ? 'rgba(214, 61, 53, 0.15)' : 'rgba(214, 61, 53, 0.10)' }]}>
+                          <Feather name="activity" size={12} color={SectorColors.blood} />
+                        </View>
+                        <Text
+                          style={[
+                            styles.hospitalTxt,
+                            { color: C.text, fontFamily: FontFamily.jakartaBold },
+                          ]}
+                          numberOfLines={2}
+                        >
+                          {r.hospital}
+                        </Text>
+                      </View>
+
+                      <View style={[styles.locationLine, { marginTop: 6 }]}>
+                        <View style={[styles.locIconSquare, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : C.surface }]}>
+                          <Icon name="pin" size={11} color={C.textMuted} />
+                        </View>
+                        <Text
+                          style={[
+                            styles.areaTxt,
+                            { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {r.area ? `${r.area}, Dhaka` : 'Dhaka, Bangladesh'}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Pledge Progress / Status Row (Answers multi-bag scenario!) */}
+                    <View
+                      style={[
+                        styles.pledgeStatusBox,
+                        pledgeCount > 0
+                          ? {
+                              backgroundColor: unitsLeft === 0
+                                ? (isDark ? 'rgba(34, 197, 94, 0.12)' : 'rgba(34, 197, 94, 0.08)')
+                                : (isDark ? 'rgba(214, 61, 53, 0.12)' : 'rgba(214, 61, 53, 0.07)'),
+                              borderColor: unitsLeft === 0
+                                ? (isDark ? 'rgba(34, 197, 94, 0.30)' : 'rgba(34, 197, 94, 0.20)')
+                                : (isDark ? 'rgba(214, 61, 53, 0.25)' : 'rgba(214, 61, 53, 0.18)'),
+                            }
+                          : {
+                              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : C.surface2,
+                              borderColor: 'transparent',
+                            },
+                      ]}
+                    >
+                      <Feather
+                        name={pledgeCount > 0 ? (unitsLeft === 0 ? 'check-circle' : 'heart') : 'users'}
+                        size={13}
+                        color={
+                          pledgeCount > 0
+                            ? (unitsLeft === 0 ? C.success : SectorColors.blood)
+                            : C.textMuted
+                        }
+                      />
+                      <Text
+                        style={[
+                          styles.pledgeStatusTxt,
+                          {
+                            color: pledgeCount > 0
+                              ? (unitsLeft === 0 ? C.success : (isDark ? '#fff' : SectorColors.blood))
+                              : C.textMuted,
+                            fontFamily: pledgeCount > 0 ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                          },
+                        ]}
+                      >
+                        {pledgeCount > 0
+                          ? unitsLeft === 0
+                            ? `${pledgeCount} ${pledgeCount === 1 ? 'donor offered help' : 'donors offered help'} · All ${meta.unitCount} bags covered!`
+                            : `${pledgeCount} ${pledgeCount === 1 ? 'donor offered help' : 'donors offered help'} (${pledgeCount}/${meta.unitCount} bags covered · ${unitsLeft} more needed)`
+                          : meta.unitCount > 1
+                            ? `${meta.unitCount} donors needed · No donors pledged yet`
+                            : '1 donor needed · Be the first to help'}
                       </Text>
                     </View>
-                    {r.requester_id === user?.id ? (
+
+                    {/* High-Visibility Action Button */}
+                    {isOwn ? (
                       <TouchableOpacity
-                        style={[styles.pledgeBtn, { backgroundColor: C.surface2 }]}
+                        style={[
+                          styles.cardActionBtn,
+                          {
+                            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : C.surface2,
+                            borderColor: C.border,
+                            borderWidth: 1,
+                          },
+                        ]}
                         onPress={() => navigation.navigate('BloodRequestDetail', { requestId: r.id })}
-                        activeOpacity={0.75}
+                        activeOpacity={0.8}
                       >
-                        <Icon name="directory" size={15} color={C.text2} />
-                        <Text style={[styles.pledgeTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                          {t.blood2.manageResponses}
+                        <Icon name="directory" size={15} color={C.text} />
+                        <Text style={[styles.cardActionBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                          {t.blood2.manageResponses} {pledgeCount > 0 ? `(${pledgeCount})` : ''}
                         </Text>
                       </TouchableOpacity>
-                    ) : respondedIds.has(r.id) ? (
+                    ) : hasPledged ? (
                       <TouchableOpacity
-                        style={[styles.pledgeBtn, { backgroundColor: C.successBg }]}
+                        style={[styles.cardActionBtn, { backgroundColor: '#16a34a' }]}
                         onPress={() => revealRequester(r)}
-                        activeOpacity={0.75}
+                        activeOpacity={0.85}
                         disabled={busyId === r.id}
                       >
-                        <Icon name="phone" size={15} color={C.success} />
-                        <Text style={[styles.pledgeTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
-                          {busyId === r.id ? '…' : t.blood2.viewRequesterContact}
+                        <Icon name="phone" size={15} color="#fff" />
+                        <Text style={[styles.cardActionBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                          {busyId === r.id ? 'Connecting…' : 'Call / WhatsApp Requester'}
                         </Text>
                       </TouchableOpacity>
                     ) : (
                       <TouchableOpacity
-                        style={[styles.pledgeBtn, { backgroundColor: BLOOD_BG }]}
+                        style={[styles.cardActionBtn, { backgroundColor: SectorColors.blood }]}
                         onPress={() => handleHelpPress(r)}
-                        activeOpacity={0.75}
+                        activeOpacity={0.85}
                       >
-                        <Icon name="blood" size={16} color={BLOOD_COLOR} />
-                        <Text style={[styles.pledgeTxt, { color: BLOOD_COLOR, fontFamily: FontFamily.jakartaBold }]}>
-                          {t.blood2.iCanHelp}
+                        <Icon name="blood" size={16} color="#fff" />
+                        <Text style={[styles.cardActionBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                          {unitsLeft > 0 && meta.unitCount > 1 && pledgeCount > 0
+                            ? `I Can Help (${unitsLeft} More Needed)`
+                            : t.blood2.iCanHelp}
                         </Text>
                       </TouchableOpacity>
                     )}
@@ -907,6 +1156,7 @@ export function BloodScreen({ navigation }: any) {
                 );
               })
             )}
+
           </View>
         ) : (
           <View>
@@ -1198,7 +1448,140 @@ const styles = StyleSheet.create({
   list: { gap: 11 } as ViewStyle,
   groupBadge: { backgroundColor: BLOOD_BG, alignItems: 'center', justifyContent: 'center', flexShrink: 0 } as ViewStyle,
   groupText: {} as any,
-  reqCard: { padding: 14, borderRadius: 16, borderWidth: 1 } as ViewStyle,
+  reqCard: {
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+  } as ViewStyle,
+  reqBloodBadge: {
+    width: 48,
+    height: 48,
+    borderRadius: 13,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  } as ViewStyle,
+  reqBloodGroupTxt: {
+    fontSize: 16.5,
+    lineHeight: 19,
+  } as TextStyle,
+  reqBloodTypeLabel: {
+    fontSize: 7.5,
+    letterSpacing: 0.6,
+    marginTop: 1,
+  } as TextStyle,
+  cardHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  } as ViewStyle,
+  cardHeaderCenter: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+  } as ViewStyle,
+  patientNameTxt: {
+    fontSize: 15,
+  } as TextStyle,
+  affBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 6,
+    borderWidth: 1,
+    alignSelf: 'flex-start',
+  } as ViewStyle,
+  affBadgeTxt: {
+    fontSize: 10.5,
+  } as TextStyle,
+  timeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+  } as ViewStyle,
+  timeTxt: {
+    fontSize: 11,
+  } as TextStyle,
+  clinicalBadgesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 10,
+  } as ViewStyle,
+  unitBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+  } as ViewStyle,
+  unitBadgeTxt: {
+    fontSize: 11.5,
+  } as TextStyle,
+  caseBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+  } as ViewStyle,
+  caseBadgeTxt: {
+    fontSize: 11,
+  } as TextStyle,
+  locationBox: {
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginTop: 10,
+  } as ViewStyle,
+  locationLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+  } as ViewStyle,
+  locIconSquare: {
+    width: 20,
+    height: 20,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  } as ViewStyle,
+  hospitalTxt: {
+    fontSize: 13,
+    flex: 1,
+  } as TextStyle,
+  areaTxt: {
+    fontSize: 11.5,
+    flex: 1,
+  } as TextStyle,
+  pledgeStatusBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginTop: 10,
+  } as ViewStyle,
+  pledgeStatusTxt: {
+    fontSize: 12,
+    flex: 1,
+  } as TextStyle,
+  cardActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    height: 44,
+    borderRadius: 12,
+    marginTop: 11,
+  } as ViewStyle,
+  cardActionBtnTxt: {
+    fontSize: 13.5,
+  } as TextStyle,
   reqTop: { flexDirection: 'row', alignItems: 'center', gap: 12 } as ViewStyle,
   reqBody: { flex: 1 } as ViewStyle,
   reqTitle: { fontSize: 14 } as any,

@@ -55,3 +55,72 @@ export function donorEligibility(
 
   return { eligible: daysLeft === 0, daysLeft, waitDays };
 }
+
+export interface ParsedBloodRequestMeta {
+  patientName: string;
+  medicalReason: string | null;
+  affiliation: string | null;
+  isPlatelet: boolean;
+  unitCount: number;
+}
+
+export function parseBloodRequestMeta(
+  patientRaw?: string | null,
+  hospitalRaw?: string | null,
+  unitsRaw?: number | null
+): ParsedBloodRequestMeta {
+  const isPlatelet = Boolean(
+    patientRaw?.includes('[Platelets]') ||
+    hospitalRaw?.toLowerCase().includes('platelet')
+  );
+
+  let clean = (patientRaw || '').replace(/\[Platelets\]/g, '').trim();
+
+  // Extract affiliation in parentheses at the end if present, e.g. " (BUBT Student)"
+  let affiliation: string | null = null;
+  const affMatch = clean.match(/\(([^)]+)\)\s*$/);
+  if (affMatch) {
+    affiliation = affMatch[1].trim();
+    clean = clean.replace(/\(([^)]+)\)\s*$/, '').trim();
+  }
+
+  // Extract medicalReason if separated by ' · '
+  let patientName = clean;
+  let medicalReason: string | null = null;
+  if (clean.includes(' · ')) {
+    const parts = clean.split(' · ');
+    patientName = parts[0].trim();
+    medicalReason = parts.slice(1).join(' · ').trim();
+  }
+
+  const unitCount = Math.max(1, typeof unitsRaw === 'number' ? unitsRaw : parseInt(String(unitsRaw || 1), 10) || 1);
+
+  return {
+    patientName: patientName || 'Patient',
+    medicalReason: medicalReason || null,
+    affiliation: affiliation || null,
+    isPlatelet,
+    unitCount,
+  };
+}
+
+export function getMedicalReasonIcon(reason?: string | null): string {
+  if (!reason) return '🩺';
+  const r = reason.toLowerCase();
+  if (r.includes('surgery')) return '🚨';
+  if (r.includes('dengue') || r.includes('platelet')) return '⚡';
+  if (r.includes('accident') || r.includes('trauma')) return '💥';
+  if (r.includes('childbirth') || r.includes('c-section') || r.includes('cesarean')) return '👶';
+  if (r.includes('thalassemia')) return '🩸';
+  if (r.includes('icu') || r.includes('critical')) return '🏥';
+  return '🩺';
+}
+
+export function getAffiliationIcon(affiliation?: string | null): string {
+  if (!affiliation) return '👤';
+  const a = affiliation.toLowerCase();
+  if (a.includes('student')) return '🎓';
+  if (a.includes('faculty') || a.includes('staff')) return '🏢';
+  if (a.includes('family')) return '👨‍👩‍👧';
+  return '👤';
+}

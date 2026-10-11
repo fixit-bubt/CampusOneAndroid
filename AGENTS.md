@@ -974,5 +974,27 @@ The Jobs & Internships module (`JobsBrowseScreen.tsx`, `JobDetailScreen.tsx`, `J
   - **Case Reason / Requirement:** Curated categories (*Emergency Surgery*, *Dengue / Low Platelets*, *Road Accident / Trauma*, *Childbirth / C-Section*, *Thalassemia*, *ICU Critical Care*, *Routine / Other*). Automatically switches on platelet mode if Dengue is selected.
   - **Patient Affiliation:** Curated categories (*BUBT Student*, *Faculty / Staff*, *Family Member*, *General Patient*).
 
+### 27.4 Blood Request Card Redesign & Multi-Bag Donor Pledge Architecture (`BloodScreen.tsx` & `BloodRequestDetailScreen.tsx`)
+- **Metadata Decomposition (`parseBloodRequestMeta` in `src/utils/blood.ts`):**
+  - Parses composite `patient` string (`"${patientName} · ${medicalReason} (${affiliation})"`) into distinct typed fields: `patientName`, `medicalReason`, `affiliation`, `isPlatelet`, and `unitCount`.
+  - Cleans up trailing parentheses, supports `[Platelets]` tags, and handles plain patient names gracefully.
+  - Added helpers `getMedicalReasonIcon` and `getAffiliationIcon` for standardized clinical iconography.
+- **Institutional Visual Hierarchy:**
+  - **48×48 Squircle Badge (`RequestBloodBadge`):** Prominently displays blood group (16.5px extra bold) with micro-label (`BLOOD` or `PLATELETS` in 7.5px bold) and amber glow for platelets or crimson tint for whole blood.
+  - **Header Row:** Shows Patient Name, soft blue Affiliation chip (`🎓 BUBT Student`, `🏢 Faculty / Staff`), relative timestamp (`formatRelativeTime`), and urgency pill (`🚨 Urgent`, `⏰ Today`).
+  - **Clinical Chips Row:** Highlights bags needed (`🩸 3 Bags Needed` in deep crimson), medical reason chip (`🚨 Emergency Surgery`, `⚡ Dengue`, etc.), and platelets tag.
+  - **Hospital & Location Container:** Sunken card (`surface2`) with hospital activity icon + hospital name, and pin icon + area (e.g. `Mirpur-10, Dhaka`).
+- **Multi-Bag Donor Pledge Progression:**
+  - Clearly supports multi-bag requests (2 or 3 bags):
+  - When `pledge_count === 0`: Shows status banner indicating `X donors needed · No donors pledged yet`.
+  - When `pledge_count > 0`: Displays real-time progress banner: `🤝 X donors offered help (X/Y bags covered · Z more needed)` with emerald badge if all covered.
+  - Other eligible campus donors can continue offering help until the request is fulfilled.
+- **High-Visibility Contextual Action Buttons:**
+  - **Post Owner:** `📋 Manage Responses (${pledge_count})`.
+  - **Pledged Donor:** Solid emerald green button (`📞 Call / WhatsApp Requester`) allowing instant coordination with the patient/family.
+  - **Eligible Donor:** Solid crimson button (`🩸 I Can Help (${unitsLeft} More Needed)`) with bold white text.
+- **Requester Response Management Sheet (`BloodRequestDetailScreen.tsx`):**
+  - Requesters can view all responding donors, check 90-day eligibility, tap the phone icon to open `ContactSheet` for 1-tap call/WhatsApp, and confirm donation.
+
 
 

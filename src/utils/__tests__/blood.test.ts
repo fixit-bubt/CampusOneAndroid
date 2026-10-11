@@ -75,3 +75,42 @@ describe('isBloodCompatible', () => {
     expect(isBloodCompatible('AB+', 'O+')).toBe(false);
   });
 });
+
+describe('parseBloodRequestMeta', () => {
+  const { parseBloodRequestMeta, getMedicalReasonIcon, getAffiliationIcon } = require('../blood');
+
+  it('parses composite patient string with medical reason and affiliation', () => {
+    const meta = parseBloodRequestMeta('Sofik · Emergency Surgery (BUBT Student)', 'Ibn Sina Hospital', 3);
+    expect(meta.patientName).toBe('Sofik');
+    expect(meta.medicalReason).toBe('Emergency Surgery');
+    expect(meta.affiliation).toBe('BUBT Student');
+    expect(meta.isPlatelet).toBe(false);
+    expect(meta.unitCount).toBe(3);
+  });
+
+  it('detects platelet requests from prefix or hospital', () => {
+    const meta1 = parseBloodRequestMeta('[Platelets] Rahim · Dengue / Low Platelets', 'LabAid', 2);
+    expect(meta1.isPlatelet).toBe(true);
+    expect(meta1.patientName).toBe('Rahim');
+    expect(meta1.medicalReason).toBe('Dengue / Low Platelets');
+
+    const meta2 = parseBloodRequestMeta('Karim', 'National Platelet Center', 1);
+    expect(meta2.isPlatelet).toBe(true);
+  });
+
+  it('handles plain patient names with no metadata gracefully', () => {
+    const meta = parseBloodRequestMeta('Sadia Akter', 'Mirpur General', 1);
+    expect(meta.patientName).toBe('Sadia Akter');
+    expect(meta.medicalReason).toBeNull();
+    expect(meta.affiliation).toBeNull();
+    expect(meta.unitCount).toBe(1);
+  });
+
+  it('maps medical reasons and affiliations to corresponding icons', () => {
+    expect(getMedicalReasonIcon('Emergency Surgery')).toBe('🚨');
+    expect(getMedicalReasonIcon('Dengue / Low Platelets')).toBe('⚡');
+    expect(getMedicalReasonIcon('Road Accident / Trauma')).toBe('💥');
+    expect(getAffiliationIcon('BUBT Student')).toBe('🎓');
+    expect(getAffiliationIcon('Faculty / Staff')).toBe('🏢');
+  });
+});
