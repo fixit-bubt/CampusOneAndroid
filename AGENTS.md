@@ -145,8 +145,8 @@ The live Supabase database (`xhgpxvyqrufbbuivttmi`) is the single source of trut
 |---|---|---|
 | **Marketplace** | `listings` (NOT `marketplace`) | Status: `'Available'` / `'Sold'`. Contact reveal via `listing_contact(p_code)` RPC. Upload to `photos` bucket (`marketplace/{user_id}/`). |
 | **Rides** | `rides` (NOT `ride_shares`) | Columns: `origin`, `destination`, `date`, `time`, `seats_total`, `fare`, `driver_id`, `code`. Contact via `ride_contact(p_code, p_target)`. Call `delete_expired_rides()` before fetch. |
-| **Blood Donors** | `donors` (NOT `blood_donors`) | Columns: `user_id`, `blood_group`, `area`, `last_donated`. No phone column (phone is in `profiles.whatsapp`). Contact via `donor_contact(p_user_id)` RPC. 90-day wait enforced. |
-| **Blood Pledges** | `blood_pledges` | Columns: `request_id`, `donor_id`. Used when a student pledges "I can help". |
+| **Blood Donors** | `donors` (NOT `blood_donors`) | Columns: `user_id`, `blood_group`, `area`, `last_donated`, `alert_urgency` (`'urgent_only'`, `'today_plus'`, `'all'`). No phone column (phone is in `profiles.whatsapp`). Contact via `donor_contact(p_user_id)` RPC. 90/120-day wait enforced. |
+| **Blood Pledges** | `blood_pledges` | Columns: `request_id`, `donor_id`. Triggers `trg_notify_blood_pledge` and `trg_notify_blood_pledge_cancelled` notify requester. `trg_notify_blood_request_fulfilled` on `blood_requests` notifies all pledged donors when resolved. |
 | **Events** | `events` | Date column is `date` (NOT `event_date`); location is `venue` (NOT `location`). Whitelist: `event_organizers`. |
 | **Clubs** | `clubs` & `club_posts` | `clubs.about` (NOT `description`), filter `is_active = true`. Posts: `club_posts.body` (NOT `content`), `author_id`. |
 | **Jobs** | `jobs` & `job_applications` | **NO status column on jobs**. Removed jobs have `deleted_at IS NOT NULL`. Withdraw a job by setting `deleted_at = now()`. Types: `internship`, `tuition`, `on_campus`, `part_time`, `full_time`, `freelance`. Applications tracked in `job_applications` (`submitted`, `viewed`, `shortlisted`, `rejected`) with RLS & notification triggers. Storage bucket `job-circulars` (circulars uploaded to `{user_id}/*`, student resumes uploaded to `resumes/{user_id}/*`). Poster authorization verified via `can_post_jobs()` RPC. Notifications use `sector = 'jobs'`. |
@@ -241,6 +241,7 @@ In `RootNavigator.tsx`, students who have not completed onboarding (`!profile?.s
 ### 10.3 Direct FCM Push Notifications
 - **Firebase Project:** `campusone-853e6`
 - **Mechanism:** Trigger on `notifications` table (`trg_push_on_notification`) → `pg_net` HTTP post → `send-push` Edge Function → Google Service Account OAuth → FCM v1.
+- **Emergency Channel:** Android native channel `emergency_blood` (`AndroidImportance.MAX`, double-pulse vibration `[0, 500, 200, 500]`, heads-up lockscreen banner). FCM messages with `sector === 'blood'` are routed directly to this channel.
 - **Device Registration:** Handled via `register_push_token` RPC in `src/lib/push.ts`.
 - **Diagnosis:** If push fails, check `push_tokens` table and `net._http_response` first. `{"sent": 0}` means the target user has no registered device token.
 
@@ -416,6 +417,33 @@ The mobile and web applications are actively pitched and presented to BUBT admin
   - Mutual disconnect with native confirmation alert in `StudentProfileScreen.tsx`.
 - **1:1 Web Parity (`StudentDirectory.jsx`):**
   - Sibling web app equipped with Department filter select dropdown, Classmates toggle, CR & Blood badges, and modal Disconnect action. Verified via `vite build`.
+
+### 13.12 Blood Donation Notification System & Life-Saving Dispatch Loop (`BloodScreen.tsx`, `DonorRegisterScreen.tsx`, `NotifSettingsScreen.tsx`)
+- **Emergency Priority Architecture:**
+  - Android native channel `emergency_blood` configured with `AndroidImportance.MAX`, bypasses DND in emergency contexts, displays full heads-up banner on lockscreen, and features a distinct emergency double-pulse vibration pattern (`[0, 500, 200, 500]`).
+  - Edge function `send-push` (`supabase/functions/send-push/index.ts`) automatically maps all notifications with `sector === 'blood'` to `channelId: 'emergency_blood'`.
+- **Urgency Sensitivity & Fatigue Prevention:**
+  - `public.donors` table stores `alert_urgency` (`'urgent_only'`, `'today_plus'`, `'all'`) defaulting to `'all'`.
+  - Registered donors can toggle their urgency preference in both `DonorRegisterScreen.tsx` during signup/profile editing and directly in `NotifSettingsScreen.tsx` under the Blood notification preferences card via `updateDonorAlertUrgency(userId, urgency)`.
+  - Sensitivity thresholds:
+    - `urgent_only`: Alerted ONLY for critical immediate emergencies (`urgency = 'urgent'`).
+    - `today_plus`: Alerted for critical emergencies and requests needed today (`urgency IN ('urgent', 'today')`).
+    - `all`: Alerted for all blood requests matching blood group (`urgent`, `today`, `this_week`, `planned`).
+- **Smart Dhaka Location Matching with City-Wide Fallback:**
+  - `notify_blood_request()` trigger function checks the requested patient `area` (e.g. `Mirpur`, `Dhanmondi`, `Uttara`, `Mohakhali`).
+  - Matches compatible donors located in that specific area first who have not donated within the recharge interval and have enabled blood notifications (`notif_prefs->blood`).
+  - **Zero-Response Safety Fallback:** If fewer than 3 compatible donors are found in that specific area, the system automatically expands notifications to city-wide compatible Dhaka donors. This guarantees life-saving requests are never silenced if an area has low donor density or all local donors have recently donated.
+- **Two-Way Dispatch & Closure Feedback Loop:**
+  - `trg_notify_blood_pledge` (AFTER INSERT on `blood_pledges`): Instantly notifies the requester when a student taps "I can help" (`type = 'blood_pledge'`), providing the donor's name and blood group.
+  - `trg_notify_blood_pledge_cancelled` (AFTER DELETE on `blood_pledges`): Alerts the requester if a donor cancels their pledge (`type = 'blood_pledge_cancelled'`), allowing the requester to seek alternative donors without delay.
+  - `trg_notify_blood_request_fulfilled` (AFTER UPDATE on `blood_requests` when `is_fulfilled = true`): Automatically sends a closure and thank-you notification (`type = 'blood_request_fulfilled'`) to all donors who pledged, informing them that blood has been arranged.
+- **Intelligent Deep-Linking & Targeted Highlight:**
+  - `notifTarget.ts` maps `blood_pledge` and `blood_pledge_cancelled` to `BloodRequestDetail` (with `requestId`), and `blood_request` and `blood_request_fulfilled` to `Blood` (with `requestCode`).
+  - When opened via push or in-app notification with `requestCode`, `BloodScreen.tsx` switches to the Requests tab, anchors a golden highlight card banner, and highlights the specific emergency request card with an accent border.
+- **Gender-Aware Replenishment & WHO Health Safeguards:**
+  - Enforces WHO blood donation recovery intervals: 90 days for males and 120 days for females (`scheduleRechargedReminder` in `src/utils/bloodReminder.ts` taking user's `gender`).
+- **Direct WhatsApp Coordination:**
+  - `ContactSheet.tsx` supports optional `whatsAppMessage` prop, routing pre-composed emergency details (`Assalamu Alaikum, I saw your urgent blood request on CampusOne for [Blood Group] at [Hospital]...`) directly into WhatsApp chat.
 
 ---
 

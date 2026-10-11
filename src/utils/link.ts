@@ -54,7 +54,7 @@ export async function openInApp(raw: string | null | undefined): Promise<boolean
  * - keeps an existing "880…"; converts local "0…" → "880…"
  * - a bare 10-digit "1…" (missing the leading 0) → "880…"
  */
-export function waHref(phone: string | null | undefined): string | null {
+export function waHref(phone: string | null | undefined, text?: string): string | null {
   let d = (phone ?? '').replace(/[^0-9]/g, '');
   if (!d) return null;
   if (d.startsWith('00')) d = d.slice(2);
@@ -66,7 +66,8 @@ export function waHref(phone: string | null | undefined): string | null {
     d = '880' + d;
   }
   if (d.length < 11) return null;
-  return `https://wa.me/${d}`;
+  const query = text ? `?text=${encodeURIComponent(text)}` : '';
+  return `https://wa.me/${d}${query}`;
 }
 
 /**
@@ -81,8 +82,8 @@ export async function callPhone(phone: string | null | undefined): Promise<boole
 /**
  * Open WhatsApp chat with the given phone number directly.
  */
-export async function openWhatsApp(phone: string | null | undefined): Promise<boolean> {
-  const href = waHref(phone);
+export async function openWhatsApp(phone: string | null | undefined, text?: string): Promise<boolean> {
+  const href = waHref(phone, text);
   if (!href) return false;
   return openUrl(href);
 }

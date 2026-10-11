@@ -40,10 +40,13 @@ export async function resolveNotifTarget(
     const { data } = await supabase.from('announcements').select('id').eq('code', refId).maybeSingle();
     return data?.id ? { screen: 'AnnouncementDetail', params: { announcementId: data.id } } : null;
   }
-  // Blood notifications carry a request code; there's no public per-request
-  // detail for non-requesters, so land on the Blood screen.
-  if (refType === 'blood_request') {
-    return { screen: 'Blood' };
+  // Blood pledge alert (for requester) carries request UUID; open BloodRequestDetail
+  if (refType === 'blood_pledge' || refType === 'blood_pledge_cancelled') {
+    return { screen: 'BloodRequestDetail', params: { requestId: refId } };
+  }
+  // Blood request / fulfilled alerts carry request code; land on Blood screen with requestCode
+  if (refType === 'blood_request' || refType === 'blood_request_fulfilled') {
+    return { screen: 'Blood', params: { requestCode: refId } };
   }
   // Connection request/accepted - land on specific Directory tabs.
   if (refType === 'connection_request') {

@@ -87,7 +87,7 @@ export function BloodRequestDetailScreen({ route, navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [busyContactId, setBusyContactId] = useState<string | null>(null);
-  const [contactTarget, setContactTarget] = useState<{ name: string; phone: string; title?: string } | null>(null);
+  const [contactTarget, setContactTarget] = useState<{ name: string; phone: string; title?: string; message?: string } | null>(null);
   const [fulfilling, setFulfilling] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
 
@@ -157,10 +157,13 @@ export function BloodRequestDetailScreen({ route, navigation }: any) {
         toast({ type: 'info', title: t.blood2.notAvailable, message: 'This donor has not provided a contact number.' });
         return;
       }
+      const cleanPatient = (req?.patient ?? 'our patient').replace(/\[Platelets\]/g, '').trim();
+      const prefill = `Salam ${res.data.name || p.full_name || 'Brother/Sister'}, thank you for offering to donate ${p.blood_group || 'blood'} for ${cleanPatient} at ${req?.hospital || 'the hospital'}. Where can we coordinate to meet?`;
       setContactTarget({
         name: res.data.name ?? p.full_name ?? t.blood2.anonymous,
         phone: res.data.whatsapp,
         title: p.blood_group ? `${p.blood_group} Donor` : 'Blood Donor',
+        message: prefill,
       });
     } finally {
       setBusyContactId(null);
@@ -556,6 +559,7 @@ export function BloodRequestDetailScreen({ route, navigation }: any) {
         phone={contactTarget?.phone ?? ''}
         name={contactTarget?.name ?? ''}
         title={contactTarget?.title}
+        whatsAppMessage={contactTarget?.message}
       />
     </SafeAreaView>
   );

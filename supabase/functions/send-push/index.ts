@@ -107,6 +107,7 @@ Deno.serve(async (req) => {
     const projectId = sa.project_id;
     let sent = 0;
 
+    const channelId = p.sector === 'blood' ? 'emergency_blood' : 'default';
     for (const { token } of rows) {
       const message = {
         message: {
@@ -117,7 +118,7 @@ Deno.serve(async (req) => {
             reference_id: p.reference_id ?? '',
             reference_type: p.reference_type ?? '',
           },
-          android: { priority: 'high', notification: { channel_id: 'default', sound: 'default' } },
+          android: { priority: 'high', notification: { channel_id: channelId, sound: 'default' } },
         },
       };
       const fcmRes = await fetch(

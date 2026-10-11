@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, Switch, StyleSheet,
-  Linking, AppState, type ViewStyle,
+  Linking, AppState, type ViewStyle, type TextStyle,
 } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { useFocusEffect } from '@react-navigation/native';
@@ -11,7 +11,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { SectorIcon } from '../../components/ui/SectorIcon';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout, Accent } from '../../theme';
+import { FontFamily, Layout, Accent, SectorColors } from '../../theme';
 import type { SectorKey } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
@@ -80,6 +80,8 @@ export function NotifSettingsScreen({ navigation }: any) {
   const [prefs, setPrefs] = useState<Record<string, SectorPref>>(
     Object.fromEntries(SECTORS.map(s => [s.id, defaultPref()]))
   );
+  const [donorUrgency, setDonorUrgency] = useState<'urgent_only' | 'today_plus' | 'all'>('all');
+  const [isDonor, setIsDonor] = useState(false);
   const [push, setPush] = useState<PushStatus>({ state: 'pending' });
   const [retrying, setRetrying] = useState(false);
   const [osDisabled, setOsDisabled] = useState(false);
@@ -99,16 +101,24 @@ export function NotifSettingsScreen({ navigation }: any) {
 
   const load = useCallback(async () => {
     setLoadError(null);
-    const { data, error } = await supabase
-      .from('notif_prefs')
-      .select('*')
-      .eq('user_id', user?.id ?? '');
-    if (error) {
-      setLoadError(error.message);
+    const [prefsRes, donorRes] = await Promise.all([
+      supabase.from('notif_prefs').select('*').eq('user_id', user?.id ?? ''),
+      user?.id
+        ? supabase.from('donors').select('alert_urgency').eq('user_id', user.id).maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
+    ]);
+    if (prefsRes.error) {
+      setLoadError(prefsRes.error.message);
       return;
     }
-    if (data) {
-      const rows = data as any[];
+    if (donorRes.data) {
+      setIsDonor(true);
+      if ((donorRes.data as any).alert_urgency) {
+        setDonorUrgency((donorRes.data as any).alert_urgency);
+      }
+    }
+    if (prefsRes.data) {
+      const rows = prefsRes.data as any[];
       const pausedRow = rows.find(p => p.sector === '_paused');
       const quietRow  = rows.find(p => p.sector === '_quiet');
       if (pausedRow) setPaused(pausedRow.enabled);
@@ -170,6 +180,12 @@ export function NotifSettingsScreen({ navigation }: any) {
       { onConflict: 'user_id,sector' },
     );
     if (error) load();
+  }
+
+  async function saveDonorUrgency(val: 'urgent_only' | 'today_plus' | 'all') {
+    if (!user?.id) return;
+    setDonorUrgency(val);
+    await (supabase.from('donors') as any).update({ alert_urgency: val }).eq('user_id', user.id);
   }
 
   const onCount = visibleSectors.filter(s => prefs[s.id]?.enabled).length;
@@ -390,6 +406,45 @@ export function NotifSettingsScreen({ navigation }: any) {
                   ))}
                 </View>
               )}
+
+              {isOpen && p.enabled && s.id === 'blood' && isDonor && (
+                <View style={styles.bloodUrgencySection}>
+                  <Text style={[styles.bloodUrgencyLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                    Alert Sensitivity:
+                  </Text>
+                  <View style={styles.bloodUrgencyRow}>
+                    {[
+                      { id: 'urgent_only', label: '🚨 Urgent Only' },
+                      { id: 'today_plus',  label: '⚡ Urgent & Today' },
+                      { id: 'all',         label: '📅 All' },
+                    ].map(opt => {
+                      const on = donorUrgency === opt.id;
+                      return (
+                        <TouchableOpacity
+                          key={opt.id}
+                          style={[
+                            styles.urgencyPill,
+                            on
+                              ? { backgroundColor: SectorColors.blood, borderColor: SectorColors.blood }
+                              : { backgroundColor: C.surface2, borderColor: C.border },
+                          ]}
+                          onPress={() => saveDonorUrgency(opt.id as any)}
+                          activeOpacity={0.75}
+                        >
+                          <Text
+                            style={[
+                              styles.urgencyPillTxt,
+                              { color: on ? '#fff' : C.text, fontFamily: FontFamily.jakartaBold },
+                            ]}
+                          >
+                            {opt.label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+              )}
             </View>
           );
         })}
@@ -514,5 +569,32 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   } as ViewStyle,
   chanTxt: { fontSize: 12.5 } as any,
+  bloodUrgencySection: {
+    paddingHorizontal: 14,
+    paddingBottom: 14,
+    paddingLeft: 56,
+    paddingTop: 4,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.06)',
+    marginTop: 4,
+  } as ViewStyle,
+  bloodUrgencyLabel: {
+    fontSize: 11.5,
+    marginBottom: 8,
+  } as TextStyle,
+  bloodUrgencyRow: {
+    flexDirection: 'row',
+    gap: 8,
+    flexWrap: 'wrap',
+  } as ViewStyle,
+  urgencyPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 999,
+    borderWidth: 1,
+  } as ViewStyle,
+  urgencyPillTxt: {
+    fontSize: 12,
+  } as TextStyle,
 });
 

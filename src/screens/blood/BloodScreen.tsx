@@ -101,11 +101,19 @@ function RequestBloodBadge({ group, isPlatelet }: { group: string; isPlatelet?: 
   );
 }
 
-export function BloodScreen({ navigation }: any) {
+export function BloodScreen({ route, navigation }: any) {
   const { C, isDark } = useTheme();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const t = useT();
   const [tab, setTab] = useState<Tab>('requests');
+  const [highlightCode, setHighlightCode] = useState<string | null>(route?.params?.requestCode ?? null);
+
+  useEffect(() => {
+    if (route?.params?.requestCode) {
+      setTab('requests');
+      setHighlightCode(route.params.requestCode);
+    }
+  }, [route?.params?.requestCode]);
 
   // Segmented track animated indicator & theme colors
   const animIndex = useRef(new Animated.Value(0)).current;
@@ -164,7 +172,7 @@ export function BloodScreen({ navigation }: any) {
   const [respondedIds, setRespondedIds] = useState<Set<string>>(new Set());
   const [busyId, setBusyId] = useState<string | null>(null);
   const [loadState, setLoadState] = useState<'loading' | 'error' | 'ready'>('loading');
-  const [contactTarget, setContactTarget] = useState<{ name: string; phone: string; title?: string } | null>(null);
+  const [contactTarget, setContactTarget] = useState<{ name: string; phone: string; title?: string; message?: string } | null>(null);
   const [isOffline, setIsOffline] = useState(false);
 
   const areaCounts = useMemo(() => {
@@ -228,7 +236,7 @@ export function BloodScreen({ navigation }: any) {
       if (res.data.myDonor?.last_donated) {
         scheduleRechargedReminder(
           res.data.myDonor.last_donated,
-          'male',
+          (profile as any)?.gender ?? 'male',
           t.blood2.rechargedNotificationTitle,
           t.blood2.rechargedNotificationBody,
         );
@@ -269,10 +277,12 @@ export function BloodScreen({ navigation }: any) {
         toast({ type: 'info', title: t.blood2.notAvailable, message: t.blood2.notShared });
         return;
       }
+      const prefill = `Salam, I found your profile on the CampusOne Blood Registry (${donorName || 'Donor'}). Are you currently available to donate?`;
       setContactTarget({
         name: res.data.name ?? donorName ?? t.blood2.contact,
         phone: res.data.whatsapp,
         title: t.blood2.donorsTab,
+        message: prefill,
       });
     } finally {
       setBusyId(null);
@@ -301,10 +311,13 @@ export function BloodScreen({ navigation }: any) {
         toast({ type: 'info', title: t.blood2.notAvailable, message: t.blood2.contactDonorsOnly });
         return;
       }
+      const cleanPatient = (r.patient ?? 'patient').replace(/\[Platelets\]/g, '').trim();
+      const prefill = `Salam, I saw your CampusOne blood request for ${cleanPatient} at ${r.hospital || 'the hospital'}. I am an ${r.blood_group} donor and ready to help. Where can I meet you?`;
       setContactTarget({
         name: res.data.name ?? r.patient ?? t.blood2.requester,
         phone: res.data.whatsapp,
         title: `${r.blood_group} · ${r.patient}`,
+        message: prefill,
       });
     } finally {
       setBusyId(null);
@@ -327,7 +340,7 @@ export function BloodScreen({ navigation }: any) {
           if (!res.ok) { toast({ type: 'error', title: t.common.error, message: res.error }); return; }
           await scheduleRechargedReminder(
             localToday(),
-            'male',
+            (profile as any)?.gender ?? 'male',
             t.blood2.rechargedNotificationTitle,
             t.blood2.rechargedNotificationBody,
           );
@@ -863,6 +876,7 @@ export function BloodScreen({ navigation }: any) {
                 const hasPledged = respondedIds.has(r.id);
                 const { fg: urgencyFg, bg: urgencyBg } = urgencyTone(C, r.urgency);
                 const relativeTime = r.created_at ? formatRelativeTime(r.created_at) : '';
+                const isTarget = highlightCode !== null && r.code === highlightCode;
 
                 return (
                   <View
@@ -871,10 +885,19 @@ export function BloodScreen({ navigation }: any) {
                       styles.reqCard,
                       {
                         backgroundColor: C.surface,
-                        borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : C.border,
+                        borderColor: isTarget ? SectorColors.blood : isDark ? 'rgba(255, 255, 255, 0.08)' : C.border,
+                        borderWidth: isTarget ? 2 : 1,
                       },
                     ]}
                   >
+                    {isTarget && (
+                      <View style={[styles.targetBanner, { backgroundColor: `${SectorColors.blood}16`, borderColor: `${SectorColors.blood}33` }]}>
+                        <Feather name="bell" size={13} color={SectorColors.blood} />
+                        <Text style={[styles.targetBannerTxt, { color: SectorColors.blood, fontFamily: FontFamily.jakartaBold }]}>
+                          Requested Blood Need ({r.code})
+                        </Text>
+                      </View>
+                    )}
                     {/* Top Row: Blood Group Badge + Patient / Affiliation / Time + Urgency */}
                     <View style={styles.cardHeaderRow}>
                       <RequestBloodBadge group={r.blood_group} isPlatelet={meta.isPlatelet} />
@@ -1289,6 +1312,7 @@ export function BloodScreen({ navigation }: any) {
         title={contactTarget?.title ?? t.blood2.contact}
         name={contactTarget?.name ?? ''}
         phone={contactTarget?.phone}
+        whatsAppMessage={contactTarget?.message}
       />
       <AreaPickerModal
         visible={areaModalVisible}
@@ -1446,6 +1470,19 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
   } as ViewStyle,
+  targetBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 10,
+  } as ViewStyle,
+  targetBannerTxt: {
+    fontSize: 12,
+  } as TextStyle,
   reqBloodBadge: {
     width: 48,
     height: 48,

@@ -24,7 +24,7 @@ const GROUPS: BloodRequest['blood_group'][] = ['A+', 'A-', 'B+', 'B-', 'AB+', 'A
 
 export function DonorRegisterScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
-  const { user, refreshProfile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const t = useT();
   const toast = useToast();
 
@@ -33,6 +33,7 @@ export function DonorRegisterScreen({ navigation }: any) {
   const [areaModalVisible, setAreaModalVisible] = useState(false);
   const [phone, setPhone] = useState('');
   const [lastDonated, setLastDonated] = useState('');
+  const [alertUrgency, setAlertUrgency] = useState<'urgent_only' | 'today_plus' | 'all'>('all');
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [isRegistered, setIsRegistered] = useState(false);
@@ -53,6 +54,9 @@ export function DonorRegisterScreen({ navigation }: any) {
               setGroup(res.data.donor.blood_group);
               setArea(res.data.donor.area || '');
               setLastDonated(res.data.donor.last_donated || '');
+              if (res.data.donor.alert_urgency) {
+                setAlertUrgency(res.data.donor.alert_urgency as any);
+              }
             }
             if (res.data.phone) {
               setPhone(res.data.phone);
@@ -96,11 +100,12 @@ export function DonorRegisterScreen({ navigation }: any) {
         whatsapp: phone.trim() || null,
       };
       const [donorRes, profileRes] = await Promise.all([
-        supabase.from('donors').upsert({
-          user_id:      user.id,
-          blood_group:  group,
-          area:         area.trim(),
-          last_donated: lastDonatedDate,
+        (supabase.from('donors') as any).upsert({
+          user_id:       user.id,
+          blood_group:   group,
+          area:          area.trim(),
+          last_donated:  lastDonatedDate,
+          alert_urgency: alertUrgency,
         }, { onConflict: 'user_id' }),
         supabase.from('profiles').update(profilePatch).eq('id', user.id),
       ]);
@@ -110,7 +115,7 @@ export function DonorRegisterScreen({ navigation }: any) {
       if (lastDonatedDate) {
         await scheduleRechargedReminder(
           lastDonatedDate,
-          'male',
+          (profile as any)?.gender ?? 'male',
           t.blood2.rechargedNotificationTitle,
           t.blood2.rechargedNotificationBody,
         );
@@ -297,6 +302,50 @@ export function DonorRegisterScreen({ navigation }: any) {
           placeholderTextColor={C.textMuted}
         />
 
+        {/* Notification Sensitivity */}
+        <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+          Notification Sensitivity
+        </Text>
+        <Text style={[styles.consent, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium, marginBottom: 8 }]}>
+          Choose which blood requests should alert your device.
+        </Text>
+        <View style={styles.urgencyPrefGrid}>
+          {[
+            { id: 'urgent_only', label: '🚨 Urgent Only', desc: 'Critical emergencies, trauma & ICU only' },
+            { id: 'today_plus',  label: '⚡ Urgent & Today', desc: 'Emergencies and requests needed within today' },
+            { id: 'all',         label: '📅 All Requests', desc: 'All matching requests including this week' },
+          ].map(opt => {
+            const on = alertUrgency === opt.id;
+            return (
+              <TouchableOpacity
+                key={opt.id}
+                style={[
+                  styles.urgencyPrefCard,
+                  {
+                    backgroundColor: on ? (isDark ? '#2a1515' : '#fff5f5') : C.surface,
+                    borderColor: on ? SectorColors.blood : C.border,
+                    borderWidth: on ? 1.5 : 1,
+                  },
+                ]}
+                onPress={() => setAlertUrgency(opt.id as any)}
+                activeOpacity={0.75}
+              >
+                <View style={styles.urgencyRadioRow}>
+                  <View style={[styles.urgencyRadioDot, { borderColor: on ? SectorColors.blood : C.textMuted }]}>
+                    {on && <View style={[styles.urgencyRadioInner, { backgroundColor: SectorColors.blood }]} />}
+                  </View>
+                  <Text style={[styles.urgencyPrefTitle, { color: on ? SectorColors.blood : C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    {opt.label}
+                  </Text>
+                </View>
+                <Text style={[styles.urgencyPrefDesc, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                  {opt.desc}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
         <TouchableOpacity
           style={[styles.submitBtn, { backgroundColor: canSubmit ? SectorColors.blood : C.surface2, opacity: loading ? 0.6 : 1 }]}
           onPress={handleSubmit}
@@ -443,4 +492,40 @@ const styles = StyleSheet.create({
   } as ViewStyle,
 
   submitText: { fontSize: 15 } as any,
+  urgencyPrefGrid: {
+    gap: 8,
+    marginTop: 4,
+    marginBottom: 6,
+  } as ViewStyle,
+  urgencyPrefCard: {
+    borderRadius: 12,
+    padding: 12,
+  } as ViewStyle,
+  urgencyRadioRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 4,
+  } as ViewStyle,
+  urgencyRadioDot: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  urgencyRadioInner: {
+    width: 9,
+    height: 9,
+    borderRadius: 4.5,
+  } as ViewStyle,
+  urgencyPrefTitle: {
+    fontSize: 13.5,
+  } as TextStyle,
+  urgencyPrefDesc: {
+    fontSize: 11.5,
+    lineHeight: 16,
+    marginLeft: 28,
+  } as TextStyle,
 });

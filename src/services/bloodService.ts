@@ -109,6 +109,17 @@ export async function markDonatedToday(userId: string): Promise<ServiceResult<nu
   return { ok: true, data: null };
 }
 
+export async function updateDonorAlertUrgency(
+  userId: string,
+  urgency: 'urgent_only' | 'today_plus' | 'all'
+): Promise<ServiceResult<null>> {
+  const { error } = await (supabase.from('donors') as any)
+    .update({ alert_urgency: urgency })
+    .eq('user_id', userId);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, data: null };
+}
+
 // donor_contact returns table(name, whatsapp)
 export async function getDonorContact(donorUserId: string): Promise<ServiceResult<{ name: string | null; whatsapp: string | null } | null>> {
   const { data, error } = await supabase.rpc('donor_contact', { p_user_id: donorUserId });

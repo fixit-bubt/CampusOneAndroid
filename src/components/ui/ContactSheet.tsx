@@ -19,6 +19,7 @@ interface ContactSheetProps {
   avatarUri?: string | null;
   phone?: string | null;
   email?: string | null;
+  whatsAppMessage?: string | null;
   inAppChatAction?: () => void;
   onClose: () => void;
 }
@@ -31,6 +32,7 @@ export function ContactSheet({
   avatarUri,
   phone,
   email,
+  whatsAppMessage,
   inAppChatAction,
   onClose,
 }: ContactSheetProps) {
@@ -129,7 +131,7 @@ export function ContactSheet({
                 <TouchableOpacity
                   style={[styles.btn, styles.waBtn, { backgroundColor: '#25D366' }]}
                   onPress={() => {
-                    openWhatsApp(cleanPhone);
+                    openWhatsApp(cleanPhone, whatsAppMessage ?? undefined);
                     onClose();
                   }}
                   activeOpacity={0.8}

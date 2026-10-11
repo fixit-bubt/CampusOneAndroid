@@ -50,6 +50,12 @@ export async function configurePushChannel(): Promise<void> {
       importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 250, 250, 250],
     });
+    await Notifications.setNotificationChannelAsync('emergency_blood', {
+      name: 'Emergency Blood Requests',
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 500, 200, 500],
+      sound: 'default',
+    });
   }
 }
 

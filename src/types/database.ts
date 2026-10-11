@@ -63,8 +63,11 @@ export type BloodRequest = Omit<Tables<'blood_requests'>, 'blood_group' | 'urgen
   urgency: 'Urgent' | 'Today' | 'This week';
 };
 
+export type BloodAlertUrgency = 'urgent_only' | 'today_plus' | 'all';
+
 export type Donor = Omit<Tables<'donors'>, 'blood_group'> & {
   blood_group: BloodGroup;
+  alert_urgency?: BloodAlertUrgency;
 };
 
 export type Doctor = Tables<'doctors'>;
