@@ -334,7 +334,7 @@ export function HomeCommunityUpdates() {
     { id: 'Events', label: 'Events', icon: 'calendar', color: SectorColors.events },
   ];
 
-  const TRACK_PADDING = 3;
+  const TRACK_PADDING = 4;
   const innerTrackWidth = Math.max(0, trackWidth - TRACK_PADDING * 2);
   const tabWidth = innerTrackWidth > 0 ? innerTrackWidth / 4 : 0;
   const translateX = animIndex.interpolate({
@@ -392,7 +392,7 @@ export function HomeCommunityUpdates() {
             >
               <Feather
                 name={tab.icon}
-                size={12}
+                size={13.5}
                 color={active ? cfg.fg : C.textMuted}
               />
               <Text
@@ -636,19 +636,19 @@ const styles = StyleSheet.create({
 
   tabContainer: {
     flexDirection: 'row',
-    borderRadius: 14,
-    padding: 3,
-    marginBottom: 10,
-    marginTop: 2,
+    borderRadius: 16,
+    padding: 4,
+    marginBottom: 12,
+    marginTop: 4,
     position: 'relative',
   } as ViewStyle,
 
   activeIndicator: {
     position: 'absolute',
-    top: 3,
-    left: 3,
-    bottom: 3,
-    borderRadius: 11,
+    top: 4,
+    left: 4,
+    bottom: 4,
+    borderRadius: 13,
     borderWidth: 1.5,
     elevation: 2,
     shadowColor: '#000',
@@ -662,27 +662,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
-    paddingVertical: 7,
-    borderRadius: 11,
+    gap: 5,
+    paddingVertical: 10,
+    borderRadius: 13,
     zIndex: 1,
   } as ViewStyle,
 
   tabBtnTxt: {
-    fontSize: 12,
+    fontSize: 13,
   },
 
   tabBadge: {
-    paddingHorizontal: 5,
-    paddingVertical: 1,
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
     borderRadius: 999,
-    minWidth: 17,
+    minWidth: 19,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
 
   tabBadgeTxt: {
-    fontSize: 10.5,
+    fontSize: 11,
   },
 
   loadingBox: {

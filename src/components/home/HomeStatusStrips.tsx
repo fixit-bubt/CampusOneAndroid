@@ -204,7 +204,7 @@ export function HomeStatusStrips() {
             style={[styles.leftPill, styles.reportsDivider]}
           >
             <Text style={styles.pillText}>Reports</Text>
-            <Feather name="chevron-right" size={13} color="rgba(129, 140, 248, 0.85)" />
+            <Feather name="chevron-right" size={14} color="rgba(129, 140, 248, 0.85)" />
           </TouchableOpacity>
 
           {/* 3 Metric Columns */}
@@ -270,7 +270,7 @@ export function HomeStatusStrips() {
             style={[styles.leftPill, styles.busDivider]}
           >
             <Text style={styles.pillText}>Bus</Text>
-            <Feather name="chevron-right" size={13} color="rgba(251, 191, 36, 0.85)" />
+            <Feather name="chevron-right" size={14} color="rgba(251, 191, 36, 0.85)" />
           </TouchableOpacity>
 
           {/* 3 Metric Columns */}
@@ -345,7 +345,7 @@ export function HomeStatusStrips() {
             style={[styles.leftPill, styles.prayerDivider]}
           >
             <Text style={styles.pillText}>Prayer</Text>
-            <Feather name="chevron-right" size={13} color="rgba(52, 211, 153, 0.85)" />
+            <Feather name="chevron-right" size={14} color="rgba(52, 211, 153, 0.85)" />
           </TouchableOpacity>
 
           {/* 3 Metric Columns */}
@@ -420,7 +420,7 @@ export function HomeStatusStrips() {
             style={[styles.leftPill, styles.bloodDivider]}
           >
             <Text style={styles.pillText}>Blood</Text>
-            <Feather name="chevron-right" size={13} color="rgba(251, 113, 133, 0.85)" />
+            <Feather name="chevron-right" size={14} color="rgba(251, 113, 133, 0.85)" />
           </TouchableOpacity>
 
           {/* 3 Metric Columns */}
@@ -482,19 +482,19 @@ export function HomeStatusStrips() {
 const styles = StyleSheet.create({
   container: {
     gap: 10,
-    marginTop: 4,
-    marginBottom: 14,
+    marginTop: 6,
+    marginBottom: 16,
   },
   stripWrapper: {
-    borderRadius: 8,
+    borderRadius: 16,
     overflow: 'hidden',
   },
   strip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 9,
-    paddingHorizontal: 10,
-    borderRadius: 8,
+    paddingVertical: 13,
+    paddingHorizontal: 12,
+    borderRadius: 16,
     borderWidth: 1,
   },
   reportsBorder: {
@@ -522,16 +522,16 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(225, 29, 72, 0.28)',
   },
   leftPill: {
-    width: 82,
+    width: 88,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingRight: 8,
+    paddingRight: 10,
     borderRightWidth: 1,
   },
   pillText: {
     color: '#ffffff',
-    fontSize: 13,
+    fontSize: 14.5,
     fontFamily: FontFamily.jakartaExtraBold,
     letterSpacing: -0.2,
   },
@@ -549,28 +549,28 @@ const styles = StyleSheet.create({
   },
   verticalDivider: {
     width: 1,
-    height: 24,
+    height: 30,
     borderRightWidth: 1,
   },
   metricVal: {
-    fontSize: 15,
+    fontSize: 16.5,
     fontFamily: FontFamily.jakartaExtraBold,
-    lineHeight: 18,
+    lineHeight: 20,
   },
   metricValText: {
-    fontSize: 12.5,
+    fontSize: 13.5,
     fontFamily: FontFamily.jakartaBold,
-    lineHeight: 16,
+    lineHeight: 18,
   },
   metricSub: {
-    fontSize: 10,
+    fontSize: 10.5,
     fontFamily: FontFamily.jakartaMedium,
-    marginTop: 2,
-    lineHeight: 12,
+    marginTop: 2.5,
+    lineHeight: 13,
   },
   progressTrack: {
-    width: 44,
-    height: 3.5,
+    width: 48,
+    height: 4,
     backgroundColor: 'rgba(0, 0, 0, 0.45)',
     borderRadius: 2,
     marginTop: 3,

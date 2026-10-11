@@ -1042,5 +1042,33 @@ The Jobs & Internships module (`JobsBrowseScreen.tsx`, `JobDetailScreen.tsx`, `J
   - Replaced the raw text box and tiny red link with a full-width tappable **Living Area Selector Card** opening `AreaPickerModal` with 152 Dhaka areas and instant search.
   - Added quick-action date helper pills (`Today` and `Clear`) for the optional Last Donated date field.
 
+---
+
+## 28. Home Screen Ergonomics, Status Strips & Shortcut Customization Architecture
+
+### 28.1 Status Strips Sizing & Institutional Presence (`HomeStatusStrips.tsx`)
+- **Explore Card Parity:** Scaled the four live glance strips (**Reports**, **Bus**, **Prayer**, and **Blood**) from their previous compact slim bars (`paddingVertical: 9`, `borderRadius: 8`) to full-height cards (`paddingVertical: 13`, `paddingHorizontal: 12`, `borderRadius: 16`, `gap: 10`).
+- **Typography & Metric Readability:**
+  - Left title pill widened to 88dp with 14.5px extra bold text and 14px Feather chevrons.
+  - Live metric numerals enlarged to 16.5px extra bold with 20px line height (`metricValText` to 13.5px).
+  - Subtitles raised to 10.5px medium with clear 2.5px margins.
+  - Vertical dividers elongated from 24dp to 30dp.
+  - Transit and Azan progress tracks widened to 48dp with 4dp height.
+
+### 28.2 User-Configurable Quick Shortcuts (`HomeFrequentTools.tsx`)
+- **Customizable 4-Shortcut Grid:** Students can personalize which 4 features appear in the "Frequently Used" row instead of being locked to static defaults.
+- **Campus Feature Catalog (`ALL_TOOLS`):** Supports selection from 19 campus features including Study Hub, Routines, Cover Page, CGPA Calc, Bus, Prayer, Blood, Marketplace, Campus Rides, Lost & Found, Clubs, Events, Announcements, Student Jobs, Student Directory, Faculty, Academic Calendar, PDF Maker, and Issue Reports.
+- **Customization Modal Sheet:**
+  - Header displays live selection counter badge (`4/4` in emerald when complete, warning pill when incomplete).
+  - Tap-to-select grid with color-coded sector icon tiles, active tinted background, colored outline, and numerical selection badges (1 through 4).
+  - Auto-replace convenience: tapping a new item when 4 are already selected replaces the 4th item smoothly without requiring manual deselect first.
+  - "Reset Defaults" restores the baseline Study Hub, Routines, Cover Page, and CGPA Calc shortcuts.
+- **Local Persistence:** Selections are cached per-user in `AsyncStorage` via `@campusone_frequent_tools_${userId}` and load instantly on mount with zero flicker.
+
+### 28.3 Community Updates Segmented Switcher Polish (`HomeCommunityUpdates.tsx`)
+- **Touch Target & Height:** Enlarged the segmented filter tab switcher (`All`, `Notices`, `Clubs`, `Events`) from ~36dp to standard 48dp ergonomics (`paddingVertical: 10`, `borderRadius: 16`, `padding: 4`, `TRACK_PADDING = 4`).
+- **Tactile Scale:** Feather tab icons increased from 12px to 13.5px, label typography from 12px to 13px bold, and count badges expanded with comfortable horizontal padding (`paddingHorizontal: 6`, `minWidth: 19`).
+
+
 
 
