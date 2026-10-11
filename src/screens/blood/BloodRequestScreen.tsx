@@ -100,32 +100,14 @@ export function BloodRequestScreen({ navigation }: any) {
     const targetIdx = u === 'Urgent' ? 0 : u === 'Today' ? 1 : 2;
     Animated.spring(urgencyAnim, {
       toValue: targetIdx,
+      tension: 68,
+      friction: 10,
       useNativeDriver: true,
-      tension: 140,
-      friction: 9,
     }).start();
   }
 
-  // Blood Group Spring Tactile Bounce Animation
-  const groupScales = useRef(
-    GROUPS.reduce((acc, g) => {
-      acc[g] = new Animated.Value(1);
-      return acc;
-    }, {} as Record<string, Animated.Value>)
-  ).current;
-
   function handleSelectGroup(g: BloodRequest['blood_group']) {
     setGroup(g);
-    const scaleAnim = groupScales[g];
-    if (scaleAnim) {
-      scaleAnim.setValue(0.82);
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        friction: 4,
-        tension: 140,
-        useNativeDriver: true,
-      }).start();
-    }
   }
 
   function handleSelectReason(item: MedicalReasonOption) {
@@ -234,13 +216,7 @@ export function BloodRequestScreen({ navigation }: any) {
             {GROUPS.map(g => {
               const on = group === g;
               return (
-                <Animated.View
-                  key={g}
-                  style={[
-                    styles.groupBtnWrapper,
-                    { transform: [{ scale: groupScales[g] || 1 }] },
-                  ]}
-                >
+                <View key={g} style={styles.groupBtnWrapper}>
                   <TouchableOpacity
                     style={[
                       styles.groupBtn,
@@ -262,7 +238,7 @@ export function BloodRequestScreen({ navigation }: any) {
                       {g}
                     </Text>
                   </TouchableOpacity>
-                </Animated.View>
+                </View>
               );
             })}
           </View>

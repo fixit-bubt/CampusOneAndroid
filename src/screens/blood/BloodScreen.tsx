@@ -73,54 +73,20 @@ export function BloodScreen({ navigation }: any) {
     const idx = tabIndexMap[tab] ?? 0;
     Animated.spring(animIndex, {
       toValue: idx,
-      tension: 120,
-      friction: 8,
+      tension: 68,
+      friction: 10,
       useNativeDriver: true,
     }).start();
   }, [tab, animIndex, tabIndexMap]);
 
   const bloodTypes = useMemo(() => ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'], []);
 
-  const requestGroupScales = useRef(
-    ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'].reduce((acc, g) => {
-      acc[g] = new Animated.Value(1);
-      return acc;
-    }, {} as Record<string, Animated.Value>)
-  ).current;
-
-  const donorGroupScales = useRef(
-    ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'].reduce((acc, g) => {
-      acc[g] = new Animated.Value(1);
-      return acc;
-    }, {} as Record<string, Animated.Value>)
-  ).current;
-
   function handleRequestGroupPress(g: string) {
     setGroupFilter(prev => (prev === g ? 'All' : g));
-    const anim = requestGroupScales[g];
-    if (anim) {
-      anim.setValue(0.82);
-      Animated.spring(anim, {
-        toValue: 1,
-        friction: 4,
-        tension: 130,
-        useNativeDriver: true,
-      }).start();
-    }
   }
 
   function handleDonorGroupPress(g: string) {
     setGroupFilter(prev => (prev === g ? 'All' : g));
-    const anim = donorGroupScales[g];
-    if (anim) {
-      anim.setValue(0.82);
-      Animated.spring(anim, {
-        toValue: 1,
-        friction: 4,
-        tension: 130,
-        useNativeDriver: true,
-      }).start();
-    }
   }
 
   const TAB_COLORS: Record<Tab, { fg: string; bg: string }> = useMemo(
@@ -803,13 +769,7 @@ export function BloodScreen({ navigation }: any) {
                   const on = groupFilter === g;
                   const count = requestGroups[g] ?? 0;
                   return (
-                    <Animated.View
-                      key={g}
-                      style={[
-                        styles.summaryCellWrapper,
-                        { transform: [{ scale: requestGroupScales[g] || 1 }] },
-                      ]}
-                    >
+                    <View key={g} style={styles.summaryCellWrapper}>
                       <TouchableOpacity
                         style={[
                           styles.summaryCell,
@@ -824,7 +784,7 @@ export function BloodScreen({ navigation }: any) {
                           {count}
                         </Text>
                       </TouchableOpacity>
-                    </Animated.View>
+                    </View>
                   );
                 })}
               </View>
@@ -972,13 +932,7 @@ export function BloodScreen({ navigation }: any) {
                 {bloodTypes.map(g => {
                   const on = groupFilter === g;
                   return (
-                    <Animated.View
-                      key={g}
-                      style={[
-                        styles.summaryCellWrapper,
-                        { transform: [{ scale: donorGroupScales[g] || 1 }] },
-                      ]}
-                    >
+                    <View key={g} style={styles.summaryCellWrapper}>
                       <TouchableOpacity
                         style={[
                           styles.summaryCell,
@@ -993,7 +947,7 @@ export function BloodScreen({ navigation }: any) {
                           {donorGroups[g] ?? 0}
                         </Text>
                       </TouchableOpacity>
-                    </Animated.View>
+                    </View>
                   );
                 })}
               </View>

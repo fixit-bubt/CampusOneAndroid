@@ -315,16 +315,17 @@ export function AreaPickerModal({
     }
   }, [visible, initialTab, slideAnim]);
 
-  // Instant native spring animation with zero CPU contention
   const switchTab = useCallback((tab: TypeFilterTab) => {
-    setActiveTab(tab);
     const targetIdx = tab === 'hospital' ? 1 : tab === 'area' ? 2 : 0;
     Animated.spring(slideAnim, {
       toValue: targetIdx,
+      tension: 68,
+      friction: 10,
       useNativeDriver: true,
-      tension: 140,
-      friction: 9,
     }).start();
+    requestAnimationFrame(() => {
+      setActiveTab(tab);
+    });
   }, [slideAnim]);
 
   // Instant O(1) tab list selection when search is empty
@@ -611,10 +612,10 @@ export function AreaPickerModal({
             keyExtractor={keyExtractor}
             style={styles.listScroll}
             contentContainerStyle={styles.listContent}
-            initialNumToRender={14}
-            maxToRenderPerBatch={10}
-            windowSize={5}
-            removeClippedSubviews={Platform.OS === 'android'}
+            initialNumToRender={8}
+            maxToRenderPerBatch={8}
+            windowSize={3}
+            removeClippedSubviews={false}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
             showsVerticalScrollIndicator={false}
@@ -728,11 +729,6 @@ const styles = StyleSheet.create({
     bottom: 3,
     left: 3,
     borderRadius: 9,
-    shadowColor: SectorColors.blood,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 3,
   } as ViewStyle,
   segmentBtn: {
     flex: 1,
