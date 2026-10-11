@@ -23,7 +23,7 @@ interface AreaPickerModalProps {
   initialTab?: 'all' | 'hospital' | 'area';
 }
 
-type TypeFilterTab = 'all' | 'hospital' | 'area';
+type TypeFilterTab = 'hospital' | 'area';
 
 type FlatListItem =
   | { type: 'all_option'; id: 'all_option' }
@@ -78,10 +78,10 @@ function buildFlatZoneItems(items: IndexedAreaItem[], includeAllOption: boolean)
   return result;
 }
 
-const STATIC_ALL_ITEMS_WITH_ALL = buildFlatZoneItems(INDEXED_AREAS, true);
-const STATIC_ALL_ITEMS_NO_ALL = buildFlatZoneItems(INDEXED_AREAS, false);
-const STATIC_HOSPITAL_ITEMS = buildFlatZoneItems(INDEXED_AREAS.filter(a => a.type === 'hospital'), false);
-const STATIC_AREA_ITEMS = buildFlatZoneItems(INDEXED_AREAS.filter(a => a.type === 'area'), false);
+const STATIC_HOSPITAL_ITEMS_WITH_ALL = buildFlatZoneItems(INDEXED_AREAS.filter(a => a.type === 'hospital'), true);
+const STATIC_HOSPITAL_ITEMS_NO_ALL = buildFlatZoneItems(INDEXED_AREAS.filter(a => a.type === 'hospital'), false);
+const STATIC_AREA_ITEMS_WITH_ALL = buildFlatZoneItems(INDEXED_AREAS.filter(a => a.type === 'area'), true);
+const STATIC_AREA_ITEMS_NO_ALL = buildFlatZoneItems(INDEXED_AREAS.filter(a => a.type === 'area'), false);
 
 const keyExtractor = (item: FlatListItem) => item.id;
 
@@ -294,7 +294,8 @@ export function AreaPickerModal({
   const t = useT();
   const insets = useSafeAreaInsets();
   const [search, setSearch] = useState('');
-  const [activeTab, setActiveTab] = useState<TypeFilterTab>(initialTab);
+  const startingTab: TypeFilterTab = initialTab === 'area' ? 'area' : 'hospital';
+  const [activeTab, setActiveTab] = useState<TypeFilterTab>(startingTab);
   const searchInputRef = useRef<TextInput>(null);
 
   // Pre-calculate track width from window width to avoid onLayout re-render
@@ -302,44 +303,34 @@ export function AreaPickerModal({
   const initialTrackWidth = Math.max(280, screenWidth - Layout.screenPadding * 2);
   const [trackWidth, setTrackWidth] = useState(initialTrackWidth);
 
-  const initialIndex = initialTab === 'hospital' ? 1 : initialTab === 'area' ? 2 : 0;
+  const initialIndex = startingTab === 'area' ? 1 : 0;
   const slideAnim = useRef(new Animated.Value(initialIndex)).current;
 
   useEffect(() => {
     if (visible) {
       setSearch('');
-      const startingTab = initialTab || 'all';
-      setActiveTab(startingTab);
-      const startingIdx = startingTab === 'hospital' ? 1 : startingTab === 'area' ? 2 : 0;
-      slideAnim.setValue(startingIdx);
+      const tabToUse: TypeFilterTab = initialTab === 'area' ? 'area' : 'hospital';
+      setActiveTab(tabToUse);
+      slideAnim.setValue(tabToUse === 'area' ? 1 : 0);
     }
   }, [visible, initialTab, slideAnim]);
 
   const switchTab = useCallback((tab: TypeFilterTab) => {
-    const targetIdx = tab === 'hospital' ? 1 : tab === 'area' ? 2 : 0;
+    setActiveTab(tab);
+    const targetIdx = tab === 'area' ? 1 : 0;
     Animated.spring(slideAnim, {
       toValue: targetIdx,
       tension: 68,
       friction: 10,
       useNativeDriver: true,
     }).start();
-    requestAnimationFrame(() => {
-      setActiveTab(tab);
-    });
   }, [slideAnim]);
 
-  // Instant O(1) tab list selection when search is empty
-  const listData = useMemo<FlatListItem[]>(() => {
+  // Fast pre-indexed search (active when user types in search box)
+  const searchListData = useMemo<FlatListItem[]>(() => {
     const q = search.trim().toLowerCase();
+    if (!q) return [];
 
-    // 1. Zero-calculation static path when not searching
-    if (!q) {
-      if (activeTab === 'hospital') return STATIC_HOSPITAL_ITEMS;
-      if (activeTab === 'area') return STATIC_AREA_ITEMS;
-      return allowAll ? STATIC_ALL_ITEMS_WITH_ALL : STATIC_ALL_ITEMS_NO_ALL;
-    }
-
-    // 2. Ultra-fast pre-indexed search
     let pool = INDEXED_AREAS;
     if (activeTab === 'hospital') {
       pool = pool.filter(a => a.type === 'hospital');
@@ -348,15 +339,12 @@ export function AreaPickerModal({
     }
 
     const matched = pool.filter(a => a._searchKey.includes(q));
-
     const result: FlatListItem[] = [];
 
-    // Custom query option if not matched exactly
     if (!pool.some(a => a.name.toLowerCase() === q)) {
       result.push({ type: 'custom_query', id: 'custom_query', query: search.trim() });
     }
 
-    // Group matched items
     const grouped: Record<string, IndexedAreaItem[]> = {};
     for (let i = 0; i < matched.length; i++) {
       const item = matched[i];
@@ -384,7 +372,7 @@ export function AreaPickerModal({
     }
 
     return result;
-  }, [search, activeTab, allowAll]);
+  }, [search, activeTab]);
 
   const handleSelect = useCallback((areaName: string) => {
     onSelectArea(areaName);
@@ -397,7 +385,7 @@ export function AreaPickerModal({
   }, [onSelectArea, onClose]);
 
   const isFiltered = Boolean(selectedArea && selectedArea !== 'All');
-  const tabWidth = trackWidth > 0 ? (trackWidth - 6) / 3 : 0;
+  const tabWidth = trackWidth > 0 ? (trackWidth - 6) / 2 : 0;
 
   const renderItem = useCallback(({ item }: { item: FlatListItem }) => {
     if (item.type === 'all_option') {
@@ -509,7 +497,11 @@ export function AreaPickerModal({
             <TextInput
               ref={searchInputRef}
               style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-              placeholder="Search hospital or area (e.g. DMCH, Mirpur)..."
+              placeholder={
+                activeTab === 'hospital'
+                  ? 'Search hospital or clinic (e.g. DMCH, Square)...'
+                  : 'Search area or neighborhood (e.g. Mirpur, Uttara)...'
+              }
               placeholderTextColor={C.textMuted}
               value={search}
               onChangeText={setSearch}
@@ -524,7 +516,7 @@ export function AreaPickerModal({
             )}
           </View>
 
-          {/* Single Clean Segment Filter Tabs (All / Hospitals / Areas) with Instant Sliding Indicator */}
+          {/* Clean Dual Filter Tabs (Hospitals / Areas) */}
           <View
             style={[styles.segmentTrack, { backgroundColor: C.surface2, borderColor: C.border }]}
             onLayout={e => setTrackWidth(e.nativeEvent.layout.width)}
@@ -539,8 +531,8 @@ export function AreaPickerModal({
                     transform: [
                       {
                         translateX: slideAnim.interpolate({
-                          inputRange: [0, 1, 2],
-                          outputRange: [0, tabWidth, tabWidth * 2],
+                          inputRange: [0, 1],
+                          outputRange: [0, tabWidth],
                         }),
                       },
                     ],
@@ -551,27 +543,12 @@ export function AreaPickerModal({
 
             <TouchableOpacity
               style={styles.segmentBtn}
-              onPress={() => switchTab('all')}
-              activeOpacity={0.8}
-            >
-              <Text
-                style={[
-                  styles.segmentBtnTxt,
-                  { color: activeTab === 'all' ? '#fff' : C.text, fontFamily: FontFamily.jakartaBold },
-                ]}
-              >
-                All ({DHAKA_AREAS.length})
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.segmentBtn}
               onPress={() => switchTab('hospital')}
               activeOpacity={0.8}
             >
               <Feather
                 name="activity"
-                size={12}
+                size={13}
                 color={activeTab === 'hospital' ? '#fff' : SectorColors.blood}
               />
               <Text
@@ -591,7 +568,7 @@ export function AreaPickerModal({
             >
               <Icon
                 name="pin"
-                size={12}
+                size={13}
                 color={activeTab === 'area' ? '#fff' : C.textMuted}
               />
               <Text
@@ -605,22 +582,22 @@ export function AreaPickerModal({
             </TouchableOpacity>
           </View>
 
-          {/* High-Performance Virtualized FlatList */}
-          <FlatList
-            data={listData}
-            renderItem={renderItem}
-            keyExtractor={keyExtractor}
-            style={styles.listScroll}
-            contentContainerStyle={styles.listContent}
-            initialNumToRender={8}
-            maxToRenderPerBatch={8}
-            windowSize={3}
-            removeClippedSubviews={false}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="on-drag"
-            showsVerticalScrollIndicator={false}
-            ListEmptyComponent={
-              listData.length === 0 ? (
+          {/* Virtualized Lists: Search Results OR Pre-Mounted Dual Tab Panes */}
+          {search.trim().length > 0 ? (
+            <FlatList
+              data={searchListData}
+              renderItem={renderItem}
+              keyExtractor={keyExtractor}
+              style={styles.listScroll}
+              contentContainerStyle={styles.listContent}
+              initialNumToRender={8}
+              maxToRenderPerBatch={8}
+              windowSize={3}
+              removeClippedSubviews={false}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="on-drag"
+              showsVerticalScrollIndicator={false}
+              ListEmptyComponent={
                 <View style={styles.emptyContainer}>
                   <Feather name="map-pin" size={28} color={C.textMuted} />
                   <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -630,9 +607,42 @@ export function AreaPickerModal({
                     Try typing a different hospital name or area keyword.
                   </Text>
                 </View>
-              ) : null
-            }
-          />
+              }
+            />
+          ) : (
+            <View style={styles.listScroll}>
+              <View style={[styles.tabPane, activeTab === 'hospital' ? styles.tabPaneVisible : styles.tabPaneHidden]}>
+                <FlatList
+                  data={allowAll ? STATIC_HOSPITAL_ITEMS_WITH_ALL : STATIC_HOSPITAL_ITEMS_NO_ALL}
+                  renderItem={renderItem}
+                  keyExtractor={keyExtractor}
+                  contentContainerStyle={styles.listContent}
+                  initialNumToRender={8}
+                  maxToRenderPerBatch={8}
+                  windowSize={3}
+                  removeClippedSubviews={false}
+                  keyboardShouldPersistTaps="handled"
+                  keyboardDismissMode="on-drag"
+                  showsVerticalScrollIndicator={false}
+                />
+              </View>
+              <View style={[styles.tabPane, activeTab === 'area' ? styles.tabPaneVisible : styles.tabPaneHidden]}>
+                <FlatList
+                  data={allowAll ? STATIC_AREA_ITEMS_WITH_ALL : STATIC_AREA_ITEMS_NO_ALL}
+                  renderItem={renderItem}
+                  keyExtractor={keyExtractor}
+                  contentContainerStyle={styles.listContent}
+                  initialNumToRender={8}
+                  maxToRenderPerBatch={8}
+                  windowSize={3}
+                  removeClippedSubviews={false}
+                  keyboardShouldPersistTaps="handled"
+                  keyboardDismissMode="on-drag"
+                  showsVerticalScrollIndicator={false}
+                />
+              </View>
+            </View>
+          )}
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -747,6 +757,16 @@ const styles = StyleSheet.create({
   // Virtualized List Scroll
   listScroll: {
     maxHeight: 480,
+  } as ViewStyle,
+  tabPane: {
+    height: '100%',
+    width: '100%',
+  } as ViewStyle,
+  tabPaneVisible: {
+    display: 'flex',
+  } as ViewStyle,
+  tabPaneHidden: {
+    display: 'none',
   } as ViewStyle,
   listContent: {
     paddingBottom: 20,

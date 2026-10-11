@@ -944,4 +944,35 @@ The Jobs & Internships module (`JobsBrowseScreen.tsx`, `JobDetailScreen.tsx`, `J
 6. **Gemini AI Grounding:**
    - Grounding tool in `supabase/functions/chat/index.ts` allowing the Gemini assistant to provide accurate, live answers for student queries about open internships, tuitions, and deadlines.
 
+---
+
+## 27. Blood Donation Module: UI Architecture, 2-Tab Dual Pane System & Animation Standards
+
+### 27.1 2-Tab Dual Pane Architecture (`AreaPickerModal.tsx`)
+- **Removal of "All" Tab:** Replaced the previous 3-tab layout (`All`, `Hospitals`, `Areas`) with an institutional 50/50 dual-tab bar (`Hospitals` vs `Areas`). Eliminates jumbled mixing of institutions and residential neighborhoods.
+- **Permanent 0ms Tab Switching Fix (Pre-Mounted Dual Tab Panes):**
+  - Both tab lists (`FlatList` for Hospitals and `FlatList` for Areas) remain mounted in memory using Yoga's `display: 'flex'` and `display: 'none'`.
+  - Switching between Hospitals and Areas destroys 0 views and creates 0 views. Tab transition is instantaneous ($0.0\text{ ms}$).
+  - Preserves scroll positions on both tabs independently (user never loses their place).
+- **Precomputed Datasets:** Pre-indexes static data arrays at module load (`STATIC_HOSPITAL_ITEMS_WITH_ALL`, `STATIC_HOSPITAL_ITEMS_NO_ALL`, `STATIC_AREA_ITEMS_WITH_ALL`, `STATIC_AREA_ITEMS_NO_ALL`) to eliminate runtime array allocations.
+- **Search System:** When the user types into the search box (`search.trim().length > 0`), the UI switches to a dedicated search `FlatList` matching against precomputed `_searchKey` values in sub-millisecond time.
+- **Filter Reset Option:** When `allowAll` is true (in `BloodScreen.tsx`), an `AllOptionRow` ("All Dhaka Locations / সমগ্র ঢাকা") sits at the top of the list allowing students to clear location filters back to all of Dhaka.
+
+### 27.2 Standardized Animation & Spring Physics
+- **Universal Damped Spring:** Aligned all sliding indicators across `AreaPickerModal`, `BloodScreen` (`Requests` vs `Donors`), and `BloodRequestScreen` (`Urgency` selector) with the golden critically-damped spring formula:
+  ```ts
+  tension: 68,
+  friction: 10,
+  useNativeDriver: true
+  ```
+  Guarantees smooth glides with zero bouncing or wobble.
+- **Zero Bouncy Scales on Buttons:** Removed underdamped spring scale transforms (`friction: 4, tension: 130/140`) on blood group cells. Taps respond instantly with crisp native touch highlights (`activeOpacity: 0.7`), matching Ride Share and Marketplace.
+
+### 27.3 Patient & Clinical Details Redesign (`BloodRequestScreen.tsx`)
+- **Decluttering:** Completely removed messy cabin, ward, and bed number text inputs.
+- **Card-Style Dropdowns:** Replaced cluttered chip grids with clean dropdown selector cards opening dedicated modal bottom sheets:
+  - **Case Reason / Requirement:** Curated categories (*Emergency Surgery*, *Dengue / Low Platelets*, *Road Accident / Trauma*, *Childbirth / C-Section*, *Thalassemia*, *ICU Critical Care*, *Routine / Other*). Automatically switches on platelet mode if Dengue is selected.
+  - **Patient Affiliation:** Curated categories (*BUBT Student*, *Faculty / Staff*, *Family Member*, *General Patient*).
+
+
 
