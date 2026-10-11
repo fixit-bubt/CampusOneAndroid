@@ -9,7 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { Icon } from '../ui/Icon';
 import { FontFamily, Layout, SectorColors } from '../../theme';
-import { DHAKA_AREAS, QUICK_CAMPUS_AREAS, type DhakaAreaInfo } from '../../constants/dhakaAreas';
+import { DHAKA_AREAS, type DhakaAreaInfo } from '../../constants/dhakaAreas';
 import { useT } from '../../i18n';
 
 interface AreaPickerModalProps {
@@ -68,9 +68,10 @@ export function AreaPickerModal({
     return list.filter(a => {
       const matchName = a.name.toLowerCase().includes(q);
       const matchNameBn = a.nameBn.includes(q);
+      const matchSub = a.subLocation ? a.subLocation.toLowerCase().includes(q) : false;
       const matchZone = a.zone.toLowerCase().includes(q) || a.zoneBn.includes(q);
       const matchKeywords = (a.keywords || []).some(k => k.toLowerCase().includes(q));
-      return matchName || matchNameBn || matchZone || matchKeywords;
+      return matchName || matchNameBn || matchSub || matchZone || matchKeywords;
     });
   }, [search, activeTab]);
 
@@ -153,7 +154,7 @@ export function AreaPickerModal({
             <TextInput
               ref={searchInputRef}
               style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-              placeholder="Search hospital, clinic, or area (e.g. DMCH, Mirpur)..."
+              placeholder="Search hospital or area (e.g. DMCH, Mirpur)..."
               placeholderTextColor={C.textMuted}
               value={search}
               onChangeText={setSearch}
@@ -168,7 +169,7 @@ export function AreaPickerModal({
             )}
           </View>
 
-          {/* Segment Filter Pills (All / Hospitals / Areas) */}
+          {/* Single Clean Segment Filter Tabs (All / Hospitals / Areas) */}
           <View style={styles.segmentTrack}>
             <TouchableOpacity
               style={[
@@ -241,67 +242,6 @@ export function AreaPickerModal({
             </TouchableOpacity>
           </View>
 
-          {/* Quick Campus Chips Bar (Top frequency locations) */}
-          <View style={styles.quickChipsWrapper}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.quickChipsContent}
-              keyboardShouldPersistTaps="handled"
-            >
-              {allowAll && (
-                <TouchableOpacity
-                  style={[
-                    styles.quickChip,
-                    !isFiltered
-                      ? [styles.quickChipActive, { backgroundColor: `${SectorColors.blood}20`, borderColor: SectorColors.blood }]
-                      : [styles.quickChipInactive, { backgroundColor: C.surface2, borderColor: C.border }],
-                  ]}
-                  onPress={handleClear}
-                  activeOpacity={0.75}
-                >
-                  <Text
-                    style={[
-                      styles.quickChipTxt,
-                      { color: !isFiltered ? SectorColors.blood : C.textMuted, fontFamily: FontFamily.jakartaBold },
-                    ]}
-                  >
-                    All Locations
-                  </Text>
-                </TouchableOpacity>
-              )}
-
-              {QUICK_CAMPUS_AREAS.filter(x => x !== 'All').map(chipName => {
-                const isChipSelected = selectedArea.trim().toLowerCase() === chipName.trim().toLowerCase();
-                const isChipHospital = chipName.includes('Hospital') || chipName.includes('DMCH');
-                return (
-                  <TouchableOpacity
-                    key={chipName}
-                    style={[
-                      styles.quickChip,
-                      isChipSelected
-                        ? [styles.quickChipActive, { backgroundColor: `${SectorColors.blood}20`, borderColor: SectorColors.blood }]
-                        : [styles.quickChipInactive, { backgroundColor: C.surface2, borderColor: C.border }],
-                    ]}
-                    onPress={() => handleSelect(chipName)}
-                    activeOpacity={0.75}
-                  >
-                    <Text style={{ fontSize: 11, marginRight: 2 }}>{isChipHospital ? '🏥' : '📍'}</Text>
-                    <Text
-                      style={[
-                        styles.quickChipTxt,
-                        { color: isChipSelected ? SectorColors.blood : C.text, fontFamily: isChipSelected ? FontFamily.jakartaBold : FontFamily.jakartaMedium },
-                      ]}
-                      numberOfLines={1}
-                    >
-                      {chipName.split('(')[0].trim()}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
-
           {/* Area / Hospital List in Standalone Card Bars */}
           <ScrollView
             style={styles.listScroll}
@@ -310,6 +250,61 @@ export function AreaPickerModal({
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
           >
+            {/* "All Locations" Option at the Top if allowed */}
+            {allowAll && !search && activeTab === 'all' && (
+              <TouchableOpacity
+                style={[
+                  styles.areaCardBar,
+                  {
+                    backgroundColor: !isFiltered
+                      ? (isDark ? 'rgba(199, 52, 74, 0.16)' : 'rgba(199, 52, 74, 0.08)')
+                      : C.surface,
+                    borderColor: !isFiltered ? SectorColors.blood : C.border,
+                    borderWidth: !isFiltered ? 1.5 : 1,
+                  },
+                ]}
+                onPress={handleClear}
+                activeOpacity={0.72}
+              >
+                <View
+                  style={[
+                    styles.itemIconBox,
+                    {
+                      backgroundColor: !isFiltered
+                        ? (isDark ? 'rgba(199, 52, 74, 0.22)' : 'rgba(199, 52, 74, 0.1)')
+                        : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2),
+                    },
+                  ]}
+                >
+                  <Icon name="grid" size={15} color={!isFiltered ? SectorColors.blood : C.text2} />
+                </View>
+
+                <View style={styles.itemInfoStack}>
+                  <Text
+                    style={[
+                      styles.areaName,
+                      {
+                        color: !isFiltered ? SectorColors.blood : C.text,
+                        fontFamily: FontFamily.jakartaBold,
+                      },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    All Locations
+                  </Text>
+                  <Text style={[styles.areaSubName, { color: C.textMuted, fontFamily: FontFamily.bnRegular }]}>
+                    সকল এলাকা ও হাসপাতাল
+                  </Text>
+                </View>
+
+                {!isFiltered ? (
+                  <Feather name="check-circle" size={18} color={SectorColors.blood} />
+                ) : (
+                  <Feather name="chevron-right" size={14} color={C.border} />
+                )}
+              </TouchableOpacity>
+            )}
+
             {/* Custom query option if not matched exactly */}
             {search.trim().length > 1 && !DHAKA_AREAS.some(a => a.name.toLowerCase() === search.trim().toLowerCase()) && (
               <TouchableOpacity
@@ -363,6 +358,7 @@ export function AreaPickerModal({
                   const isSelected = selectedArea.trim().toLowerCase() === item.name.trim().toLowerCase();
                   const count = areaCounts ? areaCounts[item.name] : undefined;
                   const isHospital = item.type === 'hospital';
+                  const subtitleText = item.subLocation ? `${item.subLocation} · ${item.nameBn}` : item.nameBn;
 
                   return (
                     <TouchableOpacity
@@ -398,29 +394,20 @@ export function AreaPickerModal({
                         )}
                       </View>
 
-                      {/* Title & Bengali Subtitle Stack */}
+                      {/* Title & Subtitle Stack (No truncated tags) */}
                       <View style={styles.itemInfoStack}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                          <Text
-                            style={[
-                              styles.areaName,
-                              {
-                                color: isSelected ? SectorColors.blood : C.text,
-                                fontFamily: FontFamily.jakartaBold,
-                              },
-                            ]}
-                            numberOfLines={1}
-                          >
-                            {item.name}
-                          </Text>
-                          {isHospital && (
-                            <View style={[styles.typePill, { backgroundColor: `${SectorColors.blood}15` }]}>
-                              <Text style={[styles.typePillTxt, { color: SectorColors.blood, fontFamily: FontFamily.jakartaBold }]}>
-                                Hospital
-                              </Text>
-                            </View>
-                          )}
-                        </View>
+                        <Text
+                          style={[
+                            styles.areaName,
+                            {
+                              color: isSelected ? SectorColors.blood : C.text,
+                              fontFamily: FontFamily.jakartaBold,
+                            },
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {item.name}
+                        </Text>
                         <Text
                           style={[
                             styles.areaSubName,
@@ -428,7 +415,7 @@ export function AreaPickerModal({
                           ]}
                           numberOfLines={1}
                         >
-                          {item.nameBn}
+                          {subtitleText}
                         </Text>
                       </View>
 
@@ -483,7 +470,7 @@ const styles = StyleSheet.create({
     bottom: 0,
   } as ViewStyle,
   sheet: {
-    maxHeight: '88%',
+    maxHeight: '85%',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderWidth: 1,
@@ -546,11 +533,11 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   } as TextStyle,
 
-  // Segment Tabs
+  // Single Segment Bar
   segmentTrack: {
     flexDirection: 'row',
     gap: 8,
-    marginBottom: 10,
+    marginBottom: 12,
   } as ViewStyle,
   segmentBtn: {
     flex: 1,
@@ -568,31 +555,9 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
   } as TextStyle,
 
-  // Quick Chips
-  quickChipsWrapper: {
-    marginBottom: 12,
-  } as ViewStyle,
-  quickChipsContent: {
-    gap: 6,
-    paddingVertical: 2,
-  } as ViewStyle,
-  quickChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 16,
-    borderWidth: 1,
-  } as ViewStyle,
-  quickChipActive: {} as ViewStyle,
-  quickChipInactive: {} as ViewStyle,
-  quickChipTxt: {
-    fontSize: 11.5,
-  } as TextStyle,
-
   // List Scroll
   listScroll: {
-    maxHeight: 460,
+    maxHeight: 480,
   } as ViewStyle,
   listContent: {
     paddingBottom: 20,
@@ -679,19 +644,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   } as ViewStyle,
   areaName: {
-    fontSize: 13.5,
-    flexShrink: 1,
-  } as TextStyle,
-  typePill: {
-    paddingHorizontal: 5,
-    paddingVertical: 1.5,
-    borderRadius: 6,
-  } as ViewStyle,
-  typePillTxt: {
-    fontSize: 9.5,
+    fontSize: 14,
   } as TextStyle,
   areaSubName: {
-    fontSize: 11,
+    fontSize: 11.5,
     marginTop: 2,
   } as TextStyle,
   itemRight: {
