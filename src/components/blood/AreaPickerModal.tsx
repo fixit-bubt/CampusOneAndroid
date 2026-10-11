@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, Modal,
-  ScrollView, StyleSheet, Keyboard, KeyboardAvoidingView, Platform,
+  ScrollView, StyleSheet, Keyboard, KeyboardAvoidingView,
   type ViewStyle, type TextStyle,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
@@ -9,7 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { Icon } from '../ui/Icon';
 import { FontFamily, Layout, SectorColors } from '../../theme';
-import { DHAKA_AREAS, type DhakaAreaInfo } from '../../constants/dhakaAreas';
+import { DHAKA_AREAS, QUICK_CAMPUS_AREAS, type DhakaAreaInfo } from '../../constants/dhakaAreas';
 import { useT } from '../../i18n';
 
 interface AreaPickerModalProps {
@@ -22,6 +22,8 @@ interface AreaPickerModalProps {
   allowAll?: boolean;
 }
 
+type TypeFilterTab = 'all' | 'hospital' | 'area';
+
 export function AreaPickerModal({
   visible,
   onClose,
@@ -31,26 +33,46 @@ export function AreaPickerModal({
   areaCounts,
   allowAll = true,
 }: AreaPickerModalProps) {
-  const { C } = useTheme();
+  const { C, isDark } = useTheme();
   const t = useT();
   const insets = useSafeAreaInsets();
   const [search, setSearch] = useState('');
+  const [activeTab, setActiveTab] = useState<TypeFilterTab>('all');
   const searchInputRef = useRef<TextInput>(null);
 
   useEffect(() => {
-    if (visible) setSearch('');
+    if (visible) {
+      setSearch('');
+      setActiveTab('all');
+    }
   }, [visible]);
 
+  // Count totals for badges
+  const totalHospitals = useMemo(() => DHAKA_AREAS.filter(a => a.type === 'hospital').length, []);
+  const totalAreas = useMemo(() => DHAKA_AREAS.filter(a => a.type === 'area').length, []);
+
+  // Filter pipeline: Search query + Category Tab
   const filteredAreas = useMemo(() => {
+    let list = DHAKA_AREAS;
+
+    // Filter by type tab if not 'all'
+    if (activeTab === 'hospital') {
+      list = list.filter(a => a.type === 'hospital');
+    } else if (activeTab === 'area') {
+      list = list.filter(a => a.type === 'area');
+    }
+
     const q = search.trim().toLowerCase();
-    if (!q) return DHAKA_AREAS;
-    return DHAKA_AREAS.filter(a =>
-      a.name.toLowerCase().includes(q) ||
-      a.nameBn.includes(q) ||
-      a.zone.toLowerCase().includes(q) ||
-      a.zoneBn.includes(q)
-    );
-  }, [search]);
+    if (!q) return list;
+
+    return list.filter(a => {
+      const matchName = a.name.toLowerCase().includes(q);
+      const matchNameBn = a.nameBn.includes(q);
+      const matchZone = a.zone.toLowerCase().includes(q) || a.zoneBn.includes(q);
+      const matchKeywords = (a.keywords || []).some(k => k.toLowerCase().includes(q));
+      return matchName || matchNameBn || matchZone || matchKeywords;
+    });
+  }, [search, activeTab]);
 
   // Group by zone
   const grouped = useMemo(() => {
@@ -99,8 +121,8 @@ export function AreaPickerModal({
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
-              <View style={[styles.headerIcon, { backgroundColor: `${SectorColors.blood}1e` }]}>
-                <Icon name="pin" size={16} color={SectorColors.blood} />
+              <View style={[styles.headerIcon, { backgroundColor: `${SectorColors.blood}18` }]}>
+                <Icon name="pin" size={17} color={SectorColors.blood} />
               </View>
               <View>
                 <Text style={[styles.headerTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -120,7 +142,7 @@ export function AreaPickerModal({
             </TouchableOpacity>
           </View>
 
-          {/* Search Box */}
+          {/* Search Box with Clear Button */}
           <View style={[styles.searchBox, { backgroundColor: C.surface2, borderColor: C.border }]}>
             <TouchableOpacity
               onPress={() => searchInputRef.current?.focus()}
@@ -131,7 +153,7 @@ export function AreaPickerModal({
             <TextInput
               ref={searchInputRef}
               style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-              placeholder={t.blood2.searchAreaInput}
+              placeholder="Search hospital, clinic, or area (e.g. DMCH, Mirpur)..."
               placeholderTextColor={C.textMuted}
               value={search}
               onChangeText={setSearch}
@@ -146,39 +168,141 @@ export function AreaPickerModal({
             )}
           </View>
 
-          {/* Quick Clear / All Button */}
-          {allowAll && (
-            <View style={styles.quickBar}>
-              <TouchableOpacity
+          {/* Segment Filter Pills (All / Hospitals / Areas) */}
+          <View style={styles.segmentTrack}>
+            <TouchableOpacity
+              style={[
+                styles.segmentBtn,
+                activeTab === 'all'
+                  ? [styles.segmentBtnActive, { backgroundColor: SectorColors.blood, borderColor: SectorColors.blood }]
+                  : [styles.segmentBtnInactive, { backgroundColor: C.surface2, borderColor: C.border }],
+              ]}
+              onPress={() => setActiveTab('all')}
+              activeOpacity={0.75}
+            >
+              <Text
                 style={[
-                  styles.quickAllBtn,
-                  !isFiltered
-                    ? { backgroundColor: SectorColors.blood, borderColor: SectorColors.blood }
-                    : { backgroundColor: C.surface2, borderColor: C.border },
+                  styles.segmentBtnTxt,
+                  { color: activeTab === 'all' ? '#fff' : C.text, fontFamily: FontFamily.jakartaBold },
                 ]}
-                onPress={handleClear}
-                activeOpacity={0.75}
               >
-                <Text style={[styles.quickAllTxt, { color: !isFiltered ? '#fff' : C.text, fontFamily: FontFamily.jakartaBold }]}>
-                  {t.blood2.filterLocationAll}
-                </Text>
-              </TouchableOpacity>
-              {isFiltered && (
+                All ({DHAKA_AREAS.length})
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.segmentBtn,
+                activeTab === 'hospital'
+                  ? [styles.segmentBtnActive, { backgroundColor: SectorColors.blood, borderColor: SectorColors.blood }]
+                  : [styles.segmentBtnInactive, { backgroundColor: C.surface2, borderColor: C.border }],
+              ]}
+              onPress={() => setActiveTab('hospital')}
+              activeOpacity={0.75}
+            >
+              <Feather
+                name="activity"
+                size={12}
+                color={activeTab === 'hospital' ? '#fff' : SectorColors.blood}
+              />
+              <Text
+                style={[
+                  styles.segmentBtnTxt,
+                  { color: activeTab === 'hospital' ? '#fff' : C.text, fontFamily: FontFamily.jakartaBold },
+                ]}
+              >
+                Hospitals ({totalHospitals})
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.segmentBtn,
+                activeTab === 'area'
+                  ? [styles.segmentBtnActive, { backgroundColor: SectorColors.blood, borderColor: SectorColors.blood }]
+                  : [styles.segmentBtnInactive, { backgroundColor: C.surface2, borderColor: C.border }],
+              ]}
+              onPress={() => setActiveTab('area')}
+              activeOpacity={0.75}
+            >
+              <Icon
+                name="pin"
+                size={12}
+                color={activeTab === 'area' ? '#fff' : C.textMuted}
+              />
+              <Text
+                style={[
+                  styles.segmentBtnTxt,
+                  { color: activeTab === 'area' ? '#fff' : C.text, fontFamily: FontFamily.jakartaBold },
+                ]}
+              >
+                Areas ({totalAreas})
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Quick Campus Chips Bar (Top frequency locations) */}
+          <View style={styles.quickChipsWrapper}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.quickChipsContent}
+              keyboardShouldPersistTaps="handled"
+            >
+              {allowAll && (
                 <TouchableOpacity
-                  style={[styles.clearBtn, { borderColor: C.border }]}
+                  style={[
+                    styles.quickChip,
+                    !isFiltered
+                      ? [styles.quickChipActive, { backgroundColor: `${SectorColors.blood}20`, borderColor: SectorColors.blood }]
+                      : [styles.quickChipInactive, { backgroundColor: C.surface2, borderColor: C.border }],
+                  ]}
                   onPress={handleClear}
                   activeOpacity={0.75}
                 >
-                  <Feather name="rotate-ccw" size={12} color={C.textMuted} />
-                  <Text style={[styles.clearTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                    {t.blood2.clearAreaFilter}
+                  <Text
+                    style={[
+                      styles.quickChipTxt,
+                      { color: !isFiltered ? SectorColors.blood : C.textMuted, fontFamily: FontFamily.jakartaBold },
+                    ]}
+                  >
+                    All Locations
                   </Text>
                 </TouchableOpacity>
               )}
-            </View>
-          )}
 
-          {/* Area List */}
+              {QUICK_CAMPUS_AREAS.filter(x => x !== 'All').map(chipName => {
+                const isChipSelected = selectedArea.trim().toLowerCase() === chipName.trim().toLowerCase();
+                const isChipHospital = chipName.includes('Hospital') || chipName.includes('DMCH');
+                return (
+                  <TouchableOpacity
+                    key={chipName}
+                    style={[
+                      styles.quickChip,
+                      isChipSelected
+                        ? [styles.quickChipActive, { backgroundColor: `${SectorColors.blood}20`, borderColor: SectorColors.blood }]
+                        : [styles.quickChipInactive, { backgroundColor: C.surface2, borderColor: C.border }],
+                    ]}
+                    onPress={() => handleSelect(chipName)}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={{ fontSize: 11, marginRight: 2 }}>{isChipHospital ? '🏥' : '📍'}</Text>
+                    <Text
+                      style={[
+                        styles.quickChipTxt,
+                        { color: isChipSelected ? SectorColors.blood : C.text, fontFamily: isChipSelected ? FontFamily.jakartaBold : FontFamily.jakartaMedium },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {chipName.split('(')[0].trim()}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+
+          {/* Area / Hospital List in Standalone Card Bars */}
           <ScrollView
             style={styles.listScroll}
             contentContainerStyle={styles.listContent}
@@ -193,67 +317,147 @@ export function AreaPickerModal({
                 onPress={() => handleSelect(search.trim())}
                 activeOpacity={0.75}
               >
-                <Icon name="pin" size={15} color={SectorColors.blood} />
+                <View style={[styles.itemIconBox, { backgroundColor: `${SectorColors.blood}18` }]}>
+                  <Icon name="pin" size={15} color={SectorColors.blood} />
+                </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.customTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                     Filter by &ldquo;{search.trim()}&rdquo;
                   </Text>
                   <Text style={[styles.customSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                    Custom landmark or specific address
+                    Custom hospital, clinic, or local landmark
                   </Text>
                 </View>
                 <Feather name="arrow-right" size={15} color={SectorColors.blood} />
               </TouchableOpacity>
             )}
 
+            {/* Zero results message */}
+            {filteredAreas.length === 0 && (
+              <View style={styles.emptyContainer}>
+                <Feather name="map-pin" size={28} color={C.textMuted} />
+                <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  No locations found
+                </Text>
+                <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+                  Try typing a different hospital name or area keyword.
+                </Text>
+              </View>
+            )}
+
+            {/* Grouped Zones with Individual Standalone Card Bars */}
             {Object.keys(grouped).map(zone => (
               <View key={zone} style={styles.zoneBlock}>
-                <Text style={[styles.zoneTitle, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                  {zone.toUpperCase()}
-                </Text>
-                <View style={[styles.zoneCard, { backgroundColor: C.surface2, borderColor: C.border }]}>
-                  {grouped[zone].map((item, idx) => {
-                    const isSelected = selectedArea.trim().toLowerCase() === item.name.trim().toLowerCase();
-                    const count = areaCounts ? areaCounts[item.name] : undefined;
+                <View style={styles.zoneHeaderRow}>
+                  <Text style={[styles.zoneTitle, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                    {zone.toUpperCase()}
+                  </Text>
+                  <View style={[styles.zoneCountBadge, { backgroundColor: C.surface2 }]}>
+                    <Text style={[styles.zoneCountTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                      {grouped[zone].length}
+                    </Text>
+                  </View>
+                </View>
 
-                    return (
-                      <TouchableOpacity
-                        key={item.name}
+                {grouped[zone].map(item => {
+                  const isSelected = selectedArea.trim().toLowerCase() === item.name.trim().toLowerCase();
+                  const count = areaCounts ? areaCounts[item.name] : undefined;
+                  const isHospital = item.type === 'hospital';
+
+                  return (
+                    <TouchableOpacity
+                      key={item.name}
+                      style={[
+                        styles.areaCardBar,
+                        {
+                          backgroundColor: isSelected
+                            ? (isDark ? 'rgba(199, 52, 74, 0.16)' : 'rgba(199, 52, 74, 0.08)')
+                            : C.surface,
+                          borderColor: isSelected ? SectorColors.blood : C.border,
+                          borderWidth: isSelected ? 1.5 : 1,
+                        },
+                      ]}
+                      onPress={() => handleSelect(item.name)}
+                      activeOpacity={0.72}
+                    >
+                      {/* Left Icon Badge */}
+                      <View
                         style={[
-                          styles.areaRow,
-                          idx > 0 && [styles.rowBorder, { borderTopColor: C.border }],
-                          isSelected && { backgroundColor: `${SectorColors.blood}12` },
+                          styles.itemIconBox,
+                          {
+                            backgroundColor: isHospital
+                              ? (isDark ? 'rgba(199, 52, 74, 0.22)' : 'rgba(199, 52, 74, 0.1)')
+                              : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2),
+                          },
                         ]}
-                        onPress={() => handleSelect(item.name)}
-                        activeOpacity={0.7}
                       >
-                        <View style={styles.areaLeft}>
-                          <Icon name="pin" size={14} color={isSelected ? SectorColors.blood : C.textMuted} />
-                          <View>
-                            <Text style={[styles.areaName, { color: isSelected ? SectorColors.blood : C.text, fontFamily: FontFamily.jakartaBold }]}>
-                              {item.name}
-                            </Text>
-                            <Text style={[styles.areaSubName, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                              {item.nameBn}
-                            </Text>
-                          </View>
-                        </View>
-                        <View style={styles.areaRight}>
-                          {count !== undefined && count > 0 && (
-                            <View style={[styles.countPill, { backgroundColor: C.surface }]}>
-                              <Text style={[styles.countTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                                {count}
+                        {isHospital ? (
+                          <Feather name="activity" size={15} color={SectorColors.blood} />
+                        ) : (
+                          <Icon name="pin" size={15} color={isSelected ? SectorColors.blood : C.text2} />
+                        )}
+                      </View>
+
+                      {/* Title & Bengali Subtitle Stack */}
+                      <View style={styles.itemInfoStack}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <Text
+                            style={[
+                              styles.areaName,
+                              {
+                                color: isSelected ? SectorColors.blood : C.text,
+                                fontFamily: FontFamily.jakartaBold,
+                              },
+                            ]}
+                            numberOfLines={1}
+                          >
+                            {item.name}
+                          </Text>
+                          {isHospital && (
+                            <View style={[styles.typePill, { backgroundColor: `${SectorColors.blood}15` }]}>
+                              <Text style={[styles.typePillTxt, { color: SectorColors.blood, fontFamily: FontFamily.jakartaBold }]}>
+                                Hospital
                               </Text>
                             </View>
                           )}
-                          {isSelected && (
-                            <Feather name="check" size={16} color={SectorColors.blood} />
-                          )}
                         </View>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
+                        <Text
+                          style={[
+                            styles.areaSubName,
+                            { color: C.textMuted, fontFamily: FontFamily.bnRegular },
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {item.nameBn}
+                        </Text>
+                      </View>
+
+                      {/* Right Counter / Checkmark */}
+                      <View style={styles.itemRight}>
+                        {count !== undefined && count > 0 && (
+                          <View style={[styles.countPill, { backgroundColor: isSelected ? `${SectorColors.blood}20` : C.surface2 }]}>
+                            <Text
+                              style={[
+                                styles.countTxt,
+                                {
+                                  color: isSelected ? SectorColors.blood : C.textMuted,
+                                  fontFamily: FontFamily.jakartaBold,
+                                },
+                              ]}
+                            >
+                              {count}
+                            </Text>
+                          </View>
+                        )}
+                        {isSelected ? (
+                          <Feather name="check-circle" size={18} color={SectorColors.blood} />
+                        ) : (
+                          <Feather name="chevron-right" size={14} color={C.border} />
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             ))}
 
@@ -279,7 +483,7 @@ const styles = StyleSheet.create({
     bottom: 0,
   } as ViewStyle,
   sheet: {
-    maxHeight: '82%',
+    maxHeight: '88%',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderWidth: 1,
@@ -287,7 +491,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Layout.screenPadding,
   } as ViewStyle,
   handle: {
-    width: 36,
+    width: 38,
     height: 4,
     borderRadius: 2,
     alignSelf: 'center',
@@ -305,9 +509,9 @@ const styles = StyleSheet.create({
     gap: 10,
   } as ViewStyle,
   headerIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 38,
+    height: 38,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
@@ -338,48 +542,69 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     height: '100%',
-    fontSize: 13.5,
+    fontSize: 13,
     paddingVertical: 0,
   } as TextStyle,
-  quickBar: {
+
+  // Segment Tabs
+  segmentTrack: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 10,
+  } as ViewStyle,
+  segmentBtn: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
+    gap: 5,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+  } as ViewStyle,
+  segmentBtnActive: {} as ViewStyle,
+  segmentBtnInactive: {} as ViewStyle,
+  segmentBtnTxt: {
+    fontSize: 11.5,
+  } as TextStyle,
+
+  // Quick Chips
+  quickChipsWrapper: {
     marginBottom: 12,
   } as ViewStyle,
-  quickAllBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 20,
-    borderWidth: 1,
+  quickChipsContent: {
+    gap: 6,
+    paddingVertical: 2,
   } as ViewStyle,
-  quickAllTxt: {
-    fontSize: 12,
-  } as TextStyle,
-  clearBtn: {
+  quickChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
   } as ViewStyle,
-  clearTxt: {
-    fontSize: 11,
+  quickChipActive: {} as ViewStyle,
+  quickChipInactive: {} as ViewStyle,
+  quickChipTxt: {
+    fontSize: 11.5,
   } as TextStyle,
+
+  // List Scroll
   listScroll: {
     maxHeight: 460,
   } as ViewStyle,
   listContent: {
-    paddingBottom: 24,
+    paddingBottom: 20,
   } as ViewStyle,
+
+  // Custom Search Query Row
   customRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
     padding: 12,
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1.5,
     marginBottom: 12,
   } as ViewStyle,
@@ -390,54 +615,97 @@ const styles = StyleSheet.create({
     fontSize: 11,
     marginTop: 1,
   } as TextStyle,
+
+  // Empty State
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 36,
+    gap: 8,
+  } as ViewStyle,
+  emptyTitle: {
+    fontSize: 15,
+  } as TextStyle,
+  emptySub: {
+    fontSize: 12,
+    textAlign: 'center',
+    maxWidth: 240,
+  } as TextStyle,
+
+  // Zone Blocks
   zoneBlock: {
     marginBottom: 14,
+  } as ViewStyle,
+  zoneHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+    paddingHorizontal: 2,
   } as ViewStyle,
   zoneTitle: {
     fontSize: 11,
     letterSpacing: 0.6,
-    marginBottom: 6,
-    marginLeft: 4,
   } as TextStyle,
-  zoneCard: {
-    borderRadius: 14,
-    borderWidth: 1,
-    overflow: 'hidden',
+  zoneCountBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 8,
   } as ViewStyle,
-  areaRow: {
+  zoneCountTxt: {
+    fontSize: 10,
+  } as TextStyle,
+
+  // Standalone Card Bars
+  areaCardBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 11,
     paddingHorizontal: 12,
+    borderRadius: 14,
+    marginBottom: 8,
   } as ViewStyle,
-  rowBorder: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-  } as ViewStyle,
-  areaLeft: {
-    flexDirection: 'row',
+  itemIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     alignItems: 'center',
-    gap: 10,
+    justifyContent: 'center',
+    marginRight: 10,
+  } as ViewStyle,
+  itemInfoStack: {
     flex: 1,
+    justifyContent: 'center',
   } as ViewStyle,
   areaName: {
     fontSize: 13.5,
+    flexShrink: 1,
+  } as TextStyle,
+  typePill: {
+    paddingHorizontal: 5,
+    paddingVertical: 1.5,
+    borderRadius: 6,
+  } as ViewStyle,
+  typePillTxt: {
+    fontSize: 9.5,
   } as TextStyle,
   areaSubName: {
-    fontSize: 10.5,
-    marginTop: 1,
+    fontSize: 11,
+    marginTop: 2,
   } as TextStyle,
-  areaRight: {
+  itemRight: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    marginLeft: 6,
   } as ViewStyle,
   countPill: {
     paddingHorizontal: 7,
     paddingVertical: 2,
-    borderRadius: 999,
+    borderRadius: 10,
   } as ViewStyle,
   countTxt: {
-    fontSize: 10.5,
+    fontSize: 11,
   } as TextStyle,
 });

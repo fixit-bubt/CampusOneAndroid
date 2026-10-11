@@ -27,6 +27,7 @@ import {
 import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 import { ContactSheet } from '../../components/ui/ContactSheet';
 import { AreaPickerModal } from '../../components/blood/AreaPickerModal';
+import { DHAKA_AREAS } from '../../constants/dhakaAreas';
 import type { BloodRequest, Donor } from '../../types/database';
 
 type Tab = 'requests' | 'donors';
@@ -353,12 +354,32 @@ export function BloodScreen({ navigation }: any) {
     );
   }
 
+  // Check if active filter is a hospital
+  const isHospitalFilter = useMemo(() => {
+    return DHAKA_AREAS.some(a => a.type === 'hospital' && a.name.toLowerCase() === areaFilter.toLowerCase());
+  }, [areaFilter]);
+
+  const displayAreaText = useMemo(() => {
+    if (areaFilter === 'All') return t.blood2.filterLocationAll;
+    const short = areaFilter.split('(')[0].trim();
+    return short || areaFilter;
+  }, [areaFilter, t.blood2.filterLocationAll]);
+
   // Filter requests and donors by group, area, and search query
   const filteredRequests = requests.filter(r => {
     const matchesGroup = groupFilter === 'All' || r.blood_group === groupFilter;
+    const baseFilter = areaFilter === 'All' ? '' : areaFilter.split('(')[0].trim().toLowerCase();
     const matchesArea = areaFilter === 'All' ||
-      (r.area && r.area.toLowerCase().includes(areaFilter.toLowerCase())) ||
-      (r.hospital && r.hospital.toLowerCase().includes(areaFilter.toLowerCase()));
+      (r.area && (
+        r.area.toLowerCase().includes(areaFilter.toLowerCase()) ||
+        areaFilter.toLowerCase().includes(r.area.toLowerCase()) ||
+        (baseFilter.length > 2 && r.area.toLowerCase().includes(baseFilter))
+      )) ||
+      (r.hospital && (
+        r.hospital.toLowerCase().includes(areaFilter.toLowerCase()) ||
+        areaFilter.toLowerCase().includes(r.hospital.toLowerCase()) ||
+        (baseFilter.length > 2 && r.hospital.toLowerCase().includes(baseFilter))
+      ));
     const q = searchQuery.trim().toLowerCase();
     const matchesQuery = !q ||
       (r.patient && r.patient.toLowerCase().includes(q)) ||
@@ -370,8 +391,13 @@ export function BloodScreen({ navigation }: any) {
 
   const filteredDonors = donors.filter(d => {
     const matchesGroup = groupFilter === 'All' || d.blood_group === groupFilter;
+    const baseFilter = areaFilter === 'All' ? '' : areaFilter.split('(')[0].trim().toLowerCase();
     const matchesArea = areaFilter === 'All' ||
-      (d.area && d.area.toLowerCase().includes(areaFilter.toLowerCase()));
+      (d.area && (
+        d.area.toLowerCase().includes(areaFilter.toLowerCase()) ||
+        areaFilter.toLowerCase().includes(d.area.toLowerCase()) ||
+        (baseFilter.length > 2 && d.area.toLowerCase().includes(baseFilter))
+      ));
     const q = searchQuery.trim().toLowerCase();
     const name = (d as any).profiles?.full_name?.toLowerCase() || '';
     const matchesQuery = !q ||
@@ -571,19 +597,23 @@ export function BloodScreen({ navigation }: any) {
         })}
       </View>
 
-      {/* Unified Search & Dhaka Area Trigger Row */}
+      {/* Unified Search & Dhaka Location Trigger Row (Option 2: Micro-Label Stacked) */}
       <View style={[styles.searchAreaRow, { paddingHorizontal: Layout.screenPadding }]}>
         <View style={[styles.searchBar, { backgroundColor: C.surface, borderColor: C.border }]}>
           <TouchableOpacity
             onPress={() => searchInputRef.current?.focus()}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 8 }}
           >
-            <Feather name="search" size={15} color={C.textMuted} />
+            <Feather name="search" size={16} color={C.textMuted} />
           </TouchableOpacity>
           <TextInput
             ref={searchInputRef}
             style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-            placeholder={tab === 'requests' ? 'Search hospital, patient, area...' : 'Search donor, area...'}
+            placeholder={
+              tab === 'requests'
+                ? 'Search hospital, patient, or area...'
+                : 'Search donor name or living area...'
+            }
             placeholderTextColor={C.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -595,7 +625,7 @@ export function BloodScreen({ navigation }: any) {
               onPress={() => setSearchQuery('')}
               hitSlop={{ top: 10, bottom: 10, left: 8, right: 10 }}
             >
-              <Feather name="x" size={14} color={C.textMuted} />
+              <Feather name="x" size={15} color={C.textMuted} />
             </TouchableOpacity>
           )}
         </View>
@@ -604,7 +634,11 @@ export function BloodScreen({ navigation }: any) {
           style={[
             styles.areaPickerTrigger,
             areaFilter !== 'All'
-              ? { backgroundColor: SectorColors.blood, borderColor: SectorColors.blood }
+              ? {
+                  backgroundColor: isDark ? 'rgba(199, 52, 74, 0.22)' : 'rgba(199, 52, 74, 0.12)',
+                  borderColor: SectorColors.blood,
+                  borderWidth: 1.5,
+                }
               : { backgroundColor: C.surface, borderColor: C.border },
           ]}
         >
@@ -613,32 +647,67 @@ export function BloodScreen({ navigation }: any) {
             onPress={() => setAreaModalVisible(true)}
             activeOpacity={0.75}
           >
-            <Icon name="pin" size={12} color={areaFilter !== 'All' ? '#fff' : SectorColors.blood} />
-            <Text
+            <View
               style={[
-                styles.areaPickerTriggerTxt,
-                { color: areaFilter !== 'All' ? '#fff' : C.text, fontFamily: FontFamily.jakartaBold },
+                styles.areaIconBox,
+                {
+                  backgroundColor: areaFilter !== 'All'
+                    ? (isDark ? 'rgba(255, 255, 255, 0.12)' : `${SectorColors.blood}18`)
+                    : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2),
+                },
               ]}
-              numberOfLines={1}
             >
-              {areaFilter === 'All' ? t.blood2.filterLocationAll : areaFilter}
-            </Text>
+              {isHospitalFilter ? (
+                <Feather name="activity" size={13} color={areaFilter !== 'All' ? SectorColors.blood : C.text2} />
+              ) : (
+                <Icon name="pin" size={13} color={areaFilter !== 'All' ? SectorColors.blood : C.text2} />
+              )}
+            </View>
+
+            <View style={styles.areaTextStack}>
+              <Text
+                style={[
+                  styles.areaMicroLabel,
+                  {
+                    color: areaFilter !== 'All' ? SectorColors.blood : C.textMuted,
+                    fontFamily: FontFamily.jakartaBold,
+                  },
+                ]}
+              >
+                {isHospitalFilter ? 'HOSPITAL' : 'LOCATION'}
+              </Text>
+              <Text
+                style={[
+                  styles.areaPickerTriggerTxt,
+                  {
+                    color: areaFilter !== 'All' ? (isDark ? '#fff' : SectorColors.blood) : C.text,
+                    fontFamily: FontFamily.jakartaBold,
+                  },
+                ]}
+                numberOfLines={1}
+              >
+                {displayAreaText}
+              </Text>
+            </View>
           </TouchableOpacity>
+
           {areaFilter !== 'All' ? (
             <TouchableOpacity
               onPress={() => setAreaFilter('All')}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              hitSlop={{ top: 10, bottom: 10, left: 6, right: 10 }}
               style={styles.areaClearBtn}
             >
-              <Feather name="x" size={13} color="#fff" />
+              <View style={[styles.clearPill, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.14)' : `${SectorColors.blood}20` }]}>
+                <Feather name="x" size={11} color={isDark ? '#fff' : SectorColors.blood} />
+              </View>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
               onPress={() => setAreaModalVisible(true)}
-              hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }}
+              hitSlop={{ top: 10, bottom: 10, left: 6, right: 10 }}
               style={styles.areaClearBtn}
             >
-              <Feather name="chevron-down" size={12} color={C.textMuted} />
+              <Feather name="chevron-down" size={13} color={C.textMuted} />
             </TouchableOpacity>
           )}
         </View>
@@ -977,8 +1046,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    height: 42,
-    borderRadius: 12,
+    height: 46,
+    borderRadius: 13,
     borderWidth: 1,
     paddingHorizontal: 12,
   } as ViewStyle,
@@ -991,19 +1060,36 @@ const styles = StyleSheet.create({
   areaPickerTrigger: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 42,
-    paddingHorizontal: 10,
-    borderRadius: 12,
+    height: 46,
+    paddingLeft: 8,
+    paddingRight: 6,
+    borderRadius: 13,
     borderWidth: 1,
-    maxWidth: 145,
+    maxWidth: 165,
+    minWidth: 125,
   } as ViewStyle,
   areaPickerBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 7,
     flex: 1,
     height: '100%',
   } as ViewStyle,
+  areaIconBox: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  areaTextStack: {
+    flex: 1,
+    justifyContent: 'center',
+  } as ViewStyle,
+  areaMicroLabel: {
+    fontSize: 9,
+    letterSpacing: 0.6,
+  } as TextStyle,
   areaPickerTriggerTxt: {
     fontSize: 12,
     flexShrink: 1,
@@ -1013,6 +1099,13 @@ const styles = StyleSheet.create({
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
+  } as ViewStyle,
+  clearPill: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   } as ViewStyle,
   miniBloodBadge: {
     width: 34,
