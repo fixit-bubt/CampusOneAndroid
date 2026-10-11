@@ -1,8 +1,8 @@
-import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback, memo } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, Modal,
   FlatList, StyleSheet, Keyboard, KeyboardAvoidingView,
-  Animated, Platform, type ViewStyle, type TextStyle,
+  Animated, Platform, Dimensions, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -31,6 +31,255 @@ type FlatListItem =
   | { type: 'zone_header'; id: string; zone: string; count: number }
   | { type: 'area_item'; id: string; item: DhakaAreaInfo };
 
+// -------------------------------------------------------------
+// MODULE-LEVEL PRE-COMPUTED DATA (Zero allocations during tab switch)
+// -------------------------------------------------------------
+const TOTAL_HOSPITALS = DHAKA_AREAS.filter(a => a.type === 'hospital').length;
+const TOTAL_AREAS = DHAKA_AREAS.filter(a => a.type === 'area').length;
+
+interface IndexedAreaItem extends DhakaAreaInfo {
+  _searchKey: string;
+}
+
+const INDEXED_AREAS: IndexedAreaItem[] = DHAKA_AREAS.map(a => ({
+  ...a,
+  _searchKey: `${a.name.toLowerCase()} ${a.nameBn} ${(a.subLocation || '').toLowerCase()} ${a.zone.toLowerCase()} ${a.zoneBn} ${(a.keywords || []).join(' ').toLowerCase()}`,
+}));
+
+function buildFlatZoneItems(items: IndexedAreaItem[], includeAllOption: boolean): FlatListItem[] {
+  const result: FlatListItem[] = [];
+  if (includeAllOption) {
+    result.push({ type: 'all_option', id: 'all_option' });
+  }
+  const grouped: Record<string, IndexedAreaItem[]> = {};
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    if (!grouped[item.zone]) grouped[item.zone] = [];
+    grouped[item.zone].push(item);
+  }
+  const zones = Object.keys(grouped);
+  for (let z = 0; z < zones.length; z++) {
+    const zone = zones[z];
+    const groupItems = grouped[zone];
+    result.push({
+      type: 'zone_header',
+      id: `header_${zone}`,
+      zone,
+      count: groupItems.length,
+    });
+    for (let j = 0; j < groupItems.length; j++) {
+      result.push({
+        type: 'area_item',
+        id: `item_${groupItems[j].name}`,
+        item: groupItems[j],
+      });
+    }
+  }
+  return result;
+}
+
+const STATIC_ALL_ITEMS_WITH_ALL = buildFlatZoneItems(INDEXED_AREAS, true);
+const STATIC_ALL_ITEMS_NO_ALL = buildFlatZoneItems(INDEXED_AREAS, false);
+const STATIC_HOSPITAL_ITEMS = buildFlatZoneItems(INDEXED_AREAS.filter(a => a.type === 'hospital'), false);
+const STATIC_AREA_ITEMS = buildFlatZoneItems(INDEXED_AREAS.filter(a => a.type === 'area'), false);
+
+const keyExtractor = (item: FlatListItem) => item.id;
+
+// -------------------------------------------------------------
+// MEMOIZED ITEM COMPONENTS (Zero re-renders on scroll)
+// -------------------------------------------------------------
+const AllOptionRow = memo(function AllOptionRow({
+  isFiltered,
+  onPress,
+  C,
+  isDark,
+}: {
+  isFiltered: boolean;
+  onPress: () => void;
+  C: any;
+  isDark: boolean;
+}) {
+  return (
+    <TouchableOpacity
+      style={[
+        styles.areaCardBar,
+        {
+          backgroundColor: !isFiltered
+            ? (isDark ? 'rgba(199, 52, 74, 0.16)' : 'rgba(199, 52, 74, 0.08)')
+            : C.surface,
+          borderColor: !isFiltered ? SectorColors.blood : C.border,
+          borderWidth: !isFiltered ? 1.5 : 1,
+        },
+      ]}
+      onPress={onPress}
+      activeOpacity={0.72}
+    >
+      <View
+        style={[
+          styles.itemIconBox,
+          {
+            backgroundColor: !isFiltered
+              ? (isDark ? 'rgba(199, 52, 74, 0.22)' : 'rgba(199, 52, 74, 0.1)')
+              : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2),
+          },
+        ]}
+      >
+        <Icon name="grid" size={15} color={!isFiltered ? SectorColors.blood : C.text2} />
+      </View>
+
+      <View style={styles.itemInfoStack}>
+        <Text
+          style={[
+            styles.areaName,
+            {
+              color: !isFiltered ? SectorColors.blood : C.text,
+              fontFamily: FontFamily.jakartaBold,
+            },
+          ]}
+          numberOfLines={1}
+        >
+          All Locations
+        </Text>
+        <Text style={[styles.areaSubName, { color: C.textMuted, fontFamily: FontFamily.bnRegular }]}>
+          সকল এলাকা ও হাসপাতাল
+        </Text>
+      </View>
+
+      {!isFiltered ? (
+        <Feather name="check-circle" size={18} color={SectorColors.blood} />
+      ) : (
+        <Feather name="chevron-right" size={14} color={C.border} />
+      )}
+    </TouchableOpacity>
+  );
+});
+
+const ZoneHeaderRow = memo(function ZoneHeaderRow({
+  zone,
+  count,
+  C,
+}: {
+  zone: string;
+  count: number;
+  C: any;
+}) {
+  return (
+    <View style={styles.zoneHeaderRow}>
+      <Text style={[styles.zoneTitle, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+        {zone.toUpperCase()}
+      </Text>
+      <View style={[styles.zoneCountBadge, { backgroundColor: C.surface2 }]}>
+        <Text style={[styles.zoneCountTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+          {count}
+        </Text>
+      </View>
+    </View>
+  );
+});
+
+const AreaItemRow = memo(function AreaItemRow({
+  item,
+  isSelected,
+  count,
+  onSelect,
+  C,
+  isDark,
+}: {
+  item: DhakaAreaInfo;
+  isSelected: boolean;
+  count?: number;
+  onSelect: (name: string) => void;
+  C: any;
+  isDark: boolean;
+}) {
+  const isHospital = item.type === 'hospital';
+  const subtitleText = item.subLocation ? `${item.subLocation} · ${item.nameBn}` : item.nameBn;
+
+  return (
+    <TouchableOpacity
+      style={[
+        styles.areaCardBar,
+        {
+          backgroundColor: isSelected
+            ? (isDark ? 'rgba(199, 52, 74, 0.16)' : 'rgba(199, 52, 74, 0.08)')
+            : C.surface,
+          borderColor: isSelected ? SectorColors.blood : C.border,
+          borderWidth: isSelected ? 1.5 : 1,
+        },
+      ]}
+      onPress={() => onSelect(item.name)}
+      activeOpacity={0.72}
+    >
+      <View
+        style={[
+          styles.itemIconBox,
+          {
+            backgroundColor: isHospital
+              ? (isDark ? 'rgba(199, 52, 74, 0.22)' : 'rgba(199, 52, 74, 0.1)')
+              : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2),
+          },
+        ]}
+      >
+        {isHospital ? (
+          <Feather name="activity" size={15} color={SectorColors.blood} />
+        ) : (
+          <Icon name="pin" size={15} color={isSelected ? SectorColors.blood : C.text2} />
+        )}
+      </View>
+
+      <View style={styles.itemInfoStack}>
+        <Text
+          style={[
+            styles.areaName,
+            {
+              color: isSelected ? SectorColors.blood : C.text,
+              fontFamily: FontFamily.jakartaBold,
+            },
+          ]}
+          numberOfLines={1}
+        >
+          {item.name}
+        </Text>
+        <Text
+          style={[
+            styles.areaSubName,
+            { color: C.textMuted, fontFamily: FontFamily.bnRegular },
+          ]}
+          numberOfLines={1}
+        >
+          {subtitleText}
+        </Text>
+      </View>
+
+      <View style={styles.itemRight}>
+        {count !== undefined && count > 0 && (
+          <View style={[styles.countPill, { backgroundColor: isSelected ? `${SectorColors.blood}20` : C.surface2 }]}>
+            <Text
+              style={[
+                styles.countTxt,
+                {
+                  color: isSelected ? SectorColors.blood : C.textMuted,
+                  fontFamily: FontFamily.jakartaBold,
+                },
+              ]}
+            >
+              {count}
+            </Text>
+          </View>
+        )}
+        {isSelected ? (
+          <Feather name="check-circle" size={18} color={SectorColors.blood} />
+        ) : (
+          <Feather name="chevron-right" size={14} color={C.border} />
+        )}
+      </View>
+    </TouchableOpacity>
+  );
+});
+
+// -------------------------------------------------------------
+// MAIN MODAL COMPONENT
+// -------------------------------------------------------------
 export function AreaPickerModal({
   visible,
   onClose,
@@ -46,8 +295,12 @@ export function AreaPickerModal({
   const insets = useSafeAreaInsets();
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<TypeFilterTab>(initialTab);
-  const [trackWidth, setTrackWidth] = useState(0);
   const searchInputRef = useRef<TextInput>(null);
+
+  // Pre-calculate track width from window width to avoid onLayout re-render
+  const screenWidth = Dimensions.get('window').width;
+  const initialTrackWidth = Math.max(280, screenWidth - Layout.screenPadding * 2);
+  const [trackWidth, setTrackWidth] = useState(initialTrackWidth);
 
   const initialIndex = initialTab === 'hospital' ? 1 : initialTab === 'area' ? 2 : 0;
   const slideAnim = useRef(new Animated.Value(initialIndex)).current;
@@ -62,159 +315,98 @@ export function AreaPickerModal({
     }
   }, [visible, initialTab, slideAnim]);
 
+  // Instant native spring animation with zero CPU contention
   const switchTab = useCallback((tab: TypeFilterTab) => {
     setActiveTab(tab);
     const targetIdx = tab === 'hospital' ? 1 : tab === 'area' ? 2 : 0;
     Animated.spring(slideAnim, {
       toValue: targetIdx,
       useNativeDriver: true,
-      tension: 130,
-      friction: 8,
+      tension: 140,
+      friction: 9,
     }).start();
   }, [slideAnim]);
 
-  // Count totals for badges
-  const totalHospitals = useMemo(() => DHAKA_AREAS.filter(a => a.type === 'hospital').length, []);
-  const totalAreas = useMemo(() => DHAKA_AREAS.filter(a => a.type === 'area').length, []);
-
-  // Filter pipeline: Search query + Category Tab
-  const filteredAreas = useMemo(() => {
-    let list = DHAKA_AREAS;
-
-    if (activeTab === 'hospital') {
-      list = list.filter(a => a.type === 'hospital');
-    } else if (activeTab === 'area') {
-      list = list.filter(a => a.type === 'area');
-    }
-
-    const q = search.trim().toLowerCase();
-    if (!q) return list;
-
-    return list.filter(a => {
-      const matchName = a.name.toLowerCase().includes(q);
-      const matchNameBn = a.nameBn.includes(q);
-      const matchSub = a.subLocation ? a.subLocation.toLowerCase().includes(q) : false;
-      const matchZone = a.zone.toLowerCase().includes(q) || a.zoneBn.includes(q);
-      const matchKeywords = (a.keywords || []).some(k => k.toLowerCase().includes(q));
-      return matchName || matchNameBn || matchSub || matchZone || matchKeywords;
-    });
-  }, [search, activeTab]);
-
-  // Group by zone
-  const grouped = useMemo(() => {
-    const map: Record<string, DhakaAreaInfo[]> = {};
-    filteredAreas.forEach(a => {
-      if (!map[a.zone]) map[a.zone] = [];
-      map[a.zone].push(a);
-    });
-    return map;
-  }, [filteredAreas]);
-
-  // High-performance FlatList items array
+  // Instant O(1) tab list selection when search is empty
   const listData = useMemo<FlatListItem[]>(() => {
-    const items: FlatListItem[] = [];
+    const q = search.trim().toLowerCase();
 
-    // "All Locations" option at the top if allowed
-    if (allowAll && !search && activeTab === 'all') {
-      items.push({ type: 'all_option', id: 'all_option' });
+    // 1. Zero-calculation static path when not searching
+    if (!q) {
+      if (activeTab === 'hospital') return STATIC_HOSPITAL_ITEMS;
+      if (activeTab === 'area') return STATIC_AREA_ITEMS;
+      return allowAll ? STATIC_ALL_ITEMS_WITH_ALL : STATIC_ALL_ITEMS_NO_ALL;
     }
 
-    // Custom search query option if query doesn't match an exact item
-    const trimmed = search.trim();
-    if (trimmed.length > 1 && !DHAKA_AREAS.some(a => a.name.toLowerCase() === trimmed.toLowerCase())) {
-      items.push({ type: 'custom_query', id: 'custom_query', query: trimmed });
+    // 2. Ultra-fast pre-indexed search
+    let pool = INDEXED_AREAS;
+    if (activeTab === 'hospital') {
+      pool = pool.filter(a => a.type === 'hospital');
+    } else if (activeTab === 'area') {
+      pool = pool.filter(a => a.type === 'area');
     }
 
-    // Grouped zones
+    const matched = pool.filter(a => a._searchKey.includes(q));
+
+    const result: FlatListItem[] = [];
+
+    // Custom query option if not matched exactly
+    if (!pool.some(a => a.name.toLowerCase() === q)) {
+      result.push({ type: 'custom_query', id: 'custom_query', query: search.trim() });
+    }
+
+    // Group matched items
+    const grouped: Record<string, IndexedAreaItem[]> = {};
+    for (let i = 0; i < matched.length; i++) {
+      const item = matched[i];
+      if (!grouped[item.zone]) grouped[item.zone] = [];
+      grouped[item.zone].push(item);
+    }
+
     const zones = Object.keys(grouped);
-    for (const zone of zones) {
-      items.push({
+    for (let z = 0; z < zones.length; z++) {
+      const zone = zones[z];
+      const items = grouped[zone];
+      result.push({
         type: 'zone_header',
         id: `header_${zone}`,
         zone,
-        count: grouped[zone].length,
+        count: items.length,
       });
-      for (const item of grouped[zone]) {
-        items.push({
+      for (let j = 0; j < items.length; j++) {
+        result.push({
           type: 'area_item',
-          id: `item_${item.name}`,
-          item,
+          id: `item_${items[j].name}`,
+          item: items[j],
         });
       }
     }
 
-    return items;
-  }, [allowAll, search, activeTab, grouped]);
+    return result;
+  }, [search, activeTab, allowAll]);
 
-  if (!visible) return null;
-
-  function handleSelect(areaName: string) {
+  const handleSelect = useCallback((areaName: string) => {
     onSelectArea(areaName);
     onClose();
-  }
+  }, [onSelectArea, onClose]);
 
-  function handleClear() {
+  const handleClear = useCallback(() => {
     onSelectArea('All');
     onClose();
-  }
+  }, [onSelectArea, onClose]);
 
-  const isFiltered = selectedArea && selectedArea !== 'All';
+  const isFiltered = Boolean(selectedArea && selectedArea !== 'All');
   const tabWidth = trackWidth > 0 ? (trackWidth - 6) / 3 : 0;
 
-  const renderItem = ({ item }: { item: FlatListItem }) => {
+  const renderItem = useCallback(({ item }: { item: FlatListItem }) => {
     if (item.type === 'all_option') {
       return (
-        <TouchableOpacity
-          style={[
-            styles.areaCardBar,
-            {
-              backgroundColor: !isFiltered
-                ? (isDark ? 'rgba(199, 52, 74, 0.16)' : 'rgba(199, 52, 74, 0.08)')
-                : C.surface,
-              borderColor: !isFiltered ? SectorColors.blood : C.border,
-              borderWidth: !isFiltered ? 1.5 : 1,
-            },
-          ]}
+        <AllOptionRow
+          isFiltered={isFiltered}
           onPress={handleClear}
-          activeOpacity={0.72}
-        >
-          <View
-            style={[
-              styles.itemIconBox,
-              {
-                backgroundColor: !isFiltered
-                  ? (isDark ? 'rgba(199, 52, 74, 0.22)' : 'rgba(199, 52, 74, 0.1)')
-                  : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2),
-              },
-            ]}
-          >
-            <Icon name="grid" size={15} color={!isFiltered ? SectorColors.blood : C.text2} />
-          </View>
-
-          <View style={styles.itemInfoStack}>
-            <Text
-              style={[
-                styles.areaName,
-                {
-                  color: !isFiltered ? SectorColors.blood : C.text,
-                  fontFamily: FontFamily.jakartaBold,
-                },
-              ]}
-              numberOfLines={1}
-            >
-              All Locations
-            </Text>
-            <Text style={[styles.areaSubName, { color: C.textMuted, fontFamily: FontFamily.bnRegular }]}>
-              সকল এলাকা ও হাসপাতাল
-            </Text>
-          </View>
-
-          {!isFiltered ? (
-            <Feather name="check-circle" size={18} color={SectorColors.blood} />
-          ) : (
-            <Feather name="chevron-right" size={14} color={C.border} />
-          )}
-        </TouchableOpacity>
+          C={C}
+          isDark={isDark}
+        />
       );
     }
 
@@ -242,108 +434,24 @@ export function AreaPickerModal({
     }
 
     if (item.type === 'zone_header') {
-      return (
-        <View style={styles.zoneHeaderRow}>
-          <Text style={[styles.zoneTitle, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-            {item.zone.toUpperCase()}
-          </Text>
-          <View style={[styles.zoneCountBadge, { backgroundColor: C.surface2 }]}>
-            <Text style={[styles.zoneCountTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-              {item.count}
-            </Text>
-          </View>
-        </View>
-      );
+      return <ZoneHeaderRow zone={item.zone} count={item.count} C={C} />;
     }
 
-    // item.type === 'area_item'
     const areaItem = item.item;
     const isSelected = selectedArea.trim().toLowerCase() === areaItem.name.trim().toLowerCase();
     const count = areaCounts ? areaCounts[areaItem.name] : undefined;
-    const isHospital = areaItem.type === 'hospital';
-    const subtitleText = areaItem.subLocation ? `${areaItem.subLocation} · ${areaItem.nameBn}` : areaItem.nameBn;
 
     return (
-      <TouchableOpacity
-        style={[
-          styles.areaCardBar,
-          {
-            backgroundColor: isSelected
-              ? (isDark ? 'rgba(199, 52, 74, 0.16)' : 'rgba(199, 52, 74, 0.08)')
-              : C.surface,
-            borderColor: isSelected ? SectorColors.blood : C.border,
-            borderWidth: isSelected ? 1.5 : 1,
-          },
-        ]}
-        onPress={() => handleSelect(areaItem.name)}
-        activeOpacity={0.72}
-      >
-        <View
-          style={[
-            styles.itemIconBox,
-            {
-              backgroundColor: isHospital
-                ? (isDark ? 'rgba(199, 52, 74, 0.22)' : 'rgba(199, 52, 74, 0.1)')
-                : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2),
-            },
-          ]}
-        >
-          {isHospital ? (
-            <Feather name="activity" size={15} color={SectorColors.blood} />
-          ) : (
-            <Icon name="pin" size={15} color={isSelected ? SectorColors.blood : C.text2} />
-          )}
-        </View>
-
-        <View style={styles.itemInfoStack}>
-          <Text
-            style={[
-              styles.areaName,
-              {
-                color: isSelected ? SectorColors.blood : C.text,
-                fontFamily: FontFamily.jakartaBold,
-              },
-            ]}
-            numberOfLines={1}
-          >
-            {areaItem.name}
-          </Text>
-          <Text
-            style={[
-              styles.areaSubName,
-              { color: C.textMuted, fontFamily: FontFamily.bnRegular },
-            ]}
-            numberOfLines={1}
-          >
-            {subtitleText}
-          </Text>
-        </View>
-
-        <View style={styles.itemRight}>
-          {count !== undefined && count > 0 && (
-            <View style={[styles.countPill, { backgroundColor: isSelected ? `${SectorColors.blood}20` : C.surface2 }]}>
-              <Text
-                style={[
-                  styles.countTxt,
-                  {
-                    color: isSelected ? SectorColors.blood : C.textMuted,
-                    fontFamily: FontFamily.jakartaBold,
-                  },
-                ]}
-              >
-                {count}
-              </Text>
-            </View>
-          )}
-          {isSelected ? (
-            <Feather name="check-circle" size={18} color={SectorColors.blood} />
-          ) : (
-            <Feather name="chevron-right" size={14} color={C.border} />
-          )}
-        </View>
-      </TouchableOpacity>
+      <AreaItemRow
+        item={areaItem}
+        isSelected={isSelected}
+        count={count}
+        onSelect={handleSelect}
+        C={C}
+        isDark={isDark}
+      />
     );
-  };
+  }, [isFiltered, handleClear, handleSelect, selectedArea, areaCounts, C, isDark]);
 
   return (
     <Modal
@@ -415,7 +523,7 @@ export function AreaPickerModal({
             )}
           </View>
 
-          {/* Single Clean Segment Filter Tabs (All / Hospitals / Areas) with Snappy Indicator */}
+          {/* Single Clean Segment Filter Tabs (All / Hospitals / Areas) with Instant Sliding Indicator */}
           <View
             style={[styles.segmentTrack, { backgroundColor: C.surface2, borderColor: C.border }]}
             onLayout={e => setTrackWidth(e.nativeEvent.layout.width)}
@@ -471,7 +579,7 @@ export function AreaPickerModal({
                   { color: activeTab === 'hospital' ? '#fff' : C.text, fontFamily: FontFamily.jakartaBold },
                 ]}
               >
-                Hospitals ({totalHospitals})
+                Hospitals ({TOTAL_HOSPITALS})
               </Text>
             </TouchableOpacity>
 
@@ -491,7 +599,7 @@ export function AreaPickerModal({
                   { color: activeTab === 'area' ? '#fff' : C.text, fontFamily: FontFamily.jakartaBold },
                 ]}
               >
-                Areas ({totalAreas})
+                Areas ({TOTAL_AREAS})
               </Text>
             </TouchableOpacity>
           </View>
@@ -500,7 +608,7 @@ export function AreaPickerModal({
           <FlatList
             data={listData}
             renderItem={renderItem}
-            keyExtractor={item => item.id}
+            keyExtractor={keyExtractor}
             style={styles.listScroll}
             contentContainerStyle={styles.listContent}
             initialNumToRender={14}
@@ -511,7 +619,7 @@ export function AreaPickerModal({
             keyboardDismissMode="on-drag"
             showsVerticalScrollIndicator={false}
             ListEmptyComponent={
-              filteredAreas.length === 0 ? (
+              listData.length === 0 ? (
                 <View style={styles.emptyContainer}>
                   <Feather name="map-pin" size={28} color={C.textMuted} />
                   <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -603,7 +711,7 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   } as TextStyle,
 
-  // Single Segment Bar with Sliding Indicator
+  // Single Segment Bar with Instant Sliding Indicator
   segmentTrack: {
     flexDirection: 'row',
     height: 42,

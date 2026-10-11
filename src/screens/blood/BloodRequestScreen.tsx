@@ -1,9 +1,10 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView,
-  StyleSheet, KeyboardAvoidingView, Animated, type ViewStyle, type TextStyle,
+  StyleSheet, KeyboardAvoidingView, Animated, Modal,
+  Dimensions, type ViewStyle, type TextStyle,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
@@ -25,32 +26,55 @@ const URGENCIES: { id: BloodRequest['urgency']; label: string }[] = [
   { id: 'This week', label: 'This week' },
 ];
 
-const MEDICAL_REASONS = [
-  { id: 'Emergency Surgery',      label: '🚨 Surgery',    labelBn: 'সার্জারি' },
-  { id: 'Dengue / Platelets',     label: '🦟 Dengue',     labelBn: 'ডেঙ্গু' },
-  { id: 'Accident / Trauma',      label: '🚑 Accident',   labelBn: 'দুর্ঘটনা' },
-  { id: 'Childbirth / C-Section', label: '👶 Delivery',   labelBn: 'প্রসব / সিজার' },
-  { id: 'Thalassemia',           label: '🩸 Thalassemia', labelBn: 'থ্যালাসেমিয়া' },
-  { id: 'ICU Critical Care',     label: '🏥 ICU Care',   labelBn: 'আইসিইউ' },
-  { id: 'General / Other',        label: '🩺 Other',      labelBn: 'অন্যান্য' },
+interface MedicalReasonOption {
+  id: string;
+  label: string;
+  labelBn: string;
+  icon: string;
+}
+
+const MEDICAL_REASONS: MedicalReasonOption[] = [
+  { id: 'Emergency Surgery',      label: 'Emergency Surgery',      labelBn: 'জরুরি সার্জারি',     icon: 'activity' },
+  { id: 'Dengue / Low Platelets', label: 'Dengue / Low Platelets', labelBn: 'ডেঙ্গু / প্লাটিলেট', icon: 'zap' },
+  { id: 'Road Accident / Trauma',  label: 'Road Accident / Trauma',  labelBn: 'দুর্ঘটনা / ট্রমা',    icon: 'alert-triangle' },
+  { id: 'Childbirth / C-Section', label: 'Childbirth / C-Section', labelBn: 'প্রসব / সিজারিয়ান',  icon: 'heart' },
+  { id: 'Thalassemia',           label: 'Thalassemia Regular',    labelBn: 'থ্যালাসেমিয়া রক্তদান', icon: 'droplet' },
+  { id: 'ICU Critical Care',     label: 'ICU Critical Care',      labelBn: 'আইসিইউ ক্রিটিক্যাল',   icon: 'shield' },
+  { id: 'Routine / Other Case',  label: 'Routine / Other Case',   labelBn: 'অন্যান্য চিকিৎসা',    icon: 'plus-circle' },
 ];
 
-const AFFILIATIONS = ['BUBT Student', 'Faculty / Staff', 'Family Member', 'General Patient'];
+interface AffiliationOption {
+  id: string;
+  label: string;
+  labelBn: string;
+  icon: string;
+}
+
+const AFFILIATIONS: AffiliationOption[] = [
+  { id: 'BUBT Student',    label: 'BUBT Student',    labelBn: 'বিইউবিটি শিক্ষার্থী', icon: 'book' },
+  { id: 'Faculty / Staff', label: 'Faculty / Staff', labelBn: 'শিক্ষক ও কর্মকর্তা', icon: 'award' },
+  { id: 'Family Member',   label: 'Family Member',   labelBn: 'পিতা/মাতা/পরিবার',   icon: 'users' },
+  { id: 'General Patient', label: 'General Patient', labelBn: 'সাধারণ রোগী',        icon: 'user' },
+];
 
 export function BloodRequestScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
   const { user } = useAuth();
   const t = useT();
   const toast = useToast();
+  const insets = useSafeAreaInsets();
 
   const [group, setGroup] = useState<BloodRequest['blood_group'] | null>(null);
   const [units, setUnits] = useState('1');
 
-  // Professional Patient & Case Information
+  // Clean Patient & Clinical Details (No cabin/ward clutter)
   const [patientName, setPatientName] = useState('');
   const [medicalReason, setMedicalReason] = useState<string>('');
-  const [cabinBed, setCabinBed] = useState('');
   const [affiliation, setAffiliation] = useState('BUBT Student');
+
+  // Dropdown Picker Modal states
+  const [reasonModalVisible, setReasonModalVisible] = useState(false);
+  const [affModalVisible, setAffModalVisible] = useState(false);
 
   const [hospital, setHospital] = useState('');
   const [area, setArea] = useState('');
@@ -58,16 +82,18 @@ export function BloodRequestScreen({ navigation }: any) {
   const [isPlatelets, setIsPlatelets] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Picker Modal State & Modes
+  // Hospital & Area Picker Modal State
   const [pickerVisible, setPickerVisible] = useState(false);
   const [pickerMode, setPickerMode] = useState<'hospital' | 'area'>('hospital');
   const [customHospitalMode, setCustomHospitalMode] = useState(false);
   const [customAreaMode, setCustomAreaMode] = useState(false);
 
-  // Urgency Sliding Pill Animation with Snappy Tension
+  // Urgency Sliding Pill Animation with Pre-calculated Width
+  const screenWidth = Dimensions.get('window').width;
+  const defaultSegWidth = Math.max(160, screenWidth * 0.55);
+  const [segWidth, setSegWidth] = useState(defaultSegWidth);
   const initialUrgencyIdx = urgency === 'Urgent' ? 0 : urgency === 'Today' ? 1 : 2;
   const urgencyAnim = useRef(new Animated.Value(initialUrgencyIdx)).current;
-  const [segWidth, setSegWidth] = useState(0);
 
   function handleSelectUrgency(u: BloodRequest['urgency']) {
     setUrgency(u);
@@ -75,8 +101,8 @@ export function BloodRequestScreen({ navigation }: any) {
     Animated.spring(urgencyAnim, {
       toValue: targetIdx,
       useNativeDriver: true,
-      tension: 130,
-      friction: 8,
+      tension: 140,
+      friction: 9,
     }).start();
   }
 
@@ -96,39 +122,26 @@ export function BloodRequestScreen({ navigation }: any) {
       Animated.spring(scaleAnim, {
         toValue: 1,
         friction: 4,
-        tension: 130,
+        tension: 140,
         useNativeDriver: true,
       }).start();
     }
   }
 
-  // Medical Reason Spring Tactile Bounce Animation
-  const reasonScales = useRef(
-    MEDICAL_REASONS.reduce((acc, r) => {
-      acc[r.id] = new Animated.Value(1);
-      return acc;
-    }, {} as Record<string, Animated.Value>)
-  ).current;
-
-  function handleSelectReason(reasonId: string) {
-    const next = medicalReason === reasonId ? '' : reasonId;
-    setMedicalReason(next);
-    if (next === 'Dengue / Platelets') {
+  function handleSelectReason(item: MedicalReasonOption) {
+    setMedicalReason(item.id);
+    if (item.id === 'Dengue / Low Platelets') {
       setIsPlatelets(true);
     }
-    const scaleAnim = reasonScales[reasonId];
-    if (scaleAnim) {
-      scaleAnim.setValue(0.85);
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        friction: 4,
-        tension: 130,
-        useNativeDriver: true,
-      }).start();
-    }
+    setReasonModalVisible(false);
   }
 
-  // Dropdown Picker Handlers
+  function handleSelectAffiliation(item: AffiliationOption) {
+    setAffiliation(item.id);
+    setAffModalVisible(false);
+  }
+
+  // Hospital & Area Picker Openers
   function openHospitalPicker() {
     setPickerMode('hospital');
     setPickerVisible(true);
@@ -163,16 +176,13 @@ export function BloodRequestScreen({ navigation }: any) {
     if (!canSubmit) return;
     setLoading(true);
     try {
-      // Assemble professional clinical patient summary
+      // Assemble clean, clinical patient summary
       let fullPatient = patientName.trim();
       if (medicalReason) {
         fullPatient += ` · ${medicalReason}`;
       }
-      const metaTags: string[] = [];
-      if (cabinBed.trim()) metaTags.push(cabinBed.trim());
-      if (affiliation && affiliation !== 'General Patient') metaTags.push(affiliation);
-      if (metaTags.length > 0) {
-        fullPatient += ` (${metaTags.join(', ')})`;
+      if (affiliation && affiliation !== 'General Patient') {
+        fullPatient += ` (${affiliation})`;
       }
 
       const finalPatient = isPlatelets ? `[Platelets] ${fullPatient}` : fullPatient;
@@ -202,6 +212,8 @@ export function BloodRequestScreen({ navigation }: any) {
   }
 
   const segTabWidth = segWidth > 0 ? (segWidth - 6) / 3 : 0;
+  const currentReasonObj = MEDICAL_REASONS.find(r => r.id === medicalReason);
+  const currentAffObj = AFFILIATIONS.find(a => a.id === affiliation);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -214,7 +226,7 @@ export function BloodRequestScreen({ navigation }: any) {
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
         >
-          {/* Blood group grid with snappy bounce animation */}
+          {/* Blood group grid with tactile bounce animation */}
           <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
             {t.blood2.bloodGroup}
           </Text>
@@ -320,133 +332,116 @@ export function BloodRequestScreen({ navigation }: any) {
             </View>
           </View>
 
-          {/* Professional Clinical Patient & Case Information */}
-          <View style={[styles.sectionCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <View style={styles.sectionHeader}>
-              <View style={[styles.sectionIconBox, { backgroundColor: `${SectorColors.blood}16` }]}>
-                <Feather name="user" size={15} color={SectorColors.blood} />
-              </View>
-              <View>
-                <Text style={[styles.sectionTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                  PATIENT & CLINICAL DETAILS
-                </Text>
-                <Text style={[styles.sectionSubtitle, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                  Medical context ensures urgent donor dispatch
-                </Text>
-              </View>
-            </View>
+          {/* ------------------------------------------------------------- */}
+          {/* CLEAN PATIENT & CLINICAL DETAILS (Clean Dropdown Architecture) */}
+          {/* ------------------------------------------------------------- */}
 
-            {/* Patient Name */}
-            <Text style={[styles.miniFieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-              PATIENT FULL NAME *
-            </Text>
-            <View style={[styles.inputWithIcon, { backgroundColor: C.surface2, borderColor: C.border }]}>
-              <Feather name="user-check" size={15} color={C.textMuted} />
-              <TextInput
-                style={[styles.innerInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                value={patientName}
-                onChangeText={setPatientName}
-                placeholder="e.g. Sadia Sultana, Md. Rafiq"
-                placeholderTextColor={C.textMuted}
-              />
-            </View>
-
-            {/* Medical Reason / Case Selector */}
-            <Text style={[styles.miniFieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 14 }]}>
-              CASE REASON / REQUIREMENT
-            </Text>
-            <View style={styles.reasonsGrid}>
-              {MEDICAL_REASONS.map(r => {
-                const isSelected = medicalReason === r.id;
-                return (
-                  <Animated.View
-                    key={r.id}
-                    style={{ transform: [{ scale: reasonScales[r.id] || 1 }] }}
-                  >
-                    <TouchableOpacity
-                      style={[
-                        styles.reasonPill,
-                        {
-                          backgroundColor: isSelected ? SectorColors.blood : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2),
-                          borderColor: isSelected ? SectorColors.blood : C.border,
-                        },
-                      ]}
-                      onPress={() => handleSelectReason(r.id)}
-                      activeOpacity={0.7}
-                    >
-                      <Text
-                        style={[
-                          styles.reasonTxt,
-                          {
-                            color: isSelected ? '#fff' : C.text,
-                            fontFamily: isSelected ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                          },
-                        ]}
-                      >
-                        {r.label}
-                      </Text>
-                    </TouchableOpacity>
-                  </Animated.View>
-                );
-              })}
-            </View>
-
-            {/* Cabin / Bed / ICU Details */}
-            <Text style={[styles.miniFieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 14 }]}>
-              CABIN / WARD / BED NO. (OPTIONAL)
-            </Text>
-            <View style={[styles.inputWithIcon, { backgroundColor: C.surface2, borderColor: C.border }]}>
-              <Feather name="map-pin" size={15} color={C.textMuted} />
-              <TextInput
-                style={[styles.innerInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                value={cabinBed}
-                onChangeText={setCabinBed}
-                placeholder="e.g. Cabin 402, ICU Bed-3, OT Ward"
-                placeholderTextColor={C.textMuted}
-              />
-            </View>
-
-            {/* Affiliation Pills */}
-            <Text style={[styles.miniFieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 14 }]}>
-              PATIENT AFFILIATION
-            </Text>
-            <View style={styles.affiliationRow}>
-              {AFFILIATIONS.map(aff => {
-                const on = affiliation === aff;
-                return (
-                  <TouchableOpacity
-                    key={aff}
-                    style={[
-                      styles.affPill,
-                      {
-                        backgroundColor: on ? `${SectorColors.blood}20` : (isDark ? 'rgba(255, 255, 255, 0.05)' : C.surface2),
-                        borderColor: on ? SectorColors.blood : C.border,
-                      },
-                    ]}
-                    onPress={() => setAffiliation(aff)}
-                    activeOpacity={0.75}
-                  >
-                    <Text
-                      style={[
-                        styles.affTxt,
-                        {
-                          color: on ? SectorColors.blood : C.textMuted,
-                          fontFamily: on ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                        },
-                      ]}
-                    >
-                      {aff}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+          {/* Patient Full Name */}
+          <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+            PATIENT FULL NAME *
+          </Text>
+          <View style={[styles.inputWithIcon, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <Feather name="user" size={16} color={C.textMuted} />
+            <TextInput
+              style={[styles.innerInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+              value={patientName}
+              onChangeText={setPatientName}
+              placeholder="e.g. Sadia Sultana, Md. Karim"
+              placeholderTextColor={C.textMuted}
+            />
           </View>
+
+          {/* Medical Case Reason Requirement (Clean Dropdown) */}
+          <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+            CASE REASON / REQUIREMENT
+          </Text>
+          <TouchableOpacity
+            style={[
+              styles.dropdownCard,
+              {
+                backgroundColor: C.surface,
+                borderColor: medicalReason ? SectorColors.blood : C.border,
+                borderWidth: medicalReason ? 1.5 : 1,
+              },
+            ]}
+            onPress={() => setReasonModalVisible(true)}
+            activeOpacity={0.75}
+          >
+            <View style={[styles.dropdownIconBox, { backgroundColor: `${SectorColors.blood}16` }]}>
+              <Feather name={currentReasonObj?.icon ? (currentReasonObj.icon as any) : 'activity'} size={16} color={SectorColors.blood} />
+            </View>
+            <View style={styles.dropdownInfo}>
+              <Text
+                style={[
+                  styles.dropdownValue,
+                  {
+                    color: medicalReason ? C.text : C.textMuted,
+                    fontFamily: medicalReason ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                  },
+                ]}
+                numberOfLines={1}
+              >
+                {currentReasonObj ? `${currentReasonObj.label} (${currentReasonObj.labelBn})` : 'Select case reason (e.g. Surgery, Dengue)...'}
+              </Text>
+              <Text style={[styles.dropdownHint, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+                {medicalReason ? 'Tap to change reason' : 'Helps donors know the emergency context'}
+              </Text>
+            </View>
+            <View style={styles.dropdownRight}>
+              {medicalReason ? (
+                <TouchableOpacity
+                  onPress={(e) => { e.stopPropagation(); setMedicalReason(''); }}
+                  style={[styles.clearPill, { backgroundColor: C.surface2 }]}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Feather name="x" size={12} color={C.textMuted} />
+                </TouchableOpacity>
+              ) : (
+                <Feather name="chevron-down" size={17} color={C.textMuted} />
+              )}
+            </View>
+          </TouchableOpacity>
+
+          {/* Patient Affiliation (Clean Dropdown) */}
+          <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+            PATIENT AFFILIATION
+          </Text>
+          <TouchableOpacity
+            style={[
+              styles.dropdownCard,
+              {
+                backgroundColor: C.surface,
+                borderColor: C.border,
+                borderWidth: 1,
+              },
+            ]}
+            onPress={() => setAffModalVisible(true)}
+            activeOpacity={0.75}
+          >
+            <View style={[styles.dropdownIconBox, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2 }]}>
+              <Feather name={currentAffObj?.icon ? (currentAffObj.icon as any) : 'users'} size={16} color={SectorColors.blood} />
+            </View>
+            <View style={styles.dropdownInfo}>
+              <Text
+                style={[
+                  styles.dropdownValue,
+                  { color: C.text, fontFamily: FontFamily.jakartaBold },
+                ]}
+                numberOfLines={1}
+              >
+                {currentAffObj ? `${currentAffObj.label} (${currentAffObj.labelBn})` : 'BUBT Student'}
+              </Text>
+              <Text style={[styles.dropdownHint, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+                Campus connection or relationship to patient
+              </Text>
+            </View>
+            <Feather name="chevron-down" size={17} color={C.textMuted} style={{ paddingLeft: 4 }} />
+          </TouchableOpacity>
 
           {/* Hospital Dropdown System */}
           <View style={styles.labelRow}>
             <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>
-              {t.blood2.hospital.toUpperCase()}
+              {t.blood2.hospital.toUpperCase()} *
             </Text>
             <TouchableOpacity
               onPress={() => setCustomHospitalMode(!customHospitalMode)}
@@ -623,7 +618,7 @@ export function BloodRequestScreen({ navigation }: any) {
             </View>
           </TouchableOpacity>
 
-          {/* Submit */}
+          {/* Submit Button */}
           <TouchableOpacity
             style={[styles.submitBtn, { backgroundColor: canSubmit ? SectorColors.blood : C.surface2, opacity: loading ? 0.6 : 1 }]}
             onPress={handleSubmit}
@@ -639,6 +634,126 @@ export function BloodRequestScreen({ navigation }: any) {
           <View style={{ height: 30 }} />
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* ------------------------------------------------------------- */}
+      {/* MEDICAL CASE REASON SELECTION SHEET                           */}
+      {/* ------------------------------------------------------------- */}
+      <Modal
+        visible={reasonModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setReasonModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalBackdrop}
+          activeOpacity={1}
+          onPress={() => setReasonModalVisible(false)}
+        >
+          <View style={[styles.sheetContent, { backgroundColor: C.surface, borderColor: C.border, paddingBottom: Math.max(insets.bottom, 16) }]}>
+            <View style={[styles.sheetHandle, { backgroundColor: C.border }]} />
+            <View style={styles.sheetHeader}>
+              <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                Select Medical Case Reason
+              </Text>
+              <TouchableOpacity onPress={() => setReasonModalVisible(false)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Feather name="x" size={18} color={C.textMuted} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 360 }}>
+              {MEDICAL_REASONS.map(r => {
+                const isSelected = medicalReason === r.id;
+                return (
+                  <TouchableOpacity
+                    key={r.id}
+                    style={[
+                      styles.sheetOptionRow,
+                      {
+                        backgroundColor: isSelected ? (isDark ? 'rgba(199, 52, 74, 0.16)' : 'rgba(199, 52, 74, 0.08)') : C.surface,
+                        borderColor: isSelected ? SectorColors.blood : C.border,
+                      },
+                    ]}
+                    onPress={() => handleSelectReason(r)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.sheetOptionIcon, { backgroundColor: isSelected ? `${SectorColors.blood}20` : C.surface2 }]}>
+                      <Feather name={r.icon as any} size={15} color={isSelected ? SectorColors.blood : C.text2} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.sheetOptionTitle, { color: isSelected ? SectorColors.blood : C.text, fontFamily: FontFamily.jakartaBold }]}>
+                        {r.label}
+                      </Text>
+                      <Text style={[styles.sheetOptionSub, { color: C.textMuted, fontFamily: FontFamily.bnRegular }]}>
+                        {r.labelBn}
+                      </Text>
+                    </View>
+                    {isSelected && <Feather name="check" size={16} color={SectorColors.blood} />}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* ------------------------------------------------------------- */}
+      {/* PATIENT AFFILIATION SELECTION SHEET                           */}
+      {/* ------------------------------------------------------------- */}
+      <Modal
+        visible={affModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setAffModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalBackdrop}
+          activeOpacity={1}
+          onPress={() => setAffModalVisible(false)}
+        >
+          <View style={[styles.sheetContent, { backgroundColor: C.surface, borderColor: C.border, paddingBottom: Math.max(insets.bottom, 16) }]}>
+            <View style={[styles.sheetHandle, { backgroundColor: C.border }]} />
+            <View style={styles.sheetHeader}>
+              <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                Select Campus Affiliation
+              </Text>
+              <TouchableOpacity onPress={() => setAffModalVisible(false)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Feather name="x" size={18} color={C.textMuted} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 300 }}>
+              {AFFILIATIONS.map(a => {
+                const isSelected = affiliation === a.id;
+                return (
+                  <TouchableOpacity
+                    key={a.id}
+                    style={[
+                      styles.sheetOptionRow,
+                      {
+                        backgroundColor: isSelected ? (isDark ? 'rgba(199, 52, 74, 0.16)' : 'rgba(199, 52, 74, 0.08)') : C.surface,
+                        borderColor: isSelected ? SectorColors.blood : C.border,
+                      },
+                    ]}
+                    onPress={() => handleSelectAffiliation(a)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.sheetOptionIcon, { backgroundColor: isSelected ? `${SectorColors.blood}20` : C.surface2 }]}>
+                      <Feather name={a.icon as any} size={15} color={isSelected ? SectorColors.blood : C.text2} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.sheetOptionTitle, { color: isSelected ? SectorColors.blood : C.text, fontFamily: FontFamily.jakartaBold }]}>
+                        {a.label}
+                      </Text>
+                      <Text style={[styles.sheetOptionSub, { color: C.textMuted, fontFamily: FontFamily.bnRegular }]}>
+                        {a.labelBn}
+                      </Text>
+                    </View>
+                    {isSelected && <Feather name="check" size={16} color={SectorColors.blood} />}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       {/* Unified Area & Hospital Picker Modal */}
       <AreaPickerModal
@@ -721,6 +836,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
   } as TextStyle,
 
+  inputWithIcon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    height: 50,
+    borderRadius: 13,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+  } as ViewStyle,
+
+  innerInput: {
+    flex: 1,
+    height: '100%',
+    fontSize: 14,
+    paddingVertical: 0,
+  } as TextStyle,
+
   // Urgency Segment Track with Sliding Indicator
   segRow: {
     flexDirection: 'row',
@@ -755,96 +887,6 @@ const styles = StyleSheet.create({
   } as ViewStyle,
 
   segTxt: { fontSize: 12 } as TextStyle,
-
-  // Professional Patient Section
-  sectionCard: {
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 14,
-    marginTop: 18,
-  } as ViewStyle,
-
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 14,
-  } as ViewStyle,
-
-  sectionIconBox: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  } as ViewStyle,
-
-  sectionTitle: {
-    fontSize: 12,
-    letterSpacing: 0.6,
-  } as TextStyle,
-
-  sectionSubtitle: {
-    fontSize: 11,
-    marginTop: 1,
-  } as TextStyle,
-
-  miniFieldLabel: {
-    fontSize: 10.5,
-    letterSpacing: 0.5,
-    marginBottom: 6,
-  } as TextStyle,
-
-  inputWithIcon: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    height: 44,
-    borderRadius: 11,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-  } as ViewStyle,
-
-  innerInput: {
-    flex: 1,
-    fontSize: 13.5,
-    height: '100%',
-    paddingVertical: 0,
-  } as TextStyle,
-
-  reasonsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-  } as ViewStyle,
-
-  reasonPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 6.5,
-    borderRadius: 9,
-    borderWidth: 1,
-  } as ViewStyle,
-
-  reasonTxt: {
-    fontSize: 11.5,
-  } as TextStyle,
-
-  affiliationRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-  } as ViewStyle,
-
-  affPill: {
-    paddingHorizontal: 9,
-    paddingVertical: 5.5,
-    borderRadius: 8,
-    borderWidth: 1,
-  } as ViewStyle,
-
-  affTxt: {
-    fontSize: 11,
-  } as TextStyle,
 
   // Dropdown Selector Cards
   dropdownCard: {
@@ -949,4 +991,67 @@ const styles = StyleSheet.create({
   } as ViewStyle,
 
   submitText: { fontSize: 15 } as TextStyle,
+
+  // Dropdown Selection Bottom Sheets
+  modalBackdrop: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  } as ViewStyle,
+
+  sheetContent: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderWidth: 1,
+    paddingTop: 8,
+    paddingHorizontal: Layout.screenPadding,
+  } as ViewStyle,
+
+  sheetHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 10,
+  } as ViewStyle,
+
+  sheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+    paddingHorizontal: 2,
+  } as ViewStyle,
+
+  sheetTitle: {
+    fontSize: 14.5,
+  } as TextStyle,
+
+  sheetOptionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 8,
+  } as ViewStyle,
+
+  sheetOptionIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+
+  sheetOptionTitle: {
+    fontSize: 13,
+  } as TextStyle,
+
+  sheetOptionSub: {
+    fontSize: 11,
+    marginTop: 1,
+  } as TextStyle,
 });
