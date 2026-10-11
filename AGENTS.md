@@ -1094,6 +1094,52 @@ An exhaustive multi-agent audit spanning Security/SecOps, Logic/QA, and Performa
 - **Copy Typography Compliance:** Removed all forbidden em-dashes (`—`) in user-visible UI copy across screens, replacing them with `-` or `,`.
 - **Async Component Lifecycle Protection:** Added unmounted-state guards and cleanup returns across asynchronous fetching hooks and realtime channel subscriptions to eliminate unmounted state update memory warnings.
 
+---
+
+## 30. Faculty 360 Architecture: Live Automated Sync, Office Locator & Research Mentor Discovery
+
+The Faculty directory is modernized into an institutional tool providing automated freshness, campus office wayfinding, live consultation tracking, and research paper mentorship discovery.
+
+### 30.1 Live Cloud Crawler & Automated Schedule (`sync-faculty` Edge Function & `pg_cron`)
+- **Automated Web Crawler:** Cloud Edge Function `supabase/functions/sync-faculty/index.ts` extracts `window.academicHierarchy` from `bubt.edu.bd`, systematically traversing all 13 BUBT academic departments.
+- **Roster & Metadata Extraction:** Parses official teacher routine initial codes (`/profile/{code}`), high-resolution portraits, academic designations, official emails, room locations, blood groups, and Scopus profile URLs.
+- **SSL Resilience:** Gracefully handles legacy department subdomains (e.g. `cse.bubt.edu.bd`) without failing the overall crawl.
+- **Audit Logging (`faculty_sync_logs`):** Each crawl logs start time, completion duration, total scanned count, new additions, rank promotions, and photo updates.
+- **Cron Scheduling:** Automated monthly sync scheduled via `pg_cron` (`20261018010000_faculty_sync_cron.sql`) at 03:00 AM Dhaka time (21:00 UTC) on the 1st of every month.
+- **Admin In-App Trigger:** 1-tap manual sync button on `ManageFacultyScreen.tsx` with live progress modal and detailed diff report.
+
+### 30.2 Database Schema Enhancements (`20261018000000_faculty_360_enhancements.sql`)
+- **Columns Added to `faculty`:**
+  - `short_code` (TEXT): Official teacher routine initial code (e.g. `DALM`, `SR`, `SAM`).
+  - `room_number` (TEXT): Faculty room number (e.g. `402`, `601`).
+  - `building` (TEXT): Campus building (e.g. `Building 2`, `Building 1`).
+  - `floor` (TEXT): Campus floor (e.g. `4th Floor`, `6th Floor`).
+  - `counseling_hours` (TEXT): Formatted schedule slots (e.g. `Sun 10:00 AM - 11:30 AM | Tue 02:00 PM - 03:30 PM`).
+  - `blood_group` (TEXT): Emergency blood group.
+  - `scopus_url` (TEXT): Scopus author profile link.
+  - `is_accepting_research` (BOOLEAN): Flag indicating faculty openness to student research paper guidance.
+
+### 30.3 Campus Office Locator & Routine Initial Search
+- **Routine Initial Search:** Search bars in `FacultyScreen.tsx`, `FacultyDeptScreen.tsx`, and `ManageFacultyScreen.tsx` match routine initial codes, enabling students to instantly look up teacher details directly from their class routine sheet.
+- **Campus Office Card:** `FacultyProfileScreen.tsx` highlights building, room number, and floor with a 1-tap copy button for fast wayfinding.
+
+### 30.4 Real-Time Counseling Hours Tracker (Dhaka UTC+6)
+- **Live Status Calculation (`getCounselingStatus` in `facultyShared.tsx`):** Parses weekly slots against Dhaka local time (UTC+6).
+- **Presence Indicators:**
+  - Active counseling: Emerald badge (`Counseling now (Xm left)` / `Counseling available now`) with avatar presence indicator dot.
+  - Upcoming today: Informational blue badge (`Counseling today at X:XX AM/PM`).
+  - Scheduled slots: Clean list view with calendar icons on `FacultyProfileScreen.tsx`.
+
+### 30.5 Research Paper Mentorship & Co-Author Discovery
+- **Varsity Context:** BUBT centrally assigns Capstone/Thesis supervisors, but students independently seek faculty co-authors and mentors for research paper publishing, IEEE conferences, and journal submissions.
+- **Research Mentors Tab:** Segmented filter isolating faculty members open to paper publication guidance (`is_accepting_research = true`), with publication domain chips.
+- **Draft Paper Proposal Modal:** Formats a structured academic email populated with student name, intake, and section from the caller's CampusOne profile, launching the native email client with subject and body pre-filled.
+
+### 30.6 Design System & Institutional Standards
+- **High-Density Institutional Cards (`FacultyCard`):** Displays avatar, presence dot, initial code badge, designation, office location, counseling status pill, research pills, and direct `ContactSheet` launcher.
+- **Bilingual Internationalization:** Full translation key parity in `src/i18n/en.ts` and `src/i18n/bn.ts` (`faculty2` and `manage` namespaces).
+
+
 
 
 
