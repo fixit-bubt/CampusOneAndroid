@@ -117,6 +117,39 @@ export type Database = {
           },
         ]
       }
+      announcement_bookmarks: {
+        Row: {
+          announcement_id: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          announcement_id: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          announcement_id?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcement_bookmarks_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "announcements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "announcement_bookmarks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       announcement_reads: {
         Row: {
           announcement_id: string
@@ -162,15 +195,21 @@ export type Database = {
           attachment_name: string | null
           attachment_url: string | null
           body: string
+          category: string | null
+          category_slug: string | null
           code: string
           created_at: string
           created_by: string
           deleted_at: string | null
           department: string
+          department_code: string | null
+          external_id: string | null
+          external_url: string | null
           id: string
           image_url: string | null
           pinned: boolean
           priority: string
+          source: string
           title: string
           updated_at: string
         }
@@ -178,15 +217,21 @@ export type Database = {
           attachment_name?: string | null
           attachment_url?: string | null
           body: string
+          category?: string | null
+          category_slug?: string | null
           code?: string
           created_at?: string
           created_by: string
           deleted_at?: string | null
           department: string
+          department_code?: string | null
+          external_id?: string | null
+          external_url?: string | null
           id?: string
           image_url?: string | null
           pinned?: boolean
           priority?: string
+          source?: string
           title: string
           updated_at?: string
         }
@@ -194,15 +239,21 @@ export type Database = {
           attachment_name?: string | null
           attachment_url?: string | null
           body?: string
+          category?: string | null
+          category_slug?: string | null
           code?: string
           created_at?: string
           created_by?: string
           deleted_at?: string | null
           department?: string
+          department_code?: string | null
+          external_id?: string | null
+          external_url?: string | null
           id?: string
           image_url?: string | null
           pinned?: boolean
           priority?: string
+          source?: string
           title?: string
           updated_at?: string
         }

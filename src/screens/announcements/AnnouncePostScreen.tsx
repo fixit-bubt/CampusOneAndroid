@@ -126,6 +126,8 @@ export function AnnouncePostScreen({ navigation }: any) {
         code:       'ANN-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
         title:      title.trim(),
         department: dept.trim() || 'Administration',
+        department_code: dept.trim() ? dept.trim().toUpperCase() : 'ALL',
+        source:     'manual',
         priority,
         body:       body.trim(),
         created_by: user.id,

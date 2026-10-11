@@ -26,6 +26,7 @@ export const CacheKeys = {
   HOME_UPDATES: 'home_updates',
   ANNOUNCEMENTS: 'announcements_feed',
   ANNOUNCEMENT_READS: (uid: string) => `announcement_reads_${uid}`,
+  ANNOUNCEMENT_BOOKMARKS: (uid: string) => `announcement_bookmarks_${uid}`,
   EVENTS: 'events_feed',
   CLUBS: 'clubs_list',
   CLUB_DETAIL: (id: string) => `club_detail_${id}`,

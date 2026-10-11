@@ -36,7 +36,19 @@ export type Claim = Omit<Tables<'claims'>, 'kind' | 'status'> & {
 
 export type Announcement = Omit<Tables<'announcements'>, 'priority'> & {
   priority: 'Urgent' | 'Important' | 'General';
+  source?: 'bubt_official' | 'manual';
+  category?: string | null;
+  category_slug?: string | null;
+  department_code?: string | null;
+  external_id?: string | null;
+  external_url?: string | null;
 };
+
+export interface AnnouncementBookmark {
+  user_id: string;
+  announcement_id: string;
+  created_at: string;
+}
 
 export type Event = Omit<Tables<'events'>, 'category'> & {
   category: 'Academic' | 'Cultural' | 'Sports' | 'Club' | 'Career';
