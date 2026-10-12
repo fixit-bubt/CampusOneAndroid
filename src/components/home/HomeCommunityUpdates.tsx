@@ -15,6 +15,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { FontFamily, SectorColors, pillBg } from '../../theme';
+import { SegmentedTabs, type TabItem } from '../ui/SegmentedTabs';
 import { supabase } from '../../lib/supabase';
 import { localToday, formatDate } from '../../utils/format';
 import { getCache, setCache, CacheKeys } from '../../services/cacheService';
@@ -139,44 +140,6 @@ export function HomeCommunityUpdates() {
   const { C, isDark } = useTheme();
 
   const [activeTab, setActiveTab] = useState<CommunityTab>('Notices');
-
-  // Segmented track animated indicator & theme colors
-  const animIndex = useRef(new Animated.Value(0)).current;
-  const [trackWidth, setTrackWidth] = useState(0);
-
-  const tabIndexMap: Record<CommunityTab, number> = useMemo(
-    () => ({ Notices: 0, Clubs: 1, Events: 2 }),
-    []
-  );
-
-  useEffect(() => {
-    const idx = tabIndexMap[activeTab] ?? 0;
-    Animated.spring(animIndex, {
-      toValue: idx,
-      tension: 190,
-      friction: 18,
-      useNativeDriver: true,
-    }).start();
-  }, [activeTab, animIndex, tabIndexMap]);
-
-  const TAB_COLORS: Record<CommunityTab, { fg: string; bg: string }> = useMemo(
-    () => ({
-      Notices: {
-        fg: SectorColors.announce,
-        bg: pillBg(SectorColors.announce, isDark),
-      },
-      Clubs: {
-        fg: SectorColors.clubs,
-        bg: pillBg(SectorColors.clubs, isDark),
-      },
-      Events: {
-        fg: SectorColors.events,
-        bg: pillBg(SectorColors.events, isDark),
-      },
-    }),
-    [isDark]
-  );
-
   const [items, setItems] = useState<CommunityItem[]>(DEFAULT_NEWS);
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
@@ -333,19 +296,11 @@ export function HomeCommunityUpdates() {
     return items;
   }, [items, activeTab]);
 
-  const tabs: { id: CommunityTab; label: string; icon: keyof typeof Feather.glyphMap; color: string }[] = [
-    { id: 'Notices', label: 'Notices', icon: 'bell', color: SectorColors.announce },
-    { id: 'Clubs', label: 'Clubs', icon: 'users', color: SectorColors.clubs },
-    { id: 'Events', label: 'Events', icon: 'calendar', color: SectorColors.events },
+  const tabs: TabItem<CommunityTab>[] = [
+    { id: 'Notices', label: 'Notices', icon: 'bell', count: counts.Notices, color: SectorColors.announce },
+    { id: 'Clubs', label: 'Clubs', icon: 'users', count: counts.Clubs, color: SectorColors.clubs },
+    { id: 'Events', label: 'Events', icon: 'calendar', count: counts.Events, color: SectorColors.events },
   ];
-
-  const TRACK_PADDING = 4.5;
-  const innerTrackWidth = Math.max(0, trackWidth - TRACK_PADDING * 2);
-  const tabWidth = innerTrackWidth > 0 ? innerTrackWidth / 3 : 0;
-  const translateX = animIndex.interpolate({
-    inputRange: [0, 1, 2],
-    outputRange: [0, tabWidth, tabWidth * 2],
-  });
 
   return (
     <View style={styles.container}>
@@ -365,91 +320,13 @@ export function HomeCommunityUpdates() {
         </View>
       </View>
 
-      {/* Segmented Tab Switcher - Coss.com Tabs with Count Badge & Equal Symmetry */}
-      <View
-        style={[
-          styles.tabContainer,
-          {
-            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : C.surface2,
-            borderColor: isDark ? 'rgba(255, 255, 255, 0.07)' : 'rgba(0, 0, 0, 0.05)',
-          },
-        ]}
-        onLayout={e => setTrackWidth(e.nativeEvent.layout.width)}
-      >
-        {tabWidth > 0 && (
-          <Animated.View
-            style={[
-              styles.activeIndicator,
-              {
-                width: tabWidth,
-                transform: [{ translateX }],
-                backgroundColor: C.surface,
-                borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
-              },
-            ]}
-          />
-        )}
-        {tabs.map((tab) => {
-          const active = activeTab === tab.id;
-          const count = counts[tab.id];
-          const cfg = TAB_COLORS[tab.id];
-
-          return (
-            <TouchableOpacity
-              key={tab.id}
-              style={styles.tabBtn}
-              onPress={() => setActiveTab(tab.id)}
-              activeOpacity={0.75}
-            >
-              <Feather
-                name={tab.icon}
-                size={15.5}
-                color={active ? cfg.fg : C.textMuted}
-              />
-              <Text
-                style={[
-                  styles.tabBtnTxt,
-                  {
-                    color: active ? C.text : C.textMuted,
-                    fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                  },
-                ]}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                minimumFontScale={0.85}
-              >
-                {tab.label}
-              </Text>
-              <View
-                style={[
-                  styles.tabBadge,
-                  active
-                    ? {
-                        backgroundColor: cfg.bg,
-                        borderColor: isDark ? `${cfg.fg}45` : `${cfg.fg}30`,
-                      }
-                    : {
-                        backgroundColor: 'transparent',
-                        borderColor: isDark ? 'rgba(255, 255, 255, 0.14)' : 'rgba(0, 0, 0, 0.12)',
-                      },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.tabBadgeTxt,
-                    {
-                      color: active ? cfg.fg : C.textMuted,
-                      fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                    },
-                  ]}
-                >
-                  {count}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+      {/* Segmented Tab Switcher - Standard Reusable SegmentedTabs */}
+      <SegmentedTabs
+        tabs={tabs}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        style={{ marginBottom: 14, marginTop: 4 }}
+      />
 
       {/* Feed List */}
       {loading ? (
@@ -664,61 +541,6 @@ const styles = StyleSheet.create({
 
   liveText: {
     fontSize: 10.5,
-  },
-
-  tabContainer: {
-    flexDirection: 'row',
-    borderRadius: 16,
-    padding: 4.5,
-    borderWidth: 1,
-    marginBottom: 14,
-    marginTop: 4,
-    position: 'relative',
-  } as ViewStyle,
-
-  activeIndicator: {
-    position: 'absolute',
-    top: 4.5,
-    left: 4.5,
-    bottom: 4.5,
-    borderRadius: 12.5,
-    borderWidth: 1,
-    elevation: 2.5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 3.5,
-  } as ViewStyle,
-
-  tabBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 7,
-    paddingVertical: 10,
-    minHeight: 48,
-    borderRadius: 12.5,
-    zIndex: 1,
-  } as ViewStyle,
-
-  tabBtnTxt: {
-    fontSize: 13.5,
-    letterSpacing: -0.1,
-  },
-
-  tabBadge: {
-    paddingHorizontal: 7.5,
-    paddingVertical: 2,
-    borderRadius: 999,
-    borderWidth: 1,
-    minWidth: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-  } as ViewStyle,
-
-  tabBadgeTxt: {
-    fontSize: 11.5,
   },
 
   loadingBox: {

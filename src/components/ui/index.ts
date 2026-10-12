@@ -9,3 +9,4 @@ export { CollapsibleSection } from './CollapsibleSection';
 export { OfflineBanner } from './OfflineBanner';
 export { AnimatedIcon } from './AnimatedIcon';
 export { StatusBadge } from './StatusBadge';
+export { SegmentedTabs, type TabItem } from './SegmentedTabs';

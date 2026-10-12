@@ -143,6 +143,16 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
 - **Zero-Emoji Project Standard:**
   - Strict ban on raw Unicode emojis (`🚗`, `🛺`, `🏍️`, `🩸`, `⚡`, `🎉`, `✨`, etc.) in button text, filter chips, list badges, and UI copy. All status indicators and categorizations must use vector badges (`StatusBadge` or `@expo/vector-icons`).
 
+### 5.4 Universal SegmentedTabs Standard (`src/components/ui/SegmentedTabs.tsx`)
+- **App-Wide Standard:** All segmented tab controls, feed switchers, and filter bars across the app MUST use `SegmentedTabs` for visual and ergonomic consistency.
+- **Strict Geometric Symmetry:** Every tab has equal width (`flex: 1` / `100% / tabs.length`) so tabs never look mismatched or uneven based on word length.
+- **Touch Ergonomics & Proportions:**
+  - Standard minimum touch height: `minHeight: 48` (`paddingVertical: 10`), satisfying WCAG/Material 48dp touch targets.
+  - Track padding: `4.5dp` (`borderRadius: 16`), sliding indicator `borderRadius: 12.5` with subtle elevation and soft drop shadow.
+  - Vector icon size: `15.5dp` (Feather), typography `13.5dp` (Plus Jakarta Sans).
+  - Outlined counter badge (coss.com standard): `borderWidth: 1`, `paddingHorizontal: 7.5, paddingVertical: 2`, `minWidth: 22`, font `11.5dp`. Inactive badges have subtle border with transparent background; active badges have tinted fill (`cfg.bg`) with accent border.
+- **Spring Glide Physics:** Indicator animates using native spring physics (`tension: 190, friction: 18`, `useNativeDriver: true`) on Android's RenderThread for silky smooth transitions.
+
 ---
 
 ## 6. Expo SDK 56 & Android Quirks
