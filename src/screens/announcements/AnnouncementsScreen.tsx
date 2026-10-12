@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
-  RefreshControl, Alert, TextInput, ActivityIndicator,
-  Animated, type ViewStyle, type TextStyle,
+  RefreshControl, Alert, TextInput, Modal, Pressable,
+  ActivityIndicator, Animated, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -25,7 +25,7 @@ import {
   KNOWN_DEPARTMENTS,
 } from '../../services/announcementService';
 
-export type MainTab = 'all' | 'urgent' | 'exam' | 'saved';
+export type MainTab = 'all' | 'urgent' | 'saved';
 
 function priTone(C: any, priority: string, isDark?: boolean): { fg: string; bg: string } {
   switch (priority) {
@@ -194,16 +194,18 @@ export function AnnouncementsScreen({ navigation }: any) {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [deptFilter, setDeptFilter] = useState('ALL');
   const [includeUniversal, setIncludeUniversal] = useState(true);
+  const [categoryModalVisible, setCategoryModalVisible] = useState(false);
+  const [deptModalVisible, setDeptModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
 
-  // Segmented spring animated indicator
+  // 3-Segment spring animated indicator
   const animIndex = useRef(new Animated.Value(0)).current;
   const [trackWidth, setTrackWidth] = useState(0);
 
   const tabIndexMap: Record<MainTab, number> = useMemo(
-    () => ({ all: 0, urgent: 1, exam: 2, saved: 3 }),
+    () => ({ all: 0, urgent: 1, saved: 2 }),
     []
   );
 
@@ -226,10 +228,6 @@ export function AnnouncementsScreen({ navigation }: any) {
       urgent: {
         fg: C.danger,
         bg: isDark ? 'rgba(214, 61, 53, 0.18)' : '#FEE2E2',
-      },
-      exam: {
-        fg: SectorColors.announce,
-        bg: isDark ? 'rgba(234, 88, 12, 0.18)' : '#FFEDD5',
       },
       saved: {
         fg: Accent.gold,
@@ -273,6 +271,7 @@ export function AnnouncementsScreen({ navigation }: any) {
 
   async function onRefresh() {
     setRefreshing(true);
+    await triggerNoticeSync(false);
     await load();
     setRefreshing(false);
   }
@@ -343,21 +342,21 @@ export function AnnouncementsScreen({ navigation }: any) {
     ]);
   }
 
-  // Department pill bar options
+  // Department options
   const deptOptions = useMemo(() => {
     return [
-      { id: 'ALL', label: 'All Depts' },
-      ...(studentDept ? [{ id: 'MY_DEPT', label: `My Dept (${studentDept})` }] : []),
-      { id: 'CSE', label: 'CSE' },
-      { id: 'EEE', label: 'EEE' },
-      { id: 'Civil', label: 'Civil' },
-      { id: 'Textile', label: 'Textile' },
-      { id: 'Business', label: 'Business' },
-      { id: 'Law', label: 'Law' },
-      { id: 'English', label: 'English' },
-      { id: 'Economics', label: 'Economics' },
-      { id: 'EXAM', label: 'Controller Exam' },
-      { id: 'REG', label: 'Registrar' },
+      { id: 'ALL', label: 'All Departments' },
+      ...(studentDept ? [{ id: 'MY_DEPT', label: `My Department (${studentDept})` }] : []),
+      { id: 'CSE', label: 'Computer Science & Engineering (CSE)' },
+      { id: 'EEE', label: 'Electrical & Electronic Engineering (EEE)' },
+      { id: 'Civil', label: 'Civil Engineering' },
+      { id: 'Textile', label: 'Textile Engineering' },
+      { id: 'Business', label: 'Faculty of Business (BBA / MBA)' },
+      { id: 'Law', label: 'Law & Justice' },
+      { id: 'English', label: 'Department of English' },
+      { id: 'Economics', label: 'Department of Economics' },
+      { id: 'EXAM', label: 'Controller of Examinations' },
+      { id: 'REG', label: 'Office of the Registrar' },
     ];
   }, [studentDept]);
 
@@ -440,19 +439,15 @@ export function AnnouncementsScreen({ navigation }: any) {
   const tabCounts = useMemo(() => {
     return {
       all: scopedItems.length,
-      urgent: scopedItems.filter(a => a.priority === 'Urgent' || a.priority === 'Important' || a.pinned).length,
-      exam: scopedItems.filter(a => a.category_slug === 'exam-related' || /exam|routine|viva/i.test(a.title)).length,
+      urgent: scopedItems.filter(a => a.priority === 'Urgent' || a.priority === 'Important' || a.pinned || a.category_slug === 'exam-related' || /exam|routine|viva/i.test(a.title)).length,
       saved: scopedItems.filter(a => savedIds.has(a.id)).length,
     };
   }, [scopedItems, savedIds]);
 
-  // 4. Filtered List by Main Tab
+  // 4. Filtered List by Main Tab (All Notices | Urgent & Exams | Saved)
   const filtered = useMemo(() => {
     if (mainTab === 'urgent') {
-      return scopedItems.filter(a => a.priority === 'Urgent' || a.priority === 'Important' || a.pinned);
-    }
-    if (mainTab === 'exam') {
-      return scopedItems.filter(a => a.category_slug === 'exam-related' || /exam|routine|viva/i.test(a.title));
+      return scopedItems.filter(a => a.priority === 'Urgent' || a.priority === 'Important' || a.pinned || a.category_slug === 'exam-related' || /exam|routine|viva/i.test(a.title));
     }
     if (mainTab === 'saved') {
       return scopedItems.filter(a => savedIds.has(a.id));
@@ -470,18 +465,17 @@ export function AnnouncementsScreen({ navigation }: any) {
   }, [deptFilter, studentDept, deptOptions, t.announce2]);
 
   const tabs: { id: MainTab; label: string; icon: keyof typeof Feather.glyphMap }[] = [
-    { id: 'all', label: 'All Notice', icon: 'layers' },
-    { id: 'urgent', label: 'Urgent', icon: 'alert-circle' },
-    { id: 'exam', label: 'Exam', icon: 'file-text' },
+    { id: 'all', label: 'All Notices', icon: 'layers' },
+    { id: 'urgent', label: 'Urgent & Exams', icon: 'alert-circle' },
     { id: 'saved', label: 'Saved', icon: 'bookmark' },
   ];
 
   const TRACK_PADDING = 4;
   const innerTrackWidth = Math.max(0, trackWidth - TRACK_PADDING * 2);
-  const tabWidth = innerTrackWidth > 0 ? innerTrackWidth / 4 : 0;
+  const tabWidth = innerTrackWidth > 0 ? innerTrackWidth / 3 : 0;
   const translateX = animIndex.interpolate({
-    inputRange: [0, 1, 2, 3],
-    outputRange: [0, tabWidth, tabWidth * 2, tabWidth * 3],
+    inputRange: [0, 1, 2],
+    outputRange: [0, tabWidth, tabWidth * 2],
   });
 
   return (
@@ -518,7 +512,7 @@ export function AnnouncementsScreen({ navigation }: any) {
         }
       />
 
-      {/* 1. Animated Segmented Switcher (All Notice | Urgent | Exam | Saved) */}
+      {/* 1. Animated Segmented Switcher (3 Tabs: All Notices | Urgent & Exams | Saved) */}
       <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 4 }}>
         <View
           style={[styles.tabContainer, { backgroundColor: C.surface2 }]}
@@ -552,7 +546,7 @@ export function AnnouncementsScreen({ navigation }: any) {
               >
                 <Feather
                   name={tab.icon}
-                  size={13}
+                  size={13.5}
                   color={active ? cfg.fg : C.textMuted}
                 />
                 <Text
@@ -564,8 +558,6 @@ export function AnnouncementsScreen({ navigation }: any) {
                     },
                   ]}
                   numberOfLines={1}
-                  adjustsFontSizeToFit
-                  minimumFontScale={0.8}
                 >
                   {tab.label}
                 </Text>
@@ -618,92 +610,81 @@ export function AnnouncementsScreen({ navigation }: any) {
         </View>
       </View>
 
-      {/* 3. Horizontal Category Filter Bar */}
-      <View style={styles.barSection}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={[styles.horizontalBar, { paddingHorizontal: Layout.screenPadding }]}
-          keyboardShouldPersistTaps="handled"
+      {/* 3. Dual Dropdown Selector Bars */}
+      <View style={[styles.dualBarRow, { paddingHorizontal: Layout.screenPadding }]}>
+        {/* Category Dropdown Bar */}
+        <TouchableOpacity
+          style={[
+            styles.dualBarBtn,
+            categoryFilter !== 'all'
+              ? { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.16)' : '#e0edff', borderColor: C.brand }
+              : { backgroundColor: C.surface, borderColor: C.border },
+          ]}
+          onPress={() => setCategoryModalVisible(true)}
+          activeOpacity={0.75}
         >
-          {ANNOUNCEMENT_CATEGORIES.map(cat => {
-            const active = categoryFilter === cat.id;
-            return (
-              <TouchableOpacity
-                key={cat.id}
-                onPress={() => setCategoryFilter(cat.id)}
-                activeOpacity={0.75}
-                style={[
-                  styles.filterPill,
-                  active
-                    ? { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.18)' : '#e0edff', borderColor: C.brand }
-                    : { backgroundColor: C.surface, borderColor: C.border },
-                ]}
-              >
-                <Feather
-                  name={cat.icon as any}
-                  size={12}
-                  color={active ? C.brand : C.textMuted}
-                />
-                <Text
-                  style={[
-                    styles.filterPillTxt,
-                    {
-                      color: active ? C.brand : C.text2,
-                      fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                    },
-                  ]}
-                >
-                  {cat.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      </View>
+          <View style={styles.dualBarLeft}>
+            <Feather
+              name="layers"
+              size={13}
+              color={categoryFilter !== 'all' ? C.brand : C.textMuted}
+            />
+            <Text
+              style={[
+                styles.dualBarTxt,
+                {
+                  color: categoryFilter !== 'all' ? C.brand : C.text,
+                  fontFamily: categoryFilter !== 'all' ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                },
+              ]}
+              numberOfLines={1}
+            >
+              {activeCategoryLabel}
+            </Text>
+          </View>
+          <Feather
+            name="chevron-down"
+            size={14}
+            color={categoryFilter !== 'all' ? C.brand : C.textMuted}
+          />
+        </TouchableOpacity>
 
-      {/* 4. Horizontal Department Filter Bar */}
-      <View style={[styles.barSection, { paddingTop: 4, paddingBottom: 6 }]}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={[styles.horizontalBar, { paddingHorizontal: Layout.screenPadding }]}
-          keyboardShouldPersistTaps="handled"
+        {/* Department Dropdown Bar */}
+        <TouchableOpacity
+          style={[
+            styles.dualBarBtn,
+            deptFilter !== 'ALL'
+              ? { backgroundColor: isDark ? 'rgba(14, 156, 138, 0.16)' : '#e0f4f0', borderColor: SectorColors.jobs }
+              : { backgroundColor: C.surface, borderColor: C.border },
+          ]}
+          onPress={() => setDeptModalVisible(true)}
+          activeOpacity={0.75}
         >
-          {deptOptions.map(dept => {
-            const active = deptFilter === dept.id;
-            return (
-              <TouchableOpacity
-                key={dept.id}
-                onPress={() => setDeptFilter(dept.id)}
-                activeOpacity={0.75}
-                style={[
-                  styles.filterPill,
-                  active
-                    ? { backgroundColor: isDark ? 'rgba(14, 156, 138, 0.18)' : '#e0f4f0', borderColor: SectorColors.jobs }
-                    : { backgroundColor: C.surface, borderColor: C.border },
-                ]}
-              >
-                <Feather
-                  name={dept.id === 'ALL' ? 'grid' : dept.id === 'MY_DEPT' ? 'target' : 'shield'}
-                  size={12}
-                  color={active ? SectorColors.jobs : C.textMuted}
-                />
-                <Text
-                  style={[
-                    styles.filterPillTxt,
-                    {
-                      color: active ? SectorColors.jobs : C.text2,
-                      fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                    },
-                  ]}
-                >
-                  {dept.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+          <View style={styles.dualBarLeft}>
+            <Feather
+              name="shield"
+              size={13}
+              color={deptFilter !== 'ALL' ? SectorColors.jobs : C.textMuted}
+            />
+            <Text
+              style={[
+                styles.dualBarTxt,
+                {
+                  color: deptFilter !== 'ALL' ? SectorColors.jobs : C.text,
+                  fontFamily: deptFilter !== 'ALL' ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                },
+              ]}
+              numberOfLines={1}
+            >
+              {activeDeptLabel}
+            </Text>
+          </View>
+          <Feather
+            name="chevron-down"
+            size={14}
+            color={deptFilter !== 'ALL' ? SectorColors.jobs : C.textMuted}
+          />
+        </TouchableOpacity>
       </View>
 
       {/* Main Announcements List */}
@@ -780,6 +761,180 @@ export function AnnouncementsScreen({ navigation }: any) {
 
         <View style={{ height: 28 }} />
       </ScrollView>
+
+      {/* =========================================================================
+          MODAL 1: CATEGORY SELECTION SHEET (SEPARATE ROUNDED BARS)
+         ========================================================================= */}
+      <Modal
+        visible={categoryModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setCategoryModalVisible(false)}
+      >
+        <Pressable style={styles.modalOverlay} onPress={() => setCategoryModalVisible(false)}>
+          <View style={[styles.modalSheet, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Feather name="layers" size={17} color={C.brand} />
+                <Text style={[styles.modalTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  {t.announce2.categoryDropdown}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setCategoryModalVisible(false)} hitSlop={8}>
+                <Feather name="x" size={18} color={C.textMuted} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={{ maxHeight: 400 }} showsVerticalScrollIndicator={false}>
+              <View style={styles.modalBarsContainer}>
+                {ANNOUNCEMENT_CATEGORIES.map(cat => {
+                  const active = categoryFilter === cat.id;
+                  return (
+                    <TouchableOpacity
+                      key={cat.id}
+                      style={[
+                        styles.pickerBar,
+                        { backgroundColor: C.surface, borderColor: C.border },
+                        active && {
+                          backgroundColor: isDark ? 'rgba(59, 130, 246, 0.14)' : '#eff6ff',
+                          borderColor: C.brand,
+                        },
+                      ]}
+                      onPress={() => {
+                        setCategoryFilter(cat.id);
+                        setCategoryModalVisible(false);
+                      }}
+                      activeOpacity={0.75}
+                    >
+                      <View style={styles.pickerBarLeft}>
+                        <View
+                          style={[
+                            styles.pickerBarIconBox,
+                            {
+                              backgroundColor: active
+                                ? (isDark ? 'rgba(59, 130, 246, 0.25)' : '#dbeafe')
+                                : C.surface2,
+                            },
+                          ]}
+                        >
+                          <Feather
+                            name={cat.icon as any}
+                            size={16}
+                            color={active ? C.brand : C.textMuted}
+                          />
+                        </View>
+                        <Text
+                          style={[
+                            styles.pickerBarTitle,
+                            {
+                              color: active ? C.brand : C.text,
+                              fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                            },
+                          ]}
+                        >
+                          {cat.label}
+                        </Text>
+                      </View>
+                      {active ? (
+                        <Feather name="check-circle" size={18} color={C.brand} />
+                      ) : (
+                        <View style={[styles.radioOutline, { borderColor: C.border }]} />
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </ScrollView>
+          </View>
+        </Pressable>
+      </Modal>
+
+      {/* =========================================================================
+          MODAL 2: DEPARTMENT SELECTION SHEET (SEPARATE ROUNDED BARS)
+         ========================================================================= */}
+      <Modal
+        visible={deptModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDeptModalVisible(false)}
+      >
+        <Pressable style={styles.modalOverlay} onPress={() => setDeptModalVisible(false)}>
+          <View style={[styles.modalSheet, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Feather name="shield" size={17} color={SectorColors.jobs} />
+                <Text style={[styles.modalTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  {t.announce2.officeDropdown}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setDeptModalVisible(false)} hitSlop={8}>
+                <Feather name="x" size={18} color={C.textMuted} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={{ maxHeight: 420 }} showsVerticalScrollIndicator={false}>
+              <View style={styles.modalBarsContainer}>
+                {deptOptions.map(dept => {
+                  const active = deptFilter === dept.id;
+                  return (
+                    <TouchableOpacity
+                      key={dept.id}
+                      style={[
+                        styles.pickerBar,
+                        { backgroundColor: C.surface, borderColor: C.border },
+                        active && {
+                          backgroundColor: isDark ? 'rgba(14, 156, 138, 0.14)' : '#e0f4f0',
+                          borderColor: SectorColors.jobs,
+                        },
+                      ]}
+                      onPress={() => {
+                        setDeptFilter(dept.id);
+                        setDeptModalVisible(false);
+                      }}
+                      activeOpacity={0.75}
+                    >
+                      <View style={styles.pickerBarLeft}>
+                        <View
+                          style={[
+                            styles.pickerBarIconBox,
+                            {
+                              backgroundColor: active
+                                ? (isDark ? 'rgba(14, 156, 138, 0.25)' : '#cbf0e8')
+                                : C.surface2,
+                            },
+                          ]}
+                        >
+                          <Feather
+                            name={dept.id === 'ALL' ? 'grid' : dept.id === 'MY_DEPT' ? 'target' : 'shield'}
+                            size={16}
+                            color={active ? SectorColors.jobs : C.textMuted}
+                          />
+                        </View>
+                        <Text
+                          style={[
+                            styles.pickerBarTitle,
+                            {
+                              color: active ? SectorColors.jobs : C.text,
+                              fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                            },
+                          ]}
+                        >
+                          {dept.label}
+                        </Text>
+                      </View>
+                      {active ? (
+                        <Feather name="check-circle" size={18} color={SectorColors.jobs} />
+                      ) : (
+                        <View style={[styles.radioOutline, { borderColor: C.border }]} />
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </ScrollView>
+          </View>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -817,27 +972,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4.5,
-    paddingVertical: 9,
+    gap: 5,
+    paddingVertical: 10,
     borderRadius: 13,
     zIndex: 1,
   } as ViewStyle,
 
   tabBtnTxt: {
-    fontSize: 12.5,
+    fontSize: 13,
   },
 
   tabBadge: {
-    paddingHorizontal: 5.5,
+    paddingHorizontal: 6,
     paddingVertical: 1.5,
     borderRadius: 999,
-    minWidth: 18,
+    minWidth: 19,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
 
   tabBadgeTxt: {
-    fontSize: 10.5,
+    fontSize: 11,
   },
 
   // Search Bar
@@ -845,42 +1000,49 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
-    height: 40,
+    height: 42,
     borderRadius: Radius.lg,
     borderWidth: 1,
     gap: 8,
   } as ViewStyle,
   searchInput: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 13.5,
     paddingVertical: 0,
   } as TextStyle,
 
-  // Horizontal Filter Bars
-  barSection: {
-    marginBottom: 2,
-  } as ViewStyle,
-  horizontalBar: {
+  // Dual Dropdown Bars Row
+  dualBarRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 7,
-    paddingVertical: 2,
+    gap: 8,
+    paddingTop: 2,
+    paddingBottom: 8,
   } as ViewStyle,
-  filterPill: {
+  dualBarBtn: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 11,
-    paddingVertical: 6,
-    borderRadius: 20,
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    height: 40,
+    borderRadius: Radius.md,
     borderWidth: 1,
+    gap: 6,
   } as ViewStyle,
-  filterPillTxt: {
-    fontSize: 11.5,
+  dualBarLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flex: 1,
+  } as ViewStyle,
+  dualBarTxt: {
+    flex: 1,
+    fontSize: 12,
   } as any,
 
   // Scroll and list
-  scroll: { paddingTop: 8, paddingBottom: 24 } as ViewStyle,
+  scroll: { paddingTop: 6, paddingBottom: 24 } as ViewStyle,
   list: { gap: 10 } as ViewStyle,
 
   // Card
@@ -1033,4 +1195,70 @@ const styles = StyleSheet.create({
   resetBtnTxt: {
     fontSize: 12,
   } as any,
+
+  // Modal Sheet & Distinct Bars
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  } as ViewStyle,
+  modalSheet: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    paddingTop: 16,
+    paddingHorizontal: Layout.screenPadding,
+    paddingBottom: 24,
+  } as ViewStyle,
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+    paddingBottom: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(0,0,0,0.06)',
+  } as ViewStyle,
+  modalTitle: {
+    fontSize: 15,
+  } as any,
+  modalBarsContainer: {
+    gap: 8,
+    paddingBottom: 8,
+  } as ViewStyle,
+
+  // Distinct Rounded Picker Bar (Inside Modal)
+  pickerBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 13,
+    paddingVertical: 12,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+  } as ViewStyle,
+  pickerBarLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 11,
+    flex: 1,
+  } as ViewStyle,
+  pickerBarIconBox: {
+    width: 34,
+    height: 34,
+    borderRadius: Radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  pickerBarTitle: {
+    fontSize: 13,
+    flex: 1,
+  } as any,
+  radioOutline: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 1.5,
+  } as ViewStyle,
 });

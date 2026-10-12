@@ -58,6 +58,14 @@ export function resolveBannerSource(
     return { uri: `https://campus-theta.vercel.app${cleaned}` };
   }
 
+  if (cleaned.startsWith('notices/') || cleaned.startsWith('storage/')) {
+    const withoutStorage = cleaned.replace(/^storage\//, '').replace(/^\/+/, '');
+    return { uri: `https://www.bubt.edu.bd/storage/${withoutStorage}` };
+  }
+  if (cleaned.startsWith('uploads/')) {
+    return { uri: `https://www.bubt.edu.bd/${cleaned}` };
+  }
+
   return fallbackLocal ?? null;
 }
 
@@ -111,9 +119,8 @@ export function HomeHeroBanner() {
           .from('announcements')
           .select('id, title, department, priority, image_url, attachment_url')
           .is('deleted_at', null)
-          .order('pinned', { ascending: false })
           .order('created_at', { ascending: false })
-          .limit(6),
+          .limit(12),
         supabase
           .from('events')
           .select('id, title, venue, time, date, category, banner_url')

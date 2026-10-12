@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Image,
-  Modal, Share, Pressable, type ViewStyle, type ImageSourcePropType,
+  Modal, Share, Pressable, Dimensions, type ViewStyle, type TextStyle, type ImageSourcePropType,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -44,6 +44,9 @@ function resolveNoticeImage(rawUrl?: string | null): ImageSourcePropType | null 
   if (cleaned.startsWith('notices/') || cleaned.startsWith('storage/')) {
     const withoutStorage = cleaned.replace(/^storage\//, '').replace(/^\/+/, '');
     return { uri: `https://www.bubt.edu.bd/storage/${withoutStorage}` };
+  }
+  if (cleaned.startsWith('uploads/')) {
+    return { uri: `https://www.bubt.edu.bd/${cleaned}` };
   }
   return { uri: cleaned };
 }
@@ -202,6 +205,10 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
 
   const { fg, bg } = priTone(C, item.priority, isDark);
   const isOfficial = item.source === 'bubt_official' || item.code?.startsWith('BUBT-N-');
+  const { width: winWidth, height: winHeight } = Dimensions.get('window');
+  const displayImageUrl = item.image_url ||
+    (item.attachment_url && /\.(jpe?g|png|webp|gif)$/i.test(item.attachment_url) ? item.attachment_url : null);
+  const resolvedNoticeImg = resolveNoticeImage(displayImageUrl);
   const googleDocsPdfViewer = item.attachment_url
     ? `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(item.attachment_url)}`
     : null;
@@ -367,7 +374,7 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
         </Text>
 
         {/* Notice Image (Flyer / Poster) */}
-        {resolveNoticeImage(item.image_url) && !imgError && (
+        {resolvedNoticeImg && !imgError && (
           <View style={[styles.imageCard, { backgroundColor: C.surface, borderColor: C.border }]}>
             <TouchableOpacity
               onPress={() => setImageModalVisible(true)}
@@ -375,7 +382,7 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
               style={styles.imageWrapper}
             >
               <Image
-                source={resolveNoticeImage(item.image_url)!}
+                source={resolvedNoticeImg}
                 style={styles.noticeImage}
                 resizeMode="cover"
                 onLoadStart={() => setImgLoading(true)}
@@ -449,18 +456,45 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
           </View>
         )}
 
-        {/* External Official Link fallback */}
+        {/* Official Web Link Bar */}
         {item.external_url && (
           <TouchableOpacity
-            style={[styles.webLinkRow, { borderColor: C.border }]}
+            style={[
+              styles.officialLinkBar,
+              {
+                backgroundColor: C.surface,
+                borderColor: isDark ? 'rgba(59, 130, 246, 0.3)' : '#bfdbfe',
+              },
+            ]}
             onPress={() => openUrl(item.external_url!)}
-            activeOpacity={0.75}
+            activeOpacity={0.82}
           >
-            <Feather name="globe" size={14} color={C.textMuted} />
-            <Text style={[styles.webLinkTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-              {t.announce2.openInBrowser}
-            </Text>
-            <Feather name="arrow-up-right" size={13} color={C.textMuted} />
+            <View style={[styles.officialLinkIconSquircle, { backgroundColor: isDark ? 'rgba(37, 99, 235, 0.18)' : '#eff6ff' }]}>
+              <Feather name="globe" size={20} color="#2563eb" />
+            </View>
+            <View style={styles.officialLinkBody}>
+              <View style={styles.officialLinkBadgeRow}>
+                <View style={styles.officialVerifiedDot} />
+                <Text style={[styles.officialLinkDomain, { color: '#2563eb', fontFamily: FontFamily.jakartaBold }]}>
+                  BUBT OFFICIAL PORTAL
+                </Text>
+              </View>
+              <Text
+                style={[styles.officialLinkTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}
+                numberOfLines={1}
+              >
+                Open Official Notice on Web
+              </Text>
+              <Text
+                style={[styles.officialLinkSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}
+                numberOfLines={1}
+              >
+                bubt.edu.bd · Verified university publication
+              </Text>
+            </View>
+            <View style={[styles.officialLinkArrowBtn, { backgroundColor: isDark ? C.surface2 : '#f1f5f9' }]}>
+              <Feather name="arrow-up-right" size={16} color="#2563eb" />
+            </View>
           </TouchableOpacity>
         )}
 
@@ -475,12 +509,12 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
         animationType="slide"
         onRequestClose={() => setPdfModalVisible(false)}
       >
-        <SafeAreaView style={[styles.safe, { backgroundColor: '#fff' }]}>
-          <View style={styles.pdfHeader}>
+        <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
+          <View style={[styles.pdfHeader, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
             <TouchableOpacity onPress={() => setPdfModalVisible(false)} hitSlop={8} style={{ padding: 4 }}>
-              <Feather name="x" size={22} color="#111" />
+              <Feather name="x" size={22} color={C.text} />
             </TouchableOpacity>
-            <Text style={styles.pdfHeaderTitle} numberOfLines={1}>
+            <Text style={[styles.pdfHeaderTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
               {item.attachment_name || 'Notice PDF'}
             </Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
@@ -490,11 +524,11 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
                   hitSlop={8}
                   style={{ padding: 4 }}
                 >
-                  <Feather name="external-link" size={18} color="#111" />
+                  <Feather name="external-link" size={18} color={C.text} />
                 </TouchableOpacity>
               )}
               <TouchableOpacity onPress={handleDownloadPdf} hitSlop={8} style={{ padding: 4 }}>
-                <Feather name="download" size={19} color="#111" />
+                <Feather name="download" size={19} color={C.text} />
               </TouchableOpacity>
             </View>
           </View>
@@ -502,23 +536,80 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
           {googleDocsPdfViewer && (
             <WebView
               source={{ uri: googleDocsPdfViewer }}
-              style={{ flex: 1, backgroundColor: '#fff' }}
-              scalesPageToFit={true}
+              style={{ flex: 1, backgroundColor: '#f8fafc' }}
+              scalesPageToFit={false}
               javaScriptEnabled={true}
               domStorageEnabled={true}
               originWhitelist={['*']}
               mixedContentMode="always"
               setSupportMultipleWindows={false}
               showsHorizontalScrollIndicator={false}
-              injectedJavaScript={`
+              showsVerticalScrollIndicator={true}
+              injectedJavaScriptBeforeContentLoaded={`
                 (function() {
                   const meta = document.createElement('meta');
                   meta.name = 'viewport';
-                  meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes';
-                  document.head.appendChild(meta);
-                  const style = document.createElement('style');
-                  style.innerHTML = 'html, body { width: 100% !important; margin: 0 !important; padding: 0 !important; background: #fff !important; }';
-                  document.head.appendChild(style);
+                  meta.content = 'width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=4.0, user-scalable=yes';
+                  document.head && document.head.appendChild(meta);
+                })();
+                true;
+              `}
+              injectedJavaScript={`
+                (function() {
+                  function cleanViewer() {
+                    const styleId = 'campusone-pdf-styles';
+                    if (!document.getElementById(styleId)) {
+                      const style = document.createElement('style');
+                      style.id = styleId;
+                      style.innerHTML = \`
+                        html, body {
+                          width: 100% !important;
+                          margin: 0 !important;
+                          padding: 0 !important;
+                          background: #f8fafc !important;
+                          overflow-x: hidden !important;
+                        }
+                        .ndfHFb-c4YZDc-Wrql6b,
+                        .drive-viewer-toolstrip,
+                        div[role="toolbar"],
+                        .goog-inline-block.ndfHFb-c4YZDc-to915-LgbsSe,
+                        a[href*="docs.google.com"],
+                        .ndfHFb-c4YZDc-V67aGc {
+                          display: none !important;
+                          visibility: hidden !important;
+                          height: 0 !important;
+                          opacity: 0 !important;
+                        }
+                        .ndfHFb-c4YZDc-bC7sje,
+                        .ndfHFb-c4YZDc-c3fl2b,
+                        .ndfHFb-c4YZDc-cYSp0e-tJHJj,
+                        .ndfHFb-c4YZDc-s2gQvd,
+                        .ndfHFb-c4YZDc-bC7sje-tJHJj,
+                        .ndfHFb-c4YZDc-AWhBae {
+                          background: #f8fafc !important;
+                          background-color: #f8fafc !important;
+                          width: 100% !important;
+                          max-width: 100% !important;
+                          margin: 0 auto !important;
+                          padding: 0 !important;
+                          box-shadow: none !important;
+                        }
+                        .ndfHFb-c4YZDc-s2gQvd img,
+                        .ndfHFb-c4YZDc-bC7sje img,
+                        canvas,
+                        img {
+                          max-width: 100% !important;
+                          height: auto !important;
+                          margin: 8px auto !important;
+                          display: block !important;
+                          box-shadow: 0 2px 10px rgba(0,0,0,0.08) !important;
+                        }
+                      \`;
+                      document.head && document.head.appendChild(style);
+                    }
+                  }
+                  cleanViewer();
+                  setInterval(cleanViewer, 400);
                 })();
                 true;
               `}
@@ -526,7 +617,7 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
               renderLoading={() => (
                 <View style={styles.pdfLoading}>
                   <ActivityIndicator size="large" color={C.brand} />
-                  <Text style={[styles.pdfLoadingTxt, { color: '#666', fontFamily: FontFamily.jakartaMedium }]}>
+                  <Text style={[styles.pdfLoadingTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
                     Loading official PDF…
                   </Text>
                 </View>
@@ -577,10 +668,10 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
             showsHorizontalScrollIndicator={false}
             showsVerticalScrollIndicator={false}
           >
-            {resolveNoticeImage(item.image_url) && (
+            {resolvedNoticeImg && (
               <Image
-                source={resolveNoticeImage(item.image_url)!}
-                style={styles.fullscreenImage}
+                source={resolvedNoticeImg}
+                style={[styles.fullscreenImage, { width: winWidth, height: winHeight * 0.78 }]}
                 resizeMode="contain"
                 onLoadStart={() => setZoomLoading(true)}
                 onLoadEnd={() => setZoomLoading(false)}
@@ -723,14 +814,56 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   } as ViewStyle,
 
-  webLinkRow: {
+  officialLinkBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginTop: 18,
-    paddingVertical: 8,
+    gap: 12,
+    padding: 13,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    marginTop: 20,
   } as ViewStyle,
-  webLinkTxt: { fontSize: 12.5 } as any,
+  officialLinkIconSquircle: {
+    width: 44,
+    height: 44,
+    borderRadius: Radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  officialLinkBody: {
+    flex: 1,
+    minWidth: 0,
+  } as ViewStyle,
+  officialLinkBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginBottom: 2,
+  } as ViewStyle,
+  officialVerifiedDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#16a34a',
+  } as ViewStyle,
+  officialLinkDomain: {
+    fontSize: 10,
+    letterSpacing: 0.5,
+  } as TextStyle,
+  officialLinkTitle: {
+    fontSize: 13.5,
+  } as TextStyle,
+  officialLinkSub: {
+    fontSize: 11.5,
+    marginTop: 1,
+  } as TextStyle,
+  officialLinkArrowBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
 
   // PDF Viewer Modal
   pdfHeader: {

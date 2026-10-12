@@ -56,6 +56,13 @@ function resolveNewsImage(rawUrl?: string | null): ImageSourcePropType | null {
   if (cleaned.startsWith('/')) {
     return { uri: `https://campus-theta.vercel.app${cleaned}` };
   }
+  if (cleaned.startsWith('notices/') || cleaned.startsWith('storage/')) {
+    const withoutStorage = cleaned.replace(/^storage\//, '').replace(/^\/+/, '');
+    return { uri: `https://www.bubt.edu.bd/storage/${withoutStorage}` };
+  }
+  if (cleaned.startsWith('uploads/')) {
+    return { uri: `https://www.bubt.edu.bd/${cleaned}` };
+  }
   return null;
 }
 
@@ -193,20 +200,19 @@ export function HomeCommunityUpdates() {
           .from('announcements')
           .select('id, title, department, body, created_at, pinned, image_url, attachment_url')
           .is('deleted_at', null)
-          .order('pinned', { ascending: false })
           .order('created_at', { ascending: false })
-          .limit(8),
+          .limit(25),
         supabase
           .from('events')
           .select('id, title, venue, time, date, category, banner_url, description')
           .gte('date', today)
           .order('date', { ascending: true })
-          .limit(8),
+          .limit(10),
         supabase
           .from('club_posts')
           .select('id, title, body, created_at, image_url, club_id, clubs(id, name, cover_url)')
           .order('created_at', { ascending: false })
-          .limit(8),
+          .limit(10),
       ]);
 
       const list: CommunityItem[] = [];
@@ -216,7 +222,7 @@ export function HomeCommunityUpdates() {
         annRes.data.forEach((a: any) => {
           const imgUrl =
             a.image_url ||
-            (a.attachment_url && /\.(jpg|jpeg|png|webp|gif)$/i.test(a.attachment_url)
+            (a.attachment_url && /\.(jpe?g|png|webp|gif)$/i.test(a.attachment_url)
               ? a.attachment_url
               : null);
 

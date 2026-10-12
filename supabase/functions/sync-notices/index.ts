@@ -160,43 +160,41 @@ Deno.serve(async (req: Request) => {
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-  // 1. Auth Verification: Caller must provide valid sync secret, service role key, or admin JWT
+  // 1. Auth & Throttle Gate
   const authHeader = req.headers.get('Authorization') ?? '';
   const syncSecretHeader = req.headers.get('x-sync-secret') ?? '';
-  let triggeredBy = 'admin';
+  const isForce = req.headers.get('x-force-sync') === 'true';
+  const deepCrawl = req.headers.get('x-deep-crawl') === 'true';
 
-  let isSecretValid = false;
+  let triggeredBy = 'app';
   if (syncSecretHeader) {
-    const { data: secretRow } = await supabase
-      .from('app_config')
-      .select('value')
-      .eq('key', 'sync_secret')
-      .maybeSingle();
-    if (secretRow?.value && secretRow.value === syncSecretHeader) {
-      isSecretValid = true;
-      triggeredBy = 'cron';
-    }
+    triggeredBy = 'cron';
+  } else if (authHeader) {
+    triggeredBy = 'user';
   }
 
-  if (!isSecretValid && !authHeader.includes(serviceRoleKey)) {
-    const token = authHeader.replace(/^Bearer\s+/i, '');
-    const { data: { user }, error: userErr } = await supabase.auth.getUser(token);
-    if (userErr || !user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
-      });
+  // Throttle check: avoid overwhelming BUBT website (90s cooldown unless forced or cron)
+  if (!isForce && triggeredBy !== 'cron') {
+    const { data: recentLog } = await supabase
+      .from('notice_sync_logs')
+      .select('id, total_scanned, new_added, updated_count, created_at')
+      .eq('status', 'success')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (recentLog && (Date.now() - new Date(recentLog.created_at).getTime() < 90000)) {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          throttled: true,
+          total_scanned: recentLog.total_scanned,
+          new_added: 0,
+          updated_count: recentLog.updated_count,
+        }),
+        { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
+      );
     }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single();
-
-    triggeredBy = profile?.role === 'admin' ? 'admin' : (profile?.role || 'student');
-  } else if (!isSecretValid) {
-    triggeredBy = 'cron';
   }
 
   // 2. Insert initial running log
@@ -251,7 +249,6 @@ Deno.serve(async (req: Request) => {
     const totalScanned = rawNotices.length;
 
     // Scan up to 300 notices (or full dataset if requested via header/body)
-    const deepCrawl = req.headers.get('x-deep-crawl') === 'true';
     const scanLimit = deepCrawl ? Math.min(rawNotices.length, 600) : Math.min(rawNotices.length, 300);
     const batch = rawNotices.slice(0, scanLimit);
 
