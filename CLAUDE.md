@@ -72,6 +72,7 @@ The app is graded and reviewed by university teachers who actively check for AI-
 2. **NO Box-Drawing Banners:** Avoid ASCII separators like `// ───── Section ─────`.
 3. **NO Em-Dashes in UI Copy:** Never use `—` in user-visible UI microcopy; use `-`, `,`, or `.` instead. (Middle-dots `·` for metadata separators and `…` for search placeholders are acceptable).
 4. **Terse, Human Comments:** Keep comments short, direct, and focused on non-obvious logic, edge-to-edge gotchas, or security constraints.
+5. **NO AI-Made Icons / Slop:** Never use AI-generated icon illustrations, cheesy 3D glyphs, or cartoon clipart for feature tiles, buttons, or navigation. All icons must strictly come from established, human-designed vector icon libraries (vetted collections from 21st.dev like Lucide, Tabler, Heroicons, Phosphor, Hugeicons, or native `@expo/vector-icons` Feather). They must look clean, balanced, and authentic so teachers/evaluators never see "AI-made" graphics.
 
 ### 3.3 User Communication Style
 1. **Non-Technical & Click-by-Click:** The user prefers clear, numbered, step-by-step guidance for external dashboards (Google AI Studio, Supabase, Android settings).
@@ -113,6 +114,12 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
 - **Navigation Lists:** Always use **full-width rows** (icon on left, title, subtitle/description below, chevron on right).
 - **Prohibited:** Never use 2-column grid cards for navigation destinations, and **never mix grids and rows on the same screen**.
 - **Reference Layout:** `styles.toolCard` in `src/screens/main/ExploreScreen.tsx`.
+
+### 5.3 Iconography Standards & Human-Designed Assets
+- **Strict Human Sourcing:** When adding icons for new features, modules, settings, or dashboard cards, always source from verified, human-crafted icon collections (21st.dev icon families: Lucide, Tabler, Heroicons, Phosphor, Hugeicons, or native `@expo/vector-icons` Feather).
+- **Geometric Harmony:** Maintain consistent 2px stroke weight (`stroke: 2`), standard 24dp viewbox, and subtle round caps/joins.
+- **Zero AI-Looking Icons:** Never use AI-generated visual badges or clip-art styles. Icons must look razor-sharp, purposeful, and production-standard.
+- **Color Binding:** Always pair icons with their designated `SectorColors.<sector>` accent token rather than arbitrary colors.
 
 ---
 
