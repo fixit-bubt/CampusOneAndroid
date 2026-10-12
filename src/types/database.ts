@@ -93,7 +93,14 @@ export type Donor = Omit<Tables<'donors'>, 'blood_group'> & {
   alert_urgency?: BloodAlertUrgency;
 };
 
-export type Doctor = Tables<'doctors'>;
+export type Doctor = Tables<'doctors'> & {
+  qualifications?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  role_type?: 'doctor' | 'psychologist' | 'nurse' | 'staff';
+  is_on_leave?: boolean;
+  leave_note?: string | null;
+};
 
 export type BusRoute = Tables<'bus_routes'>;
 

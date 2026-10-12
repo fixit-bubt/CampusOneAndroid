@@ -7,6 +7,7 @@ import { SectorIcon } from './ui/SectorIcon';
 import { FontFamily, Layout, type SectorKey } from '../theme';
 import { supabase } from '../lib/supabase';
 import { localToday } from '../utils/format';
+import { dhakaWeekday, nowDhakaMinutes } from '../utils/transitPrayer';
 
 interface WidgetData {
   sector: SectorKey;
@@ -37,7 +38,7 @@ export function CampusToday({ navigation, hide }: { navigation: any; hide?: stri
 
     const staleCutoff = new Date(Date.now() - 21 * 86400000).toISOString();
 
-    const [busRes, prayerRes, annRes, evRes, jobsRes, bloodRes, ridesRes] = await Promise.all([
+    const [busRes, prayerRes, annRes, evRes, jobsRes, bloodRes, ridesRes, docRes] = await Promise.all([
       supabase.from('bus_routes').select('name, to_departures').eq('active', true),
       supabase.from('prayer_times').select('en, azan').order('sort'),
       supabase.from('announcements').select('title').is('deleted_at', null).order('pinned', { ascending: false }).order('created_at', { ascending: false }).limit(1),
@@ -52,6 +53,7 @@ export function CampusToday({ navigation, hide }: { navigation: any; hide?: stri
         .order('date')
         .order('time')
         .limit(4),
+      supabase.from('doctors').select('name, specialty, room, start_time, end_time, days, is_on_leave').eq('active', true),
     ]);
 
     const out: WidgetData[] = [];
@@ -112,6 +114,34 @@ export function CampusToday({ navigation, hide }: { navigation: any; hide?: stri
     // Urgent blood requests
     if ((bloodRes.count ?? 0) > 0) {
       out.push({ sector: 'blood', title: `${bloodRes.count} urgent request${(bloodRes.count ?? 0) === 1 ? '' : 's'}`, sub: 'Blood donation', route: 'Blood' });
+    }
+
+    // Medical Center status (Doctor on duty or clinic open)
+    const currentDay = dhakaWeekday();
+    const isClinicDay = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu'].includes(currentDay);
+    const onDutyDoc = (docRes.data ?? []).find((d: any) => {
+      if (d.is_on_leave) return false;
+      const days = Array.isArray(d.days) ? d.days : [];
+      if (!days.includes(currentDay)) return false;
+      const s = toMinutes(d.start_time);
+      const e = toMinutes(d.end_time);
+      return nowMins >= s && nowMins <= e;
+    });
+
+    if (onDutyDoc) {
+      out.push({
+        sector: 'medical',
+        title: onDutyDoc.name,
+        sub: `On duty · ${onDutyDoc.room || 'Room 205, Bldg 3'}`,
+        route: 'Medical',
+      });
+    } else if (isClinicDay && nowMins >= 9 * 60 && nowMins <= 17 * 60) {
+      out.push({
+        sector: 'medical',
+        title: 'BUBT Medical Unit Open',
+        sub: 'Room 205, Bldg 3 · Ext 112',
+        route: 'Medical',
+      });
     }
 
     setWidgets(out);

@@ -1078,9 +1078,15 @@ export type Database = {
           active: boolean
           created_at: string
           days: string[]
+          email: string | null
           end_time: string
           id: string
+          is_on_leave: boolean
+          leave_note: string | null
           name: string
+          phone: string | null
+          qualifications: string | null
+          role_type: string
           room: string | null
           specialty: string
           start_time: string
@@ -1090,9 +1096,15 @@ export type Database = {
           active?: boolean
           created_at?: string
           days?: string[]
+          email?: string | null
           end_time: string
           id: string
+          is_on_leave?: boolean
+          leave_note?: string | null
           name: string
+          phone?: string | null
+          qualifications?: string | null
+          role_type?: string
           room?: string | null
           specialty: string
           start_time: string
@@ -1102,9 +1114,15 @@ export type Database = {
           active?: boolean
           created_at?: string
           days?: string[]
+          email?: string | null
           end_time?: string
           id?: string
+          is_on_leave?: boolean
+          leave_note?: string | null
           name?: string
+          phone?: string | null
+          qualifications?: string | null
+          role_type?: string
           room?: string | null
           specialty?: string
           start_time?: string

@@ -1,8 +1,12 @@
-// Availability only, no booking.
 import { useState, useEffect } from 'react';
 import {
-  View, Text, ScrollView, StyleSheet,
-  ActivityIndicator, type ViewStyle,
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  ActivityIndicator,
+  TouchableOpacity,
+  type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
@@ -11,60 +15,148 @@ import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useT } from '../../i18n';
-import { nowDhakaMinutes, dhakaWeekday } from '../../utils/transitPrayer';
+import {
+  nowDhakaMinutes,
+  dhakaWeekday,
+  toMinutes,
+  formatTime12,
+  fmtCountdown,
+} from '../../utils/transitPrayer';
+import { openUrl } from '../../utils/link';
+import { BUBT_CLINIC_INFO } from '../../constants/medicalServices';
+import type { Doctor } from '../../types/database';
 
 const MED_COLOR = SectorColors.medical;
-const MED_BG    = `${SectorColors.medical}1e`;
+const MED_BG = `${SectorColors.medical}1e`;
 
-interface Doctor {
-  id: string;
-  name: string;
-  specialty: string;
-  days: string[];
-  start_time: string;
-  end_time: string;
-  room: string | null;
-  active: boolean;
+interface DutyState {
+  badge: 'on_duty' | 'starting_soon' | 'off_duty' | 'on_leave';
+  title: string;
+  sub: string;
+  color: string;
+  bg: string;
 }
 
-function toMins(s: string | null | undefined, fallback: number): number {
-  const [h, m] = (s ?? '').split(':').map(Number);
-  if (!Number.isFinite(h) || !Number.isFinite(m)) return fallback;
-  return h * 60 + m;
-}
+function getDoctorDuty(doc: Doctor, C: any): DutyState {
+  if (doc.is_on_leave) {
+    return {
+      badge: 'on_leave',
+      title: 'Currently On Leave',
+      sub: doc.leave_note || 'Temporary absence · Please consult the on-duty medical officer.',
+      color: C.danger,
+      bg: C.dangerBg,
+    };
+  }
+  if (!doc.active) {
+    return {
+      badge: 'off_duty',
+      title: 'Inactive',
+      sub: 'Not currently on active roster.',
+      color: C.textMuted,
+      bg: C.surface2,
+    };
+  }
 
-function isOnDuty(doc: Doctor): boolean {
-  if (!doc.active) return false;
   const currentDay = dhakaWeekday();
-  if (!doc.days?.includes(currentDay)) return false;
-  const start = toMins(doc.start_time, 0);
-  const end = toMins(doc.end_time, 24 * 60 - 1);
+  const days = Array.isArray(doc.days) ? doc.days : [];
+  const worksToday = days.includes(currentDay);
+
+  const startMins = toMinutes(doc.start_time);
+  const endMins = toMinutes(doc.end_time);
   const nowMins = nowDhakaMinutes();
-  // Handle overnight shifts (end before start wraps past midnight).
-  return start <= end ? (nowMins >= start && nowMins <= end) : (nowMins >= start || nowMins <= end);
+
+  if (worksToday) {
+    if (nowMins >= startMins && nowMins <= endMins) {
+      const remaining = endMins - nowMins;
+      return {
+        badge: 'on_duty',
+        title: 'Available Now (On Duty)',
+        sub: `Walk in to ${doc.room ?? BUBT_CLINIC_INFO.room} · Shift ends in ${fmtCountdown(remaining)}`,
+        color: C.success,
+        bg: C.successBg,
+      };
+    }
+    if (nowMins < startMins && startMins - nowMins <= 60) {
+      const until = startMins - nowMins;
+      return {
+        badge: 'starting_soon',
+        title: `Starts in ${fmtCountdown(until)}`,
+        sub: `Today's consultation hours: ${formatTime12(doc.start_time)} - ${formatTime12(doc.end_time)}`,
+        color: C.warn,
+        bg: C.warnBg,
+      };
+    }
+    if (nowMins < startMins) {
+      return {
+        badge: 'off_duty',
+        title: 'On Duty Later Today',
+        sub: `Hours: ${formatTime12(doc.start_time)} - ${formatTime12(doc.end_time)}`,
+        color: C.textMuted,
+        bg: C.surface2,
+      };
+    }
+    return {
+      badge: 'off_duty',
+      title: "Today's Shift Ended",
+      sub: `Consultation hours were ${formatTime12(doc.start_time)} - ${formatTime12(doc.end_time)}`,
+      color: C.textMuted,
+      bg: C.surface2,
+    };
+  }
+
+  return {
+    badge: 'off_duty',
+    title: 'Not Scheduled Today',
+    sub: `Consultation days: ${days.length > 0 ? days.join(', ') : 'Weekly schedule'}`,
+    color: C.textMuted,
+    bg: C.surface2,
+  };
 }
 
-function ScheduleRow({ icon, label, value, C }: any) {
+function ScheduleRow({
+  icon,
+  label,
+  value,
+  C,
+}: {
+  icon: string;
+  label: string;
+  value: string;
+  C: any;
+}) {
   return (
     <View style={[styles.schedRow, { borderColor: C.border }]}>
       <View style={[styles.schedIcon, { backgroundColor: MED_BG }]}>
         <Icon name={icon} size={16} color={MED_COLOR} />
       </View>
       <View style={styles.schedBody}>
-        <Text style={[styles.schedLabel, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>{label}</Text>
+        <Text
+          style={[
+            styles.schedLabel,
+            { color: C.text, fontFamily: FontFamily.jakartaSemiBold },
+          ]}
+        >
+          {label}
+        </Text>
       </View>
-      <Text style={[styles.schedValue, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>{value}</Text>
+      <Text
+        style={[
+          styles.schedValue,
+          { color: C.text2, fontFamily: FontFamily.jakartaBold },
+        ]}
+      >
+        {value}
+      </Text>
     </View>
   );
 }
 
 export function DoctorDetailScreen({ route, navigation }: any) {
-  const { C } = useTheme();
+  const { C, isDark } = useTheme();
   const t = useT();
   const { doctorId } = route.params ?? {};
   const [doctor, setDoctor] = useState<Doctor | null>(null);
   const [failed, setFailed] = useState(false);
-  const onDuty = doctor ? isOnDuty(doctor) : false;
 
   useEffect(() => {
     let active = true;
@@ -73,7 +165,12 @@ export function DoctorDetailScreen({ route, navigation }: any) {
       return;
     }
     (async () => {
-      const { data, error } = await supabase.from('doctors').select('*').eq('id', doctorId).maybeSingle();
+      const { data, error } = await supabase
+        .from('doctors')
+        .select('*')
+        .eq('id', doctorId)
+        .maybeSingle();
+
       if (!active) return;
       if (error || !data) {
         setFailed(true);
@@ -91,70 +188,326 @@ export function DoctorDetailScreen({ route, navigation }: any) {
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
         <SubBar title={t.medical2.doctor} onBack={() => navigation.goBack()} />
         <View style={styles.center}>
-          {failed
-            ? <Text style={{ color: C.textMuted, fontFamily: FontFamily.jakartaMedium }}>{t.common.notFound}</Text>
-            : <ActivityIndicator color={C.brand} />}
+          {failed ? (
+            <Text
+              style={{
+                color: C.textMuted,
+                fontFamily: FontFamily.jakartaMedium,
+              }}
+            >
+              {t.common.notFound}
+            </Text>
+          ) : (
+            <ActivityIndicator color={C.brand} />
+          )}
         </View>
       </SafeAreaView>
     );
+  }
+
+  const duty = getDoctorDuty(doctor, C);
+  const isPsych =
+    doctor.role_type === 'psychologist' ||
+    (doctor.specialty && doctor.specialty.toLowerCase().includes('psycholog'));
+
+  const contactPhone = doctor.phone || BUBT_CLINIC_INFO.phoneDirect;
+  const contactEmail = doctor.email || BUBT_CLINIC_INFO.email;
+
+  function handleDial() {
+    openUrl(`tel:${contactPhone.replace(/\s+/g, '')}`);
+  }
+
+  function handleEmail() {
+    const subject = isPsych
+      ? encodeURIComponent('[BUBT Health] Confidential Counseling Session Request')
+      : encodeURIComponent('[BUBT Medical Unit] Student Health Inquiry');
+    openUrl(`mailto:${contactEmail}?subject=${subject}`);
   }
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar title={doctor.name} onBack={() => navigation.goBack()} />
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingHorizontal: Layout.screenPadding }]}
+        contentContainerStyle={[
+          styles.content,
+          { paddingHorizontal: Layout.screenPadding },
+        ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Doctor header card */}
-        <View style={[styles.headerCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <View style={[styles.thumb, { backgroundColor: MED_BG }]}>
-            <Icon name="medical" size={26} color={MED_COLOR} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.docName, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{doctor.name}</Text>
-            <Text style={[styles.docSpec, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{doctor.specialty}</Text>
-          </View>
-        </View>
-
-        {/* Availability banner */}
-        <View style={[
-          styles.availBanner,
-          { backgroundColor: onDuty ? C.successBg : C.surface2 },
-        ]}>
-          <View style={[
-            styles.availIcon,
-            { backgroundColor: onDuty ? C.success : C.border },
-          ]}>
+        {/* Doctor Header Card */}
+        <View
+          style={[
+            styles.headerCard,
+            { backgroundColor: C.surface, borderColor: C.border },
+          ]}
+        >
+          <View
+            style={[
+              styles.thumb,
+              {
+                backgroundColor: isPsych
+                  ? isDark
+                    ? 'rgba(168, 85, 247, 0.16)'
+                    : 'rgba(147, 51, 234, 0.1)'
+                  : MED_BG,
+              },
+            ]}
+          >
             <Icon
-              name={onDuty ? 'check' : 'clock'}
-              size={22}
-              color={onDuty ? C.white : C.textMuted}
+              name={isPsych ? 'heart' : 'medical'}
+              size={26}
+              color={isPsych ? '#a855f7' : MED_COLOR}
             />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[
-              styles.availTitle,
-              { color: onDuty ? C.success : C.text, fontFamily: FontFamily.jakartaExtraBold },
-            ]}>
-              {onDuty ? t.medical2.availableNow : t.medical2.notAvailableNow}
+            <Text
+              style={[
+                styles.docName,
+                { color: C.text, fontFamily: FontFamily.jakartaExtraBold },
+              ]}
+            >
+              {doctor.name}
             </Text>
-            <Text style={[styles.availSub, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
-              {onDuty
-                ? "Walk in during today's hours"
-                : `Hours: ${doctor.start_time} – ${doctor.end_time}`}
+            <Text
+              style={[
+                styles.docSpec,
+                {
+                  color: isPsych ? '#a855f7' : MED_COLOR,
+                  fontFamily: FontFamily.jakartaBold,
+                },
+              ]}
+            >
+              {doctor.specialty}
+            </Text>
+            {doctor.qualifications && (
+              <Text
+                style={[
+                  styles.docQual,
+                  { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
+                ]}
+              >
+                {doctor.qualifications}
+              </Text>
+            )}
+          </View>
+        </View>
+
+        {/* Live Availability Banner */}
+        <View style={[styles.availBanner, { backgroundColor: duty.bg }]}>
+          <View
+            style={[
+              styles.availIcon,
+              {
+                backgroundColor:
+                  duty.badge === 'on_duty'
+                    ? C.success
+                    : duty.badge === 'on_leave'
+                    ? C.danger
+                    : C.border,
+              },
+            ]}
+          >
+            <Icon
+              name={
+                duty.badge === 'on_duty'
+                  ? 'check'
+                  : duty.badge === 'on_leave'
+                  ? 'alert-triangle'
+                  : 'clock'
+              }
+              size={20}
+              color={C.white}
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text
+              style={[
+                styles.availTitle,
+                { color: duty.color, fontFamily: FontFamily.jakartaExtraBold },
+              ]}
+            >
+              {duty.title}
+            </Text>
+            <Text
+              style={[
+                styles.availSub,
+                { color: C.text2, fontFamily: FontFamily.jakartaMedium },
+              ]}
+            >
+              {duty.sub}
             </Text>
           </View>
         </View>
 
-        {/* Schedule card */}
-        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>{t.medical2.schedule}</Text>
-        <View style={[styles.schedCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <ScheduleRow icon="events" label={t.medical2.dutyDays} value={Array.isArray(doctor.days) ? doctor.days.join(', ') : ''} C={C} />
+        {/* Psychological Counseling Highlight */}
+        {isPsych && (
+          <View
+            style={[
+              styles.counselingCard,
+              {
+                backgroundColor: isDark
+                  ? 'rgba(168, 85, 247, 0.1)'
+                  : 'rgba(147, 51, 234, 0.06)',
+                borderColor: isDark ? 'rgba(168, 85, 247, 0.3)' : 'rgba(147, 51, 234, 0.2)',
+              },
+            ]}
+          >
+            <View style={styles.counselingTop}>
+              <View
+                style={[
+                  styles.counselingIconBox,
+                  { backgroundColor: isDark ? '#a855f7' : '#9333ea' },
+                ]}
+              >
+                <Icon name="heart" size={18} color={C.white} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={[
+                    styles.counselingTitle,
+                    { color: C.text, fontFamily: FontFamily.jakartaBold },
+                  ]}
+                >
+                  Confidential Psychological Support
+                </Text>
+                <Text
+                  style={[
+                    styles.counselingSub,
+                    { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
+                  ]}
+                >
+                  {t.medical2.counselingNotice}
+                </Text>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.counselingActionBtn, { backgroundColor: '#a855f7' }]}
+              onPress={handleEmail}
+              activeOpacity={0.75}
+            >
+              <Icon name="mail" size={14} color={C.white} />
+              <Text
+                style={[
+                  styles.counselingActionTxt,
+                  { color: C.white, fontFamily: FontFamily.jakartaBold },
+                ]}
+              >
+                {t.medical2.requestCounseling}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Quick Contact Action Buttons */}
+        <View style={styles.actionRow}>
+          <TouchableOpacity
+            style={[styles.actionBtn, { backgroundColor: MED_BG }]}
+            onPress={handleDial}
+            activeOpacity={0.75}
+          >
+            <Icon name="phone" size={15} color={MED_COLOR} />
+            <Text
+              style={[
+                styles.actionBtnTxt,
+                { color: MED_COLOR, fontFamily: FontFamily.jakartaBold },
+              ]}
+            >
+              {t.medical2.callDesk}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.actionBtn,
+              { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1 },
+            ]}
+            onPress={handleEmail}
+            activeOpacity={0.75}
+          >
+            <Icon name="mail" size={15} color={C.text} />
+            <Text
+              style={[
+                styles.actionBtnTxt,
+                { color: C.text, fontFamily: FontFamily.jakartaBold },
+              ]}
+            >
+              {t.medical2.sendEmail}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Schedule & Location Matrix */}
+        <Text
+          style={[
+            styles.sectionLabel,
+            { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold },
+          ]}
+        >
+          {t.medical2.schedule}
+        </Text>
+        <View
+          style={[
+            styles.schedCard,
+            { backgroundColor: C.surface, borderColor: C.border },
+          ]}
+        >
+          <ScheduleRow
+            icon="events"
+            label={t.medical2.dutyDays}
+            value={Array.isArray(doctor.days) ? doctor.days.join(', ') : ''}
+            C={C}
+          />
           <View style={[styles.divider, { backgroundColor: C.border }]} />
-          <ScheduleRow icon="clock" label={t.medical2.hours} value={`${doctor.start_time} – ${doctor.end_time}`} C={C} />
+          <ScheduleRow
+            icon="clock"
+            label={t.medical2.hours}
+            value={`${formatTime12(doctor.start_time)} – ${formatTime12(
+              doctor.end_time
+            )}`}
+            C={C}
+          />
           <View style={[styles.divider, { backgroundColor: C.border }]} />
-          <ScheduleRow icon="pin" label={t.medical2.location} value={doctor.room ?? t.medical2.medicalCenter} C={C} />
+          <ScheduleRow
+            icon="pin"
+            label={t.medical2.location}
+            value={doctor.room ?? BUBT_CLINIC_INFO.room}
+            C={C}
+          />
+          <View style={[styles.divider, { backgroundColor: C.border }]} />
+          <ScheduleRow
+            icon="phone"
+            label="Campus Intercom"
+            value={doctor.phone ?? BUBT_CLINIC_INFO.phoneExt}
+            C={C}
+          />
+        </View>
+
+        {/* Guidelines Card */}
+        <View
+          style={[
+            styles.guideCard,
+            { backgroundColor: C.surface, borderColor: C.border },
+          ]}
+        >
+          <Text
+            style={[
+              styles.guideTitle,
+              { color: C.text, fontFamily: FontFamily.jakartaBold },
+            ]}
+          >
+            Walk-in Consultation Notice
+          </Text>
+          <Text
+            style={[
+              styles.guideTxt,
+              { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
+            ]}
+          >
+            All consultations, vitals monitoring, and primary over-the-counter
+            medicines are completely free of charge. Please carry your valid BUBT
+            Student or Employee ID Card to Room 205.
+          </Text>
         </View>
 
         <View style={{ height: 26 }} />
@@ -166,24 +519,117 @@ export function DoctorDetailScreen({ route, navigation }: any) {
 const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
-  content: { paddingTop: 16, paddingBottom: 20 } as ViewStyle,
+  content: { paddingTop: 14, paddingBottom: 20 } as ViewStyle,
 
-  headerCard: { flexDirection: 'row', alignItems: 'center', gap: 13, padding: 14, borderRadius: 16, borderWidth: 1 } as ViewStyle,
-  thumb: { width: 52, height: 52, borderRadius: 15, alignItems: 'center', justifyContent: 'center', flexShrink: 0 } as ViewStyle,
-  docName: { fontSize: 17 } as any,
-  docSpec: { fontSize: 12.5, marginTop: 1 } as any,
+  headerCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 13,
+    padding: 15,
+    borderRadius: 18,
+    borderWidth: 1,
+  } as ViewStyle,
+  thumb: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  } as ViewStyle,
+  docName: { fontSize: 16.5 } as any,
+  docSpec: { fontSize: 13, marginTop: 2 } as any,
+  docQual: { fontSize: 12, marginTop: 2 } as any,
 
-  availBanner: { flexDirection: 'row', alignItems: 'center', gap: 13, padding: 14, borderRadius: 16, marginTop: 12 } as ViewStyle,
-  availIcon: { width: 44, height: 44, borderRadius: 13, alignItems: 'center', justifyContent: 'center', flexShrink: 0 } as ViewStyle,
-  availTitle: { fontSize: 15.5 } as any,
-  availSub: { fontSize: 12.5, marginTop: 2 } as any,
+  availBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 14,
+    borderRadius: 16,
+    marginTop: 12,
+  } as ViewStyle,
+  availIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  } as ViewStyle,
+  availTitle: { fontSize: 14.5 } as any,
+  availSub: { fontSize: 12, marginTop: 2 } as any,
 
-  sectionLabel: { fontSize: 11, letterSpacing: 0.8, marginTop: 20, marginBottom: 9 } as any,
+  counselingCard: {
+    padding: 15,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginTop: 14,
+  } as ViewStyle,
+  counselingTop: { flexDirection: 'row', alignItems: 'center', gap: 12 } as ViewStyle,
+  counselingIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  counselingTitle: { fontSize: 14 } as any,
+  counselingSub: { fontSize: 12, marginTop: 2 } as any,
+  counselingActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 12,
+    marginTop: 12,
+  } as ViewStyle,
+  counselingActionTxt: { fontSize: 13 } as any,
+
+  actionRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 14,
+  } as ViewStyle,
+  actionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 11,
+    borderRadius: 12,
+  } as ViewStyle,
+  actionBtnTxt: { fontSize: 13 } as any,
+
+  sectionLabel: {
+    fontSize: 11,
+    letterSpacing: 0.8,
+    marginTop: 20,
+    marginBottom: 9,
+  } as any,
   schedCard: { borderRadius: 16, borderWidth: 1, overflow: 'hidden' } as ViewStyle,
   schedRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 } as ViewStyle,
-  schedIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexShrink: 0 } as ViewStyle,
+  schedIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  } as ViewStyle,
   schedBody: { flex: 1 } as ViewStyle,
-  schedLabel: { fontSize: 14 } as any,
+  schedLabel: { fontSize: 13.5 } as any,
   schedValue: { fontSize: 13, flexShrink: 0 } as any,
   divider: { height: StyleSheet.hairlineWidth } as ViewStyle,
+
+  guideCard: {
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginTop: 14,
+  } as ViewStyle,
+  guideTitle: { fontSize: 13.5 } as any,
+  guideTxt: { fontSize: 12, marginTop: 3, lineHeight: 18 } as any,
 });

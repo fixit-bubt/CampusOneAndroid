@@ -151,6 +151,7 @@ const MANAGE_TILES = [
   { icon: 'directory', fg: Accent.teal,           tk: 'manageFaculty',        route: 'ManageFaculty',sub: 'faculty'    },
   { icon: 'study',     fg: SectorColors.study,    tk: 'manageStudyHub',       route: 'StudyHub',     sub: 'studyhub'   },
   { icon: 'clubs',     fg: Accent.amber,          tk: 'manageClubs',          route: 'ManageClubs',  sub: 'clubs'      },
+  { icon: 'medical',   fg: SectorColors.medical,  tk: 'manageMedicalCenter',  route: 'Medical',      sub: 'medical'    },
 ] as const;
 
 export function AdminDashboardScreen({ navigation }: any) {
