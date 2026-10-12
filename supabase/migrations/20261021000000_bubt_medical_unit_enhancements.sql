@@ -153,3 +153,4 @@ set
   email = coalesce(email, 'medical@bubt.edu.bd'),
   role_type = 'doctor'
 where id = 'd6';
+

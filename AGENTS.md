@@ -223,7 +223,7 @@ The live Supabase database (`xhgpxvyqrufbbuivttmi`) is the single source of trut
 | **Jobs** | `jobs` & `job_applications` | **NO status column on jobs**. Removed jobs have `deleted_at IS NOT NULL`. Withdraw a job by setting `deleted_at = now()`. Types: `internship`, `tuition`, `on_campus`, `part_time`, `full_time`, `freelance`. Applications tracked in `job_applications` (`submitted`, `viewed`, `shortlisted`, `rejected`) with RLS & notification triggers. Storage bucket `job-circulars` (circulars uploaded to `{user_id}/*`, student resumes uploaded to `resumes/{user_id}/*`). Poster authorization verified via `can_post_jobs()` RPC. Notifications use `sector = 'jobs'`. |
 | **Reports** | `reports` | Columns: `code`, `reporter_id`, `assigned_staff_id`, `status` (`'Open'`, `'In Progress'`, `'Resolved'`, `'Rejected'`, `'Closed'`). Trade assignment matches `profiles.expertise`. |
 | **Connections** | `connections` | `requester_id`, `addressee_id`, `status` (`'pending'`, `'accepted'`). Contact reveal via `student_profile_detail(p_target_id)` RPC. Atomic disconnect via `disconnect_student(p_target_id)` RPC. Event notification trigger `trg_notify_connection_event` for alerts and lockscreen push. |
-| **Medical** | `doctors` & `appointments` | Clinic is walk-in / directory only. Doctors: `room`. Appointments: `student_id`, `slot`, `date`. |
+| **Medical** | `doctors` | Official BUBT Medical Unit (Room 205, Bldg 3). Columns: `name`, `specialty`, `qualifications`, `days`, `start_time`, `end_time`, `room`, `phone`, `email`, `role_type`, `is_on_leave`, `leave_note`, `active`. Walk-in triage, mental health counseling, emergency Mirpur hospital directory. RLS: select authenticated, admin write. |
 | **Account Deletion** | `delete_own_account()` RPC | SECURITY DEFINER. Removes dependent records and caller from `auth.users` (cascading to `profiles`). Revoked from anon; authenticated only. |
 
 ### 8.2 Profiles RLS & Display Names
@@ -1328,11 +1328,34 @@ The Campus Announcements architecture is transformed from a manual posting board
 - **Strict Dhaka Time Date Arithmetic:** Event presets calculate dates via `Date.UTC` arithmetic on `localToday()`, preventing UTC midnight off-by-one errors.
 - **Soft-Delete Filtering:** Home community feed query enforces `.is('deleted_at', null)` to strictly hide removed events.
 
+---
 
+## 33. BUBT Medical Unit 360 & Campus Health Architecture
 
+### 33.1 Official BUBT Facility & Campus Context
+- **Official Identity:** Managed under BUBT's **Health & Community Development** department (**BUBT Medical Unit**).
+- **Location:** **Room No. 205, 1st Floor, Building 3**, BUBT Main Campus (Rupnagar, Mirpur-2, Dhaka-1216).
+- **Direct Contact:** Intercom **Ext. 112** (`+8801741129235`) · Official Email: `medical@bubt.edu.bd` · Counseling Email: `moujuliet@bubt.edu.bd`.
+- **Operating Hours:** Sunday to Thursday, 9:00 AM – 5:00 PM (Closed Fridays & Saturdays).
+- **Walk-in Triage Policy:** All consultations, vital sign checks, and basic dispensary medicines are completely free of charge upon presenting a valid BUBT Student or Employee ID card.
 
+### 33.2 Database Schema Enhancements & Official Roster
+- **Migration `20261021000000_bubt_medical_unit_enhancements.sql`:**
+  - Added `qualifications`, `phone`, `email`, `role_type` (`'doctor'`, `'psychologist'`, `'nurse'`, `'staff'`), `is_on_leave`, and `leave_note` to `public.doctors`.
+- **Authentic BUBT Personnel:**
+  - **Dr. Nurun Nabi Md Mustafa Kamal** — Senior Medical Officer (`MBBS`)
+  - **Dr. Ekra Binte Musa** — Medical Officer (`MBBS`)
+  - **Mou Juliet Rebeiro** — Campus Psychologist (`M.Sc in Psychology · Mental Health & Well-being`)
+  - **Room 205 Nursing & Triage Desk** — Nursing Staff (`Smriti Akter / Nasima Khatun`)
+  - Visiting consultant doctors (`d1`–`d6`) retain specialized clinic hours with credentials and intercom extensions.
 
+### 33.3 3-Tab Medical Hub (`MedicalScreen.tsx` & `DoctorDetailScreen.tsx`)
+- **Universal `SegmentedTabs`:**
+  1. **Doctors & Staff (`staff`):** Real-time search across names, specialties, rooms, and qualifications; filter chips (`All`, `Doctors`, `Mental Health`, `On Duty Today`); smart duty status engine calculating `on_duty` (with live countdown e.g. `Ends in 1h 25m`), `starting_soon`, `off_duty`, and `on_leave` (with custom absence note).
+  2. **Clinic Services & Dispensary (`services`):** Documents 8 core on-campus medical capabilities (Doctor Consultation, Mental Health Counseling, Vitals Monitoring, Blood Glucose Screening, Emergency First Aid, Asthma Nebulization, Wound Dressing, Wheelchair/Stretcher Support) and 7 free over-the-counter dispensary medicines (Paracetamol, ORS, Antacids/Omeprazole, Antihistamines, Antispasmodics, Burn Cream, Povidone-Iodine).
+  3. **Emergency & Nearby Hospitals (`emergency`):** 1-tap rapid dialers for BUBT Medical Desk (Ext. 112), National Emergency (`999`), and Campus Security; curated directory of 5 nearby Mirpur 24/7 hospitals (National Heart Foundation, Delta Medical College, Mirpur General, Kidney Foundation, Dhaka Dental College) with distances, hotlines, and Google Maps navigation links.
 
-
-
-
+### 33.4 Mental Health, Admin Controls & Ecosystem Sync
+- **Confidential Psychological Support:** Dedicated highlight card on `DoctorDetailScreen` for Campus Psychologist **Mou Juliet Rebeiro** with a 1-tap `Request Confidential Session` mailto action.
+- **In-App Admin Management:** Added `manageMedicalCenter` tile to `AdminDashboardScreen` and an inline admin quick-edit modal on `MedicalScreen` to toggle `is_on_leave`, set leave notes, and update room locations.
+- **`CampusToday` Live Widget:** Displays the currently on-duty doctor or `"BUBT Medical Unit Open · Room 205, Bldg 3"` on the Home feed during operating hours.
