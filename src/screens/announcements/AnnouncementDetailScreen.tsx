@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Image,
-  Modal, Share, Pressable, type ViewStyle,
+  Modal, Share, Pressable, type ViewStyle, type ImageSourcePropType,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -20,6 +20,33 @@ import { useAuth } from '../../store/authStore';
 import { useToast } from '../../components/ui/Toast';
 import type { Announcement } from '../../types/database';
 import { toggleAnnouncementBookmark } from '../../services/announcementService';
+
+const BANNERS_MAP: Record<string, ImageSourcePropType> = {
+  'blood-drive.jpg': require('../../../assets/banners/blood-drive.jpg'),
+  'convocation-2026.jpg': require('../../../assets/banners/convocation-2026.jpg'),
+  'exam-routine.jpg': require('../../../assets/banners/exam-routine.jpg'),
+  'hackathon-2026.jpg': require('../../../assets/banners/hackathon-2026.jpg'),
+};
+
+function resolveNoticeImage(rawUrl?: string | null): ImageSourcePropType | null {
+  if (!rawUrl) return null;
+  const cleaned = rawUrl.trim();
+  const filename = cleaned.split('/').pop()?.split('?')[0] || '';
+  if (filename && BANNERS_MAP[filename]) {
+    return BANNERS_MAP[filename];
+  }
+  if (cleaned.startsWith('http://') || cleaned.startsWith('https://')) {
+    return { uri: cleaned };
+  }
+  if (cleaned.startsWith('/')) {
+    return { uri: `https://campus-theta.vercel.app${cleaned}` };
+  }
+  if (cleaned.startsWith('notices/') || cleaned.startsWith('storage/')) {
+    const withoutStorage = cleaned.replace(/^storage\//, '').replace(/^\/+/, '');
+    return { uri: `https://www.bubt.edu.bd/storage/${withoutStorage}` };
+  }
+  return { uri: cleaned };
+}
 
 function priTone(C: any, priority: string, isDark?: boolean): { fg: string; bg: string } {
   switch (priority) {
@@ -50,6 +77,9 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
   const [pdfModalVisible, setPdfModalVisible] = useState(false);
   const [imageModalVisible, setImageModalVisible] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [imgLoading, setImgLoading] = useState(false);
+  const [imgError, setImgError] = useState(false);
+  const [zoomLoading, setZoomLoading] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -227,31 +257,95 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
           </View>
         )}
 
-        {/* Priority + category pills */}
-        <View style={styles.pills}>
-          <View style={[styles.priPill, { backgroundColor: bg }]}>
+        {/* Cohesive Notice Attributes Bar */}
+        <View style={[styles.attrBar, { backgroundColor: C.surface, borderColor: C.border }]}>
+          {/* Priority Pill */}
+          <View style={[styles.attrItem, { backgroundColor: bg }]}>
             <View style={[styles.priDot, { backgroundColor: fg }]} />
-            <Text style={[styles.priText, { color: fg, fontFamily: FontFamily.jakartaBold }]}>
+            <Text style={[styles.attrText, { color: fg, fontFamily: FontFamily.jakartaBold }]}>
               {t.announce2.priorityLabels[item.priority] ?? item.priority}
             </Text>
           </View>
 
-          {item.category && (
-            <View style={[styles.priPill, { backgroundColor: C.surface2 }]}>
-              <Text style={[styles.priText, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>
+          {/* Category / Offday Pill */}
+          {item.category ? (
+            <View
+              style={[
+                styles.attrItem,
+                {
+                  backgroundColor:
+                    item.category.toLowerCase().includes('offday') || item.category.toLowerCase().includes('holiday')
+                      ? (isDark ? 'rgba(234, 88, 12, 0.16)' : '#fff7ed')
+                      : item.category.toLowerCase().includes('exam')
+                      ? (isDark ? 'rgba(59, 130, 246, 0.16)' : '#eff6ff')
+                      : C.surface2,
+                  borderColor:
+                    item.category.toLowerCase().includes('offday') || item.category.toLowerCase().includes('holiday')
+                      ? (isDark ? 'rgba(234, 88, 12, 0.35)' : '#fed7aa')
+                      : item.category.toLowerCase().includes('exam')
+                      ? (isDark ? 'rgba(59, 130, 246, 0.35)' : '#bfdbfe')
+                      : C.border,
+                  borderWidth: 1,
+                },
+              ]}
+            >
+              <Feather
+                name={
+                  item.category.toLowerCase().includes('offday') || item.category.toLowerCase().includes('holiday')
+                    ? 'sun'
+                    : item.category.toLowerCase().includes('exam')
+                    ? 'file-text'
+                    : item.category.toLowerCase().includes('semester')
+                    ? 'calendar'
+                    : 'tag'
+                }
+                size={12}
+                color={
+                  item.category.toLowerCase().includes('offday') || item.category.toLowerCase().includes('holiday')
+                    ? SectorColors.announce
+                    : item.category.toLowerCase().includes('exam')
+                    ? C.brand
+                    : C.text
+                }
+              />
+              <Text
+                style={[
+                  styles.attrText,
+                  {
+                    color:
+                      item.category.toLowerCase().includes('offday') || item.category.toLowerCase().includes('holiday')
+                        ? SectorColors.announce
+                        : item.category.toLowerCase().includes('exam')
+                        ? C.brand
+                        : C.text,
+                    fontFamily: FontFamily.jakartaBold,
+                  },
+                ]}
+              >
                 {item.category}
               </Text>
             </View>
-          )}
+          ) : null}
 
-          {item.pinned && (
-            <View style={[styles.priPill, { backgroundColor: C.infoBg }]}>
-              <View style={[styles.priDot, { backgroundColor: C.info }]} />
-              <Text style={[styles.priText, { color: C.info, fontFamily: FontFamily.jakartaBold }]}>
+          {/* Pinned Pill */}
+          {item.pinned ? (
+            <View style={[styles.attrItem, { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.18)' : '#e0edff', borderWidth: 1, borderColor: isDark ? 'rgba(59, 130, 246, 0.35)' : '#bfdbfe' }]}>
+              <Icon name="pin" size={11} color={C.brand} />
+              <Text style={[styles.attrText, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
                 {t.announce2.pinned}
               </Text>
             </View>
-          )}
+          ) : null}
+
+          {/* Issuing Office */}
+          {item.department_code && item.department_code !== 'ALL' ? (
+            <View style={[styles.attrItem, { backgroundColor: C.surface2, borderWidth: 1, borderColor: C.border }]}>
+              <Feather name="shield" size={11} color={C.textMuted} />
+              <Text style={[styles.attrText, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                {item.department_code}
+              </Text>
+            </View>
+          ) : null}
         </View>
 
         {/* Title */}
@@ -273,19 +367,39 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
         </Text>
 
         {/* Notice Image (Flyer / Poster) */}
-        {item.image_url ? (
-          <TouchableOpacity
-            onPress={() => setImageModalVisible(true)}
-            activeOpacity={0.85}
-            style={styles.imageWrapper}
-          >
-            <Image source={{ uri: item.image_url }} style={styles.noticeImage} resizeMode="contain" />
-            <View style={styles.tapToZoomPill}>
-              <Feather name="maximize-2" size={12} color="#fff" />
-              <Text style={styles.tapToZoomTxt}>Tap to zoom</Text>
-            </View>
-          </TouchableOpacity>
-        ) : null}
+        {resolveNoticeImage(item.image_url) && !imgError && (
+          <View style={[styles.imageCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <TouchableOpacity
+              onPress={() => setImageModalVisible(true)}
+              activeOpacity={0.88}
+              style={styles.imageWrapper}
+            >
+              <Image
+                source={resolveNoticeImage(item.image_url)!}
+                style={styles.noticeImage}
+                resizeMode="cover"
+                onLoadStart={() => setImgLoading(true)}
+                onLoadEnd={() => setImgLoading(false)}
+                onError={() => {
+                  setImgLoading(false);
+                  setImgError(true);
+                }}
+              />
+              {imgLoading && (
+                <View style={[styles.imageLoadingOverlay, { backgroundColor: C.surface2 }]}>
+                  <ActivityIndicator size="small" color={C.brand} />
+                  <Text style={[styles.imageLoadingTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                    Loading official notice image…
+                  </Text>
+                </View>
+              )}
+              <View style={styles.tapToZoomPill}>
+                <Feather name="maximize-2" size={12} color="#fff" />
+                <Text style={styles.tapToZoomTxt}>Tap to zoom</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Attachment Card (PDF) */}
         {item.attachment_url && (
@@ -369,15 +483,45 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
             <Text style={styles.pdfHeaderTitle} numberOfLines={1}>
               {item.attachment_name || 'Notice PDF'}
             </Text>
-            <TouchableOpacity onPress={handleDownloadPdf} hitSlop={8} style={{ padding: 4 }}>
-              <Feather name="download" size={20} color="#111" />
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              {item.attachment_url && (
+                <TouchableOpacity
+                  onPress={() => openUrl(item.attachment_url!)}
+                  hitSlop={8}
+                  style={{ padding: 4 }}
+                >
+                  <Feather name="external-link" size={18} color="#111" />
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity onPress={handleDownloadPdf} hitSlop={8} style={{ padding: 4 }}>
+                <Feather name="download" size={19} color="#111" />
+              </TouchableOpacity>
+            </View>
           </View>
 
           {googleDocsPdfViewer && (
             <WebView
               source={{ uri: googleDocsPdfViewer }}
               style={{ flex: 1, backgroundColor: '#fff' }}
+              scalesPageToFit={true}
+              javaScriptEnabled={true}
+              domStorageEnabled={true}
+              originWhitelist={['*']}
+              mixedContentMode="always"
+              setSupportMultipleWindows={false}
+              showsHorizontalScrollIndicator={false}
+              injectedJavaScript={`
+                (function() {
+                  const meta = document.createElement('meta');
+                  meta.name = 'viewport';
+                  meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes';
+                  document.head.appendChild(meta);
+                  const style = document.createElement('style');
+                  style.innerHTML = 'html, body { width: 100% !important; margin: 0 !important; padding: 0 !important; background: #fff !important; }';
+                  document.head.appendChild(style);
+                })();
+                true;
+              `}
               startInLoadingState
               renderLoading={() => (
                 <View style={styles.pdfLoading}>
@@ -393,7 +537,7 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
       </Modal>
 
       {/* =========================================================================
-          MODAL 2: FULLSCREEN IMAGE VIEWER MODAL
+          MODAL 2: FULLSCREEN IMAGE VIEWER MODAL WITH PINCH-TO-ZOOM
          ========================================================================= */}
       <Modal
         visible={imageModalVisible}
@@ -401,23 +545,54 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
         animationType="fade"
         onRequestClose={() => setImageModalVisible(false)}
       >
-        <View style={styles.imageModalOverlay}>
-          <TouchableOpacity
-            style={styles.imageModalClose}
-            onPress={() => setImageModalVisible(false)}
-            hitSlop={10}
-          >
-            <Feather name="x" size={24} color="#fff" />
-          </TouchableOpacity>
+        <SafeAreaView style={styles.imageModalOverlay}>
+          <View style={styles.imageModalHeader}>
+            <TouchableOpacity
+              style={styles.imageModalClose}
+              onPress={() => setImageModalVisible(false)}
+              hitSlop={12}
+            >
+              <Feather name="x" size={24} color="#fff" />
+            </TouchableOpacity>
+            <Text style={styles.imageModalTitle} numberOfLines={1}>
+              {item.title}
+            </Text>
+            {item.image_url ? (
+              <TouchableOpacity
+                style={styles.imageModalShare}
+                onPress={() => Share.share({ title: item.title, url: item.image_url! })}
+                hitSlop={12}
+              >
+                <Feather name="share-2" size={19} color="#fff" />
+              </TouchableOpacity>
+            ) : <View style={{ width: 36 }} />}
+          </View>
 
-          {item.image_url && (
-            <Image
-              source={{ uri: item.image_url }}
-              style={styles.fullscreenImage}
-              resizeMode="contain"
-            />
-          )}
-        </View>
+          <ScrollView
+            style={{ flex: 1, width: '100%' }}
+            contentContainerStyle={styles.imageZoomScroll}
+            maximumZoomScale={4}
+            minimumZoomScale={1}
+            centerContent
+            showsHorizontalScrollIndicator={false}
+            showsVerticalScrollIndicator={false}
+          >
+            {resolveNoticeImage(item.image_url) && (
+              <Image
+                source={resolveNoticeImage(item.image_url)!}
+                style={styles.fullscreenImage}
+                resizeMode="contain"
+                onLoadStart={() => setZoomLoading(true)}
+                onLoadEnd={() => setZoomLoading(false)}
+              />
+            )}
+            {zoomLoading && (
+              <View style={styles.zoomLoadingOverlay}>
+                <ActivityIndicator size="large" color="#fff" />
+              </View>
+            )}
+          </ScrollView>
+        </SafeAreaView>
       </Modal>
     </SafeAreaView>
   );
@@ -446,31 +621,78 @@ const styles = StyleSheet.create({
   officialBannerCode: { fontSize: 11, marginTop: 1 } as any,
   openWebBtn: { padding: 4 } as ViewStyle,
 
-  pills: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' } as ViewStyle,
-  priPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 9, paddingVertical: 5, borderRadius: 20 } as ViewStyle,
-  priDot: { width: 6, height: 6, borderRadius: 3 } as ViewStyle,
-  priText: { fontSize: 11.5 } as any,
+  // Cohesive Attribute Bar
+  attrBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    flexWrap: 'wrap',
+    padding: 6,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    marginBottom: 4,
+  } as ViewStyle,
+  attrItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 4.5,
+    borderRadius: 8,
+  } as ViewStyle,
+  attrText: {
+    fontSize: 11,
+  } as any,
+  priDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  } as ViewStyle,
 
   title: { fontSize: 20, letterSpacing: -0.4, marginTop: 14, lineHeight: 28 } as any,
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 } as ViewStyle,
   meta: { fontSize: 12.5 } as any,
   body: { fontSize: 14.5, lineHeight: 24, marginTop: 16 } as any,
 
-  imageWrapper: { marginTop: 16, borderRadius: Radius.lg, overflow: 'hidden', backgroundColor: 'rgba(0,0,0,0.03)' } as ViewStyle,
-  noticeImage: { width: '100%', height: 260, borderRadius: Radius.lg } as any,
+  // Image Card
+  imageCard: {
+    marginTop: 18,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    overflow: 'hidden',
+  } as ViewStyle,
+  imageWrapper: {
+    width: '100%',
+    height: 240,
+    overflow: 'hidden',
+    position: 'relative',
+  } as ViewStyle,
+  noticeImage: {
+    width: '100%',
+    height: '100%',
+  } as any,
+  imageLoadingOverlay: {
+    ...StyleSheet.absoluteFill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  } as ViewStyle,
+  imageLoadingTxt: {
+    fontSize: 11.5,
+  } as any,
   tapToZoomPill: {
     position: 'absolute',
     bottom: 10,
     right: 10,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(0,0,0,0.65)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    gap: 5,
+    backgroundColor: 'rgba(0,0,0,0.72)',
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 14,
   } as ViewStyle,
-  tapToZoomTxt: { color: '#fff', fontSize: 11, fontFamily: FontFamily.jakartaMedium } as any,
+  tapToZoomTxt: { color: '#fff', fontSize: 11, fontFamily: FontFamily.jakartaBold } as any,
 
   attachCard: {
     flexDirection: 'row',
@@ -539,19 +761,42 @@ const styles = StyleSheet.create({
   // Fullscreen Image Modal
   imageModalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.92)',
+    backgroundColor: 'rgba(0,0,0,0.96)',
+  } as ViewStyle,
+  imageModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    zIndex: 10,
+  } as ViewStyle,
+  imageModalClose: {
+    padding: 4,
+  } as ViewStyle,
+  imageModalTitle: {
+    flex: 1,
+    color: '#fff',
+    fontSize: 13.5,
+    fontFamily: FontFamily.jakartaBold,
+    marginHorizontal: 12,
+    textAlign: 'center',
+  } as any,
+  imageModalShare: {
+    padding: 4,
+  } as ViewStyle,
+  imageZoomScroll: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   } as ViewStyle,
-  imageModalClose: {
-    position: 'absolute',
-    top: 50,
-    right: 20,
-    zIndex: 10,
-    padding: 8,
-  } as ViewStyle,
   fullscreenImage: {
-    width: '94%',
-    height: '80%',
+    width: '100%',
+    height: '100%',
   } as any,
+  zoomLoadingOverlay: {
+    ...StyleSheet.absoluteFill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
 });

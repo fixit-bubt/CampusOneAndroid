@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { getCache, setCache, CacheKeys } from './cacheService';
+import { getCache, setCache, removeCache, CacheKeys } from './cacheService';
 import type { Announcement } from '../types/database';
 
 export interface AnnouncementCategoryItem {
@@ -68,6 +68,8 @@ export async function fetchAnnouncementsFeed(userId?: string): Promise<{
       setCache(CacheKeys.ANNOUNCEMENT_READS(userId), Array.from(readIds));
       setCache(CacheKeys.ANNOUNCEMENT_BOOKMARKS(userId), Array.from(savedIds));
     }
+    // Invalidate home updates so community feed stays fresh
+    removeCache(CacheKeys.HOME_UPDATES).catch(() => {});
 
     return { items, readIds, savedIds };
   } catch (err: any) {
@@ -115,7 +117,7 @@ export async function toggleAnnouncementBookmark(
   }
 }
 
-export async function triggerNoticeSync(): Promise<{
+export async function triggerNoticeSync(isDeep = false): Promise<{
   success: boolean;
   totalScanned?: number;
   newAdded?: number;
@@ -124,9 +126,12 @@ export async function triggerNoticeSync(): Promise<{
 }> {
   try {
     const { data, error } = await supabase.functions.invoke('sync-notices', {
-      body: { triggered_by: 'admin' },
+      headers: isDeep ? { 'x-deep-crawl': 'true' } : {},
+      body: { triggered_by: 'app', deep: isDeep },
     });
     if (error) throw error;
+    await removeCache(CacheKeys.HOME_UPDATES);
+    await removeCache(CacheKeys.ANNOUNCEMENTS);
     return {
       success: true,
       totalScanned: data?.total_scanned,

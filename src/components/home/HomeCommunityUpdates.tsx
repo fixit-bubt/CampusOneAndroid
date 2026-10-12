@@ -280,15 +280,6 @@ export function HomeCommunityUpdates() {
       }
 
       if (list.length > 0) {
-        // If fewer than 4 items, merge defaults to keep the feed engaging
-        if (list.length < 4) {
-          const existingTitles = new Set(list.map((i) => i.title.toLowerCase()));
-          DEFAULT_NEWS.forEach((d) => {
-            if (!existingTitles.has(d.title.toLowerCase())) {
-              list.push(d);
-            }
-          });
-        }
         list.sort((a, b) => (b.rawDate || '').localeCompare(a.rawDate || ''));
         setItems(list);
         setCache(CacheKeys.HOME_UPDATES, list);
@@ -306,7 +297,21 @@ export function HomeCommunityUpdates() {
 
   useEffect(() => {
     loadData();
-  }, [loadData]);
+    const unsub = navigation.addListener('focus', () => {
+      loadData();
+    });
+    const channel = supabase
+      .channel('home_community_live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, () => {
+        loadData();
+      })
+      .subscribe();
+
+    return () => {
+      unsub();
+      supabase.removeChannel(channel);
+    };
+  }, [loadData, navigation]);
 
   // Tab counts
   const counts = useMemo(() => {

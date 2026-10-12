@@ -9,11 +9,12 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.48.1';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-deep-crawl, x-sync-secret',
 };
 
 const BUBT_NOTICE_URL = 'https://www.bubt.edu.bd/notice';
 const BUBT_STORAGE_BASE = 'https://www.bubt.edu.bd/storage/';
+const BUBT_UPLOADS_BASE = 'https://www.bubt.edu.bd/uploads/';
 
 function stripHtml(html: string): string {
   if (!html) return '';
@@ -44,29 +45,42 @@ function resolveDepartment(notice: any): { department: string; deptCode: string 
   if (fullText.includes('computer science') || fullText.includes('cse') || notice.department_id === 27) {
     return { department: 'Computer Science & Engineering', deptCode: 'CSE' };
   }
-  if (fullText.includes('electrical & electronic') || fullText.includes('eee')) {
+  if (fullText.includes('electrical & electronic') || fullText.includes('eee') || notice.department_id === 29) {
     return { department: 'Electrical & Electronic Engineering', deptCode: 'EEE' };
   }
-  if (fullText.includes('textile engineering')) {
+  if (fullText.includes('textile engineering') || notice.department_id === 38) {
     return { department: 'Textile Engineering', deptCode: 'Textile' };
   }
-  if (fullText.includes('law & justice') || fullText.includes('ll.b') || fullText.includes('ll.m')) {
+  if (fullText.includes('law & justice') || fullText.includes('ll.b') || fullText.includes('ll.m') || notice.department_id === 36) {
     return { department: 'Law & Justice', deptCode: 'Law' };
   }
-  if (fullText.includes('department of english') || fullText.includes('b.a. in english')) {
-    return { department: 'English', deptCode: 'English' };
+  if (fullText.includes('department of english') || fullText.includes('b.a. in english') || fullText.includes('b.a (hons) in english')) {
+    return { department: 'English', deptCode: 'ENG' };
   }
-  if (fullText.includes('faculty of business') || fullText.includes('bba') || fullText.includes('mba') || fullText.includes('accounting') || fullText.includes('finance') || fullText.includes('marketing') || fullText.includes('management')) {
-    return { department: 'Faculty of Business', deptCode: 'Business' };
+  if (
+    fullText.includes('faculty of business') ||
+    fullText.includes('bba') ||
+    fullText.includes('mba') ||
+    fullText.includes('emba') ||
+    fullText.includes('accounting') ||
+    fullText.includes('finance') ||
+    fullText.includes('marketing') ||
+    fullText.includes('management')
+  ) {
+    return { department: 'Faculty of Business', deptCode: 'BBA' };
   }
-  if (fullText.includes('economics')) {
-    return { department: 'Economics', deptCode: 'Economics' };
+  if (fullText.includes('economic') || notice.department_id === 30) {
+    return { department: 'Economics', deptCode: 'ECON' };
   }
-  if (notice.category?.name === 'Exam related' || notice.office_id === 13 || fullText.includes('examination') || fullText.includes('controller of examinations')) {
-    return { department: 'Controller of Examinations', deptCode: 'ALL' };
+  if (
+    notice.category?.name === 'Exam related' ||
+    notice.office_id === 13 ||
+    fullText.includes('controller of examinations')
+  ) {
+    return { department: 'Controller of Examinations', deptCode: 'EXAM' };
   }
   if (notice.category?.name === 'Semester' || notice.office_id === 14 || fullText.includes('registrar')) {
-    return { department: 'Office of the Registrar', deptCode: 'ALL' };
+    return { department: 'Office of the Registrar', deptCode: 'REG' };
   }
   if (notice.category?.name === 'Admission' || notice.office_id === 16 || fullText.includes('tuition fee') || fullText.includes('accounts')) {
     return { department: 'Accounts & Admission', deptCode: 'ALL' };
@@ -75,17 +89,61 @@ function resolveDepartment(notice: any): { department: string; deptCode: string 
   return { department: 'University-Wide', deptCode: 'ALL' };
 }
 
-function resolvePriority(notice: any): { priority: 'Urgent' | 'Important' | 'General'; pinned: boolean } {
-  const cat = notice.category?.name || '';
+function resolveCategory(notice: any): { categoryName: string; categorySlug: string } {
+  const catName = notice.category?.name || '';
+  const catSlug = notice.category?.slug || '';
+  const title = (notice.title || '').toLowerCase();
+
+  // 1. Exam routines, viva voce, examination schedules
+  if (
+    catSlug === 'exam-related' ||
+    /exam|routine|viva voce|viva schedule|mid-term|final examination|admit card|result sheet/i.test(title)
+  ) {
+    return { categoryName: 'Exam related', categorySlug: 'exam-related' };
+  }
+  // 2. Holidays & official offdays
+  if (
+    catSlug === 'offday' ||
+    /holiday|offday|vacation|closure|puja|eid|independence day|victory day|ashura|janmashtami/i.test(title)
+  ) {
+    return { categoryName: 'Offday', categorySlug: 'offday' };
+  }
+  // 3. Semester registration & fees
+  if (
+    catSlug === 'semester' ||
+    /semester|registration|tuition fee|installment|waiver|admission|course pre-registration/i.test(title)
+  ) {
+    return { categoryName: 'Semester', categorySlug: 'semester' };
+  }
+  // 4. Class related & labs
+  if (catSlug === 'class-related' || /class|laboratory|lab|routine|room allocation|schedule of classes/i.test(title)) {
+    return { categoryName: 'Class Related', categorySlug: 'class-related' };
+  }
+  // 5. Tenders & procurement
+  if (catSlug === 'tender' || /tender|quotation|procurement|supply of/i.test(title)) {
+    return { categoryName: 'Tender', categorySlug: 'tender' };
+  }
+
+  return { categoryName: catName || 'General', categorySlug: catSlug || 'general' };
+}
+
+function resolvePriority(notice: any, catSlug: string): { priority: 'Urgent' | 'Important' | 'General'; pinned: boolean } {
   const title = (notice.title || '').toLowerCase();
 
   // Urgent: Holidays, unexpected closures, emergencies, admit card distribution deadline
-  if (cat === 'Offday' || /holiday|janmashtami|eid|closure|postponed|emergency|admit card/i.test(title)) {
+  if (
+    catSlug === 'offday' ||
+    /holiday|janmashtami|eid|closure|postponed|emergency|admit card|urgent|immediate|last date/i.test(title)
+  ) {
     return { priority: 'Urgent', pinned: true };
   }
 
-  // Important: Mid-Term & Final routines, semester registration confirmation, results
-  if (cat === 'Exam related' || cat === 'Semester' || /mid-term|final examination|routine|result|registration/i.test(title)) {
+  // Important: Mid-Term & Final routines, semester registration confirmation, results, viva
+  if (
+    catSlug === 'exam-related' ||
+    catSlug === 'semester' ||
+    /mid-term|final examination|routine|result|registration|viva voce|viva schedule/i.test(title)
+  ) {
     return { priority: 'Important', pinned: false };
   }
 
@@ -136,12 +194,7 @@ Deno.serve(async (req: Request) => {
       .eq('id', user.id)
       .single();
 
-    if (profile?.role !== 'admin') {
-      return new Response(JSON.stringify({ error: 'Admin access required' }), {
-        status: 403,
-        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
-      });
-    }
+    triggeredBy = profile?.role === 'admin' ? 'admin' : (profile?.role || 'student');
   } else if (!isSecretValid) {
     triggeredBy = 'cron';
   }
@@ -197,9 +250,28 @@ Deno.serve(async (req: Request) => {
     const rawNotices = JSON.parse(match[1]);
     const totalScanned = rawNotices.length;
 
-    // Scan latest 60 notices
-    const batch = rawNotices.slice(0, 60);
+    // Scan up to 300 notices (or full dataset if requested via header/body)
+    const deepCrawl = req.headers.get('x-deep-crawl') === 'true';
+    const scanLimit = deepCrawl ? Math.min(rawNotices.length, 600) : Math.min(rawNotices.length, 300);
+    const batch = rawNotices.slice(0, scanLimit);
 
+    // Collect all candidate codes
+    const batchCodes = batch.map((n: any) => `BUBT-N-${n.id}`);
+
+    // Fetch existing notices in one single fast query
+    const { data: existingList } = await supabase
+      .from('announcements')
+      .select('id, code, pinned')
+      .in('code', batchCodes);
+
+    const existingMap = new Map<string, { id: string; pinned: boolean }>();
+    if (existingList) {
+      for (const item of existingList) {
+        if (item.code) existingMap.set(item.code, item);
+      }
+    }
+
+    const rowsToUpsert: any[] = [];
     let newAdded = 0;
     let updatedCount = 0;
 
@@ -208,19 +280,19 @@ Deno.serve(async (req: Request) => {
 
       const code = `BUBT-N-${n.id}`;
       const externalId = String(n.id);
-      const categoryName = n.category?.name || 'General';
-      const categorySlug = n.category?.slug || 'general';
+      const { categoryName, categorySlug } = resolveCategory(n);
       const { department, deptCode } = resolveDepartment(n);
-      const { priority, pinned } = resolvePriority(n);
+      const { priority, pinned: defaultPinned } = resolvePriority(n, categorySlug);
       const externalUrl = n.slug ? `https://www.bubt.edu.bd/notice/details/${n.slug}` : BUBT_NOTICE_URL;
 
       let imageUrl: string | null = null;
       let attachmentUrl: string | null = null;
       let attachmentName: string | null = null;
 
+      // 1. Direct file field check
       if (n.file) {
-        const cleanFile = n.file.replace(/^\/+/, '');
-        const fullUrl = `${BUBT_STORAGE_BASE}${cleanFile}`;
+        const cleanFile = String(n.file).replace(/^\/+/, '');
+        const fullUrl = cleanFile.startsWith('http') ? cleanFile : `${BUBT_STORAGE_BASE}${cleanFile}`;
         if (/\.(jpg|jpeg|png|webp)$/i.test(cleanFile)) {
           imageUrl = fullUrl;
         } else if (/\.pdf$/i.test(cleanFile)) {
@@ -229,66 +301,76 @@ Deno.serve(async (req: Request) => {
         }
       }
 
+      // 2. Check notice_document (838 older/established BUBT notices host their PDF here!)
+      if (!attachmentUrl && n.notice_document) {
+        const cleanDoc = String(n.notice_document).replace(/^\/+/, '');
+        const docUrl = cleanDoc.startsWith('http') ? cleanDoc : `${BUBT_UPLOADS_BASE}${cleanDoc}`;
+        if (/\.pdf$/i.test(cleanDoc)) {
+          attachmentUrl = docUrl;
+          attachmentName = (n.title || 'BUBT Notice').slice(0, 60).trim() + '.pdf';
+        } else if (/\.(jpg|jpeg|png|webp)$/i.test(cleanDoc)) {
+          imageUrl = imageUrl || docUrl;
+        }
+      }
+
+      // 3. Check inline image in description HTML
+      if (!imageUrl && n.description) {
+        const imgMatch = String(n.description).match(/<img[^>]+src=["']([^"']+)["']/i);
+        if (imgMatch && imgMatch[1]) {
+          const src = imgMatch[1].trim();
+          imageUrl = src.startsWith('http') ? src : `${BUBT_STORAGE_BASE}${src.replace(/^\/+/, '')}`;
+        }
+      }
+
       const rawDesc = n.description ? stripHtml(n.description) : '';
       const body = rawDesc && rawDesc.length > 5
         ? rawDesc
         : `Official circular published by BUBT for ${categoryName}. View or download the attached document for full details.`;
 
-      // Check existing row
-      const { data: existing } = await supabase
-        .from('announcements')
-        .select('id, title, pinned')
-        .eq('code', code)
-        .maybeSingle();
-
-      if (existing) {
-        // Update existing row
-        await supabase
-          .from('announcements')
-          .update({
-            title: n.title.trim(),
-            body,
-            department,
-            department_code: deptCode,
-            category: categoryName,
-            category_slug: categorySlug,
-            attachment_url: attachmentUrl,
-            attachment_name: attachmentName,
-            image_url: imageUrl,
-            external_url: externalUrl,
-            external_id: externalId,
-            source: 'bubt_official',
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', existing.id);
-        updatedCount++;
+      const existing = existingMap.get(code);
+      const isNew = !existing;
+      if (isNew) {
+        newAdded++;
       } else {
-        // Insert new announcement (will fire trg_notify_new_announcement!)
-        const { error: insErr } = await supabase
-          .from('announcements')
-          .insert({
-            code,
-            title: n.title.trim(),
-            body,
-            department,
-            department_code: deptCode,
-            priority,
-            pinned,
-            attachment_url: attachmentUrl,
-            attachment_name: attachmentName,
-            image_url: imageUrl,
-            external_url: externalUrl,
-            external_id: externalId,
-            source: 'bubt_official',
-            category: categoryName,
-            category_slug: categorySlug,
-            created_by: createdBy,
-            created_at: n.created_at || new Date().toISOString(),
-          });
+        updatedCount++;
+      }
 
-        if (!insErr) {
-          newAdded++;
-        }
+      // Preserve pinned if already pinned by administrator
+      const finalPinned = existing?.pinned !== undefined ? existing.pinned : defaultPinned;
+
+      rowsToUpsert.push({
+        ...(existing?.id ? { id: existing.id } : {}),
+        code,
+        title: n.title.trim(),
+        body,
+        department,
+        department_code: deptCode,
+        priority,
+        pinned: finalPinned,
+        category: categoryName,
+        category_slug: categorySlug,
+        attachment_url: attachmentUrl,
+        attachment_name: attachmentName,
+        image_url: imageUrl,
+        external_url: externalUrl,
+        external_id: externalId,
+        source: 'bubt_official',
+        created_by: createdBy,
+        created_at: n.created_at || new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+    }
+
+    // High performance batch upsert in chunks of 50
+    const CHUNK_SIZE = 50;
+    for (let i = 0; i < rowsToUpsert.length; i += CHUNK_SIZE) {
+      const chunk = rowsToUpsert.slice(i, i + CHUNK_SIZE);
+      const { error: upsertErr } = await supabase
+        .from('announcements')
+        .upsert(chunk, { onConflict: 'code' });
+
+      if (upsertErr) {
+        console.error('Batch upsert error:', upsertErr.message);
       }
     }
 
@@ -304,7 +386,7 @@ Deno.serve(async (req: Request) => {
           new_added: newAdded,
           updated_count: updatedCount,
           duration_ms: durationMs,
-          details: { batch_processed: batch.length },
+          details: { batch_processed: rowsToUpsert.length, deep_crawl: deepCrawl },
         })
         .eq('id', logId);
     }
@@ -313,7 +395,7 @@ Deno.serve(async (req: Request) => {
       JSON.stringify({
         success: true,
         total_scanned: totalScanned,
-        batch_scanned: batch.length,
+        batch_scanned: rowsToUpsert.length,
         new_added: newAdded,
         updated_count: updatedCount,
         duration_ms: durationMs,
