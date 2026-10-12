@@ -153,8 +153,8 @@ export function HomeCommunityUpdates() {
     const idx = tabIndexMap[activeTab] ?? 0;
     Animated.spring(animIndex, {
       toValue: idx,
-      tension: 68,
-      friction: 10,
+      tension: 190,
+      friction: 18,
       useNativeDriver: true,
     }).start();
   }, [activeTab, animIndex, tabIndexMap]);
@@ -339,7 +339,7 @@ export function HomeCommunityUpdates() {
     { id: 'Events', label: 'Events', icon: 'calendar', color: SectorColors.events },
   ];
 
-  const TRACK_PADDING = 4;
+  const TRACK_PADDING = 3.5;
   const innerTrackWidth = Math.max(0, trackWidth - TRACK_PADDING * 2);
   const tabWidth = innerTrackWidth > 0 ? innerTrackWidth / 3 : 0;
   const translateX = animIndex.interpolate({
@@ -365,9 +365,15 @@ export function HomeCommunityUpdates() {
         </View>
       </View>
 
-      {/* Segmented Tab Switcher with Native Spring Animation & Colors */}
+      {/* Segmented Tab Switcher - Coss.com Tabs with Count Badge & Equal Symmetry */}
       <View
-        style={[styles.tabContainer, { backgroundColor: C.surface2 }]}
+        style={[
+          styles.tabContainer,
+          {
+            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : C.surface2,
+            borderColor: isDark ? 'rgba(255, 255, 255, 0.07)' : 'rgba(0, 0, 0, 0.05)',
+          },
+        ]}
         onLayout={e => setTrackWidth(e.nativeEvent.layout.width)}
       >
         {tabWidth > 0 && (
@@ -378,7 +384,7 @@ export function HomeCommunityUpdates() {
                 width: tabWidth,
                 transform: [{ translateX }],
                 backgroundColor: C.surface,
-                borderColor: isDark ? `${TAB_COLORS[activeTab].fg}55` : `${TAB_COLORS[activeTab].fg}35`,
+                borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
               },
             ]}
           />
@@ -397,15 +403,15 @@ export function HomeCommunityUpdates() {
             >
               <Feather
                 name={tab.icon}
-                size={13.5}
+                size={13}
                 color={active ? cfg.fg : C.textMuted}
               />
               <Text
                 style={[
                   styles.tabBtnTxt,
                   {
-                    color: active ? cfg.fg : C.textMuted,
-                    fontFamily: FontFamily.jakartaBold,
+                    color: active ? C.text : C.textMuted,
+                    fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
                   },
                 ]}
                 numberOfLines={1}
@@ -417,11 +423,15 @@ export function HomeCommunityUpdates() {
               <View
                 style={[
                   styles.tabBadge,
-                  {
-                    backgroundColor: active
-                      ? cfg.bg
-                      : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.border),
-                  },
+                  active
+                    ? {
+                        backgroundColor: cfg.bg,
+                        borderColor: isDark ? `${cfg.fg}45` : `${cfg.fg}30`,
+                      }
+                    : {
+                        backgroundColor: 'transparent',
+                        borderColor: isDark ? 'rgba(255, 255, 255, 0.14)' : 'rgba(0, 0, 0, 0.12)',
+                      },
                 ]}
               >
                 <Text
@@ -429,7 +439,7 @@ export function HomeCommunityUpdates() {
                     styles.tabBadgeTxt,
                     {
                       color: active ? cfg.fg : C.textMuted,
-                      fontFamily: FontFamily.jakartaBold,
+                      fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
                     },
                   ]}
                 >
@@ -658,8 +668,9 @@ const styles = StyleSheet.create({
 
   tabContainer: {
     flexDirection: 'row',
-    borderRadius: 16,
-    padding: 4,
+    borderRadius: 14,
+    padding: 3.5,
+    borderWidth: 1,
     marginBottom: 12,
     marginTop: 4,
     position: 'relative',
@@ -667,15 +678,15 @@ const styles = StyleSheet.create({
 
   activeIndicator: {
     position: 'absolute',
-    top: 4,
-    left: 4,
-    bottom: 4,
-    borderRadius: 13,
-    borderWidth: 1.5,
+    top: 3.5,
+    left: 3.5,
+    bottom: 3.5,
+    borderRadius: 11,
+    borderWidth: 1,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1.5 },
-    shadowOpacity: 0.12,
+    shadowOpacity: 0.1,
     shadowRadius: 3,
   } as ViewStyle,
 
@@ -684,28 +695,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 5,
-    paddingVertical: 10,
-    minHeight: 44,
-    borderRadius: 13,
+    gap: 5.5,
+    paddingVertical: 8,
+    minHeight: 38,
+    borderRadius: 11,
     zIndex: 1,
   } as ViewStyle,
 
   tabBtnTxt: {
-    fontSize: 13,
+    fontSize: 12.5,
   },
 
   tabBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 1.5,
+    paddingHorizontal: 6.5,
+    paddingVertical: 1,
     borderRadius: 999,
-    minWidth: 19,
+    borderWidth: 1,
+    minWidth: 20,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
 
   tabBadgeTxt: {
-    fontSize: 11,
+    fontSize: 10.5,
   },
 
   loadingBox: {
