@@ -404,7 +404,7 @@ export function HomeFrequentTools() {
                   styles.saveBtn,
                   {
                     backgroundColor:
-                      tempSelected.length === 4 ? C.brand : isDark ? '#334155' : '#cbd5e1',
+                      tempSelected.length === 4 ? C.brand : isDark ? C.surface3 : '#cbd5e1',
                     opacity: tempSelected.length === 4 ? 1 : 0.6,
                   },
                 ]}

@@ -9,28 +9,28 @@ export const Shadows = {
     elevation: 0,
   },
   sm: {
-    shadowColor: '#0f1a2e',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
   },
   md: {
-    shadowColor: '#0f1a2e',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 6,
     elevation: 3,
   },
   lg: {
-    shadowColor: '#0f1a2e',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.10,
     shadowRadius: 16,
     elevation: 8,
   },
   xl: {
-    shadowColor: '#0f1a2e',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.18,
     shadowRadius: 32,
@@ -38,7 +38,7 @@ export const Shadows = {
   },
   // Bottom sheet / pop-up
   pop: {
-    shadowColor: '#0f1a2e',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 18 },
     shadowOpacity: 0.22,
     shadowRadius: 40,

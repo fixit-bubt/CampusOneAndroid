@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
+import { NavigationContainer, createNavigationContainerRef, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { useAuth } from '../store/authStore';
 import { useTheme } from '../hooks/useTheme';
 import { useT } from '../i18n';
@@ -15,8 +15,25 @@ const navigationRef = createNavigationContainerRef();
 
 export function RootNavigator() {
   const { session, user, profile, loading, profileLoaded, profileError, refreshProfile } = useAuth();
-  const { C } = useTheme();
+  const { C, isDark } = useTheme();
   const t = useT();
+
+  const navTheme = React.useMemo(() => {
+    const baseTheme = isDark ? DarkTheme : DefaultTheme;
+    return {
+      ...baseTheme,
+      dark: isDark,
+      colors: {
+        ...baseTheme.colors,
+        primary: C.brand,
+        background: C.bg,
+        card: C.surface,
+        text: C.text,
+        border: C.border,
+        notification: C.danger,
+      },
+    };
+  }, [isDark, C]);
 
   // Claim this device's FCM token once the user is signed in and their
   // profile is loaded, and keep it current if FCM rotates the token while
@@ -83,7 +100,7 @@ export function RootNavigator() {
   }
 
   return (
-    <NavigationContainer ref={navigationRef}>
+    <NavigationContainer ref={navigationRef} theme={navTheme}>
       {session ? <AppNavigator /> : <AuthNavigator />}
     </NavigationContainer>
   );

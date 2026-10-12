@@ -91,7 +91,9 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
 
 ### 5.1 Tokens & Imports
 - **Import Location:** `import { useTheme } from '../hooks/useTheme'; import { SectorColors, FontFamily, FontSize, Spacing, Radius, Layout } from '../theme';`
-- **Dynamic Semantic Colors (`C.*`):** `C.bg`, `C.surface`, `C.border`, `C.text`, `C.textMuted`, `C.brand`, `C.success`, `C.warn`, `C.danger` (`#d63d35`).
+- **Dynamic Semantic Colors (`C.*`):** `C.bg`, `C.surface`, `C.border`, `C.text`, `C.textMuted`, `C.brand`, `C.success`, `C.warn`, `C.danger` (`#f87171` dark / `#d63d35` light).
+- **Web Parity OLED Dark Theme:** True pitch-black foundation (`bg: '#000000'`), neutral dark surfaces (`surface: '#121212'`, `surface2: '#1c1c1c'`, `surface3: '#262626'`), neutral borders (`border: '#262626'`, `border2: '#383838'`), neutral Zinc text (`text: '#f4f4f5'`, `text2: '#a1a1aa'`, `text3: '#71717a'`), electric blue brand (`brand: '#5b85f7'`), and Tailwind semantics (`success: '#34d399'`, `warn: '#fbbf24'`, `danger: '#f87171'`). Zero blue/navy tint on surfaces.
+- **Navigation Theme Sync:** `RootNavigator.tsx` passes a dynamic `navTheme` (merging `isDark ? DarkTheme : DefaultTheme` with `C.*` tokens) to `<NavigationContainer theme={navTheme}>` to prevent white/gray transition flashes on screen pushes and pops.
 - **Feature Sector Accents (`SectorColors`):** Use `SectorColors.<sector>` for feature tiles and icons (`reports`, `bus`, `study`, `medical`, `blood`, `ride`, `prayer`, `jobs`, `market`, `clubs`, `events`, `announce`, `lostfound`, `directory`, `faculty`, `pdfmaker`).
 - **Typography:** Bilingual support with `FontFamily.jakarta*` and `FontFamily.hind*` (matra-aware line height).
 

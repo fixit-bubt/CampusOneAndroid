@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
     height: 168,
     borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: '#05070c',
+    backgroundColor: '#000000',
     position: 'relative',
     justifyContent: 'flex-end',
   },
