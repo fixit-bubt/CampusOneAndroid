@@ -1203,6 +1203,31 @@ The Campus Announcements architecture is transformed from a manual posting board
 - **Home Community Feed Realtime Sync:** `HomeCommunityUpdates.tsx` orders announcements chronologically by `created_at desc` with increased limit (25) and automated cache refresh, keeping community news live and up-to-date.
 - **Bilingual Support:** Complete localization parity in `src/i18n/en.ts` and `src/i18n/bn.ts` under the `announce2` namespace.
 
+### 31.4 Performance Hardening, Edge-to-Edge PDF Viewer & Security Architecture
+- **60 FPS Virtualized List & Stable Memoization (`AnnouncementsScreen.tsx`):**
+  - Replaced un-virtualized `<ScrollView>` with an optimized `<FlatList>` (`initialNumToRender: 8`, `maxToRenderPerBatch: 10`, `windowSize: 7`, `removeClippedSubviews: Platform.OS === 'android'`).
+  - Wrapped `AnnouncementCard` in `React.memo` and stabilized row callbacks (`handleToggleSave`, `deleteAnnouncement`, `handlePressCard`, `renderCard`) via `useCallback` to prevent cascading re-renders during live search filtering and tab changes.
+  - Configured `keyboardDismissMode="on-drag"` and `keyboardShouldPersistTaps="handled"` so keyboard dismissals never swallow card selections.
+  - Separated modal bottom sheet containers from outer `<Pressable>` backdrops using `StyleSheet.absoluteFill` to eliminate accidental sheet dismissals when tapping whitespace.
+- **Edge-to-Edge PDF Rendering & Pinch-to-Pan Usability (`AnnouncementDetailScreen.tsx`):**
+  - Injected aggressive full-width CSS (`width: 100% !important; min-width: 100% !important; max-width: 100% !important; margin: 0 0 10px 0 !important;`) eliminating dark side letterbox voids and matching Chrome on Android.
+  - Enabled horizontal panning during pinch-to-zoom (`overflow-x: auto !important;`) so wide exam routines and tabular schedules can be panned across columns.
+  - Conditionally mounts `<WebView>` only when the PDF modal is active (`pdfModalVisible && googleDocsPdfViewer`), eliminating background network fetching and DOM polling when not viewing PDFs.
+  - Themed loader background dynamically (`{ backgroundColor: C.bg }`) to prevent dark mode white flashes.
+- **Home Community Hub 3-Segment Switcher (`HomeCommunityUpdates.tsx`):**
+  - Removed legacy `All` tab to feature 3 focused segments: **`Notices`**, **`Clubs`**, and **`Events`**, defaulting to `Notices` so students see active circulars on launch.
+  - Synchronized tab badge pills using `pillBg()` helper to ensure notice/club/event badges maintain color harmony.
+  - Enforced minimum 44dp touch target heights (`minHeight: 44`) on segmented tab buttons and footer navigation actions.
+- **Humanized Notice Metadata & Clean Badges:**
+  - Removed cryptic developer acronyms (`REG`) and internal database flags (`Pinned`).
+  - Converted technical database slug `offday` into a humanized **`Official Holiday`** badge with warm amber/orange styling (`#ea580c`) and sun icon.
+  - Guarded universal notice inclusion (`deptFilter !== 'EXAM' && deptFilter !== 'REG'`) so administrative office filters only return circulars for the selected office.
+- **Edge Function Security & Throttle Enforcement (`supabase/functions/sync-notices/index.ts`):**
+  - Enforces mandatory caller authentication: verifies either the database cron secret (`app_config.sync_secret`) or valid authenticated user JWT (`supabase.auth.getUser`).
+  - Rejects unauthorized invocations with 401 Unauthorized.
+  - Enforces 90-second cooldown throttle; only administrative users (`profile.role === 'admin'`) or verified cron jobs can force bypass.
+
+
 
 
 
