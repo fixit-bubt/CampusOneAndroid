@@ -9,6 +9,7 @@ import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
+import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { SkeletonList, LoadError } from '../../components/ui/LoadState';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { useToast } from '../../components/ui/Toast';
@@ -102,35 +103,6 @@ export function JobsBrowseScreen({ navigation }: any) {
   const [typeModalVisible, setTypeModalVisible] = useState(false);
   const [deptModalVisible, setDeptModalVisible] = useState(false);
 
-  // Animated sliding tab indicator for Main Tabs (Browse | Saved | Applications)
-  const [mainTrackWidth, setMainTrackWidth] = useState(0);
-  const mainAnimIndex = useRef(new Animated.Value(0)).current;
-  const mainIndexMap: Record<MainTab, number> = useMemo(() => ({ browse: 0, saved: 1, my_applications: 2 }), []);
-
-  useEffect(() => {
-    const idx = mainIndexMap[mainTab] ?? 0;
-    Animated.spring(mainAnimIndex, {
-      toValue: idx,
-      tension: 68,
-      friction: 10,
-      useNativeDriver: true,
-    }).start();
-  }, [mainTab, mainAnimIndex, mainIndexMap]);
-
-  // Animated sliding indicator for Status Tabs (Open | Closing Soon | Expired)
-  const [statusTrackWidth, setStatusTrackWidth] = useState(0);
-  const statusAnimIndex = useRef(new Animated.Value(0)).current;
-  const statusIndexMap: Record<StatusFilter, number> = useMemo(() => ({ open: 0, closing: 1, expired: 2 }), []);
-
-  useEffect(() => {
-    const idx = statusIndexMap[statusFilter] ?? 0;
-    Animated.spring(statusAnimIndex, {
-      toValue: idx,
-      tension: 68,
-      friction: 10,
-      useNativeDriver: true,
-    }).start();
-  }, [statusFilter, statusAnimIndex, statusIndexMap]);
 
   const load = useCallback(async () => {
     const [jobsRes, appsRes] = await Promise.all([
@@ -284,22 +256,17 @@ export function JobsBrowseScreen({ navigation }: any) {
     return found ? found.label : deptFilter;
   }, [deptFilter, t]);
 
-  // Main track interpolation
-  const TRACK_PADDING = 3;
-  const innerMainTrackWidth = Math.max(0, mainTrackWidth - TRACK_PADDING * 2);
-  const mainTabWidth = innerMainTrackWidth > 0 ? innerMainTrackWidth / 3 : 0;
-  const mainTranslateX = mainAnimIndex.interpolate({
-    inputRange: [0, 1, 2],
-    outputRange: [0, mainTabWidth, mainTabWidth * 2],
-  });
+  const mainTabs: TabItem<MainTab>[] = useMemo(() => [
+    { id: 'browse', label: t.jobs2?.browseTab ?? 'Browse', icon: 'briefcase', count: deptFiltered.length, accentColor: SectorColors.jobs },
+    { id: 'saved', label: t.jobs2?.savedTab ?? 'Saved', icon: 'bookmark', count: savedIds.size, accentColor: Accent.gold },
+    { id: 'my_applications', label: t.jobs2?.applicationsTab ?? 'Applications', icon: 'file-text', count: applications.length, accentColor: Accent.purple },
+  ], [t.jobs2, deptFiltered.length, savedIds.size, applications.length]);
 
-  // Status track interpolation
-  const innerStatusTrackWidth = Math.max(0, statusTrackWidth - TRACK_PADDING * 2);
-  const statusTabWidth = innerStatusTrackWidth > 0 ? innerStatusTrackWidth / 3 : 0;
-  const statusTranslateX = statusAnimIndex.interpolate({
-    inputRange: [0, 1, 2],
-    outputRange: [0, statusTabWidth, statusTabWidth * 2],
-  });
+  const statusTabs: TabItem<StatusFilter>[] = useMemo(() => [
+    { id: 'open', label: 'Open', icon: 'check-circle', count: browseCounts.open, accentColor: Accent.teal },
+    { id: 'closing', label: 'Closing Soon', icon: 'clock', count: browseCounts.closing, accentColor: C.warn },
+    { id: 'expired', label: 'Expired', icon: 'alert-circle', count: browseCounts.expired, accentColor: Accent.slate },
+  ], [browseCounts.open, browseCounts.closing, browseCounts.expired, C.warn]);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -334,143 +301,22 @@ export function JobsBrowseScreen({ navigation }: any) {
 
       {/* 1. Animated Main Tab Switcher (Browse | Saved | Applications) */}
       <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 6 }}>
-        <View
-          style={[styles.tabTrack, { backgroundColor: C.surface2 }]}
-          onLayout={e => setMainTrackWidth(e.nativeEvent.layout.width)}
-        >
-          {mainTabWidth > 0 && (
-            <Animated.View
-              style={[
-                styles.tabIndicator,
-                {
-                  width: mainTabWidth,
-                  backgroundColor: C.surface,
-                  borderColor: isDark ? `${JOB_COLOR}55` : `${JOB_COLOR}35`,
-                  transform: [{ translateX: mainTranslateX }],
-                },
-              ]}
-            />
-          )}
-
-          {[
-            { id: 'browse' as MainTab, label: t.jobs2?.browseTab ?? 'Browse', count: deptFiltered.length },
-            { id: 'saved' as MainTab, label: t.jobs2?.savedTab ?? 'Saved', count: savedIds.size },
-            { id: 'my_applications' as MainTab, label: t.jobs2?.applicationsTab ?? 'Applications', count: applications.length },
-          ].map(tb => {
-            const active = mainTab === tb.id;
-            return (
-              <TouchableOpacity
-                key={tb.id}
-                style={styles.tabBtn}
-                onPress={() => setMainTab(tb.id)}
-                activeOpacity={0.75}
-              >
-                <Text
-                  style={[
-                    styles.tabBtnTxt,
-                    {
-                      color: active ? JOB_COLOR : C.textMuted,
-                      fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                    },
-                  ]}
-                  numberOfLines={1}
-                >
-                  {tb.label}
-                </Text>
-                {tb.count > 0 && (
-                  <View
-                    style={[
-                      styles.tabBadge,
-                      {
-                        backgroundColor: active
-                          ? `${JOB_COLOR}22`
-                          : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.border),
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.tabBadgeTxt,
-                        {
-                          color: active ? JOB_COLOR : C.textMuted,
-                          fontFamily: FontFamily.jakartaBold,
-                        },
-                      ]}
-                    >
-                      {tb.count}
-                    </Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+        <SegmentedTabs
+          tabs={mainTabs}
+          activeTab={mainTab}
+          onTabChange={setMainTab}
+        />
       </View>
 
       {/* 2. Animated Status Switcher (Open | Closing Soon | Expired) */}
       {mainTab === 'browse' && (
         <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 8 }}>
-          <View
-            style={[styles.statusTrack, { backgroundColor: C.surface2 }]}
-            onLayout={e => setStatusTrackWidth(e.nativeEvent.layout.width)}
-          >
-            {statusTabWidth > 0 && (
-              <Animated.View
-                style={[
-                  styles.tabIndicator,
-                  {
-                    width: statusTabWidth,
-                    backgroundColor: C.surface,
-                    borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : C.border,
-                    transform: [{ translateX: statusTranslateX }],
-                  },
-                ]}
-              />
-            )}
-
-            {[
-              { id: 'open' as StatusFilter, label: 'Open', count: browseCounts.open, fg: Accent.teal },
-              { id: 'closing' as StatusFilter, label: 'Closing Soon', count: browseCounts.closing, fg: C.warn },
-              { id: 'expired' as StatusFilter, label: 'Expired', count: browseCounts.expired, fg: Accent.slate },
-            ].map(st => {
-              const active = statusFilter === st.id;
-              return (
-                <TouchableOpacity
-                  key={st.id}
-                  style={styles.tabBtn}
-                  onPress={() => setStatusFilter(st.id)}
-                  activeOpacity={0.75}
-                >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                    <View style={[styles.statusDotSmall, { backgroundColor: st.fg }]} />
-                    <Text
-                      style={[
-                        styles.statusBtnTxt,
-                        {
-                          color: active ? C.text : C.textMuted,
-                          fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                        },
-                      ]}
-                      numberOfLines={1}
-                    >
-                      {st.label}
-                    </Text>
-                  </View>
-                  <Text
-                    style={[
-                      styles.statusCountTxt,
-                      {
-                        color: active ? st.fg : C.textMuted,
-                        fontFamily: FontFamily.jakartaBold,
-                      },
-                    ]}
-                  >
-                    ({st.count})
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+          <SegmentedTabs
+            tabs={statusTabs}
+            activeTab={statusFilter}
+            onTabChange={setStatusFilter}
+            size="sm"
+          />
         </View>
       )}
 

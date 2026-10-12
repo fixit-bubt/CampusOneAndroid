@@ -13,6 +13,7 @@ import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
+import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../components/ui/Toast';
@@ -20,10 +21,10 @@ import { uploadFile } from '../../utils/storage';
 import { isImageFile } from '../../utils/imageCompress';
 import { MAX_FILE_SIZE_MB } from '../../constants/app';
 
-const FILE_TYPES = [
-  { id: 'materials', label: 'Materials' },
-  { id: 'questions', label: 'Questions' },
-  { id: 'books',     label: 'Books' },
+const UPLOAD_TYPE_TABS: TabItem<string>[] = [
+  { id: 'materials', label: 'Materials', icon: 'file-text' },
+  { id: 'questions', label: 'Questions', icon: 'help-circle' },
+  { id: 'books',     label: 'Books',     icon: 'book-open' },
 ];
 
 const ALLOWED_MIME_TYPES = [
@@ -208,23 +209,12 @@ export function StudyUploadScreen({ route, navigation }: any) {
 
         {/* Section / File type */}
         <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.study2.section}</Text>
-        <View style={[styles.segRow, { backgroundColor: C.surface2, borderColor: C.border }]}>
-          {FILE_TYPES.map(ft => {
-            const on = fileType === ft.id;
-            return (
-              <TouchableOpacity
-                key={ft.id}
-                style={[styles.segBtn, on && { backgroundColor: C.brand }]}
-                onPress={() => setFileType(ft.id)}
-                activeOpacity={0.75}
-              >
-                <Text style={[styles.segTxt, { color: on ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                  {ft.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+        <SegmentedTabs
+          tabs={UPLOAD_TYPE_TABS}
+          activeTab={fileType}
+          onTabChange={setFileType}
+          size="sm"
+        />
 
         {/* Material type (materials only) - must match DB CHECK */}
         {fileType === 'materials' && (

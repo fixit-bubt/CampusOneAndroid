@@ -12,6 +12,7 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
+import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { FontFamily, Layout, Accent, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { getCache, setCache, CacheKeys } from '../../services/cacheService';
@@ -74,50 +75,7 @@ export function MarketScreen({ navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [isOffline, setIsOffline] = useState(false);
 
-  // Animated sliding tab indicator
-  const [trackWidth, setTrackWidth] = useState(0);
-  const animIndex = useRef(new Animated.Value(0)).current;
-  const tabIndexMap: Record<Tab, number> = useMemo(() => ({ all: 0, mine: 1, saved: 2 }), []);
 
-  useEffect(() => {
-    const idx = tabIndexMap[tab] ?? 0;
-    Animated.spring(animIndex, {
-      toValue: idx,
-      tension: 68,
-      friction: 10,
-      useNativeDriver: true,
-    }).start();
-  }, [tab, animIndex, tabIndexMap]);
-
-  // Animated sliding sort indicator
-  const [sortTrackWidth, setSortTrackWidth] = useState(0);
-  const sortAnimIndex = useRef(new Animated.Value(0)).current;
-  const sortIndexMap: Record<'newest' | 'asc' | 'desc', number> = useMemo(() => ({ newest: 0, asc: 1, desc: 2 }), []);
-
-  useEffect(() => {
-    const idx = sortIndexMap[sortBy] ?? 0;
-    Animated.spring(sortAnimIndex, {
-      toValue: idx,
-      tension: 68,
-      friction: 10,
-      useNativeDriver: true,
-    }).start();
-  }, [sortBy, sortAnimIndex, sortIndexMap]);
-
-  // Animated sliding condition indicator
-  const [condTrackWidth, setCondTrackWidth] = useState(0);
-  const condAnimIndex = useRef(new Animated.Value(0)).current;
-  const condIndexMap: Record<ConditionPreset, number> = useMemo(() => ({ all: 0, New: 1, 'Like New': 2, Used: 3 }), []);
-
-  useEffect(() => {
-    const idx = condIndexMap[conditionFilter] ?? 0;
-    Animated.spring(condAnimIndex, {
-      toValue: idx,
-      tension: 68,
-      friction: 10,
-      useNativeDriver: true,
-    }).start();
-  }, [conditionFilter, condAnimIndex, condIndexMap]);
 
   // Load saved listing IDs from AsyncStorage
   const loadSavedIds = useCallback(async () => {
@@ -287,36 +245,27 @@ export function MarketScreen({ navigation }: any) {
   const cardGap = 11;
   const cardWidth = Math.floor((screenWidth - Layout.screenPadding * 2 - cardGap) / 2);
 
-  const TABS: { id: Tab; label: string; count: number }[] = useMemo(
+  const TABS: TabItem<Tab>[] = useMemo(
     () => [
-      { id: 'all', label: t.common.all, count: counts.all },
-      { id: 'mine', label: t.market2.myListings, count: counts.mine },
-      { id: 'saved', label: t.market2.savedListings, count: counts.saved },
+      { id: 'all',   label: t.common.all,            count: counts.all,   icon: 'grid',     color: MARKET_COLOR },
+      { id: 'mine',  label: t.market2.myListings,    count: counts.mine,  icon: 'user',     color: MARKET_COLOR },
+      { id: 'saved', label: t.market2.savedListings, count: counts.saved, icon: 'bookmark', color: MARKET_COLOR },
     ],
     [t, counts]
   );
 
-  const TRACK_PADDING = 3;
-  const innerTrackWidth = Math.max(0, trackWidth - TRACK_PADDING * 2);
-  const tabWidth = innerTrackWidth > 0 ? innerTrackWidth / 3 : 0;
-  const translateX = animIndex.interpolate({
-    inputRange: [0, 1, 2],
-    outputRange: [0, tabWidth, tabWidth * 2],
-  });
+  const SORT_TABS: TabItem<'newest' | 'asc' | 'desc'>[] = useMemo(() => [
+    { id: 'newest', label: t.market2.sortNewest,    icon: 'clock',      color: MARKET_COLOR },
+    { id: 'asc',    label: t.market2.sortPriceAsc,  icon: 'arrow-up',   color: MARKET_COLOR },
+    { id: 'desc',   label: t.market2.sortPriceDesc, icon: 'arrow-down', color: MARKET_COLOR },
+  ], [t]);
 
-  const innerSortTrackWidth = Math.max(0, sortTrackWidth - TRACK_PADDING * 2);
-  const sortWidth = innerSortTrackWidth > 0 ? innerSortTrackWidth / 3 : 0;
-  const sortTranslateX = sortAnimIndex.interpolate({
-    inputRange: [0, 1, 2],
-    outputRange: [0, sortWidth, sortWidth * 2],
-  });
-
-  const innerCondTrackWidth = Math.max(0, condTrackWidth - TRACK_PADDING * 2);
-  const condWidth = innerCondTrackWidth > 0 ? innerCondTrackWidth / 4 : 0;
-  const condTranslateX = condAnimIndex.interpolate({
-    inputRange: [0, 1, 2, 3],
-    outputRange: [0, condWidth, condWidth * 2, condWidth * 3],
-  });
+  const COND_TABS: TabItem<ConditionPreset>[] = useMemo(() => [
+    { id: 'all',      label: t.common.all,           color: MARKET_COLOR },
+    { id: 'New',      label: t.market2.condNew,      color: '#059669' },
+    { id: 'Like New', label: t.market2.condLikeNew,  color: '#2563EB' },
+    { id: 'Used',     label: t.market2.condUsed,     color: '#64748B' },
+  ], [t]);
 
   // Render individual listing card
   const renderItem = useCallback(({ item }: { item: Listing }) => {
@@ -496,72 +445,13 @@ export function MarketScreen({ navigation }: any) {
         </View>
 
         {/* 3. Segmented Tab Switcher (Card Animation matching Blood & Directory) */}
-        <View
-          style={[styles.tabContainer, { backgroundColor: C.surface2 }]}
-          onLayout={e => setTrackWidth(e.nativeEvent.layout.width)}
-        >
-          {tabWidth > 0 && (
-            <Animated.View
-              style={[
-                styles.activeIndicator,
-                {
-                  width: tabWidth,
-                  transform: [{ translateX }],
-                  backgroundColor: C.surface,
-                  borderColor: isDark ? `${MARKET_COLOR}55` : `${MARKET_COLOR}35`,
-                },
-              ]}
-            />
-          )}
-
-          {TABS.map(tItem => {
-            const active = tab === tItem.id;
-            return (
-              <TouchableOpacity
-                key={tItem.id}
-                style={styles.tabBtn}
-                onPress={() => setTab(tItem.id)}
-                activeOpacity={0.75}
-              >
-                <Text
-                  style={[
-                    styles.tabBtnTxt,
-                    {
-                      color: active ? MARKET_COLOR : C.textMuted,
-                      fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                    },
-                  ]}
-                  numberOfLines={1}
-                >
-                  {tItem.label}
-                </Text>
-                {tItem.count > 0 && (
-                  <View
-                    style={[
-                      styles.tabBadge,
-                      {
-                        backgroundColor: active
-                          ? `${MARKET_COLOR}22`
-                          : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.border),
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.tabBadgeTxt,
-                        {
-                          color: active ? MARKET_COLOR : C.textMuted,
-                          fontFamily: FontFamily.jakartaBold,
-                        },
-                      ]}
-                    >
-                      {tItem.count}
-                    </Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-            );
-          })}
+        {/* 3. Segmented Tab Switcher */}
+        <View style={{ marginBottom: 10 }}>
+          <SegmentedTabs<Tab>
+            tabs={TABS}
+            activeTab={tab}
+            onTabChange={setTab}
+          />
         </View>
 
         {/* 4. Structured Dual Control Bar (Matches Directory Screen) */}
@@ -1011,54 +901,12 @@ export function MarketScreen({ navigation }: any) {
               <Text style={[styles.sectionHeading, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
                 {t.market2.sortBy}
               </Text>
-              <View
-                style={[styles.segTrack, { backgroundColor: C.surface2 }]}
-                onLayout={e => setSortTrackWidth(e.nativeEvent.layout.width)}
-              >
-                {sortWidth > 0 && (
-                  <Animated.View
-                    style={[
-                      styles.segIndicator,
-                      {
-                        width: sortWidth,
-                        transform: [{ translateX: sortTranslateX }],
-                        backgroundColor: C.surface,
-                        borderColor: isDark ? `${MARKET_COLOR}55` : `${MARKET_COLOR}35`,
-                      },
-                    ]}
-                  />
-                )}
-
-                {[
-                  { id: 'newest', label: t.market2.sortNewest, icon: 'clock' },
-                  { id: 'asc', label: t.market2.sortPriceAsc, icon: 'arrow-up' },
-                  { id: 'desc', label: t.market2.sortPriceDesc, icon: 'arrow-down' },
-                ].map(s => {
-                  const active = sortBy === s.id;
-                  return (
-                    <TouchableOpacity
-                      key={s.id}
-                      style={styles.segBtn}
-                      onPress={() => setSortBy(s.id as any)}
-                      activeOpacity={0.75}
-                    >
-                      <Feather name={s.icon as any} size={12} color={active ? MARKET_COLOR : C.textMuted} />
-                      <Text
-                        style={[
-                          styles.segBtnTxt,
-                          {
-                            color: active ? MARKET_COLOR : C.textMuted,
-                            fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                          },
-                        ]}
-                        numberOfLines={1}
-                      >
-                        {s.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
+              <SegmentedTabs<'newest' | 'asc' | 'desc'>
+                size="sm"
+                tabs={SORT_TABS}
+                activeTab={sortBy}
+                onTabChange={setSortBy}
+              />
 
               {/* Availability Section */}
               <Text style={[styles.sectionHeading, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 14 }]}>
@@ -1090,54 +938,12 @@ export function MarketScreen({ navigation }: any) {
               <Text style={[styles.sectionHeading, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 14 }]}>
                 {t.market2.condition}
               </Text>
-              <View
-                style={[styles.segTrack, { backgroundColor: C.surface2 }]}
-                onLayout={e => setCondTrackWidth(e.nativeEvent.layout.width)}
-              >
-                {condWidth > 0 && (
-                  <Animated.View
-                    style={[
-                      styles.segIndicator,
-                      {
-                        width: condWidth,
-                        transform: [{ translateX: condTranslateX }],
-                        backgroundColor: C.surface,
-                        borderColor: isDark ? `${MARKET_COLOR}55` : `${MARKET_COLOR}35`,
-                      },
-                    ]}
-                  />
-                )}
-
-                {[
-                  { id: 'all', label: t.common.all },
-                  { id: 'New', label: t.market2.condNew },
-                  { id: 'Like New', label: t.market2.condLikeNew },
-                  { id: 'Used', label: t.market2.condUsed },
-                ].map(c => {
-                  const active = conditionFilter === c.id;
-                  return (
-                    <TouchableOpacity
-                      key={c.id}
-                      style={styles.segBtn}
-                      onPress={() => setConditionFilter(c.id as ConditionPreset)}
-                      activeOpacity={0.75}
-                    >
-                      <Text
-                        style={[
-                          styles.segBtnTxt,
-                          {
-                            color: active ? MARKET_COLOR : C.textMuted,
-                            fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                          },
-                        ]}
-                        numberOfLines={1}
-                      >
-                        {c.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
+              <SegmentedTabs<ConditionPreset>
+                size="sm"
+                tabs={COND_TABS}
+                activeTab={conditionFilter}
+                onTabChange={setConditionFilter}
+              />
 
               {/* Action Buttons (Both flex: 1 for equal size) */}
               <View style={styles.filterActionsRow}>

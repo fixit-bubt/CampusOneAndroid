@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, FlatList, StyleSheet, Alert,
   TextInput, Modal, Platform, KeyboardAvoidingView,
@@ -13,6 +13,7 @@ import { useT } from '../../i18n';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { Pill } from '../../components/ui/Pill';
+import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { supabase } from '../../lib/supabase';
 import { getCache, setCache, CacheKeys } from '../../services/cacheService';
@@ -107,6 +108,16 @@ export function RoutinesBrowseScreen({ navigation }: any) {
       (r.semester ?? '').toLowerCase().includes(q) ||
       (r.intake ?? '').toLowerCase().includes(q)
     );
+
+  const ROUTINE_TABS: TabItem<Tab>[] = useMemo(() => [
+    { id: 'class', label: t.routines2.classRoutines, icon: 'calendar', count: routines.filter(r => r.type === 'class').length, accentColor: SectorColors.routines },
+    { id: 'exam', label: t.routines2.examRoutines, icon: 'file-text', count: routines.filter(r => r.type === 'exam').length, accentColor: SectorColors.routines },
+  ], [t.routines2, routines]);
+
+  const MODAL_TYPE_TABS: TabItem<Tab>[] = useMemo(() => [
+    { id: 'class', label: t.routines2.typeClass, icon: 'calendar', accentColor: SectorColors.routines },
+    { id: 'exam', label: t.routines2.typeExam, icon: 'file-text', accentColor: SectorColors.routines },
+  ], [t.routines2]);
 
   function openPost() {
     setFTitle(''); setFDept(''); setFSemester(''); setFIntake(''); setFSection('');
@@ -258,26 +269,12 @@ export function RoutinesBrowseScreen({ navigation }: any) {
       />
 
       {/* Tabs */}
-      <View style={[styles.tabRow, { paddingHorizontal: Layout.screenPadding, borderBottomColor: C.border }]}>
-        {(['class', 'exam'] as Tab[]).map(t2 => {
-          const active = tab === t2;
-          const count = routines.filter(r => r.type === t2).length;
-          return (
-            <TouchableOpacity
-              key={t2}
-              style={[styles.tab, active && { borderBottomColor: SectorColors.routines }]}
-              onPress={() => setTab(t2)}
-            >
-              <Text style={[styles.tabText, {
-                color: active ? SectorColors.routines : C.text3,
-                fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-              }]}>
-                {t2 === 'class' ? t.routines2.classRoutines : t.routines2.examRoutines}
-                {count > 0 ? ` (${count})` : ''}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
+      <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 6 }}>
+        <SegmentedTabs
+          tabs={ROUTINE_TABS}
+          activeTab={tab}
+          onTabChange={setTab}
+        />
       </View>
 
       {/* Search */}
@@ -340,25 +337,12 @@ export function RoutinesBrowseScreen({ navigation }: any) {
               <Text style={[styles.fieldLabel, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
                 {t.routines2.type}
               </Text>
-              <View style={styles.typeRow}>
-                {(['class', 'exam'] as Tab[]).map(ty => (
-                  <TouchableOpacity
-                    key={ty}
-                    style={[styles.typeChip, {
-                      borderColor: fType === ty ? SectorColors.routines : C.border,
-                      backgroundColor: fType === ty ? SectorColors.routines + '18' : C.surface2,
-                    }]}
-                    onPress={() => setFType(ty)}
-                  >
-                    <Text style={[styles.typeChipText, {
-                      color: fType === ty ? SectorColors.routines : C.text2,
-                      fontFamily: FontFamily.jakartaMedium,
-                    }]}>
-                      {ty === 'class' ? t.routines2.typeClass : t.routines2.typeExam}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+              <SegmentedTabs
+                tabs={MODAL_TYPE_TABS}
+                activeTab={fType}
+                onTabChange={setFType}
+                size="sm"
+              />
 
               <Text style={[styles.fieldLabel, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
                 {t.routines2.routineTitle}

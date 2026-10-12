@@ -19,6 +19,7 @@ import { LogoMark } from '../../components/ui/Logo';
 import { useToast } from '../../components/ui/Toast';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { ContactSheet } from '../../components/ui/ContactSheet';
+import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { FontFamily, Layout, Accent, Radius } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { getCache, setCache, CacheKeys } from '../../services/cacheService';
@@ -61,24 +62,7 @@ export function FacultyScreen({ navigation }: any) {
   // Active teacher for ContactSheet
   const [contactTeacher, setContactTeacher] = useState<FacultyMember | null>(null);
 
-  // Segmented animated indicator matching HomeCommunityUpdates
-  const animIndex = useRef(new Animated.Value(0)).current;
-  const [trackWidth, setTrackWidth] = useState(0);
 
-  const modeIndexMap: Record<TabMode, number> = useMemo(
-    () => ({ all: 0, mentors: 1, saved: 2 }),
-    []
-  );
-
-  useEffect(() => {
-    const idx = modeIndexMap[mode] ?? 0;
-    Animated.spring(animIndex, {
-      toValue: idx,
-      tension: 68,
-      friction: 10,
-      useNativeDriver: true,
-    }).start();
-  }, [mode, modeIndexMap, animIndex]);
 
   // Reset pagination when switching tabs or changing filters
   useEffect(() => {
@@ -271,12 +255,11 @@ export function FacultyScreen({ navigation }: any) {
     setSelectedDeptId('All');
   }
 
-  // Sizing matched to HomeCommunityUpdates tab switcher
-  const segmentWidth = trackWidth > 0 ? (trackWidth - 8) / 3 : 0;
-  const translateX = animIndex.interpolate({
-    inputRange: [0, 1, 2],
-    outputRange: [0, segmentWidth, segmentWidth * 2],
-  });
+  const FACULTY_TABS: TabItem<TabMode>[] = useMemo(() => [
+    { id: 'all',     label: t.faculty2.tabDepartments,     icon: 'grid',     color: FACULTY_ACCENT },
+    { id: 'mentors', label: t.faculty2.tabResearchMentors, icon: 'award',    color: FACULTY_ACCENT },
+    { id: 'saved',   label: t.faculty2.tabMyTeachers,      icon: 'bookmark', count: savedIds.size > 0 ? savedIds.size : undefined, color: Accent.gold },
+  ], [t, savedIds.size]);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -304,88 +287,16 @@ export function FacultyScreen({ navigation }: any) {
       >
         <OfflineBanner visible={isOffline} onRetry={load} />
 
-        {/* 3-Segmented Tabs Switcher styled to match HomeCommunityUpdates */}
-        <View
-          style={[styles.tabTrack, { backgroundColor: C.surface2 }]}
-          onLayout={e => setTrackWidth(e.nativeEvent.layout.width)}
-        >
-          {segmentWidth > 0 && (
-            <Animated.View
-              style={[
-                styles.tabIndicator,
-                {
-                  width: segmentWidth,
-                  backgroundColor: C.surface,
-                  borderColor: C.border,
-                  transform: [{ translateX }],
-                },
-              ]}
-            />
-          )}
-
-          <TouchableOpacity
-            style={styles.tabItem}
-            onPress={() => {
-              setMode('all');
-              setSelectedCategory(null);
+        {/* 3-Segmented Tabs Switcher */}
+        <View style={{ marginBottom: 10 }}>
+          <SegmentedTabs<TabMode>
+            tabs={FACULTY_TABS}
+            activeTab={mode}
+            onTabChange={(nextMode) => {
+              setMode(nextMode);
+              if (nextMode === 'all') setSelectedCategory(null);
             }}
-            activeOpacity={0.8}
-          >
-            <Text
-              style={[
-                styles.tabText,
-                {
-                  color: mode === 'all' ? C.text : C.textMuted,
-                  fontFamily: mode === 'all' ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                },
-              ]}
-            >
-              {t.faculty2.tabDepartments}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.tabItem}
-            onPress={() => setMode('mentors')}
-            activeOpacity={0.8}
-          >
-            <Text
-              style={[
-                styles.tabText,
-                {
-                  color: mode === 'mentors' ? FACULTY_ACCENT : C.textMuted,
-                  fontFamily: mode === 'mentors' ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                },
-              ]}
-            >
-              {t.faculty2.tabResearchMentors}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.tabItem}
-            onPress={() => setMode('saved')}
-            activeOpacity={0.8}
-          >
-            <Text
-              style={[
-                styles.tabText,
-                {
-                  color: mode === 'saved' ? Accent.gold : C.textMuted,
-                  fontFamily: mode === 'saved' ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                },
-              ]}
-            >
-              {t.faculty2.tabMyTeachers}
-            </Text>
-            {savedIds.size > 0 && (
-              <View style={[styles.tabBadge, { backgroundColor: `${Accent.gold}22` }]}>
-                <Text style={[styles.tabBadgeTxt, { color: Accent.gold, fontFamily: FontFamily.jakartaBold }]}>
-                  {savedIds.size}
-                </Text>
-              </View>
-            )}
-          </TouchableOpacity>
+          />
         </View>
 
         {/* Global Search Bar (names, initial codes, rooms) */}

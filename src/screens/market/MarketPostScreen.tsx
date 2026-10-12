@@ -11,6 +11,7 @@ import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
+import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { FontFamily, Layout, Accent, SectorColors } from '../../theme';
 import { useToast } from '../../components/ui/Toast';
 import { supabase } from '../../lib/supabase';
@@ -94,46 +95,16 @@ export function MarketPostScreen({ route, navigation }: any) {
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Condition spring animation
-  const [condTrackWidth, setCondTrackWidth] = useState(0);
-  const condAnimIndex = useRef(new Animated.Value(CONDITIONS.indexOf(listing?.condition ?? 'Used'))).current;
+  const CONDITION_TABS: TabItem<Listing['condition']>[] = useMemo(() => [
+    { id: 'New',      label: t.market2.condNew,     color: '#059669' },
+    { id: 'Like New', label: t.market2.condLikeNew, color: '#2563EB' },
+    { id: 'Used',     label: t.market2.condUsed,    color: '#64748B' },
+  ], [t]);
 
-  useEffect(() => {
-    const idx = CONDITIONS.indexOf(condition);
-    if (idx >= 0) {
-      Animated.spring(condAnimIndex, {
-        toValue: idx,
-        tension: 68,
-        friction: 10,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [condition, condAnimIndex]);
-
-  const condTabWidth = condTrackWidth > 6 ? (condTrackWidth - 6) / 3 : 0;
-  const condTranslateX = condAnimIndex.interpolate({
-    inputRange: [0, 1, 2],
-    outputRange: [0, condTabWidth, condTabWidth * 2],
-  });
-
-  // Location modal tab spring animation
-  const [locTrackWidth, setLocTrackWidth] = useState(0);
-  const locAnimIndex = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.spring(locAnimIndex, {
-      toValue: locTab === 'campus' ? 0 : 1,
-      tension: 68,
-      friction: 10,
-      useNativeDriver: true,
-    }).start();
-  }, [locTab, locAnimIndex]);
-
-  const locTabWidth = locTrackWidth > 6 ? (locTrackWidth - 6) / 2 : 0;
-  const locTranslateX = locAnimIndex.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, locTabWidth],
-  });
+  const LOC_TABS: TabItem<'campus' | 'dhaka'>[] = useMemo(() => [
+    { id: 'campus', label: `${t.market2.tabCampusMirpur} (12)`, icon: 'map-pin', color: Accent.amber },
+    { id: 'dhaka',  label: `${t.market2.tabGreaterDhaka} (44)`, icon: 'compass', color: Accent.amber },
+  ], [t]);
 
   // Current category metadata
   const currentCategoryMeta = useMemo(() => {
@@ -417,49 +388,11 @@ export function MarketPostScreen({ route, navigation }: any) {
           <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 14 }]}>
             {t.market2.condition}
           </Text>
-          <View
-            style={[styles.condTrack, { backgroundColor: C.surface2 }]}
-            onLayout={e => setCondTrackWidth(e.nativeEvent.layout.width)}
-          >
-            {condTabWidth > 0 && (
-              <Animated.View
-                style={[
-                  styles.condIndicator,
-                  {
-                    width: condTabWidth,
-                    transform: [{ translateX: condTranslateX }],
-                    backgroundColor: C.surface,
-                    borderColor: isDark ? `${MARKET_COLOR}55` : `${MARKET_COLOR}35`,
-                  },
-                ]}
-              />
-            )}
-
-            {CONDITIONS.map(c => {
-              const on = condition === c;
-              const label = (t.market2 as any)[c === 'New' ? 'condNew' : c === 'Like New' ? 'condLikeNew' : 'condUsed'] ?? c;
-              return (
-                <TouchableOpacity
-                  key={c}
-                  style={styles.condBtn}
-                  onPress={() => setCondition(c)}
-                  activeOpacity={0.75}
-                >
-                  <Text
-                    style={[
-                      styles.condBtnTxt,
-                      {
-                        color: on ? MARKET_COLOR : C.textMuted,
-                        fontFamily: on ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                      },
-                    ]}
-                  >
-                    {label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+          <SegmentedTabs<Listing['condition']>
+            tabs={CONDITION_TABS}
+            activeTab={condition}
+            onTabChange={setCondition}
+          />
 
           {/* 5. Free Donation Mode Toggle */}
           <View style={[styles.switchRow, { backgroundColor: C.surface, borderColor: C.border, marginTop: 14 }]}>
@@ -803,61 +736,13 @@ export function MarketPostScreen({ route, navigation }: any) {
             </View>
 
             {/* Animated Tab Switcher: Campus vs Greater Dhaka */}
-            <View
-              style={[styles.categorySwitcherTrack, { backgroundColor: C.surface2 }]}
-              onLayout={e => setLocTrackWidth(e.nativeEvent.layout.width)}
-            >
-              {locTabWidth > 0 && (
-                <Animated.View
-                  style={[
-                    styles.categorySlidingIndicator,
-                    {
-                      width: locTabWidth,
-                      transform: [{ translateX: locTranslateX }],
-                      backgroundColor: C.surface,
-                      borderColor: isDark ? `${Accent.amber}55` : `${Accent.amber}35`,
-                    },
-                  ]}
-                />
-              )}
-
-              <TouchableOpacity
-                style={styles.categorySwitcherBtn}
-                onPress={() => setLocTab('campus')}
-                activeOpacity={0.75}
-              >
-                <Feather name="map-pin" size={13} color={locTab === 'campus' ? Accent.amber : C.textMuted} />
-                <Text
-                  style={[
-                    styles.categorySwitcherTxt,
-                    {
-                      color: locTab === 'campus' ? Accent.amber : C.textMuted,
-                      fontFamily: locTab === 'campus' ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                    },
-                  ]}
-                >
-                  {t.market2.tabCampusMirpur} (12)
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.categorySwitcherBtn}
-                onPress={() => setLocTab('dhaka')}
-                activeOpacity={0.75}
-              >
-                <Feather name="compass" size={13} color={locTab === 'dhaka' ? Accent.amber : C.textMuted} />
-                <Text
-                  style={[
-                    styles.categorySwitcherTxt,
-                    {
-                      color: locTab === 'dhaka' ? Accent.amber : C.textMuted,
-                      fontFamily: locTab === 'dhaka' ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                    },
-                  ]}
-                >
-                  {t.market2.tabGreaterDhaka} (44)
-                </Text>
-              </TouchableOpacity>
+            <View style={{ marginBottom: 12 }}>
+              <SegmentedTabs<'campus' | 'dhaka'>
+                size="sm"
+                tabs={LOC_TABS}
+                activeTab={locTab}
+                onTabChange={setLocTab}
+              />
             </View>
 
             {/* Use Custom Query Prompt */}

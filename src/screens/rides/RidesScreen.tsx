@@ -16,6 +16,7 @@ import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { useToast } from '../../components/ui/Toast';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
+import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { fetchPeople } from '../../services/peopleService';
@@ -34,12 +35,6 @@ type Ride = RideRow & {
 
 type TabKey = 'all' | 'to' | 'from' | 'mine';
 
-const TAB_COLORS: Record<TabKey, { fg: string }> = {
-  all:  { fg: RIDE_COLOR },
-  to:   { fg: '#16a34a' },
-  from: { fg: '#2563eb' },
-  mine: { fg: RIDE_COLOR },
-};
 
 function isRideDeparted(dateStr: string, timeStr: string): boolean {
   const today = localToday();
@@ -79,33 +74,7 @@ export function RidesScreen({ navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [isOffline, setIsOffline] = useState(false);
 
-  // Animated sliding indicator
-  const [trackWidth, setTrackWidth] = useState(0);
-  const animIndex = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    const idx = ['all', 'to', 'from', 'mine'].indexOf(tab);
-    Animated.spring(animIndex, {
-      toValue: idx >= 0 ? idx : 0,
-      useNativeDriver: true,
-      tension: 68,
-      friction: 10,
-    }).start();
-  }, [tab, animIndex]);
-
-  // Animated sliding indicator for post type filters (All, Offers, Need Ride)
-  const [postTrackWidth, setPostTrackWidth] = useState(0);
-  const postAnimIndex = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const idx = ['all', 'offer', 'request'].indexOf(postTypeFilter);
-    Animated.spring(postAnimIndex, {
-      toValue: idx >= 0 ? idx : 0,
-      useNativeDriver: true,
-      tension: 68,
-      friction: 10,
-    }).start();
-  }, [postTypeFilter, postAnimIndex]);
 
   const load = useCallback(async () => {
     // 1. Optimistic cache load
@@ -216,12 +185,12 @@ export function RidesScreen({ navigation }: any) {
   }, [rides, user?.id, requestedIds]);
 
   // Tab definitions
-  const TABS: { id: TabKey; label: string }[] = [
-    { id: 'all',  label: t.rides2.allRides ?? t.common.all },
-    { id: 'to',   label: t.rides2.toCampus ?? 'To Campus' },
-    { id: 'from', label: t.rides2.fromCampus ?? 'From Campus' },
-    { id: 'mine', label: t.rides2.myRidesTab ?? 'My Rides' },
-  ];
+  const TABS: TabItem<TabKey>[] = useMemo(() => [
+    { id: 'all',  label: t.rides2.allRides ?? t.common.all, icon: 'navigation', color: RIDE_COLOR },
+    { id: 'to',   label: t.rides2.toCampus ?? 'To Campus',  icon: 'arrow-up-right', color: '#16a34a' },
+    { id: 'from', label: t.rides2.fromCampus ?? 'From Campus', icon: 'arrow-down-left', color: '#2563eb' },
+    { id: 'mine', label: t.rides2.myRidesTab ?? 'My Rides', icon: 'user', count: myRidesCount > 0 ? myRidesCount : undefined, color: RIDE_COLOR },
+  ], [t, myRidesCount]);
 
   // Base counts for post types (All, Offers, Requests) in current tab
   const postCounts = useMemo(() => {
@@ -277,28 +246,11 @@ export function RidesScreen({ navigation }: any) {
     return list;
   }, [rides, tab, postTypeFilter, searchQuery, user?.id, requestedIds]);
 
-  const TRACK_PADDING = 3;
-  const innerTrackWidth = Math.max(0, trackWidth - TRACK_PADDING * 2);
-  const tabWidth = innerTrackWidth > 0 ? innerTrackWidth / 4 : 0;
-  const translateX = animIndex.interpolate({
-    inputRange: [0, 1, 2, 3],
-    outputRange: [0, tabWidth, tabWidth * 2, tabWidth * 3],
-  });
-
-  const innerPostTrackWidth = Math.max(0, postTrackWidth - TRACK_PADDING * 2);
-  const postTabWidth = innerPostTrackWidth > 0 ? innerPostTrackWidth / 3 : 0;
-  const postTranslateX = postAnimIndex.interpolate({
-    inputRange: [0, 1, 2],
-    outputRange: [0, postTabWidth, postTabWidth * 2],
-  });
-
-  const POST_FILTER_TABS = useMemo(() => [
-    { id: 'all' as const,     label: t.common.all ?? 'All',            iconConfig: undefined,                                           color: C.text,                border: isDark ? `${C.brand}55` : `${C.brand}35` },
-    { id: 'offer' as const,   label: t.rides2.offers ?? 'Offers',      iconConfig: { family: 'mci' as const, name: 'car-side' },        color: RIDE_COLOR,            border: isDark ? `${RIDE_COLOR}55` : `${RIDE_COLOR}35` },
-    { id: 'request' as const, label: t.rides2.needRide ?? 'Need Ride', iconConfig: { family: 'feather' as const, name: 'navigation' }, color: isDark ? '#c4b5fd' : '#7c3aed', border: isDark ? 'rgba(139, 92, 246, 0.55)' : 'rgba(139, 92, 246, 0.35)' },
-  ], [t, C.text, C.brand, isDark]);
-
-  const activePostFilter = POST_FILTER_TABS.find(item => item.id === postTypeFilter) ?? POST_FILTER_TABS[0];
+  const POST_FILTER_TABS: TabItem<'all' | 'offer' | 'request'>[] = useMemo(() => [
+    { id: 'all',     label: t.common.all ?? 'All',            count: postCounts.all, color: C.text },
+    { id: 'offer',   label: t.rides2.offers ?? 'Offers',      iconConfig: { family: 'mci', name: 'car-side' }, count: postCounts.offers, color: RIDE_COLOR },
+    { id: 'request', label: t.rides2.needRide ?? 'Need Ride', iconConfig: { family: 'feather', name: 'navigation' }, count: postCounts.requests, color: isDark ? '#c4b5fd' : '#7c3aed' },
+  ], [t, postCounts, C.text, isDark]);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -327,56 +279,12 @@ export function RidesScreen({ navigation }: any) {
       </View>
 
       {/* Unified Segmented Track Switcher with Native Spring Animation & Colors */}
-      <View
-        style={[styles.tabContainer, { backgroundColor: C.surface2 }]}
-        onLayout={e => setTrackWidth(e.nativeEvent.layout.width)}
-      >
-        {tabWidth > 0 && (
-          <Animated.View
-            style={[
-              styles.activeIndicator,
-              {
-                width: tabWidth,
-                transform: [{ translateX }],
-                backgroundColor: C.surface,
-                borderColor: isDark ? `${TAB_COLORS[tab].fg}55` : `${TAB_COLORS[tab].fg}35`,
-              },
-            ]}
-          />
-        )}
-        {TABS.map(tItem => {
-          const active = tab === tItem.id;
-          const cfg = TAB_COLORS[tItem.id];
-          const isMine = tItem.id === 'mine';
-          return (
-            <TouchableOpacity
-              key={tItem.id}
-              style={styles.tabBtn}
-              onPress={() => setTab(tItem.id)}
-              activeOpacity={0.75}
-            >
-              <Text
-                style={[
-                  styles.tabBtnTxt,
-                  {
-                    color: active ? cfg.fg : C.textMuted,
-                    fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                  },
-                ]}
-                numberOfLines={1}
-              >
-                {tItem.label}
-              </Text>
-              {isMine && myRidesCount > 0 && (
-                <View style={[styles.tabBadge, { backgroundColor: active ? `${cfg.fg}22` : C.surface }]}>
-                  <Text style={[styles.tabBadgeTxt, { color: active ? cfg.fg : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                    {myRidesCount}
-                  </Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          );
-        })}
+      <View style={{ paddingHorizontal: Layout.screenPadding, marginBottom: 8 }}>
+        <SegmentedTabs<TabKey>
+          tabs={TABS}
+          activeTab={tab}
+          onTabChange={setTab}
+        />
       </View>
 
       {/* Clutter-Free Search Bar */}
@@ -400,84 +308,13 @@ export function RidesScreen({ navigation }: any) {
       </View>
 
       {/* Unified Segmented Post Type Filter Bar (All, Offers, Need Ride) with Native Spring Animation */}
-      <View
-        style={[styles.postFilterContainer, { backgroundColor: C.surface2 }]}
-        onLayout={e => setPostTrackWidth(e.nativeEvent.layout.width)}
-      >
-        {postTabWidth > 0 && (
-          <Animated.View
-            style={[
-              styles.postFilterIndicator,
-              {
-                width: postTabWidth,
-                transform: [{ translateX: postTranslateX }],
-                backgroundColor: C.surface,
-                borderColor: activePostFilter.border,
-              },
-            ]}
-          />
-        )}
-        {POST_FILTER_TABS.map(item => {
-          const active = postTypeFilter === item.id;
-          const count = item.id === 'all'
-            ? postCounts.all
-            : item.id === 'offer'
-            ? postCounts.offers
-            : postCounts.requests;
-
-          return (
-            <TouchableOpacity
-              key={item.id}
-              style={styles.postFilterBtn}
-              onPress={() => setPostTypeFilter(item.id)}
-              activeOpacity={0.75}
-            >
-              {item.iconConfig ? (
-                <AnimatedIcon
-                  family={item.iconConfig.family}
-                  name={item.iconConfig.name}
-                  size={13}
-                  color={active ? item.color : C.textMuted}
-                  style={{ marginRight: 5 }}
-                />
-              ) : null}
-              <Text
-                style={[
-                  styles.postFilterBtnTxt,
-                  {
-                    color: active ? item.color : C.textMuted,
-                    fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                  },
-                ]}
-                numberOfLines={1}
-              >
-                {item.label}
-              </Text>
-              <View
-                style={[
-                  styles.postFilterBadge,
-                  {
-                    backgroundColor: active
-                      ? (isDark ? `${item.color}25` : `${item.color}15`)
-                      : (isDark ? 'rgba(255, 255, 255, 0.08)' : C.surface),
-                  },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.postFilterBadgeTxt,
-                    {
-                      color: active ? item.color : C.textMuted,
-                      fontFamily: FontFamily.jakartaBold,
-                    },
-                  ]}
-                >
-                  {count}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          );
-        })}
+      <View style={{ paddingHorizontal: Layout.screenPadding, marginTop: 8, marginBottom: 4 }}>
+        <SegmentedTabs<'all' | 'offer' | 'request'>
+          size="sm"
+          tabs={POST_FILTER_TABS}
+          activeTab={postTypeFilter}
+          onTabChange={setPostTypeFilter}
+        />
       </View>
 
       <ScrollView

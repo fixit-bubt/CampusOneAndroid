@@ -11,6 +11,7 @@ import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
+import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { FontFamily, Layout, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
@@ -131,6 +132,11 @@ export function MyReportsScreen({ navigation }: any) {
     return m;
   }, [scoped]);
 
+  const scopeTabs: TabItem<'everyone' | 'mine'>[] = useMemo(() => [
+    { id: 'everyone', label: t.reports.scopeEveryone, icon: 'globe', count: reports.length },
+    { id: 'mine', label: t.reports.scopeMine, icon: 'user', count: reports.filter(r => r.reporter_id === user?.id).length },
+  ], [t.reports, reports, user?.id]);
+
   const q = query.trim().toLowerCase();
   const filtered = scoped
     .filter(r => filter === 'All' || r.status === filter)
@@ -190,24 +196,12 @@ export function MyReportsScreen({ navigation }: any) {
             </View>
 
             {/* Scope: everyone vs mine */}
-            <View style={styles.scopeRow}>
-              {(['everyone', 'mine'] as const).map(s => {
-                const on = scope === s;
-                return (
-                  <TouchableOpacity
-                    key={s}
-                    style={[styles.scopeChip, on
-                      ? { backgroundColor: C.brand, borderColor: C.brand }
-                      : { backgroundColor: C.surface, borderColor: C.border }]}
-                    onPress={() => setScope(s)}
-                    activeOpacity={0.75}
-                  >
-                    <Text style={[styles.chipTxt, { color: on ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                      {s === 'everyone' ? t.reports.scopeEveryone : t.reports.scopeMine}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
+            <View style={{ marginBottom: 10 }}>
+              <SegmentedTabs
+                tabs={scopeTabs}
+                activeTab={scope}
+                onTabChange={setScope}
+              />
             </View>
 
             {/* Status chips with counts */}

@@ -11,6 +11,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
+import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { FontFamily, Layout, SectorColors, Accent, pillBg } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { localToday } from '../../utils/format';
@@ -62,6 +63,11 @@ export function PostItemFormScreen({ route, navigation }: any) {
   const [existingPhotoUrl, setExistingPhotoUrl] = useState<string | null>(null);
   const [photoPickerVisible, setPhotoPickerVisible] = useState(false);
   const [matches, setMatches] = useState<MatchItem[]>([]);
+
+  const TYPE_TABS: TabItem<'Lost' | 'Found'>[] = [
+    { id: 'Lost',  label: t.lf.lost,  icon: 'alert-circle', color: C.danger },
+    { id: 'Found', label: t.lf.found, icon: 'check-circle', color: C.success },
+  ];
 
   // Pre-fill fields when editing an existing item
   useEffect(() => {
@@ -239,36 +245,11 @@ export function PostItemFormScreen({ route, navigation }: any) {
           <Text style={[styles.label, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold, marginTop: 4 }]}>
             {t.lf.typeLabel}
           </Text>
-          <View style={[styles.typeToggle, { backgroundColor: C.surface2, borderColor: C.border }]}>
-            {(['Lost', 'Found'] as const).map(tOpt => {
-              const active = type === tOpt;
-              const isLost = tOpt === 'Lost';
-              const activeBg = isLost ? C.dangerBg : C.successBg;
-              const activeBorder = isLost ? C.danger : C.success;
-              const activeFg = isLost ? C.danger : C.success;
-              return (
-                <TouchableOpacity
-                  key={tOpt}
-                  style={[
-                    styles.typeBtn,
-                    active && {
-                      backgroundColor: activeBg,
-                      borderColor: activeBorder,
-                      borderWidth: 1.5,
-                      elevation: 1,
-                    },
-                  ]}
-                  onPress={() => setType(tOpt)}
-                  activeOpacity={0.75}
-                >
-                  <View style={[styles.typeDot, { backgroundColor: activeFg }]} />
-                  <Text style={[styles.typeTxt, { color: active ? activeFg : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                    {tOpt === 'Lost' ? t.lf.lost : t.lf.found}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+          <SegmentedTabs<'Lost' | 'Found'>
+            tabs={TYPE_TABS}
+            activeTab={type}
+            onTabChange={setType}
+          />
 
           {/* Category: 2x2 Symmetrical Grid */}
           <Text style={[styles.label, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>

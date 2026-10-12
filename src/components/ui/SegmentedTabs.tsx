@@ -10,11 +10,16 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { FontFamily, pillBg } from '../../theme';
+import { AnimatedIcon, type IconFamily } from './AnimatedIcon';
 
 export interface TabItem<T extends string = string> {
   id: T;
   label: string;
   icon?: keyof typeof Feather.glyphMap;
+  iconConfig?: {
+    family: IconFamily;
+    name: string;
+  };
   count?: number;
   color?: string;
 }
@@ -24,19 +29,23 @@ interface SegmentedTabsProps<T extends string = string> {
   activeTab: T;
   onTabChange: (tabId: T) => void;
   style?: ViewStyle;
+  size?: 'sm' | 'md';
 }
-
-const TRACK_PADDING = 4.5;
 
 export function SegmentedTabs<T extends string = string>({
   tabs,
   activeTab,
   onTabChange,
   style,
+  size = 'md',
 }: SegmentedTabsProps<T>) {
   const { C, isDark } = useTheme();
   const [trackWidth, setTrackWidth] = useState(0);
   const animIndex = useRef(new Animated.Value(0)).current;
+
+  const isSmall = size === 'sm';
+  const trackPadding = isSmall ? 3.5 : 4.5;
+  const iconSize = isSmall ? 13.5 : 15.5;
 
   const activeIndex = Math.max(
     0,
@@ -52,23 +61,22 @@ export function SegmentedTabs<T extends string = string>({
     }).start();
   }, [activeIndex, animIndex]);
 
-  const innerTrackWidth = Math.max(0, trackWidth - TRACK_PADDING * 2);
+  const innerTrackWidth = Math.max(0, trackWidth - trackPadding * 2);
   const numTabs = Math.max(1, tabs.length);
   const tabWidth = innerTrackWidth > 0 ? innerTrackWidth / numTabs : 0;
 
   const translateX = animIndex.interpolate({
-    inputRange: tabs.map((_, i) => i),
-    outputRange: tabs.map((_, i) => i * tabWidth),
+    inputRange: tabs.length > 1 ? tabs.map((_, i) => i) : [0, 1],
+    outputRange: tabs.length > 1 ? tabs.map((_, i) => i * tabWidth) : [0, tabWidth],
   });
-
-  const activeTabItem = tabs[activeIndex] || tabs[0];
-  const activeColor = activeTabItem?.color || C.brand;
 
   return (
     <View
       style={[
         styles.track,
         {
+          padding: trackPadding,
+          borderRadius: isSmall ? 13 : 16,
           backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : C.surface2,
           borderColor: isDark ? 'rgba(255, 255, 255, 0.07)' : 'rgba(0, 0, 0, 0.05)',
         },
@@ -81,7 +89,11 @@ export function SegmentedTabs<T extends string = string>({
           style={[
             styles.indicator,
             {
+              top: trackPadding,
+              left: trackPadding,
+              bottom: trackPadding,
               width: tabWidth,
+              borderRadius: isSmall ? 10 : 12.5,
               transform: [{ translateX }],
               backgroundColor: C.surface,
               borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
@@ -98,21 +110,40 @@ export function SegmentedTabs<T extends string = string>({
         return (
           <TouchableOpacity
             key={tab.id}
-            style={styles.tabBtn}
+            style={[
+              styles.tabBtn,
+              {
+                minHeight: isSmall ? 38 : 48,
+                paddingVertical: isSmall ? 7 : 10,
+                borderRadius: isSmall ? 10 : 12.5,
+                gap: isSmall ? 5.5 : 7,
+              },
+            ]}
             onPress={() => onTabChange(tab.id)}
             activeOpacity={0.75}
           >
-            {tab.icon && (
-              <Feather
-                name={tab.icon}
-                size={15.5}
+            {tab.iconConfig ? (
+              <AnimatedIcon
+                family={tab.iconConfig.family}
+                name={tab.iconConfig.name}
+                size={iconSize}
                 color={isActive ? color : C.textMuted}
+                animation={isActive ? 'spring' : 'none'}
               />
-            )}
+            ) : tab.icon ? (
+              <AnimatedIcon
+                family="feather"
+                name={tab.icon}
+                size={iconSize}
+                color={isActive ? color : C.textMuted}
+                animation={isActive ? 'spring' : 'none'}
+              />
+            ) : null}
             <Text
               style={[
                 styles.tabLabel,
                 {
+                  fontSize: isSmall ? 12.5 : 13.5,
                   color: isActive ? C.text : C.textMuted,
                   fontFamily: isActive ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
                 },
@@ -128,6 +159,11 @@ export function SegmentedTabs<T extends string = string>({
               <View
                 style={[
                   styles.badge,
+                  {
+                    paddingHorizontal: isSmall ? 6 : 7.5,
+                    paddingVertical: isSmall ? 1.5 : 2,
+                    minWidth: isSmall ? 20 : 22,
+                  },
                   isActive
                     ? {
                         backgroundColor: badgeBg,
@@ -143,6 +179,7 @@ export function SegmentedTabs<T extends string = string>({
                   style={[
                     styles.badgeText,
                     {
+                      fontSize: isSmall ? 10.5 : 11.5,
                       color: isActive ? color : C.textMuted,
                       fontFamily: isActive ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
                     },
@@ -162,18 +199,12 @@ export function SegmentedTabs<T extends string = string>({
 const styles = StyleSheet.create({
   track: {
     flexDirection: 'row',
-    borderRadius: 16,
-    padding: TRACK_PADDING,
     borderWidth: 1,
     position: 'relative',
   } as ViewStyle,
 
   indicator: {
     position: 'absolute',
-    top: TRACK_PADDING,
-    left: TRACK_PADDING,
-    bottom: TRACK_PADDING,
-    borderRadius: 12.5,
     borderWidth: 1,
     elevation: 2.5,
     shadowColor: '#000',

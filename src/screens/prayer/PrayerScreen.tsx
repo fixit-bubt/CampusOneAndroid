@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput, Modal, Alert,
   StyleSheet, RefreshControl, KeyboardAvoidingView, Platform, type ViewStyle,
@@ -12,6 +12,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
 import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
+import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { SkeletonList, LoadError } from '../../components/ui/LoadState';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { FontFamily, Layout , SectorColors, darken } from '../../theme';
@@ -92,6 +93,11 @@ export function PrayerScreen({ navigation }: any) {
   const [editPrayer, setEditPrayer] = useState<PrayerTime | null>(null);
   const [jamaatInput, setJamaatInput] = useState('');
   const [musEdit, setMusEdit] = useState<{ id: number | null; name: string; floor_desc: string } | null>(null);
+
+  const prayerTabs: TabItem<'today' | 'month'>[] = useMemo(() => [
+    { id: 'today', label: t.prayer2.today, icon: 'clock', accentColor: PRAYER_GREEN },
+    { id: 'month', label: t.prayer2.month, icon: 'calendar', accentColor: PRAYER_GREEN },
+  ], [t.prayer2]);
 
   const load = useCallback(async () => {
     // 1. Instant cache load
@@ -254,24 +260,12 @@ export function PrayerScreen({ navigation }: any) {
         )}
 
         {/* Today / Month toggle */}
-        <View style={styles.viewToggle}>
-          {([['today', t.prayer2.today], ['month', t.prayer2.month]] as const).map(([id, label]) => {
-            const on = view === id;
-            return (
-              <TouchableOpacity
-                key={id}
-                style={[styles.viewChip, on
-                  ? { backgroundColor: PRAYER_GREEN, borderColor: PRAYER_GREEN }
-                  : { backgroundColor: C.surface, borderColor: C.border }]}
-                onPress={() => setView(id)}
-                activeOpacity={0.75}
-              >
-                <Text style={[styles.viewChipTxt, { color: on ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                  {label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+        <View style={{ marginVertical: 10 }}>
+          <SegmentedTabs
+            tabs={prayerTabs}
+            activeTab={view}
+            onTabChange={setView}
+          />
         </View>
 
         {/* Month table - campus runs a fixed timetable, so every day shares

@@ -11,6 +11,7 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { SkeletonList, LoadError } from '../../components/ui/LoadState';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
+import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { FontFamily, Layout, SectorColors, Accent, pillBg } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
@@ -141,46 +142,7 @@ export function LostFoundBrowseScreen({ navigation }: any) {
 
   const searchInputRef = useRef<TextInput>(null);
 
-  // Segmented track animated indicator & theme colors
-  const animIndex = useRef(new Animated.Value(0)).current;
-  const [trackWidth, setTrackWidth] = useState(0);
 
-  const tabIndexMap: Record<TabFilter, number> = useMemo(
-    () => ({ all: 0, Lost: 1, Found: 2, mine: 3 }),
-    []
-  );
-
-  useEffect(() => {
-    const idx = tabIndexMap[filter] ?? 0;
-    Animated.spring(animIndex, {
-      toValue: idx,
-      tension: 68,
-      friction: 10,
-      useNativeDriver: true,
-    }).start();
-  }, [filter, animIndex, tabIndexMap]);
-
-  const TAB_COLORS: Record<TabFilter, { fg: string; bg: string }> = useMemo(
-    () => ({
-      all: {
-        fg: SectorColors.lostfound, // Amber (#c77d1a)
-        bg: `${SectorColors.lostfound}18`,
-      },
-      Lost: {
-        fg: C.danger, // Crimson (#d63d35)
-        bg: isDark ? 'rgba(214, 61, 53, 0.18)' : C.dangerBg,
-      },
-      Found: {
-        fg: C.success, // Emerald (#16a34a)
-        bg: isDark ? 'rgba(22, 163, 74, 0.18)' : C.successBg,
-      },
-      mine: {
-        fg: '#8B5CF6', // Purple (#8B5CF6)
-        bg: isDark ? 'rgba(139, 92, 246, 0.18)' : 'rgba(139, 92, 246, 0.12)',
-      },
-    }),
-    [C.danger, C.dangerBg, C.success, C.successBg, isDark]
-  );
 
   const load = useCallback(async () => {
     if (profile && !isStudent && profile.role !== 'admin') return;
@@ -317,12 +279,12 @@ export function LostFoundBrowseScreen({ navigation }: any) {
     setStatusFilter('Open');
   }
 
-  const TABS: { id: TabFilter; label: string }[] = [
-    { id: 'all', label: t.common.all },
-    { id: 'Lost', label: t.lf.lost },
-    { id: 'Found', label: t.lf.found },
-    { id: 'mine', label: t.lf.myPosts },
-  ];
+  const TABS: TabItem<TabFilter>[] = useMemo(() => [
+    { id: 'all',   label: t.common.all, count: counts.all,  icon: 'grid',         color: SectorColors.lostfound },
+    { id: 'Lost',  label: t.lf.lost,    count: counts.Lost, icon: 'alert-circle', color: C.danger },
+    { id: 'Found', label: t.lf.found,   count: counts.Found, icon: 'check-circle', color: C.success },
+    { id: 'mine',  label: t.lf.myPosts, count: counts.mine, icon: 'user',         color: '#8B5CF6' },
+  ], [t, counts, C.danger, C.success]);
 
   const STATUS_OPTIONS: {
     id: StatusFilter;
@@ -354,14 +316,6 @@ export function LostFoundBrowseScreen({ navigation }: any) {
     },
   ];
 
-  const TRACK_PADDING = 3;
-  const innerTrackWidth = Math.max(0, trackWidth - TRACK_PADDING * 2);
-  const tabWidth = innerTrackWidth > 0 ? innerTrackWidth / 4 : 0;
-  const translateX = animIndex.interpolate({
-    inputRange: [0, 1, 2, 3],
-    outputRange: [0, tabWidth, tabWidth * 2, tabWidth * 3],
-  });
-
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar title={t.lf.title} onBack={() => navigation.goBack()} />
@@ -388,70 +342,12 @@ export function LostFoundBrowseScreen({ navigation }: any) {
       )}
 
       {/* Unified Segmented Track Switcher with Native Spring Animation & Colors */}
-      <View
-        style={[styles.tabContainer, { backgroundColor: C.surface2 }]}
-        onLayout={e => setTrackWidth(e.nativeEvent.layout.width)}
-      >
-        {tabWidth > 0 && (
-          <Animated.View
-            style={[
-              styles.activeIndicator,
-              {
-                width: tabWidth,
-                transform: [{ translateX }],
-                backgroundColor: C.surface,
-                borderColor: isDark ? `${TAB_COLORS[filter].fg}55` : `${TAB_COLORS[filter].fg}35`,
-              },
-            ]}
-          />
-        )}
-        {TABS.map(tItem => {
-          const active = filter === tItem.id;
-          const cfg = TAB_COLORS[tItem.id];
-          return (
-            <TouchableOpacity
-              key={tItem.id}
-              style={styles.tabBtn}
-              onPress={() => setFilter(tItem.id)}
-              activeOpacity={0.75}
-            >
-              <Text
-                style={[
-                  styles.tabBtnTxt,
-                  {
-                    color: active ? cfg.fg : C.textMuted,
-                    fontFamily: FontFamily.jakartaBold,
-                  },
-                ]}
-                numberOfLines={1}
-              >
-                {tItem.label}
-              </Text>
-              <View
-                style={[
-                  styles.tabBadge,
-                  {
-                    backgroundColor: active
-                      ? cfg.bg
-                      : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.border),
-                  },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.tabBadgeTxt,
-                    {
-                      color: active ? cfg.fg : C.textMuted,
-                      fontFamily: FontFamily.jakartaBold,
-                    },
-                  ]}
-                >
-                  {counts[tItem.id]}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          );
-        })}
+      <View style={{ paddingHorizontal: Layout.screenPadding, marginBottom: 8 }}>
+        <SegmentedTabs<TabFilter>
+          tabs={TABS}
+          activeTab={filter}
+          onTabChange={setFilter}
+        />
       </View>
 
       {/* Unified Single Row: Search Input + Filter Trigger (Zero Clutter) */}

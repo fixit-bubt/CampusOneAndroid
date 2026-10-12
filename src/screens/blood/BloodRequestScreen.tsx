@@ -11,6 +11,7 @@ import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
+import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../components/ui/Toast';
@@ -88,23 +89,11 @@ export function BloodRequestScreen({ navigation }: any) {
   const [customHospitalMode, setCustomHospitalMode] = useState(false);
   const [customAreaMode, setCustomAreaMode] = useState(false);
 
-  // Urgency Sliding Pill Animation with Pre-calculated Width
-  const screenWidth = Dimensions.get('window').width;
-  const defaultSegWidth = Math.max(160, screenWidth * 0.55);
-  const [segWidth, setSegWidth] = useState(defaultSegWidth);
-  const initialUrgencyIdx = urgency === 'Urgent' ? 0 : urgency === 'Today' ? 1 : 2;
-  const urgencyAnim = useRef(new Animated.Value(initialUrgencyIdx)).current;
-
-  function handleSelectUrgency(u: BloodRequest['urgency']) {
-    setUrgency(u);
-    const targetIdx = u === 'Urgent' ? 0 : u === 'Today' ? 1 : 2;
-    Animated.spring(urgencyAnim, {
-      toValue: targetIdx,
-      tension: 68,
-      friction: 10,
-      useNativeDriver: true,
-    }).start();
-  }
+  const URGENCY_TABS: TabItem<BloodRequest['urgency']>[] = [
+    { id: 'Urgent',    label: 'Urgent',    color: C.danger, icon: 'alert-triangle' },
+    { id: 'Today',     label: 'Today',     color: C.warn,   icon: 'clock' },
+    { id: 'This week', label: 'This week', color: SectorColors.blood, icon: 'calendar' },
+  ];
 
   function handleSelectGroup(g: BloodRequest['blood_group']) {
     setGroup(g);
@@ -193,7 +182,6 @@ export function BloodRequestScreen({ navigation }: any) {
     }
   }
 
-  const segTabWidth = segWidth > 0 ? (segWidth - 6) / 3 : 0;
   const currentReasonObj = MEDICAL_REASONS.find(r => r.id === medicalReason);
   const currentAffObj = AFFILIATIONS.find(a => a.id === affiliation);
 
@@ -261,50 +249,12 @@ export function BloodRequestScreen({ navigation }: any) {
               <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>
                 {t.blood2.urgency}
               </Text>
-              <View
-                style={[styles.segRow, { backgroundColor: C.surface2, borderColor: C.border }]}
-                onLayout={e => setSegWidth(e.nativeEvent.layout.width)}
-              >
-                {segTabWidth > 0 && (
-                  <Animated.View
-                    style={[
-                      styles.segIndicator,
-                      {
-                        width: segTabWidth,
-                        backgroundColor: SectorColors.blood,
-                        transform: [
-                          {
-                            translateX: urgencyAnim.interpolate({
-                              inputRange: [0, 1, 2],
-                              outputRange: [0, segTabWidth, segTabWidth * 2],
-                            }),
-                          },
-                        ],
-                      },
-                    ]}
-                  />
-                )}
-                {URGENCIES.map(u => {
-                  const on = urgency === u.id;
-                  return (
-                    <TouchableOpacity
-                      key={u.id}
-                      style={styles.segBtn}
-                      onPress={() => handleSelectUrgency(u.id)}
-                      activeOpacity={0.8}
-                    >
-                      <Text
-                        style={[
-                          styles.segTxt,
-                          { color: on ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold },
-                        ]}
-                      >
-                        {u.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
+              <SegmentedTabs<BloodRequest['urgency']>
+                size="sm"
+                tabs={URGENCY_TABS}
+                activeTab={urgency}
+                onTabChange={setUrgency}
+              />
             </View>
           </View>
 

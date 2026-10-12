@@ -1,7 +1,7 @@
 // Jobs moderation - admin-only.
 // Reported tab: live jobs with reports, most-reported first, with the report
 // reasons listed. Removed tab: withdrawn/removed jobs with restore.
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
   RefreshControl, ActivityIndicator, type ViewStyle, type TextStyle,
@@ -12,7 +12,8 @@ import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout, SectorColors } from '../../theme';
+import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
+import { FontFamily, Layout, SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
@@ -88,34 +89,22 @@ export function JobsModerateScreen({ navigation }: any) {
   const removed = jobs.filter(j => !!j.deleted_at);
   const list = tab === 'reported' ? reported : removed;
 
+  const moderateTabs: TabItem<'reported' | 'removed'>[] = useMemo(() => [
+    { id: 'reported', label: t.jobs.reported, icon: 'alert-triangle', count: reported.length, accentColor: C.danger },
+    { id: 'removed', label: t.jobs.removed, icon: 'trash-2', count: removed.length, accentColor: Accent.slate },
+  ], [t.jobs, reported.length, removed.length, C.danger]);
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar title={t.jobs.moderation} onBack={() => navigation.goBack()} />
 
       {/* Tabs */}
-      <View style={[styles.tabs, { paddingHorizontal: Layout.screenPadding }]}>
-        {([['reported', t.jobs.reported, reported.length], ['removed', t.jobs.removed, removed.length]] as const).map(([id, label, count]) => {
-          const on = tab === id;
-          return (
-            <TouchableOpacity
-              key={id}
-              style={[styles.tabBtn, on
-                ? { backgroundColor: C.brand, borderColor: C.brand }
-                : { backgroundColor: C.surface, borderColor: C.border }]}
-              onPress={() => setTab(id)}
-              activeOpacity={0.75}
-            >
-              <Text style={[styles.tabTxt, { color: on ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                {label}
-              </Text>
-              <View style={[styles.countPill, { backgroundColor: on ? 'rgba(255,255,255,0.22)' : C.surface2 }]}>
-                <Text style={[styles.countTxt, { color: on ? C.white : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                  {count}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          );
-        })}
+      <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 4 }}>
+        <SegmentedTabs
+          tabs={moderateTabs}
+          activeTab={tab}
+          onTabChange={setTab}
+        />
       </View>
 
       <ScrollView

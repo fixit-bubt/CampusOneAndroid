@@ -12,6 +12,7 @@ import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
+import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { localToday, nowDhakaMinutes, formatDate, formatTime } from '../../utils/format';
@@ -214,87 +215,31 @@ export function RidePostScreen({ route, navigation }: any) {
 
   const isOffer = postType === 'offer';
   const accentColor = isOffer ? RIDE_COLOR : '#8b5cf6';
-  const TRACK_PADDING = 3;
+  const POST_TYPE_TABS: TabItem<'offer' | 'request'>[] = useMemo(() => [
+    { id: 'offer', label: 'Offer Ride (Driver)', icon: 'navigation', color: RIDE_COLOR },
+    { id: 'request', label: 'Need Ride (Passenger)', icon: 'user-check', color: '#8b5cf6' },
+  ], []);
 
-  // 1. Post Type (Offer vs Request)
-  const animIndex = useRef(new Animated.Value(initialPostType === 'request' ? 1 : 0)).current;
-  const [trackWidth, setTrackWidth] = useState(0);
+  const DIRECTION_TABS: TabItem<Ride['direction']>[] = useMemo(() => [
+    { id: 'To Campus', label: t.rides2.toCampus ?? 'To Campus', icon: 'arrow-up-right', color: accentColor },
+    { id: 'From Campus', label: t.rides2.fromCampus ?? 'From Campus', icon: 'arrow-down-left', color: accentColor },
+  ], [accentColor, t.rides2.toCampus, t.rides2.fromCampus]);
 
-  useEffect(() => {
-    Animated.spring(animIndex, {
-      toValue: postType === 'request' ? 1 : 0,
-      tension: 68,
-      friction: 10,
-      useNativeDriver: true,
-    }).start();
-  }, [postType, animIndex]);
+  const DATE_TABS: TabItem<'today' | 'tomorrow'>[] = useMemo(() => [
+    { id: 'today', label: `${t.rides2.todayText ?? 'Today'} · ${formatShortDate(localToday())}`, icon: 'calendar', color: accentColor },
+    { id: 'tomorrow', label: `${t.rides2.tomorrowText ?? 'Tomorrow'} · ${formatShortDate(localTomorrow())}`, icon: 'calendar', color: accentColor },
+  ], [accentColor, t.rides2.todayText, t.rides2.tomorrowText]);
 
-  const innerTrackWidth = Math.max(0, trackWidth - TRACK_PADDING * 2);
-  const tabWidth = innerTrackWidth > 0 ? innerTrackWidth / 2 : 0;
-  const translateX = animIndex.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, tabWidth],
-  });
+  const LOC_CAT_TABS: TabItem<'mirpur' | 'dhaka'>[] = useMemo(() => [
+    { id: 'mirpur', label: 'Mirpur & Campus', icon: 'map-pin', count: 14, color: accentColor },
+    { id: 'dhaka', label: 'Greater Dhaka', icon: 'compass', count: 44, color: accentColor },
+  ], [accentColor]);
 
-  // 2. Direction (To Campus vs From Campus)
-  const dirAnimIndex = useRef(new Animated.Value(direction === 'From Campus' ? 1 : 0)).current;
-  const [dirTrackWidth, setDirTrackWidth] = useState(0);
-
-  useEffect(() => {
-    Animated.spring(dirAnimIndex, {
-      toValue: direction === 'From Campus' ? 1 : 0,
-      tension: 68,
-      friction: 10,
-      useNativeDriver: true,
-    }).start();
-  }, [direction, dirAnimIndex]);
-
-  const dirInnerTrackWidth = Math.max(0, dirTrackWidth - TRACK_PADDING * 2);
-  const dirTabWidth = dirInnerTrackWidth > 0 ? dirInnerTrackWidth / 2 : 0;
-  const dirTranslateX = dirAnimIndex.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, dirTabWidth],
-  });
-
-  // 3. Date Choice (Today vs Tomorrow)
-  const dateAnimIndex = useRef(new Animated.Value(dateChoice === 'tomorrow' ? 1 : 0)).current;
-  const [dateTrackWidth, setDateTrackWidth] = useState(0);
-
-  useEffect(() => {
-    Animated.spring(dateAnimIndex, {
-      toValue: dateChoice === 'tomorrow' ? 1 : 0,
-      tension: 68,
-      friction: 10,
-      useNativeDriver: true,
-    }).start();
-  }, [dateChoice, dateAnimIndex]);
-
-  const dateInnerTrackWidth = Math.max(0, dateTrackWidth - TRACK_PADDING * 2);
-  const dateTabWidth = dateInnerTrackWidth > 0 ? dateInnerTrackWidth / 2 : 0;
-  const dateTranslateX = dateAnimIndex.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, dateTabWidth],
-  });
-
-  // 4. Modal Category Switcher (Mirpur & Campus vs Greater Dhaka)
-  const catAnimIndex = useRef(new Animated.Value(locationCategory === 'dhaka' ? 1 : 0)).current;
-  const [catTrackWidth, setCatTrackWidth] = useState(0);
-
-  useEffect(() => {
-    Animated.spring(catAnimIndex, {
-      toValue: locationCategory === 'dhaka' ? 1 : 0,
-      tension: 68,
-      friction: 10,
-      useNativeDriver: true,
-    }).start();
-  }, [locationCategory, catAnimIndex]);
-
-  const catInnerTrackWidth = Math.max(0, catTrackWidth - TRACK_PADDING * 2);
-  const catTabWidth = catInnerTrackWidth > 0 ? catInnerTrackWidth / 2 : 0;
-  const catTranslateX = catAnimIndex.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, catTabWidth],
-  });
+  const handlePostTypeChange = (next: 'offer' | 'request') => {
+    setPostType(next);
+    if (next === 'offer' && fare === '40') setFare('50');
+    if (next === 'request' && fare === '50') setFare('40');
+  };
 
   const currentVehicleConfig = VEHICLES.find(v => v.id === vehicle) ?? VEHICLES[0];
 
@@ -340,7 +285,6 @@ export function RidePostScreen({ route, navigation }: any) {
     setSearchArea('');
     const targetCat = field === 'from' ? 'mirpur' : 'dhaka';
     setLocationCategory(targetCat);
-    catAnimIndex.setValue(targetCat === 'dhaka' ? 1 : 0);
     setHubModalVisible(true);
   }
 
@@ -463,71 +407,12 @@ export function RidePostScreen({ route, navigation }: any) {
           keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps="handled"
         >
-          {/* Post Type Segmented Animated Track Bar */}
-          <View
-            style={[styles.segmentedTrack, { backgroundColor: C.surface2 }]}
-            onLayout={e => setTrackWidth(e.nativeEvent.layout.width)}
-          >
-            {tabWidth > 0 && (
-              <Animated.View
-                style={[
-                  styles.slidingIndicator,
-                  {
-                    width: tabWidth,
-                    transform: [{ translateX }],
-                    backgroundColor: C.surface,
-                    borderColor: isDark
-                      ? (isOffer ? `${RIDE_COLOR}55` : '#8b5cf655')
-                      : (isOffer ? `${RIDE_COLOR}35` : '#8b5cf635'),
-                  },
-                ]}
-              />
-            )}
-
-            <TouchableOpacity
-              style={styles.segmentedTabBtn}
-              onPress={() => {
-                setPostType('offer');
-                if (fare === '40') setFare('50');
-              }}
-              activeOpacity={0.75}
-            >
-              <Feather name="navigation" size={14} color={isOffer ? RIDE_COLOR : C.textMuted} />
-              <Text
-                style={[
-                  styles.segmentedTabTxt,
-                  {
-                    color: isOffer ? RIDE_COLOR : C.textMuted,
-                    fontFamily: isOffer ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                  },
-                ]}
-              >
-                Offer Ride (Driver)
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.segmentedTabBtn}
-              onPress={() => {
-                setPostType('request');
-                if (fare === '50') setFare('40');
-              }}
-              activeOpacity={0.75}
-            >
-              <Feather name="user-check" size={14} color={!isOffer ? '#8b5cf6' : C.textMuted} />
-              <Text
-                style={[
-                  styles.segmentedTabTxt,
-                  {
-                    color: !isOffer ? '#8b5cf6' : C.textMuted,
-                    fontFamily: !isOffer ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                  },
-                ]}
-              >
-                Need Ride (Passenger)
-              </Text>
-            </TouchableOpacity>
-          </View>
+          {/* Post Type Segmented Tab Switcher */}
+          <SegmentedTabs<'offer' | 'request'>
+            tabs={POST_TYPE_TABS}
+            activeTab={postType}
+            onTabChange={handlePostTypeChange}
+          />
 
           {/* 1. Vehicle Selection */}
           <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
@@ -570,76 +455,15 @@ export function RidePostScreen({ route, navigation }: any) {
             })}
           </View>
 
-          {/* 2. Direction Selection (Animated Segmented Track) */}
+          {/* 2. Direction Selection */}
           <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
             {t.rides2.direction ?? 'DIRECTION'}
           </Text>
-          <View
-            style={[styles.segmentedTrack, { backgroundColor: C.surface2 }]}
-            onLayout={e => setDirTrackWidth(e.nativeEvent.layout.width)}
-          >
-            {dirTabWidth > 0 && (
-              <Animated.View
-                style={[
-                  styles.slidingIndicator,
-                  {
-                    width: dirTabWidth,
-                    transform: [{ translateX: dirTranslateX }],
-                    backgroundColor: C.surface,
-                    borderColor: isDark
-                      ? (isOffer ? `${RIDE_COLOR}55` : '#8b5cf655')
-                      : (isOffer ? `${RIDE_COLOR}35` : '#8b5cf635'),
-                  },
-                ]}
-              />
-            )}
-
-            <TouchableOpacity
-              style={styles.segmentedTabBtn}
-              onPress={() => handleDirectionSelect('To Campus')}
-              activeOpacity={0.75}
-            >
-              <Feather
-                name="arrow-up-right"
-                size={14}
-                color={direction === 'To Campus' ? accentColor : C.textMuted}
-              />
-              <Text
-                style={[
-                  styles.segmentedTabTxt,
-                  {
-                    color: direction === 'To Campus' ? accentColor : C.textMuted,
-                    fontFamily: direction === 'To Campus' ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                  },
-                ]}
-              >
-                {t.rides2.toCampus ?? 'To Campus'}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.segmentedTabBtn}
-              onPress={() => handleDirectionSelect('From Campus')}
-              activeOpacity={0.75}
-            >
-              <Feather
-                name="arrow-down-left"
-                size={14}
-                color={direction === 'From Campus' ? accentColor : C.textMuted}
-              />
-              <Text
-                style={[
-                  styles.segmentedTabTxt,
-                  {
-                    color: direction === 'From Campus' ? accentColor : C.textMuted,
-                    fontFamily: direction === 'From Campus' ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                  },
-                ]}
-              >
-                {t.rides2.fromCampus ?? 'From Campus'}
-              </Text>
-            </TouchableOpacity>
-          </View>
+          <SegmentedTabs<Ride['direction']>
+            tabs={DIRECTION_TABS}
+            activeTab={direction}
+            onTabChange={handleDirectionSelect}
+          />
 
           {/* 3. Origin & Destination: 2 Dedicated Location Bars */}
           {/* Bar 1: Pickup Location (From) */}
@@ -712,74 +536,11 @@ export function RidePostScreen({ route, navigation }: any) {
           <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
             {t.rides2.date ?? 'DATE'}
           </Text>
-          <View
-            style={[styles.segmentedTrack, { backgroundColor: C.surface2 }]}
-            onLayout={e => setDateTrackWidth(e.nativeEvent.layout.width)}
-          >
-            {dateTabWidth > 0 && (
-              <Animated.View
-                style={[
-                  styles.slidingIndicator,
-                  {
-                    width: dateTabWidth,
-                    transform: [{ translateX: dateTranslateX }],
-                    backgroundColor: C.surface,
-                    borderColor: isDark
-                      ? (isOffer ? `${RIDE_COLOR}55` : '#8b5cf655')
-                      : (isOffer ? `${RIDE_COLOR}35` : '#8b5cf635'),
-                  },
-                ]}
-              />
-            )}
-
-            <TouchableOpacity
-              style={styles.segmentedTabBtn}
-              onPress={() => handleDateChoice('today')}
-              activeOpacity={0.75}
-            >
-              <Feather
-                name="calendar"
-                size={13}
-                color={dateChoice === 'today' ? accentColor : C.textMuted}
-              />
-              <Text
-                style={[
-                  styles.segmentedTabTxt,
-                  {
-                    color: dateChoice === 'today' ? accentColor : C.textMuted,
-                    fontFamily: dateChoice === 'today' ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                  },
-                ]}
-                numberOfLines={1}
-              >
-                {(t.rides2.todayText ?? 'Today')} · {formatShortDate(localToday())}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.segmentedTabBtn}
-              onPress={() => handleDateChoice('tomorrow')}
-              activeOpacity={0.75}
-            >
-              <Feather
-                name="calendar"
-                size={13}
-                color={dateChoice === 'tomorrow' ? accentColor : C.textMuted}
-              />
-              <Text
-                style={[
-                  styles.segmentedTabTxt,
-                  {
-                    color: dateChoice === 'tomorrow' ? accentColor : C.textMuted,
-                    fontFamily: dateChoice === 'tomorrow' ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                  },
-                ]}
-                numberOfLines={1}
-              >
-                {(t.rides2.tomorrowText ?? 'Tomorrow')} · {formatShortDate(localTomorrow())}
-              </Text>
-            </TouchableOpacity>
-          </View>
+          <SegmentedTabs<'today' | 'tomorrow'>
+            tabs={DATE_TABS}
+            activeTab={dateChoice}
+            onTabChange={handleDateChoice}
+          />
 
           {/* 5. Departure Time Picker Trigger Bar */}
           <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
@@ -1011,107 +772,13 @@ export function RidePostScreen({ route, navigation }: any) {
               </View>
 
               {/* 2. The 2-Bar Category Switcher with Spring Sliding Animation */}
-              <View
-                style={[styles.categorySwitcherTrack, { backgroundColor: C.surface2 }]}
-                onLayout={e => setCatTrackWidth(e.nativeEvent.layout.width)}
-              >
-                {catTabWidth > 0 && (
-                  <Animated.View
-                    style={[
-                      styles.categorySlidingIndicator,
-                      {
-                        width: catTabWidth,
-                        transform: [{ translateX: catTranslateX }],
-                        backgroundColor: C.surface,
-                        borderColor: isDark ? `${accentColor}55` : `${accentColor}35`,
-                      },
-                    ]}
-                  />
-                )}
-
-                <TouchableOpacity
-                  style={styles.categorySwitcherBtn}
-                  onPress={() => setLocationCategory('mirpur')}
-                  activeOpacity={0.75}
-                >
-                  <Feather
-                    name="map-pin"
-                    size={14}
-                    color={locationCategory === 'mirpur' ? accentColor : C.textMuted}
-                  />
-                  <Text
-                    style={[
-                      styles.categorySwitcherTxt,
-                      {
-                        color: locationCategory === 'mirpur' ? accentColor : C.textMuted,
-                        fontFamily: locationCategory === 'mirpur' ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                      },
-                    ]}
-                  >
-                    Mirpur & Campus
-                  </Text>
-                  <View
-                    style={[
-                      styles.categoryMiniBadge,
-                      {
-                        backgroundColor: locationCategory === 'mirpur'
-                          ? (isDark ? `${accentColor}25` : `${accentColor}18`)
-                          : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)'),
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.categoryMiniBadgeTxt,
-                        { color: locationCategory === 'mirpur' ? accentColor : C.textMuted, fontFamily: FontFamily.jakartaBold },
-                      ]}
-                    >
-                      14
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.categorySwitcherBtn}
-                  onPress={() => setLocationCategory('dhaka')}
-                  activeOpacity={0.75}
-                >
-                  <Feather
-                    name="compass"
-                    size={14}
-                    color={locationCategory === 'dhaka' ? accentColor : C.textMuted}
-                  />
-                  <Text
-                    style={[
-                      styles.categorySwitcherTxt,
-                      {
-                        color: locationCategory === 'dhaka' ? accentColor : C.textMuted,
-                        fontFamily: locationCategory === 'dhaka' ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                      },
-                    ]}
-                  >
-                    Greater Dhaka
-                  </Text>
-                  <View
-                    style={[
-                      styles.categoryMiniBadge,
-                      {
-                        backgroundColor: locationCategory === 'dhaka'
-                          ? (isDark ? `${accentColor}25` : `${accentColor}18`)
-                          : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)'),
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.categoryMiniBadgeTxt,
-                        { color: locationCategory === 'dhaka' ? accentColor : C.textMuted, fontFamily: FontFamily.jakartaBold },
-                      ]}
-                    >
-                      44
-                    </Text>
-                  </View>
-                </TouchableOpacity>
+              <View style={{ marginBottom: 12 }}>
+                <SegmentedTabs<'mirpur' | 'dhaka'>
+                  size="sm"
+                  tabs={LOC_CAT_TABS}
+                  activeTab={locationCategory}
+                  onTabChange={setLocationCategory}
+                />
               </View>
 
               {/* 3. Scrollable Areas List */}

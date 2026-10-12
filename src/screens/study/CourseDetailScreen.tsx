@@ -2,7 +2,7 @@
 // study_books. Questions carry an exam tag and a CR-verifiable badge; books can
 // be external links or files. Files open in an in-app browser tab; members can
 // bookmark, search, filter by exam, and sort. CRs verify/delete entries.
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
   ActivityIndicator, Alert, type ViewStyle,
@@ -11,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
+import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
@@ -298,6 +299,11 @@ export function CourseDetailScreen({ route, navigation }: any) {
   const counts: Record<Tab, number> = {
     materials: materials.length, questions: questions.length, books: books.length,
   };
+  const studyTabs: TabItem<Tab>[] = useMemo(() => [
+    { id: 'materials', label: TAB_LABELS.materials, icon: 'file-text', count: counts.materials, accentColor: STUDY_COLOR },
+    { id: 'questions', label: TAB_LABELS.questions, icon: 'help-circle', count: counts.questions, accentColor: STUDY_COLOR },
+    { id: 'books',     label: TAB_LABELS.books,     icon: 'book-open',   count: counts.books,     accentColor: STUDY_COLOR },
+  ], [counts.materials, counts.questions, counts.books]);
   const tintBg = isDark ? `${STUDY_COLOR}2e` : STUDY_BG;
 
   // Exam options for the questions filter
@@ -392,24 +398,13 @@ export function CourseDetailScreen({ route, navigation }: any) {
 
         {/* Tabs + sort */}
         <View style={styles.tabsRow}>
-          <View style={styles.chips}>
-            {(Object.keys(TAB_LABELS) as Tab[]).map(tb => (
-              <TouchableOpacity
-                key={tb}
-                style={[styles.chip, tab === tb
-                  ? { backgroundColor: C.brand, borderColor: C.brand }
-                  : { backgroundColor: C.surface, borderColor: C.border }]}
-                onPress={() => { setTab(tb); setExamFilter('All'); }}
-                activeOpacity={0.75}
-              >
-                <Text style={[styles.chipTxt, { color: tab === tb ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                  {TAB_LABELS[tb]}
-                </Text>
-                <Text style={[styles.chipCount, { color: tab === tb ? 'rgba(255,255,255,0.7)' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                  {counts[tb]}
-                </Text>
-              </TouchableOpacity>
-            ))}
+          <View style={{ flex: 1 }}>
+            <SegmentedTabs
+              tabs={studyTabs}
+              activeTab={tab}
+              onTabChange={tb => { setTab(tb); setExamFilter('All'); }}
+              size="sm"
+            />
           </View>
           <TouchableOpacity
             style={[styles.sortBtn, { borderColor: C.border, backgroundColor: C.surface }]}

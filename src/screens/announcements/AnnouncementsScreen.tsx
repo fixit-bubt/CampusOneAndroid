@@ -11,6 +11,7 @@ import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
+import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { FontFamily, Layout, Accent, SectorColors, pillBg, Radius } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { getCache, CacheKeys } from '../../services/cacheService';
@@ -204,42 +205,6 @@ export function AnnouncementsScreen({ navigation }: any) {
   const [syncing, setSyncing] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
 
-  // 3-Segment spring animated indicator
-  const animIndex = useRef(new Animated.Value(0)).current;
-  const [trackWidth, setTrackWidth] = useState(0);
-
-  const tabIndexMap: Record<MainTab, number> = useMemo(
-    () => ({ all: 0, urgent: 1, saved: 2 }),
-    []
-  );
-
-  useEffect(() => {
-    const idx = tabIndexMap[mainTab] ?? 0;
-    Animated.spring(animIndex, {
-      toValue: idx,
-      tension: 68,
-      friction: 10,
-      useNativeDriver: true,
-    }).start();
-  }, [mainTab, animIndex, tabIndexMap]);
-
-  const TAB_COLORS: Record<MainTab, { fg: string; bg: string }> = useMemo(
-    () => ({
-      all: {
-        fg: C.brand,
-        bg: isDark ? 'rgba(37, 99, 235, 0.18)' : '#DBEAFE',
-      },
-      urgent: {
-        fg: C.danger,
-        bg: isDark ? 'rgba(214, 61, 53, 0.18)' : '#FEE2E2',
-      },
-      saved: {
-        fg: Accent.gold,
-        bg: isDark ? 'rgba(234, 179, 8, 0.18)' : '#FEF3C7',
-      },
-    }),
-    [C.brand, C.danger, isDark]
-  );
 
   const load = useCallback(async () => {
     // 1. Instant Cache Load
@@ -474,19 +439,14 @@ export function AnnouncementsScreen({ navigation }: any) {
     return deptOptions.find(d => d.id === deptFilter)?.label || t.announce2.allDepartments;
   }, [deptFilter, studentDept, deptOptions, t.announce2]);
 
-  const tabs: { id: MainTab; label: string; icon: keyof typeof Feather.glyphMap }[] = [
-    { id: 'all', label: 'All', icon: 'layers' },
-    { id: 'urgent', label: 'Urgent', icon: 'alert-circle' },
-    { id: 'saved', label: 'Saved', icon: 'bookmark' },
-  ];
-
-  const TRACK_PADDING = 4;
-  const innerTrackWidth = Math.max(0, trackWidth - TRACK_PADDING * 2);
-  const tabWidth = innerTrackWidth > 0 ? innerTrackWidth / 3 : 0;
-  const translateX = animIndex.interpolate({
-    inputRange: [0, 1, 2],
-    outputRange: [0, tabWidth, tabWidth * 2],
-  });
+  const ANNOUNCEMENT_TABS: TabItem<MainTab>[] = useMemo(
+    () => [
+      { id: 'all', label: 'All', icon: 'layers', count: tabCounts.all, accentColor: SectorColors.announce },
+      { id: 'urgent', label: 'Urgent', icon: 'alert-circle', count: tabCounts.urgent, accentColor: C.danger },
+      { id: 'saved', label: 'Saved', icon: 'bookmark', count: tabCounts.saved, accentColor: Accent.gold },
+    ],
+    [tabCounts.all, tabCounts.urgent, tabCounts.saved, C.danger]
+  );
 
   const renderCard = useCallback(({ item }: { item: Announcement }) => (
     <AnnouncementCard
@@ -538,83 +498,11 @@ export function AnnouncementsScreen({ navigation }: any) {
 
       {/* 1. Animated Segmented Switcher (3 Tabs: All | Urgent | Saved) */}
       <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 4 }}>
-        <View
-          style={[styles.tabContainer, { backgroundColor: C.surface2 }]}
-          onLayout={e => setTrackWidth(e.nativeEvent.layout.width)}
-        >
-          {tabWidth > 0 && (
-            <Animated.View
-              style={[
-                styles.activeIndicator,
-                {
-                  width: tabWidth,
-                  transform: [{ translateX }],
-                  backgroundColor: C.surface,
-                  borderColor: isDark ? `${TAB_COLORS[mainTab].fg}55` : `${TAB_COLORS[mainTab].fg}35`,
-                },
-              ]}
-            />
-          )}
-
-          {tabs.map(tab => {
-            const active = mainTab === tab.id;
-            const count = tabCounts[tab.id];
-            const cfg = TAB_COLORS[tab.id];
-
-            return (
-              <TouchableOpacity
-                key={tab.id}
-                style={styles.tabBtn}
-                onPress={() => setMainTab(tab.id)}
-                activeOpacity={0.75}
-              >
-                <Feather
-                  name={tab.icon}
-                  size={13.5}
-                  color={active ? cfg.fg : C.textMuted}
-                />
-                <Text
-                  style={[
-                    styles.tabBtnTxt,
-                    {
-                      color: active ? cfg.fg : C.textMuted,
-                      fontFamily: FontFamily.jakartaBold,
-                    },
-                  ]}
-                  numberOfLines={1}
-                  adjustsFontSizeToFit
-                  minimumFontScale={0.85}
-                >
-                  {tab.label}
-                </Text>
-                {count > 0 && (
-                  <View
-                    style={[
-                      styles.tabBadge,
-                      {
-                        backgroundColor: active
-                          ? cfg.bg
-                          : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.border),
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.tabBadgeTxt,
-                        {
-                          color: active ? cfg.fg : C.textMuted,
-                          fontFamily: FontFamily.jakartaBold,
-                        },
-                      ]}
-                    >
-                      {count}
-                    </Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+        <SegmentedTabs
+          tabs={ANNOUNCEMENT_TABS}
+          activeTab={mainTab}
+          onTabChange={setMainTab}
+        />
       </View>
 
       {/* 2. Global Search Bar */}

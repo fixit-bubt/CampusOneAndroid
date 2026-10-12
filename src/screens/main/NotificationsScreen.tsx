@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
@@ -11,6 +11,7 @@ import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { SectorIcon } from '../../components/ui/SectorIcon';
 import { Icon } from '../../components/ui/Icon';
+import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { FontFamily, Layout } from '../../theme';
 import { SectorColors, type SectorKey } from '../../theme';
@@ -220,6 +221,11 @@ export function NotificationsScreen({ navigation }: any) {
   const unread = notifs.filter(n => !n.read).length;
   const list = filter === 'unread' ? notifs.filter(n => !n.read) : notifs;
 
+  const notifTabs: TabItem<Filter>[] = useMemo(() => [
+    { id: 'all', label: 'All', icon: 'bell', count: notifs.length },
+    { id: 'unread', label: 'Unread', icon: 'mail', count: unread, accentColor: C.brand },
+  ], [notifs.length, unread, C.brand]);
+
   const BUCKET_LABELS = { new: t.mainx.notifBucketNew, today: t.mainx.notifBucketToday, earlier: t.mainx.notifBucketEarlier };
   const buckets = (['new', 'today', 'earlier'] as const)
     .map(b => ({ id: b, label: BUCKET_LABELS[b], items: list.filter(n => bucket(n) === b) }))
@@ -255,35 +261,13 @@ export function NotificationsScreen({ navigation }: any) {
         message="Showing cached notifications."
       />
 
-      {/* Filter chips */}
-      <View style={[styles.chips, { paddingHorizontal: Layout.screenPadding }]}>
-        {(['all', 'unread'] as Filter[]).map(f => (
-          <TouchableOpacity
-            key={f}
-            style={[
-              styles.chip,
-              filter === f
-                ? { backgroundColor: C.brand, borderColor: C.brand }
-                : { backgroundColor: C.surface, borderColor: C.border },
-            ]}
-            onPress={() => setFilter(f)}
-            activeOpacity={0.75}
-          >
-            <Text style={[styles.chipText, { color: filter === f ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-              {f === 'all' ? 'All' : 'Unread'}
-            </Text>
-            {f === 'all' && (
-              <Text style={[styles.chipCount, { color: filter === f ? 'rgba(255,255,255,0.75)' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                {notifs.length}
-              </Text>
-            )}
-            {f === 'unread' && unread > 0 && (
-              <Text style={[styles.chipCount, { color: filter === f ? 'rgba(255,255,255,0.75)' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                {unread}
-              </Text>
-            )}
-          </TouchableOpacity>
-        ))}
+      {/* Segmented Filter Switcher */}
+      <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 4, paddingBottom: 6 }}>
+        <SegmentedTabs
+          tabs={notifTabs}
+          activeTab={filter}
+          onTabChange={setFilter}
+        />
       </View>
 
       <ScrollView

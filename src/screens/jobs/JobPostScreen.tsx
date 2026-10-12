@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView,
   StyleSheet, ActivityIndicator, type ViewStyle,
@@ -11,6 +11,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
+import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { FontFamily, Layout, SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useT } from '../../i18n';
@@ -18,36 +19,6 @@ import { isValidDate, localToday, formatFileSize } from '../../utils/format';
 import { uploadJobCircular } from '../../services/jobsService';
 import { MAX_FILE_SIZE_MB, JOB_DEPARTMENTS, DHAKA_AREAS, COMPENSATION_TYPES } from '../../constants/app';
 import type { Job } from '../../types/database';
-
-function SegControl<T extends string>({
-  options, value, onChange, C,
-}: { options: { id: T; label: string }[]; value: T; onChange: (v: T) => void; C: any }) {
-  return (
-    <View style={[segStyles.row, { backgroundColor: C.surface2, borderColor: C.border }]}>
-      {options.map(o => {
-        const on = o.id === value;
-        return (
-          <TouchableOpacity
-            key={o.id}
-            style={[segStyles.btn, on && { backgroundColor: C.brand }]}
-            onPress={() => onChange(o.id)}
-            activeOpacity={0.75}
-          >
-            <Text style={[segStyles.txt, { color: on ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-              {o.label}
-            </Text>
-          </TouchableOpacity>
-        );
-      })}
-    </View>
-  );
-}
-
-const segStyles = StyleSheet.create({
-  row: { flexDirection: 'row' as const, borderRadius: 12, borderWidth: 1, padding: 4, gap: 4 },
-  btn: { flex: 1, alignItems: 'center' as const, paddingVertical: 9, borderRadius: 9 },
-  txt: { fontSize: 13 } as any,
-});
 
 const JOB_TYPES: { id: Job['job_type']; label: string }[] = [
   { id: 'internship', label: 'Internship' },
@@ -58,23 +29,10 @@ const JOB_TYPES: { id: Job['job_type']; label: string }[] = [
   { id: 'freelance',  label: 'Freelance' },
 ];
 
-const MODES: { id: Job['work_mode']; label: string }[] = [
-  { id: 'onsite', label: 'On-site' },
-  { id: 'remote', label: 'Remote' },
-  { id: 'hybrid', label: 'Hybrid' },
-];
-
-const COMPENSATION_OPTIONS: { id: NonNullable<Job['compensation_type']>; label: string }[] = [
-  { id: 'paid',        label: 'Paid / Stipend' },
-  { id: 'conveyance',  label: 'Conveyance' },
-  { id: 'negotiable',  label: 'Negotiable' },
-  { id: 'unpaid',      label: 'Experience' },
-];
-
-const APPLY_METHODS: { id: Job['apply_method']; label: string }[] = [
-  { id: 'email', label: 'Email' },
-  { id: 'link',  label: 'Link' },
-  { id: 'file',  label: 'Circular PDF' },
+const APPLY_METHODS: TabItem<Job['apply_method']>[] = [
+  { id: 'email', label: 'Email', icon: 'mail' },
+  { id: 'link',  label: 'Link', icon: 'link' },
+  { id: 'file',  label: 'Circular PDF', icon: 'file-text' },
 ];
 
 interface PickedCircular {
@@ -170,18 +128,18 @@ export function JobPostScreen({ navigation }: any) {
     { id: 'freelance',  label: t.jobs2?.freelance ?? 'Freelance' },
   ];
 
-  const modes: { id: Job['work_mode']; label: string }[] = [
-    { id: 'onsite', label: t.jobs2?.onsite ?? 'On-site' },
-    { id: 'remote', label: t.jobs2?.remote ?? 'Remote' },
-    { id: 'hybrid', label: t.jobs2?.hybrid ?? 'Hybrid' },
-  ];
+  const modes: TabItem<Job['work_mode']>[] = useMemo(() => [
+    { id: 'onsite', label: t.jobs2?.onsite ?? 'On-site', icon: 'map-pin' },
+    { id: 'remote', label: t.jobs2?.remote ?? 'Remote', icon: 'wifi' },
+    { id: 'hybrid', label: t.jobs2?.hybrid ?? 'Hybrid', icon: 'shuffle' },
+  ], [t.jobs2]);
 
-  const compensationOptions: { id: NonNullable<Job['compensation_type']>; label: string }[] = [
-    { id: 'paid',        label: t.jobs2?.paid ?? 'Paid / Stipend' },
-    { id: 'conveyance',  label: t.jobs2?.conveyance ?? 'Conveyance' },
-    { id: 'negotiable',  label: t.jobs2?.negotiable ?? 'Negotiable' },
-    { id: 'unpaid',      label: t.jobs2?.unpaid ?? 'Experience' },
-  ];
+  const compensationOptions: TabItem<NonNullable<Job['compensation_type']>>[] = useMemo(() => [
+    { id: 'paid',        label: t.jobs2?.paid ?? 'Paid', icon: 'dollar-sign' },
+    { id: 'conveyance',  label: t.jobs2?.conveyance ?? 'Conveyance', icon: 'navigation' },
+    { id: 'negotiable',  label: t.jobs2?.negotiable ?? 'Negotiable', icon: 'sliders' },
+    { id: 'unpaid',      label: t.jobs2?.unpaid ?? 'Experience', icon: 'award' },
+  ], [t.jobs2]);
 
   async function pickPdfFile() {
     try {
@@ -433,17 +391,22 @@ export function JobPostScreen({ navigation }: any) {
           <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
             {t.jobs2.workMode}
           </Text>
-          <SegControl options={modes} value={workMode} onChange={setWorkMode} C={C} />
+          <SegmentedTabs
+            tabs={modes}
+            activeTab={workMode}
+            onTabChange={setWorkMode}
+            size="sm"
+          />
 
           {/* Compensation Model */}
           <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
             {t.jobs2?.salaryLabel ?? 'COMPENSATION & SALARY'}
           </Text>
-          <SegControl
-            options={compensationOptions}
-            value={compensationType}
-            onChange={setCompensationType}
-            C={C}
+          <SegmentedTabs
+            tabs={compensationOptions}
+            activeTab={compensationType}
+            onTabChange={setCompensationType}
+            size="sm"
           />
 
           {compensationType === 'paid' && (
@@ -620,11 +583,11 @@ export function JobPostScreen({ navigation }: any) {
           <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
             {t.jobs2?.applyTitle ?? 'HOW TO APPLY'}
           </Text>
-          <SegControl
-            options={APPLY_METHODS}
-            value={applyMethod}
-            onChange={setApplyMethod}
-            C={C}
+          <SegmentedTabs
+            tabs={APPLY_METHODS}
+            activeTab={applyMethod}
+            onTabChange={setApplyMethod}
+            size="sm"
           />
 
           {applyMethod === 'email' && (

@@ -14,6 +14,7 @@ import { Icon } from '../../components/ui/Icon';
 import { SkeletonList, LoadError } from '../../components/ui/LoadState';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { StatusBadge } from '../../components/ui/StatusBadge';
+import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { FontFamily, Layout, SectorColors, Accent } from '../../theme';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
@@ -115,24 +116,25 @@ export function BloodScreen({ route, navigation }: any) {
     }
   }, [route?.params?.requestCode]);
 
-  // Segmented track animated indicator & theme colors
-  const animIndex = useRef(new Animated.Value(0)).current;
-  const [trackWidth, setTrackWidth] = useState(0);
+  const [requests, setRequests] = useState<BloodRequest[]>([]);
+  const [donors, setDonors]     = useState<DonorWithName[]>([]);
 
-  const tabIndexMap: Record<Tab, number> = useMemo(
-    () => ({ requests: 0, donors: 1 }),
-    []
-  );
-
-  useEffect(() => {
-    const idx = tabIndexMap[tab] ?? 0;
-    Animated.spring(animIndex, {
-      toValue: idx,
-      tension: 68,
-      friction: 10,
-      useNativeDriver: true,
-    }).start();
-  }, [tab, animIndex, tabIndexMap]);
+  const BLOOD_TABS: TabItem<Tab>[] = useMemo(() => [
+    {
+      id: 'requests',
+      label: t.blood2.requestsTab,
+      iconConfig: { family: 'feather', name: 'alert-circle' },
+      count: requests.length,
+      color: C.danger,
+    },
+    {
+      id: 'donors',
+      label: t.blood2.donorsTab,
+      iconConfig: { family: 'feather', name: 'users' },
+      count: donors.length,
+      color: C.success,
+    },
+  ], [t, requests.length, donors.length, C.danger, C.success]);
 
   const bloodTypes = useMemo(() => ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'], []);
 
@@ -144,27 +146,11 @@ export function BloodScreen({ route, navigation }: any) {
     setGroupFilter(prev => (prev === g ? 'All' : g));
   }
 
-  const TAB_COLORS: Record<Tab, { fg: string; bg: string }> = useMemo(
-    () => ({
-      requests: {
-        fg: C.danger,
-        bg: C.dangerBg,
-      },
-      donors: {
-        fg: C.success,
-        bg: C.successBg,
-      },
-    }),
-    [C.danger, C.dangerBg, C.success, C.successBg]
-  );
-
   const [groupFilter, setGroupFilter] = useState('All');
   const [areaFilter, setAreaFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const searchInputRef = useRef<TextInput>(null);
   const [areaModalVisible, setAreaModalVisible] = useState(false);
-  const [requests, setRequests] = useState<BloodRequest[]>([]);
-  const [donors, setDonors]     = useState<DonorWithName[]>([]);
   const [myDonor, setMyDonor]   = useState<Donor | null>(null);
   const [myDonationCount, setMyDonationCount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
@@ -537,13 +523,7 @@ export function BloodScreen({ route, navigation }: any) {
     return map;
   }, [donors]);
 
-  const TRACK_PADDING = 3;
-  const innerTrackWidth = Math.max(0, trackWidth - TRACK_PADDING * 2);
-  const tabWidth = innerTrackWidth > 0 ? innerTrackWidth / 2 : 0;
-  const translateX = animIndex.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, tabWidth],
-  });
+
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -651,71 +631,12 @@ export function BloodScreen({ route, navigation }: any) {
       )}
 
       {/* Unified Segmented Tab Switcher with Native Spring Animation & Colors */}
-      <View
-        style={[styles.tabContainer, { backgroundColor: C.surface2 }]}
-        onLayout={e => setTrackWidth(e.nativeEvent.layout.width)}
-      >
-        {tabWidth > 0 && (
-          <Animated.View
-            style={[
-              styles.activeIndicator,
-              {
-                width: tabWidth,
-                transform: [{ translateX }],
-                backgroundColor: C.surface,
-                borderColor: isDark ? `${TAB_COLORS[tab].fg}55` : `${TAB_COLORS[tab].fg}35`,
-              },
-            ]}
-          />
-        )}
-        {(['requests', 'donors'] as Tab[]).map(tb => {
-          const active = tab === tb;
-          const cfg = TAB_COLORS[tb];
-          const count = tb === 'requests' ? requests.length : donors.length;
-          return (
-            <TouchableOpacity
-              key={tb}
-              style={styles.tabBtn}
-              onPress={() => setTab(tb)}
-              activeOpacity={0.75}
-            >
-              <Text
-                style={[
-                  styles.tabBtnTxt,
-                  {
-                    color: active ? cfg.fg : C.textMuted,
-                    fontFamily: FontFamily.jakartaBold,
-                  },
-                ]}
-                numberOfLines={1}
-              >
-                {tb === 'requests' ? t.blood2.requestsTab : t.blood2.donorsTab}
-              </Text>
-              <View
-                style={[
-                  styles.tabBadge,
-                  {
-                    backgroundColor: active
-                      ? cfg.bg
-                      : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.border),
-                  },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.tabBadgeTxt,
-                    {
-                      color: active ? cfg.fg : C.textMuted,
-                      fontFamily: FontFamily.jakartaBold,
-                    },
-                  ]}
-                >
-                  {count}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          );
-        })}
+      <View style={{ paddingHorizontal: Layout.screenPadding, marginVertical: 8 }}>
+        <SegmentedTabs<Tab>
+          tabs={BLOOD_TABS}
+          activeTab={tab}
+          onTabChange={setTab}
+        />
       </View>
 
       {/* Unified Search & Dhaka Location Trigger Row (Option 2: Micro-Label Stacked) */}

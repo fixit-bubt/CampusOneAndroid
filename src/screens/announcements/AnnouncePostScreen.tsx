@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView, Platform,
   StyleSheet, Switch, Image, type ViewStyle,
@@ -11,6 +11,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
+import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { uploadFile } from '../../utils/storage';
@@ -18,17 +19,6 @@ import { BUCKETS, MAX_FILE_SIZE_MB } from '../../constants/app';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
 import type { Announcement } from '../../types/database';
-
-const PRIORITIES: { id: Announcement['priority']; label: string }[] = [
-  { id: 'Urgent',    label: 'Urgent'    },
-  { id: 'Important', label: 'Important' },
-  { id: 'General',   label: 'General'   },
-];
-
-// Priority accent from theme tokens (dark-mode aware via C)
-function priColor(C: any, id: Announcement['priority']): string {
-  return id === 'Urgent' ? C.danger : id === 'Important' ? C.warn : C.brand;
-}
 
 export function AnnouncePostScreen({ navigation }: any) {
   const { C } = useTheme();
@@ -48,6 +38,12 @@ export function AnnouncePostScreen({ navigation }: any) {
   const [uploadingPdf, setUploadingPdf] = useState(false);
   const [loading, setLoading] = useState(false);
   const toast = useToast();
+
+  const priorityTabs: TabItem<Announcement['priority']>[] = useMemo(() => [
+    { id: 'Urgent', label: 'Urgent', icon: 'alert-triangle', accentColor: C.danger },
+    { id: 'Important', label: 'Important', icon: 'alert-circle', accentColor: C.warn },
+    { id: 'General', label: 'General', icon: 'info', accentColor: C.brand },
+  ], [C.danger, C.warn, C.brand]);
 
   // Announcements are admin-only.
   if (profile?.role !== 'admin') {
@@ -175,23 +171,12 @@ export function AnnouncePostScreen({ navigation }: any) {
         />
 
         <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.announce2.labelPriority}</Text>
-        <View style={[styles.segRow, { backgroundColor: C.surface2, borderColor: C.border }]}>
-          {PRIORITIES.map(p => {
-            const on = priority === p.id;
-            return (
-              <TouchableOpacity
-                key={p.id}
-                style={[styles.segBtn, on && { backgroundColor: priColor(C, p.id) }]}
-                onPress={() => setPriority(p.id)}
-                activeOpacity={0.75}
-              >
-                <Text style={[styles.segTxt, { color: on ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                  {p.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+        <SegmentedTabs
+          tabs={priorityTabs}
+          activeTab={priority}
+          onTabChange={setPriority}
+          size="sm"
+        />
 
         <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.announce2.labelBody}</Text>
         <TextInput

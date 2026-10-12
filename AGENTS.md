@@ -146,12 +146,31 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
 ### 5.4 Universal SegmentedTabs Standard (`src/components/ui/SegmentedTabs.tsx`)
 - **App-Wide Standard:** All segmented tab controls, feed switchers, and filter bars across the app MUST use `SegmentedTabs` for visual and ergonomic consistency.
 - **Strict Geometric Symmetry:** Every tab has equal width (`flex: 1` / `100% / tabs.length`) so tabs never look mismatched or uneven based on word length.
-- **Touch Ergonomics & Proportions:**
-  - Standard minimum touch height: `minHeight: 48` (`paddingVertical: 10`), satisfying WCAG/Material 48dp touch targets.
-  - Track padding: `4.5dp` (`borderRadius: 16`), sliding indicator `borderRadius: 12.5` with subtle elevation and soft drop shadow.
-  - Vector icon size: `15.5dp` (Feather), typography `13.5dp` (Plus Jakarta Sans).
-  - Outlined counter badge (coss.com standard): `borderWidth: 1`, `paddingHorizontal: 7.5, paddingVertical: 2`, `minWidth: 22`, font `11.5dp`. Inactive badges have subtle border with transparent background; active badges have tinted fill (`cfg.bg`) with accent border.
-- **Spring Glide Physics:** Indicator animates using native spring physics (`tension: 190, friction: 18`, `useNativeDriver: true`) on Android's RenderThread for silky smooth transitions.
+- **Sizes (`size?: 'sm' | 'md'`):**
+  - Standard `md` (default): `minHeight: 48` (`paddingVertical: 10`), satisfying WCAG/Material 48dp touch targets, `fontSize: 13.5`, icon `15.5`.
+  - Compact `sm`: `minHeight: 38` (`paddingVertical: 7`), `fontSize: 12`, icon `13.5`. Used for secondary filter switchers, modals, and forms.
+- **Interpolation Guard:** Uses safe interpolation output range (`outputRange: tabs.length <= 1 ? [0, 0] : ...`) to prevent crash on single-tab lists.
+- **Universal Adoption Across App:**
+  - `RidePostScreen`: Post Type (`offer` / `request`), Direction (`To Campus` / `From Campus`), Date Choice (`today` / `tomorrow`), Location Modal categories (`mirpur` / `dhaka`).
+  - `RidesScreen`: Direction filter (4 tabs with badges), Post Type filter (3 tabs with counts).
+  - `BloodScreen`: Requests vs Donors switcher with counts.
+  - `BloodRequestScreen`: Urgency selector (`Urgent` / `Today` / `This week`).
+  - `MarketScreen`: Feed tabs (`all` / `mine` / `saved`), Filter Modal Sort (`newest` / `asc` / `desc`), Condition (`all` / `New` / `Like New` / `Used`).
+  - `MarketPostScreen`: Condition selector, Meetup Location modal tabs.
+  - `LostFoundBrowseScreen`: Main 4-tab switcher (`all` / `Lost` / `Found` / `mine` with counts).
+  - `PostItemFormScreen`: Type toggle (`Lost` / `Found`).
+  - `FacultyScreen`: Main 3-tab switcher (`all` / `mentors` / `saved` with bookmark counts).
+  - `AnnouncementsScreen`: Main 3-tab switcher (`All` / `Urgent` / `Saved` with counts).
+  - `AnnouncePostScreen`: Priority selector (`Urgent` / `Important` / `General`).
+  - `JobsBrowseScreen`: Main tabs (`Browse` / `Saved` / `Applications`), Status filter (`Open` / `Closing Soon` / `Expired`).
+  - `JobPostScreen`: Work Mode (`On-site` / `Remote` / `Hybrid`), Compensation model (`Paid` / `Conveyance` / `Negotiable` / `Experience`), How to Apply (`Email` / `Link` / `Circular PDF`).
+  - `JobsModerateScreen`: Moderation tabs (`Reported` / `Removed`).
+  - `MyReportsScreen`: Scope switcher (`Everyone` / `My Reports`).
+  - `CourseDetailScreen`: Material tabs (`Materials` / `Questions` / `Books` with counts).
+  - `StudyUploadScreen`: Upload category switcher (`Materials` / `Questions` / `Books`).
+  - `RoutinesBrowseScreen`: Main routine tabs (`Class` / `Exam` with counts), Modal type switcher.
+  - `NotificationsScreen`: Filter switcher (`All` / `Unread` with unread count).
+  - `PrayerScreen`: Timetable view switcher (`Today` / `Month`).
 
 ---
 
