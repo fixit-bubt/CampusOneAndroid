@@ -115,11 +115,32 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
 - **Prohibited:** Never use 2-column grid cards for navigation destinations, and **never mix grids and rows on the same screen**.
 - **Reference Layout:** `styles.toolCard` in `src/screens/main/ExploreScreen.tsx`.
 
-### 5.3 Iconography Standards & Human-Designed Assets
-- **Strict Human Sourcing:** When adding icons for new features, modules, settings, or dashboard cards, always source from verified, human-crafted icon collections (21st.dev icon families: Lucide, Tabler, Heroicons, Phosphor, Hugeicons, or native `@expo/vector-icons` Feather).
+### 5.3 Iconography Standards, Animated Icons & StatusBadge System
+- **Strict Human Sourcing:** When adding icons for new features, modules, settings, or dashboard cards, always source from verified, human-crafted icon collections (21st.dev icon families: Lucide, Tabler, Heroicons, Phosphor, Hugeicons, or native `@expo/vector-icons` Feather/MaterialCommunityIcons/Ionicons).
 - **Geometric Harmony:** Maintain consistent 2px stroke weight (`stroke: 2`), standard 24dp viewbox, and subtle round caps/joins.
 - **Zero AI-Looking Icons:** Never use AI-generated visual badges or clip-art styles. Icons must look razor-sharp, purposeful, and production-standard.
 - **Color Binding:** Always pair icons with their designated `SectorColors.<sector>` accent token rather than arbitrary colors.
+- **Universal AnimatedIcon (`src/components/ui/AnimatedIcon.tsx`):**
+  - High performance, 120 FPS native animated component powered by React Native's `Animated` library (`useNativeDriver: true`) running directly on Android's RenderThread.
+  - Supports animations: `spring` (rubberband bounce pop from 0.82 to 1.0 on mount/tab focus), `pulse` (subtle heartbeat for urgent alerts/reminders), `entrance` (zoom-in from 0.3 to 1.0), `wobble` (rotational shake), and `none`.
+  - Maps seamlessly across icon families (`feather`, `mci` / MaterialCommunityIcons, `ionicons`).
+- **Universal StatusBadge (`src/components/ui/StatusBadge.tsx`):**
+  - Replaces all raw Unicode emoji stickers across deep features with sleek, theme-aware vector badges:
+    - `vehicle`: `car-side`, `taxi`, `motorbike`, `rickshaw`
+    - `role`: `navigation` (Need Ride) / `car-side` (Offer)
+    - `urgency`: `alert-triangle` (Urgent, with pulsing icon), `clock` (Today), `calendar` (Scheduled)
+    - `bags`: `blood-bag` with bag count
+    - `platelet`: `zap` (Platelets / প্লাটিলেট)
+    - `medical`: `needle`, `alert-decagram`, `baby-carriage`, `hospital-building`, `activity`
+    - `affiliation`: `school` (BUBT Student), `briefcase` (Faculty / Staff), `users` (Family)
+    - `shortlisted`: `award` (Shortlisted candidate badge)
+    - `deadline`: `clock`
+    - `meetup`: `map-pin` (Marketplace meetup location)
+- **Touch Responder Safety Rule:**
+  - Never wrap `AnimatedIcon` or `SectorIcon` in `<TouchableWithoutFeedback>` unless an explicit `onPress` callback is supplied.
+  - In React Native Android, mounting an empty touch responder without a handler intercepts gesture responders and swallows taps intended for parent `<TouchableOpacity>` wrappers (e.g. `ExploreScreen` tool cards or `HomeFrequentTools`).
+- **Zero-Emoji Project Standard:**
+  - Strict ban on raw Unicode emojis (`🚗`, `🛺`, `🏍️`, `🩸`, `⚡`, `🎉`, `✨`, etc.) in button text, filter chips, list badges, and UI copy. All status indicators and categorizations must use vector badges (`StatusBadge` or `@expo/vector-icons`).
 
 ---
 
