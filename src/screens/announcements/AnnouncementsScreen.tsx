@@ -59,17 +59,21 @@ const AnnouncementCard = memo(function AnnouncementCard({
   unread: boolean;
   isSaved: boolean;
   canDelete: boolean;
-  onToggleSave: () => void;
-  onDelete: () => void;
-  onPress: () => void;
+  onToggleSave: (a: Announcement) => void;
+  onDelete: (a: Announcement) => void;
+  onPress: (id: string) => void;
 }) {
   const { fg, bg: priBg } = priTone(C, a.priority, isDark);
   const isOfficial = a.source === 'bubt_official' || a.code?.startsWith('BUBT-N-');
   const bg = `${fg}1a`;
 
+  const handleCardPress = useCallback(() => onPress(a.id), [onPress, a.id]);
+  const handleToggle = useCallback(() => onToggleSave(a), [onToggleSave, a]);
+  const handleDelete = useCallback(() => onDelete(a), [onDelete, a]);
+
   return (
     <TouchableOpacity
-      onPress={onPress}
+      onPress={handleCardPress}
       style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}
       activeOpacity={0.75}
     >
@@ -102,7 +106,7 @@ const AnnouncementCard = memo(function AnnouncementCard({
 
           {/* Bookmark Button */}
           <TouchableOpacity
-            onPress={onToggleSave}
+            onPress={handleToggle}
             hitSlop={8}
             activeOpacity={0.7}
             style={styles.starBtn}
@@ -170,7 +174,7 @@ const AnnouncementCard = memo(function AnnouncementCard({
       </View>
 
       {canDelete && (
-        <TouchableOpacity onPress={onDelete} hitSlop={8} activeOpacity={0.7} style={{ padding: 4 }}>
+        <TouchableOpacity onPress={handleDelete} hitSlop={8} activeOpacity={0.7} style={{ padding: 4 }}>
           <Feather name="trash-2" size={15} color={C.danger} />
         </TouchableOpacity>
       )}
@@ -276,7 +280,11 @@ export function AnnouncementsScreen({ navigation }: any) {
     setRefreshing(false);
   }
 
-  async function handleToggleSave(item: Announcement) {
+  const handlePressCard = useCallback((id: string) => {
+    navigation.navigate('AnnouncementDetail', { announcementId: id });
+  }, [navigation]);
+
+  const handleToggleSave = useCallback(async (item: Announcement) => {
     if (!user?.id) {
       toast({ type: 'info', title: t.common.error, message: 'Please sign in to save notices.' });
       return;
@@ -300,7 +308,7 @@ export function AnnouncementsScreen({ navigation }: any) {
         title: currentlySaved ? t.announce2.bookmarkRemoved : t.announce2.bookmarkSaved,
       });
     }
-  }
+  }, [user?.id, savedIds, toast, t]);
 
   async function handleManualSync(deep = false) {
     if (syncing) return;
@@ -321,7 +329,7 @@ export function AnnouncementsScreen({ navigation }: any) {
     }
   }
 
-  function deleteAnnouncement(a: Announcement) {
+  const deleteAnnouncement = useCallback((a: Announcement) => {
     Alert.alert(t.common.delete, a.title, [
       { text: t.common.cancel, style: 'cancel' },
       {
@@ -340,7 +348,7 @@ export function AnnouncementsScreen({ navigation }: any) {
         },
       },
     ]);
-  }
+  }, [t, toast]);
 
   // Department options
   const deptOptions = useMemo(() => {
@@ -421,6 +429,8 @@ export function AnnouncementsScreen({ navigation }: any) {
 
           const isUniversal =
             includeUniversal &&
+            deptFilter !== 'EXAM' &&
+            deptFilter !== 'REG' &&
             (dc === 'all' ||
               d === 'all' ||
               d.includes('university-wide') ||
@@ -477,6 +487,20 @@ export function AnnouncementsScreen({ navigation }: any) {
     inputRange: [0, 1, 2],
     outputRange: [0, tabWidth, tabWidth * 2],
   });
+
+  const renderCard = useCallback(({ item }: { item: Announcement }) => (
+    <AnnouncementCard
+      a={item}
+      C={C}
+      isDark={isDark}
+      unread={!readIds.has(item.id)}
+      isSaved={savedIds.has(item.id)}
+      canDelete={isAdmin}
+      onToggleSave={handleToggleSave}
+      onDelete={deleteAnnouncement}
+      onPress={handlePressCard}
+    />
+  ), [C, isDark, readIds, savedIds, isAdmin, handleToggleSave, deleteAnnouncement, handlePressCard]);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -693,22 +717,11 @@ export function AnnouncementsScreen({ navigation }: any) {
       <FlatList
         data={filtered}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <AnnouncementCard
-            a={item}
-            C={C}
-            isDark={isDark}
-            unread={!readIds.has(item.id)}
-            isSaved={savedIds.has(item.id)}
-            canDelete={isAdmin}
-            onToggleSave={() => handleToggleSave(item)}
-            onDelete={() => deleteAnnouncement(item)}
-            onPress={() => navigation.navigate('AnnouncementDetail', { announcementId: item.id })}
-          />
-        )}
+        renderItem={renderCard}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
         initialNumToRender={8}
         maxToRenderPerBatch={10}
@@ -773,7 +786,8 @@ export function AnnouncementsScreen({ navigation }: any) {
         animationType="fade"
         onRequestClose={() => setCategoryModalVisible(false)}
       >
-        <Pressable style={styles.modalOverlay} onPress={() => setCategoryModalVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setCategoryModalVisible(false)} />
           <View style={[styles.modalSheet, { backgroundColor: C.surface, borderColor: C.border }]}>
             <View style={styles.modalHeader}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -787,7 +801,7 @@ export function AnnouncementsScreen({ navigation }: any) {
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={{ maxHeight: 400 }} showsVerticalScrollIndicator={false}>
+            <ScrollView style={{ maxHeight: 400 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
               <View style={styles.modalBarsContainer}>
                 {ANNOUNCEMENT_CATEGORIES.map(cat => {
                   const active = categoryFilter === cat.id;
@@ -848,7 +862,7 @@ export function AnnouncementsScreen({ navigation }: any) {
               </View>
             </ScrollView>
           </View>
-        </Pressable>
+        </View>
       </Modal>
 
       {/* =========================================================================
@@ -860,7 +874,8 @@ export function AnnouncementsScreen({ navigation }: any) {
         animationType="fade"
         onRequestClose={() => setDeptModalVisible(false)}
       >
-        <Pressable style={styles.modalOverlay} onPress={() => setDeptModalVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setDeptModalVisible(false)} />
           <View style={[styles.modalSheet, { backgroundColor: C.surface, borderColor: C.border }]}>
             <View style={styles.modalHeader}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -874,7 +889,7 @@ export function AnnouncementsScreen({ navigation }: any) {
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={{ maxHeight: 420 }} showsVerticalScrollIndicator={false}>
+            <ScrollView style={{ maxHeight: 420 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
               <View style={styles.modalBarsContainer}>
                 {deptOptions.map(dept => {
                   const active = deptFilter === dept.id;
@@ -935,7 +950,7 @@ export function AnnouncementsScreen({ navigation }: any) {
               </View>
             </ScrollView>
           </View>
-        </Pressable>
+        </View>
       </Modal>
     </SafeAreaView>
   );
@@ -983,6 +998,7 @@ const styles = StyleSheet.create({
 
   tabBtnTxt: {
     fontSize: 12.5,
+    flexShrink: 1,
   },
 
   tabBadge: {

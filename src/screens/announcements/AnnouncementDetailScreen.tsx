@@ -265,81 +265,84 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
         )}
 
         {/* Notice Status & Category Bar */}
-        <View style={[styles.attrBar, { backgroundColor: C.surface, borderColor: C.border }]}>
-          {/* Priority Pill */}
-          {item.priority === 'Urgent' && (
-            <View style={[styles.attrItem, { backgroundColor: bg }]}>
-              <View style={[styles.priDot, { backgroundColor: fg }]} />
-              <Text style={[styles.attrText, { color: fg, fontFamily: FontFamily.jakartaBold }]}>
-                {t.announce2.priorityLabels[item.priority] ?? item.priority}
-              </Text>
-            </View>
-          )}
+        {/* Notice Status & Category Bar */}
+        {(item.priority === 'Urgent' || !!item.category) && (
+          <View style={[styles.attrBar, { backgroundColor: C.surface, borderColor: C.border }]}>
+            {/* Priority Pill */}
+            {item.priority === 'Urgent' && (
+              <View style={[styles.attrItem, { backgroundColor: bg }]}>
+                <View style={[styles.priDot, { backgroundColor: fg }]} />
+                <Text style={[styles.attrText, { color: fg, fontFamily: FontFamily.jakartaBold }]}>
+                  {t.announce2.priorityLabels[item.priority] ?? item.priority}
+                </Text>
+              </View>
+            )}
 
-          {/* Clean Humanized Category Pill */}
-          {item.category ? (
-            <View
-              style={[
-                styles.attrItem,
-                {
-                  backgroundColor:
-                    item.category.toLowerCase().includes('offday') || item.category.toLowerCase().includes('holiday')
-                      ? (isDark ? 'rgba(234, 88, 12, 0.16)' : '#fff7ed')
-                      : item.category.toLowerCase().includes('exam')
-                      ? (isDark ? 'rgba(59, 130, 246, 0.16)' : '#eff6ff')
-                      : C.surface2,
-                  borderColor:
-                    item.category.toLowerCase().includes('offday') || item.category.toLowerCase().includes('holiday')
-                      ? (isDark ? 'rgba(234, 88, 12, 0.35)' : '#fed7aa')
-                      : item.category.toLowerCase().includes('exam')
-                      ? (isDark ? 'rgba(59, 130, 246, 0.35)' : '#bfdbfe')
-                      : C.border,
-                  borderWidth: 1,
-                },
-              ]}
-            >
-              <Feather
-                name={
-                  item.category.toLowerCase().includes('offday') || item.category.toLowerCase().includes('holiday')
-                    ? 'sun'
-                    : item.category.toLowerCase().includes('exam')
-                    ? 'file-text'
-                    : item.category.toLowerCase().includes('semester')
-                    ? 'calendar'
-                    : 'tag'
-                }
-                size={12}
-                color={
-                  item.category.toLowerCase().includes('offday') || item.category.toLowerCase().includes('holiday')
-                    ? SectorColors.announce
-                    : item.category.toLowerCase().includes('exam')
-                    ? C.brand
-                    : C.text
-                }
-              />
-              <Text
+            {/* Clean Humanized Category Pill */}
+            {item.category ? (
+              <View
                 style={[
-                  styles.attrText,
+                  styles.attrItem,
                   {
-                    color:
+                    backgroundColor:
                       item.category.toLowerCase().includes('offday') || item.category.toLowerCase().includes('holiday')
-                        ? SectorColors.announce
+                        ? (isDark ? 'rgba(234, 88, 12, 0.16)' : '#fff7ed')
                         : item.category.toLowerCase().includes('exam')
-                        ? C.brand
-                        : C.text,
-                    fontFamily: FontFamily.jakartaBold,
+                        ? (isDark ? 'rgba(59, 130, 246, 0.16)' : '#eff6ff')
+                        : C.surface2,
+                    borderColor:
+                      item.category.toLowerCase().includes('offday') || item.category.toLowerCase().includes('holiday')
+                        ? (isDark ? 'rgba(234, 88, 12, 0.35)' : '#fed7aa')
+                        : item.category.toLowerCase().includes('exam')
+                        ? (isDark ? 'rgba(59, 130, 246, 0.35)' : '#bfdbfe')
+                        : C.border,
+                    borderWidth: 1,
                   },
                 ]}
               >
-                {item.category.toLowerCase().includes('offday') || item.category.toLowerCase().includes('holiday')
-                  ? 'Official Holiday'
-                  : item.category.toLowerCase().includes('exam')
-                  ? 'Exam Routine'
-                  : item.category}
-              </Text>
-            </View>
-          ) : null}
-        </View>
+                <Feather
+                  name={
+                    item.category.toLowerCase().includes('offday') || item.category.toLowerCase().includes('holiday')
+                      ? 'sun'
+                      : item.category.toLowerCase().includes('exam')
+                      ? 'file-text'
+                      : item.category.toLowerCase().includes('semester')
+                      ? 'calendar'
+                      : 'tag'
+                  }
+                  size={12}
+                  color={
+                    item.category.toLowerCase().includes('offday') || item.category.toLowerCase().includes('holiday')
+                      ? '#ea580c'
+                      : item.category.toLowerCase().includes('exam')
+                      ? C.brand
+                      : C.text
+                  }
+                />
+                <Text
+                  style={[
+                    styles.attrText,
+                    {
+                      color:
+                        item.category.toLowerCase().includes('offday') || item.category.toLowerCase().includes('holiday')
+                          ? '#ea580c'
+                          : item.category.toLowerCase().includes('exam')
+                          ? C.brand
+                          : C.text,
+                      fontFamily: FontFamily.jakartaBold,
+                    },
+                  ]}
+                >
+                  {item.category.toLowerCase().includes('offday') || item.category.toLowerCase().includes('holiday')
+                    ? 'Official Holiday'
+                    : item.category.toLowerCase().includes('exam')
+                    ? 'Exam Routine'
+                    : item.category}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+        )}
 
         {/* Title */}
         <Text style={[styles.title, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
@@ -519,7 +522,7 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
             </View>
           </View>
 
-          {googleDocsPdfViewer && (
+          {pdfModalVisible && googleDocsPdfViewer && (
             <WebView
               source={{ uri: googleDocsPdfViewer }}
               style={{ flex: 1, backgroundColor: '#f8fafc' }}
@@ -553,7 +556,7 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
                           margin: 0 !important;
                           padding: 0 !important;
                           background: #f8fafc !important;
-                          overflow-x: hidden !important;
+                          overflow-x: auto !important;
                         }
                         .ndfHFb-c4YZDc-Wrql6b,
                         .drive-viewer-toolstrip,
@@ -607,7 +610,7 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
               `}
               startInLoadingState
               renderLoading={() => (
-                <View style={styles.pdfLoading}>
+                <View style={[styles.pdfLoading, { backgroundColor: C.bg }]}>
                   <ActivityIndicator size="large" color={C.brand} />
                   <Text style={[styles.pdfLoadingTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
                     Loading official PDF…
@@ -878,7 +881,6 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fff',
     gap: 10,
   } as ViewStyle,
   pdfLoadingTxt: { fontSize: 13 } as any,

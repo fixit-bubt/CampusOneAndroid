@@ -163,17 +163,57 @@ Deno.serve(async (req: Request) => {
   // 1. Auth & Throttle Gate
   const authHeader = req.headers.get('Authorization') ?? '';
   const syncSecretHeader = req.headers.get('x-sync-secret') ?? '';
-  const isForce = req.headers.get('x-force-sync') === 'true';
+  let isForce = req.headers.get('x-force-sync') === 'true';
   const deepCrawl = req.headers.get('x-deep-crawl') === 'true';
 
-  let triggeredBy = 'app';
+  let triggeredBy = 'user';
+  let isAuthorized = false;
+
+  // Validate cron secret if provided
   if (syncSecretHeader) {
-    triggeredBy = 'cron';
-  } else if (authHeader) {
-    triggeredBy = 'user';
+    const { data: secretRow } = await supabase
+      .from('app_config')
+      .select('value')
+      .eq('key', 'sync_secret')
+      .maybeSingle();
+
+    if (secretRow?.value && secretRow.value === syncSecretHeader) {
+      triggeredBy = 'cron';
+      isAuthorized = true;
+    }
   }
 
-  // Throttle check: avoid overwhelming BUBT website (90s cooldown unless forced or cron)
+  // Validate authenticated user session if not cron
+  if (!isAuthorized && authHeader) {
+    const token = authHeader.replace(/^Bearer\s+/i, '');
+    const { data: { user }, error: userErr } = await supabase.auth.getUser(token);
+
+    if (!userErr && user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      triggeredBy = profile?.role === 'admin' ? 'admin' : (profile?.role || 'student');
+      isAuthorized = true;
+    }
+  }
+
+  // Reject unauthorized callers
+  if (!isAuthorized) {
+    return new Response(JSON.stringify({ error: 'Unauthorized invocation' }), {
+      status: 401,
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+    });
+  }
+
+  // Only admins and cron can force bypass the throttle
+  if (isForce && triggeredBy !== 'admin' && triggeredBy !== 'cron') {
+    isForce = false;
+  }
+
+  // Throttle check: 90s cooldown unless forced by admin or cron
   if (!isForce && triggeredBy !== 'cron') {
     const { data: recentLog } = await supabase
       .from('notice_sync_logs')

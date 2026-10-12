@@ -14,7 +14,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
-import { FontFamily, SectorColors } from '../../theme';
+import { FontFamily, SectorColors, pillBg } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { localToday, formatDate } from '../../utils/format';
 import { getCache, setCache, CacheKeys } from '../../services/cacheService';
@@ -163,15 +163,15 @@ export function HomeCommunityUpdates() {
     () => ({
       Notices: {
         fg: SectorColors.announce,
-        bg: isDark ? 'rgba(234, 88, 12, 0.18)' : '#FFEDD5',
+        bg: pillBg(SectorColors.announce, isDark),
       },
       Clubs: {
         fg: SectorColors.clubs,
-        bg: isDark ? 'rgba(5, 150, 105, 0.18)' : '#D1FAE5',
+        bg: pillBg(SectorColors.clubs, isDark),
       },
       Events: {
         fg: SectorColors.events,
-        bg: isDark ? 'rgba(139, 92, 246, 0.18)' : '#EDE9FE',
+        bg: pillBg(SectorColors.events, isDark),
       },
     }),
     [isDark]
@@ -547,6 +547,7 @@ export function HomeCommunityUpdates() {
                             fontFamily: FontFamily.jakartaRegular,
                           },
                         ]}
+                        numberOfLines={1}
                       >
                         {item.date}
                       </Text>
@@ -684,6 +685,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 5,
     paddingVertical: 10,
+    minHeight: 44,
     borderRadius: 13,
     zIndex: 1,
   } as ViewStyle,
@@ -761,6 +763,7 @@ const styles = StyleSheet.create({
 
   cardContent: {
     flex: 1,
+    minWidth: 0,
     justifyContent: 'center',
   } as ViewStyle,
 
@@ -816,6 +819,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 7,
     paddingVertical: 11,
+    minHeight: 44,
     borderRadius: 12,
     borderWidth: 1,
     marginTop: 4,
