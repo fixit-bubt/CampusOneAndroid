@@ -465,8 +465,8 @@ export function AnnouncementsScreen({ navigation }: any) {
   }, [deptFilter, studentDept, deptOptions, t.announce2]);
 
   const tabs: { id: MainTab; label: string; icon: keyof typeof Feather.glyphMap }[] = [
-    { id: 'all', label: 'All Notices', icon: 'layers' },
-    { id: 'urgent', label: 'Urgent & Exams', icon: 'alert-circle' },
+    { id: 'all', label: 'All', icon: 'layers' },
+    { id: 'urgent', label: 'Urgent', icon: 'alert-circle' },
     { id: 'saved', label: 'Saved', icon: 'bookmark' },
   ];
 
@@ -512,7 +512,7 @@ export function AnnouncementsScreen({ navigation }: any) {
         }
       />
 
-      {/* 1. Animated Segmented Switcher (3 Tabs: All Notices | Urgent & Exams | Saved) */}
+      {/* 1. Animated Segmented Switcher (3 Tabs: All | Urgent | Saved) */}
       <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 4 }}>
         <View
           style={[styles.tabContainer, { backgroundColor: C.surface2 }]}
@@ -558,6 +558,8 @@ export function AnnouncementsScreen({ navigation }: any) {
                     },
                   ]}
                   numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.85}
                 >
                   {tab.label}
                 </Text>
@@ -972,27 +974,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 5,
+    gap: 4.5,
+    paddingHorizontal: 4,
     paddingVertical: 10,
     borderRadius: 13,
     zIndex: 1,
   } as ViewStyle,
 
   tabBtnTxt: {
-    fontSize: 13,
+    fontSize: 12.5,
   },
 
   tabBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 1.5,
+    paddingHorizontal: 5.5,
+    paddingVertical: 1,
     borderRadius: 999,
-    minWidth: 19,
+    minWidth: 18,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
 
   tabBadgeTxt: {
-    fontSize: 11,
+    fontSize: 10.5,
   },
 
   // Search Bar
