@@ -264,17 +264,19 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
           </View>
         )}
 
-        {/* Cohesive Notice Attributes Bar */}
+        {/* Notice Status & Category Bar */}
         <View style={[styles.attrBar, { backgroundColor: C.surface, borderColor: C.border }]}>
           {/* Priority Pill */}
-          <View style={[styles.attrItem, { backgroundColor: bg }]}>
-            <View style={[styles.priDot, { backgroundColor: fg }]} />
-            <Text style={[styles.attrText, { color: fg, fontFamily: FontFamily.jakartaBold }]}>
-              {t.announce2.priorityLabels[item.priority] ?? item.priority}
-            </Text>
-          </View>
+          {item.priority === 'Urgent' && (
+            <View style={[styles.attrItem, { backgroundColor: bg }]}>
+              <View style={[styles.priDot, { backgroundColor: fg }]} />
+              <Text style={[styles.attrText, { color: fg, fontFamily: FontFamily.jakartaBold }]}>
+                {t.announce2.priorityLabels[item.priority] ?? item.priority}
+              </Text>
+            </View>
+          )}
 
-          {/* Category / Offday Pill */}
+          {/* Clean Humanized Category Pill */}
           {item.category ? (
             <View
               style={[
@@ -329,27 +331,11 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
                   },
                 ]}
               >
-                {item.category}
-              </Text>
-            </View>
-          ) : null}
-
-          {/* Pinned Pill */}
-          {item.pinned ? (
-            <View style={[styles.attrItem, { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.18)' : '#e0edff', borderWidth: 1, borderColor: isDark ? 'rgba(59, 130, 246, 0.35)' : '#bfdbfe' }]}>
-              <Icon name="pin" size={11} color={C.brand} />
-              <Text style={[styles.attrText, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
-                {t.announce2.pinned}
-              </Text>
-            </View>
-          ) : null}
-
-          {/* Issuing Office */}
-          {item.department_code && item.department_code !== 'ALL' ? (
-            <View style={[styles.attrItem, { backgroundColor: C.surface2, borderWidth: 1, borderColor: C.border }]}>
-              <Feather name="shield" size={11} color={C.textMuted} />
-              <Text style={[styles.attrText, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                {item.department_code}
+                {item.category.toLowerCase().includes('offday') || item.category.toLowerCase().includes('holiday')
+                  ? 'Official Holiday'
+                  : item.category.toLowerCase().includes('exam')
+                  ? 'Exam Routine'
+                  : item.category}
               </Text>
             </View>
           ) : null}
@@ -590,19 +576,25 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
                           background-color: #f8fafc !important;
                           width: 100% !important;
                           max-width: 100% !important;
-                          margin: 0 auto !important;
+                          min-width: 100% !important;
+                          margin: 0 !important;
                           padding: 0 !important;
                           box-shadow: none !important;
                         }
                         .ndfHFb-c4YZDc-s2gQvd img,
                         .ndfHFb-c4YZDc-bC7sje img,
+                        .ndfHFb-c4YZDc-cYSp0e-tJHJj img,
+                        .ndfHFb-c4YZDc-c3fl2b img,
+                        .ndfHFb-c4YZDc-AWhBae img,
                         canvas,
                         img {
+                          width: 100% !important;
+                          min-width: 100% !important;
                           max-width: 100% !important;
                           height: auto !important;
-                          margin: 8px auto !important;
+                          margin: 0 0 10px 0 !important;
                           display: block !important;
-                          box-shadow: 0 2px 10px rgba(0,0,0,0.08) !important;
+                          box-shadow: 0 2px 8px rgba(0,0,0,0.12) !important;
                         }
                       \`;
                       document.head && document.head.appendChild(style);

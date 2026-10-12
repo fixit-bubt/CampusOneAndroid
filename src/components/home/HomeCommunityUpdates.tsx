@@ -19,7 +19,7 @@ import { supabase } from '../../lib/supabase';
 import { localToday, formatDate } from '../../utils/format';
 import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 
-export type CommunityTab = 'All' | 'Notices' | 'Clubs' | 'Events';
+export type CommunityTab = 'Notices' | 'Clubs' | 'Events';
 
 interface CommunityItem {
   id: string;
@@ -138,14 +138,14 @@ export function HomeCommunityUpdates() {
   const navigation = useNavigation<any>();
   const { C, isDark } = useTheme();
 
-  const [activeTab, setActiveTab] = useState<CommunityTab>('All');
+  const [activeTab, setActiveTab] = useState<CommunityTab>('Notices');
 
   // Segmented track animated indicator & theme colors
   const animIndex = useRef(new Animated.Value(0)).current;
   const [trackWidth, setTrackWidth] = useState(0);
 
   const tabIndexMap: Record<CommunityTab, number> = useMemo(
-    () => ({ All: 0, Notices: 1, Clubs: 2, Events: 3 }),
+    () => ({ Notices: 0, Clubs: 1, Events: 2 }),
     []
   );
 
@@ -161,10 +161,6 @@ export function HomeCommunityUpdates() {
 
   const TAB_COLORS: Record<CommunityTab, { fg: string; bg: string }> = useMemo(
     () => ({
-      All: {
-        fg: C.brand,
-        bg: isDark ? 'rgba(37, 99, 235, 0.18)' : '#DBEAFE',
-      },
       Notices: {
         fg: SectorColors.announce,
         bg: isDark ? 'rgba(234, 88, 12, 0.18)' : '#FFEDD5',
@@ -178,7 +174,7 @@ export function HomeCommunityUpdates() {
         bg: isDark ? 'rgba(139, 92, 246, 0.18)' : '#EDE9FE',
       },
     }),
-    [C.brand, isDark]
+    [isDark]
   );
 
   const [items, setItems] = useState<CommunityItem[]>(DEFAULT_NEWS);
@@ -322,7 +318,6 @@ export function HomeCommunityUpdates() {
   // Tab counts
   const counts = useMemo(() => {
     return {
-      All: items.length,
       Notices: items.filter((n) => n.category === 'Notice').length,
       Clubs: items.filter((n) => n.category === 'Club Update').length,
       Events: items.filter((n) => n.category === 'Event').length,
@@ -331,7 +326,6 @@ export function HomeCommunityUpdates() {
 
   // Filtered list
   const filtered = useMemo(() => {
-    if (activeTab === 'All') return items;
     if (activeTab === 'Notices') return items.filter((n) => n.category === 'Notice');
     if (activeTab === 'Clubs') return items.filter((n) => n.category === 'Club Update');
     if (activeTab === 'Events') return items.filter((n) => n.category === 'Event');
@@ -339,7 +333,6 @@ export function HomeCommunityUpdates() {
   }, [items, activeTab]);
 
   const tabs: { id: CommunityTab; label: string; icon: keyof typeof Feather.glyphMap; color: string }[] = [
-    { id: 'All', label: 'All', icon: 'layers', color: C.brand },
     { id: 'Notices', label: 'Notices', icon: 'bell', color: SectorColors.announce },
     { id: 'Clubs', label: 'Clubs', icon: 'users', color: SectorColors.clubs },
     { id: 'Events', label: 'Events', icon: 'calendar', color: SectorColors.events },
@@ -347,10 +340,10 @@ export function HomeCommunityUpdates() {
 
   const TRACK_PADDING = 4;
   const innerTrackWidth = Math.max(0, trackWidth - TRACK_PADDING * 2);
-  const tabWidth = innerTrackWidth > 0 ? innerTrackWidth / 4 : 0;
+  const tabWidth = innerTrackWidth > 0 ? innerTrackWidth / 3 : 0;
   const translateX = animIndex.interpolate({
-    inputRange: [0, 1, 2, 3],
-    outputRange: [0, tabWidth, tabWidth * 2, tabWidth * 3],
+    inputRange: [0, 1, 2],
+    outputRange: [0, tabWidth, tabWidth * 2],
   });
 
   return (
@@ -594,6 +587,22 @@ export function HomeCommunityUpdates() {
               <Feather name="chevron-right" size={16} color={C.textMuted} style={styles.chevron} />
             </TouchableOpacity>
           ))}
+
+          {/* Footer action button */}
+          <TouchableOpacity
+            style={[styles.viewAllBtn, { backgroundColor: C.surface, borderColor: C.border }]}
+            onPress={() => {
+              if (activeTab === 'Notices') navigation.navigate('Announcements');
+              else if (activeTab === 'Clubs') navigation.navigate('Clubs');
+              else navigation.navigate('EventsBrowse');
+            }}
+            activeOpacity={0.75}
+          >
+            <Text style={[styles.viewAllTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              {activeTab === 'Notices' ? 'View All Campus Notices' : activeTab === 'Clubs' ? 'Browse All Campus Clubs' : 'Explore All Varsity Events'}
+            </Text>
+            <Feather name="arrow-right" size={14} color={C.brand} />
+          </TouchableOpacity>
         </View>
       )}
     </View>
@@ -799,5 +808,20 @@ const styles = StyleSheet.create({
 
   chevron: {
     marginLeft: 2,
+  },
+
+  viewAllBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    paddingVertical: 11,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 4,
+  } as ViewStyle,
+
+  viewAllTxt: {
+    fontSize: 12.5,
   },
 });

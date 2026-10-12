@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, memo } from 'react';
 import {
-  View, Text, TouchableOpacity, ScrollView, StyleSheet,
+  View, Text, TouchableOpacity, FlatList, ScrollView, StyleSheet, Platform,
   RefreshControl, Alert, TextInput, Modal, Pressable,
   ActivityIndicator, Animated, type ViewStyle, type TextStyle,
 } from 'react-native';
@@ -42,7 +42,7 @@ function timeAgo(iso: string): string {
   return `${Math.floor(secs / 86400)}d`;
 }
 
-function AnnouncementCard({
+const AnnouncementCard = memo(function AnnouncementCard({
   a,
   C,
   isDark,
@@ -176,7 +176,7 @@ function AnnouncementCard({
       )}
     </TouchableOpacity>
   );
-}
+});
 
 export function AnnouncementsScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
@@ -689,16 +689,34 @@ export function AnnouncementsScreen({ navigation }: any) {
         </TouchableOpacity>
       </View>
 
-      {/* Main Announcements List */}
-      <ScrollView
+      {/* Main Announcements Virtualized List (Locked 60 FPS) */}
+      <FlatList
+        data={filtered}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <AnnouncementCard
+            a={item}
+            C={C}
+            isDark={isDark}
+            unread={!readIds.has(item.id)}
+            isSaved={savedIds.has(item.id)}
+            canDelete={isAdmin}
+            onToggleSave={() => handleToggleSave(item)}
+            onDelete={() => deleteAnnouncement(item)}
+            onPress={() => navigation.navigate('AnnouncementDetail', { announcementId: item.id })}
+          />
+        )}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
-      >
-        <OfflineBanner visible={isOffline} onRetry={load} />
-
-        {filtered.length === 0 ? (
+        initialNumToRender={8}
+        maxToRenderPerBatch={10}
+        windowSize={7}
+        removeClippedSubviews={Platform.OS === 'android'}
+        ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+        ListHeaderComponent={<OfflineBanner visible={isOffline} onRetry={load} />}
+        ListEmptyComponent={
           <View style={styles.empty}>
             <Icon name="announce" size={36} color={C.textMuted} />
             <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -742,27 +760,9 @@ export function AnnouncementsScreen({ navigation }: any) {
               )}
             </View>
           </View>
-        ) : (
-          <View style={styles.list}>
-            {filtered.map(a => (
-              <AnnouncementCard
-                key={a.id}
-                a={a}
-                C={C}
-                isDark={isDark}
-                unread={!readIds.has(a.id)}
-                isSaved={savedIds.has(a.id)}
-                canDelete={isAdmin}
-                onToggleSave={() => handleToggleSave(a)}
-                onDelete={() => deleteAnnouncement(a)}
-                onPress={() => navigation.navigate('AnnouncementDetail', { announcementId: a.id })}
-              />
-            ))}
-          </View>
-        )}
-
-        <View style={{ height: 28 }} />
-      </ScrollView>
+        }
+        ListFooterComponent={<View style={{ height: 28 }} />}
+      />
 
       {/* =========================================================================
           MODAL 1: CATEGORY SELECTION SHEET (SEPARATE ROUNDED BARS)
