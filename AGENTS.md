@@ -1170,9 +1170,9 @@ The Campus Announcements architecture is transformed from a manual posting board
 - **Smart Priority & Pinned Mapping:**
   - `Offday` category or holiday keywords (Janmashtami, Eid, emergency closures) -> `Urgent` priority + pinned to top.
   - `Exam related` / `Semester` categories (mid-terms, finals, admit cards, registration) -> `Important` priority.
-  - `General` / `Class Related` / `Tender` -> `General` priority.
 - **Deduplication:** Notices use deterministic codes (`BUBT-N-${id}`). Sync operations perform upserts on conflict, preventing duplicates.
 - **Automated Cron Schedule:** Migration `20261019010000_notices_sync_cron.sql` schedules automated sync via `pg_cron` and `pg_net` every 30 minutes between 02:00 and 16:00 UTC (08:00 AM to 10:00 PM Dhaka time).
+- **Shared Cron Secret Authentication:** Cron invocations authenticate via private `x-sync-secret` passed by `pg_net` from `public.app_config`, matching the hardened pattern established by `send-push`. Also supports admin user JWT for manual app triggers and service-role keys.
 - **Admin In-App Trigger:** 1-tap manual sync button on `AnnouncementsScreen.tsx` SubBar header for instant refresh.
 
 ### 31.2 Database Schema & Targeting (`20261019000000_announcements_360_sync.sql`)

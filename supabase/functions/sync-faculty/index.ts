@@ -42,11 +42,25 @@ Deno.serve(async (req: Request) => {
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-  // 1. Auth Verification: Caller must be admin or service role
+  // 1. Auth Verification: Caller must provide valid sync secret, service role key, or admin JWT
   const authHeader = req.headers.get('Authorization') ?? '';
+  const syncSecretHeader = req.headers.get('x-sync-secret') ?? '';
   let triggeredBy = 'admin';
 
-  if (!authHeader.includes(serviceRoleKey)) {
+  let isSecretValid = false;
+  if (syncSecretHeader) {
+    const { data: secretRow } = await supabase
+      .from('app_config')
+      .select('value')
+      .eq('key', 'sync_secret')
+      .maybeSingle();
+    if (secretRow?.value && secretRow.value === syncSecretHeader) {
+      isSecretValid = true;
+      triggeredBy = 'cron';
+    }
+  }
+
+  if (!isSecretValid && !authHeader.includes(serviceRoleKey)) {
     const token = authHeader.replace(/^Bearer\s+/i, '');
     const { data: { user }, error: userErr } = await supabase.auth.getUser(token);
     if (userErr || !user) {
@@ -68,7 +82,7 @@ Deno.serve(async (req: Request) => {
         headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
       });
     }
-  } else {
+  } else if (!isSecretValid) {
     triggeredBy = 'cron';
   }
 

@@ -21,10 +21,7 @@ select cron.schedule(
     url := 'https://xhgpxvyqrufbbuivttmi.supabase.co/functions/v1/sync-faculty',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
-      'Authorization', 'Bearer ' || coalesce(
-        current_setting('app.settings.service_role_key', true),
-        (select decrypted_secret from vault.decrypted_secrets where name = 'service_role_key' limit 1)
-      )
+      'x-sync-secret', coalesce((select value from public.app_config where key = 'sync_secret' limit 1), '')
     ),
     body := '{"triggered_by":"cron"}'::jsonb
   );
