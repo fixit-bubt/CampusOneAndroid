@@ -159,7 +159,7 @@ export function ExploreScreen({ navigation }: any) {
             activeOpacity={0.75}
           >
             <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
-              <AnimatedIcon family="feather" name="message-circle" size={20} color={C.brand} animation="pulse" />
+              <AnimatedIcon family="feather" name="message-circle" size={20} color={C.brand} animation="entrance" />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.cellTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -180,7 +180,7 @@ export function ExploreScreen({ navigation }: any) {
             activeOpacity={0.75}
           >
             <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
-              <AnimatedIcon family="feather" name="alert-triangle" size={20} color={C.danger} animation="wobble" loop={true} />
+              <AnimatedIcon family="feather" name="alert-triangle" size={20} color={C.danger} animation="wobble" loop={false} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.cellTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -209,7 +209,7 @@ export function ExploreScreen({ navigation }: any) {
               activeOpacity={0.75}
             >
               <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
-                <AnimatedIcon family="feather" name="percent" size={20} color={C.brand} animation="float" />
+                <AnimatedIcon family="feather" name="percent" size={20} color={C.brand} animation="entrance" />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.cellTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -229,7 +229,7 @@ export function ExploreScreen({ navigation }: any) {
                 activeOpacity={0.75}
               >
                 <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
-                  <AnimatedIcon family="feather" name="file-plus" size={20} color={SectorColors.pdfmaker} animation="bounce" />
+                  <AnimatedIcon family="feather" name="file-plus" size={20} color={SectorColors.pdfmaker} animation="entrance" />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.cellTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
