@@ -10,3 +10,4 @@
 - [x] Phase 5: Sibling Web App Parity (`Events.jsx`, `scroll-velocity-text.tsx`, `utils.ts`).
 - [x] Phase 6: Verification (`npx tsc --noEmit` 0 errors, `npm run build` passed), synchronized `AGENTS.md` & `CLAUDE.md`.
 - [ ] Git commit and push to remote.
+

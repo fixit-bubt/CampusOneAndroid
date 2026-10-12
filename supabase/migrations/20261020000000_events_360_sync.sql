@@ -145,3 +145,4 @@ $$;
 
 revoke execute on function public.toggle_event_bookmark(uuid) from public, anon;
 grant execute on function public.toggle_event_bookmark(uuid) to authenticated;
+

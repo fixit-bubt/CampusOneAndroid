@@ -18,6 +18,7 @@ import { supabase } from '../../lib/supabase';
 import { getCache, CacheKeys } from '../../services/cacheService';
 import { openUrl } from '../../utils/link';
 import { localToday } from '../../utils/format';
+import { resolveBannerSource } from '../../components/home/HomeHeroBanner';
 import {
   getEventLiveStatus,
   shareEventDetails,
@@ -68,6 +69,7 @@ export function EventDetailScreen({ route, navigation }: any) {
   const [canCreateEvents, setCanCreateEvents] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [showPassModal, setShowPassModal] = useState(false);
+  const [bannerError, setBannerError] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -255,11 +257,52 @@ export function EventDetailScreen({ route, navigation }: any) {
         showsVerticalScrollIndicator={false}
       >
         {/* Banner Flyer or Category Header */}
-        {event.banner_url ? (
-          <View style={styles.heroBannerWrap}>
-            <Image source={{ uri: event.banner_url }} style={styles.heroBannerImg} resizeMode="cover" />
-            <View style={styles.heroOverlayBadge}>
-              <View style={[styles.statusTag, { backgroundColor: 'rgba(0,0,0,0.7)' }]}>
+        {(() => {
+          const bannerSource = resolveBannerSource(event.banner_url);
+          if (bannerSource && !bannerError) {
+            return (
+              <View style={styles.heroBannerWrap}>
+                <Image
+                  source={bannerSource}
+                  style={styles.heroBannerImg}
+                  resizeMode="cover"
+                  onError={() => setBannerError(true)}
+                />
+                <View style={styles.heroOverlayBadge}>
+                  <View style={[styles.statusTag, { backgroundColor: 'rgba(0,0,0,0.7)' }]}>
+                    <View
+                      style={[
+                        styles.statusDot,
+                        {
+                          backgroundColor:
+                            status === 'Ongoing' ? C.success : status === 'Today' ? C.warn : C.info,
+                        },
+                      ]}
+                    />
+                    <Text style={[styles.statusText, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>
+                      {status} · {countdownText}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            );
+          }
+          return (
+            <View style={[styles.thumbLg, { backgroundColor: bg }]}>
+              <Icon name={CAT_ICON[event.category] ?? 'events'} size={48} color={fg} />
+              <View
+                style={[
+                  styles.statusOverlay,
+                  {
+                    backgroundColor:
+                      status === 'Ongoing'
+                        ? `${C.success}25`
+                        : status === 'Today'
+                        ? `${C.warn}25`
+                        : `${C.info}25`,
+                  },
+                ]}
+              >
                 <View
                   style={[
                     styles.statusDot,
@@ -269,52 +312,22 @@ export function EventDetailScreen({ route, navigation }: any) {
                     },
                   ]}
                 />
-                <Text style={[styles.statusText, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>
+                <Text
+                  style={[
+                    styles.statusText,
+                    {
+                      color:
+                        status === 'Ongoing' ? C.success : status === 'Today' ? C.warn : C.info,
+                      fontFamily: FontFamily.jakartaBold,
+                    },
+                  ]}
+                >
                   {status} · {countdownText}
                 </Text>
               </View>
             </View>
-          </View>
-        ) : (
-          <View style={[styles.thumbLg, { backgroundColor: bg }]}>
-            <Icon name={CAT_ICON[event.category] ?? 'events'} size={48} color={fg} />
-            <View
-              style={[
-                styles.statusOverlay,
-                {
-                  backgroundColor:
-                    status === 'Ongoing'
-                      ? `${C.success}25`
-                      : status === 'Today'
-                      ? `${C.warn}25`
-                      : `${C.info}25`,
-                },
-              ]}
-            >
-              <View
-                style={[
-                  styles.statusDot,
-                  {
-                    backgroundColor:
-                      status === 'Ongoing' ? C.success : status === 'Today' ? C.warn : C.info,
-                  },
-                ]}
-              />
-              <Text
-                style={[
-                  styles.statusText,
-                  {
-                    color:
-                      status === 'Ongoing' ? C.success : status === 'Today' ? C.warn : C.info,
-                    fontFamily: FontFamily.jakartaBold,
-                  },
-                ]}
-              >
-                {status} · {countdownText}
-              </Text>
-            </View>
-          </View>
-        )}
+          );
+        })()}
 
         <Text style={[styles.title, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
           {event.title}

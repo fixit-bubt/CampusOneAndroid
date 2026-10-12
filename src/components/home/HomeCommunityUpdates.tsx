@@ -201,6 +201,7 @@ export function HomeCommunityUpdates() {
         supabase
           .from('events')
           .select('id, title, venue, time, date, category, banner_url, description')
+          .is('deleted_at', null)
           .gte('date', today)
           .order('date', { ascending: true })
           .limit(10),

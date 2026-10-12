@@ -34,3 +34,4 @@ Build a complete, varsity-pitch-ready 360-degree Events system for CampusOne and
 
 ## Next Step
 Commit changes and push to git remotes.
+

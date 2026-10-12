@@ -1252,7 +1252,10 @@ The Campus Announcements architecture is transformed from a manual posting board
 - **One-Tap Event Bookmarks:** Backed by `event_bookmarks` table and atomic `toggle_event_bookmark(p_event_id)` RPC with instant optimistic updates and dedicated "Saved" tab on `EventsBrowseScreen`.
 - **Flyer Poster Integration:** Full cover image resolution for both synced news flyers and mobile-uploaded posters via `BUCKETS.photos` (`events/{user_id}/*`).
 - **Native Sharing:** One-tap OS share sheet formatting campus event title, schedule, venue, and official link.
-- **Club Integration:** Tapping an event organizer opens the associated club profile (`ClubDetailScreen`); club detail lists upcoming club events.
+### 32.4 Universal Banner Resolver, Resilient Fallbacks & Dhaka Time Integrity
+- **Universal Banner Resolver (`resolveBannerSource`):** Supports bundled local varsity assets (`hackathon-2026.jpg`, `blood-drive.jpg`, etc.), remote web URLs (`http://`, `https://`), relative web seed paths (`https://campus-theta.vercel.app/*`), BUBT storage paths (`storage/*`, `notices/*`), and upload paths (`uploads/*`). Handles null/undefined inputs seamlessly with resilient category fallback headers on load failure.
+- **Strict Dhaka Time Date Arithmetic:** Event presets calculate dates via `Date.UTC` arithmetic on `localToday()`, preventing UTC midnight off-by-one errors.
+- **Soft-Delete Filtering:** Home community feed query enforces `.is('deleted_at', null)` to strictly hide removed events.
 
 
 

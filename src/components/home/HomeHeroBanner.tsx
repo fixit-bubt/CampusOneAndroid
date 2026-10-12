@@ -34,7 +34,7 @@ const BANNERS_MAP: Record<string, ImageSourcePropType> = {
 };
 
 export function resolveBannerSource(
-  rawUrl?: string,
+  rawUrl?: string | null,
   fallbackLocal?: ImageSourcePropType
 ): ImageSourcePropType | null {
   if (!rawUrl && !fallbackLocal) return null;

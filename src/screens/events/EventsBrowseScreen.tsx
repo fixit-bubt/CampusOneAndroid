@@ -17,6 +17,7 @@ import { FontFamily, Layout, SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 import { localToday } from '../../utils/format';
+import { resolveBannerSource } from '../../components/home/HomeHeroBanner';
 import {
   getEventLiveStatus,
   fetchUserEventBookmarks,
@@ -89,6 +90,8 @@ function EventCard({
   const bg = `${fg}1a`;
   const { status, countdownText } = getEventLiveStatus(e);
   const isOfficial = e.source === 'bubt_news';
+  const bannerSource = resolveBannerSource(e.banner_url);
+  const [imgError, setImgError] = useState(false);
 
   return (
     <TouchableOpacity
@@ -97,9 +100,14 @@ function EventCard({
       activeOpacity={0.82}
     >
       {/* Banner Cover or Category Header */}
-      {e.banner_url ? (
+      {bannerSource && !imgError ? (
         <View style={styles.bannerWrap}>
-          <Image source={{ uri: e.banner_url }} style={styles.bannerImg} resizeMode="cover" />
+          <Image
+            source={bannerSource}
+            style={styles.bannerImg}
+            resizeMode="cover"
+            onError={() => setImgError(true)}
+          />
           <View style={styles.bannerOverlay}>
             <View style={[styles.catTag, { backgroundColor: 'rgba(0,0,0,0.65)' }]}>
               <Icon name={CAT_ICON[e.category] ?? 'events'} size={12} color={C.white} />
@@ -113,7 +121,7 @@ function EventCard({
               activeOpacity={0.7}
               style={[styles.bookmarkBtn, { backgroundColor: 'rgba(0,0,0,0.65)' }]}
             >
-              <Feather name={isSaved ? 'bookmark' : 'bookmark'} size={15} color={isSaved ? C.warn : C.white} />
+              <Feather name="bookmark" size={15} color={isSaved ? C.warn : C.white} />
             </TouchableOpacity>
           </View>
         </View>

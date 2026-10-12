@@ -15,3 +15,4 @@
 ## 3. Proven Synchronization Pipeline
 - Notices sync runs every 30m via `pg_cron` calling Edge Function `sync-notices`.
 - We will replicate this pattern with `sync-events` to crawl `bubt.edu.bd/news` and academic milestones.
+

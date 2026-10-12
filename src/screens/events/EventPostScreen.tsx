@@ -128,10 +128,9 @@ export function EventPostScreen({ navigation }: any) {
   }
 
   function setDatePreset(daysFromNow: number) {
-    const d = new Date();
-    d.setDate(d.getDate() + daysFromNow);
-    const iso = d.toISOString().split('T')[0];
-    setEventDate(iso);
+    const [y, m, d] = localToday().split('-').map(Number);
+    const dt = new Date(Date.UTC(y, m - 1, d + daysFromNow));
+    setEventDate(dt.toISOString().split('T')[0]);
   }
 
   if (canCreate === false) {
