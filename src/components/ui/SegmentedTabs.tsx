@@ -45,9 +45,8 @@ export function SegmentedTabs<T extends string = string>({
   const [trackWidth, setTrackWidth] = useState(0);
   const animIndex = useRef(new Animated.Value(0)).current;
 
-  const isSmall = size === 'sm';
-  const trackPadding = isSmall ? 3.5 : 4.5;
-  const iconSize = isSmall ? 13.5 : 15.5;
+  const trackPadding = 4.5;
+  const iconSize = 15.5;
 
   const foundIdx = tabs.findIndex((t) => t.id === activeTab);
   const activeIndex = foundIdx >= 0 ? foundIdx : -1;
@@ -78,7 +77,7 @@ export function SegmentedTabs<T extends string = string>({
         styles.track,
         {
           padding: trackPadding,
-          borderRadius: isSmall ? 13 : 16,
+          borderRadius: 16,
           backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : C.surface2,
           borderColor: isDark ? 'rgba(255, 255, 255, 0.07)' : 'rgba(0, 0, 0, 0.05)',
         },
@@ -95,7 +94,7 @@ export function SegmentedTabs<T extends string = string>({
               left: trackPadding,
               bottom: trackPadding,
               width: tabWidth,
-              borderRadius: isSmall ? 10 : 12.5,
+              borderRadius: 12.5,
               transform: [{ translateX }],
               backgroundColor: C.surface,
               borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
@@ -116,11 +115,11 @@ export function SegmentedTabs<T extends string = string>({
             style={[
               styles.tabBtn,
               {
-                minHeight: isSmall ? 38 : 48,
-                paddingVertical: isSmall ? 7 : 10,
-                borderRadius: isSmall ? 10 : 12.5,
+                minHeight: 48,
+                paddingVertical: 10,
+                borderRadius: 12.5,
                 paddingHorizontal: 4,
-                gap: isSmall ? 4.5 : 5.5,
+                gap: 5.5,
               },
             ]}
             onPress={() => onTabChange(tab.id)}
@@ -147,7 +146,7 @@ export function SegmentedTabs<T extends string = string>({
               style={[
                 styles.tabLabel,
                 {
-                  fontSize: isSmall ? 12.5 : 13.5,
+                  fontSize: 13.5,
                   color: isActive ? C.text : C.textMuted,
                   fontFamily: isActive ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
                 },
@@ -164,9 +163,9 @@ export function SegmentedTabs<T extends string = string>({
                 style={[
                   styles.badge,
                   {
-                    paddingHorizontal: isSmall ? 5.5 : 6.5,
-                    paddingVertical: isSmall ? 1.5 : 2,
-                    minWidth: isSmall ? 18 : 20,
+                    paddingHorizontal: 6.5,
+                    paddingVertical: 2,
+                    minWidth: 20,
                   },
                   isActive
                     ? {
@@ -183,7 +182,7 @@ export function SegmentedTabs<T extends string = string>({
                   style={[
                     styles.badgeText,
                     {
-                      fontSize: isSmall ? 10.5 : 11.5,
+                      fontSize: 11.5,
                       color: isActive ? color : C.textMuted,
                       fontFamily: isActive ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
                     },

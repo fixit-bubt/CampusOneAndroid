@@ -148,9 +148,8 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
 - **Strict Geometric Symmetry:** Every tab has equal width (`flex: 1` / `100% / tabs.length`) so tabs never look mismatched or uneven based on word length.
 - **Strict Button Count Range (Max 3, Min 2):** Never use 4 buttons in a segmented tab bar. 4 buttons squeeze touch targets down to ~80dp and cause text truncation on mobile. All segmented bars must strictly have 2 or 3 tabs. Move secondary views (e.g. "My Rides") to header buttons or sub-bars.
 - **No-Icon Policy on Counted & Narrow Tabs:** Do not include icons on tabs that display (or will display) numerical count badges. Tab labels must be kept short (<7 chars: e.g. "Applied" not "Applications", "Depts" not "Departments", "Notes" not "Materials", "Doctors" not "Doctors & Staff"). This guarantees >30dp of safety buffer so future 2-digit and 3-digit counts (`12`, `99`, `999`) never cause cut-offs.
-- **Sizes (`size?: 'sm' | 'md'`):**
-  - Standard `md` (default): `minHeight: 48` (`paddingVertical: 10`), satisfying WCAG/Material 48dp touch targets, `fontSize: 13.5`, icon `15.5`.
-  - Compact `sm`: `minHeight: 38` (`paddingVertical: 7`), `fontSize: 12`, icon `13.5`. Used for secondary filter switchers, modals, and forms.
+- **Universal 48dp Height & Touch Target Standard:** All segmented tab bars, search bars, and action buttons across the entire app are standardized to a substantial, comfortable **48dp height** (`minHeight: 48`, `paddingVertical: 10`, `fontSize: 13.5`, `borderRadius: 14-16`), completely eliminating thin/squished 38dp controls. Satisfies WCAG & Material 48dp mobile touch ergonomics everywhere.
+- **Strict Horizontal Grid Alignment (Same Length):** Top action buttons, segmented tab switchers, category buttons, and search bars MUST share the exact same `Layout.screenPadding` (16dp) on both left and right, ensuring a seamless, aligned vertical column across screens.
 - **Interpolation Guard:** Uses safe interpolation output range (`outputRange: tabs.length <= 1 ? [0, 0] : ...`) and gracefully hides the indicator when `activeIndex = -1` (unselected state).
 - **Universal Adoption Across App (Strictly 2 or 3 tabs, No legacy animations):**
   - `RidePostScreen`: Post Type (`Offer Ride` / `Need Ride`), Direction (`To Campus` / `From Campus`), Date Choice (`Today` / `Tomorrow`), Location Modal (`Mirpur & Campus` / `Greater Dhaka`).
@@ -409,10 +408,10 @@ The mobile and web applications are actively pitched and presented to BUBT admin
   - `uploadPhoto`: Auto-resolves preset by folder (`avatars` -> `avatar`, `chatbot` -> `compact`, `routines` -> `document`, else `standard`).
   - `uploadProof`: Auto-compresses claim proof photos with `standard` preset.
   - Pre-Upload Size Guards: Rejects documents exceeding `MAX_FILE_SIZE_MB` (10MB) and images exceeding `MAX_IMAGE_SIZE_MB` (5MB).
-- **Lost & Found Photos:**
-  - `LostFoundBrowseScreen.tsx`: Render 52×52 rounded cover thumbnail with category icon fallback.
-  - `LostFoundDetailScreen.tsx`: Render 190dp hero image card with anchored status badge (`Lost` in crimson / `Found` in emerald).
-  - `PostItemFormScreen.tsx`: Support image picking via `expo-image-picker`, preview thumbnail with Change/Remove actions, and upload to public `photos` bucket via `uploadPhoto(uri, 'lostfound', user.id)`.
+ - **Lost & Found Photos:**
+   - `LostFoundBrowseScreen.tsx`: Render 52×52 rounded cover thumbnail with category icon fallback.
+   - `LostFoundDetailScreen.tsx`: Render 190dp hero image card with anchored status badge (`Lost` in crimson / `Found` in emerald).
+   - `PostItemFormScreen.tsx`: Support image picking via `expo-image-picker`, preview thumbnail with Change/Remove actions, and upload to public `photos` bucket via `uploadPhoto(uri, 'lostfound', user.id)`.
 
 ### 13.3 Home Live Status Carousel (`CampusToday.tsx`)
 - Replaced cramped 2-column flex-wrapped grid with a horizontal snap carousel (210dp card width, 13.5px bold title, 11.5px subtitle, sector accent pill).
@@ -1235,7 +1234,6 @@ The Faculty directory is modernized into an institutional tool providing automat
 - **Modal Bar Layout:** Inside both *Select Department* and *Select Publication Domain* bottom sheets, items are rendered as distinct, rounded bars (`styles.pickerBar`) with icon tiles, bold titles, subtitle counts, and checkmark indicators (replacing flat list rows).
 - **Tab Switching Zero-Lag Windowing:** Renders an initial slice of 25 mentors (`INITIAL_RENDER_LIMIT = 25`) with a "Show more" button, and decouples research domain aggregation from active mode. Tab switching runs at 60fps without JS thread frame drops.
 - **Header App Logo:** SubBar top app bar right slot uses the official `<LogoMark size={28} shadow={false} />` (star icon removed).
-- **Segmented Switcher Sizing:** 3-tab switcher (`Departments`, `Research Mentors`, `My Teachers`) scaled to match `HomeCommunityUpdates` dimensions (`borderRadius: 16`, `padding: 4`, `paddingVertical: 10`, `borderRadius: 13`, `fontSize: 13`).
 
 ---
 
@@ -1369,4 +1367,3 @@ The Campus Announcements architecture is transformed from a manual posting board
 - **Confidential Psychological Support:** Dedicated highlight card on `DoctorDetailScreen` for Campus Psychologist **Mou Juliet Rebeiro** with a 1-tap `Request Confidential Session` mailto action.
 - **In-App Admin Management:** Added `manageMedicalCenter` tile to `AdminDashboardScreen` and an inline admin quick-edit modal on `MedicalScreen` to toggle `is_on_leave`, set leave notes, and update room locations.
 - **`CampusToday` Live Widget:** Displays the currently on-duty doctor or `"BUBT Medical Unit Open · Room 205, Bldg 3"` on the Home feed during operating hours.
-

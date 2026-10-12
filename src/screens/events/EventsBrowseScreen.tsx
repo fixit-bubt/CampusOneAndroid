@@ -647,12 +647,12 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    height: 44,
-    borderRadius: 12,
+    paddingHorizontal: 14,
+    height: 48,
+    borderRadius: 14,
     borderWidth: 1,
   } as ViewStyle,
-  searchInput: { flex: 1, fontSize: 13.5, paddingVertical: 0 } as any,
+  searchInput: { flex: 1, fontSize: 14, paddingVertical: 0 } as any,
 
   catChips: { flexDirection: 'row', gap: 6, paddingBottom: 10 } as ViewStyle,
   catChip: {

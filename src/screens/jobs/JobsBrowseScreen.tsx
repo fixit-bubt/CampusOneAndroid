@@ -916,8 +916,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 9,
     paddingHorizontal: 14,
-    height: 44,
-    borderRadius: 13,
+    height: 48,
+    borderRadius: 14,
     borderWidth: 1,
   } as ViewStyle,
   searchInput: {

@@ -445,7 +445,7 @@ export function MarketScreen({ navigation }: any) {
 
         {/* 3. Segmented Tab Switcher (Card Animation matching Blood & Directory) */}
         {/* 3. Segmented Tab Switcher */}
-        <View style={{ marginBottom: 10 }}>
+        <View style={{ paddingHorizontal: Layout.screenPadding, marginBottom: 10 }}>
           <SegmentedTabs<Tab>
             tabs={TABS}
             activeTab={tab}
@@ -983,8 +983,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    paddingVertical: 11,
-    borderRadius: 12,
+    height: 48,
+    borderRadius: 14,
   } as ViewStyle,
   heroActBtnTxt: {
     fontSize: 14,
@@ -1043,14 +1043,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 8,
+    height: 46,
     paddingHorizontal: 12,
-    borderRadius: 12,
+    borderRadius: 13,
     borderWidth: 1,
   } as ViewStyle,
   dualBarBtnActive: {} as ViewStyle,
   dualBarBtnInactive: {} as ViewStyle,
-  dualBarTxt: { fontSize: 12.5 } as any,
+  dualBarTxt: { fontSize: 13 } as any,
 
   // Search & Filter Row (Directly above feed)
   searchRow: {
@@ -1065,27 +1065,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    paddingHorizontal: 12,
-    height: 38,
-    borderRadius: 11,
+    paddingHorizontal: 14,
+    height: 48,
+    borderRadius: 14,
     borderWidth: 1,
   } as ViewStyle,
   searchInput: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 14,
     paddingVertical: 0,
   } as TextStyle,
   filterTriggerBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    height: 38,
-    paddingHorizontal: 12,
-    borderRadius: 11,
+    height: 48,
+    paddingHorizontal: 14,
+    borderRadius: 14,
     borderWidth: 1,
     position: 'relative',
   } as ViewStyle,
-  filterTriggerTxt: { fontSize: 12.5 } as any,
+  filterTriggerTxt: { fontSize: 13 } as any,
   filterActiveDot: {
     width: 6,
     height: 6,

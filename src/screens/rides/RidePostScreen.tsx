@@ -1354,16 +1354,16 @@ const styles = StyleSheet.create({
   modalSearchBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 40,
-    borderRadius: 12,
+    height: 48,
+    borderRadius: 14,
     borderWidth: 1,
-    paddingHorizontal: 10,
+    paddingHorizontal: 14,
     marginBottom: 8,
     gap: 8,
   } as ViewStyle,
   modalSearchInput: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 14,
     paddingVertical: 0,
   } as TextStyle,
 

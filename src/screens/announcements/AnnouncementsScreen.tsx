@@ -906,15 +906,15 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    height: 42,
-    borderRadius: Radius.lg,
+    paddingHorizontal: 14,
+    height: 48,
+    borderRadius: 14,
     borderWidth: 1,
     gap: 8,
   } as ViewStyle,
   searchInput: {
     flex: 1,
-    fontSize: 13.5,
+    fontSize: 14,
     paddingVertical: 0,
   } as TextStyle,
 

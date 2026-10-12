@@ -612,14 +612,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 9,
-    height: 44,
-    borderRadius: 12,
+    height: 48,
+    borderRadius: 14,
     borderWidth: 1,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
   },
   searchInput: {
     flex: 1,
-    fontSize: 13.5,
+    fontSize: 14,
     paddingVertical: 0,
   } as TextStyle,
 

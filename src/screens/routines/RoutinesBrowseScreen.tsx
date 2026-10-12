@@ -430,8 +430,8 @@ export function RoutinesBrowseScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   searchRow: { paddingVertical: Spacing[3] },
-  searchBar: { flexDirection: 'row', alignItems: 'center', height: 42, borderRadius: Radius.sm, borderWidth: 1, paddingHorizontal: Spacing[3], gap: Spacing[2] },
-  searchInput: { flex: 1, fontSize: FontSize.base, padding: 0 },
+  searchBar: { flexDirection: 'row', alignItems: 'center', height: 48, borderRadius: 14, borderWidth: 1, paddingHorizontal: 14, gap: 8 },
+  searchInput: { flex: 1, fontSize: 14, padding: 0 },
   empty: { textAlign: 'center', marginTop: Spacing[10], fontSize: FontSize.base },
   card: { flexDirection: 'row', borderRadius: Radius.md, borderWidth: 1, marginBottom: Spacing[2], overflow: 'hidden' },
   thumb: { width: 72, height: 72 },
