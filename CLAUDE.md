@@ -1165,24 +1165,22 @@ The Campus Announcements architecture is transformed from a manual posting board
 
 ### 31.1 Automated BUBT Crawler & Sync Engine (`sync-notices` & `pg_cron`)
 - **Direct Website Ingestion:** Cloud Edge Function `supabase/functions/sync-notices/index.ts` fetches `https://www.bubt.edu.bd/notice`, extracting the server-embedded `notices: [...]` array (1,500+ circular archive) via regex parsing.
-- **Attachment Resolution:** Automatically distinguishes and formats attachment assets:
-  - PDFs (`.pdf`): saved to `attachment_url` pointing directly to BUBT's public CDN (`https://www.bubt.edu.bd/storage/notices/...`). Zero Supabase storage usage.
-  - Image posters (`.jpg`, `.png`): saved to `image_url` for inline flyer presentation.
-- **Smart Priority & Pinned Mapping:**
-  - `Offday` category or holiday keywords (Janmashtami, Eid, emergency closures) -> `Urgent` priority + pinned to top.
-  - `Exam related` / `Semester` categories (mid-terms, finals, admit cards, registration) -> `Important` priority.
-  - `General` / `Class Related` / `Tender` -> `General` priority.
+- **Attachment & Archive Resolution:**
+  - Modern PDFs (`.pdf`): saved to `attachment_url` pointing directly to BUBT's public CDN (`https://www.bubt.edu.bd/storage/notices/...`). Zero Supabase storage usage.
+  - Historical BUBT Circulars (`notice_document` field): 838+ notices host their PDF under `https://www.bubt.edu.bd/uploads/{notice_document}`. Automatically detected and resolved.
+  - Image posters (`.jpg`, `.png`): extracted from `file`, `notice_document`, or description HTML and saved to `image_url` for inline flyer presentation.
+- **High-Performance Chunked Upsert:** Evaluates batch codes in a single query and upserts in chunks of 50, crawling 300+ notices in ~1.5 seconds without function timeouts. Supports `x-deep-crawl` header for deep archives (up to 600+ items).
+- **Intelligent Classification:** Title analysis automatically categorizes viva schedules, exam routines, and admit cards into `Exam related` (`exam-related`) with `Important` priority, and holiday/vacation notices into `Offday` with `Urgent` priority and pinned status.
 - **Deduplication:** Notices use deterministic codes (`BUBT-N-${id}`). Sync operations perform upserts on conflict, preventing duplicates.
 - **Automated Cron Schedule:** Migration `20261019010000_notices_sync_cron.sql` schedules automated sync via `pg_cron` and `pg_net` every 30 minutes between 02:00 and 16:00 UTC (08:00 AM to 10:00 PM Dhaka time).
-- **Shared Cron Secret Authentication:** Cron invocations authenticate via private `x-sync-secret` passed by `pg_net` from `public.app_config`, matching the hardened pattern established by `send-push`. Also supports admin user JWT for manual app triggers and service-role keys.
-- **Admin In-App Trigger:** 1-tap manual sync button on `AnnouncementsScreen.tsx` SubBar header for instant refresh.
+- **In-App Triggers:** Manual sync on SubBar header triggers immediate refresh; authenticated users are gated with a 2-minute throttle to prevent server spam.
 
 ### 31.2 Database Schema & Targeting (`20261019000000_announcements_360_sync.sql`)
 - **Columns on `announcements`:**
   - `source`: `'bubt_official'` vs `'manual'`.
   - `category`: BUBT notice category name (`Exam related`, `Offday`, `Semester`, `Class Related`, `General`, `Tender`).
   - `category_slug`: Category slug for filtering.
-  - `department_code`: Target department (`CSE`, `EEE`, `Civil`, `Textile`, `Business`, `Law`, `English`, `ALL`).
+  - `department_code`: Target department (`CSE`, `EEE`, `Civil`, `Textile`, `BBA`, `Law`, `ENG`, `ECON`, `EXAM`, `REG`, `ALL`).
   - `external_id`: Original BUBT notice ID.
   - `external_url`: Deep link to BUBT website notice details (`https://www.bubt.edu.bd/notice/details/{slug}`).
 - **Bookmarking Join Table (`announcement_bookmarks`):**
@@ -1195,15 +1193,17 @@ The Campus Announcements architecture is transformed from a manual posting board
     - University-wide notices (holidays, exam routines, rules) -> alerts all student profiles.
     - Department-specific notices (e.g. CSE project defense or Civil lab notice) -> targets only students in matching departments (`profiles.department`), eliminating notification fatigue.
 
-### 31.3 UI/UX Design System & In-App PDF Reader (`AnnouncementsScreen.tsx` & `AnnouncementDetailScreen.tsx`)
-- **3-Segment Top Switcher:** `All Notices`, `📌 Urgent & Exams` (with active danger badge), and `⭐ Saved` (with gold bookmark count).
-- **Live Search Bar:** Real-time query matching across notice titles, bodies, categories, departments, and codes.
-- **Dual Dropdown Filter Bars:** Full-width rounded selector bars for `Category` and `Department` with bottom sheet modal pickers, checkmark indicators, and active accent tints.
-- **Smart "My Department" Quick Filter:** Automatically suggests and selects the student's own department (e.g. `🎯 My Dept (CSE)`) while preserving university-wide notices.
-- **Full-Width Institutional Card (`AnnouncementCard`):** Displays left priority icon tile, unread badge, department eyebrow, verified `🔵 BUBT Official` emblem, 2-line clamped title, priority pills, category pills, attachment badges, and 1-tap star bookmark button.
-- **In-App PDF Viewer Modal:** Renders official circular PDFs directly inside the app using `react-native-webview` with Google Docs PDF previewer. Includes one-tap local caching via `File.downloadFileAsync` (`expo-file-system`) and native Android share sheet integration via `Sharing.shareAsync` (`expo-sharing`).
-- **Pinch-to-Zoom Image Modal:** Full-screen zoom viewer for official notice flyers and posters.
+### 31.3 UI/UX Design System & Feed Architecture (`AnnouncementsScreen.tsx` & `AnnouncementDetailScreen.tsx`)
+- **4-Segment Animated Switcher:** `All Notice`, `Urgent`, `Exam`, and `Saved` tabs featuring the identical native spring sliding indicator as `HomeCommunityUpdates.tsx` (`tension: 68`, `friction: 10`), dynamic badge counters, and theme-adaptive colors.
+- **Horizontal Scrolling Filter Bars:** Replaces modal pickers with sleek horizontal scrolling pill bars for both Categories and Departments with 1-tap filtering.
+- **Synchronized Scoped Counts:** Tab badge counters are derived dynamically from the active department and category scope, ensuring badge counts and list results are always 100% consistent.
+- **Varsity-Wide Notice Preservation:** Department filtering (such as Economics or CSE) preserves university-wide notices (`ALL`, Controller of Examinations, Registrar) so students never miss general mid-term/final routines or holiday closures.
+- **Cohesive Notice Attribute Bar (`attrBar` & `cardMetaBar`):** Groups priority pills, category/offday badges, pinned indicators, and department tags into a unified horizontal metadata bar.
+- **In-App PDF Viewer Modal:** Uses `react-native-webview` with `scalesPageToFit={true}`, responsive viewport meta injection, local download caching via `File.downloadFileAsync` (`expo-file-system`), and an "Open in Browser" direct link button in the header.
+- **Pinch-to-Zoom Flyer Viewer:** `resolveNoticeImage` supports local banner mappings, remote CDNs, and BUBT storage paths. Includes loading spinners and a full-screen pinch-to-zoom `ScrollView` (`maximumZoomScale={4}`) with native share sheet.
+- **Home Community Feed Realtime Sync:** `HomeCommunityUpdates.tsx` listens to screen focus events and Supabase Realtime postgres changes on `announcements`, with automated cache invalidation upon notice fetch and sync.
 - **Bilingual Support:** Complete localization parity in `src/i18n/en.ts` and `src/i18n/bn.ts` under the `announce2` namespace.
+
 
 
 
