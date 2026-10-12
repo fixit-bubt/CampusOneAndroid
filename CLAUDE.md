@@ -45,6 +45,18 @@ This document is the single, authoritative reference for any AI agent or develop
 - **React Native Project Root:** `c:\Users\dracu\Desktop\CampusOne\CampusOne`
 - **Outer Wrapper / Workspace:** `c:\Users\dracu\Desktop\CampusOne` (contains Capstone Thesis Word document and backup files)
 
+### 2.4 Model Context Protocol (MCP) & Design Tooling
+- **Config Locations:**
+  - Global: `~/.gemini/config/mcp_config.json`
+  - Workspace: `.mcp.json` in workspace root and `CampusOne/.mcp.json`
+- **21st.dev MCP Integration (`twenty-first` / `21st`):**
+  - **Transport & Endpoints:** Stdio proxy via `@21st-dev/magic@latest` (Windows `cmd.exe /c npx -y @21st-dev/magic@latest`) and HTTP endpoint `https://21st.dev/api/mcp` with `x-api-key` header.
+  - **Authentication:** Dedicated 21st.dev API token configured in environment (`API_KEY` / `API_KEY_21ST`).
+  - **Capabilities:** Direct search and installation of React/Tailwind/Framer components, SVG brand logos (`21st logo <name>`), and icon variants without manual copy-pasting.
+- **Visual Design & Asset Creation:**
+  - **Native Image Generation:** Agent `generate_image` tool generates high-resolution app icons, logos, banners, and splash screen artwork directly into project assets.
+  - **Brand Identity System:** `brandkit` skill (`~/.gemini/config/skills/brandkit`) standardizes palettes, typography tokens, logo rules, and marketing mockups.
+
 ---
 
 ## 3. Critical Non-Negotiable Rules & Workflow
