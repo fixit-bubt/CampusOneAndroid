@@ -339,7 +339,7 @@ export function HomeCommunityUpdates() {
     { id: 'Events', label: 'Events', icon: 'calendar', color: SectorColors.events },
   ];
 
-  const TRACK_PADDING = 3.5;
+  const TRACK_PADDING = 4.5;
   const innerTrackWidth = Math.max(0, trackWidth - TRACK_PADDING * 2);
   const tabWidth = innerTrackWidth > 0 ? innerTrackWidth / 3 : 0;
   const translateX = animIndex.interpolate({
@@ -403,7 +403,7 @@ export function HomeCommunityUpdates() {
             >
               <Feather
                 name={tab.icon}
-                size={13}
+                size={15.5}
                 color={active ? cfg.fg : C.textMuted}
               />
               <Text
@@ -668,26 +668,26 @@ const styles = StyleSheet.create({
 
   tabContainer: {
     flexDirection: 'row',
-    borderRadius: 14,
-    padding: 3.5,
+    borderRadius: 16,
+    padding: 4.5,
     borderWidth: 1,
-    marginBottom: 12,
+    marginBottom: 14,
     marginTop: 4,
     position: 'relative',
   } as ViewStyle,
 
   activeIndicator: {
     position: 'absolute',
-    top: 3.5,
-    left: 3.5,
-    bottom: 3.5,
-    borderRadius: 11,
+    top: 4.5,
+    left: 4.5,
+    bottom: 4.5,
+    borderRadius: 12.5,
     borderWidth: 1,
-    elevation: 2,
+    elevation: 2.5,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1.5 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 3.5,
   } as ViewStyle,
 
   tabBtn: {
@@ -695,29 +695,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 5.5,
-    paddingVertical: 8,
-    minHeight: 38,
-    borderRadius: 11,
+    gap: 7,
+    paddingVertical: 10,
+    minHeight: 48,
+    borderRadius: 12.5,
     zIndex: 1,
   } as ViewStyle,
 
   tabBtnTxt: {
-    fontSize: 12.5,
+    fontSize: 13.5,
+    letterSpacing: -0.1,
   },
 
   tabBadge: {
-    paddingHorizontal: 6.5,
-    paddingVertical: 1,
+    paddingHorizontal: 7.5,
+    paddingVertical: 2,
     borderRadius: 999,
     borderWidth: 1,
-    minWidth: 20,
+    minWidth: 22,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
 
   tabBadgeTxt: {
-    fontSize: 10.5,
+    fontSize: 11.5,
   },
 
   loadingBox: {
