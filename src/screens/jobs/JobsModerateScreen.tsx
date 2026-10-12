@@ -90,8 +90,8 @@ export function JobsModerateScreen({ navigation }: any) {
   const list = tab === 'reported' ? reported : removed;
 
   const moderateTabs: TabItem<'reported' | 'removed'>[] = useMemo(() => [
-    { id: 'reported', label: t.jobs.reported, icon: 'alert-triangle', count: reported.length, accentColor: C.danger },
-    { id: 'removed', label: t.jobs.removed, icon: 'trash-2', count: removed.length, accentColor: Accent.slate },
+    { id: 'reported', label: t.jobs.reported, count: reported.length, color: C.danger },
+    { id: 'removed', label: t.jobs.removed, count: removed.length, color: Accent.slate },
   ], [t.jobs, reported.length, removed.length, C.danger]);
 
   return (

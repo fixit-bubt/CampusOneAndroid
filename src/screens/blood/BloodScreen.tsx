@@ -123,15 +123,13 @@ export function BloodScreen({ route, navigation }: any) {
     {
       id: 'requests',
       label: t.blood2.requestsTab,
-      iconConfig: { family: 'feather', name: 'alert-circle' },
-      count: requests.length,
+      count: requests.length > 0 ? requests.length : undefined,
       color: C.danger,
     },
     {
       id: 'donors',
       label: t.blood2.donorsTab,
-      iconConfig: { family: 'feather', name: 'users' },
-      count: donors.length,
+      count: donors.length > 0 ? donors.length : undefined,
       color: C.success,
     },
   ], [t, requests.length, donors.length, C.danger, C.success]);

@@ -155,29 +155,30 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
 - **Universal Adoption Across App (Strictly 2 or 3 tabs, No legacy animations):**
   - `RidePostScreen`: Post Type (`Offer Ride` / `Need Ride`), Direction (`To Campus` / `From Campus`), Date Choice (`Today` / `Tomorrow`), Location Modal (`Mirpur & Campus` / `Greater Dhaka`).
   - `RidesScreen`: Direction filter (3 tabs: `All` / `To Campus` / `From Campus`), Post Type filter (3 tabs: `All` / `Offers` / `Need Ride`), with `My Rides` in header.
-  - `BloodScreen`: Requests vs Donors switcher with counts (2 tabs).
+  - `BloodScreen`: Requests vs Donors switcher with counts (2 tabs, no icons).
   - `BloodRequestScreen`: Urgency selector (3 tabs: `Urgent` / `Today` / `Week`).
-  - `AreaPickerModal`: Filter mode (2 tabs: `All Areas` / `Blood Donors`).
+  - `AreaPickerModal`: Filter mode (2 tabs: `Hospitals` / `Areas`, no icons).
   - `MarketScreen`: Feed tabs (3 tabs: `All` / `Mine` / `Saved`), Filter Modal Sort (3 tabs: `Newest` / `Price Low` / `Price High`), Condition (3 tabs: `New` / `Like New` / `Used`).
   - `MarketPostScreen`: Condition selector (3 tabs), Location modal (2 tabs without hardcoded numbers).
   - `LostFoundBrowseScreen`: Main 3-tab switcher (`Lost` / `Found` / `Mine` with counts; "All" eliminated).
   - `PostItemFormScreen`: Type toggle (2 tabs: `Lost` / `Found`).
   - `FacultyScreen`: Main 3-tab switcher (`Depts` / `Mentors` / `Saved` with bookmark counts, no icons).
   - `DirectoryScreen`: Main 3-tab switcher (`All` / `Connections` / `Requests` with counts, no icons; legacy spring anim eliminated).
-  - `AnnouncementsScreen`: Main 3-tab switcher (`All` / `Urgent` / `Saved` with counts).
+  - `AnnouncementsScreen`: Main 3-tab switcher (`All` / `Urgent` / `Saved` with counts, no icons).
   - `AnnouncePostScreen`: Priority selector (3 tabs: `Urgent` / `Important` / `General`).
   - `JobsBrowseScreen`: Main tabs (3 tabs: `Browse` / `Saved` / `Applied`), Status filter (3 tabs: `Open` / `Closing` / `Expired`).
   - `JobPostScreen`: Work Mode (3 tabs: `On-site` / `Remote` / `Hybrid`), Compensation model (3 tabs: `Paid` / `Conveyance` / `Negotiable`), How to Apply (3 tabs: `Email` / `Link` / `PDF`).
-  - `JobsModerateScreen`: Moderation tabs (2 tabs: `Reported` / `Removed`).
+  - `JobsModerateScreen`: Moderation tabs (2 tabs: `Reported` / `Removed`, no icons).
   - `EventsBrowseScreen`: Main 3-tab switcher (`Upcoming` / `Past` / `Saved` with counts; legacy static chips eliminated).
-  - `MyReportsScreen`: Scope switcher (2 tabs: `Everyone` / `My Reports`).
+  - `MyReportsScreen`: Scope switcher (2 tabs: `Everyone` / `My Reports`, no icons).
   - `ManageStaffScreen`: Role tabs (2 tabs: `Staff` / `Admins` with counts; legacy static chips eliminated).
   - `ClubDetailScreen`: 2-tab switcher (`Feed` / `Members` with count; legacy static chips eliminated).
   - `MedicalScreen`: 3 tabs (`Doctors` / `Services` / `Emergency`, no icons).
   - `CourseDetailScreen`: Material tabs (3 tabs: `Notes` / `Questions` / `Books` with counts, no icons).
   - `StudyUploadScreen`: Upload category switcher (3 tabs: `Materials` / `Questions` / `Books`).
-  - `RoutinesBrowseScreen`: Main routine tabs (2 tabs: `Class` / `Exam` with counts), Modal type switcher (2 tabs).
-  - `NotificationsScreen`: Filter switcher (2 tabs: `All` / `Unread` with unread count).
+  - `RoutinesBrowseScreen`: Main routine tabs (2 tabs: `Class` / `Exam` with counts, no icons), Modal type switcher (2 tabs).
+  - `NotificationsScreen`: Filter switcher (2 tabs: `All` / `Unread` with unread count, no icons).
+  - `HomeCommunityUpdates`: Update categories (3 tabs: `Notices` / `Clubs` / `Events` with counts, no icons).
   - `PrayerScreen`: Timetable view switcher (2 tabs: `Today` / `Month`).
 
 ---

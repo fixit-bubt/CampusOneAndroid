@@ -110,8 +110,8 @@ export function RoutinesBrowseScreen({ navigation }: any) {
     );
 
   const ROUTINE_TABS: TabItem<Tab>[] = useMemo(() => [
-    { id: 'class', label: t.routines2.classRoutines, icon: 'calendar', count: routines.filter(r => r.type === 'class').length, accentColor: SectorColors.routines },
-    { id: 'exam', label: t.routines2.examRoutines, icon: 'file-text', count: routines.filter(r => r.type === 'exam').length, accentColor: SectorColors.routines },
+    { id: 'class', label: t.routines2.classRoutines, count: routines.filter(r => r.type === 'class').length, color: SectorColors.routines },
+    { id: 'exam', label: t.routines2.examRoutines, count: routines.filter(r => r.type === 'exam').length, color: SectorColors.routines },
   ], [t.routines2, routines]);
 
   const MODAL_TYPE_TABS: TabItem<Tab>[] = useMemo(() => [
@@ -429,9 +429,6 @@ export function RoutinesBrowseScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  tabRow: { flexDirection: 'row', borderBottomWidth: StyleSheet.hairlineWidth },
-  tab: { flex: 1, alignItems: 'center', paddingVertical: Spacing[3], borderBottomWidth: 2, borderBottomColor: 'transparent' },
-  tabText: { fontSize: FontSize.md },
   searchRow: { paddingVertical: Spacing[3] },
   searchBar: { flexDirection: 'row', alignItems: 'center', height: 42, borderRadius: Radius.sm, borderWidth: 1, paddingHorizontal: Spacing[3], gap: Spacing[2] },
   searchInput: { flex: 1, fontSize: FontSize.base, padding: 0 },

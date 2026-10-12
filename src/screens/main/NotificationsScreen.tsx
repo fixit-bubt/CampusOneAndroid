@@ -222,8 +222,8 @@ export function NotificationsScreen({ navigation }: any) {
   const list = filter === 'unread' ? notifs.filter(n => !n.read) : notifs;
 
   const notifTabs: TabItem<Filter>[] = useMemo(() => [
-    { id: 'all', label: 'All', icon: 'bell', count: notifs.length },
-    { id: 'unread', label: 'Unread', icon: 'mail', count: unread, accentColor: C.brand },
+    { id: 'all', label: 'All', count: notifs.length },
+    { id: 'unread', label: 'Unread', count: unread, color: C.brand },
   ], [notifs.length, unread, C.brand]);
 
   const BUCKET_LABELS = { new: t.mainx.notifBucketNew, today: t.mainx.notifBucketToday, earlier: t.mainx.notifBucketEarlier };

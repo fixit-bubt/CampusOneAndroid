@@ -297,9 +297,9 @@ export function HomeCommunityUpdates() {
   }, [items, activeTab]);
 
   const tabs: TabItem<CommunityTab>[] = [
-    { id: 'Notices', label: 'Notices', icon: 'bell', count: counts.Notices, color: SectorColors.announce },
-    { id: 'Clubs', label: 'Clubs', icon: 'users', count: counts.Clubs, color: SectorColors.clubs },
-    { id: 'Events', label: 'Events', icon: 'calendar', count: counts.Events, color: SectorColors.events },
+    { id: 'Notices', label: 'Notices', count: counts.Notices, color: SectorColors.announce },
+    { id: 'Clubs', label: 'Clubs', count: counts.Clubs, color: SectorColors.clubs },
+    { id: 'Events', label: 'Events', count: counts.Events, color: SectorColors.events },
   ];
 
   return (

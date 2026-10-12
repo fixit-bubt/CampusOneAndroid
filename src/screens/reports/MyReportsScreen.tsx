@@ -133,8 +133,8 @@ export function MyReportsScreen({ navigation }: any) {
   }, [scoped]);
 
   const scopeTabs: TabItem<'everyone' | 'mine'>[] = useMemo(() => [
-    { id: 'everyone', label: t.reports.scopeEveryone, icon: 'globe', count: reports.length },
-    { id: 'mine', label: t.reports.scopeMine, icon: 'user', count: reports.filter(r => r.reporter_id === user?.id).length },
+    { id: 'everyone', label: t.reports.scopeEveryone, count: reports.length },
+    { id: 'mine', label: t.reports.scopeMine, count: reports.filter(r => r.reporter_id === user?.id).length },
   ], [t.reports, reports, user?.id]);
 
   const q = query.trim().toLowerCase();

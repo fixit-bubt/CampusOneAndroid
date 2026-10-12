@@ -35,9 +35,6 @@ type FlatListItem =
 // -------------------------------------------------------------
 // MODULE-LEVEL PRE-COMPUTED DATA (Zero allocations during tab switch)
 // -------------------------------------------------------------
-const TOTAL_HOSPITALS = DHAKA_AREAS.filter(a => a.type === 'hospital').length;
-const TOTAL_AREAS = DHAKA_AREAS.filter(a => a.type === 'area').length;
-
 interface IndexedAreaItem extends DhakaAreaInfo {
   _searchKey: string;
 }
@@ -312,8 +309,8 @@ export function AreaPickerModal({
   }, []);
 
   const PICKER_TABS: TabItem<TypeFilterTab>[] = useMemo(() => [
-    { id: 'hospital', label: 'Hospitals', count: TOTAL_HOSPITALS, color: SectorColors.blood },
-    { id: 'area',     label: 'Areas',     count: TOTAL_AREAS,     color: SectorColors.blood },
+    { id: 'hospital', label: 'Hospitals', color: SectorColors.blood },
+    { id: 'area',     label: 'Areas',     color: SectorColors.blood },
   ], []);
 
   // Fast pre-indexed search (active when user types in search box)

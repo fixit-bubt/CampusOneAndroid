@@ -441,9 +441,9 @@ export function AnnouncementsScreen({ navigation }: any) {
 
   const ANNOUNCEMENT_TABS: TabItem<MainTab>[] = useMemo(
     () => [
-      { id: 'all', label: 'All', icon: 'layers', count: tabCounts.all, accentColor: SectorColors.announce },
-      { id: 'urgent', label: 'Urgent', icon: 'alert-circle', count: tabCounts.urgent, accentColor: C.danger },
-      { id: 'saved', label: 'Saved', icon: 'bookmark', count: tabCounts.saved, accentColor: Accent.gold },
+      { id: 'all', label: 'All', count: tabCounts.all, color: SectorColors.announce },
+      { id: 'urgent', label: 'Urgent', count: tabCounts.urgent, color: C.danger },
+      { id: 'saved', label: 'Saved', count: tabCounts.saved, color: Accent.gold },
     ],
     [tabCounts.all, tabCounts.urgent, tabCounts.saved, C.danger]
   );
