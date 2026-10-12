@@ -132,7 +132,7 @@ export function StatusBadge({
       }
 
       case 'bags': {
-        const bagCount = count ?? 1;
+        const bagCount = count && count > 0 ? count : 1;
         return {
           family: 'mci',
           icon: 'blood-bag',

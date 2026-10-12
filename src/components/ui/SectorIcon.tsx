@@ -129,7 +129,7 @@ export function SectorIcon({
     </Animated.View>
   );
 
-  if (interactive || onPress) {
+  if (onPress) {
     return (
       <TouchableWithoutFeedback
         onPress={onPress}

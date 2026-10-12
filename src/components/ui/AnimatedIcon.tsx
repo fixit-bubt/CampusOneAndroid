@@ -32,7 +32,9 @@ export function AnimatedIcon({
   onPress,
   style,
 }: AnimatedIconProps) {
-  const scale = useRef(new Animated.Value(animation === 'entrance' ? 0.3 : 1)).current;
+  const scale = useRef(
+    new Animated.Value(animation === 'entrance' ? 0.3 : animation === 'spring' ? 0.82 : 1)
+  ).current;
   const rotation = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -43,6 +45,14 @@ export function AnimatedIcon({
         toValue: 1,
         tension: 260,
         friction: 12,
+        useNativeDriver: true,
+      }).start();
+    } else if (animation === 'spring') {
+      scale.setValue(0.82);
+      Animated.spring(scale, {
+        toValue: 1,
+        tension: 260,
+        friction: 10,
         useNativeDriver: true,
       }).start();
     } else if (animation === 'pulse') {
@@ -81,6 +91,9 @@ export function AnimatedIcon({
       } else {
         wobbleAnim.start();
       }
+    } else {
+      scale.setValue(1);
+      rotation.setValue(0);
     }
 
     return () => {
@@ -152,7 +165,7 @@ export function AnimatedIcon({
     </Animated.View>
   );
 
-  if (onPress || animation === 'spring') {
+  if (onPress) {
     return (
       <TouchableWithoutFeedback
         onPress={onPress}
