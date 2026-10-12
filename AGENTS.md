@@ -1193,14 +1193,14 @@ The Campus Announcements architecture is transformed from a manual posting board
     - Department-specific notices (e.g. CSE project defense or Civil lab notice) -> targets only students in matching departments (`profiles.department`), eliminating notification fatigue.
 
 ### 31.3 UI/UX Design System & Feed Architecture (`AnnouncementsScreen.tsx` & `AnnouncementDetailScreen.tsx`)
-- **4-Segment Animated Switcher:** `All Notice`, `Urgent`, `Exam`, and `Saved` tabs featuring the identical native spring sliding indicator as `HomeCommunityUpdates.tsx` (`tension: 68`, `friction: 10`), dynamic badge counters, and theme-adaptive colors.
-- **Horizontal Scrolling Filter Bars:** Replaces modal pickers with sleek horizontal scrolling pill bars for both Categories and Departments with 1-tap filtering.
+- **3-Segment Animated Switcher:** `All`, `Urgent`, and `Saved` tabs featuring the identical native spring sliding indicator as `HomeCommunityUpdates.tsx` (`innerTrackWidth / 3`, `tension: 68`, `friction: 10`), dynamic badge counters, and font auto-scaling (`adjustsFontSizeToFit`, `minimumFontScale: 0.85`) to guarantee no text spills outside on mobile screens.
+- **Dual Dropdown Selectors with Distinct Bar Sheets:** Category and Department dropdown buttons on the main screen open modal bottom sheets where options are styled as distinct, rounded bars (`pickerBar`) with icon squircles, bold titles, and checkmark indicators.
 - **Synchronized Scoped Counts:** Tab badge counters are derived dynamically from the active department and category scope, ensuring badge counts and list results are always 100% consistent.
 - **Varsity-Wide Notice Preservation:** Department filtering (such as Economics or CSE) preserves university-wide notices (`ALL`, Controller of Examinations, Registrar) so students never miss general mid-term/final routines or holiday closures.
-- **Cohesive Notice Attribute Bar (`attrBar` & `cardMetaBar`):** Groups priority pills, category/offday badges, pinned indicators, and department tags into a unified horizontal metadata bar.
-- **In-App PDF Viewer Modal:** Uses `react-native-webview` with `scalesPageToFit={true}`, responsive viewport meta injection, local download caching via `File.downloadFileAsync` (`expo-file-system`), and an "Open in Browser" direct link button in the header.
-- **Pinch-to-Zoom Flyer Viewer:** `resolveNoticeImage` supports local banner mappings, remote CDNs, and BUBT storage paths. Includes loading spinners and a full-screen pinch-to-zoom `ScrollView` (`maximumZoomScale={4}`) with native share sheet.
-- **Home Community Feed Realtime Sync:** `HomeCommunityUpdates.tsx` listens to screen focus events and Supabase Realtime postgres changes on `announcements`, with automated cache invalidation upon notice fetch and sync.
+- **Institutional Official Link Bar:** Prominent circular card bar on `AnnouncementDetailScreen` with an official BUBT globe squircle, verified green portal badge (`BUBT OFFICIAL PORTAL`), title, and direct external navigation.
+- **In-App PDF Viewer Modal:** Uses `react-native-webview` with `scalesPageToFit={false}`, responsive mobile viewport injection, removal of Google Docs' dark letterbox margins and toolstrip, `#f8fafc` background, and centered document pages.
+- **Pinch-to-Zoom Flyer Viewer:** `resolveNoticeImage` supports local banner mappings, remote CDNs, `uploads/`, and BUBT storage paths. Uses explicit window dimensions (`winWidth`, `winHeight * 0.78`) to prevent height collapse inside Android's `ScrollView`.
+- **Home Community Feed Realtime Sync:** `HomeCommunityUpdates.tsx` orders announcements chronologically by `created_at desc` with increased limit (25) and automated cache refresh, keeping community news live and up-to-date.
 - **Bilingual Support:** Complete localization parity in `src/i18n/en.ts` and `src/i18n/bn.ts` under the `announce2` namespace.
 
 
