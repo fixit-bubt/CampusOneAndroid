@@ -122,7 +122,8 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
 - **Color Binding:** Always pair icons with their designated `SectorColors.<sector>` accent token rather than arbitrary colors.
 - **Universal AnimatedIcon (`src/components/ui/AnimatedIcon.tsx`):**
   - High performance, 120 FPS native animated component powered by React Native's `Animated` library (`useNativeDriver: true`) running directly on Android's RenderThread.
-  - Supports animations: `spring` (rubberband bounce pop from 0.82 to 1.0 on mount/tab focus), `pulse` (subtle heartbeat for urgent alerts/reminders), `entrance` (zoom-in from 0.3 to 1.0), `wobble` (rotational shake), and `none`.
+  - Supports animations: `spring` (explosive rubberband bounce pop from 1.0 to 1.34 to 1.0 on mount/tab focus), `pulse` (continuous rhythmic heartbeat scale from 1.0 to 1.22 for urgent alerts/AI orb), `float` (continuous smooth vertical hovering translateY from 0 to -4 to 0), `bounce` (periodic spring jump translateY from 0 to -6 to 0), `entrance` (zoom-in from 0.3 to 1.25 to 1.0), `wobble` (rotational shake from -14deg to +14deg with optional loop), and `none`.
+  - Bottom Tab Bar integration: `BottomTabNavigator` keys tab icons with `${key}-${focused}` to guarantee tactile rubberband pop on every tap.
   - Maps seamlessly across icon families (`feather`, `mci` / MaterialCommunityIcons, `ionicons`).
 - **Universal StatusBadge (`src/components/ui/StatusBadge.tsx`):**
   - Replaces all raw Unicode emoji stickers across deep features with sleek, theme-aware vector badges:

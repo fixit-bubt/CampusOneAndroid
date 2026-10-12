@@ -9,7 +9,7 @@ import { Feather, MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 
 export type IconFamily = 'feather' | 'mci' | 'ionicons';
 
-export type AnimationType = 'none' | 'spring' | 'pulse' | 'entrance' | 'wobble';
+export type AnimationType = 'none' | 'spring' | 'pulse' | 'entrance' | 'wobble' | 'float' | 'bounce';
 
 export interface AnimatedIconProps {
   name: string;
@@ -32,40 +32,91 @@ export function AnimatedIcon({
   onPress,
   style,
 }: AnimatedIconProps) {
-  const scale = useRef(
-    new Animated.Value(animation === 'entrance' ? 0.3 : animation === 'spring' ? 0.82 : 1)
-  ).current;
+  const scale = useRef(new Animated.Value(animation === 'entrance' ? 0.3 : 1)).current;
   const rotation = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     let animLoop: Animated.CompositeAnimation | null = null;
 
     if (animation === 'entrance') {
-      Animated.spring(scale, {
-        toValue: 1,
-        tension: 260,
-        friction: 12,
-        useNativeDriver: true,
-      }).start();
+      scale.setValue(0.3);
+      Animated.sequence([
+        Animated.spring(scale, {
+          toValue: 1.25,
+          tension: 280,
+          friction: 6,
+          useNativeDriver: true,
+        }),
+        Animated.spring(scale, {
+          toValue: 1,
+          tension: 220,
+          friction: 9,
+          useNativeDriver: true,
+        }),
+      ]).start();
     } else if (animation === 'spring') {
-      scale.setValue(0.82);
-      Animated.spring(scale, {
-        toValue: 1,
-        tension: 260,
-        friction: 10,
-        useNativeDriver: true,
-      }).start();
+      scale.setValue(1);
+      Animated.sequence([
+        Animated.spring(scale, {
+          toValue: 1.34,
+          tension: 320,
+          friction: 6,
+          useNativeDriver: true,
+        }),
+        Animated.spring(scale, {
+          toValue: 1,
+          tension: 200,
+          friction: 9,
+          useNativeDriver: true,
+        }),
+      ]).start();
     } else if (animation === 'pulse') {
       animLoop = Animated.loop(
         Animated.sequence([
           Animated.timing(scale, {
-            toValue: 1.15,
-            duration: 800,
+            toValue: 1.22,
+            duration: 650,
             useNativeDriver: true,
           }),
           Animated.timing(scale, {
-            toValue: 1,
-            duration: 800,
+            toValue: 1.0,
+            duration: 650,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      animLoop.start();
+    } else if (animation === 'bounce') {
+      animLoop = Animated.loop(
+        Animated.sequence([
+          Animated.spring(translateY, {
+            toValue: -6,
+            tension: 300,
+            friction: 7,
+            useNativeDriver: true,
+          }),
+          Animated.spring(translateY, {
+            toValue: 0,
+            tension: 220,
+            friction: 7,
+            useNativeDriver: true,
+          }),
+          Animated.delay(1200),
+        ])
+      );
+      animLoop.start();
+    } else if (animation === 'float') {
+      animLoop = Animated.loop(
+        Animated.sequence([
+          Animated.timing(translateY, {
+            toValue: -4,
+            duration: 900,
+            useNativeDriver: true,
+          }),
+          Animated.timing(translateY, {
+            toValue: 0,
+            duration: 900,
             useNativeDriver: true,
           }),
         ])
@@ -73,18 +124,18 @@ export function AnimatedIcon({
       animLoop.start();
     } else if (animation === 'wobble') {
       const wobbleAnim = Animated.sequence([
-        Animated.timing(rotation, { toValue: 1, duration: 100, useNativeDriver: true }),
-        Animated.timing(rotation, { toValue: -1, duration: 100, useNativeDriver: true }),
-        Animated.timing(rotation, { toValue: 0.8, duration: 90, useNativeDriver: true }),
-        Animated.timing(rotation, { toValue: -0.8, duration: 90, useNativeDriver: true }),
-        Animated.timing(rotation, { toValue: 0, duration: 90, useNativeDriver: true }),
+        Animated.timing(rotation, { toValue: 1, duration: 80, useNativeDriver: true }),
+        Animated.timing(rotation, { toValue: -1, duration: 80, useNativeDriver: true }),
+        Animated.timing(rotation, { toValue: 0.8, duration: 70, useNativeDriver: true }),
+        Animated.timing(rotation, { toValue: -0.8, duration: 70, useNativeDriver: true }),
+        Animated.timing(rotation, { toValue: 0, duration: 70, useNativeDriver: true }),
       ]);
 
       if (loop) {
         animLoop = Animated.loop(
           Animated.sequence([
             wobbleAnim,
-            Animated.delay(2200),
+            Animated.delay(1800),
           ])
         );
         animLoop.start();
@@ -94,6 +145,7 @@ export function AnimatedIcon({
     } else {
       scale.setValue(1);
       rotation.setValue(0);
+      translateY.setValue(0);
     }
 
     return () => {
@@ -103,20 +155,28 @@ export function AnimatedIcon({
 
   const handlePressIn = () => {
     Animated.spring(scale, {
-      toValue: 0.88,
-      tension: 300,
-      friction: 15,
+      toValue: 0.78,
+      tension: 400,
+      friction: 12,
       useNativeDriver: true,
     }).start();
   };
 
   const handlePressOut = () => {
-    Animated.spring(scale, {
-      toValue: 1,
-      tension: 260,
-      friction: 10,
-      useNativeDriver: true,
-    }).start();
+    Animated.sequence([
+      Animated.spring(scale, {
+        toValue: 1.25,
+        tension: 300,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scale, {
+        toValue: 1.0,
+        tension: 200,
+        friction: 10,
+        useNativeDriver: true,
+      }),
+    ]).start();
   };
 
   const spin = rotation.interpolate({
@@ -127,6 +187,7 @@ export function AnimatedIcon({
   const animatedStyle = {
     transform: [
       { scale },
+      { translateY },
       { rotate: spin },
     ],
   };

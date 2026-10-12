@@ -187,7 +187,7 @@ export function HomeFrequentTools() {
                   },
                 ]}
               >
-                <AnimatedIcon name={tool.icon} size={18} color={tool.color} />
+                <AnimatedIcon name={tool.icon} size={18} color={tool.color} animation="entrance" />
               </View>
               <Text
                 style={[

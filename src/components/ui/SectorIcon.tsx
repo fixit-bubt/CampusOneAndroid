@@ -6,7 +6,7 @@ import {
 } from 'react-native';
 import { SectorColors } from '../../theme';
 import type { SectorKey } from '../../theme';
-import { AnimatedIcon, type IconFamily } from './AnimatedIcon';
+import { AnimatedIcon, type IconFamily, type AnimationType } from './AnimatedIcon';
 
 interface SectorIconConfig {
   name: string;
@@ -47,6 +47,7 @@ export interface SectorIconProps {
   size?: SecSize;
   dark?: boolean;
   interactive?: boolean;
+  animation?: AnimationType;
   onPress?: () => void;
   style?: ViewStyle;
 }
@@ -73,6 +74,7 @@ export function SectorIcon({
   size = 'md',
   dark = false,
   interactive = false,
+  animation = 'none',
   onPress,
   style,
 }: SectorIconProps) {
@@ -125,6 +127,7 @@ export function SectorIcon({
         name={iconConfig.name}
         size={iconSize}
         color={fg}
+        animation={animation}
       />
     </Animated.View>
   );

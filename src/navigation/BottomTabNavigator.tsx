@@ -83,8 +83,9 @@ export function BottomTabNavigator() {
           tabBarLabel: TAB_LABEL[key] ?? route.name,
           tabBarIcon: ({ color, size, focused }) => (
             <AnimatedIcon
+              key={`${key}-${focused}`}
               name={TAB_ICON[key] ?? 'circle'}
-              size={size}
+              size={focused ? size + 1 : size}
               color={color}
               animation={focused ? 'spring' : 'none'}
             />
