@@ -1154,6 +1154,39 @@ export type Database = {
           },
         ]
       }
+      event_bookmarks: {
+        Row: {
+          created_at: string
+          event_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_bookmarks_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_bookmarks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_organizers: {
         Row: {
           created_at: string
@@ -1237,10 +1270,15 @@ export type Database = {
           created_at: string
           created_by: string
           date: string
+          deleted_at: string | null
           description: string
           end_time: string | null
+          external_id: string | null
+          external_url: string | null
           id: string
           organizer: string
+          source: string
+          tags: string[] | null
           time: string
           title: string
           updated_at: string
@@ -1255,10 +1293,15 @@ export type Database = {
           created_at?: string
           created_by: string
           date: string
+          deleted_at?: string | null
           description: string
           end_time?: string | null
+          external_id?: string | null
+          external_url?: string | null
           id?: string
           organizer: string
+          source?: string
+          tags?: string[] | null
           time: string
           title: string
           updated_at?: string
@@ -1273,10 +1316,15 @@ export type Database = {
           created_at?: string
           created_by?: string
           date?: string
+          deleted_at?: string | null
           description?: string
           end_time?: string | null
+          external_id?: string | null
+          external_url?: string | null
           id?: string
           organizer?: string
+          source?: string
+          tags?: string[] | null
           time?: string
           title?: string
           updated_at?: string
@@ -3820,6 +3868,10 @@ export type Database = {
           vote_count: number
           voted: boolean
         }[]
+      }
+      toggle_event_bookmark: {
+        Args: { p_event_id: string }
+        Returns: boolean
       }
     }
     Enums: {

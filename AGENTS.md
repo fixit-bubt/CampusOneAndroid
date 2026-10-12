@@ -146,8 +146,7 @@ The live Supabase database (`xhgpxvyqrufbbuivttmi`) is the single source of trut
 | **Marketplace** | `listings` (NOT `marketplace`) | Status: `'Available'` / `'Sold'`. Contact reveal via `listing_contact(p_code)` RPC. Upload to `photos` bucket (`marketplace/{user_id}/`). |
 | **Rides** | `rides` (NOT `ride_shares`) | Columns: `origin`, `destination`, `date`, `time`, `seats_total`, `fare`, `driver_id`, `code`. Contact via `ride_contact(p_code, p_target)`. Call `delete_expired_rides()` before fetch. |
 | **Blood Donors** | `donors` (NOT `blood_donors`) | Columns: `user_id`, `blood_group`, `area`, `last_donated`, `alert_urgency` (`'urgent_only'`, `'today_plus'`, `'all'`). No phone column (phone is in `profiles.whatsapp`). Contact via `donor_contact(p_user_id)` RPC. 90/120-day wait enforced. |
-| **Blood Pledges** | `blood_pledges` | Columns: `request_id`, `donor_id`. Triggers `trg_notify_blood_pledge` and `trg_notify_blood_pledge_cancelled` notify requester. `trg_notify_blood_request_fulfilled` on `blood_requests` notifies all pledged donors when resolved. |
-| **Events** | `events` | Date column is `date` (NOT `event_date`); location is `venue` (NOT `location`). Whitelist: `event_organizers`. |
+| **Events** | `events`, `event_rsvps`, `event_bookmarks`, `event_sync_logs` | Date column is `date` (NOT `event_date`); location is `venue` (NOT `location`). Columns: `source` (`'manual'`, `'bubt_news'`), `external_id`, `external_url`, `tags`, `deleted_at`, `banner_url`, `club_id`. Bookmarks via `toggle_event_bookmark(p_event_id)` RPC. 4-tier live status (`Ongoing`, `Today`, `Upcoming`, `Ended`). Automated crawler Edge Function `sync-events` synced via cron `auto-sync-bubt-events`. Whitelist: `event_organizers`. |
 | **Clubs** | `clubs` & `club_posts` | `clubs.about` (NOT `description`), filter `is_active = true`. Posts: `club_posts.body` (NOT `content`), `author_id`. |
 | **Jobs** | `jobs` & `job_applications` | **NO status column on jobs**. Removed jobs have `deleted_at IS NOT NULL`. Withdraw a job by setting `deleted_at = now()`. Types: `internship`, `tuition`, `on_campus`, `part_time`, `full_time`, `freelance`. Applications tracked in `job_applications` (`submitted`, `viewed`, `shortlisted`, `rejected`) with RLS & notification triggers. Storage bucket `job-circulars` (circulars uploaded to `{user_id}/*`, student resumes uploaded to `resumes/{user_id}/*`). Poster authorization verified via `can_post_jobs()` RPC. Notifications use `sector = 'jobs'`. |
 | **Reports** | `reports` | Columns: `code`, `reporter_id`, `assigned_staff_id`, `status` (`'Open'`, `'In Progress'`, `'Resolved'`, `'Rejected'`, `'Closed'`). Trade assignment matches `profiles.expertise`. |
@@ -1226,6 +1225,34 @@ The Campus Announcements architecture is transformed from a manual posting board
   - Enforces mandatory caller authentication: verifies either the database cron secret (`app_config.sync_secret`) or valid authenticated user JWT (`supabase.auth.getUser`).
   - Rejects unauthorized invocations with 401 Unauthorized.
   - Enforces 90-second cooldown throttle; only administrative users (`profile.role === 'admin'`) or verified cron jobs can force bypass.
+
+---
+
+## 32. Events 360 & Automated BUBT Event Sync Architecture
+
+### 32.1 Automated BUBT Official Event Crawler (`sync-events`)
+- **Portal Endpoint:** `https://www.bubt.edu.bd/news` serves as BUBT's primary public event hub for academic research weeks, club committee meetings, conferences, seminars, farewell receptions, and sports tournaments.
+- **Engine Execution:** Supabase Edge Function `sync-events` parses event articles, extracting high-resolution promotional flyers from `https://www.bubt.edu.bd/storage/news/...`, titles, dates, descriptions, and article URLs.
+- **Auto-Categorization:** Maps keywords to standard campus categories: `Academic`, `Cultural`, `Sports`, `Club`, or `Career`.
+- **Club Linking:** Automatically scans event text against BUBT's 16 active clubs, linking `events.club_id` to the matching club in the `clubs` table.
+- **Cron Scheduling:** Migration `20261020010000_events_sync_cron.sql` configures `auto-sync-bubt-events` to run every 30 minutes between 02:00 and 16:00 UTC (08:00 AM to 10:00 PM Dhaka time).
+- **Audit Logging:** Every sync run is logged in `event_sync_logs` with duration, total scanned, new additions, and error tracking.
+
+### 32.2 4-Tier Real-Time Status & Dhaka Time Engine (`eventsService.ts`)
+- **Real-Time Statuses:**
+  - `Ongoing` (Live / In Progress): Displays green pulsing badge when current time is between event start and end time.
+  - `Today`: Amber badge showing countdown (e.g. `Starts in 2h`).
+  - `Upcoming`: Blue badge indicating days until event (e.g. `Tomorrow`, `In 3 days`).
+  - `Ended`: Slate badge for completed campus programs.
+- **Calculation Precision:** Uses `Asia/Dhaka` timezone date/time conversions to ensure midnight transitions match Bangladesh Standard Time (UTC+6).
+
+### 32.3 Digital BUBT Event Pass & Student Utilities
+- **Personalized Entry Pass:** Modal on `EventDetailScreen` generates a varsity-branded admission ticket featuring Student Name, Student ID, Intake, Event Title, Date, Venue, and verifiable QR token (`PASS-EVT-***-***`) for door check-in at BUBT Auditorium or Hall.
+- **One-Tap Event Bookmarks:** Backed by `event_bookmarks` table and atomic `toggle_event_bookmark(p_event_id)` RPC with instant optimistic updates and dedicated "Saved" tab on `EventsBrowseScreen`.
+- **Flyer Poster Integration:** Full cover image resolution for both synced news flyers and mobile-uploaded posters via `BUCKETS.photos` (`events/{user_id}/*`).
+- **Native Sharing:** One-tap OS share sheet formatting campus event title, schedule, venue, and official link.
+- **Club Integration:** Tapping an event organizer opens the associated club profile (`ClubDetailScreen`); club detail lists upcoming club events.
+
 
 
 

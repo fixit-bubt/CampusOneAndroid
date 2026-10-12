@@ -50,8 +50,19 @@ export interface AnnouncementBookmark {
   created_at: string;
 }
 
+export interface EventBookmark {
+  user_id: string;
+  event_id: string;
+  created_at: string;
+}
+
 export type Event = Omit<Tables<'events'>, 'category'> & {
   category: 'Academic' | 'Cultural' | 'Sports' | 'Club' | 'Career';
+  source?: string;
+  external_id?: string | null;
+  external_url?: string | null;
+  tags?: string[] | null;
+  deleted_at?: string | null;
 };
 
 export type Listing = Omit<Tables<'listings'>, 'condition' | 'category' | 'status'> & {
