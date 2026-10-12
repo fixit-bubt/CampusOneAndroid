@@ -741,9 +741,7 @@ export function DirectoryScreen({ route, navigation }: any) {
                         ]}
                         numberOfLines={1}
                       >
-                        {classmatesOnly
-                          ? `My Sec (${profile!.intake}-${profile!.section})`
-                          : `✨ My Sec (${profile!.intake}-${profile!.section})`}
+                        {`My Sec (${profile!.intake}-${profile!.section})`}
                       </Text>
                     </TouchableOpacity>
                   ) : (

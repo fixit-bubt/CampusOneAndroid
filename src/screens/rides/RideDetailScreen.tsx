@@ -13,6 +13,8 @@ import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
+import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
+import { StatusBadge } from '../../components/ui/StatusBadge';
 import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { fetchPeople } from '../../services/peopleService';
@@ -24,13 +26,6 @@ import { openUrl, waHref } from '../../utils/link';
 
 const RIDE_COLOR = SectorColors.ride;
 const RIDE_BG    = `${SectorColors.ride}1e`;
-
-const VEHICLE_META: Record<string, { icon: string; label: string }> = {
-  Car:      { icon: '🚗', label: 'Car'      },
-  CNG:      { icon: '🛺', label: 'CNG'      },
-  Bike:     { icon: '🏍️', label: 'Bike'     },
-  Rickshaw: { icon: '🚲', label: 'Rickshaw' },
-};
 
 function formatDepartureLabel(dateStr: string, timeStr: string, t: any): string {
   const isToday = dateStr === localToday();
@@ -406,7 +401,6 @@ export function RideDetailScreen({ route, navigation }: any) {
   const seatsLeft = (ride.seats_total ?? 0) - takenCount;
   const isFull = seatsLeft <= 0 && !requested && !isPassengerRequest;
   const departureText = formatDepartureLabel(ride.date, ride.time, t);
-  const vMeta = VEHICLE_META[ride.vehicle] ?? { icon: '🚗', label: ride.vehicle };
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -429,23 +423,17 @@ export function RideDetailScreen({ route, navigation }: any) {
               {ride.origin} → {ride.destination}
             </Text>
             <View style={styles.badgeRow}>
-              {/* Type pill */}
-              <View style={[styles.pill, { backgroundColor: isPassengerRequest ? (isDark ? 'rgba(139, 92, 246, 0.2)' : '#f3effe') : RIDE_BG }]}>
-                <Text style={[styles.pillTxt, { color: isPassengerRequest ? (isDark ? '#c4b5fd' : '#7c3aed') : RIDE_COLOR, fontFamily: FontFamily.jakartaBold }]}>
-                  {isPassengerRequest ? '🙋 Need Ride' : '🚗 Offer'}
-                </Text>
-              </View>
-              {/* Vehicle pill */}
-              <View style={[styles.pill, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : C.surface2, flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
-                {ride.vehicle === 'Rickshaw' ? (
-                  <MaterialCommunityIcons name="rickshaw" size={13} color={C.text2} />
-                ) : (
-                  <Text style={{ fontSize: 11 }}>{vMeta.icon}</Text>
-                )}
-                <Text style={[styles.pillTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                  {vMeta.label}
-                </Text>
-              </View>
+              <StatusBadge
+                variant="role"
+                value={isPassengerRequest ? 'request' : 'offer'}
+                label={isPassengerRequest ? (t.rides2.needRide ?? 'Need Ride') : (t.rides2.offers ?? 'Offer')}
+                size="sm"
+              />
+              <StatusBadge
+                variant="vehicle"
+                value={ride.vehicle}
+                size="sm"
+              />
               {/* Direction pill */}
               <View style={[styles.pill, { backgroundColor: RIDE_BG }]}>
                 <Text style={[styles.pillTxt, { color: RIDE_COLOR, fontFamily: FontFamily.jakartaBold }]}>
@@ -460,9 +448,12 @@ export function RideDetailScreen({ route, navigation }: any) {
                 </View>
               ) : null}
             </View>
-            <Text style={[styles.subTime, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-              🕒 {departureText}
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+              <Feather name="clock" size={12} color={C.textMuted} style={{ marginRight: 4 }} />
+              <Text style={[styles.subTime, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                {departureText}
+              </Text>
+            </View>
           </View>
         </View>
 

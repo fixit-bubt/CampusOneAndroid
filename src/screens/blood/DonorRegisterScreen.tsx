@@ -311,9 +311,9 @@ export function DonorRegisterScreen({ navigation }: any) {
         </Text>
         <View style={styles.urgencyPrefGrid}>
           {[
-            { id: 'urgent_only', label: '🚨 Urgent Only', desc: 'Critical emergencies, trauma & ICU only' },
-            { id: 'today_plus',  label: '⚡ Urgent & Today', desc: 'Emergencies and requests needed within today' },
-            { id: 'all',         label: '📅 All Requests', desc: 'All matching requests including this week' },
+            { id: 'urgent_only', label: 'Urgent Only', icon: 'alert-triangle' as const, fg: C.danger, desc: 'Critical emergencies, trauma & ICU only' },
+            { id: 'today_plus',  label: 'Urgent & Today', icon: 'clock' as const, fg: C.warn, desc: 'Emergencies and requests needed within today' },
+            { id: 'all',         label: 'All Requests', icon: 'calendar' as const, fg: C.brand, desc: 'All matching requests including this week' },
           ].map(opt => {
             const on = alertUrgency === opt.id;
             return (
@@ -334,6 +334,12 @@ export function DonorRegisterScreen({ navigation }: any) {
                   <View style={[styles.urgencyRadioDot, { borderColor: on ? SectorColors.blood : C.textMuted }]}>
                     {on && <View style={[styles.urgencyRadioInner, { backgroundColor: SectorColors.blood }]} />}
                   </View>
+                  <Feather
+                    name={opt.icon}
+                    size={14}
+                    color={on ? SectorColors.blood : opt.fg}
+                    style={{ marginRight: 6 }}
+                  />
                   <Text style={[styles.urgencyPrefTitle, { color: on ? SectorColors.blood : C.text, fontFamily: FontFamily.jakartaBold }]}>
                     {opt.label}
                   </Text>

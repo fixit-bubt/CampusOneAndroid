@@ -12,6 +12,8 @@ import { useT } from '../../i18n';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
+import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
+import { StatusBadge } from '../../components/ui/StatusBadge';
 import { useToast } from '../../components/ui/Toast';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { FontFamily, Layout, SectorColors } from '../../theme';
@@ -37,13 +39,6 @@ const TAB_COLORS: Record<TabKey, { fg: string }> = {
   to:   { fg: '#16a34a' },
   from: { fg: '#2563eb' },
   mine: { fg: RIDE_COLOR },
-};
-
-const VEHICLE_META: Record<string, { icon: string; label: string }> = {
-  Car:      { icon: '🚗', label: 'Car'      },
-  CNG:      { icon: '🛺', label: 'CNG'      },
-  Bike:     { icon: '🏍️', label: 'Bike'     },
-  Rickshaw: { icon: '🚲', label: 'Rickshaw' },
 };
 
 function isRideDeparted(dateStr: string, timeStr: string): boolean {
@@ -298,9 +293,9 @@ export function RidesScreen({ navigation }: any) {
   });
 
   const POST_FILTER_TABS = useMemo(() => [
-    { id: 'all' as const,     label: t.common.all ?? 'All',            icon: undefined, color: C.text,                border: isDark ? `${C.brand}55` : `${C.brand}35` },
-    { id: 'offer' as const,   label: t.rides2.offers ?? 'Offers',      icon: '🚗',      color: RIDE_COLOR,            border: isDark ? `${RIDE_COLOR}55` : `${RIDE_COLOR}35` },
-    { id: 'request' as const, label: t.rides2.needRide ?? 'Need Ride', icon: '🙋',      color: isDark ? '#c4b5fd' : '#7c3aed', border: isDark ? 'rgba(139, 92, 246, 0.55)' : 'rgba(139, 92, 246, 0.35)' },
+    { id: 'all' as const,     label: t.common.all ?? 'All',            iconConfig: undefined,                                           color: C.text,                border: isDark ? `${C.brand}55` : `${C.brand}35` },
+    { id: 'offer' as const,   label: t.rides2.offers ?? 'Offers',      iconConfig: { family: 'mci' as const, name: 'car-side' },        color: RIDE_COLOR,            border: isDark ? `${RIDE_COLOR}55` : `${RIDE_COLOR}35` },
+    { id: 'request' as const, label: t.rides2.needRide ?? 'Need Ride', iconConfig: { family: 'feather' as const, name: 'navigation' }, color: isDark ? '#c4b5fd' : '#7c3aed', border: isDark ? 'rgba(139, 92, 246, 0.55)' : 'rgba(139, 92, 246, 0.35)' },
   ], [t, C.text, C.brand, isDark]);
 
   const activePostFilter = POST_FILTER_TABS.find(item => item.id === postTypeFilter) ?? POST_FILTER_TABS[0];
@@ -437,8 +432,14 @@ export function RidesScreen({ navigation }: any) {
               onPress={() => setPostTypeFilter(item.id)}
               activeOpacity={0.75}
             >
-              {item.icon ? (
-                <Text style={styles.postFilterIcon}>{item.icon}</Text>
+              {item.iconConfig ? (
+                <AnimatedIcon
+                  family={item.iconConfig.family}
+                  name={item.iconConfig.name}
+                  size={13}
+                  color={active ? item.color : C.textMuted}
+                  style={{ marginRight: 5 }}
+                />
               ) : null}
               <Text
                 style={[
@@ -548,7 +549,6 @@ export function RidesScreen({ navigation }: any) {
               const seatsLeft = r.seats_total - taken;
               const isFull = seatsLeft <= 0 && !isRequested;
               const departureText = formatDepartureLabel(r.date, r.time, t);
-              const vMeta = VEHICLE_META[r.vehicle] ?? { icon: '🚗', label: r.vehicle };
 
               return (
                 <TouchableOpacity
@@ -565,29 +565,17 @@ export function RidesScreen({ navigation }: any) {
                       </Text>
                       {/* Vehicle & Type & Time Row */}
                       <View style={styles.subMetaRow}>
-                        {isPassengerRequest ? (
-                          <View style={[styles.typePill, { backgroundColor: isDark ? 'rgba(139, 92, 246, 0.2)' : '#f3effe' }]}>
-                            <Text style={[styles.typePillTxt, { color: isDark ? '#c4b5fd' : '#7c3aed', fontFamily: FontFamily.jakartaBold }]}>
-                              🙋 Need Ride
-                            </Text>
-                          </View>
-                        ) : (
-                          <View style={[styles.typePill, { backgroundColor: RIDE_BG }]}>
-                            <Text style={[styles.typePillTxt, { color: RIDE_COLOR, fontFamily: FontFamily.jakartaBold }]}>
-                              🚗 Offer
-                            </Text>
-                          </View>
-                        )}
-                        <View style={[styles.vehPill, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : C.surface2, flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
-                          {r.vehicle === 'Rickshaw' ? (
-                            <MaterialCommunityIcons name="rickshaw" size={13} color={C.text2} />
-                          ) : (
-                            <Text style={{ fontSize: 11 }}>{vMeta.icon}</Text>
-                          )}
-                          <Text style={[styles.vehTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                            {vMeta.label}
-                          </Text>
-                        </View>
+                        <StatusBadge
+                          variant="role"
+                          value={isPassengerRequest ? 'request' : 'offer'}
+                          label={isPassengerRequest ? (t.rides2.needRide ?? 'Need Ride') : (t.rides2.offers ?? 'Offer')}
+                          size="sm"
+                        />
+                        <StatusBadge
+                          variant="vehicle"
+                          value={r.vehicle}
+                          size="sm"
+                        />
                         <View style={[styles.dirPill, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : C.surface2 }]}>
                           <Text style={[styles.dirPillTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
                             {r.direction === 'To Campus' ? (t.rides2.toCampus ?? 'To Campus') : (t.rides2.fromCampus ?? 'From Campus')}

@@ -180,10 +180,10 @@ export async function fetchUserEventBookmarks(userId: string): Promise<Set<strin
  */
 export async function shareEventDetails(event: Event): Promise<void> {
   const message = [
-    `🎓 BUBT Campus Event: ${event.title}`,
-    `📅 Date: ${event.date} (${event.time}${event.end_time ? ' - ' + event.end_time : ''})`,
-    `📍 Venue: ${event.venue}`,
-    `👤 Organizer: ${event.organizer}`,
+    `BUBT Campus Event: ${event.title}`,
+    `Date: ${event.date} (${event.time}${event.end_time ? ' - ' + event.end_time : ''})`,
+    `Venue: ${event.venue}`,
+    `Organizer: ${event.organizer}`,
     '',
     event.description ? `${event.description.slice(0, 150)}...` : '',
     '',

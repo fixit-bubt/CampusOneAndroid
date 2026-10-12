@@ -13,6 +13,7 @@ import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { SkeletonList, LoadError } from '../../components/ui/LoadState';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
+import { StatusBadge } from '../../components/ui/StatusBadge';
 import { FontFamily, Layout, SectorColors, Accent } from '../../theme';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
@@ -21,8 +22,6 @@ import {
   donorEligibility,
   isBloodCompatible,
   parseBloodRequestMeta,
-  getMedicalReasonIcon,
-  getAffiliationIcon,
 } from '../../utils/blood';
 import { scheduleRechargedReminder } from '../../utils/bloodReminder';
 import { localToday, formatRelativeTime } from '../../utils/format';
@@ -972,18 +971,11 @@ export function BloodScreen({ route, navigation }: any) {
                                 },
                               ]}
                             >
-                              <Text
-                                style={[
-                                  styles.affBadgeTxt,
-                                  {
-                                    color: isDark ? '#38bdf8' : '#0284c7',
-                                    fontFamily: FontFamily.jakartaBold,
-                                  },
-                                ]}
-                                numberOfLines={1}
-                              >
-                                {getAffiliationIcon(meta.affiliation)} {meta.affiliation}
-                              </Text>
+                              <StatusBadge
+                                variant="affiliation"
+                                value={meta.affiliation}
+                                size="sm"
+                              />
                             </View>
                           )}
                         </View>
@@ -1003,82 +995,36 @@ export function BloodScreen({ route, navigation }: any) {
                         ) : null}
                       </View>
 
-                      {/* Urgency Pill */}
-                      <View style={[styles.urgencyPill, { backgroundColor: urgencyBg }]}>
-                        <View style={[styles.urgencyDot, { backgroundColor: urgencyFg }]} />
-                        <Text
-                          style={[
-                            styles.urgencyTxt,
-                            { color: urgencyFg, fontFamily: FontFamily.jakartaBold },
-                          ]}
-                        >
-                          {r.urgency === 'Urgent' ? '🚨 Urgent' : r.urgency === 'Today' ? '⏰ Today' : r.urgency}
-                        </Text>
-                      </View>
+                      {/* Urgency Badge */}
+                      <StatusBadge
+                        variant="urgency"
+                        value={r.urgency}
+                        size="sm"
+                        pulse={r.urgency === 'Urgent'}
+                      />
                     </View>
 
                     {/* Clinical Details Row: Bags Needed Badge + Medical Case Reason Badge + Platelets */}
                     <View style={styles.clinicalBadgesRow}>
-                      <View
-                        style={[
-                          styles.unitBadge,
-                          {
-                            backgroundColor: isDark ? 'rgba(214, 61, 53, 0.16)' : 'rgba(214, 61, 53, 0.10)',
-                            borderColor: isDark ? 'rgba(214, 61, 53, 0.35)' : 'rgba(214, 61, 53, 0.24)',
-                          },
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.unitBadgeTxt,
-                            { color: SectorColors.blood, fontFamily: FontFamily.jakartaBold },
-                          ]}
-                        >
-                          🩸 {meta.unitCount} {meta.unitCount === 1 ? 'Bag Needed' : 'Bags Needed'}
-                        </Text>
-                      </View>
+                      <StatusBadge
+                        variant="bags"
+                        count={meta.unitCount}
+                        size="sm"
+                      />
 
                       {meta.medicalReason && (
-                        <View
-                          style={[
-                            styles.caseBadge,
-                            {
-                              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : C.surface2,
-                              borderColor: C.border,
-                            },
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.caseBadgeTxt,
-                              { color: C.text2, fontFamily: FontFamily.jakartaMedium },
-                            ]}
-                            numberOfLines={1}
-                          >
-                            {getMedicalReasonIcon(meta.medicalReason)} {meta.medicalReason}
-                          </Text>
-                        </View>
+                        <StatusBadge
+                          variant="medical"
+                          value={meta.medicalReason}
+                          size="sm"
+                        />
                       )}
 
                       {meta.isPlatelet && (
-                        <View
-                          style={[
-                            styles.caseBadge,
-                            {
-                              backgroundColor: isDark ? 'rgba(234, 179, 8, 0.14)' : 'rgba(234, 179, 8, 0.10)',
-                              borderColor: isDark ? 'rgba(234, 179, 8, 0.35)' : 'rgba(234, 179, 8, 0.25)',
-                            },
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.caseBadgeTxt,
-                              { color: isDark ? '#facc15' : '#b45309', fontFamily: FontFamily.jakartaBold },
-                            ]}
-                          >
-                            ⚡ Platelets (প্লাটিলেট)
-                          </Text>
-                        </View>
+                        <StatusBadge
+                          variant="platelet"
+                          size="sm"
+                        />
                       )}
                     </View>
 

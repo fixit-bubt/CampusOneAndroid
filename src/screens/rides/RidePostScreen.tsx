@@ -11,6 +11,7 @@ import { useT } from '../../i18n';
 import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
+import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
 import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { localToday, nowDhakaMinutes, formatDate, formatTime } from '../../utils/format';
@@ -18,11 +19,11 @@ import type { Ride } from '../../types/database';
 
 const RIDE_COLOR = SectorColors.ride;
 
-const VEHICLES: { id: Ride['vehicle']; label: string; icon: string; maxSeats: number; defaultSeats: number }[] = [
-  { id: 'Rickshaw', label: 'Rickshaw', icon: '🚲', maxSeats: 2, defaultSeats: 1 },
-  { id: 'Bike',     label: 'Bike',     icon: '🏍️', maxSeats: 1, defaultSeats: 1 },
-  { id: 'CNG',      label: 'CNG',      icon: '🛺', maxSeats: 3, defaultSeats: 2 },
-  { id: 'Car',      label: 'Car',      icon: '🚗', maxSeats: 4, defaultSeats: 3 },
+const VEHICLES: { id: Ride['vehicle']; label: string; iconName: string; maxSeats: number; defaultSeats: number }[] = [
+  { id: 'Rickshaw', label: 'Rickshaw', iconName: 'rickshaw', maxSeats: 2, defaultSeats: 1 },
+  { id: 'Bike',     label: 'Bike',     iconName: 'motorbike', maxSeats: 1, defaultSeats: 1 },
+  { id: 'CNG',      label: 'CNG',      iconName: 'taxi', maxSeats: 3, defaultSeats: 2 },
+  { id: 'Car',      label: 'Car',      iconName: 'car-side', maxSeats: 4, defaultSeats: 3 },
 ];
 
 export interface CommuteAreaItem {
@@ -550,16 +551,14 @@ export function RidePostScreen({ route, navigation }: any) {
                   onPress={() => handleVehicleSelect(v.id)}
                   activeOpacity={0.75}
                 >
-                  {v.id === 'Rickshaw' ? (
-                    <MaterialCommunityIcons
-                      name="rickshaw"
-                      size={26}
-                      color={on ? accentColor : (isDark ? '#a3e635' : '#4d7c0f')}
-                      style={{ marginBottom: 4 }}
-                    />
-                  ) : (
-                    <Text style={styles.vehicleIcon}>{v.icon}</Text>
-                  )}
+                  <AnimatedIcon
+                    family="mci"
+                    name={v.iconName}
+                    size={26}
+                    color={on ? accentColor : (isDark ? C.text2 : C.text)}
+                    animation={on ? 'spring' : 'none'}
+                    style={{ marginBottom: 5 }}
+                  />
                   <Text style={[styles.vehicleLabel, { color: on ? accentColor : C.text, fontFamily: FontFamily.jakartaBold }]}>
                     {v.label}
                   </Text>

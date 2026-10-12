@@ -54,7 +54,7 @@ function jobStatusTone(C: any, t: any, k: JobStatus, isDark?: boolean): { label:
 
 function appStatusTone(C: any, t: any, status: JobApplication['status']) {
   switch (status) {
-    case 'shortlisted': return { label: t.jobs2?.candidateShortlisted ?? 'Shortlisted 🎉', fg: C.success, bg: C.successBg };
+    case 'shortlisted': return { label: t.jobs2?.candidateShortlisted ?? 'Shortlisted', fg: C.success, bg: C.successBg };
     case 'viewed':      return { label: t.jobs2?.candidateViewed ?? 'Viewed by Recruiter', fg: C.info, bg: C.infoBg };
     case 'rejected':    return { label: t.jobs2?.candidateRejected ?? 'Not Selected', fg: Accent.slate, bg: 'rgba(100, 116, 139, 0.12)' };
     default:            return { label: t.jobs2?.applicationSubmitted ?? 'Application Submitted', fg: C.brand, bg: `${SectorColors.jobs}1a` };
@@ -309,7 +309,7 @@ export function JobDetailScreen({ route, navigation }: any) {
       return;
     }
     setJobApplications(prev => prev.map(a => a.id === appId ? { ...a, status: newStatus } : a));
-    toast({ type: 'success', title: newStatus === 'shortlisted' ? 'Candidate Shortlisted 🎉' : 'Candidate Status Updated' });
+    toast({ type: 'success', title: newStatus === 'shortlisted' ? 'Candidate Shortlisted' : 'Candidate Status Updated' });
   }
 
   if (!job) {
@@ -560,7 +560,7 @@ export function JobDetailScreen({ route, navigation }: any) {
             </View>
             <Text style={[styles.appliedBannerMsg, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>
               {myApplication.status === 'shortlisted'
-                ? '🎉 Congratulations! You have been shortlisted for this position. The recruiter may contact you via WhatsApp, Phone, or In-App Chat.'
+                ? 'Congratulations! You have been shortlisted for this position. The recruiter may contact you via WhatsApp, Phone, or In-App Chat.'
                 : myApplication.status === 'viewed'
                 ? 'The recruiter has viewed your application.'
                 : myApplication.status === 'rejected'

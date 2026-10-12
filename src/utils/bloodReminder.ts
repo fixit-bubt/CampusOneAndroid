@@ -17,7 +17,7 @@ export async function cancelRechargedReminder(): Promise<void> {
 export async function scheduleRechargedReminder(
   lastDonatedDate: string,
   gender?: 'male' | 'female' | 'Male' | 'Female' | null,
-  titleText: string = "Hero, you're fully recharged! 🩸",
+  titleText: string = "Hero, you're fully recharged!",
   bodyText: string = "Your blood reserves have fully replenished. You are officially eligible to save a life again."
 ): Promise<void> {
   await cancelRechargedReminder();

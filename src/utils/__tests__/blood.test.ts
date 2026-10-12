@@ -107,10 +107,10 @@ describe('parseBloodRequestMeta', () => {
   });
 
   it('maps medical reasons and affiliations to corresponding icons', () => {
-    expect(getMedicalReasonIcon('Emergency Surgery')).toBe('🚨');
-    expect(getMedicalReasonIcon('Dengue / Low Platelets')).toBe('⚡');
-    expect(getMedicalReasonIcon('Road Accident / Trauma')).toBe('💥');
-    expect(getAffiliationIcon('BUBT Student')).toBe('🎓');
-    expect(getAffiliationIcon('Faculty / Staff')).toBe('🏢');
+    expect(getMedicalReasonIcon('Emergency Surgery')).toBe('alert-triangle');
+    expect(getMedicalReasonIcon('Dengue / Low Platelets')).toBe('zap');
+    expect(getMedicalReasonIcon('Road Accident / Trauma')).toBe('alert-circle');
+    expect(getAffiliationIcon('BUBT Student')).toBe('book-open');
+    expect(getAffiliationIcon('Faculty / Staff')).toBe('briefcase');
   });
 });

@@ -105,22 +105,23 @@ export function parseBloodRequestMeta(
 }
 
 export function getMedicalReasonIcon(reason?: string | null): string {
-  if (!reason) return '🩺';
+  if (!reason) return 'activity';
   const r = reason.toLowerCase();
-  if (r.includes('surgery')) return '🚨';
-  if (r.includes('dengue') || r.includes('platelet')) return '⚡';
-  if (r.includes('accident') || r.includes('trauma')) return '💥';
-  if (r.includes('childbirth') || r.includes('c-section') || r.includes('cesarean')) return '👶';
-  if (r.includes('thalassemia')) return '🩸';
-  if (r.includes('icu') || r.includes('critical')) return '🏥';
-  return '🩺';
+  if (r.includes('surgery')) return 'alert-triangle';
+  if (r.includes('dengue') || r.includes('platelet')) return 'zap';
+  if (r.includes('accident') || r.includes('trauma')) return 'alert-circle';
+  if (r.includes('childbirth') || r.includes('c-section') || r.includes('cesarean')) return 'heart';
+  if (r.includes('thalassemia')) return 'droplet';
+  if (r.includes('icu') || r.includes('critical')) return 'plus-circle';
+  return 'activity';
 }
 
 export function getAffiliationIcon(affiliation?: string | null): string {
-  if (!affiliation) return '👤';
+  if (!affiliation) return 'user';
   const a = affiliation.toLowerCase();
-  if (a.includes('student')) return '🎓';
-  if (a.includes('faculty') || a.includes('staff')) return '🏢';
-  if (a.includes('family')) return '👨‍👩‍👧';
-  return '👤';
+  if (a.includes('student')) return 'book-open';
+  if (a.includes('faculty') || a.includes('staff')) return 'briefcase';
+  if (a.includes('family')) return 'users';
+  return 'user';
 }
+

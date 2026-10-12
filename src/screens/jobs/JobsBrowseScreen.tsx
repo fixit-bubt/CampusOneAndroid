@@ -44,7 +44,7 @@ function jobStatusTone(C: any, t: any, k: JobStatus, isDark?: boolean): { label:
 
 function appStatusTone(C: any, t: any, status: JobApplication['status']) {
   switch (status) {
-    case 'shortlisted': return { label: t.jobs2?.candidateShortlisted ?? 'Shortlisted 🎉', fg: C.success, bg: C.successBg };
+    case 'shortlisted': return { label: t.jobs2?.candidateShortlisted ?? 'Shortlisted', fg: C.success, bg: C.successBg };
     case 'viewed':      return { label: t.jobs2?.candidateViewed ?? 'Viewed by Recruiter', fg: C.info, bg: C.infoBg };
     case 'rejected':    return { label: t.jobs2?.candidateRejected ?? 'Not Selected', fg: Accent.slate, bg: 'rgba(100, 116, 139, 0.12)' };
     default:            return { label: t.jobs2?.applicationSubmitted ?? 'Submitted', fg: C.brand, bg: `${SectorColors.jobs}1a` };
@@ -758,17 +758,20 @@ export function JobsBrowseScreen({ navigation }: any) {
                       {/* Footer Info Row */}
                       <View style={styles.cardFooter}>
                         {daysLeft ? (
-                          <Text
-                            style={[
-                              styles.deadlineTxt,
-                              {
-                                color: status === 'closing' ? C.warn : C.textMuted,
-                                fontFamily: FontFamily.jakartaSemiBold,
-                              },
-                            ]}
-                          >
-                            🕒 {daysLeft}
-                          </Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Feather name="clock" size={11} color={status === 'closing' ? C.warn : C.textMuted} style={{ marginRight: 3 }} />
+                            <Text
+                              style={[
+                                styles.deadlineTxt,
+                                {
+                                  color: status === 'closing' ? C.warn : C.textMuted,
+                                  fontFamily: FontFamily.jakartaSemiBold,
+                                },
+                              ]}
+                            >
+                              {daysLeft}
+                            </Text>
+                          </View>
                         ) : null}
                       </View>
                     </View>

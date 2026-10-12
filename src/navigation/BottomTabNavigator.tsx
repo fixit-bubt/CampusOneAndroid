@@ -9,6 +9,7 @@ import { useTheme } from '../hooks/useTheme';
 import { useAuth } from '../store/authStore';
 import { useMessages } from '../store/messagesStore';
 import { useT } from '../i18n';
+import { AnimatedIcon } from '../components/ui/AnimatedIcon';
 import { FontFamily, FontSize, Layout } from '../theme';
 import type { BottomTabParams } from '../types/navigation';
 
@@ -80,8 +81,13 @@ export function BottomTabNavigator() {
             fontSize: FontSize.xs,
           },
           tabBarLabel: TAB_LABEL[key] ?? route.name,
-          tabBarIcon: ({ color, size }) => (
-            <Feather name={TAB_ICON[key] ?? 'circle'} size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <AnimatedIcon
+              name={TAB_ICON[key] ?? 'circle'}
+              size={size}
+              color={color}
+              animation={focused ? 'spring' : 'none'}
+            />
           ),
         };
       }}

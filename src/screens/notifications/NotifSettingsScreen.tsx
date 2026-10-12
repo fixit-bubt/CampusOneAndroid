@@ -414,9 +414,9 @@ export function NotifSettingsScreen({ navigation }: any) {
                   </Text>
                   <View style={styles.bloodUrgencyRow}>
                     {[
-                      { id: 'urgent_only', label: '🚨 Urgent Only' },
-                      { id: 'today_plus',  label: '⚡ Urgent & Today' },
-                      { id: 'all',         label: '📅 All' },
+                      { id: 'urgent_only', label: 'Urgent Only', icon: 'alert-triangle' as const },
+                      { id: 'today_plus',  label: 'Urgent & Today', icon: 'clock' as const },
+                      { id: 'all',         label: 'All', icon: 'calendar' as const },
                     ].map(opt => {
                       const on = donorUrgency === opt.id;
                       return (
@@ -431,6 +431,12 @@ export function NotifSettingsScreen({ navigation }: any) {
                           onPress={() => saveDonorUrgency(opt.id as any)}
                           activeOpacity={0.75}
                         >
+                          <Feather
+                            name={opt.icon}
+                            size={12}
+                            color={on ? '#fff' : (opt.id === 'urgent_only' ? C.danger : C.text2)}
+                            style={{ marginRight: 4 }}
+                          />
                           <Text
                             style={[
                               styles.urgencyPillTxt,

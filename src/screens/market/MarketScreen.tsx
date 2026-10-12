@@ -450,9 +450,12 @@ export function MarketScreen({ navigation }: any) {
                 </View>
               ) : null}
               {item.meetup_spot ? (
-                <Text style={[styles.spotText, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                  📍 {item.meetup_spot}
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', flexShrink: 1 }}>
+                  <Feather name="map-pin" size={11} color={C.textMuted} style={{ marginRight: 3 }} />
+                  <Text style={[styles.spotText, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                    {item.meetup_spot}
+                  </Text>
+                </View>
               ) : null}
             </View>
           ) : null}

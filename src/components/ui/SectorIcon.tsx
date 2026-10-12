@@ -1,32 +1,39 @@
-import React from 'react';
-import { View, StyleSheet, type ViewStyle } from 'react-native';
-import { useTheme } from '../../hooks/useTheme';
-import { Icon } from './Icon';
+import React, { useRef } from 'react';
+import {
+  Animated,
+  TouchableWithoutFeedback,
+  type ViewStyle,
+} from 'react-native';
 import { SectorColors } from '../../theme';
 import type { SectorKey } from '../../theme';
+import { AnimatedIcon, type IconFamily } from './AnimatedIcon';
 
-// Sector icon mapping.
-const SECTOR_ICON: Record<SectorKey, string> = {
-  reports:   'report',
-  lostfound: 'found',
-  clubs:     'clubs',
-  events:    'events',
-  jobs:      'jobs',
-  announce:  'announce',
-  study:     'study',
-  bus:       'bus',
-  medical:   'medical',
-  market:    'market',
-  ride:      'ride',
-  blood:     'blood',
-  directory: 'directory',
-  prayer:    'moon',
-  faculty:   'faculty',
-  calendar:  'calendar',
-  routines:  'clipboard',
-  coverpage: 'fileText',
-  pdfmaker:  'fileText',
-  messages:  'chat',
+interface SectorIconConfig {
+  name: string;
+  family: IconFamily;
+}
+
+const SECTOR_ICON: Record<SectorKey, SectorIconConfig> = {
+  reports:   { name: 'tool',         family: 'feather' },
+  lostfound: { name: 'search',       family: 'feather' },
+  clubs:     { name: 'users',        family: 'feather' },
+  events:    { name: 'calendar',     family: 'feather' },
+  jobs:      { name: 'briefcase',    family: 'feather' },
+  announce:  { name: 'volume-2',     family: 'feather' },
+  study:     { name: 'book-open',    family: 'feather' },
+  bus:       { name: 'bus-side',     family: 'mci'     },
+  medical:   { name: 'heart',        family: 'feather' },
+  market:    { name: 'shopping-bag', family: 'feather' },
+  ride:      { name: 'navigation',   family: 'feather' },
+  blood:     { name: 'droplet',      family: 'feather' },
+  directory: { name: 'users',        family: 'feather' },
+  prayer:    { name: 'moon',         family: 'feather' },
+  faculty:   { name: 'user-check',   family: 'feather' },
+  calendar:  { name: 'calendar',     family: 'feather' },
+  routines:  { name: 'clipboard',    family: 'feather' },
+  coverpage: { name: 'file-text',    family: 'feather' },
+  pdfmaker:  { name: 'file-pdf-box', family: 'mci'     },
+  messages:  { name: 'message-circle', family: 'feather' },
 };
 
 const SIZE_MAP = { sm: 32, md: 42, lg: 58 } as const;
@@ -35,10 +42,12 @@ const RADIUS_MAP = { sm: 10, md: 13, lg: 18 } as const;
 
 type SecSize = 'sm' | 'md' | 'lg';
 
-interface SectorIconProps {
+export interface SectorIconProps {
   sector: SectorKey;
   size?: SecSize;
   dark?: boolean;
+  interactive?: boolean;
+  onPress?: () => void;
   style?: ViewStyle;
 }
 
@@ -59,17 +68,45 @@ function hexWithAlpha(hex: string, alpha: number): string {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
-export function SectorIcon({ sector, size = 'md', dark = false, style }: SectorIconProps) {
-  const baseFg = SectorColors[sector];
+export function SectorIcon({
+  sector,
+  size = 'md',
+  dark = false,
+  interactive = false,
+  onPress,
+  style,
+}: SectorIconProps) {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const baseFg = SectorColors[sector] ?? '#3b82f6';
   const fg = dark ? lightenHex(baseFg) : baseFg;
   const bg = hexWithAlpha(baseFg, dark ? 0.18 : 0.12);
 
   const dim = SIZE_MAP[size];
   const iconSize = ICON_SIZE_MAP[size];
   const radius = RADIUS_MAP[size];
+  const iconConfig = SECTOR_ICON[sector] ?? { name: 'help-circle', family: 'feather' };
 
-  return (
-    <View
+  const handlePressIn = () => {
+    Animated.spring(scale, {
+      toValue: 0.90,
+      tension: 300,
+      friction: 12,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scale, {
+      toValue: 1,
+      tension: 260,
+      friction: 10,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const content = (
+    <Animated.View
       style={[
         {
           width: dim,
@@ -78,11 +115,31 @@ export function SectorIcon({ sector, size = 'md', dark = false, style }: SectorI
           backgroundColor: bg,
           alignItems: 'center',
           justifyContent: 'center',
+          transform: [{ scale }],
         },
         style,
       ]}
     >
-      <Icon name={SECTOR_ICON[sector]} size={iconSize} color={fg} />
-    </View>
+      <AnimatedIcon
+        family={iconConfig.family}
+        name={iconConfig.name}
+        size={iconSize}
+        color={fg}
+      />
+    </Animated.View>
   );
+
+  if (interactive || onPress) {
+    return (
+      <TouchableWithoutFeedback
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+      >
+        {content}
+      </TouchableWithoutFeedback>
+    );
+  }
+
+  return content;
 }

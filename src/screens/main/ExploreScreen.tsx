@@ -8,6 +8,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
 import { useAuth } from '../../store/authStore';
 import { SectorIcon } from '../../components/ui/SectorIcon';
+import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
 import { CollapsibleSection } from '../../components/ui/CollapsibleSection';
 import { FontFamily, Layout, SectorColors } from '../../theme';
 import type { SectorKey } from '../../theme';
@@ -158,7 +159,7 @@ export function ExploreScreen({ navigation }: any) {
             activeOpacity={0.75}
           >
             <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
-              <Feather name="message-circle" size={20} color={C.brand} />
+              <AnimatedIcon family="feather" name="message-circle" size={20} color={C.brand} animation="spring" />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.cellTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -179,7 +180,7 @@ export function ExploreScreen({ navigation }: any) {
             activeOpacity={0.75}
           >
             <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
-              <Feather name="alert-triangle" size={20} color={C.brand} />
+              <AnimatedIcon family="feather" name="alert-triangle" size={20} color={C.brand} animation="spring" />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.cellTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -208,7 +209,7 @@ export function ExploreScreen({ navigation }: any) {
               activeOpacity={0.75}
             >
               <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
-                <Feather name="percent" size={20} color={C.brand} />
+                <AnimatedIcon family="feather" name="percent" size={20} color={C.brand} animation="spring" />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.cellTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -228,7 +229,7 @@ export function ExploreScreen({ navigation }: any) {
                 activeOpacity={0.75}
               >
                 <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
-                  <Feather name="file-plus" size={20} color={SectorColors.pdfmaker} />
+                  <AnimatedIcon family="feather" name="file-plus" size={20} color={SectorColors.pdfmaker} animation="spring" />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.cellTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>

@@ -14,6 +14,7 @@ import { Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
+import { AnimatedIcon } from '../ui/AnimatedIcon';
 import { FontFamily, SectorColors } from '../../theme';
 
 export interface FrequentTool {
@@ -186,7 +187,7 @@ export function HomeFrequentTools() {
                   },
                 ]}
               >
-                <Feather name={tool.icon} size={18} color={tool.color} />
+                <AnimatedIcon name={tool.icon} size={18} color={tool.color} />
               </View>
               <Text
                 style={[
