@@ -202,9 +202,9 @@ export function MedicalScreen({ navigation }: any) {
 
   const tabs: TabItem<MedicalTab>[] = useMemo(
     () => [
-      { id: 'staff', label: t.medical2.tabStaff, icon: 'users' },
-      { id: 'services', label: t.medical2.tabServices, icon: 'activity' },
-      { id: 'emergency', label: t.medical2.tabEmergency, icon: 'alert-triangle' },
+      { id: 'staff', label: t.medical2.tabStaff },
+      { id: 'services', label: t.medical2.tabServices },
+      { id: 'emergency', label: t.medical2.tabEmergency },
     ],
     [t]
   );

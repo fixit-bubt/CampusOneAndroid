@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
   RefreshControl, TextInput, Image, ActivityIndicator, type ViewStyle,
@@ -13,6 +13,7 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { SkeletonList, LoadError } from '../../components/ui/LoadState';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
+import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { FontFamily, Layout, SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { getCache, setCache, CacheKeys } from '../../services/cacheService';
@@ -214,7 +215,8 @@ export function EventsBrowseScreen({ navigation }: any) {
     });
   }, [user?.id]);
 
-  const [tab, setTab] = useState<'upcoming' | 'today' | 'past' | 'saved'>('upcoming');
+  type EventTab = 'upcoming' | 'past' | 'saved';
+  const [tab, setTab] = useState<EventTab>('upcoming');
   const [category, setCategory] = useState('All');
   const [search, setSearch] = useState('');
   const [view, setView] = useState<'list' | 'calendar'>('list');
@@ -342,15 +344,19 @@ export function EventsBrowseScreen({ navigation }: any) {
       })
     : filteredByCat;
 
-  const upcomingList = searchedEvents.filter(e => e.date > todayStr);
-  const todayList = searchedEvents.filter(e => e.date === todayStr);
+  const upcomingList = searchedEvents.filter(e => e.date >= todayStr);
   const pastList = searchedEvents.filter(e => e.date < todayStr).reverse();
   const savedList = searchedEvents.filter(e => savedIds.has(e.id));
 
   let displayList = upcomingList;
-  if (tab === 'today') displayList = todayList;
-  else if (tab === 'past') displayList = pastList;
+  if (tab === 'past') displayList = pastList;
   else if (tab === 'saved') displayList = savedList;
+
+  const EVENT_TABS: TabItem<EventTab>[] = useMemo(() => [
+    { id: 'upcoming', label: 'Upcoming', count: upcomingList.length > 0 ? upcomingList.length : undefined, color: C.brand },
+    { id: 'past',     label: 'Past',     count: pastList.length > 0 ? pastList.length : undefined, color: C.text2 },
+    { id: 'saved',    label: 'Saved',    count: savedList.length > 0 ? savedList.length : undefined, color: Accent.gold },
+  ], [upcomingList.length, pastList.length, savedList.length, C.brand, C.text2]);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -411,55 +417,14 @@ export function EventsBrowseScreen({ navigation }: any) {
         </View>
       </View>
 
-      {/* Status Segment Tabs */}
-      <View style={[styles.chips, { paddingHorizontal: Layout.screenPadding }]}>
-        {(
-          [
-            ['upcoming', 'Upcoming', upcomingList.length],
-            ['today', 'Today', todayList.length],
-            ['past', 'Past', pastList.length],
-            ['saved', 'Saved', savedList.length],
-          ] as const
-        ).map(([id, label, count]) => {
-          const on = tab === id;
-          return (
-            <TouchableOpacity
-              key={id}
-              style={[
-                styles.chip,
-                on
-                  ? { backgroundColor: C.brand, borderColor: C.brand }
-                  : { backgroundColor: C.surface, borderColor: C.border },
-              ]}
-              onPress={() => setTab(id)}
-              activeOpacity={0.75}
-            >
-              <Text
-                style={[
-                  styles.chipText,
-                  { color: on ? C.white : C.text2, fontFamily: FontFamily.jakartaBold },
-                ]}
-              >
-                {label}
-              </Text>
-              <View
-                style={[
-                  styles.countPill,
-                  { backgroundColor: on ? 'rgba(255,255,255,0.25)' : C.surface2 },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.chipCount,
-                    { color: on ? C.white : C.textMuted, fontFamily: FontFamily.jakartaBold },
-                  ]}
-                >
-                  {count}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          );
-        })}
+      {/* Universal Segmented Navigation Standard */}
+      <View style={{ paddingHorizontal: Layout.screenPadding, paddingVertical: 6 }}>
+        <SegmentedTabs<EventTab>
+          tabs={EVENT_TABS}
+          activeTab={tab}
+          onTabChange={setTab}
+          size="sm"
+        />
       </View>
 
       {/* Category Horizontal Filter */}
@@ -644,8 +609,6 @@ export function EventsBrowseScreen({ navigation }: any) {
             <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
               {tab === 'saved'
                 ? 'No saved events'
-                : tab === 'today'
-                ? 'No events today'
                 : `No ${tab} events found`}
             </Text>
             <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
@@ -690,20 +653,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   } as ViewStyle,
   searchInput: { flex: 1, fontSize: 13.5, paddingVertical: 0 } as any,
-  chips: { flexDirection: 'row', gap: 6, paddingVertical: 8 } as ViewStyle,
-  chip: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-    paddingVertical: 7,
-    borderRadius: 12,
-    borderWidth: 1,
-  } as ViewStyle,
-  chipText: { fontSize: 12 } as any,
-  countPill: { paddingHorizontal: 5, paddingVertical: 1, borderRadius: 10 } as ViewStyle,
-  chipCount: { fontSize: 10.5 } as any,
+
   catChips: { flexDirection: 'row', gap: 6, paddingBottom: 10 } as ViewStyle,
   catChip: {
     flexDirection: 'row',

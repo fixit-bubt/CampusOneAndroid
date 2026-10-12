@@ -2,7 +2,7 @@
 // Staff tab: staff count + list + Add Staff (role locked to staff, trade picker).
 // Admin tab: admin count + list + Add Admin (role locked to admin).
 // Students are managed separately in ManageUsers.
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView, StyleSheet,
   RefreshControl, Alert, Modal, ActivityIndicator, KeyboardAvoidingView, Platform, type ViewStyle,
@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
+import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { Avatar } from '../../components/ui/Avatar';
 import { PasswordInput } from '../../components/ui/PasswordInput';
 import { FontFamily, Layout } from '../../theme';
@@ -120,28 +121,21 @@ export function ManageStaffScreen({ navigation }: any) {
 
   const list = tab === 'staff' ? staff : admins;
 
+  const STAFF_TABS: TabItem<Tab>[] = useMemo(() => [
+    { id: 'staff', label: t.manage.staff, count: staff.length > 0 ? staff.length : undefined, color: C.roleStaff },
+    { id: 'admin', label: t.manage.admins, count: admins.length > 0 ? admins.length : undefined, color: C.roleAdmin },
+  ], [t.manage.staff, t.manage.admins, staff.length, admins.length, C.roleStaff, C.roleAdmin]);
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar title={t.manage.staffAndAdmins} onBack={() => navigation.goBack()} />
 
-      {/* Tabs with counts */}
-      <View style={[styles.tabs, { paddingHorizontal: Layout.screenPadding }]}>
-        {([['staff', t.manage.staff, staff.length], ['admin', t.manage.admins, admins.length]] as const).map(([id, label, count]) => {
-          const on = tab === id;
-          return (
-            <TouchableOpacity
-              key={id}
-              style={[styles.tabBtn, on ? { backgroundColor: C.brand, borderColor: C.brand } : { backgroundColor: C.surface, borderColor: C.border }]}
-              onPress={() => setTab(id)}
-              activeOpacity={0.75}
-            >
-              <Text style={[styles.tabTxt, { color: on ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>{label}</Text>
-              <View style={[styles.countPill, { backgroundColor: on ? 'rgba(255,255,255,0.22)' : C.surface2 }]}>
-                <Text style={[styles.countTxt, { color: on ? C.white : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{count}</Text>
-              </View>
-            </TouchableOpacity>
-          );
-        })}
+      <View style={{ paddingHorizontal: Layout.screenPadding, marginBottom: 10 }}>
+        <SegmentedTabs<Tab>
+          tabs={STAFF_TABS}
+          activeTab={tab}
+          onTabChange={setTab}
+        />
       </View>
 
       <ScrollView
@@ -294,20 +288,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
   scroll: { paddingTop: 4, paddingBottom: 20 } as ViewStyle,
 
-  tabs: { flexDirection: 'row', gap: 8, paddingVertical: 10 } as ViewStyle,
-  tabBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 7,
-    paddingVertical: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-  } as ViewStyle,
-  tabTxt: { fontSize: 13.5 } as any,
-  countPill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999 } as ViewStyle,
-  countTxt: { fontSize: 11.5 } as any,
+
 
   addBtn: {
     flexDirection: 'row',

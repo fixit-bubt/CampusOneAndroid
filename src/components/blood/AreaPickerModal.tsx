@@ -10,6 +10,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { Icon } from '../ui/Icon';
 import { FontFamily, Layout, SectorColors } from '../../theme';
 import { DHAKA_AREAS, type DhakaAreaInfo } from '../../constants/dhakaAreas';
+import { SegmentedTabs, type TabItem } from '../ui/SegmentedTabs';
 import { useT } from '../../i18n';
 
 interface AreaPickerModalProps {
@@ -298,33 +299,22 @@ export function AreaPickerModal({
   const [activeTab, setActiveTab] = useState<TypeFilterTab>(startingTab);
   const searchInputRef = useRef<TextInput>(null);
 
-  // Pre-calculate track width from window width to avoid onLayout re-render
-  const screenWidth = Dimensions.get('window').width;
-  const initialTrackWidth = Math.max(280, screenWidth - Layout.screenPadding * 2);
-  const [trackWidth, setTrackWidth] = useState(initialTrackWidth);
-
-  const initialIndex = startingTab === 'area' ? 1 : 0;
-  const slideAnim = useRef(new Animated.Value(initialIndex)).current;
-
   useEffect(() => {
     if (visible) {
       setSearch('');
       const tabToUse: TypeFilterTab = initialTab === 'area' ? 'area' : 'hospital';
       setActiveTab(tabToUse);
-      slideAnim.setValue(tabToUse === 'area' ? 1 : 0);
     }
-  }, [visible, initialTab, slideAnim]);
+  }, [visible, initialTab]);
 
   const switchTab = useCallback((tab: TypeFilterTab) => {
     setActiveTab(tab);
-    const targetIdx = tab === 'area' ? 1 : 0;
-    Animated.spring(slideAnim, {
-      toValue: targetIdx,
-      tension: 68,
-      friction: 10,
-      useNativeDriver: true,
-    }).start();
-  }, [slideAnim]);
+  }, []);
+
+  const PICKER_TABS: TabItem<TypeFilterTab>[] = useMemo(() => [
+    { id: 'hospital', label: 'Hospitals', count: TOTAL_HOSPITALS, color: SectorColors.blood },
+    { id: 'area',     label: 'Areas',     count: TOTAL_AREAS,     color: SectorColors.blood },
+  ], []);
 
   // Fast pre-indexed search (active when user types in search box)
   const searchListData = useMemo<FlatListItem[]>(() => {
@@ -385,7 +375,6 @@ export function AreaPickerModal({
   }, [onSelectArea, onClose]);
 
   const isFiltered = Boolean(selectedArea && selectedArea !== 'All');
-  const tabWidth = trackWidth > 0 ? (trackWidth - 6) / 2 : 0;
 
   const renderItem = useCallback(({ item }: { item: FlatListItem }) => {
     if (item.type === 'all_option') {
@@ -517,69 +506,13 @@ export function AreaPickerModal({
           </View>
 
           {/* Clean Dual Filter Tabs (Hospitals / Areas) */}
-          <View
-            style={[styles.segmentTrack, { backgroundColor: C.surface2, borderColor: C.border }]}
-            onLayout={e => setTrackWidth(e.nativeEvent.layout.width)}
-          >
-            {tabWidth > 0 && (
-              <Animated.View
-                style={[
-                  styles.segmentIndicator,
-                  {
-                    width: tabWidth,
-                    backgroundColor: SectorColors.blood,
-                    transform: [
-                      {
-                        translateX: slideAnim.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [0, tabWidth],
-                        }),
-                      },
-                    ],
-                  },
-                ]}
-              />
-            )}
-
-            <TouchableOpacity
-              style={styles.segmentBtn}
-              onPress={() => switchTab('hospital')}
-              activeOpacity={0.8}
-            >
-              <Feather
-                name="activity"
-                size={13}
-                color={activeTab === 'hospital' ? '#fff' : SectorColors.blood}
-              />
-              <Text
-                style={[
-                  styles.segmentBtnTxt,
-                  { color: activeTab === 'hospital' ? '#fff' : C.text, fontFamily: FontFamily.jakartaBold },
-                ]}
-              >
-                Hospitals ({TOTAL_HOSPITALS})
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.segmentBtn}
-              onPress={() => switchTab('area')}
-              activeOpacity={0.8}
-            >
-              <Icon
-                name="pin"
-                size={13}
-                color={activeTab === 'area' ? '#fff' : C.textMuted}
-              />
-              <Text
-                style={[
-                  styles.segmentBtnTxt,
-                  { color: activeTab === 'area' ? '#fff' : C.text, fontFamily: FontFamily.jakartaBold },
-                ]}
-              >
-                Areas ({TOTAL_AREAS})
-              </Text>
-            </TouchableOpacity>
+          <View style={{ marginBottom: 12 }}>
+            <SegmentedTabs<TypeFilterTab>
+              size="sm"
+              tabs={PICKER_TABS}
+              activeTab={activeTab}
+              onTabChange={switchTab}
+            />
           </View>
 
           {/* Virtualized Lists: Search Results OR Pre-Mounted Dual Tab Panes */}

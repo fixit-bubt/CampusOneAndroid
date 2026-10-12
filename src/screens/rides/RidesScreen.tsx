@@ -184,13 +184,12 @@ export function RidesScreen({ navigation }: any) {
     return rides.filter(r => r.driver_id === user?.id || requestedIds.has(r.id)).length;
   }, [rides, user?.id, requestedIds]);
 
-  // Tab definitions
-  const TABS: TabItem<TabKey>[] = useMemo(() => [
-    { id: 'all',  label: t.rides2.allRides ?? t.common.all, icon: 'navigation', color: RIDE_COLOR },
-    { id: 'to',   label: t.rides2.toCampus ?? 'To Campus',  icon: 'arrow-up-right', color: '#16a34a' },
-    { id: 'from', label: t.rides2.fromCampus ?? 'From Campus', icon: 'arrow-down-left', color: '#2563eb' },
-    { id: 'mine', label: t.rides2.myRidesTab ?? 'My Rides', icon: 'user', count: myRidesCount > 0 ? myRidesCount : undefined, color: RIDE_COLOR },
-  ], [t, myRidesCount]);
+  // Direction tab definitions (strictly 3 tabs: All, To Campus, From Campus)
+  const DIRECTION_TABS: TabItem<'all' | 'to' | 'from'>[] = useMemo(() => [
+    { id: 'all',  label: t.common.all ?? 'All', color: RIDE_COLOR },
+    { id: 'to',   label: t.rides2.toCampus ?? 'To Campus', color: '#16a34a' },
+    { id: 'from', label: t.rides2.fromCampus ?? 'From Campus', color: '#2563eb' },
+  ], [t]);
 
   // Base counts for post types (All, Offers, Requests) in current tab
   const postCounts = useMemo(() => {
@@ -247,9 +246,9 @@ export function RidesScreen({ navigation }: any) {
   }, [rides, tab, postTypeFilter, searchQuery, user?.id, requestedIds]);
 
   const POST_FILTER_TABS: TabItem<'all' | 'offer' | 'request'>[] = useMemo(() => [
-    { id: 'all',     label: t.common.all ?? 'All',            count: postCounts.all, color: C.text },
-    { id: 'offer',   label: t.rides2.offers ?? 'Offers',      iconConfig: { family: 'mci', name: 'car-side' }, count: postCounts.offers, color: RIDE_COLOR },
-    { id: 'request', label: t.rides2.needRide ?? 'Need Ride', iconConfig: { family: 'feather', name: 'navigation' }, count: postCounts.requests, color: isDark ? '#c4b5fd' : '#7c3aed' },
+    { id: 'all',     label: t.common.all ?? 'All',            color: C.text },
+    { id: 'offer',   label: t.rides2.offers ?? 'Offers',      count: postCounts.offers > 0 ? postCounts.offers : undefined, color: RIDE_COLOR },
+    { id: 'request', label: t.rides2.needRide ?? 'Need Ride', count: postCounts.requests > 0 ? postCounts.requests : undefined, color: isDark ? '#c4b5fd' : '#7c3aed' },
   ], [t, postCounts, C.text, isDark]);
 
   return (
@@ -257,6 +256,31 @@ export function RidesScreen({ navigation }: any) {
       <SubBar
         title={t.rides2.rideShareTitle}
         onBack={() => navigation.goBack()}
+        rightSlot={
+          <TouchableOpacity
+            style={[
+              styles.myRidesHeaderBtn,
+              {
+                backgroundColor: tab === 'mine' ? RIDE_COLOR : C.surface2,
+                borderColor: tab === 'mine' ? RIDE_COLOR : C.border,
+              },
+            ]}
+            onPress={() => setTab(tab === 'mine' ? 'all' : 'mine')}
+            activeOpacity={0.8}
+          >
+            <Feather name="user" size={13} color={tab === 'mine' ? '#fff' : C.text} />
+            <Text style={[styles.myRidesHeaderTxt, { color: tab === 'mine' ? '#fff' : C.text, fontFamily: FontFamily.jakartaBold }]}>
+              {t.rides2.myRidesTab ?? 'My Rides'}
+            </Text>
+            {myRidesCount > 0 && (
+              <View style={[styles.myRidesBadge, { backgroundColor: tab === 'mine' ? '#fff' : RIDE_COLOR }]}>
+                <Text style={[styles.myRidesBadgeTxt, { color: tab === 'mine' ? RIDE_COLOR : '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                  {myRidesCount}
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        }
       />
 
       <OfflineBanner
@@ -280,10 +304,10 @@ export function RidesScreen({ navigation }: any) {
 
       {/* Unified Segmented Track Switcher with Native Spring Animation & Colors */}
       <View style={{ paddingHorizontal: Layout.screenPadding, marginBottom: 8 }}>
-        <SegmentedTabs<TabKey>
-          tabs={TABS}
-          activeTab={tab}
-          onTabChange={setTab}
+        <SegmentedTabs<'all' | 'to' | 'from'>
+          tabs={DIRECTION_TABS}
+          activeTab={tab === 'mine' ? ('' as any) : tab}
+          onTabChange={(nextTab) => setTab(nextTab)}
         />
       </View>
 
@@ -562,46 +586,26 @@ const styles = StyleSheet.create({
     fontSize: 14,
   } as TextStyle,
 
-  tabContainer: {
-    flexDirection: 'row',
-    borderRadius: 14,
-    padding: 3,
-    marginHorizontal: Layout.screenPadding,
-    marginTop: 6,
-    marginBottom: 8,
-    position: 'relative',
-  } as ViewStyle,
-  activeIndicator: {
-    position: 'absolute',
-    top: 3,
-    left: 3,
-    bottom: 3,
-    borderRadius: 11,
-    borderWidth: 1.5,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1.5 },
-    shadowOpacity: 0.12,
-    shadowRadius: 3,
-  } as ViewStyle,
-  tabBtn: {
-    flex: 1,
+  myRidesHeaderBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    paddingVertical: 8,
-    minHeight: 40,
-    borderRadius: 11,
-    zIndex: 1,
+    gap: 5,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 12,
+    borderWidth: 1,
   } as ViewStyle,
-  tabBtnTxt: { fontSize: 12 } as any,
-  tabBadge: {
+  myRidesHeaderTxt: {
+    fontSize: 12,
+  } as TextStyle,
+  myRidesBadge: {
     paddingHorizontal: 5,
     paddingVertical: 1,
     borderRadius: 999,
   } as ViewStyle,
-  tabBadgeTxt: { fontSize: 10 } as any,
+  myRidesBadgeTxt: {
+    fontSize: 10,
+  } as TextStyle,
 
   searchWrapper: { paddingTop: 2, paddingBottom: 6 },
   searchBar: {

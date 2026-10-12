@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet, Image,
   ActivityIndicator, Alert, type ViewStyle,
@@ -9,6 +9,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
+import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { FontFamily, Layout, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { fetchPeople } from '../../services/peopleService';
@@ -215,6 +216,11 @@ export function ClubDetailScreen({ route, navigation }: any) {
     ]);
   }
 
+  const CLUB_TABS: TabItem<Tab>[] = useMemo(() => [
+    { id: 'feed',    label: t.clubs.feed,    color: C.brand },
+    { id: 'members', label: t.clubs.members, count: members.length > 0 ? members.length : undefined, color: Accent.teal },
+  ], [t.clubs.feed, t.clubs.members, members.length, C.brand]);
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar
@@ -316,26 +322,12 @@ export function ClubDetailScreen({ route, navigation }: any) {
         )}
 
         {/* Tabs */}
-        <View style={styles.chips}>
-          {(['feed', 'members'] as Tab[]).map(tb => (
-            <TouchableOpacity
-              key={tb}
-              style={[styles.chip, tab === tb
-                ? { backgroundColor: C.brand, borderColor: C.brand }
-                : { backgroundColor: C.surface, borderColor: C.border }]}
-              onPress={() => setTab(tb)}
-              activeOpacity={0.75}
-            >
-              <Text style={[styles.chipTxt, { color: tab === tb ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                {tb === 'feed' ? t.clubs.feed : t.clubs.members}
-              </Text>
-              {tb === 'members' && (
-                <Text style={[styles.chipCount, { color: tab === tb ? 'rgba(255,255,255,0.7)' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                  {members.length}
-                </Text>
-              )}
-            </TouchableOpacity>
-          ))}
+        <View style={{ marginTop: 14 }}>
+          <SegmentedTabs<Tab>
+            tabs={CLUB_TABS}
+            activeTab={tab}
+            onTabChange={setTab}
+          />
         </View>
 
         {/* Tab content */}
@@ -454,10 +446,7 @@ const styles = StyleSheet.create({
   postTitle: { fontSize: 14.5, marginTop: 10 } as any,
   postImage: { width: '100%', height: 160, borderRadius: 12, marginTop: 10 } as any,
 
-  chips: { flexDirection: 'row', gap: 8, marginTop: 14 } as ViewStyle,
-  chip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1 } as ViewStyle,
-  chipTxt: { fontSize: 12.5 } as any,
-  chipCount: { fontSize: 12 } as any,
+
 
   feedList: { gap: 10, marginTop: 12 } as ViewStyle,
   postCard: { padding: 14, borderRadius: 14, borderWidth: 1 } as ViewStyle,

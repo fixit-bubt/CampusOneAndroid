@@ -126,7 +126,7 @@ export function LostFoundBrowseScreen({ navigation }: any) {
   const t = useT();
 
   const [items, setItems] = useState<LostFoundItem[]>([]);
-  const [filter, setFilter] = useState<TabFilter>('all');
+  const [filter, setFilter] = useState<TabFilter>('Lost');
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('All');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('Open');
   const [searchQuery, setSearchQuery] = useState('');
@@ -280,11 +280,10 @@ export function LostFoundBrowseScreen({ navigation }: any) {
   }
 
   const TABS: TabItem<TabFilter>[] = useMemo(() => [
-    { id: 'all',   label: t.common.all, count: counts.all,  icon: 'grid',         color: SectorColors.lostfound },
-    { id: 'Lost',  label: t.lf.lost,    count: counts.Lost, icon: 'alert-circle', color: C.danger },
-    { id: 'Found', label: t.lf.found,   count: counts.Found, icon: 'check-circle', color: C.success },
-    { id: 'mine',  label: t.lf.myPosts, count: counts.mine, icon: 'user',         color: '#8B5CF6' },
-  ], [t, counts, C.danger, C.success]);
+    { id: 'Lost',  label: t.lf.lost,  count: counts.Lost,  color: C.danger },
+    { id: 'Found', label: t.lf.found, count: counts.Found, color: C.success },
+    { id: 'mine',  label: 'Mine',     count: counts.mine,  color: '#8B5CF6' },
+  ], [t.lf, counts.Lost, counts.Found, counts.mine, C.danger, C.success]);
 
   const STATUS_OPTIONS: {
     id: StatusFilter;

@@ -146,31 +146,39 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
 ### 5.4 Universal SegmentedTabs Standard (`src/components/ui/SegmentedTabs.tsx`)
 - **App-Wide Standard:** All segmented tab controls, feed switchers, and filter bars across the app MUST use `SegmentedTabs` for visual and ergonomic consistency.
 - **Strict Geometric Symmetry:** Every tab has equal width (`flex: 1` / `100% / tabs.length`) so tabs never look mismatched or uneven based on word length.
+- **Strict Button Count Range (Max 3, Min 2):** Never use 4 buttons in a segmented tab bar. 4 buttons squeeze touch targets down to ~80dp and cause text truncation on mobile. All segmented bars must strictly have 2 or 3 tabs. Move secondary views (e.g. "My Rides") to header buttons or sub-bars.
+- **No-Icon Policy on Counted & Narrow Tabs:** Do not include icons on tabs that display (or will display) numerical count badges. Tab labels must be kept short (<7 chars: e.g. "Applied" not "Applications", "Depts" not "Departments", "Notes" not "Materials", "Doctors" not "Doctors & Staff"). This guarantees >30dp of safety buffer so future 2-digit and 3-digit counts (`12`, `99`, `999`) never cause cut-offs.
 - **Sizes (`size?: 'sm' | 'md'`):**
   - Standard `md` (default): `minHeight: 48` (`paddingVertical: 10`), satisfying WCAG/Material 48dp touch targets, `fontSize: 13.5`, icon `15.5`.
   - Compact `sm`: `minHeight: 38` (`paddingVertical: 7`), `fontSize: 12`, icon `13.5`. Used for secondary filter switchers, modals, and forms.
-- **Interpolation Guard:** Uses safe interpolation output range (`outputRange: tabs.length <= 1 ? [0, 0] : ...`) to prevent crash on single-tab lists.
-- **Universal Adoption Across App:**
-  - `RidePostScreen`: Post Type (`offer` / `request`), Direction (`To Campus` / `From Campus`), Date Choice (`today` / `tomorrow`), Location Modal categories (`mirpur` / `dhaka`).
-  - `RidesScreen`: Direction filter (4 tabs with badges), Post Type filter (3 tabs with counts).
-  - `BloodScreen`: Requests vs Donors switcher with counts.
-  - `BloodRequestScreen`: Urgency selector (`Urgent` / `Today` / `This week`).
-  - `MarketScreen`: Feed tabs (`all` / `mine` / `saved`), Filter Modal Sort (`newest` / `asc` / `desc`), Condition (`all` / `New` / `Like New` / `Used`).
-  - `MarketPostScreen`: Condition selector, Meetup Location modal tabs.
-  - `LostFoundBrowseScreen`: Main 4-tab switcher (`all` / `Lost` / `Found` / `mine` with counts).
-  - `PostItemFormScreen`: Type toggle (`Lost` / `Found`).
-  - `FacultyScreen`: Main 3-tab switcher (`all` / `mentors` / `saved` with bookmark counts).
+- **Interpolation Guard:** Uses safe interpolation output range (`outputRange: tabs.length <= 1 ? [0, 0] : ...`) and gracefully hides the indicator when `activeIndex = -1` (unselected state).
+- **Universal Adoption Across App (Strictly 2 or 3 tabs, No legacy animations):**
+  - `RidePostScreen`: Post Type (`Offer Ride` / `Need Ride`), Direction (`To Campus` / `From Campus`), Date Choice (`Today` / `Tomorrow`), Location Modal (`Mirpur & Campus` / `Greater Dhaka`).
+  - `RidesScreen`: Direction filter (3 tabs: `All` / `To Campus` / `From Campus`), Post Type filter (3 tabs: `All` / `Offers` / `Need Ride`), with `My Rides` in header.
+  - `BloodScreen`: Requests vs Donors switcher with counts (2 tabs).
+  - `BloodRequestScreen`: Urgency selector (3 tabs: `Urgent` / `Today` / `Week`).
+  - `AreaPickerModal`: Filter mode (2 tabs: `All Areas` / `Blood Donors`).
+  - `MarketScreen`: Feed tabs (3 tabs: `All` / `Mine` / `Saved`), Filter Modal Sort (3 tabs: `Newest` / `Price Low` / `Price High`), Condition (3 tabs: `New` / `Like New` / `Used`).
+  - `MarketPostScreen`: Condition selector (3 tabs), Location modal (2 tabs without hardcoded numbers).
+  - `LostFoundBrowseScreen`: Main 3-tab switcher (`Lost` / `Found` / `Mine` with counts; "All" eliminated).
+  - `PostItemFormScreen`: Type toggle (2 tabs: `Lost` / `Found`).
+  - `FacultyScreen`: Main 3-tab switcher (`Depts` / `Mentors` / `Saved` with bookmark counts, no icons).
+  - `DirectoryScreen`: Main 3-tab switcher (`All` / `Connections` / `Requests` with counts, no icons; legacy spring anim eliminated).
   - `AnnouncementsScreen`: Main 3-tab switcher (`All` / `Urgent` / `Saved` with counts).
-  - `AnnouncePostScreen`: Priority selector (`Urgent` / `Important` / `General`).
-  - `JobsBrowseScreen`: Main tabs (`Browse` / `Saved` / `Applications`), Status filter (`Open` / `Closing Soon` / `Expired`).
-  - `JobPostScreen`: Work Mode (`On-site` / `Remote` / `Hybrid`), Compensation model (`Paid` / `Conveyance` / `Negotiable` / `Experience`), How to Apply (`Email` / `Link` / `Circular PDF`).
-  - `JobsModerateScreen`: Moderation tabs (`Reported` / `Removed`).
-  - `MyReportsScreen`: Scope switcher (`Everyone` / `My Reports`).
-  - `CourseDetailScreen`: Material tabs (`Materials` / `Questions` / `Books` with counts).
-  - `StudyUploadScreen`: Upload category switcher (`Materials` / `Questions` / `Books`).
-  - `RoutinesBrowseScreen`: Main routine tabs (`Class` / `Exam` with counts), Modal type switcher.
-  - `NotificationsScreen`: Filter switcher (`All` / `Unread` with unread count).
-  - `PrayerScreen`: Timetable view switcher (`Today` / `Month`).
+  - `AnnouncePostScreen`: Priority selector (3 tabs: `Urgent` / `Important` / `General`).
+  - `JobsBrowseScreen`: Main tabs (3 tabs: `Browse` / `Saved` / `Applied`), Status filter (3 tabs: `Open` / `Closing` / `Expired`).
+  - `JobPostScreen`: Work Mode (3 tabs: `On-site` / `Remote` / `Hybrid`), Compensation model (3 tabs: `Paid` / `Conveyance` / `Negotiable`), How to Apply (3 tabs: `Email` / `Link` / `PDF`).
+  - `JobsModerateScreen`: Moderation tabs (2 tabs: `Reported` / `Removed`).
+  - `EventsBrowseScreen`: Main 3-tab switcher (`Upcoming` / `Past` / `Saved` with counts; legacy static chips eliminated).
+  - `MyReportsScreen`: Scope switcher (2 tabs: `Everyone` / `My Reports`).
+  - `ManageStaffScreen`: Role tabs (2 tabs: `Staff` / `Admins` with counts; legacy static chips eliminated).
+  - `ClubDetailScreen`: 2-tab switcher (`Feed` / `Members` with count; legacy static chips eliminated).
+  - `MedicalScreen`: 3 tabs (`Doctors` / `Services` / `Emergency`, no icons).
+  - `CourseDetailScreen`: Material tabs (3 tabs: `Notes` / `Questions` / `Books` with counts, no icons).
+  - `StudyUploadScreen`: Upload category switcher (3 tabs: `Materials` / `Questions` / `Books`).
+  - `RoutinesBrowseScreen`: Main routine tabs (2 tabs: `Class` / `Exam` with counts), Modal type switcher (2 tabs).
+  - `NotificationsScreen`: Filter switcher (2 tabs: `All` / `Unread` with unread count).
+  - `PrayerScreen`: Timetable view switcher (2 tabs: `Today` / `Month`).
 
 ---
 

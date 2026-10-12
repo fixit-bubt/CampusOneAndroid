@@ -216,23 +216,23 @@ export function RidePostScreen({ route, navigation }: any) {
   const isOffer = postType === 'offer';
   const accentColor = isOffer ? RIDE_COLOR : '#8b5cf6';
   const POST_TYPE_TABS: TabItem<'offer' | 'request'>[] = useMemo(() => [
-    { id: 'offer', label: 'Offer Ride (Driver)', icon: 'navigation', color: RIDE_COLOR },
-    { id: 'request', label: 'Need Ride (Passenger)', icon: 'user-check', color: '#8b5cf6' },
+    { id: 'offer', label: 'Offer Ride', color: RIDE_COLOR },
+    { id: 'request', label: 'Need Ride', color: '#8b5cf6' },
   ], []);
 
   const DIRECTION_TABS: TabItem<Ride['direction']>[] = useMemo(() => [
-    { id: 'To Campus', label: t.rides2.toCampus ?? 'To Campus', icon: 'arrow-up-right', color: accentColor },
-    { id: 'From Campus', label: t.rides2.fromCampus ?? 'From Campus', icon: 'arrow-down-left', color: accentColor },
+    { id: 'To Campus', label: t.rides2.toCampus ?? 'To Campus', color: accentColor },
+    { id: 'From Campus', label: t.rides2.fromCampus ?? 'From Campus', color: accentColor },
   ], [accentColor, t.rides2.toCampus, t.rides2.fromCampus]);
 
   const DATE_TABS: TabItem<'today' | 'tomorrow'>[] = useMemo(() => [
-    { id: 'today', label: `${t.rides2.todayText ?? 'Today'} · ${formatShortDate(localToday())}`, icon: 'calendar', color: accentColor },
-    { id: 'tomorrow', label: `${t.rides2.tomorrowText ?? 'Tomorrow'} · ${formatShortDate(localTomorrow())}`, icon: 'calendar', color: accentColor },
+    { id: 'today', label: `${t.rides2.todayText ?? 'Today'} · ${formatShortDate(localToday())}`, color: accentColor },
+    { id: 'tomorrow', label: `${t.rides2.tomorrowText ?? 'Tomorrow'} · ${formatShortDate(localTomorrow())}`, color: accentColor },
   ], [accentColor, t.rides2.todayText, t.rides2.tomorrowText]);
 
   const LOC_CAT_TABS: TabItem<'mirpur' | 'dhaka'>[] = useMemo(() => [
-    { id: 'mirpur', label: 'Mirpur & Campus', icon: 'map-pin', count: 14, color: accentColor },
-    { id: 'dhaka', label: 'Greater Dhaka', icon: 'compass', count: 44, color: accentColor },
+    { id: 'mirpur', label: 'Mirpur & Campus', color: accentColor },
+    { id: 'dhaka', label: 'Greater Dhaka', color: accentColor },
   ], [accentColor]);
 
   const handlePostTypeChange = (next: 'offer' | 'request') => {

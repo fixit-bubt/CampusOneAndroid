@@ -257,16 +257,16 @@ export function JobsBrowseScreen({ navigation }: any) {
   }, [deptFilter, t]);
 
   const mainTabs: TabItem<MainTab>[] = useMemo(() => [
-    { id: 'browse', label: t.jobs2?.browseTab ?? 'Browse', icon: 'briefcase', count: deptFiltered.length, accentColor: SectorColors.jobs },
-    { id: 'saved', label: t.jobs2?.savedTab ?? 'Saved', icon: 'bookmark', count: savedIds.size, accentColor: Accent.gold },
-    { id: 'my_applications', label: t.jobs2?.applicationsTab ?? 'Applications', icon: 'file-text', count: applications.length, accentColor: Accent.purple },
+    { id: 'browse', label: t.jobs2?.browseTab ?? 'Browse', count: deptFiltered.length, accentColor: SectorColors.jobs },
+    { id: 'saved', label: t.jobs2?.savedTab ?? 'Saved', count: savedIds.size, accentColor: Accent.gold },
+    { id: 'my_applications', label: 'Applied', count: applications.length, accentColor: Accent.purple },
   ], [t.jobs2, deptFiltered.length, savedIds.size, applications.length]);
 
   const statusTabs: TabItem<StatusFilter>[] = useMemo(() => [
-    { id: 'open', label: 'Open', icon: 'check-circle', count: browseCounts.open, accentColor: Accent.teal },
-    { id: 'closing', label: 'Closing Soon', icon: 'clock', count: browseCounts.closing, accentColor: C.warn },
-    { id: 'expired', label: 'Expired', icon: 'alert-circle', count: browseCounts.expired, accentColor: Accent.slate },
-  ], [browseCounts.open, browseCounts.closing, browseCounts.expired, C.warn]);
+    { id: 'open', label: 'Open', accentColor: Accent.teal },
+    { id: 'closing', label: 'Closing', accentColor: C.warn },
+    { id: 'expired', label: 'Expired', accentColor: Accent.slate },
+  ], [C.warn]);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>

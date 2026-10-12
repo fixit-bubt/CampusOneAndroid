@@ -247,9 +247,9 @@ export function MarketScreen({ navigation }: any) {
 
   const TABS: TabItem<Tab>[] = useMemo(
     () => [
-      { id: 'all',   label: t.common.all,            count: counts.all,   icon: 'grid',     color: MARKET_COLOR },
-      { id: 'mine',  label: t.market2.myListings,    count: counts.mine,  icon: 'user',     color: MARKET_COLOR },
-      { id: 'saved', label: t.market2.savedListings, count: counts.saved, icon: 'bookmark', color: MARKET_COLOR },
+      { id: 'all',   label: t.common.all, count: counts.all,  color: MARKET_COLOR },
+      { id: 'mine',  label: 'Mine',       count: counts.mine, color: MARKET_COLOR },
+      { id: 'saved', label: 'Saved',      count: counts.saved, color: MARKET_COLOR },
     ],
     [t, counts]
   );
@@ -261,10 +261,9 @@ export function MarketScreen({ navigation }: any) {
   ], [t]);
 
   const COND_TABS: TabItem<ConditionPreset>[] = useMemo(() => [
-    { id: 'all',      label: t.common.all,           color: MARKET_COLOR },
-    { id: 'New',      label: t.market2.condNew,      color: '#059669' },
-    { id: 'Like New', label: t.market2.condLikeNew,  color: '#2563EB' },
-    { id: 'Used',     label: t.market2.condUsed,     color: '#64748B' },
+    { id: 'New',      label: t.market2.condNew,     color: '#059669' },
+    { id: 'Like New', label: t.market2.condLikeNew, color: '#2563EB' },
+    { id: 'Used',     label: t.market2.condUsed,    color: '#64748B' },
   ], [t]);
 
   // Render individual listing card
@@ -942,7 +941,7 @@ export function MarketScreen({ navigation }: any) {
                 size="sm"
                 tabs={COND_TABS}
                 activeTab={conditionFilter}
-                onTabChange={setConditionFilter}
+                onTabChange={(c) => setConditionFilter((prev) => (prev === c ? 'all' : c))}
               />
 
               {/* Action Buttons (Both flex: 1 for equal size) */}

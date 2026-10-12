@@ -256,9 +256,9 @@ export function FacultyScreen({ navigation }: any) {
   }
 
   const FACULTY_TABS: TabItem<TabMode>[] = useMemo(() => [
-    { id: 'all',     label: t.faculty2.tabDepartments,     icon: 'grid',     color: FACULTY_ACCENT },
-    { id: 'mentors', label: t.faculty2.tabResearchMentors, icon: 'award',    color: FACULTY_ACCENT },
-    { id: 'saved',   label: t.faculty2.tabMyTeachers,      icon: 'bookmark', count: savedIds.size > 0 ? savedIds.size : undefined, color: Accent.gold },
+    { id: 'all',     label: t.faculty2.tabDepartments,     color: FACULTY_ACCENT },
+    { id: 'mentors', label: t.faculty2.tabResearchMentors, color: FACULTY_ACCENT },
+    { id: 'saved',   label: t.faculty2.tabMyTeachers,      count: savedIds.size > 0 ? savedIds.size : undefined, color: Accent.gold },
   ], [t, savedIds.size]);
 
   return (

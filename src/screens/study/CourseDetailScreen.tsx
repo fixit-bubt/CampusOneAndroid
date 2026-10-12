@@ -29,7 +29,7 @@ type Tab = 'materials' | 'questions' | 'books';
 type Sort = 'new' | 'name';
 
 const TAB_LABELS: Record<Tab, string> = {
-  materials: 'Materials',
+  materials: 'Notes',
   questions: 'Questions',
   books:     'Books',
 };
@@ -300,9 +300,9 @@ export function CourseDetailScreen({ route, navigation }: any) {
     materials: materials.length, questions: questions.length, books: books.length,
   };
   const studyTabs: TabItem<Tab>[] = useMemo(() => [
-    { id: 'materials', label: TAB_LABELS.materials, icon: 'file-text', count: counts.materials, accentColor: STUDY_COLOR },
-    { id: 'questions', label: TAB_LABELS.questions, icon: 'help-circle', count: counts.questions, accentColor: STUDY_COLOR },
-    { id: 'books',     label: TAB_LABELS.books,     icon: 'book-open',   count: counts.books,     accentColor: STUDY_COLOR },
+    { id: 'materials', label: TAB_LABELS.materials, count: counts.materials > 0 ? counts.materials : undefined, accentColor: STUDY_COLOR },
+    { id: 'questions', label: TAB_LABELS.questions, count: counts.questions > 0 ? counts.questions : undefined, accentColor: STUDY_COLOR },
+    { id: 'books',     label: TAB_LABELS.books,     count: counts.books > 0 ? counts.books : undefined,         accentColor: STUDY_COLOR },
   ], [counts.materials, counts.questions, counts.books]);
   const tintBg = isDark ? `${STUDY_COLOR}2e` : STUDY_BG;
 

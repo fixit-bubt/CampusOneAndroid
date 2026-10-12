@@ -16,6 +16,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
+import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { ContactSheet } from '../../components/ui/ContactSheet';
 import { FontFamily, Layout, Accent, SectorColors, pillBg } from '../../theme';
@@ -192,24 +193,6 @@ export function DirectoryScreen({ route, navigation }: any) {
     [selectedDept]
   );
 
-  // Segmented track native spring animation & width tracking
-  const animIndex = useRef(new Animated.Value(0)).current;
-  const [trackWidth, setTrackWidth] = useState(0);
-
-  const tabIndexMap: Record<TabKey, number> = useMemo(
-    () => ({ all: 0, connections: 1, requests: 2 }),
-    []
-  );
-
-  useEffect(() => {
-    const idx = tabIndexMap[tab] ?? 0;
-    Animated.spring(animIndex, {
-      toValue: idx,
-      tension: 68,
-      friction: 10,
-      useNativeDriver: true,
-    }).start();
-  }, [tab, animIndex, tabIndexMap]);
 
   const isHidden = profile?.directory_visible === false;
 
@@ -344,31 +327,13 @@ export function DirectoryScreen({ route, navigation }: any) {
   const connectedCount = useMemo(() => students.filter(s => s.connState === 'connected').length, [students]);
   const requestsTotal = incomingCount + outgoingCount;
 
-  // Segmented track dimensions
-  const TRACK_PADDING = 3;
-  const innerTrackWidth = Math.max(0, trackWidth - TRACK_PADDING * 2);
-  const tabWidth = innerTrackWidth > 0 ? innerTrackWidth / 3 : 0;
-  const translateX = animIndex.interpolate({
-    inputRange: [0, 1, 2],
-    outputRange: [0, tabWidth, tabWidth * 2],
-  });
-
-  const TAB_COLORS: Record<TabKey, { fg: string; bg: string }> = useMemo(
-    () => ({
-      all: { fg: SectorColors.directory, bg: `${SectorColors.directory}18` },
-      connections: { fg: Accent.teal, bg: pillBg(Accent.teal, isDark) },
-      requests: { fg: incomingCount > 0 ? C.danger : C.warn, bg: incomingCount > 0 ? C.dangerBg : C.warnBg },
-    }),
-    [C.danger, C.dangerBg, C.warn, C.warnBg, isDark, incomingCount]
-  );
-
-  const TABS: { id: TabKey; label: string; count: number }[] = useMemo(
+  const TABS: TabItem<TabKey>[] = useMemo(
     () => [
-      { id: 'all', label: t.directory2.tabAll, count: students.length },
-      { id: 'connections', label: t.directory2.tabConnections, count: connectedCount },
-      { id: 'requests', label: t.directory2.tabRequests, count: requestsTotal },
+      { id: 'all', label: t.directory2.tabAll, color: SectorColors.directory },
+      { id: 'connections', label: t.directory2.tabConnections, count: connectedCount > 0 ? connectedCount : undefined, color: Accent.teal },
+      { id: 'requests', label: t.directory2.tabRequests, count: requestsTotal > 0 ? requestsTotal : undefined, color: incomingCount > 0 ? C.danger : C.warn },
     ],
-    [t.directory2, students.length, connectedCount, requestsTotal]
+    [t.directory2, connectedCount, requestsTotal, incomingCount, C.danger, C.warn]
   );
 
   // Filter pipeline
@@ -635,74 +600,12 @@ export function DirectoryScreen({ route, navigation }: any) {
           ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
           ListHeaderComponent={
             <View style={styles.headerBlock}>
-              {/* Native Spring Animated Segmented Track Switcher */}
-              <View
-                style={[styles.tabContainer, { backgroundColor: C.surface2 }]}
-                onLayout={e => setTrackWidth(e.nativeEvent.layout.width)}
-              >
-                {tabWidth > 0 && (
-                  <Animated.View
-                    style={[
-                      styles.activeIndicator,
-                      {
-                        width: tabWidth,
-                        transform: [{ translateX }],
-                        backgroundColor: C.surface,
-                        borderColor: isDark ? `${TAB_COLORS[tab].fg}55` : `${TAB_COLORS[tab].fg}35`,
-                      },
-                    ]}
-                  />
-                )}
-                {TABS.map(tItem => {
-                  const active = tab === tItem.id;
-                  const cfg = TAB_COLORS[tItem.id];
-
-                  return (
-                    <TouchableOpacity
-                      key={tItem.id}
-                      style={styles.tabBtn}
-                      onPress={() => setTab(tItem.id)}
-                      activeOpacity={0.75}
-                    >
-                      <Text
-                        style={[
-                          styles.tabBtnTxt,
-                          {
-                            color: active ? cfg.fg : C.textMuted,
-                            fontFamily: FontFamily.jakartaBold,
-                          },
-                        ]}
-                        numberOfLines={1}
-                      >
-                        {tItem.label}
-                      </Text>
-                      {tItem.count > 0 && (
-                        <View
-                          style={[
-                            styles.tabBadge,
-                            {
-                              backgroundColor: active
-                                ? cfg.bg
-                                : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.border),
-                            },
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.tabBadgeTxt,
-                              {
-                                color: active ? cfg.fg : C.textMuted,
-                                fontFamily: FontFamily.jakartaBold,
-                              },
-                            ]}
-                          >
-                            {tItem.count}
-                          </Text>
-                        </View>
-                      )}
-                    </TouchableOpacity>
-                  );
-                })}
+              <View style={{ marginBottom: 10 }}>
+                <SegmentedTabs<TabKey>
+                  tabs={TABS}
+                  activeTab={tab}
+                  onTabChange={setTab}
+                />
               </View>
 
               {/* Structured Dual Control Bar (Option A: Sub-filters directly under Tabs) */}
@@ -1045,45 +948,6 @@ const styles = StyleSheet.create({
 
   headerBlock: { marginBottom: 12 } as ViewStyle,
 
-  /* Animated Segmented Track */
-  tabContainer: {
-    flexDirection: 'row',
-    borderRadius: 14,
-    padding: 3,
-    marginBottom: 10,
-    position: 'relative',
-  } as ViewStyle,
-  activeIndicator: {
-    position: 'absolute',
-    top: 3,
-    left: 3,
-    bottom: 3,
-    borderRadius: 11,
-    borderWidth: 1.5,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1.5 },
-    shadowOpacity: 0.12,
-    shadowRadius: 3,
-  } as ViewStyle,
-  tabBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-    paddingVertical: 8,
-    minHeight: 42,
-    borderRadius: 11,
-    zIndex: 1,
-  } as ViewStyle,
-  tabBtnTxt: { fontSize: 12.5 } as any,
-  tabBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 1.5,
-    borderRadius: 999,
-  } as ViewStyle,
-  tabBadgeTxt: { fontSize: 10.5 } as any,
 
   /* Option A: Dual Control Bar Directly Below Tabs */
   dualBarRow: {

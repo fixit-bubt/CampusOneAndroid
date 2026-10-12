@@ -90,9 +90,9 @@ export function BloodRequestScreen({ navigation }: any) {
   const [customAreaMode, setCustomAreaMode] = useState(false);
 
   const URGENCY_TABS: TabItem<BloodRequest['urgency']>[] = [
-    { id: 'Urgent',    label: 'Urgent',    color: C.danger, icon: 'alert-triangle' },
-    { id: 'Today',     label: 'Today',     color: C.warn,   icon: 'clock' },
-    { id: 'This week', label: 'This week', color: SectorColors.blood, icon: 'calendar' },
+    { id: 'Urgent',    label: 'Urgent', color: C.danger },
+    { id: 'Today',     label: 'Today',  color: C.warn },
+    { id: 'This week', label: 'Week',   color: SectorColors.blood },
   ];
 
   function handleSelectGroup(g: BloodRequest['blood_group']) {

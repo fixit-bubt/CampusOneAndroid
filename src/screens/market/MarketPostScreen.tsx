@@ -102,8 +102,8 @@ export function MarketPostScreen({ route, navigation }: any) {
   ], [t]);
 
   const LOC_TABS: TabItem<'campus' | 'dhaka'>[] = useMemo(() => [
-    { id: 'campus', label: `${t.market2.tabCampusMirpur} (12)`, icon: 'map-pin', color: Accent.amber },
-    { id: 'dhaka',  label: `${t.market2.tabGreaterDhaka} (44)`, icon: 'compass', color: Accent.amber },
+    { id: 'campus', label: t.market2.tabCampusMirpur, color: Accent.amber },
+    { id: 'dhaka',  label: t.market2.tabGreaterDhaka, color: Accent.amber },
   ], [t]);
 
   // Current category metadata

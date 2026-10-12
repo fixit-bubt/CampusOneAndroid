@@ -21,7 +21,9 @@ export interface TabItem<T extends string = string> {
     name: string;
   };
   count?: number;
+  showZeroCount?: boolean;
   color?: string;
+  accentColor?: string;
 }
 
 interface SegmentedTabsProps<T extends string = string> {
@@ -47,18 +49,18 @@ export function SegmentedTabs<T extends string = string>({
   const trackPadding = isSmall ? 3.5 : 4.5;
   const iconSize = isSmall ? 13.5 : 15.5;
 
-  const activeIndex = Math.max(
-    0,
-    tabs.findIndex((t) => t.id === activeTab)
-  );
+  const foundIdx = tabs.findIndex((t) => t.id === activeTab);
+  const activeIndex = foundIdx >= 0 ? foundIdx : -1;
 
   useEffect(() => {
-    Animated.spring(animIndex, {
-      toValue: activeIndex,
-      tension: 190,
-      friction: 18,
-      useNativeDriver: true,
-    }).start();
+    if (activeIndex >= 0) {
+      Animated.spring(animIndex, {
+        toValue: activeIndex,
+        tension: 190,
+        friction: 18,
+        useNativeDriver: true,
+      }).start();
+    }
   }, [activeIndex, animIndex]);
 
   const innerTrackWidth = Math.max(0, trackWidth - trackPadding * 2);
@@ -84,7 +86,7 @@ export function SegmentedTabs<T extends string = string>({
       ]}
       onLayout={(e) => setTrackWidth(e.nativeEvent.layout.width)}
     >
-      {tabWidth > 0 && (
+      {tabWidth > 0 && activeIndex >= 0 && (
         <Animated.View
           style={[
             styles.indicator,
@@ -104,8 +106,9 @@ export function SegmentedTabs<T extends string = string>({
 
       {tabs.map((tab, idx) => {
         const isActive = activeIndex === idx;
-        const color = tab.color || C.brand;
+        const color = tab.color || tab.accentColor || C.brand;
         const badgeBg = pillBg(color, isDark);
+        const hasCount = typeof tab.count === 'number' && (tab.count > 0 || tab.showZeroCount === true);
 
         return (
           <TouchableOpacity
@@ -116,7 +119,8 @@ export function SegmentedTabs<T extends string = string>({
                 minHeight: isSmall ? 38 : 48,
                 paddingVertical: isSmall ? 7 : 10,
                 borderRadius: isSmall ? 10 : 12.5,
-                gap: isSmall ? 5.5 : 7,
+                paddingHorizontal: 4,
+                gap: isSmall ? 4.5 : 5.5,
               },
             ]}
             onPress={() => onTabChange(tab.id)}
@@ -150,19 +154,19 @@ export function SegmentedTabs<T extends string = string>({
               ]}
               numberOfLines={1}
               adjustsFontSizeToFit
-              minimumFontScale={0.85}
+              minimumFontScale={0.8}
             >
               {tab.label}
             </Text>
 
-            {typeof tab.count === 'number' && (
+            {hasCount && (
               <View
                 style={[
                   styles.badge,
                   {
-                    paddingHorizontal: isSmall ? 6 : 7.5,
+                    paddingHorizontal: isSmall ? 5.5 : 6.5,
                     paddingVertical: isSmall ? 1.5 : 2,
-                    minWidth: isSmall ? 20 : 22,
+                    minWidth: isSmall ? 18 : 20,
                   },
                   isActive
                     ? {
@@ -218,7 +222,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 7,
+    gap: 6,
     paddingVertical: 10,
     minHeight: 48,
     borderRadius: 12.5,
@@ -228,14 +232,16 @@ const styles = StyleSheet.create({
   tabLabel: {
     fontSize: 13.5,
     letterSpacing: -0.1,
+    flexShrink: 1,
+    textAlign: 'center',
   },
 
   badge: {
-    paddingHorizontal: 7.5,
+    paddingHorizontal: 6.5,
     paddingVertical: 2,
     borderRadius: 999,
     borderWidth: 1,
-    minWidth: 22,
+    minWidth: 20,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,

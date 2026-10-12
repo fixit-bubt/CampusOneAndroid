@@ -32,7 +32,7 @@ const JOB_TYPES: { id: Job['job_type']; label: string }[] = [
 const APPLY_METHODS: TabItem<Job['apply_method']>[] = [
   { id: 'email', label: 'Email', icon: 'mail' },
   { id: 'link',  label: 'Link', icon: 'link' },
-  { id: 'file',  label: 'Circular PDF', icon: 'file-text' },
+  { id: 'file',  label: 'PDF', icon: 'file-text' },
 ];
 
 interface PickedCircular {
@@ -135,10 +135,9 @@ export function JobPostScreen({ navigation }: any) {
   ], [t.jobs2]);
 
   const compensationOptions: TabItem<NonNullable<Job['compensation_type']>>[] = useMemo(() => [
-    { id: 'paid',        label: t.jobs2?.paid ?? 'Paid', icon: 'dollar-sign' },
-    { id: 'conveyance',  label: t.jobs2?.conveyance ?? 'Conveyance', icon: 'navigation' },
-    { id: 'negotiable',  label: t.jobs2?.negotiable ?? 'Negotiable', icon: 'sliders' },
-    { id: 'unpaid',      label: t.jobs2?.unpaid ?? 'Experience', icon: 'award' },
+    { id: 'paid',        label: t.jobs2?.paid ?? 'Paid' },
+    { id: 'conveyance',  label: t.jobs2?.conveyance ?? 'Conveyance' },
+    { id: 'negotiable',  label: t.jobs2?.negotiable ?? 'Negotiable' },
   ], [t.jobs2]);
 
   async function pickPdfFile() {
