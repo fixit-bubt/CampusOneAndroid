@@ -11,6 +11,7 @@ import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
+import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
 import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
@@ -541,7 +542,7 @@ export function BloodRequestScreen({ navigation }: any) {
             </View>
           )}
 
-          {/* Dengue Platelet (Apheresis) Toggle Card */}
+          {/* Dengue Platelet (Apheresis) Toggle Card (Universal 72dp Content Standard) */}
           <TouchableOpacity
             style={[styles.plateletCard, {
               backgroundColor: isPlatelets ? C.warnBg : C.surface,
@@ -551,11 +552,11 @@ export function BloodRequestScreen({ navigation }: any) {
             activeOpacity={0.8}
           >
             <View style={styles.plateletLeft}>
-              <View style={[styles.plateletIcon, { backgroundColor: isPlatelets ? C.warn : C.surface2 }]}>
-                <Icon name="blood" size={16} color={isPlatelets ? '#fff' : C.textMuted} />
+              <View style={[styles.plateletIcon, { backgroundColor: isPlatelets ? C.warn : (isDark ? 'rgba(234, 179, 8, 0.15)' : 'rgba(234, 179, 8, 0.10)') }]}>
+                <AnimatedIcon family="feather" name="zap" size={20} color={isPlatelets ? '#fff' : C.warn} animation="wobble" loop={false} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.plateletTitle, { color: isPlatelets ? C.warn : C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                <Text style={[styles.plateletTitle, { color: isPlatelets ? (isDark ? '#fef08a' : '#854d0e') : C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                   {t.blood2.denguePlateletUrgent} (Apheresis)
                 </Text>
                 <Text style={[styles.plateletDesc, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
@@ -571,14 +572,14 @@ export function BloodRequestScreen({ navigation }: any) {
             </View>
           </TouchableOpacity>
 
-          {/* Submit Button */}
+          {/* Submit Button (Universal 58dp Standard) */}
           <TouchableOpacity
             style={[styles.submitBtn, { backgroundColor: canSubmit ? SectorColors.blood : C.surface2, opacity: loading ? 0.6 : 1 }]}
             onPress={handleSubmit}
             disabled={!canSubmit || loading}
             activeOpacity={0.8}
           >
-            <Icon name="blood" size={18} color={canSubmit ? '#fff' : C.textMuted} />
+            <AnimatedIcon family="feather" name="droplet" size={18} color={canSubmit ? '#fff' : C.textMuted} animation="entrance" />
             <Text style={[styles.submitText, { color: canSubmit ? '#fff' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
               {t.blood2.postRequest}
             </Text>
@@ -864,36 +865,38 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    minHeight: 72,
     borderRadius: 16,
     borderWidth: 1,
     marginTop: 18,
-    gap: 10,
+    gap: 12,
   } as ViewStyle,
 
   plateletLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
     flex: 1,
   } as ViewStyle,
 
   plateletIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
 
   plateletTitle: {
-    fontSize: 13,
+    fontSize: 14.5,
   } as TextStyle,
 
   plateletDesc: {
-    fontSize: 11,
+    fontSize: 11.5,
     marginTop: 2,
-    lineHeight: 15,
+    lineHeight: 16,
   } as TextStyle,
 
   checkbox: {

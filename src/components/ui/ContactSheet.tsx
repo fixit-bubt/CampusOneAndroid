@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 9,
-    height: 56,
+    height: 58,
     borderRadius: 16,
   } as ViewStyle,
   callBtn: {},

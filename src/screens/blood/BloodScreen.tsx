@@ -14,6 +14,7 @@ import { Icon } from '../../components/ui/Icon';
 import { SkeletonList, LoadError } from '../../components/ui/LoadState';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { StatusBadge } from '../../components/ui/StatusBadge';
+import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
 import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { FontFamily, Layout, SectorColors, Accent } from '../../theme';
 import { useAuth } from '../../store/authStore';
@@ -537,21 +538,21 @@ export function BloodScreen({ route, navigation }: any) {
         message="Showing cached blood requests and donor directory. Connect to internet to respond or reveal contacts."
       />
 
-      {/* Prominent Emergency Request Blood Bar */}
+      {/* Prominent Emergency Request Blood Bar (Universal 58dp Standard) */}
       <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 6, paddingBottom: 2 }}>
         <TouchableOpacity
           style={[styles.actBtn, { backgroundColor: SectorColors.blood }]}
           onPress={() => navigation.navigate('BloodRequest')}
           activeOpacity={0.85}
         >
-          <Icon name="blood" size={18} color="#fff" />
+          <AnimatedIcon family="feather" name="droplet" size={18} color="#fff" animation="entrance" />
           <Text style={[styles.actBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
             {t.blood2.requestBloodBtn}
           </Text>
         </TouchableOpacity>
       </View>
 
-      {/* Donor Status / Registration Banner */}
+      {/* Donor Status / Registration Banner (Universal 72dp Content Standard) */}
       {myDonor ? (
         <View style={[styles.myStatusCard, { backgroundColor: C.surface, borderColor: C.border, marginHorizontal: Layout.screenPadding }]}>
           <View style={styles.myStatusLeft}>
@@ -617,9 +618,9 @@ export function BloodScreen({ route, navigation }: any) {
           onPress={() => navigation.navigate('DonorRegister')}
           activeOpacity={0.8}
         >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
             <View style={[styles.miniBloodBadge, { backgroundColor: BLOOD_BG }]}>
-              <Icon name="blood" size={14} color={BLOOD_COLOR} />
+              <AnimatedIcon family="feather" name="droplet" size={20} color={BLOOD_COLOR} animation="entrance" />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.registerPromptTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -630,7 +631,7 @@ export function BloodScreen({ route, navigation }: any) {
               </Text>
             </View>
           </View>
-          <Feather name="chevron-right" size={16} color={C.textMuted} />
+          <Feather name="chevron-right" size={17} color={C.textMuted} />
         </TouchableOpacity>
       )}
 
@@ -819,7 +820,7 @@ export function BloodScreen({ route, navigation }: any) {
             {/* Request list */}
             {filteredRequests.length === 0 ? (
               <View style={[styles.emptyWrap, { backgroundColor: C.surface, borderColor: C.border }]}>
-                <Icon name="blood" size={30} color={C.textMuted} />
+                <AnimatedIcon family="feather" name="droplet" size={32} color={SectorColors.blood} animation="entrance" />
                 <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
                   {t.common.noResults}
                 </Text>
@@ -1033,7 +1034,7 @@ export function BloodScreen({ route, navigation }: any) {
                       </Text>
                     </View>
 
-                    {/* High-Visibility Action Button */}
+                    {/* High-Visibility Action Button (Universal 58dp Standard) */}
                     {isOwn ? (
                       <TouchableOpacity
                         style={[
@@ -1047,7 +1048,7 @@ export function BloodScreen({ route, navigation }: any) {
                         onPress={() => navigation.navigate('BloodRequestDetail', { requestId: r.id })}
                         activeOpacity={0.8}
                       >
-                        <Icon name="directory" size={15} color={C.text} />
+                        <AnimatedIcon family="feather" name="users" size={16} color={C.text} animation="entrance" />
                         <Text style={[styles.cardActionBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                           {t.blood2.manageResponses} {pledgeCount > 0 ? `(${pledgeCount})` : ''}
                         </Text>
@@ -1059,7 +1060,7 @@ export function BloodScreen({ route, navigation }: any) {
                         activeOpacity={0.85}
                         disabled={busyId === r.id}
                       >
-                        <Icon name="phone" size={15} color="#fff" />
+                        <AnimatedIcon family="feather" name="phone-call" size={16} color="#fff" animation="entrance" />
                         <Text style={[styles.cardActionBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
                           {busyId === r.id ? 'Connecting…' : 'Call / WhatsApp Requester'}
                         </Text>
@@ -1070,7 +1071,7 @@ export function BloodScreen({ route, navigation }: any) {
                         onPress={() => handleHelpPress(r)}
                         activeOpacity={0.85}
                       >
-                        <Icon name="blood" size={16} color="#fff" />
+                        <AnimatedIcon family="feather" name="droplet" size={16} color="#fff" animation="entrance" />
                         <Text style={[styles.cardActionBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
                           {unitsLeft > 0 && meta.unitCount > 1 && pledgeCount > 0
                             ? `I Can Help (${unitsLeft} More Needed)`
@@ -1132,7 +1133,7 @@ export function BloodScreen({ route, navigation }: any) {
             {/* Donor list */}
             {filteredDonors.length === 0 ? (
               <View style={[styles.emptyWrap, { backgroundColor: C.surface, borderColor: C.border }]}>
-                <Icon name="blood" size={30} color={C.textMuted} />
+                <AnimatedIcon family="feather" name="droplet" size={32} color={SectorColors.blood} animation="entrance" />
                 <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
                   {t.common.noResults}
                 </Text>
@@ -1201,6 +1202,13 @@ export function BloodScreen({ route, navigation }: any) {
                             disabled={busyId === d.user_id || !eligible}
                             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                           >
+                            <AnimatedIcon
+                              family="feather"
+                              name="phone"
+                              size={12}
+                              color={eligible ? BLOOD_COLOR : C.textMuted}
+                              animation="entrance"
+                            />
                             <Text style={[styles.contactTxt, { color: eligible ? BLOOD_COLOR : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
                               {busyId === d.user_id ? '…' : t.blood2.contact}
                             </Text>
@@ -1321,14 +1329,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   } as ViewStyle,
   miniBloodBadge: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
   miniBloodTxt: {
-    fontSize: 13,
+    fontSize: 15.5,
   } as any,
   eligPill: { alignSelf: 'flex-start', paddingHorizontal: 7, paddingVertical: 2.5, borderRadius: 999, marginTop: 4 } as ViewStyle,
   eligTxt: { fontSize: 10 } as any,
@@ -1447,13 +1455,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    height: 44,
-    borderRadius: 12,
-    marginTop: 11,
+    gap: 9,
+    height: 58,
+    borderRadius: 16,
+    marginTop: 12,
   } as ViewStyle,
   cardActionBtnTxt: {
-    fontSize: 13.5,
+    fontSize: 14.5,
   } as TextStyle,
   summaryCard: { padding: 14, borderRadius: 16, borderWidth: 1, marginBottom: 12 } as ViewStyle,
   summaryTitle: { fontSize: 11, letterSpacing: 0.5, marginBottom: 10 } as any,
@@ -1467,23 +1475,32 @@ const styles = StyleSheet.create({
   donorRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 } as ViewStyle,
   donorName: { fontSize: 14 } as any,
   donorMeta: { fontSize: 12, marginTop: 2 } as any,
-  contactBtn: { minHeight: 38, justifyContent: 'center', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 } as ViewStyle,
-  contactTxt: { fontSize: 11 } as any,
+  contactBtn: {
+    height: 32,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    borderRadius: 10,
+  } as ViewStyle,
+  contactTxt: { fontSize: 11.5 } as any,
   myStatusCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: 14,
+    minHeight: 72,
     borderRadius: 16,
     borderWidth: 1,
     marginTop: 6,
     marginBottom: 6,
-    gap: 10,
+    gap: 12,
   } as ViewStyle,
-  myStatusLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 } as ViewStyle,
-  myStatusTitle: { fontSize: 13 } as any,
-  myStatusMeta: { fontSize: 11, marginTop: 1 } as any,
+  myStatusLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 } as ViewStyle,
+  myStatusTitle: { fontSize: 14.5 } as any,
+  myStatusMeta: { fontSize: 11.5, marginTop: 2 } as any,
   myStatusEditBtn: {
     width: 36,
     height: 36,
@@ -1504,15 +1521,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: 14,
+    minHeight: 72,
     borderRadius: 16,
     borderWidth: 1,
     marginTop: 6,
     marginBottom: 6,
-    gap: 10,
+    gap: 12,
   } as ViewStyle,
-  registerPromptTitle: { fontSize: 13 } as any,
-  registerPromptSub: { fontSize: 11, marginTop: 1 } as any,
+  registerPromptTitle: { fontSize: 14.5 } as any,
+  registerPromptSub: { fontSize: 11.5, marginTop: 2 } as any,
   emptyWrap: { padding: 32, borderRadius: 16, borderWidth: 1, alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 8 } as ViewStyle,
   emptyTxt: { fontSize: 13 } as any,
   resetFilterBtn: {

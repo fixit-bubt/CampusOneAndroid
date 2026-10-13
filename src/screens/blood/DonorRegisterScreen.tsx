@@ -11,6 +11,7 @@ import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
+import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
 import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { getMyDonor } from '../../services/bloodService';
@@ -358,7 +359,7 @@ export function DonorRegisterScreen({ navigation }: any) {
           disabled={!canSubmit || loading}
           activeOpacity={0.8}
         >
-          <Icon name="blood" size={18} color={canSubmit ? '#fff' : C.textMuted} />
+          <AnimatedIcon family="feather" name="droplet" size={18} color={canSubmit ? '#fff' : C.textMuted} animation="entrance" />
           <Text style={[styles.submitText, { color: canSubmit ? '#fff' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
             {isRegistered ? t.blood2.updateDonorBtn : t.blood2.registerAsDonorBtnFull}
           </Text>
@@ -504,8 +505,8 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   } as ViewStyle,
   urgencyPrefCard: {
-    borderRadius: 14,
-    padding: 12,
+    borderRadius: 16,
+    padding: 14,
   } as ViewStyle,
   urgencyRadioRow: {
     flexDirection: 'row',

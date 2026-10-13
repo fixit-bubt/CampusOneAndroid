@@ -206,9 +206,17 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
 
 ### 5.5 Universal 72dp Content Card & Row Standard (Reference: `DESIGN.md`)
 - **The 58 / 72 Dual System:** Controls, switchers, search bars, and CTAs adhere to the **58dp** standard (`Layout.controlHeight = 58`), while all content cards, list rows, and feed items adhere to the **72dp** standard (`height: 72` or `padding: 14` + `44dp` icon/avatar = `72dp`).
-- **Blood Donation Module (`BloodScreen.tsx`, `BloodRequestScreen.tsx`, `AreaPickerModal.tsx`, `DonorRegisterScreen.tsx`):**
-  - Donor list rows: standardized to 72dp (`<Avatar size="md" />` 44dp + `padding: 14, borderRadius: 16`), with single-line text truncation (`numberOfLines={1}`) on `donorName` and `donorMeta`. Status cards (`myStatusCard`, `registerPromptCard`) standardized to `paddingVertical: 12, paddingHorizontal: 14, borderRadius: 16`.
-  - `AreaPickerModal.tsx`: `areaCardBar` standardized to 72dp (`padding: 14, borderRadius: 16`), `itemIconBox` standardized to `44 × 44 dp, borderRadius: 13`.
+- **Blood Donation Module (`BloodScreen.tsx`, `BloodRequestScreen.tsx`, `BloodRequestDetailScreen.tsx`, `DonorRegisterScreen.tsx`, `AreaPickerModal.tsx`):**
+  - **Universal 58dp Control Standard:** Top Emergency Request Blood button (`actBtn`), search bar (`searchBar`), location trigger (`areaPickerTrigger`), segmented tabs (`SegmentedTabs.tsx`), form submission buttons (`submitBtn`), and request card action CTAs (`cardActionBtn` — *"I Can Help"*, *"Call Requester"*, *"Manage Responses"*) all standardized to exactly `height: 58, borderRadius: 16`.
+  - **Universal 72dp Content Card Standard:**
+    - `myStatusCard` (registered donor status): standardized to 72dp (`minHeight: 72, padding: 14, borderRadius: 16`, `44 × 44 dp` blood badge box).
+    - `registerPromptCard` ("Join campus donor network"): standardized to 72dp (`minHeight: 72, padding: 14, borderRadius: 16`, `44 × 44 dp` icon box).
+    - `donorRow`: standardized to 72dp (`<Avatar size="md" />` 44dp + `padding: 14, borderRadius: 16`), with single-line text truncation and 32dp `contactBtn` (`height: 32, borderRadius: 10`).
+    - `plateletCard` (Dengue Platelet / Apheresis toggle): standardized to 72dp (`minHeight: 72, padding: 14, borderRadius: 16`, `44 × 44 dp` icon box).
+    - `lockedCard` (verified group card): standardized to 72dp (`padding: 14, borderRadius: 16, 44 × 44 dp` badge box).
+    - Responder rows in `BloodRequestDetailScreen.tsx`: standardized to 72dp (`<Avatar size="md" />` 44dp + `paddingVertical: 14`).
+    - `areaCardBar` in `AreaPickerModal.tsx`: standardized to 72dp (`padding: 14, borderRadius: 16`, `itemIconBox` 44 × 44 dp).
+  - **Fabric Native Crash Prevention & Animation Engine:** Fixed fatal `RetryableMountingLayerException` in React Native 0.85 Fabric by removing infinite `loop={true}` on unvirtualized/scrollable feed items. In `AnimatedIcon.tsx`, added `loop={false}` support for pulse/bounce/float and comprehensive `stopAnimation()` on unmount. In `StatusBadge.tsx`, badges animate on mount with finite 120 FPS `entrance` pop (0.3 ➔ 1.25 ➔ 1.0) and a single tactile `wobble` alert shake for Urgent requests (`loop={false}`), completely eliminating infinite loop timers and orphaned native frame callbacks.
   - Dropdown triggers (`medicalReason`, `hospital`, `area`) in `BloodRequestScreen.tsx`: converted from nested touchables with broken `e.stopPropagation()` to parent `<View>` with sibling touchables (`dropdownMain` + `dropdownRight`), fully eliminating Android touch conflicts.
   - Institutional Hospital Icon Standard: Standardized hospital icon across the entire app from Feather zigzag line `activity` to `MaterialCommunityIcons` `'hospital-building'` (`AreaPickerModal`, `BloodScreen`, `BloodRequestScreen`, `BloodRequestDetailScreen`, and `StatusBadge`).
   - Elimination of Double-Badge Glitch: Removed redundant `<View style={styles.affBadge}>` wrapping around `<StatusBadge variant="affiliation" />` in `BloodScreen.tsx`.
@@ -231,7 +239,7 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
   - Unconnected: 72dp Shield Privacy Card (*"Contact Details Protected"*, floating shield icon) paired with a 58dp `Send Connection Request` primary CTA button.
   - Incoming request: 72dp Request Card (*"Incoming Connection Request"*, spring user-check icon) paired with dual 58dp symmetrical `Accept` and `Decline` action buttons.
   - Disconnect connection converted to clean destructive outline action button (`height: 50, borderRadius: 14`).
-- **Contact Sheet (`ContactSheet.tsx`):** Standardized button height to `height: 56, borderRadius: 16`, added top-right close button (`32 × 32 dp`), and resolved clashing greens.
+- **Contact Sheet (`ContactSheet.tsx`):** Standardized primary action buttons to universal 58dp (`height: 58, borderRadius: 16`), added top-right close button (`32 × 32 dp`), and resolved clashing greens.
 
 ---
 

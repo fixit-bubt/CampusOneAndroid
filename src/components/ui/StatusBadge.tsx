@@ -254,14 +254,14 @@ export function StatusBadge({
         color={meta.fg}
         animation={
           pulse || (variant === 'urgency' && meta.label === 'Urgent')
-            ? 'pulse'
+            ? 'wobble'
             : variant === 'platelet'
             ? 'wobble'
             : variant === 'shortlisted'
             ? 'bounce'
-            : 'none'
+            : 'entrance'
         }
-        loop={true}
+        loop={false}
         style={{ marginRight: 5 }}
       />
       <Text

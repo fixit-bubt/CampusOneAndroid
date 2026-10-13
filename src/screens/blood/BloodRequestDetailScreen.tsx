@@ -476,7 +476,7 @@ export function BloodRequestDetailScreen({ route, navigation }: any) {
                 <View key={p.donor_id}>
                   {i > 0 && <View style={[styles.divider, { backgroundColor: C.border }]} />}
                   <View style={styles.row}>
-                    <Avatar name={p.full_name ?? undefined} size="sm" />
+                    <Avatar name={p.full_name ?? undefined} size="md" />
                     <View style={{ flex: 1, minWidth: 0 }}>
                       <Text style={[styles.name, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                         {p.full_name ?? t.blood2.anonymous}{p.blood_group ? ` · ${p.blood_group}` : ''}

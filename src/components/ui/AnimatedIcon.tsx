@@ -72,56 +72,65 @@ export function AnimatedIcon({
         }),
       ]).start();
     } else if (animation === 'pulse') {
-      animLoop = Animated.loop(
-        Animated.sequence([
-          Animated.timing(scale, {
-            toValue: 1.22,
-            duration: 650,
-            useNativeDriver: true,
-          }),
-          Animated.timing(scale, {
-            toValue: 1.0,
-            duration: 650,
-            useNativeDriver: true,
-          }),
-        ])
-      );
-      animLoop.start();
+      const pulseAnim = Animated.sequence([
+        Animated.timing(scale, {
+          toValue: 1.22,
+          duration: 350,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scale, {
+          toValue: 1.0,
+          duration: 350,
+          useNativeDriver: true,
+        }),
+      ]);
+      if (loop) {
+        animLoop = Animated.loop(pulseAnim);
+        animLoop.start();
+      } else {
+        pulseAnim.start();
+      }
     } else if (animation === 'bounce') {
-      animLoop = Animated.loop(
-        Animated.sequence([
-          Animated.spring(translateY, {
-            toValue: -6,
-            tension: 300,
-            friction: 7,
-            useNativeDriver: true,
-          }),
-          Animated.spring(translateY, {
-            toValue: 0,
-            tension: 220,
-            friction: 7,
-            useNativeDriver: true,
-          }),
-          Animated.delay(1200),
-        ])
-      );
-      animLoop.start();
+      const bounceAnim = Animated.sequence([
+        Animated.spring(translateY, {
+          toValue: -6,
+          tension: 300,
+          friction: 7,
+          useNativeDriver: true,
+        }),
+        Animated.spring(translateY, {
+          toValue: 0,
+          tension: 220,
+          friction: 7,
+          useNativeDriver: true,
+        }),
+        Animated.delay(1200),
+      ]);
+      if (loop) {
+        animLoop = Animated.loop(bounceAnim);
+        animLoop.start();
+      } else {
+        bounceAnim.start();
+      }
     } else if (animation === 'float') {
-      animLoop = Animated.loop(
-        Animated.sequence([
-          Animated.timing(translateY, {
-            toValue: -4,
-            duration: 900,
-            useNativeDriver: true,
-          }),
-          Animated.timing(translateY, {
-            toValue: 0,
-            duration: 900,
-            useNativeDriver: true,
-          }),
-        ])
-      );
-      animLoop.start();
+      const floatAnim = Animated.sequence([
+        Animated.timing(translateY, {
+          toValue: -4,
+          duration: 900,
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateY, {
+          toValue: 0,
+          duration: 900,
+          useNativeDriver: true,
+        }),
+      ]);
+      if (loop) {
+        animLoop = Animated.loop(floatAnim);
+        animLoop.start();
+      } else {
+        floatAnim.start();
+      }
     } else if (animation === 'wobble') {
       const wobbleAnim = Animated.sequence([
         Animated.timing(rotation, { toValue: 1, duration: 80, useNativeDriver: true }),
@@ -149,7 +158,12 @@ export function AnimatedIcon({
     }
 
     return () => {
-      if (animLoop) animLoop.stop();
+      if (animLoop) {
+        animLoop.stop();
+      }
+      scale.stopAnimation();
+      rotation.stopAnimation();
+      translateY.stopAnimation();
     };
   }, [animation, loop]);
 
