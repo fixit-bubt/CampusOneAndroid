@@ -365,32 +365,25 @@ Deno.serve(async (req: Request) => {
         : `Official circular published by BUBT for ${categoryName}. View or download the attached document for full details.`;
 
       const existing = existingMap.get(code);
-      const isNew = !existing;
-      if (isNew) {
-        newAdded++;
-      } else {
-        updatedCount++;
-      }
 
       // Preserve pinned if already pinned by administrator
       const finalPinned = existing?.pinned !== undefined ? existing.pinned : defaultPinned;
 
       rowsToUpsert.push({
-        ...(existing?.id ? { id: existing.id } : {}),
         code,
         title: n.title.trim(),
         body,
-        department,
-        department_code: deptCode,
+        department: department || null,
+        department_code: deptCode || null,
         priority,
         pinned: finalPinned,
         category: categoryName,
         category_slug: categorySlug,
-        attachment_url: attachmentUrl,
-        attachment_name: attachmentName,
-        image_url: imageUrl,
-        external_url: externalUrl,
-        external_id: externalId,
+        attachment_url: attachmentUrl || null,
+        attachment_name: attachmentName || null,
+        image_url: imageUrl || null,
+        external_url: externalUrl || null,
+        external_id: externalId || null,
         source: 'bubt_official',
         created_by: createdBy,
         created_at: n.created_at || new Date().toISOString(),
@@ -407,7 +400,29 @@ Deno.serve(async (req: Request) => {
         .upsert(chunk, { onConflict: 'code' });
 
       if (upsertErr) {
-        console.error('Batch upsert error:', upsertErr.message);
+        console.error('Batch upsert error on chunk, falling back to row-by-row:', upsertErr.message);
+        // Fallback row-by-row to isolate failures so valid notices still get inserted
+        for (const row of chunk) {
+          const isNew = !existingMap.has(row.code);
+          const { error: singleErr } = await supabase
+            .from('announcements')
+            .upsert(row, { onConflict: 'code' });
+          if (!singleErr) {
+            if (isNew) newAdded++;
+            else updatedCount++;
+          } else {
+            console.error(`Failed to upsert notice ${row.code}:`, singleErr.message);
+          }
+        }
+      } else {
+        // Chunk succeeded
+        for (const row of chunk) {
+          if (!existingMap.has(row.code)) {
+            newAdded++;
+          } else {
+            updatedCount++;
+          }
+        }
       }
     }
 

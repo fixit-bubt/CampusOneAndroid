@@ -1488,3 +1488,39 @@ The Campus Announcements architecture is transformed from a manual posting board
   - Updated `bus_routes` query to select both `to_departures` and `from_departures`.
   - Automatically transitions at 12:00 PM Dhaka time to calculate and display afternoon departures leaving campus, eliminating the bug where morning departures showed "Tomorrow" during the afternoon commute.
 
+---
+
+## 35. Automated BUBT Notice Synchronization & Faculty Directory Crawler
+
+### 35.1 Official Notice Synchronization Engine (`sync-notices`)
+- **Root Cause & Architectural Fix:**
+  - Notice 1634 ("Notice on Rescheduling of Classes Suspended on October 22, 2026") and 40 preceding circulars were previously failing to sync due to a PostgREST key-mismatch error: `PGRST102 (All object keys must match)`.
+  - The upsert array conditionally included `id` only for pre-existing records (`...(existing?.id ? { id: existing.id } : {})`), violating PostgREST's requirement that all objects in a batch payload have identical key sets.
+  - **The Fix:** Eliminated `id` from the upsert payload completely. Upserts now rely purely on the Postgres conflict target `onConflict: 'code'`, allowing PostgreSQL to auto-generate UUIDs for new records and update existing records smoothly.
+  - **Uniform Payload Contract:** Normalized all optional fields (`department`, `department_code`, `attachment_url`, `attachment_name`, `image_url`, `external_url`, `external_id`) to explicit `null` defaults instead of `undefined`.
+  - **Batch Chunking & Row-by-Row Fallback:** Upserts in chunks of 50 with automatic individual row-level fallback upon chunk rejection so a single malformed row cannot prevent other notices from saving.
+  - **Live Verification:** Edge Function successfully verified in production, syncing 300 scanned notices, adding 41 new notices, and updating 259 notices in under 8 seconds. Notice 1634 (`BUBT-N-1634`) confirmed in `public.announcements`.
+
+### 35.2 Scalable Faculty Directory Crawler & Routine Short-Code Engine (`sync-faculty`)
+- **Root Cause & Architectural Fix:**
+  - 81% of faculty records (339 teachers) were previously missing their routine short codes (`short_code`), causing timetable lookups and search-by-initial to fail.
+  - Missing new faculty onboarding (e.g., Shaila Shaznin `SSN` in CSE).
+  - Previous crawler ran into an N+1 synchronous database waterfall (making >800 individual HTTP queries sequentially), hitting the Edge Function execution timeout after ~35 seconds and aborting after scanning only 78 teachers.
+  - **The Fix (In-Memory Set Diffing):** Pre-fetches all existing faculty records and department IDs into memory maps (`byDeptAndExact`, `byDeptAndNorm`, `byShortCode`, `byNormOnly`).
+  - **Full Department Coverage:** Crawls all 13 active BUBT department rosters in parallel/batches, extracting routine short codes directly from profile URLs (`/faculty/profile/([A-Z0-9_-]+)`).
+  - **High Performance Batch Execution:** Collects `rowsToInsert` and `rowsToUpdate` and executes in 50-row chunks via `insert()` and `upsert(..., { onConflict: 'id' })`. Complete sync of 405 teachers across all 13 departments now finishes in ~16 seconds (down from timeout).
+  - **Automated New Teacher Discovery:** Successfully detected and onboarded new teachers including **Shaila Shaznin** (`SSN`, Lecturer, Dept of CSE) with photo, profile URL, and routine initial.
+  - **Live Verification:** 403 out of 476 faculty members now have verified short codes populated in `public.faculty`.
+
+### 35.3 Modern Canonical BUBT Profile Link Architecture
+- **Elimination of Broken Subdomains & 404s:**
+  - 107 legacy CSE profile links pointed to the dead server `https://cse.bubt.edu.bd/facultydetails/<id>/` (503 Service Unavailable / expired SSL).
+  - 312 other links pointed to old numeric patterns (`/department/<num>/faculty/profile/<numeric_id>`) returning 404 Not Found.
+  - Standardized modern canonical URL format: `https://www.bubt.edu.bd/department/${deptSlug}/faculty/profile/${shortCode}` (verified 200 OK across all departments).
+  - Cleaned all legacy `cse.bubt.edu.bd` records in `public.faculty` (0 dead links remaining).
+- **Client-Side Safeguard (`FacultyProfileScreen.tsx`):**
+  - Added `resolveFacultyProfileUrl(member)` helper function.
+  - Dynamically rewrites any legacy/cached URLs to the modern canonical BUBT URL format.
+  - The "View official profile on bubt.edu.bd" action now computes `effectiveProfileUrl`, ensuring users are never exposed to broken or offline web pages.
+
+

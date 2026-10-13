@@ -41,6 +41,39 @@ interface FacultyFull extends FacultyMember {
   departments: { id: string; name: string; branch: string; dept_number: string } | null;
 }
 
+function resolveFacultyProfileUrl(member: FacultyFull | null): string | null {
+  if (!member) return null;
+  const shortCode = member.short_code?.trim().toUpperCase();
+  const deptName = member.departments?.name?.toLowerCase() || '';
+
+  let deptSlug = 'department-of-computer-science-engineering';
+  if (deptName.includes('electrical')) deptSlug = 'department-of-electrical-electronic-engineering';
+  else if (deptName.includes('civil')) deptSlug = 'department-of-civil-engineering';
+  else if (deptName.includes('textile')) deptSlug = 'department-of-textile-engineering';
+  else if (deptName.includes('data science')) deptSlug = 'department-of-data-science-engineering';
+  else if (deptName.includes('management')) deptSlug = 'department-of-management';
+  else if (deptName.includes('accounting')) deptSlug = 'department-of-accounting';
+  else if (deptName.includes('marketing')) deptSlug = 'department-of-marketing';
+  else if (deptName.includes('finance')) deptSlug = 'department-of-finance';
+  else if (deptName.includes('mathematics') || deptName.includes('statistics')) deptSlug = 'department-of-mathematics-statistics';
+  else if (deptName.includes('law')) deptSlug = 'department-of-law-justice';
+  else if (deptName.includes('english')) deptSlug = 'department-of-english';
+  else if (deptName.includes('economics')) deptSlug = 'department-of-economics';
+
+  if (shortCode) {
+    return `https://www.bubt.edu.bd/department/${deptSlug}/faculty/profile/${shortCode}`;
+  }
+
+  if (member.profile_url) {
+    if (member.profile_url.includes('cse.bubt.edu.bd')) {
+      return null;
+    }
+    return member.profile_url;
+  }
+
+  return null;
+}
+
 export function FacultyProfileScreen({ route, navigation }: any) {
   const { C, isDark } = useTheme();
   const t = useT();
@@ -85,7 +118,12 @@ export function FacultyProfileScreen({ route, navigation }: any) {
   }
 
   const openLink = (url: string) => {
-    openUrl(url).then(ok => { if (!ok) toast({ type: 'error', title: t.common.error }); });
+    let target = url;
+    if (target.includes('cse.bubt.edu.bd') || target.includes('/faculty/profile/')) {
+      const resolved = resolveFacultyProfileUrl(member);
+      if (resolved) target = resolved;
+    }
+    openUrl(target).then(ok => { if (!ok) toast({ type: 'error', title: t.common.error }); });
   };
 
   async function copyLocation(text: string) {
@@ -376,18 +414,22 @@ export function FacultyProfileScreen({ route, navigation }: any) {
         )}
 
         {/* Official bubt.edu.bd profile */}
-        {member.profile_url && (
-          <TouchableOpacity
-            style={[styles.officialLink, { borderColor: C.border, backgroundColor: C.surface2 }]}
-            onPress={() => openLink(member.profile_url!)}
-            activeOpacity={0.75}
-          >
-            <Feather name="external-link" size={13} color={C.textMuted} />
-            <Text style={[styles.officialTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaSemiBold }]}>
-              View official profile on bubt.edu.bd
-            </Text>
-          </TouchableOpacity>
-        )}
+        {(() => {
+          const effectiveProfileUrl = resolveFacultyProfileUrl(member) || member.profile_url;
+          if (!effectiveProfileUrl) return null;
+          return (
+            <TouchableOpacity
+              style={[styles.officialLink, { borderColor: C.border, backgroundColor: C.surface2 }]}
+              onPress={() => openLink(effectiveProfileUrl)}
+              activeOpacity={0.75}
+            >
+              <Feather name="external-link" size={13} color={C.textMuted} />
+              <Text style={[styles.officialTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaSemiBold }]}>
+                View official profile on bubt.edu.bd
+              </Text>
+            </TouchableOpacity>
+          );
+        })()}
 
         <View style={{ height: 100 }} />
       </ScrollView>

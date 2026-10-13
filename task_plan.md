@@ -1,37 +1,37 @@
-# task_plan.md — Campus Events 360 & Automated BUBT Sync
+# task_plan.md — Permanent Sync, Crawler, Faculty Short-Codes & Deep QA System
 
-## Goals & Objectives
-Build a complete, varsity-pitch-ready 360-degree Events system for CampusOne and FixIt web companion, with automated background synchronization from official BUBT portals (bubt.edu.bd/news and notice board), digital QR event passes, rich flyer banners, live 4-tier countdown status, and complete club integration.
+## Core Objectives
+Implement permanent, robust solutions for notice synchronization, automated faculty directory crawling with initial/short codes, modern official BUBT profile URLs, missing faculty onboarding (e.g. Shaila Shaznin `SSN`), frontend search and fallback resilience, deployment to Supabase & GitHub, followed by an exhaustive multi-agent faculty module audit, bug fixes, verification, build, and memory synchronization.
 
 ## Phases
-- [x] **Phase 1: Database Schema & Cron Migration** `complete`
-  - Created migration `20261020000000_events_360_sync.sql` (source, external_url, tags, bookmarks, sync logs, notification trigger).
-  - Created migration `20261020010000_events_sync_cron.sql` (pg_cron + pg_net auto-sync every 30m).
-- [x] **Phase 2: Automated Crawler Edge Function** `complete`
-  - Created `supabase/functions/sync-events/index.ts` to crawl bubt.edu.bd/news and academic milestones, extract flyers, map clubs/categories, upsert into events table, and log execution.
-- [x] **Phase 3: Frontend Data Services & Types** `complete`
-  - Updated `src/types/database.ts` and `src/types/supabase.ts`.
-  - Created `src/services/eventsService.ts` for queries, 4-tier status, search, bookmarks, digital passes, and sharing.
-- [x] **Phase 4: Mobile Screen Overhauls** `complete`
-  - Overhauled `EventsBrowseScreen.tsx`: Banners, search, 4-tier status badges, saved tab, calendar agenda.
-  - Overhauled `EventDetailScreen.tsx`: Hero banner, digital BUBT Event Pass modal with QR code, share sheet, club deep linking, calendar export.
-  - Overhauled `EventPostScreen.tsx`: Banner image upload, club selector, capacity validation, error handling.
-- [x] **Phase 5: Sibling Web App Parity** `complete`
-  - Updated `fixit-campus/src/screens/events/Events.jsx` for official source badges, links, and parity.
-- [x] **Phase 6: Verification, Memories & Git Deployment** `in_progress`
-  - Ran type checks (`cmd /c npx tsc --noEmit` -> 0 errors).
-  - Ran web build (`cmd /c npm run build` -> passed in 3.67s).
-  - Updated `AGENTS.md` and `CLAUDE.md`.
-  - Commit with user-only author (no AI trailers) and push to GitHub remote.
-
-## Errors Encountered
-| Error | Attempt | Resolution |
-|-------|---------|------------|
-| Missing `}` on donors table in `supabase.ts` | 1 | Restored closing brace |
-| `toggle_event_bookmark` RPC signature missing in `supabase.ts` | 1 | Added RPC function signature to `supabase.ts` |
-| `scroll-velocity-text.tsx` had unresolved `motion/react` import | 1 | Changed import to `framer-motion` |
-| `utils.ts` in web missing `clsx` package | 1 | Implemented zero-dependency `cn` helper |
-
-## Next Step
-Commit changes and push to git remotes.
-
+- [ ] **Phase 1: Fix `sync-notices` Edge Function**
+  - Strip `id` from `rowsToUpsert` so all rows have uniform keys (preventing PostgREST 400 `PGRST102` error).
+  - Normalize all optional fields with explicit `null` defaults.
+  - Implement chunk-level batch upsert with row-by-row fallback so single invalid records never poison the batch.
+  - Ensure counts (`newAdded`, `updatedCount`) only increment upon successful DB commits.
+- [ ] **Phase 2: Fix `sync-faculty` Edge Function**
+  - Replace N+1 sequential query waterfall (>800 DB calls) with pre-loaded in-memory set diffing.
+  - Parse all 13 BUBT department rosters completely (overcoming the 78-faculty timeout).
+  - Extract routine short codes (`SSN`, `SR`, `MAHB`, etc.) from profile link slugs.
+  - Store active, modern BUBT profile URLs (`https://www.bubt.edu.bd/department/${slug}/faculty/profile/${shortCode}`).
+  - Implement batch inserts for new faculty (e.g. Shaila Shaznin) and batch upserts for existing faculty updates (chunks of 50).
+  - Isolated error handling per department.
+- [ ] **Phase 3: Deploy & Execute Edge Functions**
+  - Deploy `sync-notices` and `sync-faculty` to Supabase project `xhgpxvyqrufbbuivttmi`.
+  - Trigger `sync-notices` and verify Notice 1634 (`BUBT-N-1634`) is inserted into `public.announcements`.
+  - Trigger `sync-faculty` and verify Shaila Shaznin (`SSN`) is in `public.faculty` and short codes are populated for all teachers.
+- [ ] **Phase 4: Frontend Safeguard in `FacultyProfileScreen.tsx`**
+  - Dynamic URL normalization in `openLink` to rewrite legacy `cse.bubt.edu.bd` or numeric URLs to modern BUBT links on the fly.
+- [ ] **Phase 5: First Verification, Build & GitHub Push**
+  - TypeScript type check (`npx.cmd tsc --noEmit`).
+  - Deploy edge functions to Supabase.
+  - Git commit (zero AI footprint, user as author) and push to GitHub `origin main`.
+  - Initial memory update (`AGENTS.md` and `CLAUDE.md`).
+- [ ] **Phase 6: Multi-Agent Deep Audit of Faculty Module (50 Lenses)**
+  - Audit across Search, Navigation, 58dp Standard, Design System, Type Safety, Bookmarking, Mentorship, Admin CRUD, Offline Cache, Empty/Loading States, Accessibility, Re-render performance.
+  - Fix any discovered bugs/imperfections.
+- [ ] **Phase 7: Final Verification, Build, Push & Final Memory Update**
+  - Full TypeScript and packaging verification.
+  - Deploy any updated edge functions/DB changes.
+  - Git commit and push to `origin main`.
+  - Final synchronization of `AGENTS.md` and `CLAUDE.md`.

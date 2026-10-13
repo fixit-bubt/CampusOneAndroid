@@ -1,10 +1,3 @@
-// sync-faculty — automated BUBT faculty directory sync engine.
-// Crawls official BUBT websites (www.bubt.edu.bd and cse.bubt.edu.bd),
-// extracts teacher initial codes, designations, photos, emails, blood groups,
-// academic links, and updates public.faculty with audit logs in faculty_sync_logs.
-//
-// Requires admin role when invoked by user JWT, or service-role for cron.
-
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.48.1';
 
 const CORS_HEADERS = {
@@ -14,22 +7,14 @@ const CORS_HEADERS = {
 
 const BUBT_BASE = 'https://www.bubt.edu.bd';
 
-interface ScrapedFaculty {
-  name: string;
-  designation: string;
-  department_slug: string;
-  short_code: string | null;
-  photo_url: string | null;
-  profile_url: string | null;
-  email: string | null;
-  phone?: string | null;
-  blood_group?: string | null;
-  scholar_url?: string | null;
-  researchgate_url?: string | null;
-  scopus_url?: string | null;
-  research_interests?: string[];
-  qualifications?: string[];
-  on_leave?: boolean;
+function normalizeFacultyName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/^(dr\.|prof\.|professor|lecturer|mr\.|ms\.|mrs\.|engr\.|engineer)\s+/gi, '')
+    .replace(/^(md\.|mohammed|mohammad|muhammad|mst\.)\s+/gi, '')
+    .replace(/[^a-z0-9]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 Deno.serve(async (req: Request) => {
@@ -42,7 +27,7 @@ Deno.serve(async (req: Request) => {
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-  // 1. Auth Verification: Caller must provide valid sync secret, service role key, or admin JWT
+  // 1. Auth Verification
   const authHeader = req.headers.get('Authorization') ?? '';
   const syncSecretHeader = req.headers.get('x-sync-secret') ?? '';
   let triggeredBy = 'admin';
@@ -99,63 +84,64 @@ Deno.serve(async (req: Request) => {
   const logId = logEntry?.id;
 
   try {
-    // 3. Fetch departments map from DB
-    const { data: dbDepts } = await supabase.from('departments').select('id, name, dept_number');
+    // 3. Fetch departments and existing faculty in parallel
+    const [deptsRes, facultyRes] = await Promise.all([
+      supabase.from('departments').select('id, name, dept_number'),
+      supabase.from('faculty').select('id, department_id, name, designation, photo_url, profile_url, short_code, on_leave, is_chairman'),
+    ]);
+
+    const dbDepts = deptsRes.data ?? [];
+    const existingFaculty = facultyRes.data ?? [];
+
     const deptMap = new Map<string, string>();
-    (dbDepts ?? []).forEach(d => {
+    dbDepts.forEach(d => {
       deptMap.set(d.name.toLowerCase().trim(), d.id);
       deptMap.set(d.dept_number.trim(), d.id);
     });
 
-    // 4. Fetch BUBT Homepage to get academicHierarchy
-    const homeRes = await fetch(BUBT_BASE, {
-      headers: { 'User-Agent': 'CampusOne-Sync/1.0 (Academic Bot; BUBT Mobile)' },
-    });
-    const homeHtml = await homeRes.text();
+    // In-memory lookup maps for instant matching
+    const byDeptAndExact = new Map<string, any>();
+    const byDeptAndNorm = new Map<string, any>();
+    const byShortCode = new Map<string, any>();
+    const byNormOnly = new Map<string, any>();
 
-    const hierarchyMatch = homeHtml.match(/window\.academicHierarchy\s*=\s*(\[[\s\S]*?\]);/);
-    const departmentSlugs: { name: string; slug: string }[] = [];
-
-    if (hierarchyMatch) {
-      try {
-        const rawHierarchy = JSON.parse(hierarchyMatch[1]);
-        for (const facultyGroup of rawHierarchy) {
-          if (Array.isArray(facultyGroup.subPages)) {
-            for (const sub of facultyGroup.subPages) {
-              if (sub.slug && sub.name) {
-                departmentSlugs.push({ name: sub.name, slug: sub.slug });
-              }
-            }
-          }
-        }
-      } catch (_e) {
-        // Fallback below
+    for (const f of existingFaculty) {
+      const exactKey = `${f.department_id}::${f.name.toLowerCase().trim()}`;
+      const normKey = `${f.department_id}::${normalizeFacultyName(f.name)}`;
+      byDeptAndExact.set(exactKey, f);
+      byDeptAndNorm.set(normKey, f);
+      if (f.short_code) {
+        byShortCode.set(f.short_code.toUpperCase(), f);
       }
+      byNormOnly.set(normalizeFacultyName(f.name), f);
     }
 
-    // Fallback if regex failed
-    if (departmentSlugs.length === 0) {
-      departmentSlugs.push(
-        { name: 'Department of Computer Science & Engineering', slug: 'department-of-computer-science-engineering' },
-        { name: 'Department of Electrical & Electronic Engineering', slug: 'department-of-electrical-electronic-engineering' },
-        { name: 'Department of Civil Engineering', slug: 'department-of-civil-engineering' },
-        { name: 'Department of Textile Engineering', slug: 'department-of-textile-engineering' },
-        { name: 'Department of Data Science & Engineering', slug: 'department-of-data-science-engineering' },
-        { name: 'Department of Management', slug: 'department-of-management' },
-        { name: 'Department of Accounting', slug: 'department-of-accounting' },
-        { name: 'Department of Marketing', slug: 'department-of-marketing' },
-        { name: 'Department of Finance', slug: 'department-of-finance' },
-        { name: 'Department of Mathematics & Statistics', slug: 'department-of-mathematics-statistics' },
-        { name: 'Department of Law & Justice', slug: 'department-of-law-justice' },
-        { name: 'Department of English', slug: 'department-of-english' },
-        { name: 'Department of Economics', slug: 'department-of-economics' },
-      );
-    }
+    // 4. Department Slugs List
+    const departmentSlugs = [
+      { name: 'Department of Computer Science & Engineering', slug: 'department-of-computer-science-engineering' },
+      { name: 'Department of Data Science & Engineering', slug: 'department-of-data-science-engineering' },
+      { name: 'Department of Mathematics & Statistics', slug: 'department-of-mathematics-statistics' },
+      { name: 'Department of Electrical & Electronic Engineering', slug: 'department-of-electrical-electronic-engineering' },
+      { name: 'Department of Textile Engineering', slug: 'department-of-textile-engineering' },
+      { name: 'Department of Civil Engineering', slug: 'department-of-civil-engineering' },
+      { name: 'Department of Law & Justice', slug: 'department-of-law-justice' },
+      { name: 'Department of English', slug: 'department-of-english' },
+      { name: 'Department of Management', slug: 'department-of-management' },
+      { name: 'Department of Economics', slug: 'department-of-economics' },
+      { name: 'Department of Accounting', slug: 'department-of-accounting' },
+      { name: 'Department of Marketing', slug: 'department-of-marketing' },
+      { name: 'Department of Finance', slug: 'department-of-finance' },
+    ];
 
     let totalScanned = 0;
     let newAdded = 0;
     let promotionsUpdated = 0;
     let photosUpdated = 0;
+    let shortCodesUpdated = 0;
+
+    const rowsToInsert: any[] = [];
+    const rowsToUpdate: any[] = [];
+    const seenUpdatedIds = new Set<string>();
 
     // 5. Scrape Department Rosters
     for (const d of departmentSlugs) {
@@ -167,7 +153,6 @@ Deno.serve(async (req: Request) => {
         if (!deptRes.ok) continue;
         const deptHtml = await deptRes.text();
 
-        // Find department id in DB
         let deptId: string | undefined;
         for (const [key, id] of deptMap.entries()) {
           if (d.name.toLowerCase().includes(key) || key.includes(d.name.toLowerCase())) {
@@ -177,16 +162,18 @@ Deno.serve(async (req: Request) => {
         }
         if (!deptId) continue;
 
-        // Parse faculty card chunks
         const cardChunks = deptHtml.split(/class="faculty-card\b/);
         for (let i = 1; i < cardChunks.length; i++) {
           const chunk = cardChunks[i];
           const linkMatch = chunk.match(/href="([^"]*\/faculty\/profile\/([^"]+))"/i);
-          if (!linkMatch) continue; // Skip non-faculty staff
+          if (!linkMatch) continue;
 
           totalScanned++;
-          const profileUrl = linkMatch[1]?.trim();
-          const shortCode = linkMatch[2]?.trim().toUpperCase();
+          const rawCode = linkMatch[2]?.trim().replace(/\/+$/, '') || '';
+          const shortCode = rawCode ? rawCode.toUpperCase() : null;
+          const canonicalProfileUrl = shortCode
+            ? `${BUBT_BASE}/department/${d.slug}/faculty/profile/${shortCode}`
+            : linkMatch[1]?.trim() || null;
 
           const imgMatch = chunk.match(/<img[^>]+src="([^">]+)"/i);
           const altMatch = chunk.match(/<img[^>]+alt="([^">]+)"/i);
@@ -204,59 +191,105 @@ Deno.serve(async (req: Request) => {
           const onLeave = /on leave|study leave|lien/i.test(chunk);
           const isChairman = /chairman|head of/i.test(chunk) || /chairman/i.test(rawDesig);
 
-          // Check existing faculty row
-          const { data: existing } = await supabase
-            .from('faculty')
-            .select('id, designation, photo_url, short_code, on_leave, is_chairman')
-            .eq('department_id', deptId)
-            .ilike('name', name)
-            .maybeSingle();
+          // In-memory match
+          const exactKey = `${deptId}::${name.toLowerCase().trim()}`;
+          const normKey = `${deptId}::${normalizeFacultyName(name)}`;
+          const existing = byDeptAndExact.get(exactKey)
+            || byDeptAndNorm.get(normKey)
+            || (shortCode ? byShortCode.get(shortCode) : null)
+            || byNormOnly.get(normalizeFacultyName(name));
 
           if (existing) {
-            const updates: Record<string, any> = {
-              last_synced_at: new Date().toISOString(),
-            };
-            if (shortCode && !existing.short_code) updates.short_code = shortCode;
-            if (photoUrl && existing.photo_url !== photoUrl) {
-              updates.photo_url = photoUrl;
-              photosUpdated++;
-            }
-            if (rawDesig && existing.designation !== rawDesig) {
-              updates.designation = rawDesig;
-              promotionsUpdated++;
-            }
-            if (onLeave !== existing.on_leave) updates.on_leave = onLeave;
-            if (isChairman !== existing.is_chairman) updates.is_chairman = isChairman;
+            if (seenUpdatedIds.has(existing.id)) continue;
+            seenUpdatedIds.add(existing.id);
 
-            await supabase.from('faculty').update(updates).eq('id', existing.id);
+            const needsShortCode = Boolean(shortCode && existing.short_code !== shortCode);
+            const needsProfileUrl = Boolean(
+              canonicalProfileUrl &&
+              (!existing.profile_url ||
+                existing.profile_url.includes('cse.bubt.edu.bd') ||
+                existing.profile_url !== canonicalProfileUrl)
+            );
+            const photoChanged = Boolean(photoUrl && existing.photo_url !== photoUrl);
+            const desigChanged = Boolean(rawDesig && existing.designation !== rawDesig);
+            const leaveChanged = onLeave !== existing.on_leave;
+            const chairmanChanged = isChairman !== existing.is_chairman;
+
+            if (needsShortCode || needsProfileUrl || photoChanged || desigChanged || leaveChanged || chairmanChanged) {
+              if (needsShortCode) shortCodesUpdated++;
+              if (photoChanged) photosUpdated++;
+              if (desigChanged) promotionsUpdated++;
+
+              rowsToUpdate.push({
+                id: existing.id,
+                department_id: deptId,
+                name: existing.name,
+                designation: rawDesig || existing.designation,
+                short_code: shortCode || existing.short_code || null,
+                photo_url: photoUrl || existing.photo_url || null,
+                profile_url: canonicalProfileUrl || existing.profile_url || null,
+                on_leave: onLeave,
+                is_chairman: isChairman,
+                last_synced_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              });
+            }
           } else {
-            // New teacher found on BUBT official site!
-            const newRow = {
+            // New teacher found on BUBT
+            rowsToInsert.push({
               department_id: deptId,
               name,
-              designation: rawDesig,
-              short_code: shortCode,
-              photo_url: photoUrl,
-              profile_url: profileUrl,
+              designation: rawDesig || 'Lecturer',
+              short_code: shortCode || null,
+              photo_url: photoUrl || null,
+              profile_url: canonicalProfileUrl,
               on_leave: onLeave,
               is_chairman: isChairman,
               research_interests: [],
               qualifications: [],
               data_source: 'main_site',
               last_synced_at: new Date().toISOString(),
-            };
-            await supabase.from('faculty').insert(newRow);
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            });
             newAdded++;
           }
         }
-      } catch (_err) {
+      } catch (_deptErr) {
         // Continue with next department
+      }
+    }
+
+    // 6. High performance batch writes in chunks of 50
+    const CHUNK_SIZE = 50;
+
+    // Batch inserts for new faculty
+    for (let i = 0; i < rowsToInsert.length; i += CHUNK_SIZE) {
+      const chunk = rowsToInsert.slice(i, i + CHUNK_SIZE);
+      const { error: insertErr } = await supabase.from('faculty').insert(chunk);
+      if (insertErr) {
+        console.error('Batch insert error, falling back row-by-row:', insertErr.message);
+        for (const row of chunk) {
+          await supabase.from('faculty').insert(row);
+        }
+      }
+    }
+
+    // Batch upserts for updated faculty
+    for (let i = 0; i < rowsToUpdate.length; i += CHUNK_SIZE) {
+      const chunk = rowsToUpdate.slice(i, i + CHUNK_SIZE);
+      const { error: upsertErr } = await supabase.from('faculty').upsert(chunk, { onConflict: 'id' });
+      if (upsertErr) {
+        console.error('Batch upsert error, falling back row-by-row:', upsertErr.message);
+        for (const row of chunk) {
+          await supabase.from('faculty').upsert(row, { onConflict: 'id' });
+        }
       }
     }
 
     const durationMs = Date.now() - startedAt;
 
-    // 6. Update audit log
+    // 7. Update audit log
     if (logId) {
       await supabase.from('faculty_sync_logs').update({
         status: 'success',
@@ -265,6 +298,11 @@ Deno.serve(async (req: Request) => {
         promotions_updated: promotionsUpdated,
         photos_updated: photosUpdated,
         duration_ms: durationMs,
+        details: {
+          short_codes_updated: shortCodesUpdated,
+          total_updated: rowsToUpdate.length,
+          departments_scanned: departmentSlugs.length,
+        },
         completed_at: new Date().toISOString(),
       }).eq('id', logId);
     }
@@ -274,8 +312,10 @@ Deno.serve(async (req: Request) => {
         success: true,
         total_scanned: totalScanned,
         new_added: newAdded,
+        short_codes_updated: shortCodesUpdated,
         promotions_updated: promotionsUpdated,
         photos_updated: photosUpdated,
+        total_updated: rowsToUpdate.length,
         duration_ms: durationMs,
       }),
       {
@@ -283,10 +323,12 @@ Deno.serve(async (req: Request) => {
       }
     );
   } catch (error: any) {
+    const durationMs = Date.now() - startedAt;
     if (logId) {
       await supabase.from('faculty_sync_logs').update({
         status: 'failed',
         error_message: error?.message || 'Unknown crawl error',
+        duration_ms: durationMs,
         completed_at: new Date().toISOString(),
       }).eq('id', logId);
     }
@@ -297,4 +339,3 @@ Deno.serve(async (req: Request) => {
     });
   }
 });
-
