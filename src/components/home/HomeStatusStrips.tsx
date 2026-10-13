@@ -16,6 +16,7 @@ import {
   minutesToHHMM,
   busCycleProgress,
   prayerIntervalProgress,
+  nowDhakaMinutes,
   type PrayerItem,
 } from '../../utils/transitPrayer';
 import { FontFamily } from '../../theme';
@@ -24,6 +25,7 @@ interface BusRouteData {
   id: string;
   name: string;
   to_departures: string[];
+  from_departures: string[];
 }
 
 export function HomeStatusStrips() {
@@ -67,7 +69,7 @@ export function HomeStatusStrips() {
         getMyReports(user.id),
         supabase
           .from('bus_routes')
-          .select('id, name, to_departures')
+          .select('id, name, to_departures, from_departures')
           .eq('active', true),
         supabase
           .from('saved_bus_routes')
@@ -93,6 +95,7 @@ export function HomeStatusStrips() {
             id: r.id,
             name: r.name,
             to_departures: r.to_departures ?? [],
+            from_departures: r.from_departures ?? [],
           }))
         : (cached?.busRoutes ?? []);
       const nextSavedBus = savedBusRes.data
@@ -160,9 +163,13 @@ export function HomeStatusStrips() {
         ? busRoutes.filter((r) => savedBusRoutes.includes(r.id))
         : busRoutes;
 
+    const dhakaH = Math.floor(nowDhakaMinutes() / 60);
     const departures = pool
       .map((r) => {
-        const d = nextDeparture(r.to_departures);
+        const times = dhakaH >= 12
+          ? (r.from_departures?.length ? r.from_departures : r.to_departures)
+          : (r.to_departures?.length ? r.to_departures : r.from_departures);
+        const d = nextDeparture(times ?? []);
         return d ? { route: r, ...d } : null;
       })
       .filter((item): item is NonNullable<typeof item> => item !== null)

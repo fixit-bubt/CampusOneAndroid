@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, Modal, ScrollView,
-  StyleSheet, RefreshControl, KeyboardAvoidingView, Platform, type ViewStyle,
+  StyleSheet, RefreshControl, KeyboardAvoidingView, Linking, type ViewStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -12,25 +12,39 @@ import { useT } from '../../i18n';
 import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
+import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
 import { SkeletonList, LoadError } from '../../components/ui/LoadState';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
+import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { getCache, setCache, CacheKeys } from '../../services/cacheService';
-import { minutesToHHMM, nowDhakaMinutes } from '../../utils/transitPrayer';
+import {
+  minutesToHHMM,
+  nowDhakaMinutes,
+  formatTime12,
+  fmtCountdown,
+  nextDeparture,
+  dhakaWeekday,
+} from '../../utils/transitPrayer';
 import type { BusRoute } from '../../types/database';
 
 const BUS_COLOR = SectorColors.bus;
 const BUS_BG    = `${SectorColors.bus}1e`;
 
+const DIRECTION_TABS: TabItem<'to' | 'from'>[] = [
+  { id: 'to', label: 'To Campus', icon: 'arrow-right' },
+  { id: 'from', label: 'From Campus', icon: 'arrow-left' },
+];
+
 interface RouteForm {
-  id: string | null;       // null = new route
+  id: string | null;
   name: string;
   area: string;
   bus_no: string;
   helper_name: string;
   helper_phone: string;
-  stops: string;           // comma-separated in the form
+  stops: string;
   to_departures: string;
   from_departures: string;
 }
@@ -38,24 +52,20 @@ interface RouteForm {
 const csv = (a: string[] | null | undefined) => (a ?? []).join(', ');
 const uncsv = (s: string) => s.split(',').map(x => x.trim()).filter(Boolean);
 
-function format12Hour(time24: string): string {
-  if (!time24 || !time24.includes(':')) return time24;
-  const [hStr, mStr] = time24.split(':');
-  let h = parseInt(hStr, 10);
-  if (isNaN(h)) return time24;
-  const ampm = h >= 12 ? 'PM' : 'AM';
-  h = h % 12 || 12;
-  return `${String(h).padStart(2, '0')}:${mStr} ${ampm}`;
-}
-
 export function BusScreen({ navigation }: any) {
   const { C } = useTheme();
   const toast = useToast();
   const t = useT();
   const { user, profile } = useAuth();
   const isAdmin = profile?.role === 'admin';
+
   const [routes, setRoutes] = useState<BusRoute[]>([]);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const [direction, setDirection] = useState<'to' | 'from'>(() => {
+    const h = Math.floor(nowDhakaMinutes() / 60);
+    return h >= 12 ? 'from' : 'to';
+  });
+  const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -63,7 +73,6 @@ export function BusScreen({ navigation }: any) {
   const [form, setForm] = useState<RouteForm | null>(null);
 
   const load = useCallback(async () => {
-    // 1. Instant cache load
     const cachedRoutes = await getCache<BusRoute[]>(CacheKeys.BUS_ROUTES);
     if (cachedRoutes && cachedRoutes.length > 0) {
       setRoutes(cachedRoutes);
@@ -74,7 +83,6 @@ export function BusScreen({ navigation }: any) {
       if (cachedSaved) setSavedIds(new Set(cachedSaved));
     }
 
-    // 2. Fetch fresh
     const [routesRes, savedRes] = await Promise.all([
       supabase.from('bus_routes').select('*').eq('active', true).order('name').limit(50),
       supabase.from('saved_bus_routes').select('route_id').eq('user_id', user?.id ?? '').limit(50),
@@ -119,7 +127,6 @@ export function BusScreen({ navigation }: any) {
       ? await supabase.from('saved_bus_routes').delete().eq('route_id', routeId).eq('user_id', user.id)
       : await supabase.from('saved_bus_routes').upsert({ route_id: routeId, user_id: user.id }, { onConflict: 'user_id,route_id' });
     if (error && error.code !== '23505') {
-      // revert the optimistic toggle on failure
       setSavedIds(prev => { const n = new Set(prev); isSaved ? n.add(routeId) : n.delete(routeId); return n; });
       toast({ type: 'error', title: t.common.error });
     }
@@ -167,15 +174,57 @@ export function BusScreen({ navigation }: any) {
     load();
   }
 
-  function nextDeparture(route: BusRoute): string {
-    const hhmm = minutesToHHMM(nowDhakaMinutes());
-    const upcoming = (route.to_departures ?? []).find(d => d > hhmm);
-    const chosen = upcoming ?? (route.to_departures ?? [])[0];
-    return chosen ? format12Hour(chosen) : '--:--';
+  function getDeparture(r: BusRoute) {
+    const list = direction === 'to' ? (r.to_departures ?? []) : (r.from_departures ?? []);
+    return nextDeparture(list);
   }
 
-  const sorted = [...routes].sort((a, b) =>
-    Number(savedIds.has(b.id)) - Number(savedIds.has(a.id)) || a.name.localeCompare(b.name));
+  const queryTrimmed = searchQuery.toLowerCase().trim();
+
+  const filteredRoutes = useMemo(() => {
+    if (!queryTrimmed) return routes;
+    return routes.filter(r => {
+      const nameMatch = r.name?.toLowerCase().includes(queryTrimmed);
+      const areaMatch = r.area?.toLowerCase().includes(queryTrimmed);
+      const busMatch = r.bus_no?.toLowerCase().includes(queryTrimmed);
+      const stopsMatch = (r.stops ?? []).some(s => s.toLowerCase().includes(queryTrimmed));
+      return nameMatch || areaMatch || busMatch || stopsMatch;
+    });
+  }, [routes, queryTrimmed]);
+
+  const sortedRoutes = useMemo(() => {
+    return [...filteredRoutes].sort((a, b) =>
+      Number(savedIds.has(b.id)) - Number(savedIds.has(a.id)) || a.name.localeCompare(b.name)
+    );
+  }, [filteredRoutes, savedIds]);
+
+  const hero = useMemo(() => {
+    if (routes.length === 0) return null;
+    const candidates = (savedIds.size > 0
+      ? routes.filter(r => savedIds.has(r.id))
+      : routes
+    )
+      .map(r => {
+        const d = getDeparture(r);
+        return d ? { route: r, ...d } : null;
+      })
+      .filter((x): x is NonNullable<typeof x> => x !== null)
+      .sort((a, b) => a.wait - b.wait);
+
+    if (candidates.length > 0) return candidates[0];
+
+    const fallback = routes
+      .map(r => {
+        const d = getDeparture(r);
+        return d ? { route: r, ...d } : null;
+      })
+      .filter((x): x is NonNullable<typeof x> => x !== null)
+      .sort((a, b) => a.wait - b.wait);
+
+    return fallback[0] ?? null;
+  }, [routes, savedIds, direction]);
+
+  const isFriday = dhakaWeekday() === 'Fri';
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -188,48 +237,170 @@ export function BusScreen({ navigation }: any) {
           </TouchableOpacity>
         ) : undefined}
       />
+
+      {/* 58dp Direction Switcher */}
+      <View style={{ paddingHorizontal: Layout.screenPadding, marginTop: 4, marginBottom: 8 }}>
+        <SegmentedTabs<'to' | 'from'>
+          tabs={DIRECTION_TABS}
+          activeTab={direction}
+          onTabChange={setDirection}
+        />
+      </View>
+
+      {/* 58dp Search Bar */}
+      <View style={[styles.searchWrapper, { paddingHorizontal: Layout.screenPadding, marginBottom: 8 }]}>
+        <View style={[styles.searchBar, { backgroundColor: C.surface, borderColor: C.border }]}>
+          <Icon name="search" size={18} color={C.textMuted} />
+          <TextInput
+            style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+            placeholder="Search route, stop, or area…"
+            placeholderTextColor={C.textMuted}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            autoCapitalize="none"
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={8} style={{ padding: 4 }}>
+              <Icon name="x" size={15} color={C.textMuted} />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
         <OfflineBanner visible={isOffline} onRetry={load} />
-        {loading ? (
+
+        {/* Friday Notice Banner */}
+        {isFriday && (
+          <View style={[styles.noticeBanner, { backgroundColor: C.surface, borderColor: C.warn }]}>
+            <Icon name="alert-triangle" size={16} color={C.warn} />
+            <Text style={[styles.noticeText, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>
+              Friday service is suspended for regular classes. Special exam or event shuttles may operate.
+            </Text>
+          </View>
+        )}
+
+        {/* Next Departure Hero Card */}
+        {hero && !searchQuery && (
+          <TouchableOpacity
+            style={[styles.heroCard, { backgroundColor: C.surface, borderColor: C.border }]}
+            onPress={() => navigation.navigate('BusDetail', { id: hero.route.id, initialDirection: direction })}
+            activeOpacity={0.8}
+          >
+            <View style={styles.heroTop}>
+              <View style={[styles.heroBadge, { backgroundColor: BUS_BG }]}>
+                <AnimatedIcon family="feather" name="clock" size={13} color={BUS_COLOR} animation="spring" />
+                <Text style={[styles.heroBadgeTxt, { color: BUS_COLOR, fontFamily: FontFamily.jakartaBold }]}>
+                  {direction === 'to' ? 'Next shuttle to campus' : 'Next shuttle from campus'}
+                </Text>
+              </View>
+              <View style={[styles.waitPill, { backgroundColor: hero.tomorrow ? C.surface2 : `${BUS_COLOR}1e` }]}>
+                <Text style={[styles.waitPillTxt, { color: hero.tomorrow ? C.textMuted : BUS_COLOR, fontFamily: FontFamily.jakartaBold }]}>
+                  {hero.tomorrow ? 'Tomorrow' : `in ${fmtCountdown(hero.wait)}`}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.heroBody}>
+              <Text style={[styles.heroTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+                {hero.route.name}
+              </Text>
+              <Text style={[styles.heroTime, { color: BUS_COLOR, fontFamily: FontFamily.jakartaBold }]}>
+                {formatTime12(minutesToHHMM(hero.mins))}
+              </Text>
+            </View>
+
+            <View style={[styles.heroFooter, { borderColor: C.border }]}>
+              <Text style={[styles.heroMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+                {hero.route.bus_no ? `${hero.route.bus_no} · ` : ''}
+                {direction === 'to' ? `Starts from ${hero.route.stops?.[0] ?? hero.route.area}` : 'Departs from BUBT Main Campus'}
+              </Text>
+              <Feather name="chevron-right" size={16} color={C.textMuted} />
+            </View>
+          </TouchableOpacity>
+        )}
+
+        {loading && routes.length === 0 ? (
           <SkeletonList />
         ) : loadFailed ? (
           <LoadError onRetry={load} />
-        ) : routes.length === 0 ? (
+        ) : sortedRoutes.length === 0 ? (
           <View style={styles.empty}>
-            <Icon name="bus" size={28} color={C.textMuted} />
-            <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.bus2.noRoutes}</Text>
+            <Icon name="bus" size={32} color={C.textMuted} />
+            <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              {searchQuery ? t.common.noResults : t.bus2.noRoutes}
+            </Text>
+            {searchQuery ? (
+              <TouchableOpacity
+                style={[styles.clearBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+                onPress={() => setSearchQuery('')}
+                activeOpacity={0.75}
+              >
+                <Text style={[styles.clearBtnTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+                  Clear search
+                </Text>
+              </TouchableOpacity>
+            ) : null}
           </View>
         ) : (
           <View style={styles.list}>
-            {sorted.map(r => {
-              const next = nextDeparture(r);
+            {sortedRoutes.map(r => {
+              const dep = getDeparture(r);
               const isSaved = savedIds.has(r.id);
+              const matchedStop = queryTrimmed
+                ? (r.stops ?? []).find(s => s.toLowerCase().includes(queryTrimmed))
+                : null;
+
               return (
                 <TouchableOpacity
                   key={r.id}
                   style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}
-                  onPress={() => navigation.navigate('BusDetail', { id: r.id })}
+                  onPress={() => navigation.navigate('BusDetail', { id: r.id, initialDirection: direction })}
                   activeOpacity={0.75}
                 >
                   <View style={[styles.thumb, { backgroundColor: BUS_BG }]}>
                     <Icon name="bus" size={22} color={BUS_COLOR} />
                   </View>
                   <View style={styles.cardBody}>
-                    <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                      {r.name}
-                    </Text>
+                    <View style={styles.cardTitleRow}>
+                      <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                        {r.name}
+                      </Text>
+                      {r.bus_no && (
+                        <View style={[styles.busNoBadge, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                          <Text style={[styles.busNoTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                            {r.bus_no}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+
                     <Text style={[styles.cardStops, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                      {(r.stops ?? []).length} stops
+                      {(r.stops ?? []).length} stops · {r.area}
                     </Text>
+
+                    {matchedStop && (
+                      <View style={[styles.matchedPill, { backgroundColor: `${C.brand}14` }]}>
+                        <Feather name="map-pin" size={11} color={C.brand} />
+                        <Text style={[styles.matchedPillTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+                          Stops at {matchedStop}
+                        </Text>
+                      </View>
+                    )}
+
                     <View style={styles.cardMeta}>
                       <View style={[styles.timePill, { backgroundColor: `${BUS_COLOR}1e` }]}>
                         <View style={[styles.timeDot, { backgroundColor: BUS_COLOR }]} />
                         <Text style={[styles.timeTxt, { color: BUS_COLOR, fontFamily: FontFamily.jakartaBold }]}>
-                          Next: {next}
+                          {dep
+                            ? `${dep.tomorrow ? 'Tmrw' : 'Next'}: ${formatTime12(minutesToHHMM(dep.mins))}`
+                            : 'No service'}
                         </Text>
                       </View>
                     </View>
@@ -247,10 +418,51 @@ export function BusScreen({ navigation }: any) {
             })}
           </View>
         )}
-        <View style={{ height: 12 }} />
+
+        {/* Campus Transit & Helpline Footer */}
+        <View style={[styles.transitFooter, { backgroundColor: C.surface, borderColor: C.border }]}>
+          <View style={styles.transitRow}>
+            <View style={[styles.transitIconBox, { backgroundColor: `${C.brand}1e` }]}>
+              <Feather name="navigation" size={18} color={C.brand} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.transitTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                Metro Rail & Campus Link
+              </Text>
+              <Text style={[styles.transitSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+                Pallabi & Mirpur-11 Metro Stations (MRT Line-6) are 5-10 min from Rupnagar Campus.
+              </Text>
+            </View>
+          </View>
+
+          <View style={[styles.transitDivider, { backgroundColor: C.border }]} />
+
+          <View style={styles.transitRow}>
+            <View style={[styles.transitIconBox, { backgroundColor: `${C.success}1e` }]}>
+              <Feather name="phone-call" size={18} color={C.success} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.transitTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                BUBT Transport Desk
+              </Text>
+              <Text style={[styles.transitSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+                One Stop Service Hotline: 01810033740 · Free with BUBT ID
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={[styles.callBtn, { backgroundColor: C.success }]}
+              onPress={() => Linking.openURL('tel:01810033740')}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.callBtnTxt, { fontFamily: FontFamily.jakartaBold }]}>Call</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={{ height: 20 }} />
       </ScrollView>
 
-      {/* Admin: add/edit route */}
+      {/* Admin: add/edit route modal */}
       <Modal visible={!!form} transparent animationType="slide" onRequestClose={() => setForm(null)}>
         <KeyboardAvoidingView style={styles.overlay} behavior="padding">
           <TouchableOpacity style={{ flex: 1 }} onPress={() => setForm(null)} />
@@ -262,12 +474,12 @@ export function BusScreen({ navigation }: any) {
               {([
                 ['name', 'Route name *'],
                 ['area', 'Area'],
-                ['bus_no', 'Bus number'],
+                ['bus_no', 'Bus number (e.g. BUBT-07)'],
                 ['helper_name', 'Helper name'],
-                ['helper_phone', 'Helper phone'],
+                ['helper_phone', 'Helper phone (+8801...)'],
                 ['stops', 'Stops (comma-separated)'],
-                ['to_departures', 'To campus times (07:00, 08:00)'],
-                ['from_departures', 'From campus times (13:00, 17:00)'],
+                ['to_departures', 'To campus times (06:45, 07:30)'],
+                ['from_departures', 'From campus times (16:30, 18:00)'],
               ] as [keyof RouteForm, string][]).map(([key, label]) => (
                 <TextInput
                   key={key}
@@ -281,7 +493,9 @@ export function BusScreen({ navigation }: any) {
             </ScrollView>
             <TouchableOpacity
               style={[styles.sheetBtn, { backgroundColor: BUS_COLOR, opacity: form?.name.trim() ? 1 : 0.5 }]}
-              onPress={saveRoute} disabled={!form?.name.trim()} activeOpacity={0.8}
+              onPress={saveRoute}
+              disabled={!form?.name.trim()}
+              activeOpacity={0.8}
             >
               <Text style={[styles.sheetBtnTxt, { fontFamily: FontFamily.jakartaBold }]}>{t.bus2.saveRoute}</Text>
             </TouchableOpacity>
@@ -294,21 +508,224 @@ export function BusScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
-  scroll: { paddingTop: 8, paddingBottom: 20 } as ViewStyle,
+  scroll: { paddingTop: 6, paddingBottom: 24 } as ViewStyle,
+
+  searchWrapper: {} as ViewStyle,
+  searchBar: {
+    height: Layout.controlHeight,
+    borderRadius: Layout.controlRadius,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  } as ViewStyle,
+  searchInput: {
+    flex: 1,
+    height: '100%',
+    fontSize: 14.5,
+  } as any,
+
+  noticeBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginBottom: 12,
+  } as ViewStyle,
+  noticeText: {
+    flex: 1,
+    fontSize: 12.5,
+    lineHeight: 18,
+  } as any,
+
+  heroCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 14,
+    marginBottom: 12,
+  } as ViewStyle,
+  heroTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  } as ViewStyle,
+  heroBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 8,
+  } as ViewStyle,
+  heroBadgeTxt: {
+    fontSize: 12,
+  } as any,
+  waitPill: {
+    paddingHorizontal: 9,
+    paddingVertical: 3.5,
+    borderRadius: 20,
+  } as ViewStyle,
+  waitPillTxt: {
+    fontSize: 11.5,
+  } as any,
+  heroBody: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  } as ViewStyle,
+  heroTitle: {
+    fontSize: 18,
+    flex: 1,
+  } as any,
+  heroTime: {
+    fontSize: 17,
+  } as any,
+  heroFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderTopWidth: 1,
+    paddingTop: 8,
+  } as ViewStyle,
+  heroMeta: {
+    fontSize: 12,
+  } as any,
+
   list: { gap: 10 } as ViewStyle,
-  card: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 16, borderWidth: 1 } as ViewStyle,
-  thumb: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center', flexShrink: 0 } as ViewStyle,
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+  } as ViewStyle,
+  thumb: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  } as ViewStyle,
   cardBody: { flex: 1 } as ViewStyle,
-  cardTitle: { fontSize: 14 } as any,
-  cardStops: { fontSize: 12, marginTop: 3 } as any,
-  cardMeta: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 5 } as ViewStyle,
-  timePill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 } as ViewStyle,
+  cardTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  } as ViewStyle,
+  cardTitle: {
+    fontSize: 14.5,
+    flexShrink: 1,
+  } as any,
+  busNoBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+  } as ViewStyle,
+  busNoTxt: {
+    fontSize: 10.5,
+  } as any,
+  cardStops: {
+    fontSize: 12,
+    marginTop: 3,
+  } as any,
+  matchedPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4.5,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
+    borderRadius: 6,
+    marginTop: 4,
+  } as ViewStyle,
+  matchedPillTxt: {
+    fontSize: 11,
+  } as any,
+  cardMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 6,
+  } as ViewStyle,
+  timePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 20,
+  } as ViewStyle,
   timeDot: { width: 6, height: 6, borderRadius: 3 } as ViewStyle,
   timeTxt: { fontSize: 11 } as any,
-  empty: { alignItems: 'center', paddingTop: 60, gap: 8 } as ViewStyle,
-  emptyTitle: { fontSize: 16 } as any,
 
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' } as ViewStyle,
+  empty: {
+    alignItems: 'center',
+    paddingTop: 50,
+    gap: 12,
+  } as ViewStyle,
+  emptyTitle: { fontSize: 15 } as any,
+  clearBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 10,
+    borderWidth: 1,
+  } as ViewStyle,
+  clearBtnTxt: { fontSize: 13 } as any,
+
+  transitFooter: {
+    marginTop: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 14,
+    gap: 12,
+  } as ViewStyle,
+  transitRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  } as ViewStyle,
+  transitIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  transitTitle: {
+    fontSize: 13.5,
+  } as any,
+  transitSub: {
+    fontSize: 11.5,
+    marginTop: 2,
+    lineHeight: 16,
+  } as any,
+  transitDivider: {
+    height: 1,
+    opacity: 0.6,
+  } as ViewStyle,
+  callBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+  } as ViewStyle,
+  callBtnTxt: {
+    color: '#fff',
+    fontSize: 12.5,
+  } as any,
+
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  } as ViewStyle,
   sheet: {
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
@@ -316,7 +733,20 @@ const styles = StyleSheet.create({
     paddingBottom: 36,
   } as ViewStyle,
   sheetTitle: { fontSize: 17, marginBottom: 12 } as any,
-  sheetInput: { height: 46, borderRadius: 12, borderWidth: 1, paddingHorizontal: 13, fontSize: 14, marginBottom: 10 } as any,
-  sheetBtn: { height: 48, borderRadius: 13, alignItems: 'center', justifyContent: 'center', marginTop: 6 } as ViewStyle,
+  sheetInput: {
+    height: Layout.controlHeight,
+    borderRadius: Layout.controlRadius,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    fontSize: 14,
+    marginBottom: 10,
+  } as any,
+  sheetBtn: {
+    height: Layout.controlHeight,
+    borderRadius: Layout.controlRadius,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 6,
+  } as ViewStyle,
   sheetBtnTxt: { color: '#fff', fontSize: 15 } as any,
 });
