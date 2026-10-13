@@ -3,7 +3,7 @@ import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
   RefreshControl, Alert, TextInput, Keyboard, Animated, type ViewStyle, type TextStyle,
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -376,6 +376,7 @@ export function BloodScreen({ route, navigation }: any) {
             t.blood2.rechargedNotificationTitle,
             t.blood2.rechargedNotificationBody,
           );
+          await AsyncStorage.removeItem(CacheKeys.HOME_STATUS(user.id));
           toast({ type: 'success', title: t.blood2.markedDonatedTitle, message: t.blood2.markedDonatedBody });
           load();
         },
@@ -423,8 +424,9 @@ export function BloodScreen({ route, navigation }: any) {
         {
           text: t.blood2.yesICanHelp,
           onPress: async () => {
-            // Optimistically mark as responded so the user cannot double-tap
+            // Optimistically mark as responded and bump pledge count
             setRespondedIds(prev => new Set(prev).add(r.id));
+            setRequests(prev => prev.map(req => req.id === r.id ? { ...req, pledge_count: ((req as any).pledge_count || 0) + 1 } : req));
             const res = await pledgeToRequest(r.id, user.id);
             if (!res.ok) {
               setRespondedIds(prev => {
@@ -432,6 +434,7 @@ export function BloodScreen({ route, navigation }: any) {
                 next.delete(r.id);
                 return next;
               });
+              setRequests(prev => prev.map(req => req.id === r.id ? { ...req, pledge_count: Math.max(0, ((req as any).pledge_count || 1) - 1) } : req));
               toast({ type: 'error', title: t.common.error, message: t.blood2.submitResponseError });
             } else {
               const cacheKey = CacheKeys.BLOOD_FEED(user.id);
@@ -439,7 +442,10 @@ export function BloodScreen({ route, navigation }: any) {
               if (cached) {
                 const setIds = new Set(cached.respondedIds ?? []);
                 setIds.add(r.id);
-                setCache(cacheKey, { ...cached, respondedIds: Array.from(setIds) });
+                const updatedRequests = (cached.requests ?? []).map((req: any) =>
+                  req.id === r.id ? { ...req, pledge_count: (req.pledge_count || 0) + 1 } : req
+                );
+                setCache(cacheKey, { ...cached, requests: updatedRequests, respondedIds: Array.from(setIds) });
               }
               toast({ type: 'success', title: t.blood2.thankYou, message: t.blood2.pledgedToHelp(r.blood_group) });
             }
@@ -560,7 +566,7 @@ export function BloodScreen({ route, navigation }: any) {
                   {myDonor.area ? myDonor.area : t.blood2.myDonorStatusTitle}
                 </Text>
                 {(() => {
-                  const { eligible, daysLeft } = donorEligibility(myDonor.last_donated);
+                  const { eligible, daysLeft } = donorEligibility(myDonor.last_donated, (profile as any)?.gender);
                   return (
                     <View style={[styles.eligPill, { backgroundColor: eligible ? C.successBg : C.warnBg, marginTop: 0 }]}>
                       <Text style={[styles.eligTxt, { color: eligible ? C.success : C.warn, fontFamily: FontFamily.jakartaBold }]}>
@@ -578,7 +584,7 @@ export function BloodScreen({ route, navigation }: any) {
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             {(() => {
-              const { eligible } = donorEligibility(myDonor.last_donated);
+              const { eligible } = donorEligibility(myDonor.last_donated, (profile as any)?.gender);
               if (!eligible || myDonor.last_donated === localToday()) return null;
               return (
                 <TouchableOpacity
@@ -698,7 +704,7 @@ export function BloodScreen({ route, navigation }: any) {
               ]}
             >
               {isHospitalFilter ? (
-                <Feather name="activity" size={13} color={areaFilter !== 'All' ? SectorColors.blood : C.text2} />
+                <MaterialCommunityIcons name="hospital-building" size={14} color={areaFilter !== 'All' ? SectorColors.blood : C.text2} />
               ) : (
                 <Icon name="pin" size={13} color={areaFilter !== 'All' ? SectorColors.blood : C.text2} />
               )}
@@ -881,21 +887,11 @@ export function BloodScreen({ route, navigation }: any) {
                             {meta.patientName}
                           </Text>
                           {meta.affiliation && (
-                            <View
-                              style={[
-                                styles.affBadge,
-                                {
-                                  backgroundColor: isDark ? 'rgba(56, 189, 248, 0.12)' : 'rgba(14, 165, 233, 0.09)',
-                                  borderColor: isDark ? 'rgba(56, 189, 248, 0.28)' : 'rgba(14, 165, 233, 0.22)',
-                                },
-                              ]}
-                            >
-                              <StatusBadge
-                                variant="affiliation"
-                                value={meta.affiliation}
-                                size="sm"
-                              />
-                            </View>
+                            <StatusBadge
+                              variant="affiliation"
+                              value={meta.affiliation}
+                              size="sm"
+                            />
                           )}
                         </View>
 
@@ -959,7 +955,7 @@ export function BloodScreen({ route, navigation }: any) {
                     >
                       <View style={styles.locationLine}>
                         <View style={[styles.locIconSquare, { backgroundColor: isDark ? 'rgba(214, 61, 53, 0.15)' : 'rgba(214, 61, 53, 0.10)' }]}>
-                          <Feather name="activity" size={12} color={SectorColors.blood} />
+                          <MaterialCommunityIcons name="hospital-building" size={13} color={SectorColors.blood} />
                         </View>
                         <Text
                           style={[
@@ -1058,7 +1054,7 @@ export function BloodScreen({ route, navigation }: any) {
                       </TouchableOpacity>
                     ) : hasPledged ? (
                       <TouchableOpacity
-                        style={[styles.cardActionBtn, { backgroundColor: '#16a34a' }]}
+                        style={[styles.cardActionBtn, { backgroundColor: C.success }]}
                         onPress={() => revealRequester(r)}
                         activeOpacity={0.85}
                         disabled={busyId === r.id}
@@ -1161,17 +1157,17 @@ export function BloodScreen({ route, navigation }: any) {
               <View style={[styles.donorList, { backgroundColor: C.surface, borderColor: C.border }]}>
                 {filteredDonors.map((d, i) => {
                   const isMe = d.user_id === user?.id;
-                  const { eligible, daysLeft } = donorEligibility(d.last_donated);
+                  const { eligible, daysLeft } = donorEligibility(d.last_donated, (d as any).profiles?.gender ?? (d as any).gender);
                   return (
                     <View key={d.user_id}>
                       {i > 0 && <View style={[styles.divider, { backgroundColor: C.border }]} />}
                       <View style={[styles.donorRow, !eligible && { opacity: 0.6 }]}>
-                        <Avatar name={(d as any).profiles?.full_name} uri={(d as any).profiles?.avatar_url} size="sm" />
-                        <View style={{ flex: 1 }}>
-                          <Text style={[styles.donorName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                        <Avatar name={(d as any).profiles?.full_name} uri={(d as any).profiles?.avatar_url} size="md" />
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <Text style={[styles.donorName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                             {(d as any).profiles?.full_name ?? t.blood2.anonymous}{isMe ? ` ${t.blood2.youTag}` : ''}
                           </Text>
-                          <Text style={[styles.donorMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+                          <Text style={[styles.donorMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
                             {t.blood2.donorMeta(d.area || 'BUBT', d.last_donated ?? t.blood2.never)}
                           </Text>
                           <View style={[styles.eligPill, { backgroundColor: eligible ? C.successBg : C.warnBg }]}>
@@ -1180,7 +1176,7 @@ export function BloodScreen({ route, navigation }: any) {
                             </Text>
                           </View>
                         </View>
-                        <GroupBadge group={d.blood_group} size={34} />
+                        <GroupBadge group={d.blood_group} size={36} />
                         {isMe ? (
                           eligible && d.last_donated !== localToday() ? (
                             <TouchableOpacity
@@ -1334,45 +1330,6 @@ const styles = StyleSheet.create({
   miniBloodTxt: {
     fontSize: 13,
   } as any,
-  tabContainer: {
-    flexDirection: 'row',
-    borderRadius: 14,
-    padding: 3,
-    marginHorizontal: Layout.screenPadding,
-    marginTop: 6,
-    marginBottom: 8,
-    position: 'relative',
-  } as ViewStyle,
-  activeIndicator: {
-    position: 'absolute',
-    top: 3,
-    left: 3,
-    bottom: 3,
-    borderRadius: 11,
-    borderWidth: 1.5,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1.5 },
-    shadowOpacity: 0.12,
-    shadowRadius: 3,
-  } as ViewStyle,
-  tabBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 8,
-    borderRadius: 11,
-    zIndex: 1,
-  } as ViewStyle,
-  tabBtnTxt: { fontSize: 13 } as any,
-  tabBadge: {
-    paddingHorizontal: 7,
-    paddingVertical: 1.5,
-    borderRadius: 999,
-  } as ViewStyle,
-  tabBadgeTxt: { fontSize: 11 } as any,
   eligPill: { alignSelf: 'flex-start', paddingHorizontal: 7, paddingVertical: 2.5, borderRadius: 999, marginTop: 4 } as ViewStyle,
   eligTxt: { fontSize: 10 } as any,
   scroll: { paddingTop: 4, paddingBottom: 20 } as ViewStyle,
@@ -1428,16 +1385,6 @@ const styles = StyleSheet.create({
   patientNameTxt: {
     fontSize: 15,
   } as TextStyle,
-  affBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 1.5,
-    borderRadius: 6,
-    borderWidth: 1,
-    alignSelf: 'flex-start',
-  } as ViewStyle,
-  affBadgeTxt: {
-    fontSize: 10.5,
-  } as TextStyle,
   timeRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1454,24 +1401,6 @@ const styles = StyleSheet.create({
     gap: 6,
     marginTop: 10,
   } as ViewStyle,
-  unitBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-    borderWidth: 1,
-  } as ViewStyle,
-  unitBadgeTxt: {
-    fontSize: 11.5,
-  } as TextStyle,
-  caseBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-    borderWidth: 1,
-  } as ViewStyle,
-  caseBadgeTxt: {
-    fontSize: 11,
-  } as TextStyle,
   locationBox: {
     borderRadius: 12,
     borderWidth: 1,
@@ -1526,18 +1455,6 @@ const styles = StyleSheet.create({
   cardActionBtnTxt: {
     fontSize: 13.5,
   } as TextStyle,
-  reqTop: { flexDirection: 'row', alignItems: 'center', gap: 12 } as ViewStyle,
-  reqBody: { flex: 1 } as ViewStyle,
-  reqTitle: { fontSize: 14 } as any,
-  reqLoc: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 } as ViewStyle,
-  reqLocTxt: { fontSize: 12 } as any,
-  urgencyPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 20 } as ViewStyle,
-  urgencyDot: { width: 6, height: 6, borderRadius: 3 } as ViewStyle,
-  urgencyTxt: { fontSize: 11 } as any,
-  reqMeta: { marginTop: 8 } as ViewStyle,
-  reqMetaTxt: { fontSize: 12 } as any,
-  pledgeBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 44, borderRadius: 12, marginTop: 12 } as ViewStyle,
-  pledgeTxt: { fontSize: 13 } as any,
   summaryCard: { padding: 14, borderRadius: 16, borderWidth: 1, marginBottom: 12 } as ViewStyle,
   summaryTitle: { fontSize: 11, letterSpacing: 0.5, marginBottom: 10 } as any,
   summaryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 } as ViewStyle,
@@ -1545,11 +1462,9 @@ const styles = StyleSheet.create({
   summaryCell: { width: '100%', alignItems: 'center', paddingVertical: 8, borderRadius: 10 } as ViewStyle,
   summaryCellGroup: { fontSize: 13, fontFamily: FontFamily.jakartaExtraBold } as any,
   summaryCellNum: { fontSize: 15, marginTop: 2 } as any,
-  casePill: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6, borderWidth: 1 } as ViewStyle,
-  caseTxt: { fontSize: 10.5 } as any,
   donorList: { borderRadius: 16, borderWidth: 1, overflow: 'hidden' } as ViewStyle,
   divider: { height: StyleSheet.hairlineWidth } as ViewStyle,
-  donorRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 13 } as ViewStyle,
+  donorRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 } as ViewStyle,
   donorName: { fontSize: 14 } as any,
   donorMeta: { fontSize: 12, marginTop: 2 } as any,
   contactBtn: { minHeight: 38, justifyContent: 'center', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 } as ViewStyle,
@@ -1558,9 +1473,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 16,
     borderWidth: 1,
     marginTop: 6,
     marginBottom: 6,
@@ -1588,9 +1503,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 16,
     borderWidth: 1,
     marginTop: 6,
     marginBottom: 6,
@@ -1598,8 +1513,6 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   registerPromptTitle: { fontSize: 13 } as any,
   registerPromptSub: { fontSize: 11, marginTop: 1 } as any,
-  plateletPill: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 } as ViewStyle,
-  plateletTxt: { fontSize: 10 } as any,
   emptyWrap: { padding: 32, borderRadius: 16, borderWidth: 1, alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 8 } as ViewStyle,
   emptyTxt: { fontSize: 13 } as any,
   resetFilterBtn: {

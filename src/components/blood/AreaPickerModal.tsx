@@ -4,11 +4,11 @@ import {
   FlatList, StyleSheet, Keyboard, KeyboardAvoidingView,
   Animated, Platform, Dimensions, type ViewStyle, type TextStyle,
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { Icon } from '../ui/Icon';
-import { FontFamily, Layout, SectorColors } from '../../theme';
+import { FontFamily, Layout, SectorColors, pillBg } from '../../theme';
 import { DHAKA_AREAS, type DhakaAreaInfo } from '../../constants/dhakaAreas';
 import { SegmentedTabs, type TabItem } from '../ui/SegmentedTabs';
 import { useT } from '../../i18n';
@@ -103,7 +103,7 @@ const AllOptionRow = memo(function AllOptionRow({
         styles.areaCardBar,
         {
           backgroundColor: !isFiltered
-            ? (isDark ? 'rgba(199, 52, 74, 0.16)' : 'rgba(199, 52, 74, 0.08)')
+            ? pillBg(SectorColors.blood, isDark)
             : C.surface,
           borderColor: !isFiltered ? SectorColors.blood : C.border,
           borderWidth: !isFiltered ? 1.5 : 1,
@@ -117,12 +117,12 @@ const AllOptionRow = memo(function AllOptionRow({
           styles.itemIconBox,
           {
             backgroundColor: !isFiltered
-              ? (isDark ? 'rgba(199, 52, 74, 0.22)' : 'rgba(199, 52, 74, 0.1)')
+              ? (isDark ? 'rgba(199, 52, 74, 0.28)' : 'rgba(199, 52, 74, 0.14)')
               : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2),
           },
         ]}
       >
-        <Icon name="grid" size={15} color={!isFiltered ? SectorColors.blood : C.text2} />
+        <Icon name="grid" size={17} color={!isFiltered ? SectorColors.blood : C.text2} />
       </View>
 
       <View style={styles.itemInfoStack}>
@@ -199,7 +199,7 @@ const AreaItemRow = memo(function AreaItemRow({
         styles.areaCardBar,
         {
           backgroundColor: isSelected
-            ? (isDark ? 'rgba(199, 52, 74, 0.16)' : 'rgba(199, 52, 74, 0.08)')
+            ? pillBg(SectorColors.blood, isDark)
             : C.surface,
           borderColor: isSelected ? SectorColors.blood : C.border,
           borderWidth: isSelected ? 1.5 : 1,
@@ -219,9 +219,9 @@ const AreaItemRow = memo(function AreaItemRow({
         ]}
       >
         {isHospital ? (
-          <Feather name="activity" size={15} color={SectorColors.blood} />
+          <MaterialCommunityIcons name="hospital-building" size={20} color={SectorColors.blood} />
         ) : (
-          <Icon name="pin" size={15} color={isSelected ? SectorColors.blood : C.text2} />
+          <Icon name="pin" size={17} color={isSelected ? SectorColors.blood : C.text2} />
         )}
       </View>
 
@@ -726,23 +726,23 @@ const styles = StyleSheet.create({
     fontSize: 10,
   } as TextStyle,
 
-  // Standalone Card Bars
+  // Standalone Card Bars (Standard 72dp Content Row: 44dp icon + 28dp padding)
   areaCardBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 11,
-    paddingHorizontal: 12,
-    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    borderRadius: 16,
     marginBottom: 8,
   } as ViewStyle,
   itemIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 10,
+    marginRight: 12,
   } as ViewStyle,
   itemInfoStack: {
     flex: 1,

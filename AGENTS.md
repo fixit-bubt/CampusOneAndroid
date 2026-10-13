@@ -194,7 +194,9 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
   - `MedicalScreen`: Admin modal `modalSaveBtn` (58dp), `modalInput` (58dp)
   - `EventPostScreen`: `submitBtn` (58dp)
   - `ClubPostScreen`: `submitBtn` (58dp)
-  - `DonorRegisterScreen`: `submitBtn` (58dp)
+  - `DonorRegisterScreen`: `submitBtn` (58dp), `selectorCard` (58dp), `input` (58dp)
+  - `BloodRequestDetailScreen`: `fulfillBtn` (58dp)
+  - `BloodRequestScreen`: `submitBtn` (58dp), `input` (58dp), `inputWithIcon` (58dp), `dropdownCard` (58dp)
   - `FeatureScreen`: `ctaBtn` (58dp)
   - `ProfileScreen`: Modal `submitBtn` (58dp)
   - `NotifDetailScreen`: `actionBtn` (58dp), `secondaryBtn` (58dp)
@@ -204,6 +206,13 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
 
 ### 5.5 Universal 72dp Content Card & Row Standard (Reference: `DESIGN.md`)
 - **The 58 / 72 Dual System:** Controls, switchers, search bars, and CTAs adhere to the **58dp** standard (`Layout.controlHeight = 58`), while all content cards, list rows, and feed items adhere to the **72dp** standard (`height: 72` or `padding: 14` + `44dp` icon/avatar = `72dp`).
+- **Blood Donation Module (`BloodScreen.tsx`, `BloodRequestScreen.tsx`, `AreaPickerModal.tsx`, `DonorRegisterScreen.tsx`):**
+  - Donor list rows: standardized to 72dp (`<Avatar size="md" />` 44dp + `padding: 14, borderRadius: 16`), with single-line text truncation (`numberOfLines={1}`) on `donorName` and `donorMeta`. Status cards (`myStatusCard`, `registerPromptCard`) standardized to `paddingVertical: 12, paddingHorizontal: 14, borderRadius: 16`.
+  - `AreaPickerModal.tsx`: `areaCardBar` standardized to 72dp (`padding: 14, borderRadius: 16`), `itemIconBox` standardized to `44 × 44 dp, borderRadius: 13`.
+  - Dropdown triggers (`medicalReason`, `hospital`, `area`) in `BloodRequestScreen.tsx`: converted from nested touchables with broken `e.stopPropagation()` to parent `<View>` with sibling touchables (`dropdownMain` + `dropdownRight`), fully eliminating Android touch conflicts.
+  - Institutional Hospital Icon Standard: Standardized hospital icon across the entire app from Feather zigzag line `activity` to `MaterialCommunityIcons` `'hospital-building'` (`AreaPickerModal`, `BloodScreen`, `BloodRequestScreen`, `BloodRequestDetailScreen`, and `StatusBadge`).
+  - Elimination of Double-Badge Glitch: Removed redundant `<View style={styles.affBadge}>` wrapping around `<StatusBadge variant="affiliation" />` in `BloodScreen.tsx`.
+  - WHO Clinical Cooldown Enforcement: 90 days (male) and 120 days (female) clinical recovery windows properly enforced by passing user/donor profile gender to `donorEligibility` in `BloodScreen.tsx`.
 - **Student Directory (`DirectoryScreen.tsx`):**
   - Student row cards: `padding: 14, borderRadius: 16` (`44dp` avatar + `28dp` padding = 72dp). Connect/Chat CTA buttons standardized to 32dp.
   - Department picker modal cards: `padding: 14, borderRadius: 16`, `44 × 44 dp` icon box = 72dp.

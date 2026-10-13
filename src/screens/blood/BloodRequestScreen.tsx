@@ -5,7 +5,7 @@ import {
   Dimensions, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Feather } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
@@ -281,7 +281,7 @@ export function BloodRequestScreen({ navigation }: any) {
           <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
             CASE REASON / REQUIREMENT
           </Text>
-          <TouchableOpacity
+          <View
             style={[
               styles.dropdownCard,
               {
@@ -290,43 +290,52 @@ export function BloodRequestScreen({ navigation }: any) {
                 borderWidth: medicalReason ? 1.5 : 1,
               },
             ]}
-            onPress={() => setReasonModalVisible(true)}
-            activeOpacity={0.75}
           >
-            <View style={[styles.dropdownIconBox, { backgroundColor: `${SectorColors.blood}16` }]}>
-              <Feather name={currentReasonObj?.icon ? (currentReasonObj.icon as any) : 'activity'} size={16} color={SectorColors.blood} />
-            </View>
-            <View style={styles.dropdownInfo}>
-              <Text
-                style={[
-                  styles.dropdownValue,
-                  {
-                    color: medicalReason ? C.text : C.textMuted,
-                    fontFamily: medicalReason ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                  },
-                ]}
-                numberOfLines={1}
-              >
-                {currentReasonObj ? `${currentReasonObj.label} (${currentReasonObj.labelBn})` : 'Select case reason (e.g. Surgery, Dengue)...'}
-              </Text>
-              <Text style={[styles.dropdownHint, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                {medicalReason ? 'Tap to change reason' : 'Helps donors know the emergency context'}
-              </Text>
-            </View>
+            <TouchableOpacity
+              style={styles.dropdownMain}
+              onPress={() => setReasonModalVisible(true)}
+              activeOpacity={0.75}
+            >
+              <View style={[styles.dropdownIconBox, { backgroundColor: `${SectorColors.blood}16` }]}>
+                <Feather name={currentReasonObj?.icon ? (currentReasonObj.icon as any) : 'activity'} size={16} color={SectorColors.blood} />
+              </View>
+              <View style={styles.dropdownInfo}>
+                <Text
+                  style={[
+                    styles.dropdownValue,
+                    {
+                      color: medicalReason ? C.text : C.textMuted,
+                      fontFamily: medicalReason ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                    },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {currentReasonObj ? `${currentReasonObj.label} (${currentReasonObj.labelBn})` : 'Select case reason (e.g. Surgery, Dengue)...'}
+                </Text>
+                <Text style={[styles.dropdownHint, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+                  {medicalReason ? 'Tap to change reason' : 'Helps donors know the emergency context'}
+                </Text>
+              </View>
+            </TouchableOpacity>
             <View style={styles.dropdownRight}>
               {medicalReason ? (
                 <TouchableOpacity
-                  onPress={(e) => { e.stopPropagation(); setMedicalReason(''); }}
+                  onPress={() => setMedicalReason('')}
                   style={[styles.clearPill, { backgroundColor: C.surface2 }]}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
                   <Feather name="x" size={12} color={C.textMuted} />
                 </TouchableOpacity>
               ) : (
-                <Feather name="chevron-down" size={17} color={C.textMuted} />
+                <TouchableOpacity
+                  onPress={() => setReasonModalVisible(true)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Feather name="chevron-down" size={17} color={C.textMuted} />
+                </TouchableOpacity>
               )}
             </View>
-          </TouchableOpacity>
+          </View>
 
           {/* Patient Affiliation (Clean Dropdown) */}
           <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
@@ -391,7 +400,7 @@ export function BloodRequestScreen({ navigation }: any) {
               autoFocus
             />
           ) : (
-            <TouchableOpacity
+            <View
               style={[
                 styles.dropdownCard,
                 {
@@ -400,43 +409,52 @@ export function BloodRequestScreen({ navigation }: any) {
                   borderWidth: hospital ? 1.5 : 1,
                 },
               ]}
-              onPress={openHospitalPicker}
-              activeOpacity={0.75}
             >
-              <View style={[styles.dropdownIconBox, { backgroundColor: `${SectorColors.blood}16` }]}>
-                <Feather name="activity" size={16} color={SectorColors.blood} />
-              </View>
-              <View style={styles.dropdownInfo}>
-                <Text
-                  style={[
-                    styles.dropdownValue,
-                    {
-                      color: hospital ? C.text : C.textMuted,
-                      fontFamily: hospital ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                    },
-                  ]}
-                  numberOfLines={1}
-                >
-                  {hospital || 'Select hospital or medical center...'}
-                </Text>
-                <Text style={[styles.dropdownHint, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                  {hospital ? 'Tap to change hospital' : '108 Dhaka hospitals & institutes'}
-                </Text>
-              </View>
+              <TouchableOpacity
+                style={styles.dropdownMain}
+                onPress={openHospitalPicker}
+                activeOpacity={0.75}
+              >
+                <View style={[styles.dropdownIconBox, { backgroundColor: `${SectorColors.blood}16` }]}>
+                  <MaterialCommunityIcons name="hospital-building" size={18} color={SectorColors.blood} />
+                </View>
+                <View style={styles.dropdownInfo}>
+                  <Text
+                    style={[
+                      styles.dropdownValue,
+                      {
+                        color: hospital ? C.text : C.textMuted,
+                        fontFamily: hospital ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                      },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {hospital || 'Select hospital or medical center...'}
+                  </Text>
+                  <Text style={[styles.dropdownHint, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+                    {hospital ? 'Tap to change hospital' : '108 Dhaka hospitals & institutes'}
+                  </Text>
+                </View>
+              </TouchableOpacity>
               <View style={styles.dropdownRight}>
                 {hospital ? (
                   <TouchableOpacity
-                    onPress={(e) => { e.stopPropagation(); setHospital(''); }}
+                    onPress={() => setHospital('')}
                     style={[styles.clearPill, { backgroundColor: C.surface2 }]}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   >
                     <Feather name="x" size={12} color={C.textMuted} />
                   </TouchableOpacity>
                 ) : (
-                  <Feather name="chevron-down" size={17} color={C.textMuted} />
+                  <TouchableOpacity
+                    onPress={openHospitalPicker}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Feather name="chevron-down" size={17} color={C.textMuted} />
+                  </TouchableOpacity>
                 )}
               </View>
-            </TouchableOpacity>
+            </View>
           )}
 
           {/* Area / Neighborhood Dropdown System */}
@@ -466,7 +484,7 @@ export function BloodRequestScreen({ navigation }: any) {
               autoFocus
             />
           ) : (
-            <TouchableOpacity
+            <View
               style={[
                 styles.dropdownCard,
                 {
@@ -475,43 +493,52 @@ export function BloodRequestScreen({ navigation }: any) {
                   borderWidth: area ? 1.5 : 1,
                 },
               ]}
-              onPress={openAreaPicker}
-              activeOpacity={0.75}
             >
-              <View style={[styles.dropdownIconBox, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2 }]}>
-                <Icon name="pin" size={16} color={area ? SectorColors.blood : C.text2} />
-              </View>
-              <View style={styles.dropdownInfo}>
-                <Text
-                  style={[
-                    styles.dropdownValue,
-                    {
-                      color: area ? C.text : C.textMuted,
-                      fontFamily: area ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                    },
-                  ]}
-                  numberOfLines={1}
-                >
-                  {area || 'Select residential area or zone...'}
-                </Text>
-                <Text style={[styles.dropdownHint, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                  {area ? 'Tap to change area' : '144 Dhaka neighborhoods'}
-                </Text>
-              </View>
+              <TouchableOpacity
+                style={styles.dropdownMain}
+                onPress={openAreaPicker}
+                activeOpacity={0.75}
+              >
+                <View style={[styles.dropdownIconBox, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2 }]}>
+                  <Icon name="pin" size={16} color={area ? SectorColors.blood : C.text2} />
+                </View>
+                <View style={styles.dropdownInfo}>
+                  <Text
+                    style={[
+                      styles.dropdownValue,
+                      {
+                        color: area ? C.text : C.textMuted,
+                        fontFamily: area ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                      },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {area || 'Select residential area or zone...'}
+                  </Text>
+                  <Text style={[styles.dropdownHint, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+                    {area ? 'Tap to change area' : '144 Dhaka neighborhoods'}
+                  </Text>
+                </View>
+              </TouchableOpacity>
               <View style={styles.dropdownRight}>
                 {area ? (
                   <TouchableOpacity
-                    onPress={(e) => { e.stopPropagation(); setArea(''); }}
+                    onPress={() => setArea('')}
                     style={[styles.clearPill, { backgroundColor: C.surface2 }]}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   >
                     <Feather name="x" size={12} color={C.textMuted} />
                   </TouchableOpacity>
                 ) : (
-                  <Feather name="chevron-down" size={17} color={C.textMuted} />
+                  <TouchableOpacity
+                    onPress={openAreaPicker}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Feather name="chevron-down" size={17} color={C.textMuted} />
+                  </TouchableOpacity>
                 )}
               </View>
-            </TouchableOpacity>
+            </View>
           )}
 
           {/* Dengue Platelet (Apheresis) Toggle Card */}
@@ -528,7 +555,7 @@ export function BloodRequestScreen({ navigation }: any) {
                 <Icon name="blood" size={16} color={isPlatelets ? '#fff' : C.textMuted} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.plateletTitle, { color: isPlatelets ? C.warn : C.text, fontFamily: FontFamily.jakartaBold }]}>
+                <Text style={[styles.plateletTitle, { color: isPlatelets ? C.warn : C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                   {t.blood2.denguePlateletUrgent} (Apheresis)
                 </Text>
                 <Text style={[styles.plateletDesc, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
@@ -755,27 +782,27 @@ const styles = StyleSheet.create({
   halfField: {} as ViewStyle,
 
   input: {
-    height: 48,
-    borderRadius: 12,
+    height: 58,
+    borderRadius: 16,
     borderWidth: 1,
-    paddingHorizontal: 14,
-    fontSize: 14,
+    paddingHorizontal: 16,
+    fontSize: 14.5,
   } as TextStyle,
 
   inputWithIcon: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    height: 50,
-    borderRadius: 13,
+    height: 58,
+    borderRadius: 16,
     borderWidth: 1,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
   } as ViewStyle,
 
   innerInput: {
     flex: 1,
     height: '100%',
-    fontSize: 14,
+    fontSize: 14.5,
     paddingVertical: 0,
   } as TextStyle,
 
@@ -787,6 +814,14 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingHorizontal: 16,
     gap: 10,
+  } as ViewStyle,
+
+  dropdownMain: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+    height: '100%',
   } as ViewStyle,
 
   dropdownIconBox: {
@@ -830,7 +865,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 12,
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
     marginTop: 18,
     gap: 10,

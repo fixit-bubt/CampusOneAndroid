@@ -164,7 +164,7 @@ export function DonorRegisterScreen({ navigation }: any) {
             </View>
             <View style={{ flex: 1 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Text style={[styles.lockedTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                <Text style={[styles.lockedTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                   Blood Group: {group}
                 </Text>
                 <View style={[styles.permPill, { backgroundColor: C.successBg }]}>
@@ -322,7 +322,7 @@ export function DonorRegisterScreen({ navigation }: any) {
                 style={[
                   styles.urgencyPrefCard,
                   {
-                    backgroundColor: on ? (isDark ? '#2a1515' : '#fff5f5') : C.surface,
+                    backgroundColor: on ? (isDark ? 'rgba(214, 61, 53, 0.14)' : 'rgba(214, 61, 53, 0.08)') : C.surface,
                     borderColor: on ? SectorColors.blood : C.border,
                     borderWidth: on ? 1.5 : 1,
                   },
@@ -340,7 +340,7 @@ export function DonorRegisterScreen({ navigation }: any) {
                     color={on ? SectorColors.blood : opt.fg}
                     style={{ marginRight: 6 }}
                   />
-                  <Text style={[styles.urgencyPrefTitle, { color: on ? SectorColors.blood : C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  <Text style={[styles.urgencyPrefTitle, { color: on ? SectorColors.blood : C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                     {opt.label}
                   </Text>
                 </View>
@@ -389,7 +389,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     padding: 14,
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
     marginTop: 6,
     marginBottom: 4,
@@ -431,9 +431,9 @@ const styles = StyleSheet.create({
   selectorCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderRadius: 13,
+    height: 58,
+    paddingHorizontal: 16,
+    borderRadius: 16,
     borderWidth: 1,
     gap: 10,
   } as ViewStyle,
@@ -480,10 +480,10 @@ const styles = StyleSheet.create({
   consent: { fontSize: 11.5, lineHeight: 16, marginTop: 8, marginLeft: 2 } as any,
 
   input: {
-    height: 48,
-    borderRadius: 12,
+    height: 58,
+    borderRadius: 16,
     borderWidth: 1,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     fontSize: 14.5,
   } as any,
 
@@ -504,7 +504,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   } as ViewStyle,
   urgencyPrefCard: {
-    borderRadius: 12,
+    borderRadius: 14,
     padding: 12,
   } as ViewStyle,
   urgencyRadioRow: {

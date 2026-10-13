@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { Feather } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
@@ -215,6 +215,12 @@ export function BloodRequestDetailScreen({ route, navigation }: any) {
               return;
             }
             toast({ type: 'success', title: t.blood2.confirmedTitle, message: t.blood2.confirmedBody });
+            if (user?.id) {
+              await Promise.all([
+                removeCache(CacheKeys.BLOOD_FEED(user.id)),
+                removeCache(CacheKeys.HOME_STATUS(user.id)),
+              ]);
+            }
             load();
           },
         },
@@ -373,7 +379,7 @@ export function BloodRequestDetailScreen({ route, navigation }: any) {
               >
                 <View style={styles.locationLine}>
                   <View style={[styles.locIconSquare, { backgroundColor: isDark ? 'rgba(214, 61, 53, 0.15)' : 'rgba(214, 61, 53, 0.10)' }]}>
-                    <Feather name="activity" size={12} color={SectorColors.blood} />
+                    <MaterialCommunityIcons name="hospital-building" size={14} color={SectorColors.blood} />
                   </View>
                   <Text style={[styles.hospitalTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={2}>
                     {req.hospital}
@@ -576,16 +582,6 @@ const styles = StyleSheet.create({
   patientNameTxt: {
     fontSize: 15,
   } as TextStyle,
-  affBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 1.5,
-    borderRadius: 6,
-    borderWidth: 1,
-    alignSelf: 'flex-start',
-  } as ViewStyle,
-  affBadgeTxt: {
-    fontSize: 10.5,
-  } as TextStyle,
   timeRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -595,14 +591,6 @@ const styles = StyleSheet.create({
   timeTxt: {
     fontSize: 11,
   } as TextStyle,
-  urgencyPill: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 20,
-  } as ViewStyle,
-  urgencyTxt: {
-    fontSize: 11,
-  } as TextStyle,
   clinicalBadgesRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -610,24 +598,6 @@ const styles = StyleSheet.create({
     gap: 6,
     marginTop: 10,
   } as ViewStyle,
-  unitBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-    borderWidth: 1,
-  } as ViewStyle,
-  unitBadgeTxt: {
-    fontSize: 11.5,
-  } as TextStyle,
-  caseBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-    borderWidth: 1,
-  } as ViewStyle,
-  caseBadgeTxt: {
-    fontSize: 11,
-  } as TextStyle,
   locationBox: {
     borderRadius: 12,
     borderWidth: 1,
@@ -675,8 +645,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    height: 46,
-    borderRadius: 13,
+    height: 58,
+    borderRadius: 16,
     borderWidth: 1.5,
     marginBottom: 20,
   } as ViewStyle,
