@@ -295,7 +295,7 @@ export function RidesScreen({ navigation }: any) {
           onPress={() => navigation.navigate('RidePost', { postType: 'offer' })}
           activeOpacity={0.85}
         >
-          <Feather name="plus-circle" size={16} color="#fff" />
+          <Feather name="plus-circle" size={18} color="#fff" />
           <Text style={[styles.heroActBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
             {t.rides2.postRideHeroBtn ?? 'Post a Campus Ride'}
           </Text>
@@ -314,7 +314,7 @@ export function RidesScreen({ navigation }: any) {
       {/* Clutter-Free Search Bar */}
       <View style={[styles.searchWrapper, { paddingHorizontal: Layout.screenPadding }]}>
         <View style={[styles.searchBar, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <Icon name="search" size={17} color={C.textMuted} />
+          <Icon name="search" size={18} color={C.textMuted} />
           <TextInput
             style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
             placeholder={t.rides2.searchPlaceholder ?? 'Search pickup, destination, or area…'}
@@ -570,12 +570,12 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
 
   heroActBtn: {
-    height: 44,
-    borderRadius: 12,
+    height: 58,
+    borderRadius: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: 9,
     shadowColor: RIDE_COLOR,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.22,
@@ -583,7 +583,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   } as ViewStyle,
   heroActBtnTxt: {
-    fontSize: 14,
+    fontSize: 14.5,
   } as TextStyle,
 
   myRidesHeaderBtn: {
@@ -612,14 +612,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 9,
-    height: 48,
-    borderRadius: 14,
+    height: 58,
+    borderRadius: 16,
     borderWidth: 1,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
   },
   searchInput: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 14.5,
     paddingVertical: 0,
   } as TextStyle,
 

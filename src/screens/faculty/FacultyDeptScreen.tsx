@@ -116,8 +116,8 @@ export function FacultyDeptScreen({ route, navigation }: any) {
 
         {/* Search */}
         {roster.length > 4 && (
-          <View style={[styles.searchBar, { backgroundColor: C.surface2 }]}>
-            <Icon name="search" size={17} color={C.textMuted} />
+          <View style={[styles.searchBar, { backgroundColor: C.surface2, borderColor: C.border }]}>
+            <Icon name="search" size={18} color={C.textMuted} />
             <TextInput
               style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
               placeholder={t.faculty2.searchInDept(shortDept(dept?.name) || t.faculty2.departmentFallback)}
@@ -177,11 +177,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 9,
-    paddingHorizontal: 14,
-    borderRadius: 14,
+    paddingHorizontal: 16,
+    height: 58,
+    borderRadius: 16,
+    borderWidth: 1,
     marginBottom: 12,
   } as ViewStyle,
-  searchInput: { flex: 1, fontSize: 14.5, paddingVertical: 12 } as TextStyle,
+  searchInput: { flex: 1, fontSize: 14.5, paddingVertical: 0 } as TextStyle,
 
   list: { gap: 10 } as ViewStyle,
   empty: { alignItems: 'center', paddingTop: 50, gap: 8 } as ViewStyle,

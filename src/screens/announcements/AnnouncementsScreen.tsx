@@ -508,7 +508,7 @@ export function AnnouncementsScreen({ navigation }: any) {
       {/* 2. Global Search Bar */}
       <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 6, paddingBottom: 6 }}>
         <View style={[styles.searchBar, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <Icon name="search" size={15} color={C.textMuted} />
+          <Icon name="search" size={18} color={C.textMuted} />
           <TextInput
             style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
             placeholder={t.announce2.searchPlaceholder}
@@ -906,15 +906,15 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    height: 48,
-    borderRadius: 14,
+    paddingHorizontal: 16,
+    height: 58,
+    borderRadius: 16,
     borderWidth: 1,
     gap: 8,
   } as ViewStyle,
   searchInput: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 14.5,
     paddingVertical: 0,
   } as TextStyle,
 

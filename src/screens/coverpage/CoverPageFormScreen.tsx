@@ -579,7 +579,7 @@ export function CoverPageFormScreen({ navigation }: any) {
 
           {/* Generate */}
           <TouchableOpacity style={[styles.genBtn, { backgroundColor: SectorColors.coverpage, opacity: !canGenerate || generating ? 0.5 : 1 }]} onPress={handleGenerate} disabled={!canGenerate || generating}>
-            {generating ? <ActivityIndicator color={C.white} size="small" /> : <Icon name="sparkles" size={20} color={C.white} />}
+            {generating ? <ActivityIndicator color={C.white} size="small" /> : <Icon name="sparkles" size={18} color={C.white} />}
             <Text style={[styles.genBtnText, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>{generating ? t.coverpage2.generating : 'Generate Document'}</Text>
           </TouchableOpacity>
           <View style={{ height: 40 }} />
@@ -589,7 +589,7 @@ export function CoverPageFormScreen({ navigation }: any) {
       {/* Course picker */}
       <BottomSheet visible={courseModal} onClose={() => { setCourseModal(false); setCourseSearch(''); }} title="Select Course" C={C}>
         <View style={[styles.sBar, { backgroundColor: C.surface2, borderColor: C.border }]}>
-          <Icon name="search" size={16} color={C.textMuted} />
+          <Icon name="search" size={18} color={C.textMuted} />
           <TextInput style={[styles.sInput, { color: C.text, fontFamily: FontFamily.jakartaRegular }]} value={courseSearch} onChangeText={setCourseSearch} placeholder="Search course code or title..." placeholderTextColor={C.textMuted} autoFocus />
         </View>
         <FlatList data={filteredCourses} keyExtractor={i => i.code} style={{ maxHeight: 380 }}
@@ -606,7 +606,7 @@ export function CoverPageFormScreen({ navigation }: any) {
       {/* Faculty picker */}
       <BottomSheet visible={facultyModal} onClose={() => { setFacultyModal(false); setFacultySearch(''); }} title="Select Teacher" C={C}>
         <View style={[styles.sBar, { backgroundColor: C.surface2, borderColor: C.border }]}>
-          <Icon name="search" size={16} color={C.textMuted} />
+          <Icon name="search" size={18} color={C.textMuted} />
           <TextInput style={[styles.sInput, { color: C.text, fontFamily: FontFamily.jakartaRegular }]} value={facultySearch} onChangeText={setFacultySearch} placeholder="Search teacher name..." placeholderTextColor={C.textMuted} autoFocus />
         </View>
         <FlatList data={filteredFaculty} keyExtractor={i => i.id} style={{ maxHeight: 380 }}
@@ -745,15 +745,15 @@ const styles = StyleSheet.create({
   delMember: { width: 44, height: 44, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginBottom: Spacing[3] },
   addBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, height: 46, borderRadius: 12, borderWidth: 1.5, borderStyle: 'dashed', marginTop: Spacing[1] },
   addTxt: { fontSize: FontSize.sm },
-  genBtn: { flexDirection: 'row', height: 52, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center', gap: Spacing[2], marginTop: Spacing[6] },
+  genBtn: { flexDirection: 'row', height: 58, borderRadius: 16, alignItems: 'center', justifyContent: 'center', gap: 9, marginTop: Spacing[6] },
   genBtnText: { fontSize: FontSize.lg },
   overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' },
   sheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: Layout.screenPadding, paddingBottom: Layout.screenPadding, maxHeight: '80%' },
   handle: { alignItems: 'center', paddingVertical: Spacing[3] },
   handleBar: { width: 36, height: 4, borderRadius: 2 },
   sheetTitle: { fontSize: FontSize['2xl'], textAlign: 'center', marginBottom: Spacing[3] },
-  sBar: { flexDirection: 'row', alignItems: 'center', height: 42, borderRadius: Radius.sm, borderWidth: 1, paddingHorizontal: Spacing[3], gap: Spacing[2], marginBottom: Spacing[3] },
-  sInput: { flex: 1, fontSize: FontSize.base, padding: 0 },
+  sBar: { flexDirection: 'row', alignItems: 'center', height: 58, borderRadius: 16, borderWidth: 1, paddingHorizontal: 16, gap: 10, marginBottom: Spacing[3] },
+  sInput: { flex: 1, fontSize: 14.5, padding: 0 },
   listRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing[3], borderBottomWidth: StyleSheet.hairlineWidth },
   courseCode: { fontSize: FontSize.md, width: 80 },
   courseName: { flex: 1, fontSize: FontSize.sm },

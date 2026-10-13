@@ -280,7 +280,7 @@ export function RoutinesBrowseScreen({ navigation }: any) {
       {/* Search */}
       <View style={[styles.searchRow, { paddingHorizontal: Layout.screenPadding }]}>
         <View style={[styles.searchBar, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <Icon name="search" size={16} color={C.textMuted} />
+          <Icon name="search" size={18} color={C.textMuted} />
           <TextInput
             style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaRegular }]}
             value={search}
@@ -430,8 +430,8 @@ export function RoutinesBrowseScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   searchRow: { paddingVertical: Spacing[3] },
-  searchBar: { flexDirection: 'row', alignItems: 'center', height: 48, borderRadius: 14, borderWidth: 1, paddingHorizontal: 14, gap: 8 },
-  searchInput: { flex: 1, fontSize: 14, padding: 0 },
+  searchBar: { flexDirection: 'row', alignItems: 'center', height: 58, borderRadius: 16, borderWidth: 1, paddingHorizontal: 16, gap: 8 },
+  searchInput: { flex: 1, fontSize: 14.5, padding: 0 },
   empty: { textAlign: 'center', marginTop: Spacing[10], fontSize: FontSize.base },
   card: { flexDirection: 'row', borderRadius: Radius.md, borderWidth: 1, marginBottom: Spacing[2], overflow: 'hidden' },
   thumb: { width: 72, height: 72 },

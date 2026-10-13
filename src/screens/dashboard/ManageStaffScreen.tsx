@@ -149,7 +149,7 @@ export function ManageStaffScreen({ navigation }: any) {
           onPress={() => { resetForm(); setAddOpen(true); }}
           activeOpacity={0.85}
         >
-          <Feather name="user-plus" size={16} color={C.white} />
+          <Feather name="user-plus" size={18} color={C.white} />
           <Text style={[styles.addBtnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>
             {tab === 'staff' ? t.manage.addStaff : t.manage.addAdmin}
           </Text>
@@ -294,12 +294,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    height: 46,
-    borderRadius: 13,
+    gap: 9,
+    height: 58,
+    borderRadius: 16,
     marginBottom: 12,
   } as ViewStyle,
-  addBtnTxt: { fontSize: 14 } as any,
+  addBtnTxt: { fontSize: 14.5 } as any,
 
   card: { borderRadius: 16, borderWidth: 1, overflow: 'hidden' } as ViewStyle,
   divider: { height: StyleSheet.hairlineWidth } as ViewStyle,

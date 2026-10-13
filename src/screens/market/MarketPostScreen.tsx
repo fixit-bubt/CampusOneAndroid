@@ -719,7 +719,7 @@ export function MarketPostScreen({ route, navigation }: any) {
 
             {/* Search Box */}
             <View style={[styles.modalSearchBox, { backgroundColor: C.surface2, borderColor: C.border }]}>
-              <Feather name="search" size={15} color={C.textMuted} />
+              <Feather name="search" size={18} color={C.textMuted} />
               <TextInput
                 style={[styles.modalSearchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                 placeholder={t.market2.searchLocationPlaceholder}
@@ -1122,15 +1122,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    height: 48,
-    borderRadius: 14,
+    height: 58,
+    borderRadius: 16,
     borderWidth: 1,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     marginBottom: 10,
   } as ViewStyle,
   modalSearchInput: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 14.5,
     paddingVertical: 0,
   } as TextStyle,
 

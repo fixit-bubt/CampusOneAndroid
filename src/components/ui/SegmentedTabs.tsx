@@ -45,7 +45,7 @@ export function SegmentedTabs<T extends string = string>({
   const [trackWidth, setTrackWidth] = useState(0);
   const animIndex = useRef(new Animated.Value(0)).current;
 
-  const trackPadding = 4.5;
+  const trackPadding = 4;
   const iconSize = 15.5;
 
   const foundIdx = tabs.findIndex((t) => t.id === activeTab);
@@ -94,7 +94,7 @@ export function SegmentedTabs<T extends string = string>({
               left: trackPadding,
               bottom: trackPadding,
               width: tabWidth,
-              borderRadius: 12.5,
+              borderRadius: 12,
               transform: [{ translateX }],
               backgroundColor: C.surface,
               borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
@@ -115,9 +115,7 @@ export function SegmentedTabs<T extends string = string>({
             style={[
               styles.tabBtn,
               {
-                minHeight: 48,
-                paddingVertical: 10,
-                borderRadius: 12.5,
+                borderRadius: 12,
                 paddingHorizontal: 4,
                 gap: 5.5,
               },
@@ -164,7 +162,6 @@ export function SegmentedTabs<T extends string = string>({
                   styles.badge,
                   {
                     paddingHorizontal: 6.5,
-                    paddingVertical: 2,
                     minWidth: 20,
                   },
                   isActive
@@ -182,7 +179,7 @@ export function SegmentedTabs<T extends string = string>({
                   style={[
                     styles.badgeText,
                     {
-                      fontSize: 11.5,
+                      fontSize: 11,
                       color: isActive ? color : C.textMuted,
                       fontFamily: isActive ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
                     },
@@ -201,13 +198,16 @@ export function SegmentedTabs<T extends string = string>({
 
 const styles = StyleSheet.create({
   track: {
+    height: 58,
     flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 1,
     position: 'relative',
   } as ViewStyle,
 
   indicator: {
     position: 'absolute',
+    borderRadius: 12,
     borderWidth: 1,
     elevation: 2.5,
     shadowColor: '#000',
@@ -218,13 +218,13 @@ const styles = StyleSheet.create({
 
   tabBtn: {
     flex: 1,
+    height: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 10,
-    minHeight: 48,
-    borderRadius: 12.5,
+    paddingVertical: 0,
+    borderRadius: 12,
     zIndex: 1,
   } as ViewStyle,
 
@@ -236,8 +236,8 @@ const styles = StyleSheet.create({
   },
 
   badge: {
+    height: 22,
     paddingHorizontal: 6.5,
-    paddingVertical: 2,
     borderRadius: 999,
     borderWidth: 1,
     minWidth: 20,
@@ -246,6 +246,6 @@ const styles = StyleSheet.create({
   } as ViewStyle,
 
   badgeText: {
-    fontSize: 11.5,
+    fontSize: 11,
   },
 });

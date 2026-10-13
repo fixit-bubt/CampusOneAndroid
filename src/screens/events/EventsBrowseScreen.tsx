@@ -400,7 +400,7 @@ export function EventsBrowseScreen({ navigation }: any) {
       {/* Instant Search Bar */}
       <View style={[styles.searchBoxWrap, { paddingHorizontal: Layout.screenPadding }]}>
         <View style={[styles.searchBar, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <Feather name="search" size={17} color={C.textMuted} style={{ marginRight: 8 }} />
+          <Feather name="search" size={18} color={C.textMuted} style={{ marginRight: 8 }} />
           <TextInput
             style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
             placeholder="Search events, clubs, venues, or speakers..."
@@ -647,12 +647,12 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    height: 48,
-    borderRadius: 14,
+    paddingHorizontal: 16,
+    height: 58,
+    borderRadius: 16,
     borderWidth: 1,
   } as ViewStyle,
-  searchInput: { flex: 1, fontSize: 14, paddingVertical: 0 } as any,
+  searchInput: { flex: 1, fontSize: 14.5, paddingVertical: 0 } as any,
 
   catChips: { flexDirection: 'row', gap: 6, paddingBottom: 10 } as ViewStyle,
   catChip: {

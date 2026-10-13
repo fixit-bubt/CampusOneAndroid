@@ -244,7 +244,7 @@ export function MessageThread({ route, navigation }: any) {
 
       {searching && (
         <View style={[styles.searchBar, { backgroundColor: C.surface2, marginHorizontal: Layout.screenPadding }]}>
-          <Feather name="search" size={16} color={C.textMuted} />
+          <Feather name="search" size={18} color={C.textMuted} />
           <TextInput
             style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
             placeholder={t.messages.searchTitle}
@@ -392,8 +392,8 @@ const styles = StyleSheet.create({
   headerBtns: { flexDirection: 'row', gap: 6 } as ViewStyle,
   hBtn: { width: 36, height: 36, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
 
-  searchBar: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, borderRadius: 12, marginTop: 6 } as ViewStyle,
-  searchInput: { flex: 1, fontSize: 14, paddingVertical: 10 } as TextStyle,
+  searchBar: { height: 58, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, borderRadius: 16, marginTop: 6 } as ViewStyle,
+  searchInput: { flex: 1, fontSize: 14.5, paddingVertical: 0 } as TextStyle,
 
   bubbleRow: { flexDirection: 'row', alignItems: 'flex-end', marginVertical: 3, gap: 7 } as ViewStyle,
   mineRow: { justifyContent: 'flex-end' } as ViewStyle,

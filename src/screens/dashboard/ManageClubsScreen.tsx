@@ -294,7 +294,7 @@ export function ManageClubsScreen({ navigation }: any) {
               {t.clubs.assignPresident} - {presTarget?.name}
             </Text>
             <View style={[styles.searchBar, { backgroundColor: C.bg, borderColor: C.border }]}>
-              <Icon name="search" size={16} color={C.textMuted} />
+              <Icon name="search" size={18} color={C.textMuted} />
               <TextInput
                 style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
                 placeholder={t.common.search + '...'}
@@ -367,11 +367,11 @@ const styles = StyleSheet.create({
   catRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 } as ViewStyle,
   catChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, borderWidth: 1 } as ViewStyle,
   catChipTxt: { fontSize: 12 } as TextStyle,
-  createBtn: { height: 50, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginTop: 18 } as ViewStyle,
-  createBtnTxt: { fontSize: 15 } as TextStyle,
+  createBtn: { height: 58, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginTop: 18 } as ViewStyle,
+  createBtnTxt: { fontSize: 14.5 } as TextStyle,
 
-  searchBar: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, borderRadius: 12, borderWidth: 1, marginBottom: 8, marginTop: 6 } as ViewStyle,
-  searchInput: { flex: 1, fontSize: 14, paddingVertical: 11 } as TextStyle,
+  searchBar: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, height: 58, borderRadius: 16, borderWidth: 1, marginBottom: 8, marginTop: 6 } as ViewStyle,
+  searchInput: { flex: 1, fontSize: 14.5, paddingVertical: 0 } as TextStyle,
   resultRow: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 10 } as ViewStyle,
   emptyTxt: { fontSize: 13 } as TextStyle,
 });

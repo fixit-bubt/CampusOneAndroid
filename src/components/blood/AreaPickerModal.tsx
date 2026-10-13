@@ -478,7 +478,7 @@ export function AreaPickerModal({
               onPress={() => searchInputRef.current?.focus()}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Feather name="search" size={15} color={C.textMuted} />
+              <Feather name="search" size={18} color={C.textMuted} />
             </TouchableOpacity>
             <TextInput
               ref={searchInputRef}
@@ -639,16 +639,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    height: 48,
-    borderRadius: 14,
+    height: 58,
+    borderRadius: 16,
     borderWidth: 1,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     marginBottom: 10,
   } as ViewStyle,
   searchInput: {
     flex: 1,
     height: '100%',
-    fontSize: 14,
+    fontSize: 14.5,
     paddingVertical: 0,
   } as TextStyle,
 

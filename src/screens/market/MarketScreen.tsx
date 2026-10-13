@@ -436,14 +436,13 @@ export function MarketScreen({ navigation }: any) {
             onPress={() => navigation.navigate('MarketPost')}
             activeOpacity={0.85}
           >
-            <Feather name="plus-circle" size={16} color="#fff" />
+            <Feather name="plus-circle" size={18} color="#fff" />
             <Text style={[styles.heroActBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
               {t.market2.sellItem}
             </Text>
           </TouchableOpacity>
         </View>
 
-        {/* 3. Segmented Tab Switcher (Card Animation matching Blood & Directory) */}
         {/* 3. Segmented Tab Switcher */}
         <View style={{ paddingHorizontal: Layout.screenPadding, marginBottom: 10 }}>
           <SegmentedTabs<Tab>
@@ -474,7 +473,7 @@ export function MarketScreen({ navigation }: any) {
           >
             <Feather
               name="grid"
-              size={14}
+              size={16}
               color={category === 'all' ? (isDark ? '#fff' : MARKET_COLOR) : C.text2}
             />
             <Text
@@ -510,7 +509,7 @@ export function MarketScreen({ navigation }: any) {
           >
             <Feather
               name={currentCategoryMeta.icon}
-              size={14}
+              size={16}
               color={category !== 'all' ? (isDark ? '#fff' : currentCategoryMeta.fg) : C.text2}
             />
             <Text
@@ -527,7 +526,7 @@ export function MarketScreen({ navigation }: any) {
             </Text>
             <Icon
               name="chevD"
-              size={14}
+              size={15}
               color={category !== 'all' ? (isDark ? '#fff' : currentCategoryMeta.fg) : C.textMuted}
             />
           </TouchableOpacity>
@@ -536,7 +535,7 @@ export function MarketScreen({ navigation }: any) {
         {/* 5. Search Bar & Secondary Filter Trigger */}
         <View style={styles.searchRow}>
           <View style={[styles.searchBar, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <Icon name="search" size={16} color={C.textMuted} />
+            <Icon name="search" size={18} color={C.textMuted} />
             <TextInput
               style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
               placeholder={t.market2.searchItems}
@@ -570,7 +569,7 @@ export function MarketScreen({ navigation }: any) {
           >
             <Feather
               name="sliders"
-              size={14}
+              size={16}
               color={hasSecondaryFilters ? '#fff' : MARKET_COLOR}
             />
             <Text
@@ -982,12 +981,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    height: 48,
-    borderRadius: 14,
+    gap: 9,
+    height: 58,
+    borderRadius: 16,
   } as ViewStyle,
   heroActBtnTxt: {
-    fontSize: 14,
+    fontSize: 14.5,
     letterSpacing: 0.1,
   } as any,
 
@@ -1043,14 +1042,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    height: 46,
-    paddingHorizontal: 12,
-    borderRadius: 13,
+    height: 58,
+    paddingHorizontal: 14,
+    borderRadius: 16,
     borderWidth: 1,
   } as ViewStyle,
   dualBarBtnActive: {} as ViewStyle,
   dualBarBtnInactive: {} as ViewStyle,
-  dualBarTxt: { fontSize: 13 } as any,
+  dualBarTxt: { fontSize: 13.5 } as any,
 
   // Search & Filter Row (Directly above feed)
   searchRow: {
@@ -1065,27 +1064,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    paddingHorizontal: 14,
-    height: 48,
-    borderRadius: 14,
+    paddingHorizontal: 16,
+    height: 58,
+    borderRadius: 16,
     borderWidth: 1,
   } as ViewStyle,
   searchInput: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 14.5,
     paddingVertical: 0,
   } as TextStyle,
   filterTriggerBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    height: 48,
-    paddingHorizontal: 14,
-    borderRadius: 14,
+    height: 58,
+    paddingHorizontal: 16,
+    borderRadius: 16,
     borderWidth: 1,
     position: 'relative',
   } as ViewStyle,
-  filterTriggerTxt: { fontSize: 13 } as any,
+  filterTriggerTxt: { fontSize: 13.5 } as any,
   filterActiveDot: {
     width: 6,
     height: 6,

@@ -538,7 +538,7 @@ export function BloodScreen({ route, navigation }: any) {
           onPress={() => navigation.navigate('BloodRequest')}
           activeOpacity={0.85}
         >
-          <Icon name="blood" size={15} color="#fff" />
+          <Icon name="blood" size={18} color="#fff" />
           <Text style={[styles.actBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
             {t.blood2.requestBloodBtn}
           </Text>
@@ -644,7 +644,7 @@ export function BloodScreen({ route, navigation }: any) {
             onPress={() => searchInputRef.current?.focus()}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 8 }}
           >
-            <Feather name="search" size={16} color={C.textMuted} />
+            <Feather name="search" size={18} color={C.textMuted} />
           </TouchableOpacity>
           <TextInput
             ref={searchInputRef}
@@ -1246,12 +1246,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 7,
-    height: 44,
-    borderRadius: 12,
+    gap: 9,
+    height: 58,
+    borderRadius: 16,
   } as ViewStyle,
   actBtnTxt: {
-    fontSize: 13.5,
+    fontSize: 14.5,
   } as any,
   searchAreaRow: {
     flexDirection: 'row',
@@ -1264,24 +1264,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    height: 48,
-    borderRadius: 14,
+    height: 58,
+    borderRadius: 16,
     borderWidth: 1,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
   } as ViewStyle,
   searchInput: {
     flex: 1,
     height: '100%',
-    fontSize: 14,
+    fontSize: 14.5,
     paddingVertical: 0,
   } as TextStyle,
   areaPickerTrigger: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 48,
-    paddingLeft: 8,
-    paddingRight: 6,
-    borderRadius: 14,
+    height: 58,
+    paddingHorizontal: 12,
+    borderRadius: 16,
     borderWidth: 1,
     maxWidth: 165,
     minWidth: 125,

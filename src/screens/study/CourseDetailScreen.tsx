@@ -411,7 +411,7 @@ export function CourseDetailScreen({ route, navigation }: any) {
             onPress={() => setSort(s => (s === 'new' ? 'name' : 'new'))}
             activeOpacity={0.75}
           >
-            <Feather name={sort === 'new' ? 'clock' : 'type'} size={15} color={C.text2} />
+            <Feather name={sort === 'new' ? 'clock' : 'type'} size={18} color={C.text2} />
           </TouchableOpacity>
         </View>
 
@@ -516,13 +516,13 @@ const styles = StyleSheet.create({
   forSaleCard: { flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 12, paddingVertical: 9, borderRadius: 12, borderWidth: 1, maxWidth: 220 } as ViewStyle,
   forSaleName: { fontSize: 12.5, flexShrink: 1 } as any,
   forSalePrice: { fontSize: 12.5 } as any,
-  search: { height: 48, borderRadius: 14, borderWidth: 1, paddingHorizontal: 14, fontSize: 14, marginTop: 12 } as any,
+  search: { height: 58, borderRadius: 16, borderWidth: 1, paddingHorizontal: 16, fontSize: 14.5, marginTop: 12 } as any,
   tabsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 12 } as ViewStyle,
   chips: { flexDirection: 'row', gap: 8, flexShrink: 1 } as ViewStyle,
   chip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1 } as ViewStyle,
   chipTxt: { fontSize: 12.5 } as any,
   chipCount: { fontSize: 12 } as any,
-  sortBtn: { width: 48, height: 48, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center', flexShrink: 0 } as ViewStyle,
+  sortBtn: { width: 58, height: 58, borderRadius: 16, borderWidth: 1, alignItems: 'center', justifyContent: 'center', flexShrink: 0 } as ViewStyle,
   examChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, borderWidth: 1 } as ViewStyle,
   examTxt: { fontSize: 12 } as any,
   filesList: { borderRadius: 16, borderWidth: 1, overflow: 'hidden', marginTop: 12 } as ViewStyle,

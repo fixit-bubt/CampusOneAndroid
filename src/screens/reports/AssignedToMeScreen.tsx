@@ -119,8 +119,8 @@ export function AssignedToMeScreen({ navigation }: any) {
         ListHeaderComponent={
           <View>
             {/* Search */}
-            <View style={[styles.searchBar, { backgroundColor: C.surface2 }]}>
-              <Icon name="search" size={17} color={C.textMuted} />
+            <View style={[styles.searchBar, { backgroundColor: C.surface2, borderColor: C.border }]}>
+              <Icon name="search" size={18} color={C.textMuted} />
               <TextInput
                 style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
                 placeholder={t.reports.searchPlaceholder}
@@ -216,8 +216,8 @@ const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
   scroll: { paddingTop: 8, paddingBottom: 20 } as ViewStyle,
 
-  searchBar: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 14, borderRadius: 14, marginBottom: 10 } as ViewStyle,
-  searchInput: { flex: 1, fontSize: 15, paddingVertical: 12 } as TextStyle,
+  searchBar: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 16, height: 58, borderRadius: 16, borderWidth: 1, marginBottom: 10 } as ViewStyle,
+  searchInput: { flex: 1, fontSize: 14.5, paddingVertical: 0 } as TextStyle,
 
   chips: { flexDirection: 'row', gap: 7, paddingBottom: 12 } as ViewStyle,
   chip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 11, paddingVertical: 7, borderRadius: 999, borderWidth: 1 } as ViewStyle,

@@ -324,7 +324,7 @@ export function JobsBrowseScreen({ navigation }: any) {
       {mainTab !== 'my_applications' && (
         <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 8 }}>
           <View style={[styles.searchBar, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <Icon name="search" size={16} color={C.textMuted} />
+            <Icon name="search" size={18} color={C.textMuted} />
             <TextInput
               style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
               placeholder={t.jobs.searchPlaceholder}
@@ -360,7 +360,7 @@ export function JobsBrowseScreen({ navigation }: any) {
           >
             <Feather
               name="briefcase"
-              size={13}
+              size={16}
               color={typeFilter !== 'all' ? SectorColors.jobs : C.textMuted}
             />
             <Text
@@ -377,7 +377,7 @@ export function JobsBrowseScreen({ navigation }: any) {
             </Text>
             <Feather
               name="chevron-down"
-              size={13}
+              size={16}
               color={typeFilter !== 'all' ? SectorColors.jobs : C.textMuted}
             />
           </TouchableOpacity>
@@ -398,7 +398,7 @@ export function JobsBrowseScreen({ navigation }: any) {
           >
             <Feather
               name="book-open"
-              size={13}
+              size={16}
               color={deptFilter !== 'ALL' ? SectorColors.jobs : C.textMuted}
             />
             <Text
@@ -415,7 +415,7 @@ export function JobsBrowseScreen({ navigation }: any) {
             </Text>
             <Feather
               name="chevron-down"
-              size={13}
+              size={16}
               color={deptFilter !== 'ALL' ? SectorColors.jobs : C.textMuted}
             />
           </TouchableOpacity>
@@ -915,15 +915,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 9,
-    paddingHorizontal: 14,
-    height: 48,
-    borderRadius: 14,
+    paddingHorizontal: 16,
+    height: 58,
+    borderRadius: 16,
     borderWidth: 1,
   } as ViewStyle,
   searchInput: {
     flex: 1,
-    fontSize: 14,
-    paddingVertical: 8,
+    fontSize: 14.5,
+    paddingVertical: 0,
   } as TextStyle,
 
   // Dual Dropdown Buttons Row
@@ -936,15 +936,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    height: 38,
-    borderRadius: 11,
+    paddingHorizontal: 14,
+    height: 58,
+    borderRadius: 16,
     borderWidth: 1,
     gap: 6,
   } as ViewStyle,
   dualBarTxt: {
     flex: 1,
-    fontSize: 12,
+    fontSize: 13.5,
   } as any,
 
   // Dropdown Modal Sheets

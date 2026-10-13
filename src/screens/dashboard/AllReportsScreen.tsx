@@ -136,8 +136,8 @@ export function AllReportsScreen({ navigation }: any) {
 
       {/* Search */}
       <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 8 }}>
-        <View style={[styles.searchBar, { backgroundColor: C.surface2 }]}>
-          <Icon name="search" size={17} color={C.textMuted} />
+        <View style={[styles.searchBar, { backgroundColor: C.surface2, borderColor: C.border }]}>
+          <Icon name="search" size={18} color={C.textMuted} />
           <TextInput
             style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
             placeholder={t.dash.searchReportsPlaceholder}
@@ -376,8 +376,8 @@ const styles = StyleSheet.create({
   chipTxt: { fontSize: 13 } as any,
   chipCount: { fontSize: 12 } as any,
 
-  searchBar: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 14, borderRadius: 14 } as ViewStyle,
-  searchInput: { flex: 1, fontSize: 15, paddingVertical: 11 } as TextStyle,
+  searchBar: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 16, height: 58, borderRadius: 16, borderWidth: 1 } as ViewStyle,
+  searchInput: { flex: 1, fontSize: 14.5, paddingVertical: 0 } as TextStyle,
   catChips: { flexDirection: 'row', gap: 7, paddingBottom: 10 } as ViewStyle,
   catChip: { paddingHorizontal: 11, paddingVertical: 6, borderRadius: 999, borderWidth: 1 } as ViewStyle,
   catChipTxt: { fontSize: 11.5 } as any,

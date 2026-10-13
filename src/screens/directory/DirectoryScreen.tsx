@@ -706,7 +706,7 @@ export function DirectoryScreen({ route, navigation }: any) {
 
               {/* Search Bar (Directly Above Results Feed) */}
               <View style={[styles.searchBar, { backgroundColor: C.surface2, borderColor: C.border }]}>
-                <Icon name="search" size={17} color={C.textMuted} />
+                <Icon name="search" size={18} color={C.textMuted} />
                 <TextInput
                   style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
                   placeholder={t.directory2.searchPlaceholderFull}
@@ -962,17 +962,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    height: 42,
-    borderRadius: 12,
+    height: 58,
+    borderRadius: 16,
     borderWidth: 1,
-    paddingHorizontal: 10,
+    paddingHorizontal: 14,
   } as ViewStyle,
   dualBarBtnActive: {
     elevation: 1,
   } as ViewStyle,
   dualBarBtnInactive: {} as ViewStyle,
   dualBarTxt: {
-    fontSize: 12.5,
+    fontSize: 13.5,
   } as TextStyle,
 
   /* Search Bar Directly Above Feed */
@@ -980,12 +980,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 9,
-    paddingHorizontal: 14,
-    borderRadius: 14,
+    paddingHorizontal: 16,
+    height: 58,
+    borderRadius: 16,
     borderWidth: 1,
     marginBottom: 10,
   } as ViewStyle,
-  searchInput: { flex: 1, fontSize: 14, paddingVertical: 11 } as TextStyle,
+  searchInput: { flex: 1, fontSize: 14.5, paddingVertical: 0 } as TextStyle,
 
   emptyLoading: { paddingVertical: 40, alignItems: 'center' } as ViewStyle,
   emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 48, paddingHorizontal: 24 } as ViewStyle,
