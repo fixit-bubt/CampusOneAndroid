@@ -17,6 +17,7 @@ import { useT } from '../../i18n';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
+import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
 import { useToast } from '../../components/ui/Toast';
 import { ContactSheet } from '../../components/ui/ContactSheet';
 import { FontFamily, Layout, Accent, Radius } from '../../theme';
@@ -194,7 +195,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
         onBack={() => navigation.goBack()}
         rightSlot={
           <TouchableOpacity style={styles.iconBtn} onPress={toggleSave} activeOpacity={0.75}>
-            <Feather name="star" size={21} color={saved ? Accent.gold : C.text2} />
+            <AnimatedIcon family="feather" name="star" size={21} color={saved ? Accent.gold : C.text2} animation={saved ? 'spring' : 'none'} />
           </TouchableOpacity>
         }
       />
@@ -257,7 +258,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
           <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border, marginTop: 12 }]}>
             <View style={styles.cardHeaderRow}>
               <View style={styles.cardHeaderLeft}>
-                <Feather name="map-pin" size={16} color={FACULTY_ACCENT} />
+                <AnimatedIcon family="feather" name="map-pin" size={16} color={FACULTY_ACCENT} animation="bounce" />
                 <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                   {t.faculty2.campusOfficeLocation}
                 </Text>
@@ -291,7 +292,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
           <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border, marginTop: 12 }]}>
             <View style={styles.cardHeaderRow}>
               <View style={styles.cardHeaderLeft}>
-                <Feather name="clock" size={16} color={C.brand} />
+                <AnimatedIcon family="feather" name="clock" size={16} color={C.brand} animation="pulse" />
                 <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                   {t.faculty2.counselingHoursTitle}
                 </Text>
@@ -441,7 +442,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
           onPress={() => setShowProposalModal(true)}
           activeOpacity={0.8}
         >
-          <Feather name="edit-3" size={16} color={FACULTY_ACCENT} />
+          <AnimatedIcon family="feather" name="edit-3" size={16} color={FACULTY_ACCENT} animation="entrance" />
           <Text style={[styles.proposalBtnTxt, { color: FACULTY_ACCENT, fontFamily: FontFamily.jakartaBold }]}>
             {t.faculty2.draftPaperProposal}
           </Text>
@@ -452,7 +453,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
           onPress={() => setShowContact(true)}
           activeOpacity={0.85}
         >
-          <Feather name="phone-call" size={16} color="#fff" />
+          <AnimatedIcon family="feather" name="phone-call" size={16} color="#fff" animation="entrance" />
           <Text style={[styles.contactBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
             {t.faculty2.contact}
           </Text>

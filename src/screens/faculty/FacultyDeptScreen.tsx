@@ -13,6 +13,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
+import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
 import { useToast } from '../../components/ui/Toast';
 import { FontFamily, Layout, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
@@ -103,7 +104,7 @@ export function FacultyDeptScreen({ route, navigation }: any) {
         {dept && (
           <View style={styles.header}>
             <View style={[styles.tile, { backgroundColor: `${FACULTY_ACCENT}14` }]}>
-              <Feather name={BRANCH_ICON[dept.branch] ?? 'book-open'} size={22} color={FACULTY_ACCENT} />
+              <AnimatedIcon family="feather" name={BRANCH_ICON[dept.branch] ?? 'book-open'} size={20} color={FACULTY_ACCENT} animation="entrance" />
             </View>
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={[styles.deptName, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
@@ -142,7 +143,7 @@ export function FacultyDeptScreen({ route, navigation }: any) {
 
         {list.length === 0 ? (
           <View style={styles.empty}>
-            <Feather name="search" size={28} color={C.textMuted} />
+            <AnimatedIcon family="feather" name="search" size={28} color={C.textMuted} animation="pulse" loop />
             <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
               {t.faculty2.noTeachersFound}
             </Text>
@@ -175,7 +176,7 @@ const styles = StyleSheet.create({
   scroll: { paddingTop: 10, paddingBottom: 20 } as ViewStyle,
 
   header: { flexDirection: 'row', alignItems: 'flex-start', gap: 13, marginBottom: 14 } as ViewStyle,
-  tile: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
+  tile: { width: 44, height: 44, borderRadius: 13, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
   deptName: { fontSize: 18, letterSpacing: -0.01 } as TextStyle,
   deptMeta: { fontSize: 12, marginTop: 2 } as TextStyle,
   chair: { fontSize: 12.5, marginTop: 4 } as TextStyle,

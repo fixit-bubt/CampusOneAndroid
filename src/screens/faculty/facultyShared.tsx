@@ -7,6 +7,7 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
+import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
 import { FontFamily, SectorColors, pillBg, Radius, Accent } from '../../theme';
 import { openUrl } from '../../utils/link';
 import { useT } from '../../i18n';
@@ -328,7 +329,12 @@ export function TeacherBar({
       <View style={styles.barRightSlot}>
         {onToggleSave && saved !== undefined ? (
           <TouchableOpacity style={styles.starTouch} onPress={onToggleSave} hitSlop={10} activeOpacity={0.7}>
-            <Feather name="star" size={17} color={saved ? goldColor : C.textMuted} />
+            <AnimatedIcon
+              name="star"
+              size={17}
+              color={saved ? goldColor : C.textMuted}
+              animation={saved ? 'spring' : 'none'}
+            />
           </TouchableOpacity>
         ) : (
           <Icon name="chevR" size={16} color={C.textMuted} />
@@ -642,14 +648,16 @@ const styles = StyleSheet.create({
     fontSize: 12,
   } as TextStyle,
 
+  // Universal 72dp Content Card Standard (44dp avatar + 14dp top + 14dp bottom = 72dp)
   teacherBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    borderRadius: 14,
+    minHeight: 72,
+    padding: 14,
+    borderRadius: 16,
     borderWidth: 1,
-    marginBottom: 8,
-    gap: 12,
+    marginBottom: 10,
+    gap: 13,
   } as ViewStyle,
   barAvatarWrap: {
     position: 'relative',

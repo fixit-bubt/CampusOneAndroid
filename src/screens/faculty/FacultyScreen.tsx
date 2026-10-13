@@ -20,6 +20,7 @@ import { useToast } from '../../components/ui/Toast';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { ContactSheet } from '../../components/ui/ContactSheet';
 import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
+import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
 import { FontFamily, Layout, Accent, Radius } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { getCache, setCache, CacheKeys } from '../../services/cacheService';
@@ -345,7 +346,7 @@ export function FacultyScreen({ navigation }: any) {
                       activeOpacity={0.75}
                     >
                       <View style={[styles.categoryIconTile, { backgroundColor: `${FACULTY_ACCENT}12` }]}>
-                        <Feather name={cat.icon} size={22} color={FACULTY_ACCENT} />
+                        <AnimatedIcon name={cat.icon} size={22} color={FACULTY_ACCENT} animation="entrance" />
                       </View>
                       <View style={{ flex: 1, minWidth: 0 }}>
                         <Text style={[styles.categoryTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -387,7 +388,7 @@ export function FacultyScreen({ navigation }: any) {
                         activeOpacity={0.75}
                       >
                         <View style={[styles.deptBarTile, { backgroundColor: `${FACULTY_ACCENT}12` }]}>
-                          <Feather name={BRANCH_ICON[d.branch] ?? 'book-open'} size={20} color={FACULTY_ACCENT} />
+                          <AnimatedIcon name={BRANCH_ICON[d.branch] ?? 'book-open'} size={20} color={FACULTY_ACCENT} animation="entrance" />
                         </View>
                         <View style={{ flex: 1, minWidth: 0 }}>
                           <Text style={[styles.deptBarName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -432,7 +433,7 @@ export function FacultyScreen({ navigation }: any) {
               activeOpacity={0.75}
             >
               <View style={[styles.dropdownIconTile, { backgroundColor: `${FACULTY_ACCENT}14` }]}>
-                <Feather name="layers" size={17} color={FACULTY_ACCENT} />
+                <AnimatedIcon name="layers" size={18} color={FACULTY_ACCENT} animation="spring" />
               </View>
               <View style={styles.dropdownBody}>
                 <Text style={[styles.dropdownLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
@@ -454,7 +455,7 @@ export function FacultyScreen({ navigation }: any) {
               activeOpacity={0.75}
             >
               <View style={[styles.dropdownIconTile, { backgroundColor: `${FACULTY_ACCENT}14` }]}>
-                <Feather name="award" size={17} color={FACULTY_ACCENT} />
+                <AnimatedIcon name="award" size={18} color={FACULTY_ACCENT} animation="spring" />
               </View>
               <View style={styles.dropdownBody}>
                 <Text style={[styles.dropdownLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
@@ -534,7 +535,7 @@ export function FacultyScreen({ navigation }: any) {
               activeOpacity={0.75}
             >
               <View style={[styles.dropdownIconTile, { backgroundColor: `${Accent.gold}18` }]}>
-                <Feather name="layers" size={17} color={Accent.gold} />
+                <AnimatedIcon name="layers" size={18} color={Accent.gold} animation="spring" />
               </View>
               <View style={styles.dropdownBody}>
                 <Text style={[styles.dropdownLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
@@ -719,10 +720,11 @@ export function FacultyScreen({ navigation }: any) {
                     },
                   ]}
                 >
-                  <Feather
+                  <AnimatedIcon
                     name="layers"
-                    size={17}
+                    size={18}
                     color={selectedDeptId === 'All' ? '#fff' : FACULTY_ACCENT}
+                    animation="entrance"
                   />
                 </View>
                 <View style={{ flex: 1, minWidth: 0 }}>
@@ -784,10 +786,11 @@ export function FacultyScreen({ navigation }: any) {
                         },
                       ]}
                     >
-                      <Feather
+                      <AnimatedIcon
                         name={BRANCH_ICON[d.branch] ?? 'book-open'}
-                        size={17}
+                        size={18}
                         color={active ? '#fff' : FACULTY_ACCENT}
+                        animation="entrance"
                       />
                     </View>
                     <View style={{ flex: 1, minWidth: 0 }}>
@@ -891,10 +894,11 @@ export function FacultyScreen({ navigation }: any) {
                     },
                   ]}
                 >
-                  <Feather
+                  <AnimatedIcon
                     name="award"
-                    size={17}
+                    size={18}
                     color={!interest ? '#fff' : FACULTY_ACCENT}
+                    animation="entrance"
                   />
                 </View>
                 <View style={{ flex: 1, minWidth: 0 }}>
@@ -952,10 +956,11 @@ export function FacultyScreen({ navigation }: any) {
                         },
                       ]}
                     >
-                      <Feather
+                      <AnimatedIcon
                         name="bookmark"
-                        size={17}
+                        size={18}
                         color={active ? '#fff' : FACULTY_ACCENT}
+                        animation="entrance"
                       />
                     </View>
                     <View style={{ flex: 1, minWidth: 0 }}>
@@ -1089,19 +1094,20 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   } as TextStyle,
 
-  // Faculty category full-width bars
+  // Universal 72dp Content Card Standard (44dp icon + 14dp top + 14dp bottom = 72dp)
   categoryBar: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 13,
+    minHeight: 72,
     padding: 14,
     borderRadius: 16,
     borderWidth: 1,
     marginBottom: 10,
   } as ViewStyle,
   categoryIconTile: {
-    width: 46,
-    height: 46,
+    width: 44,
+    height: 44,
     borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1132,20 +1138,21 @@ const styles = StyleSheet.create({
     marginTop: 3,
   } as TextStyle,
 
-  // Department bars under category
+  // Universal 72dp Content Card Standard: Department bars under category
   deptBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    padding: 13,
-    borderRadius: 14,
+    gap: 13,
+    minHeight: 72,
+    padding: 14,
+    borderRadius: 16,
     borderWidth: 1,
-    marginBottom: 8,
+    marginBottom: 10,
   } as ViewStyle,
   deptBarTile: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
@@ -1290,20 +1297,21 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   } as TextStyle,
 
-  // Institutional bars for picker modal items
+  // Universal 72dp Content Card Standard: Institutional bars for picker modal items
   pickerBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    padding: 12,
-    borderRadius: 14,
+    gap: 13,
+    minHeight: 72,
+    padding: 14,
+    borderRadius: 16,
     borderWidth: 1,
-    marginBottom: 8,
+    marginBottom: 10,
   } as ViewStyle,
   pickerIconTile: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,

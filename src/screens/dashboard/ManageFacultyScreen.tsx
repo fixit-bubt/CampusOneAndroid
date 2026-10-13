@@ -15,6 +15,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
+import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
 import { FontFamily, Layout, Accent, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import type { TablesUpdate, TablesInsert } from '../../types/supabase';
@@ -290,7 +291,7 @@ export function ManageFacultyScreen({ navigation }: any) {
         <View style={[styles.syncCard, { backgroundColor: C.surface, borderColor: C.border }]}>
           <View style={styles.syncCardTop}>
             <View style={[styles.syncIconWrap, { backgroundColor: `${SectorColors.faculty}14` }]}>
-              <Feather name="refresh-cw" size={18} color={SectorColors.faculty} />
+              <AnimatedIcon family="feather" name="refresh-cw" size={20} color={SectorColors.faculty} animation={syncing ? 'pulse' : 'spring'} loop={syncing} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.syncTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -353,7 +354,7 @@ export function ManageFacultyScreen({ navigation }: any) {
                 onPress={() => openEdit(f)}
                 activeOpacity={0.7}
               >
-                <Avatar uri={f.photo_url} name={f.name} size="sm" />
+                <Avatar uri={f.photo_url} name={f.name} size="md" />
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                     <Text style={[styles.name, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -394,9 +395,9 @@ export function ManageFacultyScreen({ navigation }: any) {
               {syncing ? (
                 <ActivityIndicator color={SectorColors.faculty} size="large" />
               ) : syncResult?.error ? (
-                <Feather name="alert-triangle" size={28} color={C.danger} />
+                <AnimatedIcon family="feather" name="alert-triangle" size={28} color={C.danger} animation="wobble" />
               ) : (
-                <Feather name="check-circle" size={28} color={C.success} />
+                <AnimatedIcon family="feather" name="check-circle" size={28} color={C.success} animation="spring" />
               )}
             </View>
 
@@ -581,9 +582,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   } as ViewStyle,
   syncIconWrap: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
@@ -606,7 +607,7 @@ const styles = StyleSheet.create({
 
   card: { borderRadius: 16, borderWidth: 1, overflow: 'hidden' } as ViewStyle,
   divider: { height: StyleSheet.hairlineWidth } as ViewStyle,
-  row: { flexDirection: 'row', alignItems: 'center', gap: 11, padding: 12, paddingHorizontal: 14 } as ViewStyle,
+  row: { flexDirection: 'row', alignItems: 'center', minHeight: 72, gap: 13, padding: 14 } as ViewStyle,
   name: { fontSize: 14 } as TextStyle,
   shortBadge: { paddingHorizontal: 5, paddingVertical: 1.5, borderRadius: 5 } as ViewStyle,
   shortBadgeTxt: { fontSize: 10 } as TextStyle,
