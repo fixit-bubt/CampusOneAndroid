@@ -303,7 +303,7 @@ export function ClubDetailScreen({ route, navigation }: any) {
               disabled={busy}
               activeOpacity={0.8}
             >
-              <Feather name="user-plus" size={15} color={C.white} />
+              <Feather name="user-plus" size={18} color={C.white} />
               <Text style={[styles.joinBtnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>
                 {t.clubs.requestToJoin}
               </Text>
@@ -316,7 +316,7 @@ export function ClubDetailScreen({ route, navigation }: any) {
             onPress={leaveClub}
             activeOpacity={0.75}
           >
-            <Feather name="log-out" size={15} color={C.text2} />
+            <Feather name="log-out" size={18} color={C.text2} />
             <Text style={[styles.joinBtnTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>{t.clubs.leave}</Text>
           </TouchableOpacity>
         )}
@@ -467,6 +467,6 @@ const styles = StyleSheet.create({
 
   empty: { alignItems: 'center', padding: 24 } as ViewStyle,
   emptyTxt: { fontSize: 13.5 } as any,
-  joinBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, height: 42, borderRadius: 13, marginTop: 12 } as ViewStyle,
-  joinBtnTxt: { fontSize: 14 } as any,
+  joinBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, height: 58, borderRadius: 16, marginTop: 12 } as ViewStyle,
+  joinBtnTxt: { fontSize: 14.5 } as any,
 });

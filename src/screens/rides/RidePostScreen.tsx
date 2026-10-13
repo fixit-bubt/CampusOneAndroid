@@ -674,7 +674,7 @@ export function RidePostScreen({ route, navigation }: any) {
             disabled={!canSubmit || loading}
             activeOpacity={0.8}
           >
-            <Feather name={isOffer ? 'check-circle' : 'send'} size={17} color="#fff" />
+            <Feather name={isOffer ? 'check-circle' : 'send'} size={18} color="#fff" />
             <Text style={[styles.submitBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
               {loading
                 ? 'Posting…'
@@ -1371,11 +1371,11 @@ const styles = StyleSheet.create({
   locationBarContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 52,
-    borderRadius: 14,
+    height: 58,
+    borderRadius: 16,
     borderWidth: 1.2,
-    paddingLeft: 12,
-    paddingRight: 6,
+    paddingLeft: 14,
+    paddingRight: 8,
     marginBottom: 8,
     gap: 8,
   } as ViewStyle,
@@ -1568,9 +1568,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    height: 48,
-    borderRadius: 14,
+    gap: 9,
+    height: 58,
+    borderRadius: 16,
     marginTop: 22,
   } as ViewStyle,
   submitBtnTxt: { fontSize: 15 } as TextStyle,

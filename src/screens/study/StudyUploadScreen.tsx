@@ -369,31 +369,15 @@ const styles = StyleSheet.create({
     marginLeft: 2,
   } as any,
 
-  segRow: {
-    flexDirection: 'row',
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 4,
-    gap: 4,
-  } as ViewStyle,
-
-  segBtn: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 9,
-    borderRadius: 9,
-  } as ViewStyle,
-
-  segTxt: { fontSize: 13.5 } as any,
   examRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 } as ViewStyle,
   examChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, borderWidth: 1 } as ViewStyle,
   examTxt: { fontSize: 12 } as any,
 
   input: {
-    height: 48,
-    borderRadius: 12,
+    height: 58,
+    borderRadius: 16,
     borderWidth: 1,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     fontSize: 14.5,
   } as any,
 
@@ -402,8 +386,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    height: 52,
-    borderRadius: 12,
+    height: 58,
+    borderRadius: 16,
     borderWidth: 1.5,
     borderStyle: 'dashed',
     marginTop: 14,
@@ -415,9 +399,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    height: 52,
-    borderRadius: 14,
+    gap: 9,
+    height: 58,
+    borderRadius: 16,
     marginTop: 22,
   } as ViewStyle,
 

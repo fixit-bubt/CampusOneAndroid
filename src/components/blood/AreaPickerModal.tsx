@@ -652,38 +652,6 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   } as TextStyle,
 
-  // Single Segment Bar with Instant Sliding Indicator
-  segmentTrack: {
-    flexDirection: 'row',
-    height: 42,
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 3,
-    marginBottom: 10,
-    position: 'relative',
-    alignItems: 'center',
-  } as ViewStyle,
-  segmentIndicator: {
-    position: 'absolute',
-    top: 3,
-    bottom: 3,
-    left: 3,
-    borderRadius: 9,
-  } as ViewStyle,
-  segmentBtn: {
-    flex: 1,
-    height: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-    borderRadius: 9,
-    zIndex: 1,
-  } as ViewStyle,
-  segmentBtnTxt: {
-    fontSize: 11.5,
-  } as TextStyle,
-
   // Virtualized List Scroll
   listScroll: {
     maxHeight: 480,

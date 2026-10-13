@@ -779,49 +779,13 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   } as TextStyle,
 
-  // Urgency Segment Track with Sliding Indicator
-  segRow: {
-    flexDirection: 'row',
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 3,
-    height: 48,
-    alignItems: 'center',
-    position: 'relative',
-  } as ViewStyle,
-
-  segIndicator: {
-    position: 'absolute',
-    top: 3,
-    bottom: 3,
-    left: 3,
-    borderRadius: 9,
-    shadowColor: SectorColors.blood,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3,
-    elevation: 3,
-  } as ViewStyle,
-
-  segBtn: {
-    flex: 1,
-    height: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 9,
-    zIndex: 1,
-  } as ViewStyle,
-
-  segTxt: { fontSize: 12 } as TextStyle,
-
   // Dropdown Selector Cards
   dropdownCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: 52,
-    borderRadius: 13,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    height: 58,
+    borderRadius: 16,
+    paddingHorizontal: 16,
     gap: 10,
   } as ViewStyle,
 
@@ -910,9 +874,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    height: 52,
-    borderRadius: 14,
+    gap: 9,
+    height: 58,
+    borderRadius: 16,
     marginTop: 22,
   } as ViewStyle,
 

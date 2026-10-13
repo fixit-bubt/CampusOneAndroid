@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
   photoPreview: { width: '100%', height: '100%' } as any,
   photoPlaceholder: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 6 } as ViewStyle,
   photoPlaceholderTxt: { fontSize: 13 } as any,
-  fileBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 52, borderRadius: 12, borderWidth: 1.5, borderStyle: 'dashed', marginTop: 4, paddingHorizontal: 12 } as ViewStyle,
+  fileBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 58, borderRadius: 16, borderWidth: 1.5, borderStyle: 'dashed', marginTop: 4, paddingHorizontal: 12 } as ViewStyle,
   fileBtnTxt: { fontSize: 14, flexShrink: 1 } as any,
 
   label: {
@@ -276,23 +276,6 @@ const styles = StyleSheet.create({
     fontSize: 14.5,
   } as any,
 
-  segRow: {
-    flexDirection: 'row',
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 4,
-    gap: 4,
-  } as ViewStyle,
-
-  segBtn: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 9,
-    borderRadius: 9,
-  } as ViewStyle,
-
-  segTxt: { fontSize: 13.5 } as any,
-
   textarea: {
     minHeight: 120,
     borderRadius: 12,
@@ -306,9 +289,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    height: 52,
-    borderRadius: 14,
+    gap: 9,
+    height: 58,
+    borderRadius: 16,
     marginTop: 22,
   } as ViewStyle,
 

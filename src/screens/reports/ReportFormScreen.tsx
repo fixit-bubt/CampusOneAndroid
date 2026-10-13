@@ -574,12 +574,12 @@ const styles = StyleSheet.create({
   boardNoticeTxt: { fontSize: 12.5, flex: 1 } as any,
 
   submitBtn: {
-    height: 52,
+    height: 58,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
 
-  btnRow: { flexDirection: 'row', alignItems: 'center', gap: 8 } as ViewStyle,
+  btnRow: { flexDirection: 'row', alignItems: 'center', gap: 9 } as ViewStyle,
   btnTxt: { fontSize: 15, color: '#fff' } as any,
 });

@@ -516,30 +516,6 @@ const styles = StyleSheet.create({
 
   label: { fontSize: 13, marginBottom: 8, marginTop: 16 } as TextStyle,
 
-  typeToggle: {
-    flexDirection: 'row',
-    borderRadius: 14,
-    borderWidth: 1,
-    padding: 4,
-    gap: 4,
-  } as ViewStyle,
-
-  typeBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 7,
-    paddingVertical: 10,
-    minHeight: 44,
-    borderRadius: 11,
-    borderWidth: 1,
-    borderColor: 'transparent',
-  } as ViewStyle,
-
-  typeDot: { width: 8, height: 8, borderRadius: 4 } as ViewStyle,
-  typeTxt: { fontSize: 14 } as TextStyle,
-
   catGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -632,18 +608,18 @@ const styles = StyleSheet.create({
   errText: { fontSize: 13, marginTop: 8 } as TextStyle,
 
   submitBtn: {
-    height: 50,
-    borderRadius: 14,
+    height: 58,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
 
-  btnRow: { flexDirection: 'row', alignItems: 'center', gap: 8 } as ViewStyle,
+  btnRow: { flexDirection: 'row', alignItems: 'center', gap: 9 } as ViewStyle,
   btnTxt: { fontSize: 15, color: '#fff' } as TextStyle,
 
   photoUploadBtn: {
-    height: 50,
-    borderRadius: 13,
+    height: 58,
+    borderRadius: 16,
     borderWidth: 1.5,
     borderStyle: 'dashed',
     flexDirection: 'row',
