@@ -243,6 +243,16 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
   - Incoming request: 72dp Request Card (*"Incoming Connection Request"*, spring user-check icon) paired with dual 58dp symmetrical `Accept` and `Decline` action buttons.
   - Disconnect connection converted to clean destructive outline action button (`height: 50, borderRadius: 14`).
 - **Contact Sheet (`ContactSheet.tsx`):** Standardized primary action buttons to universal 58dp (`height: 58, borderRadius: 16`), added top-right close button (`32 × 32 dp`), and resolved clashing greens.
+- **Faculty Directory & Mentors Module (`FacultyScreen.tsx`, `FacultyDeptScreen.tsx`, `FacultyProfileScreen.tsx`, `facultyShared.tsx`, `ManageFacultyScreen.tsx`):**
+  - **Universal 58dp Control Standard:** Segmented tabs switcher (`SegmentedTabs`), search bars, department/domain picker dropdown bars (`dropdownBar`), modal sheet close buttons (`sheetCloseBtn`), bottom dock CTAs (`proposalBtn`, `contactBtn`), admin sync trigger (`syncActionBtn`), and form save buttons (`saveBtn`, `closeReportBtn`) all standardized to `height: 58, borderRadius: 16`.
+  - **Universal 72dp Content Card Standard:**
+    - `TeacherBar` (`facultyShared.tsx`): standardized to `minHeight: 72, padding: 14, borderRadius: 16, marginBottom: 10, gap: 13`, featuring `44 × 44 dp` avatar (`<Avatar size="md" />`), 14.5px Title, 12px Subtitle, and tactile spring animated star bookmark icon.
+    - `categoryBar` (`FacultyScreen.tsx`): standardized to `minHeight: 72, padding: 14, borderRadius: 16, marginBottom: 10, gap: 13` with `44 × 44 dp` tile and `<AnimatedIcon animation="entrance" />`.
+    - `deptBar` (`FacultyScreen.tsx`): standardized to `minHeight: 72, padding: 14, borderRadius: 16, marginBottom: 10, gap: 13` with `44 × 44 dp` tile and `<AnimatedIcon animation="entrance" />`.
+    - `pickerBar` (modal lists in `FacultyScreen.tsx`): standardized to `minHeight: 72, padding: 14, borderRadius: 16, marginBottom: 10, gap: 13` with `44 × 44 dp` tile and `<AnimatedIcon animation="entrance" />`.
+    - `FacultyDeptScreen.tsx`: Dept header tile standardized to `width: 44, height: 44, borderRadius: 13` with `<AnimatedIcon animation="entrance" />`; empty state with pulsing search icon.
+    - `ManageFacultyScreen.tsx`: Admin teacher rows standardized to `minHeight: 72, padding: 14, gap: 13` with `44 × 44 dp` avatar (`<Avatar size="md" />`); sync icon wrap standardized to `44 × 44 dp` with pulsing/spring `refresh-cw` animation; sync report modal features entrance animated status badges.
+    - `FacultyProfileScreen.tsx`: SubBar star bookmark button features tactile spring pop (`animation="spring"`); campus office location card uses vertical bouncing pin (`animation="bounce"`); counseling hours card uses pulsing clock (`animation="pulse"`); bottom dock buttons feature smooth entrance animations (`animation="entrance"`).
 
 ---
 
