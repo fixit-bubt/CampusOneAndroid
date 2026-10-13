@@ -180,6 +180,8 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
   - `NotificationsScreen`: Filter switcher (2 tabs: `All` / `Unread` with unread count, no icons).
   - `HomeCommunityUpdates`: Update categories (3 tabs: `Notices` / `Clubs` / `Events` with counts, no icons).
   - `PrayerScreen`: Timetable view switcher (2 tabs: `Today` / `Month`).
+  - `BusScreen`: Direction switcher (2 tabs: `To Campus` / `From Campus`), 58dp search bar, 58dp admin modal controls.
+  - `BusDetailScreen`: Direction switcher (2 tabs: `To Campus` / `From Campus`), trip timetable selector.
 - **Layout Tokens (`src/theme/spacing.ts`):** `Layout.controlHeight = 58` and `Layout.controlRadius = 16` provide universal design system constants for all horizontal bars, buttons, and segmented tracks.
 - **Detail Screen & Modal Action CTAs (58dp):** All primary submission/action CTAs across detail views and modal bottom sheets are standardized to `height: 58, borderRadius: 16`:
   - `RideDetailScreen`: `actionBtn` (58dp)
@@ -1394,3 +1396,50 @@ The Campus Announcements architecture is transformed from a manual posting board
 - **Confidential Psychological Support:** Dedicated highlight card on `DoctorDetailScreen` for Campus Psychologist **Mou Juliet Rebeiro** with a 1-tap `Request Confidential Session` mailto action.
 - **In-App Admin Management:** Added `manageMedicalCenter` tile to `AdminDashboardScreen` and an inline admin quick-edit modal on `MedicalScreen` to toggle `is_on_leave`, set leave notes, and update room locations.
 - **`CampusToday` Live Widget:** Displays the currently on-duty doctor or `"BUBT Medical Unit Open · Room 205, Bldg 3"` on the Home feed during operating hours.
+
+---
+
+## 34. BUBT Campus Shuttle Bus 360 & Transit Architecture
+
+### 34.1 Official BUBT Transport Intelligence & Campus Context
+- **Fleet Launch:** Dedicated institutional shuttle bus service officially launched on **July 8, 2025**, inaugurated by Vice-Chancellor Prof. Dr. A B M Shawkat Ali and BUBT Trust.
+- **Service Policy:** **100% Free** campus transportation for registered students, faculty, and administrative staff. Boarding strictly requires presenting a valid physical **BUBT Student ID Card**.
+- **Core Corridors:**
+  - `BR-07` (Uttara Line): Uttara House Building, Airport, Khilkhet, Mirpur-14, Mirpur-12, BUBT Campus (`BUBT-07`, Helper: Md. Jasim `+8801712554477`).
+  - `BR-03` (Mirpur Line): Mirpur-1, Mirpur-2, Mirpur-10, Mirpur-11, Rupnagar, BUBT Campus (`BUBT-03`, Helper: Sohel Rana `+8801813220099`).
+  - `BR-05` (Dhanmondi Line): Dhanmondi 27, Shyamoli, Gabtoli, Technical, Mirpur-1, BUBT Campus (`BUBT-05`, Helper: Abdul Karim `+8801911778822`).
+  - `BR-09` (Mohammadpur Line): Mohammadpur Bus Stand, Shyamoli Square, Kallyanpur, Mirpur-1, Rupnagar, BUBT Campus (`BUBT-09`, Helper: Rasel Ahmed `+8801677334411`).
+  - `BR-02` (Gulshan Line): Gulshan-1, Mohakhali, Bijoy Sarani, Agargaon, Mirpur-10, BUBT Campus (`BUBT-02`, Helper: Tanvir Hossain `+8801556990011`).
+  - `BR-11` (Savar Line): Savar Bazar, Hemayetpur, Amin Bazar, Gabtoli, Technical, BUBT Campus (`BUBT-11`, Helper: Mizanur Rahman `+8801722446688`).
+- **Schedule & Operations:** Runs Saturday to Wednesday (with adjusted shifts during Midterm/Final exam routines). Regular service is suspended on Fridays & Government Holidays.
+- **Metro Rail Connectivity:** Permanent campus in Rupnagar, Mirpur-2 is centrally accessible via **MRT Line-6** through **Pallabi Metro Station** (1.2 km, 5 min rickshaw ~30 BDT) and **Mirpur-11 Metro Station** (1.4 km).
+- **Transport Desk Support:** Direct line to the BUBT One Stop Service / Transport Division at `01810033740` (`medical@bubt.edu.bd` / `02-4803-6351`).
+
+### 34.2 Database Schema & Remote Supabase Migration
+- **Migration `20261022000000_bus_schedule_enhancements.sql`:**
+  - Granted `SELECT` on `public.bus_routes` to `anon` and `authenticated`, enabling guest/unauthenticated students to read route details, helper phone numbers, and timetable schedules without 42501 permission errors.
+  - Added RLS policy `bus_routes_anon_select` (`active = true`).
+  - Upserted accurate records for all 6 active BUBT shuttle lines with complete stop lists, leg intervals (`leg_mins`), to-campus morning departures, and from-campus afternoon departures.
+
+### 34.3 Mobile UI/UX & Design System Integration (`BusScreen.tsx` & `BusDetailScreen.tsx`)
+- **Universal 58dp Standard:**
+  - **Direction Switcher:** 58dp `SegmentedTabs` (`To Campus` | `From Campus`) with native spring indicator animation. Auto-selects direction by Dhaka local hour (<12:00 -> *To Campus*, >=12:00 -> *From Campus*).
+  - **Search Bar:** 58dp fixed height (`height: 58`, `borderRadius: 16`, `borderWidth: 1`, `paddingHorizontal: 16`), searching route title, area, bus number, and all intermediate stops with visual *"Stops at [Stop Name]"* matching badge.
+  - **Admin Route Editor Modal:** Sheet inputs and primary submit button standardized to `Layout.controlHeight = 58` and `Layout.controlRadius = 16`, wrapped in `KeyboardAvoidingView behavior="padding"`.
+- **Live Upcoming Departure Hero Card:**
+  - Prominent transit card calculating the soonest departure across user's bookmarked routes (falling back to all routes) for the selected direction.
+  - Displays dynamic countdown pill (`in 15m` / `Tomorrow`), formatted clock departure, origin stop, and bus registration.
+- **Stop-by-Stop Calculated Clock Timetable (`BusDetailScreen.tsx`):**
+  - Interactive departure trip selector pills (`Trip 1: 06:45 AM`, `Trip 2: 07:30 AM`).
+  - Calculates and renders the exact projected arrival clock time at every individual stop along the route using `toMinutes()` + cumulative `leg_mins` offsets (e.g., `06:45 AM` Uttara -> `07:00 AM` Airport -> `07:15 AM` Khilkhet -> `07:35 AM` Mirpur-14 -> `07:50 AM` BUBT Campus).
+- **Route In-Charge & Helper Contact Card:**
+  - Displays helper name, bus registration number, and verified contact number.
+  - 1-tap Phone Call action (`Linking.openURL('tel:...')`).
+  - 1-tap WhatsApp action (`Linking.openURL('https://wa.me/...')` with automatic `+880` formatting).
+- **Cross-Feature Synergies:**
+  - Fallback button: *"Missed the bus? Check student campus rides"* linking to `RidesScreen`.
+  - Recovery button: *"Left an item on the bus? Check Lost & Found"* linking to `LostFoundBrowseScreen`.
+- **Home Screen Widget Parity (`HomeStatusStrips.tsx`):**
+  - Updated `bus_routes` query to select both `to_departures` and `from_departures`.
+  - Automatically transitions at 12:00 PM Dhaka time to calculate and display afternoon departures leaving campus, eliminating the bug where morning departures showed "Tomorrow" during the afternoon commute.
+
