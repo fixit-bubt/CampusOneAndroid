@@ -34,6 +34,8 @@ export const Layout = {
   inputHeight:      Spacing[12],  // 48px - touch target height
   buttonHeight:     Spacing[12],  // 48px
   buttonHeightSm:   Spacing[9],   // 36px
+  controlHeight:    58,           // 58px - universal control bar / tab / search height
+  controlRadius:    16,           // 16px - universal control bar border radius
   bottomNavHeight:  Spacing[20],  // 80px - tab bar
   bottomPadding:    110,          // scroll area bottom padding (clears nav)
   topBarHeight:     Spacing[14],  // 56px

@@ -180,6 +180,22 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
   - `NotificationsScreen`: Filter switcher (2 tabs: `All` / `Unread` with unread count, no icons).
   - `HomeCommunityUpdates`: Update categories (3 tabs: `Notices` / `Clubs` / `Events` with counts, no icons).
   - `PrayerScreen`: Timetable view switcher (2 tabs: `Today` / `Month`).
+- **Layout Tokens (`src/theme/spacing.ts`):** `Layout.controlHeight = 58` and `Layout.controlRadius = 16` provide universal design system constants for all horizontal bars, buttons, and segmented tracks.
+- **Detail Screen & Modal Action CTAs (58dp):** All primary submission/action CTAs across detail views and modal bottom sheets are standardized to `height: 58, borderRadius: 16`:
+  - `RideDetailScreen`: `actionBtn` (58dp)
+  - `MarketDetailScreen`: `actionBtn` (58dp), `secActionBtn` (58dp)
+  - `LostFoundDetailScreen`: `actionBtn` (58dp)
+  - `ReportDetailScreen`: `actionBtn` (58dp)
+  - `JobDetailScreen`: `actionBtn` (58dp), `secondaryBtn` (58dp)
+  - `EventPostScreen`: `submitBtn` (58dp)
+  - `ClubPostScreen`: `submitBtn` (58dp)
+  - `DonorRegisterScreen`: `submitBtn` (58dp)
+  - `FeatureScreen`: `ctaBtn` (58dp)
+  - `ProfileScreen`: Modal `submitBtn` (58dp)
+  - `NotifDetailScreen`: `actionBtn` (58dp), `secondaryBtn` (58dp)
+  - `StudyHubScreen`: CR & section request sheets `submitBtn` (58dp)
+  - `ManageStaffScreen`: Add staff modal `createBtn` (58dp)
+- **PDF Maker Suite Standardization (58dp):** All 4 PDF Maker tools (`ToolCompressScreen`, `ToolMergeScreen`, `ToolImagesScreen`, `ToolOrganizeScreen`) `cta` buttons are standardized to `height: 58, borderRadius: 16`. In `components.tsx`, `primaryBtn` (Share), `secondaryBtn` (Start Over), and `SegmentToggle` track are standardized to `height: 58, borderRadius: 16`.
 
 ---
 
@@ -187,7 +203,17 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
 
 Expo SDK 56 enforces Android 15 edge-to-edge mode. This breaks two standard React Native conventions:
 
-### 6.1 Keyboard Handling & KeyboardAvoidingView across Android & iOS
+### 6.1 Android `singleTask` RAM Persistence & Clean ADB Installation
+- When an app is configured with `android:launchMode="singleTask"` in `AndroidManifest.xml` (Expo default), running `adb install -r` updates the APK file on disk, but running `adb shell am start` merely brings the **existing running process forward from RAM** without reloading the newly packaged JavaScript bundle.
+- **The Rule:** Always force-stop the app process before testing new APK builds:
+  ```bash
+  adb -s <device_id> shell am force-stop com.bubt.campusone
+  adb -s <device_id> install -r android/app/build/outputs/apk/release/app-release.apk
+  adb -s <device_id> shell am start -n com.bubt.campusone/.MainActivity
+  ```
+- Verify the process restarted by inspecting `adb shell "ps -A | grep bubt"` for a newly allocated PID.
+
+### 6.2 Keyboard Handling & KeyboardAvoidingView across Android & iOS
 - **`app.json` Configuration:** `"softwareKeyboardLayoutMode": "resize"` is explicitly configured in `expo.android`.
 - **The `behavior="height"` Trap:** In React Native's `KeyboardAvoidingView.js`, `behavior="height"` forcibly sets `flex: 0` and recalculates an explicit height. In Android 15 edge-to-edge mode (Expo SDK 56), this collapses flex containers, zeros offsets, and causes the soft keyboard to obstruct search boxes and inputs.
 - **The Standard Rule:** ALWAYS use `behavior="padding"` across all screens on both iOS and Android. It maintains `flex: 1` and applies `paddingBottom: keyboardHeight` smoothly.

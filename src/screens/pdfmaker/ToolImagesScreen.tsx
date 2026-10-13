@@ -281,6 +281,6 @@ const styles = StyleSheet.create({
   count: { fontSize: 13, marginLeft: 'auto' },
   label: { fontSize: 14, marginTop: 2 },
   hint: { fontSize: 12 },
-  cta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 48, borderRadius: 14 } as ViewStyle,
+  cta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, height: 58, borderRadius: 16 } as ViewStyle,
   ctaText: { fontSize: 15 },
 });

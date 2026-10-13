@@ -552,8 +552,8 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: 12 } as ViewStyle,
   halfField: { flex: 1 } as ViewStyle,
   submitBtn: {
-    height: 50,
-    borderRadius: 14,
+    height: 58,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 22,

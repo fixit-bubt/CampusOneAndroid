@@ -321,7 +321,7 @@ const sheetStyles = StyleSheet.create({
   flabel: { fontSize: 11, letterSpacing: 0.7, marginBottom: 7, marginTop: 12, marginLeft: 2 } as any,
   input: { height: 58, borderRadius: 16, borderWidth: 1, paddingHorizontal: 16, fontSize: 14.5 } as any,
   textarea: { minHeight: 80, borderRadius: 12, borderWidth: 1, padding: 13, fontSize: 14, textAlignVertical: 'top' } as any,
-  submitBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: 14, marginTop: 22 } as ViewStyle,
+  submitBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, height: 58, borderRadius: 16, marginTop: 22 } as ViewStyle,
   submitTxt: { fontSize: 15 } as any,
   hintTxt: { fontSize: 13.5, lineHeight: 20 } as any,
 });

@@ -539,9 +539,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    height: 46,
-    borderRadius: 14,
+    gap: 8,
+    height: 58,
+    borderRadius: 16,
     borderWidth: 1,
   } as ViewStyle,
 

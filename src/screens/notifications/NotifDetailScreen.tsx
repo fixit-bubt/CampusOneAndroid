@@ -139,9 +139,9 @@ const styles = StyleSheet.create({
   relatedCard: { flexDirection: 'row', alignItems: 'center', gap: 13, padding: 14, borderRadius: 16, borderWidth: 1 } as ViewStyle,
   relatedTitle: { fontSize: 14 } as any,
   relatedSub: { fontSize: 12.5, marginTop: 1 } as any,
-  actionBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: 14, marginTop: 18 } as ViewStyle,
+  actionBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, height: 58, borderRadius: 16, marginTop: 18 } as ViewStyle,
   actionTxt: { fontSize: 15 } as any,
   secondaryRow: { flexDirection: 'row', gap: 10, marginTop: 10 } as ViewStyle,
-  secondaryBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, height: 44, borderRadius: 12, borderWidth: 1 } as ViewStyle,
-  secondaryTxt: { fontSize: 13.5 } as any,
+  secondaryBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, height: 58, borderRadius: 16, borderWidth: 1 } as ViewStyle,
+  secondaryTxt: { fontSize: 14.5 } as any,
 });

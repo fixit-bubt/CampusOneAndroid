@@ -1130,13 +1130,13 @@ const styles = StyleSheet.create({
   } as ViewStyle,
 
   actionBtn: {
-    height: 50,
-    borderRadius: 14,
+    height: 58,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
 
-  btnRow: { flexDirection: 'row', alignItems: 'center', gap: 8 } as ViewStyle,
+  btnRow: { flexDirection: 'row', alignItems: 'center', gap: 9 } as ViewStyle,
   btnTxt: { fontSize: 15 } as any,
 
   zoomHint: {

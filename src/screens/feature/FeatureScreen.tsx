@@ -211,6 +211,6 @@ const styles = StyleSheet.create({
   capText: { flex: 1, fontSize: 14, lineHeight: 20 } as any,
   divider: { height: StyleSheet.hairlineWidth } as ViewStyle,
 
-  ctaBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: 14, marginTop: 18 } as ViewStyle,
+  ctaBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, height: 58, borderRadius: 16, marginTop: 18 } as ViewStyle,
   ctaTxt: { fontSize: 15 } as any,
 });

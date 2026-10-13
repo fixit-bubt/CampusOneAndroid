@@ -1141,11 +1141,11 @@ const styles = StyleSheet.create({
   removedBanner: { alignItems: 'center', padding: 14, borderRadius: 14, marginTop: 18 } as ViewStyle,
   removedText: { fontSize: 13.5 } as any,
 
-  actionBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 48, borderRadius: 14, marginTop: 18 } as ViewStyle,
+  actionBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, height: 58, borderRadius: 16, marginTop: 18 } as ViewStyle,
   actionTxt: { fontSize: 15 } as any,
 
-  secondaryBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 44, borderRadius: 14, marginTop: 10, borderWidth: 1 } as ViewStyle,
-  secondaryTxt: { fontSize: 14 } as any,
+  secondaryBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, height: 58, borderRadius: 16, marginTop: 10, borderWidth: 1 } as ViewStyle,
+  secondaryTxt: { fontSize: 14.5 } as any,
 
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' } as ViewStyle,
   sheet: { borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 36 } as ViewStyle,

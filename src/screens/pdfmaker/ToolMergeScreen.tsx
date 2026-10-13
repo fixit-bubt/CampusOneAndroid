@@ -270,6 +270,6 @@ const styles = StyleSheet.create({
   smallBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 36, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1 } as ViewStyle,
   smallBtnText: { fontSize: 13 },
   count: { fontSize: 13, marginLeft: 'auto' },
-  cta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 48, borderRadius: 14 } as ViewStyle,
+  cta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, height: 58, borderRadius: 16 } as ViewStyle,
   ctaText: { fontSize: 15 },
 });

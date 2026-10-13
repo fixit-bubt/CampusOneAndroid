@@ -308,6 +308,6 @@ const styles = StyleSheet.create({
   label: { fontSize: 14, marginTop: 2 },
   ackBtn: { alignSelf: 'flex-start', marginTop: 8, height: 34, justifyContent: 'center', paddingHorizontal: 12, borderRadius: 10, borderWidth: 1 } as ViewStyle,
   ackText: { fontSize: 13 },
-  cta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 48, borderRadius: 14 } as ViewStyle,
+  cta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, height: 58, borderRadius: 16 } as ViewStyle,
   ctaText: { fontSize: 15 },
 });

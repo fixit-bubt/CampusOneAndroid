@@ -210,9 +210,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    height: 52,
-    borderRadius: 14,
+    gap: 9,
+    height: 58,
+    borderRadius: 16,
     marginTop: 16,
   } as ViewStyle,
 

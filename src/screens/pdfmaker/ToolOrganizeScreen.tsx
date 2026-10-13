@@ -320,6 +320,6 @@ const styles = StyleSheet.create({
   label: { fontSize: 14, marginBottom: 5 },
   input: { height: 42, borderWidth: 1, borderRadius: 11, paddingHorizontal: 12, fontSize: 14 },
   applyBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 42, paddingHorizontal: 14, borderRadius: 11, borderWidth: 1 } as ViewStyle,
-  cta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 48, borderRadius: 14 } as ViewStyle,
+  cta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, height: 58, borderRadius: 16 } as ViewStyle,
   ctaText: { fontSize: 15 },
 });

@@ -225,7 +225,7 @@ const sheetStyles = StyleSheet.create({
   sheetTitle: { fontSize: 18, letterSpacing: -0.3, marginBottom: 14 } as any,
   flabel: { fontSize: 11, letterSpacing: 0.7, marginBottom: 7, marginTop: 14, marginLeft: 2 } as any,
   input: { height: 46, borderRadius: 12, borderWidth: 1, paddingHorizontal: 13, fontSize: 14 } as any,
-  submitBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: 14, marginTop: 22 } as ViewStyle,
+  submitBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, height: 58, borderRadius: 16, marginTop: 22 } as ViewStyle,
   submitTxt: { fontSize: 15 } as any,
   typeChip: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
