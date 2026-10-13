@@ -202,6 +202,26 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
   - `ManageStaffScreen`: Add staff modal `createBtn` (58dp)
 - **PDF Maker Suite Standardization (58dp):** All 4 PDF Maker tools (`ToolCompressScreen`, `ToolMergeScreen`, `ToolImagesScreen`, `ToolOrganizeScreen`) `cta` buttons are standardized to `height: 58, borderRadius: 16`. In `components.tsx`, `primaryBtn` (Share), `secondaryBtn` (Start Over), and `SegmentToggle` track are standardized to `height: 58, borderRadius: 16`.
 
+### 5.5 Universal 72dp Content Card & Row Standard (Reference: `DESIGN.md`)
+- **The 58 / 72 Dual System:** Controls, switchers, search bars, and CTAs adhere to the **58dp** standard (`Layout.controlHeight = 58`), while all content cards, list rows, and feed items adhere to the **72dp** standard (`height: 72` or `padding: 14` + `44dp` icon/avatar = `72dp`).
+- **Student Directory (`DirectoryScreen.tsx`):**
+  - Student row cards: `padding: 14, borderRadius: 16` (`44dp` avatar + `28dp` padding = 72dp). Connect/Chat CTA buttons standardized to 32dp.
+  - Department picker modal cards: `padding: 14, borderRadius: 16`, `44 × 44 dp` icon box = 72dp.
+  - Native 120 FPS `AnimatedIcon` integration for department triggers, modal icons, empty states, and action buttons.
+- **Home Community Updates (`HomeCommunityUpdates.tsx`):**
+  - Notice & update feed cards: `padding: 12, borderRadius: 16`, `48 × 48 dp` thumbnail = 72dp.
+  - Bottom "View All Campus Notices" button: standardized to 58dp (`height: 58, borderRadius: 16, fontSize: 14`).
+- **Student Profile Direct Action Cards (`StudentProfileScreen.tsx`):**
+  - Hero card cleanup: redundant `connectedRow` (`Connected` pill + `Message` button) removed; clean status badge placed directly in `badgeRow`.
+  - Contact options modal replaced with direct, 1-tap **72dp action cards** (`minHeight: 72, padding: 14, borderRadius: 16`, `44 × 44 dp` icon box):
+    1. CampusOne In-App Chat (72dp, Brand Blue)
+    2. WhatsApp (72dp, official WhatsApp `#25D366`)
+    3. Call Phone (72dp, Emerald `#10B981`)
+    4. Send Email (72dp, Purple `#8B5CF6`)
+  - Disconnect connection converted to clean destructive outline action button (`height: 50, borderRadius: 14`).
+  - Text overflow protection: `lockedTxt` wrapped with `flex: 1, flexShrink: 1`.
+- **Contact Sheet (`ContactSheet.tsx`):** Standardized button height to `height: 56, borderRadius: 16`, added top-right close button (`32 × 32 dp`), and resolved clashing greens.
+
 ---
 
 ## 6. Expo SDK 56 & Android Quirks

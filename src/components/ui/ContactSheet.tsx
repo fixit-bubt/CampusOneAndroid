@@ -74,11 +74,19 @@ export function ContactSheet({
                 {name}
               </Text>
               {!!(roleSubtitle ?? title) && (
-                <Text style={[styles.subtitle, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                <Text style={[styles.subtitle, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
                   {roleSubtitle ?? title}
                 </Text>
               )}
             </View>
+            <TouchableOpacity
+              style={[styles.closeIconBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+              onPress={onClose}
+              hitSlop={8}
+              activeOpacity={0.75}
+            >
+              <Feather name="x" size={16} color={C.textMuted} />
+            </TouchableOpacity>
           </View>
 
           {/* Phone Display Card */}
@@ -115,7 +123,7 @@ export function ContactSheet({
             {cleanPhone ? (
               <>
                 <TouchableOpacity
-                  style={[styles.btn, styles.callBtn, { backgroundColor: C.success }]}
+                  style={[styles.btn, styles.callBtn, { backgroundColor: C.brand }]}
                   onPress={() => {
                     callPhone(cleanPhone);
                     onClose();
@@ -262,6 +270,14 @@ const styles = StyleSheet.create({
   copyTxt: {
     fontSize: 12,
   } as any,
+  closeIconBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
   actions: {
     gap: 10,
   } as ViewStyle,
@@ -270,13 +286,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 9,
-    height: 48,
-    borderRadius: 13,
+    height: 56,
+    borderRadius: 16,
   } as ViewStyle,
   callBtn: {},
   waBtn: {},
   btnTxt: {
-    fontSize: 15,
+    fontSize: 14.5,
   } as any,
   cancelBtn: {
     height: 44,

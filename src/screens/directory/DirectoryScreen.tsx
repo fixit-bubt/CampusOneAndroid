@@ -17,6 +17,7 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
+import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { ContactSheet } from '../../components/ui/ContactSheet';
 import { FontFamily, Layout, Accent, SectorColors, pillBg } from '../../theme';
@@ -461,14 +462,14 @@ export function DirectoryScreen({ route, navigation }: any) {
                 onPress={() => navigation.navigate('MessageThread', { kind: 'dm', id: s.id, title: s.full_name })}
                 activeOpacity={0.8}
               >
-                <Icon name="chat" size={14} color="#fff" />
+                <AnimatedIcon family="feather" name="message-circle" size={14} color="#fff" animation="spring" />
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.smallIconBtn, { backgroundColor: C.surface2, borderColor: C.border, borderWidth: 1 }]}
                 onPress={() => setContactStudent(s)}
                 activeOpacity={0.8}
               >
-                <Icon name="phone" size={14} color={C.text} />
+                <AnimatedIcon family="feather" name="phone" size={14} color={C.text} animation="spring" />
               </TouchableOpacity>
             </View>
           ) : s.connState === 'connected' ? (
@@ -508,7 +509,7 @@ export function DirectoryScreen({ route, navigation }: any) {
               disabled={isBusy}
               activeOpacity={0.85}
             >
-              <Icon name="userPlus" size={14} color="#fff" />
+              <AnimatedIcon family="feather" name="user-plus" size={14} color="#fff" animation="none" />
               <Text style={[styles.connectTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
                 {t.directory2.connect}
               </Text>
@@ -678,10 +679,12 @@ export function DirectoryScreen({ route, navigation }: any) {
                     onPress={() => setDeptModalVisible(true)}
                     activeOpacity={0.75}
                   >
-                    <Feather
+                    <AnimatedIcon
+                      family="feather"
                       name={currentDept.icon}
                       size={14}
                       color={selectedDept !== 'All' ? (isDark ? '#fff' : currentDept.color) : C.text2}
+                      animation={selectedDept !== 'All' ? 'spring' : 'none'}
                     />
                     <Text
                       style={[
@@ -730,7 +733,7 @@ export function DirectoryScreen({ route, navigation }: any) {
               </View>
             ) : (
               <View style={styles.emptyContainer}>
-                <Icon name="directory" size={32} color={C.textMuted} />
+                <AnimatedIcon family="feather" name="users" size={36} color={C.textMuted} animation="float" />
                 <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                   {tab === 'connections'
                     ? t.directory2.noConnections
@@ -853,7 +856,7 @@ export function DirectoryScreen({ route, navigation }: any) {
                     activeOpacity={0.75}
                   >
                     <View style={[styles.deptIconBox, { backgroundColor: iconBg }]}>
-                      <Feather name={d.icon} size={19} color={fg} />
+                      <AnimatedIcon family="feather" name={d.icon} size={20} color={fg} animation="entrance" />
                     </View>
 
                     <View style={styles.deptInfo}>
@@ -1004,7 +1007,7 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   clearFilterTxt: { fontSize: 13 } as TextStyle,
 
-  card: { padding: 13, borderRadius: 16, borderWidth: 1 } as ViewStyle,
+  card: { padding: 14, borderRadius: 16, borderWidth: 1 } as ViewStyle,
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: 12 } as ViewStyle,
   identity: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, minWidth: 0 } as ViewStyle,
   cardBody: { flex: 1, minWidth: 0 } as ViewStyle,
@@ -1173,15 +1176,15 @@ const styles = StyleSheet.create({
   deptCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 11,
-    padding: 11,
-    borderRadius: 14,
+    gap: 12,
+    padding: 14,
+    borderRadius: 16,
     marginBottom: 8,
   } as ViewStyle,
   deptIconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,

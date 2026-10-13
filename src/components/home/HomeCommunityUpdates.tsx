@@ -572,15 +572,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
-    gap: 11,
+    gap: 12,
   } as ViewStyle,
 
   thumbBox: {
-    width: 58,
-    height: 58,
-    borderRadius: 10,
+    width: 48,
+    height: 48,
+    borderRadius: 12,
     borderWidth: 1,
     overflow: 'hidden',
   } as ViewStyle,
@@ -607,7 +607,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginBottom: 3,
+    marginBottom: 2,
   } as ViewStyle,
 
   catBadge: {
@@ -636,13 +636,13 @@ const styles = StyleSheet.create({
 
   cardTitle: {
     fontSize: 13,
-    lineHeight: 18,
+    lineHeight: 17,
   },
 
   cardBody: {
     fontSize: 11.5,
-    lineHeight: 16,
-    marginTop: 2,
+    lineHeight: 15,
+    marginTop: 1,
   },
 
   chevron: {
@@ -653,15 +653,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 7,
-    paddingVertical: 11,
-    minHeight: 44,
-    borderRadius: 12,
+    gap: 8,
+    height: 58,
+    borderRadius: 16,
     borderWidth: 1,
-    marginTop: 4,
+    marginTop: 6,
   } as ViewStyle,
 
   viewAllTxt: {
-    fontSize: 12.5,
+    fontSize: 14,
   },
 });

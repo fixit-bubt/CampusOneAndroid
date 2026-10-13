@@ -5,9 +5,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, ActivityIndicator,
-  type ViewStyle, type TextStyle,
+  Linking, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
 import { useAuth } from '../../store/authStore';
@@ -15,8 +16,8 @@ import { useMessages } from '../../store/messagesStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
+import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
-import { ContactSheet } from '../../components/ui/ContactSheet';
 import { useToast } from '../../components/ui/Toast';
 import {
   connectErrorKey,
@@ -187,6 +188,28 @@ export function StudentProfileScreen({ route, navigation }: any) {
     );
   }
 
+  function handleWhatsApp(phone: string) {
+    let cleaned = phone.replace(/[^\d+]/g, '');
+    if (cleaned.startsWith('+')) cleaned = cleaned.slice(1);
+    if (cleaned.startsWith('01')) cleaned = '880' + cleaned.slice(1);
+    Linking.openURL(`https://wa.me/${cleaned}`).catch(() => {
+      toast({ type: 'error', title: 'Cannot Open WhatsApp', message: 'WhatsApp is not installed on this device.' });
+    });
+  }
+
+  function handlePhoneCall(phone: string) {
+    const cleaned = phone.replace(/[^\d+]/g, '');
+    Linking.openURL(`tel:${cleaned}`).catch(() => {
+      toast({ type: 'error', title: 'Cannot Call', message: 'Dialer could not be opened.' });
+    });
+  }
+
+  function handleEmail(email: string) {
+    Linking.openURL(`mailto:${email}`).catch(() => {
+      toast({ type: 'error', title: 'Cannot Open Mail', message: 'No email application found.' });
+    });
+  }
+
   if (loading && !student) {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -282,161 +305,215 @@ export function StudentProfileScreen({ route, navigation }: any) {
                     </Text>
                   </View>
                 ) : null}
+                {connected ? (
+                  <View style={[styles.connBadge, { backgroundColor: pillBg(Accent.teal, isDark), borderColor: isDark ? 'rgba(20, 184, 166, 0.4)' : '#99f6e4' }]}>
+                    <View style={[styles.connDot, { backgroundColor: Accent.teal }]} />
+                    <Text style={[styles.connBadgeTxt, { color: Accent.teal, fontFamily: FontFamily.jakartaBold }]}>
+                      {t.directory2.connected}
+                    </Text>
+                  </View>
+                ) : null}
               </View>
             </View>
           </View>
 
-          {/* Connection Actions Container */}
-          <View style={styles.connArea}>
-            {student.connState === 'connected' && (
-              <View style={styles.connectedRow}>
-                <View style={[styles.statePill, { backgroundColor: pillBg(Accent.teal, isDark) }]}>
-                  <View style={[styles.stateDot, { backgroundColor: Accent.teal }]} />
-                  <Text style={[styles.statePillTxt, { color: Accent.teal, fontFamily: FontFamily.jakartaBold }]}>
-                    {t.directory2.connected}
-                  </Text>
+          {/* Connection Actions Container for non-connected states */}
+          {student.connState !== 'connected' && (
+            <View style={styles.connArea}>
+              {student.connState === 'requested' && (
+                <View style={styles.requestedRow}>
+                  <View style={[styles.statePill, { backgroundColor: C.warnBg }]}>
+                    <View style={[styles.stateDot, { backgroundColor: C.warn }]} />
+                    <Text style={[styles.statePillTxt, { color: C.warn, fontFamily: FontFamily.jakartaBold }]}>
+                      {t.directory2.requested}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={[styles.cancelBtn, { borderColor: C.border, backgroundColor: C.surface2 }]}
+                    onPress={handleCancelRequest}
+                    disabled={busy}
+                    activeOpacity={0.7}
+                  >
+                    <Icon name="x" size={14} color={C.text2} />
+                    <Text style={[styles.cancelBtnTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                      {t.directory2.cancelRequest}
+                    </Text>
+                  </TouchableOpacity>
                 </View>
+              )}
+
+              {student.connState === 'none' && (
                 <TouchableOpacity
-                  style={[styles.msgBtn, { backgroundColor: C.brand }]}
-                  onPress={() => navigation.navigate('MessageThread', { kind: 'dm', id: student.id, title: student.full_name })}
+                  style={[styles.fullBtn, { backgroundColor: C.brand }]}
+                  onPress={handleConnect}
+                  disabled={busy}
                   activeOpacity={0.85}
                 >
-                  <Icon name="chat" size={15} color="#fff" />
-                  <Text style={[styles.msgBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
-                    {t.messages.startChat}
+                  <AnimatedIcon family="feather" name="user-plus" size={16} color="#fff" animation="none" />
+                  <Text style={[styles.fullBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                    {t.directory2.connect}
                   </Text>
                 </TouchableOpacity>
-              </View>
-            )}
+              )}
 
-            {student.connState === 'requested' && (
-              <View style={styles.requestedRow}>
-                <View style={[styles.statePill, { backgroundColor: C.warnBg }]}>
-                  <View style={[styles.stateDot, { backgroundColor: C.warn }]} />
-                  <Text style={[styles.statePillTxt, { color: C.warn, fontFamily: FontFamily.jakartaBold }]}>
-                    {t.directory2.requested}
+              {student.connState === 'incoming' && (
+                <>
+                  <Text style={[styles.wants, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+                    {t.directory2.wantsToConnect}
                   </Text>
-                </View>
-                <TouchableOpacity
-                  style={[styles.cancelBtn, { borderColor: C.border, backgroundColor: C.surface2 }]}
-                  onPress={handleCancelRequest}
-                  disabled={busy}
-                  activeOpacity={0.7}
-                >
-                  <Icon name="x" size={14} color={C.text2} />
-                  <Text style={[styles.cancelBtnTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                    {t.directory2.cancelRequest}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {student.connState === 'none' && (
-              <TouchableOpacity
-                style={[styles.fullBtn, { backgroundColor: C.brand }]}
-                onPress={handleConnect}
-                disabled={busy}
-                activeOpacity={0.85}
-              >
-                <Icon name="userPlus" size={16} color="#fff" />
-                <Text style={[styles.fullBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
-                  {t.directory2.connect}
-                </Text>
-              </TouchableOpacity>
-            )}
-
-            {student.connState === 'incoming' && (
-              <>
-                <Text style={[styles.wants, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
-                  {t.directory2.wantsToConnect}
-                </Text>
-                <View style={styles.actionRow}>
-                  <TouchableOpacity
-                    style={[styles.halfBtn, { backgroundColor: C.brand }]}
-                    onPress={() => handleRespond(true)}
-                    disabled={busy}
-                    activeOpacity={0.85}
-                  >
-                    <Icon name="check" size={15} color="#fff" />
-                    <Text style={[styles.halfBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
-                      {t.directory2.accept}
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.halfBtn, { backgroundColor: C.surface2, borderColor: C.border, borderWidth: 1 }]}
-                    onPress={() => handleRespond(false)}
-                    disabled={busy}
-                    activeOpacity={0.85}
-                  >
-                    <Icon name="x" size={15} color={C.text} />
-                    <Text style={[styles.halfBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                      {t.directory2.decline}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </>
-            )}
-          </View>
-        </View>
-
-        {/* Contact Details Card */}
-        <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border, marginTop: 12 }]}>
-          <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-            {t.directory2.contact}
-          </Text>
-
-          {!connected ? (
-            <View style={styles.lockedArea}>
-              <Icon name="shield" size={17} color={C.textMuted} />
-              <Text style={[styles.lockedTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                {t.directory2.connectToSeeContact}
-              </Text>
+                  <View style={styles.actionRow}>
+                    <TouchableOpacity
+                      style={[styles.halfBtn, { backgroundColor: C.brand }]}
+                      onPress={() => handleRespond(true)}
+                      disabled={busy}
+                      activeOpacity={0.85}
+                    >
+                      <Icon name="check" size={15} color="#fff" />
+                      <Text style={[styles.halfBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                        {t.directory2.accept}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.halfBtn, { backgroundColor: C.surface2, borderColor: C.border, borderWidth: 1 }]}
+                      onPress={() => handleRespond(false)}
+                      disabled={busy}
+                      activeOpacity={0.85}
+                    >
+                      <Icon name="x" size={15} color={C.text} />
+                      <Text style={[styles.halfBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                        {t.directory2.decline}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
             </View>
-          ) : student.email || student.whatsapp ? (
-            <View style={styles.contactDetailsArea}>
-              <TouchableOpacity
-                style={[styles.contactCardBtn, { backgroundColor: SectorColors.directory }]}
-                onPress={() => setContactOpen(true)}
-                activeOpacity={0.85}
-              >
-                <Icon name="phone" size={16} color="#fff" />
-                <Text style={[styles.contactCardBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
-                  View Full Contact Options
-                </Text>
-              </TouchableOpacity>
-
-              {student.email ? (
-                <View style={[styles.infoRow, { backgroundColor: C.surface2, borderColor: C.border }]}>
-                  <Icon name="mail" size={15} color={C.text2} />
-                  <Text style={[styles.infoVal, { color: C.text, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                    {student.email}
-                  </Text>
-                </View>
-              ) : null}
-
-              {student.whatsapp ? (
-                <View style={[styles.infoRow, { backgroundColor: C.surface2, borderColor: C.border }]}>
-                  <Icon name="chat" size={15} color={C.success} />
-                  <Text style={[styles.infoVal, { color: C.text, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                    {student.whatsapp} (WhatsApp)
-                  </Text>
-                </View>
-              ) : null}
-            </View>
-          ) : (
-            <Text style={[styles.lockedTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-              {t.directory2.noContactShared}
-            </Text>
           )}
         </View>
 
-        {/* Safety & Disconnect Option */}
-        {connected && (
-          <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border, marginTop: 12 }]}>
+        {/* Section Header */}
+        <View style={styles.sectionHeaderRow}>
+          <Text style={[styles.sectionTitle, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
+            {connected ? 'CONTACT & DIRECT ACTIONS' : 'CONTACT PRIVACY'}
+          </Text>
+        </View>
+
+        {/* When MUTUALLY CONNECTED: Standardized 72dp Action Bars */}
+        {connected ? (
+          <View style={styles.actionCardsCol}>
+            {/* 1. CampusOne Chat Bar (72dp) */}
             <TouchableOpacity
-              style={styles.disconnectBtn}
+              style={[styles.actionCard, { backgroundColor: C.surface, borderColor: C.border }]}
+              onPress={() => navigation.navigate('MessageThread', { kind: 'dm', id: student.id, title: student.full_name })}
+              activeOpacity={0.75}
+            >
+              <View style={[styles.actionIconBox, { backgroundColor: isDark ? 'rgba(91, 133, 247, 0.18)' : '#eff6ff' }]}>
+                <AnimatedIcon family="feather" name="message-circle" size={22} color={C.brand} animation="spring" />
+              </View>
+              <View style={styles.actionCardContent}>
+                <Text style={[styles.actionCardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  CampusOne Chat
+                </Text>
+                <Text style={[styles.actionCardDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                  {`Direct in-app messaging with ${student.full_name.split(' ')[0]}`}
+                </Text>
+              </View>
+              <Feather name="chevron-right" size={18} color={C.textMuted} />
+            </TouchableOpacity>
+
+            {/* 2. WhatsApp Bar (72dp) */}
+            {student.whatsapp ? (
+              <TouchableOpacity
+                style={[styles.actionCard, { backgroundColor: C.surface, borderColor: C.border }]}
+                onPress={() => handleWhatsApp(student.whatsapp!)}
+                activeOpacity={0.75}
+              >
+                <View style={[styles.actionIconBox, { backgroundColor: isDark ? 'rgba(37, 211, 102, 0.18)' : '#f0fdf4' }]}>
+                  <AnimatedIcon family="feather" name="message-square" size={22} color="#25D366" animation="spring" />
+                </View>
+                <View style={styles.actionCardContent}>
+                  <Text style={[styles.actionCardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    Chat on WhatsApp
+                  </Text>
+                  <Text style={[styles.actionCardDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                    {`${student.whatsapp} · Tap to open WhatsApp`}
+                  </Text>
+                </View>
+                <Feather name="chevron-right" size={18} color={C.textMuted} />
+              </TouchableOpacity>
+            ) : null}
+
+            {/* 3. Call Phone Bar (72dp) */}
+            {student.whatsapp ? (
+              <TouchableOpacity
+                style={[styles.actionCard, { backgroundColor: C.surface, borderColor: C.border }]}
+                onPress={() => handlePhoneCall(student.whatsapp!)}
+                activeOpacity={0.75}
+              >
+                <View style={[styles.actionIconBox, { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.18)' : '#ecfdf5' }]}>
+                  <AnimatedIcon family="feather" name="phone-call" size={22} color="#10B981" animation="spring" />
+                </View>
+                <View style={styles.actionCardContent}>
+                  <Text style={[styles.actionCardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    Call Phone
+                  </Text>
+                  <Text style={[styles.actionCardDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                    {`${student.whatsapp} · Direct mobile call`}
+                  </Text>
+                </View>
+                <Feather name="chevron-right" size={18} color={C.textMuted} />
+              </TouchableOpacity>
+            ) : null}
+
+            {/* 4. Send Email Bar (72dp) */}
+            {student.email ? (
+              <TouchableOpacity
+                style={[styles.actionCard, { backgroundColor: C.surface, borderColor: C.border }]}
+                onPress={() => handleEmail(student.email!)}
+                activeOpacity={0.75}
+              >
+                <View style={[styles.actionIconBox, { backgroundColor: isDark ? 'rgba(139, 92, 246, 0.18)' : '#f5f3ff' }]}>
+                  <AnimatedIcon family="feather" name="mail" size={22} color="#8B5CF6" animation="spring" />
+                </View>
+                <View style={styles.actionCardContent}>
+                  <Text style={[styles.actionCardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    Send Email
+                  </Text>
+                  <Text style={[styles.actionCardDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                    {`${student.email} · Tap to compose`}
+                  </Text>
+                </View>
+                <Feather name="chevron-right" size={18} color={C.textMuted} />
+              </TouchableOpacity>
+            ) : null}
+
+            {!student.whatsapp && !student.email && (
+              <View style={[styles.actionCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+                <View style={[styles.actionIconBox, { backgroundColor: C.surface2 }]}>
+                  <AnimatedIcon family="feather" name="info" size={22} color={C.textMuted} animation="none" />
+                </View>
+                <View style={styles.actionCardContent}>
+                  <Text style={[styles.actionCardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    No External Contacts
+                  </Text>
+                  <Text style={[styles.actionCardDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
+                    Use CampusOne Chat above to contact this student
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            {/* Safety Disconnect Option */}
+            <TouchableOpacity
+              style={[
+                styles.disconnectBtn,
+                {
+                  borderColor: isDark ? 'rgba(248, 113, 113, 0.35)' : '#fca5a5',
+                  backgroundColor: isDark ? 'rgba(248, 113, 113, 0.08)' : '#fef2f2',
+                },
+              ]}
               onPress={confirmDisconnect}
-              activeOpacity={0.7}
+              activeOpacity={0.75}
             >
               <Icon name="trash" size={15} color={C.danger} />
               <Text style={[styles.disconnectTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
@@ -444,25 +521,25 @@ export function StudentProfileScreen({ route, navigation }: any) {
               </Text>
             </TouchableOpacity>
           </View>
+        ) : (
+          /* When NOT CONNECTED: 72dp Protected Card */
+          <View style={[styles.actionCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <View style={[styles.actionIconBox, { backgroundColor: isDark ? 'rgba(91, 133, 247, 0.18)' : '#eff6ff' }]}>
+              <AnimatedIcon family="feather" name="shield" size={22} color={C.brand} animation="float" />
+            </View>
+            <View style={styles.actionCardContent}>
+              <Text style={[styles.actionCardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                Contact Details Protected
+              </Text>
+              <Text style={[styles.actionCardDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
+                {t.directory2.connectToSeeContact}
+              </Text>
+            </View>
+          </View>
         )}
 
         <View style={{ height: 28 }} />
       </ScrollView>
-
-      {/* Standardized ContactSheet Component (AGENTS.md 13.1) */}
-      <ContactSheet
-        visible={contactOpen}
-        name={student.full_name}
-        roleSubtitle={metaParts}
-        avatarUri={student.avatar_url}
-        phone={student.whatsapp}
-        email={student.email}
-        inAppChatAction={() => {
-          setContactOpen(false);
-          navigation.navigate('MessageThread', { kind: 'dm', id: student.id, title: student.full_name });
-        }}
-        onClose={() => setContactOpen(false)}
-      />
     </SafeAreaView>
   );
 }
@@ -491,6 +568,13 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   bloodBadgeTxt: { fontSize: 11 } as TextStyle,
 
+  connBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    paddingHorizontal: 8, paddingVertical: 2.5, borderRadius: 6, borderWidth: 1,
+  } as ViewStyle,
+  connDot: { width: 6, height: 6, borderRadius: 3 } as ViewStyle,
+  connBadgeTxt: { fontSize: 11 } as TextStyle,
+
   connArea: { marginTop: 14 } as ViewStyle,
   statePill: {
     flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start',
@@ -498,13 +582,6 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   stateDot: { width: 7, height: 7, borderRadius: 3.5 } as ViewStyle,
   statePillTxt: { fontSize: 12.5 } as TextStyle,
-
-  connectedRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 } as ViewStyle,
-  msgBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingHorizontal: 16, paddingVertical: 9, borderRadius: 12,
-  } as ViewStyle,
-  msgBtnTxt: { fontSize: 13 } as TextStyle,
 
   requestedRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 } as ViewStyle,
   cancelBtn: {
@@ -515,36 +592,81 @@ const styles = StyleSheet.create({
 
   wants: { fontSize: 13, marginBottom: 9 } as TextStyle,
   fullBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7,
-    height: 46, borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    height: 58,
+    borderRadius: 16,
   } as ViewStyle,
-  fullBtnTxt: { fontSize: 14 } as TextStyle,
+  fullBtnTxt: { fontSize: 14.5 } as TextStyle,
 
   actionRow: { flexDirection: 'row', gap: 9 } as ViewStyle,
   halfBtn: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-    height: 42, borderRadius: 11,
+    height: 50, borderRadius: 14,
   } as ViewStyle,
   halfBtnTxt: { fontSize: 13.5 } as TextStyle,
 
-  lockedArea: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 } as ViewStyle,
-  lockedTxt: { fontSize: 12.5, lineHeight: 18 } as TextStyle,
-
-  contactDetailsArea: { marginTop: 11, gap: 8 } as ViewStyle,
-  contactCardBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7,
-    height: 44, borderRadius: 12, marginBottom: 2,
+  sectionHeaderRow: {
+    marginTop: 18,
+    marginBottom: 10,
+    paddingHorizontal: 2,
   } as ViewStyle,
-  contactCardBtnTxt: { fontSize: 13.5 } as TextStyle,
+  sectionTitle: {
+    fontSize: 11,
+    letterSpacing: 0.8,
+  } as TextStyle,
 
-  infoRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    paddingHorizontal: 12, paddingVertical: 10, borderRadius: 10, borderWidth: 1,
+  actionCardsCol: {
+    gap: 11,
   } as ViewStyle,
-  infoVal: { fontSize: 13, flex: 1 } as TextStyle,
 
-  disconnectBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingVertical: 4 } as ViewStyle,
-  disconnectTxt: { fontSize: 13 } as TextStyle,
+  actionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 13,
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+  } as ViewStyle,
+
+  actionIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+
+  actionCardContent: {
+    flex: 1,
+    minWidth: 0,
+    justifyContent: 'center',
+  } as ViewStyle,
+
+  actionCardTitle: {
+    fontSize: 14.5,
+    lineHeight: 20,
+  } as TextStyle,
+
+  actionCardDesc: {
+    fontSize: 11.5,
+    lineHeight: 16,
+    marginTop: 2,
+  } as TextStyle,
+
+  disconnectBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    height: 50,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginTop: 14,
+  } as ViewStyle,
+  disconnectTxt: { fontSize: 13.5 } as TextStyle,
 
   centerLoading: {
     flex: 1,
