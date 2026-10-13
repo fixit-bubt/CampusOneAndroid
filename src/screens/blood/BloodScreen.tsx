@@ -1155,66 +1155,73 @@ export function BloodScreen({ route, navigation }: any) {
                 )}
               </View>
             ) : (
-              <View style={[styles.donorList, { backgroundColor: C.surface, borderColor: C.border }]}>
-                {filteredDonors.map((d, i) => {
+              <View style={styles.list}>
+                {filteredDonors.map(d => {
                   const isMe = d.user_id === user?.id;
                   const { eligible, daysLeft } = donorEligibility(d.last_donated, (d as any).profiles?.gender ?? (d as any).gender);
                   return (
-                    <View key={d.user_id}>
-                      {i > 0 && <View style={[styles.divider, { backgroundColor: C.border }]} />}
-                      <View style={[styles.donorRow, !eligible && { opacity: 0.6 }]}>
-                        <Avatar name={(d as any).profiles?.full_name} uri={(d as any).profiles?.avatar_url} size="md" />
-                        <View style={{ flex: 1, minWidth: 0 }}>
-                          <Text style={[styles.donorName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                            {(d as any).profiles?.full_name ?? t.blood2.anonymous}{isMe ? ` ${t.blood2.youTag}` : ''}
+                    <View
+                      key={d.user_id}
+                      style={[
+                        styles.donorCard,
+                        {
+                          backgroundColor: C.surface,
+                          borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : C.border,
+                        },
+                        !eligible && { opacity: 0.65 },
+                      ]}
+                    >
+                      <Avatar name={(d as any).profiles?.full_name} uri={(d as any).profiles?.avatar_url} size="md" />
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <Text style={[styles.donorName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                          {(d as any).profiles?.full_name ?? t.blood2.anonymous}{isMe ? ` ${t.blood2.youTag}` : ''}
+                        </Text>
+                        <Text style={[styles.donorMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
+                          {t.blood2.donorMeta(d.area || 'BUBT', d.last_donated ?? t.blood2.never)}
+                        </Text>
+                        <View style={[styles.eligPill, { backgroundColor: eligible ? C.successBg : C.warnBg }]}>
+                          <Text style={[styles.eligTxt, { color: eligible ? C.success : C.warn, fontFamily: FontFamily.jakartaBold }]}>
+                            {eligible ? t.blood2.eligible : t.blood2.eligibleInDays(daysLeft)}
                           </Text>
-                          <Text style={[styles.donorMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
-                            {t.blood2.donorMeta(d.area || 'BUBT', d.last_donated ?? t.blood2.never)}
-                          </Text>
-                          <View style={[styles.eligPill, { backgroundColor: eligible ? C.successBg : C.warnBg }]}>
-                            <Text style={[styles.eligTxt, { color: eligible ? C.success : C.warn, fontFamily: FontFamily.jakartaBold }]}>
-                              {eligible ? t.blood2.eligible : t.blood2.eligibleInDays(daysLeft)}
-                            </Text>
-                          </View>
                         </View>
-                        <GroupBadge group={d.blood_group} size={36} />
-                        {isMe ? (
-                          eligible && d.last_donated !== localToday() ? (
-                            <TouchableOpacity
-                              style={[styles.contactBtn, { backgroundColor: C.successBg }]}
-                              onPress={markDonatedToday}
-                              activeOpacity={0.75}
-                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                            >
-                              <Text style={[styles.contactTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
-                                {t.blood2.iDonated}
-                              </Text>
-                            </TouchableOpacity>
-                          ) : null
-                        ) : (
+                      </View>
+                      <GroupBadge group={d.blood_group} size={36} />
+                      {isMe ? (
+                        eligible && d.last_donated !== localToday() ? (
                           <TouchableOpacity
-                            style={[styles.contactBtn, {
-                              backgroundColor: eligible ? BLOOD_BG : C.surface2,
-                              opacity: busyId === d.user_id ? 0.5 : 1,
-                            }]}
-                            onPress={() => revealContact(d.user_id, (d as any).profiles?.full_name)}
+                            style={[styles.contactBtn, { backgroundColor: C.successBg }]}
+                            onPress={markDonatedToday}
                             activeOpacity={0.75}
-                            disabled={busyId === d.user_id || !eligible}
                             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                           >
-                            <AnimatedIcon
-                              family="feather"
-                              name="phone"
-                              size={12}
-                              color={eligible ? BLOOD_COLOR : C.textMuted}
-                              animation="entrance"
-                            />
-                            <Text style={[styles.contactTxt, { color: eligible ? BLOOD_COLOR : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                              {busyId === d.user_id ? '…' : t.blood2.contact}
+                            <Text style={[styles.contactTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
+                              {t.blood2.iDonated}
                             </Text>
                           </TouchableOpacity>
-                        )}
-                      </View>
+                        ) : null
+                      ) : (
+                        <TouchableOpacity
+                          style={[styles.contactBtn, {
+                            backgroundColor: eligible ? BLOOD_BG : C.surface2,
+                            opacity: busyId === d.user_id ? 0.5 : 1,
+                          }]}
+                          onPress={() => revealContact(d.user_id, (d as any).profiles?.full_name)}
+                          activeOpacity={0.75}
+                          disabled={busyId === d.user_id || !eligible}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
+                          <AnimatedIcon
+                            family="feather"
+                            name="phone"
+                            size={12}
+                            color={eligible ? BLOOD_COLOR : C.textMuted}
+                            animation="entrance"
+                          />
+                          <Text style={[styles.contactTxt, { color: eligible ? BLOOD_COLOR : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                            {busyId === d.user_id ? '…' : t.blood2.contact}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   );
                 })}
@@ -1470,11 +1477,18 @@ const styles = StyleSheet.create({
   summaryCell: { width: '100%', alignItems: 'center', paddingVertical: 8, borderRadius: 10 } as ViewStyle,
   summaryCellGroup: { fontSize: 13, fontFamily: FontFamily.jakartaExtraBold } as any,
   summaryCellNum: { fontSize: 15, marginTop: 2 } as any,
-  donorList: { borderRadius: 16, borderWidth: 1, overflow: 'hidden' } as ViewStyle,
-  divider: { height: StyleSheet.hairlineWidth } as ViewStyle,
-  donorRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 } as ViewStyle,
-  donorName: { fontSize: 14 } as any,
-  donorMeta: { fontSize: 12, marginTop: 2 } as any,
+  donorCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 10,
+    minHeight: 72,
+  } as ViewStyle,
+  donorName: { fontSize: 14.5 } as any,
+  donorMeta: { fontSize: 11.5, marginTop: 2 } as any,
   contactBtn: {
     height: 32,
     flexDirection: 'row',

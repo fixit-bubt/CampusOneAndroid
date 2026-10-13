@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView,
-  StyleSheet, ActivityIndicator, KeyboardAvoidingView, type ViewStyle, type TextStyle,
+  StyleSheet, ActivityIndicator, KeyboardAvoidingView, Animated,
+  type ViewStyle, type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -10,7 +11,6 @@ import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
 import { SubBar } from '../../components/layout/TopBar';
-import { Icon } from '../../components/ui/Icon';
 import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
 import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
@@ -183,24 +183,15 @@ export function DonorRegisterScreen({ navigation }: any) {
           <>
             <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.blood2.yourBloodGroup}</Text>
             <View style={styles.groupGrid}>
-              {GROUPS.map(g => {
-                const on = group === g;
-                return (
-                  <TouchableOpacity
-                    key={g}
-                    style={[styles.groupBtn, {
-                      backgroundColor: on ? SectorColors.blood : 'transparent',
-                      borderColor: on ? 'transparent' : C.border,
-                    }]}
-                    onPress={() => setGroup(g)}
-                    activeOpacity={0.75}
-                  >
-                    <Text style={[styles.groupTxt, { color: on ? '#fff' : C.text2, fontFamily: FontFamily.jakartaExtraBold }]}>
-                      {g}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
+              {GROUPS.map(g => (
+                <GroupButton
+                  key={g}
+                  label={g}
+                  isSelected={group === g}
+                  onPress={() => setGroup(g)}
+                  C={C}
+                />
+              ))}
             </View>
             <Text style={[styles.consent, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
               {t.blood2.bloodGroupPermanent}
@@ -215,10 +206,11 @@ export function DonorRegisterScreen({ navigation }: any) {
             {
               backgroundColor: C.surface,
               borderColor: area ? SectorColors.blood : C.border,
+              borderWidth: area ? 1.5 : 1,
             },
           ]}
           onPress={() => setAreaModalVisible(true)}
-          activeOpacity={0.75}
+          activeOpacity={0.8}
         >
           <View
             style={[
@@ -228,7 +220,14 @@ export function DonorRegisterScreen({ navigation }: any) {
               },
             ]}
           >
-            <Icon name="pin" size={15} color={area ? SectorColors.blood : C.textMuted} />
+            <AnimatedIcon
+              key={`area-pin-${area || 'empty'}`}
+              family="feather"
+              name="map-pin"
+              size={20}
+              color={area ? SectorColors.blood : C.textMuted}
+              animation="spring"
+            />
           </View>
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text
@@ -252,7 +251,7 @@ export function DonorRegisterScreen({ navigation }: any) {
               {area ? 'Tap to change area' : 'Select from 152 Dhaka areas'}
             </Text>
           </View>
-          <Feather name="chevron-down" size={16} color={C.textMuted} />
+          <Feather name="chevron-down" size={18} color={C.textMuted} />
         </TouchableOpacity>
 
         <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.blood2.phoneWhatsapp}</Text>
@@ -315,42 +314,16 @@ export function DonorRegisterScreen({ navigation }: any) {
             { id: 'urgent_only', label: 'Urgent Only', icon: 'alert-triangle' as const, fg: C.danger, desc: 'Critical emergencies, trauma & ICU only' },
             { id: 'today_plus',  label: 'Urgent & Today', icon: 'clock' as const, fg: C.warn, desc: 'Emergencies and requests needed within today' },
             { id: 'all',         label: 'All Requests', icon: 'calendar' as const, fg: C.brand, desc: 'All matching requests including this week' },
-          ].map(opt => {
-            const on = alertUrgency === opt.id;
-            return (
-              <TouchableOpacity
-                key={opt.id}
-                style={[
-                  styles.urgencyPrefCard,
-                  {
-                    backgroundColor: on ? (isDark ? 'rgba(214, 61, 53, 0.14)' : 'rgba(214, 61, 53, 0.08)') : C.surface,
-                    borderColor: on ? SectorColors.blood : C.border,
-                    borderWidth: on ? 1.5 : 1,
-                  },
-                ]}
-                onPress={() => setAlertUrgency(opt.id as any)}
-                activeOpacity={0.75}
-              >
-                <View style={styles.urgencyRadioRow}>
-                  <View style={[styles.urgencyRadioDot, { borderColor: on ? SectorColors.blood : C.textMuted }]}>
-                    {on && <View style={[styles.urgencyRadioInner, { backgroundColor: SectorColors.blood }]} />}
-                  </View>
-                  <Feather
-                    name={opt.icon}
-                    size={14}
-                    color={on ? SectorColors.blood : opt.fg}
-                    style={{ marginRight: 6 }}
-                  />
-                  <Text style={[styles.urgencyPrefTitle, { color: on ? SectorColors.blood : C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                    {opt.label}
-                  </Text>
-                </View>
-                <Text style={[styles.urgencyPrefDesc, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                  {opt.desc}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+          ].map(opt => (
+            <UrgencyCard
+              key={opt.id}
+              opt={opt}
+              isSelected={alertUrgency === opt.id}
+              onPress={() => setAlertUrgency(opt.id as any)}
+              C={C}
+              isDark={isDark}
+            />
+          ))}
         </View>
 
         <TouchableOpacity
@@ -359,7 +332,14 @@ export function DonorRegisterScreen({ navigation }: any) {
           disabled={!canSubmit || loading}
           activeOpacity={0.8}
         >
-          <AnimatedIcon family="feather" name="droplet" size={18} color={canSubmit ? '#fff' : C.textMuted} animation="entrance" />
+          <AnimatedIcon
+            key={`submit-btn-${canSubmit}`}
+            family="feather"
+            name="droplet"
+            size={18}
+            color={canSubmit ? '#fff' : C.textMuted}
+            animation={canSubmit ? 'spring' : 'none'}
+          />
           <Text style={[styles.submitText, { color: canSubmit ? '#fff' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
             {isRegistered ? t.blood2.updateDonorBtn : t.blood2.registerAsDonorBtnFull}
           </Text>
@@ -389,6 +369,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    minHeight: 72,
     padding: 14,
     borderRadius: 16,
     borderWidth: 1,
@@ -398,12 +379,12 @@ const styles = StyleSheet.create({
   lockedBadge: {
     width: 44,
     height: 44,
-    borderRadius: 12,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
   lockedGroupTxt: { fontSize: 16 } as any,
-  lockedTitle: { fontSize: 14 } as any,
+  lockedTitle: { fontSize: 14.5 } as any,
   lockedNote: { fontSize: 11.5, marginTop: 2 } as any,
   permPill: {
     paddingHorizontal: 7,
@@ -432,25 +413,26 @@ const styles = StyleSheet.create({
   selectorCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 58,
-    paddingHorizontal: 16,
+    minHeight: 72,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
     borderRadius: 16,
     borderWidth: 1,
-    gap: 10,
+    gap: 12,
   } as ViewStyle,
   selectorIconBox: {
-    width: 32,
-    height: 32,
-    borderRadius: 9,
+    width: 44,
+    height: 44,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
   selectorValueTxt: {
-    fontSize: 13.5,
+    fontSize: 14.5,
   } as TextStyle,
   selectorSubTxt: {
-    fontSize: 11,
-    marginTop: 1,
+    fontSize: 11.5,
+    marginTop: 2,
   } as TextStyle,
 
   quickDateBtn: {
@@ -468,12 +450,15 @@ const styles = StyleSheet.create({
     gap: 8,
   } as ViewStyle,
 
+  groupBtnWrapper: {
+    width: '22.8%',
+  } as ViewStyle,
+
   groupBtn: {
-    width: '22%',
+    width: '100%',
     paddingVertical: 12,
     alignItems: 'center',
-    borderRadius: 10,
-    borderWidth: 1.5,
+    borderRadius: 12,
   } as ViewStyle,
 
   groupTxt: { fontSize: 15 } as any,
@@ -499,40 +484,238 @@ const styles = StyleSheet.create({
   } as ViewStyle,
 
   submitText: { fontSize: 15 } as any,
+
   urgencyPrefGrid: {
     gap: 8,
     marginTop: 4,
     marginBottom: 6,
   } as ViewStyle,
+
   urgencyPrefCard: {
-    borderRadius: 16,
-    padding: 14,
-  } as ViewStyle,
-  urgencyRadioRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginBottom: 4,
+    minHeight: 72,
+    borderRadius: 16,
+    padding: 14,
+    gap: 12,
   } as ViewStyle,
-  urgencyRadioDot: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    borderWidth: 1.5,
+
+  urgencyIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
-  urgencyRadioInner: {
-    width: 9,
-    height: 9,
-    borderRadius: 4.5,
-  } as ViewStyle,
+
   urgencyPrefTitle: {
-    fontSize: 13.5,
+    fontSize: 14.5,
   } as TextStyle,
+
   urgencyPrefDesc: {
     fontSize: 11.5,
+    marginTop: 2,
     lineHeight: 16,
-    marginLeft: 28,
   } as TextStyle,
+
+  urgencyRadioDot: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 4,
+  } as ViewStyle,
+
+  urgencyRadioInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  } as ViewStyle,
 });
+
+function GroupButton({
+  label,
+  isSelected,
+  onPress,
+  C,
+}: {
+  label: string;
+  isSelected: boolean;
+  onPress: () => void;
+  C: any;
+}) {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(scale, {
+      toValue: 0.90,
+      tension: 340,
+      friction: 12,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.sequence([
+      Animated.spring(scale, {
+        toValue: 1.15,
+        tension: 320,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scale, {
+        toValue: 1,
+        tension: 200,
+        friction: 9,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  return (
+    <Animated.View style={[styles.groupBtnWrapper, { transform: [{ scale }] }]}>
+      <TouchableOpacity
+        style={[
+          styles.groupBtn,
+          {
+            backgroundColor: isSelected ? SectorColors.blood : C.surface,
+            borderColor: isSelected ? SectorColors.blood : C.border,
+            borderWidth: isSelected ? 1.8 : 1,
+          },
+        ]}
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        activeOpacity={0.85}
+      >
+        <Text
+          style={[
+            styles.groupTxt,
+            { color: isSelected ? '#fff' : C.text, fontFamily: FontFamily.jakartaExtraBold },
+          ]}
+        >
+          {label}
+        </Text>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
+
+function UrgencyCard({
+  opt,
+  isSelected,
+  onPress,
+  C,
+  isDark,
+}: {
+  opt: { id: string; label: string; icon: 'alert-triangle' | 'clock' | 'calendar'; fg: string; desc: string };
+  isSelected: boolean;
+  onPress: () => void;
+  C: any;
+  isDark: boolean;
+}) {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(scale, {
+      toValue: 0.96,
+      tension: 340,
+      friction: 12,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.sequence([
+      Animated.spring(scale, {
+        toValue: 1.02,
+        tension: 320,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scale, {
+        toValue: 1,
+        tension: 200,
+        friction: 9,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  return (
+    <Animated.View style={{ transform: [{ scale }] }}>
+      <TouchableOpacity
+        style={[
+          styles.urgencyPrefCard,
+          {
+            backgroundColor: isSelected
+              ? (isDark ? 'rgba(214, 61, 53, 0.14)' : 'rgba(214, 61, 53, 0.08)')
+              : C.surface,
+            borderColor: isSelected ? SectorColors.blood : C.border,
+            borderWidth: isSelected ? 1.5 : 1,
+          },
+        ]}
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        activeOpacity={0.85}
+      >
+        <View
+          style={[
+            styles.urgencyIconBox,
+            {
+              backgroundColor: isSelected
+                ? `${SectorColors.blood}16`
+                : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2),
+            },
+          ]}
+        >
+          <AnimatedIcon
+            key={`urgency-icon-${opt.id}-${isSelected}`}
+            family="feather"
+            name={opt.icon}
+            size={20}
+            color={isSelected ? SectorColors.blood : opt.fg}
+            animation={isSelected ? 'spring' : 'none'}
+          />
+        </View>
+
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text
+            style={[
+              styles.urgencyPrefTitle,
+              {
+                color: isSelected ? (isDark ? '#fff' : SectorColors.blood) : C.text,
+                fontFamily: FontFamily.jakartaBold,
+              },
+            ]}
+            numberOfLines={1}
+          >
+            {opt.label}
+          </Text>
+          <Text
+            style={[
+              styles.urgencyPrefDesc,
+              { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
+            ]}
+          >
+            {opt.desc}
+          </Text>
+        </View>
+
+        <View
+          style={[
+            styles.urgencyRadioDot,
+            { borderColor: isSelected ? SectorColors.blood : C.textMuted },
+          ]}
+        >
+          {isSelected && (
+            <View style={[styles.urgencyRadioInner, { backgroundColor: SectorColors.blood }]} />
+          )}
+        </View>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}

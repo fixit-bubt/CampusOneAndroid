@@ -468,58 +468,64 @@ export function BloodRequestDetailScreen({ route, navigation }: any) {
             </Text>
           </View>
         ) : (
-          <View style={[styles.list, { backgroundColor: C.surface, borderColor: C.border }]}>
-            {pledges.map((p, i) => {
+          <View>
+            {pledges.map(p => {
               const { eligible, daysLeft } = donorEligibility(p.last_donated);
               const done = !!p.fulfilled_at;
               return (
-                <View key={p.donor_id}>
-                  {i > 0 && <View style={[styles.divider, { backgroundColor: C.border }]} />}
-                  <View style={styles.row}>
-                    <Avatar name={p.full_name ?? undefined} size="md" />
-                    <View style={{ flex: 1, minWidth: 0 }}>
-                      <Text style={[styles.name, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                        {p.full_name ?? t.blood2.anonymous}{p.blood_group ? ` · ${p.blood_group}` : ''}
+                <View
+                  key={p.donor_id}
+                  style={[
+                    styles.responderCard,
+                    {
+                      backgroundColor: C.surface,
+                      borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : C.border,
+                    },
+                  ]}
+                >
+                  <Avatar name={p.full_name ?? undefined} size="md" />
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={[styles.name, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                      {p.full_name ?? t.blood2.anonymous}{p.blood_group ? ` · ${p.blood_group}` : ''}
+                    </Text>
+                    <View style={[styles.pill, { backgroundColor: done ? C.successBg : eligible ? C.successBg : C.warnBg }]}>
+                      <Text style={[styles.pillTxt, { color: done ? C.success : eligible ? C.success : C.warn, fontFamily: FontFamily.jakartaBold }]}>
+                        {done ? t.blood2.donatedBadge : eligible ? t.blood2.eligible : t.blood2.eligibleInDays(daysLeft)}
                       </Text>
-                      <View style={[styles.pill, { backgroundColor: done ? C.successBg : eligible ? C.successBg : C.warnBg }]}>
-                        <Text style={[styles.pillTxt, { color: done ? C.success : eligible ? C.success : C.warn, fontFamily: FontFamily.jakartaBold }]}>
-                          {done ? t.blood2.donatedBadge : eligible ? t.blood2.eligible : t.blood2.eligibleInDays(daysLeft)}
-                        </Text>
+                    </View>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <TouchableOpacity
+                      style={[
+                        styles.contactDonorBtn,
+                        {
+                          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : C.surface2,
+                          borderColor: C.border,
+                        },
+                      ]}
+                      onPress={() => revealDonorContact(p)}
+                      disabled={busyContactId === p.donor_id}
+                      activeOpacity={0.75}
+                      accessibilityLabel="Contact donor"
+                    >
+                      <Feather name="phone" size={13} color={C.text} />
+                    </TouchableOpacity>
+                    {done ? (
+                      <View style={styles.doneIconWrap}>
+                        <Icon name="check" size={18} color={C.success} />
                       </View>
-                    </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    ) : (
                       <TouchableOpacity
-                        style={[
-                          styles.contactDonorBtn,
-                          {
-                            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : C.surface2,
-                            borderColor: C.border,
-                          },
-                        ]}
-                        onPress={() => revealDonorContact(p)}
-                        disabled={busyContactId === p.donor_id}
-                        activeOpacity={0.75}
-                        accessibilityLabel="Contact donor"
+                        style={[styles.confirmBtn, { backgroundColor: BLOOD, opacity: busyId === p.donor_id ? 0.5 : 1 }]}
+                        onPress={() => confirmDonated(p)}
+                        disabled={busyId === p.donor_id}
+                        activeOpacity={0.85}
                       >
-                        <Feather name="phone" size={13} color={C.text} />
+                        <Text style={[styles.confirmTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                          {busyId === p.donor_id ? '…' : t.blood2.confirmDonated}
+                        </Text>
                       </TouchableOpacity>
-                      {done ? (
-                        <View style={styles.doneIconWrap}>
-                          <Icon name="check" size={18} color={C.success} />
-                        </View>
-                      ) : (
-                        <TouchableOpacity
-                          style={[styles.confirmBtn, { backgroundColor: BLOOD, opacity: busyId === p.donor_id ? 0.5 : 1 }]}
-                          onPress={() => confirmDonated(p)}
-                          disabled={busyId === p.donor_id}
-                          activeOpacity={0.85}
-                        >
-                          <Text style={[styles.confirmTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
-                            {busyId === p.donor_id ? '…' : t.blood2.confirmDonated}
-                          </Text>
-                        </TouchableOpacity>
-                      )}
-                    </View>
+                    )}
                   </View>
                 </View>
               );
@@ -652,10 +658,17 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   fulfillTxt: { fontSize: 14 } as TextStyle,
   sectionTitle: { fontSize: 12, letterSpacing: 0.5, marginBottom: 10, marginLeft: 2 } as TextStyle,
-  list: { borderRadius: 16, borderWidth: 1, paddingHorizontal: 14 } as ViewStyle,
-  divider: { height: StyleSheet.hairlineWidth } as ViewStyle,
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14 } as ViewStyle,
-  name: { fontSize: 14 } as TextStyle,
+  responderCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 10,
+    minHeight: 72,
+  } as ViewStyle,
+  name: { fontSize: 14.5 } as TextStyle,
   pill: { alignSelf: 'flex-start', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, marginTop: 5 } as ViewStyle,
   pillTxt: { fontSize: 11 } as TextStyle,
   contactDonorBtn: {

@@ -223,7 +223,7 @@ export function BloodRequestScreen({ navigation }: any) {
             onTabChange={setUrgency}
           />
 
-          {/* Units / Bags Needed Stepper (Universal 58dp Standard) */}
+          {/* Units / Bags Needed Stepper (Universal 72dp Content Standard) */}
           <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
             {t.blood2.units.toUpperCase()}
           </Text>
@@ -234,7 +234,7 @@ export function BloodRequestScreen({ navigation }: any) {
                   key={`units-droplet-${units}`}
                   family="feather"
                   name="droplet"
-                  size={18}
+                  size={20}
                   color={SectorColors.blood}
                   animation="spring"
                 />
@@ -832,10 +832,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    height: 58,
+    minHeight: 72,
     borderRadius: 16,
     borderWidth: 1,
     paddingHorizontal: 14,
+    paddingVertical: 14,
   } as ViewStyle,
 
   unitsLeft: {
@@ -846,20 +847,20 @@ const styles = StyleSheet.create({
   } as ViewStyle,
 
   unitsIconBox: {
-    width: 38,
-    height: 38,
-    borderRadius: 11,
+    width: 44,
+    height: 44,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
 
   unitsLabel: {
-    fontSize: 14,
+    fontSize: 14.5,
   } as TextStyle,
 
   unitsSub: {
-    fontSize: 10.5,
-    marginTop: 1,
+    fontSize: 11.5,
+    marginTop: 2,
   } as TextStyle,
 
   stepperRow: {
