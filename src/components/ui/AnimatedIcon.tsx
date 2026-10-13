@@ -18,6 +18,7 @@ export interface AnimatedIconProps {
   family?: IconFamily;
   animation?: AnimationType;
   loop?: boolean;
+  delay?: number;
   onPress?: () => void;
   style?: StyleProp<ViewStyle>;
 }
@@ -29,6 +30,7 @@ export function AnimatedIcon({
   family = 'feather',
   animation = 'none',
   loop = false,
+  delay,
   onPress,
   style,
 }: AnimatedIconProps) {
@@ -41,7 +43,7 @@ export function AnimatedIcon({
 
     if (animation === 'entrance') {
       scale.setValue(0.3);
-      Animated.sequence([
+      const entranceAnim = [
         Animated.spring(scale, {
           toValue: 1.25,
           tension: 280,
@@ -54,10 +56,16 @@ export function AnimatedIcon({
           friction: 9,
           useNativeDriver: true,
         }),
-      ]).start();
+      ];
+      const wait = delay ?? 160;
+      if (wait > 0) {
+        Animated.sequence([Animated.delay(wait), ...entranceAnim]).start();
+      } else {
+        Animated.sequence(entranceAnim).start();
+      }
     } else if (animation === 'spring') {
       scale.setValue(1);
-      Animated.sequence([
+      const springAnim = [
         Animated.spring(scale, {
           toValue: 1.34,
           tension: 320,
@@ -70,7 +78,12 @@ export function AnimatedIcon({
           friction: 9,
           useNativeDriver: true,
         }),
-      ]).start();
+      ];
+      if (delay && delay > 0) {
+        Animated.sequence([Animated.delay(delay), ...springAnim]).start();
+      } else {
+        Animated.sequence(springAnim).start();
+      }
     } else if (animation === 'pulse') {
       const pulseAnim = Animated.sequence([
         Animated.timing(scale, {

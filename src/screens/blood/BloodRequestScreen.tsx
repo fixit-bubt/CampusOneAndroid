@@ -202,60 +202,72 @@ export function BloodRequestScreen({ navigation }: any) {
             {t.blood2.bloodGroup}
           </Text>
           <View style={styles.groupGrid}>
-            {GROUPS.map(g => {
-              const on = group === g;
-              return (
-                <View key={g} style={styles.groupBtnWrapper}>
-                  <TouchableOpacity
-                    style={[
-                      styles.groupBtn,
-                      {
-                        backgroundColor: on ? SectorColors.blood : C.surface,
-                        borderColor: on ? SectorColors.blood : C.border,
-                        borderWidth: on ? 1.8 : 1,
-                      },
-                    ]}
-                    onPress={() => handleSelectGroup(g)}
-                    activeOpacity={0.7}
-                  >
-                    <Text
-                      style={[
-                        styles.groupTxt,
-                        { color: on ? '#fff' : C.text, fontFamily: FontFamily.jakartaExtraBold },
-                      ]}
-                    >
-                      {g}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              );
-            })}
+            {GROUPS.map(g => (
+              <GroupButton
+                key={g}
+                label={g}
+                isSelected={group === g}
+                onPress={() => handleSelectGroup(g)}
+                C={C}
+              />
+            ))}
           </View>
 
-          {/* Units + Urgency with Snappy Sliding Indicator */}
-          <View style={styles.row}>
-            <View style={[styles.halfField, { flex: 1 }]}>
-              <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>
-                {t.blood2.units}
-              </Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                value={units}
-                onChangeText={t => setUnits(t.replace(/\D/g, ''))}
-                keyboardType="numeric"
-                placeholderTextColor={C.textMuted}
-              />
+          {/* Urgency with Snappy Sliding Indicator (Universal 58dp Standard) */}
+          <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+            {t.blood2.urgency.toUpperCase()}
+          </Text>
+          <SegmentedTabs<BloodRequest['urgency']>
+            tabs={URGENCY_TABS}
+            activeTab={urgency}
+            onTabChange={setUrgency}
+          />
+
+          {/* Units / Bags Needed Stepper (Universal 58dp Standard) */}
+          <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+            {t.blood2.units.toUpperCase()}
+          </Text>
+          <View style={[styles.unitsBar, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <View style={styles.unitsLeft}>
+              <View style={[styles.unitsIconBox, { backgroundColor: `${SectorColors.blood}16` }]}>
+                <AnimatedIcon
+                  key={`units-droplet-${units}`}
+                  family="feather"
+                  name="droplet"
+                  size={18}
+                  color={SectorColors.blood}
+                  animation="spring"
+                />
+              </View>
+              <View style={{ justifyContent: 'center' }}>
+                <Text style={[styles.unitsLabel, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  {units} {parseInt(units, 10) === 1 ? 'Bag Needed' : 'Bags Needed'}
+                </Text>
+                <Text style={[styles.unitsSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                  Clinical blood units required
+                </Text>
+              </View>
             </View>
-            <View style={[styles.halfField, { flex: 2.1 }]}>
-              <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>
-                {t.blood2.urgency}
+            <View style={styles.stepperRow}>
+              <TouchableOpacity
+                style={[styles.stepperBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+                onPress={() => setUnits(prev => String(Math.max(1, (parseInt(prev, 10) || 1) - 1)))}
+                activeOpacity={0.7}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Feather name="minus" size={16} color={C.text} />
+              </TouchableOpacity>
+              <Text style={[styles.stepperValue, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+                {units}
               </Text>
-              <SegmentedTabs<BloodRequest['urgency']>
-                size="sm"
-                tabs={URGENCY_TABS}
-                activeTab={urgency}
-                onTabChange={setUrgency}
-              />
+              <TouchableOpacity
+                style={[styles.stepperBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+                onPress={() => setUnits(prev => String(Math.min(10, (parseInt(prev, 10) || 1) + 1)))}
+                activeOpacity={0.7}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Feather name="plus" size={16} color={C.text} />
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -263,12 +275,12 @@ export function BloodRequestScreen({ navigation }: any) {
           {/* CLEAN PATIENT & CLINICAL DETAILS (Clean Dropdown Architecture) */}
           {/* ------------------------------------------------------------- */}
 
-          {/* Patient Full Name */}
+          {/* Patient Full Name (Universal 58dp Standard) */}
           <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
             PATIENT FULL NAME *
           </Text>
           <View style={[styles.inputWithIcon, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <Feather name="user" size={16} color={C.textMuted} />
+            <AnimatedIcon family="feather" name="user" size={18} color={patientName ? SectorColors.blood : C.textMuted} animation="entrance" />
             <TextInput
               style={[styles.innerInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
               value={patientName}
@@ -278,7 +290,7 @@ export function BloodRequestScreen({ navigation }: any) {
             />
           </View>
 
-          {/* Medical Case Reason Requirement (Clean Dropdown) */}
+          {/* Medical Case Reason Requirement (Universal 72dp Content Standard) */}
           <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
             CASE REASON / REQUIREMENT
           </Text>
@@ -298,7 +310,14 @@ export function BloodRequestScreen({ navigation }: any) {
               activeOpacity={0.75}
             >
               <View style={[styles.dropdownIconBox, { backgroundColor: `${SectorColors.blood}16` }]}>
-                <Feather name={currentReasonObj?.icon ? (currentReasonObj.icon as any) : 'activity'} size={16} color={SectorColors.blood} />
+                <AnimatedIcon
+                  key={`reason-${medicalReason}`}
+                  family="feather"
+                  name={currentReasonObj?.icon ? (currentReasonObj.icon as any) : 'activity'}
+                  size={22}
+                  color={SectorColors.blood}
+                  animation={medicalReason ? 'spring' : 'entrance'}
+                />
               </View>
               <View style={styles.dropdownInfo}>
                 <Text
@@ -325,20 +344,20 @@ export function BloodRequestScreen({ navigation }: any) {
                   style={[styles.clearPill, { backgroundColor: C.surface2 }]}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                  <Feather name="x" size={12} color={C.textMuted} />
+                  <Feather name="x" size={14} color={C.textMuted} />
                 </TouchableOpacity>
               ) : (
                 <TouchableOpacity
                   onPress={() => setReasonModalVisible(true)}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                  <Feather name="chevron-down" size={17} color={C.textMuted} />
+                  <Feather name="chevron-down" size={18} color={C.textMuted} />
                 </TouchableOpacity>
               )}
             </View>
           </View>
 
-          {/* Patient Affiliation (Clean Dropdown) */}
+          {/* Patient Affiliation (Universal 72dp Content Standard) */}
           <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
             PATIENT AFFILIATION
           </Text>
@@ -347,15 +366,22 @@ export function BloodRequestScreen({ navigation }: any) {
               styles.dropdownCard,
               {
                 backgroundColor: C.surface,
-                borderColor: C.border,
-                borderWidth: 1,
+                borderColor: affiliation ? SectorColors.blood : C.border,
+                borderWidth: affiliation ? 1.5 : 1,
               },
             ]}
             onPress={() => setAffModalVisible(true)}
             activeOpacity={0.75}
           >
             <View style={[styles.dropdownIconBox, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2 }]}>
-              <Feather name={currentAffObj?.icon ? (currentAffObj.icon as any) : 'users'} size={16} color={SectorColors.blood} />
+              <AnimatedIcon
+                key={`aff-${affiliation}`}
+                family="feather"
+                name={currentAffObj?.icon ? (currentAffObj.icon as any) : 'users'}
+                size={22}
+                color={SectorColors.blood}
+                animation={affiliation ? 'spring' : 'entrance'}
+              />
             </View>
             <View style={styles.dropdownInfo}>
               <Text
@@ -371,10 +397,10 @@ export function BloodRequestScreen({ navigation }: any) {
                 Campus connection or relationship to patient
               </Text>
             </View>
-            <Feather name="chevron-down" size={17} color={C.textMuted} style={{ paddingLeft: 4 }} />
+            <Feather name="chevron-down" size={18} color={C.textMuted} style={{ paddingLeft: 4 }} />
           </TouchableOpacity>
 
-          {/* Hospital Dropdown System */}
+          {/* Hospital Dropdown System (Universal 72dp Content Standard) */}
           <View style={styles.labelRow}>
             <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>
               {t.blood2.hospital.toUpperCase()} *
@@ -417,7 +443,14 @@ export function BloodRequestScreen({ navigation }: any) {
                 activeOpacity={0.75}
               >
                 <View style={[styles.dropdownIconBox, { backgroundColor: `${SectorColors.blood}16` }]}>
-                  <MaterialCommunityIcons name="hospital-building" size={18} color={SectorColors.blood} />
+                  <AnimatedIcon
+                    key={`hosp-${hospital}`}
+                    family="mci"
+                    name="hospital-building"
+                    size={22}
+                    color={hospital ? SectorColors.blood : C.text2}
+                    animation={hospital ? 'spring' : 'entrance'}
+                  />
                 </View>
                 <View style={styles.dropdownInfo}>
                   <Text
@@ -444,21 +477,21 @@ export function BloodRequestScreen({ navigation }: any) {
                     style={[styles.clearPill, { backgroundColor: C.surface2 }]}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   >
-                    <Feather name="x" size={12} color={C.textMuted} />
+                    <Feather name="x" size={14} color={C.textMuted} />
                   </TouchableOpacity>
                 ) : (
                   <TouchableOpacity
                     onPress={openHospitalPicker}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   >
-                    <Feather name="chevron-down" size={17} color={C.textMuted} />
+                    <Feather name="chevron-down" size={18} color={C.textMuted} />
                   </TouchableOpacity>
                 )}
               </View>
             </View>
           )}
 
-          {/* Area / Neighborhood Dropdown System */}
+          {/* Area / Neighborhood Dropdown System (Universal 72dp Content Standard) */}
           <View style={styles.labelRow}>
             <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>
               {t.blood2.area.toUpperCase()}
@@ -501,7 +534,14 @@ export function BloodRequestScreen({ navigation }: any) {
                 activeOpacity={0.75}
               >
                 <View style={[styles.dropdownIconBox, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2 }]}>
-                  <Icon name="pin" size={16} color={area ? SectorColors.blood : C.text2} />
+                  <AnimatedIcon
+                    key={`area-${area}`}
+                    family="feather"
+                    name="map-pin"
+                    size={22}
+                    color={area ? SectorColors.blood : C.text2}
+                    animation={area ? 'spring' : 'entrance'}
+                  />
                 </View>
                 <View style={styles.dropdownInfo}>
                   <Text
@@ -528,14 +568,14 @@ export function BloodRequestScreen({ navigation }: any) {
                     style={[styles.clearPill, { backgroundColor: C.surface2 }]}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   >
-                    <Feather name="x" size={12} color={C.textMuted} />
+                    <Feather name="x" size={14} color={C.textMuted} />
                   </TouchableOpacity>
                 ) : (
                   <TouchableOpacity
                     onPress={openAreaPicker}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   >
-                    <Feather name="chevron-down" size={17} color={C.textMuted} />
+                    <Feather name="chevron-down" size={18} color={C.textMuted} />
                   </TouchableOpacity>
                 )}
               </View>
@@ -553,7 +593,15 @@ export function BloodRequestScreen({ navigation }: any) {
           >
             <View style={styles.plateletLeft}>
               <View style={[styles.plateletIcon, { backgroundColor: isPlatelets ? C.warn : (isDark ? 'rgba(234, 179, 8, 0.15)' : 'rgba(234, 179, 8, 0.10)') }]}>
-                <AnimatedIcon family="feather" name="zap" size={20} color={isPlatelets ? '#fff' : C.warn} animation="wobble" loop={false} />
+                <AnimatedIcon
+                  key={`platelet-${isPlatelets}`}
+                  family="feather"
+                  name="zap"
+                  size={22}
+                  color={isPlatelets ? '#fff' : C.warn}
+                  animation={isPlatelets ? 'spring' : 'wobble'}
+                  loop={false}
+                />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.plateletTitle, { color: isPlatelets ? (isDark ? '#fef08a' : '#854d0e') : C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -579,7 +627,14 @@ export function BloodRequestScreen({ navigation }: any) {
             disabled={!canSubmit || loading}
             activeOpacity={0.8}
           >
-            <AnimatedIcon family="feather" name="droplet" size={18} color={canSubmit ? '#fff' : C.textMuted} animation="entrance" />
+            <AnimatedIcon
+              key={`submit-droplet-${canSubmit}`}
+              family="feather"
+              name="droplet"
+              size={18}
+              color={canSubmit ? '#fff' : C.textMuted}
+              animation={canSubmit ? 'spring' : 'entrance'}
+            />
             <Text style={[styles.submitText, { color: canSubmit ? '#fff' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
               {t.blood2.postRequest}
             </Text>
@@ -630,7 +685,7 @@ export function BloodRequestScreen({ navigation }: any) {
                     activeOpacity={0.7}
                   >
                     <View style={[styles.sheetOptionIcon, { backgroundColor: isSelected ? `${SectorColors.blood}20` : C.surface2 }]}>
-                      <Feather name={r.icon as any} size={15} color={isSelected ? SectorColors.blood : C.text2} />
+                      <AnimatedIcon family="feather" name={r.icon as any} size={18} color={isSelected ? SectorColors.blood : C.text2} animation="entrance" />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.sheetOptionTitle, { color: isSelected ? SectorColors.blood : C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -690,7 +745,7 @@ export function BloodRequestScreen({ navigation }: any) {
                     activeOpacity={0.7}
                   >
                     <View style={[styles.sheetOptionIcon, { backgroundColor: isSelected ? `${SectorColors.blood}20` : C.surface2 }]}>
-                      <Feather name={a.icon as any} size={15} color={isSelected ? SectorColors.blood : C.text2} />
+                      <AnimatedIcon family="feather" name={a.icon as any} size={18} color={isSelected ? SectorColors.blood : C.text2} animation="entrance" />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.sheetOptionTitle, { color: isSelected ? SectorColors.blood : C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -773,14 +828,60 @@ const styles = StyleSheet.create({
 
   groupTxt: { fontSize: 15 } as TextStyle,
 
-  row: {
+  unitsBar: {
     flexDirection: 'row',
-    gap: 10,
-    marginTop: 18,
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    height: 58,
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingHorizontal: 14,
   } as ViewStyle,
 
-  halfField: {} as ViewStyle,
+  unitsLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  } as ViewStyle,
+
+  unitsIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+
+  unitsLabel: {
+    fontSize: 14,
+  } as TextStyle,
+
+  unitsSub: {
+    fontSize: 10.5,
+    marginTop: 1,
+  } as TextStyle,
+
+  stepperRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  } as ViewStyle,
+
+  stepperBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+
+  stepperValue: {
+    fontSize: 16,
+    minWidth: 26,
+    textAlign: 'center',
+  } as TextStyle,
 
   input: {
     height: 58,
@@ -807,28 +908,30 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   } as TextStyle,
 
-  // Dropdown Selector Cards
+  // Dropdown Selector Cards (Universal 72dp Content Standard)
   dropdownCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 58,
+    justifyContent: 'space-between',
+    minHeight: 72,
     borderRadius: 16,
-    paddingHorizontal: 16,
-    gap: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    borderWidth: 1,
+    gap: 12,
   } as ViewStyle,
 
   dropdownMain: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
     flex: 1,
-    height: '100%',
   } as ViewStyle,
 
   dropdownIconBox: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
@@ -839,12 +942,13 @@ const styles = StyleSheet.create({
   } as ViewStyle,
 
   dropdownValue: {
-    fontSize: 13.5,
+    fontSize: 14.5,
   } as TextStyle,
 
   dropdownHint: {
-    fontSize: 10.5,
-    marginTop: 1.5,
+    fontSize: 11.5,
+    marginTop: 2,
+    lineHeight: 16,
   } as TextStyle,
 
   dropdownRight: {
@@ -854,9 +958,9 @@ const styles = StyleSheet.create({
   } as ViewStyle,
 
   clearPill: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
@@ -958,28 +1062,95 @@ const styles = StyleSheet.create({
   sheetOptionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 12,
+    gap: 12,
+    padding: 14,
+    borderRadius: 16,
     borderWidth: 1,
     marginBottom: 8,
   } as ViewStyle,
 
   sheetOptionIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 9,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
 
   sheetOptionTitle: {
-    fontSize: 13,
+    fontSize: 14,
   } as TextStyle,
 
   sheetOptionSub: {
-    fontSize: 11,
-    marginTop: 1,
+    fontSize: 11.5,
+    marginTop: 2,
   } as TextStyle,
 });
+
+function GroupButton({
+  label,
+  isSelected,
+  onPress,
+  C,
+}: {
+  label: string;
+  isSelected: boolean;
+  onPress: () => void;
+  C: any;
+}) {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(scale, {
+      toValue: 0.90,
+      tension: 340,
+      friction: 12,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.sequence([
+      Animated.spring(scale, {
+        toValue: 1.15,
+        tension: 320,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scale, {
+        toValue: 1,
+        tension: 200,
+        friction: 9,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  return (
+    <Animated.View style={[styles.groupBtnWrapper, { transform: [{ scale }] }]}>
+      <TouchableOpacity
+        style={[
+          styles.groupBtn,
+          {
+            backgroundColor: isSelected ? SectorColors.blood : C.surface,
+            borderColor: isSelected ? SectorColors.blood : C.border,
+            borderWidth: isSelected ? 1.8 : 1,
+          },
+        ]}
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        activeOpacity={0.85}
+      >
+        <Text
+          style={[
+            styles.groupTxt,
+            { color: isSelected ? '#fff' : C.text, fontFamily: FontFamily.jakartaExtraBold },
+          ]}
+        >
+          {label}
+        </Text>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
