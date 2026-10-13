@@ -1523,4 +1523,18 @@ The Campus Announcements architecture is transformed from a manual posting board
   - Dynamically rewrites any legacy/cached URLs to the modern canonical BUBT URL format.
   - The "View official profile on bubt.edu.bd" action now computes `effectiveProfileUrl`, ensuring users are never exposed to broken or offline web pages.
 
+### 35.4 Multi-Agent Faculty Audit, 58dp Ergonomics & Fuzzy Initial Search
+- **58dp Fixed Height & Control Bar Compliance:**
+  - Standardized `dropdownBar` in `FacultyScreen.tsx` to `Layout.controlHeight = 58` and `Layout.controlRadius = 16`.
+  - Standardized `sheetCloseBtn` in `FacultyScreen.tsx` to `Layout.controlHeight = 58` and `Layout.controlRadius = 16`.
+  - Standardized `proposalBtn` and `contactBtn` bottom dock CTAs in `FacultyProfileScreen.tsx` to `Layout.controlHeight = 58` and `Layout.controlRadius = 16`.
+  - Standardized `sendProposalBtn` in research collaboration modal to `Layout.controlHeight = 58` and `Layout.controlRadius = 16`.
+  - Standardized `saveBtn` and `closeReportBtn` in `ManageFacultyScreen.tsx` to `Layout.controlHeight = 58` and `Layout.controlRadius = 16`.
+- **Fuzzy Routine Initial Search:**
+  - Implemented sanitized alphanumeric search (`cleanQ`) across `FacultyScreen.tsx`, `FacultyDeptScreen.tsx`, and `ManageFacultyScreen.tsx`.
+  - Allows searching initials with spaces or periods (e.g. `S.S.N.`, `s s n`, `S-S-N`, `SSN`) to cleanly resolve to teacher records with matching routine short codes.
+- **Android Modal Keyboard Resilience:**
+  - Replaced conditional iOS-only padding in modal bottom sheets with unconditional `behavior="padding"` ensuring keyboard offsets adapt cleanly across modern Android 15 edge-to-edge screens.
+
+
 

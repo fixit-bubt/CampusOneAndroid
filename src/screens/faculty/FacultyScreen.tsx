@@ -220,13 +220,23 @@ export function FacultyScreen({ navigation }: any) {
     }
 
     if (q) {
-      list = list.filter(f =>
-        f.name.toLowerCase().includes(q) ||
-        (f.short_code && f.short_code.toLowerCase().includes(q)) ||
-        f.designation.toLowerCase().includes(q) ||
-        (f.room_number && f.room_number.toLowerCase().includes(q)) ||
-        interestsOf(f).some(i => i.toLowerCase().includes(q)) ||
-        (deptById[f.department_id]?.name && deptById[f.department_id]?.name.toLowerCase().includes(q)));
+      const cleanQ = q.replace(/[^a-z0-9]/g, '');
+      list = list.filter(f => {
+        const nameMatch = f.name.toLowerCase().includes(q);
+        const codeMatch = Boolean(
+          f.short_code &&
+          (f.short_code.toLowerCase().includes(q) ||
+            (cleanQ.length > 0 && f.short_code.toLowerCase().replace(/[^a-z0-9]/g, '').includes(cleanQ)))
+        );
+        const desigMatch = f.designation.toLowerCase().includes(q);
+        const roomMatch = Boolean(f.room_number && f.room_number.toLowerCase().includes(q));
+        const interestMatch = interestsOf(f).some(i => i.toLowerCase().includes(q));
+        const deptMatch = Boolean(
+          deptById[f.department_id]?.name &&
+          deptById[f.department_id]?.name.toLowerCase().includes(q)
+        );
+        return nameMatch || codeMatch || desigMatch || roomMatch || interestMatch || deptMatch;
+      });
     }
 
     return sortFaculty(list);
@@ -659,7 +669,7 @@ export function FacultyScreen({ navigation }: any) {
         onRequestClose={() => setDeptPickerVisible(false)}
       >
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          behavior="padding"
           style={styles.modalOverlay}
         >
           <TouchableOpacity
@@ -831,7 +841,7 @@ export function FacultyScreen({ navigation }: any) {
         onRequestClose={() => setDomainPickerVisible(false)}
       >
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          behavior="padding"
           style={styles.modalOverlay}
         >
           <TouchableOpacity
@@ -1147,13 +1157,14 @@ const styles = StyleSheet.create({
     marginTop: 2,
   } as TextStyle,
 
-  // Full-width dropdown selector bars
+  // Full-width dropdown selector bars (standard 58dp)
   dropdownBar: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    padding: 12,
-    borderRadius: 14,
+    height: Layout.controlHeight,
+    paddingHorizontal: 16,
+    borderRadius: Layout.controlRadius,
     borderWidth: 1,
     marginBottom: 10,
   } as ViewStyle,
@@ -1318,8 +1329,8 @@ const styles = StyleSheet.create({
   } as ViewStyle,
 
   sheetCloseBtn: {
-    height: 44,
-    borderRadius: Radius.md,
+    height: Layout.controlHeight,
+    borderRadius: Layout.controlRadius,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',

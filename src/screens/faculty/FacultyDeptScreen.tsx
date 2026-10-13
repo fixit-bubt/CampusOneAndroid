@@ -72,13 +72,20 @@ export function FacultyDeptScreen({ route, navigation }: any) {
   }
 
   const q = query.trim().toLowerCase();
+  const cleanQ = q.replace(/[^a-z0-9]/g, '');
   const list = q
-    ? roster.filter(f =>
-        f.name.toLowerCase().includes(q) ||
-        (f.short_code && f.short_code.toLowerCase().includes(q)) ||
-        f.designation.toLowerCase().includes(q) ||
-        (f.room_number && f.room_number.toLowerCase().includes(q)) ||
-        interestsOf(f).some(i => i.toLowerCase().includes(q)))
+    ? roster.filter(f => {
+        const nameMatch = f.name.toLowerCase().includes(q);
+        const codeMatch = Boolean(
+          f.short_code &&
+          (f.short_code.toLowerCase().includes(q) ||
+            (cleanQ.length > 0 && f.short_code.toLowerCase().replace(/[^a-z0-9]/g, '').includes(cleanQ)))
+        );
+        const desigMatch = f.designation.toLowerCase().includes(q);
+        const roomMatch = Boolean(f.room_number && f.room_number.toLowerCase().includes(q));
+        const interestMatch = interestsOf(f).some(i => i.toLowerCase().includes(q));
+        return nameMatch || codeMatch || desigMatch || roomMatch || interestMatch;
+      })
     : roster;
 
   return (

@@ -1,7 +1,18 @@
-# Progress Log
+# Progress Log — Final Audit & Delivery
 
-## Status: Starting Phase 1
-- Root causes identified and verified against live BUBT HTML and Supabase database.
-- Notice 1634 failure: Key mismatch in PostgREST batch array (`id` present on some objects, absent on others).
-- Faculty short-code failure: N+1 sequential waterfall hit Edge Function timeout after scanning only 78 teachers, leaving 339 teachers un-updated and missing new teachers like Shaila Shaznin.
-- Verified BUBT's new URL structure: `https://www.bubt.edu.bd/department/${slug}/faculty/profile/${shortCode}` returns 200 OK.
+## Status: All Systems Operational & Verified
+1. **Notice 1634 & Automated Sync:**
+   - Permanent solution deployed in `sync-notices`.
+   - Verified live in Supabase: Notice 1634 (`BUBT-N-1634`) stored in `announcements`.
+   - 41 previously blocked notices inserted, 259 updated.
+2. **Faculty Short Codes & Crawler:**
+   - Permanent solution deployed in `sync-faculty` with in-memory set diffing and chunked batch writes.
+   - Crawled all 13 departments in 16.8 seconds.
+   - Onboarded new teacher **Shaila Shaznin** (`SSN`, CSE).
+   - Routine short codes populated for 403 active teachers in `faculty`.
+   - All legacy `cse.bubt.edu.bd` links replaced with canonical working BUBT URLs (`https://www.bubt.edu.bd/department/${slug}/faculty/profile/${shortCode}`).
+3. **Faculty Module Multi-Agent Audit:**
+   - 58dp fixed control height standard applied to `dropdownBar`, `sheetCloseBtn`, `proposalBtn`, `contactBtn`, `sendProposalBtn`, `saveBtn`, and `closeReportBtn`.
+   - Android modal `KeyboardAvoidingView` upgraded to `behavior="padding"`.
+   - Fuzzy initial search with `cleanQ` implemented across all faculty search bars.
+   - Verification passed: `tsc --noEmit` (0 errors), Expo bundle export (0 errors).

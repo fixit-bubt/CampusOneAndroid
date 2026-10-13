@@ -248,13 +248,21 @@ export function ManageFacultyScreen({ navigation }: any) {
   }
 
   const q = query.trim().toLowerCase();
+  const cleanQ = q.replace(/[^a-z0-9]/g, '');
   const filtered = q
-    ? list.filter(f =>
-        [f.name, f.short_code, f.designation, f.departments?.name, f.room_number]
+    ? list.filter(f => {
+        const textMatch = [f.name, f.designation, f.departments?.name, f.room_number]
           .filter(Boolean)
           .join(' ')
           .toLowerCase()
-          .includes(q))
+          .includes(q);
+        const codeMatch = Boolean(
+          f.short_code &&
+          (f.short_code.toLowerCase().includes(q) ||
+            (cleanQ.length > 0 && f.short_code.toLowerCase().replace(/[^a-z0-9]/g, '').includes(cleanQ)))
+        );
+        return textMatch || codeMatch;
+      })
     : list;
 
   return (
@@ -628,7 +636,7 @@ const styles = StyleSheet.create({
   field: { height: 44, borderRadius: 12, borderWidth: 1, paddingHorizontal: 13, fontSize: 13.5 } as TextStyle,
   toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 } as ViewStyle,
   toggleLbl: { fontSize: 13.5 } as TextStyle,
-  saveBtn: { height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginTop: 18 } as ViewStyle,
+  saveBtn: { height: Layout.controlHeight, borderRadius: Layout.controlRadius, alignItems: 'center', justifyContent: 'center', marginTop: 18 } as ViewStyle,
   saveTxt: { fontSize: 14.5 } as TextStyle,
 
   syncOverlay: {
@@ -658,8 +666,8 @@ const styles = StyleSheet.create({
   syncReportDesc: { fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 8, marginBottom: 18 } as TextStyle,
   closeReportBtn: {
     width: '100%',
-    height: 44,
-    borderRadius: 12,
+    height: Layout.controlHeight,
+    borderRadius: Layout.controlRadius,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
