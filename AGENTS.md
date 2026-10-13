@@ -173,7 +173,8 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
   - `MyReportsScreen`: Scope switcher (2 tabs: `Everyone` / `My Reports`, no icons).
   - `ManageStaffScreen`: Role tabs (2 tabs: `Staff` / `Admins` with counts; legacy static chips eliminated).
   - `ClubDetailScreen`: 2-tab switcher (`Feed` / `Members` with count; legacy static chips eliminated).
-  - `MedicalScreen`: 3 tabs (`Doctors` / `Services` / `Emergency`, no icons).
+  - `MedicalScreen`: 3 tabs (`Doctors` / `Services` / `Emergency`, no icons), 58dp roster dropdown trigger bar, 58dp medicine search bar, 58dp emergency blood bridge card, 48dp hospital action buttons, 44dp admin quick-edit button, and 58dp admin modal controls with Android 15 keyboard padding.
+  - `DoctorDetailScreen`: `actionBtn` (Call Desk 58dp, Send Email 58dp), `counselingActionBtn` (58dp), and offline cache fallback via `CacheKeys.DOCTORS`.
   - `CourseDetailScreen`: Material tabs (3 tabs: `Notes` / `Questions` / `Books` with counts, no icons).
   - `StudyUploadScreen`: Upload category switcher (3 tabs: `Materials` / `Questions` / `Books`).
   - `RoutinesBrowseScreen`: Main routine tabs (2 tabs: `Class` / `Exam` with counts, no icons), Modal type switcher (2 tabs).
@@ -189,6 +190,8 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
   - `LostFoundDetailScreen`: `actionBtn` (58dp)
   - `ReportDetailScreen`: `actionBtn` (58dp)
   - `JobDetailScreen`: `actionBtn` (58dp), `secondaryBtn` (58dp)
+  - `DoctorDetailScreen`: `actionBtn` (Call Desk 58dp, Send Email 58dp), `counselingActionBtn` (58dp)
+  - `MedicalScreen`: Admin modal `modalSaveBtn` (58dp), `modalInput` (58dp)
   - `EventPostScreen`: `submitBtn` (58dp)
   - `ClubPostScreen`: `submitBtn` (58dp)
   - `DonorRegisterScreen`: `submitBtn` (58dp)

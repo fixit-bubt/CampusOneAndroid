@@ -45,3 +45,4 @@ on conflict (id) do update set
   to_departures = excluded.to_departures,
   from_departures = excluded.from_departures,
   active = excluded.active;
+
