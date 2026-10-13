@@ -10,6 +10,8 @@ import {
   TextInput,
   Modal,
   Switch,
+  Platform,
+  KeyboardAvoidingView,
   type ViewStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
@@ -152,6 +154,8 @@ export function MedicalScreen({ navigation }: any) {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<FilterType>('all');
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
+  const [medSearchQuery, setMedSearchQuery] = useState('');
 
   const [editModalDoc, setEditModalDoc] = useState<Doctor | null>(null);
   const [editIsOnLeave, setEditIsOnLeave] = useState(false);
@@ -208,6 +212,54 @@ export function MedicalScreen({ navigation }: any) {
     ],
     [t]
   );
+
+  const filterOptions = useMemo(
+    () => [
+      {
+        id: 'all' as FilterType,
+        label: t.medical2.filterAll,
+        sub: 'All medical officers and counseling specialists',
+        icon: 'medical',
+      },
+      {
+        id: 'doctors' as FilterType,
+        label: t.medical2.filterDoctors,
+        sub: 'General physicians for fever, cold and consultations',
+        icon: 'user-check',
+      },
+      {
+        id: 'psychologist' as FilterType,
+        label: t.medical2.filterCounseling,
+        sub: 'Confidential psychological support and counseling',
+        icon: 'heart',
+      },
+      {
+        id: 'today' as FilterType,
+        label: t.medical2.filterOnDuty,
+        sub: 'Staff members with active consultation hours today',
+        icon: 'clock',
+      },
+    ],
+    [t]
+  );
+
+  const selectedFilterObj = useMemo(
+    () => filterOptions.find((f) => f.id === selectedFilter) || filterOptions[0],
+    [filterOptions, selectedFilter]
+  );
+
+  const filteredMeds = useMemo(() => {
+    const q = medSearchQuery.trim().toLowerCase();
+    if (!q) return DISPENSARY_MEDICINES;
+    return DISPENSARY_MEDICINES.filter(
+      (m) =>
+        m.name.toLowerCase().includes(q) ||
+        m.category.toLowerCase().includes(q) ||
+        m.useFor.toLowerCase().includes(q) ||
+        (m.nameBn && m.nameBn.includes(q)) ||
+        (m.useForBn && m.useForBn.includes(q))
+    );
+  }, [medSearchQuery]);
 
   const filteredDoctors = useMemo(() => {
     const today = dhakaWeekday();
@@ -434,47 +486,39 @@ export function MedicalScreen({ navigation }: any) {
               )}
             </View>
 
-            {/* Quick Filter Chips */}
-            <View style={styles.filterRow}>
-              {(
-                [
-                  { id: 'all', label: t.medical2.filterAll },
-                  { id: 'doctors', label: t.medical2.filterDoctors },
-                  { id: 'psychologist', label: t.medical2.filterCounseling },
-                  { id: 'today', label: t.medical2.filterOnDuty },
-                ] as const
-              ).map((chip) => {
-                const isSelected = selectedFilter === chip.id;
-                return (
-                  <TouchableOpacity
-                    key={chip.id}
-                    style={[
-                      styles.filterChip,
-                      {
-                        backgroundColor: isSelected ? MED_COLOR : C.surface,
-                        borderColor: isSelected ? MED_COLOR : C.border,
-                      },
-                    ]}
-                    onPress={() => setSelectedFilter(chip.id)}
-                    activeOpacity={0.75}
-                  >
-                    <Text
-                      style={[
-                        styles.filterChipTxt,
-                        {
-                          color: isSelected ? C.white : C.text2,
-                          fontFamily: isSelected
-                            ? FontFamily.jakartaBold
-                            : FontFamily.jakartaMedium,
-                        },
-                      ]}
-                    >
-                      {chip.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+            {/* 58dp Universal Dropdown Selector Bar */}
+            <TouchableOpacity
+              style={[
+                styles.dropdownBar,
+                { backgroundColor: C.surface, borderColor: C.border },
+              ]}
+              onPress={() => setFilterModalVisible(true)}
+              activeOpacity={0.75}
+            >
+              <View style={[styles.dropdownIconTile, { backgroundColor: MED_BG }]}>
+                <Icon name={selectedFilterObj.icon} size={17} color={MED_COLOR} />
+              </View>
+              <View style={styles.dropdownBody}>
+                <Text
+                  style={[
+                    styles.dropdownLabel,
+                    { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
+                  ]}
+                >
+                  ROSTER FILTER
+                </Text>
+                <Text
+                  style={[
+                    styles.dropdownValue,
+                    { color: C.text, fontFamily: FontFamily.jakartaBold },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {selectedFilterObj.label}
+                </Text>
+              </View>
+              <Icon name="chevD" size={17} color={C.textMuted} />
+            </TouchableOpacity>
 
             {/* Doctor List */}
             {loading && doctors.length === 0 ? (
@@ -757,53 +801,96 @@ export function MedicalScreen({ navigation }: any) {
               {t.medical2.dispensarySub}
             </Text>
 
-            <View style={styles.medsList}>
-              {DISPENSARY_MEDICINES.map((med, idx) => (
-                <View
-                  key={med.id}
-                  style={[
-                    styles.medRow,
-                    { backgroundColor: C.surface, borderColor: C.border },
-                  ]}
+            {/* 58dp Universal Medicine Search Bar */}
+            <View
+              style={[
+                styles.searchBox,
+                { backgroundColor: C.surface, borderColor: C.border, marginBottom: 12 },
+              ]}
+            >
+              <Icon name="search" size={18} color={C.textMuted} />
+              <TextInput
+                style={[
+                  styles.searchInput,
+                  { color: C.text, fontFamily: FontFamily.jakartaMedium },
+                ]}
+                placeholder="Search medicine or symptom (e.g. Napa, Antacid)..."
+                placeholderTextColor={C.textMuted}
+                value={medSearchQuery}
+                onChangeText={setMedSearchQuery}
+                autoCorrect={false}
+              />
+              {medSearchQuery.length > 0 && (
+                <TouchableOpacity
+                  onPress={() => setMedSearchQuery('')}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                  <View style={[styles.medIndexBadge, { backgroundColor: C.surface2 }]}>
-                    <Text
-                      style={[
-                        styles.medIndexTxt,
-                        { color: C.text2, fontFamily: FontFamily.jakartaBold },
-                      ]}
-                    >
-                      {idx + 1}
-                    </Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text
-                      style={[
-                        styles.medName,
-                        { color: C.text, fontFamily: FontFamily.jakartaBold },
-                      ]}
-                    >
-                      {med.name}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.medCategory,
-                        { color: MED_COLOR, fontFamily: FontFamily.jakartaMedium },
-                      ]}
-                    >
-                      {med.category}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.medUse,
-                        { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
-                      ]}
-                    >
-                      Indications: {med.useFor}
-                    </Text>
-                  </View>
+                  <Icon name="close" size={14} color={C.textMuted} />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <View style={styles.medsList}>
+              {filteredMeds.length === 0 ? (
+                <View style={styles.empty}>
+                  <Icon name="medical" size={26} color={C.textMuted} />
+                  <Text
+                    style={[
+                      styles.emptyTitle,
+                      { color: C.text, fontFamily: FontFamily.jakartaBold },
+                    ]}
+                  >
+                    No medicines matched your search
+                  </Text>
                 </View>
-              ))}
+              ) : (
+                filteredMeds.map((med, idx) => (
+                  <View
+                    key={med.id}
+                    style={[
+                      styles.medRow,
+                      { backgroundColor: C.surface, borderColor: C.border },
+                    ]}
+                  >
+                    <View style={[styles.medIndexBadge, { backgroundColor: C.surface2 }]}>
+                      <Text
+                        style={[
+                          styles.medIndexTxt,
+                          { color: C.text2, fontFamily: FontFamily.jakartaBold },
+                        ]}
+                      >
+                        {idx + 1}
+                      </Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text
+                        style={[
+                          styles.medName,
+                          { color: C.text, fontFamily: FontFamily.jakartaBold },
+                        ]}
+                      >
+                        {med.name}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.medCategory,
+                          { color: MED_COLOR, fontFamily: FontFamily.jakartaMedium },
+                        ]}
+                      >
+                        {med.category}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.medUse,
+                          { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
+                        ]}
+                      >
+                        Indications: {med.useFor}
+                      </Text>
+                    </View>
+                  </View>
+                ))
+              )}
             </View>
           </View>
         )}
@@ -918,6 +1005,39 @@ export function MedicalScreen({ navigation }: any) {
                 </TouchableOpacity>
               ))}
             </View>
+
+            {/* Emergency Blood Request Bridge */}
+            <TouchableOpacity
+              style={[
+                styles.bloodBridgeCard,
+                { backgroundColor: C.surface, borderColor: C.border },
+              ]}
+              onPress={() => navigation.navigate('Blood')}
+              activeOpacity={0.75}
+            >
+              <View style={[styles.bloodBridgeIconTile, { backgroundColor: `${SectorColors.blood}18` }]}>
+                <Icon name="blood" size={19} color={SectorColors.blood} />
+              </View>
+              <View style={styles.bloodBridgeBody}>
+                <Text
+                  style={[
+                    styles.bloodBridgeTitle,
+                    { color: C.text, fontFamily: FontFamily.jakartaBold },
+                  ]}
+                >
+                  Need Emergency Blood for Patient?
+                </Text>
+                <Text
+                  style={[
+                    styles.bloodBridgeSub,
+                    { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
+                  ]}
+                >
+                  Find active donors or post urgent blood request
+                </Text>
+              </View>
+              <Icon name="chevR" size={17} color={C.textMuted} />
+            </TouchableOpacity>
 
             {/* Nearby Emergency Hospitals in Mirpur */}
             <Text
@@ -1037,6 +1157,111 @@ export function MedicalScreen({ navigation }: any) {
         <View style={{ height: 28 }} />
       </ScrollView>
 
+      {/* ROSTER FILTER BOTTOM SHEET MODAL */}
+      <Modal
+        visible={filterModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setFilterModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setFilterModalVisible(false)}
+          />
+          <View style={[styles.sheetCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <View style={styles.sheetHandle}>
+              <View style={[styles.sheetHandleBar, { backgroundColor: C.border }]} />
+            </View>
+
+            <Text
+              style={[
+                styles.sheetTitle,
+                { color: C.text, fontFamily: FontFamily.jakartaBold },
+              ]}
+            >
+              Filter Medical Staff
+            </Text>
+
+            <View style={{ gap: 8, marginTop: 10 }}>
+              {filterOptions.map((opt) => {
+                const isSelected = selectedFilter === opt.id;
+                return (
+                  <TouchableOpacity
+                    key={opt.id}
+                    style={[
+                      styles.pickerBar,
+                      {
+                        backgroundColor: isSelected
+                          ? isDark
+                            ? `${MED_COLOR}22`
+                            : `${MED_COLOR}12`
+                          : C.surface2,
+                        borderColor: isSelected ? MED_COLOR : C.border,
+                      },
+                    ]}
+                    onPress={() => {
+                      setSelectedFilter(opt.id);
+                      setFilterModalVisible(false);
+                    }}
+                    activeOpacity={0.75}
+                  >
+                    <View
+                      style={[
+                        styles.pickerIconTile,
+                        {
+                          backgroundColor: isSelected
+                            ? MED_COLOR
+                            : isDark
+                            ? 'rgba(255,255,255,0.06)'
+                            : 'rgba(0,0,0,0.05)',
+                        },
+                      ]}
+                    >
+                      <Icon
+                        name={opt.icon}
+                        size={17}
+                        color={isSelected ? C.white : MED_COLOR}
+                      />
+                    </View>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text
+                        style={[
+                          styles.pickerBarText,
+                          {
+                            color: isSelected ? MED_COLOR : C.text,
+                            fontFamily: FontFamily.jakartaBold,
+                          },
+                        ]}
+                      >
+                        {opt.label}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.pickerBarSub,
+                          { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {opt.sub}
+                      </Text>
+                    </View>
+                    {isSelected ? (
+                      <View style={[styles.checkCircle, { backgroundColor: MED_COLOR }]}>
+                        <Icon name="check" size={13} color={C.white} />
+                      </View>
+                    ) : (
+                      <View style={[styles.emptyCircle, { borderColor: C.border }]} />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* ADMIN DOCTOR / STAFF MANAGE MODAL */}
       <Modal
         visible={!!editModalDoc}
@@ -1044,74 +1269,110 @@ export function MedicalScreen({ navigation }: any) {
         animationType="slide"
         onRequestClose={() => setEditModalDoc(null)}
       >
-        <TouchableOpacity
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
           style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setEditModalDoc(null)}
-        />
-        <View style={[styles.modalSheet, { backgroundColor: C.surface }]}>
-          <Text
-            style={[
-              styles.modalTitle,
-              { color: C.text, fontFamily: FontFamily.jakartaExtraBold },
-            ]}
-          >
-            {t.medical2.adminEditTitle}
-          </Text>
+        >
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setEditModalDoc(null)}
+          />
+          <View style={[styles.sheetCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <View style={styles.sheetHandle}>
+              <View style={[styles.sheetHandleBar, { backgroundColor: C.border }]} />
+            </View>
 
-          {editModalDoc && (
-            <View style={styles.modalContent}>
-              <Text
-                style={[
-                  styles.modalDocName,
-                  { color: C.text, fontFamily: FontFamily.jakartaBold },
-                ]}
-              >
-                {editModalDoc.name}
-              </Text>
-              <Text
-                style={[
-                  styles.modalDocSpec,
-                  { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
-                ]}
-              >
-                {editModalDoc.specialty}
-              </Text>
+            <Text
+              style={[
+                styles.sheetTitle,
+                { color: C.text, fontFamily: FontFamily.jakartaExtraBold },
+              ]}
+            >
+              {t.medical2.adminEditTitle}
+            </Text>
 
-              {/* Leave toggle */}
-              <View
-                style={[
-                  styles.toggleRow,
-                  { backgroundColor: C.surface2, borderColor: C.border },
-                ]}
-              >
-                <View style={{ flex: 1 }}>
-                  <Text
-                    style={[
-                      styles.toggleLabel,
-                      { color: C.text, fontFamily: FontFamily.jakartaBold },
-                    ]}
-                  >
-                    {t.medical2.markOnLeave}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.toggleSub,
-                      { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
-                    ]}
-                  >
-                    Displays an on-leave warning to students
-                  </Text>
+            {editModalDoc && (
+              <View style={styles.modalContent}>
+                <Text
+                  style={[
+                    styles.modalDocName,
+                    { color: C.text, fontFamily: FontFamily.jakartaBold },
+                  ]}
+                >
+                  {editModalDoc.name}
+                </Text>
+                <Text
+                  style={[
+                    styles.modalDocSpec,
+                    { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
+                  ]}
+                >
+                  {editModalDoc.specialty}
+                </Text>
+
+                {/* Leave toggle */}
+                <View
+                  style={[
+                    styles.toggleRow,
+                    { backgroundColor: C.surface2, borderColor: C.border },
+                  ]}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={[
+                        styles.toggleLabel,
+                        { color: C.text, fontFamily: FontFamily.jakartaBold },
+                      ]}
+                    >
+                      {t.medical2.markOnLeave}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.toggleSub,
+                        { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
+                      ]}
+                    >
+                      Displays an on-leave warning to students
+                    </Text>
+                  </View>
+                  <Switch
+                    value={editIsOnLeave}
+                    onValueChange={setEditIsOnLeave}
+                    trackColor={{ false: C.border, true: C.danger }}
+                  />
                 </View>
-                <Switch
-                  value={editIsOnLeave}
-                  onValueChange={setEditIsOnLeave}
-                  trackColor={{ false: C.border, true: C.danger }}
-                />
-              </View>
 
-              {/* Leave reason input */}
-              {editIsOnLeave && (
+                {/* Leave reason input */}
+                {editIsOnLeave && (
+                  <View style={{ marginTop: 12 }}>
+                    <Text
+                      style={[
+                        styles.inputLabel,
+                        { color: C.text2, fontFamily: FontFamily.jakartaBold },
+                      ]}
+                    >
+                      {t.medical2.leaveReason}
+                    </Text>
+                    <TextInput
+                      style={[
+                        styles.modalInput,
+                        {
+                          backgroundColor: C.surface2,
+                          color: C.text,
+                          borderColor: C.border,
+                          fontFamily: FontFamily.jakartaMedium,
+                        },
+                      ]}
+                      placeholder="e.g. In faculty seminar until 1:00 PM"
+                      placeholderTextColor={C.textMuted}
+                      value={editLeaveNote}
+                      onChangeText={setEditLeaveNote}
+                    />
+                  </View>
+                )}
+
+                {/* Room input */}
                 <View style={{ marginTop: 12 }}>
                   <Text
                     style={[
@@ -1119,7 +1380,7 @@ export function MedicalScreen({ navigation }: any) {
                       { color: C.text2, fontFamily: FontFamily.jakartaBold },
                     ]}
                   >
-                    {t.medical2.leaveReason}
+                    Room / Location
                   </Text>
                   <TextInput
                     style={[
@@ -1131,67 +1392,40 @@ export function MedicalScreen({ navigation }: any) {
                         fontFamily: FontFamily.jakartaMedium,
                       },
                     ]}
-                    placeholder="e.g. In faculty seminar until 1:00 PM"
+                    placeholder="Room 205, Building 3"
                     placeholderTextColor={C.textMuted}
-                    value={editLeaveNote}
-                    onChangeText={setEditLeaveNote}
+                    value={editRoom}
+                    onChangeText={setEditRoom}
                   />
                 </View>
-              )}
 
-              {/* Room input */}
-              <View style={{ marginTop: 12 }}>
-                <Text
+                {/* Save Button (58dp) */}
+                <TouchableOpacity
                   style={[
-                    styles.inputLabel,
-                    { color: C.text2, fontFamily: FontFamily.jakartaBold },
+                    styles.modalSaveBtn,
+                    { backgroundColor: MED_COLOR },
                   ]}
+                  onPress={handleSaveDoctorEdit}
+                  disabled={savingEdit}
+                  activeOpacity={0.75}
                 >
-                  Room / Location
-                </Text>
-                <TextInput
-                  style={[
-                    styles.modalInput,
-                    {
-                      backgroundColor: C.surface2,
-                      color: C.text,
-                      borderColor: C.border,
-                      fontFamily: FontFamily.jakartaMedium,
-                    },
-                  ]}
-                  placeholder="Room 205, Building 3"
-                  placeholderTextColor={C.textMuted}
-                  value={editRoom}
-                  onChangeText={setEditRoom}
-                />
+                  {savingEdit ? (
+                    <ActivityIndicator color={C.white} size="small" />
+                  ) : (
+                    <Text
+                      style={[
+                        styles.modalSaveTxt,
+                        { color: C.white, fontFamily: FontFamily.jakartaBold },
+                      ]}
+                    >
+                      {t.medical2.saveChanges}
+                    </Text>
+                  )}
+                </TouchableOpacity>
               </View>
-
-              {/* Save Button */}
-              <TouchableOpacity
-                style={[
-                  styles.modalSaveBtn,
-                  { backgroundColor: MED_COLOR },
-                ]}
-                onPress={handleSaveDoctorEdit}
-                disabled={savingEdit}
-                activeOpacity={0.75}
-              >
-                {savingEdit ? (
-                  <ActivityIndicator color={C.white} size="small" />
-                ) : (
-                  <Text
-                    style={[
-                      styles.modalSaveTxt,
-                      { color: C.white, fontFamily: FontFamily.jakartaBold },
-                    ]}
-                  >
-                    {t.medical2.saveChanges}
-                  </Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
+            )}
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );
@@ -1267,19 +1501,36 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   } as ViewStyle,
   searchInput: { flex: 1, fontSize: 14.5, paddingVertical: 0 } as any,
-  filterRow: {
+  dropdownBar: {
     flexDirection: 'row',
-    gap: 8,
-    marginBottom: 14,
-    flexWrap: 'wrap',
-  } as ViewStyle,
-  filterChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 20,
+    alignItems: 'center',
+    gap: 12,
+    height: 58,
+    borderRadius: 16,
+    paddingHorizontal: 16,
     borderWidth: 1,
+    marginBottom: 12,
   } as ViewStyle,
-  filterChipTxt: { fontSize: 12 } as any,
+  dropdownIconTile: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  dropdownBody: {
+    flex: 1,
+    minWidth: 0,
+  } as ViewStyle,
+  dropdownLabel: {
+    fontSize: 11,
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
+  } as any,
+  dropdownValue: {
+    fontSize: 13.5,
+    marginTop: 2,
+  } as any,
 
   // Doctor List
   doctorList: { gap: 10 } as ViewStyle,
@@ -1322,11 +1573,11 @@ const styles = StyleSheet.create({
   dutyLiveDot: { width: 5.5, height: 5.5, borderRadius: 3 } as ViewStyle,
   dutyBadgeTxt: { fontSize: 11 } as any,
   dutySubTxt: { fontSize: 11 } as any,
-  cardRightCol: { alignItems: 'center', gap: 8 } as ViewStyle,
+  cardRightCol: { flexDirection: 'row', alignItems: 'center', gap: 6 } as ViewStyle,
   adminQuickBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
@@ -1467,69 +1718,155 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   distBadgeTxt: { fontSize: 11 } as any,
   hospDivider: { height: StyleSheet.hairlineWidth, marginVertical: 11 } as ViewStyle,
-  hospActionsRow: { flexDirection: 'row', gap: 8 } as ViewStyle,
+  hospActionsRow: { flexDirection: 'row', gap: 10, marginTop: 11 } as ViewStyle,
   hospActionBtn: {
     flex: 1,
+    height: 48,
+    borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 5,
-    paddingVertical: 8,
-    borderRadius: 10,
+    gap: 6,
   } as ViewStyle,
-  hospActionTxt: { fontSize: 12 } as any,
+  hospActionTxt: { fontSize: 13 } as any,
   hospMapBtn: {
+    height: 48,
+    borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
+    gap: 6,
+    paddingHorizontal: 16,
     borderWidth: 1,
   } as ViewStyle,
-  hospMapTxt: { fontSize: 12 } as any,
+  hospMapTxt: { fontSize: 13 } as any,
 
-  // Admin Modal
+  // Emergency Blood Bridge Card
+  bloodBridgeCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    height: 58,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    marginTop: 12,
+  } as ViewStyle,
+  bloodBridgeIconTile: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  bloodBridgeBody: {
+    flex: 1,
+    minWidth: 0,
+  } as ViewStyle,
+  bloodBridgeTitle: {
+    fontSize: 13.5,
+  } as any,
+  bloodBridgeSub: {
+    fontSize: 11,
+    marginTop: 1.5,
+  } as any,
+
+  // Sheet Card & Picker Bars
   modalOverlay: {
     flex: 1,
+    justifyContent: 'flex-end',
     backgroundColor: 'rgba(0,0,0,0.5)',
   } as ViewStyle,
-  modalSheet: {
+  modalBackdrop: {
+    ...StyleSheet.absoluteFill,
+  } as ViewStyle,
+  sheetCard: {
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
     padding: 20,
     paddingBottom: 34,
+    borderWidth: 1,
   } as ViewStyle,
-  modalTitle: { fontSize: 17, marginBottom: 12 } as any,
+  sheetHandle: {
+    alignItems: 'center',
+    marginBottom: 14,
+  } as ViewStyle,
+  sheetHandleBar: {
+    width: 38,
+    height: 4,
+    borderRadius: 2,
+  } as ViewStyle,
+  sheetTitle: {
+    fontSize: 17,
+    marginBottom: 6,
+  } as any,
+
+  pickerBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    height: 58,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+  } as ViewStyle,
+  pickerIconTile: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  pickerBarText: {
+    fontSize: 13.5,
+  } as any,
+  pickerBarSub: {
+    fontSize: 11,
+    marginTop: 1.5,
+  } as any,
+  checkCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  emptyCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1.5,
+  } as ViewStyle,
+
+  // Admin Modal Controls (58dp Standard)
   modalContent: {} as ViewStyle,
   modalDocName: { fontSize: 15 } as any,
   modalDocSpec: { fontSize: 12.5, marginTop: 2, marginBottom: 14 } as any,
   toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    borderRadius: 12,
+    padding: 14,
+    borderRadius: 14,
     borderWidth: 1,
   } as ViewStyle,
   toggleLabel: { fontSize: 13.5 } as any,
   toggleSub: { fontSize: 11, marginTop: 2 } as any,
   inputLabel: { fontSize: 12, marginBottom: 6 } as any,
   modalInput: {
-    height: 42,
-    borderRadius: 10,
+    height: 58,
+    borderRadius: 16,
     borderWidth: 1,
-    paddingHorizontal: 12,
-    fontSize: 13,
+    paddingHorizontal: 16,
+    fontSize: 14.5,
   } as any,
   modalSaveBtn: {
-    height: 46,
-    borderRadius: 12,
+    height: 58,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 18,
   } as ViewStyle,
-  modalSaveTxt: { fontSize: 14 } as any,
+  modalSaveTxt: { fontSize: 15 } as any,
 
   empty: { alignItems: 'center', paddingTop: 40, gap: 8 } as ViewStyle,
   emptyTitle: { fontSize: 15 } as any,

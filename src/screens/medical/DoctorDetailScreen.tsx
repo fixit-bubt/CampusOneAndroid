@@ -23,6 +23,7 @@ import {
   fmtCountdown,
 } from '../../utils/transitPrayer';
 import { openUrl } from '../../utils/link';
+import { getCache, CacheKeys } from '../../services/cacheService';
 import { BUBT_CLINIC_INFO } from '../../constants/medicalServices';
 import type { Doctor } from '../../types/database';
 
@@ -173,6 +174,12 @@ export function DoctorDetailScreen({ route, navigation }: any) {
 
       if (!active) return;
       if (error || !data) {
+        const cachedList = await getCache<Doctor[]>(CacheKeys.DOCTORS);
+        const found = (cachedList || []).find((d) => d.id === doctorId);
+        if (found) {
+          setDoctor(found);
+          return;
+        }
         setFailed(true);
         return;
       }
@@ -406,7 +413,7 @@ export function DoctorDetailScreen({ route, navigation }: any) {
             onPress={handleDial}
             activeOpacity={0.75}
           >
-            <Icon name="phone" size={15} color={MED_COLOR} />
+            <Icon name="phone" size={17} color={MED_COLOR} />
             <Text
               style={[
                 styles.actionBtnTxt,
@@ -425,7 +432,7 @@ export function DoctorDetailScreen({ route, navigation }: any) {
             onPress={handleEmail}
             activeOpacity={0.75}
           >
-            <Icon name="mail" size={15} color={C.text} />
+            <Icon name="mail" size={17} color={C.text} />
             <Text
               style={[
                 styles.actionBtnTxt,
@@ -577,15 +584,15 @@ const styles = StyleSheet.create({
   counselingTitle: { fontSize: 14 } as any,
   counselingSub: { fontSize: 12, marginTop: 2 } as any,
   counselingActionBtn: {
+    height: 58,
+    borderRadius: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    borderRadius: 12,
-    marginTop: 12,
+    gap: 8,
+    marginTop: 14,
   } as ViewStyle,
-  counselingActionTxt: { fontSize: 13 } as any,
+  counselingActionTxt: { fontSize: 14.5 } as any,
 
   actionRow: {
     flexDirection: 'row',
@@ -594,14 +601,14 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   actionBtn: {
     flex: 1,
+    height: 58,
+    borderRadius: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 11,
-    borderRadius: 12,
+    gap: 8,
   } as ViewStyle,
-  actionBtnTxt: { fontSize: 13 } as any,
+  actionBtnTxt: { fontSize: 14.5 } as any,
 
   sectionLabel: {
     fontSize: 11,
