@@ -94,15 +94,13 @@ All primary content cards, directory items, department pickers, and feed rows ac
    * Category badge: `fontSize: 9.5 px`, Title: `13 px` (Bold), Snippet: `11.5 px` (Regular).
 
 5. **Student Profile Direct Action & Status Cards (`StudentProfileScreen.tsx`):**
-   * Outer card: `padding: 14 dp`, `borderRadius: 16 dp`, `minHeight: 72 dp`.
-   * Action icon box: `44 × 44 dp`, `borderRadius: 14 dp`, icon `20–22 px`.
-   * Calculation: `44 dp + 14 dp top + 14 dp bottom = 72 dp`.
+   * Outer card: `height: 72 dp`, `paddingHorizontal: 14 dp`, `borderRadius: 16 dp`.
+   * Action icon box: `44 × 44 dp`, `borderRadius: 13 dp`, icon `20–22 px`.
    * **Mutually Connected:** Direct 1-tap communication cards: CampusOne In-App Chat (Brand Blue), WhatsApp (`#25D366`), Call Phone (`#10B981`), and Send Email (`#8B5CF6`).
    * **Pending Outgoing Request:** 72 dp Amber Status Card (*"Connection Request Pending"*, pulsing clock icon) paired with a 58 dp `Cancel Connection Request` control button.
    * **Unconnected:** 72 dp Shield Privacy Card (*"Contact Details Protected"*, floating shield icon) paired with a 58 dp `Send Connection Request` primary CTA button.
    * **Incoming Request:** 72 dp Request Card (*"Incoming Connection Request"*, spring user-check icon) paired with dual 58 dp symmetrical `Accept` and `Decline` action buttons.
    * **Identity Hero Card:** Pure profile identity (Avatar, Name, Intake/Section meta, and `badgeRow` containing CR, Blood Group, and Connection Status Badge). Zero crammed inline buttons.
-   * **Academic & Campus Info Card:** Fills screen space cleanly with Department, Intake/Section, Blood Group, Student ID (when connected), and BUBT Institutional Affiliation.
 
 ---
 

@@ -472,11 +472,11 @@ export function StudentProfileScreen({ route, navigation }: any) {
                     <AnimatedIcon family="feather" name="clock" size={22} color={isDark ? '#fbbf24' : '#d97706'} animation="pulse" />
                   </View>
                   <View style={styles.actionCardContent}>
-                    <Text style={[styles.actionCardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    <Text style={[styles.actionCardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                       Connection Request Pending
                     </Text>
-                    <Text style={[styles.actionCardDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
-                      {`Waiting for ${student.full_name.split(' ')[0]} to accept. Direct contact actions will unlock once connected.`}
+                    <Text style={[styles.actionCardDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                      {`Waiting for ${student.full_name.split(' ')[0]} to accept request`}
                     </Text>
                   </View>
                 </View>
@@ -508,10 +508,10 @@ export function StudentProfileScreen({ route, navigation }: any) {
                     <AnimatedIcon family="feather" name="shield" size={22} color={C.brand} animation="float" />
                   </View>
                   <View style={styles.actionCardContent}>
-                    <Text style={[styles.actionCardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    <Text style={[styles.actionCardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                       Contact Details Protected
                     </Text>
-                    <Text style={[styles.actionCardDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
+                    <Text style={[styles.actionCardDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
                       {t.directory2.connectToSeeContact}
                     </Text>
                   </View>
@@ -538,11 +538,11 @@ export function StudentProfileScreen({ route, navigation }: any) {
                     <AnimatedIcon family="feather" name="user-check" size={22} color={C.brand} animation="spring" />
                   </View>
                   <View style={styles.actionCardContent}>
-                    <Text style={[styles.actionCardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    <Text style={[styles.actionCardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                       {t.directory2.wantsToConnect}
                     </Text>
-                    <Text style={[styles.actionCardDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
-                      {`Accept this request to unlock direct contact actions and start chatting with ${student.full_name.split(' ')[0]}.`}
+                    <Text style={[styles.actionCardDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                      {`Accept request to start direct messaging`}
                     </Text>
                   </View>
                 </View>
@@ -575,98 +575,6 @@ export function StudentProfileScreen({ route, navigation }: any) {
             )}
           </View>
         )}
-
-        {/* Campus & Academic Details Section */}
-        <View style={styles.sectionHeaderRow}>
-          <Text style={[styles.sectionTitle, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
-            ACADEMIC & CAMPUS INFO
-          </Text>
-        </View>
-
-        <View style={[styles.infoCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-          {/* Department Row */}
-          <View style={styles.infoRow}>
-            <View style={[styles.infoIconBox, { backgroundColor: isDark ? 'rgba(91, 133, 247, 0.15)' : '#eff6ff' }]}>
-              <Icon name="study" size={16} color={C.brand} />
-            </View>
-            <View style={styles.infoCol}>
-              <Text style={[styles.infoLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                Department
-              </Text>
-              <Text style={[styles.infoVal, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                {student.department || 'BUBT Student'}
-              </Text>
-            </View>
-          </View>
-
-          {/* Intake & Section Row if available */}
-          {(student.intake || student.section) ? (
-            <View style={[styles.infoRow, { borderTopWidth: 1, borderTopColor: C.border }]}>
-              <View style={[styles.infoIconBox, { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.15)' : '#ecfdf5' }]}>
-                <Icon name="calendar" size={16} color={C.success} />
-              </View>
-              <View style={styles.infoCol}>
-                <Text style={[styles.infoLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                  Intake & Section
-                </Text>
-                <Text style={[styles.infoVal, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                  {[student.intake ? `Intake ${student.intake}` : null, student.section ? `Section ${student.section}` : null]
-                    .filter(Boolean)
-                    .join(' · ')}
-                </Text>
-              </View>
-            </View>
-          ) : null}
-
-          {/* Blood Group Row if available */}
-          {student.blood_group ? (
-            <View style={[styles.infoRow, { borderTopWidth: 1, borderTopColor: C.border }]}>
-              <View style={[styles.infoIconBox, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#fee2e2' }]}>
-                <Icon name="blood" size={16} color="#ef4444" />
-              </View>
-              <View style={styles.infoCol}>
-                <Text style={[styles.infoLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                  Blood Group
-                </Text>
-                <Text style={[styles.infoVal, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                  {student.blood_group}
-                </Text>
-              </View>
-            </View>
-          ) : null}
-
-          {/* Student ID Row if connected and available */}
-          {connected && student.student_id ? (
-            <View style={[styles.infoRow, { borderTopWidth: 1, borderTopColor: C.border }]}>
-              <View style={[styles.infoIconBox, { backgroundColor: isDark ? 'rgba(168, 85, 247, 0.15)' : '#f3e8ff' }]}>
-                <Icon name="user" size={16} color="#a855f7" />
-              </View>
-              <View style={styles.infoCol}>
-                <Text style={[styles.infoLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                  {t.directory2.studentId}
-                </Text>
-                <Text style={[styles.infoVal, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                  {student.student_id}
-                </Text>
-              </View>
-            </View>
-          ) : null}
-
-          {/* Institutional Affiliation Row */}
-          <View style={[styles.infoRow, { borderTopWidth: 1, borderTopColor: C.border }]}>
-            <View style={[styles.infoIconBox, { backgroundColor: isDark ? 'rgba(245, 158, 11, 0.15)' : '#fef3c7' }]}>
-              <Icon name="award" size={16} color={C.warn} />
-            </View>
-            <View style={styles.infoCol}>
-              <Text style={[styles.infoLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                Campus Affiliation
-              </Text>
-              <Text style={[styles.infoVal, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                {student.is_cr ? 'Class Representative · BUBT' : 'Enrolled Student · BUBT'}
-              </Text>
-            </View>
-          </View>
-        </View>
 
         <View style={{ height: 28 }} />
       </ScrollView>
@@ -735,38 +643,6 @@ const styles = StyleSheet.create({
     fontSize: 14.5,
   } as TextStyle,
 
-  infoCard: {
-    borderRadius: 16,
-    borderWidth: 1,
-    overflow: 'hidden',
-  } as ViewStyle,
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    padding: 14,
-  } as ViewStyle,
-  infoIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  } as ViewStyle,
-  infoCol: {
-    flex: 1,
-    minWidth: 0,
-  } as ViewStyle,
-  infoLabel: {
-    fontSize: 11,
-    lineHeight: 14,
-  } as TextStyle,
-  infoVal: {
-    fontSize: 13.5,
-    lineHeight: 18,
-    marginTop: 1,
-  } as TextStyle,
-
   sectionHeaderRow: {
     marginTop: 18,
     marginBottom: 10,
@@ -785,7 +661,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 13,
-    padding: 14,
+    height: 72,
+    paddingHorizontal: 14,
     borderRadius: 16,
     borderWidth: 1,
   } as ViewStyle,
