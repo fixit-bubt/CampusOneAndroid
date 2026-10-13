@@ -211,15 +211,18 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
 - **Home Community Updates (`HomeCommunityUpdates.tsx`):**
   - Notice & update feed cards: `padding: 12, borderRadius: 16`, `48 × 48 dp` thumbnail = 72dp.
   - Bottom "View All Campus Notices" button: standardized to 58dp (`height: 58, borderRadius: 16, fontSize: 14`).
-- **Student Profile Direct Action Cards (`StudentProfileScreen.tsx`):**
-  - Hero card cleanup: redundant `connectedRow` (`Connected` pill + `Message` button) removed; clean status badge placed directly in `badgeRow`.
-  - Contact options modal replaced with direct, 1-tap **72dp action cards** (`minHeight: 72, padding: 14, borderRadius: 16`, `44 × 44 dp` icon box):
+- **Student Profile Direct Action & Status System (`StudentProfileScreen.tsx`):**
+  - Hero card cleanup: redundant inline buttons completely removed; clean status badges (`Connected`, `Requested`, `Incoming`) placed directly in `badgeRow` alongside CR and Blood Group.
+  - Mutually connected: Direct, 1-tap **72dp action cards** (`minHeight: 72, padding: 14, borderRadius: 16`, `44 × 44 dp` icon box):
     1. CampusOne In-App Chat (72dp, Brand Blue)
     2. WhatsApp (72dp, official WhatsApp `#25D366`)
     3. Call Phone (72dp, Emerald `#10B981`)
     4. Send Email (72dp, Purple `#8B5CF6`)
+  - Pending outgoing request: 72dp Amber Status Card (*"Connection Request Pending"*, pulsing clock icon) paired with a 58dp `Cancel Connection Request` button.
+  - Unconnected: 72dp Shield Privacy Card (*"Contact Details Protected"*, floating shield icon) paired with a 58dp `Send Connection Request` primary CTA button.
+  - Incoming request: 72dp Request Card (*"Incoming Connection Request"*, spring user-check icon) paired with dual 58dp symmetrical `Accept` and `Decline` action buttons.
+  - Academic & Campus Info Card: Fills screen space cleanly with Department, Intake/Section, Blood Group, Student ID (when connected), and BUBT Institutional Affiliation.
   - Disconnect connection converted to clean destructive outline action button (`height: 50, borderRadius: 14`).
-  - Text overflow protection: `lockedTxt` wrapped with `flex: 1, flexShrink: 1`.
 - **Contact Sheet (`ContactSheet.tsx`):** Standardized button height to `height: 56, borderRadius: 16`, added top-right close button (`32 × 32 dp`), and resolved clashing greens.
 
 ---

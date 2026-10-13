@@ -312,83 +312,24 @@ export function StudentProfileScreen({ route, navigation }: any) {
                       {t.directory2.connected}
                     </Text>
                   </View>
+                ) : student.connState === 'requested' ? (
+                  <View style={[styles.connBadge, { backgroundColor: pillBg(SectorColors.jobs, isDark), borderColor: isDark ? 'rgba(245, 158, 11, 0.4)' : '#fde68a' }]}>
+                    <View style={[styles.connDot, { backgroundColor: C.warn }]} />
+                    <Text style={[styles.connBadgeTxt, { color: isDark ? '#fbbf24' : '#b45309', fontFamily: FontFamily.jakartaBold }]}>
+                      {t.directory2.requested}
+                    </Text>
+                  </View>
+                ) : student.connState === 'incoming' ? (
+                  <View style={[styles.connBadge, { backgroundColor: pillBg(SectorColors.directory, isDark), borderColor: isDark ? 'rgba(59, 130, 246, 0.4)' : '#bfdbfe' }]}>
+                    <View style={[styles.connDot, { backgroundColor: C.brand }]} />
+                    <Text style={[styles.connBadgeTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+                      {t.directory2.wantsToConnect}
+                    </Text>
+                  </View>
                 ) : null}
               </View>
             </View>
           </View>
-
-          {/* Connection Actions Container for non-connected states */}
-          {student.connState !== 'connected' && (
-            <View style={styles.connArea}>
-              {student.connState === 'requested' && (
-                <View style={styles.requestedRow}>
-                  <View style={[styles.statePill, { backgroundColor: C.warnBg }]}>
-                    <View style={[styles.stateDot, { backgroundColor: C.warn }]} />
-                    <Text style={[styles.statePillTxt, { color: C.warn, fontFamily: FontFamily.jakartaBold }]}>
-                      {t.directory2.requested}
-                    </Text>
-                  </View>
-                  <TouchableOpacity
-                    style={[styles.cancelBtn, { borderColor: C.border, backgroundColor: C.surface2 }]}
-                    onPress={handleCancelRequest}
-                    disabled={busy}
-                    activeOpacity={0.7}
-                  >
-                    <Icon name="x" size={14} color={C.text2} />
-                    <Text style={[styles.cancelBtnTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                      {t.directory2.cancelRequest}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-
-              {student.connState === 'none' && (
-                <TouchableOpacity
-                  style={[styles.fullBtn, { backgroundColor: C.brand }]}
-                  onPress={handleConnect}
-                  disabled={busy}
-                  activeOpacity={0.85}
-                >
-                  <AnimatedIcon family="feather" name="user-plus" size={16} color="#fff" animation="none" />
-                  <Text style={[styles.fullBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
-                    {t.directory2.connect}
-                  </Text>
-                </TouchableOpacity>
-              )}
-
-              {student.connState === 'incoming' && (
-                <>
-                  <Text style={[styles.wants, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
-                    {t.directory2.wantsToConnect}
-                  </Text>
-                  <View style={styles.actionRow}>
-                    <TouchableOpacity
-                      style={[styles.halfBtn, { backgroundColor: C.brand }]}
-                      onPress={() => handleRespond(true)}
-                      disabled={busy}
-                      activeOpacity={0.85}
-                    >
-                      <Icon name="check" size={15} color="#fff" />
-                      <Text style={[styles.halfBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
-                        {t.directory2.accept}
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.halfBtn, { backgroundColor: C.surface2, borderColor: C.border, borderWidth: 1 }]}
-                      onPress={() => handleRespond(false)}
-                      disabled={busy}
-                      activeOpacity={0.85}
-                    >
-                      <Icon name="x" size={15} color={C.text} />
-                      <Text style={[styles.halfBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                        {t.directory2.decline}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </>
-              )}
-            </View>
-          )}
         </View>
 
         {/* Section Header */}
@@ -522,21 +463,210 @@ export function StudentProfileScreen({ route, navigation }: any) {
             </TouchableOpacity>
           </View>
         ) : (
-          /* When NOT CONNECTED: 72dp Protected Card */
-          <View style={[styles.actionCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <View style={[styles.actionIconBox, { backgroundColor: isDark ? 'rgba(91, 133, 247, 0.18)' : '#eff6ff' }]}>
-              <AnimatedIcon family="feather" name="shield" size={22} color={C.brand} animation="float" />
+          /* When NOT CONNECTED: 72dp Dynamic Status/Privacy Card + 58dp Action Control */
+          <View style={styles.actionCardsCol}>
+            {student.connState === 'requested' && (
+              <>
+                <View style={[styles.actionCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+                  <View style={[styles.actionIconBox, { backgroundColor: isDark ? 'rgba(245, 158, 11, 0.18)' : '#fef3c7' }]}>
+                    <AnimatedIcon family="feather" name="clock" size={22} color={isDark ? '#fbbf24' : '#d97706'} animation="pulse" />
+                  </View>
+                  <View style={styles.actionCardContent}>
+                    <Text style={[styles.actionCardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                      Connection Request Pending
+                    </Text>
+                    <Text style={[styles.actionCardDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
+                      {`Waiting for ${student.full_name.split(' ')[0]} to accept. Direct contact actions will unlock once connected.`}
+                    </Text>
+                  </View>
+                </View>
+
+                <TouchableOpacity
+                  style={[
+                    styles.actionControlBtn,
+                    {
+                      borderColor: isDark ? 'rgba(248, 113, 113, 0.4)' : '#fca5a5',
+                      backgroundColor: isDark ? 'rgba(248, 113, 113, 0.08)' : '#fef2f2',
+                    },
+                  ]}
+                  onPress={handleCancelRequest}
+                  disabled={busy}
+                  activeOpacity={0.75}
+                >
+                  <Icon name="x" size={16} color={C.danger} />
+                  <Text style={[styles.actionControlBtnTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
+                    {t.directory2.cancelRequest}
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
+
+            {student.connState === 'none' && (
+              <>
+                <View style={[styles.actionCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+                  <View style={[styles.actionIconBox, { backgroundColor: isDark ? 'rgba(91, 133, 247, 0.18)' : '#eff6ff' }]}>
+                    <AnimatedIcon family="feather" name="shield" size={22} color={C.brand} animation="float" />
+                  </View>
+                  <View style={styles.actionCardContent}>
+                    <Text style={[styles.actionCardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                      Contact Details Protected
+                    </Text>
+                    <Text style={[styles.actionCardDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
+                      {t.directory2.connectToSeeContact}
+                    </Text>
+                  </View>
+                </View>
+
+                <TouchableOpacity
+                  style={[styles.actionControlBtn, { backgroundColor: C.brand }]}
+                  onPress={handleConnect}
+                  disabled={busy}
+                  activeOpacity={0.85}
+                >
+                  <AnimatedIcon family="feather" name="user-plus" size={18} color="#fff" animation="spring" />
+                  <Text style={[styles.actionControlBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                    {t.directory2.connect}
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
+
+            {student.connState === 'incoming' && (
+              <>
+                <View style={[styles.actionCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+                  <View style={[styles.actionIconBox, { backgroundColor: isDark ? 'rgba(91, 133, 247, 0.18)' : '#eff6ff' }]}>
+                    <AnimatedIcon family="feather" name="user-check" size={22} color={C.brand} animation="spring" />
+                  </View>
+                  <View style={styles.actionCardContent}>
+                    <Text style={[styles.actionCardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                      {t.directory2.wantsToConnect}
+                    </Text>
+                    <Text style={[styles.actionCardDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
+                      {`Accept this request to unlock direct contact actions and start chatting with ${student.full_name.split(' ')[0]}.`}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.dualActionRow}>
+                  <TouchableOpacity
+                    style={[styles.dualActionBtn, { backgroundColor: C.brand }]}
+                    onPress={() => handleRespond(true)}
+                    disabled={busy}
+                    activeOpacity={0.85}
+                  >
+                    <Icon name="check" size={16} color="#fff" />
+                    <Text style={[styles.dualActionBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                      {t.directory2.accept}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.dualActionBtn, { backgroundColor: C.surface2, borderColor: C.border, borderWidth: 1 }]}
+                    onPress={() => handleRespond(false)}
+                    disabled={busy}
+                    activeOpacity={0.85}
+                  >
+                    <Icon name="x" size={16} color={C.text} />
+                    <Text style={[styles.dualActionBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                      {t.directory2.decline}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+          </View>
+        )}
+
+        {/* Campus & Academic Details Section */}
+        <View style={styles.sectionHeaderRow}>
+          <Text style={[styles.sectionTitle, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
+            ACADEMIC & CAMPUS INFO
+          </Text>
+        </View>
+
+        <View style={[styles.infoCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+          {/* Department Row */}
+          <View style={styles.infoRow}>
+            <View style={[styles.infoIconBox, { backgroundColor: isDark ? 'rgba(91, 133, 247, 0.15)' : '#eff6ff' }]}>
+              <Icon name="study" size={16} color={C.brand} />
             </View>
-            <View style={styles.actionCardContent}>
-              <Text style={[styles.actionCardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                Contact Details Protected
+            <View style={styles.infoCol}>
+              <Text style={[styles.infoLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                Department
               </Text>
-              <Text style={[styles.actionCardDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
-                {t.directory2.connectToSeeContact}
+              <Text style={[styles.infoVal, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                {student.department || 'BUBT Student'}
               </Text>
             </View>
           </View>
-        )}
+
+          {/* Intake & Section Row if available */}
+          {(student.intake || student.section) ? (
+            <View style={[styles.infoRow, { borderTopWidth: 1, borderTopColor: C.border }]}>
+              <View style={[styles.infoIconBox, { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.15)' : '#ecfdf5' }]}>
+                <Icon name="calendar" size={16} color={C.success} />
+              </View>
+              <View style={styles.infoCol}>
+                <Text style={[styles.infoLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                  Intake & Section
+                </Text>
+                <Text style={[styles.infoVal, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  {[student.intake ? `Intake ${student.intake}` : null, student.section ? `Section ${student.section}` : null]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </Text>
+              </View>
+            </View>
+          ) : null}
+
+          {/* Blood Group Row if available */}
+          {student.blood_group ? (
+            <View style={[styles.infoRow, { borderTopWidth: 1, borderTopColor: C.border }]}>
+              <View style={[styles.infoIconBox, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#fee2e2' }]}>
+                <Icon name="blood" size={16} color="#ef4444" />
+              </View>
+              <View style={styles.infoCol}>
+                <Text style={[styles.infoLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                  Blood Group
+                </Text>
+                <Text style={[styles.infoVal, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  {student.blood_group}
+                </Text>
+              </View>
+            </View>
+          ) : null}
+
+          {/* Student ID Row if connected and available */}
+          {connected && student.student_id ? (
+            <View style={[styles.infoRow, { borderTopWidth: 1, borderTopColor: C.border }]}>
+              <View style={[styles.infoIconBox, { backgroundColor: isDark ? 'rgba(168, 85, 247, 0.15)' : '#f3e8ff' }]}>
+                <Icon name="user" size={16} color="#a855f7" />
+              </View>
+              <View style={styles.infoCol}>
+                <Text style={[styles.infoLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                  {t.directory2.studentId}
+                </Text>
+                <Text style={[styles.infoVal, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  {student.student_id}
+                </Text>
+              </View>
+            </View>
+          ) : null}
+
+          {/* Institutional Affiliation Row */}
+          <View style={[styles.infoRow, { borderTopWidth: 1, borderTopColor: C.border }]}>
+            <View style={[styles.infoIconBox, { backgroundColor: isDark ? 'rgba(245, 158, 11, 0.15)' : '#fef3c7' }]}>
+              <Icon name="award" size={16} color={C.warn} />
+            </View>
+            <View style={styles.infoCol}>
+              <Text style={[styles.infoLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                Campus Affiliation
+              </Text>
+              <Text style={[styles.infoVal, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                {student.is_cr ? 'Class Representative · BUBT' : 'Enrolled Student · BUBT'}
+              </Text>
+            </View>
+          </View>
+        </View>
 
         <View style={{ height: 28 }} />
       </ScrollView>
@@ -575,38 +705,67 @@ const styles = StyleSheet.create({
   connDot: { width: 6, height: 6, borderRadius: 3 } as ViewStyle,
   connBadgeTxt: { fontSize: 11 } as TextStyle,
 
-  connArea: { marginTop: 14 } as ViewStyle,
-  statePill: {
-    flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start',
-    paddingHorizontal: 11, paddingVertical: 6, borderRadius: 20,
-  } as ViewStyle,
-  stateDot: { width: 7, height: 7, borderRadius: 3.5 } as ViewStyle,
-  statePillTxt: { fontSize: 12.5 } as TextStyle,
-
-  requestedRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 } as ViewStyle,
-  cancelBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10, borderWidth: 1,
-  } as ViewStyle,
-  cancelBtnTxt: { fontSize: 12 } as TextStyle,
-
-  wants: { fontSize: 13, marginBottom: 9 } as TextStyle,
-  fullBtn: {
+  actionControlBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
     height: 58,
     borderRadius: 16,
+    borderWidth: 1,
   } as ViewStyle,
-  fullBtnTxt: { fontSize: 14.5 } as TextStyle,
+  actionControlBtnTxt: {
+    fontSize: 14.5,
+  } as TextStyle,
 
-  actionRow: { flexDirection: 'row', gap: 9 } as ViewStyle,
-  halfBtn: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-    height: 50, borderRadius: 14,
+  dualActionRow: {
+    flexDirection: 'row',
+    gap: 10,
   } as ViewStyle,
-  halfBtnTxt: { fontSize: 13.5 } as TextStyle,
+  dualActionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    height: 58,
+    borderRadius: 16,
+  } as ViewStyle,
+  dualActionBtnTxt: {
+    fontSize: 14.5,
+  } as TextStyle,
+
+  infoCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: 'hidden',
+  } as ViewStyle,
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 14,
+  } as ViewStyle,
+  infoIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  infoCol: {
+    flex: 1,
+    minWidth: 0,
+  } as ViewStyle,
+  infoLabel: {
+    fontSize: 11,
+    lineHeight: 14,
+  } as TextStyle,
+  infoVal: {
+    fontSize: 13.5,
+    lineHeight: 18,
+    marginTop: 1,
+  } as TextStyle,
 
   sectionHeaderRow: {
     marginTop: 18,
