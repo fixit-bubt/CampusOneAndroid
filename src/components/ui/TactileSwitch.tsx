@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import {
   Animated,
-  Pressable,
+  TouchableOpacity,
   StyleSheet,
   View,
   type StyleProp,
@@ -33,46 +33,35 @@ export function TactileSwitch({
   const { C, isDark } = useTheme();
 
   const isSmall = size === 'sm';
-  const trackWidth = isSmall ? 40 : 48;
-  const trackHeight = isSmall ? 24 : 28;
-  const trackRadius = trackHeight / 2;
-  const inset = isSmall ? 2.5 : 3;
-  const thumbSize = isSmall ? 19 : 22;
-  const travel = trackWidth - thumbSize - inset * 2;
+  const trackWidth   = isSmall ? 40 : 48;
+  const trackHeight  = isSmall ? 24 : 28;
+  const trackRadius  = trackHeight / 2;
+  const inset        = isSmall ? 2.5 : 3;
+  const thumbSize    = isSmall ? 19 : 22;
+  // Exact travel distance from resting left-inset to resting right-inset
+  const travel       = trackWidth - thumbSize - inset * 2;
 
-  const posAnim = useRef(new Animated.Value(value ? 1 : 0)).current;
-  const scaleXAnim = useRef(new Animated.Value(1)).current;
-  const isPressedRef = useRef(false);
+  const posAnim    = useRef(new Animated.Value(value ? 1 : 0)).current;
+  const pressAnim  = useRef(new Animated.Value(0)).current;
+  const prevValRef = useRef(value);
 
+  // Animate thumb position only when value actually changes
   useEffect(() => {
-    Animated.parallel([
+    if (prevValRef.current !== value) {
+      prevValRef.current = value;
       Animated.spring(posAnim, {
         toValue: value ? 1 : 0,
         tension: 280,
         friction: 20,
         useNativeDriver: true,
-      }),
-      Animated.sequence([
-        Animated.timing(scaleXAnim, {
-          toValue: 1.16,
-          duration: 75,
-          useNativeDriver: true,
-        }),
-        Animated.spring(scaleXAnim, {
-          toValue: isPressedRef.current ? 1.2 : 1.0,
-          tension: 300,
-          friction: 14,
-          useNativeDriver: true,
-        }),
-      ]),
-    ]).start();
-  }, [value, posAnim, scaleXAnim]);
+      }).start();
+    }
+  }, [value, posAnim]);
 
   const handlePressIn = () => {
-    if (disabled) return;
-    isPressedRef.current = true;
-    Animated.spring(scaleXAnim, {
-      toValue: 1.2,
+    if (disabled || !onValueChange) return;
+    Animated.spring(pressAnim, {
+      toValue: 1,
       tension: 350,
       friction: 12,
       useNativeDriver: true,
@@ -80,53 +69,71 @@ export function TactileSwitch({
   };
 
   const handlePressOut = () => {
-    isPressedRef.current = false;
-    Animated.spring(scaleXAnim, {
-      toValue: 1.0,
+    if (disabled || !onValueChange) return;
+    Animated.spring(pressAnim, {
+      toValue: 0,
       tension: 300,
-      friction: 14,
+      friction: 16,
       useNativeDriver: true,
     }).start();
   };
 
   const handleToggle = () => {
-    if (disabled) return;
-    onValueChange?.(!value);
+    if (disabled || !onValueChange) return;
+    onValueChange(!value);
   };
 
-  const inactiveTrackColor =
-    trackColor?.false ?? (isDark ? C.surface3 : C.border2);
-  const activeTrackColor = trackColor?.true ?? C.brand;
+  const inactiveTrackColor = trackColor?.false ?? (isDark ? C.surface3 : C.border2);
+  const activeTrackColor   = trackColor?.true  ?? C.brand;
 
+  // 100% native-driven transforms:
+  // 1. translateX travels from 0 to travel dp
   const translateX = posAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [inset, inset + travel],
+    outputRange: [0, travel],
     extrapolate: 'clamp',
   });
 
+  // 2. Flight stretch: peak stretch (1.20x) occurs mid-flight at 0.5 posAnim
+  const flightScale = posAnim.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [1, 1.20, 1],
+    extrapolate: 'clamp',
+  });
+
+  // 3. Anticipation press squash: stretches slightly (1.10x) while user holds thumb down
+  const pressScale = pressAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.10],
+    extrapolate: 'clamp',
+  });
+
+  // Combined scale: multiplication runs entirely on Android RenderThread
+  const finalScaleX = Animated.multiply(flightScale, pressScale);
+
+  // Active track overlay opacity fades in/out with posAnim
   const activeOpacity = posAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [0, 1],
     extrapolate: 'clamp',
   });
 
-  const finalThumbColor = thumbColor ?? '#ffffff';
-
   return (
-    <Pressable
+    <TouchableOpacity
       onPress={handleToggle}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
-      disabled={disabled}
-      hitSlop={10}
+      disabled={disabled || !onValueChange}
+      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+      activeOpacity={1}
       accessibilityRole="switch"
       accessibilityState={{ checked: value, disabled }}
       accessibilityLabel={accessibilityLabel}
       style={[{ opacity: disabled ? 0.45 : 1 }, style]}
     >
       {/*
-        No overflow:hidden here — that clips the scaleX squish animation on Android.
-        The track shape is conveyed purely by borderRadius on both the base and overlay.
+        Track container has NO overflow:hidden — that clips native-driver scaleX on Android Fabric.
+        The pill shape comes from borderRadius on both the base track and active overlay.
       */}
       <View
         style={[
@@ -139,7 +146,7 @@ export function TactileSwitch({
           },
         ]}
       >
-        {/* Active colour overlay — independently clipped so the thumb can stretch outside */}
+        {/* Active color overlay fades in as posAnim → 1 */}
         <Animated.View
           style={[
             StyleSheet.absoluteFill,
@@ -151,37 +158,42 @@ export function TactileSwitch({
           ]}
         />
 
-        {/* Thumb — positioned absolutely so scaleX stretching isn't clipped by the track */}
+        {/*
+          Thumb positioned at (left: inset, top: inset) so layout origin is symmetrical.
+          translateX moves 0 → travel dp. scaleX squishes organically around center.
+        */}
         <Animated.View
           style={[
             styles.thumb,
             {
               position: 'absolute',
               top: inset,
-              left: 0,
+              left: inset,
               height: thumbSize,
               width: thumbSize,
               borderRadius: thumbSize / 2,
-              backgroundColor: finalThumbColor,
-              transform: [{ translateX }, { scaleX: scaleXAnim }],
+              backgroundColor: thumbColor ?? '#ffffff',
+              transform: [
+                { translateX },
+                { scaleX: finalScaleX as any },
+              ],
             },
           ]}
         />
       </View>
-    </Pressable>
+    </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   track: {
-    justifyContent: 'center',
-    // overflow is intentionally NOT 'hidden' — clipping breaks scaleX on Android Fabric
+    // Intentionally no overflow:hidden — clipping cuts scaleX on Android Fabric
   },
   thumb: {
+    elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.14,
     shadowRadius: 2,
-    elevation: 2,
   },
 });

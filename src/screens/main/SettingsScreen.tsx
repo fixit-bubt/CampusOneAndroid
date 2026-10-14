@@ -288,11 +288,13 @@ export function SettingsScreen({ navigation }: any) {
           label={t.mainx.optSync}
           sub={t.mainx.optSyncSub}
           C={C}
+          onPress={() => handleToggleOptSync(!optSync)}
           right={
-            <TactileSwitch
-              value={optSync}
-              onValueChange={handleToggleOptSync}
-            />
+            <View pointerEvents="none">
+              <TactileSwitch
+                value={optSync}
+              />
+            </View>
           }
         />
 
@@ -311,11 +313,13 @@ export function SettingsScreen({ navigation }: any) {
           label="Dark Mode"
           sub={t.mainx.darkModeSub(appDark)}
           C={C}
+          onPress={toggleTheme}
           right={
-            <TactileSwitch
-              value={appDark}
-              onValueChange={toggleTheme}
-            />
+            <View pointerEvents="none">
+              <TactileSwitch
+                value={appDark}
+              />
+            </View>
           }
         />
 
@@ -325,11 +329,13 @@ export function SettingsScreen({ navigation }: any) {
           label="Language"
           sub={t.mainx.languageSub(lang === 'bn')}
           C={C}
+          onPress={toggleLang}
           right={
-            <TactileSwitch
-              value={lang === 'bn'}
-              onValueChange={toggleLang}
-            />
+            <View pointerEvents="none">
+              <TactileSwitch
+                value={lang === 'bn'}
+              />
+            </View>
           }
         />
 

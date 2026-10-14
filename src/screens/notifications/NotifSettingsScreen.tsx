@@ -280,7 +280,11 @@ export function NotifSettingsScreen({ navigation }: any) {
         </Text>
 
         {/* Master pause */}
-        <View style={[styles.settingCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+        <TouchableOpacity
+          style={[styles.settingCard, { backgroundColor: C.surface, borderColor: C.border }]}
+          onPress={() => { const v = !paused; setPaused(v); saveMaster('_paused', v); }}
+          activeOpacity={0.7}
+        >
           <View style={styles.settingRow}>
             <View style={[styles.settingIcon, {
               backgroundColor: paused ? C.dangerBg : C.surface2,
@@ -291,15 +295,21 @@ export function NotifSettingsScreen({ navigation }: any) {
               <Text style={[styles.settingTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.notif.pauseAll}</Text>
               <Text style={[styles.settingSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{t.notif.pauseAllSub}</Text>
             </View>
-            <TactileSwitch
-              value={paused}
-              onValueChange={v => { setPaused(v); saveMaster('_paused', v); }}
-            />
+            <View pointerEvents="none">
+              <TactileSwitch
+                value={paused}
+              />
+            </View>
           </View>
-        </View>
+        </TouchableOpacity>
 
         {/* Quiet hours */}
-        <View style={[styles.settingCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+        <TouchableOpacity
+          style={[styles.settingCard, { backgroundColor: C.surface, borderColor: C.border }]}
+          onPress={() => { if (!paused) { const v = !quiet; setQuiet(v); saveMaster('_quiet', v); } }}
+          disabled={paused}
+          activeOpacity={0.7}
+        >
           <View style={[styles.settingRow, { opacity: paused ? 0.4 : 1 }]}>
             <View style={[styles.settingIcon, { backgroundColor: `${Accent.purple}${isDark ? '2e' : '12'}` }]}>
               <Icon name="clock" size={22} color={Accent.purple} />
@@ -308,13 +318,14 @@ export function NotifSettingsScreen({ navigation }: any) {
               <Text style={[styles.settingTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.notif.quietHours}</Text>
               <Text style={[styles.settingSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{t.notif.quietHoursSub}</Text>
             </View>
-            <TactileSwitch
-              value={quiet}
-              onValueChange={v => { setQuiet(v); saveMaster('_quiet', v); }}
-              disabled={paused}
-            />
+            <View pointerEvents="none">
+              <TactileSwitch
+                value={quiet}
+                disabled={paused}
+              />
+            </View>
           </View>
-        </View>
+        </TouchableOpacity>
 
         {/* Categories header */}
         <View style={styles.catsHeader}>

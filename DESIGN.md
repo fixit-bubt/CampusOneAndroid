@@ -212,14 +212,18 @@ CampusOne implements the organic curved tab bar inspired by 21st.dev (`abxlfazl_
 
 All legacy React Native `<Switch>` components across CampusOne are replaced with `TactileSwitch`, inspired by 21st.dev (`kuratlielia/switch`):
 1. **100% Native Driver Performance:**
-   * Both `posAnim` and `scaleXAnim` run entirely with `useNativeDriver: true`, preventing thread blocking and eliminating `Invariant Violation` errors.
-2. **Layered Track Views:**
+   * Both `posAnim` and `scaleXAnim` run entirely with `useNativeDriver: true` directly on Android's RenderThread, eliminating JS thread bridge delays, frame drops, and `Invariant Violation` errors.
+2. **Layered Track & No `overflow: 'hidden'` Clipping:**
    * Base track displays `inactiveTrackColor` (`C.surface3` / `C.border2`), while an absolute overlay displays `activeTrackColor` (`C.brand`), smoothly fading in/out via native `opacity`. Eliminates color string interpolation crashes.
-3. **Finger Squish Effect:**
-   * On press down (`onPressIn`), the thumb stretches horizontally (`scaleX: 1.2`) with spring physics.
-   * On toggle transition, the thumb momentarily expands to `scaleX: 1.16` for 75ms before snapping to rest (`1.0`), simulating fluid moving mass.
-4. **Clamped Native Travel:**
-   * The thumb travels `20 dp` across the track using clamped interpolation (`extrapolate: 'clamp'`) with critically damped spring physics (`tension: 280, friction: 20`).
+   * `overflow: 'hidden'` is strictly removed from the track container: on Android RN 0.85 Fabric, clipping containers cut native-driver `scaleX` transforms whenever the thumb stretches outside layout bounds. The pill shape is achieved cleanly via `borderRadius` on both base track and overlay.
+3. **Synchronized Flight Stretch & Anticipation Squish:**
+   * `flightScale` is mathematically interpolated directly from `posAnim` (`[0, 0.5, 1] -> [1, 1.20, 1]`), ensuring peak stretch occurs at the 0.5 velocity midpoint without timing race conditions or glitchy sequences.
+   * `pressScale` springs to `1.10` on `onPressIn` and settles back to `1.0` on `onPressOut`.
+   * Combined natively via `Animated.multiply(flightScale, pressScale)` on the RenderThread at 120 FPS.
+4. **Touch Ergonomics & Row Card Integration:**
+   * Standalone `TactileSwitch` uses `TouchableOpacity` with `hitSlop={12}` (effective 72 × 52 dp touch target).
+   * In row cards (`SettingCard` in `SettingsScreen.tsx`, master toggles in `NotifSettingsScreen.tsx`), the entire row card is interactive via `onPress` while the embedded `TactileSwitch` has `pointerEvents="none"` and `disabled={!onValueChange}`. Users can tap anywhere across the row (icon, title, or switch knob) to toggle the setting cleanly without double-firing.
 5. **Universal Application:**
    * Deployed across all 16 toggle locations in the app (Settings, Notifications, Profile, Marketplace, Study Hub, Medical, and Announcements).
+
 

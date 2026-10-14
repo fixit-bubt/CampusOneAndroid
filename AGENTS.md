@@ -304,11 +304,10 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
   - Floating unread badge integration for Messages and safe area padding (`58 + Math.max(insets.bottom, 10)` dp) for Android 15 edge-to-edge gesture navigation.
 - **Universal Tactile Squish Switch (`src/components/ui/TactileSwitch.tsx`):**
   - High-performance, tactile toggle switch inspired by 21st.dev `kuratlielia/switch`.
-  - 100% Native Driver Performance: `posAnim` and `scaleXAnim` run entirely with `useNativeDriver: true`, preventing thread blocking and eliminating `Invariant Violation` crashes.
-  - Layered Track Views: Base track renders `inactiveTrackColor`, overlay renders `activeTrackColor`, smoothly cross-fading via native `opacity` (no color interpolation crashes).
-  - Finger squish effect: on press down (`onPressIn`), thumb stretches horizontally (`scaleX: 1.2`) with spring physics.
-  - Moving mass inertia: on toggle, `scaleX` dynamically balloons to `1.16` for 75ms before settling at `1.0`.
-  - Critically damped landing: travels 20dp across the track using clamped interpolation (`extrapolate: 'clamp'`) with critically damped spring physics (`tension: 280, friction: 20`).
+  - 100% Native Driver Performance: `posAnim`, `flightScale`, and `pressScale` run entirely with `useNativeDriver: true` directly on Android's RenderThread at 120 FPS.
+  - Layered Track & No `overflow: 'hidden'` Clipping: Base track renders `inactiveTrackColor`, overlay renders `activeTrackColor`, smoothly cross-fading via native `opacity`. `overflow: 'hidden'` is strictly omitted from track because on Android RN 0.85 Fabric it clips `scaleX` native-driver transforms whenever the thumb squishes outside layout bounds.
+  - Synchronized Flight Stretch & Anticipation Squish: `flightScale` is mathematically interpolated directly from `posAnim` (`[0, 0.5, 1] -> [1, 1.20, 1]`) ensuring peak stretch occurs at 0.5 velocity midpoint without timing race conditions. `pressScale` springs to `1.10` on `onPressIn` and settles back on release. Combined via `Animated.multiply(flightScale, pressScale)`.
+  - Touch Ergonomics & Card Integration: Uses `TouchableOpacity` with `hitSlop={12}` (72 × 52 dp touch target). In row cards (`SettingCard`, notification toggles), row card is interactive via `onPress` while switch has `pointerEvents="none"` and `disabled={!onValueChange}`, allowing users to tap anywhere across the row without double-firing.
   - Replaces all legacy React Native `<Switch>` components across all 16 toggle locations in the app (Settings, Notifications, Profile, Marketplace, Study Hub, Medical, and Announcements).
 
 ---
@@ -1678,15 +1677,20 @@ The Campus Announcements architecture is transformed from a manual posting board
 ### 37.2 Universal Tactile Squish Switch (`src/components/ui/TactileSwitch.tsx`)
 - **21st.dev Component Source:** Inspired by `kuratlielia/switch` (`https://21st.dev/@kuratlielia/components/switch`).
 - **Zero-Crash Native Architecture:**
-  - Converted entirely to `useNativeDriver: true` for all animated nodes (`posAnim`, `scaleXAnim`).
+  - Converted entirely to `useNativeDriver: true` for all animated nodes (`posAnim`, `flightScale`, `pressScale`).
+  - Combined scale via `Animated.multiply(flightScale, pressScale)` executed directly on Android's RenderThread at 120 FPS.
   - Prevents React Native's fatal `Invariant Violation: Got combination of native and non-native animated values in transform`.
-- **Layered Track Views (No Color Interpolation):**
+- **Layered Track Views & No `overflow: 'hidden'` Clipping:**
   - Base track view renders `inactiveTrackColor` (`C.surface3` / `C.border2`).
   - Overlay track view renders `activeTrackColor` (`C.brand`), smoothly fading in/out via native `opacity` clamped interpolation. Completely eliminates native color string parsing exceptions on Android.
-- **Finger Squish & Fluid Inertia:**
-  - On `onPressIn`: thumb widens horizontally (`scaleX: 1.2`) with spring physics.
-  - On state transition: thumb momentarily stretches to `scaleX: 1.16` for 75ms before settling at `1.0`.
-  - Thumb travels across the track using clamped interpolation (`extrapolate: 'clamp'`) with critically damped spring physics (`tension: 280, friction: 20`).
+  - `overflow: 'hidden'` is omitted from the track container: on Android RN 0.85 Fabric, clipping containers cut native-driver `scaleX` transforms whenever the thumb stretches outside layout bounds. The pill shape is achieved cleanly via `borderRadius` on both base track and overlay.
+- **Synchronized Flight Stretch & Anticipation Squish:**
+  - `flightScale` is mathematically interpolated directly from `posAnim` (`[0, 0.5, 1] -> [1, 1.20, 1]`), ensuring peak stretch occurs at the 0.5 velocity midpoint without timing race conditions or glitchy sequences.
+  - `pressScale` springs to `1.10` on `onPressIn` and settles back to `1.0` on `onPressOut`.
+  - Thumb travels across the track (`0 -> travel` dp) using clamped interpolation (`extrapolate: 'clamp'`) with critically damped spring physics (`tension: 280, friction: 20`).
+- **Touch Ergonomics & Row Card Tap Integration:**
+  - Standalone `TactileSwitch` uses `TouchableOpacity` with `hitSlop={12}` (effective 72 × 52 dp touch target).
+  - In row cards (`SettingCard` in `SettingsScreen.tsx`, master toggles in `NotifSettingsScreen.tsx`), the entire row card is interactive via `onPress` while the embedded `TactileSwitch` has `pointerEvents="none"` and `disabled={!onValueChange}`. Users can tap anywhere across the row (icon, title, or switch knob) to toggle the setting cleanly without double-firing.
 - **App-Wide Deployment:**
   - Replaced legacy React Native `<Switch>` across all 16 locations: Settings (Sync, Dark Mode, Language), Notifications (Pause All, Quiet Hours, Category Channels), Profile (Directory, WhatsApp), Marketplace (Hide Sold, Free, Negotiable), Study Hub (Public/Private), Medical (Doctor Leave), Manage Faculty (Mentorship, Leave), and Announcements (Pin to Top).
 
