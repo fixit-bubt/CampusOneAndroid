@@ -63,6 +63,30 @@ describe('locationService - search and autocomplete', () => {
     expect(place.zone).toBe('Mirpur & Campus');
     expect(place.subText).toContain('Rupnagar');
   });
+
+  it('correctly validates coordinates within Bangladesh boundaries and rejects outside/invalid coords', () => {
+    const { isWithinBangladesh } = require('../locationService');
+    expect(isWithinBangladesh({ latitude: 23.8103, longitude: 90.3567 })).toBe(true); // Dhaka
+    expect(isWithinBangladesh({ latitude: 22.3569, longitude: 91.7832 })).toBe(true); // Chittagong
+    expect(isWithinBangladesh({ latitude: 51.5074, longitude: -0.1278 })).toBe(false); // London
+    expect(isWithinBangladesh({ latitude: NaN, longitude: 90.3567 })).toBe(false); // Invalid
+    expect(isWithinBangladesh({ latitude: 23.8103, longitude: NaN })).toBe(false); // Invalid
+  });
+
+  it('immediately cancels reverseGeocodeCoords when passed an aborted AbortSignal', async () => {
+    const controller = new AbortController();
+    controller.abort();
+    // Non-landmark coordinate that would hit network
+    const customCoords = { latitude: 23.7500, longitude: 90.4000 };
+    await expect(reverseGeocodeCoords(customCoords, controller.signal)).rejects.toThrow('Aborted');
+  });
+
+  it('gracefully falls back on NaN or invalid coordinates in reverseGeocodeCoords', async () => {
+    const invalidCoords = { latitude: NaN, longitude: NaN };
+    const place = await reverseGeocodeCoords(invalidCoords);
+    expect(place.name).toBe('BUBT Main Campus');
+    expect(place.coords).toEqual(BUBT_COORDS);
+  });
 });
 
 

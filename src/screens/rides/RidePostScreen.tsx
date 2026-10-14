@@ -821,6 +821,8 @@ export function RidePostScreen({ route, navigation }: any) {
                   value={searchArea}
                   onChangeText={setSearchArea}
                   autoCorrect={false}
+                  multiline={false}
+                  numberOfLines={1}
                   returnKeyType="search"
                   onSubmitEditing={() => {
                     if (searchArea.trim()) {
@@ -1125,7 +1127,7 @@ export function RidePostScreen({ route, navigation }: any) {
         </View>
       </Modal>
 
-      {/* 3. Interactive Leaflet Map & GPS Picker Modal */}
+      {/* 3. Interactive MapLibre Vector Map & GPS Picker Modal */}
       <LocationPickerModal
         visible={mapModalVisible}
         onClose={() => setMapModalVisible(false)}
@@ -1446,8 +1448,11 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   modalSearchInput: {
     flex: 1,
+    height: '100%',
     fontSize: 14.5,
     paddingVertical: 0,
+    textAlignVertical: 'center',
+    includeFontPadding: false,
   } as TextStyle,
 
   /* Location Bars (Main Screen) */
@@ -1516,10 +1521,14 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   mapTriggerTitle: {
     fontSize: 13.5,
+    lineHeight: 18,
+    includeFontPadding: false,
   } as TextStyle,
   mapTriggerSub: {
     fontSize: 11,
-    marginTop: 1,
+    lineHeight: 15,
+    marginTop: 2,
+    includeFontPadding: false,
   } as TextStyle,
 
   /* 2-Bar Category Switcher (Modal) */

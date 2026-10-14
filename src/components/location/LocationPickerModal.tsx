@@ -11,10 +11,12 @@ import {
   Keyboard,
   Platform,
   Animated,
+  BackHandler,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
+import Svg, { Path, Circle } from 'react-native-svg';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useToast } from '../ui/Toast';
@@ -45,9 +47,9 @@ interface LocationPickerModalProps {
 const RECENT_SEARCHES_KEY = '@campusone_recent_map_searches';
 
 const QUICK_COMMUTE_HUBS = [
-  { label: 'BUBT Campus', coords: { latitude: 23.8119, longitude: 90.3571 } },
+  { label: 'BUBT Campus', coords: { latitude: 23.8122, longitude: 90.3563 } },
   { label: 'Sony Square', coords: { latitude: 23.8093, longitude: 90.3578 } },
-  { label: 'Mirpur 10 Metro', coords: { latitude: 23.8071, longitude: 90.3686 } },
+  { label: 'Mirpur 10', coords: { latitude: 23.8071, longitude: 90.3686 } },
   { label: 'Mirpur 1', coords: { latitude: 23.7956, longitude: 90.3537 } },
   { label: 'Mirpur 12', coords: { latitude: 23.8277, longitude: 90.3644 } },
   { label: 'Heart Foundation', coords: { latitude: 23.8055, longitude: 90.3600 } },
@@ -65,6 +67,8 @@ function generateMapLibreHtml(initial: Coordinates, isDark: boolean): string {
   const styleUrl = isDark
     ? 'https://tiles.openfreemap.org/styles/dark'
     : 'https://tiles.openfreemap.org/styles/liberty';
+  const initLng = Number.isFinite(initial?.longitude) ? initial.longitude : 90.3563;
+  const initLat = Number.isFinite(initial?.latitude) ? initial.latitude : 23.8122;
 
   return `
 <!DOCTYPE html>
@@ -104,28 +108,103 @@ function generateMapLibreHtml(initial: Coordinates, isDark: boolean): string {
   <div id="map"></div>
 
   <script>
-    var map = new maplibregl.Map({
-      container: 'map',
-      style: '${styleUrl}',
-      center: [${initial.longitude}, ${initial.latitude}],
-      zoom: 16.5,
-      minZoom: 10,
-      maxZoom: 20,
-      dragRotate: false,
-      touchPitch: false,
-      pitchWithRotate: false,
-      maxPitch: 0,
-      dragPan: { inertia: true, linearity: 0.25 },
-      touchZoomRotate: { inertia: true },
-      maxBounds: [
-        [88.0, 20.5],
-        [92.8, 26.7]
-      ],
-      attributionControl: false
-    });
+    window.onerror = function(message) {
+      if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({
+          type: 'MAP_ERROR',
+          error: String(message)
+        }));
+      }
+      return false;
+    };
 
-    if (map.touchZoomRotate) {
-      map.touchZoomRotate.disableRotation();
+    var map = null;
+    var mapReady = false;
+    var pendingFlyTo = null;
+
+    if (typeof maplibregl !== 'undefined') {
+      try {
+        map = new maplibregl.Map({
+          container: 'map',
+          style: '${styleUrl}',
+          center: [${initLng}, ${initLat}],
+          zoom: 16.5,
+          minZoom: 10,
+          maxZoom: 20,
+          dragRotate: false,
+          touchPitch: false,
+          pitchWithRotate: false,
+          maxPitch: 0,
+          dragPan: { inertia: true, linearity: 0.25 },
+          touchZoomRotate: { inertia: true },
+          maxBounds: [
+            [88.0, 20.5],
+            [92.8, 26.7]
+          ],
+          attributionControl: false
+        });
+
+        if (map.touchZoomRotate) {
+          map.touchZoomRotate.disableRotation();
+        }
+
+        map.on('movestart', function(e) {
+          var isUserGesture = !!(e && e.originalEvent);
+          if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+            window.ReactNativeWebView.postMessage(JSON.stringify({
+              type: 'MOVE_START',
+              isUserGesture: isUserGesture
+            }));
+          }
+        });
+
+        map.on('moveend', function() {
+          sendCenter();
+          if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+            window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'MOVE_END' }));
+          }
+        });
+
+        map.on('click', function(e) {
+          if (e.point && e.point.y < 100) return;
+          if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+            window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'MAP_CLICK' }));
+          }
+        });
+
+        map.on('load', function() {
+          mapReady = true;
+          sendCenter();
+          resizeMap();
+          if (pendingFlyTo && map) {
+            map.flyTo(pendingFlyTo);
+            pendingFlyTo = null;
+          }
+        });
+
+        map.on('error', function(e) {
+          if (e && e.error && window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+            window.ReactNativeWebView.postMessage(JSON.stringify({
+              type: 'MAP_TILE_ERROR',
+              error: e.error.message || 'Tile network error'
+            }));
+          }
+        });
+      } catch (mapInitErr) {
+        if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+          window.ReactNativeWebView.postMessage(JSON.stringify({
+            type: 'MAP_ERROR',
+            error: String(mapInitErr)
+          }));
+        }
+      }
+    } else {
+      if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({
+          type: 'MAP_ERROR',
+          error: 'MapLibre GL failed to load'
+        }));
+      }
     }
 
     function resizeMap() {
@@ -152,57 +231,24 @@ function generateMapLibreHtml(initial: Coordinates, isDark: boolean): string {
       }
     }
 
-    var mapReady = false;
-    var pendingFlyTo = null;
-
-    map.on('movestart', function(e) {
-      var isUserGesture = !!(e && e.originalEvent);
-      if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
-        window.ReactNativeWebView.postMessage(JSON.stringify({
-          type: 'MOVE_START',
-          isUserGesture: isUserGesture
-        }));
-      }
-    });
-
-    map.on('moveend', function() {
-      sendCenter();
-      if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
-        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'MOVE_END' }));
-      }
-    });
-
-    map.on('click', function(e) {
-      if (e.point && e.point.y < 100) return;
-      if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
-        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'MAP_CLICK' }));
-      }
-    });
-
-    map.on('load', function() {
-      mapReady = true;
-      sendCenter();
-      resizeMap();
-      if (pendingFlyTo && map) {
-        map.flyTo(pendingFlyTo);
-        pendingFlyTo = null;
-      }
-    });
-
     function handleMessage(event) {
       try {
         var data = JSON.parse(event.data);
         if (data.type === 'FLY_TO') {
-          var flyOpts = {
-            center: [data.lng, data.lat],
-            zoom: data.zoom || 16.5,
-            duration: 1200,
-            essential: true
-          };
-          if (mapReady && map) {
-            map.flyTo(flyOpts);
-          } else {
-            pendingFlyTo = flyOpts;
+          var targetLng = Number(data.lng);
+          var targetLat = Number(data.lat);
+          if (isFinite(targetLng) && isFinite(targetLat)) {
+            var flyOpts = {
+              center: [targetLng, targetLat],
+              zoom: data.zoom || 16.5,
+              duration: 1200,
+              essential: true
+            };
+            if (mapReady && map) {
+              map.flyTo(flyOpts);
+            } else {
+              pendingFlyTo = flyOpts;
+            }
           }
         } else if (data.type === 'ZOOM_IN' && map) {
           map.zoomIn({ duration: 300 });
@@ -241,7 +287,7 @@ export function LocationPickerModal({
   const [selectedPlace, setSelectedPlace] = useState<GeocodedPlace>({
     name: initialPlaceName || 'BUBT Main Campus',
     zone: 'Mirpur & Campus',
-    subText: 'Permanent Campus · Rupnagar, Mirpur-2',
+    subText: 'Permanent Campus · Road 9 & 10, Rupnagar',
     formattedAddress: initialPlaceName || 'BUBT Main Campus',
     coords: startCoords,
   });
@@ -253,14 +299,37 @@ export function LocationPickerModal({
   const [recentSearches, setRecentSearches] = useState<GeocodedPlace[]>([]);
   const [locatingGps, setLocatingGps] = useState(false);
   const [geocoding, setGeocoding] = useState(false);
+  const [mapError, setMapError] = useState(false);
   const isProgrammaticMoveRef = useRef(false);
   const currentCoordsRef = useRef<Coordinates>(startCoords);
   const searchAbortRef = useRef<AbortController | null>(null);
+  const reverseGeocodeAbortRef = useRef<AbortController | null>(null);
+
+  // Memoize HTML template to prevent unnecessary WebView reloads during typing or panning
+  const mapHtml = useMemo(
+    () => generateMapLibreHtml(startCoords, isDark),
+    [isDark]
+  );
 
   // Sync ref with currentCoords
   useEffect(() => {
     currentCoordsRef.current = currentCoords;
   }, [currentCoords]);
+
+  // Android hardware back button handler: dismisses search dropdown first without closing modal
+  useEffect(() => {
+    if (!visible) return;
+    const onBackPress = () => {
+      if (isSearching) {
+        Keyboard.dismiss();
+        setIsSearching(false);
+        return true;
+      }
+      return false;
+    };
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => sub.remove();
+  }, [visible, isSearching]);
 
   // Load recent searches from AsyncStorage on mount
   useEffect(() => {
@@ -341,6 +410,7 @@ export function LocationPickerModal({
     if (!text || text.trim().length === 0) {
       if (searchAbortRef.current) {
         searchAbortRef.current.abort();
+        searchAbortRef.current = null;
       }
       setSearchLoading(false);
       setSearchResults([]);
@@ -421,11 +491,15 @@ export function LocationPickerModal({
     }
   };
 
-  // Reverse geocode when map center moves
+  // Reverse geocode when map center moves (with active AbortController to prevent race condition jumps)
   const onMapCenterChanged = useCallback((coords: Coordinates) => {
     setCurrentCoords(coords);
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
+    }
+    if (reverseGeocodeAbortRef.current) {
+      reverseGeocodeAbortRef.current.abort();
+      reverseGeocodeAbortRef.current = null;
     }
 
     // Skip reverse geocode if center was changed programmatically via search suggestion, hub, or snap
@@ -436,10 +510,17 @@ export function LocationPickerModal({
 
     setGeocoding(true);
     debounceTimerRef.current = setTimeout(async () => {
+      const controller = new AbortController();
+      reverseGeocodeAbortRef.current = controller;
       try {
-        const place = await reverseGeocodeCoords(coords);
-        setSelectedPlace(place);
-      } catch (err) {
+        const place = await reverseGeocodeCoords(coords, controller.signal);
+        if (!controller.signal.aborted) {
+          setSelectedPlace(place);
+        }
+      } catch (err: any) {
+        if (err?.message === 'Aborted') {
+          return;
+        }
         setSelectedPlace({
           name: `Location (${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)})`,
           zone: 'Dhaka',
@@ -448,20 +529,27 @@ export function LocationPickerModal({
           coords,
         });
       } finally {
-        setGeocoding(false);
+        if (reverseGeocodeAbortRef.current === controller) {
+          setGeocoding(false);
+          reverseGeocodeAbortRef.current = null;
+        }
       }
-    }, 380);
+    }, 350);
   }, []);
 
   // Handle WebView bridge message
-  const handleWebViewMessage = (event: any) => {
+  const handleWebViewMessage = useCallback((event: any) => {
     try {
       const data = JSON.parse(event.nativeEvent.data);
-      if (data.type === 'CENTER_CHANGED' && data.lat && data.lng) {
-        onMapCenterChanged({
-          latitude: Number(data.lat),
-          longitude: Number(data.lng),
-        });
+      if (data.type === 'CENTER_CHANGED') {
+        const lat = Number(data.lat);
+        const lng = Number(data.lng);
+        if (Number.isFinite(lat) && Number.isFinite(lng)) {
+          onMapCenterChanged({
+            latitude: lat,
+            longitude: lng,
+          });
+        }
       } else if (data.type === 'MOVE_START') {
         if (data.isUserGesture) {
           isProgrammaticMoveRef.current = false;
@@ -483,11 +571,13 @@ export function LocationPickerModal({
         }).start();
       } else if (data.type === 'MAP_CLICK') {
         Keyboard.dismiss();
+      } else if (data.type === 'MAP_ERROR') {
+        setMapError(true);
       }
     } catch (e) {
       // Ignore parse errors
     }
-  };
+  }, [onMapCenterChanged, pinLiftAnim]);
 
   // Confirm and return location
   const handleConfirmLocation = () => {
@@ -559,13 +649,14 @@ export function LocationPickerModal({
     if (visible) {
       setSearchQuery('');
       setIsSearching(false);
+      setMapError(false);
       const matched = findLandmarkByName(initialPlaceName);
       const coords = initialCoords || matched?.coords || BUBT_COORDS;
       setCurrentCoords(coords);
       setSelectedPlace({
         name: initialPlaceName || matched?.name || 'BUBT Main Campus',
         zone: matched?.zone || 'Mirpur & Campus',
-        subText: matched?.desc || (initialPlaceName ? '' : 'Permanent Campus · Rupnagar, Mirpur-2'),
+        subText: matched?.desc || 'Permanent Campus · Road 9 & 10, Rupnagar',
         formattedAddress: initialPlaceName || matched?.name || 'BUBT Main Campus',
         coords,
       });
@@ -575,6 +666,17 @@ export function LocationPickerModal({
         flyToCoordinates(coords, 16);
       }, 350);
       return () => clearTimeout(timer);
+    } else {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+      if (reverseGeocodeAbortRef.current) {
+        reverseGeocodeAbortRef.current.abort();
+        reverseGeocodeAbortRef.current = null;
+      }
+      if (searchAbortRef.current) {
+        searchAbortRef.current.abort();
+        searchAbortRef.current = null;
+      }
     }
   }, [visible, initialCoords, initialPlaceName, flyToCoordinates]);
 
@@ -586,6 +688,12 @@ export function LocationPickerModal({
       if (searchDebounceRef.current) {
         clearTimeout(searchDebounceRef.current);
       }
+      if (reverseGeocodeAbortRef.current) {
+        reverseGeocodeAbortRef.current.abort();
+      }
+      if (searchAbortRef.current) {
+        searchAbortRef.current.abort();
+      }
     };
   }, []);
 
@@ -595,15 +703,24 @@ export function LocationPickerModal({
       animationType="slide"
       presentationStyle="fullScreen"
       statusBarTranslucent
-      onRequestClose={onClose}
+      onRequestClose={() => {
+        if (isSearching) {
+          Keyboard.dismiss();
+          setIsSearching(false);
+        } else {
+          onClose();
+        }
+      }}
     >
       <View style={[styles.rootContainer, { backgroundColor: isDark ? '#111317' : '#f8fafc' }]}>
         {/* Full-Bleed Edge-to-Edge Vector Map */}
         <WebView
           ref={webViewRef}
-          source={{ html: generateMapLibreHtml(startCoords, isDark) }}
+          source={{ html: mapHtml }}
           style={styles.webView}
           onMessage={handleWebViewMessage}
+          onError={() => setMapError(true)}
+          onHttpError={() => setMapError(true)}
           javaScriptEnabled
           domStorageEnabled
           scalesPageToFit={false}
@@ -614,6 +731,27 @@ export function LocationPickerModal({
           originWhitelist={['*']}
           userAgent="Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
         />
+
+        {/* Offline Vector Map Fallback Banner */}
+        {mapError && (
+          <View style={[styles.mapErrorBanner, { top: insets.top + 76, backgroundColor: C.surface, borderColor: C.warn }]}>
+            <Feather name="wifi-off" size={15} color={C.warn} style={{ marginRight: 8 }} />
+            <Text style={[styles.mapErrorTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+              Map preview limited offline · Landmarks active
+            </Text>
+            <TouchableOpacity
+              onPress={() => {
+                setMapError(false);
+                webViewRef.current?.reload();
+              }}
+              style={[styles.retryBtn, { backgroundColor: `${accentColor}18` }]}
+            >
+              <Text style={[styles.retryBtnTxt, { color: accentColor, fontFamily: FontFamily.jakartaBold }]}>
+                Retry
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Native Floating Pin & Reticle Layer (High-Performance 120 FPS on Android RenderThread) */}
         <View pointerEvents="none" style={styles.nativePinCenterOverlay}>
@@ -632,7 +770,7 @@ export function LocationPickerModal({
                 },
               ]}
             />
-            {/* Spring Floating Pin - Only pin lifts, bottom point touches (0, 0) when resting */}
+            {/* Spring Floating Pin - Authentic vector teardrop pointing straight down into (0, 0) */}
             <Animated.View
               style={[
                 styles.nativePinContainer,
@@ -641,9 +779,16 @@ export function LocationPickerModal({
                 },
               ]}
             >
-              <View style={[styles.nativePinHead, { backgroundColor: accentColor }]}>
-                <View style={styles.nativePinDot} />
-              </View>
+              <Svg width={38} height={48} viewBox="0 0 38 48">
+                <Path
+                  d="M 19 47.5 C 18 45.5, 2 27, 2 19 A 17 17 0 1 1 36 19 C 36 27, 20 45.5, 19 47.5 Z"
+                  fill={accentColor}
+                  stroke="#ffffff"
+                  strokeWidth="2.5"
+                  strokeLinejoin="round"
+                />
+                <Circle cx="19" cy="19" r="6" fill="#ffffff" />
+              </Svg>
             </Animated.View>
           </View>
         </View>
@@ -661,7 +806,7 @@ export function LocationPickerModal({
         )}
 
         {/* Floating Top Bar (Back button + Interactive Search) - Universal 58dp Standard */}
-        <View style={[styles.topBarWrapper, { paddingTop: insets.top + 10 }]}>
+        <View style={[styles.topBarWrapper, { paddingTop: Math.max(insets.top, 24) + 12 }]}>
           <TouchableOpacity
             style={[styles.frostedCloseBtn, { backgroundColor: C.surface, borderColor: C.border }]}
             onPress={onClose}
@@ -679,22 +824,19 @@ export function LocationPickerModal({
             {searchLoading ? (
               <ActivityIndicator size="small" color={accentColor} style={styles.searchIcon} />
             ) : (
-              <TouchableOpacity
-                onPress={() => searchInputRef.current?.focus()}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Feather name="search" size={18} color={isSearching ? accentColor : C.textMuted} style={styles.searchIcon} />
-              </TouchableOpacity>
+              <Feather name="search" size={18} color={isSearching ? accentColor : C.textMuted} style={styles.searchIcon} />
             )}
             <TextInput
               ref={searchInputRef}
               style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-              placeholder="Search any place, hospital, road in Dhaka..."
+              placeholder="Search place, hospital, or road..."
               placeholderTextColor={C.textMuted}
               value={searchQuery}
               onChangeText={handleSearchTextChange}
               onFocus={() => setIsSearching(true)}
               returnKeyType="search"
+              multiline={false}
+              numberOfLines={1}
               onSubmitEditing={() => {
                 if (searchResults.length > 0) {
                   handleSelectSearchPlace(searchResults[0]);
@@ -776,8 +918,9 @@ export function LocationPickerModal({
             {searchQuery.trim().length === 0 ? (
               <ScrollView
                 keyboardShouldPersistTaps="handled"
-                showsVerticalScrollIndicator={false}
-                style={{ maxHeight: 280 }}
+                showsVerticalScrollIndicator={true}
+                contentContainerStyle={{ paddingBottom: 8 }}
+                style={{ maxHeight: 290 }}
               >
                 {/* Recent Searches Header */}
                 {recentSearches.length > 0 && (
@@ -894,8 +1037,9 @@ export function LocationPickerModal({
             ) : searchResults.length > 0 ? (
               <ScrollView
                 keyboardShouldPersistTaps="handled"
-                showsVerticalScrollIndicator={false}
-                style={{ maxHeight: 260 }}
+                showsVerticalScrollIndicator={true}
+                contentContainerStyle={{ paddingBottom: 8 }}
+                style={{ maxHeight: 290 }}
               >
                 {searchResults.map(item => {
                   let iconName: 'plus-circle' | 'navigation' | 'flag' | 'book' | 'map-pin' = 'map-pin';
@@ -971,8 +1115,11 @@ export function LocationPickerModal({
                     style={[
                       styles.hubChip,
                       {
-                        backgroundColor: isActive ? `${accentColor}24` : C.surface,
+                        backgroundColor: isActive
+                          ? (isDark ? '#261b1e' : '#fee2e2')
+                          : C.surface,
                         borderColor: isActive ? accentColor : C.border,
+                        borderWidth: isActive ? 1.5 : 1,
                       },
                     ]}
                     onPress={() => handleSelectHub(hub)}
@@ -1015,6 +1162,16 @@ export function LocationPickerModal({
             </View>
 
             <View style={styles.locationTextColumn}>
+              {!!title && (
+                <View style={styles.contextBadgeRow}>
+                  <View style={[styles.contextBadge, { backgroundColor: isDark ? `${accentColor}26` : `${accentColor}18`, borderColor: `${accentColor}44` }]}>
+                    <View style={[styles.contextBadgeDot, { backgroundColor: accentColor }]} />
+                    <Text style={[styles.contextBadgeTxt, { color: accentColor, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                      {title.toUpperCase()}
+                    </Text>
+                  </View>
+                </View>
+              )}
               <View style={styles.locationNameRow}>
                 <Text
                   style={[
@@ -1079,6 +1236,36 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFill as any,
     backgroundColor: 'transparent',
   },
+  mapErrorBanner: {
+    position: 'absolute',
+    left: Layout.screenPadding,
+    right: Layout.screenPadding,
+    borderRadius: 14,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    zIndex: 110,
+    elevation: 8,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+  },
+  mapErrorTxt: {
+    flex: 1,
+    fontSize: 12,
+  },
+  retryBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 8,
+    marginLeft: 6,
+  },
+  retryBtnTxt: {
+    fontSize: 11.5,
+  },
   topBarWrapper: {
     position: 'absolute',
     top: 0,
@@ -1089,6 +1276,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Layout.screenPadding,
     gap: 10,
     zIndex: 100,
+    elevation: 10,
   },
   frostedCloseBtn: {
     width: Layout.controlHeight, // 58dp
@@ -1122,8 +1310,11 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
+    height: '100%',
     fontSize: 14.5,
     paddingVertical: 0,
+    textAlignVertical: 'center',
+    includeFontPadding: false,
   },
   searchResultsOverlay: {
     position: 'absolute',
@@ -1132,7 +1323,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     zIndex: 500,
-    elevation: 12,
+    elevation: 14,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.35,
@@ -1157,7 +1348,8 @@ const styles = StyleSheet.create({
   searchResultItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 11,
+    minHeight: 54,
+    paddingVertical: 9,
     paddingHorizontal: 14,
     borderBottomWidth: 1,
     gap: 10,
@@ -1171,10 +1363,14 @@ const styles = StyleSheet.create({
   },
   searchResultTitle: {
     fontSize: 13.5,
+    lineHeight: 18,
+    includeFontPadding: false,
   },
   searchResultSub: {
     fontSize: 11,
-    marginTop: 1,
+    lineHeight: 15,
+    marginTop: 2,
+    includeFontPadding: false,
   },
   searchingStateRow: {
     flexDirection: 'row',
@@ -1279,6 +1475,29 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
   },
+  contextBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  contextBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
+    borderRadius: 6,
+    borderWidth: 1,
+    gap: 4,
+  },
+  contextBadgeDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+  },
+  contextBadgeTxt: {
+    fontSize: 9.5,
+    letterSpacing: 0.5,
+  },
   locationNameRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1353,35 +1572,17 @@ const styles = StyleSheet.create({
   },
   nativePinContainer: {
     position: 'absolute',
-    left: -21,
-    top: -51,
-    width: 42,
-    height: 42,
+    left: -19,
+    top: -47.5,
+    width: 38,
+    height: 48,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  nativePinHead: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    borderBottomRightRadius: 2,
-    transform: [{ rotate: '-45deg' }],
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 3,
-    borderColor: '#ffffff',
-    elevation: 8,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.35,
-    shadowRadius: 10,
-  },
-  nativePinDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: '#ffffff',
-    transform: [{ rotate: '45deg' }],
+    shadowRadius: 8,
+    elevation: 8,
   },
   distancePill: {
     paddingHorizontal: 8,

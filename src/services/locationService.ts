@@ -27,8 +27,8 @@ export interface GeocodedPlace {
 }
 
 export const BUBT_COORDS: Coordinates = {
-  latitude: 23.8119,
-  longitude: 90.3571,
+  latitude: 23.8122,
+  longitude: 90.3563,
 };
 
 export const CAMPUS_AND_DHAKA_LANDMARKS: LandmarkLocation[] = [
@@ -37,7 +37,7 @@ export const CAMPUS_AND_DHAKA_LANDMARKS: LandmarkLocation[] = [
     name: 'BUBT Main Campus',
     nameBn: 'বিইউবিটি মেইন ক্যাম্পাস',
     zone: 'Mirpur & Campus',
-    coords: { latitude: 23.8119, longitude: 90.3571 },
+    coords: { latitude: 23.8122, longitude: 90.3563 },
     desc: 'Permanent Campus · Road 9 & 10, Rupnagar',
     type: 'university',
     keywords: ['bubt', 'campus', 'rupnagar', 'permanent campus', 'university', 'academic'],
@@ -1101,12 +1101,19 @@ export async function searchPlacesOnline(
         const p = feat.properties || {};
         const primary = p.name || p.street || p.district || p.city || q;
 
-        const isDuplicate = localMatches.some(
-          lm =>
-            lm.name.toLowerCase() === primary.toLowerCase() &&
-            Math.abs(lm.coords.latitude - lat) < 0.001 &&
-            Math.abs(lm.coords.longitude - lon) < 0.001
-        );
+        const isDuplicate =
+          localMatches.some(
+            lm =>
+              lm.name.toLowerCase() === primary.toLowerCase() &&
+              Math.abs(lm.coords.latitude - lat) < 0.001 &&
+              Math.abs(lm.coords.longitude - lon) < 0.001
+          ) ||
+          onlineMatches.some(
+            om =>
+              om.name.toLowerCase() === primary.toLowerCase() &&
+              Math.abs(om.coords.latitude - lat) < 0.001 &&
+              Math.abs(om.coords.longitude - lon) < 0.001
+          );
         if (isDuplicate) continue;
 
         const subParts = [p.street, p.locality || p.district, p.city || 'Dhaka'].filter(Boolean);
@@ -1175,12 +1182,19 @@ export async function searchPlacesOnline(
           addr.neighbourhood ||
           item.display_name.split(',')[0];
 
-        const isDuplicate = localMatches.some(
-          lm =>
-            lm.name.toLowerCase() === primary.toLowerCase() &&
-            Math.abs(lm.coords.latitude - lat) < 0.001 &&
-            Math.abs(lm.coords.longitude - lon) < 0.001
-        );
+        const isDuplicate =
+          localMatches.some(
+            lm =>
+              lm.name.toLowerCase() === primary.toLowerCase() &&
+              Math.abs(lm.coords.latitude - lat) < 0.001 &&
+              Math.abs(lm.coords.longitude - lon) < 0.001
+          ) ||
+          onlineMatches.some(
+            om =>
+              om.name.toLowerCase() === primary.toLowerCase() &&
+              Math.abs(om.coords.latitude - lat) < 0.001 &&
+              Math.abs(om.coords.longitude - lon) < 0.001
+          );
         if (isDuplicate) continue;
 
         const areaParts = [
@@ -1226,6 +1240,9 @@ export async function searchPlacesOnline(
 }
 
 export function isWithinBangladesh(coords: Coordinates): boolean {
+  if (!Number.isFinite(coords.latitude) || !Number.isFinite(coords.longitude)) {
+    return false;
+  }
   return (
     coords.latitude >= 20.5 &&
     coords.latitude <= 26.7 &&
@@ -1255,7 +1272,20 @@ export async function getCurrentUserCoordinates(): Promise<Coordinates | null> {
   }
 }
 
-export async function reverseGeocodeCoords(coords: Coordinates): Promise<GeocodedPlace> {
+export async function reverseGeocodeCoords(
+  coords: Coordinates,
+  signal?: AbortSignal
+): Promise<GeocodedPlace> {
+  if (!Number.isFinite(coords.latitude) || !Number.isFinite(coords.longitude)) {
+    return {
+      name: 'BUBT Main Campus',
+      zone: 'Mirpur & Campus',
+      subText: 'Permanent Campus · Road 9 & 10, Rupnagar',
+      formattedAddress: 'BUBT Main Campus',
+      coords: BUBT_COORDS,
+    };
+  }
+
   const inBd = isWithinBangladesh(coords);
 
   // 1. Instant Landmark Match within strict 65-meter boundary
@@ -1271,10 +1301,18 @@ export async function reverseGeocodeCoords(coords: Coordinates): Promise<Geocode
     };
   }
 
+  if (signal?.aborted) {
+    throw new Error('Aborted');
+  }
+
   // 2. OpenStreetMap Nominatim Reverse API (High-accuracy road, amenity & building resolution)
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 2800);
+    const onSignalAbort = () => controller.abort();
+    if (signal) {
+      signal.addEventListener('abort', onSignalAbort);
+    }
 
     const res = await fetch(
       `https://nominatim.openstreetmap.org/reverse?format=json&lat=${coords.latitude}&lon=${coords.longitude}&zoom=18&addressdetails=1`,
@@ -1286,6 +1324,9 @@ export async function reverseGeocodeCoords(coords: Coordinates): Promise<Geocode
       }
     );
     clearTimeout(timeoutId);
+    if (signal) {
+      signal.removeEventListener('abort', onSignalAbort);
+    }
 
     if (res.ok) {
       const data = await res.json();
@@ -1311,7 +1352,13 @@ export async function reverseGeocodeCoords(coords: Coordinates): Promise<Geocode
       };
     }
   } catch (osmErr) {
-    // Fallback if network request fails
+    if (signal?.aborted) {
+      throw new Error('Aborted');
+    }
+  }
+
+  if (signal?.aborted) {
+    throw new Error('Aborted');
   }
 
   // 3. Native Android Geocoder fallback

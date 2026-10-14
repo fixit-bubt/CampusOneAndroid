@@ -758,6 +758,8 @@ export function MarketPostScreen({ route, navigation }: any) {
                 value={searchLoc}
                 onChangeText={setSearchLoc}
                 autoCorrect={false}
+                multiline={false}
+                numberOfLines={1}
               />
               {searchLoc.length > 0 && (
                 <TouchableOpacity onPress={() => setSearchLoc('')} hitSlop={8}>
@@ -1181,10 +1183,14 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   mapTriggerTitle: {
     fontSize: 13.5,
+    lineHeight: 18,
+    includeFontPadding: false,
   } as TextStyle,
   mapTriggerSub: {
     fontSize: 11,
-    marginTop: 1,
+    lineHeight: 15,
+    marginTop: 2,
+    includeFontPadding: false,
   } as TextStyle,
 
   // Location search box
@@ -1200,8 +1206,11 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   modalSearchInput: {
     flex: 1,
+    height: '100%',
     fontSize: 14.5,
     paddingVertical: 0,
+    textAlignVertical: 'center',
+    includeFontPadding: false,
   } as TextStyle,
 
   // 2-Bar Switcher
