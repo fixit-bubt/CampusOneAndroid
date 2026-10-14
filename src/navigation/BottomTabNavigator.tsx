@@ -160,14 +160,6 @@ function StandardTabButton({
         >
           {label}
         </Text>
-
-        {/* Active blue dot indicator from website */}
-        <View
-          style={[
-            styles.activeDot,
-            { backgroundColor: isFocused ? activeColor : 'transparent' },
-          ]}
-        />
       </Animated.View>
     </Pressable>
   );
@@ -286,12 +278,6 @@ const styles = StyleSheet.create({
     fontSize: 10.5,
     marginTop: 2,
     letterSpacing: -0.2,
-  },
-  activeDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    marginTop: 2.5,
   },
   tabBadge: {
     position: 'absolute',

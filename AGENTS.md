@@ -178,7 +178,7 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
   - Clean flat top line with retained 20dp smooth rounded corner shoulders (`r = 20 dp`). Zero middle notch dip.
   - Seamless Screen Edge Integration: All 7 tab screens strictly use `<SafeAreaView edges={['top', 'left', 'right']}>`, eliminating any bottom inset bar (`C.bg`: black in dark mode, white in light mode) above the navbar.
   - Clean in-line Messages tab button in the center (tab 3 of 5 for students) with unread badge.
-  - Active tab highlighted in electric Blue (`#60a5fa`) with active electric blue dot indicator (`4 × 4 dp`, `borderRadius: 2`) centered below the label. Inactive tabs rendered in sharp slate (`rgba(203, 213, 225, 0.85)` / `#cbd5e1`).
+  - Active tab highlighted in electric Blue (`#60a5fa`) with bold typography and native bouncy vector icon entrance pop. Inactive tabs rendered in sharp slate (`rgba(203, 213, 225, 0.85)` / `#cbd5e1`). Clean distraction-free layout with no bottom dots.
   - 120 FPS Elastic Bounce Tap Micro-Interactions on Android RenderThread (`useNativeDriver: true`): Press-in tactile squash to `0.84`, release elastic spring pop (`scale: 0.72 -> 1.30 -> 1.0`, matching Explore entrance physics).
   - Role-adaptive tab count & layout:
     - Students (5 tabs): `Home`, `StudyHub`, `Messages`, `Explore`, `Settings`.

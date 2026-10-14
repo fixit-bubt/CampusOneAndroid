@@ -227,9 +227,9 @@ The mobile app bottom navigation bar is ported 1:1 from the sibling web app (`Ca
 4. **Clean In-Line Messages Tab (Option 2 — Messages in Center):**
    - Messages button sits cleanly in-line with other tab items in the middle position (tab 3 of 5 for students).
    - Dynamic red unread count badge (`#ef4444`) anchored on the top-right of the message icon.
-5. **Sharp Contrast Typography & Active Electric Blue Dot:**
-   - **Active Tab:** Electric blue (`#60a5fa`), Plus Jakarta Sans Bold, with an active electric blue dot indicator (`4 × 4 dp`, `borderRadius: 2`) centered below the text label.
-   - **Inactive Tabs:** Sharp high-contrast slate (`rgba(203, 213, 225, 0.85)` / `#cbd5e1`), Plus Jakarta Sans Medium, with transparent dot placeholder.
+5. **Sharp Contrast Typography & Clean Active State:**
+   - **Active Tab:** Electric blue (`#60a5fa`), Plus Jakarta Sans Bold, with native bouncy vector icon entrance pop. Uncluttered design eliminates bottom dots for a clean, distraction-free aesthetic.
+   - **Inactive Tabs:** Sharp high-contrast slate (`rgba(203, 213, 225, 0.85)` / `#cbd5e1`), Plus Jakarta Sans Medium.
 6. **Role-Adaptive Tab Layout:**
    - **Students (5 tabs):** `Home` | `Study Hub` | `Messages` | `Explore` | `Settings`
    - **Admin (4 tabs):** `Home` | `Study Hub` | `Explore` | `Settings`
