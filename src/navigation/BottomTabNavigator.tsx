@@ -78,7 +78,7 @@ function BottomNavBackdrop({ width, height }: { width: number; height: number })
   );
 }
 
-// Standard Tab Item with active electric blue dot indicator & 120 FPS tap bounce
+// Standard Tab Item with active electric blue highlight & 120 FPS tap bounce
 function StandardTabButton({
   label,
   iconName,
