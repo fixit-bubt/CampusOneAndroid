@@ -12,6 +12,7 @@ import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
+import { LocationPickerModal } from '../../components/location/LocationPickerModal';
 import { FontFamily, Layout, SectorColors, Accent, pillBg } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { localToday } from '../../utils/format';
@@ -62,6 +63,7 @@ export function PostItemFormScreen({ route, navigation }: any) {
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [existingPhotoUrl, setExistingPhotoUrl] = useState<string | null>(null);
   const [photoPickerVisible, setPhotoPickerVisible] = useState(false);
+  const [mapModalVisible, setMapModalVisible] = useState(false);
   const [matches, setMatches] = useState<MatchItem[]>([]);
 
   const TYPE_TABS: TabItem<'Lost' | 'Found'>[] = [
@@ -352,6 +354,22 @@ export function PostItemFormScreen({ route, navigation }: any) {
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={styles.quickLocRow}
           >
+            <TouchableOpacity
+              style={[
+                styles.quickLocChip,
+                {
+                  backgroundColor: isDark ? `${SectorColors.lostfound}22` : `${SectorColors.lostfound}14`,
+                  borderColor: SectorColors.lostfound,
+                },
+              ]}
+              onPress={() => setMapModalVisible(true)}
+              activeOpacity={0.75}
+            >
+              <Feather name="map" size={12} color={SectorColors.lostfound} />
+              <Text style={[styles.quickLocTxt, { color: SectorColors.lostfound, fontFamily: FontFamily.jakartaBold }]}>
+                Pick on Map
+              </Text>
+            </TouchableOpacity>
             {QUICK_LOCATIONS.map(place => (
               <TouchableOpacity
                 key={place}
@@ -506,6 +524,18 @@ export function PostItemFormScreen({ route, navigation }: any) {
           </View>
         </TouchableOpacity>
       </Modal>
+
+      {/* Interactive Map & GPS Picker Modal */}
+      <LocationPickerModal
+        visible={mapModalVisible}
+        onClose={() => setMapModalVisible(false)}
+        accentColor={SectorColors.lostfound}
+        title="Pick Lost / Found Location"
+        initialPlaceName={loc}
+        onSelectLocation={(place) => {
+          setLoc(place.formattedAddress);
+        }}
+      />
     </SafeAreaView>
   );
 }

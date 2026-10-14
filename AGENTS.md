@@ -1572,9 +1572,11 @@ The Campus Announcements architecture is transformed from a manual posting board
 1. **`src/services/locationService.ts`:**
    - **Device GPS Retrieval:** `getCurrentUserCoordinates()` requests foreground permission (`Location.requestForegroundPermissionsAsync()`) and retrieves current device position via `Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })`.
    - **Landmark Geocoding & Proximity Detection:** Contains pre-indexed coordinates for BUBT Main Campus (`23.8103, 90.3567`), Sony Square, Mirpur 10 Metro, Commerce College Road, Rainkhola, and key commute hubs across North, Central, and South Dhaka. Uses Haversine distance (`getDistanceMeters`) to instantly match nearby pins within 280m without network latency.
+   - **Landmark Name Resolution (`findLandmarkByName`):** Resolves pre-filled place names into exact coordinates, auto-centering the map pin to the existing location upon modal open.
    - **Multi-Tier Reverse Geocoding:** Falls back to Android native Geocoder (`Location.reverseGeocodeAsync`) and OpenStreetMap Nominatim reverse API for unmapped spots.
 2. **`src/components/location/LocationPickerModal.tsx`:**
    - **Fixed Center Pin Crosshair:** Uses the mobile ride-sharing standard (Uber / Pathao pattern) where a floating center pin lifts during map pan (`is-moving`) and drops with a subtle spring bounce on `moveend`, sending coordinates to React Native via the WebView bridge.
+   - **Dynamic Reopen Synchronization:** Synchronizes coordinates and resolved place title whenever `visible` becomes true, ensuring switching between different input fields (e.g. From vs To) always loads the correct target spot.
    - **Universal 58dp Control Standard:** Top "Use My Current Location" button (`height: 58, borderRadius: 16`) auto-locates via GPS and animates the map with `map.flyTo`. Bottom "Confirm Location" CTA is standardized to `height: 58, borderRadius: 16`.
    - **Quick Commute Hub Chips:** Horizontal scrollbar of quick-jump shortcuts: BUBT Campus, Sony Square, Mirpur 10 Metro, Mirpur 1, Mirpur 12, Uttara 3, Farmgate, Dhanmondi 27, Mohakhali, and Kuril Flyover.
    - **Universal 72dp Content Card:** Live selected location preview card (`minHeight: 72, padding: 14, borderRadius: 16`) with 44dp map pin icon box, resolved place title, and coordinates subtitle.
@@ -1587,6 +1589,8 @@ The Campus Announcements architecture is transformed from a manual posting board
   - Handover location picker includes a 58dp map trigger card (`mapTriggerCard58`) to pinpoint campus meetup gates, cafeteria, or Dhaka hubs.
 - **Blood Donation (`AreaPickerModal.tsx`):**
   - Area and hospital search modal includes a 58dp map trigger card (`mapTriggerCard58`) allowing blood requesters and donors to pick exact hospitals and areas on the map.
+- **Lost & Found (`PostItemFormScreen.tsx`):**
+  - Quick location chips row features a primary "Pick on Map" button to pinpoint campus outdoor spots, grounds, and gates.
 - **Database & Web Parity:** All selections resolve to clean human-readable address strings, maintaining 100% backward and forward compatibility with Supabase backend tables and the sibling web app (`CampusOneWeb`).
 
 

@@ -257,6 +257,20 @@ export function findNearestLandmark(
   return nearest;
 }
 
+export function findLandmarkByName(name?: string | null): LandmarkLocation | null {
+  if (!name || !name.trim()) return null;
+  const q = name.trim().toLowerCase();
+  return (
+    CAMPUS_AND_DHAKA_LANDMARKS.find(
+      l =>
+        l.name.toLowerCase() === q ||
+        (l.nameBn && l.nameBn.toLowerCase() === q) ||
+        l.name.toLowerCase().includes(q) ||
+        q.includes(l.name.toLowerCase())
+    ) || null
+  );
+}
+
 export async function getCurrentUserCoordinates(): Promise<Coordinates | null> {
   try {
     const { status } = await Location.requestForegroundPermissionsAsync();

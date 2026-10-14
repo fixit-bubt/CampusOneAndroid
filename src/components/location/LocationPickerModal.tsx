@@ -22,6 +22,7 @@ import {
   CAMPUS_AND_DHAKA_LANDMARKS,
   getCurrentUserCoordinates,
   reverseGeocodeCoords,
+  findLandmarkByName,
   type Coordinates,
   type GeocodedPlace,
 } from '../../services/locationService';
@@ -195,9 +196,11 @@ function generateLeafletHtml(initial: Coordinates, isDark: boolean, accentColor:
       try {
         var data = JSON.parse(event.data);
         if (data.type === 'FLY_TO') {
-          map.flyTo([data.lat, data.lng], data.zoom || 16, {
-            duration: 1.2
-          });
+          if (typeof map !== 'undefined' && map && map.flyTo) {
+            map.flyTo([data.lat, data.lng], data.zoom || 16, {
+              duration: 1.2
+            });
+          }
         }
       } catch (e) {
         // Ignore parse error
@@ -334,6 +337,27 @@ export function LocationPickerModal({
     onSelectLocation(selectedPlace);
     onClose();
   };
+
+  useEffect(() => {
+    if (visible) {
+      const matched = findLandmarkByName(initialPlaceName);
+      const coords = initialCoords || matched?.coords || BUBT_COORDS;
+      setCurrentCoords(coords);
+      setSelectedPlace({
+        name: initialPlaceName || matched?.name || 'BUBT Main Campus',
+        zone: matched?.zone || 'Mirpur & Campus',
+        subText: matched?.desc || (initialPlaceName ? '' : 'Permanent Campus · Rupnagar, Mirpur-2'),
+        formattedAddress: initialPlaceName || matched?.name || 'BUBT Main Campus',
+        coords,
+      });
+
+      // Fly map to selected coordinates once WebView layout mounts
+      const timer = setTimeout(() => {
+        flyToCoordinates(coords, 16);
+      }, 350);
+      return () => clearTimeout(timer);
+    }
+  }, [visible, initialCoords, initialPlaceName, flyToCoordinates]);
 
   useEffect(() => {
     return () => {
