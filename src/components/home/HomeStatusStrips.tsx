@@ -588,26 +588,26 @@ export function HomeStatusStrips() {
               style={[styles.leftPill, { borderRightColor: C.border }]}
             >
               <View style={styles.pillLeft}>
-                <AnimatedIcon name="alert-circle" size={17} color={SectorColors.reports} animation="entrance" />
-                <Text style={[styles.pillText, { color: C.text }]}>Reports</Text>
+                <AnimatedIcon name="alert-circle" size={16} color={SectorColors.reports} animation="entrance" />
+                <Text style={[styles.pillText, { color: C.text }]} numberOfLines={1} ellipsizeMode="tail">Reports</Text>
               </View>
-              <Feather name="chevron-right" size={14} color={C.textMuted} />
+              <Feather name="chevron-right" size={12} color={C.textMuted} />
             </TouchableOpacity>
 
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('MyReports')} style={styles.metricCol}>
-                <Text style={[styles.metricVal, { color: C.text }]}>{reportCounts.open}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Open</Text>
+                <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{reportCounts.open}</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Open</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('MyReports')} style={styles.metricCol}>
-                <Text style={[styles.metricVal, { color: C.text }]}>{reportCounts.inProgress}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>In Progress</Text>
+                <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{reportCounts.inProgress}</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Pending</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('MyReports')} style={styles.metricCol}>
-                <Text style={[styles.metricVal, { color: C.text }]}>{reportCounts.resolved}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Resolved</Text>
+                <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{reportCounts.resolved}</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Resolved</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -622,10 +622,10 @@ export function HomeStatusStrips() {
               style={[styles.leftPill, { borderRightColor: C.border }]}
             >
               <View style={styles.pillLeft}>
-                <AnimatedIcon name="truck" size={17} color={SectorColors.bus} animation="entrance" />
-                <Text style={[styles.pillText, { color: C.text }]}>Bus</Text>
+                <AnimatedIcon name="truck" size={16} color={SectorColors.bus} animation="entrance" />
+                <Text style={[styles.pillText, { color: C.text }]} numberOfLines={1} ellipsizeMode="tail">Bus</Text>
               </View>
-              <Feather name="chevron-right" size={14} color={C.textMuted} />
+              <Feather name="chevron-right" size={12} color={C.textMuted} />
             </TouchableOpacity>
 
             <View style={styles.metricsRow}>
@@ -633,18 +633,18 @@ export function HomeStatusStrips() {
                 <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>
                   {nextBus ? nextBus.route.name.split(' ')[0] : 'All'}
                 </Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Route</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Route</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Bus')} style={styles.metricCol}>
-                <Text style={[styles.metricValText, { color: C.text }]}>
+                <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>
                   {nextBus ? formatTime12(minutesToHHMM(nextBus.mins)) : '--:--'}
                 </Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Departs</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Departs</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Bus')} style={styles.metricCol}>
-                <Text style={[styles.metricValText, { color: C.text }]}>
+                <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>
                   {nextBus ? (nextBus.tomorrow ? 'Tomorrow' : fmtCountdown(nextBus.wait)) : 'No bus'}
                 </Text>
                 <View style={[styles.progressTrack, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)' }]}>
@@ -664,10 +664,10 @@ export function HomeStatusStrips() {
               style={[styles.leftPill, { borderRightColor: C.border }]}
             >
               <View style={styles.pillLeft}>
-                <AnimatedIcon name="sun" size={17} color={SectorColors.prayer} animation="entrance" />
-                <Text style={[styles.pillText, { color: C.text }]}>Prayer</Text>
+                <AnimatedIcon name="sun" size={16} color={SectorColors.prayer} animation="entrance" />
+                <Text style={[styles.pillText, { color: C.text }]} numberOfLines={1} ellipsizeMode="tail">Prayer</Text>
               </View>
-              <Feather name="chevron-right" size={14} color={C.textMuted} />
+              <Feather name="chevron-right" size={12} color={C.textMuted} />
             </TouchableOpacity>
 
             <View style={styles.metricsRow}>
@@ -675,18 +675,18 @@ export function HomeStatusStrips() {
                 <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>
                   {nextPrayer ? nextPrayer.en : 'Prayer'}
                 </Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Salah</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Salah</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Prayer')} style={styles.metricCol}>
-                <Text style={[styles.metricValText, { color: C.text }]}>
+                <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>
                   {nextPrayer ? formatTime12(nextPrayer.azan) : '--:--'}
                 </Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Azan</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Azan</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Prayer')} style={styles.metricCol}>
-                <Text style={[styles.metricValText, { color: C.text }]}>
+                <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>
                   {prayerSt ? (prayerSt.tomorrow ? 'Tomorrow' : fmtCountdown(prayerSt.wait)) : 'Schedule'}
                 </Text>
                 <View style={[styles.progressTrack, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)' }]}>
@@ -706,28 +706,28 @@ export function HomeStatusStrips() {
               style={[styles.leftPill, { borderRightColor: C.border }]}
             >
               <View style={styles.pillLeft}>
-                <AnimatedIcon name="heart" size={17} color={SectorColors.blood} animation="entrance" />
-                <Text style={[styles.pillText, { color: C.text }]}>Blood</Text>
+                <AnimatedIcon name="heart" size={16} color={SectorColors.blood} animation="entrance" />
+                <Text style={[styles.pillText, { color: C.text }]} numberOfLines={1} ellipsizeMode="tail">Blood</Text>
               </View>
-              <Feather name="chevron-right" size={14} color={C.textMuted} />
+              <Feather name="chevron-right" size={12} color={C.textMuted} />
             </TouchableOpacity>
 
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Blood')} style={styles.metricCol}>
-                <Text style={[styles.metricVal, { color: bloodStats.urgent > 0 ? C.danger : C.text }]}>
+                <Text style={[styles.metricVal, { color: bloodStats.urgent > 0 ? C.danger : C.text }]} numberOfLines={1}>
                   {bloodStats.urgent}
                 </Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Urgent</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Urgent</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Blood')} style={styles.metricCol}>
-                <Text style={[styles.metricVal, { color: C.text }]}>{bloodStats.total}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Needed</Text>
+                <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{bloodStats.total}</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Needed</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Blood')} style={styles.metricCol}>
-                <Text style={[styles.metricVal, { color: C.text }]}>{bloodStats.donors}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Donors</Text>
+                <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{bloodStats.donors}</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Donors</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -742,26 +742,26 @@ export function HomeStatusStrips() {
               style={[styles.leftPill, { borderRightColor: C.border }]}
             >
               <View style={styles.pillLeft}>
-                <AnimatedIcon name="navigation" size={17} color={SectorColors.ride} animation="entrance" />
-                <Text style={[styles.pillText, { color: C.text }]}>Rides</Text>
+                <AnimatedIcon name="navigation" size={16} color={SectorColors.ride} animation="entrance" />
+                <Text style={[styles.pillText, { color: C.text }]} numberOfLines={1} ellipsizeMode="tail">Rides</Text>
               </View>
-              <Feather name="chevron-right" size={14} color={C.textMuted} />
+              <Feather name="chevron-right" size={12} color={C.textMuted} />
             </TouchableOpacity>
 
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Rides')} style={styles.metricCol}>
-                <Text style={[styles.metricVal, { color: C.text }]}>{rideStats.offers}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Offers</Text>
+                <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{rideStats.offers}</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Offers</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Rides')} style={styles.metricCol}>
-                <Text style={[styles.metricVal, { color: C.text }]}>{rideStats.requests}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Requests</Text>
+                <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{rideStats.requests}</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Requests</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Rides')} style={styles.metricCol}>
-                <Text style={[styles.metricVal, { color: C.text }]}>{rideStats.seats}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Seats</Text>
+                <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{rideStats.seats}</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Seats</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -776,26 +776,26 @@ export function HomeStatusStrips() {
               style={[styles.leftPill, { borderRightColor: C.border }]}
             >
               <View style={styles.pillLeft}>
-                <AnimatedIcon name="shopping-bag" size={17} color={SectorColors.market} animation="entrance" />
-                <Text style={[styles.pillText, { color: C.text }]}>Market</Text>
+                <AnimatedIcon name="shopping-bag" size={16} color={SectorColors.market} animation="entrance" />
+                <Text style={[styles.pillText, { color: C.text }]} numberOfLines={1} ellipsizeMode="tail">Market</Text>
               </View>
-              <Feather name="chevron-right" size={14} color={C.textMuted} />
+              <Feather name="chevron-right" size={12} color={C.textMuted} />
             </TouchableOpacity>
 
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Market')} style={styles.metricCol}>
-                <Text style={[styles.metricVal, { color: C.text }]}>{marketStats.total}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Items</Text>
+                <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{marketStats.total}</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Items</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Market')} style={styles.metricCol}>
-                <Text style={[styles.metricVal, { color: C.text }]}>{marketStats.active}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Active</Text>
+                <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{marketStats.active}</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Active</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Market')} style={styles.metricCol}>
-                <Text style={[styles.metricVal, { color: C.text }]}>{marketStats.saved}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Saved</Text>
+                <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{marketStats.saved}</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Saved</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -810,26 +810,26 @@ export function HomeStatusStrips() {
               style={[styles.leftPill, { borderRightColor: C.border }]}
             >
               <View style={styles.pillLeft}>
-                <AnimatedIcon name="search" size={17} color={SectorColors.lostfound} animation="entrance" />
-                <Text style={[styles.pillText, { color: C.text }]}>Lost</Text>
+                <AnimatedIcon name="search" size={16} color={SectorColors.lostfound} animation="entrance" />
+                <Text style={[styles.pillText, { color: C.text }]} numberOfLines={1} ellipsizeMode="tail">Lost</Text>
               </View>
-              <Feather name="chevron-right" size={14} color={C.textMuted} />
+              <Feather name="chevron-right" size={12} color={C.textMuted} />
             </TouchableOpacity>
 
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('LostFoundBrowse')} style={styles.metricCol}>
-                <Text style={[styles.metricVal, { color: C.text }]}>{lostStats.lost}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Lost</Text>
+                <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{lostStats.lost}</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Lost</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('LostFoundBrowse')} style={styles.metricCol}>
-                <Text style={[styles.metricVal, { color: C.text }]}>{lostStats.found}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Found</Text>
+                <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{lostStats.found}</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Found</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('LostFoundBrowse')} style={styles.metricCol}>
-                <Text style={[styles.metricVal, { color: C.text }]}>{lostStats.claims}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Claims</Text>
+                <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{lostStats.claims}</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Claims</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -844,26 +844,26 @@ export function HomeStatusStrips() {
               style={[styles.leftPill, { borderRightColor: C.border }]}
             >
               <View style={styles.pillLeft}>
-                <AnimatedIcon name="briefcase" size={17} color={SectorColors.jobs} animation="entrance" />
-                <Text style={[styles.pillText, { color: C.text }]}>Jobs</Text>
+                <AnimatedIcon name="briefcase" size={16} color={SectorColors.jobs} animation="entrance" />
+                <Text style={[styles.pillText, { color: C.text }]} numberOfLines={1} ellipsizeMode="tail">Jobs</Text>
               </View>
-              <Feather name="chevron-right" size={14} color={C.textMuted} />
+              <Feather name="chevron-right" size={12} color={C.textMuted} />
             </TouchableOpacity>
 
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('JobsBrowse')} style={styles.metricCol}>
-                <Text style={[styles.metricVal, { color: C.text }]}>{jobStats.open}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Open</Text>
+                <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{jobStats.open}</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Open</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('JobsBrowse')} style={styles.metricCol}>
-                <Text style={[styles.metricVal, { color: C.text }]}>{jobStats.interns}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Interns</Text>
+                <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{jobStats.interns}</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Interns</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('JobsBrowse')} style={styles.metricCol}>
-                <Text style={[styles.metricVal, { color: C.text }]}>{jobStats.applied}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Applied</Text>
+                <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{jobStats.applied}</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Applied</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -878,26 +878,26 @@ export function HomeStatusStrips() {
               style={[styles.leftPill, { borderRightColor: C.border }]}
             >
               <View style={styles.pillLeft}>
-                <AnimatedIcon name="book-open" size={17} color={SectorColors.study} animation="entrance" />
-                <Text style={[styles.pillText, { color: C.text }]}>Study</Text>
+                <AnimatedIcon name="book-open" size={16} color={SectorColors.study} animation="entrance" />
+                <Text style={[styles.pillText, { color: C.text }]} numberOfLines={1} ellipsizeMode="tail">Study</Text>
               </View>
-              <Feather name="chevron-right" size={14} color={C.textMuted} />
+              <Feather name="chevron-right" size={12} color={C.textMuted} />
             </TouchableOpacity>
 
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('StudyHub')} style={styles.metricCol}>
-                <Text style={[styles.metricVal, { color: C.text }]}>{studyStats.notes}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Notes</Text>
+                <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{studyStats.notes}</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Notes</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('StudyHub')} style={styles.metricCol}>
-                <Text style={[styles.metricVal, { color: C.text }]}>{studyStats.files}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Files</Text>
+                <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{studyStats.files}</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Files</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('StudyHub')} style={styles.metricCol}>
-                <Text style={[styles.metricVal, { color: C.text }]}>{studyStats.saved}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Saved</Text>
+                <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{studyStats.saved}</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Saved</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -912,26 +912,26 @@ export function HomeStatusStrips() {
               style={[styles.leftPill, { borderRightColor: C.border }]}
             >
               <View style={styles.pillLeft}>
-                <AnimatedIcon name="calendar" size={17} color={SectorColors.events} animation="entrance" />
-                <Text style={[styles.pillText, { color: C.text }]}>Events</Text>
+                <AnimatedIcon name="calendar" size={16} color={SectorColors.events} animation="entrance" />
+                <Text style={[styles.pillText, { color: C.text }]} numberOfLines={1} ellipsizeMode="tail">Events</Text>
               </View>
-              <Feather name="chevron-right" size={14} color={C.textMuted} />
+              <Feather name="chevron-right" size={12} color={C.textMuted} />
             </TouchableOpacity>
 
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('EventsBrowse')} style={styles.metricCol}>
-                <Text style={[styles.metricVal, { color: C.text }]}>{eventStats.upcoming}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Upcoming</Text>
+                <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{eventStats.upcoming}</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Upcoming</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('EventsBrowse')} style={styles.metricCol}>
-                <Text style={[styles.metricVal, { color: C.text }]}>{eventStats.thisWeek}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>This Wk</Text>
+                <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{eventStats.thisWeek}</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>This Wk</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('EventsBrowse')} style={styles.metricCol}>
-                <Text style={[styles.metricVal, { color: C.text }]}>{eventStats.going}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Going</Text>
+                <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{eventStats.going}</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Going</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -946,26 +946,26 @@ export function HomeStatusStrips() {
               style={[styles.leftPill, { borderRightColor: C.border }]}
             >
               <View style={styles.pillLeft}>
-                <AnimatedIcon name="users" size={17} color={SectorColors.clubs} animation="entrance" />
-                <Text style={[styles.pillText, { color: C.text }]}>Clubs</Text>
+                <AnimatedIcon name="users" size={16} color={SectorColors.clubs} animation="entrance" />
+                <Text style={[styles.pillText, { color: C.text }]} numberOfLines={1} ellipsizeMode="tail">Clubs</Text>
               </View>
-              <Feather name="chevron-right" size={14} color={C.textMuted} />
+              <Feather name="chevron-right" size={12} color={C.textMuted} />
             </TouchableOpacity>
 
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Clubs')} style={styles.metricCol}>
-                <Text style={[styles.metricVal, { color: C.text }]}>{clubStats.total}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Clubs</Text>
+                <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{clubStats.total}</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Clubs</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Clubs')} style={styles.metricCol}>
-                <Text style={[styles.metricVal, { color: C.text }]}>{clubStats.joined}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Joined</Text>
+                <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{clubStats.joined}</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Joined</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Clubs')} style={styles.metricCol}>
-                <Text style={[styles.metricVal, { color: C.text }]}>{clubStats.posts}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Posts</Text>
+                <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{clubStats.posts}</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Posts</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -980,26 +980,26 @@ export function HomeStatusStrips() {
               style={[styles.leftPill, { borderRightColor: C.border }]}
             >
               <View style={styles.pillLeft}>
-                <AnimatedIcon name="activity" size={17} color={SectorColors.medical} animation="entrance" />
-                <Text style={[styles.pillText, { color: C.text }]}>Medical</Text>
+                <AnimatedIcon name="activity" size={16} color={SectorColors.medical} animation="entrance" />
+                <Text style={[styles.pillText, { color: C.text }]} numberOfLines={1} ellipsizeMode="tail">Medical</Text>
               </View>
-              <Feather name="chevron-right" size={14} color={C.textMuted} />
+              <Feather name="chevron-right" size={12} color={C.textMuted} />
             </TouchableOpacity>
 
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Medical')} style={styles.metricCol}>
-                <Text style={[styles.metricVal, { color: C.text }]}>{doctorStats.onDuty}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>On Duty</Text>
+                <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{doctorStats.onDuty}</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>On Duty</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Medical')} style={styles.metricCol}>
-                <Text style={[styles.metricVal, { color: C.text }]}>{doctorStats.total}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Doctors</Text>
+                <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{doctorStats.total}</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Doctors</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Medical')} style={styles.metricCol}>
-                <Text style={[styles.metricValText, { color: C.text }]}>Open</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Clinic</Text>
+                <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>Open</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Clinic</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1014,26 +1014,26 @@ export function HomeStatusStrips() {
               style={[styles.leftPill, { borderRightColor: C.border }]}
             >
               <View style={styles.pillLeft}>
-                <AnimatedIcon name="user" size={17} color={SectorColors.directory} animation="entrance" />
-                <Text style={[styles.pillText, { color: C.text }]}>Directory</Text>
+                <AnimatedIcon name="user" size={16} color={SectorColors.directory} animation="entrance" />
+                <Text style={[styles.pillText, { color: C.text }]} numberOfLines={1} ellipsizeMode="tail">Directory</Text>
               </View>
-              <Feather name="chevron-right" size={14} color={C.textMuted} />
+              <Feather name="chevron-right" size={12} color={C.textMuted} />
             </TouchableOpacity>
 
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Directory')} style={styles.metricCol}>
-                <Text style={[styles.metricVal, { color: C.text }]}>4</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Connects</Text>
+                <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>4</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Connects</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Directory')} style={styles.metricCol}>
-                <Text style={[styles.metricVal, { color: C.text }]}>1</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Requests</Text>
+                <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>1</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Requests</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Directory')} style={styles.metricCol}>
-                <Text style={[styles.metricValText, { color: C.text }]}>BUBT</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Students</Text>
+                <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>BUBT</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Campus</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1048,26 +1048,26 @@ export function HomeStatusStrips() {
               style={[styles.leftPill, { borderRightColor: C.border }]}
             >
               <View style={styles.pillLeft}>
-                <AnimatedIcon name="user-check" size={17} color={SectorColors.faculty} animation="entrance" />
-                <Text style={[styles.pillText, { color: C.text }]}>Faculty</Text>
+                <AnimatedIcon name="user-check" size={16} color={SectorColors.faculty} animation="entrance" />
+                <Text style={[styles.pillText, { color: C.text }]} numberOfLines={1} ellipsizeMode="tail">Faculty</Text>
               </View>
-              <Feather name="chevron-right" size={14} color={C.textMuted} />
+              <Feather name="chevron-right" size={12} color={C.textMuted} />
             </TouchableOpacity>
 
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Faculty')} style={styles.metricCol}>
-                <Text style={[styles.metricVal, { color: C.text }]}>{facultyStats.total}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Teachers</Text>
+                <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{facultyStats.total}</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Teachers</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Faculty')} style={styles.metricCol}>
-                <Text style={[styles.metricVal, { color: C.text }]}>{facultyStats.mentors}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Mentors</Text>
+                <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{facultyStats.mentors}</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Mentors</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Faculty')} style={styles.metricCol}>
-                <Text style={[styles.metricVal, { color: C.text }]}>8</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Depts</Text>
+                <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>8</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Depts</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1082,26 +1082,26 @@ export function HomeStatusStrips() {
               style={[styles.leftPill, { borderRightColor: C.border }]}
             >
               <View style={styles.pillLeft}>
-                <AnimatedIcon name="clock" size={17} color={SectorColors.routines} animation="entrance" />
-                <Text style={[styles.pillText, { color: C.text }]}>Routines</Text>
+                <AnimatedIcon name="clock" size={16} color={SectorColors.routines} animation="entrance" />
+                <Text style={[styles.pillText, { color: C.text }]} numberOfLines={1} ellipsizeMode="tail">Routine</Text>
               </View>
-              <Feather name="chevron-right" size={14} color={C.textMuted} />
+              <Feather name="chevron-right" size={12} color={C.textMuted} />
             </TouchableOpacity>
 
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('RoutinesBrowse')} style={styles.metricCol}>
-                <Text style={[styles.metricValText, { color: C.text }]}>Intake</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Classes</Text>
+                <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>Intake</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Classes</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('RoutinesBrowse')} style={styles.metricCol}>
-                <Text style={[styles.metricValText, { color: C.text }]}>Section</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Schedule</Text>
+                <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>Section</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Timing</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('RoutinesBrowse')} style={styles.metricCol}>
-                <Text style={[styles.metricValText, { color: C.text }]}>Final</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Exams</Text>
+                <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>Final</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Exams</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1116,26 +1116,26 @@ export function HomeStatusStrips() {
               style={[styles.leftPill, { borderRightColor: C.border }]}
             >
               <View style={styles.pillLeft}>
-                <AnimatedIcon name="calendar" size={17} color={SectorColors.calendar} animation="entrance" />
-                <Text style={[styles.pillText, { color: C.text }]}>Calendar</Text>
+                <AnimatedIcon name="calendar" size={16} color={SectorColors.calendar} animation="entrance" />
+                <Text style={[styles.pillText, { color: C.text }]} numberOfLines={1} ellipsizeMode="tail">Calendar</Text>
               </View>
-              <Feather name="chevron-right" size={14} color={C.textMuted} />
+              <Feather name="chevron-right" size={12} color={C.textMuted} />
             </TouchableOpacity>
 
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('AcademicCalendar')} style={styles.metricCol}>
-                <Text style={[styles.metricVal, { color: C.text }]}>8</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Holidays</Text>
+                <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>8</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Events</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('AcademicCalendar')} style={styles.metricCol}>
-                <Text style={[styles.metricValText, { color: C.text }]}>Midterm</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Exams</Text>
+                <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>Midterm</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Exams</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('AcademicCalendar')} style={styles.metricCol}>
-                <Text style={[styles.metricValText, { color: C.text }]}>Summer</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Breaks</Text>
+                <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>Summer</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Breaks</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1150,26 +1150,26 @@ export function HomeStatusStrips() {
               style={[styles.leftPill, { borderRightColor: C.border }]}
             >
               <View style={styles.pillLeft}>
-                <AnimatedIcon name="file" size={17} color={SectorColors.pdfmaker} animation="entrance" />
-                <Text style={[styles.pillText, { color: C.text }]}>PDF Tools</Text>
+                <AnimatedIcon name="file" size={16} color={SectorColors.pdfmaker} animation="entrance" />
+                <Text style={[styles.pillText, { color: C.text }]} numberOfLines={1} ellipsizeMode="tail">PDF</Text>
               </View>
-              <Feather name="chevron-right" size={14} color={C.textMuted} />
+              <Feather name="chevron-right" size={12} color={C.textMuted} />
             </TouchableOpacity>
 
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('PdfMaker')} style={styles.metricCol}>
-                <Text style={[styles.metricValText, { color: C.text }]}>Merge</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Files</Text>
+                <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>Merge</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Files</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('PdfMaker')} style={styles.metricCol}>
-                <Text style={[styles.metricValText, { color: C.text }]}>Compress</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Size</Text>
+                <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>Shrink</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Size</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('PdfMaker')} style={styles.metricCol}>
-                <Text style={[styles.metricValText, { color: C.text }]}>Convert</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Images</Text>
+                <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>Scan</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Images</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1184,26 +1184,26 @@ export function HomeStatusStrips() {
               style={[styles.leftPill, { borderRightColor: C.border }]}
             >
               <View style={styles.pillLeft}>
-                <AnimatedIcon name="file-text" size={17} color={SectorColors.coverpage} animation="entrance" />
-                <Text style={[styles.pillText, { color: C.text }]}>Cover</Text>
+                <AnimatedIcon name="file-text" size={16} color={SectorColors.coverpage} animation="entrance" />
+                <Text style={[styles.pillText, { color: C.text }]} numberOfLines={1} ellipsizeMode="tail">Cover</Text>
               </View>
-              <Feather name="chevron-right" size={14} color={C.textMuted} />
+              <Feather name="chevron-right" size={12} color={C.textMuted} />
             </TouchableOpacity>
 
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('CoverPageForm')} style={styles.metricCol}>
-                <Text style={[styles.metricValText, { color: C.text }]}>4 Styles</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Templates</Text>
+                <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>4 Styles</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Styles</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('CoverPageForm')} style={styles.metricCol}>
-                <Text style={[styles.metricValText, { color: C.text }]}>BUBT</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Format</Text>
+                <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>BUBT</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Format</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('CoverPageForm')} style={styles.metricCol}>
-                <Text style={[styles.metricValText, { color: C.text }]}>Instant</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Generate</Text>
+                <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>Instant</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Maker</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1218,26 +1218,26 @@ export function HomeStatusStrips() {
               style={[styles.leftPill, { borderRightColor: C.border }]}
             >
               <View style={styles.pillLeft}>
-                <AnimatedIcon name="percent" size={17} color="#0e9c8a" animation="entrance" />
-                <Text style={[styles.pillText, { color: C.text }]}>CGPA</Text>
+                <AnimatedIcon name="percent" size={16} color="#0e9c8a" animation="entrance" />
+                <Text style={[styles.pillText, { color: C.text }]} numberOfLines={1} ellipsizeMode="tail">CGPA</Text>
               </View>
-              <Feather name="chevron-right" size={14} color={C.textMuted} />
+              <Feather name="chevron-right" size={12} color={C.textMuted} />
             </TouchableOpacity>
 
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Cgpa')} style={styles.metricCol}>
-                <Text style={[styles.metricValText, { color: C.text }]}>4.00</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Target</Text>
+                <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>4.00</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Target</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Cgpa')} style={styles.metricCol}>
-                <Text style={[styles.metricValText, { color: C.text }]}>Semester</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>GPA</Text>
+                <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>Term</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>GPA</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Cgpa')} style={styles.metricCol}>
-                <Text style={[styles.metricValText, { color: C.text }]}>Total</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]}>Credits</Text>
+                <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>Total</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Credit</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1567,40 +1567,46 @@ const styles = StyleSheet.create({
     height: 72,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     borderRadius: 16,
     borderWidth: 1,
   },
   leftPill: {
-    width: 92,
+    width: 96,
     height: 48,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingRight: 10,
+    paddingLeft: 2,
+    paddingRight: 6,
     borderRightWidth: 1,
   },
   pillLeft: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 7,
+    gap: 5,
+    marginRight: 2,
+    overflow: 'hidden',
   },
   pillText: {
-    fontSize: 14.5,
+    fontSize: 13,
     fontFamily: FontFamily.jakartaExtraBold,
     letterSpacing: -0.2,
+    flexShrink: 1,
   },
   metricsRow: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingLeft: 4,
+    paddingLeft: 2,
   },
   metricCol: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 1,
+    paddingHorizontal: 1,
   },
   verticalDivider: {
     width: 1,
@@ -1611,17 +1617,20 @@ const styles = StyleSheet.create({
     fontSize: 16.5,
     fontFamily: FontFamily.jakartaExtraBold,
     lineHeight: 20,
+    textAlign: 'center',
   },
   metricValText: {
-    fontSize: 13.5,
+    fontSize: 13,
     fontFamily: FontFamily.jakartaBold,
-    lineHeight: 18,
+    lineHeight: 17,
+    textAlign: 'center',
   },
   metricSub: {
-    fontSize: 10.5,
+    fontSize: 10,
     fontFamily: FontFamily.jakartaMedium,
-    marginTop: 2.5,
-    lineHeight: 13,
+    marginTop: 2,
+    lineHeight: 12,
+    textAlign: 'center',
   },
   progressTrack: {
     width: 48,
