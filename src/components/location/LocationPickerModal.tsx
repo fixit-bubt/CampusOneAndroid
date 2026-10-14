@@ -40,7 +40,7 @@ interface LocationPickerModalProps {
 }
 
 const QUICK_COMMUTE_HUBS = [
-  { label: 'BUBT Campus', coords: { latitude: 23.8103, longitude: 90.3567 } },
+  { label: 'BUBT Campus', coords: { latitude: 23.8119, longitude: 90.3571 } },
   { label: 'Sony Square', coords: { latitude: 23.8093, longitude: 90.3578 } },
   { label: 'Mirpur 10 Metro', coords: { latitude: 23.8071, longitude: 90.3686 } },
   { label: 'Mirpur 1', coords: { latitude: 23.7956, longitude: 90.3537 } },
@@ -56,9 +56,7 @@ const QUICK_COMMUTE_HUBS = [
 ];
 
 function generateMapLibreHtml(initial: Coordinates, isDark: boolean): string {
-  const bgColor = isDark ? '#111317' : '#f8fafc';
-  // Standard detailed Liberty vector style (111 layers) with full street names, building footprints, parks, water, transit
-  const styleUrl = 'https://tiles.openfreemap.org/styles/liberty';
+  const bgColor = isDark ? '#1a1f2c' : '#f8fafc';
 
   return `
 <!DOCTYPE html>
@@ -89,6 +87,12 @@ function generateMapLibreHtml(initial: Coordinates, isDark: boolean): string {
       height: 100%;
       background-color: ${bgColor};
     }
+    ${isDark ? `
+    /* Google Maps Dark Mode CSS filter matching official Google Maps Dark Theme */
+    #map .maplibregl-canvas {
+      filter: invert(90%) hue-rotate(180deg) brightness(88%) contrast(105%);
+    }
+    ` : ''}
     .maplibregl-ctrl-attrib, .maplibregl-ctrl-logo, .maplibregl-compact {
       display: none !important;
     }
@@ -98,14 +102,38 @@ function generateMapLibreHtml(initial: Coordinates, isDark: boolean): string {
   <div id="map"></div>
 
   <script>
+    var googleStyle = {
+      version: 8,
+      sources: {
+        'google-roadmap': {
+          type: 'raster',
+          tiles: [
+            'https://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}',
+            'https://mt1.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}',
+            'https://mt2.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}',
+            'https://mt3.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}'
+          ],
+          tileSize: 256
+        }
+      },
+      layers: [
+        {
+          id: 'google-roadmap-tiles',
+          type: 'raster',
+          source: 'google-roadmap',
+          minzoom: 0,
+          maxzoom: 22
+        }
+      ]
+    };
+
     var map = new maplibregl.Map({
       container: 'map',
-      style: '${styleUrl}',
+      style: googleStyle,
       center: [${initial.longitude}, ${initial.latitude}],
-      zoom: 15.5,
+      zoom: 16.5,
       minZoom: 10,
-      maxZoom: 19,
-      pixelRatio: window.devicePixelRatio || 2,
+      maxZoom: 20,
       dragRotate: false,
       touchPitch: false,
       pitchWithRotate: false,
@@ -168,13 +196,10 @@ function generateMapLibreHtml(initial: Coordinates, isDark: boolean): string {
     });
 
     map.on('click', function(e) {
+      if (e.point && e.point.y < 100) return;
       if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
         window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'MAP_CLICK' }));
       }
-      map.easeTo({
-        center: [e.lngLat.lng, e.lngLat.lat],
-        duration: 400
-      });
     });
 
     map.on('load', function() {
@@ -267,6 +292,7 @@ export function LocationPickerModal({
     outputRange: [0.4, 0.12],
   });
 
+  const searchInputRef = useRef<TextInput>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -293,8 +319,53 @@ export function LocationPickerModal({
 
   // Real-time Places Search (Prefix-aware local index + Nominatim online fallback)
   useEffect(() => {
-    if (!searchQuery || searchQuery.trim().length < 2) {
-      setSearchResults([]);
+    if (!searchQuery || searchQuery.trim().length === 0) {
+      if (isSearching) {
+        setSearchResults([
+          {
+            name: 'BUBT Main Campus',
+            zone: 'Mirpur & Campus',
+            subText: 'Permanent Campus · Road 9 & 10, Rupnagar',
+            formattedAddress: 'BUBT Main Campus',
+            coords: BUBT_COORDS,
+            placeType: 'university',
+          },
+          {
+            name: 'BUBT Building 4 (BBA & Admission)',
+            zone: 'Mirpur & Campus',
+            subText: 'Road 6 · Rupnagar, Mirpur-2',
+            formattedAddress: 'BUBT Building 4 (BBA & Admission)',
+            coords: { latitude: 23.8098, longitude: 90.3567 },
+            placeType: 'university',
+          },
+          {
+            name: 'Mirpur 10 Metro Station',
+            zone: 'Mirpur & Campus',
+            subText: 'Metro Rail Station · Main Roundabout',
+            formattedAddress: 'Mirpur 10 Metro Station',
+            coords: { latitude: 23.8071, longitude: 90.3686 },
+            placeType: 'transit',
+          },
+          {
+            name: 'Mirpur 1 (Muktodhara)',
+            zone: 'Mirpur & Campus',
+            subText: 'Muktodhara Roundabout · Darussalam Link',
+            formattedAddress: 'Mirpur 1 (Muktodhara)',
+            coords: { latitude: 23.7956, longitude: 90.3537 },
+            placeType: 'area',
+          },
+          {
+            name: 'Dhanmondi 27',
+            zone: 'Central & West',
+            subText: 'Rapa Plaza · Mirpur Road',
+            formattedAddress: 'Dhanmondi 27',
+            coords: { latitude: 23.7529, longitude: 90.3752 },
+            placeType: 'area',
+          },
+        ]);
+      } else {
+        setSearchResults([]);
+      }
       setSearchLoading(false);
       return;
     }
@@ -313,14 +384,14 @@ export function LocationPickerModal({
       } finally {
         setSearchLoading(false);
       }
-    }, 200);
+    }, 150);
 
     return () => {
       if (searchDebounceRef.current) {
         clearTimeout(searchDebounceRef.current);
       }
     };
-  }, [searchQuery, currentCoords]);
+  }, [searchQuery, isSearching, currentCoords]);
 
   // Handle GPS "Use My Current Location"
   const handleUseCurrentLocation = async () => {
@@ -400,6 +471,7 @@ export function LocationPickerModal({
         });
       } else if (data.type === 'MOVE_START') {
         if (data.isUserGesture) {
+          isProgrammaticMoveRef.current = false;
           Keyboard.dismiss();
           setIsSearching(false);
           Animated.spring(pinLiftAnim, {
@@ -418,7 +490,6 @@ export function LocationPickerModal({
         }).start();
       } else if (data.type === 'MAP_CLICK') {
         Keyboard.dismiss();
-        setIsSearching(false);
       }
     } catch (e) {
       // Ignore parse errors
@@ -531,38 +602,53 @@ export function LocationPickerModal({
           geolocationEnabled
           androidLayerType="none"
           originWhitelist={['*']}
+          userAgent="Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
         />
 
         {/* Native Floating Pin & Reticle Layer (High-Performance 120 FPS on Android RenderThread) */}
         <View pointerEvents="none" style={styles.nativePinCenterOverlay}>
-          {/* Target Reticle on Ground */}
-          <View style={[styles.nativeReticleRing, { borderColor: accentColor }]}>
-            <View style={[styles.nativeReticleDot, { backgroundColor: accentColor }]} />
-          </View>
-          {/* Ground Shadow - Stays firmly grounded on (0, 0), shrinks and fades on lift */}
-          <Animated.View
-            style={[
-              styles.nativeGroundShadow,
-              {
-                transform: [{ scale: shadowScale }],
-                opacity: shadowOpacity,
-              },
-            ]}
-          />
-          {/* Spring Floating Pin - Only pin lifts, bottom point touches (0, 0) when resting */}
-          <Animated.View
-            style={[
-              styles.nativePinContainer,
-              {
-                transform: [{ translateY: pinTranslateY }],
-              },
-            ]}
-          >
-            <View style={[styles.nativePinHead, { backgroundColor: accentColor }]}>
-              <View style={styles.nativePinDot} />
+          <View style={styles.centerAnchor}>
+            {/* Target Reticle on Ground */}
+            <View style={[styles.nativeReticleRing, { borderColor: accentColor }]}>
+              <View style={[styles.nativeReticleDot, { backgroundColor: accentColor }]} />
             </View>
-          </Animated.View>
+            {/* Ground Shadow - Stays firmly grounded on (0, 0), shrinks and fades on lift */}
+            <Animated.View
+              style={[
+                styles.nativeGroundShadow,
+                {
+                  transform: [{ scale: shadowScale }],
+                  opacity: shadowOpacity,
+                },
+              ]}
+            />
+            {/* Spring Floating Pin - Only pin lifts, bottom point touches (0, 0) when resting */}
+            <Animated.View
+              style={[
+                styles.nativePinContainer,
+                {
+                  transform: [{ translateY: pinTranslateY }],
+                },
+              ]}
+            >
+              <View style={[styles.nativePinHead, { backgroundColor: accentColor }]}>
+                <View style={styles.nativePinDot} />
+              </View>
+            </Animated.View>
+          </View>
         </View>
+
+        {/* Search Dismiss Backdrop when dropdown is open */}
+        {isSearching && (
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => {
+              Keyboard.dismiss();
+              setIsSearching(false);
+            }}
+          />
+        )}
 
         {/* Floating Top Bar (Back button + Interactive Search) - Universal 58dp Standard */}
         <View style={[styles.topBarWrapper, { paddingTop: insets.top + 10 }]}>
@@ -575,22 +661,32 @@ export function LocationPickerModal({
             <Feather name="arrow-left" size={20} color={C.text} />
           </TouchableOpacity>
 
-          <View style={[styles.searchCapsule, { backgroundColor: C.surface, borderColor: isSearching ? accentColor : C.border }]}>
+          <TouchableOpacity
+            activeOpacity={1}
+            style={[styles.searchCapsule, { backgroundColor: C.surface, borderColor: isSearching ? accentColor : C.border }]}
+            onPress={() => searchInputRef.current?.focus()}
+          >
             {searchLoading ? (
               <ActivityIndicator size="small" color={accentColor} style={styles.searchIcon} />
             ) : (
-              <Feather name="search" size={18} color={isSearching ? accentColor : C.textMuted} style={styles.searchIcon} />
+              <TouchableOpacity
+                onPress={() => searchInputRef.current?.focus()}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Feather name="search" size={18} color={isSearching ? accentColor : C.textMuted} style={styles.searchIcon} />
+              </TouchableOpacity>
             )}
             <TextInput
+              ref={searchInputRef}
               style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
               placeholder="Search any place, hospital, road in Dhaka..."
               placeholderTextColor={C.textMuted}
               value={searchQuery}
               onChangeText={text => {
                 setSearchQuery(text);
-                setIsSearching(text.length > 0);
+                setIsSearching(true);
               }}
-              onFocus={() => setIsSearching(searchQuery.length > 0)}
+              onFocus={() => setIsSearching(true)}
               returnKeyType="search"
               onSubmitEditing={() => {
                 if (searchResults.length > 0) {
@@ -614,7 +710,7 @@ export function LocationPickerModal({
                 <Feather name="x" size={17} color={C.textMuted} />
               </TouchableOpacity>
             )}
-          </View>
+          </TouchableOpacity>
         </View>
 
         {/* Floating Live Places Autocomplete Dropdown */}
@@ -1082,8 +1178,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     zIndex: 10,
   },
+  centerAnchor: {
+    width: 0,
+    height: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   nativeReticleRing: {
     position: 'absolute',
+    left: -14,
+    top: -14,
     width: 28,
     height: 28,
     borderRadius: 14,
@@ -1100,17 +1204,19 @@ const styles = StyleSheet.create({
   },
   nativeGroundShadow: {
     position: 'absolute',
+    left: -11,
+    top: -3.5,
     width: 22,
     height: 7,
     borderRadius: 11,
     backgroundColor: 'rgba(0, 0, 0, 0.45)',
-    top: -3.5,
   },
   nativePinContainer: {
     position: 'absolute',
+    left: -21,
+    top: -51,
     width: 42,
     height: 42,
-    top: -51,
     alignItems: 'center',
     justifyContent: 'center',
   },

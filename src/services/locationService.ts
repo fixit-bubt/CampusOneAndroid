@@ -27,8 +27,8 @@ export interface GeocodedPlace {
 }
 
 export const BUBT_COORDS: Coordinates = {
-  latitude: 23.8103,
-  longitude: 90.3567,
+  latitude: 23.8119,
+  longitude: 90.3571,
 };
 
 export const CAMPUS_AND_DHAKA_LANDMARKS: LandmarkLocation[] = [
@@ -37,10 +37,46 @@ export const CAMPUS_AND_DHAKA_LANDMARKS: LandmarkLocation[] = [
     name: 'BUBT Main Campus',
     nameBn: 'বিইউবিটি মেইন ক্যাম্পাস',
     zone: 'Mirpur & Campus',
-    coords: { latitude: 23.8103, longitude: 90.3567 },
-    desc: 'Permanent Campus · Rupnagar, Mirpur-2',
+    coords: { latitude: 23.8119, longitude: 90.3571 },
+    desc: 'Permanent Campus · Road 9 & 10, Rupnagar',
     type: 'university',
-    keywords: ['bubt', 'campus', 'rupnagar', 'university'],
+    keywords: ['bubt', 'campus', 'rupnagar', 'permanent campus', 'university', 'academic'],
+  },
+  {
+    name: 'BUBT Building 4 (BBA & Admission)',
+    nameBn: 'বিইউবিটি বিল্ডিং ৪',
+    zone: 'Mirpur & Campus',
+    coords: { latitude: 23.8098, longitude: 90.3567 },
+    desc: 'Road 6 · Rupnagar, Mirpur-2',
+    type: 'university',
+    keywords: ['bubt', 'building 4', 'bba', 'admission', 'rupnagar'],
+  },
+  {
+    name: 'BUBT Building 2 & 3',
+    nameBn: 'বিইউবিটি বিল্ডিং ২ ও ৩',
+    zone: 'Mirpur & Campus',
+    coords: { latitude: 23.8122, longitude: 90.3572 },
+    desc: 'Academic Buildings · Road 10, Rupnagar',
+    type: 'university',
+    keywords: ['bubt', 'building 2', 'building 3', 'academic'],
+  },
+  {
+    name: 'Super Hostel-04 (Mirpur Female Branch)',
+    nameBn: 'সুপার হোস্টেল-০৪',
+    zone: 'Mirpur & Campus',
+    coords: { latitude: 23.8112, longitude: 90.3562 },
+    desc: 'Road 8 · Rupnagar, Mirpur-2',
+    type: 'landmark',
+    keywords: ['super hostel', 'hostel', 'rupnagar'],
+  },
+  {
+    name: 'Follow Fashion (Rupnagar)',
+    nameBn: 'ফলো ফ্যাশন',
+    zone: 'Mirpur & Campus',
+    coords: { latitude: 23.8106, longitude: 90.3560 },
+    desc: 'Road 7 · Rupnagar, Mirpur-2',
+    type: 'landmark',
+    keywords: ['follow fashion', 'fashion', 'rupnagar'],
   },
   {
     name: 'Sony Square (Sony Cinema)',
@@ -1024,7 +1060,7 @@ export async function searchPlacesOnline(
 
     const encoded = encodeURIComponent(q);
     const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${encoded}&countrycodes=bd&viewbox=90.28,23.95,90.52,23.65&bounded=0&limit=6&addressdetails=1`,
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encoded}&countrycodes=bd&limit=8&addressdetails=1`,
       {
         headers: {
           'User-Agent': 'CampusOne-BUBT-App/1.0 (academic capstone)',
@@ -1043,14 +1079,6 @@ export async function searchPlacesOnline(
         const lon = parseFloat(item.lon);
         if (isNaN(lat) || isNaN(lon)) continue;
 
-        // Skip if practically identical to local match (< 300m)
-        const isDuplicate = localMatches.some(
-          lm =>
-            Math.abs(lm.coords.latitude - lat) < 0.003 &&
-            Math.abs(lm.coords.longitude - lon) < 0.003
-        );
-        if (isDuplicate) continue;
-
         const addr = item.address || {};
         const primary =
           item.name ||
@@ -1060,6 +1088,15 @@ export async function searchPlacesOnline(
           addr.suburb ||
           addr.neighbourhood ||
           item.display_name.split(',')[0];
+
+        // Skip only if identically named and within 50m of a local match
+        const isDuplicate = localMatches.some(
+          lm =>
+            lm.name.toLowerCase() === primary.toLowerCase() &&
+            Math.abs(lm.coords.latitude - lat) < 0.0005 &&
+            Math.abs(lm.coords.longitude - lon) < 0.0005
+        );
+        if (isDuplicate) continue;
 
         const areaParts = [
           addr.suburb || addr.quarter || addr.neighbourhood,
