@@ -29,10 +29,13 @@ export const en = {
 
   tabs: {
     home: 'Home',
+    studyHub: 'Study Hub',
+    messages: 'Messages',
     explore: 'Explore',
-    annex: 'Annex',
-    profile: 'Profile',
     settings: 'Settings',
+    annex: 'Annex',
+    annexDesc: 'Check results, routine & attendance',
+    profile: 'Profile',
   },
 
   topbar: {

@@ -30,10 +30,13 @@ export const bn: Dict = {
 
   tabs: {
     home: 'হোম',
+    studyHub: 'স্টাডি হাব',
+    messages: 'মেসেজ',
     explore: 'এক্সপ্লোর',
-    annex: 'Annex',
-    profile: 'প্রোফাইল',
     settings: 'সেটিংস',
+    annex: 'Annex',
+    annexDesc: 'ফলাফল, রুটিন ও উপস্থিতি দেখুন',
+    profile: 'প্রোফাইল',
   },
 
   topbar: {

@@ -202,6 +202,25 @@ export function ExploreScreen({ navigation }: any) {
           >
             {academicsSectors.map(renderSectorRow)}
 
+            {/* Annex Portal */}
+            <TouchableOpacity
+              style={[styles.toolCard, { backgroundColor: C.surface, borderColor: C.border }]}
+              onPress={() => navigation.navigate('Annex')}
+              activeOpacity={0.75}
+            >
+              <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
+                <AnimatedIcon family="feather" name="external-link" size={20} color={C.brand} animation="entrance" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.cellTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  {t.tabs.annex}
+                </Text>
+                <Text style={[styles.cellDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
+                  {t.tabs.annexDesc}
+                </Text>
+              </View>
+            </TouchableOpacity>
+
             {/* Tool: CGPA calculator - academic tool, hidden from maintenance staff */}
             <TouchableOpacity
               style={[styles.toolCard, { backgroundColor: C.surface, borderColor: C.border }]}

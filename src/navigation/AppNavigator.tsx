@@ -75,6 +75,7 @@ import { ToolCompressScreen }      from '../screens/pdfmaker/ToolCompressScreen'
 import { ProfileScreen }          from '../screens/main/ProfileScreen';
 import { ChatbotScreen }          from '../screens/chatbot/ChatbotScreen';
 import { ChatbotHistoryScreen }   from '../screens/chatbot/ChatbotHistoryScreen';
+import { AnnexPortalScreen }       from '../screens/annex/AnnexPortalScreen';
 import { PrivacyPolicyScreen }    from '../screens/legal/PrivacyPolicyScreen';
 import { TermsScreen }            from '../screens/legal/TermsScreen';
 
@@ -85,6 +86,9 @@ export function AppNavigator() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {/* Main tabs (Home tab = role dashboard for admin/staff) */}
       <Stack.Screen name="Tabs"           component={BottomTabNavigator} />
+
+      {/* Annex Portal (from Explore) */}
+      <Stack.Screen name="Annex"          component={AnnexPortalScreen} />
 
       {/* Reports */}
       <Stack.Screen name="ReportForm"     component={ReportFormScreen} />

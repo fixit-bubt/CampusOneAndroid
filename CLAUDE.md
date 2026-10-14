@@ -176,8 +176,12 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
 - **Standard Bottom Tab Bar Specification (`BottomTabNavigator.tsx`):**
   - Native standard React Navigation bottom tab bar with dynamic theme synchronization (`tabBarStyle: { backgroundColor: C.surface, borderTopColor: C.border, height: Layout.bottomNavHeight, paddingBottom: 14, paddingTop: 6 }`).
   - Active tab highlighted in electric Brand Blue (`tabBarActiveTintColor: C.brand`), inactive in muted zinc (`tabBarInactiveTintColor: C.textMuted`).
-  - Active tab focus triggers a 120 FPS native rubberband spring bounce pop (`AnimatedIcon` `animation={focused ? 'spring' : 'none'}` keyed with `${key}-${focused}`).
-  - Role-adaptive tab count: 5 tabs for students (`Home`, `Explore`, `Messages`, `Annex`, `Settings`) and 4 tabs for admin/staff (`Home`, `Explore`, `Annex`, `Settings`). Unread direct messages badge dynamically displayed on Messages tab.
+  - 120 FPS Elastic Bounce Tap Micro-Interactions: Every tab button implements `AnimatedTabBarButton` on the Android RenderThread (`useNativeDriver: true`). Press-in produces tactile squash (`scale: 0.84`), and tap release / trigger launches the elastic spring pop (`scale: 0.72 -> 1.30 -> 1.0`, matching Explore entrance bounce physics). Re-tapping active tabs reliably fires the elastic bounce on every single tap. Active tab switches also trigger `AnimatedIcon` `animation={focused ? 'entrance' : 'none'}` (`0.3 -> 1.25 -> 1.0`).
+  - Role-adaptive tab count & layout:
+    - Students (5 tabs): `Home`, `StudyHub`, `Messages`, `Explore`, `Settings`. Unread direct messages badge dynamically displayed on Messages tab.
+    - Admin (4 tabs): `Home`, `StudyHub`, `Explore`, `Settings`.
+    - Staff (3 tabs): `Home`, `Explore`, `Settings`.
+  - Annex Portal Relocation: Relocated from bottom navigation bar to `ExploreScreen` under Academics, rendered as an interactive tool card that opens `AnnexPortalScreen` with an integrated header back button.
   - Strict prohibition against experimental SVG curved cutout/hill bottom bars: maintains 100% theme consistency, zero layout distortion, and rock-solid Android edge-to-edge gesture compliance.
 - **Universal Liquid Gooey Toggle Switch Standard (`LiquidToggle.tsx` / `TactileSwitch.tsx`):**
   - **Fluid Viscous Morphing Physics:** Single cohesive fluid droplet thumb with native volume-preserving squash-and-stretch (`scaleX: 1.0 -> 1.40 -> 1.0`, `scaleY: 1.0 -> 0.84 -> 1.0`, `translateX: 0 -> travel`) driven by a 460ms silky fluid cubic-bezier curve (`Easing.bezier(0.32, 0.0, 0.18, 1.0)`). Pure, continuous fluid gel capsule motion with zero seams, zero overlapping boxes, and zero extraneous artifacts.

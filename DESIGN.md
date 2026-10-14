@@ -207,4 +207,32 @@ All toggle switches across CampusOne strictly implement the **Liquid Toggle** st
 6. **Universal Application:**
    * Deployed across all 16 toggle locations in the app (Settings, Notifications, Profile, Marketplace, Study Hub, Medical, and Announcements).
 
+---
+
+## 9. Universal Bottom Navigation Bar & 120 FPS Elastic Tap Animation
+
+The mobile bottom navigation bar implements a flat, native edge-to-edge layout with 120 FPS spring micro-interactions:
+1. **Student Tab Order:**
+   * `Home` (Dashboard & Campus Today feed)
+   * `Study Hub` (Department, Intake & Section materials)
+   * `Messages` (Direct student chats & unread notification pill)
+   * `Explore` (Campus services directory & relocated Annex Portal)
+   * `Settings` (User profile, theme tokens, and account settings)
+2. **Role-Adaptive Layout:**
+   * **Students (5 tabs):** `Home` | `Study Hub` | `Messages` | `Explore` | `Settings`
+   * **Admin (4 tabs):** `Home` | `Study Hub` | `Explore` | `Settings`
+   * **Staff (3 tabs):** `Home` | `Explore` | `Settings`
+3. **Flat Bar Geometry vs. Notch Prohibition:**
+   * Strictly maintains a clean, flat top border with dynamic OLED dark/light theme background.
+   * Experimental SVG curved cutouts/notches in the middle are strictly forbidden to eliminate 1px border tearing, touch target shrink, and Android gesture pill clipping.
+4. **120 FPS Elastic Bounce Tap Physics:**
+   * Powered by `AnimatedTabBarButton` running on Android RenderThread (`useNativeDriver: true`).
+   * **Press-In:** Tactile squish to scale `0.84` (`tension: 400, friction: 12`).
+   * **Release / Trigger:** Elastic rubberband pop identical to Explore's `entrance` animation (scale reset to `0.72` -> spring to `1.30` -> settles at `1.0`).
+   * Active tab switches trigger `AnimatedIcon` `entrance` pop from `0.3 → 1.25 → 1.0`.
+   * Re-tapping an already focused tab reliably plays the tactile pop on every single tap.
+5. **Annex Portal Relocation:**
+   * BUBT Annex portal relocated from bottom tab bar into **Explore -> Academics** section.
+   * Rendered as an interactive tool card (`external-link` icon) that pushes `AnnexPortalScreen` with an integrated header back button.
+
 

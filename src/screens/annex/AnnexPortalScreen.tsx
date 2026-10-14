@@ -38,7 +38,7 @@ const FORCE_LIGHT_JS = `
   true;
 `;
 
-export function AnnexPortalScreen() {
+export function AnnexPortalScreen({ navigation }: any) {
   const { C } = useTheme();
   const webRef = useRef<WebView>(null);
   const [loading, setLoading] = useState(true);
@@ -47,7 +47,7 @@ export function AnnexPortalScreen() {
   const [canGoBack, setCanGoBack] = useState(false);
 
   // Android hardware back should step through the portal's own page history
-  // before it's allowed to leave the tab.
+  // before it's allowed to leave the screen.
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
       if (canGoBack) {
@@ -69,9 +69,27 @@ export function AnnexPortalScreen() {
     webRef.current?.reload();
   }, []);
 
+  const handleBack = () => {
+    if (canGoBack && webRef.current) {
+      webRef.current.goBack();
+    } else if (navigation?.canGoBack?.()) {
+      navigation.goBack();
+    }
+  };
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <View style={[styles.header, { paddingHorizontal: Layout.screenPadding }]}>
+        {navigation?.canGoBack?.() && (
+          <TouchableOpacity
+            onPress={handleBack}
+            style={[styles.iconBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+            activeOpacity={0.75}
+            hitSlop={8}
+          >
+            <Icon name="arrowL" size={20} color={C.text} />
+          </TouchableOpacity>
+        )}
         <View style={{ flex: 1 }}>
           <Text style={[styles.eyebrow, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
             CampusOne

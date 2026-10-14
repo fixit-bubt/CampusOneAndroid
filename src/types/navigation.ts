@@ -12,9 +12,9 @@ export type AuthStackParams = {
 
 export type BottomTabParams = {
   Home: undefined;
-  Explore: undefined;
+  StudyHub: undefined;
   Messages: undefined;
-  Annex: undefined;
+  Explore: undefined;
   Settings: undefined;
 };
 
@@ -22,6 +22,9 @@ export type BottomTabParams = {
 export type AppStackParams = {
   // Core tabs wrapper
   Tabs: undefined;
+
+  // Annex Portal
+  Annex: undefined;
 
   // Reports
   ReportDetail: { reportId: string };
