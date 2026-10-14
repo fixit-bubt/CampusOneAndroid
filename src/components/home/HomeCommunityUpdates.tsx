@@ -157,22 +157,23 @@ export function HomeCommunityUpdates() {
       const [annRes, evRes, clubPostsRes] = await Promise.all([
         supabase
           .from('announcements')
-          .select('id, title, department, body, created_at, pinned, image_url, attachment_url')
+          .select('id, title, department, body, created_at, pinned, image_url, attachment_url, priority')
           .is('deleted_at', null)
+          .order('pinned', { ascending: false })
           .order('created_at', { ascending: false })
-          .limit(25),
+          .limit(100),
         supabase
           .from('events')
           .select('id, title, venue, time, date, category, banner_url, description')
           .is('deleted_at', null)
           .gte('date', today)
           .order('date', { ascending: true })
-          .limit(10),
+          .limit(20),
         supabase
           .from('club_posts')
           .select('id, title, body, created_at, image_url, club_id, clubs(id, name, cover_url)')
           .order('created_at', { ascending: false })
-          .limit(10),
+          .limit(20),
       ]);
 
       const list: CommunityItem[] = [];
@@ -297,9 +298,9 @@ export function HomeCommunityUpdates() {
   }, [items, activeTab]);
 
   const tabs: TabItem<CommunityTab>[] = [
-    { id: 'Notices', label: 'Notices', count: counts.Notices, color: SectorColors.announce },
-    { id: 'Clubs', label: 'Clubs', count: counts.Clubs, color: SectorColors.clubs },
-    { id: 'Events', label: 'Events', count: counts.Events, color: SectorColors.events },
+    { id: 'Notices', label: 'Notices', count: counts.Notices, color: SectorColors.announce, showZeroCount: true },
+    { id: 'Clubs', label: 'Clubs', count: counts.Clubs, color: SectorColors.clubs, showZeroCount: true },
+    { id: 'Events', label: 'Events', count: counts.Events, color: SectorColors.events, showZeroCount: true },
   ];
 
   return (
@@ -315,7 +316,7 @@ export function HomeCommunityUpdates() {
         <View style={[styles.liveBadge, { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.15)' : '#eff6ff' }]}>
           <View style={styles.pulseDot} />
           <Text style={[styles.liveText, { color: SectorColors.announce, fontFamily: FontFamily.jakartaBold }]}>
-            {filtered.length} updates
+            {filtered.length > 99 ? '99+' : `${filtered.length} updates`}
           </Text>
         </View>
       </View>
@@ -342,7 +343,7 @@ export function HomeCommunityUpdates() {
         </View>
       ) : (
         <View style={styles.listCol}>
-          {filtered.slice(0, 5).map((item) => (
+          {filtered.slice(0, 6).map((item) => (
             <TouchableOpacity
               key={item.id}
               activeOpacity={0.75}

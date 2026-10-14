@@ -185,7 +185,7 @@ export function SegmentedTabs<T extends string = string>({
                     },
                   ]}
                 >
-                  {tab.count}
+                  {typeof tab.count === 'number' ? (tab.count > 99 ? 99 : tab.count) : tab.count}
                 </Text>
               </View>
             )}
