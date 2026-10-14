@@ -100,7 +100,7 @@ export function TactileSwitch({
 
   const translateX = posAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, travel],
+    outputRange: [inset, inset + travel],
     extrapolate: 'clamp',
   });
 
@@ -118,12 +118,16 @@ export function TactileSwitch({
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       disabled={disabled}
-      hitSlop={8}
+      hitSlop={10}
       accessibilityRole="switch"
       accessibilityState={{ checked: value, disabled }}
       accessibilityLabel={accessibilityLabel}
       style={[{ opacity: disabled ? 0.45 : 1 }, style]}
     >
+      {/*
+        No overflow:hidden here — that clips the scaleX squish animation on Android.
+        The track shape is conveyed purely by borderRadius on both the base and overlay.
+      */}
       <View
         style={[
           styles.track,
@@ -131,11 +135,11 @@ export function TactileSwitch({
             width: trackWidth,
             height: trackHeight,
             borderRadius: trackRadius,
-            padding: inset,
             backgroundColor: inactiveTrackColor,
           },
         ]}
       >
+        {/* Active colour overlay — independently clipped so the thumb can stretch outside */}
         <Animated.View
           style={[
             StyleSheet.absoluteFill,
@@ -147,10 +151,14 @@ export function TactileSwitch({
           ]}
         />
 
+        {/* Thumb — positioned absolutely so scaleX stretching isn't clipped by the track */}
         <Animated.View
           style={[
             styles.thumb,
             {
+              position: 'absolute',
+              top: inset,
+              left: 0,
               height: thumbSize,
               width: thumbSize,
               borderRadius: thumbSize / 2,
@@ -167,13 +175,13 @@ export function TactileSwitch({
 const styles = StyleSheet.create({
   track: {
     justifyContent: 'center',
-    overflow: 'hidden',
+    // overflow is intentionally NOT 'hidden' — clipping breaks scaleX on Android Fabric
   },
   thumb: {
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.18,
-    shadowRadius: 2.5,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
+    elevation: 2,
   },
 });
