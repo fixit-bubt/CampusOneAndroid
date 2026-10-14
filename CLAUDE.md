@@ -179,8 +179,20 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
   - Active tab focus triggers a 120 FPS native rubberband spring bounce pop (`AnimatedIcon` `animation={focused ? 'spring' : 'none'}` keyed with `${key}-${focused}`).
   - Role-adaptive tab count: 5 tabs for students (`Home`, `Explore`, `Messages`, `Annex`, `Settings`) and 4 tabs for admin/staff (`Home`, `Explore`, `Annex`, `Settings`). Unread direct messages badge dynamically displayed on Messages tab.
   - Strict prohibition against experimental SVG curved cutout/hill bottom bars: maintains 100% theme consistency, zero layout distortion, and rock-solid Android edge-to-edge gesture compliance.
+- **Universal Liquid Gooey Toggle Switch Standard (`LiquidToggle.tsx` / `TactileSwitch.tsx`):**
+  - **Fluid Metaball Morphing Physics:** Two morphing circles translate and scale organically (`translateX: 0 -> 12`, `scale: 1 -> 0` on Circle 1; `translateX: -12 -> 0`, `scale: 0 -> 1` on Circle 2) linked by an organic connecting liquid bridge (metaball waist) and micro-droplet splash (`dropCircle` translating from the top and merging into the thumb).
+  - **100% Native-Driver Performance (120 FPS):** All transforms and crossfades execute exclusively on the Android RenderThread (`useNativeDriver: true`), ensuring buttery-smooth interaction with zero JS-thread frame drops.
+  - **Color Variants & Semantic Mapping:**
+    - `default`: Electric Brand Blue (`#275EFE` / `C.brand`)
+    - `success`: Emerald (`#10B981` / `C.success`) - used for Language, Free Donation mode, etc.
+    - `warning`: Amber (`#F59E0B` / `C.warn`)
+    - `danger`: Red (`#EF4444` / `C.danger`) - used for Doctor On-Leave, Master Pause, Faculty On-Leave.
+    - Custom: `trackColor?: { false?: string; true?: string }` support across modules.
+  - **Proportions & Ergonomics:** Standard 52×32dp (radius 16, thumb 20, travel 20) and compact `sm` 44×26dp (radius 13, thumb 16, travel 18) with minimum 48dp touch hit-slop.
+  - **Full Backwards Compatibility:** `TactileSwitch` re-exports `LiquidToggle`, supporting both `checked` / `value` and `onCheckedChange` / `onValueChange` across all screens.
 
 ### 5.4 Universal 58dp Control Bar & SegmentedTabs Standard
+
 - **App-Wide Standard:** All segmented tab controls, feed switchers, search bars, dropdown triggers, and primary action/submit buttons across the app MUST strictly adhere to the universal **58dp fixed outer height** standard (`height: 58`, `borderRadius: 16`, horizontal screen padding alignment `Layout.screenPadding = 16dp`) for visual, structural, and ergonomic consistency.
 - **Strict Geometric Symmetry:** Every tab has equal width (`flex: 1` / `100% / tabs.length`) so tabs never look mismatched or uneven based on word length.
 - **Strict Button Count Range (Max 3, Min 2):** Never use 4 buttons in a segmented tab bar. 4 buttons squeeze touch targets down to ~80dp and cause text truncation on mobile. All segmented bars must strictly have 2 or 3 tabs. Move secondary views (e.g. "My Rides") to header buttons or sub-bars.
