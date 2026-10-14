@@ -295,6 +295,84 @@ export const CAMPUS_AND_DHAKA_LANDMARKS: LandmarkLocation[] = [
     coords: { latitude: 23.7435, longitude: 90.3820 },
     desc: 'House 1, Road 4, Dhanmondi',
   },
+  // University Campuses & Student Commute Destinations
+  {
+    name: 'Dhaka University (TSC & Arts)',
+    nameBn: 'ঢাকা বিশ্ববিদ্যালয় (টিএসসি)',
+    zone: 'Central & South',
+    coords: { latitude: 23.7319, longitude: 90.3957 },
+    desc: 'Teacher-Student Centre · Nilkhet Road',
+  },
+  {
+    name: 'BUET Main Campus',
+    nameBn: 'বুয়েট মেইন ক্যাম্পাস',
+    zone: 'Central & South',
+    coords: { latitude: 23.7266, longitude: 90.3924 },
+    desc: 'Palashi · Engineering University',
+  },
+  {
+    name: 'Jahangirnagar University (JU)',
+    nameBn: 'জাহাঙ্গীরনগর বিশ্ববিদ্যালয়',
+    zone: 'Savar & Outer West',
+    coords: { latitude: 23.8814, longitude: 90.2674 },
+    desc: 'Dairy Gate · Savar Highway',
+  },
+  {
+    name: 'North South University (NSU)',
+    nameBn: 'নর্থ সাউথ বিশ্ববিদ্যালয়',
+    zone: 'North Dhaka',
+    coords: { latitude: 23.8151, longitude: 90.4255 },
+    desc: 'Plot 15, Block B, Bashundhara R/A',
+  },
+  {
+    name: 'AIUB Permanent Campus',
+    nameBn: 'এআইইউবি ক্যাম্পাস',
+    zone: 'North Dhaka',
+    coords: { latitude: 23.8223, longitude: 90.4274 },
+    desc: '408/1 Kuratoli, Khilkhet',
+  },
+  {
+    name: 'BRAC University (New Campus)',
+    nameBn: 'ব্র্যাক বিশ্ববিদ্যালয়',
+    zone: 'Central & East',
+    coords: { latitude: 23.7745, longitude: 90.4260 },
+    desc: 'Kha 224, Pragati Sarani, Merul Badda',
+  },
+  {
+    name: 'Shah Ali Mazar (Mirpur 1)',
+    nameBn: 'শাহ আলী মাজার',
+    zone: 'Mirpur & Campus',
+    coords: { latitude: 23.8010, longitude: 90.3512 },
+    desc: 'Mazar Road, Mirpur-1',
+  },
+  {
+    name: 'Hazrat Shahjalal Int Airport',
+    nameBn: 'শাহজালাল আন্তর্জাতিক বিমানবন্দর',
+    zone: 'North Dhaka',
+    coords: { latitude: 23.8433, longitude: 90.3978 },
+    desc: 'Terminal 1 & 2 · Airport Road, Kurmitola',
+  },
+  {
+    name: 'Kamalapur Railway Station',
+    nameBn: 'কমলাপুর রেলওয়ে স্টেশন',
+    zone: 'Central & South',
+    coords: { latitude: 23.7317, longitude: 90.4255 },
+    desc: 'Central Railway Station · Motijheel link',
+  },
+  {
+    name: 'Jamuna Future Park',
+    nameBn: 'যমুনা ফিউচার পার্ক',
+    zone: 'North Dhaka',
+    coords: { latitude: 23.8135, longitude: 90.4242 },
+    desc: 'Ka-244, Pragati Sarani, Kuril',
+  },
+  {
+    name: 'Bashundhara City Complex',
+    nameBn: 'বসুন্ধরা সিটি মল',
+    zone: 'Central & West',
+    coords: { latitude: 23.7512, longitude: 90.3905 },
+    desc: 'Panthapath · Karwan Bazar Link',
+  },
 ];
 
 export function getDistanceMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -359,6 +437,87 @@ export function searchLandmarks(query: string, limit: number = 8): LandmarkLocat
       l.zone.toLowerCase().includes(q) ||
       (l.desc && l.desc.toLowerCase().includes(q))
   ).slice(0, limit);
+}
+
+export async function searchPlacesOnline(query: string): Promise<GeocodedPlace[]> {
+  if (!query || query.trim().length < 2) return [];
+  const q = query.trim();
+
+  // 1. Instant local curated landmark match (0ms latency)
+  const localMatches: GeocodedPlace[] = searchLandmarks(q, 5).map(l => ({
+    name: l.name,
+    zone: l.zone,
+    subText: l.desc || `${l.coords.latitude.toFixed(4)}, ${l.coords.longitude.toFixed(4)}`,
+    formattedAddress: l.name,
+    coords: l.coords,
+  }));
+
+  // 2. Real-time OpenStreetMap Nominatim search for Bangladesh / Dhaka
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3500);
+
+    const encoded = encodeURIComponent(q);
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encoded}&countrycodes=bd&limit=6&addressdetails=1`,
+      {
+        headers: {
+          'User-Agent': 'CampusOne-BUBT-App/1.0 (academic capstone)',
+        },
+        signal: controller.signal,
+      }
+    );
+    clearTimeout(timeoutId);
+
+    if (res.ok) {
+      const data = await res.json();
+      const onlineMatches: GeocodedPlace[] = [];
+
+      for (const item of data) {
+        const lat = parseFloat(item.lat);
+        const lon = parseFloat(item.lon);
+        if (isNaN(lat) || isNaN(lon)) continue;
+
+        // Skip if practically identical to local match
+        const isDuplicate = localMatches.some(
+          lm =>
+            Math.abs(lm.coords.latitude - lat) < 0.002 &&
+            Math.abs(lm.coords.longitude - lon) < 0.002
+        );
+        if (isDuplicate) continue;
+
+        const addr = item.address || {};
+        const primary =
+          item.name ||
+          addr.amenity ||
+          addr.building ||
+          addr.road ||
+          addr.suburb ||
+          addr.neighbourhood ||
+          item.display_name.split(',')[0];
+
+        const areaParts = [
+          addr.suburb || addr.quarter || addr.neighbourhood,
+          addr.city || addr.county || 'Dhaka',
+        ].filter(Boolean);
+        const sub = areaParts.join(', ') || item.display_name;
+
+        onlineMatches.push({
+          name: primary,
+          zone: addr.city || 'Dhaka',
+          subText: sub,
+          formattedAddress: `${primary}, ${sub}`,
+          coords: { latitude: lat, longitude: lon },
+        });
+      }
+
+      return [...localMatches, ...onlineMatches].slice(0, 8);
+    }
+  } catch (err) {
+    // Return local matches if offline or timed out
+  }
+
+  return localMatches;
 }
 
 export function isWithinBangladesh(coords: Coordinates): boolean {

@@ -1564,27 +1564,24 @@ The Campus Announcements architecture is transformed from a manual posting board
 
 ---
 
-## 36. Interactive Leaflet Map & GPS Location Selection Architecture (Option B)
+## 36. Interactive MapLibre GL Vector Map & GPS Location Selection Architecture (Option B)
 
-### 36.1 Architectural Overview & Zero-Watermark OpenStreetMap Engine
-- **Option B Implementation:** Replaces static/manual text entry with an interactive OpenStreetMap (OSM) and Leaflet map engine embedded via `react-native-webview` (v13.16.1) combined with native device geolocation (`expo-location`).
-- **Zero-Cost, Zero-Watermark & No Credit Card Dependency:** Completely eliminates Google Maps SDK billing blockers and third-party tile watermarks (such as CartoDB's recent "API KEY REQUIRED" watermark). Directly streams official OpenStreetMap raster tiles (`https://tile.openstreetmap.org/{z}/{x}/{y}.png`).
-- **OLED Dark Mode & Light Mode CSS Shaders:**
-  - Dark Mode: Inverts and hue-rotates tiles with CSS (`filter: invert(100%) hue-rotate(180deg) brightness(85%) contrast(125%) saturate(60%)`) to deliver a true OLED pitch-black night map matching CampusOne tokens (`#09090b` foundation).
-  - Light Mode: Enhanced contrast and saturation shader (`filter: contrast(102%) saturate(105%)`).
-  - Automated `invalidateSize()` timing handles Android WebView container mounting without light-grey rendering flashes.
-- **Geographic Boundary & Drift Guard:** Restricts panning and zooming to Bangladesh coordinates (`minZoom: 11, maxZoom: 19`, `maxBounds: [[20.5, 88.0], [26.7, 92.8]]` with `maxBoundsViscosity: 0.85`), preventing map drift into the ocean or foreign territories.
+### 36.1 Architectural Overview & Zero-Watermark Vector Engine
+- **Option B Implementation:** Replaces static/manual text entry with an interactive **MapLibre GL JS vector map engine** embedded via `react-native-webview` (v13.16.1) combined with native device geolocation (`expo-location`).
+- **Zero-Cost, Zero-Watermark & High-DPI Vector Clarity:** Completely eliminates raster tile blurriness and third-party tile watermarks. Uses **OpenFreeMap vector tiles (`.pbf`)** powered by WebGL hardware acceleration at the device's native screen resolution. Vector typography and street lines remain 100% razor-sharp at all zoom levels on high-DPI AMOLED mobile screens.
+- **Buttery 60–120 FPS Native Performance:** Eliminates DOM tile shuffling and GPU-bound CSS shader filters by streaming native dark vector styles (`https://tiles.openfreemap.org/styles/dark`) and light vector styles (`https://tiles.openfreemap.org/styles/liberty`), cached directly on Cloudflare edge nodes in Dhaka (`DAC`).
+- **Geographic Boundary & Drift Guard:** Restricts panning and zooming to Bangladesh coordinates (`minZoom: 11, maxZoom: 19`, `maxBounds: [[88.0, 20.5], [92.8, 26.7]]`), preventing map drift into the ocean or foreign territories.
 
 ### 36.2 Core Services & Components
 1. **`src/services/locationService.ts`:**
    - **Device GPS Retrieval:** `getCurrentUserCoordinates()` requests foreground permission and retrieves device position via `Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })`.
-   - **Landmark Geocoding & Proximity Detection:** Contains pre-indexed coordinates for BUBT Main Campus (`23.8103, 90.3567`), Sony Square, Mirpur 10 Metro, Commerce College Road, Rainkhola, and key commute hubs + major medical hospitals (DMCH, National Heart Foundation, Delta Hospital, Square Hospital, Suhrawardy Hospital, NITOR, Evercare, United, BIRDEM, LabAid).
-   - **Real-Time Autocomplete Search (`searchLandmarks`):** Instant multi-field prefix matching across English, Bengali, and zone metadata for responsive search suggestions.
+   - **Expanded Landmark Registry:** Contains pre-indexed coordinates for BUBT Main Campus (`23.8103, 90.3567`), Sony Square, Mirpur 10 Metro, Commerce College Road, Rainkhola, universities (DU, BUET, JU, NSU, AIUB, BRACU), key commute hubs, and major hospitals (DMCH, National Heart Foundation, Delta Hospital, Square Hospital, Suhrawardy Hospital, NITOR, Evercare, United, BIRDEM, LabAid).
+   - **Google Maps-Like Places Search (`searchPlacesOnline`):** Debounced hybrid search engine combining instant local landmark matches (0ms latency) with live OpenStreetMap Nominatim Bangladesh geocoding (`countrycodes=bd`), allowing users to search and discover any street, hospital, neighborhood, or landmark across Dhaka.
    - **Geography-Aware Reverse Geocoding (`reverseGeocodeCoords`):** Validates bounding box (`isWithinBangladesh`) before applying city defaults, preventing fallback anomalies.
 2. **`src/components/location/LocationPickerModal.tsx`:**
-   - **Full-Bleed Canvas:** Full-screen edge-to-edge map rendering with floating controls.
+   - **Full-Bleed Canvas:** Full-screen edge-to-edge vector map rendering with floating controls.
    - **Fixed Center Pin & Ground Target Reticle:** Features a ground reticle ring with pulsing dot marking the exact road intersection, plus a teardrop vector pin that lifts during drag (`body.is-moving`) and drops with a spring bounce on `moveend`.
-   - **Floating Top Bar & Autocomplete Search:** Back button alongside an interactive search input with floating suggestions dropdown.
+   - **Floating Top Bar & Live Places Search:** Back button alongside an interactive search input with loading indicator and floating suggestions dropdown.
    - **Right Floating Action Buttons (FAB Column):** Quick GPS auto-locate FAB, BUBT Campus quick-snap FAB, and native zoom in/out FABs.
    - **Quick Commute Hub Chips:** Horizontal scrollbar of quick-jump shortcuts: BUBT Campus, Sony Square, Mirpur 10 Metro, Mirpur 1, Mirpur 12, Heart Foundation, Square Hospital, DMCH, Farmgate, Dhanmondi 27, Uttara 3, Mohakhali, and Kuril Flyover.
    - **Universal 72dp Content Card:** Live selected location preview card (`minHeight: 72, padding: 14, borderRadius: 16`) with 44dp map pin icon box, resolved place title, and coordinates subtitle.

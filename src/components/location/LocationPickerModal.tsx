@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,10 +7,9 @@ import {
   StyleSheet,
   ActivityIndicator,
   ScrollView,
-  Platform,
   TextInput,
   Keyboard,
-  TouchableWithoutFeedback,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
@@ -21,14 +20,12 @@ import { AnimatedIcon } from '../ui/AnimatedIcon';
 import { FontFamily, Layout, SectorColors } from '../../theme';
 import {
   BUBT_COORDS,
-  CAMPUS_AND_DHAKA_LANDMARKS,
   getCurrentUserCoordinates,
   reverseGeocodeCoords,
   findLandmarkByName,
-  searchLandmarks,
+  searchPlacesOnline,
   type Coordinates,
   type GeocodedPlace,
-  type LandmarkLocation,
 } from '../../services/locationService';
 
 interface LocationPickerModalProps {
@@ -57,8 +54,11 @@ const QUICK_COMMUTE_HUBS = [
   { label: 'Kuril Flyover', coords: { latitude: 23.8172, longitude: 90.4208 } },
 ];
 
-function generateLeafletHtml(initial: Coordinates, isDark: boolean, accentColor: string): string {
-  const bgColor = isDark ? '#09090b' : '#f8fafc';
+function generateMapLibreHtml(initial: Coordinates, isDark: boolean, accentColor: string): string {
+  const bgColor = isDark ? '#0c0d10' : '#f8fafc';
+  const styleUrl = isDark
+    ? 'https://tiles.openfreemap.org/styles/dark'
+    : 'https://tiles.openfreemap.org/styles/liberty';
 
   return `
 <!DOCTYPE html>
@@ -66,7 +66,8 @@ function generateLeafletHtml(initial: Coordinates, isDark: boolean, accentColor:
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
   <style>
     * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
     html, body {
@@ -88,26 +89,11 @@ function generateLeafletHtml(initial: Coordinates, isDark: boolean, accentColor:
       height: 100%;
       background-color: ${bgColor};
     }
-    .leaflet-control-zoom, .leaflet-control-attribution {
+    .maplibregl-ctrl-attrib, .maplibregl-ctrl-logo, .maplibregl-compact {
       display: none !important;
     }
 
-    /* OpenStreetMap Zero-Watermark Tile Layer Filter */
-    ${
-      isDark
-        ? `
-    .leaflet-tile {
-      filter: invert(100%) hue-rotate(180deg) brightness(85%) contrast(125%) saturate(60%) !important;
-    }
-    `
-        : `
-    .leaflet-tile {
-      filter: contrast(102%) saturate(105%) !important;
-    }
-    `
-    }
-
-    /* Target Reticle On Map Ground */
+    /* Target Reticle On Ground */
     .target-reticle {
       position: absolute;
       top: 50%;
@@ -118,12 +104,12 @@ function generateLeafletHtml(initial: Coordinates, isDark: boolean, accentColor:
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 28px;
-      height: 28px;
+      width: 32px;
+      height: 32px;
     }
     .reticle-ring {
-      width: 22px;
-      height: 22px;
+      width: 24px;
+      height: 24px;
       border: 2px dashed ${accentColor};
       border-radius: 50%;
       opacity: 0.85;
@@ -156,29 +142,29 @@ function generateLeafletHtml(initial: Coordinates, isDark: boolean, accentColor:
       transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
     .pin-head {
-      width: 40px;
-      height: 40px;
+      width: 42px;
+      height: 42px;
       background: ${accentColor};
       border-radius: 50% 50% 50% 0;
       transform: rotate(-45deg);
-      box-shadow: 0 8px 20px rgba(0,0,0,0.45);
+      box-shadow: 0 8px 22px rgba(0,0,0,0.45);
       display: flex;
       align-items: center;
       justify-content: center;
       border: 3px solid #ffffff;
     }
     .pin-dot {
-      width: 12px;
-      height: 12px;
+      width: 13px;
+      height: 13px;
       background: #ffffff;
       border-radius: 50%;
       transform: rotate(45deg);
       box-shadow: 0 1px 3px rgba(0,0,0,0.3);
     }
     .pin-shadow {
-      width: 16px;
+      width: 18px;
       height: 6px;
-      background: rgba(0, 0, 0, 0.4);
+      background: rgba(0, 0, 0, 0.45);
       border-radius: 50%;
       margin-top: 2px;
       transform: scale(1);
@@ -196,7 +182,7 @@ function generateLeafletHtml(initial: Coordinates, isDark: boolean, accentColor:
     body.is-moving .target-reticle .reticle-ring {
       border-color: #ffffff;
       opacity: 1;
-      transform: scale(1.15);
+      transform: scale(1.2);
     }
   </style>
 </head>
@@ -213,36 +199,34 @@ function generateLeafletHtml(initial: Coordinates, isDark: boolean, accentColor:
     <div class="pin-shadow"></div>
   </div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    var map = L.map('map', {
-      zoomControl: false,
-      attributionControl: false,
+    var map = new maplibregl.Map({
+      container: 'map',
+      style: '${styleUrl}',
+      center: [${initial.longitude}, ${initial.latitude}],
+      zoom: 15.5,
       minZoom: 11,
       maxZoom: 19,
       maxBounds: [
-        [20.5, 88.0],
-        [26.7, 92.8]
+        [88.0, 20.5],
+        [92.8, 26.7]
       ],
-      maxBoundsViscosity: 0.85
-    }).setView([${initial.latitude}, ${initial.longitude}], 16);
+      attributionControl: false
+    });
 
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19
-    }).addTo(map);
-
-    function invalidateSizeNow() {
+    function resizeMap() {
       if (map) {
-        map.invalidateSize();
+        map.resize();
       }
     }
-    window.addEventListener('resize', invalidateSizeNow);
-    window.addEventListener('load', invalidateSizeNow);
-    setTimeout(invalidateSizeNow, 80);
-    setTimeout(invalidateSizeNow, 250);
-    setTimeout(invalidateSizeNow, 600);
+    window.addEventListener('resize', resizeMap);
+    window.addEventListener('load', resizeMap);
+    setTimeout(resizeMap, 100);
+    setTimeout(resizeMap, 300);
+    setTimeout(resizeMap, 600);
 
     function sendCenter() {
+      if (!map) return;
       var center = map.getCenter();
       var msg = JSON.stringify({
         type: 'CENTER_CHANGED',
@@ -264,28 +248,39 @@ function generateLeafletHtml(initial: Coordinates, isDark: boolean, accentColor:
     });
 
     map.on('click', function(e) {
-      map.panTo(e.latlng, { animate: true, duration: 0.4 });
+      map.easeTo({
+        center: [e.lngLat.lng, e.lngLat.lat],
+        duration: 400
+      });
+    });
+
+    map.on('load', function() {
+      sendCenter();
+      resizeMap();
     });
 
     function handleMessage(event) {
       try {
         var data = JSON.parse(event.data);
         if (data.type === 'FLY_TO' && map) {
-          map.flyTo([data.lat, data.lng], data.zoom || 16, { duration: 1.0 });
+          map.flyTo({
+            center: [data.lng, data.lat],
+            zoom: data.zoom || 16,
+            duration: 1200,
+            essential: true
+          });
         } else if (data.type === 'ZOOM_IN' && map) {
-          map.zoomIn();
+          map.zoomIn({ duration: 300 });
         } else if (data.type === 'ZOOM_OUT' && map) {
-          map.zoomOut();
-        } else if (data.type === 'INVALIDATE_SIZE' && map) {
-          map.invalidateSize();
+          map.zoomOut({ duration: 300 });
+        } else if (data.type === 'RESIZE' && map) {
+          map.resize();
         }
       } catch (e) {}
     }
 
     window.addEventListener('message', handleMessage);
     document.addEventListener('message', handleMessage);
-
-    setTimeout(sendCenter, 200);
   </script>
 </body>
 </html>
@@ -318,14 +313,13 @@ export function LocationPickerModal({
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchResults, setSearchResults] = useState<GeocodedPlace[]>([]);
   const [locatingGps, setLocatingGps] = useState(false);
   const [geocoding, setGeocoding] = useState(false);
-  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Search autocomplete results
-  const searchResults = useMemo(() => {
-    return searchLandmarks(searchQuery, 6);
-  }, [searchQuery]);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
   // Trigger flyTo in WebView
   const flyToCoordinates = useCallback((coords: Coordinates, zoom = 16) => {
@@ -339,7 +333,7 @@ export function LocationPickerModal({
     webViewRef.current?.postMessage(msg);
   }, []);
 
-  // Zoom controls via WebView bridge
+  // Zoom controls
   const handleZoomIn = () => {
     webViewRef.current?.postMessage(JSON.stringify({ type: 'ZOOM_IN' }));
   };
@@ -347,6 +341,37 @@ export function LocationPickerModal({
   const handleZoomOut = () => {
     webViewRef.current?.postMessage(JSON.stringify({ type: 'ZOOM_OUT' }));
   };
+
+  // Real-time Places Search (Curated + OpenStreetMap Geocoding)
+  useEffect(() => {
+    if (!searchQuery || searchQuery.trim().length < 2) {
+      setSearchResults([]);
+      setSearchLoading(false);
+      return;
+    }
+
+    setSearchLoading(true);
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+    }
+
+    searchDebounceRef.current = setTimeout(async () => {
+      try {
+        const results = await searchPlacesOnline(searchQuery);
+        setSearchResults(results);
+      } catch (err) {
+        setSearchResults([]);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 320);
+
+    return () => {
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
+      }
+    };
+  }, [searchQuery]);
 
   // Handle GPS "Use My Current Location"
   const handleUseCurrentLocation = async () => {
@@ -427,19 +452,13 @@ export function LocationPickerModal({
     onClose();
   };
 
-  // Select landmark from search suggestion
-  const handleSelectLandmark = (landmark: LandmarkLocation) => {
+  // Select place from search suggestion
+  const handleSelectSearchPlace = (place: GeocodedPlace) => {
     Keyboard.dismiss();
     setSearchQuery('');
     setIsSearching(false);
-    flyToCoordinates(landmark.coords, 17);
-    setSelectedPlace({
-      name: landmark.name,
-      zone: landmark.zone,
-      subText: landmark.desc || `${landmark.coords.latitude.toFixed(4)}, ${landmark.coords.longitude.toFixed(4)}`,
-      formattedAddress: landmark.name,
-      coords: landmark.coords,
-    });
+    flyToCoordinates(place.coords, 16.5);
+    setSelectedPlace(place);
   };
 
   // Sync coords on modal open
@@ -470,13 +489,11 @@ export function LocationPickerModal({
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
       }
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
+      }
     };
   }, []);
-
-  const mapHtml = useMemo(
-    () => generateLeafletHtml(startCoords, isDark, accentColor),
-    [startCoords.latitude, startCoords.longitude, isDark, accentColor]
-  );
 
   return (
     <Modal
@@ -486,11 +503,11 @@ export function LocationPickerModal({
       statusBarTranslucent
       onRequestClose={onClose}
     >
-      <View style={[styles.rootContainer, { backgroundColor: isDark ? '#09090b' : '#f8fafc' }]}>
-        {/* Full-Bleed Edge-to-Edge Map */}
+      <View style={[styles.rootContainer, { backgroundColor: isDark ? '#0c0d10' : '#f8fafc' }]}>
+        {/* Full-Bleed Edge-to-Edge Vector Map */}
         <WebView
           ref={webViewRef}
-          source={{ html: mapHtml }}
+          source={{ html: generateMapLibreHtml(startCoords, isDark, accentColor) }}
           style={styles.webView}
           onMessage={handleWebViewMessage}
           javaScriptEnabled
@@ -500,6 +517,7 @@ export function LocationPickerModal({
           scrollEnabled={false}
           geolocationEnabled
           androidLayerType={Platform.OS === 'android' ? 'hardware' : 'none'}
+          originWhitelist={['*']}
         />
 
         {/* Floating Top Bar (Back button + Interactive Search) */}
@@ -514,10 +532,14 @@ export function LocationPickerModal({
           </TouchableOpacity>
 
           <View style={[styles.searchCapsule, { backgroundColor: C.surface, borderColor: isSearching ? accentColor : C.border }]}>
-            <Feather name="search" size={17} color={isSearching ? accentColor : C.textMuted} style={styles.searchIcon} />
+            {searchLoading ? (
+              <ActivityIndicator size="small" color={accentColor} style={styles.searchIcon} />
+            ) : (
+              <Feather name="search" size={17} color={isSearching ? accentColor : C.textMuted} style={styles.searchIcon} />
+            )}
             <TextInput
               style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-              placeholder="Search campus, hospital, area..."
+              placeholder="Search any place, hospital, road in Dhaka..."
               placeholderTextColor={C.textMuted}
               value={searchQuery}
               onChangeText={text => {
@@ -532,6 +554,7 @@ export function LocationPickerModal({
               <TouchableOpacity
                 onPress={() => {
                   setSearchQuery('');
+                  setSearchResults([]);
                   setIsSearching(false);
                   Keyboard.dismiss();
                 }}
@@ -543,36 +566,52 @@ export function LocationPickerModal({
           </View>
         </View>
 
-        {/* Floating Search Autocomplete Dropdown */}
-        {isSearching && searchResults.length > 0 && (
+        {/* Floating Live Places Autocomplete Dropdown */}
+        {isSearching && (
           <View style={[styles.searchResultsOverlay, { top: insets.top + 68, backgroundColor: C.surface, borderColor: C.border }]}>
-            <ScrollView
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
-              style={{ maxHeight: 220 }}
-            >
-              {searchResults.map(item => (
-                <TouchableOpacity
-                  key={item.name}
-                  style={[styles.searchResultItem, { borderBottomColor: C.border }]}
-                  onPress={() => handleSelectLandmark(item)}
-                  activeOpacity={0.7}
-                >
-                  <View style={[styles.searchResultIconBox, { backgroundColor: `${accentColor}18` }]}>
-                    <Feather name="map-pin" size={14} color={accentColor} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.searchResultTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                      {item.name}
-                    </Text>
-                    <Text style={[styles.searchResultSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
-                      {item.desc || item.zone}
-                    </Text>
-                  </View>
-                  <Feather name="corner-down-left" size={13} color={C.textMuted} />
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+            {searchResults.length > 0 ? (
+              <ScrollView
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+                style={{ maxHeight: 240 }}
+              >
+                {searchResults.map(item => (
+                  <TouchableOpacity
+                    key={`${item.name}-${item.coords.latitude}`}
+                    style={[styles.searchResultItem, { borderBottomColor: C.border }]}
+                    onPress={() => handleSelectSearchPlace(item)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.searchResultIconBox, { backgroundColor: `${accentColor}18` }]}>
+                      <Feather name="map-pin" size={14} color={accentColor} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.searchResultTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                        {item.name}
+                      </Text>
+                      <Text style={[styles.searchResultSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
+                        {item.subText || item.zone}
+                      </Text>
+                    </View>
+                    <Feather name="corner-down-left" size={13} color={C.textMuted} />
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            ) : searchLoading ? (
+              <View style={styles.searchingStateRow}>
+                <ActivityIndicator size="small" color={accentColor} />
+                <Text style={[styles.searchingStateTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                  Searching places in Dhaka...
+                </Text>
+              </View>
+            ) : searchQuery.length >= 2 ? (
+              <View style={styles.searchingStateRow}>
+                <Feather name="info" size={15} color={C.textMuted} />
+                <Text style={[styles.searchingStateTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                  No matching places found. Try another keyword.
+                </Text>
+              </View>
+            ) : null}
           </View>
         )}
 
@@ -833,6 +872,16 @@ const styles = StyleSheet.create({
   searchResultSub: {
     fontSize: 11,
     marginTop: 1,
+  },
+  searchingStateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    gap: 10,
+  },
+  searchingStateTxt: {
+    fontSize: 13,
   },
   rightFabColumn: {
     position: 'absolute',
