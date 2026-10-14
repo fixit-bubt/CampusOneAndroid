@@ -89,6 +89,8 @@ function RequestBloodBadge({ group, isPlatelet }: { group: string; isPlatelet?: 
         {group}
       </Text>
       <Text
+        numberOfLines={1}
+        ellipsizeMode="clip"
         style={[
           styles.reqBloodTypeLabel,
           {
@@ -538,105 +540,8 @@ export function BloodScreen({ route, navigation }: any) {
         message="Showing cached blood requests and donor directory. Connect to internet to respond or reveal contacts."
       />
 
-      {/* Prominent Emergency Request Blood Bar (Universal 58dp Standard) */}
-      <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 6, paddingBottom: 2 }}>
-        <TouchableOpacity
-          style={[styles.actBtn, { backgroundColor: SectorColors.blood }]}
-          onPress={() => navigation.navigate('BloodRequest')}
-          activeOpacity={0.85}
-        >
-          <AnimatedIcon family="feather" name="droplet" size={18} color="#fff" animation="entrance" />
-          <Text style={[styles.actBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
-            {t.blood2.requestBloodBtn}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Donor Status / Registration Banner (Universal 72dp Content Standard) */}
-      {myDonor ? (
-        <View style={[styles.myStatusCard, { backgroundColor: C.surface, borderColor: C.border, marginHorizontal: Layout.screenPadding }]}>
-          <View style={styles.myStatusLeft}>
-            <View style={[styles.miniBloodBadge, { backgroundColor: BLOOD_BG }]}>
-              <Text style={[styles.miniBloodTxt, { color: BLOOD_COLOR, fontFamily: FontFamily.jakartaExtraBold }]}>
-                {myDonor.blood_group}
-              </Text>
-            </View>
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Text style={[styles.myStatusTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                  {myDonor.area ? myDonor.area : t.blood2.myDonorStatusTitle}
-                </Text>
-                {(() => {
-                  const { eligible, daysLeft } = donorEligibility(myDonor.last_donated, (profile as any)?.gender);
-                  return (
-                    <View style={[styles.eligPill, { backgroundColor: eligible ? C.successBg : C.warnBg, marginTop: 0 }]}>
-                      <Text style={[styles.eligTxt, { color: eligible ? C.success : C.warn, fontFamily: FontFamily.jakartaBold }]}>
-                        {eligible ? t.blood2.eligible : t.blood2.eligibleInDays(daysLeft)}
-                      </Text>
-                    </View>
-                  );
-                })()}
-              </View>
-              <Text style={[styles.myStatusMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
-                {myDonor.last_donated ? `Last: ${myDonor.last_donated}` : t.blood2.never}
-                {myDonationCount > 0 ? ` · ${t.blood2.donationsCount(myDonationCount)}` : ''}
-              </Text>
-            </View>
-          </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            {(() => {
-              const { eligible } = donorEligibility(myDonor.last_donated, (profile as any)?.gender);
-              if (!eligible || myDonor.last_donated === localToday()) return null;
-              return (
-                <TouchableOpacity
-                  style={[styles.statusDonatedBtn, { backgroundColor: C.successBg }]}
-                  onPress={markDonatedToday}
-                  activeOpacity={0.75}
-                >
-                  <Text style={[styles.statusDonatedTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
-                    {t.blood2.iDonated}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })()}
-            <TouchableOpacity
-              style={[styles.myStatusEditBtn, { backgroundColor: C.surface2 }]}
-              onPress={() => navigation.navigate('DonorRegister')}
-              activeOpacity={0.75}
-              accessibilityLabel={t.blood2.updateLocationPhone}
-            >
-              <Feather name="settings" size={13} color={C.text2} />
-            </TouchableOpacity>
-          </View>
-        </View>
-      ) : (
-        <TouchableOpacity
-          style={[
-            styles.registerPromptCard,
-            { backgroundColor: C.surface, borderColor: C.border, marginHorizontal: Layout.screenPadding },
-          ]}
-          onPress={() => navigation.navigate('DonorRegister')}
-          activeOpacity={0.8}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-            <View style={[styles.miniBloodBadge, { backgroundColor: BLOOD_BG }]}>
-              <AnimatedIcon family="feather" name="droplet" size={20} color={BLOOD_COLOR} animation="entrance" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.registerPromptTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                {t.blood2.registerAsDonorBtn}
-              </Text>
-              <Text style={[styles.registerPromptSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                Join the BUBT campus blood donor network
-              </Text>
-            </View>
-          </View>
-          <Feather name="chevron-right" size={17} color={C.textMuted} />
-        </TouchableOpacity>
-      )}
-
       {/* Unified Segmented Tab Switcher with Native Spring Animation & Colors */}
-      <View style={{ paddingHorizontal: Layout.screenPadding, marginVertical: 8 }}>
+      <View style={{ paddingHorizontal: Layout.screenPadding, marginTop: 4, marginBottom: 8 }}>
         <SegmentedTabs<Tab>
           tabs={BLOOD_TABS}
           activeTab={tab}
@@ -773,48 +678,95 @@ export function BloodScreen({ route, navigation }: any) {
           <LoadError onRetry={load} />
         ) : tab === 'requests' ? (
           <View style={styles.list}>
-            {/* Blood type requests summary & interactive filter */}
-            <View style={[styles.summaryCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                <Text style={[styles.summaryTitle, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginBottom: 0 }]}>
-                  {t.blood2.requestsByGroup}
-                </Text>
-                {groupFilter !== 'All' && (
-                  <TouchableOpacity
-                    onPress={() => setGroupFilter('All')}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+            {/* Prominent Emergency Request Blood Bar (Universal 58dp Standard) */}
+            <TouchableOpacity
+              style={[styles.actBtn, { backgroundColor: SectorColors.blood, marginBottom: 2 }]}
+              onPress={() => navigation.navigate('BloodRequest')}
+              activeOpacity={0.85}
+            >
+              <AnimatedIcon family="feather" name="droplet" size={18} color="#fff" animation="entrance" />
+              <Text style={[styles.actBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                {t.blood2.requestBloodBtn}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Sleek Horizontal Blood Group Filter Track */}
+            <View style={styles.groupFilterSection}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.groupFilterTrack}
+              >
+                <TouchableOpacity
+                  style={[
+                    styles.groupPill,
+                    groupFilter === 'All'
+                      ? { backgroundColor: SectorColors.blood, borderColor: SectorColors.blood }
+                      : { backgroundColor: C.surface, borderColor: C.border },
+                  ]}
+                  onPress={() => setGroupFilter('All')}
+                  activeOpacity={0.75}
+                >
+                  <Text
+                    style={[
+                      styles.groupPillTxt,
+                      {
+                        color: groupFilter === 'All' ? '#fff' : C.text,
+                        fontFamily: FontFamily.jakartaBold,
+                      },
+                    ]}
                   >
-                    <Text style={{ fontSize: 11.5, color: SectorColors.blood, fontFamily: FontFamily.jakartaBold }}>
-                      {t.blood2.showingGroupRequests(groupFilter)}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-              <View style={styles.summaryGrid}>
+                    All ({requests.length})
+                  </Text>
+                </TouchableOpacity>
+
                 {bloodTypes.map(g => {
                   const on = groupFilter === g;
                   const count = requestGroups[g] ?? 0;
                   return (
-                    <View key={g} style={styles.summaryCellWrapper}>
-                      <TouchableOpacity
+                    <TouchableOpacity
+                      key={g}
+                      style={[
+                        styles.groupPill,
+                        on
+                          ? { backgroundColor: SectorColors.blood, borderColor: SectorColors.blood }
+                          : { backgroundColor: C.surface, borderColor: C.border },
+                      ]}
+                      onPress={() => handleRequestGroupPress(g)}
+                      activeOpacity={0.75}
+                    >
+                      <Text
                         style={[
-                          styles.summaryCell,
-                          { backgroundColor: on ? `${SectorColors.blood}20` : count > 0 ? `${SectorColors.blood}10` : C.surface2 },
-                          on && { borderColor: SectorColors.blood, borderWidth: 1.5 },
+                          styles.groupPillTxt,
+                          {
+                            color: on ? '#fff' : count > 0 ? SectorColors.blood : C.text,
+                            fontFamily: FontFamily.jakartaBold,
+                          },
                         ]}
-                        onPress={() => handleRequestGroupPress(g)}
-                        activeOpacity={0.7}
                       >
-                        <Text style={[styles.summaryCellGroup, { color: SectorColors.blood }]}>{g}</Text>
-                        <Text style={[styles.summaryCellNum, { color: on || count > 0 ? SectorColors.blood : C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-                          {count}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
+                        {g}
+                      </Text>
+                      {count > 0 && (
+                        <View
+                          style={[
+                            styles.groupPillBadge,
+                            { backgroundColor: on ? '#fff' : `${SectorColors.blood}20` },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.groupPillBadgeTxt,
+                              { color: on ? SectorColors.blood : SectorColors.blood, fontFamily: FontFamily.jakartaBold },
+                            ]}
+                          >
+                            {count}
+                          </Text>
+                        </View>
+                      )}
+                    </TouchableOpacity>
                   );
                 })}
-              </View>
+              </ScrollView>
             </View>
 
             {/* Request list */}
@@ -848,7 +800,6 @@ export function BloodScreen({ route, navigation }: any) {
                 const unitsLeft = Math.max(0, meta.unitCount - pledgeCount);
                 const isOwn = r.requester_id === user?.id;
                 const hasPledged = respondedIds.has(r.id);
-                const { fg: urgencyFg, bg: urgencyBg } = urgencyTone(C, r.urgency);
                 const relativeTime = r.created_at ? formatRelativeTime(r.created_at) : '';
                 const isTarget = highlightCode !== null && r.code === highlightCode;
 
@@ -872,12 +823,13 @@ export function BloodScreen({ route, navigation }: any) {
                         </Text>
                       </View>
                     )}
-                    {/* Top Row: Blood Group Badge + Patient / Affiliation / Time + Urgency */}
+
+                    {/* Top Row: Blood Group Badge + Patient Name / Affiliation / Time + Urgency */}
                     <View style={styles.cardHeaderRow}>
                       <RequestBloodBadge group={r.blood_group} isPlatelet={meta.isPlatelet} />
 
                       <View style={styles.cardHeaderCenter}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                        <View style={styles.patientTitleRow}>
                           <Text
                             style={[
                               styles.patientNameTxt,
@@ -887,40 +839,41 @@ export function BloodScreen({ route, navigation }: any) {
                           >
                             {meta.patientName}
                           </Text>
-                          {meta.affiliation && (
-                            <StatusBadge
-                              variant="affiliation"
-                              value={meta.affiliation}
-                              size="sm"
-                            />
-                          )}
+                          <StatusBadge
+                            variant="urgency"
+                            value={r.urgency}
+                            size="sm"
+                            pulse={r.urgency === 'Urgent'}
+                          />
                         </View>
 
-                        {relativeTime ? (
-                          <View style={styles.timeRow}>
-                            <Feather name="clock" size={11} color={C.textMuted} />
-                            <Text
-                              style={[
-                                styles.timeTxt,
-                                { color: C.textMuted, fontFamily: FontFamily.jakartaRegular },
-                              ]}
-                            >
+                        <View style={styles.metaSubRow}>
+                          {meta.affiliation ? (
+                            <Text style={[styles.metaSubTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                              {meta.affiliation}
+                              {relativeTime ? ` · Posted ${relativeTime}` : ''}
+                            </Text>
+                          ) : relativeTime ? (
+                            <Text style={[styles.metaSubTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
                               Posted {relativeTime}
                             </Text>
-                          </View>
-                        ) : null}
+                          ) : null}
+                        </View>
                       </View>
-
-                      {/* Urgency Badge */}
-                      <StatusBadge
-                        variant="urgency"
-                        value={r.urgency}
-                        size="sm"
-                        pulse={r.urgency === 'Urgent'}
-                      />
                     </View>
 
-                    {/* Clinical Details Row: Bags Needed Badge + Medical Case Reason Badge + Platelets */}
+                    {/* Hospital & Area Line */}
+                    <View style={styles.hospitalRow}>
+                      <MaterialCommunityIcons name="hospital-building" size={15} color={SectorColors.blood} style={{ marginTop: 1 }} />
+                      <Text style={styles.hospitalTxt} numberOfLines={1}>
+                        <Text style={{ fontFamily: FontFamily.jakartaBold, color: C.text }}>{r.hospital}</Text>
+                        {r.area ? (
+                          <Text style={{ fontFamily: FontFamily.jakartaRegular, color: C.textMuted }}>{` · ${r.area}`}</Text>
+                        ) : null}
+                      </Text>
+                    </View>
+
+                    {/* Clinical Details Row: Bags Needed Badge + Medical Case Reason Badge */}
                     <View style={styles.clinicalBadgesRow}>
                       <StatusBadge
                         variant="bags"
@@ -928,80 +881,31 @@ export function BloodScreen({ route, navigation }: any) {
                         size="sm"
                       />
 
-                      {meta.medicalReason && (
+                      {meta.medicalReason ? (
                         <StatusBadge
                           variant="medical"
                           value={meta.medicalReason}
                           size="sm"
                         />
-                      )}
-
-                      {meta.isPlatelet && (
-                        <StatusBadge
-                          variant="platelet"
-                          size="sm"
-                        />
-                      )}
+                      ) : null}
                     </View>
 
-                    {/* Hospital & Area Box */}
+                    {/* Pledge Progress / Status Row */}
                     <View
                       style={[
-                        styles.locationBox,
+                        styles.pledgeStrip,
                         {
-                          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.035)' : C.surface2,
-                          borderColor: isDark ? 'rgba(255, 255, 255, 0.06)' : C.border,
-                        },
-                      ]}
-                    >
-                      <View style={styles.locationLine}>
-                        <View style={[styles.locIconSquare, { backgroundColor: isDark ? 'rgba(214, 61, 53, 0.15)' : 'rgba(214, 61, 53, 0.10)' }]}>
-                          <MaterialCommunityIcons name="hospital-building" size={13} color={SectorColors.blood} />
-                        </View>
-                        <Text
-                          style={[
-                            styles.hospitalTxt,
-                            { color: C.text, fontFamily: FontFamily.jakartaBold },
-                          ]}
-                          numberOfLines={2}
-                        >
-                          {r.hospital}
-                        </Text>
-                      </View>
-
-                      <View style={[styles.locationLine, { marginTop: 6 }]}>
-                        <View style={[styles.locIconSquare, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : C.surface }]}>
-                          <Icon name="pin" size={11} color={C.textMuted} />
-                        </View>
-                        <Text
-                          style={[
-                            styles.areaTxt,
-                            { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
-                          ]}
-                          numberOfLines={1}
-                        >
-                          {r.area ? `${r.area}, Dhaka` : 'Dhaka, Bangladesh'}
-                        </Text>
-                      </View>
-                    </View>
-
-                    {/* Pledge Progress / Status Row (Answers multi-bag scenario!) */}
-                    <View
-                      style={[
-                        styles.pledgeStatusBox,
-                        pledgeCount > 0
-                          ? {
-                              backgroundColor: unitsLeft === 0
+                          backgroundColor: pledgeCount > 0
+                            ? (unitsLeft === 0
                                 ? (isDark ? 'rgba(34, 197, 94, 0.12)' : 'rgba(34, 197, 94, 0.08)')
-                                : (isDark ? 'rgba(214, 61, 53, 0.12)' : 'rgba(214, 61, 53, 0.07)'),
-                              borderColor: unitsLeft === 0
-                                ? (isDark ? 'rgba(34, 197, 94, 0.30)' : 'rgba(34, 197, 94, 0.20)')
-                                : (isDark ? 'rgba(214, 61, 53, 0.25)' : 'rgba(214, 61, 53, 0.18)'),
-                            }
-                          : {
-                              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : C.surface2,
-                              borderColor: 'transparent',
-                            },
+                                : (isDark ? 'rgba(214, 61, 53, 0.12)' : 'rgba(214, 61, 53, 0.07)'))
+                            : (isDark ? 'rgba(255, 255, 255, 0.04)' : C.surface2),
+                          borderColor: pledgeCount > 0
+                            ? (unitsLeft === 0
+                                ? (isDark ? 'rgba(34, 197, 94, 0.25)' : 'rgba(34, 197, 94, 0.20)')
+                                : (isDark ? 'rgba(214, 61, 53, 0.22)' : 'rgba(214, 61, 53, 0.16)'))
+                            : 'transparent',
+                        },
                       ]}
                     >
                       <Feather
@@ -1015,7 +919,7 @@ export function BloodScreen({ route, navigation }: any) {
                       />
                       <Text
                         style={[
-                          styles.pledgeStatusTxt,
+                          styles.pledgeStripTxt,
                           {
                             color: pledgeCount > 0
                               ? (unitsLeft === 0 ? C.success : (isDark ? '#fff' : SectorColors.blood))
@@ -1027,7 +931,7 @@ export function BloodScreen({ route, navigation }: any) {
                         {pledgeCount > 0
                           ? unitsLeft === 0
                             ? `${pledgeCount} ${pledgeCount === 1 ? 'donor offered help' : 'donors offered help'} · All ${meta.unitCount} bags covered!`
-                            : `${pledgeCount} ${pledgeCount === 1 ? 'donor offered help' : 'donors offered help'} (${pledgeCount}/${meta.unitCount} bags covered · ${unitsLeft} more needed)`
+                            : `${pledgeCount} ${pledgeCount === 1 ? 'donor offered help' : 'donors offered help'} (${pledgeCount}/${meta.unitCount} bags · ${unitsLeft} needed)`
                           : meta.unitCount > 1
                             ? `${meta.unitCount} donors needed · No donors pledged yet`
                             : '1 donor needed · Be the first to help'}
@@ -1086,48 +990,167 @@ export function BloodScreen({ route, navigation }: any) {
 
           </View>
         ) : (
-          <View>
-            {/* Blood type summary & interactive filter */}
-            <View style={[styles.summaryCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                <Text style={[styles.summaryTitle, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginBottom: 0 }]}>
-                  {t.blood2.availableDonors}
-                </Text>
-                {groupFilter !== 'All' && (
-                  <TouchableOpacity
-                    onPress={() => setGroupFilter('All')}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
-                  >
-                    <Text style={{ fontSize: 11.5, color: SectorColors.blood, fontFamily: FontFamily.jakartaBold }}>
-                      {t.blood2.showingGroupFilter(groupFilter)}
+          <View style={styles.list}>
+            {/* Donor Status / Registration Banner (Universal 72dp Content Standard) */}
+            {myDonor ? (
+              <View style={[styles.myStatusCard, { backgroundColor: C.surface, borderColor: C.border, marginBottom: 2 }]}>
+                <View style={styles.myStatusLeft}>
+                  <View style={[styles.miniBloodBadge, { backgroundColor: BLOOD_BG }]}>
+                    <Text style={[styles.miniBloodTxt, { color: BLOOD_COLOR, fontFamily: FontFamily.jakartaExtraBold }]}>
+                      {myDonor.blood_group}
                     </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-              <View style={styles.summaryGrid}>
-                {bloodTypes.map(g => {
-                  const on = groupFilter === g;
-                  return (
-                    <View key={g} style={styles.summaryCellWrapper}>
+                  </View>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Text style={[styles.myStatusTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                        {myDonor.area ? myDonor.area : t.blood2.myDonorStatusTitle}
+                      </Text>
+                      {(() => {
+                        const { eligible, daysLeft } = donorEligibility(myDonor.last_donated, (profile as any)?.gender);
+                        return (
+                          <View style={[styles.eligPill, { backgroundColor: eligible ? C.successBg : C.warnBg, marginTop: 0 }]}>
+                            <Text style={[styles.eligTxt, { color: eligible ? C.success : C.warn, fontFamily: FontFamily.jakartaBold }]}>
+                              {eligible ? t.blood2.eligible : t.blood2.eligibleInDays(daysLeft)}
+                            </Text>
+                          </View>
+                        );
+                      })()}
+                    </View>
+                    <Text style={[styles.myStatusMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
+                      {myDonor.last_donated ? `Last: ${myDonor.last_donated}` : t.blood2.never}
+                      {myDonationCount > 0 ? ` · ${t.blood2.donationsCount(myDonationCount)}` : ''}
+                    </Text>
+                  </View>
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  {(() => {
+                    const { eligible } = donorEligibility(myDonor.last_donated, (profile as any)?.gender);
+                    if (!eligible || myDonor.last_donated === localToday()) return null;
+                    return (
                       <TouchableOpacity
-                        style={[
-                          styles.summaryCell,
-                          { backgroundColor: on ? `${SectorColors.blood}20` : C.surface2 },
-                          on && { borderColor: SectorColors.blood, borderWidth: 1.5 },
-                        ]}
-                        onPress={() => handleDonorGroupPress(g)}
-                        activeOpacity={0.7}
+                        style={[styles.statusDonatedBtn, { backgroundColor: C.successBg }]}
+                        onPress={markDonatedToday}
+                        activeOpacity={0.75}
                       >
-                        <Text style={[styles.summaryCellGroup, { color: SectorColors.blood }]}>{g}</Text>
-                        <Text style={[styles.summaryCellNum, { color: on ? SectorColors.blood : C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-                          {donorGroups[g] ?? 0}
+                        <Text style={[styles.statusDonatedTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
+                          {t.blood2.iDonated}
                         </Text>
                       </TouchableOpacity>
-                    </View>
+                    );
+                  })()}
+                  <TouchableOpacity
+                    style={[styles.myStatusEditBtn, { backgroundColor: C.surface2 }]}
+                    onPress={() => navigation.navigate('DonorRegister')}
+                    activeOpacity={0.75}
+                    accessibilityLabel={t.blood2.updateLocationPhone}
+                  >
+                    <Feather name="settings" size={13} color={C.text2} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={[
+                  styles.registerPromptCard,
+                  { backgroundColor: C.surface, borderColor: C.border, marginBottom: 2 },
+                ]}
+                onPress={() => navigation.navigate('DonorRegister')}
+                activeOpacity={0.8}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+                  <View style={[styles.miniBloodBadge, { backgroundColor: BLOOD_BG }]}>
+                    <AnimatedIcon family="feather" name="droplet" size={20} color={BLOOD_COLOR} animation="entrance" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.registerPromptTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                      {t.blood2.registerAsDonorBtn}
+                    </Text>
+                    <Text style={[styles.registerPromptSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+                      Join the BUBT campus blood donor network
+                    </Text>
+                  </View>
+                </View>
+                <Feather name="chevron-right" size={17} color={C.textMuted} />
+              </TouchableOpacity>
+            )}
+
+            {/* Sleek Horizontal Blood Group Filter Track */}
+            <View style={styles.groupFilterSection}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.groupFilterTrack}
+              >
+                <TouchableOpacity
+                  style={[
+                    styles.groupPill,
+                    groupFilter === 'All'
+                      ? { backgroundColor: SectorColors.blood, borderColor: SectorColors.blood }
+                      : { backgroundColor: C.surface, borderColor: C.border },
+                  ]}
+                  onPress={() => setGroupFilter('All')}
+                  activeOpacity={0.75}
+                >
+                  <Text
+                    style={[
+                      styles.groupPillTxt,
+                      {
+                        color: groupFilter === 'All' ? '#fff' : C.text,
+                        fontFamily: FontFamily.jakartaBold,
+                      },
+                    ]}
+                  >
+                    All ({donors.length})
+                  </Text>
+                </TouchableOpacity>
+
+                {bloodTypes.map(g => {
+                  const on = groupFilter === g;
+                  const count = donorGroups[g] ?? 0;
+                  return (
+                    <TouchableOpacity
+                      key={g}
+                      style={[
+                        styles.groupPill,
+                        on
+                          ? { backgroundColor: SectorColors.blood, borderColor: SectorColors.blood }
+                          : { backgroundColor: C.surface, borderColor: C.border },
+                      ]}
+                      onPress={() => handleDonorGroupPress(g)}
+                      activeOpacity={0.75}
+                    >
+                      <Text
+                        style={[
+                          styles.groupPillTxt,
+                          {
+                            color: on ? '#fff' : count > 0 ? SectorColors.blood : C.text,
+                            fontFamily: FontFamily.jakartaBold,
+                          },
+                        ]}
+                      >
+                        {g}
+                      </Text>
+                      {count > 0 && (
+                        <View
+                          style={[
+                            styles.groupPillBadge,
+                            { backgroundColor: on ? '#fff' : `${SectorColors.blood}20` },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.groupPillBadgeTxt,
+                              { color: on ? SectorColors.blood : SectorColors.blood, fontFamily: FontFamily.jakartaBold },
+                            ]}
+                          >
+                            {count}
+                          </Text>
+                        </View>
+                      )}
+                    </TouchableOpacity>
                   );
                 })}
-              </View>
+              </ScrollView>
             </View>
 
             {/* Donor list */}
@@ -1370,81 +1393,67 @@ const styles = StyleSheet.create({
     fontSize: 12,
   } as TextStyle,
   reqBloodBadge: {
-    width: 48,
-    height: 48,
-    borderRadius: 13,
+    width: 52,
+    height: 52,
+    borderRadius: 14,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
+    paddingHorizontal: 2,
   } as ViewStyle,
   reqBloodGroupTxt: {
-    fontSize: 16.5,
-    lineHeight: 19,
+    fontSize: 17,
+    lineHeight: 20,
   } as TextStyle,
   reqBloodTypeLabel: {
-    fontSize: 7.5,
-    letterSpacing: 0.6,
+    fontSize: 7.2,
+    letterSpacing: 0.2,
     marginTop: 1,
   } as TextStyle,
   cardHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
   } as ViewStyle,
   cardHeaderCenter: {
     flex: 1,
     minWidth: 0,
-    gap: 2,
   } as ViewStyle,
-  patientNameTxt: {
-    fontSize: 15,
-  } as TextStyle,
-  timeRow: {
+  patientTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    justifyContent: 'space-between',
+    gap: 6,
+  } as ViewStyle,
+  patientNameTxt: {
+    fontSize: 15.5,
+    flex: 1,
+  } as TextStyle,
+  metaSubRow: {
     marginTop: 2,
   } as ViewStyle,
-  timeTxt: {
-    fontSize: 11,
+  metaSubTxt: {
+    fontSize: 11.5,
+  } as TextStyle,
+  hospitalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    marginTop: 10,
+  } as ViewStyle,
+  hospitalTxt: {
+    fontSize: 13,
+    flex: 1,
   } as TextStyle,
   clinicalBadgesRow: {
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
     gap: 6,
-    marginTop: 10,
+    marginTop: 8,
   } as ViewStyle,
-  locationBox: {
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    marginTop: 10,
-  } as ViewStyle,
-  locationLine: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-  } as ViewStyle,
-  locIconSquare: {
-    width: 20,
-    height: 20,
-    borderRadius: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  } as ViewStyle,
-  hospitalTxt: {
-    fontSize: 13,
-    flex: 1,
-  } as TextStyle,
-  areaTxt: {
-    fontSize: 11.5,
-    flex: 1,
-  } as TextStyle,
-  pledgeStatusBox: {
+  pledgeStrip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 7,
@@ -1454,7 +1463,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginTop: 10,
   } as ViewStyle,
-  pledgeStatusTxt: {
+  pledgeStripTxt: {
     fontSize: 12,
     flex: 1,
   } as TextStyle,
@@ -1470,13 +1479,35 @@ const styles = StyleSheet.create({
   cardActionBtnTxt: {
     fontSize: 14.5,
   } as TextStyle,
-  summaryCard: { padding: 14, borderRadius: 16, borderWidth: 1, marginBottom: 12 } as ViewStyle,
-  summaryTitle: { fontSize: 11, letterSpacing: 0.5, marginBottom: 10 } as any,
-  summaryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 } as ViewStyle,
-  summaryCellWrapper: { width: '22%' } as ViewStyle,
-  summaryCell: { width: '100%', alignItems: 'center', paddingVertical: 8, borderRadius: 10 } as ViewStyle,
-  summaryCellGroup: { fontSize: 13, fontFamily: FontFamily.jakartaExtraBold } as any,
-  summaryCellNum: { fontSize: 15, marginTop: 2 } as any,
+  groupFilterSection: {
+    marginBottom: 8,
+  } as ViewStyle,
+  groupFilterTrack: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    paddingVertical: 2,
+  } as ViewStyle,
+  groupPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    height: 36,
+    paddingHorizontal: 13,
+    borderRadius: 18,
+    borderWidth: 1,
+  } as ViewStyle,
+  groupPillTxt: {
+    fontSize: 12.5,
+  } as TextStyle,
+  groupPillBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 10,
+  } as ViewStyle,
+  groupPillBadgeTxt: {
+    fontSize: 10.5,
+  } as TextStyle,
   donorCard: {
     flexDirection: 'row',
     alignItems: 'center',
