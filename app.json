@@ -42,7 +42,13 @@
       "expo-web-browser",
       "expo-notifications",
       "@sentry/react-native",
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow CampusOne to access your location to select commute and campus points."
+        }
+      ]
     ]
   }
 }

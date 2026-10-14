@@ -21,6 +21,7 @@
     "expo-image-manipulator": "~56.0.22",
     "expo-image-picker": "~56.0.20",
     "expo-linear-gradient": "~56.0.4",
+    "expo-location": "~56.0.26",
     "expo-notifications": "~56.0.20",
     "expo-print": "~56.0.4",
     "expo-secure-store": "~56.0.4",

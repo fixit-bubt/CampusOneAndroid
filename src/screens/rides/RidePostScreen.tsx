@@ -13,6 +13,7 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
 import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
+import { LocationPickerModal } from '../../components/location/LocationPickerModal';
 import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { localToday, nowDhakaMinutes, formatDate, formatTime } from '../../utils/format';
@@ -208,6 +209,7 @@ export function RidePostScreen({ route, navigation }: any) {
   const [loading, setLoading] = useState(false);
 
   const [hubModalVisible, setHubModalVisible] = useState(false);
+  const [mapModalVisible, setMapModalVisible] = useState(false);
   const [targetField, setTargetField] = useState<'from' | 'to'>('from');
   const [searchArea, setSearchArea] = useState('');
   const [locationCategory, setLocationCategory] = useState<'mirpur' | 'dhaka'>('mirpur');
@@ -286,6 +288,11 @@ export function RidePostScreen({ route, navigation }: any) {
     const targetCat = field === 'from' ? 'mirpur' : 'dhaka';
     setLocationCategory(targetCat);
     setHubModalVisible(true);
+  }
+
+  function openMapModal(field: 'from' | 'to') {
+    setTargetField(field);
+    setMapModalVisible(true);
   }
 
   function handleAreaSelect(areaName: string) {
@@ -483,6 +490,20 @@ export function RidePostScreen({ route, navigation }: any) {
             />
             <TouchableOpacity
               style={[
+                styles.locationBarMapBtn,
+                {
+                  backgroundColor: isDark ? `${accentColor}22` : `${accentColor}14`,
+                  borderColor: isDark ? `${accentColor}44` : `${accentColor}28`,
+                },
+              ]}
+              onPress={() => openMapModal('from')}
+              activeOpacity={0.75}
+              accessibilityLabel="Pick from location on map"
+            >
+              <Feather name="map" size={15} color={accentColor} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
                 styles.locationBarPickBtn,
                 {
                   backgroundColor: isDark ? `${accentColor}22` : `${accentColor}14`,
@@ -514,6 +535,20 @@ export function RidePostScreen({ route, navigation }: any) {
               placeholder={t.rides2.toPlaceholder ?? 'e.g. BUBT Campus, Uttara, Dhanmondi…'}
               placeholderTextColor={C.textMuted}
             />
+            <TouchableOpacity
+              style={[
+                styles.locationBarMapBtn,
+                {
+                  backgroundColor: isDark ? `${accentColor}22` : `${accentColor}14`,
+                  borderColor: isDark ? `${accentColor}44` : `${accentColor}28`,
+                },
+              ]}
+              onPress={() => openMapModal('to')}
+              activeOpacity={0.75}
+              accessibilityLabel="Pick destination on map"
+            >
+              <Feather name="map" size={15} color={accentColor} />
+            </TouchableOpacity>
             <TouchableOpacity
               style={[
                 styles.locationBarPickBtn,
@@ -746,6 +781,35 @@ export function RidePostScreen({ route, navigation }: any) {
                   <Feather name="x" size={16} color={C.text} />
                 </TouchableOpacity>
               </View>
+
+              {/* 58dp Interactive Map & GPS Trigger */}
+              <TouchableOpacity
+                style={[
+                  styles.mapTriggerCard58,
+                  {
+                    backgroundColor: isDark ? `${accentColor}18` : `${accentColor}0f`,
+                    borderColor: isDark ? `${accentColor}44` : `${accentColor}30`,
+                  },
+                ]}
+                onPress={() => {
+                  setHubModalVisible(false);
+                  setMapModalVisible(true);
+                }}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.mapTriggerIconWrap, { backgroundColor: `${accentColor}24` }]}>
+                  <Feather name="map" size={18} color={accentColor} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.mapTriggerTitle, { color: accentColor, fontFamily: FontFamily.jakartaBold }]}>
+                    Pick on Interactive Map or Use GPS
+                  </Text>
+                  <Text style={[styles.mapTriggerSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                    Pinpoint exact Dhaka pickup spot & metro stops
+                  </Text>
+                </View>
+                <Feather name="chevron-right" size={18} color={accentColor} />
+              </TouchableOpacity>
 
               {/* 1. Live Search Box */}
               <View style={[styles.modalSearchBox, { backgroundColor: C.surface2, borderColor: C.border }]}>
@@ -1060,6 +1124,25 @@ export function RidePostScreen({ route, navigation }: any) {
           </KeyboardAvoidingView>
         </View>
       </Modal>
+
+      {/* 3. Interactive Leaflet Map & GPS Picker Modal */}
+      <LocationPickerModal
+        visible={mapModalVisible}
+        onClose={() => setMapModalVisible(false)}
+        accentColor={accentColor}
+        title={targetField === 'from' ? (isOffer ? 'Select Pickup Point' : 'Your Current Location') : 'Select Destination'}
+        initialPlaceName={targetField === 'from' ? from : to}
+        onSelectLocation={(place) => {
+          if (targetField === 'from') {
+            setFrom(place.formattedAddress);
+          } else {
+            setTo(place.formattedAddress);
+          }
+          if (!notes && place.zone && place.subText && place.subText !== place.formattedAddress) {
+            setNotes(place.subText);
+          }
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -1400,8 +1483,43 @@ const styles = StyleSheet.create({
     gap: 4,
     flexShrink: 0,
   } as ViewStyle,
+  locationBarMapBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  } as ViewStyle,
   locationBarPickTxt: {
     fontSize: 12.5,
+  } as TextStyle,
+
+  /* 58dp Map & GPS Trigger Card */
+  mapTriggerCard58: {
+    height: Layout.controlHeight,
+    borderRadius: Layout.controlRadius,
+    borderWidth: 1.2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    marginBottom: 10,
+    gap: 12,
+  } as ViewStyle,
+  mapTriggerIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  mapTriggerTitle: {
+    fontSize: 13.5,
+  } as TextStyle,
+  mapTriggerSub: {
+    fontSize: 11,
+    marginTop: 1,
   } as TextStyle,
 
   /* 2-Bar Category Switcher (Modal) */

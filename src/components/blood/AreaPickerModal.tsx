@@ -11,6 +11,7 @@ import { Icon } from '../ui/Icon';
 import { FontFamily, Layout, SectorColors, pillBg } from '../../theme';
 import { DHAKA_AREAS, type DhakaAreaInfo } from '../../constants/dhakaAreas';
 import { SegmentedTabs, type TabItem } from '../ui/SegmentedTabs';
+import { LocationPickerModal } from '../location/LocationPickerModal';
 import { useT } from '../../i18n';
 
 interface AreaPickerModalProps {
@@ -294,6 +295,7 @@ export function AreaPickerModal({
   const [search, setSearch] = useState('');
   const startingTab: TypeFilterTab = initialTab === 'area' ? 'area' : 'hospital';
   const [activeTab, setActiveTab] = useState<TypeFilterTab>(startingTab);
+  const [mapPickerOpen, setMapPickerOpen] = useState(false);
   const searchInputRef = useRef<TextInput>(null);
 
   useEffect(() => {
@@ -472,6 +474,32 @@ export function AreaPickerModal({
             </TouchableOpacity>
           </View>
 
+          {/* 58dp Interactive Map & GPS Trigger */}
+          <TouchableOpacity
+            style={[
+              styles.mapTriggerCard58,
+              {
+                backgroundColor: isDark ? `${SectorColors.blood}18` : `${SectorColors.blood}0f`,
+                borderColor: isDark ? `${SectorColors.blood}44` : `${SectorColors.blood}30`,
+              },
+            ]}
+            onPress={() => setMapPickerOpen(true)}
+            activeOpacity={0.8}
+          >
+            <View style={[styles.mapTriggerIconWrap, { backgroundColor: `${SectorColors.blood}24` }]}>
+              <Feather name="map" size={18} color={SectorColors.blood} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.mapTriggerTitle, { color: SectorColors.blood, fontFamily: FontFamily.jakartaBold }]}>
+                Pick Hospital or Area on Map
+              </Text>
+              <Text style={[styles.mapTriggerSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                Pinpoint exact location or auto-detect with device GPS
+              </Text>
+            </View>
+            <Feather name="chevron-right" size={18} color={SectorColors.blood} />
+          </TouchableOpacity>
+
           {/* Search Box with Clear Button */}
           <View style={[styles.searchBox, { backgroundColor: C.surface2, borderColor: C.border }]}>
             <TouchableOpacity
@@ -575,6 +603,18 @@ export function AreaPickerModal({
           )}
         </View>
       </KeyboardAvoidingView>
+
+      <LocationPickerModal
+        visible={mapPickerOpen}
+        onClose={() => setMapPickerOpen(false)}
+        accentColor={SectorColors.blood}
+        title="Pick Hospital / Area on Map"
+        initialPlaceName={selectedArea}
+        onSelectLocation={(place) => {
+          handleSelect(place.formattedAddress);
+          onClose();
+        }}
+      />
     </Modal>
   );
 }
@@ -635,6 +675,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
+  /* 58dp Map & GPS Trigger Card */
+  mapTriggerCard58: {
+    height: Layout.controlHeight,
+    borderRadius: Layout.controlRadius,
+    borderWidth: 1.2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    marginBottom: 10,
+    gap: 12,
+  } as ViewStyle,
+  mapTriggerIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  mapTriggerTitle: {
+    fontSize: 13.5,
+  } as TextStyle,
+  mapTriggerSub: {
+    fontSize: 11,
+    marginTop: 1,
+  } as TextStyle,
+
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',

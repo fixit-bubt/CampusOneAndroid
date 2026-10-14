@@ -1559,5 +1559,36 @@ The Campus Announcements architecture is transformed from a manual posting board
 - **Android Modal Keyboard Resilience:**
   - Replaced conditional iOS-only padding in modal bottom sheets with unconditional `behavior="padding"` ensuring keyboard offsets adapt cleanly across modern Android 15 edge-to-edge screens.
 
+---
+
+## 36. Interactive Leaflet Map & GPS Location Selection Architecture (Option B)
+
+### 36.1 Architectural Overview & Zero-Billing OpenStreetMap Engine
+- **Option B Implementation:** Replaces static/manual text entry with an interactive OpenStreetMap (OSM) and Leaflet map engine embedded via `react-native-webview` (v13.16.1) combined with native device geolocation (`expo-location`).
+- **Zero-Cost & No Credit Card Dependency:** Completely eliminates Google Maps SDK billing blockers in Bangladesh (which often fail or show watermarked "For development purposes only" screens due to international credit card restrictions). Uses high-precision, community-maintained OpenStreetMap tiles for Dhaka and BUBT campus.
+- **OLED Dark Mode Parity:** Embeds CartoDB Dark Matter tiles (`https://{s}.basemaps.cartocdn.com/dark_all/...`) in dark mode to match CampusOne's pitch-black theme, and CartoDB Positron / OSM tiles in light mode.
+
+### 36.2 Core Services & Components
+1. **`src/services/locationService.ts`:**
+   - **Device GPS Retrieval:** `getCurrentUserCoordinates()` requests foreground permission (`Location.requestForegroundPermissionsAsync()`) and retrieves current device position via `Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })`.
+   - **Landmark Geocoding & Proximity Detection:** Contains pre-indexed coordinates for BUBT Main Campus (`23.8103, 90.3567`), Sony Square, Mirpur 10 Metro, Commerce College Road, Rainkhola, and key commute hubs across North, Central, and South Dhaka. Uses Haversine distance (`getDistanceMeters`) to instantly match nearby pins within 280m without network latency.
+   - **Multi-Tier Reverse Geocoding:** Falls back to Android native Geocoder (`Location.reverseGeocodeAsync`) and OpenStreetMap Nominatim reverse API for unmapped spots.
+2. **`src/components/location/LocationPickerModal.tsx`:**
+   - **Fixed Center Pin Crosshair:** Uses the mobile ride-sharing standard (Uber / Pathao pattern) where a floating center pin lifts during map pan (`is-moving`) and drops with a subtle spring bounce on `moveend`, sending coordinates to React Native via the WebView bridge.
+   - **Universal 58dp Control Standard:** Top "Use My Current Location" button (`height: 58, borderRadius: 16`) auto-locates via GPS and animates the map with `map.flyTo`. Bottom "Confirm Location" CTA is standardized to `height: 58, borderRadius: 16`.
+   - **Quick Commute Hub Chips:** Horizontal scrollbar of quick-jump shortcuts: BUBT Campus, Sony Square, Mirpur 10 Metro, Mirpur 1, Mirpur 12, Uttara 3, Farmgate, Dhanmondi 27, Mohakhali, and Kuril Flyover.
+   - **Universal 72dp Content Card:** Live selected location preview card (`minHeight: 72, padding: 14, borderRadius: 16`) with 44dp map pin icon box, resolved place title, and coordinates subtitle.
+
+### 36.3 App-Wide Feature Integration
+- **Campus Rides (`RidePostScreen.tsx`):**
+  - Pickup ("From") and Destination ("To") location bars now feature a direct map trigger button (`locationBarMapBtn`, 38dp) alongside the "Pick Area" button.
+  - Commute Area bottom sheet modal features a prominent 58dp card (`mapTriggerCard58`) to switch directly to the interactive map.
+- **Student Marketplace (`MarketPostScreen.tsx`):**
+  - Handover location picker includes a 58dp map trigger card (`mapTriggerCard58`) to pinpoint campus meetup gates, cafeteria, or Dhaka hubs.
+- **Blood Donation (`AreaPickerModal.tsx`):**
+  - Area and hospital search modal includes a 58dp map trigger card (`mapTriggerCard58`) allowing blood requesters and donors to pick exact hospitals and areas on the map.
+- **Database & Web Parity:** All selections resolve to clean human-readable address strings, maintaining 100% backward and forward compatibility with Supabase backend tables and the sibling web app (`CampusOneWeb`).
+
+
 
 

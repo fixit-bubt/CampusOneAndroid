@@ -12,6 +12,7 @@ import { useT } from '../../i18n';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
+import { LocationPickerModal } from '../../components/location/LocationPickerModal';
 import { FontFamily, Layout, Accent, SectorColors } from '../../theme';
 import { useToast } from '../../components/ui/Toast';
 import { supabase } from '../../lib/supabase';
@@ -88,6 +89,7 @@ export function MarketPostScreen({ route, navigation }: any) {
   const [pickerModalOpen, setPickerModalOpen] = useState(false);
   const [catModalOpen, setCatModalOpen] = useState(false);
   const [locationModalOpen, setLocationModalOpen] = useState(false);
+  const [mapModalOpen, setMapModalOpen] = useState(false);
   const [locTab, setLocTab] = useState<'campus' | 'dhaka'>('campus');
   const [searchLoc, setSearchLoc] = useState('');
 
@@ -717,6 +719,35 @@ export function MarketPostScreen({ route, navigation }: any) {
               </TouchableOpacity>
             </View>
 
+            {/* 58dp Interactive Map & GPS Trigger */}
+            <TouchableOpacity
+              style={[
+                styles.mapTriggerCard58,
+                {
+                  backgroundColor: isDark ? `${Accent.amber}18` : `${Accent.amber}0f`,
+                  borderColor: isDark ? `${Accent.amber}44` : `${Accent.amber}30`,
+                },
+              ]}
+              onPress={() => {
+                setLocationModalOpen(false);
+                setMapModalOpen(true);
+              }}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.mapTriggerIconWrap, { backgroundColor: `${Accent.amber}24` }]}>
+                <Feather name="map" size={18} color={Accent.amber} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.mapTriggerTitle, { color: Accent.amber, fontFamily: FontFamily.jakartaBold }]}>
+                  Pick on Interactive Map or Use GPS
+                </Text>
+                <Text style={[styles.mapTriggerSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                  Pinpoint exact campus gate, canteen, or Dhaka meetup spot
+                </Text>
+              </View>
+              <Feather name="chevron-right" size={18} color={Accent.amber} />
+            </TouchableOpacity>
+
             {/* Search Box */}
             <View style={[styles.modalSearchBox, { backgroundColor: C.surface2, borderColor: C.border }]}>
               <Feather name="search" size={18} color={C.textMuted} />
@@ -854,6 +885,18 @@ export function MarketPostScreen({ route, navigation }: any) {
         </KeyboardAvoidingView>
       </View>
     </Modal>
+
+    {/* Interactive Map & GPS Picker Modal */}
+    <LocationPickerModal
+      visible={mapModalOpen}
+      onClose={() => setMapModalOpen(false)}
+      accentColor={Accent.amber}
+      title="Select Meetup Location"
+      initialPlaceName={meetupSpot}
+      onSelectLocation={(place) => {
+        setMeetupSpot(place.formattedAddress);
+      }}
+    />
     </SafeAreaView>
   );
 }
@@ -1117,6 +1160,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
+
+  /* 58dp Map & GPS Trigger Card */
+  mapTriggerCard58: {
+    height: Layout.controlHeight,
+    borderRadius: Layout.controlRadius,
+    borderWidth: 1.2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    marginBottom: 10,
+    gap: 12,
+  } as ViewStyle,
+  mapTriggerIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  mapTriggerTitle: {
+    fontSize: 13.5,
+  } as TextStyle,
+  mapTriggerSub: {
+    fontSize: 11,
+    marginTop: 1,
+  } as TextStyle,
 
   // Location search box
   modalSearchBox: {
