@@ -20,31 +20,32 @@ import { FontFamily, SectorColors } from '../../theme';
 export interface FrequentTool {
   id: string;
   title: string;
+  subtitle: string;
   route: string;
   icon: keyof typeof Feather.glyphMap;
   color: string;
 }
 
 export const ALL_TOOLS: FrequentTool[] = [
-  { id: 'study-hub', title: 'Study Hub', route: 'StudyHub', icon: 'book-open', color: SectorColors.study },
-  { id: 'routines', title: 'Routines', route: 'RoutinesBrowse', icon: 'clock', color: SectorColors.routines },
-  { id: 'cover-page', title: 'Cover Page', route: 'CoverPageForm', icon: 'file-text', color: SectorColors.coverpage },
-  { id: 'cgpa', title: 'CGPA Calc', route: 'Cgpa', icon: 'percent', color: '#0e9c8a' },
-  { id: 'bus', title: 'Bus', route: 'Bus', icon: 'truck', color: SectorColors.bus },
-  { id: 'prayer', title: 'Prayer', route: 'Prayer', icon: 'sun', color: SectorColors.prayer },
-  { id: 'blood', title: 'Blood', route: 'Blood', icon: 'heart', color: SectorColors.blood },
-  { id: 'market', title: 'Market', route: 'Market', icon: 'shopping-bag', color: SectorColors.market },
-  { id: 'ride', title: 'Rides', route: 'Rides', icon: 'navigation', color: SectorColors.ride },
-  { id: 'lostfound', title: 'Lost & Found', route: 'LostFoundBrowse', icon: 'search', color: SectorColors.lostfound },
-  { id: 'clubs', title: 'Clubs', route: 'Clubs', icon: 'users', color: SectorColors.clubs },
-  { id: 'events', title: 'Events', route: 'EventsBrowse', icon: 'calendar', color: SectorColors.events },
-  { id: 'announce', title: 'Notices', route: 'Announcements', icon: 'bell', color: SectorColors.announce },
-  { id: 'jobs', title: 'Jobs', route: 'JobsBrowse', icon: 'briefcase', color: SectorColors.jobs },
-  { id: 'directory', title: 'Directory', route: 'Directory', icon: 'user', color: SectorColors.directory },
-  { id: 'faculty', title: 'Faculty', route: 'Faculty', icon: 'user-check', color: SectorColors.faculty },
-  { id: 'calendar', title: 'Calendar', route: 'AcademicCalendar', icon: 'calendar', color: SectorColors.calendar },
-  { id: 'pdfmaker', title: 'PDF Maker', route: 'PdfMaker', icon: 'file', color: SectorColors.pdfmaker },
-  { id: 'reports', title: 'Reports', route: 'ReportForm', icon: 'alert-circle', color: SectorColors.reports },
+  { id: 'study-hub', title: 'Study Hub', subtitle: 'Lecture notes, syllabus, and study resources', route: 'StudyHub', icon: 'book-open', color: SectorColors.study },
+  { id: 'routines', title: 'Routines', subtitle: 'Intake class routines and exam schedules', route: 'RoutinesBrowse', icon: 'clock', color: SectorColors.routines },
+  { id: 'cover-page', title: 'Cover Page', subtitle: 'Standard assignment cover page generator', route: 'CoverPageForm', icon: 'file-text', color: SectorColors.coverpage },
+  { id: 'cgpa', title: 'CGPA Calc', subtitle: 'Semester and cumulative grade point calculator', route: 'Cgpa', icon: 'percent', color: '#0e9c8a' },
+  { id: 'bus', title: 'Bus', subtitle: 'Shuttle routes and departure countdowns', route: 'Bus', icon: 'truck', color: SectorColors.bus },
+  { id: 'prayer', title: 'Prayer', subtitle: 'Salah prayer times and Azan countdown', route: 'Prayer', icon: 'sun', color: SectorColors.prayer },
+  { id: 'blood', title: 'Blood', subtitle: 'Emergency blood donors and urgent requests', route: 'Blood', icon: 'heart', color: SectorColors.blood },
+  { id: 'market', title: 'Market', subtitle: 'Student marketplace for books and gear', route: 'Market', icon: 'shopping-bag', color: SectorColors.market },
+  { id: 'ride', title: 'Rides', subtitle: 'Campus ride sharing and seat availability', route: 'Rides', icon: 'navigation', color: SectorColors.ride },
+  { id: 'lostfound', title: 'Lost & Found', subtitle: 'Report missing items or claim found gear', route: 'LostFoundBrowse', icon: 'search', color: SectorColors.lostfound },
+  { id: 'clubs', title: 'Clubs', subtitle: 'BUBT student clubs, communities, and events', route: 'Clubs', icon: 'users', color: SectorColors.clubs },
+  { id: 'events', title: 'Events', subtitle: 'Upcoming campus workshops, seminars, and fests', route: 'EventsBrowse', icon: 'calendar', color: SectorColors.events },
+  { id: 'announce', title: 'Notices', subtitle: 'Official administrative notices and alerts', route: 'Announcements', icon: 'bell', color: SectorColors.announce },
+  { id: 'jobs', title: 'Jobs', subtitle: 'Campus recruitment, internships, and vacancies', route: 'JobsBrowse', icon: 'briefcase', color: SectorColors.jobs },
+  { id: 'directory', title: 'Directory', subtitle: 'Search peers and manage connection requests', route: 'Directory', icon: 'user', color: SectorColors.directory },
+  { id: 'faculty', title: 'Faculty', subtitle: 'Teacher directory, office rooms, and mentors', route: 'Faculty', icon: 'user-check', color: SectorColors.faculty },
+  { id: 'calendar', title: 'Calendar', subtitle: 'Academic terms, holidays, and exam dates', route: 'AcademicCalendar', icon: 'calendar', color: SectorColors.calendar },
+  { id: 'pdfmaker', title: 'PDF Maker', subtitle: 'Merge, compress, scan, and convert documents', route: 'PdfMaker', icon: 'file', color: SectorColors.pdfmaker },
+  { id: 'reports', title: 'Reports', subtitle: 'Campus maintenance issues and status tracking', route: 'ReportForm', icon: 'alert-circle', color: SectorColors.reports },
 ];
 
 export const DEFAULT_TOOL_IDS = ['study-hub', 'routines', 'cover-page', 'cgpa'];
@@ -159,53 +160,46 @@ export function HomeFrequentTools() {
         </TouchableOpacity>
       </View>
 
-      {/* 4 Square Buttons in 1 Horizontal Line */}
+      {/* 4 Standard 72dp Fixed-Height Shortcut Cards */}
       <View style={styles.gridRow}>
-        {activeTools.map((tool) => {
-          const bgTint = isDark ? `${tool.color}18` : `${tool.color}12`;
-          const borderTint = isDark ? `${tool.color}35` : `${tool.color}25`;
-
-          return (
-            <TouchableOpacity
-              key={tool.id}
-              activeOpacity={0.75}
-              onPress={() => navigation.navigate(tool.route)}
+        {activeTools.map((tool) => (
+          <TouchableOpacity
+            key={tool.id}
+            activeOpacity={0.75}
+            onPress={() => navigation.navigate(tool.route)}
+            style={[
+              styles.toolCard,
+              {
+                backgroundColor: C.surface,
+                borderColor: C.border,
+              },
+            ]}
+          >
+            <View
               style={[
-                styles.toolCard,
+                styles.iconBox,
                 {
-                  backgroundColor: C.surface,
-                  borderColor: C.border,
+                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2,
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : C.border,
                 },
               ]}
             >
-              <View
-                style={[
-                  styles.iconBox,
-                  {
-                    backgroundColor: bgTint,
-                    borderColor: borderTint,
-                  },
-                ]}
-              >
-                <AnimatedIcon name={tool.icon} size={18} color={tool.color} animation="entrance" />
-              </View>
-              <Text
-                style={[
-                  styles.toolTitle,
-                  {
-                    color: C.text,
-                    fontFamily: FontFamily.jakartaBold,
-                  },
-                ]}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                minimumFontScale={0.85}
-              >
-                {tool.title}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
+              <AnimatedIcon name={tool.icon} size={18} color={tool.color} animation="entrance" />
+            </View>
+            <Text
+              style={[
+                styles.toolTitle,
+                {
+                  color: C.text,
+                  fontFamily: FontFamily.jakartaBold,
+                },
+              ]}
+              numberOfLines={1}
+            >
+              {tool.title}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
 
       {/* Customization Modal */}
@@ -233,7 +227,12 @@ export function HomeFrequentTools() {
             ]}
           >
             {/* Grab Handle */}
-            <View style={styles.handleBar} />
+            <View
+              style={[
+                styles.handleBar,
+                { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.15)' },
+              ]}
+            />
 
             {/* Header */}
             <View style={styles.sheetHeader}>
@@ -292,7 +291,7 @@ export function HomeFrequentTools() {
               </View>
             </View>
 
-            {/* List of features */}
+            {/* Calm, Neutral 19-Feature Selection Catalog */}
             <ScrollView
               style={styles.toolsList}
               contentContainerStyle={styles.toolsListContent}
@@ -314,10 +313,10 @@ export function HomeFrequentTools() {
                         {
                           backgroundColor: isPicked
                             ? isDark
-                              ? `${item.color}18`
-                              : `${item.color}10`
+                              ? 'rgba(255, 255, 255, 0.06)'
+                              : C.surfaceAlt
                             : C.surface2,
-                          borderColor: isPicked ? item.color : C.border,
+                          borderColor: isPicked ? C.brand : C.border,
                         },
                       ]}
                     >
@@ -325,33 +324,44 @@ export function HomeFrequentTools() {
                         style={[
                           styles.pickerIconBox,
                           {
-                            backgroundColor: isDark ? `${item.color}25` : `${item.color}15`,
+                            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : C.border,
                           },
                         ]}
                       >
-                        <Feather name={item.icon} size={16} color={item.color} />
+                        <AnimatedIcon name={item.icon} size={18} color={item.color} animation="entrance" />
                       </View>
 
-                      <Text
-                        style={[
-                          styles.pickerItemTitle,
-                          {
-                            color: C.text,
-                            fontFamily: isPicked
-                              ? FontFamily.jakartaBold
-                              : FontFamily.jakartaMedium,
-                          },
-                        ]}
-                        numberOfLines={1}
-                      >
-                        {item.title}
-                      </Text>
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={[
+                            styles.pickerItemTitle,
+                            {
+                              color: C.text,
+                              fontFamily: isPicked
+                                ? FontFamily.jakartaBold
+                                : FontFamily.jakartaMedium,
+                            },
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {item.title}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.pickerItemSub,
+                            { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {item.subtitle}
+                        </Text>
+                      </View>
 
                       {isPicked ? (
                         <View
                           style={[
                             styles.badgePicked,
-                            { backgroundColor: item.color },
+                            { backgroundColor: C.brand },
                           ]}
                         >
                           <Text
@@ -377,7 +387,7 @@ export function HomeFrequentTools() {
               </View>
             </ScrollView>
 
-            {/* Footer Buttons */}
+            {/* Equal-Width 50/50 Footer Buttons */}
             <View style={styles.sheetFooter}>
               <TouchableOpacity
                 activeOpacity={0.7}
@@ -405,15 +415,23 @@ export function HomeFrequentTools() {
                   styles.saveBtn,
                   {
                     backgroundColor:
-                      tempSelected.length === 4 ? C.brand : isDark ? C.surface3 : '#cbd5e1',
-                    opacity: tempSelected.length === 4 ? 1 : 0.6,
+                      tempSelected.length === 4 ? C.brand : C.border,
+                    opacity: tempSelected.length === 4 ? 1 : 0.5,
                   },
                 ]}
               >
+                <Feather
+                  name="check"
+                  size={16}
+                  color={tempSelected.length === 4 ? '#ffffff' : C.textMuted}
+                />
                 <Text
                   style={[
                     styles.saveBtnText,
-                    { color: '#ffffff', fontFamily: FontFamily.jakartaBold },
+                    {
+                      color: tempSelected.length === 4 ? '#ffffff' : C.textMuted,
+                      fontFamily: FontFamily.jakartaBold,
+                    },
                   ]}
                 >
                   Save Shortcuts
@@ -472,18 +490,18 @@ const styles = StyleSheet.create({
 
   toolCard: {
     flex: 1,
-    aspectRatio: 1,
-    minHeight: 76,
+    height: 72,
     borderRadius: 14,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 6,
+    paddingHorizontal: 4,
+    paddingVertical: 6,
   } as ViewStyle,
 
   iconBox: {
-    width: 36,
-    height: 36,
+    width: 34,
+    height: 34,
     borderRadius: 10,
     borderWidth: 1,
     alignItems: 'center',
@@ -492,14 +510,14 @@ const styles = StyleSheet.create({
 
   toolTitle: {
     fontSize: 11,
-    marginTop: 6,
+    marginTop: 4,
     textAlign: 'center',
   },
 
   modalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    backgroundColor: 'rgba(0, 0, 0, 0.72)',
   } as ViewStyle,
 
   modalBackdrop: {
@@ -512,84 +530,90 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderLeftWidth: 1,
     borderRightWidth: 1,
-    maxHeight: '80%',
+    maxHeight: '82%',
     paddingTop: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
   } as ViewStyle,
 
   handleBar: {
-    width: 36,
+    width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: 'rgba(156, 163, 175, 0.4)',
     alignSelf: 'center',
-    marginBottom: 12,
+    marginBottom: 14,
   } as ViewStyle,
 
   sheetHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 14,
+    marginBottom: 12,
+    gap: 12,
   } as ViewStyle,
 
   sheetTitle: {
     fontSize: 17,
+    letterSpacing: -0.3,
   },
 
   sheetSubtitle: {
-    fontSize: 12,
+    fontSize: 12.5,
     marginTop: 2,
   },
 
   counterPill: {
-    paddingVertical: 3.5,
-    paddingHorizontal: 9,
-    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
   } as ViewStyle,
 
   counterText: {
-    fontSize: 11.5,
+    fontSize: 12,
   },
 
   toolsList: {
-    maxHeight: 330,
+    maxHeight: 380,
   } as ViewStyle,
 
   toolsListContent: {
-    paddingVertical: 4,
+    paddingTop: 6,
+    paddingBottom: 16,
   } as ViewStyle,
 
   pickerGrid: {
-    gap: 8,
+    gap: 10,
   } as ViewStyle,
 
   pickerItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 10,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    gap: 10,
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    gap: 12,
   } as ViewStyle,
 
   pickerIconBox: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
+    width: 40,
+    height: 40,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
 
   pickerItemTitle: {
-    flex: 1,
-    fontSize: 13.5,
+    fontSize: 14.5,
+  },
+
+  pickerItemSub: {
+    fontSize: 11.5,
+    marginTop: 2,
   },
 
   badgePicked: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
@@ -600,41 +624,42 @@ const styles = StyleSheet.create({
   },
 
   badgeUnpicked: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     borderWidth: 1.5,
   } as ViewStyle,
 
   sheetFooter: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 12,
     marginTop: 14,
-    paddingTop: 8,
   } as ViewStyle,
 
   resetBtn: {
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: 12,
+    height: 50,
+    borderRadius: 14,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
 
   resetBtnText: {
-    fontSize: 13,
+    fontSize: 14,
   },
 
   saveBtn: {
-    flex: 2,
-    paddingVertical: 12,
-    borderRadius: 12,
+    flex: 1,
+    height: 50,
+    borderRadius: 14,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 8,
   } as ViewStyle,
 
   saveBtnText: {
-    fontSize: 13.5,
+    fontSize: 14,
   },
 });
