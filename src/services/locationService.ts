@@ -217,6 +217,84 @@ export const CAMPUS_AND_DHAKA_LANDMARKS: LandmarkLocation[] = [
     coords: { latitude: 23.8160, longitude: 90.4260 },
     desc: 'Main Gate · Jamuna Future Park',
   },
+  // Key Hospitals & Medical Centers (Blood & Emergency Support)
+  {
+    name: 'National Heart Foundation',
+    nameBn: 'ন্যাশনাল হার্ট ফাউন্ডেশন',
+    zone: 'Mirpur & Campus',
+    coords: { latitude: 23.8055, longitude: 90.3600 },
+    desc: 'Plot 4, Mirpur-2 · Heart & Cardiac Hospital',
+  },
+  {
+    name: 'Delta Hospital',
+    nameBn: 'ডেল্টা হাসপাতাল',
+    zone: 'Mirpur & Campus',
+    coords: { latitude: 23.7990, longitude: 90.3520 },
+    desc: 'Section 1, Mirpur · Oncology & General Hospital',
+  },
+  {
+    name: 'Popular Diagnostic (Mirpur 10)',
+    nameBn: 'পপুলার ডায়াগনস্টিক মিরপুর',
+    zone: 'Mirpur & Campus',
+    coords: { latitude: 23.8068, longitude: 90.3680 },
+    desc: 'Begum Rokeya Sarani, Mirpur 10',
+  },
+  {
+    name: 'Dhaka Medical College Hospital (DMCH)',
+    nameBn: 'ঢাকা মেডিকেল কলেজ হাসপাতাল',
+    zone: 'Central & South',
+    coords: { latitude: 23.7257, longitude: 90.3976 },
+    desc: 'Bakshibazar, Dhaka · Largest Public Hospital',
+  },
+  {
+    name: 'Square Hospital',
+    nameBn: 'স্কয়ার হাসপাতাল',
+    zone: 'Central & West',
+    coords: { latitude: 23.7533, longitude: 90.3817 },
+    desc: '18/F Bir Uttam Qazi Nuruzzaman Sarak, Panthapath',
+  },
+  {
+    name: 'Shaheed Suhrawardy Hospital',
+    nameBn: 'শহীদ সোহরাওয়ার্দী হাসপাতাল',
+    zone: 'Central & West',
+    coords: { latitude: 23.7698, longitude: 90.3702 },
+    desc: 'Sher-e-Bangla Nagar · Government Hospital',
+  },
+  {
+    name: 'NITOR (Pangu Hospital)',
+    nameBn: 'পঙ্গু হাসপাতাল',
+    zone: 'Central & West',
+    coords: { latitude: 23.7705, longitude: 90.3690 },
+    desc: 'Orthopedic Hospital · Sher-e-Bangla Nagar',
+  },
+  {
+    name: 'Evercare Hospital',
+    nameBn: 'এভারকেয়ার হাসপাতাল',
+    zone: 'North Dhaka',
+    coords: { latitude: 23.8105, longitude: 90.4312 },
+    desc: 'Plot 81, Block E, Bashundhara R/A',
+  },
+  {
+    name: 'United Hospital',
+    nameBn: 'ইউনাইটেড হাসপাতাল',
+    zone: 'North Dhaka',
+    coords: { latitude: 23.7995, longitude: 90.4140 },
+    desc: 'Plot 15, Road 71, Gulshan 2',
+  },
+  {
+    name: 'BIRDEM General Hospital',
+    nameBn: 'বারডেম হাসপাতাল',
+    zone: 'Central & South',
+    coords: { latitude: 23.7388, longitude: 90.3958 },
+    desc: 'Shahbagh Roundabout · Diabetes & Specialized',
+  },
+  {
+    name: 'LabAid Specialized Hospital',
+    nameBn: 'ল্যাবএইড কার্ডিয়াক হাসপাতাল',
+    zone: 'Central & West',
+    coords: { latitude: 23.7435, longitude: 90.3820 },
+    desc: 'House 1, Road 4, Dhanmondi',
+  },
 ];
 
 export function getDistanceMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -271,6 +349,27 @@ export function findLandmarkByName(name?: string | null): LandmarkLocation | nul
   );
 }
 
+export function searchLandmarks(query: string, limit: number = 8): LandmarkLocation[] {
+  if (!query || !query.trim()) return [];
+  const q = query.trim().toLowerCase();
+  return CAMPUS_AND_DHAKA_LANDMARKS.filter(
+    l =>
+      l.name.toLowerCase().includes(q) ||
+      (l.nameBn && l.nameBn.toLowerCase().includes(q)) ||
+      l.zone.toLowerCase().includes(q) ||
+      (l.desc && l.desc.toLowerCase().includes(q))
+  ).slice(0, limit);
+}
+
+export function isWithinBangladesh(coords: Coordinates): boolean {
+  return (
+    coords.latitude >= 20.5 &&
+    coords.latitude <= 26.7 &&
+    coords.longitude >= 88.0 &&
+    coords.longitude <= 92.8
+  );
+}
+
 export async function getCurrentUserCoordinates(): Promise<Coordinates | null> {
   try {
     const { status } = await Location.requestForegroundPermissionsAsync();
@@ -293,6 +392,9 @@ export async function getCurrentUserCoordinates(): Promise<Coordinates | null> {
 }
 
 export async function reverseGeocodeCoords(coords: Coordinates): Promise<GeocodedPlace> {
+  const inBd = isWithinBangladesh(coords);
+
+  // 1. Instant Landmark Match within 280 meters
   const nearestLandmark = findNearestLandmark(coords, 280);
   if (nearestLandmark) {
     return {
@@ -304,6 +406,7 @@ export async function reverseGeocodeCoords(coords: Coordinates): Promise<Geocode
     };
   }
 
+  // 2. Native Android Geocoder
   try {
     const nativePlaces = await Location.reverseGeocodeAsync({
       latitude: coords.latitude,
@@ -312,22 +415,23 @@ export async function reverseGeocodeCoords(coords: Coordinates): Promise<Geocode
 
     if (nativePlaces && nativePlaces.length > 0) {
       const p = nativePlaces[0];
-      const primaryName = p.name || p.street || p.subregion || p.district || 'Selected Location';
-      const area = p.subregion || p.district || p.city || 'Dhaka';
-      const label = primaryName !== area ? `${primaryName}, ${area}` : primaryName;
+      const primaryName = p.name || p.street || p.subregion || p.district || (inBd ? 'Dhaka Location' : 'Selected Location');
+      const area = p.subregion || p.district || p.city || (inBd ? 'Dhaka' : p.country || '');
+      const label = area && primaryName !== area ? `${primaryName}, ${area}` : primaryName;
 
       return {
         name: label,
-        zone: area,
+        zone: area || (inBd ? 'Dhaka' : 'Global'),
         subText: `${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`,
         formattedAddress: label,
         coords,
       };
     }
   } catch (nativeErr) {
-    // Native geocoder can fail on emulator or without play services, fall through to OSM Nominatim
+    // Native geocoder fallback
   }
 
+  // 3. OpenStreetMap Nominatim Reverse API
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 4000);
@@ -354,13 +458,13 @@ export async function reverseGeocodeCoords(coords: Coordinates): Promise<Geocode
         addr.neighbourhood ||
         addr.residential ||
         data.name ||
-        'Dhaka Location';
-      const cityArea = addr.suburb || addr.city_district || addr.city || 'Dhaka';
-      const formatted = placeName !== cityArea ? `${placeName}, ${cityArea}` : placeName;
+        (inBd ? 'Dhaka Location' : 'Custom Map Pin');
+      const cityArea = addr.suburb || addr.city_district || addr.city || (inBd ? 'Dhaka' : addr.country || '');
+      const formatted = cityArea && placeName !== cityArea ? `${placeName}, ${cityArea}` : placeName;
 
       return {
         name: formatted,
-        zone: cityArea,
+        zone: cityArea || (inBd ? 'Dhaka' : 'Global'),
         subText: `${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`,
         formattedAddress: formatted,
         coords,
@@ -370,10 +474,11 @@ export async function reverseGeocodeCoords(coords: Coordinates): Promise<Geocode
     // Fallback if network request fails
   }
 
+  // 4. Clean Coordinate Fallback
   return {
-    name: `Location (${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)})`,
-    zone: 'Dhaka',
-    subText: 'Custom Map Pin',
+    name: inBd ? 'Dhaka Location' : 'Selected Pin',
+    zone: inBd ? 'Mirpur & Campus' : 'Map Pin',
+    subText: `${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`,
     formattedAddress: `${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`,
     coords,
   };

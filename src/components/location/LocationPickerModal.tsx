@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,13 +8,15 @@ import {
   ActivityIndicator,
   ScrollView,
   Platform,
+  TextInput,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useToast } from '../ui/Toast';
-import { Icon } from '../ui/Icon';
 import { AnimatedIcon } from '../ui/AnimatedIcon';
 import { FontFamily, Layout, SectorColors } from '../../theme';
 import {
@@ -23,8 +25,10 @@ import {
   getCurrentUserCoordinates,
   reverseGeocodeCoords,
   findLandmarkByName,
+  searchLandmarks,
   type Coordinates,
   type GeocodedPlace,
+  type LandmarkLocation,
 } from '../../services/locationService';
 
 interface LocationPickerModalProps {
@@ -43,21 +47,18 @@ const QUICK_COMMUTE_HUBS = [
   { label: 'Mirpur 10 Metro', coords: { latitude: 23.8071, longitude: 90.3686 } },
   { label: 'Mirpur 1', coords: { latitude: 23.7956, longitude: 90.3537 } },
   { label: 'Mirpur 12', coords: { latitude: 23.8277, longitude: 90.3644 } },
-  { label: 'Uttara 3', coords: { latitude: 23.8696, longitude: 90.3986 } },
+  { label: 'Heart Foundation', coords: { latitude: 23.8055, longitude: 90.3600 } },
+  { label: 'Square Hospital', coords: { latitude: 23.7533, longitude: 90.3817 } },
+  { label: 'DMCH', coords: { latitude: 23.7257, longitude: 90.3976 } },
   { label: 'Farmgate', coords: { latitude: 23.7570, longitude: 90.3888 } },
   { label: 'Dhanmondi 27', coords: { latitude: 23.7529, longitude: 90.3752 } },
+  { label: 'Uttara 3', coords: { latitude: 23.8696, longitude: 90.3986 } },
   { label: 'Mohakhali', coords: { latitude: 23.7776, longitude: 90.4054 } },
   { label: 'Kuril Flyover', coords: { latitude: 23.8172, longitude: 90.4208 } },
 ];
 
 function generateLeafletHtml(initial: Coordinates, isDark: boolean, accentColor: string): string {
-  const tileLayerUrl = isDark
-    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-    : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-
-  const tileAttribution = isDark
-    ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
-    : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+  const bgColor = isDark ? '#09090b' : '#f8fafc';
 
   return `
 <!DOCTYPE html>
@@ -67,88 +68,147 @@ function generateLeafletHtml(initial: Coordinates, isDark: boolean, accentColor:
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
-    * { -webkit-tap-highlight-color: transparent; }
+    * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
     html, body {
       margin: 0;
       padding: 0;
       width: 100%;
       height: 100%;
-      background-color: ${isDark ? '#000000' : '#ffffff'};
+      background-color: ${bgColor};
       overflow: hidden;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
     #map {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
       width: 100%;
       height: 100%;
+      background-color: ${bgColor};
     }
-    .leaflet-control-zoom {
+    .leaflet-control-zoom, .leaflet-control-attribution {
       display: none !important;
     }
-    .leaflet-control-attribution {
-      font-size: 8px !important;
-      background: ${isDark ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.7)'} !important;
-      color: ${isDark ? '#888' : '#555'} !important;
+
+    /* OpenStreetMap Zero-Watermark Tile Layer Filter */
+    ${
+      isDark
+        ? `
+    .leaflet-tile {
+      filter: invert(100%) hue-rotate(180deg) brightness(85%) contrast(125%) saturate(60%) !important;
     }
-    .leaflet-control-attribution a {
-      color: ${accentColor} !important;
+    `
+        : `
+    .leaflet-tile {
+      filter: contrast(102%) saturate(105%) !important;
     }
-    /* Fixed Center Pin */
-    .center-pin-wrapper {
+    `
+    }
+
+    /* Target Reticle On Map Ground */
+    .target-reticle {
       position: absolute;
       top: 50%;
       left: 50%;
-      transform: translate(-50%, -100%);
+      transform: translate(-50%, -50%);
       pointer-events: none;
-      z-index: 1000;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      transition: transform 0.15s ease-out;
-    }
-    .pin-shadow {
-      position: absolute;
-      bottom: -6px;
-      width: 14px;
-      height: 6px;
-      background: rgba(0, 0, 0, 0.35);
-      border-radius: 50%;
-      transform: scale(1);
-      transition: transform 0.15s ease-out, opacity 0.15s ease-out;
-    }
-    .pin-head {
-      width: 38px;
-      height: 38px;
-      background: ${accentColor};
-      border-radius: 50% 50% 50% 0;
-      transform: rotate(-45deg);
-      box-shadow: 0 4px 14px rgba(0,0,0,0.45);
+      z-index: 999;
       display: flex;
       align-items: center;
       justify-content: center;
-      border: 2.5px solid #ffffff;
+      width: 28px;
+      height: 28px;
     }
-    .pin-inner-dot {
-      width: 11px;
-      height: 11px;
+    .reticle-ring {
+      width: 22px;
+      height: 22px;
+      border: 2px dashed ${accentColor};
+      border-radius: 50%;
+      opacity: 0.85;
+      animation: spinRing 12s linear infinite;
+    }
+    .reticle-dot {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      background-color: ${accentColor};
+      border-radius: 50%;
+      box-shadow: 0 0 6px ${accentColor};
+    }
+    @keyframes spinRing {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Fixed Center Pin (Floating Layer) */
+    .pin-anchor {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      pointer-events: none;
+      z-index: 1000;
+      transform: translate(-50%, -100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .pin-head {
+      width: 40px;
+      height: 40px;
+      background: ${accentColor};
+      border-radius: 50% 50% 50% 0;
+      transform: rotate(-45deg);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 3px solid #ffffff;
+    }
+    .pin-dot {
+      width: 12px;
+      height: 12px;
       background: #ffffff;
       border-radius: 50%;
       transform: rotate(45deg);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
     }
-    /* Dragging animation */
-    body.is-moving .center-pin-wrapper {
-      transform: translate(-50%, -130%);
+    .pin-shadow {
+      width: 16px;
+      height: 6px;
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 50%;
+      margin-top: 2px;
+      transform: scale(1);
+      transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.22s ease-out;
+    }
+
+    /* Lifted Pin State on Drag */
+    body.is-moving .pin-anchor {
+      transform: translate(-50%, -150%);
     }
     body.is-moving .pin-shadow {
-      transform: scale(0.6);
-      opacity: 0.3;
+      transform: scale(0.4);
+      opacity: 0.2;
+    }
+    body.is-moving .target-reticle .reticle-ring {
+      border-color: #ffffff;
+      opacity: 1;
+      transform: scale(1.15);
     }
   </style>
 </head>
 <body>
   <div id="map"></div>
-  <div class="center-pin-wrapper">
+  <div class="target-reticle">
+    <div class="reticle-ring"></div>
+    <div class="reticle-dot"></div>
+  </div>
+  <div class="pin-anchor">
     <div class="pin-head">
-      <div class="pin-inner-dot"></div>
+      <div class="pin-dot"></div>
     </div>
     <div class="pin-shadow"></div>
   </div>
@@ -157,15 +217,31 @@ function generateLeafletHtml(initial: Coordinates, isDark: boolean, accentColor:
   <script>
     var map = L.map('map', {
       zoomControl: false,
-      attributionControl: true
+      attributionControl: false,
+      minZoom: 11,
+      maxZoom: 19,
+      maxBounds: [
+        [20.5, 88.0],
+        [26.7, 92.8]
+      ],
+      maxBoundsViscosity: 0.85
     }).setView([${initial.latitude}, ${initial.longitude}], 16);
 
-    L.tileLayer('${tileLayerUrl}', {
-      maxZoom: 19,
-      attribution: '${tileAttribution}'
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19
     }).addTo(map);
 
-    // Send center change on pan/zoom
+    function invalidateSizeNow() {
+      if (map) {
+        map.invalidateSize();
+      }
+    }
+    window.addEventListener('resize', invalidateSizeNow);
+    window.addEventListener('load', invalidateSizeNow);
+    setTimeout(invalidateSizeNow, 80);
+    setTimeout(invalidateSizeNow, 250);
+    setTimeout(invalidateSizeNow, 600);
+
     function sendCenter() {
       var center = map.getCenter();
       var msg = JSON.stringify({
@@ -188,30 +264,28 @@ function generateLeafletHtml(initial: Coordinates, isDark: boolean, accentColor:
     });
 
     map.on('click', function(e) {
-      map.panTo(e.latlng, { animate: true, duration: 0.5 });
+      map.panTo(e.latlng, { animate: true, duration: 0.4 });
     });
 
-    // Handle messages from React Native
     function handleMessage(event) {
       try {
         var data = JSON.parse(event.data);
-        if (data.type === 'FLY_TO') {
-          if (typeof map !== 'undefined' && map && map.flyTo) {
-            map.flyTo([data.lat, data.lng], data.zoom || 16, {
-              duration: 1.2
-            });
-          }
+        if (data.type === 'FLY_TO' && map) {
+          map.flyTo([data.lat, data.lng], data.zoom || 16, { duration: 1.0 });
+        } else if (data.type === 'ZOOM_IN' && map) {
+          map.zoomIn();
+        } else if (data.type === 'ZOOM_OUT' && map) {
+          map.zoomOut();
+        } else if (data.type === 'INVALIDATE_SIZE' && map) {
+          map.invalidateSize();
         }
-      } catch (e) {
-        // Ignore parse error
-      }
+      } catch (e) {}
     }
 
     window.addEventListener('message', handleMessage);
     document.addEventListener('message', handleMessage);
 
-    // Initial trigger once map is loaded
-    setTimeout(sendCenter, 300);
+    setTimeout(sendCenter, 200);
   </script>
 </body>
 </html>
@@ -242,9 +316,16 @@ export function LocationPickerModal({
     coords: startCoords,
   });
 
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
   const [locatingGps, setLocatingGps] = useState(false);
   const [geocoding, setGeocoding] = useState(false);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Search autocomplete results
+  const searchResults = useMemo(() => {
+    return searchLandmarks(searchQuery, 6);
+  }, [searchQuery]);
 
   // Trigger flyTo in WebView
   const flyToCoordinates = useCallback((coords: Coordinates, zoom = 16) => {
@@ -257,6 +338,15 @@ export function LocationPickerModal({
     });
     webViewRef.current?.postMessage(msg);
   }, []);
+
+  // Zoom controls via WebView bridge
+  const handleZoomIn = () => {
+    webViewRef.current?.postMessage(JSON.stringify({ type: 'ZOOM_IN' }));
+  };
+
+  const handleZoomOut = () => {
+    webViewRef.current?.postMessage(JSON.stringify({ type: 'ZOOM_OUT' }));
+  };
 
   // Handle GPS "Use My Current Location"
   const handleUseCurrentLocation = async () => {
@@ -303,7 +393,6 @@ export function LocationPickerModal({
         const place = await reverseGeocodeCoords(coords);
         setSelectedPlace(place);
       } catch (err) {
-        // Fallback display
         setSelectedPlace({
           name: `Location (${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)})`,
           zone: 'Dhaka',
@@ -314,7 +403,7 @@ export function LocationPickerModal({
       } finally {
         setGeocoding(false);
       }
-    }, 450);
+    }, 400);
   }, []);
 
   // Handle WebView bridge message
@@ -328,7 +417,7 @@ export function LocationPickerModal({
         });
       }
     } catch (e) {
-      // Ignore
+      // Ignore parse errors
     }
   };
 
@@ -338,8 +427,26 @@ export function LocationPickerModal({
     onClose();
   };
 
+  // Select landmark from search suggestion
+  const handleSelectLandmark = (landmark: LandmarkLocation) => {
+    Keyboard.dismiss();
+    setSearchQuery('');
+    setIsSearching(false);
+    flyToCoordinates(landmark.coords, 17);
+    setSelectedPlace({
+      name: landmark.name,
+      zone: landmark.zone,
+      subText: landmark.desc || `${landmark.coords.latitude.toFixed(4)}, ${landmark.coords.longitude.toFixed(4)}`,
+      formattedAddress: landmark.name,
+      coords: landmark.coords,
+    });
+  };
+
+  // Sync coords on modal open
   useEffect(() => {
     if (visible) {
+      setSearchQuery('');
+      setIsSearching(false);
       const matched = findLandmarkByName(initialPlaceName);
       const coords = initialCoords || matched?.coords || BUBT_COORDS;
       setCurrentCoords(coords);
@@ -351,7 +458,6 @@ export function LocationPickerModal({
         coords,
       });
 
-      // Fly map to selected coordinates once WebView layout mounts
       const timer = setTimeout(() => {
         flyToCoordinates(coords, 16);
       }, 350);
@@ -367,178 +473,207 @@ export function LocationPickerModal({
     };
   }, []);
 
+  const mapHtml = useMemo(
+    () => generateLeafletHtml(startCoords, isDark, accentColor),
+    [startCoords.latitude, startCoords.longitude, isDark, accentColor]
+  );
+
   return (
     <Modal
       visible={visible}
       animationType="slide"
-      presentationStyle="pageSheet"
+      presentationStyle="fullScreen"
+      statusBarTranslucent
       onRequestClose={onClose}
     >
-      <SafeAreaView style={[styles.container, { backgroundColor: C.bg }]} edges={['top', 'bottom']}>
-        {/* Top Header Bar */}
-        <View style={[styles.header, { borderBottomColor: C.border }]}>
+      <View style={[styles.rootContainer, { backgroundColor: isDark ? '#09090b' : '#f8fafc' }]}>
+        {/* Full-Bleed Edge-to-Edge Map */}
+        <WebView
+          ref={webViewRef}
+          source={{ html: mapHtml }}
+          style={styles.webView}
+          onMessage={handleWebViewMessage}
+          javaScriptEnabled
+          domStorageEnabled
+          scalesPageToFit={false}
+          bounces={false}
+          scrollEnabled={false}
+          geolocationEnabled
+          androidLayerType={Platform.OS === 'android' ? 'hardware' : 'none'}
+        />
+
+        {/* Floating Top Bar (Back button + Interactive Search) */}
+        <View style={[styles.topBarWrapper, { paddingTop: insets.top + 10 }]}>
           <TouchableOpacity
-            style={[styles.closeBtn, { backgroundColor: C.surface2 }]}
+            style={[styles.frostedCloseBtn, { backgroundColor: C.surface, borderColor: C.border }]}
             onPress={onClose}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            accessibilityLabel="Close map modal"
+            activeOpacity={0.8}
+            accessibilityLabel="Close map"
           >
-            <Feather name="x" size={20} color={C.text} />
+            <Feather name="arrow-left" size={20} color={C.text} />
           </TouchableOpacity>
-          <View style={styles.headerTitleWrap}>
-            <Text style={[styles.headerTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-              {title}
-            </Text>
-            <Text style={[styles.headerSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-              Drag map to place the pin
-            </Text>
+
+          <View style={[styles.searchCapsule, { backgroundColor: C.surface, borderColor: isSearching ? accentColor : C.border }]}>
+            <Feather name="search" size={17} color={isSearching ? accentColor : C.textMuted} style={styles.searchIcon} />
+            <TextInput
+              style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+              placeholder="Search campus, hospital, area..."
+              placeholderTextColor={C.textMuted}
+              value={searchQuery}
+              onChangeText={text => {
+                setSearchQuery(text);
+                setIsSearching(text.length > 0);
+              }}
+              onFocus={() => setIsSearching(searchQuery.length > 0)}
+              returnKeyType="search"
+              autoCorrect={false}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity
+                onPress={() => {
+                  setSearchQuery('');
+                  setIsSearching(false);
+                  Keyboard.dismiss();
+                }}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Feather name="x" size={16} color={C.textMuted} />
+              </TouchableOpacity>
+            )}
           </View>
-          <View style={{ width: 40 }} />
         </View>
 
-        {/* 1. Universal 58dp Control Bar: "Use My Current Location" */}
-        <View style={styles.controlBarWrapper}>
+        {/* Floating Search Autocomplete Dropdown */}
+        {isSearching && searchResults.length > 0 && (
+          <View style={[styles.searchResultsOverlay, { top: insets.top + 68, backgroundColor: C.surface, borderColor: C.border }]}>
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+              style={{ maxHeight: 220 }}
+            >
+              {searchResults.map(item => (
+                <TouchableOpacity
+                  key={item.name}
+                  style={[styles.searchResultItem, { borderBottomColor: C.border }]}
+                  onPress={() => handleSelectLandmark(item)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.searchResultIconBox, { backgroundColor: `${accentColor}18` }]}>
+                    <Feather name="map-pin" size={14} color={accentColor} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.searchResultTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                      {item.name}
+                    </Text>
+                    <Text style={[styles.searchResultSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
+                      {item.desc || item.zone}
+                    </Text>
+                  </View>
+                  <Feather name="corner-down-left" size={13} color={C.textMuted} />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* Right Floating Action Buttons (FAB Column) */}
+        <View style={[styles.rightFabColumn, { top: insets.top + 74 }]}>
+          {/* GPS Locate FAB */}
           <TouchableOpacity
-            style={[
-              styles.gpsButton58,
-              {
-                backgroundColor: C.surface,
-                borderColor: locatingGps ? accentColor : C.border,
-              },
-            ]}
+            style={[styles.fabBtn, { backgroundColor: C.surface, borderColor: C.border }]}
             onPress={handleUseCurrentLocation}
             disabled={locatingGps}
             activeOpacity={0.8}
+            accessibilityLabel="Use My Current Location"
           >
-            <View
-              style={[
-                styles.gpsIconBox,
-                { backgroundColor: `${accentColor}1e` },
-              ]}
-            >
-              {locatingGps ? (
-                <ActivityIndicator size="small" color={accentColor} />
-              ) : (
-                <AnimatedIcon
-                  name="navigation"
-                  size={19}
-                  color={accentColor}
-                  animation="pulse"
-                  loop
-                />
-              )}
-            </View>
-            <View style={styles.gpsTextWrap}>
-              <Text
-                style={[
-                  styles.gpsTitle,
-                  { color: C.text, fontFamily: FontFamily.jakartaBold },
-                ]}
-              >
-                {locatingGps ? 'Locating Your Device...' : 'Use My Current Location'}
-              </Text>
-              <Text
-                style={[
-                  styles.gpsSub,
-                  { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
-                ]}
-              >
-                Auto-detect via GPS coordinates
-              </Text>
-            </View>
-            <Feather name="chevron-right" size={18} color={C.textMuted} />
+            {locatingGps ? (
+              <ActivityIndicator size="small" color={accentColor} />
+            ) : (
+              <AnimatedIcon name="navigation" size={20} color={accentColor} animation="pulse" loop />
+            )}
+          </TouchableOpacity>
+
+          {/* Quick Snap to BUBT Campus */}
+          <TouchableOpacity
+            style={[styles.fabBtn, { backgroundColor: C.surface, borderColor: C.border }]}
+            onPress={() => flyToCoordinates(BUBT_COORDS, 17)}
+            activeOpacity={0.8}
+            accessibilityLabel="Center to BUBT Campus"
+          >
+            <Feather name="compass" size={20} color={accentColor} />
+          </TouchableOpacity>
+
+          {/* Zoom In */}
+          <TouchableOpacity
+            style={[styles.fabBtnSmall, { backgroundColor: C.surface, borderColor: C.border }]}
+            onPress={handleZoomIn}
+            activeOpacity={0.8}
+            accessibilityLabel="Zoom In"
+          >
+            <Feather name="plus" size={18} color={C.text} />
+          </TouchableOpacity>
+
+          {/* Zoom Out */}
+          <TouchableOpacity
+            style={[styles.fabBtnSmall, { backgroundColor: C.surface, borderColor: C.border }]}
+            onPress={handleZoomOut}
+            activeOpacity={0.8}
+            accessibilityLabel="Zoom Out"
+          >
+            <Feather name="minus" size={18} color={C.text} />
           </TouchableOpacity>
         </View>
 
-        {/* 2. Quick Dhaka & BUBT Shortcuts Chips */}
-        <View style={styles.chipsSection}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.chipsScroll}
-            keyboardShouldPersistTaps="handled"
-          >
-            {QUICK_COMMUTE_HUBS.map(hub => {
-              const isActive =
-                Math.abs(hub.coords.latitude - currentCoords.latitude) < 0.003 &&
-                Math.abs(hub.coords.longitude - currentCoords.longitude) < 0.003;
-              return (
-                <TouchableOpacity
-                  key={hub.label}
-                  style={[
-                    styles.chip,
-                    {
-                      backgroundColor: isActive ? `${accentColor}22` : C.surface,
-                      borderColor: isActive ? accentColor : C.border,
-                    },
-                  ]}
-                  onPress={() => flyToCoordinates(hub.coords, 16)}
-                  activeOpacity={0.7}
-                >
-                  <Icon
-                    name="mapPin"
-                    size={13}
-                    color={isActive ? accentColor : C.textMuted}
-                  />
-                  <Text
+        {/* Bottom Floating Area (Chips + 72dp Place Card + 58dp Primary CTA) */}
+        <View style={styles.bottomFloatingDock}>
+          {/* Quick Commute Hub Chips */}
+          <View style={styles.chipsRowWrap}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.chipsScrollContent}
+              keyboardShouldPersistTaps="handled"
+            >
+              {QUICK_COMMUTE_HUBS.map(hub => {
+                const isActive =
+                  Math.abs(hub.coords.latitude - currentCoords.latitude) < 0.003 &&
+                  Math.abs(hub.coords.longitude - currentCoords.longitude) < 0.003;
+                return (
+                  <TouchableOpacity
+                    key={hub.label}
                     style={[
-                      styles.chipText,
+                      styles.hubChip,
                       {
-                        color: isActive ? accentColor : C.text,
-                        fontFamily: isActive ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                        backgroundColor: isActive ? `${accentColor}24` : C.surface,
+                        borderColor: isActive ? accentColor : C.border,
                       },
                     ]}
+                    onPress={() => flyToCoordinates(hub.coords, 16)}
+                    activeOpacity={0.75}
                   >
-                    {hub.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </View>
+                    <Feather
+                      name="map-pin"
+                      size={12}
+                      color={isActive ? accentColor : C.textMuted}
+                    />
+                    <Text
+                      style={[
+                        styles.hubChipText,
+                        {
+                          color: isActive ? accentColor : C.text,
+                          fontFamily: isActive ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                        },
+                      ]}
+                    >
+                      {hub.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
 
-        {/* 3. Interactive Leaflet Map via WebView */}
-        <View style={styles.mapContainer}>
-          <WebView
-            ref={webViewRef}
-            source={{
-              html: generateLeafletHtml(startCoords, isDark, accentColor),
-            }}
-            style={styles.webView}
-            onMessage={handleWebViewMessage}
-            javaScriptEnabled
-            domStorageEnabled
-            scalesPageToFit={false}
-            bounces={false}
-            scrollEnabled={false}
-            geolocationEnabled
-            androidLayerType={Platform.OS === 'android' ? 'hardware' : 'none'}
-          />
-
-          {/* Quick Reset to BUBT Floating Button */}
-          <TouchableOpacity
-            style={[
-              styles.floatingBubtBtn,
-              { backgroundColor: C.surface, borderColor: C.border },
-            ]}
-            onPress={() => flyToCoordinates(BUBT_COORDS, 17)}
-            activeOpacity={0.85}
-          >
-            <Feather name="compass" size={18} color={accentColor} />
-            <Text
-              style={[
-                styles.floatingBubtTxt,
-                { color: C.text, fontFamily: FontFamily.jakartaSemiBold },
-              ]}
-            >
-              BUBT Campus
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* 4. Bottom Card & CTA */}
-        <View style={[styles.bottomSection, { borderTopColor: C.border, backgroundColor: C.bg }]}>
-          {/* Universal 72dp Content Card: Selected Place Preview */}
+          {/* Universal 72dp Content Card Standard */}
           <View
             style={[
               styles.selectedLocationCard72,
@@ -548,13 +683,8 @@ export function LocationPickerModal({
               },
             ]}
           >
-            <View
-              style={[
-                styles.locationIconBox44,
-                { backgroundColor: `${accentColor}1e` },
-              ]}
-            >
-              <Feather name="map-pin" size={20} color={accentColor} />
+            <View style={[styles.locationIconBox44, { backgroundColor: `${accentColor}18` }]}>
+              <AnimatedIcon name="map-pin" size={22} color={accentColor} animation="spring" />
             </View>
 
             <View style={styles.locationTextColumn}>
@@ -568,13 +698,6 @@ export function LocationPickerModal({
                 >
                   {selectedPlace.name}
                 </Text>
-                {geocoding && (
-                  <ActivityIndicator
-                    size="small"
-                    color={accentColor}
-                    style={{ marginLeft: 6 }}
-                  />
-                )}
               </View>
               <Text
                 style={[
@@ -586,13 +709,20 @@ export function LocationPickerModal({
                 {selectedPlace.subText || `${selectedPlace.coords.latitude.toFixed(4)}, ${selectedPlace.coords.longitude.toFixed(4)}`}
               </Text>
             </View>
+
+            {geocoding && (
+              <ActivityIndicator size="small" color={accentColor} style={{ marginLeft: 8 }} />
+            )}
           </View>
 
-          {/* Universal 58dp Primary CTA Button */}
+          {/* Universal 58dp Primary Action CTA Standard */}
           <TouchableOpacity
             style={[
               styles.confirmButton58,
-              { backgroundColor: accentColor },
+              {
+                backgroundColor: accentColor,
+                marginBottom: Math.max(insets.bottom, 14),
+              },
             ]}
             onPress={handleConfirmLocation}
             activeOpacity={0.85}
@@ -608,80 +738,151 @@ export function LocationPickerModal({
             </Text>
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  rootContainer: {
     flex: 1,
+    position: 'relative',
   },
-  header: {
-    height: 56,
+  webView: {
+    ...StyleSheet.absoluteFill as any,
+    backgroundColor: 'transparent',
+  },
+  topBarWrapper: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: Layout.screenPadding,
-    borderBottomWidth: 1,
+    gap: 10,
+    zIndex: 100,
   },
-  closeBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
+  frostedCloseBtn: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 4,
   },
-  headerTitleWrap: {
+  searchCapsule: {
     flex: 1,
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 16,
-  },
-  headerSub: {
-    fontSize: 11,
-    marginTop: 1,
-  },
-  controlBarWrapper: {
-    paddingHorizontal: Layout.screenPadding,
-    paddingTop: 12,
-    paddingBottom: 8,
-  },
-  /* Universal 58dp Control Standard */
-  gpsButton58: {
-    height: Layout.controlHeight, // 58dp
-    borderRadius: Layout.controlRadius, // 16dp
+    height: 48,
+    borderRadius: 14,
     borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 4,
   },
-  gpsIconBox: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    paddingVertical: 0,
+  },
+  searchResultsOverlay: {
+    position: 'absolute',
+    left: Layout.screenPadding,
+    right: Layout.screenPadding,
+    borderRadius: 16,
+    borderWidth: 1,
+    zIndex: 200,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 8,
+    overflow: 'hidden',
+  },
+  searchResultItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+    borderBottomWidth: 1,
+    gap: 10,
+  },
+  searchResultIconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
   },
-  gpsTextWrap: {
-    flex: 1,
+  searchResultTitle: {
+    fontSize: 13.5,
   },
-  gpsTitle: {
-    fontSize: 14.5,
-  },
-  gpsSub: {
+  searchResultSub: {
     fontSize: 11,
-    marginTop: 2,
+    marginTop: 1,
   },
-  chipsSection: {
-    paddingBottom: 10,
+  rightFabColumn: {
+    position: 'absolute',
+    right: Layout.screenPadding,
+    alignItems: 'center',
+    gap: 10,
+    zIndex: 90,
   },
-  chipsScroll: {
+  fabBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 5,
+  },
+  fabBtnSmall: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 4,
+  },
+  bottomFloatingDock: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     paddingHorizontal: Layout.screenPadding,
-    gap: 8,
+    zIndex: 95,
   },
-  chip: {
+  chipsRowWrap: {
+    marginBottom: 10,
+  },
+  chipsScrollContent: {
+    gap: 8,
+    paddingVertical: 2,
+  },
+  hubChip: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 7,
@@ -689,43 +890,14 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     gap: 6,
-  },
-  chipText: {
-    fontSize: 12.5,
-  },
-  mapContainer: {
-    flex: 1,
-    position: 'relative',
-  },
-  webView: {
-    flex: 1,
-    backgroundColor: 'transparent',
-  },
-  floatingBubtBtn: {
-    position: 'absolute',
-    top: 14,
-    right: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 20,
-    borderWidth: 1,
-    gap: 6,
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
-    shadowRadius: 5,
-    elevation: 4,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  floatingBubtTxt: {
-    fontSize: 12.5,
-  },
-  bottomSection: {
-    paddingHorizontal: Layout.screenPadding,
-    paddingTop: 12,
-    paddingBottom: 12,
-    borderTopWidth: 1,
+  hubChipText: {
+    fontSize: 12,
   },
   /* Universal 72dp Content Card Standard */
   selectedLocationCard72: {
@@ -737,6 +909,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     marginBottom: 10,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.28,
+    shadowRadius: 8,
+    elevation: 6,
   },
   locationIconBox44: {
     width: 44,
@@ -755,7 +932,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   locationTitle: {
-    fontSize: 14.5,
+    fontSize: 15,
   },
   locationSubtitle: {
     fontSize: 11.5,
@@ -768,6 +945,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.32,
+    shadowRadius: 8,
+    elevation: 6,
   },
   confirmButtonText: {
     color: '#ffffff',

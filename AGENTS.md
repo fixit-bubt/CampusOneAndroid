@@ -1566,34 +1566,35 @@ The Campus Announcements architecture is transformed from a manual posting board
 
 ## 36. Interactive Leaflet Map & GPS Location Selection Architecture (Option B)
 
-### 36.1 Architectural Overview & Zero-Billing OpenStreetMap Engine
+### 36.1 Architectural Overview & Zero-Watermark OpenStreetMap Engine
 - **Option B Implementation:** Replaces static/manual text entry with an interactive OpenStreetMap (OSM) and Leaflet map engine embedded via `react-native-webview` (v13.16.1) combined with native device geolocation (`expo-location`).
-- **Zero-Cost & No Credit Card Dependency:** Completely eliminates Google Maps SDK billing blockers in Bangladesh (which often fail or show watermarked "For development purposes only" screens due to international credit card restrictions). Uses high-precision, community-maintained OpenStreetMap tiles for Dhaka and BUBT campus.
-- **OLED Dark Mode Parity:** Embeds CartoDB Dark Matter tiles (`https://{s}.basemaps.cartocdn.com/dark_all/...`) in dark mode to match CampusOne's pitch-black theme, and CartoDB Positron / OSM tiles in light mode.
+- **Zero-Cost, Zero-Watermark & No Credit Card Dependency:** Completely eliminates Google Maps SDK billing blockers and third-party tile watermarks (such as CartoDB's recent "API KEY REQUIRED" watermark). Directly streams official OpenStreetMap raster tiles (`https://tile.openstreetmap.org/{z}/{x}/{y}.png`).
+- **OLED Dark Mode & Light Mode CSS Shaders:**
+  - Dark Mode: Inverts and hue-rotates tiles with CSS (`filter: invert(100%) hue-rotate(180deg) brightness(85%) contrast(125%) saturate(60%)`) to deliver a true OLED pitch-black night map matching CampusOne tokens (`#09090b` foundation).
+  - Light Mode: Enhanced contrast and saturation shader (`filter: contrast(102%) saturate(105%)`).
+  - Automated `invalidateSize()` timing handles Android WebView container mounting without light-grey rendering flashes.
+- **Geographic Boundary & Drift Guard:** Restricts panning and zooming to Bangladesh coordinates (`minZoom: 11, maxZoom: 19`, `maxBounds: [[20.5, 88.0], [26.7, 92.8]]` with `maxBoundsViscosity: 0.85`), preventing map drift into the ocean or foreign territories.
 
 ### 36.2 Core Services & Components
 1. **`src/services/locationService.ts`:**
-   - **Device GPS Retrieval:** `getCurrentUserCoordinates()` requests foreground permission (`Location.requestForegroundPermissionsAsync()`) and retrieves current device position via `Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })`.
-   - **Landmark Geocoding & Proximity Detection:** Contains pre-indexed coordinates for BUBT Main Campus (`23.8103, 90.3567`), Sony Square, Mirpur 10 Metro, Commerce College Road, Rainkhola, and key commute hubs across North, Central, and South Dhaka. Uses Haversine distance (`getDistanceMeters`) to instantly match nearby pins within 280m without network latency.
-   - **Landmark Name Resolution (`findLandmarkByName`):** Resolves pre-filled place names into exact coordinates, auto-centering the map pin to the existing location upon modal open.
-   - **Multi-Tier Reverse Geocoding:** Falls back to Android native Geocoder (`Location.reverseGeocodeAsync`) and OpenStreetMap Nominatim reverse API for unmapped spots.
+   - **Device GPS Retrieval:** `getCurrentUserCoordinates()` requests foreground permission and retrieves device position via `Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })`.
+   - **Landmark Geocoding & Proximity Detection:** Contains pre-indexed coordinates for BUBT Main Campus (`23.8103, 90.3567`), Sony Square, Mirpur 10 Metro, Commerce College Road, Rainkhola, and key commute hubs + major medical hospitals (DMCH, National Heart Foundation, Delta Hospital, Square Hospital, Suhrawardy Hospital, NITOR, Evercare, United, BIRDEM, LabAid).
+   - **Real-Time Autocomplete Search (`searchLandmarks`):** Instant multi-field prefix matching across English, Bengali, and zone metadata for responsive search suggestions.
+   - **Geography-Aware Reverse Geocoding (`reverseGeocodeCoords`):** Validates bounding box (`isWithinBangladesh`) before applying city defaults, preventing fallback anomalies.
 2. **`src/components/location/LocationPickerModal.tsx`:**
-   - **Fixed Center Pin Crosshair:** Uses the mobile ride-sharing standard (Uber / Pathao pattern) where a floating center pin lifts during map pan (`is-moving`) and drops with a subtle spring bounce on `moveend`, sending coordinates to React Native via the WebView bridge.
-   - **Dynamic Reopen Synchronization:** Synchronizes coordinates and resolved place title whenever `visible` becomes true, ensuring switching between different input fields (e.g. From vs To) always loads the correct target spot.
-   - **Universal 58dp Control Standard:** Top "Use My Current Location" button (`height: 58, borderRadius: 16`) auto-locates via GPS and animates the map with `map.flyTo`. Bottom "Confirm Location" CTA is standardized to `height: 58, borderRadius: 16`.
-   - **Quick Commute Hub Chips:** Horizontal scrollbar of quick-jump shortcuts: BUBT Campus, Sony Square, Mirpur 10 Metro, Mirpur 1, Mirpur 12, Uttara 3, Farmgate, Dhanmondi 27, Mohakhali, and Kuril Flyover.
+   - **Full-Bleed Canvas:** Full-screen edge-to-edge map rendering with floating controls.
+   - **Fixed Center Pin & Ground Target Reticle:** Features a ground reticle ring with pulsing dot marking the exact road intersection, plus a teardrop vector pin that lifts during drag (`body.is-moving`) and drops with a spring bounce on `moveend`.
+   - **Floating Top Bar & Autocomplete Search:** Back button alongside an interactive search input with floating suggestions dropdown.
+   - **Right Floating Action Buttons (FAB Column):** Quick GPS auto-locate FAB, BUBT Campus quick-snap FAB, and native zoom in/out FABs.
+   - **Quick Commute Hub Chips:** Horizontal scrollbar of quick-jump shortcuts: BUBT Campus, Sony Square, Mirpur 10 Metro, Mirpur 1, Mirpur 12, Heart Foundation, Square Hospital, DMCH, Farmgate, Dhanmondi 27, Uttara 3, Mohakhali, and Kuril Flyover.
    - **Universal 72dp Content Card:** Live selected location preview card (`minHeight: 72, padding: 14, borderRadius: 16`) with 44dp map pin icon box, resolved place title, and coordinates subtitle.
+   - **Universal 58dp Primary CTA:** Standardized "Confirm Location" button (`height: 58, borderRadius: 16`).
 
 ### 36.3 App-Wide Feature Integration
-- **Campus Rides (`RidePostScreen.tsx`):**
-  - Pickup ("From") and Destination ("To") location bars now feature a direct map trigger button (`locationBarMapBtn`, 38dp) alongside the "Pick Area" button.
-  - Commute Area bottom sheet modal features a prominent 58dp card (`mapTriggerCard58`) to switch directly to the interactive map.
-- **Student Marketplace (`MarketPostScreen.tsx`):**
-  - Handover location picker includes a 58dp map trigger card (`mapTriggerCard58`) to pinpoint campus meetup gates, cafeteria, or Dhaka hubs.
-- **Blood Donation (`AreaPickerModal.tsx`):**
-  - Area and hospital search modal includes a 58dp map trigger card (`mapTriggerCard58`) allowing blood requesters and donors to pick exact hospitals and areas on the map.
-- **Lost & Found (`PostItemFormScreen.tsx`):**
-  - Quick location chips row features a primary "Pick on Map" button to pinpoint campus outdoor spots, grounds, and gates.
+- **Campus Rides (`RidePostScreen.tsx`):** Map trigger buttons on pickup and destination bars and commute area sheet.
+- **Student Marketplace (`MarketPostScreen.tsx`):** 58dp map trigger card in handover location sheet.
+- **Blood Donation (`AreaPickerModal.tsx`):** Sibling modal integration allowing donors and requesters to pinpoint hospitals and areas on the map.
+- **Lost & Found (`PostItemFormScreen.tsx`):** "Pick on Map" button in quick location row.
 - **Database & Web Parity:** All selections resolve to clean human-readable address strings, maintaining 100% backward and forward compatibility with Supabase backend tables and the sibling web app (`CampusOneWeb`).
 
 

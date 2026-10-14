@@ -431,12 +431,13 @@ export function AreaPickerModal({
   }, [isFiltered, handleClear, handleSelect, selectedArea, areaCounts, C, isDark]);
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}
-    >
+    <>
+      <Modal
+        visible={visible}
+        transparent
+        animationType="slide"
+        onRequestClose={onClose}
+      >
       <KeyboardAvoidingView
         style={styles.overlay}
         behavior="padding"
@@ -603,19 +604,20 @@ export function AreaPickerModal({
           )}
         </View>
       </KeyboardAvoidingView>
-
-      <LocationPickerModal
-        visible={mapPickerOpen}
-        onClose={() => setMapPickerOpen(false)}
-        accentColor={SectorColors.blood}
-        title="Pick Hospital / Area on Map"
-        initialPlaceName={selectedArea}
-        onSelectLocation={(place) => {
-          handleSelect(place.formattedAddress);
-          onClose();
-        }}
-      />
     </Modal>
+
+    <LocationPickerModal
+      visible={mapPickerOpen}
+      onClose={() => setMapPickerOpen(false)}
+      accentColor={SectorColors.blood}
+      title="Pick Hospital / Area on Map"
+      initialPlaceName={selectedArea}
+      onSelectLocation={(place) => {
+        handleSelect(place.formattedAddress);
+        onClose();
+      }}
+    />
+  </>
   );
 }
 
