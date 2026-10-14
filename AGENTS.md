@@ -203,6 +203,7 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
   - `StudyHubScreen`: CR & section request sheets `submitBtn` (58dp)
   - `ManageStaffScreen`: Add staff modal `createBtn` (58dp)
   - `SettingsScreen`: Modal action buttons (`primaryBtn`, `outlineBtn`, `cancelBtn` 58dp) and password inputs (`pwField` 58dp)
+  - `LocationPickerModal`: `gpsBtn` ("Use My Current Location" 58dp), `confirmBtn` ("Confirm Location" 58dp), and modal map switchers (`mapTriggerCard58` 58dp across `RidePostScreen`, `MarketPostScreen`, and `AreaPickerModal`).
 - **PDF Maker Suite Standardization (58dp):** All 4 PDF Maker tools (`ToolCompressScreen`, `ToolMergeScreen`, `ToolImagesScreen`, `ToolOrganizeScreen`) `cta` buttons are standardized to `height: 58, borderRadius: 16`. In `components.tsx`, `primaryBtn` (Share), `secondaryBtn` (Start Over), and `SegmentToggle` track are standardized to `height: 58, borderRadius: 16`.
 
 ### 5.5 Universal 72dp Content Card & Row Standard (Reference: `DESIGN.md`)
@@ -260,6 +261,8 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
     - `SettingCard`: Standardized to `minHeight: 72, padding: 14, borderRadius: 16, marginBottom: 10, gap: 13` with `44 × 44 dp` icon wrap (`borderRadius: 13`), matching `DirectoryScreen` and `FacultyScreen`.
     - Vector iconography migration: Replaced static legacy `Icon` with human-designed vector `AnimatedIcon` using verified Feather names (`refresh-cw`, `hard-drive`, `download-cloud`, `share-2`, `file-text`, `log-out`, `trash-2`, `tool`), fixing 6 broken icon identifiers (`refreshCw`, `database`, `downloadCloud`, `share`, `fileText`, `logout`, `trash`, `wrench`).
     - Contextual micro-animations: Tactile `wobble` on Admin Dashboard, Staff Workspace, Notifications disabled, Delete Account card, and Delete Confirmation modal header (`AnimatedIcon` `trash-2` `wobble`); vertical hovering `float` on About App and Award badge modal (`award` `float` loop); smooth `entrance` on standard preference rows and Data & Cache modal header (`hard-drive` `entrance`).
+- **Interactive Location Picker (`LocationPickerModal.tsx`):**
+  - Live selected place preview card: standardized to 72dp (`minHeight: 72, padding: 14, borderRadius: 16`, `44 × 44 dp` map pin icon box, 14.5px Title, 11.5px Subtitle) adhering to the 2-line layout rule.
 
 ---
 
