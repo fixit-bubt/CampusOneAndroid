@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  View, Text, TouchableOpacity, ScrollView, Switch, StyleSheet,
+  View, Text, TouchableOpacity, ScrollView, StyleSheet,
   Linking, AppState, type ViewStyle, type TextStyle,
 } from 'react-native';
+import { TactileSwitch } from '../../components/ui/TactileSwitch';
 import * as Notifications from 'expo-notifications';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -290,11 +291,9 @@ export function NotifSettingsScreen({ navigation }: any) {
               <Text style={[styles.settingTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.notif.pauseAll}</Text>
               <Text style={[styles.settingSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{t.notif.pauseAllSub}</Text>
             </View>
-            <Switch
+            <TactileSwitch
               value={paused}
               onValueChange={v => { setPaused(v); saveMaster('_paused', v); }}
-              trackColor={{ false: C.border, true: C.brand }}
-              thumbColor="#fff"
             />
           </View>
         </View>
@@ -309,12 +308,10 @@ export function NotifSettingsScreen({ navigation }: any) {
               <Text style={[styles.settingTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.notif.quietHours}</Text>
               <Text style={[styles.settingSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{t.notif.quietHoursSub}</Text>
             </View>
-            <Switch
+            <TactileSwitch
               value={quiet}
               onValueChange={v => { setQuiet(v); saveMaster('_quiet', v); }}
               disabled={paused}
-              trackColor={{ false: C.border, true: C.brand }}
-              thumbColor="#fff"
             />
           </View>
         </View>
@@ -366,12 +363,11 @@ export function NotifSettingsScreen({ navigation }: any) {
                     </Text>
                   </View>
                 </TouchableOpacity>
-                <Switch
+                <TactileSwitch
                   value={p.enabled}
                   onValueChange={val => savePref(s.id, { enabled: val })}
                   disabled={paused}
-                  trackColor={{ false: C.border, true: C.brand }}
-                  thumbColor="#fff"
+                  trackColor={{ true: SectorColors[s.id] ?? C.brand }}
                 />
               </View>
 

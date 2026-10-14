@@ -263,6 +263,19 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
     - Contextual micro-animations: Tactile `wobble` on Admin Dashboard, Staff Workspace, Notifications disabled, Delete Account card, and Delete Confirmation modal header (`AnimatedIcon` `trash-2` `wobble`); vertical hovering `float` on About App and Award badge modal (`award` `float` loop); smooth `entrance` on standard preference rows and Data & Cache modal header (`hard-drive` `entrance`).
 - **Interactive Location Picker (`LocationPickerModal.tsx`):**
   - Live selected place preview card: standardized to 72dp (`minHeight: 72, padding: 14, borderRadius: 16`, `44 × 44 dp` map pin icon box, 14.5px Title, 11.5px Subtitle) adhering to the 2-line layout rule.
+- **Animated Curved Tab Bar (`src/components/navigation/CurvedTabBar.tsx`):**
+  - 100% pixel-perfect implementation of 21st.dev `abxlfazl__/animated-tab-bar` using `react-native-svg` and native driver spring physics.
+  - Smooth Bezier curve cutout (`d="M0,0 C12,0 18,3 26,12 C34,21 38,22 43,22 C48,22 52,21 60,12 C68,3 74,0 86,0"`, width: 86dp, height: 22dp).
+  - Elevated floating circle bubble (50dp, `top: -16dp`, elevated with `elevation: 8`, `shadowColor: C.brand`) housing the active Feather icon in white.
+  - Tactile rubberband spring pop on active tab arrival (`scale: 0.82` -> `1.12` -> `1.0`).
+  - Dynamic tab width calculation (`containerWidth / routes.length`) flawlessly adapting between Student mode (5 tabs) and Staff/Admin mode (4 tabs).
+  - Floating unread badge integration for Messages and safe area padding (`60 + Math.max(insets.bottom, 10)` dp) for Android 15 edge-to-edge gesture navigation.
+- **Universal Tactile Squish Switch (`src/components/ui/TactileSwitch.tsx`):**
+  - High-performance, tactile toggle switch inspired by 21st.dev `kuratlielia/switch`.
+  - Finger squish effect: on press down (`onPressIn`), thumb stretches horizontally by `+5dp` (expanding from 22dp to 27dp) with elastic spring resistance.
+  - Moving mass inertia: on toggle, `scaleX` dynamically balloons to `1.15` and smoothly springs back to `1.0` during travel to simulate liquid inertia.
+  - Critically damped landing: travels 20dp across the track using critically damped spring physics (`tension: 260, friction: 16`), landing firmly without overshooting or oscillation.
+  - Replaces all legacy React Native `<Switch>` components across all 16 toggle locations in the app (Settings, Notifications, Profile, Marketplace, Study Hub, Medical, and Announcements).
 
 ---
 

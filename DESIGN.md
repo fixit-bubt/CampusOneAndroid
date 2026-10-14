@@ -182,3 +182,40 @@ Always import from `src/theme/spacing.ts`:
 3. **Contrast & Color Discordance Prevention:**
    * Avoid placing conflicting shades of the same color side-by-side (e.g. Call Phone uses `C.brand`, while WhatsApp exclusively uses official `#25D366`).
 
+---
+
+## 8. Animated Curved Tab Bar Standard (`CurvedTabBar.tsx`)
+
+CampusOne implements the organic curved cutout tab bar inspired by 21st.dev (`abxlfazl__/animated-tab-bar`):
+1. **Curved SVG Notch Geometry:**
+   * Width: `86 dp`, Height: `22 dp`.
+   * Mathematical cubic Bezier path (`d="M0,0 C12,0 18,3 26,12 C34,21 38,22 43,22 C48,22 52,21 60,12 C68,3 74,0 86,0"`).
+   * Slides horizontally across the bar border via `translateX` powered by `Animated.spring(slideAnim, { tension: 190, friction: 15, useNativeDriver: true })`.
+2. **Floating Active Bubble:**
+   * Diameter: `50 dp` circle, elevated at `top: -16 dp` above the tab bar surface.
+   * Background: Electric Brand Blue (`C.brand`: `#5b85f7` dark / `#2b5be3` light), with `elevation: 8` and `shadowRadius: 6`.
+   * Bubble Pop Animation: Subtly compresses to `0.82` and springs to `1.12` before settling at `1.0` on active tab arrival.
+   * Houses the active Feather icon in `#ffffff` (22px).
+3. **Dynamic Role Layout:**
+   * Tab width is dynamically computed as `containerWidth / routesCount`.
+   * Automatically adapts between 5 tabs (Students: Home, Explore, Messages, Annex, Settings) and 4 tabs (Staff & Admins: Home, Explore, Annex, Settings).
+4. **Ergonomics & Insets:**
+   * Bar height: `60 + Math.max(insets.bottom, 10) dp` to ensure ample clearance above Android 15 edge-to-edge navigation gesture handles.
+
+---
+
+## 9. Tactile Squish Switch Standard (`TactileSwitch.tsx`)
+
+All legacy React Native `<Switch>` components across CampusOne are replaced with `TactileSwitch`, inspired by 21st.dev (`kuratlielia/switch`):
+1. **Finger Squish Effect:**
+   * On press down (`onPressIn`), the thumb widens horizontally by `+5 dp` (expanding from `22 dp` to `27 dp` in default size) with elastic spring resistance.
+2. **Moving Mass Gliding (`scaleX`):**
+   * As the thumb travels between states, `scaleX` momentarily swells to `1.15` and smoothly springs back to `1.0`, giving the physical sensation of moving viscous mass rather than a rigid ball.
+3. **Critically Damped Landing:**
+   * The thumb travels `20 dp` across the track using critically damped spring physics (`tension: 260, friction: 16`), landing firmly without overshooting or oscillation.
+4. **Theme Crossfade:**
+   * Inactive: `C.surface3` / `C.border2` with crisp white thumb (`#ffffff`).
+   * Active: `C.brand` or designated sector color (`SectorColors.<sector>`).
+5. **Universal Application:**
+   * Deployed across all 16 toggle locations in the app (Settings, Notifications, Profile, Marketplace, Study Hub, Medical, and Announcements).
+

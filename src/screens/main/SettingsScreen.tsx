@@ -1,8 +1,9 @@
 import { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, Modal, KeyboardAvoidingView,
-  StyleSheet, Switch, ActivityIndicator, Share, Linking, AppState, type ViewStyle,
+  StyleSheet, ActivityIndicator, Share, Linking, AppState, type ViewStyle,
 } from 'react-native';
+import { TactileSwitch } from '../../components/ui/TactileSwitch';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Notifications from 'expo-notifications';
@@ -288,11 +289,9 @@ export function SettingsScreen({ navigation }: any) {
           sub={t.mainx.optSyncSub}
           C={C}
           right={
-            <Switch
+            <TactileSwitch
               value={optSync}
               onValueChange={handleToggleOptSync}
-              trackColor={{ false: C.surface3, true: C.brand + '66' }}
-              thumbColor={optSync ? C.brand : C.white}
             />
           }
         />
@@ -313,11 +312,9 @@ export function SettingsScreen({ navigation }: any) {
           sub={t.mainx.darkModeSub(appDark)}
           C={C}
           right={
-            <Switch
+            <TactileSwitch
               value={appDark}
               onValueChange={toggleTheme}
-              trackColor={{ false: C.surface3, true: C.brand + '66' }}
-              thumbColor={appDark ? C.brand : C.white}
             />
           }
         />
@@ -329,11 +326,9 @@ export function SettingsScreen({ navigation }: any) {
           sub={t.mainx.languageSub(lang === 'bn')}
           C={C}
           right={
-            <Switch
+            <TactileSwitch
               value={lang === 'bn'}
               onValueChange={toggleLang}
-              trackColor={{ false: C.surface3, true: C.brand + '66' }}
-              thumbColor={lang === 'bn' ? C.brand : C.white}
             />
           }
         />

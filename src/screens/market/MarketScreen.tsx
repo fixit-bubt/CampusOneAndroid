@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   RefreshControl, Image, ActivityIndicator, Animated, FlatList,
-  Modal, ScrollView, Switch, Dimensions, Platform, type ViewStyle, type TextStyle,
+  Modal, ScrollView, Dimensions, Platform, type ViewStyle, type TextStyle,
 } from 'react-native';
+import { TactileSwitch } from '../../components/ui/TactileSwitch';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -924,11 +925,10 @@ export function MarketScreen({ navigation }: any) {
                     {t.market2.hideSoldSubtitle}
                   </Text>
                 </View>
-                <Switch
+                <TactileSwitch
                   value={hideSold}
                   onValueChange={setHideSold}
-                  trackColor={{ false: C.border, true: MARKET_COLOR }}
-                  thumbColor="#fff"
+                  trackColor={{ true: MARKET_COLOR }}
                 />
               </View>
 

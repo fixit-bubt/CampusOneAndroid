@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView, Modal,
-  StyleSheet, Switch, ActivityIndicator, KeyboardAvoidingView, type ViewStyle,
+  StyleSheet, ActivityIndicator, KeyboardAvoidingView, type ViewStyle,
 } from 'react-native';
+import { TactileSwitch } from '../../components/ui/TactileSwitch';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -590,14 +591,14 @@ export function ProfileScreen({ navigation }: any) {
                       <Text style={[styles.toggleLbl, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
                         {t.mainx.showInDirectory}
                       </Text>
-                      <Switch value={editDirVisible} onValueChange={setEditDirVisible} trackColor={{ true: C.brand }} />
+                      <TactileSwitch value={editDirVisible} onValueChange={setEditDirVisible} />
                     </View>
                     <View style={[styles.toggleDivider, { backgroundColor: C.border }]} />
                     <View style={styles.toggleRow}>
                       <Text style={[styles.toggleLbl, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
                         {t.mainx.showWhatsapp}
                       </Text>
-                      <Switch value={editShowWa} onValueChange={setEditShowWa} trackColor={{ true: C.brand }} />
+                      <TactileSwitch value={editShowWa} onValueChange={setEditShowWa} />
                     </View>
                   </View>
                 )}

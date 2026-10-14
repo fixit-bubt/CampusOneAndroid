@@ -9,8 +9,6 @@ import { useTheme } from '../hooks/useTheme';
 import { useAuth } from '../store/authStore';
 import { useMessages } from '../store/messagesStore';
 import { useT } from '../i18n';
-import { AnimatedIcon } from '../components/ui/AnimatedIcon';
-import { FontFamily, FontSize, Layout } from '../theme';
 import type { BottomTabParams } from '../types/navigation';
 
 import { HomeScreen } from '../screens/main/HomeScreen';
@@ -42,6 +40,8 @@ const TAB_ICON: Record<keyof BottomTabParams, FeatherName> = {
   Settings:      'settings',
 };
 
+import { CurvedTabBar } from '../components/navigation/CurvedTabBar';
+
 export function BottomTabNavigator() {
   const { C } = useTheme();
   const { profile } = useAuth();
@@ -63,33 +63,12 @@ export function BottomTabNavigator() {
 
   return (
     <Tab.Navigator
+      tabBar={(props) => <CurvedTabBar {...props} />}
       screenOptions={({ route }) => {
         const key = route.name as keyof BottomTabParams;
         return {
           headerShown: false,
-          tabBarStyle: {
-            backgroundColor: C.surface,
-            borderTopColor: C.border,
-            height: Layout.bottomNavHeight,
-            paddingBottom: 14,
-            paddingTop: 6,
-          },
-          tabBarActiveTintColor: C.brand,
-          tabBarInactiveTintColor: C.textMuted,
-          tabBarLabelStyle: {
-            fontFamily: FontFamily.jakartaSemiBold,
-            fontSize: FontSize.xs,
-          },
           tabBarLabel: TAB_LABEL[key] ?? route.name,
-          tabBarIcon: ({ color, size, focused }) => (
-            <AnimatedIcon
-              key={`${key}-${focused}`}
-              name={TAB_ICON[key] ?? 'circle'}
-              size={focused ? size + 1 : size}
-              color={color}
-              animation={focused ? 'spring' : 'none'}
-            />
-          ),
         };
       }}
     >

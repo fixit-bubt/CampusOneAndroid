@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import {
-  View, Text, TouchableOpacity, TextInput, ScrollView, Switch, KeyboardAvoidingView,
+  View, Text, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView,
   StyleSheet, Image, Modal, Animated, Dimensions, ActivityIndicator, type ViewStyle, type TextStyle,
 } from 'react-native';
+import { TactileSwitch } from '../../components/ui/TactileSwitch';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -406,11 +407,10 @@ export function MarketPostScreen({ route, navigation }: any) {
                 {t.market2.freeDonationSubtitle}
               </Text>
             </View>
-            <Switch
+            <TactileSwitch
               value={isFree}
               onValueChange={handleToggleFree}
-              trackColor={{ false: C.border, true: '#16a34a' }}
-              thumbColor="#fff"
+              trackColor={{ true: '#16a34a' }}
             />
           </View>
 
@@ -438,11 +438,10 @@ export function MarketPostScreen({ route, navigation }: any) {
                     Open to reasonable price negotiation with peers
                   </Text>
                 </View>
-                <Switch
+                <TactileSwitch
                   value={negotiable}
                   onValueChange={setNegotiable}
-                  trackColor={{ false: C.border, true: MARKET_COLOR }}
-                  thumbColor="#fff"
+                  trackColor={{ true: MARKET_COLOR }}
                 />
               </View>
             </>

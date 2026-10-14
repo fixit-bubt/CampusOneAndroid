@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView, Platform,
-  StyleSheet, Switch, Image, type ViewStyle,
+  StyleSheet, Image, type ViewStyle,
 } from 'react-native';
+import { TactileSwitch } from '../../components/ui/TactileSwitch';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -225,7 +226,7 @@ export function AnnouncePostScreen({ navigation }: any) {
           <Text style={[styles.pinLbl, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>
             Pin to top
           </Text>
-          <Switch value={pinned} onValueChange={setPinned} trackColor={{ true: C.brand }} />
+          <TactileSwitch value={pinned} onValueChange={setPinned} />
         </View>
 
         <TouchableOpacity

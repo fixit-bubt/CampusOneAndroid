@@ -9,11 +9,11 @@ import {
   ActivityIndicator,
   TextInput,
   Modal,
-  Switch,
   Platform,
   KeyboardAvoidingView,
   type ViewStyle,
 } from 'react-native';
+import { TactileSwitch } from '../../components/ui/TactileSwitch';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
@@ -1336,10 +1336,10 @@ export function MedicalScreen({ navigation }: any) {
                       Displays an on-leave warning to students
                     </Text>
                   </View>
-                  <Switch
+                  <TactileSwitch
                     value={editIsOnLeave}
                     onValueChange={setEditIsOnLeave}
-                    trackColor={{ false: C.border, true: C.danger }}
+                    trackColor={{ true: C.danger }}
                   />
                 </View>
 

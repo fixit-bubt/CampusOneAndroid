@@ -4,9 +4,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
-  Modal, Switch, ActivityIndicator, KeyboardAvoidingView, Platform,
+  Modal, ActivityIndicator, KeyboardAvoidingView, Platform,
   type ViewStyle, type TextStyle,
 } from 'react-native';
+import { TactileSwitch } from '../../components/ui/TactileSwitch';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -528,12 +529,12 @@ export function ManageFacultyScreen({ navigation }: any) {
 
               <View style={styles.toggleRow}>
                 <Text style={[styles.toggleLbl, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>Accepting Paper Mentorship</Text>
-                <Switch value={isAcceptingResearch} onValueChange={setIsAcceptingResearch} trackColor={{ true: SectorColors.faculty }} />
+                <TactileSwitch value={isAcceptingResearch} onValueChange={setIsAcceptingResearch} trackColor={{ true: SectorColors.faculty }} />
               </View>
 
               <View style={styles.toggleRow}>
                 <Text style={[styles.toggleLbl, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>{t.manage.onLeave}</Text>
-                <Switch value={onLeave} onValueChange={setOnLeave} trackColor={{ true: C.brand }} />
+                <TactileSwitch value={onLeave} onValueChange={setOnLeave} />
               </View>
 
               <TouchableOpacity

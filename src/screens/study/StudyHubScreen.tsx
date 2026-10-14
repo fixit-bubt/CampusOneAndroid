@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  View, Text, TouchableOpacity, TextInput, ScrollView, Switch, Modal,
+  View, Text, TouchableOpacity, TextInput, ScrollView, Modal,
   StyleSheet, Alert, KeyboardAvoidingView, Platform, type ViewStyle,
 } from 'react-native';
+import { TactileSwitch } from '../../components/ui/TactileSwitch';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -1212,11 +1213,9 @@ export function StudyHubScreen({ navigation }: any) {
                 {mySection.is_public ? 'Other sections in this intake can browse' : 'Only your approved members can access'}
               </Text>
             </View>
-            <Switch
+            <TactileSwitch
               value={mySection.is_public}
               onValueChange={toggleVisibility}
-              trackColor={{ false: C.border, true: C.brand + '88' }}
-              thumbColor={mySection.is_public ? C.brand : C.surface2}
             />
           </View>
         </View>
