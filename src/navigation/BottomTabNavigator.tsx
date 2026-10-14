@@ -123,7 +123,7 @@ function StandardTabButton({
   };
 
   const activeColor = '#60a5fa'; // electric blue from website
-  const inactiveColor = 'rgba(203, 213, 225, 0.85)'; // sharp slate from website
+  const inactiveColor = 'rgba(148, 163, 184, 0.50)'; // soft muted slate for high contrast
 
   return (
     <Pressable
@@ -133,7 +133,12 @@ function StandardTabButton({
       hitSlop={4}
     >
       <Animated.View style={[styles.tabContent, { transform: [{ scale }] }]}>
-        <View style={styles.iconWrap}>
+        <View
+          style={[
+            styles.iconWrap,
+            isFocused && styles.iconWrapActive,
+          ]}
+        >
           <AnimatedIcon
             key={`${iconName}-${isFocused}`}
             name={iconName}
@@ -269,20 +274,27 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   iconWrap: {
-    width: 24,
-    height: 24,
+    width: 48,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
   },
+  iconWrapActive: {
+    backgroundColor: 'rgba(96, 165, 250, 0.20)',
+    borderColor: 'rgba(96, 165, 250, 0.35)',
+  },
   tabLabel: {
     fontSize: 10.5,
-    marginTop: 2,
+    marginTop: 3,
     letterSpacing: -0.2,
   },
   tabBadge: {
     position: 'absolute',
     top: -2,
-    right: -6,
+    right: 2,
     minWidth: 14,
     height: 14,
     borderRadius: 7,
