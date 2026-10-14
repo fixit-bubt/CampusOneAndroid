@@ -67,12 +67,9 @@ export function LiquidToggle({
   const trackWidth  = isSmall ? 44 : 52;
   const trackHeight = isSmall ? 26 : 32;
   const trackRadius = trackHeight / 2;
-  const thumbSize   = isSmall ? 16 : 20;
-  const inset       = isSmall ? 5 : 6;
-  const delta       = isSmall ? 8.5 : 11; // translation offset of morphing circles
-  const travel      = trackWidth - thumbSize - inset * 2; // total travel distance
-  const dropSize    = isSmall ? 3.5 : 4.5;
-  const bridgeH     = isSmall ? 9 : 12;
+  const thumbSize   = isSmall ? 20 : 24; // Plump, balanced, ergonomic diameter
+  const inset       = isSmall ? 3 : 4;   // Uniform 4dp margin (3dp on sm)
+  const travel      = trackWidth - thumbSize - inset * 2; // Exactly 20dp (18dp on sm)
 
   // Primary animation value (0 = OFF / left, 1 = ON / right)
   const posAnim   = useRef(new Animated.Value(isChecked ? 1 : 0)).current;
@@ -82,11 +79,12 @@ export function LiquidToggle({
   useEffect(() => {
     if (prevVal.current !== isChecked) {
       prevVal.current = isChecked;
-      // 420ms fluid cubic-bezier curve: eliminates abrupt snap and shows luxurious liquid flow
+
+      // Primary fluid glide & stretch: 460ms silky smooth cubic bezier
       Animated.timing(posAnim, {
         toValue: isChecked ? 1 : 0,
-        duration: 420,
-        easing: Easing.bezier(0.38, 0.0, 0.22, 1.0),
+        duration: 460,
+        easing: Easing.bezier(0.32, 0.0, 0.18, 1.0),
         useNativeDriver: true,
       }).start();
     }
@@ -96,7 +94,7 @@ export function LiquidToggle({
     if (disabled || !triggerChange) return;
     Animated.timing(pressAnim, {
       toValue: 1,
-      duration: 160,
+      duration: 140,
       easing: Easing.out(Easing.quad),
       useNativeDriver: true,
     }).start();
@@ -106,7 +104,7 @@ export function LiquidToggle({
     if (disabled || !triggerChange) return;
     Animated.timing(pressAnim, {
       toValue: 0,
-      duration: 200,
+      duration: 180,
       easing: Easing.out(Easing.quad),
       useNativeDriver: true,
     }).start();
@@ -121,99 +119,38 @@ export function LiquidToggle({
   const inactiveColor = trackColor?.false ?? (isDark ? C.surface3 : '#D2D6E9');
   const activeColor   = trackColor?.true ?? (variant ? VARIANT_COLORS[variant] : C.brand);
 
-  // 1. Circle 1 (Left resting circle):
-  // When OFF (posAnim=0): at x=0, scale=1, opacity=1.
-  // When ON (posAnim=1): translates right by +delta px, scale=0, opacity=0 (cleanly extinguished).
-  const circle1TranslateX = posAnim.interpolate({
+  // 1. Fluid Horizontal Travel: from 0 (OFF / left) to travel (ON / right)
+  const thumbTranslateX = posAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, delta],
-    extrapolate: 'clamp',
-  });
-  const circle1Scale = posAnim.interpolate({
-    inputRange: [0, 0.55, 1],
-    outputRange: [1, 0.42, 0.001],
-    extrapolate: 'clamp',
-  });
-  const circle1Opacity = posAnim.interpolate({
-    inputRange: [0, 0.65, 0.95, 1],
-    outputRange: [1, 0.85, 0, 0],
+    outputRange: [0, travel],
     extrapolate: 'clamp',
   });
 
-  // 2. Circle 2 (Right resting circle):
-  // When OFF (posAnim=0): at x = travel - delta, scale=0, opacity=0.
-  // When ON (posAnim=1): translates to travel, scale=1, opacity=1.
-  const circle2TranslateX = posAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [travel - delta, travel],
-    extrapolate: 'clamp',
-  });
-  const circle2Scale = posAnim.interpolate({
-    inputRange: [0, 0.45, 1],
-    outputRange: [0.001, 0.42, 1],
-    extrapolate: 'clamp',
-  });
-  const circle2Opacity = posAnim.interpolate({
-    inputRange: [0, 0.05, 0.35, 1],
-    outputRange: [0, 0, 0.85, 1],
-    extrapolate: 'clamp',
-  });
-
-  // 3. Liquid Connecting Neck / Bridge (Metaball Waist):
-  // Bridges Circle 1 and Circle 2 seamlessly without independent shadow artifacts.
-  const bridgeTranslateX = posAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [delta * 0.4, travel - delta * 0.4],
-    extrapolate: 'clamp',
-  });
-  const bridgeScaleX = posAnim.interpolate({
-    inputRange: [0, 0.5, 1],
-    outputRange: [0.2, 1.3, 0.2],
-    extrapolate: 'clamp',
-  });
-  const bridgeScaleY = posAnim.interpolate({
-    inputRange: [0, 0.5, 1],
-    outputRange: [0.5, 0.82, 0.5],
-    extrapolate: 'clamp',
-  });
-  const bridgeOpacity = posAnim.interpolate({
-    inputRange: [0, 0.18, 0.5, 0.82, 1],
-    outputRange: [0, 0.95, 1, 0.95, 0],
-    extrapolate: 'clamp',
-  });
-
-  // 4. Liquid Micro-Droplet (dropCircle):
-  // Contained within the thumb's top margin, zero overflow or external floating artifacts.
-  const dropTranslateX = posAnim.interpolate({
-    inputRange: [0, 0.5, 1],
-    outputRange: [inset + thumbSize * 0.3, inset + travel * 0.5, inset + travel - 2],
-    extrapolate: 'clamp',
-  });
-  const dropTranslateY = posAnim.interpolate({
+  // 2. Liquid Viscous Elongation (Squash & Stretch along X-axis):
+  // Expands organically during mid-flight (peak at 0.50), then snaps back to 1.0
+  const liquidStretchX = posAnim.interpolate({
     inputRange: [0, 0.25, 0.5, 0.75, 1],
-    outputRange: [inset + 2, inset - 3, inset - 1, inset - 3, inset + 2],
-    extrapolate: 'clamp',
-  });
-  const dropScale = posAnim.interpolate({
-    inputRange: [0, 0.2, 0.5, 0.8, 1],
-    outputRange: [0.001, 1.0, 0.35, 1.0, 0.001],
-    extrapolate: 'clamp',
-  });
-  const dropOpacity = posAnim.interpolate({
-    inputRange: [0, 0.15, 0.5, 0.85, 1],
-    outputRange: [0, 0.9, 0.25, 0.9, 0],
+    outputRange: [1.0, 1.24, 1.40, 1.24, 1.0],
     extrapolate: 'clamp',
   });
 
-  // 5. Tactile Press Squish (Anticipation physics):
+  // 3. Liquid Vertical Compression (Volume conservation along Y-axis):
+  // Compresses organically during mid-flight (dip at 0.50), then recovers to 1.0
+  const liquidCompressY = posAnim.interpolate({
+    inputRange: [0, 0.25, 0.5, 0.75, 1],
+    outputRange: [1.0, 0.90, 0.84, 0.90, 1.0],
+    extrapolate: 'clamp',
+  });
+
+  // 4. Tactile Press Squish (Touch down anticipation):
   const pressScaleX = pressAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [1, 1.08],
+    outputRange: [1.0, 1.08],
     extrapolate: 'clamp',
   });
   const pressScaleY = pressAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [1, 0.94],
+    outputRange: [1.0, 0.92],
     extrapolate: 'clamp',
   });
 
@@ -253,89 +190,22 @@ export function LiquidToggle({
           ]}
         />
 
-        {/* Liquid Connecting Bridge (Mid-flight metaball waist, NO shadow to avoid artifacts) */}
-        <Animated.View
-          pointerEvents="none"
-          style={[
-            styles.bridge,
-            {
-              top: (trackHeight - bridgeH) / 2,
-              left: inset + thumbSize / 2,
-              width: thumbSize,
-              height: bridgeH,
-              borderRadius: bridgeH / 2,
-              backgroundColor: thumbColor,
-              opacity: bridgeOpacity,
-              transform: [
-                { translateX: bridgeTranslateX },
-                { scaleX: bridgeScaleX },
-                { scaleY: bridgeScaleY },
-              ],
-            },
-          ]}
-        />
-
-        {/* Liquid Micro-Droplet (dropCircle, NO shadow to avoid artifacts) */}
-        <Animated.View
-          pointerEvents="none"
-          style={[
-            styles.drop,
-            {
-              width: dropSize,
-              height: dropSize,
-              borderRadius: dropSize / 2,
-              backgroundColor: thumbColor,
-              opacity: dropOpacity,
-              transform: [
-                { translateX: dropTranslateX },
-                { translateY: dropTranslateY },
-                { scale: dropScale },
-              ],
-            },
-          ]}
-        />
-
-        {/* Circle 1: Left Morphing Thumb */}
+        {/* Unified Liquid Droplet Thumb (Single cohesive body: ZERO seams, ZERO distortion, pure fluid) */}
         <Animated.View
           pointerEvents="none"
           style={[
             styles.thumb,
             {
-              position: 'absolute',
               top: inset,
               left: inset,
               width: thumbSize,
               height: thumbSize,
               borderRadius: thumbSize / 2,
               backgroundColor: thumbColor,
-              opacity: circle1Opacity,
               transform: [
-                { translateX: circle1TranslateX },
-                { scale: circle1Scale },
-                { scaleX: pressScaleX },
-                { scaleY: pressScaleY },
-              ],
-            },
-          ]}
-        />
-
-        {/* Circle 2: Right Morphing Thumb */}
-        <Animated.View
-          pointerEvents="none"
-          style={[
-            styles.thumb,
-            {
-              position: 'absolute',
-              top: inset,
-              left: inset,
-              width: thumbSize,
-              height: thumbSize,
-              borderRadius: thumbSize / 2,
-              backgroundColor: thumbColor,
-              opacity: circle2Opacity,
-              transform: [
-                { translateX: circle2TranslateX },
-                { scale: circle2Scale },
+                { translateX: thumbTranslateX },
+                { scaleX: liquidStretchX },
+                { scaleY: liquidCompressY },
                 { scaleX: pressScaleX },
                 { scaleY: pressScaleY },
               ],
@@ -425,21 +295,15 @@ export function DangerToggleDemo() {
 const styles = StyleSheet.create({
   track: {
     position: 'relative',
-    overflow: 'hidden', // Cleanly clips any subpixel edge bleeding to keep the pill pristine
+    overflow: 'hidden',
   },
   thumb: {
-    elevation: 3,
+    position: 'absolute',
+    elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1.5 },
-    shadowOpacity: 0.18,
+    shadowOpacity: 0.16,
     shadowRadius: 2.5,
-  },
-  // Bridge and Drop have NO elevation/shadows to completely eliminate shadowy smudge artifacts
-  bridge: {
-    position: 'absolute',
-  },
-  drop: {
-    position: 'absolute',
   },
   hiddenSvg: {
     position: 'absolute',

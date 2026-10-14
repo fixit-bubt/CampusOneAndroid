@@ -180,7 +180,7 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
   - Role-adaptive tab count: 5 tabs for students (`Home`, `Explore`, `Messages`, `Annex`, `Settings`) and 4 tabs for admin/staff (`Home`, `Explore`, `Annex`, `Settings`). Unread direct messages badge dynamically displayed on Messages tab.
   - Strict prohibition against experimental SVG curved cutout/hill bottom bars: maintains 100% theme consistency, zero layout distortion, and rock-solid Android edge-to-edge gesture compliance.
 - **Universal Liquid Gooey Toggle Switch Standard (`LiquidToggle.tsx` / `TactileSwitch.tsx`):**
-  - **Fluid Metaball Morphing Physics:** Two morphing circles translate and scale organically (`translateX: 0 -> 12`, `scale: 1 -> 0` on Circle 1; `translateX: -12 -> 0`, `scale: 0 -> 1` on Circle 2) linked by an organic connecting liquid bridge (metaball waist) and micro-droplet splash (`dropCircle` translating from the top and merging into the thumb).
+  - **Fluid Viscous Morphing Physics:** Single cohesive fluid droplet thumb with native volume-preserving squash-and-stretch (`scaleX: 1.0 -> 1.40 -> 1.0`, `scaleY: 1.0 -> 0.84 -> 1.0`, `translateX: 0 -> travel`) driven by a 460ms silky fluid cubic-bezier curve (`Easing.bezier(0.32, 0.0, 0.18, 1.0)`). Pure, continuous fluid gel capsule motion with zero seams, zero overlapping boxes, and zero extraneous artifacts.
   - **100% Native-Driver Performance (120 FPS):** All transforms and crossfades execute exclusively on the Android RenderThread (`useNativeDriver: true`), ensuring buttery-smooth interaction with zero JS-thread frame drops.
   - **Color Variants & Semantic Mapping:**
     - `default`: Electric Brand Blue (`#275EFE` / `C.brand`)
@@ -188,7 +188,7 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
     - `warning`: Amber (`#F59E0B` / `C.warn`)
     - `danger`: Red (`#EF4444` / `C.danger`) - used for Doctor On-Leave, Master Pause, Faculty On-Leave.
     - Custom: `trackColor?: { false?: string; true?: string }` support across modules.
-  - **Proportions & Ergonomics:** Standard 52×32dp (radius 16, thumb 20, travel 20) and compact `sm` 44×26dp (radius 13, thumb 16, travel 18) with minimum 48dp touch hit-slop.
+  - **Proportions & Ergonomics:** Standard 52×32dp (radius 16, thumb 24, travel 20, uniform 4dp margins) and compact `sm` 44×26dp (radius 13, thumb 20, travel 18, uniform 3dp margins) with minimum 48dp touch hit-slop.
   - **Full Backwards Compatibility:** `TactileSwitch` re-exports `LiquidToggle`, supporting both `checked` / `value` and `onCheckedChange` / `onValueChange` across all screens.
 
 ### 5.4 Universal 58dp Control Bar & SegmentedTabs Standard

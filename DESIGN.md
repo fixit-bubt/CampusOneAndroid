@@ -184,22 +184,27 @@ Always import from `src/theme/spacing.ts`:
 
 ---
 
-## 8. Tactile Squish Switch Standard (`TactileSwitch.tsx`)
+## 8. Universal Liquid Gooey Toggle Switch Standard (`LiquidToggle.tsx` / `TactileSwitch.tsx`)
 
-All legacy React Native `<Switch>` components across CampusOne are replaced with `TactileSwitch`, inspired by 21st.dev (`kuratlielia/switch`):
-1. **100% Native Driver Performance:**
-   * Both `posAnim` and `scaleXAnim` run entirely with `useNativeDriver: true` directly on Android's RenderThread, eliminating JS thread bridge delays, frame drops, and `Invariant Violation` errors.
-2. **Layered Track & No `overflow: 'hidden'` Clipping:**
-   * Base track displays `inactiveTrackColor` (`C.surface3` / `C.border2`), while an absolute overlay displays `activeTrackColor` (`C.brand`), smoothly fading in/out via native `opacity`. Eliminates color string interpolation crashes.
-   * `overflow: 'hidden'` is strictly removed from the track container: on Android RN 0.85 Fabric, clipping containers cut native-driver `scaleX` transforms whenever the thumb stretches outside layout bounds. The pill shape is achieved cleanly via `borderRadius` on both base track and overlay.
-3. **Synchronized Flight Stretch & Anticipation Squish:**
-   * `flightScale` is mathematically interpolated directly from `posAnim` (`[0, 0.5, 1] -> [1, 1.20, 1]`), ensuring peak stretch occurs at the 0.5 velocity midpoint without timing race conditions or glitchy sequences.
-   * `pressScale` springs to `1.10` on `onPressIn` and settles back to `1.0` on `onPressOut`.
-   * Combined natively via `Animated.multiply(flightScale, pressScale)` on the RenderThread at 120 FPS.
-4. **Touch Ergonomics & Row Card Integration:**
-   * Standalone `TactileSwitch` uses `TouchableOpacity` with `hitSlop={12}` (effective 72 × 52 dp touch target).
-   * In row cards (`SettingCard` in `SettingsScreen.tsx`, master toggles in `NotifSettingsScreen.tsx`), the entire row card is interactive via `onPress` while the embedded `TactileSwitch` has `pointerEvents="none"` and `disabled={!onValueChange}`. Users can tap anywhere across the row (icon, title, or switch knob) to toggle the setting cleanly without double-firing.
-5. **Universal Application:**
+All toggle switches across CampusOne strictly implement the **Liquid Toggle** standard (inspired by 21st.dev `deepaksslibra/liquid-toggle`), engineered for 120 FPS native Android performance with zero geometric artifacts:
+1. **Fluid Viscous Morphing Physics:**
+   * Single cohesive fluid droplet thumb with volume-preserving squash-and-stretch (`scaleX: 1.0 -> 1.40 -> 1.0`, `scaleY: 1.0 -> 0.84 -> 1.0`, `translateX: 0 -> travel`) driven by a 460ms silky fluid cubic-bezier curve (`Easing.bezier(0.32, 0.0, 0.18, 1.0)`).
+   * Completely eliminates multi-view seams, overlapping boxes, corner cuts, and subpixel shadow smudges. Pure, continuous fluid gel capsule motion.
+2. **Standard Sizing & Ergonomic Proportions:**
+   * **Default Size:** Track `52 × 32 dp` (radius `16 dp`), Thumb `24 × 24 dp` (radius `12 dp`), uniform `4 dp` margin, travel `20 dp`. Centers at `x = 16` (OFF) and `x = 36` (ON).
+   * **Compact Size (`sm`):** Track `44 × 26 dp` (radius `13 dp`), Thumb `20 × 20 dp` (radius `10 dp`), uniform `3 dp` margin, travel `18 dp`. Centers at `x = 13` (OFF) and `x = 31` (ON).
+3. **100% Native Driver Performance (120 FPS):**
+   * All transforms (`translateX`, `scaleX`, `scaleY`) and track color crossfades execute exclusively on Android's RenderThread (`useNativeDriver: true`), ensuring zero JS-thread frame drops even during full-tree theme/language re-renders.
+4. **Color Variants & Semantic Mapping:**
+   * `default`: Electric Brand Blue (`#275EFE` / `C.brand`)
+   * `success`: Emerald (`#10B981` / `C.success`) - used for Language, Free Donation mode, etc.
+   * `warning`: Amber (`#F59E0B` / `C.warn`)
+   * `danger`: Red (`#EF4444` / `C.danger`) - used for Doctor On-Leave, Master Pause, Faculty On-Leave.
+   * Custom override: `trackColor?: { false?: string; true?: string }` support across modules.
+5. **Touch Ergonomics & Row Card Integration:**
+   * Standalone `LiquidToggle` uses `TouchableOpacity` with `hitSlop={12}` (effective 76 × 56 dp touch target).
+   * In row cards (`SettingCard` in `SettingsScreen.tsx`, master toggles in `NotifSettingsScreen.tsx`), the entire row card is interactive via `onPress` while the embedded `TactileSwitch` has `pointerEvents="none"` and `disabled={!onValueChange}`. Users can tap anywhere across the row (icon, title, or switch knob) to toggle cleanly without double-firing.
+6. **Universal Application:**
    * Deployed across all 16 toggle locations in the app (Settings, Notifications, Profile, Marketplace, Study Hub, Medical, and Announcements).
 
 
