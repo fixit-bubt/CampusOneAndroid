@@ -202,6 +202,7 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
   - `NotifDetailScreen`: `actionBtn` (58dp), `secondaryBtn` (58dp)
   - `StudyHubScreen`: CR & section request sheets `submitBtn` (58dp)
   - `ManageStaffScreen`: Add staff modal `createBtn` (58dp)
+  - `SettingsScreen`: Modal action buttons (`primaryBtn`, `outlineBtn`, `cancelBtn` 58dp) and password inputs (`pwField` 58dp)
 - **PDF Maker Suite Standardization (58dp):** All 4 PDF Maker tools (`ToolCompressScreen`, `ToolMergeScreen`, `ToolImagesScreen`, `ToolOrganizeScreen`) `cta` buttons are standardized to `height: 58, borderRadius: 16`. In `components.tsx`, `primaryBtn` (Share), `secondaryBtn` (Start Over), and `SegmentToggle` track are standardized to `height: 58, borderRadius: 16`.
 
 ### 5.5 Universal 72dp Content Card & Row Standard (Reference: `DESIGN.md`)
@@ -253,6 +254,12 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
     - `FacultyDeptScreen.tsx`: Dept header tile standardized to `width: 44, height: 44, borderRadius: 13` with `<AnimatedIcon animation="entrance" />`; empty state with pulsing search icon.
     - `ManageFacultyScreen.tsx`: Admin teacher rows standardized to `minHeight: 72, padding: 14, gap: 13` with `44 × 44 dp` avatar (`<Avatar size="md" />`); sync icon wrap standardized to `44 × 44 dp` with pulsing/spring `refresh-cw` animation; sync report modal features entrance animated status badges.
     - `FacultyProfileScreen.tsx`: SubBar star bookmark button features tactile spring pop (`animation="spring"`); campus office location card uses vertical bouncing pin (`animation="bounce"`); counseling hours card uses pulsing clock (`animation="pulse"`); bottom dock buttons feature smooth entrance animations (`animation="entrance"`).
+- **Settings & Preferences Module (`SettingsScreen.tsx`):**
+  - **Universal 58dp Control Standard:** All bottom sheet modal action buttons (`primaryBtn`, `outlineBtn`, `cancelBtn`) and modal password input fields (`pwField`) standardized to `height: 58, borderRadius: 16, paddingHorizontal: 14, fontSize: 14.5`.
+  - **Universal 72dp Content Card Standard:**
+    - `SettingCard`: Standardized to `minHeight: 72, padding: 14, borderRadius: 16, marginBottom: 10, gap: 13` with `44 × 44 dp` icon wrap (`borderRadius: 13`), matching `DirectoryScreen` and `FacultyScreen`.
+    - Vector iconography migration: Replaced static legacy `Icon` with human-designed vector `AnimatedIcon` using verified Feather names (`refresh-cw`, `hard-drive`, `download-cloud`, `share-2`, `file-text`, `log-out`, `trash-2`, `tool`), fixing 6 broken icon identifiers (`refreshCw`, `database`, `downloadCloud`, `share`, `fileText`, `logout`, `trash`, `wrench`).
+    - Contextual micro-animations: Tactile `wobble` on Admin Dashboard, Staff Workspace, Notifications disabled, and Delete Account; vertical hovering `float` on About App and Award badge modal; smooth `entrance` on standard preference rows.
 
 ---
 
