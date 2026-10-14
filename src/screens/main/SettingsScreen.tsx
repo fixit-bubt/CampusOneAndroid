@@ -608,7 +608,7 @@ export function SettingsScreen({ navigation }: any) {
         <TouchableOpacity style={styles.sheetOverlay} activeOpacity={1} onPress={() => !delBusy && setDelOpen(false)} />
         <View style={[styles.sheetContent, { backgroundColor: C.surface }]}>
           <View style={[styles.delIconWrap, { backgroundColor: C.danger + '18' }]}>
-            <Feather name="trash-2" size={24} color={C.danger} />
+            <AnimatedIcon name="trash-2" family="feather" size={24} color={C.danger} animation="wobble" />
           </View>
           <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold, marginTop: 12, textAlign: 'center' }]}>
             {t.mainx.deleteAccountTitle}
