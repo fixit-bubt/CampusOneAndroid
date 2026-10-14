@@ -199,7 +199,7 @@ export function SettingsScreen({ navigation }: any) {
   }, [pwNew, pwConfirm, pwBusy, t, toast]);
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={[styles.safe, { backgroundColor: C.bg }]}>
       <View style={[styles.header, { paddingHorizontal: Layout.screenPadding }]}>
         <Text style={[styles.title, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
           {t.tabs.settings}

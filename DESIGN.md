@@ -217,27 +217,28 @@ The mobile app bottom navigation bar is ported 1:1 from the sibling web app (`Ca
      - Top Stop: `#0f2862`
      - Bottom Stop: `#0a1b42`
    - Clean, crisp top rim highlight stroke: `rgba(255, 255, 255, 0.16)` with 1px stroke width.
-2. **Organic Cradle Valley Curve:**
-   - Mathematically smooth C1-continuous organic valley notch in the center (`notch depth = 26 dp`, `notch half-width = 46 dp`, `outer shoulder radius = 20 dp`).
-   - Symmetrically cradles the elevated center button with zero subpixel seams or distortion.
-3. **Cosmic Glass Luxury Floating Center Orb (Option 2 — Messages):**
-   - Elevated center button (`top: -24 dp`) nested right into the cradle curve.
-   - Outer ring gradient: `rgba(129, 140, 248, 0.55)` to `rgba(15, 23, 42, 0.9)` (focused: `rgba(96, 165, 250, 0.9)`).
-   - Inner orb: Deep 4-stop radial/linear cosmic glass gradient (`#38bdf8` → `#1e40af` → `#0f172a` → `#030712`).
-   - Specular glass reflection: top-left pill highlight (`rgba(255, 255, 255, 0.45)` to transparent).
-   - Crisp white `message-circle` icon with dynamic red unread count badge (`#ef4444`).
-4. **Sharp Contrast Typography & Active Electric Blue Dot:**
+2. **Clean Flat Top Line with Rounded Outer Shoulders:**
+   - Left and right outer shoulders retain smooth 20 dp rounded corners (`r = 20 dp`), while the top edge across all tabs is completely flat.
+   - Zero middle notch or cradle dip, ensuring a clean, flush appearance across the entire screen width.
+3. **Seamless Screen Edge Integration:**
+   - All tab screens (`HomeScreen`, `StudyHubScreen`, `MessagesHome`, `ExploreScreen`, `SettingsScreen`, `AdminDashboardScreen`, `StaffDashboardScreen`) strictly use `<SafeAreaView edges={['top', 'left', 'right']}>`.
+   - Prevents `SafeAreaView` from injecting device bottom insets as a dead colored band (`C.bg`: black in dark mode, white in light mode) above the navbar.
+   - The navigation bar handles `insets.bottom` internally (`barHeight = 62 + Math.max(insets.bottom, 10)`), sitting completely flush with screen content.
+4. **Clean In-Line Messages Tab (Option 2 — Messages in Center):**
+   - Messages button sits cleanly in-line with other tab items in the middle position (tab 3 of 5 for students).
+   - Dynamic red unread count badge (`#ef4444`) anchored on the top-right of the message icon.
+5. **Sharp Contrast Typography & Active Electric Blue Dot:**
    - **Active Tab:** Electric blue (`#60a5fa`), Plus Jakarta Sans Bold, with an active electric blue dot indicator (`4 × 4 dp`, `borderRadius: 2`) centered below the text label.
    - **Inactive Tabs:** Sharp high-contrast slate (`rgba(203, 213, 225, 0.85)` / `#cbd5e1`), Plus Jakarta Sans Medium, with transparent dot placeholder.
-5. **Role-Adaptive Tab Layout:**
-   - **Students (5 tabs):** `Home` | `Study Hub` | **Messages (Center Orb)** | `Explore` | `Settings`
+6. **Role-Adaptive Tab Layout:**
+   - **Students (5 tabs):** `Home` | `Study Hub` | `Messages` | `Explore` | `Settings`
    - **Admin (4 tabs):** `Home` | `Study Hub` | `Explore` | `Settings`
    - **Staff (3 tabs):** `Home` | `Explore` | `Settings`
-6. **120 FPS Native Rubberband Bounce Tap Micro-Interactions:**
-   - All tab buttons (standard tabs and center orb) execute on Android RenderThread (`useNativeDriver: true`).
+7. **120 FPS Native Rubberband Bounce Tap Micro-Interactions:**
+   - All tab buttons execute on Android RenderThread (`useNativeDriver: true`).
    - Press-in: tactile squish to `0.84` scale (`tension: 400, friction: 12`).
-   - Release: energetic spring bounce pop (`0.72 → 1.30 → 1.0`), matching Explore entrance animation physics.
-7. **Annex Portal Relocation:**
+   - Release: energetic spring bounce pop (`0.72 -> 1.30 -> 1.0`), matching Explore entrance animation physics.
+8. **Annex Portal Relocation:**
    - Relocated from bottom navigation bar into **Explore -> Academics** section with its own interactive tool card and header back button.
 
 

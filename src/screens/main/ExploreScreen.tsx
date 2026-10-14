@@ -137,7 +137,7 @@ export function ExploreScreen({ navigation }: any) {
   const toggleSection = (id: string) => setOpenSection((prev) => (prev === id ? null : id));
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={[styles.safe, { backgroundColor: C.bg }]}>
       <View style={[styles.tabHeader, { paddingHorizontal: Layout.screenPadding }]}>
         <Text style={[styles.tabSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
           CampusOne

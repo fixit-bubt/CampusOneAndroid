@@ -230,14 +230,14 @@ export function StaffDashboardScreen({ navigation }: any) {
 
   if (profile && profile.role !== 'staff' && profile.role !== 'admin') {
     return (
-      <SafeAreaView style={[styles.safe, { backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' }]}>
+      <SafeAreaView edges={['top', 'left', 'right']} style={[styles.safe, { backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' }]}>
         <Text style={{ color: C.textMuted, fontFamily: FontFamily.jakartaMedium }}>Staff access required</Text>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={[styles.safe, { backgroundColor: C.bg }]}>
       <TopBar
         profile={profile}
         unread={unread}

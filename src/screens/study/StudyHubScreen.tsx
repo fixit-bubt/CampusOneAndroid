@@ -1426,7 +1426,7 @@ export function StudyHubScreen({ navigation }: any) {
     : t.study2.studyHub;
 
   return (
-    <SafeAreaView style={[s.safe, { backgroundColor: C.bg }]}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={[s.safe, { backgroundColor: C.bg }]}>
       <SubBar title={barTitle} onBack={handleBack} />
       <OfflineBanner
         visible={isOffline}

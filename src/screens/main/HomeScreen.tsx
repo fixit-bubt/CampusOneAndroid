@@ -51,6 +51,7 @@ export function HomeScreen({ navigation }: any) {
   if (profile && profile.role !== 'student') {
     return (
       <SafeAreaView
+        edges={['top', 'left', 'right']}
         style={[
           styles.safe,
           { backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' },
@@ -62,7 +63,7 @@ export function HomeScreen({ navigation }: any) {
   }
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={[styles.safe, { backgroundColor: C.bg }]}>
       <TopBar
         profile={profile}
         unread={unread}

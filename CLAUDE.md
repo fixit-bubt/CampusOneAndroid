@@ -174,13 +174,14 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
 - **Zero-Emoji Project Standard:**
   - Strict ban on raw Unicode emojis (`🚗`, `🛺`, `🏍️`, `🩸`, `⚡`, `🎉`, `✨`, etc.) in button text, filter chips, list badges, and UI copy. All status indicators and categorizations must use vector badges (`StatusBadge` or `@expo/vector-icons`).
 - **1:1 Sibling Web Mobile Bottom Navigation Bar (`BottomTabNavigator.tsx`):**
-  - Continuous 1-piece SVG canvas with mathematical C1-continuous organic cradle valley notch (`depth: 26 dp`, `notch half-width: 46 dp`, `shoulder radius: 20 dp`), ported 1:1 from `CampusOneWeb/src/components/AppShell.jsx`.
   - Midnight Navy Gradient (`#0f2862` to `#0a1b42`) with crisp 1px top rim highlight stroke (`rgba(255, 255, 255, 0.16)`).
-  - Elevated Cosmic Glass Floating Center Orb for Messages (`top: -24 dp`) nested into the cradle, with multi-stop radial/linear cosmic glass gradient (`#38bdf8` -> `#1e40af` -> `#0f172a` -> `#030712`), specular pill highlight, and unread badge.
+  - Clean flat top line with retained 20dp smooth rounded corner shoulders (`r = 20 dp`). Zero middle notch dip.
+  - Seamless Screen Edge Integration: All 7 tab screens strictly use `<SafeAreaView edges={['top', 'left', 'right']}>`, eliminating any bottom inset bar (`C.bg`: black in dark mode, white in light mode) above the navbar.
+  - Clean in-line Messages tab button in the center (tab 3 of 5 for students) with unread badge.
   - Active tab highlighted in electric Blue (`#60a5fa`) with active electric blue dot indicator (`4 × 4 dp`, `borderRadius: 2`) centered below the label. Inactive tabs rendered in sharp slate (`rgba(203, 213, 225, 0.85)` / `#cbd5e1`).
   - 120 FPS Elastic Bounce Tap Micro-Interactions on Android RenderThread (`useNativeDriver: true`): Press-in tactile squash to `0.84`, release elastic spring pop (`scale: 0.72 -> 1.30 -> 1.0`, matching Explore entrance physics).
   - Role-adaptive tab count & layout:
-    - Students (5 tabs): `Home`, `StudyHub`, `Messages` (Elevated Center Orb), `Explore`, `Settings`.
+    - Students (5 tabs): `Home`, `StudyHub`, `Messages`, `Explore`, `Settings`.
     - Admin (4 tabs): `Home`, `StudyHub`, `Explore`, `Settings`.
     - Staff (3 tabs): `Home`, `Explore`, `Settings`.
   - Annex Portal Relocation: Relocated from bottom navigation bar to `ExploreScreen` under Academics, rendered as an interactive tool card that opens `AnnexPortalScreen` with an integrated header back button.

@@ -146,7 +146,7 @@ export function MessagesHome({ navigation }: any) {
   }, [lastByConv, navigation, C]);
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={[styles.safe, { backgroundColor: C.bg }]}>
       <View style={[styles.header, { paddingHorizontal: Layout.screenPadding }]}>
         <Text style={[styles.headerSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>CampusOne</Text>
         <Text style={[styles.headerTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{t.messages.title}</Text>
