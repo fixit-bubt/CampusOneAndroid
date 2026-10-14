@@ -12,7 +12,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
 import { useAuth } from '../../store/authStore';
 import { Avatar } from '../../components/ui/Avatar';
-import { Icon } from '../../components/ui/Icon';
+import { AnimatedIcon, type IconFamily, type AnimationType } from '../../components/ui/AnimatedIcon';
 import { PasswordInput } from '../../components/ui/PasswordInput';
 import { FontFamily, Layout } from '../../theme';
 import { useApp } from '../../store/appStore';
@@ -34,7 +34,9 @@ function hexAlpha(hex: string, a: number): string {
 
 interface SettingCardProps {
   icon: string;
+  iconFamily?: IconFamily;
   iconColor?: string;
+  animation?: AnimationType;
   label: string;
   sub?: string;
   right?: React.ReactNode;
@@ -42,7 +44,7 @@ interface SettingCardProps {
   C: any;
 }
 
-function SettingCard({ icon, iconColor, label, sub, right, onPress, C }: SettingCardProps) {
+function SettingCard({ icon, iconFamily = 'feather', iconColor, animation = 'entrance', label, sub, right, onPress, C }: SettingCardProps) {
   const Wrapper: any = onPress ? TouchableOpacity : View;
   return (
     <Wrapper
@@ -51,7 +53,7 @@ function SettingCard({ icon, iconColor, label, sub, right, onPress, C }: Setting
       activeOpacity={onPress ? 0.7 : 1}
     >
       <View style={[styles.cardIconWrap, { backgroundColor: (iconColor ?? C.brand) + '18' }]}>
-        <Icon name={icon as any} size={18} color={iconColor ?? C.brand} />
+        <AnimatedIcon name={icon} family={iconFamily} size={20} color={iconColor ?? C.brand} animation={animation} />
       </View>
       <View style={styles.cardBody}>
         <Text style={[styles.cardLabel, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>
@@ -236,6 +238,7 @@ export function SettingsScreen({ navigation }: any) {
           <SettingCard
             icon="sliders"
             iconColor={roleHex}
+            animation="wobble"
             label="Admin Dashboard"
             sub="Manage users, staff, reports, and campus modules"
             C={C}
@@ -245,8 +248,9 @@ export function SettingsScreen({ navigation }: any) {
 
         {role === 'staff' && (
           <SettingCard
-            icon="wrench"
+            icon="tool"
             iconColor={roleHex}
+            animation="wobble"
             label="Staff Workspace"
             sub="View assigned maintenance tasks and reports"
             C={C}
@@ -262,6 +266,7 @@ export function SettingsScreen({ navigation }: any) {
         <SettingCard
           icon="bell"
           iconColor={notifDisabled ? '#f59e0b' : C.brand}
+          animation={notifDisabled ? 'wobble' : 'entrance'}
           label="Notifications"
           sub={notifDisabled ? 'Notifications disabled in phone settings' : t.mainx.notificationsSub}
           right={
@@ -277,7 +282,7 @@ export function SettingsScreen({ navigation }: any) {
         />
 
         <SettingCard
-          icon="refreshCw"
+          icon="refresh-cw"
           iconColor="#8b5cf6"
           label={t.mainx.optSync}
           sub={t.mainx.optSyncSub}
@@ -293,7 +298,7 @@ export function SettingsScreen({ navigation }: any) {
         />
 
         <SettingCard
-          icon="database"
+          icon="hard-drive"
           iconColor="#0284c7"
           label={t.mainx.dataAndCache}
           sub={t.mainx.dataAndCacheSub}
@@ -334,7 +339,7 @@ export function SettingsScreen({ navigation }: any) {
         />
 
         <SettingCard
-          icon="downloadCloud"
+          icon="download-cloud"
           iconColor="#f59e0b"
           label={t.mainx.checkForUpdates}
           sub={t.mainx.checkForUpdatesSub}
@@ -348,7 +353,7 @@ export function SettingsScreen({ navigation }: any) {
         </Text>
 
         <SettingCard
-          icon="share"
+          icon="share-2"
           iconColor="#3b82f6"
           label="Share App"
           sub="Share CampusOne with your friends"
@@ -366,7 +371,7 @@ export function SettingsScreen({ navigation }: any) {
         />
 
         <SettingCard
-          icon="fileText"
+          icon="file-text"
           iconColor={C.brand}
           label={t.mainx.termsOfService}
           sub={t.mainx.termsOfServiceSub}
@@ -377,6 +382,7 @@ export function SettingsScreen({ navigation }: any) {
         <SettingCard
           icon="info"
           iconColor="#8b5cf6"
+          animation="float"
           label={t.mainx.aboutApp}
           sub={t.mainx.aboutAppSub}
           C={C}
@@ -407,7 +413,7 @@ export function SettingsScreen({ navigation }: any) {
         />
 
         <SettingCard
-          icon="logout"
+          icon="log-out"
           iconColor={C.text2}
           label={t.mainx.signOut}
           sub="Log out of this device"
@@ -416,8 +422,9 @@ export function SettingsScreen({ navigation }: any) {
         />
 
         <SettingCard
-          icon="trash"
+          icon="trash-2"
           iconColor={C.danger}
+          animation="wobble"
           label={t.mainx.deleteAccount}
           sub={t.mainx.deleteAccountSub}
           C={C}
@@ -433,7 +440,7 @@ export function SettingsScreen({ navigation }: any) {
         <View style={[styles.sheetContent, { backgroundColor: C.surface }]}>
           <View style={styles.sheetHeaderRow}>
             <View style={[styles.sheetIconWrap, { backgroundColor: '#0284c718' }]}>
-              <Icon name="database" size={22} color="#0284c7" />
+              <AnimatedIcon name="hard-drive" family="feather" size={22} color="#0284c7" animation="entrance" />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
@@ -511,7 +518,7 @@ export function SettingsScreen({ navigation }: any) {
         <TouchableOpacity style={styles.sheetOverlay} activeOpacity={1} onPress={() => setAboutOpen(false)} />
         <View style={[styles.sheetContent, { backgroundColor: C.surface }]}>
           <View style={[styles.aboutIconWrap, { backgroundColor: C.brand + '18' }]}>
-            <Icon name="award" size={28} color={C.brand} />
+            <AnimatedIcon name="award" family="feather" size={28} color={C.brand} animation="float" loop />
           </View>
           <Text style={[styles.aboutTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
             CampusOne
@@ -668,22 +675,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 13,
-    paddingHorizontal: 15,
-    paddingVertical: 14,
+    minHeight: 72,
+    padding: 14,
     borderRadius: 16,
     borderWidth: 1,
     marginBottom: 10,
   } as ViewStyle,
   cardIconWrap: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
   cardBody: { flex: 1 } as ViewStyle,
   cardLabel: { fontSize: 14.5 } as any,
-  cardSub: { fontSize: 11.5, marginTop: 2 } as any,
+  cardSub: { fontSize: 11.5, marginTop: 3 } as any,
 
   sheetOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' } as ViewStyle,
   sheetContent: {
@@ -735,8 +742,8 @@ const styles = StyleSheet.create({
     gap: 8,
   } as ViewStyle,
   primaryBtn: {
-    height: 48,
-    borderRadius: 14,
+    height: 58,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 10,
@@ -744,8 +751,8 @@ const styles = StyleSheet.create({
   btnTxt: { fontSize: 14.5 } as any,
 
   outlineBtn: {
-    height: 46,
-    borderRadius: 14,
+    height: 58,
+    borderRadius: 16,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -754,8 +761,8 @@ const styles = StyleSheet.create({
   outlineBtnTxt: { fontSize: 14 } as any,
 
   cancelBtn: {
-    height: 46,
-    borderRadius: 14,
+    height: 58,
+    borderRadius: 16,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -783,11 +790,11 @@ const styles = StyleSheet.create({
   aboutMetaLine: { fontSize: 12 } as any,
 
   pwField: {
-    height: 46,
-    borderRadius: 12,
+    height: 58,
+    borderRadius: 16,
     borderWidth: 1,
-    paddingHorizontal: 13,
-    fontSize: 14,
+    paddingHorizontal: 14,
+    fontSize: 14.5,
     marginBottom: 10,
   } as any,
 
