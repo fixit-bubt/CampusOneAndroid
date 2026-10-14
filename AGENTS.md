@@ -173,6 +173,12 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
   - In React Native Android, mounting an empty touch responder without a handler intercepts gesture responders and swallows taps intended for parent `<TouchableOpacity>` wrappers (e.g. `ExploreScreen` tool cards or `HomeFrequentTools`).
 - **Zero-Emoji Project Standard:**
   - Strict ban on raw Unicode emojis (`🚗`, `🛺`, `🏍️`, `🩸`, `⚡`, `🎉`, `✨`, etc.) in button text, filter chips, list badges, and UI copy. All status indicators and categorizations must use vector badges (`StatusBadge` or `@expo/vector-icons`).
+- **Standard Bottom Tab Bar Specification (`BottomTabNavigator.tsx`):**
+  - Native standard React Navigation bottom tab bar with dynamic theme synchronization (`tabBarStyle: { backgroundColor: C.surface, borderTopColor: C.border, height: Layout.bottomNavHeight, paddingBottom: 14, paddingTop: 6 }`).
+  - Active tab highlighted in electric Brand Blue (`tabBarActiveTintColor: C.brand`), inactive in muted zinc (`tabBarInactiveTintColor: C.textMuted`).
+  - Active tab focus triggers a 120 FPS native rubberband spring bounce pop (`AnimatedIcon` `animation={focused ? 'spring' : 'none'}` keyed with `${key}-${focused}`).
+  - Role-adaptive tab count: 5 tabs for students (`Home`, `Explore`, `Messages`, `Annex`, `Settings`) and 4 tabs for admin/staff (`Home`, `Explore`, `Annex`, `Settings`). Unread direct messages badge dynamically displayed on Messages tab.
+  - Strict prohibition against experimental SVG curved cutout/hill bottom bars: maintains 100% theme consistency, zero layout distortion, and rock-solid Android edge-to-edge gesture compliance.
 
 ### 5.4 Universal 58dp Control Bar & SegmentedTabs Standard
 - **App-Wide Standard:** All segmented tab controls, feed switchers, search bars, dropdown triggers, and primary action/submit buttons across the app MUST strictly adhere to the universal **58dp fixed outer height** standard (`height: 58`, `borderRadius: 16`, horizontal screen padding alignment `Layout.screenPadding = 16dp`) for visual, structural, and ergonomic consistency.
