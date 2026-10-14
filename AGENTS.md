@@ -1184,9 +1184,10 @@ The Jobs & Internships module (`JobsBrowseScreen.tsx`, `JobDetailScreen.tsx`, `J
   - **Hospital & Location Line:** Clean typographic line with hospital icon, bold hospital name, and muted area tag, replacing heavy nested gray boxes.
   - **Clinical Chips Row:** Highlights bags needed (`2 Bags Needed` in deep crimson) and medical reason chip (`Emergency Surgery`, `Dengue`, etc.).
   - **Pledge Progress Strip:** Sleek status strip with feather icon indicating bags covered and donor response status.
-- **Sleek Horizontal Blood Group Filter Track:**
-  - Replaced the bulky 160dp 8-box summary grid card with a compact 36dp horizontal scrolling filter pill row (`All`, `A+`, `B+`, etc.) on both Requests and Donors tabs.
-  - Guarantees symmetrical "all the way" scrolling up to the search bar across both tabs, saving over 120dp of vertical space so request cards are immediately visible.
+- **Compact 8-Group Quick-Filter Grid:**
+  - Modernized the 8-group summary grid into an ultra-compact, sleek 4×2 card layout (`height: 34dp` per tile, 6dp gap, 10dp padding).
+  - Each tile displays blood group and count side-by-side (`[ O+  1 ]`, `[ AB+ 1 ]`), with subtle sector crimson tint and border on active/available groups and quiet contrast for zero counts.
+  - Sits directly below the emergency action button/status card, preserving full visibility for request cards without forcing them off-screen.
 - **Multi-Bag Donor Pledge Progression:**
   - Clearly supports multi-bag requests (2 or 3 bags):
   - When `pledge_count === 0`: Shows status banner indicating `X donors needed · No donors pledged yet`.

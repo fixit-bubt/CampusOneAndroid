@@ -690,83 +690,70 @@ export function BloodScreen({ route, navigation }: any) {
               </Text>
             </TouchableOpacity>
 
-            {/* Sleek Horizontal Blood Group Filter Track */}
-            <View style={styles.groupFilterSection}>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.groupFilterTrack}
-              >
-                <TouchableOpacity
-                  style={[
-                    styles.groupPill,
-                    groupFilter === 'All'
-                      ? { backgroundColor: SectorColors.blood, borderColor: SectorColors.blood }
-                      : { backgroundColor: C.surface, borderColor: C.border },
-                  ]}
-                  onPress={() => setGroupFilter('All')}
-                  activeOpacity={0.75}
-                >
-                  <Text
-                    style={[
-                      styles.groupPillTxt,
-                      {
-                        color: groupFilter === 'All' ? '#fff' : C.text,
-                        fontFamily: FontFamily.jakartaBold,
-                      },
-                    ]}
+            {/* Compact 8-Group Grid */}
+            <View style={[styles.compactGridCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+              <View style={styles.compactGridHeader}>
+                <Text style={[styles.compactGridTitle, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                  {t.blood2.requestsByGroup}
+                </Text>
+                {groupFilter !== 'All' && (
+                  <TouchableOpacity
+                    onPress={() => setGroupFilter('All')}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
                   >
-                    All ({requests.length})
-                  </Text>
-                </TouchableOpacity>
+                    <Text style={{ fontSize: 11, color: SectorColors.blood, fontFamily: FontFamily.jakartaBold }}>
+                      {t.blood2.showingGroupRequests(groupFilter)}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
 
+              <View style={styles.compactGridBody}>
                 {bloodTypes.map(g => {
                   const on = groupFilter === g;
                   const count = requestGroups[g] ?? 0;
                   return (
-                    <TouchableOpacity
-                      key={g}
-                      style={[
-                        styles.groupPill,
-                        on
-                          ? { backgroundColor: SectorColors.blood, borderColor: SectorColors.blood }
-                          : { backgroundColor: C.surface, borderColor: C.border },
-                      ]}
-                      onPress={() => handleRequestGroupPress(g)}
-                      activeOpacity={0.75}
-                    >
-                      <Text
+                    <View key={g} style={styles.compactCellWrapper}>
+                      <TouchableOpacity
                         style={[
-                          styles.groupPillTxt,
-                          {
-                            color: on ? '#fff' : count > 0 ? SectorColors.blood : C.text,
-                            fontFamily: FontFamily.jakartaBold,
-                          },
+                          styles.compactCell,
+                          on
+                            ? { backgroundColor: `${SectorColors.blood}22`, borderColor: SectorColors.blood, borderWidth: 1.5 }
+                            : count > 0
+                            ? { backgroundColor: `${SectorColors.blood}10`, borderColor: `${SectorColors.blood}30`, borderWidth: 1 }
+                            : { backgroundColor: C.surface2, borderColor: isDark ? 'rgba(255,255,255,0.04)' : 'transparent', borderWidth: 1 },
                         ]}
+                        onPress={() => handleRequestGroupPress(g)}
+                        activeOpacity={0.7}
                       >
-                        {g}
-                      </Text>
-                      {count > 0 && (
-                        <View
+                        <Text
                           style={[
-                            styles.groupPillBadge,
-                            { backgroundColor: on ? '#fff' : `${SectorColors.blood}20` },
+                            styles.compactCellGroup,
+                            {
+                              color: on || count > 0 ? SectorColors.blood : C.text2,
+                              fontFamily: FontFamily.jakartaBold,
+                            },
                           ]}
                         >
-                          <Text
-                            style={[
-                              styles.groupPillBadgeTxt,
-                              { color: on ? SectorColors.blood : SectorColors.blood, fontFamily: FontFamily.jakartaBold },
-                            ]}
-                          >
-                            {count}
-                          </Text>
-                        </View>
-                      )}
-                    </TouchableOpacity>
+                          {g}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.compactCellCount,
+                            {
+                              color: on || count > 0 ? SectorColors.blood : C.textMuted,
+                              fontFamily: FontFamily.jakartaExtraBold,
+                            },
+                          ]}
+                        >
+                          {count}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
                   );
                 })}
-              </ScrollView>
+              </View>
             </View>
 
             {/* Request list */}
@@ -1074,83 +1061,70 @@ export function BloodScreen({ route, navigation }: any) {
               </TouchableOpacity>
             )}
 
-            {/* Sleek Horizontal Blood Group Filter Track */}
-            <View style={styles.groupFilterSection}>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.groupFilterTrack}
-              >
-                <TouchableOpacity
-                  style={[
-                    styles.groupPill,
-                    groupFilter === 'All'
-                      ? { backgroundColor: SectorColors.blood, borderColor: SectorColors.blood }
-                      : { backgroundColor: C.surface, borderColor: C.border },
-                  ]}
-                  onPress={() => setGroupFilter('All')}
-                  activeOpacity={0.75}
-                >
-                  <Text
-                    style={[
-                      styles.groupPillTxt,
-                      {
-                        color: groupFilter === 'All' ? '#fff' : C.text,
-                        fontFamily: FontFamily.jakartaBold,
-                      },
-                    ]}
+            {/* Compact 8-Group Grid */}
+            <View style={[styles.compactGridCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+              <View style={styles.compactGridHeader}>
+                <Text style={[styles.compactGridTitle, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                  {t.blood2.availableDonors}
+                </Text>
+                {groupFilter !== 'All' && (
+                  <TouchableOpacity
+                    onPress={() => setGroupFilter('All')}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
                   >
-                    All ({donors.length})
-                  </Text>
-                </TouchableOpacity>
+                    <Text style={{ fontSize: 11, color: SectorColors.blood, fontFamily: FontFamily.jakartaBold }}>
+                      {t.blood2.showingGroupFilter(groupFilter)}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
 
+              <View style={styles.compactGridBody}>
                 {bloodTypes.map(g => {
                   const on = groupFilter === g;
                   const count = donorGroups[g] ?? 0;
                   return (
-                    <TouchableOpacity
-                      key={g}
-                      style={[
-                        styles.groupPill,
-                        on
-                          ? { backgroundColor: SectorColors.blood, borderColor: SectorColors.blood }
-                          : { backgroundColor: C.surface, borderColor: C.border },
-                      ]}
-                      onPress={() => handleDonorGroupPress(g)}
-                      activeOpacity={0.75}
-                    >
-                      <Text
+                    <View key={g} style={styles.compactCellWrapper}>
+                      <TouchableOpacity
                         style={[
-                          styles.groupPillTxt,
-                          {
-                            color: on ? '#fff' : count > 0 ? SectorColors.blood : C.text,
-                            fontFamily: FontFamily.jakartaBold,
-                          },
+                          styles.compactCell,
+                          on
+                            ? { backgroundColor: `${SectorColors.blood}22`, borderColor: SectorColors.blood, borderWidth: 1.5 }
+                            : count > 0
+                            ? { backgroundColor: `${SectorColors.blood}10`, borderColor: `${SectorColors.blood}30`, borderWidth: 1 }
+                            : { backgroundColor: C.surface2, borderColor: isDark ? 'rgba(255,255,255,0.04)' : 'transparent', borderWidth: 1 },
                         ]}
+                        onPress={() => handleDonorGroupPress(g)}
+                        activeOpacity={0.7}
                       >
-                        {g}
-                      </Text>
-                      {count > 0 && (
-                        <View
+                        <Text
                           style={[
-                            styles.groupPillBadge,
-                            { backgroundColor: on ? '#fff' : `${SectorColors.blood}20` },
+                            styles.compactCellGroup,
+                            {
+                              color: on || count > 0 ? SectorColors.blood : C.text2,
+                              fontFamily: FontFamily.jakartaBold,
+                            },
                           ]}
                         >
-                          <Text
-                            style={[
-                              styles.groupPillBadgeTxt,
-                              { color: on ? SectorColors.blood : SectorColors.blood, fontFamily: FontFamily.jakartaBold },
-                            ]}
-                          >
-                            {count}
-                          </Text>
-                        </View>
-                      )}
-                    </TouchableOpacity>
+                          {g}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.compactCellCount,
+                            {
+                              color: on || count > 0 ? SectorColors.blood : C.textMuted,
+                              fontFamily: FontFamily.jakartaExtraBold,
+                            },
+                          ]}
+                        >
+                          {count}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
                   );
                 })}
-              </ScrollView>
+              </View>
             </View>
 
             {/* Donor list */}
@@ -1479,34 +1453,45 @@ const styles = StyleSheet.create({
   cardActionBtnTxt: {
     fontSize: 14.5,
   } as TextStyle,
-  groupFilterSection: {
-    marginBottom: 8,
-  } as ViewStyle,
-  groupFilterTrack: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    paddingVertical: 2,
-  } as ViewStyle,
-  groupPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    height: 36,
-    paddingHorizontal: 13,
-    borderRadius: 18,
+  compactGridCard: {
+    padding: 10,
+    borderRadius: 14,
     borderWidth: 1,
+    marginBottom: 10,
   } as ViewStyle,
-  groupPillTxt: {
-    fontSize: 12.5,
+  compactGridHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+    paddingHorizontal: 2,
+  } as ViewStyle,
+  compactGridTitle: {
+    fontSize: 11,
+    letterSpacing: 0.4,
   } as TextStyle,
-  groupPillBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 1.5,
-    borderRadius: 10,
+  compactGridBody: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
   } as ViewStyle,
-  groupPillBadgeTxt: {
-    fontSize: 10.5,
+  compactCellWrapper: {
+    width: '23.4%',
+  } as ViewStyle,
+  compactCell: {
+    width: '100%',
+    height: 34,
+    borderRadius: 9,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+  } as ViewStyle,
+  compactCellGroup: {
+    fontSize: 12,
+  } as TextStyle,
+  compactCellCount: {
+    fontSize: 12.5,
   } as TextStyle,
   donorCard: {
     flexDirection: 'row',
