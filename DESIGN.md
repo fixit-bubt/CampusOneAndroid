@@ -184,31 +184,7 @@ Always import from `src/theme/spacing.ts`:
 
 ---
 
-## 8. Animated Curved Tab Bar Standard (`CurvedTabBar.tsx`)
-
-CampusOne implements the organic curved tab bar inspired by 21st.dev (`abxlfazl__/animated-tab-bar`):
-1. **Organic Curved Hill Pedestal:**
-   * Width: `96 dp`, Height: `18 dp`.
-   * Mathematical cubic Bezier path with exact C1 continuous horizontal tangents at both base and crest (`M 0 18 C 20 18, 32 0, 48 0 C 64 0, 76 18, 96 18`).
-   * Seamlessly extends the tab bar upward into a smooth organic dome matching `C.surface`, with a `C.border` stroke hugging the crest.
-   * Slides horizontally across tabs via `translateX` powered by `Animated.spring(slideAnim, { tension: 200, friction: 17, useNativeDriver: true })` running at 120 FPS on Android RenderThread.
-2. **Elevated Active Bubble:**
-   * Diameter: `48 dp` circle, poised on the crest of the hill (`top: -24 dp` relative to bar).
-   * Background: Electric Brand Blue (`C.brand`: `#5b85f7` dark / `#2b5be3` light), with `elevation: 6` and `shadowRadius: 6`.
-   * Bubble Pop Animation: Compresses to `0.85` on tap and springs to `1.12` before settling at `1.0` on arrival (`useNativeDriver: true`).
-   * Houses the active Feather icon in `#ffffff` (21px).
-3. **Aligned Tab Labels:**
-   * All 5 navigation tab labels ("Home", "Explore", "Messages", "Annex", "Settings") sit on the exact same uniform baseline across the bottom of the bar.
-   * Active tab label is tinted in bold `C.brand`, while inactive labels remain subtle `C.textMuted`. No missing or hidden labels.
-4. **Dynamic Role Layout:**
-   * Tab width is dynamically computed as `containerWidth / routesCount`.
-   * Automatically adapts between 5 tabs (Students: Home, Explore, Messages, Annex, Settings) and 4 tabs (Staff & Admins: Home, Explore, Annex, Settings).
-5. **Ergonomics & Insets:**
-   * Bar height: `58 + Math.max(insets.bottom, 10) dp` to ensure ample clearance above Android 15 edge-to-edge navigation gesture handles.
-
----
-
-## 9. Tactile Squish Switch Standard (`TactileSwitch.tsx`)
+## 8. Tactile Squish Switch Standard (`TactileSwitch.tsx`)
 
 All legacy React Native `<Switch>` components across CampusOne are replaced with `TactileSwitch`, inspired by 21st.dev (`kuratlielia/switch`):
 1. **100% Native Driver Performance:**
