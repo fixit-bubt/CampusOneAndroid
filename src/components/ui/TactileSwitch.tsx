@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   Animated,
   Pressable,
@@ -36,64 +36,52 @@ export function TactileSwitch({
   const trackHeight = isSmall ? 24 : 28;
   const trackRadius = trackHeight / 2;
   const inset = isSmall ? 2.5 : 3;
-  const thumbBaseSize = isSmall ? 19 : 22;
-  const travel = trackWidth - thumbBaseSize - inset * 2;
-  const maxStretch = isSmall ? 4 : 5;
-
-  const [isPressed, setIsPressed] = useState(false);
+  const thumbSize = isSmall ? 19 : 22;
+  const travel = trackWidth - thumbSize - inset * 2;
 
   const posAnim = useRef(new Animated.Value(value ? 1 : 0)).current;
-  const stretchAnim = useRef(new Animated.Value(0)).current;
   const scaleXAnim = useRef(new Animated.Value(1)).current;
-
-  const prevValueRef = useRef(value);
+  const isPressedRef = useRef(false);
 
   useEffect(() => {
-    const isStateChange = prevValueRef.current !== value;
-    prevValueRef.current = value;
-
     Animated.parallel([
       Animated.spring(posAnim, {
         toValue: value ? 1 : 0,
         tension: 260,
-        friction: 16,
+        friction: 18,
         useNativeDriver: false,
       }),
-      ...(isStateChange
-        ? [
-            Animated.sequence([
-              Animated.timing(scaleXAnim, {
-                toValue: 1.15,
-                duration: 100,
-                useNativeDriver: true,
-              }),
-              Animated.spring(scaleXAnim, {
-                toValue: 1.0,
-                tension: 280,
-                friction: 12,
-                useNativeDriver: true,
-              }),
-            ]),
-          ]
-        : []),
+      Animated.sequence([
+        Animated.timing(scaleXAnim, {
+          toValue: 1.18,
+          duration: 90,
+          useNativeDriver: false,
+        }),
+        Animated.spring(scaleXAnim, {
+          toValue: isPressedRef.current ? 1.22 : 1.0,
+          tension: 280,
+          friction: 14,
+          useNativeDriver: false,
+        }),
+      ]),
     ]).start();
   }, [value, posAnim, scaleXAnim]);
 
   const handlePressIn = () => {
     if (disabled) return;
-    setIsPressed(true);
-    Animated.spring(stretchAnim, {
-      toValue: maxStretch,
-      tension: 360,
+    isPressedRef.current = true;
+    Animated.spring(scaleXAnim, {
+      toValue: 1.22,
+      tension: 350,
       friction: 12,
       useNativeDriver: false,
     }).start();
   };
 
   const handlePressOut = () => {
-    setIsPressed(false);
-    Animated.spring(stretchAnim, {
-      toValue: 0,
+    isPressedRef.current = false;
+    Animated.spring(scaleXAnim, {
+      toValue: 1.0,
       tension: 300,
       friction: 12,
       useNativeDriver: false,
@@ -119,7 +107,6 @@ export function TactileSwitch({
     outputRange: [0, travel],
   });
 
-  const thumbWidth = Animated.add(thumbBaseSize, stretchAnim);
   const finalThumbColor = thumbColor ?? '#ffffff';
 
   return (
@@ -150,9 +137,9 @@ export function TactileSwitch({
           style={[
             styles.thumb,
             {
-              height: thumbBaseSize,
-              width: thumbWidth,
-              borderRadius: thumbBaseSize / 2,
+              height: thumbSize,
+              width: thumbSize,
+              borderRadius: thumbSize / 2,
               backgroundColor: finalThumbColor,
               transform: [{ translateX }, { scaleX: scaleXAnim }],
             },

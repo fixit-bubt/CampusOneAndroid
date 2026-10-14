@@ -6,7 +6,6 @@ import {
   StyleSheet,
   Animated,
   Dimensions,
-  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
@@ -25,9 +24,9 @@ const TAB_ICONS: Record<string, FeatherName> = {
   Settings: 'settings',
 };
 
-const SCOOP_WIDTH = 86;
-const SCOOP_HEIGHT = 22;
-const BUBBLE_SIZE = 50;
+const BUBBLE_SIZE = 52;
+const SCOOP_HALF_WIDTH = 42;
+const SCOOP_DEPTH = 24;
 
 export function CurvedTabBar({
   state,
@@ -47,25 +46,29 @@ export function CurvedTabBar({
 
   const slideAnim = useRef(new Animated.Value(activeIndex)).current;
   const bubbleScale = useRef(new Animated.Value(1)).current;
+  const [animIndex, setAnimIndex] = useState(activeIndex);
 
   useEffect(() => {
+    const listenerId = slideAnim.addListener(({ value }) => {
+      setAnimIndex(value);
+    });
+
     Animated.parallel([
       Animated.spring(slideAnim, {
         toValue: activeIndex,
         tension: 190,
         friction: 15,
-        useNativeDriver: true,
+        useNativeDriver: false,
       }),
       Animated.sequence([
-        Animated.spring(bubbleScale, {
-          toValue: 0.82,
-          tension: 400,
-          friction: 12,
+        Animated.timing(bubbleScale, {
+          toValue: 0.85,
+          duration: 90,
           useNativeDriver: true,
         }),
         Animated.spring(bubbleScale, {
           toValue: 1.12,
-          tension: 300,
+          tension: 280,
           friction: 8,
           useNativeDriver: true,
         }),
@@ -77,6 +80,10 @@ export function CurvedTabBar({
         }),
       ]),
     ]).start();
+
+    return () => {
+      slideAnim.removeListener(listenerId);
+    };
   }, [activeIndex, slideAnim, bubbleScale]);
 
   const activeRoute = state.routes[activeIndex];
@@ -84,21 +91,34 @@ export function CurvedTabBar({
   const activeDescriptor = descriptors[activeRoute?.key];
   const activeBadge = activeDescriptor?.options?.tabBarBadge;
 
-  const scoopTranslateX = slideAnim.interpolate({
-    inputRange: state.routes.map((_, i) => i),
-    outputRange: state.routes.map(
-      (_, i) => (i + 0.5) * tabWidth - SCOOP_WIDTH / 2
-    ),
-  });
-
-  const bubbleTranslateX = slideAnim.interpolate({
-    inputRange: state.routes.map((_, i) => i),
-    outputRange: state.routes.map(
-      (_, i) => (i + 0.5) * tabWidth - BUBBLE_SIZE / 2
-    ),
-  });
-
   const barHeight = 60 + Math.max(insets.bottom, 10);
+  const currentCx = (animIndex + 0.5) * tabWidth;
+
+  const left = Math.max(0, currentCx - SCOOP_HALF_WIDTH);
+  const right = Math.min(containerWidth, currentCx + SCOOP_HALF_WIDTH);
+
+  const barPath = `
+    M 0 0
+    L ${left} 0
+    C ${left + 12} 0, ${left + 18} 4, ${left + 24} 12
+    C ${left + 30} ${SCOOP_DEPTH}, ${currentCx - 12} ${SCOOP_DEPTH}, ${currentCx} ${SCOOP_DEPTH}
+    C ${currentCx + 12} ${SCOOP_DEPTH}, ${right - 30} ${SCOOP_DEPTH}, ${right - 24} 12
+    C ${right - 18} 4, ${right - 12} 0, ${right} 0
+    L ${containerWidth} 0
+    L ${containerWidth} ${barHeight}
+    L 0 ${barHeight}
+    Z
+  `;
+
+  const borderPath = `
+    M 0 0.5
+    L ${left} 0.5
+    C ${left + 12} 0.5, ${left + 18} 4, ${left + 24} 12
+    C ${left + 30} ${SCOOP_DEPTH}, ${currentCx - 12} ${SCOOP_DEPTH}, ${currentCx} ${SCOOP_DEPTH}
+    C ${currentCx + 12} ${SCOOP_DEPTH}, ${right - 30} ${SCOOP_DEPTH}, ${right - 24} 12
+    C ${right - 18} 4, ${right - 12} 0.5, ${right} 0.5
+    L ${containerWidth} 0.5
+  `;
 
   return (
     <View
@@ -110,64 +130,33 @@ export function CurvedTabBar({
         }
       }}
     >
-      {/* Flat Bar Body */}
-      <View
-        style={[
-          styles.barBody,
-          {
-            height: barHeight,
-            backgroundColor: C.surface,
-            borderTopColor: C.border,
-          },
-        ]}
-      />
-
-      {/* Sliding Curved Scoop SVG Cutout */}
-      <Animated.View
-        style={[
-          styles.scoopContainer,
-          {
-            width: SCOOP_WIDTH,
-            height: SCOOP_HEIGHT,
-            transform: [{ translateX: scoopTranslateX }],
-          },
-        ]}
+      {/* Seamless Carved SVG Background Bar */}
+      <Svg
+        width={containerWidth}
+        height={barHeight}
+        style={StyleSheet.absoluteFill}
         pointerEvents="none"
       >
-        <Svg
-          width={SCOOP_WIDTH}
-          height={SCOOP_HEIGHT}
-          viewBox="0 0 86 22"
-          style={StyleSheet.absoluteFill}
-        >
-          {/* Fill matches bar background to carve out notch */}
-          <Path
-            d="M0,0 C12,0 18,3 26,12 C34,21 38,22 43,22 C48,22 52,21 60,12 C68,3 74,0 86,0 L86,22 L0,22 Z"
-            fill={C.surface}
-          />
-          {/* Top border curve */}
-          <Path
-            d="M0,0 C12,0 18,3 26,12 C34,21 38,22 43,22 C48,22 52,21 60,12 C68,3 74,0 86,0"
-            fill="none"
-            stroke={C.border}
-            strokeWidth={1.2}
-          />
-        </Svg>
-      </Animated.View>
+        <Path d={barPath} fill={C.surface} />
+        <Path
+          d={borderPath}
+          fill="none"
+          stroke={C.border}
+          strokeWidth={1}
+        />
+      </Svg>
 
-      {/* Floating Active Bubble */}
+      {/* Floating Active Circle Bubble with Spring Pop */}
       <Animated.View
         style={[
           styles.floatingBubble,
           {
+            left: currentCx - BUBBLE_SIZE / 2,
             width: BUBBLE_SIZE,
             height: BUBBLE_SIZE,
             borderRadius: BUBBLE_SIZE / 2,
             backgroundColor: C.brand,
-            transform: [
-              { translateX: bubbleTranslateX },
-              { scale: bubbleScale },
-            ],
+            transform: [{ scale: bubbleScale }],
             shadowColor: C.brand,
           },
         ]}
@@ -175,7 +164,6 @@ export function CurvedTabBar({
       >
         <Feather name={activeIconName} size={22} color="#ffffff" />
 
-        {/* Floating Bubble Badge */}
         {activeBadge !== undefined && (
           <View style={[styles.bubbleBadge, { backgroundColor: C.danger }]}>
             <Text style={styles.badgeText}>{String(activeBadge)}</Text>
@@ -184,7 +172,12 @@ export function CurvedTabBar({
       </Animated.View>
 
       {/* Interactive Tabs Row */}
-      <View style={[styles.tabsRow, { paddingBottom: Math.max(insets.bottom, 10) }]}>
+      <View
+        style={[
+          styles.tabsRow,
+          { paddingBottom: Math.max(insets.bottom, 10) },
+        ]}
+      >
         {state.routes.map((route, index) => {
           const isFocused = state.index === index;
           const descriptor = descriptors[route.key];
@@ -220,27 +213,39 @@ export function CurvedTabBar({
               style={styles.tabItem}
               accessibilityRole="button"
               accessibilityState={isFocused ? { selected: true } : {}}
-              accessibilityLabel={typeof label === 'string' ? label : route.name}
+              accessibilityLabel={
+                typeof label === 'string' ? label : route.name
+              }
             >
-              <View style={[styles.iconWrap, { opacity: isFocused ? 0 : 1 }]}>
-                <Feather
-                  name={iconName}
-                  size={20}
-                  color={C.textMuted}
-                />
+              {/* Baseline icon: only visible when inactive */}
+              <View
+                style={[
+                  styles.iconWrap,
+                  { opacity: isFocused ? 0 : 1 },
+                ]}
+              >
+                <Feather name={iconName} size={20} color={C.textMuted} />
                 {badge !== undefined && !isFocused && (
-                  <View style={[styles.tabBadge, { backgroundColor: C.danger }]}>
+                  <View
+                    style={[
+                      styles.tabBadge,
+                      { backgroundColor: C.danger },
+                    ]}
+                  >
                     <Text style={styles.badgeText}>{String(badge)}</Text>
                   </View>
                 )}
               </View>
 
+              {/* Uniform Label: matches baseline across all tabs */}
               <Text
                 style={[
                   styles.tabLabel,
                   {
                     color: isFocused ? C.brand : C.textMuted,
-                    opacity: isFocused ? 0 : 1,
+                    fontFamily: isFocused
+                      ? FontFamily.jakartaBold
+                      : FontFamily.jakartaMedium,
                   },
                 ]}
                 numberOfLines={1}
@@ -260,29 +265,15 @@ const styles = StyleSheet.create({
     position: 'relative',
     width: '100%',
   },
-  barBody: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderTopWidth: 1,
-  },
-  scoopContainer: {
-    position: 'absolute',
-    top: -1,
-    left: 0,
-    zIndex: 10,
-  },
   floatingBubble: {
     position: 'absolute',
-    top: -16,
-    left: 0,
+    top: -12,
     zIndex: 20,
     alignItems: 'center',
     justifyContent: 'center',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
-    shadowRadius: 6,
+    shadowRadius: 8,
     elevation: 8,
   },
   bubbleBadge: {
@@ -335,8 +326,7 @@ const styles = StyleSheet.create({
   },
   tabLabel: {
     fontSize: FontSize.xs,
-    fontFamily: FontFamily.jakartaSemiBold,
-    marginTop: 2,
+    marginTop: 3,
     textAlign: 'center',
   },
 });
