@@ -27,8 +27,8 @@ export interface GeocodedPlace {
 }
 
 export const BUBT_COORDS: Coordinates = {
-  latitude: 23.8122,
-  longitude: 90.3563,
+  latitude: 23.8119,
+  longitude: 90.3572,
 };
 
 export const CAMPUS_AND_DHAKA_LANDMARKS: LandmarkLocation[] = [
@@ -37,10 +37,10 @@ export const CAMPUS_AND_DHAKA_LANDMARKS: LandmarkLocation[] = [
     name: 'BUBT Main Campus',
     nameBn: 'বিইউবিটি মেইন ক্যাম্পাস',
     zone: 'Mirpur & Campus',
-    coords: { latitude: 23.8122, longitude: 90.3563 },
-    desc: 'Permanent Campus · Road 9 & 10, Rupnagar',
+    coords: { latitude: 23.8119, longitude: 90.3572 },
+    desc: 'Permanent Campus · Road 9 & 5, Rupnagar',
     type: 'university',
-    keywords: ['bubt', 'campus', 'rupnagar', 'permanent campus', 'university', 'academic'],
+    keywords: ['bubt', 'campus', 'rupnagar', 'permanent campus', 'university', 'academic', 'road 9', 'road 5'],
   },
   {
     name: 'BUBT Building 4 (BBA & Admission)',
@@ -1280,7 +1280,7 @@ export async function reverseGeocodeCoords(
     return {
       name: 'BUBT Main Campus',
       zone: 'Mirpur & Campus',
-      subText: 'Permanent Campus · Road 9 & 10, Rupnagar',
+      subText: 'Permanent Campus · Road 9 & 5, Rupnagar',
       formattedAddress: 'BUBT Main Campus',
       coords: BUBT_COORDS,
     };

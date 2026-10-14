@@ -91,7 +91,8 @@ Status: **Fully Audited & Verified**. 11 critical defects resolved across concur
 - **Root Cause:** Comments in `RidePostScreen.tsx` still referenced legacy "Leaflet" architecture, and BUBT Main Campus subtitles were inconsistent across screens.
 - **Resolution:**
   - Cleaned all outdated comments in `RidePostScreen.tsx` to accurately reference MapLibre GL.
-  - Standardized BUBT Main Campus subtext to `'Permanent Campus · Road 9 & 10, Rupnagar'` across all services, modals, and test mocks.
+  - Standardized BUBT Main Campus subtext to `'Permanent Campus · Road 9 & 5, Rupnagar'` across all services, modals, and test mocks.
+  - Calibrated `BUBT_COORDS` to exact campus center on the east side of Rupnagar Road bounded between Road 5 and Road 9 at `(23.8119, 90.3572)` (OSM Way `976260677`), matching official BUBT permanent campus grounds.
 
 ---
 

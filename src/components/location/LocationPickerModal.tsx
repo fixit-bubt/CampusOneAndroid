@@ -47,7 +47,7 @@ interface LocationPickerModalProps {
 const RECENT_SEARCHES_KEY = '@campusone_recent_map_searches';
 
 const QUICK_COMMUTE_HUBS = [
-  { label: 'BUBT Campus', coords: { latitude: 23.8122, longitude: 90.3563 } },
+  { label: 'BUBT Campus', coords: { latitude: 23.8119, longitude: 90.3572 } },
   { label: 'Sony Square', coords: { latitude: 23.8093, longitude: 90.3578 } },
   { label: 'Mirpur 10', coords: { latitude: 23.8071, longitude: 90.3686 } },
   { label: 'Mirpur 1', coords: { latitude: 23.7956, longitude: 90.3537 } },
@@ -67,8 +67,8 @@ function generateMapLibreHtml(initial: Coordinates, isDark: boolean): string {
   const styleUrl = isDark
     ? 'https://tiles.openfreemap.org/styles/dark'
     : 'https://tiles.openfreemap.org/styles/liberty';
-  const initLng = Number.isFinite(initial?.longitude) ? initial.longitude : 90.3563;
-  const initLat = Number.isFinite(initial?.latitude) ? initial.latitude : 23.8122;
+  const initLng = Number.isFinite(initial?.longitude) ? initial.longitude : 90.3572;
+  const initLat = Number.isFinite(initial?.latitude) ? initial.latitude : 23.8119;
 
   return `
 <!DOCTYPE html>
@@ -287,7 +287,7 @@ export function LocationPickerModal({
   const [selectedPlace, setSelectedPlace] = useState<GeocodedPlace>({
     name: initialPlaceName || 'BUBT Main Campus',
     zone: 'Mirpur & Campus',
-    subText: 'Permanent Campus · Road 9 & 10, Rupnagar',
+    subText: 'Permanent Campus · Road 9 & 5, Rupnagar',
     formattedAddress: initialPlaceName || 'BUBT Main Campus',
     coords: startCoords,
   });
@@ -637,7 +637,7 @@ export function LocationPickerModal({
     setSelectedPlace({
       name: 'BUBT Main Campus',
       zone: 'Mirpur & Campus',
-      subText: 'Permanent Campus · Road 9 & 10, Rupnagar',
+      subText: 'Permanent Campus · Road 9 & 5, Rupnagar',
       formattedAddress: 'BUBT Main Campus',
       coords: BUBT_COORDS,
     });
@@ -656,7 +656,7 @@ export function LocationPickerModal({
       setSelectedPlace({
         name: initialPlaceName || matched?.name || 'BUBT Main Campus',
         zone: matched?.zone || 'Mirpur & Campus',
-        subText: matched?.desc || 'Permanent Campus · Road 9 & 10, Rupnagar',
+        subText: matched?.desc || 'Permanent Campus · Road 9 & 5, Rupnagar',
         formattedAddress: initialPlaceName || matched?.name || 'BUBT Main Campus',
         coords,
       });
@@ -975,7 +975,7 @@ export function LocationPickerModal({
                   {
                     name: 'BUBT Main Campus',
                     zone: 'Mirpur & Campus',
-                    subText: 'Permanent Campus · Road 9 & 10, Rupnagar',
+                    subText: 'Permanent Campus · Road 9 & 5, Rupnagar',
                     formattedAddress: 'BUBT Main Campus',
                     coords: BUBT_COORDS,
                     placeType: 'university' as const,
