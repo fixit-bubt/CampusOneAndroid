@@ -259,7 +259,7 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
   - **Universal 72dp Content Card Standard:**
     - `SettingCard`: Standardized to `minHeight: 72, padding: 14, borderRadius: 16, marginBottom: 10, gap: 13` with `44 × 44 dp` icon wrap (`borderRadius: 13`), matching `DirectoryScreen` and `FacultyScreen`.
     - Vector iconography migration: Replaced static legacy `Icon` with human-designed vector `AnimatedIcon` using verified Feather names (`refresh-cw`, `hard-drive`, `download-cloud`, `share-2`, `file-text`, `log-out`, `trash-2`, `tool`), fixing 6 broken icon identifiers (`refreshCw`, `database`, `downloadCloud`, `share`, `fileText`, `logout`, `trash`, `wrench`).
-    - Contextual micro-animations: Tactile `wobble` on Admin Dashboard, Staff Workspace, Notifications disabled, and Delete Account; vertical hovering `float` on About App and Award badge modal; smooth `entrance` on standard preference rows.
+    - Contextual micro-animations: Tactile `wobble` on Admin Dashboard, Staff Workspace, Notifications disabled, Delete Account card, and Delete Confirmation modal header (`AnimatedIcon` `trash-2` `wobble`); vertical hovering `float` on About App and Award badge modal (`award` `float` loop); smooth `entrance` on standard preference rows and Data & Cache modal header (`hard-drive` `entrance`).
 
 ---
 
