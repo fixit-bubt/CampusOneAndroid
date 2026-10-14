@@ -92,14 +92,22 @@ The app is graded and reviewed by university teachers who actively check for AI-
 3. **Typo Tolerance:** The user frequently types shorthand and colloquial typos (`naw` → now, `lick` → like, `loock` → look, `dose` → does, `stuff` → staff). Read intent generously.
 4. **Iterative UI Polish:** Ship a solid first pass, test on device, and welcome incremental refinements.
 
-### 3.4 STRICT Build & Deployment Mandate (NO Expo Go / NO EAS Cloud)
-1. **Local Gradle & Local Android SDK ONLY:** Never tell the user to test using Expo Go, `expo start`, or EAS Cloud. The project does not build with Expo Cloud.
-2. **Release Keystore Dependency:** Google Sign-In is pinned exclusively to the release keystore's SHA-1 fingerprint (`campusone-release.keystore`). Debug builds fail with `DEVELOPER_ERROR`. All real device testing MUST be done using the locally compiled, signed release APK.
-3. **Build & Deploy Commands:**
-   - Compile: `cd android; .\gradlew assembleRelease`
-   - Install to phone: `& "C:\Users\dracu\Android\sdk\platform-tools\adb.exe" install -r android/app/build/outputs/apk/release/app-release.apk`
-   - Launch: `& "C:\Users\dracu\Android\sdk\platform-tools\adb.exe" shell am start -n com.bubt.campusone/.MainActivity`
-4. **Physical Device Connected:** The user tests directly on their USB-connected physical Android device (`8734b5da`). Whenever completing features or UI updates, build the release APK with Gradle and push it to the phone via ADB.
+### 3.4 STRICT Build & Deployment Mandate (Android SDK & Gradle ONLY — NEVER Expo Go / EAS)
+1. **Zero Expo Dev Server / Zero Expo Go:** Do NOT suggest `npx expo start`, Expo Go, scanning QR codes, or running debug servers. The user builds native Android APKs with the local Android SDK and tests on a physical phone.
+2. **Local Gradle Native Build:** The app is compiled locally using Gradle (`cd android; .\gradlew assembleRelease`).
+3. **Release Keystore Dependency:** Google Sign-In is pinned exclusively to the release keystore's SHA-1 fingerprint (`campusone-release.keystore`, alias `campusone`, password `campusone2026`). Debug builds fail with `DEVELOPER_ERROR`. All real device testing MUST be done using the locally compiled, signed release APK.
+4. **Connected Physical Device Testing via ADB:**
+   - Device ID: `8734b5da` (connected via USB).
+   - Local SDK Path: `C:\Users\dracu\Android\sdk` (NDK `27.1.12297006`).
+   - ADB Path: `C:\Users\dracu\Android\sdk\platform-tools\adb.exe`.
+5. **Exact Build & Deploy Sequence:**
+   ```powershell
+   cd android
+   .\gradlew assembleRelease
+   & "C:\Users\dracu\Android\sdk\platform-tools\adb.exe" -s 8734b5da shell am force-stop com.bubt.campusone
+   & "C:\Users\dracu\Android\sdk\platform-tools\adb.exe" -s 8734b5da install -r android/app/build/outputs/apk/release/app-release.apk
+   & "C:\Users\dracu\Android\sdk\platform-tools\adb.exe" -s 8734b5da shell am start -n com.bubt.campusone/.MainActivity
+   ```
 
 ---
 
@@ -107,7 +115,9 @@ The app is graded and reviewed by university teachers who actively check for AI-
 
 | Layer | Technology | Details |
 |---|---|---|
-| **Framework** | React Native 0.85.3 + Expo SDK 56.0.15 | TypeScript 6, React 19.2.3 |
+| **Framework** | React Native 0.85.3 (uses Expo modules, but built strictly via Android SDK & Gradle — NO Expo Go / NO EAS) | TypeScript 6, React 19.2.3 |
+| **Build System** | Native Gradle + Android SDK (NDK 27.1.12297006) | `gradlew assembleRelease` using local release keystore |
+| **Testing Method** | Direct ADB install to USB physical Android device (`8734b5da`) | No Expo Go, no emulators |
 | **Navigation** | React Navigation 7 | Native Stack + Bottom Tabs |
 | **Backend / DB** | Supabase JS v2.107.0 | PostgreSQL 15, Auth, Storage, Realtime, Edge Functions |
 | **Push Notifications** | Direct FCM v1 | Firebase project `campusone-853e6` + `send-push` edge function |
@@ -485,10 +495,17 @@ In `RootNavigator.tsx`, students who have not completed onboarding (`!profile?.s
 - **Release APK Locations:**
   - Standard output: `android/app/build/outputs/apk/release/app-release.apk` (~51MB, fully signed).
   - Quick-access root copy: `CampusOne-release.apk`.
-- **Install on Device via ADB:**
-  ```bash
-  & "C:\Users\dracu\Android\sdk\platform-tools\adb.exe" install -r android/app/build/outputs/apk/release/app-release.apk
-  & "C:\Users\dracu\Android\sdk\platform-tools\adb.exe" shell am start -n com.bubt.campusone/.MainActivity
+- **Install & Launch on Real Device via ADB:**
+  - Connected device ID: `8734b5da` (physical Android device).
+  ```powershell
+  # 1. Force stop running process (prevents singleTask RAM caching)
+  & "C:\Users\dracu\Android\sdk\platform-tools\adb.exe" -s 8734b5da shell am force-stop com.bubt.campusone
+
+  # 2. Install newly built release APK
+  & "C:\Users\dracu\Android\sdk\platform-tools\adb.exe" -s 8734b5da install -r android/app/build/outputs/apk/release/app-release.apk
+
+  # 3. Launch the MainActivity cleanly
+  & "C:\Users\dracu\Android\sdk\platform-tools\adb.exe" -s 8734b5da shell am start -n com.bubt.campusone/.MainActivity
   ```
 - **Stale Path / Gradle Cache Gotcha:** If Gradle ever reports a missing directory referencing an old machine path (e.g. `C:\Users\Administrator\...`), remove `android/.gradle`, `android/build`, and `android/app/build`, verify `local.properties`, run `.\gradlew --stop`, and rebuild.
 
