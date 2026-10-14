@@ -10,6 +10,7 @@ import {
   TextInput,
   Keyboard,
   Platform,
+  Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
@@ -54,11 +55,10 @@ const QUICK_COMMUTE_HUBS = [
   { label: 'Kuril Flyover', coords: { latitude: 23.8172, longitude: 90.4208 } },
 ];
 
-function generateMapLibreHtml(initial: Coordinates, isDark: boolean, accentColor: string): string {
-  const bgColor = isDark ? '#0c0d10' : '#f8fafc';
-  const styleUrl = isDark
-    ? 'https://tiles.openfreemap.org/styles/dark'
-    : 'https://tiles.openfreemap.org/styles/liberty';
+function generateMapLibreHtml(initial: Coordinates, isDark: boolean): string {
+  const bgColor = isDark ? '#111317' : '#f8fafc';
+  // Standard detailed Liberty vector style (111 layers) with full street names, building footprints, parks, water, transit
+  const styleUrl = 'https://tiles.openfreemap.org/styles/liberty';
 
   return `
 <!DOCTYPE html>
@@ -92,112 +92,10 @@ function generateMapLibreHtml(initial: Coordinates, isDark: boolean, accentColor
     .maplibregl-ctrl-attrib, .maplibregl-ctrl-logo, .maplibregl-compact {
       display: none !important;
     }
-
-    /* Target Reticle On Ground */
-    .target-reticle {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      pointer-events: none;
-      z-index: 999;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 32px;
-      height: 32px;
-    }
-    .reticle-ring {
-      width: 24px;
-      height: 24px;
-      border: 2px dashed ${accentColor};
-      border-radius: 50%;
-      opacity: 0.85;
-      animation: spinRing 12s linear infinite;
-    }
-    .reticle-dot {
-      position: absolute;
-      width: 6px;
-      height: 6px;
-      background-color: ${accentColor};
-      border-radius: 50%;
-      box-shadow: 0 0 6px ${accentColor};
-    }
-    @keyframes spinRing {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    /* Fixed Center Pin (Floating Layer) */
-    .pin-anchor {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      pointer-events: none;
-      z-index: 1000;
-      transform: translate(-50%, -100%);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-    .pin-head {
-      width: 42px;
-      height: 42px;
-      background: ${accentColor};
-      border-radius: 50% 50% 50% 0;
-      transform: rotate(-45deg);
-      box-shadow: 0 8px 22px rgba(0,0,0,0.45);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 3px solid #ffffff;
-    }
-    .pin-dot {
-      width: 13px;
-      height: 13px;
-      background: #ffffff;
-      border-radius: 50%;
-      transform: rotate(45deg);
-      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-    }
-    .pin-shadow {
-      width: 18px;
-      height: 6px;
-      background: rgba(0, 0, 0, 0.45);
-      border-radius: 50%;
-      margin-top: 2px;
-      transform: scale(1);
-      transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.22s ease-out;
-    }
-
-    /* Lifted Pin State on Drag */
-    body.is-moving .pin-anchor {
-      transform: translate(-50%, -150%);
-    }
-    body.is-moving .pin-shadow {
-      transform: scale(0.4);
-      opacity: 0.2;
-    }
-    body.is-moving .target-reticle .reticle-ring {
-      border-color: #ffffff;
-      opacity: 1;
-      transform: scale(1.2);
-    }
   </style>
 </head>
 <body>
   <div id="map"></div>
-  <div class="target-reticle">
-    <div class="reticle-ring"></div>
-    <div class="reticle-dot"></div>
-  </div>
-  <div class="pin-anchor">
-    <div class="pin-head">
-      <div class="pin-dot"></div>
-    </div>
-    <div class="pin-shadow"></div>
-  </div>
 
   <script>
     var map = new maplibregl.Map({
@@ -205,8 +103,15 @@ function generateMapLibreHtml(initial: Coordinates, isDark: boolean, accentColor
       style: '${styleUrl}',
       center: [${initial.longitude}, ${initial.latitude}],
       zoom: 15.5,
-      minZoom: 11,
+      minZoom: 10,
       maxZoom: 19,
+      pixelRatio: window.devicePixelRatio || 2,
+      dragRotate: false,
+      touchPitch: false,
+      pitchWithRotate: false,
+      maxPitch: 0,
+      dragPan: { inertia: true, linearity: 0.25 },
+      touchZoomRotate: { inertia: true },
       maxBounds: [
         [88.0, 20.5],
         [92.8, 26.7]
@@ -239,12 +144,16 @@ function generateMapLibreHtml(initial: Coordinates, isDark: boolean, accentColor
     }
 
     map.on('movestart', function() {
-      document.body.classList.add('is-moving');
+      if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'MOVE_START' }));
+      }
     });
 
     map.on('moveend', function() {
-      document.body.classList.remove('is-moving');
       sendCenter();
+      if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'MOVE_END' }));
+      }
     });
 
     map.on('click', function(e) {
@@ -318,6 +227,21 @@ export function LocationPickerModal({
   const [locatingGps, setLocatingGps] = useState(false);
   const [geocoding, setGeocoding] = useState(false);
 
+  // High-performance 120 FPS native pin animation on Android RenderThread
+  const pinLiftAnim = useRef(new Animated.Value(0)).current;
+  const pinTranslateY = pinLiftAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -18],
+  });
+  const shadowScale = pinLiftAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 0.45],
+  });
+  const shadowOpacity = pinLiftAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.4, 0.12],
+  });
+
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -342,7 +266,7 @@ export function LocationPickerModal({
     webViewRef.current?.postMessage(JSON.stringify({ type: 'ZOOM_OUT' }));
   };
 
-  // Real-time Places Search (Curated + OpenStreetMap Geocoding)
+  // Real-time Places Search (Prefix-aware local index + Nominatim online fallback)
   useEffect(() => {
     if (!searchQuery || searchQuery.trim().length < 2) {
       setSearchResults([]);
@@ -357,21 +281,21 @@ export function LocationPickerModal({
 
     searchDebounceRef.current = setTimeout(async () => {
       try {
-        const results = await searchPlacesOnline(searchQuery);
+        const results = await searchPlacesOnline(searchQuery, currentCoords);
         setSearchResults(results);
       } catch (err) {
         setSearchResults([]);
       } finally {
         setSearchLoading(false);
       }
-    }, 320);
+    }, 200);
 
     return () => {
       if (searchDebounceRef.current) {
         clearTimeout(searchDebounceRef.current);
       }
     };
-  }, [searchQuery]);
+  }, [searchQuery, currentCoords]);
 
   // Handle GPS "Use My Current Location"
   const handleUseCurrentLocation = async () => {
@@ -440,6 +364,20 @@ export function LocationPickerModal({
           latitude: Number(data.lat),
           longitude: Number(data.lng),
         });
+      } else if (data.type === 'MOVE_START') {
+        Animated.spring(pinLiftAnim, {
+          toValue: 1,
+          tension: 200,
+          friction: 12,
+          useNativeDriver: true,
+        }).start();
+      } else if (data.type === 'MOVE_END') {
+        Animated.spring(pinLiftAnim, {
+          toValue: 0,
+          tension: 220,
+          friction: 9,
+          useNativeDriver: true,
+        }).start();
       }
     } catch (e) {
       // Ignore parse errors
@@ -503,11 +441,11 @@ export function LocationPickerModal({
       statusBarTranslucent
       onRequestClose={onClose}
     >
-      <View style={[styles.rootContainer, { backgroundColor: isDark ? '#0c0d10' : '#f8fafc' }]}>
+      <View style={[styles.rootContainer, { backgroundColor: isDark ? '#111317' : '#f8fafc' }]}>
         {/* Full-Bleed Edge-to-Edge Vector Map */}
         <WebView
           ref={webViewRef}
-          source={{ html: generateMapLibreHtml(startCoords, isDark, accentColor) }}
+          source={{ html: generateMapLibreHtml(startCoords, isDark) }}
           style={styles.webView}
           onMessage={handleWebViewMessage}
           javaScriptEnabled
@@ -516,9 +454,39 @@ export function LocationPickerModal({
           bounces={false}
           scrollEnabled={false}
           geolocationEnabled
-          androidLayerType={Platform.OS === 'android' ? 'hardware' : 'none'}
+          androidLayerType="none"
           originWhitelist={['*']}
         />
+
+        {/* Native Floating Pin & Reticle Layer (High-Performance 120 FPS on Android RenderThread) */}
+        <View pointerEvents="none" style={styles.nativePinCenterOverlay}>
+          {/* Target Reticle on Ground */}
+          <View style={[styles.nativeReticleRing, { borderColor: accentColor }]}>
+            <View style={[styles.nativeReticleDot, { backgroundColor: accentColor }]} />
+          </View>
+          {/* Spring Floating Pin with Dynamic Shadow */}
+          <Animated.View
+            style={[
+              styles.nativePinContainer,
+              {
+                transform: [{ translateY: pinTranslateY }],
+              },
+            ]}
+          >
+            <View style={[styles.nativePinHead, { backgroundColor: accentColor }]}>
+              <View style={styles.nativePinDot} />
+            </View>
+            <Animated.View
+              style={[
+                styles.nativePinShadow,
+                {
+                  transform: [{ scale: shadowScale }],
+                  opacity: shadowOpacity,
+                },
+              ]}
+            />
+          </Animated.View>
+        </View>
 
         {/* Floating Top Bar (Back button + Interactive Search) */}
         <View style={[styles.topBarWrapper, { paddingTop: insets.top + 10 }]}>
@@ -548,6 +516,13 @@ export function LocationPickerModal({
               }}
               onFocus={() => setIsSearching(searchQuery.length > 0)}
               returnKeyType="search"
+              onSubmitEditing={() => {
+                if (searchResults.length > 0) {
+                  handleSelectSearchPlace(searchResults[0]);
+                } else {
+                  Keyboard.dismiss();
+                }
+              }}
               autoCorrect={false}
             />
             {searchQuery.length > 0 && (
@@ -575,27 +550,43 @@ export function LocationPickerModal({
                 showsVerticalScrollIndicator={false}
                 style={{ maxHeight: 240 }}
               >
-                {searchResults.map(item => (
-                  <TouchableOpacity
-                    key={`${item.name}-${item.coords.latitude}`}
-                    style={[styles.searchResultItem, { borderBottomColor: C.border }]}
-                    onPress={() => handleSelectSearchPlace(item)}
-                    activeOpacity={0.7}
-                  >
-                    <View style={[styles.searchResultIconBox, { backgroundColor: `${accentColor}18` }]}>
-                      <Feather name="map-pin" size={14} color={accentColor} />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.searchResultTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                        {item.name}
-                      </Text>
-                      <Text style={[styles.searchResultSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
-                        {item.subText || item.zone}
-                      </Text>
-                    </View>
-                    <Feather name="corner-down-left" size={13} color={C.textMuted} />
-                  </TouchableOpacity>
-                ))}
+                {searchResults.map(item => {
+                  let iconName: 'plus-circle' | 'navigation' | 'flag' | 'book' | 'map-pin' = 'map-pin';
+                  if (item.placeType === 'hospital') iconName = 'plus-circle';
+                  else if (item.placeType === 'transit') iconName = 'navigation';
+                  else if (item.placeType === 'landmark') iconName = 'flag';
+                  else if (item.placeType === 'university') iconName = 'book';
+
+                  return (
+                    <TouchableOpacity
+                      key={`${item.name}-${item.coords.latitude}-${item.coords.longitude}`}
+                      style={[styles.searchResultItem, { borderBottomColor: C.border }]}
+                      onPress={() => handleSelectSearchPlace(item)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={[styles.searchResultIconBox, { backgroundColor: `${accentColor}18` }]}>
+                        <Feather name={iconName} size={15} color={accentColor} />
+                      </View>
+                      <View style={{ flex: 1, marginRight: 8 }}>
+                        <Text style={[styles.searchResultTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                          {item.name}
+                        </Text>
+                        <Text style={[styles.searchResultSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
+                          {item.subText || item.zone}
+                        </Text>
+                      </View>
+                      {item.distanceText ? (
+                        <View style={[styles.distancePill, { backgroundColor: isDark ? '#1f2430' : '#f1f5f9', borderColor: C.border }]}>
+                          <Text style={[styles.distancePillTxt, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>
+                            {item.distanceText}
+                          </Text>
+                        </View>
+                      ) : (
+                        <Feather name="corner-down-left" size={13} color={C.textMuted} />
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
               </ScrollView>
             ) : searchLoading ? (
               <View style={styles.searchingStateRow}>
@@ -1003,5 +994,79 @@ const styles = StyleSheet.create({
   confirmButtonText: {
     color: '#ffffff',
     fontSize: 15.5,
+  },
+  /* Native Floating Pin & Reticle Layer (High-Performance 120 FPS on Android RenderThread) */
+  nativePinCenterOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+  nativeReticleRing: {
+    position: 'absolute',
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+    opacity: 0.8,
+  },
+  nativeReticleDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  nativePinContainer: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 44,
+  },
+  nativePinHead: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    borderBottomRightRadius: 2,
+    transform: [{ rotate: '-45deg' }],
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: '#ffffff',
+    elevation: 8,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+  },
+  nativePinDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#ffffff',
+    transform: [{ rotate: '45deg' }],
+  },
+  nativePinShadow: {
+    width: 18,
+    height: 6,
+    borderRadius: 9,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    marginTop: 3,
+  },
+  distancePill: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  distancePillTxt: {
+    fontSize: 11,
   },
 });

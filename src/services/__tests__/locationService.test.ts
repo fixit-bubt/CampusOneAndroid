@@ -1,0 +1,58 @@
+jest.mock('expo-location', () => ({
+  requestForegroundPermissionsAsync: jest.fn().mockResolvedValue({ status: 'granted' }),
+  getCurrentPositionAsync: jest.fn().mockResolvedValue({
+    coords: { latitude: 23.8103, longitude: 90.3567 },
+  }),
+  reverseGeocodeAsync: jest.fn().mockResolvedValue([]),
+  Accuracy: { Balanced: 3 },
+}));
+
+import {
+  searchLandmarks,
+  searchPlacesOnline,
+  getDistanceMeters,
+  BUBT_COORDS,
+} from '../locationService';
+
+describe('locationService - search and autocomplete', () => {
+  it('instantly matches Jatrabari on typing "jat"', () => {
+    const results = searchLandmarks('jat', 8, BUBT_COORDS);
+    expect(results.length).toBeGreaterThan(0);
+
+    const names = results.map(r => r.name);
+    expect(names).toContain('Jatrabari');
+    expect(names).toContain('Jatrabari Bus Stop');
+    expect(names).toContain('Jatrabari Flyover');
+  });
+
+  it('matches Jatrabari on partial word "jatrabar"', () => {
+    const results = searchLandmarks('jatrabar', 5, BUBT_COORDS);
+    expect(results.length).toBeGreaterThanOrEqual(1);
+    expect(results[0].name).toBe('Jatrabari');
+  });
+
+  it('ranks exact prefix matches first', () => {
+    const results = searchLandmarks('jat', 5);
+    expect(results[0].name.toLowerCase().startsWith('jat')).toBe(true);
+  });
+
+  it('computes distance and assigns placeType in searchPlacesOnline', async () => {
+    const places = await searchPlacesOnline('jat', BUBT_COORDS);
+    expect(places.length).toBeGreaterThan(0);
+
+    const jatrabari = places.find(p => p.name === 'Jatrabari');
+    expect(jatrabari).toBeDefined();
+    expect(jatrabari?.distanceText).toBeDefined();
+    expect(jatrabari?.distanceText).toMatch(/km|m/);
+
+    const busStop = places.find(p => p.name === 'Jatrabari Bus Stop');
+    expect(busStop?.placeType).toBe('transit');
+  });
+
+  it('accurately calculates Haversine distance between two coordinates', () => {
+    // Distance from BUBT (23.8103, 90.3567) to Sony Square (23.8093, 90.3578) is approx ~150m
+    const dist = getDistanceMeters(23.8103, 90.3567, 23.8093, 90.3578);
+    expect(dist).toBeGreaterThan(80);
+    expect(dist).toBeLessThan(250);
+  });
+});
