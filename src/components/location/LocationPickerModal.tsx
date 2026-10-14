@@ -119,6 +119,10 @@ function generateMapLibreHtml(initial: Coordinates, isDark: boolean): string {
       attributionControl: false
     });
 
+    if (map.touchZoomRotate) {
+      map.touchZoomRotate.disableRotation();
+    }
+
     function resizeMap() {
       if (map) {
         map.resize();
@@ -143,6 +147,9 @@ function generateMapLibreHtml(initial: Coordinates, isDark: boolean): string {
       }
     }
 
+    var mapReady = false;
+    var pendingFlyTo = null;
+
     map.on('movestart', function() {
       if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
         window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'MOVE_START' }));
@@ -157,6 +164,9 @@ function generateMapLibreHtml(initial: Coordinates, isDark: boolean): string {
     });
 
     map.on('click', function(e) {
+      if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'MAP_CLICK' }));
+      }
       map.easeTo({
         center: [e.lngLat.lng, e.lngLat.lat],
         duration: 400
@@ -164,20 +174,30 @@ function generateMapLibreHtml(initial: Coordinates, isDark: boolean): string {
     });
 
     map.on('load', function() {
+      mapReady = true;
       sendCenter();
       resizeMap();
+      if (pendingFlyTo && map) {
+        map.flyTo(pendingFlyTo);
+        pendingFlyTo = null;
+      }
     });
 
     function handleMessage(event) {
       try {
         var data = JSON.parse(event.data);
-        if (data.type === 'FLY_TO' && map) {
-          map.flyTo({
+        if (data.type === 'FLY_TO') {
+          var flyOpts = {
             center: [data.lng, data.lat],
             zoom: data.zoom || 16,
             duration: 1200,
             essential: true
-          });
+          };
+          if (mapReady && map) {
+            map.flyTo(flyOpts);
+          } else {
+            pendingFlyTo = flyOpts;
+          }
         } else if (data.type === 'ZOOM_IN' && map) {
           map.zoomIn({ duration: 300 });
         } else if (data.type === 'ZOOM_OUT' && map) {
@@ -226,6 +246,7 @@ export function LocationPickerModal({
   const [searchResults, setSearchResults] = useState<GeocodedPlace[]>([]);
   const [locatingGps, setLocatingGps] = useState(false);
   const [geocoding, setGeocoding] = useState(false);
+  const isProgrammaticMoveRef = useRef(false);
 
   // High-performance 120 FPS native pin animation on Android RenderThread
   const pinLiftAnim = useRef(new Animated.Value(0)).current;
@@ -300,6 +321,8 @@ export function LocationPickerModal({
   // Handle GPS "Use My Current Location"
   const handleUseCurrentLocation = async () => {
     setLocatingGps(true);
+    Keyboard.dismiss();
+    setIsSearching(false);
     try {
       const gpsCoords = await getCurrentUserCoordinates();
       if (!gpsCoords) {
@@ -312,6 +335,7 @@ export function LocationPickerModal({
         return;
       }
 
+      isProgrammaticMoveRef.current = false; // Allow reverse geocoding to resolve address
       flyToCoordinates(gpsCoords, 17);
       toast({
         type: 'success',
@@ -334,6 +358,12 @@ export function LocationPickerModal({
     setCurrentCoords(coords);
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
+    }
+
+    // Skip reverse geocode if center was changed programmatically via search suggestion, hub, or snap
+    if (isProgrammaticMoveRef.current) {
+      isProgrammaticMoveRef.current = false;
+      return;
     }
 
     setGeocoding(true);
@@ -365,6 +395,8 @@ export function LocationPickerModal({
           longitude: Number(data.lng),
         });
       } else if (data.type === 'MOVE_START') {
+        Keyboard.dismiss();
+        setIsSearching(false);
         Animated.spring(pinLiftAnim, {
           toValue: 1,
           tension: 200,
@@ -378,6 +410,9 @@ export function LocationPickerModal({
           friction: 9,
           useNativeDriver: true,
         }).start();
+      } else if (data.type === 'MAP_CLICK') {
+        Keyboard.dismiss();
+        setIsSearching(false);
       }
     } catch (e) {
       // Ignore parse errors
@@ -395,8 +430,41 @@ export function LocationPickerModal({
     Keyboard.dismiss();
     setSearchQuery('');
     setIsSearching(false);
-    flyToCoordinates(place.coords, 16.5);
+    isProgrammaticMoveRef.current = true;
     setSelectedPlace(place);
+    flyToCoordinates(place.coords, 16.5);
+  };
+
+  // Select Quick Commute Hub chip
+  const handleSelectHub = (hub: (typeof QUICK_COMMUTE_HUBS)[0]) => {
+    Keyboard.dismiss();
+    setIsSearching(false);
+    isProgrammaticMoveRef.current = true;
+    const matched = findLandmarkByName(hub.label);
+    const hubPlace: GeocodedPlace = {
+      name: hub.label,
+      zone: matched?.zone || 'Dhaka',
+      subText: matched?.desc || `${hub.coords.latitude.toFixed(4)}, ${hub.coords.longitude.toFixed(4)}`,
+      formattedAddress: hub.label,
+      coords: hub.coords,
+    };
+    setSelectedPlace(hubPlace);
+    flyToCoordinates(hub.coords, 16.5);
+  };
+
+  // Snap to BUBT Main Campus
+  const handleSnapToBUBT = () => {
+    Keyboard.dismiss();
+    setIsSearching(false);
+    isProgrammaticMoveRef.current = true;
+    setSelectedPlace({
+      name: 'BUBT Main Campus',
+      zone: 'Mirpur & Campus',
+      subText: 'Permanent Campus · Rupnagar, Mirpur-2',
+      formattedAddress: 'BUBT Main Campus',
+      coords: BUBT_COORDS,
+    });
+    flyToCoordinates(BUBT_COORDS, 17);
   };
 
   // Sync coords on modal open
@@ -416,6 +484,7 @@ export function LocationPickerModal({
       });
 
       const timer = setTimeout(() => {
+        isProgrammaticMoveRef.current = true;
         flyToCoordinates(coords, 16);
       }, 350);
       return () => clearTimeout(timer);
@@ -464,7 +533,17 @@ export function LocationPickerModal({
           <View style={[styles.nativeReticleRing, { borderColor: accentColor }]}>
             <View style={[styles.nativeReticleDot, { backgroundColor: accentColor }]} />
           </View>
-          {/* Spring Floating Pin with Dynamic Shadow */}
+          {/* Ground Shadow - Stays firmly grounded on (0, 0), shrinks and fades on lift */}
+          <Animated.View
+            style={[
+              styles.nativeGroundShadow,
+              {
+                transform: [{ scale: shadowScale }],
+                opacity: shadowOpacity,
+              },
+            ]}
+          />
+          {/* Spring Floating Pin - Only pin lifts, bottom point touches (0, 0) when resting */}
           <Animated.View
             style={[
               styles.nativePinContainer,
@@ -476,19 +555,10 @@ export function LocationPickerModal({
             <View style={[styles.nativePinHead, { backgroundColor: accentColor }]}>
               <View style={styles.nativePinDot} />
             </View>
-            <Animated.View
-              style={[
-                styles.nativePinShadow,
-                {
-                  transform: [{ scale: shadowScale }],
-                  opacity: shadowOpacity,
-                },
-              ]}
-            />
           </Animated.View>
         </View>
 
-        {/* Floating Top Bar (Back button + Interactive Search) */}
+        {/* Floating Top Bar (Back button + Interactive Search) - Universal 58dp Standard */}
         <View style={[styles.topBarWrapper, { paddingTop: insets.top + 10 }]}>
           <TouchableOpacity
             style={[styles.frostedCloseBtn, { backgroundColor: C.surface, borderColor: C.border }]}
@@ -503,7 +573,7 @@ export function LocationPickerModal({
             {searchLoading ? (
               <ActivityIndicator size="small" color={accentColor} style={styles.searchIcon} />
             ) : (
-              <Feather name="search" size={17} color={isSearching ? accentColor : C.textMuted} style={styles.searchIcon} />
+              <Feather name="search" size={18} color={isSearching ? accentColor : C.textMuted} style={styles.searchIcon} />
             )}
             <TextInput
               style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
@@ -533,17 +603,29 @@ export function LocationPickerModal({
                   setIsSearching(false);
                   Keyboard.dismiss();
                 }}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               >
-                <Feather name="x" size={16} color={C.textMuted} />
+                <Feather name="x" size={17} color={C.textMuted} />
               </TouchableOpacity>
             )}
           </View>
         </View>
 
-        {/* Floating Live Places Autocomplete Dropdown */}
+        {/* Full-screen backdrop to dismiss search on tap outside */}
         {isSearching && (
-          <View style={[styles.searchResultsOverlay, { top: insets.top + 68, backgroundColor: C.surface, borderColor: C.border }]}>
+          <TouchableOpacity
+            style={[StyleSheet.absoluteFill, { zIndex: 99 }]}
+            activeOpacity={1}
+            onPress={() => {
+              Keyboard.dismiss();
+              setIsSearching(false);
+            }}
+          />
+        )}
+
+        {/* Floating Live Places Autocomplete Dropdown */}
+        {isSearching && (searchResults.length > 0 || searchLoading || searchQuery.trim().length >= 2) && (
+          <View style={[styles.searchResultsOverlay, { top: insets.top + 76, backgroundColor: C.surface, borderColor: C.border }]}>
             {searchResults.length > 0 ? (
               <ScrollView
                 keyboardShouldPersistTaps="handled"
@@ -607,7 +689,7 @@ export function LocationPickerModal({
         )}
 
         {/* Right Floating Action Buttons (FAB Column) */}
-        <View style={[styles.rightFabColumn, { top: insets.top + 74 }]}>
+        <View style={[styles.rightFabColumn, { top: insets.top + 76 }]}>
           {/* GPS Locate FAB */}
           <TouchableOpacity
             style={[styles.fabBtn, { backgroundColor: C.surface, borderColor: C.border }]}
@@ -626,7 +708,7 @@ export function LocationPickerModal({
           {/* Quick Snap to BUBT Campus */}
           <TouchableOpacity
             style={[styles.fabBtn, { backgroundColor: C.surface, borderColor: C.border }]}
-            onPress={() => flyToCoordinates(BUBT_COORDS, 17)}
+            onPress={handleSnapToBUBT}
             activeOpacity={0.8}
             accessibilityLabel="Center to BUBT Campus"
           >
@@ -678,7 +760,7 @@ export function LocationPickerModal({
                         borderColor: isActive ? accentColor : C.border,
                       },
                     ]}
-                    onPress={() => flyToCoordinates(hub.coords, 16)}
+                    onPress={() => handleSelectHub(hub)}
                     activeOpacity={0.75}
                   >
                     <Feather
@@ -794,9 +876,9 @@ const styles = StyleSheet.create({
     zIndex: 100,
   },
   frostedCloseBtn: {
-    width: 46,
-    height: 46,
-    borderRadius: 14,
+    width: Layout.controlHeight, // 58dp
+    height: Layout.controlHeight, // 58dp
+    borderRadius: Layout.controlRadius, // 16dp
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -808,12 +890,12 @@ const styles = StyleSheet.create({
   },
   searchCapsule: {
     flex: 1,
-    height: 48,
-    borderRadius: 14,
+    height: Layout.controlHeight, // 58dp
+    borderRadius: Layout.controlRadius, // 16dp
     borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
@@ -821,11 +903,11 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   searchIcon: {
-    marginRight: 8,
+    marginRight: 10,
   },
   searchInput: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 14.5,
     paddingVertical: 0,
   },
   searchResultsOverlay: {
@@ -1022,11 +1104,21 @@ const styles = StyleSheet.create({
     height: 6,
     borderRadius: 3,
   },
+  nativeGroundShadow: {
+    position: 'absolute',
+    width: 22,
+    height: 7,
+    borderRadius: 11,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    top: -3.5,
+  },
   nativePinContainer: {
     position: 'absolute',
+    width: 42,
+    height: 42,
+    top: -51,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 44,
   },
   nativePinHead: {
     width: 42,
@@ -1050,13 +1142,6 @@ const styles = StyleSheet.create({
     borderRadius: 7,
     backgroundColor: '#ffffff',
     transform: [{ rotate: '45deg' }],
-  },
-  nativePinShadow: {
-    width: 18,
-    height: 6,
-    borderRadius: 9,
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
-    marginTop: 3,
   },
   distancePill: {
     paddingHorizontal: 8,

@@ -1024,7 +1024,7 @@ export async function searchPlacesOnline(
 
     const encoded = encodeURIComponent(q);
     const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${encoded}&countrycodes=bd&limit=6&addressdetails=1`,
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encoded}&countrycodes=bd&viewbox=90.28,23.95,90.52,23.65&bounded=0&limit=6&addressdetails=1`,
       {
         headers: {
           'User-Agent': 'CampusOne-BUBT-App/1.0 (academic capstone)',
@@ -1208,7 +1208,7 @@ export async function reverseGeocodeCoords(coords: Coordinates): Promise<Geocode
       return {
         name: formatted,
         zone: cityArea || (inBd ? 'Dhaka' : 'Global'),
-        subText: `${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`,
+        subText: cityArea && placeName !== cityArea ? `${cityArea} · ${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}` : `${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`,
         formattedAddress: formatted,
         coords,
       };
@@ -1221,7 +1221,7 @@ export async function reverseGeocodeCoords(coords: Coordinates): Promise<Geocode
   return {
     name: inBd ? 'Dhaka Location' : 'Selected Pin',
     zone: inBd ? 'Mirpur & Campus' : 'Map Pin',
-    subText: `${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`,
+    subText: inBd ? `Dhaka · ${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}` : `${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`,
     formattedAddress: `${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`,
     coords,
   };

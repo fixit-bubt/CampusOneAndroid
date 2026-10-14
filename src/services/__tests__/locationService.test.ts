@@ -10,6 +10,7 @@ jest.mock('expo-location', () => ({
 import {
   searchLandmarks,
   searchPlacesOnline,
+  reverseGeocodeCoords,
   getDistanceMeters,
   BUBT_COORDS,
 } from '../locationService';
@@ -55,4 +56,13 @@ describe('locationService - search and autocomplete', () => {
     expect(dist).toBeGreaterThan(80);
     expect(dist).toBeLessThan(250);
   });
+
+  it('reverse geocodes coordinates with contextual landmark subtext', async () => {
+    const place = await reverseGeocodeCoords(BUBT_COORDS);
+    expect(place.name).toBe('BUBT Main Campus');
+    expect(place.zone).toBe('Mirpur & Campus');
+    expect(place.subText).toContain('Rupnagar');
+  });
 });
+
+
