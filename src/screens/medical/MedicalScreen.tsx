@@ -1339,8 +1339,9 @@ export function MedicalScreen({ navigation }: any) {
                   <TactileSwitch
                     value={editIsOnLeave}
                     onValueChange={setEditIsOnLeave}
-                    trackColor={{ true: C.danger }}
+                    variant="danger"
                   />
+
                 </View>
 
                 {/* Leave reason input */}

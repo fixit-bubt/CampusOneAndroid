@@ -298,7 +298,9 @@ export function NotifSettingsScreen({ navigation }: any) {
             <View pointerEvents="none">
               <TactileSwitch
                 value={paused}
+                variant="danger"
               />
+
             </View>
           </View>
         </TouchableOpacity>

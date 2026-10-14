@@ -334,7 +334,9 @@ export function SettingsScreen({ navigation }: any) {
             <View pointerEvents="none">
               <TactileSwitch
                 value={lang === 'bn'}
+                variant="success"
               />
+
             </View>
           }
         />

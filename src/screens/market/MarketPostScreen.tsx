@@ -410,8 +410,9 @@ export function MarketPostScreen({ route, navigation }: any) {
             <TactileSwitch
               value={isFree}
               onValueChange={handleToggleFree}
-              trackColor={{ true: '#16a34a' }}
+              variant="success"
             />
+
           </View>
 
           {/* 6. Price & Negotiable */}
