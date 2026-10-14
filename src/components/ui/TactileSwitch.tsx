@@ -3,6 +3,7 @@ import {
   Animated,
   Pressable,
   StyleSheet,
+  View,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
@@ -47,21 +48,21 @@ export function TactileSwitch({
     Animated.parallel([
       Animated.spring(posAnim, {
         toValue: value ? 1 : 0,
-        tension: 260,
-        friction: 18,
-        useNativeDriver: false,
+        tension: 280,
+        friction: 20,
+        useNativeDriver: true,
       }),
       Animated.sequence([
         Animated.timing(scaleXAnim, {
-          toValue: 1.18,
-          duration: 90,
-          useNativeDriver: false,
+          toValue: 1.16,
+          duration: 75,
+          useNativeDriver: true,
         }),
         Animated.spring(scaleXAnim, {
-          toValue: isPressedRef.current ? 1.22 : 1.0,
-          tension: 280,
+          toValue: isPressedRef.current ? 1.2 : 1.0,
+          tension: 300,
           friction: 14,
-          useNativeDriver: false,
+          useNativeDriver: true,
         }),
       ]),
     ]).start();
@@ -71,10 +72,10 @@ export function TactileSwitch({
     if (disabled) return;
     isPressedRef.current = true;
     Animated.spring(scaleXAnim, {
-      toValue: 1.22,
+      toValue: 1.2,
       tension: 350,
       friction: 12,
-      useNativeDriver: false,
+      useNativeDriver: true,
     }).start();
   };
 
@@ -83,8 +84,8 @@ export function TactileSwitch({
     Animated.spring(scaleXAnim, {
       toValue: 1.0,
       tension: 300,
-      friction: 12,
-      useNativeDriver: false,
+      friction: 14,
+      useNativeDriver: true,
     }).start();
   };
 
@@ -97,14 +98,16 @@ export function TactileSwitch({
     trackColor?.false ?? (isDark ? C.surface3 : C.border2);
   const activeTrackColor = trackColor?.true ?? C.brand;
 
-  const interpolatedTrackBg = posAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [inactiveTrackColor, activeTrackColor],
-  });
-
   const translateX = posAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [0, travel],
+    extrapolate: 'clamp',
+  });
+
+  const activeOpacity = posAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
   });
 
   const finalThumbColor = thumbColor ?? '#ffffff';
@@ -121,7 +124,7 @@ export function TactileSwitch({
       accessibilityLabel={accessibilityLabel}
       style={[{ opacity: disabled ? 0.45 : 1 }, style]}
     >
-      <Animated.View
+      <View
         style={[
           styles.track,
           {
@@ -129,10 +132,21 @@ export function TactileSwitch({
             height: trackHeight,
             borderRadius: trackRadius,
             padding: inset,
-            backgroundColor: interpolatedTrackBg,
+            backgroundColor: inactiveTrackColor,
           },
         ]}
       >
+        <Animated.View
+          style={[
+            StyleSheet.absoluteFill,
+            {
+              borderRadius: trackRadius,
+              backgroundColor: activeTrackColor,
+              opacity: activeOpacity,
+            },
+          ]}
+        />
+
         <Animated.View
           style={[
             styles.thumb,
@@ -145,7 +159,7 @@ export function TactileSwitch({
             },
           ]}
         />
-      </Animated.View>
+      </View>
     </Pressable>
   );
 }
@@ -153,6 +167,7 @@ export function TactileSwitch({
 const styles = StyleSheet.create({
   track: {
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   thumb: {
     shadowColor: '#000',

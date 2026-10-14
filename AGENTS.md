@@ -1611,6 +1611,43 @@ The Campus Announcements architecture is transformed from a manual posting board
 - **Lost & Found (`PostItemFormScreen.tsx`):** "Pick on Map" button in quick location row.
 - **Database & Web Parity:** All selections resolve to clean human-readable address strings, maintaining 100% backward and forward compatibility with Supabase backend tables and the sibling web app (`CampusOneWeb`).
 
+---
+
+## 37. Animated Curved Hill Tab Bar & 100% Native Tactile Switch Architecture
+
+### 37.1 Animated Curved Hill Tab Bar (`src/components/navigation/CurvedTabBar.tsx`)
+- **21st.dev Component Source:** Inspired by `abxlfazl__/animated-tab-bar` (`https://21st.dev/@abxlfazl__/components/animated-tab-bar`).
+- **Mathematical Organic Hill Arch:**
+  - Standardized to width `96 dp` and height `18 dp`.
+  - Uses cubic Bezier path (`M 0 18 C 20 18, 32 0, 48 0 C 64 0, 76 18, 96 18 L 96 20 L 0 20 Z`) with horizontal tangents at base and crest, seamlessly extending the tab bar body upward.
+  - Sits at `top: -18 dp`, filled with `C.surface` (matching the tab bar background) and outlined with a `1 dp` stroke of `C.border` along the arch.
+- **Elevated Active Bubble:**
+  - Diameter: `48 dp` circular container, resting poised on the crest of the hill (`top: -24 dp`).
+  - Background: Electric Brand Blue (`C.brand`: `#5b85f7` in dark mode / `#2b5be3` in light mode) with soft drop shadow (`elevation: 6`, `shadowRadius: 6`).
+  - Active icon: Crisp white Feather icon (`21px`).
+  - Rubberband spring pop animation on tab arrival (`bubbleScale`: 0.85 -> 1.12 -> 1.0).
+- **Aligned 5-Tab Label Baseline:**
+  - All navigation tab labels ("Home", "Explore", "Messages", "Annex", "Settings") sit on the exact same uniform bottom baseline (`fontSize: 11.5 px`).
+  - Active tab label is emphasized in bold `C.brand`, while inactive labels remain subtle `C.textMuted`. Eliminates blank/missing text under active tabs.
+- **100% Native Driver Performance:**
+  - The hill arch and bubble are translated in tandem via `translateX: slideAnim.interpolate(...)` using `useNativeDriver: true` (`tension: 200, friction: 17`). Runs at 120 FPS directly on the Android RenderThread without triggering JS re-renders on animation frames.
+
+### 37.2 Universal Tactile Squish Switch (`src/components/ui/TactileSwitch.tsx`)
+- **21st.dev Component Source:** Inspired by `kuratlielia/switch` (`https://21st.dev/@kuratlielia/components/switch`).
+- **Zero-Crash Native Architecture:**
+  - Converted entirely to `useNativeDriver: true` for all animated nodes (`posAnim`, `scaleXAnim`).
+  - Prevents React Native's fatal `Invariant Violation: Got combination of native and non-native animated values in transform`.
+- **Layered Track Views (No Color Interpolation):**
+  - Base track view renders `inactiveTrackColor` (`C.surface3` / `C.border2`).
+  - Overlay track view renders `activeTrackColor` (`C.brand`), smoothly fading in/out via native `opacity` clamped interpolation. Completely eliminates native color string parsing exceptions on Android.
+- **Finger Squish & Fluid Inertia:**
+  - On `onPressIn`: thumb widens horizontally (`scaleX: 1.2`) with spring physics.
+  - On state transition: thumb momentarily stretches to `scaleX: 1.16` for 75ms before settling at `1.0`.
+  - Thumb travels across the track using clamped interpolation (`extrapolate: 'clamp'`) with critically damped spring physics (`tension: 280, friction: 20`).
+- **App-Wide Deployment:**
+  - Replaced legacy React Native `<Switch>` across all 16 locations: Settings (Sync, Dark Mode, Language), Notifications (Pause All, Quiet Hours, Category Channels), Profile (Directory, WhatsApp), Marketplace (Hide Sold, Free, Negotiable), Study Hub (Public/Private), Medical (Doctor Leave), Manage Faculty (Mentorship, Leave), and Announcements (Pin to Top).
+
+
 
 
 

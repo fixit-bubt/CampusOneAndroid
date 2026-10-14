@@ -186,36 +186,40 @@ Always import from `src/theme/spacing.ts`:
 
 ## 8. Animated Curved Tab Bar Standard (`CurvedTabBar.tsx`)
 
-CampusOne implements the organic curved cutout tab bar inspired by 21st.dev (`abxlfazl__/animated-tab-bar`):
-1. **Curved SVG Notch Geometry:**
-   * Width: `86 dp`, Height: `22 dp`.
-   * Mathematical cubic Bezier path (`d="M0,0 C12,0 18,3 26,12 C34,21 38,22 43,22 C48,22 52,21 60,12 C68,3 74,0 86,0"`).
-   * Slides horizontally across the bar border via `translateX` powered by `Animated.spring(slideAnim, { tension: 190, friction: 15, useNativeDriver: true })`.
-2. **Floating Active Bubble:**
-   * Diameter: `50 dp` circle, elevated at `top: -16 dp` above the tab bar surface.
-   * Background: Electric Brand Blue (`C.brand`: `#5b85f7` dark / `#2b5be3` light), with `elevation: 8` and `shadowRadius: 6`.
-   * Bubble Pop Animation: Subtly compresses to `0.82` and springs to `1.12` before settling at `1.0` on active tab arrival.
-   * Houses the active Feather icon in `#ffffff` (22px).
-3. **Dynamic Role Layout:**
+CampusOne implements the organic curved tab bar inspired by 21st.dev (`abxlfazl__/animated-tab-bar`):
+1. **Organic Curved Hill Pedestal:**
+   * Width: `96 dp`, Height: `18 dp`.
+   * Mathematical cubic Bezier path with exact C1 continuous horizontal tangents at both base and crest (`M 0 18 C 20 18, 32 0, 48 0 C 64 0, 76 18, 96 18`).
+   * Seamlessly extends the tab bar upward into a smooth organic dome matching `C.surface`, with a `C.border` stroke hugging the crest.
+   * Slides horizontally across tabs via `translateX` powered by `Animated.spring(slideAnim, { tension: 200, friction: 17, useNativeDriver: true })` running at 120 FPS on Android RenderThread.
+2. **Elevated Active Bubble:**
+   * Diameter: `48 dp` circle, poised on the crest of the hill (`top: -24 dp` relative to bar).
+   * Background: Electric Brand Blue (`C.brand`: `#5b85f7` dark / `#2b5be3` light), with `elevation: 6` and `shadowRadius: 6`.
+   * Bubble Pop Animation: Compresses to `0.85` on tap and springs to `1.12` before settling at `1.0` on arrival (`useNativeDriver: true`).
+   * Houses the active Feather icon in `#ffffff` (21px).
+3. **Aligned Tab Labels:**
+   * All 5 navigation tab labels ("Home", "Explore", "Messages", "Annex", "Settings") sit on the exact same uniform baseline across the bottom of the bar.
+   * Active tab label is tinted in bold `C.brand`, while inactive labels remain subtle `C.textMuted`. No missing or hidden labels.
+4. **Dynamic Role Layout:**
    * Tab width is dynamically computed as `containerWidth / routesCount`.
    * Automatically adapts between 5 tabs (Students: Home, Explore, Messages, Annex, Settings) and 4 tabs (Staff & Admins: Home, Explore, Annex, Settings).
-4. **Ergonomics & Insets:**
-   * Bar height: `60 + Math.max(insets.bottom, 10) dp` to ensure ample clearance above Android 15 edge-to-edge navigation gesture handles.
+5. **Ergonomics & Insets:**
+   * Bar height: `58 + Math.max(insets.bottom, 10) dp` to ensure ample clearance above Android 15 edge-to-edge navigation gesture handles.
 
 ---
 
 ## 9. Tactile Squish Switch Standard (`TactileSwitch.tsx`)
 
 All legacy React Native `<Switch>` components across CampusOne are replaced with `TactileSwitch`, inspired by 21st.dev (`kuratlielia/switch`):
-1. **Finger Squish Effect:**
-   * On press down (`onPressIn`), the thumb widens horizontally by `+5 dp` (expanding from `22 dp` to `27 dp` in default size) with elastic spring resistance.
-2. **Moving Mass Gliding (`scaleX`):**
-   * As the thumb travels between states, `scaleX` momentarily swells to `1.15` and smoothly springs back to `1.0`, giving the physical sensation of moving viscous mass rather than a rigid ball.
-3. **Critically Damped Landing:**
-   * The thumb travels `20 dp` across the track using critically damped spring physics (`tension: 260, friction: 16`), landing firmly without overshooting or oscillation.
-4. **Theme Crossfade:**
-   * Inactive: `C.surface3` / `C.border2` with crisp white thumb (`#ffffff`).
-   * Active: `C.brand` or designated sector color (`SectorColors.<sector>`).
+1. **100% Native Driver Performance:**
+   * Both `posAnim` and `scaleXAnim` run entirely with `useNativeDriver: true`, preventing thread blocking and eliminating `Invariant Violation` errors.
+2. **Layered Track Views:**
+   * Base track displays `inactiveTrackColor` (`C.surface3` / `C.border2`), while an absolute overlay displays `activeTrackColor` (`C.brand`), smoothly fading in/out via native `opacity`. Eliminates color string interpolation crashes.
+3. **Finger Squish Effect:**
+   * On press down (`onPressIn`), the thumb stretches horizontally (`scaleX: 1.2`) with spring physics.
+   * On toggle transition, the thumb momentarily expands to `scaleX: 1.16` for 75ms before snapping to rest (`1.0`), simulating fluid moving mass.
+4. **Clamped Native Travel:**
+   * The thumb travels `20 dp` across the track using clamped interpolation (`extrapolate: 'clamp'`) with critically damped spring physics (`tension: 280, friction: 20`).
 5. **Universal Application:**
    * Deployed across all 16 toggle locations in the app (Settings, Notifications, Profile, Marketplace, Study Hub, Medical, and Announcements).
 

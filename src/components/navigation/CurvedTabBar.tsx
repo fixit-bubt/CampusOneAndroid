@@ -24,9 +24,9 @@ const TAB_ICONS: Record<string, FeatherName> = {
   Settings: 'settings',
 };
 
-const BUBBLE_SIZE = 52;
-const SCOOP_HALF_WIDTH = 42;
-const SCOOP_DEPTH = 24;
+const BUBBLE_SIZE = 48;
+const HILL_WIDTH = 96;
+const HILL_HEIGHT = 18;
 
 export function CurvedTabBar({
   state,
@@ -46,30 +46,25 @@ export function CurvedTabBar({
 
   const slideAnim = useRef(new Animated.Value(activeIndex)).current;
   const bubbleScale = useRef(new Animated.Value(1)).current;
-  const [animIndex, setAnimIndex] = useState(activeIndex);
 
   useEffect(() => {
-    const listenerId = slideAnim.addListener(({ value }) => {
-      setAnimIndex(value);
-    });
-
     Animated.parallel([
       Animated.spring(slideAnim, {
         toValue: activeIndex,
-        tension: 190,
-        friction: 15,
-        useNativeDriver: false,
+        tension: 200,
+        friction: 17,
+        useNativeDriver: true,
       }),
       Animated.sequence([
         Animated.timing(bubbleScale, {
           toValue: 0.85,
-          duration: 90,
+          duration: 80,
           useNativeDriver: true,
         }),
         Animated.spring(bubbleScale, {
           toValue: 1.12,
-          tension: 280,
-          friction: 8,
+          tension: 300,
+          friction: 9,
           useNativeDriver: true,
         }),
         Animated.spring(bubbleScale, {
@@ -80,10 +75,6 @@ export function CurvedTabBar({
         }),
       ]),
     ]).start();
-
-    return () => {
-      slideAnim.removeListener(listenerId);
-    };
   }, [activeIndex, slideAnim, bubbleScale]);
 
   const activeRoute = state.routes[activeIndex];
@@ -91,33 +82,26 @@ export function CurvedTabBar({
   const activeDescriptor = descriptors[activeRoute?.key];
   const activeBadge = activeDescriptor?.options?.tabBarBadge;
 
-  const barHeight = 60 + Math.max(insets.bottom, 10);
-  const currentCx = (animIndex + 0.5) * tabWidth;
+  const barHeight = 58 + Math.max(insets.bottom, 10);
 
-  const left = Math.max(0, currentCx - SCOOP_HALF_WIDTH);
-  const right = Math.min(containerWidth, currentCx + SCOOP_HALF_WIDTH);
+  const translateX = slideAnim.interpolate({
+    inputRange: state.routes.map((_, i) => i),
+    outputRange: state.routes.map((_, i) => i * tabWidth),
+  });
 
-  const barPath = `
-    M 0 0
-    L ${left} 0
-    C ${left + 12} 0, ${left + 18} 4, ${left + 24} 12
-    C ${left + 30} ${SCOOP_DEPTH}, ${currentCx - 12} ${SCOOP_DEPTH}, ${currentCx} ${SCOOP_DEPTH}
-    C ${currentCx + 12} ${SCOOP_DEPTH}, ${right - 30} ${SCOOP_DEPTH}, ${right - 24} 12
-    C ${right - 18} 4, ${right - 12} 0, ${right} 0
-    L ${containerWidth} 0
-    L ${containerWidth} ${barHeight}
-    L 0 ${barHeight}
+  const hillFillPath = `
+    M 0 ${HILL_HEIGHT}
+    C 20 ${HILL_HEIGHT}, 32 0, 48 0
+    C 64 0, 76 ${HILL_HEIGHT}, 96 ${HILL_HEIGHT}
+    L 96 ${HILL_HEIGHT + 2}
+    L 0 ${HILL_HEIGHT + 2}
     Z
   `;
 
-  const borderPath = `
-    M 0 0.5
-    L ${left} 0.5
-    C ${left + 12} 0.5, ${left + 18} 4, ${left + 24} 12
-    C ${left + 30} ${SCOOP_DEPTH}, ${currentCx - 12} ${SCOOP_DEPTH}, ${currentCx} ${SCOOP_DEPTH}
-    C ${currentCx + 12} ${SCOOP_DEPTH}, ${right - 30} ${SCOOP_DEPTH}, ${right - 24} 12
-    C ${right - 18} 4, ${right - 12} 0.5, ${right} 0.5
-    L ${containerWidth} 0.5
+  const hillBorderPath = `
+    M 0 ${HILL_HEIGHT}
+    C 20 ${HILL_HEIGHT}, 32 0, 48 0
+    C 64 0, 76 ${HILL_HEIGHT}, 96 ${HILL_HEIGHT}
   `;
 
   return (
@@ -130,45 +114,65 @@ export function CurvedTabBar({
         }
       }}
     >
-      {/* Seamless Carved SVG Background Bar */}
-      <Svg
-        width={containerWidth}
-        height={barHeight}
-        style={StyleSheet.absoluteFill}
-        pointerEvents="none"
-      >
-        <Path d={barPath} fill={C.surface} />
-        <Path
-          d={borderPath}
-          fill="none"
-          stroke={C.border}
-          strokeWidth={1}
-        />
-      </Svg>
+      {/* Tab Bar Body Background */}
+      <View
+        style={[
+          styles.barBody,
+          {
+            height: barHeight,
+            backgroundColor: C.surface,
+            borderTopColor: C.border,
+          },
+        ]}
+      />
 
-      {/* Floating Active Circle Bubble with Spring Pop */}
+      {/* Sliding Organic Hill Arch & Floating Active Bubble (100% Native Driver) */}
       <Animated.View
         style={[
-          styles.floatingBubble,
+          styles.sliderTrack,
           {
-            left: currentCx - BUBBLE_SIZE / 2,
-            width: BUBBLE_SIZE,
-            height: BUBBLE_SIZE,
-            borderRadius: BUBBLE_SIZE / 2,
-            backgroundColor: C.brand,
-            transform: [{ scale: bubbleScale }],
-            shadowColor: C.brand,
+            width: tabWidth,
+            transform: [{ translateX }],
           },
         ]}
         pointerEvents="none"
       >
-        <Feather name={activeIconName} size={22} color="#ffffff" />
+        {/* The Organic Curved Hill Pedestal */}
+        <View style={styles.hillWrapper}>
+          <Svg
+            width={HILL_WIDTH}
+            height={HILL_HEIGHT + 2}
+            viewBox={`0 0 ${HILL_WIDTH} ${HILL_HEIGHT + 2}`}
+          >
+            <Path d={hillFillPath} fill={C.surface} />
+            <Path
+              d={hillBorderPath}
+              fill="none"
+              stroke={C.border}
+              strokeWidth={1}
+            />
+          </Svg>
+        </View>
 
-        {activeBadge !== undefined && (
-          <View style={[styles.bubbleBadge, { backgroundColor: C.danger }]}>
-            <Text style={styles.badgeText}>{String(activeBadge)}</Text>
-          </View>
-        )}
+        {/* Elevated Active Circle Bubble with Spring Pop */}
+        <Animated.View
+          style={[
+            styles.floatingBubble,
+            {
+              backgroundColor: C.brand,
+              transform: [{ scale: bubbleScale }],
+              shadowColor: C.brand,
+            },
+          ]}
+        >
+          <Feather name={activeIconName} size={21} color="#ffffff" />
+
+          {activeBadge !== undefined && (
+            <View style={[styles.bubbleBadge, { backgroundColor: C.danger }]}>
+              <Text style={styles.badgeText}>{String(activeBadge)}</Text>
+            </View>
+          )}
+        </Animated.View>
       </Animated.View>
 
       {/* Interactive Tabs Row */}
@@ -217,7 +221,7 @@ export function CurvedTabBar({
                 typeof label === 'string' ? label : route.name
               }
             >
-              {/* Baseline icon: only visible when inactive */}
+              {/* Baseline icon: visible when inactive, active tab has elevated bubble above */}
               <View
                 style={[
                   styles.iconWrap,
@@ -237,7 +241,7 @@ export function CurvedTabBar({
                 )}
               </View>
 
-              {/* Uniform Label: matches baseline across all tabs */}
+              {/* Uniform Baseline Label: ALWAYS visible across all tabs */}
               <Text
                 style={[
                   styles.tabLabel,
@@ -265,24 +269,46 @@ const styles = StyleSheet.create({
     position: 'relative',
     width: '100%',
   },
+  barBody: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderTopWidth: 1,
+  },
+  sliderTrack: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    height: '100%',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  hillWrapper: {
+    position: 'absolute',
+    top: -HILL_HEIGHT,
+    alignItems: 'center',
+  },
   floatingBubble: {
     position: 'absolute',
-    top: -12,
-    zIndex: 20,
+    top: -HILL_HEIGHT - 6,
+    width: BUBBLE_SIZE,
+    height: BUBBLE_SIZE,
+    borderRadius: BUBBLE_SIZE / 2,
     alignItems: 'center',
     justifyContent: 'center',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowOpacity: 0.28,
+    shadowRadius: 6,
+    elevation: 6,
   },
   bubbleBadge: {
     position: 'absolute',
-    top: -3,
-    right: -3,
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
+    top: -2,
+    right: -2,
+    minWidth: 17,
+    height: 17,
+    borderRadius: 8.5,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 4,
@@ -303,7 +329,7 @@ const styles = StyleSheet.create({
   },
   iconWrap: {
     position: 'relative',
-    height: 24,
+    height: 22,
     justifyContent: 'center',
     alignItems: 'center',
   },
