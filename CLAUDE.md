@@ -1646,20 +1646,27 @@ The Campus Announcements architecture is transformed from a manual posting board
    - **Strict 65m Landmark Snapping:** `findNearestLandmark(coords, 65)` snaps only when directly on landmark grounds (within 65m), preventing distant roads in Rupnagar from falsely snapping to BUBT.
    - **High-Accuracy Reverse Geocoding (`reverseGeocodeCoords`):** Prioritizes OpenStreetMap Nominatim Reverse (`zoom=18, addressdetails=1`) for true road, building, and quarter resolution, backed by native geocoder fallback.
 2. **`src/components/location/LocationPickerModal.tsx`:**
-   - **Mathematical Pin Geometry & Centered Anchor:** Native floating pin layer anchored via `centerAnchor: { width: 0, height: 0, alignItems: 'center', justifyContent: 'center' }`. Ground reticle (`left: -14, top: -14`), ground shadow (`left: -11, top: -3.5`), and rotated 42x42 teardrop pin container (`left: -21, top: -51`) ensure the bottom needle tip touches `(0, 0)` with sub-pixel precision directly on the target coordinate.
+   - **Memoized HTML & Zero Re-render Flashing:** The WebView HTML source is memoized via `useMemo(() => generateMapLibreHtml(startCoords, isDark), [isDark])`. Dynamic map panning and pin relocation are handled exclusively via RenderThread `postMessage` (`FLY_TO`), preventing WebView re-renders and bridge flashing during text input or pin motion.
+   - **Pure SVG Vector Pin Geometry & Vertical Needle Alignment:** Native floating pin layer anchored via `centerAnchor: { width: 0, height: 0, alignItems: 'center', justifyContent: 'center' }`. Ground reticle (`left: -14, top: -14`), ground shadow (`left: -11, top: -3.5`), and authentic 38x48 SVG vector teardrop pin container (`left: -19, top: -47.5`) with bottom needle tip touching `(0, 0)` with sub-pixel precision pointing vertically straight down directly onto the target coordinate.
+   - **Solid Opaque Active Commute Hub Chips:** Active commute hub chips render on solid backgrounds (`#fee2e2` in light mode / `#261b1e` in dark mode) so the map streets, building outlines, and text labels never bleed through.
+   - **Streamlined Single-Line Search Capsule:** Search bar input enforced with single-line layout (`multiline={false}, numberOfLines={1}`) and generous status bar inset buffer (`Math.max(insets.top, 24) + 12`), eliminating double-line wrapping and status bar overlap.
+   - **Reverse Geocode In-Flight Abort Guard:** Managed via `reverseGeocodeAbortRef`. When the user pans or jumps to a new location, any active in-flight reverse geocode network request is immediately aborted, eliminating race condition overwrites where an old slow network response would overwrite a newly selected position.
+   - **Android Hardware Back Button Handling:** Integrates `BackHandler` so pressing the Android back button when the search dropdown is open dismisses the search overlay and soft keyboard first, preventing accidental closure of the entire modal.
+   - **Contextual `title` Pill Badge:** Displays the caller's contextual `title` prop (e.g. `"SELECT PICKUP POINT"`, `"SELECT DESTINATION"`, `"SELECT MEETUP LOCATION"`) in a styled accent pill inside `selectedLocationCard72`.
+   - **Offline & CDN Resilience:** Listens for `window.onerror`, MapLibre `error` events, `onError`, and `onHttpError`, presenting an offline warning banner with a "Retry" button without blocking local landmark selection.
    - **Recent Searches & Suggestions:** Persists last 5 chosen places in `@campusone_recent_map_searches` via AsyncStorage. Surfaces recent searches and campus hubs on focus with a "Clear" option.
    - **Single Closest Hub Detection:** Commute hub chips use `activeHubLabel` (single closest hub within 120m threshold), ensuring multiple chips never light up simultaneously.
-   - **Z-Index & FAB Overlay Protection:** FAB column is rendered before the search overlay and hidden during active search, preventing overlay touch interception.
+   - **Z-Index & FAB Overlay Protection:** FAB column is rendered before the search overlay and hidden during active search, with `elevation: 10` on the top bar ensuring search dropdown touches are never intercepted.
    - **Reverse Geocode Overwrite Protection (`isProgrammaticMoveRef`):** Programmatic movements (selecting search suggestions, tapping Quick Commute Hub chips, initial modal open, or snapping to BUBT Campus) flag `isProgrammaticMoveRef.current = true`. This prevents `moveend` from triggering reverse geocoding and overwriting user-selected place names.
    - **Universal 58dp Control Bar Standard:** Standardized top search bar (`searchCapsule`) and back button (`frostedCloseBtn`) to `height: 58, borderRadius: 16`.
    - **Strict 2D Locked Orientation:** `map.touchZoomRotate.disableRotation()` locks two-finger gestures to pure zoom without accidental rotation.
-   - **Universal 72dp Content Card:** Live selected location preview card (`minHeight: 72, padding: 14, borderRadius: 16`) with 44dp map pin icon box, resolved place title, and coordinates subtitle.
+   - **Universal 72dp Content Card:** Live selected location preview card (`minHeight: 72, padding: 14, borderRadius: 16`) with 44dp map pin icon box, context title badge, resolved place title, and coordinates subtitle.
    - **Universal 58dp Primary CTA:** Standardized "Confirm Location" button (`height: 58, borderRadius: 16`).
 
 ### 36.3 App-Wide Feature Integration
 - **Campus Rides (`RidePostScreen.tsx`):** Map trigger buttons on pickup and destination bars and commute area sheet.
 - **Student Marketplace (`MarketPostScreen.tsx`):** 58dp map trigger card in handover location sheet.
-- **Blood Donation (`AreaPickerModal.tsx`):** Sibling modal integration allowing donors and requesters to pinpoint hospitals and areas on the map.
+- **Blood Donation (`AreaPickerModal.tsx`):** Sibling modal integration allowing donors and requesters to pinpoint hospitals and areas on the map. Explicitly resets `setMapPickerOpen(false)` upon location confirmation.
 - **Lost & Found (`PostItemFormScreen.tsx`):** "Pick on Map" button in quick location row.
 - **Database & Web Parity:** All selections resolve to clean human-readable address strings, maintaining 100% backward and forward compatibility with Supabase backend tables and the sibling web app (`CampusOneWeb`).
 
