@@ -209,30 +209,35 @@ All toggle switches across CampusOne strictly implement the **Liquid Toggle** st
 
 ---
 
-## 9. Universal Bottom Navigation Bar & 120 FPS Elastic Tap Animation
+## 9. 1:1 Sibling Web Mobile Bottom Navigation Bar (`BottomTabNavigator.tsx`)
 
-The mobile bottom navigation bar implements a flat, native edge-to-edge layout with 120 FPS spring micro-interactions:
-1. **Student Tab Order:**
-   * `Home` (Dashboard & Campus Today feed)
-   * `Study Hub` (Department, Intake & Section materials)
-   * `Messages` (Direct student chats & unread notification pill)
-   * `Explore` (Campus services directory & relocated Annex Portal)
-   * `Settings` (User profile, theme tokens, and account settings)
-2. **Role-Adaptive Layout:**
-   * **Students (5 tabs):** `Home` | `Study Hub` | `Messages` | `Explore` | `Settings`
-   * **Admin (4 tabs):** `Home` | `Study Hub` | `Explore` | `Settings`
-   * **Staff (3 tabs):** `Home` | `Explore` | `Settings`
-3. **Flat Bar Geometry vs. Notch Prohibition:**
-   * Strictly maintains a clean, flat top border with dynamic OLED dark/light theme background.
-   * Experimental SVG curved cutouts/notches in the middle are strictly forbidden to eliminate 1px border tearing, touch target shrink, and Android gesture pill clipping.
-4. **120 FPS Elastic Bounce Tap Physics:**
-   * Powered by `AnimatedTabBarButton` running on Android RenderThread (`useNativeDriver: true`).
-   * **Press-In:** Tactile squish to scale `0.84` (`tension: 400, friction: 12`).
-   * **Release / Trigger:** Elastic rubberband pop identical to Explore's `entrance` animation (scale reset to `0.72` -> spring to `1.30` -> settles at `1.0`).
-   * Active tab switches trigger `AnimatedIcon` `entrance` pop from `0.3 → 1.25 → 1.0`.
-   * Re-tapping an already focused tab reliably plays the tactile pop on every single tap.
-5. **Annex Portal Relocation:**
-   * BUBT Annex portal relocated from bottom tab bar into **Explore -> Academics** section.
-   * Rendered as an interactive tool card (`external-link` icon) that pushes `AnnexPortalScreen` with an integrated header back button.
+The mobile app bottom navigation bar is ported 1:1 from the sibling web app (`CampusOneWeb/src/components/AppShell.jsx`), featuring:
+1. **Midnight Navy Gradient Backdrop:**
+   - 1-piece seamless SVG canvas with linear gradient:
+     - Top Stop: `#0f2862`
+     - Bottom Stop: `#0a1b42`
+   - Clean, crisp top rim highlight stroke: `rgba(255, 255, 255, 0.16)` with 1px stroke width.
+2. **Organic Cradle Valley Curve:**
+   - Mathematically smooth C1-continuous organic valley notch in the center (`notch depth = 26 dp`, `notch half-width = 46 dp`, `outer shoulder radius = 20 dp`).
+   - Symmetrically cradles the elevated center button with zero subpixel seams or distortion.
+3. **Cosmic Glass Luxury Floating Center Orb (Option 2 — Messages):**
+   - Elevated center button (`top: -24 dp`) nested right into the cradle curve.
+   - Outer ring gradient: `rgba(129, 140, 248, 0.55)` to `rgba(15, 23, 42, 0.9)` (focused: `rgba(96, 165, 250, 0.9)`).
+   - Inner orb: Deep 4-stop radial/linear cosmic glass gradient (`#38bdf8` → `#1e40af` → `#0f172a` → `#030712`).
+   - Specular glass reflection: top-left pill highlight (`rgba(255, 255, 255, 0.45)` to transparent).
+   - Crisp white `message-circle` icon with dynamic red unread count badge (`#ef4444`).
+4. **Sharp Contrast Typography & Active Electric Blue Dot:**
+   - **Active Tab:** Electric blue (`#60a5fa`), Plus Jakarta Sans Bold, with an active electric blue dot indicator (`4 × 4 dp`, `borderRadius: 2`) centered below the text label.
+   - **Inactive Tabs:** Sharp high-contrast slate (`rgba(203, 213, 225, 0.85)` / `#cbd5e1`), Plus Jakarta Sans Medium, with transparent dot placeholder.
+5. **Role-Adaptive Tab Layout:**
+   - **Students (5 tabs):** `Home` | `Study Hub` | **Messages (Center Orb)** | `Explore` | `Settings`
+   - **Admin (4 tabs):** `Home` | `Study Hub` | `Explore` | `Settings`
+   - **Staff (3 tabs):** `Home` | `Explore` | `Settings`
+6. **120 FPS Native Rubberband Bounce Tap Micro-Interactions:**
+   - All tab buttons (standard tabs and center orb) execute on Android RenderThread (`useNativeDriver: true`).
+   - Press-in: tactile squish to `0.84` scale (`tension: 400, friction: 12`).
+   - Release: energetic spring bounce pop (`0.72 → 1.30 → 1.0`), matching Explore entrance animation physics.
+7. **Annex Portal Relocation:**
+   - Relocated from bottom navigation bar into **Explore -> Academics** section with its own interactive tool card and header back button.
 
 

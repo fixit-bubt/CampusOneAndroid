@@ -173,16 +173,17 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
   - In React Native Android, mounting an empty touch responder without a handler intercepts gesture responders and swallows taps intended for parent `<TouchableOpacity>` wrappers (e.g. `ExploreScreen` tool cards or `HomeFrequentTools`).
 - **Zero-Emoji Project Standard:**
   - Strict ban on raw Unicode emojis (`🚗`, `🛺`, `🏍️`, `🩸`, `⚡`, `🎉`, `✨`, etc.) in button text, filter chips, list badges, and UI copy. All status indicators and categorizations must use vector badges (`StatusBadge` or `@expo/vector-icons`).
-- **Standard Bottom Tab Bar Specification (`BottomTabNavigator.tsx`):**
-  - Native standard React Navigation bottom tab bar with dynamic theme synchronization (`tabBarStyle: { backgroundColor: C.surface, borderTopColor: C.border, height: Layout.bottomNavHeight, paddingBottom: 14, paddingTop: 6 }`).
-  - Active tab highlighted in electric Brand Blue (`tabBarActiveTintColor: C.brand`), inactive in muted zinc (`tabBarInactiveTintColor: C.textMuted`).
-  - 120 FPS Elastic Bounce Tap Micro-Interactions: Every tab button implements `AnimatedTabBarButton` on the Android RenderThread (`useNativeDriver: true`). Press-in produces tactile squash (`scale: 0.84`), and tap release / trigger launches the elastic spring pop (`scale: 0.72 -> 1.30 -> 1.0`, matching Explore entrance bounce physics). Re-tapping active tabs reliably fires the elastic bounce on every single tap. Active tab switches also trigger `AnimatedIcon` `animation={focused ? 'entrance' : 'none'}` (`0.3 -> 1.25 -> 1.0`).
+- **1:1 Sibling Web Mobile Bottom Navigation Bar (`BottomTabNavigator.tsx`):**
+  - Continuous 1-piece SVG canvas with mathematical C1-continuous organic cradle valley notch (`depth: 26 dp`, `notch half-width: 46 dp`, `shoulder radius: 20 dp`), ported 1:1 from `CampusOneWeb/src/components/AppShell.jsx`.
+  - Midnight Navy Gradient (`#0f2862` to `#0a1b42`) with crisp 1px top rim highlight stroke (`rgba(255, 255, 255, 0.16)`).
+  - Elevated Cosmic Glass Floating Center Orb for Messages (`top: -24 dp`) nested into the cradle, with multi-stop radial/linear cosmic glass gradient (`#38bdf8` -> `#1e40af` -> `#0f172a` -> `#030712`), specular pill highlight, and unread badge.
+  - Active tab highlighted in electric Blue (`#60a5fa`) with active electric blue dot indicator (`4 × 4 dp`, `borderRadius: 2`) centered below the label. Inactive tabs rendered in sharp slate (`rgba(203, 213, 225, 0.85)` / `#cbd5e1`).
+  - 120 FPS Elastic Bounce Tap Micro-Interactions on Android RenderThread (`useNativeDriver: true`): Press-in tactile squash to `0.84`, release elastic spring pop (`scale: 0.72 -> 1.30 -> 1.0`, matching Explore entrance physics).
   - Role-adaptive tab count & layout:
-    - Students (5 tabs): `Home`, `StudyHub`, `Messages`, `Explore`, `Settings`. Unread direct messages badge dynamically displayed on Messages tab.
+    - Students (5 tabs): `Home`, `StudyHub`, `Messages` (Elevated Center Orb), `Explore`, `Settings`.
     - Admin (4 tabs): `Home`, `StudyHub`, `Explore`, `Settings`.
     - Staff (3 tabs): `Home`, `Explore`, `Settings`.
   - Annex Portal Relocation: Relocated from bottom navigation bar to `ExploreScreen` under Academics, rendered as an interactive tool card that opens `AnnexPortalScreen` with an integrated header back button.
-  - Strict prohibition against experimental SVG curved cutout/hill bottom bars: maintains 100% theme consistency, zero layout distortion, and rock-solid Android edge-to-edge gesture compliance.
 - **Universal Liquid Gooey Toggle Switch Standard (`LiquidToggle.tsx` / `TactileSwitch.tsx`):**
   - **Fluid Viscous Morphing Physics:** Single cohesive fluid droplet thumb with native volume-preserving squash-and-stretch (`scaleX: 1.0 -> 1.40 -> 1.0`, `scaleY: 1.0 -> 0.84 -> 1.0`, `translateX: 0 -> travel`) driven by a 460ms silky fluid cubic-bezier curve (`Easing.bezier(0.32, 0.0, 0.18, 1.0)`). Pure, continuous fluid gel capsule motion with zero seams, zero overlapping boxes, and zero extraneous artifacts.
   - **100% Native-Driver Performance (120 FPS):** All transforms and crossfades execute exclusively on the Android RenderThread (`useNativeDriver: true`), ensuring buttery-smooth interaction with zero JS-thread frame drops.
