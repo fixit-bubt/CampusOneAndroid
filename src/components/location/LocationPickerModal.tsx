@@ -150,9 +150,13 @@ function generateMapLibreHtml(initial: Coordinates, isDark: boolean): string {
     var mapReady = false;
     var pendingFlyTo = null;
 
-    map.on('movestart', function() {
+    map.on('movestart', function(e) {
+      var isUserGesture = !!(e && e.originalEvent);
       if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
-        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'MOVE_START' }));
+        window.ReactNativeWebView.postMessage(JSON.stringify({
+          type: 'MOVE_START',
+          isUserGesture: isUserGesture
+        }));
       }
     });
 
@@ -395,14 +399,16 @@ export function LocationPickerModal({
           longitude: Number(data.lng),
         });
       } else if (data.type === 'MOVE_START') {
-        Keyboard.dismiss();
-        setIsSearching(false);
-        Animated.spring(pinLiftAnim, {
-          toValue: 1,
-          tension: 200,
-          friction: 12,
-          useNativeDriver: true,
-        }).start();
+        if (data.isUserGesture) {
+          Keyboard.dismiss();
+          setIsSearching(false);
+          Animated.spring(pinLiftAnim, {
+            toValue: 1,
+            tension: 200,
+            friction: 12,
+            useNativeDriver: true,
+          }).start();
+        }
       } else if (data.type === 'MOVE_END') {
         Animated.spring(pinLiftAnim, {
           toValue: 0,
@@ -610,18 +616,6 @@ export function LocationPickerModal({
             )}
           </View>
         </View>
-
-        {/* Full-screen backdrop to dismiss search on tap outside */}
-        {isSearching && (
-          <TouchableOpacity
-            style={[StyleSheet.absoluteFill, { zIndex: 99 }]}
-            activeOpacity={1}
-            onPress={() => {
-              Keyboard.dismiss();
-              setIsSearching(false);
-            }}
-          />
-        )}
 
         {/* Floating Live Places Autocomplete Dropdown */}
         {isSearching && (searchResults.length > 0 || searchLoading || searchQuery.trim().length >= 2) && (
