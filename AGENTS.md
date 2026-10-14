@@ -2,6 +2,18 @@
 
 This document is the single, authoritative reference for any AI agent or developer working on the **CampusOne** project. It synthesizes all project memory, live code patterns, database schemas, environment constraints, and developer preferences.
 
+> [!IMPORTANT]
+> ### STRICT BUILD & TESTING RULE: LOCAL ANDROID SDK & GRADLE ONLY (NO EXPO GO / NO METRO / NO EAS)
+> - **NEVER suggest or run `npx expo start`, Expo Go, or Metro bundler for testing.**
+> - **NEVER use EAS Cloud builds.**
+> - **Testing & Building is 100% Native via Local Android SDK & Gradle:**
+>   1. Build release APK: `cd android; .\gradlew assembleRelease`
+>   2. Force-stop previous instance: `& "C:\Users\dracu\Android\sdk\platform-tools\adb.exe" -s 8734b5da shell am force-stop com.bubt.campusone`
+>   3. Install to phone via ADB: `& "C:\Users\dracu\Android\sdk\platform-tools\adb.exe" -s 8734b5da install -r android/app/build/outputs/apk/release/app-release.apk`
+>   4. Launch on phone: `& "C:\Users\dracu\Android\sdk\platform-tools\adb.exe" -s 8734b5da shell am start -n com.bubt.campusone/.MainActivity`
+> - **Hardware Connected:** The user tests directly on their physical USB-connected Android phone (`8734b5da`).
+> - **Why?** Google Sign-In is strictly pinned to the release keystore's SHA-1 fingerprint (`campusone-release.keystore`). Debug / Expo builds fail Google Sign-In with `DEVELOPER_ERROR`. Real device testing MUST be done using the locally compiled, signed release APK.
+
 ---
 
 ## 1. Executive Summary & Project Purpose
@@ -79,6 +91,15 @@ The app is graded and reviewed by university teachers who actively check for AI-
 2. **Plain English First:** Explain "what it does" in simple terms before diving into technical details.
 3. **Typo Tolerance:** The user frequently types shorthand and colloquial typos (`naw` → now, `lick` → like, `loock` → look, `dose` → does, `stuff` → staff). Read intent generously.
 4. **Iterative UI Polish:** Ship a solid first pass, test on device, and welcome incremental refinements.
+
+### 3.4 STRICT Build & Deployment Mandate (NO Expo Go / NO EAS Cloud)
+1. **Local Gradle & Local Android SDK ONLY:** Never tell the user to test using Expo Go, `expo start`, or EAS Cloud. The project does not build with Expo Cloud.
+2. **Release Keystore Dependency:** Google Sign-In is pinned exclusively to the release keystore's SHA-1 fingerprint (`campusone-release.keystore`). Debug builds fail with `DEVELOPER_ERROR`. All real device testing MUST be done using the locally compiled, signed release APK.
+3. **Build & Deploy Commands:**
+   - Compile: `cd android; .\gradlew assembleRelease`
+   - Install to phone: `& "C:\Users\dracu\Android\sdk\platform-tools\adb.exe" install -r android/app/build/outputs/apk/release/app-release.apk`
+   - Launch: `& "C:\Users\dracu\Android\sdk\platform-tools\adb.exe" shell am start -n com.bubt.campusone/.MainActivity`
+4. **Physical Device Connected:** The user tests directly on their USB-connected physical Android device (`8734b5da`). Whenever completing features or UI updates, build the release APK with Gradle and push it to the phone via ADB.
 
 ---
 
@@ -1577,30 +1598,32 @@ The Campus Announcements architecture is transformed from a manual posting board
 
 ---
 
-## 36. Interactive Google Maps Roadmap & GPS Location Selection Architecture
+## 36. Interactive Vector Map, GPS & Location Architecture
 
-### 36.1 Architectural Overview & Real Google Maps Roadmap Engine
-- **Engine Implementation:** Combines high-resolution **Google Maps roadmap raster tiles** (`https://mt{0-3}.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}`) within a hardware-accelerated **MapLibre GL engine** embedded via `react-native-webview` (v13.16.1) combined with native device geolocation (`expo-location`).
-- **100% Real Google Maps Detail & Bilingual Labels:** Delivers full Google Maps visual accuracy with all local street names, residential hostels (e.g. Super Hostel-04), shops, markets, BUBT academic buildings (Buildings 1, 2, 3, 4), and bilingual English + Bengali place names.
-- **AMOLED Dark Mode Sync:** In dark theme, applies high-contrast CSS matrix filter (`invert(90%) hue-rotate(180deg) brightness(88%) contrast(105%)`) matching Google Maps Native Dark Theme with deep OLED blacks and vibrant street accents.
+### 36.1 Architectural Overview & High-Resolution Vector Engine
+- **Engine Implementation:** Combines high-resolution **OpenFreeMap Vector GL Styles** (`https://tiles.openfreemap.org/styles/liberty` for light, `https://tiles.openfreemap.org/styles/dark` for dark) within a hardware-accelerated **MapLibre GL engine** embedded via `react-native-webview` (v13.16.1) combined with native device geolocation (`expo-location`).
+- **Hardware-Accelerated Retina Vector Rendering:** Renders vector geometry directly on the mobile GPU at native device pixel ratio, completely eliminating blurry 256px raster tiles, pixelated street labels, and stretched roads.
+- **Native Dark Vector Theme:** In dark theme, loads the dedicated OpenFreeMap Dark vector style with deep dark surfaces and vibrant street accents, eliminating CSS canvas color inversion filters.
 - **Geographic Boundary & Drift Guard:** Restricts panning and zooming to Bangladesh coordinates (`minZoom: 10, maxZoom: 20`, `maxBounds: [[88.0, 20.5], [92.8, 26.7]]`), preventing map drift into the ocean or foreign territories.
 
 ### 36.2 Core Services & Components
 1. **`src/services/locationService.ts`:**
    - **Device GPS Retrieval:** `getCurrentUserCoordinates()` requests foreground permission and retrieves device position via `Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })`.
-   - **BUBT Permanent Campus Exact Calibration:** Calibrated `BUBT_COORDS` to official Permanent Campus at `(23.8119, 90.3571)` on Road 9 & 10 (Rupnagar, Mirpur-2), resolving the previous Road 5 offset. Added distinct landmark entries for BUBT Main Campus, BUBT Building 4 (BBA & Admission on Road 6: `23.8098, 90.3567`), BUBT Building 2 & 3 (Road 10: `23.8122, 90.3572`), Super Hostel-04 (`23.8112, 90.3562`), and Follow Fashion (`23.8106, 90.3560`).
-   - **Comprehensive Dhaka Landmark & Transit Registry:** Contains pre-indexed coordinates, Bangla names, keywords, and place types for over 70+ major Dhaka destinations: BUBT Campus buildings, Sony Square, Mirpur 1-14, metro stations (Line 6), South Dhaka hubs (Jatrabari, Jatrabari Bus Stop, Jatrabari Flyover, Kazla, Sayedabad Bus Terminal, Kamalapur Railway Station, Sadarghat Launch Terminal, Demra, Matuail, Postogola, Shani Akhra), Old Dhaka (Lalbagh Fort, Ahsan Manzil, Mitford), Central/Commercial (Motijheel, Paltan, Kakrail, Mouchak, Khilgaon, Shahbagh, Jatia Press Club), East Dhaka (Rampura, Hatirjheel, Banasree, Badda), West Dhaka (Dhanmondi 32/27/8A, Science Lab, New Market, Mohammadpur, Gabtoli Terminal, Technical, Kalyanpur, Shyamoli), North Dhaka (Mohakhali Terminal, Banani, Jatra Biroti, Gulshan 1/2, Bashundhara, Jamuna Future Park, Kuril Flyover, Airport, Uttara 1-18, Diabari, Abdullahpur), and all major public & private hospitals.
-   - **Google Maps-Quality Prefix Autocomplete (`searchPlacesOnline` & `searchLandmarks`):** High-speed prefix trie matching with length-prioritized ranking (typing `jat` or `jatrabar` immediately returns `Jatrabari`, `Jatrabari Bus Stop`, `Jatrabari Flyover`, `Jatio Hridrog Hospital`). Relaxed deduplication threshold (50m identical name check) so distinct neighborhood stops are never suppressed.
-   - **Live GPS Distance Calculation:** Attaches real-time Haversine distance (`14 km`, `4.5 km`, `850 m`) and semantic category tags (`hospital`, `transit`, `landmark`, `university`, `area`) to every suggestion.
-   - **Geography-Aware Reverse Geocoding (`reverseGeocodeCoords`):** Validates bounding box (`isWithinBangladesh`) before applying city defaults, preventing fallback anomalies. Attaches rich neighborhood and coordinate subtext.
+   - **BUBT Permanent Campus Exact Calibration:** Calibrated `BUBT_COORDS` to official Permanent Campus at `(23.8119, 90.3571)` on Road 9 & 10 (Rupnagar, Mirpur-2). Added distinct landmark entries for BUBT Main Campus, BUBT Building 4 (BBA & Admission on Road 6: `23.8098, 90.3567`), BUBT Building 2 & 3 (Road 10: `23.8122, 90.3572`), Super Hostel-04 (`23.8112, 90.3562`), and Follow Fashion (`23.8106, 90.3560`). Distinct coordinates for Banani 11 and Jatra Biroti.
+   - **Comprehensive Dhaka Landmark & Transit Registry:** Contains pre-indexed coordinates, Bangla names, keywords, and place types for over 70+ major Dhaka destinations.
+   - **Two-Stage Instant Prefix Search & Autocomplete:**
+     - `searchPlacesLocal`: Synchronous (0ms) local prefix trie matching with length-prioritized ranking (typing `son` immediately returns `Sony Square (Sony Cinema)` with live distance text).
+     - `searchPlacesOnline`: Debounced (280ms) high-speed **Photon Geocoding API** (<150ms latency) with `AbortController` cancellation, seamlessly merged with local curated matches and backed by OpenStreetMap Nominatim as fallback.
+   - **Strict 65m Landmark Snapping:** `findNearestLandmark(coords, 65)` snaps only when directly on landmark grounds (within 65m), preventing distant roads in Rupnagar from falsely snapping to BUBT.
+   - **High-Accuracy Reverse Geocoding (`reverseGeocodeCoords`):** Prioritizes OpenStreetMap Nominatim Reverse (`zoom=18, addressdetails=1`) for true road, building, and quarter resolution, backed by native geocoder fallback.
 2. **`src/components/location/LocationPickerModal.tsx`:**
    - **Mathematical Pin Geometry & Centered Anchor:** Native floating pin layer anchored via `centerAnchor: { width: 0, height: 0, alignItems: 'center', justifyContent: 'center' }`. Ground reticle (`left: -14, top: -14`), ground shadow (`left: -11, top: -3.5`), and rotated 42x42 teardrop pin container (`left: -21, top: -51`) ensure the bottom needle tip touches `(0, 0)` with sub-pixel precision directly on the target coordinate.
-   - **Keyboard Dismiss & Header Bleed-Through Guard:** WebView ignores click events inside top header zone (`e.point.y < 100`), preventing touch bleed-through to the map canvas that previously dismissed soft keyboards. `MAP_CLICK` only dismisses keyboard on genuine map canvas clicks. Search capsule is wrapped in touchable with `searchInputRef` and a semi-transparent backdrop dismisses search cleanly.
-   - **Instant Search Suggestions:** Focusing the search input immediately surfaces top campus and commute hubs (BUBT Main Campus, BUBT Building 4, Mirpur 10 Metro, Mirpur 1, Dhanmondi 27), allowing one-tap selection without typing.
-   - **Reverse Geocode Overwrite Protection (`isProgrammaticMoveRef`):** Programmatic movements (selecting search suggestions, tapping Quick Commute Hub chips, initial modal open, or snapping to BUBT Campus) flag `isProgrammaticMoveRef.current = true`. This prevents `moveend` from triggering reverse geocoding and overwriting user-selected place names with generic road strings.
-   - **Universal 58dp Control Bar Standard:** Standardized top search bar (`searchCapsule`) and back button (`frostedCloseBtn`) to `height: 58, borderRadius: 16` (`Layout.controlHeight`, `Layout.controlRadius`), aligning with Section 5.4.
+   - **Recent Searches & Suggestions:** Persists last 5 chosen places in `@campusone_recent_map_searches` via AsyncStorage. Surfaces recent searches and campus hubs on focus with a "Clear" option.
+   - **Single Closest Hub Detection:** Commute hub chips use `activeHubLabel` (single closest hub within 120m threshold), ensuring multiple chips never light up simultaneously.
+   - **Z-Index & FAB Overlay Protection:** FAB column is rendered before the search overlay and hidden during active search, preventing overlay touch interception.
+   - **Reverse Geocode Overwrite Protection (`isProgrammaticMoveRef`):** Programmatic movements (selecting search suggestions, tapping Quick Commute Hub chips, initial modal open, or snapping to BUBT Campus) flag `isProgrammaticMoveRef.current = true`. This prevents `moveend` from triggering reverse geocoding and overwriting user-selected place names.
+   - **Universal 58dp Control Bar Standard:** Standardized top search bar (`searchCapsule`) and back button (`frostedCloseBtn`) to `height: 58, borderRadius: 16`.
    - **Strict 2D Locked Orientation:** `map.touchZoomRotate.disableRotation()` locks two-finger gestures to pure zoom without accidental rotation.
-   - **Right Floating Action Buttons (FAB Column):** Quick GPS auto-locate FAB, BUBT Campus quick-snap FAB, and native zoom in/out FABs.
    - **Universal 72dp Content Card:** Live selected location preview card (`minHeight: 72, padding: 14, borderRadius: 16`) with 44dp map pin icon box, resolved place title, and coordinates subtitle.
    - **Universal 58dp Primary CTA:** Standardized "Confirm Location" button (`height: 58, borderRadius: 16`).
 

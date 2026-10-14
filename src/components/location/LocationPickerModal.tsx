@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
   Platform,
   Animated,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import { Feather } from '@expo/vector-icons';
@@ -24,7 +25,9 @@ import {
   getCurrentUserCoordinates,
   reverseGeocodeCoords,
   findLandmarkByName,
+  searchPlacesLocal,
   searchPlacesOnline,
+  getDistanceMeters,
   type Coordinates,
   type GeocodedPlace,
 } from '../../services/locationService';
@@ -38,6 +41,8 @@ interface LocationPickerModalProps {
   accentColor?: string;
   title?: string;
 }
+
+const RECENT_SEARCHES_KEY = '@campusone_recent_map_searches';
 
 const QUICK_COMMUTE_HUBS = [
   { label: 'BUBT Campus', coords: { latitude: 23.8119, longitude: 90.3571 } },
@@ -56,7 +61,10 @@ const QUICK_COMMUTE_HUBS = [
 ];
 
 function generateMapLibreHtml(initial: Coordinates, isDark: boolean): string {
-  const bgColor = isDark ? '#1a1f2c' : '#f8fafc';
+  const bgColor = isDark ? '#121418' : '#f8fafc';
+  const styleUrl = isDark
+    ? 'https://tiles.openfreemap.org/styles/dark'
+    : 'https://tiles.openfreemap.org/styles/liberty';
 
   return `
 <!DOCTYPE html>
@@ -87,12 +95,6 @@ function generateMapLibreHtml(initial: Coordinates, isDark: boolean): string {
       height: 100%;
       background-color: ${bgColor};
     }
-    ${isDark ? `
-    /* Google Maps Dark Mode CSS filter matching official Google Maps Dark Theme */
-    #map .maplibregl-canvas {
-      filter: invert(90%) hue-rotate(180deg) brightness(88%) contrast(105%);
-    }
-    ` : ''}
     .maplibregl-ctrl-attrib, .maplibregl-ctrl-logo, .maplibregl-compact {
       display: none !important;
     }
@@ -102,34 +104,9 @@ function generateMapLibreHtml(initial: Coordinates, isDark: boolean): string {
   <div id="map"></div>
 
   <script>
-    var googleStyle = {
-      version: 8,
-      sources: {
-        'google-roadmap': {
-          type: 'raster',
-          tiles: [
-            'https://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}',
-            'https://mt1.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}',
-            'https://mt2.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}',
-            'https://mt3.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}'
-          ],
-          tileSize: 256
-        }
-      },
-      layers: [
-        {
-          id: 'google-roadmap-tiles',
-          type: 'raster',
-          source: 'google-roadmap',
-          minzoom: 0,
-          maxzoom: 22
-        }
-      ]
-    };
-
     var map = new maplibregl.Map({
       container: 'map',
-      style: googleStyle,
+      style: '${styleUrl}',
       center: [${initial.longitude}, ${initial.latitude}],
       zoom: 16.5,
       minZoom: 10,
@@ -218,7 +195,7 @@ function generateMapLibreHtml(initial: Coordinates, isDark: boolean): string {
         if (data.type === 'FLY_TO') {
           var flyOpts = {
             center: [data.lng, data.lat],
-            zoom: data.zoom || 16,
+            zoom: data.zoom || 16.5,
             duration: 1200,
             essential: true
           };
@@ -273,9 +250,48 @@ export function LocationPickerModal({
   const [isSearching, setIsSearching] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchResults, setSearchResults] = useState<GeocodedPlace[]>([]);
+  const [recentSearches, setRecentSearches] = useState<GeocodedPlace[]>([]);
   const [locatingGps, setLocatingGps] = useState(false);
   const [geocoding, setGeocoding] = useState(false);
   const isProgrammaticMoveRef = useRef(false);
+  const currentCoordsRef = useRef<Coordinates>(startCoords);
+  const searchAbortRef = useRef<AbortController | null>(null);
+
+  // Sync ref with currentCoords
+  useEffect(() => {
+    currentCoordsRef.current = currentCoords;
+  }, [currentCoords]);
+
+  // Load recent searches from AsyncStorage on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const stored = await AsyncStorage.getItem(RECENT_SEARCHES_KEY);
+        if (stored) {
+          setRecentSearches(JSON.parse(stored));
+        }
+      } catch (e) {}
+    })();
+  }, []);
+
+  // Single closest hub calculation (prevents multiple chips activating simultaneously)
+  const activeHubLabel = useMemo(() => {
+    let minD = 120; // 120 meters threshold
+    let best: string | null = null;
+    for (const hub of QUICK_COMMUTE_HUBS) {
+      const d = getDistanceMeters(
+        currentCoords.latitude,
+        currentCoords.longitude,
+        hub.coords.latitude,
+        hub.coords.longitude
+      );
+      if (d < minD) {
+        minD = d;
+        best = hub.label;
+      }
+    }
+    return best;
+  }, [currentCoords.latitude, currentCoords.longitude]);
 
   // High-performance 120 FPS native pin animation on Android RenderThread
   const pinLiftAnim = useRef(new Animated.Value(0)).current;
@@ -297,7 +313,7 @@ export function LocationPickerModal({
   const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
   // Trigger flyTo in WebView
-  const flyToCoordinates = useCallback((coords: Coordinates, zoom = 16) => {
+  const flyToCoordinates = useCallback((coords: Coordinates, zoom = 16.5) => {
     setCurrentCoords(coords);
     const msg = JSON.stringify({
       type: 'FLY_TO',
@@ -317,81 +333,58 @@ export function LocationPickerModal({
     webViewRef.current?.postMessage(JSON.stringify({ type: 'ZOOM_OUT' }));
   };
 
-  // Real-time Places Search (Prefix-aware local index + Nominatim online fallback)
-  useEffect(() => {
-    if (!searchQuery || searchQuery.trim().length === 0) {
-      if (isSearching) {
-        setSearchResults([
-          {
-            name: 'BUBT Main Campus',
-            zone: 'Mirpur & Campus',
-            subText: 'Permanent Campus · Road 9 & 10, Rupnagar',
-            formattedAddress: 'BUBT Main Campus',
-            coords: BUBT_COORDS,
-            placeType: 'university',
-          },
-          {
-            name: 'BUBT Building 4 (BBA & Admission)',
-            zone: 'Mirpur & Campus',
-            subText: 'Road 6 · Rupnagar, Mirpur-2',
-            formattedAddress: 'BUBT Building 4 (BBA & Admission)',
-            coords: { latitude: 23.8098, longitude: 90.3567 },
-            placeType: 'university',
-          },
-          {
-            name: 'Mirpur 10 Metro Station',
-            zone: 'Mirpur & Campus',
-            subText: 'Metro Rail Station · Main Roundabout',
-            formattedAddress: 'Mirpur 10 Metro Station',
-            coords: { latitude: 23.8071, longitude: 90.3686 },
-            placeType: 'transit',
-          },
-          {
-            name: 'Mirpur 1 (Muktodhara)',
-            zone: 'Mirpur & Campus',
-            subText: 'Muktodhara Roundabout · Darussalam Link',
-            formattedAddress: 'Mirpur 1 (Muktodhara)',
-            coords: { latitude: 23.7956, longitude: 90.3537 },
-            placeType: 'area',
-          },
-          {
-            name: 'Dhanmondi 27',
-            zone: 'Central & West',
-            subText: 'Rapa Plaza · Mirpur Road',
-            formattedAddress: 'Dhanmondi 27',
-            coords: { latitude: 23.7529, longitude: 90.3752 },
-            placeType: 'area',
-          },
-        ]);
-      } else {
-        setSearchResults([]);
+  // Instant local results + High-speed debounced Photon autocomplete
+  const handleSearchTextChange = useCallback((text: string) => {
+    setSearchQuery(text);
+    setIsSearching(true);
+
+    if (!text || text.trim().length === 0) {
+      if (searchAbortRef.current) {
+        searchAbortRef.current.abort();
       }
+      setSearchLoading(false);
+      setSearchResults([]);
+      return;
+    }
+
+    const trimmed = text.trim();
+
+    // 1. Instant 0ms synchronous local landmark match
+    const local = searchPlacesLocal(trimmed, currentCoordsRef.current, 8);
+    setSearchResults(local);
+
+    if (trimmed.length < 2) {
       setSearchLoading(false);
       return;
     }
 
+    // 2. Debounced online autocomplete with request cancellation
     setSearchLoading(true);
     if (searchDebounceRef.current) {
       clearTimeout(searchDebounceRef.current);
     }
+    if (searchAbortRef.current) {
+      searchAbortRef.current.abort();
+    }
+
+    const controller = new AbortController();
+    searchAbortRef.current = controller;
 
     searchDebounceRef.current = setTimeout(async () => {
       try {
-        const results = await searchPlacesOnline(searchQuery, currentCoords);
-        setSearchResults(results);
+        const combined = await searchPlacesOnline(trimmed, currentCoordsRef.current, controller.signal);
+        if (!controller.signal.aborted) {
+          setSearchResults(combined);
+        }
       } catch (err) {
-        setSearchResults([]);
+        // preserve local results
       } finally {
-        setSearchLoading(false);
+        if (!controller.signal.aborted) {
+          setSearchLoading(false);
+        }
       }
-    }, 150);
-
-    return () => {
-      if (searchDebounceRef.current) {
-        clearTimeout(searchDebounceRef.current);
-      }
-    };
-  }, [searchQuery, isSearching, currentCoords]);
+    }, 280);
+  }, []);
 
   // Handle GPS "Use My Current Location"
   const handleUseCurrentLocation = async () => {
@@ -457,7 +450,7 @@ export function LocationPickerModal({
       } finally {
         setGeocoding(false);
       }
-    }, 400);
+    }, 380);
   }, []);
 
   // Handle WebView bridge message
@@ -503,13 +496,30 @@ export function LocationPickerModal({
   };
 
   // Select place from search suggestion
-  const handleSelectSearchPlace = (place: GeocodedPlace) => {
+  const handleSelectSearchPlace = async (place: GeocodedPlace) => {
     Keyboard.dismiss();
     setSearchQuery('');
     setIsSearching(false);
     isProgrammaticMoveRef.current = true;
     setSelectedPlace(place);
     flyToCoordinates(place.coords, 16.5);
+
+    // Save to recent searches
+    try {
+      const filtered = recentSearches.filter(
+        p => p.name.toLowerCase() !== place.name.toLowerCase()
+      );
+      const updated = [place, ...filtered].slice(0, 5);
+      setRecentSearches(updated);
+      await AsyncStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated));
+    } catch (e) {}
+  };
+
+  const handleClearRecentSearches = async () => {
+    try {
+      setRecentSearches([]);
+      await AsyncStorage.removeItem(RECENT_SEARCHES_KEY);
+    } catch (e) {}
   };
 
   // Select Quick Commute Hub chip
@@ -537,7 +547,7 @@ export function LocationPickerModal({
     setSelectedPlace({
       name: 'BUBT Main Campus',
       zone: 'Mirpur & Campus',
-      subText: 'Permanent Campus · Rupnagar, Mirpur-2',
+      subText: 'Permanent Campus · Road 9 & 10, Rupnagar',
       formattedAddress: 'BUBT Main Campus',
       coords: BUBT_COORDS,
     });
@@ -600,7 +610,7 @@ export function LocationPickerModal({
           bounces={false}
           scrollEnabled={false}
           geolocationEnabled
-          androidLayerType="none"
+          androidLayerType={Platform.OS === 'android' ? 'hardware' : 'none'}
           originWhitelist={['*']}
           userAgent="Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
         />
@@ -682,10 +692,7 @@ export function LocationPickerModal({
               placeholder="Search any place, hospital, road in Dhaka..."
               placeholderTextColor={C.textMuted}
               value={searchQuery}
-              onChangeText={text => {
-                setSearchQuery(text);
-                setIsSearching(true);
-              }}
+              onChangeText={handleSearchTextChange}
               onFocus={() => setIsSearching(true)}
               returnKeyType="search"
               onSubmitEditing={() => {
@@ -713,14 +720,182 @@ export function LocationPickerModal({
           </TouchableOpacity>
         </View>
 
-        {/* Floating Live Places Autocomplete Dropdown */}
-        {isSearching && (searchResults.length > 0 || searchLoading || searchQuery.trim().length >= 2) && (
+        {/* Right Floating Action Buttons (FAB Column) - Rendered before search overlay so dropdown floats on top */}
+        {!isSearching && (
+          <View style={[styles.rightFabColumn, { top: insets.top + 76 }]}>
+            {/* GPS Locate FAB */}
+            <TouchableOpacity
+              style={[styles.fabBtn, { backgroundColor: C.surface, borderColor: C.border }]}
+              onPress={handleUseCurrentLocation}
+              disabled={locatingGps}
+              activeOpacity={0.8}
+              accessibilityLabel="Use My Current Location"
+            >
+              {locatingGps ? (
+                <ActivityIndicator size="small" color={accentColor} />
+              ) : (
+                <AnimatedIcon name="navigation" size={20} color={accentColor} animation="pulse" loop />
+              )}
+            </TouchableOpacity>
+
+            {/* Quick Snap to BUBT Campus */}
+            <TouchableOpacity
+              style={[styles.fabBtn, { backgroundColor: C.surface, borderColor: C.border }]}
+              onPress={handleSnapToBUBT}
+              activeOpacity={0.8}
+              accessibilityLabel="Center to BUBT Campus"
+            >
+              <Feather name="compass" size={20} color={accentColor} />
+            </TouchableOpacity>
+
+            {/* Zoom In */}
+            <TouchableOpacity
+              style={[styles.fabBtnSmall, { backgroundColor: C.surface, borderColor: C.border }]}
+              onPress={handleZoomIn}
+              activeOpacity={0.8}
+              accessibilityLabel="Zoom In"
+            >
+              <Feather name="plus" size={18} color={C.text} />
+            </TouchableOpacity>
+
+            {/* Zoom Out */}
+            <TouchableOpacity
+              style={[styles.fabBtnSmall, { backgroundColor: C.surface, borderColor: C.border }]}
+              onPress={handleZoomOut}
+              activeOpacity={0.8}
+              accessibilityLabel="Zoom Out"
+            >
+              <Feather name="minus" size={18} color={C.text} />
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Floating Live Places Autocomplete Dropdown with Recents & Recommendations */}
+        {isSearching && (
           <View style={[styles.searchResultsOverlay, { top: insets.top + 76, backgroundColor: C.surface, borderColor: C.border }]}>
-            {searchResults.length > 0 ? (
+            {searchQuery.trim().length === 0 ? (
               <ScrollView
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
-                style={{ maxHeight: 240 }}
+                style={{ maxHeight: 280 }}
+              >
+                {/* Recent Searches Header */}
+                {recentSearches.length > 0 && (
+                  <View>
+                    <View style={styles.dropdownHeaderRow}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Feather name="clock" size={13} color={C.textMuted} />
+                        <Text style={[styles.dropdownSectionTitle, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                          RECENT SEARCHES
+                        </Text>
+                      </View>
+                      <TouchableOpacity onPress={handleClearRecentSearches} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                        <Text style={[styles.clearBtnTxt, { color: accentColor, fontFamily: FontFamily.jakartaSemiBold }]}>
+                          Clear
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                    {recentSearches.map(item => (
+                      <TouchableOpacity
+                        key={`recent-${item.name}-${item.coords.latitude}`}
+                        style={[styles.searchResultItem, { borderBottomColor: C.border }]}
+                        onPress={() => handleSelectSearchPlace(item)}
+                        activeOpacity={0.7}
+                      >
+                        <View style={[styles.searchResultIconBox, { backgroundColor: isDark ? '#1f2430' : '#f1f5f9' }]}>
+                          <Feather name="clock" size={14} color={C.textMuted} />
+                        </View>
+                        <View style={{ flex: 1, marginRight: 8 }}>
+                          <Text style={[styles.searchResultTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                            {item.name}
+                          </Text>
+                          <Text style={[styles.searchResultSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
+                            {item.subText || item.zone}
+                          </Text>
+                        </View>
+                        <Feather name="corner-down-left" size={13} color={C.textMuted} />
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+
+                {/* Popular Suggested Hubs */}
+                <View style={styles.dropdownHeaderRow}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Feather name="compass" size={13} color={accentColor} />
+                    <Text style={[styles.dropdownSectionTitle, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                      CAMPUS & DHAKA HUBS
+                    </Text>
+                  </View>
+                </View>
+                {[
+                  {
+                    name: 'BUBT Main Campus',
+                    zone: 'Mirpur & Campus',
+                    subText: 'Permanent Campus · Road 9 & 10, Rupnagar',
+                    formattedAddress: 'BUBT Main Campus',
+                    coords: BUBT_COORDS,
+                    placeType: 'university' as const,
+                  },
+                  {
+                    name: 'Sony Square (Sony Cinema)',
+                    zone: 'Mirpur & Campus',
+                    subText: 'Sony Square Roundabout · Mirpur-2',
+                    formattedAddress: 'Sony Square (Sony Cinema)',
+                    coords: { latitude: 23.8093, longitude: 90.3578 },
+                    placeType: 'landmark' as const,
+                  },
+                  {
+                    name: 'Mirpur 10 Metro Station',
+                    zone: 'Mirpur & Campus',
+                    subText: 'Metro Rail Station · Main Roundabout',
+                    formattedAddress: 'Mirpur 10 Metro Station',
+                    coords: { latitude: 23.8071, longitude: 90.3686 },
+                    placeType: 'transit' as const,
+                  },
+                  {
+                    name: 'Mirpur 1 (Muktodhara)',
+                    zone: 'Mirpur & Campus',
+                    subText: 'Muktodhara Roundabout · Darussalam Link',
+                    formattedAddress: 'Mirpur 1 (Muktodhara)',
+                    coords: { latitude: 23.7956, longitude: 90.3537 },
+                    placeType: 'area' as const,
+                  },
+                  {
+                    name: 'Dhanmondi 27',
+                    zone: 'Central & West',
+                    subText: 'Rapa Plaza · Mirpur Road',
+                    formattedAddress: 'Dhanmondi 27',
+                    coords: { latitude: 23.7529, longitude: 90.3752 },
+                    placeType: 'area' as const,
+                  },
+                ].map(item => (
+                  <TouchableOpacity
+                    key={`suggested-${item.name}`}
+                    style={[styles.searchResultItem, { borderBottomColor: C.border }]}
+                    onPress={() => handleSelectSearchPlace(item)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.searchResultIconBox, { backgroundColor: `${accentColor}18` }]}>
+                      <Feather name={item.placeType === 'transit' ? 'navigation' : item.placeType === 'university' ? 'book' : 'map-pin'} size={14} color={accentColor} />
+                    </View>
+                    <View style={{ flex: 1, marginRight: 8 }}>
+                      <Text style={[styles.searchResultTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                        {item.name}
+                      </Text>
+                      <Text style={[styles.searchResultSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
+                        {item.subText}
+                      </Text>
+                    </View>
+                    <Feather name="corner-down-left" size={13} color={C.textMuted} />
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            ) : searchResults.length > 0 ? (
+              <ScrollView
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+                style={{ maxHeight: 260 }}
               >
                 {searchResults.map(item => {
                   let iconName: 'plus-circle' | 'navigation' | 'flag' | 'book' | 'map-pin' = 'map-pin';
@@ -778,54 +953,6 @@ export function LocationPickerModal({
           </View>
         )}
 
-        {/* Right Floating Action Buttons (FAB Column) */}
-        <View style={[styles.rightFabColumn, { top: insets.top + 76 }]}>
-          {/* GPS Locate FAB */}
-          <TouchableOpacity
-            style={[styles.fabBtn, { backgroundColor: C.surface, borderColor: C.border }]}
-            onPress={handleUseCurrentLocation}
-            disabled={locatingGps}
-            activeOpacity={0.8}
-            accessibilityLabel="Use My Current Location"
-          >
-            {locatingGps ? (
-              <ActivityIndicator size="small" color={accentColor} />
-            ) : (
-              <AnimatedIcon name="navigation" size={20} color={accentColor} animation="pulse" loop />
-            )}
-          </TouchableOpacity>
-
-          {/* Quick Snap to BUBT Campus */}
-          <TouchableOpacity
-            style={[styles.fabBtn, { backgroundColor: C.surface, borderColor: C.border }]}
-            onPress={handleSnapToBUBT}
-            activeOpacity={0.8}
-            accessibilityLabel="Center to BUBT Campus"
-          >
-            <Feather name="compass" size={20} color={accentColor} />
-          </TouchableOpacity>
-
-          {/* Zoom In */}
-          <TouchableOpacity
-            style={[styles.fabBtnSmall, { backgroundColor: C.surface, borderColor: C.border }]}
-            onPress={handleZoomIn}
-            activeOpacity={0.8}
-            accessibilityLabel="Zoom In"
-          >
-            <Feather name="plus" size={18} color={C.text} />
-          </TouchableOpacity>
-
-          {/* Zoom Out */}
-          <TouchableOpacity
-            style={[styles.fabBtnSmall, { backgroundColor: C.surface, borderColor: C.border }]}
-            onPress={handleZoomOut}
-            activeOpacity={0.8}
-            accessibilityLabel="Zoom Out"
-          >
-            <Feather name="minus" size={18} color={C.text} />
-          </TouchableOpacity>
-        </View>
-
         {/* Bottom Floating Area (Chips + 72dp Place Card + 58dp Primary CTA) */}
         <View style={styles.bottomFloatingDock}>
           {/* Quick Commute Hub Chips */}
@@ -837,9 +964,7 @@ export function LocationPickerModal({
               keyboardShouldPersistTaps="handled"
             >
               {QUICK_COMMUTE_HUBS.map(hub => {
-                const isActive =
-                  Math.abs(hub.coords.latitude - currentCoords.latitude) < 0.003 &&
-                  Math.abs(hub.coords.longitude - currentCoords.longitude) < 0.003;
+                const isActive = hub.label === activeHubLabel;
                 return (
                   <TouchableOpacity
                     key={hub.label}
@@ -1006,13 +1131,28 @@ const styles = StyleSheet.create({
     right: Layout.screenPadding,
     borderRadius: 16,
     borderWidth: 1,
-    zIndex: 200,
+    zIndex: 500,
+    elevation: 12,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.35,
     shadowRadius: 10,
-    elevation: 8,
     overflow: 'hidden',
+  },
+  dropdownHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    paddingBottom: 6,
+  },
+  dropdownSectionTitle: {
+    fontSize: 10.5,
+    letterSpacing: 0.6,
+  },
+  clearBtnTxt: {
+    fontSize: 11.5,
   },
   searchResultItem: {
     flexDirection: 'row',

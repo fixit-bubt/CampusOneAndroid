@@ -547,7 +547,7 @@ export const CAMPUS_AND_DHAKA_LANDMARKS: LandmarkLocation[] = [
     name: 'Jatra Biroti (Banani)',
     nameBn: 'যাত্রা বিরতি',
     zone: 'North Dhaka',
-    coords: { latitude: 23.7935, longitude: 90.4045 },
+    coords: { latitude: 23.7942, longitude: 90.4036 },
     desc: 'Kemal Ataturk Avenue, Banani · Cultural Lounge',
     type: 'landmark',
     keywords: ['jatra biroti', 'banani', 'kemal ataturk'],
@@ -556,7 +556,7 @@ export const CAMPUS_AND_DHAKA_LANDMARKS: LandmarkLocation[] = [
     name: 'Banani 11',
     nameBn: 'বনানী ১১',
     zone: 'North Dhaka',
-    coords: { latitude: 23.7935, longitude: 90.4045 },
+    coords: { latitude: 23.7932, longitude: 90.4048 },
     desc: 'Commercial Hub · Kakoli Link',
     type: 'area',
     keywords: ['banani 11', 'commercial'],
@@ -935,7 +935,7 @@ export function getDistanceMeters(lat1: number, lon1: number, lat2: number, lon2
 
 export function findNearestLandmark(
   coords: Coordinates,
-  maxDistanceMeters: number = 280
+  maxDistanceMeters: number = 65
 ): LandmarkLocation | null {
   let nearest: LandmarkLocation | null = null;
   let minDistance = maxDistanceMeters;
@@ -992,18 +992,17 @@ export function searchLandmarks(
     const aName = a.name.toLowerCase();
     const bName = b.name.toLowerCase();
 
-    // 1. Starts with query (e.g. "jat" -> "Jatrabari")
+    // 1. Starts with query (e.g. "son" -> "Sony Square")
     const aStarts = aName.startsWith(q);
     const bStarts = bName.startsWith(q);
     if (aStarts && !bStarts) return -1;
     if (!aStarts && bStarts) return 1;
 
-    // If both start with prefix, prefer shorter/cleaner name (e.g. "Jatrabari" over "Jatrabari Flyover")
     if (aStarts && bStarts && aName.length !== bName.length) {
       return aName.length - bName.length;
     }
 
-    // 2. Contains any word starting with query (e.g. "bus" -> "Jatrabari Bus Stop")
+    // 2. Contains any word starting with query (e.g. "square" -> "Sony Square")
     const aWordStart = aName.split(/\s+/).some(w => w.startsWith(q));
     const bWordStart = bName.split(/\s+/).some(w => w.startsWith(q));
     if (aWordStart && !bWordStart) return -1;
@@ -1022,12 +1021,46 @@ export function searchLandmarks(
   return matches.slice(0, limit);
 }
 
+export function searchPlacesLocal(
+  query: string,
+  userCoords?: Coordinates | null,
+  limit: number = 8
+): GeocodedPlace[] {
+  if (!query || !query.trim()) return [];
+  const q = query.trim();
+  const landmarks = searchLandmarks(q, limit, userCoords);
+  return landmarks.map(l => {
+    let distanceKm: number | undefined;
+    let distanceText: string | undefined;
+    if (userCoords) {
+      const m = getDistanceMeters(userCoords.latitude, userCoords.longitude, l.coords.latitude, l.coords.longitude);
+      const km = m / 1000;
+      distanceKm = km;
+      distanceText = km < 1 ? `${Math.round(m)} m` : `${km < 10 ? km.toFixed(1) : Math.round(km)} km`;
+    }
+    return {
+      name: l.name,
+      zone: l.zone,
+      subText: l.desc || `${l.coords.latitude.toFixed(4)}, ${l.coords.longitude.toFixed(4)}`,
+      formattedAddress: l.name,
+      coords: l.coords,
+      distanceKm,
+      distanceText,
+      placeType: l.type || 'area',
+    };
+  });
+}
+
 export async function searchPlacesOnline(
   query: string,
-  userCoords?: Coordinates | null
+  userCoords?: Coordinates | null,
+  signal?: AbortSignal
 ): Promise<GeocodedPlace[]> {
   if (!query || query.trim().length < 2) return [];
   const q = query.trim();
+
+  // 1. Instant local curated landmark match (0ms latency, prefix-aware)
+  const localMatches = searchPlacesLocal(q, userCoords, 6);
 
   // Helper for computing distance text
   const calcDist = (coords: Coordinates): { distKm: number; text: string } | null => {
@@ -1038,37 +1071,90 @@ export async function searchPlacesOnline(
     return { distKm: km, text };
   };
 
-  // 1. Instant local curated landmark match (0ms latency, prefix-aware)
-  const localMatches: GeocodedPlace[] = searchLandmarks(q, 7, userCoords).map(l => {
-    const d = calcDist(l.coords);
-    return {
-      name: l.name,
-      zone: l.zone,
-      subText: l.desc || `${l.coords.latitude.toFixed(4)}, ${l.coords.longitude.toFixed(4)}`,
-      formattedAddress: l.name,
-      coords: l.coords,
-      distanceKm: d?.distKm,
-      distanceText: d?.text,
-      placeType: l.type || 'area',
-    };
-  });
+  const centerLat = userCoords?.latitude || BUBT_COORDS.latitude;
+  const centerLon = userCoords?.longitude || BUBT_COORDS.longitude;
 
-  // 2. Real-time OpenStreetMap Nominatim search for Bangladesh / Dhaka
+  // 2. Real-time Photon Geocoding API (High-performance OSM autocomplete, <150ms latency)
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3500);
-
     const encoded = encodeURIComponent(q);
-    const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${encoded}&countrycodes=bd&limit=8&addressdetails=1`,
-      {
-        headers: {
-          'User-Agent': 'CampusOne-BUBT-App/1.0 (academic capstone)',
-        },
-        signal: controller.signal,
+    const photonUrl = `https://photon.komoot.io/api/?q=${encoded}&lat=${centerLat}&lon=${centerLon}&limit=8`;
+
+    const res = await fetch(photonUrl, {
+      headers: { 'User-Agent': 'CampusOne-BUBT-App/1.0' },
+      signal,
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      const onlineMatches: GeocodedPlace[] = [];
+      const features = data.features || [];
+
+      for (const feat of features) {
+        const coordsArr = feat.geometry?.coordinates;
+        if (!coordsArr || coordsArr.length < 2) continue;
+        const lon = Number(coordsArr[0]);
+        const lat = Number(coordsArr[1]);
+        if (isNaN(lat) || isNaN(lon)) continue;
+
+        if (!isWithinBangladesh({ latitude: lat, longitude: lon })) continue;
+
+        const p = feat.properties || {};
+        const primary = p.name || p.street || p.district || p.city || q;
+
+        const isDuplicate = localMatches.some(
+          lm =>
+            lm.name.toLowerCase() === primary.toLowerCase() &&
+            Math.abs(lm.coords.latitude - lat) < 0.001 &&
+            Math.abs(lm.coords.longitude - lon) < 0.001
+        );
+        if (isDuplicate) continue;
+
+        const subParts = [p.street, p.locality || p.district, p.city || 'Dhaka'].filter(Boolean);
+        const sub = subParts.join(', ') || p.country || 'Dhaka';
+
+        let placeType: 'hospital' | 'transit' | 'landmark' | 'university' | 'area' = 'area';
+        const typeStr = `${p.osm_key || ''} ${p.osm_value || ''} ${primary}`.toLowerCase();
+        if (typeStr.includes('hospital') || typeStr.includes('clinic') || typeStr.includes('doctor') || typeStr.includes('medical')) {
+          placeType = 'hospital';
+        } else if (typeStr.includes('bus') || typeStr.includes('station') || typeStr.includes('terminal') || typeStr.includes('metro') || typeStr.includes('rail')) {
+          placeType = 'transit';
+        } else if (typeStr.includes('university') || typeStr.includes('college') || typeStr.includes('campus') || typeStr.includes('school')) {
+          placeType = 'university';
+        } else if (typeStr.includes('flyover') || typeStr.includes('bridge') || typeStr.includes('monument') || typeStr.includes('park') || typeStr.includes('mall') || typeStr.includes('cinema')) {
+          placeType = 'landmark';
+        }
+
+        const d = calcDist({ latitude: lat, longitude: lon });
+        onlineMatches.push({
+          name: primary,
+          zone: p.city || p.state || 'Dhaka',
+          subText: sub,
+          formattedAddress: `${primary}, ${sub}`,
+          coords: { latitude: lat, longitude: lon },
+          distanceKm: d?.distKm,
+          distanceText: d?.text,
+          placeType,
+        });
       }
-    );
-    clearTimeout(timeoutId);
+
+      if (onlineMatches.length > 0) {
+        return [...localMatches, ...onlineMatches].slice(0, 10);
+      }
+    }
+  } catch (err) {
+    // Photon fallback
+  }
+
+  // 3. Fallback to OpenStreetMap Nominatim
+  try {
+    const encoded = encodeURIComponent(q);
+    const nomUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encoded}&countrycodes=bd&limit=6&addressdetails=1`;
+    const res = await fetch(nomUrl, {
+      headers: {
+        'User-Agent': 'CampusOne-BUBT-App/1.0 (academic capstone)',
+      },
+      signal,
+    });
 
     if (res.ok) {
       const data = await res.json();
@@ -1089,12 +1175,11 @@ export async function searchPlacesOnline(
           addr.neighbourhood ||
           item.display_name.split(',')[0];
 
-        // Skip only if identically named and within 50m of a local match
         const isDuplicate = localMatches.some(
           lm =>
             lm.name.toLowerCase() === primary.toLowerCase() &&
-            Math.abs(lm.coords.latitude - lat) < 0.0005 &&
-            Math.abs(lm.coords.longitude - lon) < 0.0005
+            Math.abs(lm.coords.latitude - lat) < 0.001 &&
+            Math.abs(lm.coords.longitude - lon) < 0.001
         );
         if (isDuplicate) continue;
 
@@ -1104,7 +1189,6 @@ export async function searchPlacesOnline(
         ].filter(Boolean);
         const sub = areaParts.join(', ') || item.display_name;
 
-        // Infer placeType
         let placeType: 'hospital' | 'transit' | 'landmark' | 'university' | 'area' = 'area';
         const typeStr = `${item.type || ''} ${item.class || ''} ${primary}`.toLowerCase();
         if (typeStr.includes('hospital') || typeStr.includes('clinic') || typeStr.includes('doctor') || typeStr.includes('medical')) {
@@ -1132,7 +1216,7 @@ export async function searchPlacesOnline(
         });
       }
 
-      return [...localMatches, ...onlineMatches].slice(0, 8);
+      return [...localMatches, ...onlineMatches].slice(0, 10);
     }
   } catch (err) {
     // Return local matches if offline or timed out
@@ -1174,8 +1258,8 @@ export async function getCurrentUserCoordinates(): Promise<Coordinates | null> {
 export async function reverseGeocodeCoords(coords: Coordinates): Promise<GeocodedPlace> {
   const inBd = isWithinBangladesh(coords);
 
-  // 1. Instant Landmark Match within 280 meters
-  const nearestLandmark = findNearestLandmark(coords, 280);
+  // 1. Instant Landmark Match within strict 65-meter boundary
+  const nearestLandmark = findNearestLandmark(coords, 65);
   if (nearestLandmark) {
     return {
       name: nearestLandmark.name,
@@ -1183,38 +1267,14 @@ export async function reverseGeocodeCoords(coords: Coordinates): Promise<Geocode
       subText: nearestLandmark.desc || `${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`,
       formattedAddress: nearestLandmark.name,
       coords,
+      placeType: nearestLandmark.type || 'landmark',
     };
   }
 
-  // 2. Native Android Geocoder
-  try {
-    const nativePlaces = await Location.reverseGeocodeAsync({
-      latitude: coords.latitude,
-      longitude: coords.longitude,
-    });
-
-    if (nativePlaces && nativePlaces.length > 0) {
-      const p = nativePlaces[0];
-      const primaryName = p.name || p.street || p.subregion || p.district || (inBd ? 'Dhaka Location' : 'Selected Location');
-      const area = p.subregion || p.district || p.city || (inBd ? 'Dhaka' : p.country || '');
-      const label = area && primaryName !== area ? `${primaryName}, ${area}` : primaryName;
-
-      return {
-        name: label,
-        zone: area || (inBd ? 'Dhaka' : 'Global'),
-        subText: `${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`,
-        formattedAddress: label,
-        coords,
-      };
-    }
-  } catch (nativeErr) {
-    // Native geocoder fallback
-  }
-
-  // 3. OpenStreetMap Nominatim Reverse API
+  // 2. OpenStreetMap Nominatim Reverse API (High-accuracy road, amenity & building resolution)
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 4000);
+    const timeoutId = setTimeout(() => controller.abort(), 2800);
 
     const res = await fetch(
       `https://nominatim.openstreetmap.org/reverse?format=json&lat=${coords.latitude}&lon=${coords.longitude}&zoom=18&addressdetails=1`,
@@ -1239,7 +1299,7 @@ export async function reverseGeocodeCoords(coords: Coordinates): Promise<Geocode
         addr.residential ||
         data.name ||
         (inBd ? 'Dhaka Location' : 'Custom Map Pin');
-      const cityArea = addr.suburb || addr.city_district || addr.city || (inBd ? 'Dhaka' : addr.country || '');
+      const cityArea = addr.suburb || addr.quarter || addr.city_district || addr.city || (inBd ? 'Dhaka' : addr.country || '');
       const formatted = cityArea && placeName !== cityArea ? `${placeName}, ${cityArea}` : placeName;
 
       return {
@@ -1252,6 +1312,31 @@ export async function reverseGeocodeCoords(coords: Coordinates): Promise<Geocode
     }
   } catch (osmErr) {
     // Fallback if network request fails
+  }
+
+  // 3. Native Android Geocoder fallback
+  try {
+    const nativePlaces = await Location.reverseGeocodeAsync({
+      latitude: coords.latitude,
+      longitude: coords.longitude,
+    });
+
+    if (nativePlaces && nativePlaces.length > 0) {
+      const p = nativePlaces[0];
+      const primaryName = p.name || p.street || p.subregion || p.district || (inBd ? 'Dhaka Location' : 'Selected Location');
+      const area = p.subregion || p.district || p.city || (inBd ? 'Dhaka' : p.country || '');
+      const label = area && primaryName !== area ? `${primaryName}, ${area}` : primaryName;
+
+      return {
+        name: label,
+        zone: area || (inBd ? 'Dhaka' : 'Global'),
+        subText: `${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`,
+        formattedAddress: label,
+        coords,
+      };
+    }
+  } catch (nativeErr) {
+    // Native geocoder fallback
   }
 
   // 4. Clean Coordinate Fallback
