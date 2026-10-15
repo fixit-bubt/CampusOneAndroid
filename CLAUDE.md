@@ -804,17 +804,16 @@ Whenever the user instructs to "update memorys", the agent MUST synchronously up
 - **Categorization & Hierarchy:** High-level grouping matches the web sidebar:
   - **Featured & Quick Access:** AI Assistant and Campus Issues separated at the top with a dedicated section eyebrow and right navigation chevrons.
   - **Campus Directory Categories:** Academics, Campus Life, Services, and Community under a dedicated section eyebrow.
-- **Unified Enclosed Group Container (`variant="enclosed"`):**
-  - Instead of detached floating cards, each category acts as a single, cohesive container card (`borderRadius: 16`).
-  - When expanded, the header is cleanly separated from its children with a hairline divider (`borderBottomWidth: StyleSheet.hairlineWidth`).
-  - Child tools are rendered as compact enclosed rows (`styles.enclosedRow`) separated by subtle hairline dividers, each with its own sector icon and right navigation chevron (`>`).
-  - The active container receives a crisp sector-colored highlight border (`accentColor + '70'` dark / `'55'` light, `borderWidth: 1.5`) so users never lose their spatial context while scrolling.
-- **Sector Accents & Dynamic Item Count Badges:**
-  - Each category features its dedicated sector color token: Academics (`SectorColors.study`), Campus Life (`SectorColors.events`), Services (`SectorColors.reports`), and Community (`SectorColors.market`).
-  - Headers display dynamic count pills (e.g. `4 items`, `5 items`, `8 tools`) in both collapsed and expanded states.
+- **Prominent Category Header & Big Standout Count Box:**
+  - Category headers feature a dedicated 34x28dp prominent count box (`borderRadius: 8`, `borderWidth: 1.5`, `FontFamily.jakartaExtraBold`) tinted in the sector's vibrant accent color.
+  - When expanded, the header card highlights with a 1.5px sector-colored border and opens smoothly with an active colored chevron.
+- **Icon-Free Indented Separate Child Bars (`styles.childBar`):**
+  - All icons are deliberately removed from nested children (Study Hub, Class Routines, Marketplace, Ride Share, etc.) to eliminate visual clutter and ensure children never look like heavy top-level cards.
+  - Each child is an independent, indented separate bar (`borderRadius: 14`, `borderWidth: 1`, `marginLeft: 12`, `marginBottom: 8`).
+  - **Spatial Identity & Anchor ("Know Where We Are"):** Every separate bar features a bold 4dp colored left accent strip (`borderLeftWidth: 4`, `borderLeftColor: accentColor`) and matching tinted right chevron (`>`) in the parent category's sector color (Academics Cyan, Campus Life Pink, Services Blue, Community Green). This guarantees instant recognition while scrolling.
 - **Default State (Collapsed):** All categories start **collapsed by default** (`defaultOpen = false`).
 - **Accordion Behavior:** Tapping any category smoothly expands it (`chevD` `v`) and closes other open categories, keeping the screen compact.
-- **Admin Dashboard Integrity:** `AdminDashboardScreen.tsx` uses `defaultOpen={true}` with `variant="classic"` (default), ensuring 100% backward compatibility.
+- **Admin Dashboard Integrity:** `AdminDashboardScreen.tsx` uses `defaultOpen={true}` with full backward compatibility.
 
 ---
 
