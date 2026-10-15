@@ -38,6 +38,8 @@ import { AreaPickerModal } from '../../components/blood/AreaPickerModal';
 import { HospitalMapModal } from '../../components/blood/HospitalMapModal';
 import { DHAKA_AREAS } from '../../constants/dhakaAreas';
 import type { BloodRequest, Donor } from '../../types/database';
+import type { Coordinates } from '../../services/locationService';
+import { resolveHospitalLocation } from '../../constants/dhakaHospitalCoords';
 
 type Tab = 'requests' | 'donors';
 
@@ -163,7 +165,7 @@ export function BloodScreen({ route, navigation }: any) {
     message?: string;
     inAppChatAction?: () => void;
   } | null>(null);
-  const [hospitalMapTarget, setHospitalMapTarget] = useState<{ hospital: string; area?: string } | null>(null);
+  const [hospitalMapTarget, setHospitalMapTarget] = useState<{ hospital: string; area?: string; coords?: Coordinates } | null>(null);
   const [isOffline, setIsOffline] = useState(false);
 
   const areaCounts = useMemo(() => {
@@ -854,7 +856,10 @@ export function BloodScreen({ route, navigation }: any) {
                     {/* Interactive Hospital & Area Line (Opens In-App Map + Google Maps) */}
                     <TouchableOpacity
                       style={[styles.hospitalTouchRow, { backgroundColor: C.surface2, borderColor: C.border }]}
-                      onPress={() => setHospitalMapTarget({ hospital: r.hospital, area: r.area })}
+                      onPress={() => {
+                        const resolved = resolveHospitalLocation(r.hospital, r.area);
+                        setHospitalMapTarget({ hospital: r.hospital, area: r.area, coords: resolved.coords });
+                      }}
                       activeOpacity={0.75}
                     >
                       <View style={styles.hospitalRowLeft}>
@@ -1257,6 +1262,7 @@ export function BloodScreen({ route, navigation }: any) {
         onClose={() => setHospitalMapTarget(null)}
         hospital={hospitalMapTarget?.hospital ?? ''}
         area={hospitalMapTarget?.area}
+        coords={hospitalMapTarget?.coords}
       />
     </SafeAreaView>
   );

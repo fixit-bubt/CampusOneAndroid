@@ -166,9 +166,16 @@ function generateMapLibreHtml(initial: Coordinates, isDark: boolean): string {
         });
 
         map.on('click', function(e) {
-          if (e.point && e.point.y < 100) return;
-          if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
-            window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'MAP_CLICK' }));
+          if (e.point && e.point.y < 90) return;
+          if (e && e.lngLat) {
+            map.easeTo({ center: [e.lngLat.lng, e.lngLat.lat], duration: 350 });
+            if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+              window.ReactNativeWebView.postMessage(JSON.stringify({
+                type: 'MAP_TAP',
+                lat: e.lngLat.lat,
+                lng: e.lngLat.lng
+              }));
+            }
           }
         });
 
@@ -301,6 +308,7 @@ export function LocationPickerModal({
   const [geocoding, setGeocoding] = useState(false);
   const [mapError, setMapError] = useState(false);
   const isProgrammaticMoveRef = useRef(false);
+  const selectionLockUntilRef = useRef<number>(0);
   const currentCoordsRef = useRef<Coordinates>(startCoords);
   const searchAbortRef = useRef<AbortController | null>(null);
   const reverseGeocodeAbortRef = useRef<AbortController | null>(null);
@@ -503,7 +511,7 @@ export function LocationPickerModal({
     }
 
     // Skip reverse geocode if center was changed programmatically via search suggestion, hub, or snap
-    if (isProgrammaticMoveRef.current) {
+    if (Date.now() < selectionLockUntilRef.current || isProgrammaticMoveRef.current) {
       isProgrammaticMoveRef.current = false;
       return;
     }
@@ -552,6 +560,7 @@ export function LocationPickerModal({
         }
       } else if (data.type === 'MOVE_START') {
         if (data.isUserGesture) {
+          selectionLockUntilRef.current = 0;
           isProgrammaticMoveRef.current = false;
           Keyboard.dismiss();
           setIsSearching(false);
@@ -569,6 +578,16 @@ export function LocationPickerModal({
           friction: 9,
           useNativeDriver: true,
         }).start();
+      } else if (data.type === 'MAP_TAP') {
+        Keyboard.dismiss();
+        setIsSearching(false);
+        const lat = Number(data.lat);
+        const lng = Number(data.lng);
+        if (Number.isFinite(lat) && Number.isFinite(lng)) {
+          selectionLockUntilRef.current = 0;
+          isProgrammaticMoveRef.current = false;
+          onMapCenterChanged({ latitude: lat, longitude: lng });
+        }
       } else if (data.type === 'MAP_CLICK') {
         Keyboard.dismiss();
       } else if (data.type === 'MAP_ERROR') {
@@ -590,6 +609,7 @@ export function LocationPickerModal({
     Keyboard.dismiss();
     setSearchQuery('');
     setIsSearching(false);
+    selectionLockUntilRef.current = Date.now() + 2500;
     isProgrammaticMoveRef.current = true;
     setSelectedPlace(place);
     flyToCoordinates(place.coords, 16.5);
@@ -616,6 +636,7 @@ export function LocationPickerModal({
   const handleSelectHub = (hub: (typeof QUICK_COMMUTE_HUBS)[0]) => {
     Keyboard.dismiss();
     setIsSearching(false);
+    selectionLockUntilRef.current = Date.now() + 2500;
     isProgrammaticMoveRef.current = true;
     const matched = findLandmarkByName(hub.label);
     const hubPlace: GeocodedPlace = {
@@ -633,6 +654,7 @@ export function LocationPickerModal({
   const handleSnapToBUBT = () => {
     Keyboard.dismiss();
     setIsSearching(false);
+    selectionLockUntilRef.current = Date.now() + 2500;
     isProgrammaticMoveRef.current = true;
     setSelectedPlace({
       name: 'BUBT Main Campus',

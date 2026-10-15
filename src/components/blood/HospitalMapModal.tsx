@@ -30,6 +30,7 @@ interface HospitalMapModalProps {
   onClose: () => void;
   hospital: string;
   area?: string;
+  coords?: Coordinates;
 }
 
 interface RouteInfo {
@@ -471,6 +472,7 @@ export function HospitalMapModal({
   onClose,
   hospital,
   area,
+  coords,
 }: HospitalMapModalProps) {
   const { C, isDark } = useTheme();
   const insets = useSafeAreaInsets();
@@ -486,8 +488,17 @@ export function HospitalMapModal({
 
   // Intelligent verified hospital location resolution (108 hospitals, multi-branch aware)
   const resolvedHospital = useMemo(() => {
+    if (coords && Number.isFinite(coords.latitude) && Number.isFinite(coords.longitude)) {
+      return {
+        coords,
+        verifiedName: hospital,
+        subLocation: area || 'Dhaka',
+        searchQuery: `${coords.latitude},${coords.longitude}`,
+        isExactMatch: true,
+      };
+    }
     return resolveHospitalLocation(hospital, area);
-  }, [hospital, area]);
+  }, [hospital, area, coords]);
 
   const destCoords = resolvedHospital.coords;
   const destName = resolvedHospital.verifiedName;

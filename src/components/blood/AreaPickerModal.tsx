@@ -12,12 +12,15 @@ import { FontFamily, Layout } from '../../theme';
 import { DHAKA_AREAS, type DhakaAreaInfo } from '../../constants/dhakaAreas';
 import { LocationPickerModal } from '../location/LocationPickerModal';
 import { useT } from '../../i18n';
+import type { Coordinates } from '../../services/locationService';
+import { findMasterLocationByName } from '../../constants/dhakaMasterLocations';
+import { resolveHospitalLocation } from '../../constants/dhakaHospitalCoords';
 
 interface AreaPickerModalProps {
   visible: boolean;
   onClose: () => void;
   selectedArea: string;
-  onSelectArea: (area: string, subLocation?: string) => void;
+  onSelectArea: (area: string, subLocation?: string, coords?: Coordinates) => void;
   title?: string;
   areaCounts?: Record<string, number>;
   allowAll?: boolean;
@@ -484,8 +487,15 @@ export function AreaPickerModal({
     setOpenZoneId(prev => (prev === zoneId ? null : zoneId));
   }, []);
 
-  const handleSelect = useCallback((areaName: string, subLoc?: string) => {
-    onSelectArea(areaName, subLoc);
+  const handleSelect = useCallback((areaName: string, subLoc?: string, explicitCoords?: Coordinates) => {
+    let resolvedCoords = explicitCoords;
+    if (!resolvedCoords && areaName && areaName !== 'All') {
+      const match = findMasterLocationByName(areaName) || resolveHospitalLocation(areaName, subLoc);
+      if (match?.coords) {
+        resolvedCoords = match.coords;
+      }
+    }
+    onSelectArea(areaName, subLoc, resolvedCoords);
     onClose();
   }, [onSelectArea, onClose]);
 
@@ -662,7 +672,7 @@ export function AreaPickerModal({
           onSelectLocation={loc => {
             const locName = loc.name || loc.formattedAddress || 'Selected Location';
             const subLoc = loc.zone || loc.subText;
-            handleSelect(locName, subLoc);
+            handleSelect(locName, subLoc, loc.coords);
             setMapPickerOpen(false);
           }}
           title="Pick Hospital or Area"

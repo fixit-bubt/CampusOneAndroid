@@ -1,4 +1,5 @@
 import type { Coordinates } from '../services/locationService';
+import { findMasterLocationByName } from './dhakaMasterLocations';
 
 export interface HospitalLocationData {
   name: string;
@@ -980,6 +981,12 @@ export interface ResolvedHospitalLocation {
   isExactMatch: boolean;
 }
 
+// Pre-sorted by key length descending to guarantee specific places (e.g. mirpur-11.5, mirpur-10, mirpur-12 dohs)
+// match before generic substrings (e.g. mirpur-1)
+const SORTED_AREA_ENTRIES = Object.entries(DHAKA_AREA_CENTERS).sort(
+  (a, b) => b[0].length - a[0].length
+);
+
 /**
  * Intelligent hospital & area coordinate resolver.
  * Handles multi-branch hospitals (e.g. Ibn Sina Mirpur-10 vs Dhanmondi vs Kalyanpur),
@@ -1167,9 +1174,21 @@ export function resolveHospitalLocation(
     }
   }
 
-  // 4. Area Fallback: Match against DHAKA_AREA_CENTERS
-  for (const [areaKey, coords] of Object.entries(DHAKA_AREA_CENTERS)) {
-    if (aLower.includes(areaKey) || hLower.includes(areaKey)) {
+  // 4. Master Location Search (511 verified places: hospitals, clinics, transit, areas)
+  const masterMatch = findMasterLocationByName(rawHosp) || findMasterLocationByName(rawArea);
+  if (masterMatch) {
+    return {
+      coords: masterMatch.coords,
+      verifiedName: masterMatch.name,
+      subLocation: masterMatch.subLocation || masterMatch.zone,
+      searchQuery: `${masterMatch.coords.latitude},${masterMatch.coords.longitude}`,
+      isExactMatch: true,
+    };
+  }
+
+  // 5. Area Matching with Word-Boundary & Length-Descending Priority (prevents mirpur-10 matching mirpur-1)
+  for (const [areaKey, coords] of SORTED_AREA_ENTRIES) {
+    if (aLower === areaKey || hLower === areaKey) {
       const formattedArea = areaKey
         .split(/[\s-]+/)
         .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
@@ -1177,20 +1196,85 @@ export function resolveHospitalLocation(
       const label = rawArea || formattedArea;
       return {
         coords,
-        verifiedName: rawHosp || `${label} Medical Center`,
+        verifiedName: rawHosp || `${label} Location`,
         subLocation: label,
-        searchQuery: `${rawHosp || 'Hospital'}, ${label}, Dhaka`,
+        searchQuery: `${rawHosp || label}, ${label}, Dhaka`,
+        isExactMatch: false,
+      };
+    }
+
+    const escaped = areaKey.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+    const boundaryRegex = new RegExp(`(^|[^a-z0-9])${escaped}($|[^a-z0-9])`, 'i');
+    if (boundaryRegex.test(aLower) || boundaryRegex.test(hLower)) {
+      const formattedArea = areaKey
+        .split(/[\s-]+/)
+        .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+        .join(' ');
+      const label = rawArea || formattedArea;
+      return {
+        coords,
+        verifiedName: rawHosp || `${label} Location`,
+        subLocation: label,
+        searchQuery: `${rawHosp || label}, ${label}, Dhaka`,
         isExactMatch: false,
       };
     }
   }
 
-  // 5. Default Central Dhaka Medical Corridor (Panthapath / Square Hospital Hub)
+  // 6. Zone-Aware Geographic Fallback (never jumps 15km to Panthapath)
+  const combinedText = `${rawHosp} ${rawArea}`.toLowerCase();
+  if (combinedText.includes('mirpur') || combinedText.includes('মিরপুর') || combinedText.includes('rupnagar') || combinedText.includes('pallabi')) {
+    return {
+      coords: { latitude: 23.8119, longitude: 90.3572 }, // BUBT / Rupnagar, Mirpur
+      verifiedName: rawHosp || 'Mirpur Area',
+      subLocation: rawArea || 'Mirpur, Dhaka',
+      searchQuery: `${rawHosp || 'Location'}, Mirpur, Dhaka`,
+      isExactMatch: false,
+    };
+  }
+  if (combinedText.includes('uttara') || combinedText.includes('উত্তরা') || combinedText.includes('diabari')) {
+    return {
+      coords: { latitude: 23.8759, longitude: 90.3795 }, // Uttara Sector 3 / Diabari
+      verifiedName: rawHosp || 'Uttara Area',
+      subLocation: rawArea || 'Uttara, Dhaka',
+      searchQuery: `${rawHosp || 'Location'}, Uttara, Dhaka`,
+      isExactMatch: false,
+    };
+  }
+  if (combinedText.includes('dhanmondi') || combinedText.includes('ধানমন্ডি')) {
+    return {
+      coords: { latitude: 23.7461, longitude: 90.3742 }, // Dhanmondi
+      verifiedName: rawHosp || 'Dhanmondi Area',
+      subLocation: rawArea || 'Dhanmondi, Dhaka',
+      searchQuery: `${rawHosp || 'Location'}, Dhanmondi, Dhaka`,
+      isExactMatch: false,
+    };
+  }
+  if (combinedText.includes('gulshan') || combinedText.includes('গুলশান') || combinedText.includes('banani') || combinedText.includes('বনানী')) {
+    return {
+      coords: { latitude: 23.7925, longitude: 90.4078 }, // Gulshan
+      verifiedName: rawHosp || 'Gulshan Area',
+      subLocation: rawArea || 'Gulshan, Dhaka',
+      searchQuery: `${rawHosp || 'Location'}, Gulshan, Dhaka`,
+      isExactMatch: false,
+    };
+  }
+  if (combinedText.includes('shahbagh') || combinedText.includes('শাহবাগ') || combinedText.includes('panthapath') || combinedText.includes('green road')) {
+    return {
+      coords: { latitude: 23.7380, longitude: 90.3950 }, // Shahbagh
+      verifiedName: rawHosp || 'Shahbagh Area',
+      subLocation: rawArea || 'Shahbagh, Dhaka',
+      searchQuery: `${rawHosp || 'Location'}, Shahbagh, Dhaka`,
+      isExactMatch: false,
+    };
+  }
+
+  // Final Default: BUBT Main Campus (Mirpur-2), the home of CampusOne
   return {
-    coords: { latitude: 23.7533, longitude: 90.3817 },
-    verifiedName: rawHosp || 'Dhaka Medical Center',
-    subLocation: rawArea || 'Dhaka',
-    searchQuery: `${rawHosp || 'Hospital'}, ${rawArea || 'Dhaka'}, Bangladesh`,
+    coords: { latitude: 23.8119, longitude: 90.3572 },
+    verifiedName: rawHosp || 'Campus & Mirpur Area',
+    subLocation: rawArea || 'Mirpur-2, Dhaka',
+    searchQuery: `${rawHosp || 'Location'}, Mirpur-2, Dhaka`,
     isExactMatch: false,
   };
 }
