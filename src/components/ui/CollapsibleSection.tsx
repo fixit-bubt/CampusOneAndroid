@@ -76,7 +76,12 @@ export function CollapsibleSection({
             },
           ]}
         >
-          <Icon name={icon} size={20} color={activeColor} />
+          <Icon
+            name={icon}
+            size={20}
+            color={activeColor}
+            animation={isOpen ? 'spring' : 'entrance'}
+          />
         </View>
 
         <View style={styles.titleCol}>
@@ -124,6 +129,7 @@ export function CollapsibleSection({
           name={isOpen ? 'chevD' : 'chevR'}
           size={18}
           color={isOpen ? activeColor : C.textMuted}
+          animation={isOpen ? 'spring' : 'none'}
         />
       </TouchableOpacity>
 

@@ -100,7 +100,7 @@ export function ExploreScreen({ navigation }: any) {
   // section should display in.
   const pick = (ids: SectorKey[]) => ids.map((id) => sectors.find((s) => s.id === id)).filter((s): s is typeof sectors[number] => !!s);
 
-  function renderSectorRow(s: { id: SectorKey; en: string; dEn: string }, accentColor: string) {
+  function renderSectorRow(s: { id: SectorKey; en: string; dEn: string }, accentColor: string, index: number = 0) {
     return (
       <TouchableOpacity
         key={s.id}
@@ -115,7 +115,7 @@ export function ExploreScreen({ navigation }: any) {
         onPress={() => navigation.navigate(SECTOR_ROUTE[s.id])}
         activeOpacity={0.7}
       >
-        <SectorIcon sector={s.id} size="md" />
+        <SectorIcon sector={s.id} size="md" animation="entrance" delay={index * 35} />
         <View style={{ flex: 1 }}>
           <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
             {s.en}
@@ -224,7 +224,7 @@ export function ExploreScreen({ navigation }: any) {
             open={openSection === 'academics'}
             onToggle={() => toggleSection('academics')}
           >
-            {academicsSectors.map((s) => renderSectorRow(s, SectorColors.study))}
+            {academicsSectors.map((s, idx) => renderSectorRow(s, SectorColors.study, idx))}
 
             {/* Annex Portal - separate child bar */}
             <TouchableOpacity
@@ -240,7 +240,7 @@ export function ExploreScreen({ navigation }: any) {
               activeOpacity={0.7}
             >
               <View style={[styles.toolIcon, { backgroundColor: pillBg(SectorColors.announce, isDark) }]}>
-                <AnimatedIcon family="feather" name="external-link" size={20} color={SectorColors.announce} animation="entrance" />
+                <AnimatedIcon family="feather" name="external-link" size={20} color={SectorColors.announce} animation="entrance" delay={academicsSectors.length * 35} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -267,7 +267,7 @@ export function ExploreScreen({ navigation }: any) {
               activeOpacity={0.7}
             >
               <View style={[styles.toolIcon, { backgroundColor: pillBg(SectorColors.study, isDark) }]}>
-                <AnimatedIcon family="feather" name="percent" size={20} color={SectorColors.study} animation="entrance" />
+                <AnimatedIcon family="feather" name="percent" size={20} color={SectorColors.study} animation="entrance" delay={(academicsSectors.length + 1) * 35} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -295,7 +295,7 @@ export function ExploreScreen({ navigation }: any) {
                 activeOpacity={0.7}
               >
                 <View style={[styles.toolIcon, { backgroundColor: pillBg(SectorColors.pdfmaker, isDark) }]}>
-                  <AnimatedIcon family="mci" name="file-pdf-box" size={22} color={SectorColors.pdfmaker} animation="entrance" />
+                  <AnimatedIcon family="mci" name="file-pdf-box" size={22} color={SectorColors.pdfmaker} animation="entrance" delay={(academicsSectors.length + 2) * 35} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -322,7 +322,7 @@ export function ExploreScreen({ navigation }: any) {
             open={openSection === 'campusLife'}
             onToggle={() => toggleSection('campusLife')}
           >
-            {campusLifeSectors.map((s) => renderSectorRow(s, SectorColors.events))}
+            {campusLifeSectors.map((s, idx) => renderSectorRow(s, SectorColors.events, idx))}
           </CollapsibleSection>
         )}
 
@@ -337,7 +337,7 @@ export function ExploreScreen({ navigation }: any) {
             open={openSection === 'services'}
             onToggle={() => toggleSection('services')}
           >
-            {servicesSectors.map((s) => renderSectorRow(s, SectorColors.reports))}
+            {servicesSectors.map((s, idx) => renderSectorRow(s, SectorColors.reports, idx))}
           </CollapsibleSection>
         )}
 
@@ -352,7 +352,7 @@ export function ExploreScreen({ navigation }: any) {
             open={openSection === 'community'}
             onToggle={() => toggleSection('community')}
           >
-            {communitySectors.map((s) => renderSectorRow(s, SectorColors.market))}
+            {communitySectors.map((s, idx) => renderSectorRow(s, SectorColors.market, idx))}
           </CollapsibleSection>
         )}
 

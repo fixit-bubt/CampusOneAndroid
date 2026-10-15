@@ -812,6 +812,9 @@ Whenever the user instructs to "update memorys", the agent MUST synchronously up
   - Child rows are rendered as full-width separate cards (`Layout.screenPadding` aligned, `marginLeft: 0`), ensuring consistent vertical grid rhythm and generous touch targets without indentation cramping.
   - Each child displays its authentic, high-recognition vector logo/icon (`SectorIcon` size="md" or dedicated 42x42dp icon box) for rapid visual scanning.
   - **Spatial Identity & Anchor ("Know Where We Are"):** Every child card features a bold 4.5dp colored left accent strip (`borderLeftWidth: 4.5`, `borderLeftColor: accentColor`) and matching tinted right chevron (`>`) in the parent category's sector color (Academics Cyan, Campus Life Pink, Services Blue, Community Green). This immediately ties all children to their parent section and anchors the user's location when scrolling through open categories.
+- **Tactile Pop & Cascade Entrance Animations:**
+  - Category headers use dynamic `AnimatedIcon` with rubberband pop physics (`animation={isOpen ? 'spring' : 'entrance'}`). Tapping to toggle triggers an immediate, tactile spring pop on the RenderThread (`useNativeDriver: true`).
+  - Child tool rows render `SectorIcon` with `animation="entrance"` and a 35ms staggered cascade delay (`delay={idx * 35}`), causing child icons to ripple smoothly into view as the category unfolds.
 - **Default State (Collapsed):** All categories start **collapsed by default** (`defaultOpen = false`).
 - **Accordion Behavior:** Tapping any category smoothly expands it (`chevD` `v`) and closes other open categories, keeping the screen compact.
 - **Admin Dashboard Integrity:** `AdminDashboardScreen.tsx` uses `defaultOpen={true}` with full backward compatibility.

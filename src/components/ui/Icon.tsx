@@ -1,9 +1,10 @@
 import React from 'react';
 import { Feather } from '@expo/vector-icons';
 import type { StyleProp, ViewStyle } from 'react-native';
+import { AnimatedIcon, type AnimationType } from './AnimatedIcon';
 
 // Maps design icon names → Feather icon names
-const ICON_MAP: Record<string, React.ComponentProps<typeof Feather>['name']> = {
+export const ICON_MAP: Record<string, React.ComponentProps<typeof Feather>['name']> = {
   // Chrome
   home:     'home',
   grid:     'grid',
@@ -87,10 +88,25 @@ interface IconProps {
   size?: number;
   color?: string;
   stroke?: number;
+  animation?: AnimationType;
+  delay?: number;
   style?: StyleProp<ViewStyle>;
 }
 
-export function Icon({ name, size = 21, color, stroke, style }: IconProps) {
-  const featherName = ICON_MAP[name] ?? 'help-circle';
+export function Icon({ name, size = 21, color, stroke, animation = 'none', delay, style }: IconProps) {
+  const featherName = ICON_MAP[name] ?? (name as any);
+  if (animation !== 'none') {
+    return (
+      <AnimatedIcon
+        family="feather"
+        name={featherName}
+        size={size}
+        color={color}
+        animation={animation}
+        delay={delay}
+        style={style}
+      />
+    );
+  }
   return <Feather name={featherName} size={size} color={color} style={style} />;
 }

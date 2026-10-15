@@ -48,6 +48,7 @@ export interface SectorIconProps {
   dark?: boolean;
   interactive?: boolean;
   animation?: AnimationType;
+  delay?: number;
   onPress?: () => void;
   style?: ViewStyle;
 }
@@ -75,6 +76,7 @@ export function SectorIcon({
   dark = false,
   interactive = false,
   animation = 'none',
+  delay,
   onPress,
   style,
 }: SectorIconProps) {
@@ -128,6 +130,7 @@ export function SectorIcon({
         size={iconSize}
         color={fg}
         animation={animation}
+        delay={delay}
       />
     </Animated.View>
   );
