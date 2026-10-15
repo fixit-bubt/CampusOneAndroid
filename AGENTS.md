@@ -291,11 +291,9 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
 - **Home Campus Pulse Status Strips (`HomeStatusStrips.tsx`):**
   - Standardized to **72dp fixed height** (`height: 72, borderRadius: 16, borderWidth: 1`).
   - Calm neutral surface (`C.surface`) and border (`C.border`).
-  - Left pill container (`leftPill`): `width: 98, height: 48, paddingLeft: 6, paddingRight: 6, borderRightWidth: 1, overflow: 'visible'`.
-  - Dedicated geometric icon container (`pillIconBox`): `width: 22, height: 22, alignItems: 'center', justifyContent: 'center', overflow: 'visible'` with `AnimatedIcon` using `animation="spring"` (`1.0 -> 1.22 -> 1.0`).
-  - RenderThread Overflow Safety: `pillLeft` flex wrapper strictly uses `overflow: 'visible'`, eliminating Android hardware layer bounding-box clipping so curved icon glyphs (Reports `alert-circle`, Routine `clock`, Lost & Found `search`) never get sliced off.
-  - Safe text truncation: `pillText` specifies `flexShrink: 1, numberOfLines={1}, ellipsizeMode="tail"`.
-  - Customization Sheet modal: Full 19 campus features available in catalog. Equal-width 50/50 footer action buttons (`cancelBtn` & `saveBtn`: `flex: 1, height: 50, borderRadius: 14`).
+  - Left pill container (`leftPill`): `width: 100, height: 48, paddingLeft: 8, paddingRight: 6, borderRightWidth: 1`. Clean, icon-less navigation badge with `chevron-right` (size 13). Eliminates the cramped 22px icon box and 6px gap so module titles ("Reports", "Prayer", "Calendar", "Directory") have ~72dp of clean breathing room with zero text cut-off or ellipses.
+  - Title typography: `pillText` (`flex: 1, fontSize: 13.5, fontFamily: FontFamily.jakartaExtraBold, letterSpacing: -0.2, marginRight: 2, numberOfLines: 1`).
+  - Customization Sheet modal: Full 19 campus features available in catalog with sector icons, title, subtitle, and radio check badges. Equal-width 50/50 footer action buttons (`cancelBtn` & `saveBtn`: `flex: 1, height: 50, borderRadius: 14`).
 - **Home Frequently Used Academic Tools (`HomeFrequentTools.tsx`):**
   - Standardized to **72dp fixed height** (`height: 72, borderRadius: 14, borderWidth: 1`).
   - Calm neutral surface (`C.surface`, `C.border`).

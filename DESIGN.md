@@ -104,11 +104,9 @@ All primary content cards, directory items, department pickers, and feed rows ac
 5. **Home Campus Pulse Status Strips (`HomeStatusStrips.tsx`):**
    * Outer strip card: `height: 72 dp`, `paddingHorizontal: 10 dp`, `borderRadius: 16 dp`, `borderWidth: 1 dp`.
    * Calm neutral foundation: `C.surface` surface and `C.border` subtle outline.
-   * Left pill container (`leftPill`): `width: 98 dp`, `height: 48 dp`, `paddingLeft: 6 dp`, `paddingRight: 6 dp`, `borderRightWidth: 1 dp`, `overflow: 'visible'`.
-   * Dedicated geometric icon container (`pillIconBox`): `width: 22 dp`, `height: 22 dp`, `alignItems: 'center'`, `justifyContent: 'center'`, `overflow: 'visible'` with `AnimatedIcon` using `animation="spring"` (`1.0 -> 1.22 -> 1.0`).
-   * RenderThread Overflow Safety: `pillLeft` flex wrapper strictly uses `overflow: 'visible'`, eliminating Android hardware layer bounding-box clipping so curved icon glyphs (Reports `alert-circle`, Routine `clock`, Lost & Found `search`) never get sliced off.
-   * Safe text truncation: `pillText` specifies `flexShrink: 1`, `numberOfLines={1}`, and `ellipsizeMode="tail"`.
-   * Customization Sheet modal: Full 19 campus features available in catalog. Equal-width 50/50 footer action buttons (`cancelBtn` & `saveBtn`: `flex: 1`, `height: 50 dp`, `borderRadius: 14 dp`).
+   * Left pill container (`leftPill`): `width: 100 dp`, `height: 48 dp`, `paddingLeft: 8 dp`, `paddingRight: 6 dp`, `borderRightWidth: 1 dp`.
+   * Icon-Less Navigation Pill Standard: Removed the cramped 22px icon box and 6px gap from the left pill. The pill now presents pure bold typography (`pillText`: `fontSize: 13.5 px`, `FontFamily.jakartaExtraBold`, `letterSpacing: -0.2`) paired with a clean `chevron-right` (size 13). This provides ~72 dp of unconstrained text space, permanently preventing title truncation (such as *"Reports"*, *"Prayer"*, *"Directory"*, *"Calendar"*).
+   * Customization Sheet modal: Full 19 campus features available in catalog with sector icons, title, subtitle, and radio check badges. Equal-width 50/50 footer action buttons (`cancelBtn` & `saveBtn`: `flex: 1`, `height: 50 dp`, `borderRadius: 14 dp`).
 
 6. **Home Frequently Used Academic Tools (`HomeFrequentTools.tsx`):**
    * Shortcut card: `height: 72 dp`, `borderRadius: 14 dp`, `borderWidth: 1 dp`, `paddingHorizontal: 4 dp`, `paddingVertical: 6 dp`.
