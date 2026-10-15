@@ -154,6 +154,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0,
     lineHeight: 28,
     includeFontPadding: false,
+    flexShrink: 1,
   } as any,
   brandRow: {
     flexDirection: 'row',
