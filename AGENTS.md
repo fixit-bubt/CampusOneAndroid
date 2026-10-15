@@ -210,8 +210,8 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
   - `RidePostScreen`: Post Type (`Offer Ride` / `Need Ride`), Direction (`To Campus` / `From Campus`), Date Choice (`Today` / `Tomorrow`), Location Modal (`Mirpur & Campus` / `Greater Dhaka`).
   - `RidesScreen`: Direction filter (3 tabs: `All` / `To Campus` / `From Campus`), Post Type filter (3 tabs: `All` / `Offers` / `Need Ride`), with `My Rides` in header.
   - `BloodScreen`: Requests vs Donors switcher with counts (2 tabs, no icons).
-  - `BloodRequestScreen`: Urgency selector (3 tabs: `Urgent` / `Today` / `Week`).
-  - `AreaPickerModal`: Filter mode (2 tabs: `Hospitals` / `Areas`, no icons).
+  - `AreaPickerModal`: Unified Single Feed organized into 8 True Geographic Zones (Mirpur, Dhanmondi, Shahbagh, Mohakhali, Uttara, Old Dhaka, Motijheel, Suburbs) listing hospitals and areas together; eliminated redundant tab switcher and 'All Locations' bar; 58dp map trigger with animated floating map icon.
+  - `BloodRequestScreen`: Urgency selector (3 tabs: `Urgent` / `Today` / `Week`), unified single 72dp 'HOSPITAL OR LOCATION' dropdown card replacing previous dual-dropdown split.
   - `MarketScreen`: Feed tabs (3 tabs: `All` / `Mine` / `Saved`), Filter Modal Sort (3 tabs: `Newest` / `Price Low` / `Price High`), Condition (3 tabs: `New` / `Like New` / `Used`).
   - `MarketPostScreen`: Condition selector (3 tabs), Location modal (2 tabs without hardcoded numbers).
   - `LostFoundBrowseScreen`: Main 3-tab switcher (`Lost` / `Found` / `Mine` with counts; "All" eliminated).
@@ -1328,6 +1328,36 @@ The Jobs & Internships module (`JobsBrowseScreen.tsx`, `JobDetailScreen.tsx`, `J
   - Replaced awkward `{group} Donors` title on registered profiles with clean `Blood Group: {group}` accompanied by the green `Verified` badge.
   - Replaced the raw text box and tiny red link with a full-width tappable **Living Area Selector Card** opening `AreaPickerModal` with 152 Dhaka areas and instant search.
   - Added quick-action date helper pills (`Today` and `Clear`) for the optional Last Donated date field.
+
+### 27.6 Master Hospital Database & Live In-App Hospital Navigation Standard (`HospitalMapModal.tsx`, `dhakaHospitalCoords.ts`, `dhakaAreas.ts`)
+- **100% Comprehensive Dhaka Hospital & Area Audit:**
+  - Audited all 108 hospitals in `src/constants/dhakaAreas.ts` and mapped every single one to survey-verified latitude/longitude coordinates in `src/constants/dhakaHospitalCoords.ts`.
+  - Audited and established centroids for all 144 residential areas and neighborhoods across all zones of Dhaka in `DHAKA_AREA_CENTERS`.
+  - Achieved 100% exact resolution for both English and Bengali queries, including full coverage for localized aliases (icddr,b, AFMC, Kuwait Bangladesh Friendship, Popular, Z.H. Sikder, etc.).
+- **Multi-Branch Disambiguation Engine:**
+  - Solved entity collisions across multi-branch hospital chains (Ibn Sina, Popular, Labaid):
+    - `Ibn Sina Diagnostic Center (Mirpur)` -> Commerce College Road, Mirpur-2 (`23.8080, 90.3585`, 1:1 parity with Google Maps)
+    - `Ibn Sina Specialized Hospital (Dhanmondi)` -> Dhanmondi (`23.7517, 90.3756`)
+    - `Ibn Sina Medical College Hospital (Kalyanpur)` -> Kalyanpur (`23.7801, 90.3582`)
+    - `Ibn Sina Diagnostic Center (DOHS Banani)` -> Banani (`23.7937, 90.4048`)
+    - `Popular Diagnostic Center (Mirpur-10)` vs `Popular Medical College Hospital (Dhanmondi)`
+    - `Labaid Diagnostic (Mirpur-1)` vs `Labaid Specialized Hospital (Dhanmondi)` vs `Labaid Cancer Hospital (Green Road)`
+- **Coordinate-First Resolution Engine (Step 0):**
+  - `resolveHospitalLocation` parses custom coordinates `(-?\d{1,3}\.\d+)[,\s]+(-?\d{1,3}\.\d+)` from user map picks.
+  - Automatically preserves custom pins (e.g., Bhaturia `23.8605, 90.4695`) instead of falling back to Central Dhaka / Panthapath.
+  - Generates pure coordinate search query `${lat},${lng}` for Google Maps turn-by-turn navigation, eliminating "Can't seem to find a way there" query errors.
+- **Marker Icon & Ground Anchor Precision (Unified SVG Marker Twin):**
+  - Replaced the CSS rotated box in `HospitalMapModal.tsx` with an exact vector SVG twin of `LocationPickerModal.tsx`: crimson `#c7344a` body, crisp white circular badge, centered red medical cross `+`, and soft 22×6dp ground shadow.
+  - Destination teardrop pin is anchored with surgical precision to `[destLng, destLat]` via `anchor: 'bottom'`.
+  - Floating label pill positioned at `top: 50px` with title-cased zone names (e.g. `Dakshinkhan Location`), preventing tags from offsetting the pin tip.
+  - `LocationPickerModal.tsx`: Center pin with medical cross `+` badge for blood requests, soft ground drop-shadow, and precision 6px ground target dot. Eliminated dashed red reticle rings.
+  - `locationService.ts`: Enhanced OSM Nominatim reverse-geocoding with `addr.village`, `addr.hamlet`, and landmark fallbacks for peri-urban/rural Dhaka areas (e.g. Bhaturia).
+- **Live Physical Device GPS Navigation vs BUBT Default:**
+  - `HospitalMapModal.tsx` queries live device GPS via `getCurrentUserCoordinates()` (`expo-location`).
+  - Origin displays "Your Location" with real-time phone coordinates, accurately calculating travel distance and drawing the animated route preview from where the user physically stands.
+  - BUBT Campus (`23.8103, 90.3578`) is maintained as a graceful fallback only when location permissions are denied.
+- **Symmetrical Upright GPS Crosshairs Standard:**
+  - Replaced tilted/bent polygon pointers with an upright, symmetrical Google Maps standard crosshairs SVG (4 perpendicular axis ticks, concentric circle, and center dot).
 
 ---
 

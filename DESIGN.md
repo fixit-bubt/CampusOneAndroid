@@ -129,12 +129,14 @@ All primary content cards, directory items, department pickers, and feed rows ac
    * **Standalone Responder Cards (`BloodRequestDetailScreen.tsx`):** Standalone cards (`styles.responderCard`: `minHeight: 72 dp`, `padding: 14 dp`, `borderRadius: 16 dp`, `borderWidth: 1 dp`, `marginBottom: 10 dp`, `size="md"` 44 dp Avatar).
    * **Registered Donor Status Card (`myStatusCard` in `BloodScreen.tsx`):** `minHeight: 72 dp`, `padding: 14 dp`, `borderRadius: 16 dp`, `44 × 44 dp` blood badge box.
    * **Register as Donor Prompt Card (`registerPromptCard` in `BloodScreen.tsx`):** `minHeight: 72 dp`, `padding: 14 dp`, `borderRadius: 16 dp`, `44 × 44 dp` droplet icon box.
-   * **Dropdown Selector Cards (`BloodRequestScreen.tsx` - Case Reason, Affiliation, Hospital, Area):** `minHeight: 72 dp`, `padding: 14 dp`, `borderRadius: 16 dp`, `44 × 44 dp` icon box with `borderRadius: 13 dp`, `14.5 px` Title, `11.5 px` Subtitle.
+   * **Unified Location & Hospital Card (`BloodRequestScreen.tsx`):** Single unified `minHeight: 72 dp` dropdown card (`HOSPITAL OR LOCATION`), `padding: 14 dp`, `borderRadius: 16 dp`, `44 × 44 dp` icon box with spring `hospital-building` or `map-marker-radius`, neutral `C.surface` foundation and `C.border` boundary (zero red border glow). Replaced the previous split dual-dropdown system.
+   * **Dropdown Selector Cards (`BloodRequestScreen.tsx` - Case Reason, Affiliation):** `minHeight: 72 dp`, `padding: 14 dp`, `borderRadius: 16 dp`, `44 × 44 dp` icon box with `borderRadius: 13 dp`, `14.5 px` Title, `11.5 px` Subtitle, neutral `C.surface` foundation and `C.border` subtle outline.
    * **Dengue Platelet Emergency Card (`plateletCard` in `BloodRequestScreen.tsx`):** `minHeight: 72 dp`, `padding: 14 dp`, `borderRadius: 16 dp`, `44 × 44 dp` icon box.
-   * **Area Selector Card (`selectorCard` in `DonorRegisterScreen.tsx`):** `minHeight: 72 dp`, `padding: 14 dp`, `borderRadius: 16 dp`, `44 × 44 dp` icon box with spring `map-pin`.
+   * **Area Selector Card (`selectorCard` in `DonorRegisterScreen.tsx`):** `minHeight: 72 dp`, `padding: 14 dp`, `borderRadius: 16 dp`, `44 × 44 dp` icon box with spring `map-pin`, calm neutral foundation.
    * **Notification Sensitivity Cards (`UrgencyCard` in `DonorRegisterScreen.tsx`):** Standalone tactile cards (`minHeight: 72 dp`, `padding: 14 dp`, `borderRadius: 16 dp`, `44 × 44 dp` icon box, `14.5 px` Title, `11.5 px` Subtitle, spring `AnimatedIcon`, and spring press feedback `0.96 ➔ 1.02 ➔ 1.0`).
    * **Verified Blood Group Card (`lockedCard` in `DonorRegisterScreen.tsx`):** `minHeight: 72 dp`, `padding: 14 dp`, `borderRadius: 16 dp`, `44 × 44 dp` badge box.
-   * **Area Picker Items (`AreaPickerModal.tsx`):** Standalone items (`padding: 14 dp`, `borderRadius: 16 dp`, `itemIconBox` `44 × 44 dp`).
+   * **Unified Area & Hospital Picker Items (`AreaPickerModal.tsx`):** Standalone items (`padding: 14 dp`, `borderRadius: 16 dp`, `itemIconBox` `44 × 44 dp`). Clean monochrome animated icons (`AnimatedIcon` `hospital-building` and `map-pin`), organized into 8 true geographic zones with hospitals and areas listed together under their zone section. Zero red glowing borders, zero pink icon boxes, and eliminated the redundant `[Hospitals] [Areas]` tab switcher and "All Locations" bar.
+   * **Map & GPS Trigger Bar (`mapTriggerCard58` in `AreaPickerModal.tsx`):** `58 dp` fixed control height, neutral foundation (`C.surface`, `C.border`), featuring a live floating animated map icon (`AnimatedIcon` `name="map"` `animation="float"` `loop={true}`).
 
 ---
 
@@ -361,3 +363,42 @@ Switching between bottom navigation tabs must be completely seamless, 120 FPS in
    - Content immediately below the 60 dp `TopBar` is standardized across all tabs to start at exactly **10 dp** (`styles.scroll` `paddingTop: 10`, `FlatList` `paddingTop: 10`, or `marginTop: 10`), ensuring identical vertical baseline alignment when switching tabs.
 4. **Smooth Spring Tap Micro-Interactions:**
    - Tab button tap uses continuous spring transitions (`scale: 0.88 -> 1.15 -> 1.0`) with zero hard `setValue` resets.
+
+---
+
+## 14. Blood Donation Hospital Navigation & Master Database Standard (`HospitalMapModal.tsx`)
+
+All hospital locations and blood request navigation interfaces across CampusOne adhere to the following interactive mapping and spatial layout rules:
+
+### 1. Interactive Hospital Row Touch Ergonomics
+* **Full-Width Tappable Row (`hospitalTouchRow`):**
+  - Outer container: `borderRadius: 12 dp`, `borderWidth: 1 dp`, `paddingHorizontal: 12 dp`, `paddingVertical: 10 dp`, `marginTop: 10 dp`.
+  - Left icon: `Feather name="map-pin"` (13 px, muted color).
+  - Typographic hierarchy: Hospital Name (`FontFamily.jakartaBold`, `C.text`) followed by muted middle-dot area tag (`· Area`, `FontFamily.jakartaMedium`, `C.textMuted`).
+  - Right interactive hint badge: `mapHintBadge` with `Map` text (`11 px`, `FontFamily.jakartaBold`) and `Feather name="arrow-up-right"` (11 px).
+  - Touch feedback: Standard tactile press with `activeOpacity: 0.75` opening the modal sheet instantly without layout lag.
+
+### 2. Symmetrical Upright GPS Crosshairs Standard
+* **Recenter Button Geometry:**
+  - Standardized on the upright, symmetrical Google Maps crosshairs icon (`width: 44 dp, height: 44 dp, borderRadius: 22 dp`).
+  - Replaced tilted or skewed polygon pointers with 4 perpendicular axis tick lines (`x1/y1/x2/y2`), a concentric outer ring (`r = 7.5`), and a centered location dot (`r = 2.5`).
+  - Guarantees zero perceived angle distortion or "bent" button appearance across any screen aspect ratio.
+
+### 3. Live Physical Device GPS Integration
+* **Real-Time Origin Calculation:**
+  - Asynchronously queries device GPS via `getCurrentUserCoordinates()` (`expo-location`).
+  - Origin displays **"Your Location"** with the live coordinates of the physical device.
+  - Automatically calculates real travel distance in kilometers and draws a clean animated dashed route line from the user's actual physical spot to the hospital.
+  - Gracefully falls back to BUBT Campus (`23.8103, 90.3578`) only when GPS permissions are denied or device location services are switched off.
+
+### 4. Ground-Floor POI Reverse-Geocode Protection
+* **External Google Maps Launch Intent:**
+  - Maps URL structure: `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(hospitalQuery)}`.
+  - Omits `origin` parameter to allow Google Maps to bind natively to the phone's live location provider.
+  - Strictly uses clean, official facility POI strings rather than raw coordinates (`destination=lat,lng`). This eliminates Google Maps reverse-geocoding errors that previously caused hospitals to open as ground-floor food shops or local restaurants.
+
+### 5. Universal 58 dp Footer CTA Standard
+* **Modal Bottom Action Bar:**
+  - Floating Google Maps CTA button (`openGmapsBtn`): `height: 58 dp`, `borderRadius: 16 dp`, `Layout.screenPadding = 16 dp`.
+  - Center label: `fontSize: 14.5 px`, `FontFamily.jakartaBold`, paired with an 18 px external link vector icon.
+

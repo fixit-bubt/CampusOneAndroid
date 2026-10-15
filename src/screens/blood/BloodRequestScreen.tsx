@@ -84,11 +84,9 @@ export function BloodRequestScreen({ navigation }: any) {
   const [isPlatelets, setIsPlatelets] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Hospital & Area Picker Modal State
+  // Location Picker State
   const [pickerVisible, setPickerVisible] = useState(false);
-  const [pickerMode, setPickerMode] = useState<'hospital' | 'area'>('hospital');
-  const [customHospitalMode, setCustomHospitalMode] = useState(false);
-  const [customAreaMode, setCustomAreaMode] = useState(false);
+  const [customMode, setCustomMode] = useState(false);
 
   const URGENCY_TABS: TabItem<BloodRequest['urgency']>[] = [
     { id: 'Urgent',    label: 'Urgent', color: C.danger },
@@ -113,28 +111,18 @@ export function BloodRequestScreen({ navigation }: any) {
     setAffModalVisible(false);
   }
 
-  // Hospital & Area Picker Openers
-  function openHospitalPicker() {
-    setPickerMode('hospital');
-    setPickerVisible(true);
-  }
-
-  function openAreaPicker() {
-    setPickerMode('area');
-    setPickerVisible(true);
-  }
-
-  function handleSelectLocation(selected: string) {
+  function handleSelectLocation(selected: string, subLocation?: string) {
     if (selected === 'All') return;
-    if (pickerMode === 'hospital') {
-      setHospital(selected);
-      // Auto-prefill area if area is empty and hospital has a known subLocation
-      const matched = DHAKA_AREAS.find(a => a.name.toLowerCase() === selected.toLowerCase());
-      if (matched?.subLocation && !area) {
-        setArea(matched.subLocation);
-      }
+    setHospital(selected);
+    if (subLocation) {
+      setArea(subLocation);
     } else {
-      setArea(selected);
+      const matched = DHAKA_AREAS.find(a => a.name.toLowerCase() === selected.toLowerCase());
+      if (matched?.subLocation) {
+        setArea(matched.subLocation);
+      } else {
+        setArea(selected);
+      }
     }
   }
 
@@ -299,8 +287,8 @@ export function BloodRequestScreen({ navigation }: any) {
               styles.dropdownCard,
               {
                 backgroundColor: C.surface,
-                borderColor: medicalReason ? SectorColors.blood : C.border,
-                borderWidth: medicalReason ? 1.5 : 1,
+                borderColor: C.border,
+                borderWidth: 1,
               },
             ]}
           >
@@ -309,13 +297,13 @@ export function BloodRequestScreen({ navigation }: any) {
               onPress={() => setReasonModalVisible(true)}
               activeOpacity={0.75}
             >
-              <View style={[styles.dropdownIconBox, { backgroundColor: `${SectorColors.blood}16` }]}>
+              <View style={[styles.dropdownIconBox, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2, borderColor: C.border, borderWidth: 1 }]}>
                 <AnimatedIcon
                   key={`reason-${medicalReason}`}
                   family="feather"
                   name={currentReasonObj?.icon ? (currentReasonObj.icon as any) : 'activity'}
                   size={22}
-                  color={SectorColors.blood}
+                  color={C.text}
                   animation={medicalReason ? 'spring' : 'entrance'}
                 />
               </View>
@@ -341,7 +329,7 @@ export function BloodRequestScreen({ navigation }: any) {
               {medicalReason ? (
                 <TouchableOpacity
                   onPress={() => setMedicalReason('')}
-                  style={[styles.clearPill, { backgroundColor: C.surface2 }]}
+                  style={[styles.clearPill, { backgroundColor: C.surface2, borderColor: C.border, borderWidth: 1 }]}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
                   <Feather name="x" size={14} color={C.textMuted} />
@@ -366,20 +354,20 @@ export function BloodRequestScreen({ navigation }: any) {
               styles.dropdownCard,
               {
                 backgroundColor: C.surface,
-                borderColor: affiliation ? SectorColors.blood : C.border,
-                borderWidth: affiliation ? 1.5 : 1,
+                borderColor: C.border,
+                borderWidth: 1,
               },
             ]}
             onPress={() => setAffModalVisible(true)}
             activeOpacity={0.75}
           >
-            <View style={[styles.dropdownIconBox, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2 }]}>
+            <View style={[styles.dropdownIconBox, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2, borderColor: C.border, borderWidth: 1 }]}>
               <AnimatedIcon
                 key={`aff-${affiliation}`}
                 family="feather"
                 name={currentAffObj?.icon ? (currentAffObj.icon as any) : 'users'}
                 size={22}
-                color={SectorColors.blood}
+                color={C.text}
                 animation={affiliation ? 'spring' : 'entrance'}
               />
             </View>
@@ -400,29 +388,32 @@ export function BloodRequestScreen({ navigation }: any) {
             <Feather name="chevron-down" size={18} color={C.textMuted} style={{ paddingLeft: 4 }} />
           </TouchableOpacity>
 
-          {/* Hospital Dropdown System (Universal 72dp Content Standard) */}
+          {/* Single Unified Hospital & Location Dropdown System (Universal 72dp Content Standard) */}
           <View style={styles.labelRow}>
             <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>
-              {t.blood2.hospital.toUpperCase()} *
+              HOSPITAL OR LOCATION *
             </Text>
             <TouchableOpacity
-              onPress={() => setCustomHospitalMode(!customHospitalMode)}
+              onPress={() => setCustomMode(!customMode)}
               style={styles.toggleModeBtn}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Feather name={customHospitalMode ? 'list' : 'edit-2'} size={11} color={SectorColors.blood} />
-              <Text style={[styles.toggleModeTxt, { color: SectorColors.blood, fontFamily: FontFamily.jakartaBold }]}>
-                {customHospitalMode ? 'Choose from list' : 'Type custom'}
+              <Feather name={customMode ? 'list' : 'edit-2'} size={11} color={C.text2} />
+              <Text style={[styles.toggleModeTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                {customMode ? 'Choose from list' : 'Type custom'}
               </Text>
             </TouchableOpacity>
           </View>
 
-          {customHospitalMode ? (
+          {customMode ? (
             <TextInput
               style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
               value={hospital}
-              onChangeText={setHospital}
-              placeholder={t.blood2.hospitalPlaceholder}
+              onChangeText={(val) => {
+                setHospital(val);
+                setArea(val);
+              }}
+              placeholder="Enter hospital, clinic, or location (e.g. DMCH, Mirpur-2)..."
               placeholderTextColor={C.textMuted}
               autoFocus
             />
@@ -432,23 +423,23 @@ export function BloodRequestScreen({ navigation }: any) {
                 styles.dropdownCard,
                 {
                   backgroundColor: C.surface,
-                  borderColor: hospital ? SectorColors.blood : C.border,
-                  borderWidth: hospital ? 1.5 : 1,
+                  borderColor: C.border,
+                  borderWidth: 1,
                 },
               ]}
             >
               <TouchableOpacity
                 style={styles.dropdownMain}
-                onPress={openHospitalPicker}
+                onPress={() => setPickerVisible(true)}
                 activeOpacity={0.75}
               >
-                <View style={[styles.dropdownIconBox, { backgroundColor: `${SectorColors.blood}16` }]}>
+                <View style={[styles.dropdownIconBox, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2, borderColor: C.border, borderWidth: 1 }]}>
                   <AnimatedIcon
-                    key={`hosp-${hospital}`}
+                    key={`hosp-${hospital || area}`}
                     family="mci"
-                    name="hospital-building"
+                    name={hospital ? 'hospital-building' : 'map-marker-radius'}
                     size={22}
-                    color={hospital ? SectorColors.blood : C.text2}
+                    color={C.text}
                     animation={hospital ? 'spring' : 'entrance'}
                   />
                 </View>
@@ -457,122 +448,34 @@ export function BloodRequestScreen({ navigation }: any) {
                     style={[
                       styles.dropdownValue,
                       {
-                        color: hospital ? C.text : C.textMuted,
-                        fontFamily: hospital ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                        color: (hospital || area) ? C.text : C.textMuted,
+                        fontFamily: (hospital || area) ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
                       },
                     ]}
                     numberOfLines={1}
                   >
-                    {hospital || 'Select hospital or medical center...'}
+                    {hospital || area || 'Select hospital or location...'}
                   </Text>
                   <Text style={[styles.dropdownHint, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                    {hospital ? 'Tap to change hospital' : '108 Dhaka hospitals & institutes'}
+                    {area ? `${area} · Tap to change location` : '108 Dhaka hospitals & 144 areas'}
                   </Text>
                 </View>
               </TouchableOpacity>
               <View style={styles.dropdownRight}>
-                {hospital ? (
+                {(hospital || area) ? (
                   <TouchableOpacity
-                    onPress={() => setHospital('')}
-                    style={[styles.clearPill, { backgroundColor: C.surface2 }]}
+                    onPress={() => {
+                      setHospital('');
+                      setArea('');
+                    }}
+                    style={[styles.clearPill, { backgroundColor: C.surface2, borderColor: C.border, borderWidth: 1 }]}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   >
                     <Feather name="x" size={14} color={C.textMuted} />
                   </TouchableOpacity>
                 ) : (
                   <TouchableOpacity
-                    onPress={openHospitalPicker}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  >
-                    <Feather name="chevron-down" size={18} color={C.textMuted} />
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
-          )}
-
-          {/* Area / Neighborhood Dropdown System (Universal 72dp Content Standard) */}
-          <View style={styles.labelRow}>
-            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>
-              {t.blood2.area.toUpperCase()}
-            </Text>
-            <TouchableOpacity
-              onPress={() => setCustomAreaMode(!customAreaMode)}
-              style={styles.toggleModeBtn}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Feather name={customAreaMode ? 'list' : 'edit-2'} size={11} color={SectorColors.blood} />
-              <Text style={[styles.toggleModeTxt, { color: SectorColors.blood, fontFamily: FontFamily.jakartaBold }]}>
-                {customAreaMode ? 'Choose from list' : 'Type custom'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {customAreaMode ? (
-            <TextInput
-              style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-              value={area}
-              onChangeText={setArea}
-              placeholder={t.blood2.areaPlaceholder}
-              placeholderTextColor={C.textMuted}
-              autoFocus
-            />
-          ) : (
-            <View
-              style={[
-                styles.dropdownCard,
-                {
-                  backgroundColor: C.surface,
-                  borderColor: area ? SectorColors.blood : C.border,
-                  borderWidth: area ? 1.5 : 1,
-                },
-              ]}
-            >
-              <TouchableOpacity
-                style={styles.dropdownMain}
-                onPress={openAreaPicker}
-                activeOpacity={0.75}
-              >
-                <View style={[styles.dropdownIconBox, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2 }]}>
-                  <AnimatedIcon
-                    key={`area-${area}`}
-                    family="feather"
-                    name="map-pin"
-                    size={22}
-                    color={area ? SectorColors.blood : C.text2}
-                    animation={area ? 'spring' : 'entrance'}
-                  />
-                </View>
-                <View style={styles.dropdownInfo}>
-                  <Text
-                    style={[
-                      styles.dropdownValue,
-                      {
-                        color: area ? C.text : C.textMuted,
-                        fontFamily: area ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                      },
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {area || 'Select residential area or zone...'}
-                  </Text>
-                  <Text style={[styles.dropdownHint, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                    {area ? 'Tap to change area' : '144 Dhaka neighborhoods'}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-              <View style={styles.dropdownRight}>
-                {area ? (
-                  <TouchableOpacity
-                    onPress={() => setArea('')}
-                    style={[styles.clearPill, { backgroundColor: C.surface2 }]}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  >
-                    <Feather name="x" size={14} color={C.textMuted} />
-                  </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity
-                    onPress={openAreaPicker}
+                    onPress={() => setPickerVisible(true)}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   >
                     <Feather name="chevron-down" size={18} color={C.textMuted} />
@@ -677,25 +580,25 @@ export function BloodRequestScreen({ navigation }: any) {
                     style={[
                       styles.sheetOptionRow,
                       {
-                        backgroundColor: isSelected ? (isDark ? 'rgba(199, 52, 74, 0.16)' : 'rgba(199, 52, 74, 0.08)') : C.surface,
-                        borderColor: isSelected ? SectorColors.blood : C.border,
+                        backgroundColor: isSelected ? (isDark ? 'rgba(255, 255, 255, 0.06)' : '#f8fafc') : C.surface,
+                        borderColor: isSelected ? (isDark ? 'rgba(255, 255, 255, 0.24)' : 'rgba(0, 0, 0, 0.20)') : C.border,
                       },
                     ]}
                     onPress={() => handleSelectReason(r)}
                     activeOpacity={0.7}
                   >
-                    <View style={[styles.sheetOptionIcon, { backgroundColor: isSelected ? `${SectorColors.blood}20` : C.surface2 }]}>
-                      <AnimatedIcon family="feather" name={r.icon as any} size={18} color={isSelected ? SectorColors.blood : C.text2} animation="entrance" />
+                    <View style={[styles.sheetOptionIcon, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2, borderColor: C.border, borderWidth: 1 }]}>
+                      <AnimatedIcon family="feather" name={r.icon as any} size={18} color={C.text} animation="entrance" />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={[styles.sheetOptionTitle, { color: isSelected ? SectorColors.blood : C.text, fontFamily: FontFamily.jakartaBold }]}>
+                      <Text style={[styles.sheetOptionTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                         {r.label}
                       </Text>
                       <Text style={[styles.sheetOptionSub, { color: C.textMuted, fontFamily: FontFamily.bnRegular }]}>
                         {r.labelBn}
                       </Text>
                     </View>
-                    {isSelected && <Feather name="check" size={16} color={SectorColors.blood} />}
+                    {isSelected && <AnimatedIcon family="feather" name="check" size={16} color={C.text} animation="spring" />}
                   </TouchableOpacity>
                 );
               })}
@@ -737,25 +640,25 @@ export function BloodRequestScreen({ navigation }: any) {
                     style={[
                       styles.sheetOptionRow,
                       {
-                        backgroundColor: isSelected ? (isDark ? 'rgba(199, 52, 74, 0.16)' : 'rgba(199, 52, 74, 0.08)') : C.surface,
-                        borderColor: isSelected ? SectorColors.blood : C.border,
+                        backgroundColor: isSelected ? (isDark ? 'rgba(255, 255, 255, 0.06)' : '#f8fafc') : C.surface,
+                        borderColor: isSelected ? (isDark ? 'rgba(255, 255, 255, 0.24)' : 'rgba(0, 0, 0, 0.20)') : C.border,
                       },
                     ]}
                     onPress={() => handleSelectAffiliation(a)}
                     activeOpacity={0.7}
                   >
-                    <View style={[styles.sheetOptionIcon, { backgroundColor: isSelected ? `${SectorColors.blood}20` : C.surface2 }]}>
-                      <AnimatedIcon family="feather" name={a.icon as any} size={18} color={isSelected ? SectorColors.blood : C.text2} animation="entrance" />
+                    <View style={[styles.sheetOptionIcon, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2, borderColor: C.border, borderWidth: 1 }]}>
+                      <AnimatedIcon family="feather" name={a.icon as any} size={18} color={C.text} animation="entrance" />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={[styles.sheetOptionTitle, { color: isSelected ? SectorColors.blood : C.text, fontFamily: FontFamily.jakartaBold }]}>
+                      <Text style={[styles.sheetOptionTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                         {a.label}
                       </Text>
                       <Text style={[styles.sheetOptionSub, { color: C.textMuted, fontFamily: FontFamily.bnRegular }]}>
                         {a.labelBn}
                       </Text>
                     </View>
-                    {isSelected && <Feather name="check" size={16} color={SectorColors.blood} />}
+                    {isSelected && <AnimatedIcon family="feather" name="check" size={16} color={C.text} animation="spring" />}
                   </TouchableOpacity>
                 );
               })}
@@ -768,10 +671,9 @@ export function BloodRequestScreen({ navigation }: any) {
       <AreaPickerModal
         visible={pickerVisible}
         onClose={() => setPickerVisible(false)}
-        selectedArea={pickerMode === 'hospital' ? hospital : area}
+        selectedArea={hospital || area}
         onSelectArea={handleSelectLocation}
-        title={pickerMode === 'hospital' ? 'Select Hospital' : 'Select Area / Zone'}
-        initialTab={pickerMode === 'hospital' ? 'hospital' : 'area'}
+        title="Select Hospital or Area"
         allowAll={false}
       />
     </SafeAreaView>

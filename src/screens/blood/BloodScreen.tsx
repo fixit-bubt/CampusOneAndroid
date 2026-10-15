@@ -35,6 +35,7 @@ import {
 import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 import { ContactSheet } from '../../components/ui/ContactSheet';
 import { AreaPickerModal } from '../../components/blood/AreaPickerModal';
+import { HospitalMapModal } from '../../components/blood/HospitalMapModal';
 import { DHAKA_AREAS } from '../../constants/dhakaAreas';
 import type { BloodRequest, Donor } from '../../types/database';
 
@@ -62,26 +63,22 @@ function GroupBadge({ group, size = 46 }: { group: string; size?: number }) {
   );
 }
 
-function RequestBloodBadge({ group, isPlatelet }: { group: string; isPlatelet?: boolean }) {
+function RequestBloodBadge({ group, isPlatelet, isDark }: { group: string; isPlatelet?: boolean; isDark?: boolean }) {
+  const tintColor = isPlatelet ? '#eab308' : SectorColors.blood;
+  const bg = isPlatelet
+    ? (isDark ? 'rgba(234, 179, 8, 0.14)' : 'rgba(234, 179, 8, 0.08)')
+    : (isDark ? 'rgba(199, 52, 74, 0.16)' : 'rgba(199, 52, 74, 0.08)');
+  const border = isPlatelet
+    ? (isDark ? 'rgba(234, 179, 8, 0.35)' : 'rgba(234, 179, 8, 0.22)')
+    : (isDark ? 'rgba(199, 52, 74, 0.32)' : 'rgba(199, 52, 74, 0.20)');
+
   return (
-    <View
-      style={[
-        styles.reqBloodBadge,
-        {
-          backgroundColor: isPlatelet
-            ? 'rgba(234, 179, 8, 0.12)'
-            : 'rgba(214, 61, 53, 0.12)',
-          borderColor: isPlatelet
-            ? 'rgba(234, 179, 8, 0.35)'
-            : 'rgba(214, 61, 53, 0.28)',
-        },
-      ]}
-    >
+    <View style={[styles.reqBloodBadge, { backgroundColor: bg, borderColor: border }]}>
       <Text
         style={[
           styles.reqBloodGroupTxt,
           {
-            color: isPlatelet ? '#eab308' : SectorColors.blood,
+            color: tintColor,
             fontFamily: FontFamily.jakartaExtraBold,
           },
         ]}
@@ -94,7 +91,7 @@ function RequestBloodBadge({ group, isPlatelet }: { group: string; isPlatelet?: 
         style={[
           styles.reqBloodTypeLabel,
           {
-            color: isPlatelet ? '#ca8a04' : SectorColors.blood,
+            color: tintColor,
             fontFamily: FontFamily.jakartaBold,
           },
         ]}
@@ -166,6 +163,7 @@ export function BloodScreen({ route, navigation }: any) {
     message?: string;
     inAppChatAction?: () => void;
   } | null>(null);
+  const [hospitalMapTarget, setHospitalMapTarget] = useState<{ hospital: string; area?: string } | null>(null);
   const [isOffline, setIsOffline] = useState(false);
 
   const areaCounts = useMemo(() => {
@@ -540,8 +538,30 @@ export function BloodScreen({ route, navigation }: any) {
         message="Showing cached blood requests and donor directory. Connect to internet to respond or reveal contacts."
       />
 
+      {/* Prominent Hero Action Bar (Universal 58dp Standard, Parity with Rides & Market) */}
+      <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 4, paddingBottom: 6 }}>
+        <TouchableOpacity
+          style={[styles.heroActBtn, { backgroundColor: SectorColors.blood }]}
+          onPress={() => {
+            if (tab === 'donors' && !myDonor) {
+              navigation.navigate('DonorRegister');
+            } else {
+              navigation.navigate('BloodRequest');
+            }
+          }}
+          activeOpacity={0.85}
+        >
+          <Feather name="plus-circle" size={18} color="#fff" />
+          <Text style={[styles.heroActBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+            {tab === 'donors' && !myDonor
+              ? (t.blood2.registerAsDonorBtn ?? 'Register as Blood Donor')
+              : (t.blood2.requestBloodBtn ?? 'Emergency Blood Request')}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Unified Segmented Tab Switcher with Native Spring Animation & Colors */}
-      <View style={{ paddingHorizontal: Layout.screenPadding, marginTop: 4, marginBottom: 8 }}>
+      <View style={{ paddingHorizontal: Layout.screenPadding, marginBottom: 8 }}>
         <SegmentedTabs<Tab>
           tabs={BLOOD_TABS}
           activeTab={tab}
@@ -549,7 +569,7 @@ export function BloodScreen({ route, navigation }: any) {
         />
       </View>
 
-      {/* Unified Search & Dhaka Location Trigger Row (Option 2: Micro-Label Stacked) */}
+      {/* Unified Search & Dhaka Location Trigger Row */}
       <View style={[styles.searchAreaRow, { paddingHorizontal: Layout.screenPadding }]}>
         <View style={[styles.searchBar, { backgroundColor: C.surface, borderColor: C.border }]}>
           <TouchableOpacity
@@ -585,13 +605,7 @@ export function BloodScreen({ route, navigation }: any) {
         <View
           style={[
             styles.areaPickerTrigger,
-            areaFilter !== 'All'
-              ? {
-                  backgroundColor: isDark ? 'rgba(199, 52, 74, 0.22)' : 'rgba(199, 52, 74, 0.12)',
-                  borderColor: SectorColors.blood,
-                  borderWidth: 1.5,
-                }
-              : { backgroundColor: C.surface, borderColor: C.border },
+            { backgroundColor: C.surface, borderColor: C.border },
           ]}
         >
           <TouchableOpacity
@@ -603,17 +617,19 @@ export function BloodScreen({ route, navigation }: any) {
               style={[
                 styles.areaIconBox,
                 {
-                  backgroundColor: areaFilter !== 'All'
-                    ? (isDark ? 'rgba(255, 255, 255, 0.12)' : `${SectorColors.blood}18`)
-                    : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2),
+                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2,
+                  borderColor: C.border,
+                  borderWidth: 1,
                 },
               ]}
             >
-              {isHospitalFilter ? (
-                <MaterialCommunityIcons name="hospital-building" size={14} color={areaFilter !== 'All' ? SectorColors.blood : C.text2} />
-              ) : (
-                <Icon name="pin" size={13} color={areaFilter !== 'All' ? SectorColors.blood : C.text2} />
-              )}
+              <AnimatedIcon
+                family={isHospitalFilter ? 'mci' : 'feather'}
+                name={isHospitalFilter ? 'hospital-building' : 'map-pin'}
+                size={14}
+                color={C.text}
+                animation="spring"
+              />
             </View>
 
             <View style={styles.areaTextStack}>
@@ -621,7 +637,7 @@ export function BloodScreen({ route, navigation }: any) {
                 style={[
                   styles.areaMicroLabel,
                   {
-                    color: areaFilter !== 'All' ? SectorColors.blood : C.textMuted,
+                    color: C.textMuted,
                     fontFamily: FontFamily.jakartaBold,
                   },
                 ]}
@@ -632,7 +648,7 @@ export function BloodScreen({ route, navigation }: any) {
                 style={[
                   styles.areaPickerTriggerTxt,
                   {
-                    color: areaFilter !== 'All' ? (isDark ? '#fff' : SectorColors.blood) : C.text,
+                    color: C.text,
                     fontFamily: FontFamily.jakartaBold,
                   },
                 ]}
@@ -649,8 +665,8 @@ export function BloodScreen({ route, navigation }: any) {
               hitSlop={{ top: 10, bottom: 10, left: 6, right: 10 }}
               style={styles.areaClearBtn}
             >
-              <View style={[styles.clearPill, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.14)' : `${SectorColors.blood}20` }]}>
-                <Feather name="x" size={11} color={isDark ? '#fff' : SectorColors.blood} />
+              <View style={[styles.clearPill, { backgroundColor: C.surface2, borderColor: C.border, borderWidth: 1 }]}>
+                <Feather name="x" size={11} color={C.text} />
               </View>
             </TouchableOpacity>
           ) : (
@@ -678,19 +694,7 @@ export function BloodScreen({ route, navigation }: any) {
           <LoadError onRetry={load} />
         ) : tab === 'requests' ? (
           <View style={styles.list}>
-            {/* Prominent Emergency Request Blood Bar (Universal 58dp Standard) */}
-            <TouchableOpacity
-              style={[styles.actBtn, { backgroundColor: SectorColors.blood, marginBottom: 2 }]}
-              onPress={() => navigation.navigate('BloodRequest')}
-              activeOpacity={0.85}
-            >
-              <AnimatedIcon family="feather" name="droplet" size={18} color="#fff" animation="entrance" />
-              <Text style={[styles.actBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
-                {t.blood2.requestBloodBtn}
-              </Text>
-            </TouchableOpacity>
-
-            {/* Compact 8-Group Grid */}
+            {/* Compact 8-Group Grid (De-bloated: Neutral by default, Red accent only on selected) */}
             <View style={[styles.compactGridCard, { backgroundColor: C.surface, borderColor: C.border }]}>
               <View style={styles.compactGridHeader}>
                 <Text style={[styles.compactGridTitle, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
@@ -719,10 +723,8 @@ export function BloodScreen({ route, navigation }: any) {
                         style={[
                           styles.compactCell,
                           on
-                            ? { backgroundColor: `${SectorColors.blood}22`, borderColor: SectorColors.blood, borderWidth: 1.5 }
-                            : count > 0
-                            ? { backgroundColor: `${SectorColors.blood}10`, borderColor: `${SectorColors.blood}30`, borderWidth: 1 }
-                            : { backgroundColor: C.surface2, borderColor: isDark ? 'rgba(255,255,255,0.04)' : 'transparent', borderWidth: 1 },
+                            ? { backgroundColor: isDark ? 'rgba(199, 52, 74, 0.18)' : 'rgba(199, 52, 74, 0.10)', borderColor: SectorColors.blood, borderWidth: 1.5 }
+                            : { backgroundColor: C.surface2, borderColor: C.border, borderWidth: 1 },
                         ]}
                         onPress={() => handleRequestGroupPress(g)}
                         activeOpacity={0.7}
@@ -731,7 +733,7 @@ export function BloodScreen({ route, navigation }: any) {
                           style={[
                             styles.compactCellGroup,
                             {
-                              color: on || count > 0 ? SectorColors.blood : C.text2,
+                              color: on ? SectorColors.blood : C.text,
                               fontFamily: FontFamily.jakartaBold,
                             },
                           ]}
@@ -742,8 +744,8 @@ export function BloodScreen({ route, navigation }: any) {
                           style={[
                             styles.compactCellCount,
                             {
-                              color: on || count > 0 ? SectorColors.blood : C.textMuted,
-                              fontFamily: FontFamily.jakartaExtraBold,
+                              color: on ? SectorColors.blood : count > 0 ? C.text2 : C.textMuted,
+                              fontFamily: FontFamily.jakartaBold,
                             },
                           ]}
                         >
@@ -813,7 +815,7 @@ export function BloodScreen({ route, navigation }: any) {
 
                     {/* Top Row: Blood Group Badge + Patient Name / Affiliation / Time + Urgency */}
                     <View style={styles.cardHeaderRow}>
-                      <RequestBloodBadge group={r.blood_group} isPlatelet={meta.isPlatelet} />
+                      <RequestBloodBadge group={r.blood_group} isPlatelet={meta.isPlatelet} isDark={isDark} />
 
                       <View style={styles.cardHeaderCenter}>
                         <View style={styles.patientTitleRow}>
@@ -838,27 +840,39 @@ export function BloodScreen({ route, navigation }: any) {
                           {meta.affiliation ? (
                             <Text style={[styles.metaSubTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
                               {meta.affiliation}
-                              {relativeTime ? ` · Posted ${relativeTime}` : ''}
+                              {relativeTime ? ` · ${relativeTime}` : ''}
                             </Text>
                           ) : relativeTime ? (
                             <Text style={[styles.metaSubTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                              Posted {relativeTime}
+                              {relativeTime}
                             </Text>
                           ) : null}
                         </View>
                       </View>
                     </View>
 
-                    {/* Hospital & Area Line */}
-                    <View style={styles.hospitalRow}>
-                      <MaterialCommunityIcons name="hospital-building" size={15} color={SectorColors.blood} style={{ marginTop: 1 }} />
-                      <Text style={styles.hospitalTxt} numberOfLines={1}>
-                        <Text style={{ fontFamily: FontFamily.jakartaBold, color: C.text }}>{r.hospital}</Text>
-                        {r.area ? (
-                          <Text style={{ fontFamily: FontFamily.jakartaRegular, color: C.textMuted }}>{` · ${r.area}`}</Text>
-                        ) : null}
-                      </Text>
-                    </View>
+                    {/* Interactive Hospital & Area Line (Opens In-App Map + Google Maps) */}
+                    <TouchableOpacity
+                      style={[styles.hospitalTouchRow, { backgroundColor: C.surface2, borderColor: C.border }]}
+                      onPress={() => setHospitalMapTarget({ hospital: r.hospital, area: r.area })}
+                      activeOpacity={0.75}
+                    >
+                      <View style={styles.hospitalRowLeft}>
+                        <AnimatedIcon family="feather" name="map-pin" size={13} color={C.textMuted} animation="float" loop={true} />
+                        <Text style={styles.hospitalTxt} numberOfLines={1}>
+                          <Text style={{ fontFamily: FontFamily.jakartaBold, color: C.text }}>{r.hospital}</Text>
+                          {r.area ? (
+                            <Text style={{ fontFamily: FontFamily.jakartaMedium, color: C.textMuted }}>{` · ${r.area}`}</Text>
+                          ) : null}
+                        </Text>
+                      </View>
+                      <View style={[styles.mapHintBadge, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface, borderColor: C.border }]}>
+                        <Text style={[styles.mapHintTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                          Map
+                        </Text>
+                        <AnimatedIcon family="feather" name="arrow-up-right" size={11} color={C.textMuted} animation="spring" />
+                      </View>
+                    </TouchableOpacity>
 
                     {/* Clinical Details Row: Bags Needed Badge + Medical Case Reason Badge */}
                     <View style={styles.clinicalBadgesRow}>
@@ -877,21 +891,17 @@ export function BloodScreen({ route, navigation }: any) {
                       ) : null}
                     </View>
 
-                    {/* Pledge Progress / Status Row */}
+                    {/* Pledge Progress / Status Strip (De-bloated: Neutral by default, soft emerald when all covered) */}
                     <View
                       style={[
                         styles.pledgeStrip,
                         {
-                          backgroundColor: pledgeCount > 0
-                            ? (unitsLeft === 0
-                                ? (isDark ? 'rgba(34, 197, 94, 0.12)' : 'rgba(34, 197, 94, 0.08)')
-                                : (isDark ? 'rgba(214, 61, 53, 0.12)' : 'rgba(214, 61, 53, 0.07)'))
-                            : (isDark ? 'rgba(255, 255, 255, 0.04)' : C.surface2),
-                          borderColor: pledgeCount > 0
-                            ? (unitsLeft === 0
-                                ? (isDark ? 'rgba(34, 197, 94, 0.25)' : 'rgba(34, 197, 94, 0.20)')
-                                : (isDark ? 'rgba(214, 61, 53, 0.22)' : 'rgba(214, 61, 53, 0.16)'))
-                            : 'transparent',
+                          backgroundColor: pledgeCount > 0 && unitsLeft === 0
+                            ? (isDark ? 'rgba(34, 197, 94, 0.12)' : 'rgba(34, 197, 94, 0.08)')
+                            : C.surface2,
+                          borderColor: pledgeCount > 0 && unitsLeft === 0
+                            ? (isDark ? 'rgba(34, 197, 94, 0.25)' : 'rgba(34, 197, 94, 0.20)')
+                            : C.border,
                         },
                       ]}
                     >
@@ -909,7 +919,7 @@ export function BloodScreen({ route, navigation }: any) {
                           styles.pledgeStripTxt,
                           {
                             color: pledgeCount > 0
-                              ? (unitsLeft === 0 ? C.success : (isDark ? '#fff' : SectorColors.blood))
+                              ? (unitsLeft === 0 ? C.success : C.text)
                               : C.textMuted,
                             fontFamily: pledgeCount > 0 ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
                           },
@@ -920,7 +930,7 @@ export function BloodScreen({ route, navigation }: any) {
                             ? `${pledgeCount} ${pledgeCount === 1 ? 'donor offered help' : 'donors offered help'} · All ${meta.unitCount} bags covered!`
                             : `${pledgeCount} ${pledgeCount === 1 ? 'donor offered help' : 'donors offered help'} (${pledgeCount}/${meta.unitCount} bags · ${unitsLeft} needed)`
                           : meta.unitCount > 1
-                            ? `${meta.unitCount} donors needed · No donors pledged yet`
+                            ? `${meta.unitCount} donors needed`
                             : '1 donor needed · Be the first to help'}
                       </Text>
                     </View>
@@ -1090,10 +1100,8 @@ export function BloodScreen({ route, navigation }: any) {
                         style={[
                           styles.compactCell,
                           on
-                            ? { backgroundColor: `${SectorColors.blood}22`, borderColor: SectorColors.blood, borderWidth: 1.5 }
-                            : count > 0
-                            ? { backgroundColor: `${SectorColors.blood}10`, borderColor: `${SectorColors.blood}30`, borderWidth: 1 }
-                            : { backgroundColor: C.surface2, borderColor: isDark ? 'rgba(255,255,255,0.04)' : 'transparent', borderWidth: 1 },
+                            ? { backgroundColor: isDark ? 'rgba(199, 52, 74, 0.18)' : 'rgba(199, 52, 74, 0.10)', borderColor: SectorColors.blood, borderWidth: 1.5 }
+                            : { backgroundColor: C.surface2, borderColor: C.border, borderWidth: 1 },
                         ]}
                         onPress={() => handleDonorGroupPress(g)}
                         activeOpacity={0.7}
@@ -1102,7 +1110,7 @@ export function BloodScreen({ route, navigation }: any) {
                           style={[
                             styles.compactCellGroup,
                             {
-                              color: on || count > 0 ? SectorColors.blood : C.text2,
+                              color: on ? SectorColors.blood : C.text,
                               fontFamily: FontFamily.jakartaBold,
                             },
                           ]}
@@ -1113,8 +1121,8 @@ export function BloodScreen({ route, navigation }: any) {
                           style={[
                             styles.compactCellCount,
                             {
-                              color: on || count > 0 ? SectorColors.blood : C.textMuted,
-                              fontFamily: FontFamily.jakartaExtraBold,
+                              color: on ? SectorColors.blood : count > 0 ? C.text2 : C.textMuted,
+                              fontFamily: FontFamily.jakartaBold,
                             },
                           ]}
                         >
@@ -1244,12 +1252,29 @@ export function BloodScreen({ route, navigation }: any) {
         onSelectArea={setAreaFilter}
         areaCounts={areaCounts}
       />
+      <HospitalMapModal
+        visible={!!hospitalMapTarget}
+        onClose={() => setHospitalMapTarget(null)}
+        hospital={hospitalMapTarget?.hospital ?? ''}
+        area={hospitalMapTarget?.area}
+      />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
+  heroActBtn: {
+    height: 58,
+    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  } as ViewStyle,
+  heroActBtnTxt: {
+    fontSize: 15,
+  } as TextStyle,
   actBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1410,6 +1435,23 @@ const styles = StyleSheet.create({
   metaSubTxt: {
     fontSize: 11.5,
   } as TextStyle,
+  hospitalTouchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 10,
+    gap: 8,
+  } as ViewStyle,
+  hospitalRowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    flex: 1,
+  } as ViewStyle,
   hospitalRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1419,6 +1461,18 @@ const styles = StyleSheet.create({
   hospitalTxt: {
     fontSize: 13,
     flex: 1,
+  } as TextStyle,
+  mapHintBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+  } as ViewStyle,
+  mapHintTxt: {
+    fontSize: 11,
   } as TextStyle,
   clinicalBadgesRow: {
     flexDirection: 'row',

@@ -2,15 +2,14 @@ import React, { useState, useMemo, useRef, useEffect, useCallback, memo } from '
 import {
   View, Text, TouchableOpacity, TextInput, Modal,
   FlatList, StyleSheet, Keyboard, KeyboardAvoidingView,
-  Animated, Platform, Dimensions, type ViewStyle, type TextStyle,
+  Platform, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
-import { Icon } from '../ui/Icon';
-import { FontFamily, Layout, SectorColors, pillBg } from '../../theme';
+import { AnimatedIcon } from '../ui/AnimatedIcon';
+import { FontFamily, Layout } from '../../theme';
 import { DHAKA_AREAS, type DhakaAreaInfo } from '../../constants/dhakaAreas';
-import { SegmentedTabs, type TabItem } from '../ui/SegmentedTabs';
 import { LocationPickerModal } from '../location/LocationPickerModal';
 import { useT } from '../../i18n';
 
@@ -18,141 +17,88 @@ interface AreaPickerModalProps {
   visible: boolean;
   onClose: () => void;
   selectedArea: string;
-  onSelectArea: (area: string) => void;
+  onSelectArea: (area: string, subLocation?: string) => void;
   title?: string;
   areaCounts?: Record<string, number>;
   allowAll?: boolean;
   initialTab?: 'all' | 'hospital' | 'area';
 }
 
-type TypeFilterTab = 'hospital' | 'area';
-
 type FlatListItem =
-  | { type: 'all_option'; id: 'all_option' }
   | { type: 'custom_query'; id: 'custom_query'; query: string }
   | { type: 'zone_header'; id: string; zone: string; count: number }
   | { type: 'area_item'; id: string; item: DhakaAreaInfo };
 
-// -------------------------------------------------------------
-// MODULE-LEVEL PRE-COMPUTED DATA (Zero allocations during tab switch)
-// -------------------------------------------------------------
 interface IndexedAreaItem extends DhakaAreaInfo {
   _searchKey: string;
 }
+
+const ZONE_ORDER: string[] = [
+  'Mirpur & Campus Vicinity',
+  'Dhanmondi, Panthapath & West',
+  'Shahbagh, Agargaon & Central',
+  'Mohakhali, Banani & Gulshan',
+  'Uttara, Airport & North',
+  'Old Dhaka & Historic Quarters',
+  'Motijheel, Khilgaon & East',
+  'Greater Dhaka & Suburbs',
+];
 
 const INDEXED_AREAS: IndexedAreaItem[] = DHAKA_AREAS.map(a => ({
   ...a,
   _searchKey: `${a.name.toLowerCase()} ${a.nameBn} ${(a.subLocation || '').toLowerCase()} ${a.zone.toLowerCase()} ${a.zoneBn} ${(a.keywords || []).join(' ').toLowerCase()}`,
 }));
 
-function buildFlatZoneItems(items: IndexedAreaItem[], includeAllOption: boolean): FlatListItem[] {
+function buildFlatZoneItems(items: IndexedAreaItem[]): FlatListItem[] {
   const result: FlatListItem[] = [];
-  if (includeAllOption) {
-    result.push({ type: 'all_option', id: 'all_option' });
-  }
   const grouped: Record<string, IndexedAreaItem[]> = {};
+
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
     if (!grouped[item.zone]) grouped[item.zone] = [];
     grouped[item.zone].push(item);
   }
-  const zones = Object.keys(grouped);
-  for (let z = 0; z < zones.length; z++) {
-    const zone = zones[z];
+
+  const zoneKeys = [...ZONE_ORDER];
+  for (const k of Object.keys(grouped)) {
+    if (!zoneKeys.includes(k)) zoneKeys.push(k);
+  }
+
+  for (let z = 0; z < zoneKeys.length; z++) {
+    const zone = zoneKeys[z];
     const groupItems = grouped[zone];
+    if (!groupItems || groupItems.length === 0) continue;
+
     result.push({
       type: 'zone_header',
       id: `header_${zone}`,
       zone,
       count: groupItems.length,
     });
-    for (let j = 0; j < groupItems.length; j++) {
+
+    const hospitals = groupItems.filter(i => i.type === 'hospital');
+    const areas = groupItems.filter(i => i.type !== 'hospital');
+    const sortedGroup = [...hospitals, ...areas];
+
+    for (let j = 0; j < sortedGroup.length; j++) {
       result.push({
         type: 'area_item',
-        id: `item_${groupItems[j].name}`,
-        item: groupItems[j],
+        id: `item_${sortedGroup[j].type}_${sortedGroup[j].name}`,
+        item: sortedGroup[j],
       });
     }
   }
+
   return result;
 }
 
-const STATIC_HOSPITAL_ITEMS_WITH_ALL = buildFlatZoneItems(INDEXED_AREAS.filter(a => a.type === 'hospital'), true);
-const STATIC_HOSPITAL_ITEMS_NO_ALL = buildFlatZoneItems(INDEXED_AREAS.filter(a => a.type === 'hospital'), false);
-const STATIC_AREA_ITEMS_WITH_ALL = buildFlatZoneItems(INDEXED_AREAS.filter(a => a.type === 'area'), true);
-const STATIC_AREA_ITEMS_NO_ALL = buildFlatZoneItems(INDEXED_AREAS.filter(a => a.type === 'area'), false);
+const STATIC_UNIFIED_ITEMS: FlatListItem[] = buildFlatZoneItems(INDEXED_AREAS);
 
 const keyExtractor = (item: FlatListItem) => item.id;
 
 // -------------------------------------------------------------
-// MEMOIZED ITEM COMPONENTS (Zero re-renders on scroll)
+// MEMOIZED ITEM COMPONENTS
 // -------------------------------------------------------------
-const AllOptionRow = memo(function AllOptionRow({
-  isFiltered,
-  onPress,
-  C,
-  isDark,
-}: {
-  isFiltered: boolean;
-  onPress: () => void;
-  C: any;
-  isDark: boolean;
-}) {
-  return (
-    <TouchableOpacity
-      style={[
-        styles.areaCardBar,
-        {
-          backgroundColor: !isFiltered
-            ? pillBg(SectorColors.blood, isDark)
-            : C.surface,
-          borderColor: !isFiltered ? SectorColors.blood : C.border,
-          borderWidth: !isFiltered ? 1.5 : 1,
-        },
-      ]}
-      onPress={onPress}
-      activeOpacity={0.72}
-    >
-      <View
-        style={[
-          styles.itemIconBox,
-          {
-            backgroundColor: !isFiltered
-              ? (isDark ? 'rgba(199, 52, 74, 0.28)' : 'rgba(199, 52, 74, 0.14)')
-              : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2),
-          },
-        ]}
-      >
-        <Icon name="grid" size={17} color={!isFiltered ? SectorColors.blood : C.text2} />
-      </View>
-
-      <View style={styles.itemInfoStack}>
-        <Text
-          style={[
-            styles.areaName,
-            {
-              color: !isFiltered ? SectorColors.blood : C.text,
-              fontFamily: FontFamily.jakartaBold,
-            },
-          ]}
-          numberOfLines={1}
-        >
-          All Locations
-        </Text>
-        <Text style={[styles.areaSubName, { color: C.textMuted, fontFamily: FontFamily.bnRegular }]}>
-          সকল এলাকা ও হাসপাতাল
-        </Text>
-      </View>
-
-      {!isFiltered ? (
-        <Feather name="check-circle" size={18} color={SectorColors.blood} />
-      ) : (
-        <Feather name="chevron-right" size={14} color={C.border} />
-      )}
-    </TouchableOpacity>
-  );
-});
-
 const ZoneHeaderRow = memo(function ZoneHeaderRow({
   zone,
   count,
@@ -167,8 +113,8 @@ const ZoneHeaderRow = memo(function ZoneHeaderRow({
       <Text style={[styles.zoneTitle, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
         {zone.toUpperCase()}
       </Text>
-      <View style={[styles.zoneCountBadge, { backgroundColor: C.surface2 }]}>
-        <Text style={[styles.zoneCountTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+      <View style={[styles.zoneCountBadge, { backgroundColor: C.surface2, borderColor: C.border, borderWidth: 1 }]}>
+        <Text style={[styles.zoneCountTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
           {count}
         </Text>
       </View>
@@ -187,7 +133,7 @@ const AreaItemRow = memo(function AreaItemRow({
   item: DhakaAreaInfo;
   isSelected: boolean;
   count?: number;
-  onSelect: (name: string) => void;
+  onSelect: (name: string, subLocation?: string) => void;
   C: any;
   isDark: boolean;
 }) {
@@ -200,29 +146,31 @@ const AreaItemRow = memo(function AreaItemRow({
         styles.areaCardBar,
         {
           backgroundColor: isSelected
-            ? pillBg(SectorColors.blood, isDark)
+            ? (isDark ? 'rgba(255, 255, 255, 0.06)' : '#f8fafc')
             : C.surface,
-          borderColor: isSelected ? SectorColors.blood : C.border,
-          borderWidth: isSelected ? 1.5 : 1,
+          borderColor: isSelected
+            ? (isDark ? 'rgba(255, 255, 255, 0.24)' : 'rgba(0, 0, 0, 0.20)')
+            : C.border,
+          borderWidth: 1,
         },
       ]}
-      onPress={() => onSelect(item.name)}
+      onPress={() => onSelect(item.name, item.subLocation)}
       activeOpacity={0.72}
     >
       <View
         style={[
           styles.itemIconBox,
           {
-            backgroundColor: isHospital
-              ? (isDark ? 'rgba(199, 52, 74, 0.22)' : 'rgba(199, 52, 74, 0.1)')
-              : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2),
+            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2,
+            borderColor: C.border,
+            borderWidth: 1,
           },
         ]}
       >
         {isHospital ? (
-          <MaterialCommunityIcons name="hospital-building" size={20} color={SectorColors.blood} />
+          <AnimatedIcon family="mci" name="hospital-building" size={20} color={C.text} animation="spring" />
         ) : (
-          <Icon name="pin" size={17} color={isSelected ? SectorColors.blood : C.text2} />
+          <AnimatedIcon family="feather" name="map-pin" size={17} color={C.text2} animation="spring" />
         )}
       </View>
 
@@ -231,7 +179,7 @@ const AreaItemRow = memo(function AreaItemRow({
           style={[
             styles.areaName,
             {
-              color: isSelected ? SectorColors.blood : C.text,
+              color: C.text,
               fontFamily: FontFamily.jakartaBold,
             },
           ]}
@@ -252,12 +200,12 @@ const AreaItemRow = memo(function AreaItemRow({
 
       <View style={styles.itemRight}>
         {count !== undefined && count > 0 && (
-          <View style={[styles.countPill, { backgroundColor: isSelected ? `${SectorColors.blood}20` : C.surface2 }]}>
+          <View style={[styles.countPill, { backgroundColor: C.surface2, borderColor: C.border, borderWidth: 1 }]}>
             <Text
               style={[
                 styles.countTxt,
                 {
-                  color: isSelected ? SectorColors.blood : C.textMuted,
+                  color: C.text2,
                   fontFamily: FontFamily.jakartaBold,
                 },
               ]}
@@ -267,7 +215,7 @@ const AreaItemRow = memo(function AreaItemRow({
           </View>
         )}
         {isSelected ? (
-          <Feather name="check-circle" size={18} color={SectorColors.blood} />
+          <AnimatedIcon family="feather" name="check-circle" size={18} color={C.text} animation="spring" />
         ) : (
           <Feather name="chevron-right" size={14} color={C.border} />
         )}
@@ -286,51 +234,29 @@ export function AreaPickerModal({
   onSelectArea,
   title,
   areaCounts,
-  allowAll = true,
-  initialTab = 'all',
 }: AreaPickerModalProps) {
   const { C, isDark } = useTheme();
   const t = useT();
   const insets = useSafeAreaInsets();
   const [search, setSearch] = useState('');
-  const startingTab: TypeFilterTab = initialTab === 'area' ? 'area' : 'hospital';
-  const [activeTab, setActiveTab] = useState<TypeFilterTab>(startingTab);
   const [mapPickerOpen, setMapPickerOpen] = useState(false);
   const searchInputRef = useRef<TextInput>(null);
 
   useEffect(() => {
     if (visible) {
       setSearch('');
-      const tabToUse: TypeFilterTab = initialTab === 'area' ? 'area' : 'hospital';
-      setActiveTab(tabToUse);
     }
-  }, [visible, initialTab]);
+  }, [visible]);
 
-  const switchTab = useCallback((tab: TypeFilterTab) => {
-    setActiveTab(tab);
-  }, []);
-
-  const PICKER_TABS: TabItem<TypeFilterTab>[] = useMemo(() => [
-    { id: 'hospital', label: 'Hospitals', color: SectorColors.blood },
-    { id: 'area',     label: 'Areas',     color: SectorColors.blood },
-  ], []);
-
-  // Fast pre-indexed search (active when user types in search box)
+  // Fast pre-indexed search across all 252 items (both hospitals and areas)
   const searchListData = useMemo<FlatListItem[]>(() => {
     const q = search.trim().toLowerCase();
     if (!q) return [];
 
-    let pool = INDEXED_AREAS;
-    if (activeTab === 'hospital') {
-      pool = pool.filter(a => a.type === 'hospital');
-    } else if (activeTab === 'area') {
-      pool = pool.filter(a => a.type === 'area');
-    }
-
-    const matched = pool.filter(a => a._searchKey.includes(q));
+    const matched = INDEXED_AREAS.filter(a => a._searchKey.includes(q));
     const result: FlatListItem[] = [];
 
-    if (!pool.some(a => a.name.toLowerCase() === q)) {
+    if (!INDEXED_AREAS.some(a => a.name.toLowerCase() === q)) {
       result.push({ type: 'custom_query', id: 'custom_query', query: search.trim() });
     }
 
@@ -341,71 +267,64 @@ export function AreaPickerModal({
       grouped[item.zone].push(item);
     }
 
-    const zones = Object.keys(grouped);
-    for (let z = 0; z < zones.length; z++) {
-      const zone = zones[z];
+    const zoneKeys = [...ZONE_ORDER];
+    for (const k of Object.keys(grouped)) {
+      if (!zoneKeys.includes(k)) zoneKeys.push(k);
+    }
+
+    for (let z = 0; z < zoneKeys.length; z++) {
+      const zone = zoneKeys[z];
       const items = grouped[zone];
+      if (!items || items.length === 0) continue;
+
       result.push({
         type: 'zone_header',
         id: `header_${zone}`,
         zone,
         count: items.length,
       });
-      for (let j = 0; j < items.length; j++) {
+
+      const hospitals = items.filter(i => i.type === 'hospital');
+      const areas = items.filter(i => i.type !== 'hospital');
+      const sortedGroup = [...hospitals, ...areas];
+
+      for (let j = 0; j < sortedGroup.length; j++) {
         result.push({
           type: 'area_item',
-          id: `item_${items[j].name}`,
-          item: items[j],
+          id: `item_${sortedGroup[j].type}_${sortedGroup[j].name}`,
+          item: sortedGroup[j],
         });
       }
     }
 
     return result;
-  }, [search, activeTab]);
+  }, [search]);
 
-  const handleSelect = useCallback((areaName: string) => {
-    onSelectArea(areaName);
+  const handleSelect = useCallback((areaName: string, subLoc?: string) => {
+    onSelectArea(areaName, subLoc);
     onClose();
   }, [onSelectArea, onClose]);
-
-  const handleClear = useCallback(() => {
-    onSelectArea('All');
-    onClose();
-  }, [onSelectArea, onClose]);
-
-  const isFiltered = Boolean(selectedArea && selectedArea !== 'All');
 
   const renderItem = useCallback(({ item }: { item: FlatListItem }) => {
-    if (item.type === 'all_option') {
-      return (
-        <AllOptionRow
-          isFiltered={isFiltered}
-          onPress={handleClear}
-          C={C}
-          isDark={isDark}
-        />
-      );
-    }
-
     if (item.type === 'custom_query') {
       return (
         <TouchableOpacity
-          style={[styles.customRow, { backgroundColor: C.surface2, borderColor: SectorColors.blood }]}
+          style={[styles.customRow, { backgroundColor: C.surface, borderColor: C.border }]}
           onPress={() => handleSelect(item.query)}
           activeOpacity={0.75}
         >
-          <View style={[styles.itemIconBox, { backgroundColor: `${SectorColors.blood}18` }]}>
-            <Icon name="pin" size={15} color={SectorColors.blood} />
+          <View style={[styles.itemIconBox, { backgroundColor: C.surface2, borderColor: C.border, borderWidth: 1 }]}>
+            <AnimatedIcon family="feather" name="map-pin" size={15} color={C.text2} animation="spring" />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[styles.customTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-              Filter by &ldquo;{item.query}&rdquo;
+              Select &ldquo;{item.query}&rdquo;
             </Text>
             <Text style={[styles.customSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
               Custom hospital, clinic, or local landmark
             </Text>
           </View>
-          <Feather name="arrow-right" size={15} color={SectorColors.blood} />
+          <Feather name="arrow-right" size={15} color={C.text2} />
         </TouchableOpacity>
       );
     }
@@ -428,7 +347,7 @@ export function AreaPickerModal({
         isDark={isDark}
       />
     );
-  }, [isFiltered, handleClear, handleSelect, selectedArea, areaCounts, C, isDark]);
+  }, [handleSelect, selectedArea, areaCounts, C, isDark]);
 
   return (
     <>
@@ -440,7 +359,7 @@ export function AreaPickerModal({
       >
       <KeyboardAvoidingView
         style={styles.overlay}
-        behavior="padding"
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <TouchableOpacity
           style={styles.backdrop}
@@ -454,8 +373,8 @@ export function AreaPickerModal({
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
-              <View style={[styles.headerIcon, { backgroundColor: `${SectorColors.blood}18` }]}>
-                <Icon name="pin" size={17} color={SectorColors.blood} />
+              <View style={[styles.headerIcon, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2, borderColor: C.border, borderWidth: 1 }]}>
+                <AnimatedIcon family="feather" name="map-pin" size={17} color={C.text} animation="spring" />
               </View>
               <View>
                 <Text style={[styles.headerTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -468,55 +387,51 @@ export function AreaPickerModal({
             </View>
             <TouchableOpacity
               onPress={onClose}
-              style={[styles.closeBtn, { backgroundColor: C.surface2 }]}
+              style={[styles.closeBtn, { backgroundColor: C.surface2, borderColor: C.border, borderWidth: 1 }]}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               <Feather name="x" size={16} color={C.text2} />
             </TouchableOpacity>
           </View>
 
-          {/* 58dp Interactive Map & GPS Trigger */}
+          {/* 58dp Clean Interactive Map & GPS Trigger */}
           <TouchableOpacity
             style={[
               styles.mapTriggerCard58,
               {
-                backgroundColor: isDark ? `${SectorColors.blood}18` : `${SectorColors.blood}0f`,
-                borderColor: isDark ? `${SectorColors.blood}44` : `${SectorColors.blood}30`,
+                backgroundColor: C.surface,
+                borderColor: C.border,
               },
             ]}
             onPress={() => setMapPickerOpen(true)}
             activeOpacity={0.8}
           >
-            <View style={[styles.mapTriggerIconWrap, { backgroundColor: `${SectorColors.blood}24` }]}>
-              <Feather name="map" size={18} color={SectorColors.blood} />
+            <View style={[styles.mapTriggerIconWrap, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2, borderColor: C.border, borderWidth: 1 }]}>
+              <AnimatedIcon family="feather" name="map" size={18} color={C.text} animation="float" loop={true} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.mapTriggerTitle, { color: SectorColors.blood, fontFamily: FontFamily.jakartaBold }]}>
+              <Text style={[styles.mapTriggerTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                 Pick Hospital or Area on Map
               </Text>
               <Text style={[styles.mapTriggerSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
                 Pinpoint exact location or auto-detect with device GPS
               </Text>
             </View>
-            <Feather name="chevron-right" size={18} color={SectorColors.blood} />
+            <Feather name="chevron-right" size={16} color={C.textMuted} />
           </TouchableOpacity>
 
-          {/* Search Box with Clear Button */}
+          {/* Search Box with Clear Button (Standard 58dp) */}
           <View style={[styles.searchBox, { backgroundColor: C.surface2, borderColor: C.border }]}>
             <TouchableOpacity
               onPress={() => searchInputRef.current?.focus()}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Feather name="search" size={18} color={C.textMuted} />
+              <AnimatedIcon family="feather" name="search" size={18} color={C.textMuted} animation="spring" />
             </TouchableOpacity>
             <TextInput
               ref={searchInputRef}
               style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-              placeholder={
-                activeTab === 'hospital'
-                  ? 'Search hospital or clinic (e.g. DMCH, Square)...'
-                  : 'Search area or neighborhood (e.g. Mirpur, Uttara)...'
-              }
+              placeholder="Search hospital or area (e.g. DMCH, Mirpur, Square)..."
               placeholderTextColor={C.textMuted}
               value={search}
               onChangeText={setSearch}
@@ -533,94 +448,51 @@ export function AreaPickerModal({
             )}
           </View>
 
-          {/* Clean Dual Filter Tabs (Hospitals / Areas) */}
-          <View style={{ marginBottom: 12 }}>
-            <SegmentedTabs<TypeFilterTab>
-              size="sm"
-              tabs={PICKER_TABS}
-              activeTab={activeTab}
-              onTabChange={switchTab}
-            />
-          </View>
-
-          {/* Virtualized Lists: Search Results OR Pre-Mounted Dual Tab Panes */}
-          {search.trim().length > 0 ? (
-            <FlatList
-              data={searchListData}
-              renderItem={renderItem}
-              keyExtractor={keyExtractor}
-              style={styles.listScroll}
-              contentContainerStyle={styles.listContent}
-              initialNumToRender={8}
-              maxToRenderPerBatch={8}
-              windowSize={3}
-              removeClippedSubviews={false}
-              keyboardShouldPersistTaps="handled"
-              keyboardDismissMode="on-drag"
-              showsVerticalScrollIndicator={false}
-              ListEmptyComponent={
-                <View style={styles.emptyContainer}>
-                  <Feather name="map-pin" size={28} color={C.textMuted} />
-                  <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                    No locations found
-                  </Text>
-                  <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                    Try typing a different hospital name or area keyword.
-                  </Text>
-                </View>
-              }
-            />
-          ) : (
-            <View style={styles.listScroll}>
-              <View style={[styles.tabPane, activeTab === 'hospital' ? styles.tabPaneVisible : styles.tabPaneHidden]}>
-                <FlatList
-                  data={allowAll ? STATIC_HOSPITAL_ITEMS_WITH_ALL : STATIC_HOSPITAL_ITEMS_NO_ALL}
-                  renderItem={renderItem}
-                  keyExtractor={keyExtractor}
-                  contentContainerStyle={styles.listContent}
-                  initialNumToRender={8}
-                  maxToRenderPerBatch={8}
-                  windowSize={3}
-                  removeClippedSubviews={false}
-                  keyboardShouldPersistTaps="handled"
-                  keyboardDismissMode="on-drag"
-                  showsVerticalScrollIndicator={false}
-                />
+          {/* Unified Virtualized List with 8 Geographic Area & Hospital Zones */}
+          <FlatList
+            data={search.trim().length > 0 ? searchListData : STATIC_UNIFIED_ITEMS}
+            renderItem={renderItem}
+            keyExtractor={keyExtractor}
+            style={styles.listScroll}
+            contentContainerStyle={styles.listContent}
+            initialNumToRender={10}
+            maxToRenderPerBatch={10}
+            windowSize={5}
+            removeClippedSubviews={false}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <AnimatedIcon family="feather" name="map-pin" size={28} color={C.textMuted} animation="spring" />
+                <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  No locations found
+                </Text>
+                <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+                  Try typing a different hospital name or area keyword.
+                </Text>
               </View>
-              <View style={[styles.tabPane, activeTab === 'area' ? styles.tabPaneVisible : styles.tabPaneHidden]}>
-                <FlatList
-                  data={allowAll ? STATIC_AREA_ITEMS_WITH_ALL : STATIC_AREA_ITEMS_NO_ALL}
-                  renderItem={renderItem}
-                  keyExtractor={keyExtractor}
-                  contentContainerStyle={styles.listContent}
-                  initialNumToRender={8}
-                  maxToRenderPerBatch={8}
-                  windowSize={3}
-                  removeClippedSubviews={false}
-                  keyboardShouldPersistTaps="handled"
-                  keyboardDismissMode="on-drag"
-                  showsVerticalScrollIndicator={false}
-                />
-              </View>
-            </View>
-          )}
+            }
+          />
         </View>
       </KeyboardAvoidingView>
-    </Modal>
+      </Modal>
 
-    <LocationPickerModal
-      visible={mapPickerOpen}
-      onClose={() => setMapPickerOpen(false)}
-      accentColor={SectorColors.blood}
-      title="Pick Hospital / Area on Map"
-      initialPlaceName={selectedArea}
-      onSelectLocation={(place) => {
-        setMapPickerOpen(false);
-        handleSelect(place.formattedAddress);
-        onClose();
-      }}
-    />
-  </>
+      {/* Embedded Location & Hospital Map Picker Modal */}
+      {mapPickerOpen && (
+        <LocationPickerModal
+          visible={mapPickerOpen}
+          onClose={() => setMapPickerOpen(false)}
+          onSelectLocation={loc => {
+            const locName = loc.name || loc.formattedAddress || 'Selected Location';
+            const subLoc = loc.zone || loc.subText;
+            handleSelect(locName, subLoc);
+            setMapPickerOpen(false);
+          }}
+          title="Pick Hospital or Area"
+        />
+      )}
+    </>
   );
 }
 
@@ -628,31 +500,35 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.5)',
   } as ViewStyle,
   backdrop: {
-    ...StyleSheet.absoluteFill,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.55)',
   } as ViewStyle,
   sheet: {
-    maxHeight: '85%',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    borderWidth: 1,
-    paddingTop: 10,
+    borderTopWidth: 1,
     paddingHorizontal: Layout.screenPadding,
+    maxHeight: '88%',
   } as ViewStyle,
   handle: {
-    width: 38,
+    width: 36,
     height: 4,
     borderRadius: 2,
     alignSelf: 'center',
+    marginTop: 10,
     marginBottom: 12,
   } as ViewStyle,
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingBottom: 12,
+    marginBottom: 12,
   } as ViewStyle,
   headerLeft: {
     flexDirection: 'row',
@@ -660,9 +536,9 @@ const styles = StyleSheet.create({
     gap: 10,
   } as ViewStyle,
   headerIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
@@ -670,7 +546,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   } as TextStyle,
   headerSub: {
-    fontSize: 11.5,
+    fontSize: 12,
     marginTop: 1,
   } as TextStyle,
   closeBtn: {
@@ -680,21 +556,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
-  /* 58dp Map & GPS Trigger Card */
+
+  // 58dp Map Trigger Card
   mapTriggerCard58: {
-    height: Layout.controlHeight,
-    borderRadius: Layout.controlRadius,
-    borderWidth: 1.2,
+    height: 58,
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    marginBottom: 10,
     gap: 12,
+    marginBottom: 10,
   } as ViewStyle,
   mapTriggerIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 38,
+    height: 38,
+    borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
@@ -713,12 +590,12 @@ const styles = StyleSheet.create({
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
     height: 58,
     borderRadius: 16,
     borderWidth: 1,
     paddingHorizontal: 16,
-    marginBottom: 10,
+    marginBottom: 12,
   } as ViewStyle,
   searchInput: {
     flex: 1,
@@ -731,20 +608,10 @@ const styles = StyleSheet.create({
 
   // Virtualized List Scroll
   listScroll: {
-    maxHeight: 480,
-  } as ViewStyle,
-  tabPane: {
-    height: '100%',
-    width: '100%',
-  } as ViewStyle,
-  tabPaneVisible: {
-    display: 'flex',
-  } as ViewStyle,
-  tabPaneHidden: {
-    display: 'none',
+    maxHeight: 520,
   } as ViewStyle,
   listContent: {
-    paddingBottom: 20,
+    paddingBottom: 24,
   } as ViewStyle,
 
   // Custom Search Query Row
@@ -752,17 +619,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    padding: 12,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    marginBottom: 10,
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 8,
   } as ViewStyle,
   customTitle: {
-    fontSize: 13.5,
+    fontSize: 14,
   } as TextStyle,
   customSub: {
-    fontSize: 11,
-    marginTop: 1,
+    fontSize: 11.5,
+    marginTop: 2,
   } as TextStyle,
 
   // Empty State
@@ -786,7 +653,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 10,
+    marginTop: 12,
     marginBottom: 8,
     paddingHorizontal: 2,
   } as ViewStyle,
@@ -795,12 +662,12 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
   } as TextStyle,
   zoneCountBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
     borderRadius: 8,
   } as ViewStyle,
   zoneCountTxt: {
-    fontSize: 10,
+    fontSize: 10.5,
   } as TextStyle,
 
   // Standalone Card Bars (Standard 72dp Content Row: 44dp icon + 28dp padding)
@@ -839,7 +706,7 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   } as ViewStyle,
   countPill: {
-    paddingHorizontal: 7,
+    paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,
   } as ViewStyle,

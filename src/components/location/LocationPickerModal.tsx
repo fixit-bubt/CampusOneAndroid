@@ -753,14 +753,10 @@ export function LocationPickerModal({
           </View>
         )}
 
-        {/* Native Floating Pin & Reticle Layer (High-Performance 120 FPS on Android RenderThread) */}
+        {/* Native Floating Pin & Ground Anchor Layer (High-Performance 120 FPS on Android RenderThread) */}
         <View pointerEvents="none" style={styles.nativePinCenterOverlay}>
           <View style={styles.centerAnchor}>
-            {/* Target Reticle on Ground */}
-            <View style={[styles.nativeReticleRing, { borderColor: accentColor }]}>
-              <View style={[styles.nativeReticleDot, { backgroundColor: accentColor }]} />
-            </View>
-            {/* Ground Shadow - Stays firmly grounded on (0, 0), shrinks and fades on lift */}
+            {/* Ground Anchor Shadow - Firmly grounded on (0, 0), shrinks and fades on lift */}
             <Animated.View
               style={[
                 styles.nativeGroundShadow,
@@ -770,7 +766,10 @@ export function LocationPickerModal({
                 },
               ]}
             />
-            {/* Spring Floating Pin - Authentic vector teardrop pointing straight down into (0, 0) */}
+            {/* Ground Precision Target Dot */}
+            <View style={[styles.nativeReticleDot, { backgroundColor: accentColor }]} />
+
+            {/* Spring Floating Pin - Google Maps style vector teardrop with centered badge */}
             <Animated.View
               style={[
                 styles.nativePinContainer,
@@ -784,10 +783,18 @@ export function LocationPickerModal({
                   d="M 19 47.5 C 18 45.5, 2 27, 2 19 A 17 17 0 1 1 36 19 C 36 27, 20 45.5, 19 47.5 Z"
                   fill={accentColor}
                   stroke="#ffffff"
-                  strokeWidth="2.5"
+                  strokeWidth="2.2"
                   strokeLinejoin="round"
                 />
-                <Circle cx="19" cy="19" r="6" fill="#ffffff" />
+                <Circle cx="19" cy="18" r="7.5" fill="#ffffff" />
+                {accentColor === SectorColors.blood ? (
+                  <Path
+                    d="M 17.5 13.5 H 20.5 V 16.5 H 23.5 V 19.5 H 20.5 V 22.5 H 17.5 V 19.5 H 14.5 V 16.5 H 17.5 Z"
+                    fill={accentColor}
+                  />
+                ) : (
+                  <Circle cx="19" cy="18" r="3.5" fill={accentColor} />
+                )}
               </Svg>
             </Animated.View>
           </View>
@@ -1557,9 +1564,13 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   nativeReticleDot: {
+    position: 'absolute',
+    left: -3,
+    top: -3,
     width: 6,
     height: 6,
     borderRadius: 3,
+    opacity: 0.9,
   },
   nativeGroundShadow: {
     position: 'absolute',

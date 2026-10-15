@@ -205,8 +205,8 @@ export function DonorRegisterScreen({ navigation }: any) {
             styles.selectorCard,
             {
               backgroundColor: C.surface,
-              borderColor: area ? SectorColors.blood : C.border,
-              borderWidth: area ? 1.5 : 1,
+              borderColor: C.border,
+              borderWidth: 1,
             },
           ]}
           onPress={() => setAreaModalVisible(true)}
@@ -216,7 +216,9 @@ export function DonorRegisterScreen({ navigation }: any) {
             style={[
               styles.selectorIconBox,
               {
-                backgroundColor: area ? `${SectorColors.blood}16` : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2),
+                backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2,
+                borderColor: C.border,
+                borderWidth: 1,
               },
             ]}
           >
@@ -225,7 +227,7 @@ export function DonorRegisterScreen({ navigation }: any) {
               family="feather"
               name="map-pin"
               size={20}
-              color={area ? SectorColors.blood : C.textMuted}
+              color={C.text}
               animation="spring"
             />
           </View>

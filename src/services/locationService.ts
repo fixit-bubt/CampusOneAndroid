@@ -1258,6 +1258,23 @@ export async function getCurrentUserCoordinates(): Promise<Coordinates | null> {
       return null;
     }
 
+    // Fast-path: Check last known position first (0ms latency, prevents cold-start blocking)
+    try {
+      const last = await Location.getLastKnownPositionAsync();
+      if (
+        last?.coords &&
+        Number.isFinite(last.coords.latitude) &&
+        Number.isFinite(last.coords.longitude)
+      ) {
+        return {
+          latitude: last.coords.latitude,
+          longitude: last.coords.longitude,
+        };
+      }
+    } catch {
+      // Continue to fresh GPS fix
+    }
+
     const loc = await Location.getCurrentPositionAsync({
       accuracy: Location.Accuracy.Balanced,
     });
@@ -1331,16 +1348,29 @@ export async function reverseGeocodeCoords(
     if (res.ok) {
       const data = await res.json();
       const addr = data.address || {};
-      const placeName =
+      let placeName =
         addr.amenity ||
         addr.building ||
-        addr.road ||
+        addr.village ||
+        addr.hamlet ||
+        addr.town ||
         addr.suburb ||
         addr.neighbourhood ||
         addr.residential ||
-        data.name ||
-        (inBd ? 'Dhaka Location' : 'Custom Map Pin');
-      const cityArea = addr.suburb || addr.quarter || addr.city_district || addr.city || (inBd ? 'Dhaka' : addr.country || '');
+        addr.road ||
+        data.name;
+      let cityArea = addr.suburb || addr.quarter || addr.city_district || addr.village || addr.city || (inBd ? 'Dhaka' : addr.country || '');
+
+      if (!placeName || placeName === 'Dhaka Location') {
+        const nearby = findNearestLandmark(coords, 5000);
+        if (nearby) {
+          placeName = nearby.name;
+          cityArea = nearby.zone;
+        } else {
+          placeName = inBd ? 'Dhaka Location' : 'Custom Map Pin';
+        }
+      }
+
       const formatted = cityArea && placeName !== cityArea ? `${placeName}, ${cityArea}` : placeName;
 
       return {
@@ -1386,12 +1416,16 @@ export async function reverseGeocodeCoords(
     // Native geocoder fallback
   }
 
-  // 4. Clean Coordinate Fallback
+  // 4. Clean Neighborhood / Landmark Fallback
+  const nearby = findNearestLandmark(coords, 2500);
+  const fallbackName = nearby ? nearby.name : (inBd ? 'Dhaka Location' : 'Selected Pin');
+  const fallbackZone = nearby?.zone || (inBd ? 'Dhaka' : 'Map Pin');
+
   return {
-    name: inBd ? 'Dhaka Location' : 'Selected Pin',
-    zone: inBd ? 'Mirpur & Campus' : 'Map Pin',
-    subText: inBd ? `Dhaka · ${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}` : `${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`,
-    formattedAddress: `${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`,
+    name: fallbackName,
+    zone: fallbackZone,
+    subText: inBd ? `${fallbackZone} · ${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}` : `${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`,
+    formattedAddress: `${fallbackName} (${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)})`,
     coords,
   };
 }
