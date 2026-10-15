@@ -299,7 +299,7 @@ All top bars across the application are standardized to **60 dp** fixed outer he
 * **Left Brandmark Anchor:** Houses the authentic 32×32 dp vector `LogoMark` on the left.
 * **Beside-Logo Single Title / Brandmark Hierarchy:**
   * Clean, clutter-free single title or brandmark vertically centered beside the 32dp `LogoMark` with zero secondary subtitle clutter beneath.
-  * Title: `fontSize: 18.5 px`, Plus Jakarta Sans ExtraBold (`FontFamily.jakartaExtraBold`), line height 24 px.
+  * Title: `fontSize: 18.5 px`, Plus Jakarta Sans ExtraBold (`FontFamily.jakartaExtraBold`), line height 28 px, `letterSpacing: 0`, and `includeFontPadding: false` to ensure Bengali characters with upper matras (ি, ী, র্, ঁ) are never sliced off at the top and never truncate with ellipsis (`...`).
   * Home Screen Brandmark: On `HomeScreen`, `AdminDashboardScreen`, and `StaffDashboardScreen`, renders `Campus` (`fontSize: 19 px`, `C.text`) and `One` (`fontSize: 19 px`, `#34d399` dark / `#059669` light) with dynamic role badge pill (`ADMIN` / `STAFF`: `paddingHorizontal: 6`, `paddingVertical: 2`, `borderRadius: 6`).
 * **Other Root Tabs:** Displays the single localized tab title (`t.study2.studyHub`, `t.messages.title`, `t.tabs.explore`, `t.tabs.settings`) beside the 32dp LogoMark with zero redundant subtitles.
 * **Right Slot:** Standard 40×40 dp container supporting notification bell (with unread badge) or directory search shortcut.
@@ -308,25 +308,28 @@ All top bars across the application are standardized to **60 dp** fixed outer he
 * **Outer Height:** Fixed `60 dp` (standardized from legacy 54 dp for 100% height parity).
 * **Bilateral Symmetry Standard:**
   * **Left Side:** 40×40 dp tactile icon button (`styles.iconBtn`, `borderRadius: 14 dp`, `borderWidth: 1 dp`, `backgroundColor: C.surface2`) housing a 20 px left arrow (`arrowL`).
-  * **Center:** Centered title text (`subbarTitle`: `fontSize: 16.5 px`, Plus Jakarta Sans Bold, `textAlign: 'center'`), single-line clamped (`numberOfLines={1}`).
+  * **Center:** Centered title text (`subbarTitle`: `fontSize: 16.5 px`, `lineHeight: 24 px`, `letterSpacing: 0`, `includeFontPadding: false`, Plus Jakarta Sans Bold, `textAlign: 'center'`), single-line clamped (`numberOfLines={1}`).
   * **Right Side:** Dedicated 40×40 dp alignment box (`subbarRightBox`) housing a 28×28 dp `LogoMark` (or custom action button), delivering perfect bilateral symmetry so the title remains dead-center.
 * **App-Wide Adoption:** Applied automatically across all ~40 child sub-screens that import `SubBar`.
 
 ---
 
-## 12. Bilingual Parity & Zero-Dropdown Layout Constraints
+## 12. Bilingual Parity, Matra Protection & Clean Settings Standard (Option A)
 
 Switching between English and Bengali must NEVER cause vertical jumping, card stretching, or screen dropdown shifts.
 
 ### 1. Root Cause Analysis
-Bengali typography utilizes diacritics (matras) and compound characters that can expand font line heights and wrap words onto a second line if card containers lack fixed heights or unbounded line counts. In particular, unconstrained profile cards (`padding: 16` without explicit height) expanded by +14dp in Bengali due to ascender matras (ি, ী, র্, ঁ).
+Bengali typography utilizes diacritics (matras) and compound characters that can expand font line heights and wrap words onto a second line if card containers lack fixed heights or unbounded line counts. In particular, unconstrained profile cards (`padding: 16` without explicit height) expanded by +14dp in Bengali due to ascender matras (ি, ী, র্, ঁ). Furthermore, tight line-height constraints sliced off upper matras and negative letter-spacing broke conjunct cluster calculations, causing false ellipsis (`...`) truncation.
 
 ### 2. Mandatory Structural Constraints
-1. **Fixed Card & Profile Heights Everywhere:**
+1. **Option A Clean Settings Standard:**
+   - Setting items in `SettingsScreen.tsx` and category cards in `NotifSettingsScreen.tsx` are standardized to clean single-line rows (`[Icon] [Title] [Chevron / Switch]`) with zero redundant subtitle clutter.
+   - `cardLabel` uses `fontSize: 15.5 px`, `lineHeight: 22 px`, `letterSpacing: 0`, and `includeFontPadding: false`.
+2. **Fixed Card & Profile Heights Everywhere:**
    - Profile Card in Settings must use fixed `height: 96 dp`, `paddingHorizontal: 16 dp`, and explicit `justifyContent: 'center'`.
    - Content cards, setting items, and feed cards must use explicit fixed heights (`height: 72 dp` or `height: 58 dp`), NEVER unbounded `minHeight`.
-2. **Matra-Safe Line Heights & Typography Scale:**
-   - Setting labels use `lineHeight: 20 px`, subtitles `lineHeight: 16 px`.
+3. **Matra-Safe Line Heights & Typography Scale:**
+   - Setting labels use `lineHeight: 22 px`.
    - Profile name uses `fontSize: 17 px`, `lineHeight: 22 px`. Profile meta uses `fontSize: 12 px`, `lineHeight: 16 px`.
    - Role badge pill uses fixed `height: 22 dp`, `borderRadius: 11 dp`, and `roleText` `lineHeight: 15 px` so the top ref (র্) on "শিক্ষার্থী" is never clipped.
    - Section labels use relaxed `letterSpacing: 0.2` (avoiding Latin `0.8` that breaks Bengali ligatures).

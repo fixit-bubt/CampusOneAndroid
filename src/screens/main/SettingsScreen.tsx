@@ -241,7 +241,6 @@ export function SettingsScreen({ navigation }: any) {
             iconColor={roleHex}
             animation="wobble"
             label={t.mainx.adminDashboardTitle}
-            sub={t.mainx.adminDashboardSub}
             C={C}
             onPress={() => navigation.navigate('AdminDashboard')}
           />
@@ -253,7 +252,6 @@ export function SettingsScreen({ navigation }: any) {
             iconColor={roleHex}
             animation="wobble"
             label={t.mainx.staffWorkspaceTitle}
-            sub={t.mainx.staffWorkspaceSub}
             C={C}
             onPress={() => navigation.navigate('StaffDashboard')}
           />
@@ -269,7 +267,7 @@ export function SettingsScreen({ navigation }: any) {
           iconColor={notifDisabled ? '#f59e0b' : C.brand}
           animation={notifDisabled ? 'wobble' : 'entrance'}
           label={t.mainx.notificationsTitle}
-          sub={notifDisabled ? t.mainx.notificationsDisabledSub : t.mainx.notificationsSub}
+          sub={notifDisabled ? t.mainx.notificationsDisabledSub : undefined}
           right={
             notifDisabled ? (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -286,7 +284,6 @@ export function SettingsScreen({ navigation }: any) {
           icon="refresh-cw"
           iconColor="#8b5cf6"
           label={t.mainx.optSync}
-          sub={t.mainx.optSyncSub}
           C={C}
           onPress={() => handleToggleOptSync(!optSync)}
           right={
@@ -302,7 +299,6 @@ export function SettingsScreen({ navigation }: any) {
           icon="hard-drive"
           iconColor="#0284c7"
           label={t.mainx.dataAndCache}
-          sub={t.mainx.dataAndCacheSub}
           C={C}
           onPress={() => setDataCacheOpen(true)}
         />
@@ -311,7 +307,6 @@ export function SettingsScreen({ navigation }: any) {
           icon="moon"
           iconColor="#6366f1"
           label={t.mainx.darkModeTitle}
-          sub={t.mainx.darkModeSub(appDark)}
           C={C}
           onPress={toggleTheme}
           right={
@@ -327,7 +322,6 @@ export function SettingsScreen({ navigation }: any) {
           icon="globe"
           iconColor="#10b981"
           label={t.mainx.language ?? 'Language'}
-          sub={t.mainx.languageSub(lang === 'bn')}
           C={C}
           onPress={toggleLang}
           right={
@@ -345,7 +339,6 @@ export function SettingsScreen({ navigation }: any) {
           icon="download-cloud"
           iconColor="#f59e0b"
           label={t.mainx.checkForUpdates}
-          sub={t.mainx.checkForUpdatesSub}
           C={C}
           onPress={handleCheckUpdates}
         />
@@ -359,7 +352,6 @@ export function SettingsScreen({ navigation }: any) {
           icon="share-2"
           iconColor="#3b82f6"
           label={t.mainx.shareAppTitle}
-          sub={t.mainx.shareAppSub}
           C={C}
           onPress={() => Share.share({ message: t.mainx.shareAppMessage })}
         />
@@ -368,7 +360,6 @@ export function SettingsScreen({ navigation }: any) {
           icon="shield"
           iconColor={C.brand}
           label={t.mainx.privacyPolicy}
-          sub={t.mainx.privacyPolicySub}
           C={C}
           onPress={() => navigation.navigate('PrivacyPolicy')}
         />
@@ -377,7 +368,6 @@ export function SettingsScreen({ navigation }: any) {
           icon="file-text"
           iconColor={C.brand}
           label={t.mainx.termsOfService}
-          sub={t.mainx.termsOfServiceSub}
           C={C}
           onPress={() => navigation.navigate('TermsOfService')}
         />
@@ -387,7 +377,6 @@ export function SettingsScreen({ navigation }: any) {
           iconColor="#8b5cf6"
           animation="float"
           label={t.mainx.aboutApp}
-          sub={t.mainx.aboutAppSub}
           C={C}
           onPress={() => setAboutOpen(true)}
         />
@@ -396,7 +385,6 @@ export function SettingsScreen({ navigation }: any) {
           icon="mail"
           iconColor={C.brand}
           label={t.mainx.contactSupport}
-          sub={t.mainx.contactSupportSub}
           C={C}
           onPress={() => Linking.openURL('mailto:campusone.bubt@gmail.com?subject=CampusOne%20Support')}
         />
@@ -410,7 +398,6 @@ export function SettingsScreen({ navigation }: any) {
           icon="key"
           iconColor={C.text2}
           label={t.mainx.changePassword}
-          sub={t.mainx.changePasswordSub}
           C={C}
           onPress={() => setPwOpen(true)}
         />
@@ -419,7 +406,6 @@ export function SettingsScreen({ navigation }: any) {
           icon="log-out"
           iconColor={C.text2}
           label={t.mainx.signOut}
-          sub={t.mainx.signOutSub}
           C={C}
           onPress={signOut}
         />
@@ -429,7 +415,6 @@ export function SettingsScreen({ navigation }: any) {
           iconColor={C.danger}
           animation="wobble"
           label={t.mainx.deleteAccount}
-          sub={t.mainx.deleteAccountSub}
           C={C}
           onPress={() => setDelOpen(true)}
         />
@@ -690,8 +675,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   } as ViewStyle,
   cardBody: { flex: 1, justifyContent: 'center' } as ViewStyle,
-  cardLabel: { fontSize: 14.5, lineHeight: 20 } as any,
-  cardSub: { fontSize: 11.5, lineHeight: 16, marginTop: 2 } as any,
+  cardLabel: {
+    fontSize: 15.5,
+    lineHeight: 22,
+    letterSpacing: 0,
+    includeFontPadding: false,
+  } as any,
+  cardSub: {
+    fontSize: 11.5,
+    lineHeight: 16,
+    letterSpacing: 0,
+    includeFontPadding: false,
+    marginTop: 2,
+  } as any,
 
   sheetOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' } as ViewStyle,
   sheetContent: {

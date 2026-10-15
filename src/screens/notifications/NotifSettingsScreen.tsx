@@ -292,8 +292,7 @@ export function NotifSettingsScreen({ navigation }: any) {
               <Icon name={paused ? 'bellOff' : 'bell'} size={22} color={paused ? C.danger : C.brand} />
             </View>
             <View style={styles.settingBody}>
-              <Text style={[styles.settingTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.notif.pauseAll}</Text>
-              <Text style={[styles.settingSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{t.notif.pauseAllSub}</Text>
+              <Text style={[styles.settingTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>{t.notif.pauseAll}</Text>
             </View>
             <View pointerEvents="none">
               <TactileSwitch
@@ -317,8 +316,7 @@ export function NotifSettingsScreen({ navigation }: any) {
               <Icon name="clock" size={22} color={Accent.purple} />
             </View>
             <View style={styles.settingBody}>
-              <Text style={[styles.settingTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.notif.quietHours}</Text>
-              <Text style={[styles.settingSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{t.notif.quietHoursSub}</Text>
+              <Text style={[styles.settingTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>{t.notif.quietHours}</Text>
             </View>
             <View pointerEvents="none">
               <TactileSwitch
@@ -360,21 +358,16 @@ export function NotifSettingsScreen({ navigation }: any) {
                 },
               ]}
             >
-              <View style={[styles.sectorRow, { paddingBottom: isOpen ? 6 : 14 }]}>
+              <View style={[styles.sectorRow, { paddingBottom: isOpen ? 8 : 14 }]}>
                 <TouchableOpacity
                   style={styles.sectorMain}
                   onPress={() => setExpanded(isOpen ? null : s.id)}
                   activeOpacity={0.75}
                 >
                   <SectorIcon sector={s.id} size="sm" />
-                  <View style={styles.sectorBody}>
-                    <Text style={[styles.sectorTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                      {s.label}
-                    </Text>
-                    <Text style={[styles.sectorDesc, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                      {s.desc}
-                    </Text>
-                  </View>
+                  <Text style={[styles.sectorTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                    {s.label}
+                  </Text>
                 </TouchableOpacity>
                 <TactileSwitch
                   value={p.enabled}
@@ -531,8 +524,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexShrink: 0,
   } as ViewStyle,
-  settingBody: { flex: 1 } as ViewStyle,
-  settingTitle: { fontSize: 14.5 } as any,
+  settingBody: { flex: 1, justifyContent: 'center' } as ViewStyle,
+  settingTitle: {
+    fontSize: 15.5,
+    lineHeight: 22,
+    letterSpacing: 0,
+    includeFontPadding: false,
+  } as any,
   settingSub: { fontSize: 12, marginTop: 2 } as any,
   catsHeader: {
     flexDirection: 'row',
@@ -541,7 +539,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     marginBottom: 10,
   } as ViewStyle,
-  catsTitle: { fontSize: 11, letterSpacing: 0.6 } as any,
+  catsTitle: { fontSize: 11, letterSpacing: 0.2, includeFontPadding: false } as any,
   catsSub: { fontSize: 12, marginTop: 2 } as any,
   toggleAll: { fontSize: 13 } as any,
   sectorCard: {
@@ -554,7 +552,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 14,
-    paddingTop: 14,
+    paddingVertical: 14,
     gap: 12,
   } as ViewStyle,
   sectorMain: {
@@ -563,9 +561,13 @@ const styles = StyleSheet.create({
     gap: 12,
     flex: 1,
   } as ViewStyle,
-  sectorBody: { flex: 1 } as ViewStyle,
-  sectorTitle: { fontSize: 14.5 } as any,
-  sectorDesc: { fontSize: 12, marginTop: 2 } as any,
+  sectorTitle: {
+    fontSize: 15.5,
+    lineHeight: 22,
+    letterSpacing: 0,
+    includeFontPadding: false,
+    flex: 1,
+  } as any,
   chanRow: {
     flexDirection: 'row',
     gap: 8,

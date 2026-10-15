@@ -151,8 +151,9 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   titleText: {
     fontSize: 18.5,
-    letterSpacing: -0.3,
-    lineHeight: 24,
+    letterSpacing: 0,
+    lineHeight: 28,
+    includeFontPadding: false,
   } as any,
   brandRow: {
     flexDirection: 'row',
@@ -160,13 +161,15 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   brandCampus: {
     fontSize: 19,
-    letterSpacing: -0.4,
-    lineHeight: 24,
+    letterSpacing: -0.2,
+    lineHeight: 26,
+    includeFontPadding: false,
   } as any,
   brandOne: {
     fontSize: 19,
-    letterSpacing: -0.4,
-    lineHeight: 24,
+    letterSpacing: -0.2,
+    lineHeight: 26,
+    includeFontPadding: false,
   } as any,
   roleBadge: {
     marginLeft: 8,
@@ -195,7 +198,9 @@ const styles = StyleSheet.create({
   subbarTitle: {
     flex: 1,
     fontSize: 16.5,
-    letterSpacing: -0.2,
+    letterSpacing: 0,
+    lineHeight: 24,
+    includeFontPadding: false,
     textAlign: 'center',
   } as any,
   subbarRightBox: {

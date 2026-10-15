@@ -318,7 +318,7 @@ const sheetStyles = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' } as ViewStyle,
   sheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 22, paddingTop: 10, paddingBottom: 36 } as ViewStyle,
   handle: { width: 38, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: 16 } as ViewStyle,
-  sheetTitle: { fontSize: 18, letterSpacing: -0.3, marginBottom: 16 } as any,
+  sheetTitle: { fontSize: 18, letterSpacing: 0, lineHeight: 24, includeFontPadding: false, marginBottom: 16 } as any,
   flabel: { fontSize: 11, letterSpacing: 0.7, marginBottom: 7, marginTop: 12, marginLeft: 2 } as any,
   input: { height: 58, borderRadius: 16, borderWidth: 1, paddingHorizontal: 16, fontSize: 14.5 } as any,
   textarea: { minHeight: 80, borderRadius: 12, borderWidth: 1, padding: 13, fontSize: 14, textAlignVertical: 'top' } as any,
@@ -1629,7 +1629,7 @@ const s = StyleSheet.create({
   } as ViewStyle,
   badgeTxt: { fontSize: 11, color: '#fff' } as any,
 
-  joinTitle: { fontSize: 16, letterSpacing: -0.2, marginBottom: 12 } as any,
+  joinTitle: { fontSize: 16, letterSpacing: 0, lineHeight: 22, includeFontPadding: false, marginBottom: 12 } as any,
   codeRow: { flexDirection: 'row', gap: 8 } as ViewStyle,
   codeInput: {
     flex: 1, height: 46, borderRadius: 12, borderWidth: 1,
@@ -1643,7 +1643,7 @@ const s = StyleSheet.create({
     width: 64, height: 64, borderRadius: 20,
     alignItems: 'center', justifyContent: 'center', marginBottom: 14,
   } as ViewStyle,
-  pendingTitle: { fontSize: 16, letterSpacing: -0.2 } as any,
+  pendingTitle: { fontSize: 16, letterSpacing: 0, lineHeight: 22, includeFontPadding: false } as any,
   pendingSub: { fontSize: 13, marginTop: 4, textAlign: 'center', lineHeight: 19 } as any,
 
   // Browse

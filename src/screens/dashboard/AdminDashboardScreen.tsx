@@ -366,7 +366,7 @@ export function AdminDashboardScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
   scroll: { paddingTop: 10, paddingBottom: 20 } as ViewStyle,
-  pageTitle: { fontSize: 19, letterSpacing: -0.3 } as any,
+  pageTitle: { fontSize: 19, letterSpacing: 0, lineHeight: 26, includeFontPadding: false } as any,
   intro: { fontSize: 13.5, marginTop: 2, marginBottom: 12 } as any,
   statGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 } as ViewStyle,
   statCard: { width: '47.5%', alignItems: 'center', padding: 12, borderRadius: 14, borderWidth: 1, gap: 4 } as ViewStyle,
