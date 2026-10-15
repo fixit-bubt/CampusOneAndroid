@@ -15,6 +15,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { useTheme } from '../../hooks/useTheme';
+import { useT } from '../../i18n';
 import { AnimatedIcon } from '../ui/AnimatedIcon';
 import { getMyReports } from '../../services/reportsService';
 import { getCache, setCache, CacheKeys } from '../../services/cacheService';
@@ -210,6 +211,7 @@ interface BusRouteData {
 }
 
 interface StripPillProps {
+  id?: StatusStripId;
   icon?: keyof typeof Feather.glyphMap;
   color?: string;
   title: string;
@@ -220,12 +222,15 @@ interface StripPillProps {
 }
 
 function StripPill({
+  id,
   title,
   onPress,
   borderRightColor,
   textColor,
   chevronColor,
 }: StripPillProps) {
+  const t = useT();
+  const displayTitle = (id && t.statusStrips?.titles?.[id]) || title;
   return (
     <TouchableOpacity
       activeOpacity={0.8}
@@ -233,7 +238,7 @@ function StripPill({
       style={[styles.leftPill, { borderRightColor }]}
     >
       <Text style={[styles.pillText, { color: textColor }]} numberOfLines={1}>
-        {title}
+        {displayTitle}
       </Text>
       <Feather name="chevron-right" size={13} color={chevronColor} />
     </TouchableOpacity>
@@ -245,6 +250,7 @@ export function HomeStatusStrips() {
   const insets = useSafeAreaInsets();
   const { C, isDark } = useTheme();
   const { user } = useAuth();
+  const t = useT();
 
   const [selectedStrips, setSelectedStrips] = useState<StatusStripId[]>(DEFAULT_STATUS_STRIP_IDS);
   const [modalVisible, setModalVisible] = useState(false);
@@ -613,7 +619,7 @@ export function HomeStatusStrips() {
       case 'reports':
         return (
           <View key="reports" style={[styles.strip, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <StripPill
+            <StripPill id={id}
               icon="alert-circle"
               color={SectorColors.reports}
               title="Reports"
@@ -645,7 +651,7 @@ export function HomeStatusStrips() {
       case 'bus':
         return (
           <View key="bus" style={[styles.strip, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <StripPill
+            <StripPill id={id}
               icon="truck"
               color={SectorColors.bus}
               title="Bus"
@@ -685,7 +691,7 @@ export function HomeStatusStrips() {
       case 'prayer':
         return (
           <View key="prayer" style={[styles.strip, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <StripPill
+            <StripPill id={id}
               icon="sun"
               color={SectorColors.prayer}
               title="Prayer"
@@ -725,7 +731,7 @@ export function HomeStatusStrips() {
       case 'blood':
         return (
           <View key="blood" style={[styles.strip, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <StripPill
+            <StripPill id={id}
               icon="heart"
               color={SectorColors.blood}
               title="Blood"
@@ -759,7 +765,7 @@ export function HomeStatusStrips() {
       case 'rides':
         return (
           <View key="rides" style={[styles.strip, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <StripPill
+            <StripPill id={id}
               icon="navigation"
               color={SectorColors.ride}
               title="Rides"
@@ -791,7 +797,7 @@ export function HomeStatusStrips() {
       case 'market':
         return (
           <View key="market" style={[styles.strip, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <StripPill
+            <StripPill id={id}
               icon="shopping-bag"
               color={SectorColors.market}
               title="Market"
@@ -823,7 +829,7 @@ export function HomeStatusStrips() {
       case 'lostfound':
         return (
           <View key="lostfound" style={[styles.strip, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <StripPill
+            <StripPill id={id}
               icon="search"
               color={SectorColors.lostfound}
               title="Lost"
@@ -855,7 +861,7 @@ export function HomeStatusStrips() {
       case 'jobs':
         return (
           <View key="jobs" style={[styles.strip, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <StripPill
+            <StripPill id={id}
               icon="briefcase"
               color={SectorColors.jobs}
               title="Jobs"
@@ -887,7 +893,7 @@ export function HomeStatusStrips() {
       case 'study':
         return (
           <View key="study" style={[styles.strip, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <StripPill
+            <StripPill id={id}
               icon="book-open"
               color={SectorColors.study}
               title="Study"
@@ -919,7 +925,7 @@ export function HomeStatusStrips() {
       case 'events':
         return (
           <View key="events" style={[styles.strip, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <StripPill
+            <StripPill id={id}
               icon="calendar"
               color={SectorColors.events}
               title="Events"
@@ -951,7 +957,7 @@ export function HomeStatusStrips() {
       case 'clubs':
         return (
           <View key="clubs" style={[styles.strip, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <StripPill
+            <StripPill id={id}
               icon="users"
               color={SectorColors.clubs}
               title="Clubs"
@@ -983,7 +989,7 @@ export function HomeStatusStrips() {
       case 'medical':
         return (
           <View key="medical" style={[styles.strip, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <StripPill
+            <StripPill id={id}
               icon="activity"
               color={SectorColors.medical}
               title="Medical"
@@ -1015,7 +1021,7 @@ export function HomeStatusStrips() {
       case 'directory':
         return (
           <View key="directory" style={[styles.strip, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <StripPill
+            <StripPill id={id}
               icon="user"
               color={SectorColors.directory}
               title="Directory"
@@ -1047,7 +1053,7 @@ export function HomeStatusStrips() {
       case 'faculty':
         return (
           <View key="faculty" style={[styles.strip, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <StripPill
+            <StripPill id={id}
               icon="user-check"
               color={SectorColors.faculty}
               title="Faculty"
@@ -1079,7 +1085,7 @@ export function HomeStatusStrips() {
       case 'routines':
         return (
           <View key="routines" style={[styles.strip, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <StripPill
+            <StripPill id={id}
               icon="clock"
               color={SectorColors.routines}
               title="Routine"
@@ -1111,7 +1117,7 @@ export function HomeStatusStrips() {
       case 'calendar':
         return (
           <View key="calendar" style={[styles.strip, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <StripPill
+            <StripPill id={id}
               icon="calendar"
               color={SectorColors.calendar}
               title="Calendar"
@@ -1143,7 +1149,7 @@ export function HomeStatusStrips() {
       case 'pdfmaker':
         return (
           <View key="pdfmaker" style={[styles.strip, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <StripPill
+            <StripPill id={id}
               icon="file"
               color={SectorColors.pdfmaker}
               title="PDF"
@@ -1175,7 +1181,7 @@ export function HomeStatusStrips() {
       case 'coverpage':
         return (
           <View key="coverpage" style={[styles.strip, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <StripPill
+            <StripPill id={id}
               icon="file-text"
               color={SectorColors.coverpage}
               title="Cover"
@@ -1207,7 +1213,7 @@ export function HomeStatusStrips() {
       case 'cgpa':
         return (
           <View key="cgpa" style={[styles.strip, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <StripPill
+            <StripPill id={id}
               icon="percent"
               color="#0e9c8a"
               title="CGPA"
@@ -1253,7 +1259,7 @@ export function HomeStatusStrips() {
               { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold },
             ]}
           >
-            CAMPUS PULSE
+            {t.statusStrips?.header ?? 'CAMPUS PULSE'}
           </Text>
         </View>
 
@@ -1273,7 +1279,7 @@ export function HomeStatusStrips() {
               { color: C.textMuted, fontFamily: FontFamily.jakartaBold },
             ]}
           >
-            Customize
+            {t.statusStrips?.customize ?? 'Customize'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -1324,7 +1330,7 @@ export function HomeStatusStrips() {
                     { color: C.text, fontFamily: FontFamily.jakartaExtraBold },
                   ]}
                 >
-                  Customize Status Cards
+                  {t.statusStrips?.modalTitle ?? 'Customize Status Cards'}
                 </Text>
                 <Text
                   style={[
@@ -1332,7 +1338,7 @@ export function HomeStatusStrips() {
                     { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
                   ]}
                 >
-                  Choose 3 campus status cards to pin on your home feed
+                  {t.statusStrips?.modalSubtitle ?? 'Choose 3 campus status cards to pin on your home feed'}
                 </Text>
               </View>
 
@@ -1423,7 +1429,7 @@ export function HomeStatusStrips() {
                           },
                         ]}
                       >
-                        {item.title}
+                        {t.statusStrips?.titles?.[item.id] ?? item.title}
                       </Text>
                       <Text
                         style={[
@@ -1481,7 +1487,7 @@ export function HomeStatusStrips() {
                     { color: C.textMuted, fontFamily: FontFamily.jakartaBold },
                   ]}
                 >
-                  Cancel
+                  {t.statusStrips?.cancel ?? 'Cancel'}
                 </Text>
               </TouchableOpacity>
 
@@ -1511,7 +1517,7 @@ export function HomeStatusStrips() {
                     },
                   ]}
                 >
-                  Save Changes
+                  {t.statusStrips?.save ?? 'Save Changes'}
                 </Text>
               </TouchableOpacity>
             </View>

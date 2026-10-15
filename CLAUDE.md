@@ -340,6 +340,17 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
   - Touch Ergonomics & Card Integration: Uses `TouchableOpacity` with `hitSlop={12}` (72 × 52 dp touch target). In row cards (`SettingCard`, notification toggles), row card is interactive via `onPress` while switch has `pointerEvents="none"` and `disabled={!onValueChange}`, allowing users to tap anywhere across the row without double-firing.
   - Replaces all legacy React Native `<Switch>` components across all 16 toggle locations in the app (Settings, Notifications, Profile, Marketplace, Study Hub, Medical, and Announcements).
 
+### 5.6 Universal 60dp Header Standard (`TopBar.tsx` & `SubBar`)
+- **Root Tab Header (`TopBar`):** Standardized to **60dp fixed height** (`styles.topbar`, `height: 60`). On `HomeScreen`, renders the primary CampusOne brandmark with live role badges and tagline. On other root tabs (`StudyHubScreen`, `MessagesHome`, `ExploreScreen`, `SettingsScreen`), renders the authentic 32×32 dp vector `LogoMark` on the left, paired with an 18px extra-bold title (`FontFamily.jakartaExtraBold`) and 10.5px medium subtitle beside it.
+- **Child Sub-Screen Header (`SubBar`):** Standardized to **60dp fixed height** (upgraded from legacy 54dp for 100% height parity). Features strict bilateral symmetry: 40×40 dp tactile icon button on the left (20px left arrow), centered title with single-line clamping, and a dedicated 40×40 dp box on the right housing a 28×28 dp `LogoMark` (or custom action slot). Applied automatically across all ~40 child sub-screens that import `SubBar`.
+
+### 5.7 Bilingual Parity & Zero-Dropdown Layout Constraints
+- **Zero Screen Dropdown Shift:** Toggling between English and Bengali must NEVER cause vertical jumping, card expansion, or screen dropdown shifts.
+- **Fixed Height Mandate:** All content cards, setting items, and status strips must enforce explicit fixed heights (`height: 72 dp` or `height: 58 dp`), eliminating unbounded auto/minHeight expansion.
+- **Single-Line Clamping:** Every card label, title, subtitle, and badge description must enforce `numberOfLines={1}` so longer Bengali strings never wrap into a second line and alter parent layout bounds.
+- **Typography Scale Alignment:** English and Bengali font sizes remain 1:1 identical across all screens (`fontSize: 14.5 px` for titles, `fontSize: 11.5 px` for subtitles).
+- **100% Localization Coverage:** Matching keys in `src/i18n/bn.ts` and `src/i18n/en.ts` for all sectors, shortcuts, status strips, and community updates.
+
 ---
 
 ## 6. Expo SDK 56 & Android Quirks

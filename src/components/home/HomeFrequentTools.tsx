@@ -14,6 +14,7 @@ import { Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
+import { useT } from '../../i18n';
 import { AnimatedIcon } from '../ui/AnimatedIcon';
 import { FontFamily, SectorColors } from '../../theme';
 
@@ -57,6 +58,7 @@ export function HomeFrequentTools() {
   const insets = useSafeAreaInsets();
   const { C, isDark } = useTheme();
   const { user } = useAuth();
+  const t = useT();
 
   const [selectedIds, setSelectedIds] = useState<string[]>(DEFAULT_TOOL_IDS);
   const [modalVisible, setModalVisible] = useState(false);
@@ -135,7 +137,7 @@ export function HomeFrequentTools() {
               { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold },
             ]}
           >
-            FREQUENTLY USED
+            {t.frequentTools?.header ?? 'FREQUENTLY USED'}
           </Text>
         </View>
 
@@ -155,7 +157,7 @@ export function HomeFrequentTools() {
               { color: C.textMuted, fontFamily: FontFamily.jakartaBold },
             ]}
           >
-            Customize
+            {t.frequentTools?.customize ?? 'Customize'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -196,7 +198,7 @@ export function HomeFrequentTools() {
               ]}
               numberOfLines={1}
             >
-              {tool.title}
+              {t.frequentTools?.titles?.[tool.id] ?? tool.title}
             </Text>
           </TouchableOpacity>
         ))}
@@ -243,7 +245,7 @@ export function HomeFrequentTools() {
                     { color: C.text, fontFamily: FontFamily.jakartaExtraBold },
                   ]}
                 >
-                  Customize Shortcuts
+                  {t.frequentTools?.modalTitle ?? 'Customize Shortcuts'}
                 </Text>
                 <Text
                   style={[
@@ -251,7 +253,7 @@ export function HomeFrequentTools() {
                     { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
                   ]}
                 >
-                  Choose 4 features for your home quick access
+                  {t.frequentTools?.modalSubtitle ?? 'Choose 4 features for your home quick access'}
                 </Text>
               </View>
 
@@ -344,7 +346,7 @@ export function HomeFrequentTools() {
                           ]}
                           numberOfLines={1}
                         >
-                          {item.title}
+                          {t.frequentTools?.titles?.[item.id] ?? item.title}
                         </Text>
                         <Text
                           style={[
@@ -403,7 +405,7 @@ export function HomeFrequentTools() {
                     { color: C.textMuted, fontFamily: FontFamily.jakartaBold },
                   ]}
                 >
-                  Reset Defaults
+                  {t.frequentTools?.reset ?? 'Reset Defaults'}
                 </Text>
               </TouchableOpacity>
 
@@ -434,7 +436,7 @@ export function HomeFrequentTools() {
                     },
                   ]}
                 >
-                  Save Shortcuts
+                  {t.frequentTools?.save ?? 'Save Shortcuts'}
                 </Text>
               </TouchableOpacity>
             </View>

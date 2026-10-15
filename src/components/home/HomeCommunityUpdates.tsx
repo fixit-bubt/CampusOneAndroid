@@ -14,6 +14,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
+import { useT } from '../../i18n';
 import { FontFamily, SectorColors, pillBg } from '../../theme';
 import { SegmentedTabs, type TabItem } from '../ui/SegmentedTabs';
 import { supabase } from '../../lib/supabase';
@@ -138,6 +139,7 @@ const DEFAULT_NEWS: CommunityItem[] = [
 export function HomeCommunityUpdates() {
   const navigation = useNavigation<any>();
   const { C, isDark } = useTheme();
+  const t = useT();
 
   const [activeTab, setActiveTab] = useState<CommunityTab>('Notices');
   const [items, setItems] = useState<CommunityItem[]>(DEFAULT_NEWS);
@@ -298,9 +300,9 @@ export function HomeCommunityUpdates() {
   }, [items, activeTab]);
 
   const tabs: TabItem<CommunityTab>[] = [
-    { id: 'Notices', label: 'Notices', count: counts.Notices, color: SectorColors.announce, showZeroCount: true },
-    { id: 'Clubs', label: 'Clubs', count: counts.Clubs, color: SectorColors.clubs, showZeroCount: true },
-    { id: 'Events', label: 'Events', count: counts.Events, color: SectorColors.events, showZeroCount: true },
+    { id: 'Notices', label: t.communityUpdates?.tabNotices ?? 'Notices', count: counts.Notices, color: SectorColors.announce, showZeroCount: true },
+    { id: 'Clubs', label: t.communityUpdates?.tabClubs ?? 'Clubs', count: counts.Clubs, color: SectorColors.clubs, showZeroCount: true },
+    { id: 'Events', label: t.communityUpdates?.tabEvents ?? 'Events', count: counts.Events, color: SectorColors.events, showZeroCount: true },
   ];
 
   return (
@@ -310,13 +312,13 @@ export function HomeCommunityUpdates() {
         <View style={styles.headerLeft}>
           <Feather name="rss" size={13} color={C.textMuted} />
           <Text style={[styles.headerText, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
-            COMMUNITY UPDATES
+            {t.communityUpdates?.header ?? 'COMMUNITY UPDATES'}
           </Text>
         </View>
         <View style={[styles.liveBadge, { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.15)' : '#eff6ff' }]}>
           <View style={styles.pulseDot} />
           <Text style={[styles.liveText, { color: SectorColors.announce, fontFamily: FontFamily.jakartaBold }]}>
-            {filtered.length > 99 ? '99+' : `${filtered.length} updates`}
+            {filtered.length > 99 ? '99+' : `${filtered.length} ${t.statusStrips?.metrics?.active ?? 'updates'}`}
           </Text>
         </View>
       </View>
@@ -338,7 +340,7 @@ export function HomeCommunityUpdates() {
         <View style={[styles.emptyBox, { backgroundColor: C.surface, borderColor: C.border }]}>
           <Feather name="inbox" size={24} color={C.textMuted} />
           <Text style={[styles.emptyText, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-            No updates found for this category.
+            {t.communityUpdates?.noUpdates ?? 'No updates found for this category.'}
           </Text>
         </View>
       ) : (
@@ -467,7 +469,7 @@ export function HomeCommunityUpdates() {
                       fontFamily: FontFamily.jakartaRegular,
                     },
                   ]}
-                  numberOfLines={2}
+                  numberOfLines={1}
                 >
                   {item.body}
                 </Text>
@@ -489,7 +491,11 @@ export function HomeCommunityUpdates() {
             activeOpacity={0.75}
           >
             <Text style={[styles.viewAllTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-              {activeTab === 'Notices' ? 'View All Campus Notices' : activeTab === 'Clubs' ? 'Browse All Campus Clubs' : 'Explore All Varsity Events'}
+              {activeTab === 'Notices'
+                ? (t.communityUpdates?.viewAllNotices ?? 'View All Campus Notices')
+                : activeTab === 'Clubs'
+                ? (t.communityUpdates?.viewAllClubs ?? 'Browse All Campus Clubs')
+                : (t.communityUpdates?.viewAllEvents ?? 'Explore All Varsity Events')}
             </Text>
             <Feather name="arrow-right" size={14} color={C.brand} />
           </TouchableOpacity>
@@ -570,9 +576,11 @@ const styles = StyleSheet.create({
   } as ViewStyle,
 
   card: {
+    height: 72,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     borderRadius: 16,
     borderWidth: 1,
     gap: 12,

@@ -12,7 +12,7 @@ import { useToast } from '../../components/ui/Toast';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
-import { SubBar } from '../../components/layout/TopBar';
+import { TopBar, SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { Avatar } from '../../components/ui/Avatar';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
@@ -1425,9 +1425,15 @@ export function StudyHubScreen({ navigation }: any) {
     : sub === 'browse' ? t.study2.browseSections
     : t.study2.studyHub;
 
+  const isRootTab = !isAdmin && sub === 'home';
+
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={[s.safe, { backgroundColor: C.bg }]}>
-      <SubBar title={barTitle} onBack={handleBack} />
+      {isRootTab ? (
+        <TopBar title={t.study2.studyHub} subtitle={t.study2.studyHubSubtitle} />
+      ) : (
+        <SubBar title={barTitle} onBack={handleBack} />
+      )}
       <OfflineBanner
         visible={isOffline}
         message="Showing cached study hub courses and materials."

@@ -14,21 +14,33 @@ import type { Profile } from '../../types/database';
 interface TopBarProps {
   profile?: Profile | null;
   title?: string;
+  subtitle?: string;
   unread?: number;
   onBell?: () => void;
   onAvatar?: () => void;
   right?: React.ReactNode;
 }
 
-export function TopBar({ profile, title, unread = 0, onBell, right }: TopBarProps) {
+export function TopBar({ profile, title, subtitle: customSubtitle, unread = 0, onBell, right }: TopBarProps) {
   const { C, isDark } = useTheme();
   const t = useT();
 
   if (title) {
     return (
       <View style={[styles.topbar, { backgroundColor: C.surface, borderBottomColor: C.border, paddingHorizontal: Layout.screenPadding }]}>
-        <LogoMark size={30} shadow={false} />
-        <Text style={[styles.dashTitle, { flex: 1, color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{title}</Text>
+        <View style={styles.brandGroup}>
+          <LogoMark size={32} shadow={false} />
+          <View style={styles.brandTextCol}>
+            <Text style={[styles.brandCampus, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]} numberOfLines={1}>
+              {title}
+            </Text>
+            {customSubtitle ? (
+              <Text style={[styles.brandSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                {customSubtitle}
+              </Text>
+            ) : null}
+          </View>
+        </View>
         {right ?? null}
       </View>
     );
@@ -120,13 +132,20 @@ export function SubBar({ title, onBack, right, rightSlot }: SubBarProps) {
   const { C } = useTheme();
   return (
     <View style={[styles.subbar, { backgroundColor: C.surface, borderBottomColor: C.border, paddingHorizontal: Layout.screenPadding }]}>
-      <TouchableOpacity onPress={onBack} style={[styles.iconBtn, { backgroundColor: C.surface2, borderColor: C.border }]} hitSlop={8}>
+      <TouchableOpacity
+        onPress={onBack}
+        style={[styles.iconBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+        hitSlop={8}
+        activeOpacity={0.75}
+        accessibilityLabel="Go back"
+        accessibilityRole="button"
+      >
         <Icon name="arrowL" size={20} color={C.text} />
       </TouchableOpacity>
       <Text style={[styles.subbarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
         {title}
       </Text>
-      <View style={{ minWidth: 40, alignItems: 'flex-end' }}>
+      <View style={styles.subbarRightBox}>
         {rightSlot ?? right ?? <LogoMark size={28} shadow={false} />}
       </View>
     </View>
@@ -188,12 +207,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   } as ViewStyle,
-  dashTitle: {
-    fontSize: 18,
-    letterSpacing: -0.3,
-  } as any,
   subbar: {
-    height: 54,
+    height: 60,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
@@ -201,9 +216,16 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   subbarTitle: {
     flex: 1,
-    fontSize: FontSize.md,
+    fontSize: 16.5,
+    letterSpacing: -0.2,
     textAlign: 'center',
   } as any,
+  subbarRightBox: {
+    minWidth: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
   iconBtn: {
     width: 40,
     height: 40,

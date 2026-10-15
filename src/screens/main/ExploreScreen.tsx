@@ -10,6 +10,7 @@ import { useAuth } from '../../store/authStore';
 import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
 import { CollapsibleSection } from '../../components/ui/CollapsibleSection';
 import { SectorIcon } from '../../components/ui/SectorIcon';
+import { TopBar } from '../../components/layout/TopBar';
 import { FontFamily, Layout, SectorColors, pillBg } from '../../theme';
 import type { SectorKey } from '../../theme';
 
@@ -101,6 +102,8 @@ export function ExploreScreen({ navigation }: any) {
   const pick = (ids: SectorKey[]) => ids.map((id) => sectors.find((s) => s.id === id)).filter((s): s is typeof sectors[number] => !!s);
 
   function renderSectorRow(s: { id: SectorKey; en: string; dEn: string }, accentColor: string, index: number = 0) {
+    const title = t.sectorTitles?.[s.id] ?? s.en;
+    const desc = t.sectorDescs?.[s.id] ?? s.dEn;
     return (
       <TouchableOpacity
         key={s.id}
@@ -117,11 +120,11 @@ export function ExploreScreen({ navigation }: any) {
       >
         <SectorIcon sector={s.id} size="md" animation="entrance" delay={index * 35} />
         <View style={{ flex: 1 }}>
-          <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-            {s.en}
+          <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+            {title}
           </Text>
-          <Text style={[styles.childDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
-            {s.dEn}
+          <Text style={[styles.childDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+            {desc}
           </Text>
         </View>
         <Feather name="chevron-right" size={17} color={accentColor} />
@@ -140,14 +143,10 @@ export function ExploreScreen({ navigation }: any) {
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={[styles.safe, { backgroundColor: C.bg }]}>
-      <View style={[styles.tabHeader, { paddingHorizontal: Layout.screenPadding }]}>
-        <Text style={[styles.tabSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-          CampusOne
-        </Text>
-        <Text style={[styles.tabTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-          Explore
-        </Text>
-      </View>
+      <TopBar
+        title={t.tabs.explore}
+        subtitle={t.exploreGroups?.exploreSubtitle}
+      />
 
       <ScrollView
         contentContainerStyle={[styles.content, { paddingHorizontal: Layout.screenPadding }]}
@@ -173,11 +172,11 @@ export function ExploreScreen({ navigation }: any) {
               <AnimatedIcon family="feather" name="message-circle" size={20} color={C.brand} animation="entrance" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.cellTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                AI Assistant
+              <Text style={[styles.cellTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                {t.chatbot?.title ?? 'AI Assistant'}
               </Text>
-              <Text style={[styles.cellDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
-                Ask questions, get help with campus life
+              <Text style={[styles.cellDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                {t.chatbot?.exploreDesc ?? 'Ask questions, get help with campus life'}
               </Text>
             </View>
             <Feather name="chevron-right" size={16} color={C.textMuted} />
@@ -195,10 +194,10 @@ export function ExploreScreen({ navigation }: any) {
               <AnimatedIcon family="feather" name="alert-triangle" size={20} color={C.danger} animation="wobble" loop={false} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.cellTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              <Text style={[styles.cellTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                 {t.campusIssues.exploreTitle}
               </Text>
-              <Text style={[styles.cellDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
+              <Text style={[styles.cellDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
                 {t.campusIssues.exploreDesc}
               </Text>
             </View>
@@ -243,10 +242,10 @@ export function ExploreScreen({ navigation }: any) {
                 <AnimatedIcon family="feather" name="external-link" size={20} color={SectorColors.announce} animation="entrance" delay={academicsSectors.length * 35} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                   {t.tabs.annex}
                 </Text>
-                <Text style={[styles.childDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
+                <Text style={[styles.childDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
                   {t.tabs.annexDesc}
                 </Text>
               </View>
@@ -270,10 +269,10 @@ export function ExploreScreen({ navigation }: any) {
                 <AnimatedIcon family="feather" name="percent" size={20} color={SectorColors.study} animation="entrance" delay={(academicsSectors.length + 1) * 35} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                   {t.cgpa.title}
                 </Text>
-                <Text style={[styles.childDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
+                <Text style={[styles.childDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
                   {t.cgpa.subtitle}
                 </Text>
               </View>
@@ -298,10 +297,10 @@ export function ExploreScreen({ navigation }: any) {
                   <AnimatedIcon family="mci" name="file-pdf-box" size={22} color={SectorColors.pdfmaker} animation="entrance" delay={(academicsSectors.length + 2) * 35} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                     {t.pdfmaker.title}
                   </Text>
-                  <Text style={[styles.childDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
+                  <Text style={[styles.childDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
                     {t.pdfmaker.exploreDesc}
                   </Text>
                 </View>
@@ -365,23 +364,8 @@ export function ExploreScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
 
-  tabHeader: {
-    paddingTop: 8,
-    paddingBottom: 12,
-  } as ViewStyle,
-
-  tabSub: {
-    fontSize: 11,
-    letterSpacing: 0.3,
-  } as any,
-
-  tabTitle: {
-    fontSize: 26,
-    letterSpacing: -0.5,
-    marginTop: 2,
-  } as any,
-
   content: {
+    paddingTop: 8,
     paddingBottom: 20,
   } as ViewStyle,
 
@@ -400,7 +384,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 13,
-    padding: 14,
+    height: 72,
+    paddingHorizontal: 14,
     borderRadius: 16,
     borderWidth: 1,
     marginBottom: 10,
@@ -418,7 +403,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 13,
-    paddingVertical: 12,
+    height: 72,
     paddingHorizontal: 14,
     borderRadius: 16,
     borderWidth: 1,

@@ -13,6 +13,7 @@ import { useT } from '../../i18n';
 import { useAuth } from '../../store/authStore';
 import { useMessages } from '../../store/messagesStore';
 import { Avatar } from '../../components/ui/Avatar';
+import { TopBar } from '../../components/layout/TopBar';
 import { FontFamily, Layout } from '../../theme';
 import { convKeyOf, type Message, type MsgKind } from '../../services/messagesService';
 import { fetchPeople } from '../../services/peopleService';
@@ -147,10 +148,22 @@ export function MessagesHome({ navigation }: any) {
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={[styles.safe, { backgroundColor: C.bg }]}>
-      <View style={[styles.header, { paddingHorizontal: Layout.screenPadding }]}>
-        <Text style={[styles.headerSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>CampusOne</Text>
-        <Text style={[styles.headerTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{t.messages.title}</Text>
-      </View>
+      <TopBar
+        title={t.messages.title}
+        subtitle={t.messages.subtitle}
+        right={
+          <TouchableOpacity
+            style={[styles.iconBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+            onPress={() => navigation.navigate('Directory')}
+            activeOpacity={0.75}
+            accessibilityLabel={t.messages.findStudents}
+            accessibilityRole="button"
+            hitSlop={4}
+          >
+            <Feather name="users" size={18} color={C.text2} />
+          </TouchableOpacity>
+        }
+      />
 
       <FlatList
         data={rows}
@@ -184,9 +197,14 @@ export function MessagesHome({ navigation }: any) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
-  header: { paddingTop: 8, paddingBottom: 6 } as ViewStyle,
-  headerSub: { fontSize: 12 } as TextStyle,
-  headerTitle: { fontSize: 26, marginTop: 2 } as TextStyle,
+  iconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
 
   divider: { height: StyleSheet.hairlineWidth, marginLeft: 68 } as ViewStyle,
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 } as ViewStyle,

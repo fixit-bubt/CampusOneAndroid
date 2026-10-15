@@ -14,6 +14,7 @@ import { useT } from '../../i18n';
 import { useAuth } from '../../store/authStore';
 import { Avatar } from '../../components/ui/Avatar';
 import { AnimatedIcon, type IconFamily, type AnimationType } from '../../components/ui/AnimatedIcon';
+import { TopBar } from '../../components/layout/TopBar';
 import { PasswordInput } from '../../components/ui/PasswordInput';
 import { FontFamily, Layout } from '../../theme';
 import { useApp } from '../../store/appStore';
@@ -57,11 +58,11 @@ function SettingCard({ icon, iconFamily = 'feather', iconColor, animation = 'ent
         <AnimatedIcon name={icon} family={iconFamily} size={20} color={iconColor ?? C.brand} animation={animation} />
       </View>
       <View style={styles.cardBody}>
-        <Text style={[styles.cardLabel, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>
+        <Text style={[styles.cardLabel, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]} numberOfLines={1}>
           {label}
         </Text>
         {sub ? (
-          <Text style={[styles.cardSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+          <Text style={[styles.cardSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
             {sub}
           </Text>
         ) : null}
@@ -200,11 +201,10 @@ export function SettingsScreen({ navigation }: any) {
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={[styles.safe, { backgroundColor: C.bg }]}>
-      <View style={[styles.header, { paddingHorizontal: Layout.screenPadding }]}>
-        <Text style={[styles.title, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-          {t.tabs.settings}
-        </Text>
-      </View>
+      <TopBar
+        title={t.tabs.settings}
+        subtitle={t.mainx.settingsSubtitle}
+      />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -326,7 +326,7 @@ export function SettingsScreen({ navigation }: any) {
         <SettingCard
           icon="globe"
           iconColor="#10b981"
-          label="Language"
+          label={t.mainx.language ?? 'Language'}
           sub={t.mainx.languageSub(lang === 'bn')}
           C={C}
           onPress={toggleLang}
@@ -652,14 +652,11 @@ export function SettingsScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
 
-  header: { paddingTop: 8, paddingBottom: 4 } as ViewStyle,
-  title: { fontSize: 26, letterSpacing: -0.5 } as any,
-
-  scroll: { paddingBottom: 24 } as ViewStyle,
+  scroll: { paddingTop: 8, paddingBottom: 24 } as ViewStyle,
 
   profileCard: {
     flexDirection: 'row', alignItems: 'center', gap: 14,
-    padding: 16, borderRadius: 18, borderWidth: 1, marginTop: 12,
+    padding: 16, borderRadius: 18, borderWidth: 1, marginTop: 4,
   } as ViewStyle,
   profileInfo: { flex: 1 } as ViewStyle,
   profileName: { fontSize: 17, letterSpacing: -0.2 } as any,
@@ -678,8 +675,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 13,
-    minHeight: 72,
-    padding: 14,
+    height: 72,
+    paddingHorizontal: 14,
     borderRadius: 16,
     borderWidth: 1,
     marginBottom: 10,

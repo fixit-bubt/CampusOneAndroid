@@ -288,4 +288,49 @@ The Explore screen organizes campus features into 4 top-level directory categori
 * **Staggered Cascade Entrance:** All child icons animate in with `animation="entrance"` (`0.85 -> 1.18 -> 1.0`) and a 35ms staggered cascade delay (`delay={index * 35}`), creating a smooth ripple effect as the accordion unfolds.
 * **RenderThread Canvas Clipping Safety:** Bounding boxes declare `overflow: 'visible'` with centered alignment to ensure transforms never get sliced by Android hardware canvas layers.
 
+---
+
+## 11. Universal 60 dp Header & Navigation Standard (`TopBar.tsx`)
+
+All top bars across the application are standardized to **60 dp** fixed outer height (`styles.topbar` & `styles.subbar`) with hairline bottom borders (`borderBottomColor: C.border`, `borderBottomWidth: StyleSheet.hairlineWidth`) and horizontal padding aligned with `Layout.screenPadding = 16 dp`.
+
+### 1. Root Tab TopBar (`<TopBar />`)
+* **Outer Height:** Fixed `60 dp`.
+* **Left Brandmark Anchor:** Houses the authentic 32×32 dp vector `LogoMark` on the left.
+* **Beside-Logo Typography Hierarchy:**
+  * Title: `fontSize: 18 px`, Plus Jakarta Sans ExtraBold (`FontFamily.jakartaExtraBold`), line height 22 px.
+  * Subtitle: `fontSize: 10.5 px`, Plus Jakarta Sans Medium (`FontFamily.jakartaMedium`), color `C.textMuted`, line height 14 px.
+* **Home Screen Brandmark:** On `HomeScreen`, renders `Campus` in `C.text` and `One` in `#34d399` (dark) / `#059669` (light) with dynamic role badge (Admin / Staff) and tagline `t.topbar.tagline`.
+* **Other Root Tabs:** Displays the localized tab title (`t.study2.studyHub`, `t.messages.title`, `t.tabs.explore`, `t.tabs.settings`) and corresponding subtitle beside the 32dp LogoMark.
+* **Right Slot:** Standard 40×40 dp container supporting notification bell (with unread badge) or directory search shortcut.
+
+### 2. Child Sub-Screen SubBar (`<SubBar />`)
+* **Outer Height:** Fixed `60 dp` (standardized from legacy 54 dp for 100% height parity).
+* **Bilateral Symmetry Standard:**
+  * **Left Side:** 40×40 dp tactile icon button (`styles.iconBtn`, `borderRadius: 14 dp`, `borderWidth: 1 dp`, `backgroundColor: C.surface2`) housing a 20 px left arrow (`arrowL`).
+  * **Center:** Centered title text (`subbarTitle`: `fontSize: 16.5 px`, Plus Jakarta Sans Bold, `textAlign: 'center'`), single-line clamped (`numberOfLines={1}`).
+  * **Right Side:** Dedicated 40×40 dp alignment box (`subbarRightBox`) housing a 28×28 dp `LogoMark` (or custom action button), delivering perfect bilateral symmetry so the title remains dead-center.
+* **App-Wide Adoption:** Applied automatically across all ~40 child sub-screens that import `SubBar`.
+
+---
+
+## 12. Bilingual Parity & Zero-Dropdown Layout Constraints
+
+Switching between English and Bengali must NEVER cause vertical jumping, card stretching, or screen dropdown shifts.
+
+### 1. Root Cause Analysis
+Bengali typography utilizes diacritics (matras) and compound characters that can expand font line heights and wrap words onto a second line if card containers lack fixed heights or unbounded line counts.
+
+### 2. Mandatory Structural Constraints
+1. **Fixed Card Heights Everywhere:**
+   - Content cards, setting items, and feed cards must use explicit fixed heights (`height: 72 dp` or `height: 58 dp`), NEVER unbounded `minHeight`.
+2. **Mandatory Single-Line Text Clamping:**
+   - Every card label, title, subtitle, and badge description must declare `numberOfLines={1}`.
+   - Long Bengali words are gracefully truncated with an ellipsis (`...`) rather than breaking into a second line and expanding parent card geometry.
+3. **Typography Scale Alignment:**
+   - English and Bengali text sizes must remain 1:1 identical across all screens (`fontSize: 14.5 px` for titles, `fontSize: 11.5 px` for subtitles, `fontSize: 10 px` for status metrics).
+4. **Bilingual Parity Coverage:**
+   - All sector titles, sector descriptions, shortcut tool titles, status strip metrics, and community updates must have matching localized Bengali entries in `src/i18n/bn.ts`.
+
+
 
