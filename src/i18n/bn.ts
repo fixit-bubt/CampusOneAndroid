@@ -126,11 +126,16 @@ export const bn: Dict = {
 
   exploreGroups: {
     academics: 'একাডেমিক্স',
+    academicsDesc: 'নোট, রুটিন, অ্যানেক্স ও টুলস',
     campusLife: 'ক্যাম্পাস লাইফ',
+    campusLifeDesc: 'ক্লাব, ইভেন্ট, নামাজ ও চাকরির খবর',
     services: 'সার্ভিসেস',
+    servicesDesc: 'মেডিকেল, বাস রুট ও হারানো জিনিস',
     community: 'কমিউনিটি',
+    communityDesc: 'মার্কেটপ্লেস, রাইড ও রক্তদান',
     quickAccess: 'ফিচার্ড ও দ্রুত অ্যাক্সেস',
     directory: 'ক্যাম্পাস ডিরেক্টরি',
+    toolsLabel: 'টুলস',
     itemsCount: (n: number) => `${n} টি আইটেম`,
   },
 

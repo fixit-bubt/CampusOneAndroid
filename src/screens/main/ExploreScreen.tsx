@@ -216,9 +216,11 @@ export function ExploreScreen({ navigation }: any) {
         {showAcademics && (
           <CollapsibleSection
             title={t.exploreGroups.academics}
+            subtitle={t.exploreGroups.academicsDesc}
             icon="study"
             accentColor={SectorColors.study}
             count={academicsCount}
+            countLabel={t.exploreGroups.toolsLabel}
             open={openSection === 'academics'}
             onToggle={() => toggleSection('academics')}
           >
@@ -312,9 +314,11 @@ export function ExploreScreen({ navigation }: any) {
         {campusLifeSectors.length > 0 && (
           <CollapsibleSection
             title={t.exploreGroups.campusLife}
+            subtitle={t.exploreGroups.campusLifeDesc}
             icon="events"
             accentColor={SectorColors.events}
             count={campusLifeSectors.length}
+            countLabel={t.exploreGroups.toolsLabel}
             open={openSection === 'campusLife'}
             onToggle={() => toggleSection('campusLife')}
           >
@@ -325,9 +329,11 @@ export function ExploreScreen({ navigation }: any) {
         {servicesSectors.length > 0 && (
           <CollapsibleSection
             title={t.exploreGroups.services}
+            subtitle={t.exploreGroups.servicesDesc}
             icon="wrench"
             accentColor={SectorColors.reports}
             count={servicesSectors.length}
+            countLabel={t.exploreGroups.toolsLabel}
             open={openSection === 'services'}
             onToggle={() => toggleSection('services')}
           >
@@ -338,9 +344,11 @@ export function ExploreScreen({ navigation }: any) {
         {communitySectors.length > 0 && (
           <CollapsibleSection
             title={t.exploreGroups.community}
+            subtitle={t.exploreGroups.communityDesc}
             icon="market"
             accentColor={SectorColors.market}
             count={communitySectors.length}
+            countLabel={t.exploreGroups.toolsLabel}
             open={openSection === 'community'}
             onToggle={() => toggleSection('community')}
           >

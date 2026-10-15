@@ -804,8 +804,9 @@ Whenever the user instructs to "update memorys", the agent MUST synchronously up
 - **Categorization & Hierarchy:** High-level grouping matches the web sidebar:
   - **Featured & Quick Access:** AI Assistant and Campus Issues separated at the top with a dedicated section eyebrow and right navigation chevrons.
   - **Campus Directory Categories:** Academics, Campus Life, Services, and Community under a dedicated section eyebrow.
-- **Prominent Category Header & Big Standout Count Box:**
-  - Category headers feature a dedicated 34x28dp prominent count box (`borderRadius: 8`, `borderWidth: 1.5`, `FontFamily.jakartaExtraBold`) tinted in the sector's vibrant accent color.
+- **Campus Pulse Style Stat Block & Subtitles (`CollapsibleSection.tsx`):**
+  - Category headers feature a 2-line title and subtitle layout (e.g. `ACADEMICS` / `Notes, routines, annex & tools`), completely eliminating empty voids.
+  - On the right, a dedicated Campus Pulse-style metric block is rendered with a hairline vertical divider (`width: 1, height: 30`), a bold prominent counter on top (`statVal`: 16.5px `jakartaExtraBold` in the sector's accent color), and a clean uppercase mini-label underneath (`statSub`: 9.5px `jakartaBold` `TOOLS`), paired with the navigation chevron.
   - When expanded, the header card highlights with a 1.5px sector-colored border and opens smoothly with an active colored chevron.
 - **Full-Width Child Bars with Sector Logos & Category Colored Left Spine (`styles.childBar`):**
   - Child rows are rendered as full-width separate cards (`Layout.screenPadding` aligned, `marginLeft: 0`), ensuring consistent vertical grid rhythm and generous touch targets without indentation cramping.

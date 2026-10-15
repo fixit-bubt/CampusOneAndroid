@@ -6,8 +6,10 @@ import { Icon } from './Icon';
 
 export interface CollapsibleSectionProps {
   title: string;
+  subtitle?: string;
   icon: string;
   count?: number | string;
+  countLabel?: string;
   badge?: string;
   accentColor?: string;
   defaultOpen?: boolean;
@@ -19,8 +21,10 @@ export interface CollapsibleSectionProps {
 
 export function CollapsibleSection({
   title,
+  subtitle,
   icon,
   count,
+  countLabel,
   badge,
   accentColor,
   defaultOpen = false,
@@ -75,32 +79,45 @@ export function CollapsibleSection({
           <Icon name={icon} size={20} color={activeColor} />
         </View>
 
-        <Text style={[styles.title, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-          {title}
-        </Text>
+        <View style={styles.titleCol}>
+          <Text style={[styles.title, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+            {title}
+          </Text>
+          {subtitle ? (
+            <Text style={[styles.subtitle, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
+              {subtitle}
+            </Text>
+          ) : null}
+        </View>
 
         {displayCount ? (
-          <View
-            style={[
-              styles.countBox,
-              {
-                backgroundColor: pillBg(activeColor, isDark),
-                borderColor: isDark ? `${activeColor}95` : `${activeColor}70`,
-              },
-            ]}
-          >
-            <Text
-              style={[
-                styles.countText,
-                {
-                  color: activeColor,
-                  fontFamily: FontFamily.jakartaExtraBold,
-                },
-              ]}
-            >
-              {displayCount}
-            </Text>
-          </View>
+          <>
+            <View style={[styles.verticalDivider, { backgroundColor: C.border }]} />
+            <View style={styles.statCol}>
+              <Text
+                style={[
+                  styles.statVal,
+                  {
+                    color: activeColor,
+                    fontFamily: FontFamily.jakartaExtraBold,
+                  },
+                ]}
+              >
+                {displayCount}
+              </Text>
+              <Text
+                style={[
+                  styles.statSub,
+                  {
+                    color: C.text3,
+                    fontFamily: FontFamily.jakartaBold,
+                  },
+                ]}
+              >
+                {countLabel ?? 'TOOLS'}
+              </Text>
+            </View>
+          </>
         ) : null}
 
         <Icon
@@ -123,7 +140,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 13,
+    gap: 12,
     padding: 14,
     borderRadius: 16,
     borderWidth: 1,
@@ -137,26 +154,47 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   } as ViewStyle,
 
-  title: {
+  titleCol: {
     flex: 1,
-    fontSize: 14.5,
-  } as TextStyle,
-
-  countBox: {
-    minWidth: 34,
-    height: 28,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-    borderWidth: 1.5,
-    alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 6,
   } as ViewStyle,
 
-  countText: {
-    fontSize: 14,
-    lineHeight: 18,
-    letterSpacing: -0.3,
+  title: {
+    fontSize: 14.5,
+    lineHeight: 20,
+  } as TextStyle,
+
+  subtitle: {
+    fontSize: 11.5,
+    lineHeight: 16,
+    marginTop: 2,
+  } as TextStyle,
+
+  verticalDivider: {
+    width: 1,
+    height: 30,
+    marginHorizontal: 2,
+  } as ViewStyle,
+
+  statCol: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 40,
+    marginRight: 4,
+  } as ViewStyle,
+
+  statVal: {
+    fontSize: 16.5,
+    lineHeight: 20,
+    textAlign: 'center',
+  } as TextStyle,
+
+  statSub: {
+    fontSize: 9.5,
+    lineHeight: 12,
+    letterSpacing: 0.5,
+    textAlign: 'center',
+    marginTop: 1,
   } as TextStyle,
 
   childContainer: {

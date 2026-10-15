@@ -125,11 +125,16 @@ export const en = {
 
   exploreGroups: {
     academics: 'ACADEMICS',
+    academicsDesc: 'Notes, routines, annex & tools',
     campusLife: 'CAMPUS LIFE',
+    campusLifeDesc: 'Clubs, events, prayer & jobs',
     services: 'SERVICES',
+    servicesDesc: 'Clinic, bus routes & lost items',
     community: 'COMMUNITY',
+    communityDesc: 'Market, rides, blood & directory',
     quickAccess: 'FEATURED & QUICK ACCESS',
     directory: 'CAMPUS DIRECTORY',
+    toolsLabel: 'TOOLS',
     itemsCount: (n: number) => `${n} ${n === 1 ? 'item' : 'items'}`,
   },
 
