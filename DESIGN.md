@@ -262,4 +262,32 @@ The mobile app bottom navigation bar is ported 1:1 from the sibling web app (`Ca
 8. **Annex Portal Relocation:**
    - Relocated from bottom navigation bar into **Explore -> Academics** section with its own interactive tool card and header back button.
 
+---
+
+## 10. Explore Screen Accordion & Campus Pulse Category Standard (`ExploreScreen.tsx` & `CollapsibleSection.tsx`)
+
+The Explore screen organizes campus features into 4 top-level directory categories (`Academics`, `Campus Life`, `Services`, `Community`) using an accordion hierarchy inspired by the Home screen's **Campus Pulse** layout:
+
+### 1. Category Header Standard (Campus Pulse Metric Block)
+* **2-Line Text Hierarchy:** Category cards feature a bold 14.5px title (`FontFamily.jakartaBold`) and an 11.5px medium subtitle (`FontFamily.jakartaMedium`), completely eliminating dead center whitespace:
+  - **Academics:** *Notes, routines, annex & tools* (Cyan `#2ba0c9`)
+  - **Campus Life:** *Clubs, events, prayer & jobs* (Rose `#e0568a`)
+  - **Services:** *Clinic, bus routes & lost items* (Electric Blue `#4f6bed`)
+  - **Community:** *Market, rides, blood & directory* (Emerald `#2e9e63`)
+* **Hairline Vertical Divider:** `width: 1 dp`, `height: 30 dp`, `backgroundColor: C.border`, `marginHorizontal: 2 dp`, cleanly separating the text column from the stat block.
+* **Stacked Stat Block:**
+  - Metric value (`statVal`): `fontSize: 16.5 px`, `FontFamily.jakartaExtraBold`, `lineHeight: 20 px`, colored in the sector's vibrant `accentColor`.
+  - Metric sub-label (`statSub`): `fontSize: 9.5 px`, `FontFamily.jakartaBold`, `letterSpacing: 0.5`, uppercase text (`TOOLS` in EN / `টুলস` in BN), colored in `C.text3`.
+* **Active Card Highlighting:** When expanded, the header card gains a `1.5 dp` border in `accentColor` and points its chevron downward (`chevD`).
+
+### 2. Full-Width Child Bars with Category Colored Left Spine (`styles.childBar`)
+* **Grid Alignment:** Full width matching parent cards (`marginLeft: 0`), aligned with `Layout.screenPadding = 16 dp`.
+* **Category Colored Left Spine:** A bold `4.5 dp` left border (`borderLeftWidth: 4.5`, `borderLeftColor: accentColor`) and matching tinted right chevron (`>`). When users scroll through an open category, the left colored spine acts as an instant location anchor ("Know Where We Are").
+* **Vector Logos:** Each child displays its authentic 42×42dp vector logo (`SectorIcon` size="md" or `toolIcon`).
+
+### 3. 120 FPS Native RenderThread Physics
+* **Tactile Spring Bounce on Toggle:** Parent category icons and chevrons use `AnimatedIcon` with `animation={isOpen ? 'spring' : 'entrance'}` (rubberband pop from `1.0 -> 1.22 -> 1.0`).
+* **Staggered Cascade Entrance:** All child icons animate in with `animation="entrance"` (`0.85 -> 1.18 -> 1.0`) and a 35ms staggered cascade delay (`delay={index * 35}`), creating a smooth ripple effect as the accordion unfolds.
+* **RenderThread Canvas Clipping Safety:** Bounding boxes declare `overflow: 'visible'` with centered alignment to ensure transforms never get sliced by Android hardware canvas layers.
+
 
