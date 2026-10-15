@@ -210,7 +210,7 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
   - `RidePostScreen`: Post Type (`Offer Ride` / `Need Ride`), Direction (`To Campus` / `From Campus`), Date Choice (`Today` / `Tomorrow`), Location Modal (`Mirpur & Campus` / `Greater Dhaka`).
   - `RidesScreen`: Direction filter (3 tabs: `All` / `To Campus` / `From Campus`), Post Type filter (3 tabs: `All` / `Offers` / `Need Ride`), with `My Rides` in header.
   - `BloodScreen`: Requests vs Donors switcher with counts (2 tabs, no icons).
-  - `AreaPickerModal`: Unified Single Feed organized into 8 True Geographic Zones (Mirpur, Dhanmondi, Shahbagh, Mohakhali, Uttara, Old Dhaka, Motijheel, Suburbs) listing hospitals and areas together; eliminated redundant tab switcher and 'All Locations' bar; 58dp map trigger with animated floating map icon.
+  - `AreaPickerModal`: Explore-style collapsible Area bars (72dp with 1px divider, hospital count stat column, animated chevron) organized into 8 True Geographic Zones; expanding an area reveals child hospital cards (72dp) with clean monochrome icons and 'Select Entire Area' card; eliminated redundant tab switcher and 'All Locations' bar; 58dp map trigger with animated floating map icon.
   - `BloodRequestScreen`: Urgency selector (3 tabs: `Urgent` / `Today` / `Week`), unified single 72dp 'HOSPITAL OR LOCATION' dropdown card replacing previous dual-dropdown split.
   - `MarketScreen`: Feed tabs (3 tabs: `All` / `Mine` / `Saved`), Filter Modal Sort (3 tabs: `Newest` / `Price Low` / `Price High`), Condition (3 tabs: `New` / `Like New` / `Used`).
   - `MarketPostScreen`: Condition selector (3 tabs), Location modal (2 tabs without hardcoded numbers).
