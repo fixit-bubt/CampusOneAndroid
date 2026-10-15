@@ -146,7 +146,6 @@ export function ExploreScreen({ navigation }: any) {
     <View style={[styles.safe, { backgroundColor: C.bg, paddingTop: insets.top }]}>
       <TopBar
         title={t.tabs.explore}
-        subtitle={t.exploreGroups?.exploreSubtitle}
       />
 
       <ScrollView

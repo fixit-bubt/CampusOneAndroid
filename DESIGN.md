@@ -297,11 +297,11 @@ All top bars across the application are standardized to **60 dp** fixed outer he
 ### 1. Root Tab TopBar (`<TopBar />`)
 * **Outer Height:** Fixed `60 dp`.
 * **Left Brandmark Anchor:** Houses the authentic 32×32 dp vector `LogoMark` on the left.
-* **Beside-Logo Typography Hierarchy:**
-  * Title: `fontSize: 18 px`, Plus Jakarta Sans ExtraBold (`FontFamily.jakartaExtraBold`), line height 22 px.
-  * Subtitle: `fontSize: 10.5 px`, Plus Jakarta Sans Medium (`FontFamily.jakartaMedium`), color `C.textMuted`, line height 14 px.
-* **Home Screen Brandmark:** On `HomeScreen`, renders `Campus` in `C.text` and `One` in `#34d399` (dark) / `#059669` (light) with dynamic role badge (Admin / Staff) and tagline `t.topbar.tagline`.
-* **Other Root Tabs:** Displays the localized tab title (`t.study2.studyHub`, `t.messages.title`, `t.tabs.explore`, `t.tabs.settings`) and corresponding subtitle beside the 32dp LogoMark.
+* **Beside-Logo Single Title / Brandmark Hierarchy:**
+  * Clean, clutter-free single title or brandmark vertically centered beside the 32dp `LogoMark` with zero secondary subtitle clutter beneath.
+  * Title: `fontSize: 18.5 px`, Plus Jakarta Sans ExtraBold (`FontFamily.jakartaExtraBold`), line height 24 px.
+  * Home Screen Brandmark: On `HomeScreen`, `AdminDashboardScreen`, and `StaffDashboardScreen`, renders `Campus` (`fontSize: 19 px`, `C.text`) and `One` (`fontSize: 19 px`, `#34d399` dark / `#059669` light) with dynamic role badge pill (`ADMIN` / `STAFF`: `paddingHorizontal: 6`, `paddingVertical: 2`, `borderRadius: 6`).
+* **Other Root Tabs:** Displays the single localized tab title (`t.study2.studyHub`, `t.messages.title`, `t.tabs.explore`, `t.tabs.settings`) beside the 32dp LogoMark with zero redundant subtitles.
 * **Right Slot:** Standard 40×40 dp container supporting notification bell (with unread badge) or directory search shortcut.
 
 ### 2. Child Sub-Screen SubBar (`<SubBar />`)
@@ -319,18 +319,22 @@ All top bars across the application are standardized to **60 dp** fixed outer he
 Switching between English and Bengali must NEVER cause vertical jumping, card stretching, or screen dropdown shifts.
 
 ### 1. Root Cause Analysis
-Bengali typography utilizes diacritics (matras) and compound characters that can expand font line heights and wrap words onto a second line if card containers lack fixed heights or unbounded line counts.
+Bengali typography utilizes diacritics (matras) and compound characters that can expand font line heights and wrap words onto a second line if card containers lack fixed heights or unbounded line counts. In particular, unconstrained profile cards (`padding: 16` without explicit height) expanded by +14dp in Bengali due to ascender matras (ি, ী, র্, ঁ).
 
 ### 2. Mandatory Structural Constraints
-1. **Fixed Card Heights Everywhere:**
+1. **Fixed Card & Profile Heights Everywhere:**
+   - Profile Card in Settings must use fixed `height: 96 dp`, `paddingHorizontal: 16 dp`, and explicit `justifyContent: 'center'`.
    - Content cards, setting items, and feed cards must use explicit fixed heights (`height: 72 dp` or `height: 58 dp`), NEVER unbounded `minHeight`.
-2. **Mandatory Single-Line Text Clamping:**
+2. **Matra-Safe Line Heights & Typography Scale:**
+   - Setting labels use `lineHeight: 20 px`, subtitles `lineHeight: 16 px`.
+   - Profile name uses `fontSize: 17 px`, `lineHeight: 22 px`. Profile meta uses `fontSize: 12 px`, `lineHeight: 16 px`.
+   - Role badge pill uses fixed `height: 22 dp`, `borderRadius: 11 dp`, and `roleText` `lineHeight: 15 px` so the top ref (র্) on "শিক্ষার্থী" is never clipped.
+   - Section labels use relaxed `letterSpacing: 0.2` (avoiding Latin `0.8` that breaks Bengali ligatures).
+3. **Mandatory Single-Line Text Clamping:**
    - Every card label, title, subtitle, and badge description must declare `numberOfLines={1}`.
    - Long Bengali words are gracefully truncated with an ellipsis (`...`) rather than breaking into a second line and expanding parent card geometry.
-3. **Typography Scale Alignment:**
-   - English and Bengali text sizes must remain 1:1 identical across all screens (`fontSize: 14.5 px` for titles, `fontSize: 11.5 px` for subtitles, `fontSize: 10 px` for status metrics).
 4. **Bilingual Parity Coverage:**
-   - All sector titles, sector descriptions, shortcut tool titles, status strip metrics, and community updates must have matching localized Bengali entries in `src/i18n/bn.ts`.
+   - All sector titles, sector descriptions, shortcut tool titles, status strip metrics, community updates, settings items, and role workspaces (Admin Dashboard / Staff Workspace) have matching localized Bengali entries in `src/i18n/bn.ts`.
 
 ---
 

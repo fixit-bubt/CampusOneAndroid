@@ -204,7 +204,6 @@ export function SettingsScreen({ navigation }: any) {
     <View style={[styles.safe, { backgroundColor: C.bg, paddingTop: insets.top }]}>
       <TopBar
         title={t.tabs.settings}
-        subtitle={t.mainx.settingsSubtitle}
       />
 
       <ScrollView
@@ -223,7 +222,7 @@ export function SettingsScreen({ navigation }: any) {
               {profile?.full_name ?? t.mainx.campusMember}
             </Text>
             <Text style={[styles.profileMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-              {profile?.department ?? '-'}{profile?.intake ? ` · Intake ${profile.intake}` : ''}
+              {profile?.department ?? '-'}{profile?.intake ? t.mainx.intakePrefix(String(profile.intake)) : ''}
             </Text>
             <View style={[styles.rolePill, { backgroundColor: roleBg }]}>
               <View style={[styles.roleDot, { backgroundColor: roleHex }]} />
@@ -241,8 +240,8 @@ export function SettingsScreen({ navigation }: any) {
             icon="sliders"
             iconColor={roleHex}
             animation="wobble"
-            label="Admin Dashboard"
-            sub="Manage users, staff, reports, and campus modules"
+            label={t.mainx.adminDashboardTitle}
+            sub={t.mainx.adminDashboardSub}
             C={C}
             onPress={() => navigation.navigate('AdminDashboard')}
           />
@@ -253,8 +252,8 @@ export function SettingsScreen({ navigation }: any) {
             icon="tool"
             iconColor={roleHex}
             animation="wobble"
-            label="Staff Workspace"
-            sub="View assigned maintenance tasks and reports"
+            label={t.mainx.staffWorkspaceTitle}
+            sub={t.mainx.staffWorkspaceSub}
             C={C}
             onPress={() => navigation.navigate('StaffDashboard')}
           />
@@ -269,8 +268,8 @@ export function SettingsScreen({ navigation }: any) {
           icon="bell"
           iconColor={notifDisabled ? '#f59e0b' : C.brand}
           animation={notifDisabled ? 'wobble' : 'entrance'}
-          label="Notifications"
-          sub={notifDisabled ? 'Notifications disabled in phone settings' : t.mainx.notificationsSub}
+          label={t.mainx.notificationsTitle}
+          sub={notifDisabled ? t.mainx.notificationsDisabledSub : t.mainx.notificationsSub}
           right={
             notifDisabled ? (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -311,7 +310,7 @@ export function SettingsScreen({ navigation }: any) {
         <SettingCard
           icon="moon"
           iconColor="#6366f1"
-          label="Dark Mode"
+          label={t.mainx.darkModeTitle}
           sub={t.mainx.darkModeSub(appDark)}
           C={C}
           onPress={toggleTheme}
@@ -359,10 +358,10 @@ export function SettingsScreen({ navigation }: any) {
         <SettingCard
           icon="share-2"
           iconColor="#3b82f6"
-          label="Share App"
-          sub="Share CampusOne with your friends"
+          label={t.mainx.shareAppTitle}
+          sub={t.mainx.shareAppSub}
           C={C}
-          onPress={() => Share.share({ message: 'Check out CampusOne - BUBT campus companion app!' })}
+          onPress={() => Share.share({ message: t.mainx.shareAppMessage })}
         />
 
         <SettingCard
@@ -404,14 +403,14 @@ export function SettingsScreen({ navigation }: any) {
 
         {/* Section: ACCOUNT */}
         <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
-          ACCOUNT
+          {t.mainx.accountSection}
         </Text>
 
         <SettingCard
           icon="key"
           iconColor={C.text2}
           label={t.mainx.changePassword}
-          sub="Update your login password"
+          sub={t.mainx.changePasswordSub}
           C={C}
           onPress={() => setPwOpen(true)}
         />
@@ -420,7 +419,7 @@ export function SettingsScreen({ navigation }: any) {
           icon="log-out"
           iconColor={C.text2}
           label={t.mainx.signOut}
-          sub="Log out of this device"
+          sub={t.mainx.signOutSub}
           C={C}
           onPress={signOut}
         />
@@ -657,20 +656,21 @@ const styles = StyleSheet.create({
 
   profileCard: {
     flexDirection: 'row', alignItems: 'center', gap: 14,
-    padding: 16, borderRadius: 18, borderWidth: 1, marginTop: 0,
+    height: 96, paddingHorizontal: 16, borderRadius: 18, borderWidth: 1, marginTop: 0,
+    justifyContent: 'center',
   } as ViewStyle,
-  profileInfo: { flex: 1 } as ViewStyle,
-  profileName: { fontSize: 17, letterSpacing: -0.2 } as any,
-  profileMeta: { fontSize: 12, marginTop: 2 } as any,
+  profileInfo: { flex: 1, justifyContent: 'center' } as ViewStyle,
+  profileName: { fontSize: 17, lineHeight: 22, letterSpacing: -0.2 } as any,
+  profileMeta: { fontSize: 12, lineHeight: 16, marginTop: 2 } as any,
   rolePill: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
-    paddingHorizontal: 9, paddingVertical: 3, borderRadius: 20,
-    alignSelf: 'flex-start', marginTop: 6,
+    height: 22, paddingHorizontal: 9, borderRadius: 11,
+    alignSelf: 'flex-start', marginTop: 5,
   } as ViewStyle,
   roleDot: { width: 6, height: 6, borderRadius: 3 } as ViewStyle,
-  roleText: { fontSize: 11.5 } as any,
+  roleText: { fontSize: 11.5, lineHeight: 15 } as any,
 
-  sectionLabel: { fontSize: 11, letterSpacing: 0.8, marginTop: 22, marginBottom: 10, marginLeft: 4 } as any,
+  sectionLabel: { fontSize: 11, letterSpacing: 0.2, marginTop: 20, marginBottom: 8, marginLeft: 4 } as any,
 
   card: {
     flexDirection: 'row',
@@ -689,9 +689,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
-  cardBody: { flex: 1 } as ViewStyle,
-  cardLabel: { fontSize: 14.5 } as any,
-  cardSub: { fontSize: 11.5, marginTop: 3 } as any,
+  cardBody: { flex: 1, justifyContent: 'center' } as ViewStyle,
+  cardLabel: { fontSize: 14.5, lineHeight: 20 } as any,
+  cardSub: { fontSize: 11.5, lineHeight: 16, marginTop: 2 } as any,
 
   sheetOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' } as ViewStyle,
   sheetContent: {

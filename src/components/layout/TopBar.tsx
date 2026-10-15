@@ -30,16 +30,9 @@ export function TopBar({ profile, title, subtitle: customSubtitle, unread = 0, o
       <View style={[styles.topbar, { backgroundColor: C.surface, borderBottomColor: C.border, paddingHorizontal: Layout.screenPadding }]}>
         <View style={styles.brandGroup}>
           <LogoMark size={32} shadow={false} />
-          <View style={styles.brandTextCol}>
-            <Text style={[styles.brandCampus, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]} numberOfLines={1}>
-              {title}
-            </Text>
-            {customSubtitle ? (
-              <Text style={[styles.brandSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                {customSubtitle}
-              </Text>
-            ) : null}
-          </View>
+          <Text style={[styles.titleText, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]} numberOfLines={1}>
+            {title}
+          </Text>
         </View>
         {right ?? null}
       </View>
@@ -47,12 +40,6 @@ export function TopBar({ profile, title, subtitle: customSubtitle, unread = 0, o
   }
 
   const role = profile?.role;
-  const subtitle =
-    role === 'admin'
-      ? (t.topbar?.adminSubtitle ?? 'Campus Administration')
-      : role === 'staff'
-      ? (t.topbar?.staffSubtitle ?? 'Staff Workspace')
-      : (t.topbar?.tagline ?? 'Full campus in one app');
 
   const roleBadge =
     role === 'admin'
@@ -75,25 +62,20 @@ export function TopBar({ profile, title, subtitle: customSubtitle, unread = 0, o
     <View style={[styles.topbar, { backgroundColor: C.surface, borderBottomColor: C.border, paddingHorizontal: Layout.screenPadding }]}>
       <View style={styles.brandGroup}>
         <LogoMark size={32} shadow={false} />
-        <View style={styles.brandTextCol}>
-          <View style={styles.brandRow}>
-            <Text style={[styles.brandCampus, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-              Campus
-            </Text>
-            <Text style={[styles.brandOne, { color: isDark ? '#34d399' : '#059669', fontFamily: FontFamily.jakartaExtraBold }]}>
-              One
-            </Text>
-            {roleBadge && (
-              <View style={[styles.roleBadge, { backgroundColor: roleBadge.bg, borderColor: roleBadge.border }]}>
-                <Text style={[styles.roleBadgeTxt, { color: roleBadge.color, fontFamily: FontFamily.jakartaBold }]}>
-                  {roleBadge.label}
-                </Text>
-              </View>
-            )}
-          </View>
-          <Text style={[styles.brandSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-            {subtitle}
+        <View style={styles.brandRow}>
+          <Text style={[styles.brandCampus, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+            Campus
           </Text>
+          <Text style={[styles.brandOne, { color: isDark ? '#34d399' : '#059669', fontFamily: FontFamily.jakartaExtraBold }]}>
+            One
+          </Text>
+          {roleBadge && (
+            <View style={[styles.roleBadge, { backgroundColor: roleBadge.bg, borderColor: roleBadge.border }]}>
+              <Text style={[styles.roleBadgeTxt, { color: roleBadge.color, fontFamily: FontFamily.jakartaBold }]}>
+                {roleBadge.label}
+              </Text>
+            </View>
+          )}
         </View>
       </View>
 
@@ -167,40 +149,36 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingRight: 8,
   } as ViewStyle,
-  brandTextCol: {
-    justifyContent: 'center',
-  } as ViewStyle,
+  titleText: {
+    fontSize: 18.5,
+    letterSpacing: -0.3,
+    lineHeight: 24,
+  } as any,
   brandRow: {
     flexDirection: 'row',
     alignItems: 'center',
   } as ViewStyle,
   brandCampus: {
-    fontSize: 18,
+    fontSize: 19,
     letterSpacing: -0.4,
-    lineHeight: 22,
+    lineHeight: 24,
   } as any,
   brandOne: {
-    fontSize: 18,
+    fontSize: 19,
     letterSpacing: -0.4,
-    lineHeight: 22,
-  } as any,
-  brandSub: {
-    fontSize: 10.5,
-    letterSpacing: 0.15,
-    lineHeight: 14,
-    marginTop: 1,
+    lineHeight: 24,
   } as any,
   roleBadge: {
-    marginLeft: 6,
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    borderRadius: 5,
+    marginLeft: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
     borderWidth: 1,
   } as ViewStyle,
   roleBadgeTxt: {
-    fontSize: 9,
+    fontSize: 9.5,
     letterSpacing: 0.5,
-    lineHeight: 11,
+    lineHeight: 12,
   } as any,
   actionGroup: {
     flexDirection: 'row',

@@ -340,15 +340,21 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
   - Replaces all legacy React Native `<Switch>` components across all 16 toggle locations in the app (Settings, Notifications, Profile, Marketplace, Study Hub, Medical, and Announcements).
 
 ### 5.6 Universal 60dp Header Standard (`TopBar.tsx` & `SubBar`)
-- **Root Tab Header (`TopBar`):** Standardized to **60dp fixed height** (`styles.topbar`, `height: 60`). On `HomeScreen`, renders the primary CampusOne brandmark with live role badges and tagline. On other root tabs (`StudyHubScreen`, `MessagesHome`, `ExploreScreen`, `SettingsScreen`), renders the authentic 32×32 dp vector `LogoMark` on the left, paired with an 18px extra-bold title (`FontFamily.jakartaExtraBold`) and 10.5px medium subtitle beside it.
+- **Root Tab Header (`TopBar`):** Standardized to **60dp fixed height** (`styles.topbar`, `height: 60`). Clean, clutter-free single title or brandmark vertically centered beside the 32dp `LogoMark` with zero secondary subtitle clutter beneath across all tabs and dashboards.
+  - On `HomeScreen`, `AdminDashboardScreen`, and `StaffDashboardScreen`: Renders the primary CampusOne brandmark (`Campus` in `C.text`, `One` in `#34d399` dark / `#059669` light) with dynamic role badge pill (`ADMIN` / `STAFF`: `paddingHorizontal: 6`, `paddingVertical: 2`, `borderRadius: 6`).
+  - On other root tabs (`StudyHubScreen`, `MessagesHome`, `ExploreScreen`, `SettingsScreen`): Renders the authentic 32×32 dp vector `LogoMark` on the left, paired with an 18.5px extra-bold title (`FontFamily.jakartaExtraBold`, `lineHeight: 24`) beside it with zero redundant subtitles.
 - **Child Sub-Screen Header (`SubBar`):** Standardized to **60dp fixed height** (upgraded from legacy 54dp for 100% height parity). Features strict bilateral symmetry: 40×40 dp tactile icon button on the left (20px left arrow), centered title with single-line clamping, and a dedicated 40×40 dp box on the right housing a 28×28 dp `LogoMark` (or custom action slot). Applied automatically across all ~40 child sub-screens that import `SubBar`.
 
-### 5.7 Bilingual Parity & Zero-Dropdown Layout Constraints
+### 5.7 Bilingual Parity, Matra Protection & Zero-Dropdown Layout Constraints
 - **Zero Screen Dropdown Shift:** Toggling between English and Bengali must NEVER cause vertical jumping, card expansion, or screen dropdown shifts.
+- **Fixed Profile Card Standard:** Profile card in `SettingsScreen.tsx` uses fixed `height: 96 dp`, `paddingHorizontal: 16 dp`, and explicit `justifyContent: 'center'`. Prevents the +14dp card expansion in Bengali caused by tall ascender matras (ি, ী, র্, ঁ).
+- **Matra-Safe Line Heights:** Explicit line heights applied across typography (`profileName` `lineHeight: 22`, `profileMeta` `lineHeight: 16`, `cardLabel` `lineHeight: 20`, `cardSub` `lineHeight: 16`).
+- **Role Pill Ascender Protection:** `rolePill` uses fixed `height: 22 dp`, `borderRadius: 11 dp`, and `roleText` `lineHeight: 15 px` so the top ref (র্) on "শিক্ষার্থী" is never sliced by Android hardware canvas layers.
+- **Ligature-Safe Section Labels:** `sectionLabel` uses relaxed `letterSpacing: 0.2` (avoiding Latin `0.8` that breaks Bengali conjuncts and ligatures into spaced characters).
 - **Fixed Height Mandate:** All content cards, setting items, and status strips must enforce explicit fixed heights (`height: 72 dp` or `height: 58 dp`), eliminating unbounded auto/minHeight expansion.
 - **Single-Line Clamping:** Every card label, title, subtitle, and badge description must enforce `numberOfLines={1}` so longer Bengali strings never wrap into a second line and alter parent layout bounds.
 - **Typography Scale Alignment:** English and Bengali font sizes remain 1:1 identical across all screens (`fontSize: 14.5 px` for titles, `fontSize: 11.5 px` for subtitles).
-- **100% Localization Coverage:** Matching keys in `src/i18n/bn.ts` and `src/i18n/en.ts` for all sectors, shortcuts, status strips, and community updates.
+- **100% Localization Coverage:** Matching keys in `src/i18n/bn.ts` and `src/i18n/en.ts` for all sectors, shortcuts, status strips, community updates, settings items, and role workspaces (Admin Dashboard / Staff Workspace) with zero English leakage.
 
 ---
 

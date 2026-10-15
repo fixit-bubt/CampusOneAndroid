@@ -151,7 +151,6 @@ export function MessagesHome({ navigation }: any) {
     <View style={[styles.safe, { backgroundColor: C.bg, paddingTop: insets.top }]}>
       <TopBar
         title={t.messages.title}
-        subtitle={t.messages.subtitle}
         right={
           <TouchableOpacity
             style={[styles.iconBtn, { backgroundColor: C.surface2, borderColor: C.border }]}

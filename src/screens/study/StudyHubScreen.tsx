@@ -1431,7 +1431,7 @@ export function StudyHubScreen({ navigation }: any) {
   return (
     <View style={[s.safe, { backgroundColor: C.bg, paddingTop: insets.top }]}>
       {isRootTab ? (
-        <TopBar title={t.study2.studyHub} subtitle={t.study2.studyHubSubtitle} />
+        <TopBar title={t.study2.studyHub} />
       ) : (
         <SubBar title={barTitle} onBack={handleBack} />
       )}
