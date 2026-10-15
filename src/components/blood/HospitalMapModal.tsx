@@ -13,7 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
-import { FontFamily, Layout, SectorColors } from '../../theme';
+import { FontFamily, Layout, SectorColors, pillBg } from '../../theme';
 import { AnimatedIcon } from '../ui/AnimatedIcon';
 import { openUrl } from '../../utils/link';
 import {
@@ -638,8 +638,8 @@ export function HospitalMapModal({
           {/* Header */}
           <View style={[styles.header, { borderBottomColor: C.border }]}>
             <View style={styles.headerLeft}>
-              <View style={[styles.hospitalIconPill, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2, borderColor: C.border, borderWidth: 1 }]}>
-                <AnimatedIcon family="mci" name="hospital-building" size={16} color={C.text} animation="spring" />
+              <View style={[styles.hospitalIconPill, { backgroundColor: pillBg(SectorColors.blood, isDark), borderColor: SectorColors.blood, borderWidth: 1 }]}>
+                <AnimatedIcon family="mci" name="hospital-building" size={16} color={SectorColors.blood} animation="spring" />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.headerTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -691,7 +691,7 @@ export function HospitalMapModal({
             <View style={styles.metaRow}>
               {destSub ? (
                 <View style={styles.metaItem}>
-                  <AnimatedIcon family="feather" name="map-pin" size={12} color={C.textMuted} animation="spring" />
+                  <AnimatedIcon family="feather" name="map-pin" size={12} color={SectorColors.blood} animation="entrance" />
                   <Text style={[styles.metaTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
                     {destSub}
                   </Text>
@@ -700,7 +700,7 @@ export function HospitalMapModal({
 
               {distanceText ? (
                 <View style={styles.metaItem}>
-                  <AnimatedIcon family="feather" name="navigation" size={12} color={C.textMuted} animation="spring" />
+                  <AnimatedIcon family="feather" name="navigation" size={12} color={SectorColors.blood} animation="entrance" />
                   <Text style={[styles.metaTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
                     {distanceText}
                   </Text>

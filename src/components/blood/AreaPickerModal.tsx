@@ -8,7 +8,7 @@ import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { AnimatedIcon } from '../ui/AnimatedIcon';
-import { FontFamily, Layout } from '../../theme';
+import { FontFamily, Layout, SectorColors, pillBg } from '../../theme';
 import { DHAKA_AREAS, type DhakaAreaInfo } from '../../constants/dhakaAreas';
 import { LocationPickerModal } from '../location/LocationPickerModal';
 import { useT } from '../../i18n';
@@ -139,6 +139,12 @@ const AreaSectionBar = memo(function AreaSectionBar({
   isDark: boolean;
 }) {
   const isSelected = selectedArea.trim().toLowerCase() === zone.name.trim().toLowerCase();
+  const activeColor = SectorColors.blood;
+  const activeBorderColor = isOpen
+    ? (isDark ? `${activeColor}85` : `${activeColor}65`)
+    : isSelected
+      ? activeColor
+      : C.border;
 
   return (
     <View style={styles.zoneWrapper}>
@@ -148,12 +154,10 @@ const AreaSectionBar = memo(function AreaSectionBar({
           styles.areaCardBar,
           {
             backgroundColor: isSelected
-              ? (isDark ? 'rgba(255, 255, 255, 0.06)' : '#f8fafc')
+              ? (isDark ? 'rgba(199, 52, 74, 0.16)' : 'rgba(199, 52, 74, 0.08)')
               : C.surface,
-            borderColor: isSelected
-              ? (isDark ? 'rgba(255, 255, 255, 0.24)' : 'rgba(0, 0, 0, 0.20)')
-              : C.border,
-            borderWidth: 1,
+            borderColor: activeBorderColor,
+            borderWidth: isOpen || isSelected ? 1.5 : 1,
           },
         ]}
         onPress={onToggle}
@@ -163,13 +167,17 @@ const AreaSectionBar = memo(function AreaSectionBar({
           style={[
             styles.itemIconBox,
             {
-              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2,
-              borderColor: C.border,
-              borderWidth: 1,
+              backgroundColor: pillBg(activeColor, isDark),
             },
           ]}
         >
-          <AnimatedIcon family="feather" name="map-pin" size={20} color={C.text} animation="spring" />
+          <AnimatedIcon
+            family="feather"
+            name="map-pin"
+            size={20}
+            color={activeColor}
+            animation={isOpen ? 'spring' : 'entrance'}
+          />
         </View>
 
         <View style={styles.itemInfoStack}>
@@ -205,7 +213,7 @@ const AreaSectionBar = memo(function AreaSectionBar({
             style={[
               styles.statVal,
               {
-                color: C.text,
+                color: activeColor,
                 fontFamily: FontFamily.jakartaExtraBold,
               },
             ]}
@@ -231,13 +239,13 @@ const AreaSectionBar = memo(function AreaSectionBar({
             family="feather"
             name={isOpen ? 'chevron-down' : 'chevron-right'}
             size={18}
-            color={isOpen ? C.text : C.textMuted}
-            animation="spring"
+            color={isOpen ? activeColor : C.textMuted}
+            animation={isOpen ? 'spring' : 'none'}
           />
         </View>
       </TouchableOpacity>
 
-      {/* Expanded Child Container: Select Entire Area + Hospitals */}
+      {/* Expanded Child Container: Select Entire Area + Hospitals (Explore-style with Left Accent Line) */}
       {isOpen && (
         <View style={styles.expandedChildContainer}>
           {/* Select Entire Area Card (72dp) */}
@@ -246,12 +254,10 @@ const AreaSectionBar = memo(function AreaSectionBar({
               styles.childHospitalCard,
               {
                 backgroundColor: isSelected
-                  ? (isDark ? 'rgba(255, 255, 255, 0.06)' : '#f8fafc')
+                  ? (isDark ? 'rgba(199, 52, 74, 0.16)' : 'rgba(199, 52, 74, 0.08)')
                   : C.surface,
-                borderColor: isSelected
-                  ? (isDark ? 'rgba(255, 255, 255, 0.24)' : 'rgba(0, 0, 0, 0.20)')
-                  : C.border,
-                borderWidth: 1,
+                borderColor: isSelected ? activeColor : C.border,
+                borderLeftColor: activeColor,
               },
             ]}
             onPress={() => onSelectArea(zone.name, zone.name)}
@@ -261,13 +267,11 @@ const AreaSectionBar = memo(function AreaSectionBar({
               style={[
                 styles.childIconBox,
                 {
-                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2,
-                  borderColor: C.border,
-                  borderWidth: 1,
+                  backgroundColor: pillBg(activeColor, isDark),
                 },
               ]}
             >
-              <AnimatedIcon family="feather" name="map" size={18} color={C.text2} animation="spring" />
+              <AnimatedIcon family="feather" name="map" size={18} color={activeColor} animation="entrance" />
             </View>
             <View style={styles.childInfoStack}>
               <Text
@@ -290,14 +294,14 @@ const AreaSectionBar = memo(function AreaSectionBar({
               </Text>
             </View>
             {isSelected ? (
-              <AnimatedIcon family="feather" name="check-circle" size={18} color={C.text} animation="spring" />
+              <AnimatedIcon family="feather" name="check-circle" size={18} color={activeColor} animation="spring" />
             ) : (
-              <Feather name="chevron-right" size={14} color={C.border} />
+              <Feather name="chevron-right" size={16} color={activeColor} />
             )}
           </TouchableOpacity>
 
-          {/* Hospitals inside this Area (Each 72dp) */}
-          {zone.hospitals.map(h => {
+          {/* Hospitals inside this Area (Each 72dp with Explore Left Stripe & Restored Hospital Colors) */}
+          {zone.hospitals.map((h, idx) => {
             const isHospSelected = selectedArea.trim().toLowerCase() === h.name.trim().toLowerCase();
             const subtitleText = h.subLocation ? `${h.subLocation} · ${h.nameBn}` : h.nameBn;
 
@@ -308,12 +312,10 @@ const AreaSectionBar = memo(function AreaSectionBar({
                   styles.childHospitalCard,
                   {
                     backgroundColor: isHospSelected
-                      ? (isDark ? 'rgba(255, 255, 255, 0.06)' : '#f8fafc')
+                      ? (isDark ? 'rgba(199, 52, 74, 0.16)' : 'rgba(199, 52, 74, 0.08)')
                       : C.surface,
-                    borderColor: isHospSelected
-                      ? (isDark ? 'rgba(255, 255, 255, 0.24)' : 'rgba(0, 0, 0, 0.20)')
-                      : C.border,
-                    borderWidth: 1,
+                    borderColor: isHospSelected ? activeColor : C.border,
+                    borderLeftColor: activeColor,
                   },
                 ]}
                 onPress={() => onSelectHospital(h.name, h.subLocation || zone.name)}
@@ -323,13 +325,18 @@ const AreaSectionBar = memo(function AreaSectionBar({
                   style={[
                     styles.childIconBox,
                     {
-                      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2,
-                      borderColor: C.border,
-                      borderWidth: 1,
+                      backgroundColor: pillBg(activeColor, isDark),
                     },
                   ]}
                 >
-                  <AnimatedIcon family="mci" name="hospital-building" size={20} color={C.text} animation="spring" />
+                  <AnimatedIcon
+                    family="mci"
+                    name="hospital-building"
+                    size={20}
+                    color={activeColor}
+                    animation="entrance"
+                    delay={idx * 25}
+                  />
                 </View>
                 <View style={styles.childInfoStack}>
                   <Text
@@ -352,9 +359,9 @@ const AreaSectionBar = memo(function AreaSectionBar({
                   </Text>
                 </View>
                 {isHospSelected ? (
-                  <AnimatedIcon family="feather" name="check-circle" size={18} color={C.text} animation="spring" />
+                  <AnimatedIcon family="feather" name="check-circle" size={18} color={activeColor} animation="spring" />
                 ) : (
-                  <Feather name="chevron-right" size={14} color={C.border} />
+                  <Feather name="chevron-right" size={16} color={activeColor} />
                 )}
               </TouchableOpacity>
             );
@@ -366,7 +373,7 @@ const AreaSectionBar = memo(function AreaSectionBar({
 });
 
 // -------------------------------------------------------------
-// SEARCH RESULT ITEM COMPONENT (72dp)
+// SEARCH RESULT ITEM COMPONENT (72dp with Explore Left Stripe)
 // -------------------------------------------------------------
 const SearchResultRow = memo(function SearchResultRow({
   item,
@@ -383,19 +390,18 @@ const SearchResultRow = memo(function SearchResultRow({
 }) {
   const isHospital = item.type === 'hospital';
   const subtitleText = item.subLocation ? `${item.subLocation} · ${item.nameBn}` : item.nameBn;
+  const activeColor = SectorColors.blood;
 
   return (
     <TouchableOpacity
       style={[
-        styles.areaCardBar,
+        styles.childHospitalCard,
         {
           backgroundColor: isSelected
-            ? (isDark ? 'rgba(255, 255, 255, 0.06)' : '#f8fafc')
+            ? (isDark ? 'rgba(199, 52, 74, 0.16)' : 'rgba(199, 52, 74, 0.08)')
             : C.surface,
-          borderColor: isSelected
-            ? (isDark ? 'rgba(255, 255, 255, 0.24)' : 'rgba(0, 0, 0, 0.20)')
-            : C.border,
-          borderWidth: 1,
+          borderColor: isSelected ? activeColor : C.border,
+          borderLeftColor: activeColor,
         },
       ]}
       onPress={() => onSelect(item.name, item.subLocation)}
@@ -403,25 +409,23 @@ const SearchResultRow = memo(function SearchResultRow({
     >
       <View
         style={[
-          styles.itemIconBox,
+          styles.childIconBox,
           {
-            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2,
-            borderColor: C.border,
-            borderWidth: 1,
+            backgroundColor: pillBg(activeColor, isDark),
           },
         ]}
       >
         {isHospital ? (
-          <AnimatedIcon family="mci" name="hospital-building" size={20} color={C.text} animation="spring" />
+          <AnimatedIcon family="mci" name="hospital-building" size={20} color={activeColor} animation="entrance" />
         ) : (
-          <AnimatedIcon family="feather" name="map-pin" size={17} color={C.text2} animation="spring" />
+          <AnimatedIcon family="feather" name="map-pin" size={18} color={activeColor} animation="entrance" />
         )}
       </View>
 
-      <View style={styles.itemInfoStack}>
+      <View style={styles.childInfoStack}>
         <Text
           style={[
-            styles.areaName,
+            styles.childHospitalName,
             {
               color: C.text,
               fontFamily: FontFamily.jakartaBold,
@@ -433,7 +437,7 @@ const SearchResultRow = memo(function SearchResultRow({
         </Text>
         <Text
           style={[
-            styles.areaSubName,
+            styles.childHospitalSub,
             { color: C.textMuted, fontFamily: FontFamily.bnRegular },
           ]}
           numberOfLines={1}
@@ -443,9 +447,9 @@ const SearchResultRow = memo(function SearchResultRow({
       </View>
 
       {isSelected ? (
-        <AnimatedIcon family="feather" name="check-circle" size={18} color={C.text} animation="spring" />
+        <AnimatedIcon family="feather" name="check-circle" size={18} color={activeColor} animation="spring" />
       ) : (
-        <Feather name="chevron-right" size={14} color={C.border} />
+        <Feather name="chevron-right" size={16} color={activeColor} />
       )}
     </TouchableOpacity>
   );
@@ -530,8 +534,8 @@ export function AreaPickerModal({
             {/* Header: Standardized "Hospitals & Areas" */}
             <View style={styles.header}>
               <View style={styles.headerLeft}>
-                <View style={[styles.headerIcon, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2, borderColor: C.border, borderWidth: 1 }]}>
-                  <AnimatedIcon family="feather" name="map-pin" size={17} color={C.text} animation="spring" />
+                <View style={[styles.headerIcon, { backgroundColor: pillBg(SectorColors.blood, isDark) }]}>
+                  <AnimatedIcon family="feather" name="map-pin" size={17} color={SectorColors.blood} animation="entrance" />
                 </View>
                 <View>
                   <Text style={[styles.headerTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -563,8 +567,8 @@ export function AreaPickerModal({
               onPress={() => setMapPickerOpen(true)}
               activeOpacity={0.8}
             >
-              <View style={[styles.mapTriggerIconWrap, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2, borderColor: C.border, borderWidth: 1 }]}>
-                <AnimatedIcon family="feather" name="map" size={18} color={C.text} animation="float" loop={true} />
+              <View style={[styles.mapTriggerIconWrap, { backgroundColor: pillBg(SectorColors.blood, isDark) }]}>
+                <AnimatedIcon family="feather" name="map" size={18} color={SectorColors.blood} animation="entrance" />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.mapTriggerTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -574,7 +578,7 @@ export function AreaPickerModal({
                   Pinpoint exact location or auto-detect with device GPS
                 </Text>
               </View>
-              <Feather name="chevron-right" size={16} color={C.textMuted} />
+              <Feather name="chevron-right" size={16} color={SectorColors.blood} />
             </TouchableOpacity>
 
             {/* Search Box (Standard 58dp) */}
@@ -583,7 +587,7 @@ export function AreaPickerModal({
                 onPress={() => searchInputRef.current?.focus()}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <AnimatedIcon family="feather" name="search" size={18} color={C.textMuted} animation="spring" />
+                <AnimatedIcon family="feather" name="search" size={18} color={SectorColors.blood} animation="entrance" />
               </TouchableOpacity>
               <TextInput
                 ref={searchInputRef}
@@ -627,7 +631,7 @@ export function AreaPickerModal({
                 showsVerticalScrollIndicator={false}
                 ListEmptyComponent={
                   <View style={styles.emptyContainer}>
-                    <AnimatedIcon family="feather" name="map-pin" size={28} color={C.textMuted} animation="spring" />
+                    <AnimatedIcon family="feather" name="map-pin" size={28} color={SectorColors.blood} animation="entrance" />
                     <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                       No locations found
                     </Text>
@@ -869,11 +873,11 @@ const styles = StyleSheet.create({
   // Expanded Child Container for Hospitals inside the Area
   expandedChildContainer: {
     marginTop: 8,
-    paddingLeft: 12,
+    paddingLeft: 8,
     gap: 8,
   } as ViewStyle,
 
-  // Child Hospital Card (72dp Content Row)
+  // Child Hospital Card (Explore-style 72dp Content Row with 4.5dp Left Stripe)
   childHospitalCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -881,6 +885,9 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 14,
     borderRadius: 16,
+    borderWidth: 1,
+    borderLeftWidth: 4.5,
+    marginBottom: 8,
   } as ViewStyle,
   childIconBox: {
     width: 44,

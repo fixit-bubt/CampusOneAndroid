@@ -13,7 +13,7 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
 import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
-import { FontFamily, Layout, SectorColors } from '../../theme';
+import { FontFamily, Layout, SectorColors, pillBg } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../components/ui/Toast';
 import { removeCache, CacheKeys } from '../../services/cacheService';
@@ -33,16 +33,17 @@ interface MedicalReasonOption {
   label: string;
   labelBn: string;
   icon: string;
+  color?: string;
 }
 
 const MEDICAL_REASONS: MedicalReasonOption[] = [
-  { id: 'Emergency Surgery',      label: 'Emergency Surgery',      labelBn: 'জরুরি সার্জারি',     icon: 'activity' },
-  { id: 'Dengue / Low Platelets', label: 'Dengue / Low Platelets', labelBn: 'ডেঙ্গু / প্লাটিলেট', icon: 'zap' },
-  { id: 'Road Accident / Trauma',  label: 'Road Accident / Trauma',  labelBn: 'দুর্ঘটনা / ট্রমা',    icon: 'alert-triangle' },
-  { id: 'Childbirth / C-Section', label: 'Childbirth / C-Section', labelBn: 'প্রসব / সিজারিয়ান',  icon: 'heart' },
-  { id: 'Thalassemia',           label: 'Thalassemia Regular',    labelBn: 'থ্যালাসেমিয়া রক্তদান', icon: 'droplet' },
-  { id: 'ICU Critical Care',     label: 'ICU Critical Care',      labelBn: 'আইসিইউ ক্রিটিক্যাল',   icon: 'shield' },
-  { id: 'Routine / Other Case',  label: 'Routine / Other Case',   labelBn: 'অন্যান্য চিকিৎসা',    icon: 'plus-circle' },
+  { id: 'Emergency Surgery',      label: 'Emergency Surgery',      labelBn: 'জরুরি সার্জারি',     icon: 'activity',       color: '#c7344a' },
+  { id: 'Dengue / Low Platelets', label: 'Dengue / Low Platelets', labelBn: 'ডেঙ্গু / প্লাটিলেট', icon: 'zap',            color: '#eab308' },
+  { id: 'Road Accident / Trauma',  label: 'Road Accident / Trauma',  labelBn: 'দুর্ঘটনা / ট্রমা',    icon: 'alert-triangle', color: '#f87171' },
+  { id: 'Childbirth / C-Section', label: 'Childbirth / C-Section', labelBn: 'প্রসব / সিজারিয়ান',  icon: 'heart',          color: '#ec4899' },
+  { id: 'Thalassemia',           label: 'Thalassemia Regular',    labelBn: 'থ্যালাসেমিয়া রক্তদান', icon: 'droplet',        color: '#c7344a' },
+  { id: 'ICU Critical Care',     label: 'ICU Critical Care',      labelBn: 'আইসিইউ ক্রিটিক্যাল',   icon: 'shield',         color: '#8b5cf6' },
+  { id: 'Routine / Other Case',  label: 'Routine / Other Case',   labelBn: 'অন্যান্য চিকিৎসা',    icon: 'plus-circle',    color: '#3b82f6' },
 ];
 
 interface AffiliationOption {
@@ -50,13 +51,14 @@ interface AffiliationOption {
   label: string;
   labelBn: string;
   icon: string;
+  color?: string;
 }
 
 const AFFILIATIONS: AffiliationOption[] = [
-  { id: 'BUBT Student',    label: 'BUBT Student',    labelBn: 'বিইউবিটি শিক্ষার্থী', icon: 'book' },
-  { id: 'Faculty / Staff', label: 'Faculty / Staff', labelBn: 'শিক্ষক ও কর্মকর্তা', icon: 'award' },
-  { id: 'Family Member',   label: 'Family Member',   labelBn: 'পিতা/মাতা/পরিবার',   icon: 'users' },
-  { id: 'General Patient', label: 'General Patient', labelBn: 'সাধারণ রোগী',        icon: 'user' },
+  { id: 'BUBT Student',    label: 'BUBT Student',    labelBn: 'বিইউবিটি শিক্ষার্থী', icon: 'book',  color: '#3b82f6' },
+  { id: 'Faculty / Staff', label: 'Faculty / Staff', labelBn: 'শিক্ষক ও কর্মকর্তা', icon: 'award', color: '#8b5cf6' },
+  { id: 'Family Member',   label: 'Family Member',   labelBn: 'পিতা/মাতা/পরিবার',   icon: 'users', color: '#10b981' },
+  { id: 'General Patient', label: 'General Patient', labelBn: 'সাধারণ রোগী',        icon: 'user',  color: '#64748b' },
 ];
 
 export function BloodRequestScreen({ navigation }: any) {
@@ -297,13 +299,13 @@ export function BloodRequestScreen({ navigation }: any) {
               onPress={() => setReasonModalVisible(true)}
               activeOpacity={0.75}
             >
-              <View style={[styles.dropdownIconBox, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2, borderColor: C.border, borderWidth: 1 }]}>
+              <View style={[styles.dropdownIconBox, { backgroundColor: currentReasonObj?.color ? pillBg(currentReasonObj.color, isDark) : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2), borderColor: currentReasonObj?.color ? currentReasonObj.color : C.border, borderWidth: 1 }]}>
                 <AnimatedIcon
                   key={`reason-${medicalReason}`}
                   family="feather"
                   name={currentReasonObj?.icon ? (currentReasonObj.icon as any) : 'activity'}
                   size={22}
-                  color={C.text}
+                  color={currentReasonObj?.color || C.text}
                   animation={medicalReason ? 'spring' : 'entrance'}
                 />
               </View>
@@ -312,7 +314,7 @@ export function BloodRequestScreen({ navigation }: any) {
                   style={[
                     styles.dropdownValue,
                     {
-                      color: medicalReason ? C.text : C.textMuted,
+                      color: medicalReason ? (currentReasonObj?.color || C.text) : C.textMuted,
                       fontFamily: medicalReason ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
                     },
                   ]}
@@ -361,13 +363,13 @@ export function BloodRequestScreen({ navigation }: any) {
             onPress={() => setAffModalVisible(true)}
             activeOpacity={0.75}
           >
-            <View style={[styles.dropdownIconBox, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2, borderColor: C.border, borderWidth: 1 }]}>
+            <View style={[styles.dropdownIconBox, { backgroundColor: currentAffObj?.color ? pillBg(currentAffObj.color, isDark) : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2), borderColor: currentAffObj?.color ? currentAffObj.color : C.border, borderWidth: 1 }]}>
               <AnimatedIcon
                 key={`aff-${affiliation}`}
                 family="feather"
                 name={currentAffObj?.icon ? (currentAffObj.icon as any) : 'users'}
                 size={22}
-                color={C.text}
+                color={currentAffObj?.color || C.text}
                 animation={affiliation ? 'spring' : 'entrance'}
               />
             </View>
@@ -375,7 +377,7 @@ export function BloodRequestScreen({ navigation }: any) {
               <Text
                 style={[
                   styles.dropdownValue,
-                  { color: C.text, fontFamily: FontFamily.jakartaBold },
+                  { color: currentAffObj?.color || C.text, fontFamily: FontFamily.jakartaBold },
                 ]}
                 numberOfLines={1}
               >
@@ -423,8 +425,8 @@ export function BloodRequestScreen({ navigation }: any) {
                 styles.dropdownCard,
                 {
                   backgroundColor: C.surface,
-                  borderColor: C.border,
-                  borderWidth: 1,
+                  borderColor: hospital ? SectorColors.blood : C.border,
+                  borderWidth: hospital ? 1.5 : 1,
                 },
               ]}
             >
@@ -433,13 +435,13 @@ export function BloodRequestScreen({ navigation }: any) {
                 onPress={() => setPickerVisible(true)}
                 activeOpacity={0.75}
               >
-                <View style={[styles.dropdownIconBox, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2, borderColor: C.border, borderWidth: 1 }]}>
+                <View style={[styles.dropdownIconBox, { backgroundColor: hospital ? pillBg(SectorColors.blood, isDark) : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2), borderColor: hospital ? SectorColors.blood : C.border, borderWidth: 1 }]}>
                   <AnimatedIcon
                     key={`hosp-${hospital || area}`}
                     family="mci"
                     name={hospital ? 'hospital-building' : 'map-marker-radius'}
                     size={22}
-                    color={C.text}
+                    color={hospital ? SectorColors.blood : C.text2}
                     animation={hospital ? 'spring' : 'entrance'}
                   />
                 </View>
@@ -574,31 +576,34 @@ export function BloodRequestScreen({ navigation }: any) {
             <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 360 }}>
               {MEDICAL_REASONS.map(r => {
                 const isSelected = medicalReason === r.id;
+                const reasonColor = r.color || SectorColors.blood;
                 return (
                   <TouchableOpacity
                     key={r.id}
                     style={[
                       styles.sheetOptionRow,
                       {
-                        backgroundColor: isSelected ? (isDark ? 'rgba(255, 255, 255, 0.06)' : '#f8fafc') : C.surface,
-                        borderColor: isSelected ? (isDark ? 'rgba(255, 255, 255, 0.24)' : 'rgba(0, 0, 0, 0.20)') : C.border,
+                        backgroundColor: isSelected ? (isDark ? 'rgba(199, 52, 74, 0.16)' : 'rgba(199, 52, 74, 0.08)') : C.surface,
+                        borderColor: isSelected ? reasonColor : C.border,
+                        borderLeftWidth: 4,
+                        borderLeftColor: reasonColor,
                       },
                     ]}
                     onPress={() => handleSelectReason(r)}
                     activeOpacity={0.7}
                   >
-                    <View style={[styles.sheetOptionIcon, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2, borderColor: C.border, borderWidth: 1 }]}>
-                      <AnimatedIcon family="feather" name={r.icon as any} size={18} color={C.text} animation="entrance" />
+                    <View style={[styles.sheetOptionIcon, { backgroundColor: pillBg(reasonColor, isDark), borderColor: isSelected ? reasonColor : C.border, borderWidth: 1 }]}>
+                      <AnimatedIcon family="feather" name={r.icon as any} size={18} color={reasonColor} animation="entrance" />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={[styles.sheetOptionTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                      <Text style={[styles.sheetOptionTitle, { color: isSelected ? reasonColor : C.text, fontFamily: FontFamily.jakartaBold }]}>
                         {r.label}
                       </Text>
                       <Text style={[styles.sheetOptionSub, { color: C.textMuted, fontFamily: FontFamily.bnRegular }]}>
                         {r.labelBn}
                       </Text>
                     </View>
-                    {isSelected && <AnimatedIcon family="feather" name="check" size={16} color={C.text} animation="spring" />}
+                    {isSelected && <AnimatedIcon family="feather" name="check" size={16} color={reasonColor} animation="spring" />}
                   </TouchableOpacity>
                 );
               })}
@@ -634,31 +639,34 @@ export function BloodRequestScreen({ navigation }: any) {
             <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 300 }}>
               {AFFILIATIONS.map(a => {
                 const isSelected = affiliation === a.id;
+                const affColor = a.color || C.brand;
                 return (
                   <TouchableOpacity
                     key={a.id}
                     style={[
                       styles.sheetOptionRow,
                       {
-                        backgroundColor: isSelected ? (isDark ? 'rgba(255, 255, 255, 0.06)' : '#f8fafc') : C.surface,
-                        borderColor: isSelected ? (isDark ? 'rgba(255, 255, 255, 0.24)' : 'rgba(0, 0, 0, 0.20)') : C.border,
+                        backgroundColor: isSelected ? (isDark ? 'rgba(59, 130, 246, 0.16)' : 'rgba(59, 130, 246, 0.08)') : C.surface,
+                        borderColor: isSelected ? affColor : C.border,
+                        borderLeftWidth: 4,
+                        borderLeftColor: affColor,
                       },
                     ]}
                     onPress={() => handleSelectAffiliation(a)}
                     activeOpacity={0.7}
                   >
-                    <View style={[styles.sheetOptionIcon, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2, borderColor: C.border, borderWidth: 1 }]}>
-                      <AnimatedIcon family="feather" name={a.icon as any} size={18} color={C.text} animation="entrance" />
+                    <View style={[styles.sheetOptionIcon, { backgroundColor: pillBg(affColor, isDark), borderColor: isSelected ? affColor : C.border, borderWidth: 1 }]}>
+                      <AnimatedIcon family="feather" name={a.icon as any} size={18} color={affColor} animation="entrance" />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={[styles.sheetOptionTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                      <Text style={[styles.sheetOptionTitle, { color: isSelected ? affColor : C.text, fontFamily: FontFamily.jakartaBold }]}>
                         {a.label}
                       </Text>
                       <Text style={[styles.sheetOptionSub, { color: C.textMuted, fontFamily: FontFamily.bnRegular }]}>
                         {a.labelBn}
                       </Text>
                     </View>
-                    {isSelected && <AnimatedIcon family="feather" name="check" size={16} color={C.text} animation="spring" />}
+                    {isSelected && <AnimatedIcon family="feather" name="check" size={16} color={affColor} animation="spring" />}
                   </TouchableOpacity>
                 );
               })}

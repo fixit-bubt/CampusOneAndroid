@@ -426,4 +426,34 @@ All location picking, geolocation services, and map-based features adhere to the
 * **Control Trigger & Search Bar:** 58 dp fixed outer height (`height: 58`, `borderRadius: 16`).
 * **Selected Place Card:** 72 dp content row (`height: 72`, `borderRadius: 16`) displaying place name, Bengali name, and geographic sub-location with checkmark indicator.
 
+---
+
+## 16. Explore-Style Collapsible Area Bars & Blood Module Micro-Interactions (`AreaPickerModal.tsx`, `BloodScreen.tsx`, `BloodRequestScreen.tsx`)
+
+All location and hospital selectors across the Blood Donation system strictly follow Explore screen visual standards for 1:1 cross-app harmony:
+
+### 1. Collapsible Area Bars & 4.5 dp Left Accent Stripes
+* **Zone Header Bar (72 dp, Explore Parity):**
+  - Modeled directly on Explore's `CollapsibleSection`.
+  - When expanded: 1.5 dp accent border (`${SectorColors.blood}85` in dark mode, `${SectorColors.blood}65` in light mode), translucent blood pill icon box (`pillBg(SectorColors.blood, isDark)`), vibrant blood map-pin (`SectorColors.blood`), blood red hospital count stat, and blood red animated chevron.
+  - When collapsed: neutral surface with soft tinted icon container.
+* **Child Hospital Cards (72 dp, Explore `childBar` Parity):**
+  - Formatted with a prominent 4.5 dp left accent stripe (`borderLeftWidth: 4.5`, `borderLeftColor: SectorColors.blood`).
+  - Standard 72 dp content row height (`minHeight: 72`, `paddingVertical: 14`, `paddingHorizontal: 14`, `borderRadius: 16`, `marginBottom: 8`).
+  - Child icon container: `width: 44, height: 44, borderRadius: 13`, `backgroundColor: pillBg(SectorColors.blood, isDark)`.
+  - Official hospital vector icon: `hospital-building` (MaterialCommunityIcons, 20 px) rendered in vibrant `SectorColors.blood`.
+  - Right interactive chevron: `Feather name="chevron-right"` in `SectorColors.blood`.
+
+### 2. Micro-Animation Architecture (Explore Parity, Zero Looping)
+* **Single-Shot Tactile Micro-Interactions:**
+  - All icons across the blood donation module use single-shot `animation="entrance"` (with subtle staggered item reveals) or tactile `animation="spring"` on tap/accordion toggles.
+  - Strict ban on endless looping animations (`loop={true}`, continuous float/pulse/bounce), preventing visual clutter and preserving Android RenderThread 120 FPS performance.
+
+### 3. Semantic Icon Colors & Dropdown Triggers
+* **Blood Donation Screens (`BloodScreen.tsx`, `BloodRequestScreen.tsx`, `DonorRegisterScreen.tsx`):**
+  - Active location filter trigger: 1.5 dp `SectorColors.blood` border and translucent blood pill container when filtered.
+  - Clinical Case Reasons: Distinct semantic color tokens (Surgery `SectorColors.blood`, Dengue `#eab308`, Trauma `#f87171`, Childbirth `#ec4899`, Thalassemia `SectorColors.blood`, ICU `#8b5cf6`, Other `#3b82f6`) with matching 4 dp left accent stripes and tinted icon pills.
+  - Campus Affiliation: Semantic category colors (Student `#3b82f6`, Faculty `#8b5cf6`, Family `#10b981`, General `#64748b`) with matching 4 dp left stripes and tinted icon pills.
+
+
 

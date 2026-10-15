@@ -16,7 +16,7 @@ import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
 import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
-import { FontFamily, Layout, SectorColors, Accent } from '../../theme';
+import { FontFamily, Layout, SectorColors, Accent, pillBg } from '../../theme';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
@@ -607,7 +607,13 @@ export function BloodScreen({ route, navigation }: any) {
         <View
           style={[
             styles.areaPickerTrigger,
-            { backgroundColor: C.surface, borderColor: C.border },
+            areaFilter !== 'All'
+              ? {
+                  backgroundColor: isDark ? 'rgba(199, 52, 74, 0.16)' : 'rgba(199, 52, 74, 0.08)',
+                  borderColor: SectorColors.blood,
+                  borderWidth: 1.5,
+                }
+              : { backgroundColor: C.surface, borderColor: C.border },
           ]}
         >
           <TouchableOpacity
@@ -619,8 +625,10 @@ export function BloodScreen({ route, navigation }: any) {
               style={[
                 styles.areaIconBox,
                 {
-                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2,
-                  borderColor: C.border,
+                  backgroundColor: areaFilter !== 'All'
+                    ? pillBg(SectorColors.blood, isDark)
+                    : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2),
+                  borderColor: areaFilter !== 'All' ? SectorColors.blood : C.border,
                   borderWidth: 1,
                 },
               ]}
@@ -629,8 +637,8 @@ export function BloodScreen({ route, navigation }: any) {
                 family={isHospitalFilter ? 'mci' : 'feather'}
                 name={isHospitalFilter ? 'hospital-building' : 'map-pin'}
                 size={14}
-                color={C.text}
-                animation="spring"
+                color={areaFilter !== 'All' ? SectorColors.blood : C.text}
+                animation="entrance"
               />
             </View>
 
@@ -639,7 +647,7 @@ export function BloodScreen({ route, navigation }: any) {
                 style={[
                   styles.areaMicroLabel,
                   {
-                    color: C.textMuted,
+                    color: areaFilter !== 'All' ? SectorColors.blood : C.textMuted,
                     fontFamily: FontFamily.jakartaBold,
                   },
                 ]}
@@ -650,7 +658,7 @@ export function BloodScreen({ route, navigation }: any) {
                 style={[
                   styles.areaPickerTriggerTxt,
                   {
-                    color: C.text,
+                    color: areaFilter !== 'All' ? (isDark ? '#fff' : SectorColors.blood) : C.text,
                     fontFamily: FontFamily.jakartaBold,
                   },
                 ]}
@@ -667,8 +675,8 @@ export function BloodScreen({ route, navigation }: any) {
               hitSlop={{ top: 10, bottom: 10, left: 6, right: 10 }}
               style={styles.areaClearBtn}
             >
-              <View style={[styles.clearPill, { backgroundColor: C.surface2, borderColor: C.border, borderWidth: 1 }]}>
-                <Feather name="x" size={11} color={C.text} />
+              <View style={[styles.clearPill, { backgroundColor: isDark ? 'rgba(199, 52, 74, 0.28)' : 'rgba(199, 52, 74, 0.14)', borderColor: SectorColors.blood, borderWidth: 1 }]}>
+                <Feather name="x" size={11} color={SectorColors.blood} />
               </View>
             </TouchableOpacity>
           ) : (
@@ -863,7 +871,7 @@ export function BloodScreen({ route, navigation }: any) {
                       activeOpacity={0.75}
                     >
                       <View style={styles.hospitalRowLeft}>
-                        <AnimatedIcon family="feather" name="map-pin" size={13} color={C.textMuted} animation="float" loop={true} />
+                        <AnimatedIcon family="feather" name="map-pin" size={13} color={SectorColors.blood} animation="entrance" />
                         <Text style={styles.hospitalTxt} numberOfLines={1}>
                           <Text style={{ fontFamily: FontFamily.jakartaBold, color: C.text }}>{r.hospital}</Text>
                           {r.area ? (
@@ -871,11 +879,11 @@ export function BloodScreen({ route, navigation }: any) {
                           ) : null}
                         </Text>
                       </View>
-                      <View style={[styles.mapHintBadge, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface, borderColor: C.border }]}>
-                        <Text style={[styles.mapHintTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                      <View style={[styles.mapHintBadge, { backgroundColor: isDark ? 'rgba(199, 52, 74, 0.16)' : 'rgba(199, 52, 74, 0.08)', borderColor: isDark ? 'rgba(199, 52, 74, 0.32)' : 'rgba(199, 52, 74, 0.20)' }]}>
+                        <Text style={[styles.mapHintTxt, { color: SectorColors.blood, fontFamily: FontFamily.jakartaBold }]}>
                           Map
                         </Text>
-                        <AnimatedIcon family="feather" name="arrow-up-right" size={11} color={C.textMuted} animation="spring" />
+                        <AnimatedIcon family="feather" name="arrow-up-right" size={11} color={SectorColors.blood} animation="spring" />
                       </View>
                     </TouchableOpacity>
 

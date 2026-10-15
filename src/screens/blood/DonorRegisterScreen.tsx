@@ -12,7 +12,7 @@ import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
 import { SubBar } from '../../components/layout/TopBar';
 import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
-import { FontFamily, Layout, SectorColors } from '../../theme';
+import { FontFamily, Layout, SectorColors, pillBg } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { getMyDonor } from '../../services/bloodService';
 import { removeCache, CacheKeys } from '../../services/cacheService';
@@ -205,8 +205,8 @@ export function DonorRegisterScreen({ navigation }: any) {
             styles.selectorCard,
             {
               backgroundColor: C.surface,
-              borderColor: C.border,
-              borderWidth: 1,
+              borderColor: area ? SectorColors.blood : C.border,
+              borderWidth: area ? 1.5 : 1,
             },
           ]}
           onPress={() => setAreaModalVisible(true)}
@@ -216,8 +216,8 @@ export function DonorRegisterScreen({ navigation }: any) {
             style={[
               styles.selectorIconBox,
               {
-                backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2,
-                borderColor: C.border,
+                backgroundColor: area ? pillBg(SectorColors.blood, isDark) : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2),
+                borderColor: area ? SectorColors.blood : C.border,
                 borderWidth: 1,
               },
             ]}
@@ -227,8 +227,8 @@ export function DonorRegisterScreen({ navigation }: any) {
               family="feather"
               name="map-pin"
               size={20}
-              color={C.text}
-              animation="spring"
+              color={area ? SectorColors.blood : C.text2}
+              animation="entrance"
             />
           </View>
           <View style={{ flex: 1, minWidth: 0 }}>
