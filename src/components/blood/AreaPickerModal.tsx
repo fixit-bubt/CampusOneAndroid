@@ -811,12 +811,11 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   } as ViewStyle,
 
-  // Standalone Card Bars (Standard 72dp Content Row: 44dp icon + 28dp padding)
+  // Standalone Card Bars (Standard 72dp Content Row: Explore featuredCard Parity)
   areaCardBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: 72,
-    paddingVertical: 14,
+    height: 72,
     paddingHorizontal: 14,
     borderRadius: 16,
   } as ViewStyle,
@@ -835,10 +834,14 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   areaName: {
     fontSize: 14.5,
+    lineHeight: 20,
+    includeFontPadding: false,
   } as TextStyle,
   areaSubName: {
     fontSize: 11.5,
+    lineHeight: 16,
     marginTop: 2,
+    includeFontPadding: false,
   } as TextStyle,
 
   // Explore Screen Pattern: 1px Vertical Divider Line
@@ -870,19 +873,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   } as ViewStyle,
 
-  // Expanded Child Container for Hospitals inside the Area
+  // Expanded Child Container for Hospitals inside the Area (Explore Parity: matching width, no awkward indent)
   expandedChildContainer: {
     marginTop: 8,
-    paddingLeft: 8,
-    gap: 8,
+    marginBottom: 2,
   } as ViewStyle,
 
   // Child Hospital Card (Explore-style 72dp Content Row with 4.5dp Left Stripe)
   childHospitalCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: 72,
-    paddingVertical: 14,
+    gap: 13,
+    height: 72,
     paddingHorizontal: 14,
     borderRadius: 16,
     borderWidth: 1,
@@ -895,18 +897,21 @@ const styles = StyleSheet.create({
     borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
   } as ViewStyle,
   childInfoStack: {
     flex: 1,
     justifyContent: 'center',
   } as ViewStyle,
   childHospitalName: {
-    fontSize: 14,
+    fontSize: 14.5,
+    lineHeight: 20,
+    includeFontPadding: false,
   } as TextStyle,
   childHospitalSub: {
     fontSize: 11.5,
+    lineHeight: 16,
     marginTop: 2,
+    includeFontPadding: false,
   } as TextStyle,
 
   // Empty State
