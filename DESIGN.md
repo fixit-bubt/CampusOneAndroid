@@ -434,12 +434,15 @@ All location and hospital selectors across the Blood Donation system strictly fo
 
 ### 1. Collapsible Area Bars & 4.5 dp Left Accent Stripes
 * **Zone Header Bar (72 dp, Explore Parity):**
-  - Modeled directly on Explore's `CollapsibleSection`.
+  - Modeled directly on Explore's `CollapsibleSection` and `featuredCard`.
+  - Strict fixed height: `height: 72, paddingHorizontal: 14, borderRadius: 16`.
   - When expanded: 1.5 dp accent border (`${SectorColors.blood}85` in dark mode, `${SectorColors.blood}65` in light mode), translucent blood pill icon box (`pillBg(SectorColors.blood, isDark)`), vibrant blood map-pin (`SectorColors.blood`), blood red hospital count stat, and blood red animated chevron.
   - When collapsed: neutral surface with soft tinted icon container.
 * **Child Hospital Cards (72 dp, Explore `childBar` Parity):**
   - Formatted with a prominent 4.5 dp left accent stripe (`borderLeftWidth: 4.5`, `borderLeftColor: SectorColors.blood`).
-  - Standard 72 dp content row height (`minHeight: 72`, `paddingVertical: 14`, `paddingHorizontal: 14`, `borderRadius: 16`, `marginBottom: 8`).
+  - Strict fixed 72 dp content row height (`height: 72`, `paddingHorizontal: 14`, `gap: 13`, `borderRadius: 16`, `borderWidth: 1`, `marginBottom: 8`), eliminating font matra vertical expansion beyond 72 dp.
+  - Full-width edge alignment with the parent area bar: `expandedChildContainer` uses `marginTop: 8, marginBottom: 2` with zero horizontal indentation (`paddingLeft: 0`) and clean 8 dp card spacing.
+  - Typography locked: `includeFontPadding: false`, `lineHeight: 20` for hospital name, `lineHeight: 16` for subtitle, guaranteeing perfect vertical centering inside the 72 dp card.
   - Child icon container: `width: 44, height: 44, borderRadius: 13`, `backgroundColor: pillBg(SectorColors.blood, isDark)`.
   - Official hospital vector icon: `hospital-building` (MaterialCommunityIcons, 20 px) with theme-adaptive contrast: crisp white (`#ffffff`) in dark mode inside the crimson pill for maximum pop, and vivid `SectorColors.blood` in light mode for full readability.
   - Right interactive chevron: `Feather name="chevron-right"` in `SectorColors.blood`.
