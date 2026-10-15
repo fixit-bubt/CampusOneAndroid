@@ -3793,6 +3793,25 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     ]
   },
   {
+    "id": "area_mirpur_central",
+    "name": "Mirpur",
+    "nameBn": "মিরপুর",
+    "category": "area",
+    "zone": "Mirpur & Campus",
+    "zoneBn": "মিরপুর ও ক্যাম্পাস এলাকা",
+    "subLocation": "Mirpur-2 & Central Hub",
+    "coords": {
+      "latitude": 23.8078,
+      "longitude": 90.3582
+    },
+    "keywords": [
+      "mirpur",
+      "mirpur central",
+      "মিরপুর",
+      "মিরপুর এলাকা"
+    ]
+  },
+  {
     "id": "area_mirpur_60ft_main",
     "name": "60 Feet Road (Kamal Sarani Main)",
     "nameBn": "৬০ ফিট রোড (কামাল সরণি)",
@@ -4009,6 +4028,26 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "mirpur 7",
       "rupnagar link",
       "চলন্তিকা"
+    ]
+  },
+  {
+    "id": "area_mirpur_bauniabadh",
+    "name": "Bauniabadh (Mirpur-11)",
+    "nameBn": "বাউনিয়াবাদ (মিরপুর-১১)",
+    "category": "area",
+    "zone": "Mirpur & Campus",
+    "zoneBn": "মিরপুর ও ক্যাম্পাস এলাকা",
+    "subLocation": "Mirpur-11",
+    "coords": {
+      "latitude": 23.821,
+      "longitude": 90.37
+    },
+    "keywords": [
+      "bauniabadh",
+      "mirpur 11",
+      "মিরপুর ১১",
+      "বাউনিয়াবাদ",
+      "badh"
     ]
   },
   {
@@ -4559,6 +4598,25 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "bangshal",
       "bicycle market",
       "বংশাল"
+    ]
+  },
+  {
+    "id": "area_gazipur_central",
+    "name": "Gazipur",
+    "nameBn": "গাজীপুর",
+    "category": "area",
+    "zone": "Greater Dhaka & Suburbs",
+    "zoneBn": "বৃহত্তর ঢাকা ও শহরতলি",
+    "subLocation": "Gazipur Sadar Hub",
+    "coords": {
+      "latitude": 23.9999,
+      "longitude": 90.4203
+    },
+    "keywords": [
+      "gazipur",
+      "gazipur sadar",
+      "গাজীপুর",
+      "গাজীপুর শহর"
     ]
   },
   {
@@ -7248,6 +7306,26 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "hospital",
       "হাসপাতাল",
       "চিকিৎসা"
+    ]
+  },
+  {
+    "id": "area_mirpur",
+    "name": "Mirpur",
+    "nameBn": "মিরপুর জেনারেল হাসপাতাল",
+    "category": "area",
+    "zone": "Mirpur & Campus",
+    "zoneBn": "মিরপুর ও ক্যাম্পাস এলাকা",
+    "subLocation": "Mirpur, Dhaka",
+    "coords": {
+      "latitude": 23.8078,
+      "longitude": 90.3582
+    },
+    "keywords": [
+      "mirpur",
+      "mirpur",
+      "মিরপুর জেনারেল হাসপাতাল",
+      "area",
+      "এলাকা"
     ]
   },
   {
@@ -10471,6 +10549,26 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     ]
   },
   {
+    "id": "area_gazipur",
+    "name": "Gazipur",
+    "nameBn": "গাজীপুর চৌরাস্তা",
+    "category": "area",
+    "zone": "Greater Dhaka & Suburbs",
+    "zoneBn": "বৃহত্তর ঢাকা ও শহরতলি",
+    "subLocation": "Gazipur, Dhaka",
+    "coords": {
+      "latitude": 23.9999,
+      "longitude": 90.4203
+    },
+    "keywords": [
+      "gazipur",
+      "gazipur",
+      "গাজীপুর চৌরাস্তা",
+      "area",
+      "এলাকা"
+    ]
+  },
+  {
     "id": "area_gazipur_chowrasta_1",
     "name": "Gazipur Chowrasta",
     "nameBn": "গাজীপুর চৌরাস্তা",
@@ -10623,26 +10721,80 @@ function getDistanceMetersFast(lat1: number, lon1: number, lat2: number, lon2: n
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-const NAME_MAP = new Map<string, MasterLocation>();
-for (const loc of DHAKA_MASTER_LOCATIONS) {
-  NAME_MAP.set(loc.name.toLowerCase(), loc);
-  if (loc.nameBn) {
-    NAME_MAP.set(loc.nameBn.toLowerCase(), loc);
+interface SearchIndexEntry {
+  loc: MasterLocation;
+  cleanName: string;
+  cleanBn: string;
+  lowerName: string;
+  lowerBn: string;
+  lowerZone: string;
+  lowerSub: string;
+  tokens: string[];
+}
+
+const SEARCH_INDEX: SearchIndexEntry[] = DHAKA_MASTER_LOCATIONS.map(loc => ({
+  loc,
+  cleanName: loc.name.toLowerCase().replace(/[^a-z0-9ঀ-৿]/gi, ''),
+  cleanBn: (loc.nameBn || '').toLowerCase().replace(/[^a-z0-9ঀ-৿]/gi, ''),
+  lowerName: loc.name.toLowerCase(),
+  lowerBn: (loc.nameBn || '').toLowerCase(),
+  lowerZone: loc.zone.toLowerCase(),
+  lowerSub: (loc.subLocation || '').toLowerCase(),
+  tokens: [
+    loc.name.toLowerCase(),
+    (loc.nameBn || '').toLowerCase(),
+    loc.zone.toLowerCase(),
+    (loc.subLocation || '').toLowerCase(),
+    ...loc.keywords.map(k => k.toLowerCase()),
+  ],
+}));
+
+const CLEAN_MAP = new Map<string, MasterLocation>();
+for (const item of SEARCH_INDEX) {
+  if (item.cleanName) CLEAN_MAP.set(item.cleanName, item.loc);
+  if (item.cleanBn) CLEAN_MAP.set(item.cleanBn, item.loc);
+  if (item.lowerName) CLEAN_MAP.set(item.lowerName, item.loc);
+  if (item.lowerBn) CLEAN_MAP.set(item.lowerBn, item.loc);
+  for (const kw of item.loc.keywords) {
+    const cleanKw = kw.toLowerCase().replace(/[^a-z0-9ঀ-৿]/gi, '');
+    if (cleanKw.length >= 3 && !CLEAN_MAP.has(cleanKw)) {
+      CLEAN_MAP.set(cleanKw, item.loc);
+    }
   }
 }
 
 export function findMasterLocationByName(name?: string | null): MasterLocation | undefined {
   if (!name || !name.trim()) return undefined;
   const q = name.trim().toLowerCase();
-  const direct = NAME_MAP.get(q);
+  const direct = CLEAN_MAP.get(q);
   if (direct) return direct;
-  return DHAKA_MASTER_LOCATIONS.find(
-    l =>
-      l.name.toLowerCase() === q ||
-      (l.nameBn && l.nameBn.toLowerCase() === q) ||
-      l.name.toLowerCase().includes(q) ||
-      q.includes(l.name.toLowerCase())
-  );
+
+  const cleanQ = q.replace(/[^a-z0-9ঀ-৿]/gi, '');
+  if (cleanQ) {
+    const cleanDirect = CLEAN_MAP.get(cleanQ);
+    if (cleanDirect) return cleanDirect;
+  }
+
+  // Split on delimiters (/ & ( ) ,) to support compound names like "Airport / Ashkona"
+  const parts = q.split(/[/&(),]+/).map(p => p.trim()).filter(Boolean);
+  for (const part of parts) {
+    const partClean = part.replace(/[^a-z0-9ঀ-৿]/gi, '');
+    if (partClean.length >= 3) {
+      const partMatch = CLEAN_MAP.get(partClean);
+      if (partMatch) return partMatch;
+    }
+  }
+
+  // Substring fallback
+  if (cleanQ.length >= 4) {
+    for (const [k, loc] of CLEAN_MAP) {
+      if (k.length >= 4 && (cleanQ.includes(k) || k.includes(cleanQ))) {
+        return loc;
+      }
+    }
+  }
+
+  return undefined;
 }
 
 export function searchMasterLocations(
@@ -10652,23 +10804,29 @@ export function searchMasterLocations(
 ): MasterLocation[] {
   if (!query || !query.trim()) return [];
   const q = query.trim().toLowerCase();
-  const qClean = q.replace(/[\s\-_]+/g, '');
+  const qClean = q.replace(/[^a-z0-9ঀ-৿]/gi, '');
 
-  const matches = DHAKA_MASTER_LOCATIONS.filter(l => {
-    const n = l.name.toLowerCase();
-    const bn = l.nameBn ? l.nameBn.toLowerCase() : '';
-    const z = l.zone.toLowerCase();
-    const s = l.subLocation ? l.subLocation.toLowerCase() : '';
-    const kw = l.keywords;
-
-    if (n.includes(q) || bn.includes(q) || z.includes(q) || s.includes(q)) return true;
-    if (n.replace(/[\s\-_]+/g, '').includes(qClean)) return true;
-
-    for (let i = 0; i < kw.length; i++) {
-      if (kw[i].toLowerCase().includes(q)) return true;
+  const matches: MasterLocation[] = [];
+  for (let i = 0; i < SEARCH_INDEX.length; i++) {
+    const item = SEARCH_INDEX[i];
+    if (
+      item.lowerName.includes(q) ||
+      item.lowerBn.includes(q) ||
+      item.lowerZone.includes(q) ||
+      item.lowerSub.includes(q) ||
+      (qClean.length >= 2 && (item.cleanName.includes(qClean) || item.cleanBn.includes(qClean)))
+    ) {
+      matches.push(item.loc);
+      continue;
     }
-    return false;
-  });
+    const tokens = item.tokens;
+    for (let j = 0; j < tokens.length; j++) {
+      if (tokens[j].includes(q)) {
+        matches.push(item.loc);
+        break;
+      }
+    }
+  }
 
   matches.sort((a, b) => {
     const aName = a.name.toLowerCase();
@@ -10685,13 +10843,6 @@ export function searchMasterLocations(
     if (aStarts && bStarts && aName.length !== bName.length) {
       return aName.length - bName.length;
     }
-
-    const aWords = aName.split(/[\s\-_]+/);
-    const bWords = bName.split(/[\s\-_]+/);
-    const aWordStart = aWords.some(w => w.startsWith(q));
-    const bWordStart = bWords.some(w => w.startsWith(q));
-    if (aWordStart && !bWordStart) return -1;
-    if (!aWordStart && bWordStart) return 1;
 
     if (userCoords) {
       const distA = getDistanceMetersFast(userCoords.latitude, userCoords.longitude, a.coords.latitude, a.coords.longitude);

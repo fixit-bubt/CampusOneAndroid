@@ -87,6 +87,46 @@ describe('locationService - search and autocomplete', () => {
     expect(place.name).toBe('BUBT Main Campus');
     expect(place.coords).toEqual(BUBT_COORDS);
   });
+
+  it('resolves Mirpur-11 and Bauniabadh without falsely matching Delta Medical College', () => {
+    const { resolveHospitalLocation } = require('../../constants/dhakaHospitalCoords');
+    const res11 = resolveHospitalLocation('', 'Mirpur-11');
+    expect(res11.coords.latitude).toBeCloseTo(23.8175, 2);
+    expect(res11.coords.longitude).toBeCloseTo(90.3662, 2);
+    expect(res11.verifiedName).not.toContain('Delta Medical');
+
+    const resBauniabadh = resolveHospitalLocation('', 'Bauniabadh (Mirpur-11)');
+    expect(resBauniabadh.coords.latitude).toBeCloseTo(23.8210, 2);
+    expect(resBauniabadh.coords.longitude).toBeCloseTo(90.3700, 2);
+    expect(resBauniabadh.verifiedName).not.toContain('Delta Medical');
+
+    // Delta Medical directly requested
+    const resDelta = resolveHospitalLocation('Delta Medical College Hospital', 'Mirpur-1');
+    expect(resDelta.coords.latitude).toBeCloseTo(23.8033, 2);
+    expect(resDelta.coords.longitude).toBeCloseTo(90.3619, 2);
+    expect(resDelta.verifiedName).toContain('Delta Medical');
+  });
+
+  it('correctly resolves parent hubs Mirpur and Gazipur', () => {
+    const { findMasterLocationByName } = require('../../constants/dhakaMasterLocations');
+    const mirpur = findMasterLocationByName('Mirpur');
+    expect(mirpur).toBeDefined();
+    expect(mirpur?.coords.latitude).toBeCloseTo(23.8078, 2);
+
+    const gazipur = findMasterLocationByName('Gazipur');
+    expect(gazipur).toBeDefined();
+    expect(gazipur?.coords.latitude).toBeCloseTo(23.9999, 2);
+  });
+
+  it('matches Bengali location queries without regex stripping failure', () => {
+    const { findMasterLocationByName, searchMasterLocations } = require('../../constants/dhakaMasterLocations');
+    const mirpurBn = findMasterLocationByName('মিরপুর');
+    expect(mirpurBn).toBeDefined();
+
+    const uttaraBn = searchMasterLocations('উত্তরা', 5);
+    expect(uttaraBn.length).toBeGreaterThan(0);
+    expect(uttaraBn[0].nameBn).toContain('উত্তরা');
+  });
 });
 
 

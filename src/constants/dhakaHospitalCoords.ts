@@ -792,6 +792,7 @@ export const DHAKA_HOSPITALS_MASTER: HospitalLocationData[] = [
 // -------------------------------------------------------------
 export const DHAKA_AREA_CENTERS: Record<string, Coordinates> = {
   // Mirpur & Campus Vicinity
+  'mirpur': { latitude: 23.8078, longitude: 90.3582 },
   'mirpur-2': { latitude: 23.8078, longitude: 90.3582 },
   'mirpur-1': { latitude: 23.7956, longitude: 90.3537 },
   'mirpur-3': { latitude: 23.8110, longitude: 90.3600 },
@@ -800,6 +801,8 @@ export const DHAKA_AREA_CENTERS: Record<string, Coordinates> = {
   'mirpur-10': { latitude: 23.8071, longitude: 90.3686 },
   'mirpur-11': { latitude: 23.8175, longitude: 90.3662 },
   'mirpur-11.5': { latitude: 23.8210, longitude: 90.3650 },
+  'bauniabadh': { latitude: 23.8210, longitude: 90.3700 },
+  'bauniabadh (mirpur-11)': { latitude: 23.8210, longitude: 90.3700 },
   'purobi': { latitude: 23.8210, longitude: 90.3650 },
   'mirpur-12': { latitude: 23.8277, longitude: 90.3644 },
   'mirpur-12 dohs': { latitude: 23.8320, longitude: 90.3700 },
@@ -965,6 +968,7 @@ export const DHAKA_AREA_CENTERS: Record<string, Coordinates> = {
   'dakshinkhan': { latitude: 23.8650, longitude: 90.4260 },
   'turag': { latitude: 23.8820, longitude: 90.3550 },
   'tongi': { latitude: 23.9100, longitude: 90.4300 },
+  'gazipur': { latitude: 23.9999, longitude: 90.4203 },
   'gazipur chowrasta': { latitude: 23.9850, longitude: 90.3800 },
   'ashulia': { latitude: 23.9050, longitude: 90.3200 },
   'birulia': { latitude: 23.8550, longitude: 90.3200 },
@@ -1043,20 +1047,7 @@ export function resolveHospitalLocation(
     }
   }
 
-  // 1. Exact Name Match in Master Database
-  for (const h of DHAKA_HOSPITALS_MASTER) {
-    if (h.name.toLowerCase() === hLower) {
-      return {
-        coords: h.coords,
-        verifiedName: h.name,
-        subLocation: h.subLocation,
-        searchQuery: h.searchQuery,
-        isExactMatch: true,
-      };
-    }
-  }
-
-  // 2. Multi-Branch Disambiguation (e.g. Ibn Sina Mirpur vs Kalyanpur vs Dhanmondi)
+  // 1. Multi-Branch Disambiguation (e.g. Ibn Sina Mirpur vs Kalyanpur vs Dhanmondi)
   if (combined.includes('ibn sina') || combined.includes('ইবনে সিনা')) {
     if (combined.includes('mirpur') || combined.includes('মিরপুর') || combined.includes('10')) {
       const match = DHAKA_HOSPITALS_MASTER.find(h => h.name.includes('Mirpur-10') && h.name.includes('Ibn Sina'));
@@ -1150,19 +1141,23 @@ export function resolveHospitalLocation(
     }
   }
 
-  // 3. Keyword / Substring Match in Master Hospital List
-  for (const h of DHAKA_HOSPITALS_MASTER) {
-    if (hLower.includes(h.name.toLowerCase())) {
+  // 2. Hospital Name Resolution (if rawHosp is provided)
+  if (rawHosp && rawHosp.trim().length >= 2) {
+    // Check Master Database of 513 verified places for hospital match
+    const hospMasterMatch = findMasterLocationByName(rawHosp);
+    if (hospMasterMatch) {
       return {
-        coords: h.coords,
-        verifiedName: h.name,
-        subLocation: h.subLocation,
-        searchQuery: h.searchQuery,
+        coords: hospMasterMatch.coords,
+        verifiedName: hospMasterMatch.name,
+        subLocation: hospMasterMatch.subLocation || hospMasterMatch.zone,
+        searchQuery: `${hospMasterMatch.coords.latitude},${hospMasterMatch.coords.longitude}`,
         isExactMatch: true,
       };
     }
-    for (const kw of h.keywords) {
-      if (hLower.includes(kw.toLowerCase()) || combined.includes(kw.toLowerCase())) {
+
+    // Exact or Substring Match in Master Hospital List
+    for (const h of DHAKA_HOSPITALS_MASTER) {
+      if (h.name.toLowerCase() === hLower || hLower.includes(h.name.toLowerCase())) {
         return {
           coords: h.coords,
           verifiedName: h.name,
@@ -1171,19 +1166,33 @@ export function resolveHospitalLocation(
           isExactMatch: true,
         };
       }
+      for (const kw of h.keywords) {
+        const kwLower = kw.toLowerCase();
+        if (hLower.includes(kwLower)) {
+          return {
+            coords: h.coords,
+            verifiedName: h.name,
+            subLocation: h.subLocation,
+            searchQuery: h.searchQuery,
+            isExactMatch: true,
+          };
+        }
+      }
     }
   }
 
-  // 4. Master Location Search (511 verified places: hospitals, clinics, transit, areas)
-  const masterMatch = findMasterLocationByName(rawHosp) || findMasterLocationByName(rawArea);
-  if (masterMatch) {
-    return {
-      coords: masterMatch.coords,
-      verifiedName: masterMatch.name,
-      subLocation: masterMatch.subLocation || masterMatch.zone,
-      searchQuery: `${masterMatch.coords.latitude},${masterMatch.coords.longitude}`,
-      isExactMatch: true,
-    };
+  // 3. Area Match in Master Database (513 verified places: areas, hubs, transit)
+  if (rawArea && rawArea.trim().length >= 2) {
+    const areaMasterMatch = findMasterLocationByName(rawArea);
+    if (areaMasterMatch) {
+      return {
+        coords: areaMasterMatch.coords,
+        verifiedName: rawHosp || areaMasterMatch.name,
+        subLocation: areaMasterMatch.subLocation || areaMasterMatch.zone,
+        searchQuery: `${areaMasterMatch.coords.latitude},${areaMasterMatch.coords.longitude}`,
+        isExactMatch: true,
+      };
+    }
   }
 
   // 5. Area Matching with Word-Boundary & Length-Descending Priority (prevents mirpur-10 matching mirpur-1)

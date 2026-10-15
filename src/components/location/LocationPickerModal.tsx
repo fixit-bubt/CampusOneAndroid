@@ -481,6 +481,7 @@ export function LocationPickerModal({
         return;
       }
 
+      selectionLockUntilRef.current = 0; // Clear any search selection lock
       isProgrammaticMoveRef.current = false; // Allow reverse geocoding to resolve address
       flyToCoordinates(gpsCoords, 17);
       toast({
@@ -684,6 +685,7 @@ export function LocationPickerModal({
       });
 
       const timer = setTimeout(() => {
+        selectionLockUntilRef.current = Date.now() + 2500;
         isProgrammaticMoveRef.current = true;
         flyToCoordinates(coords, 16);
       }, 350);

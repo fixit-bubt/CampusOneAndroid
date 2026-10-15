@@ -68,37 +68,35 @@ export function findNearestLandmark(
   coords: Coordinates,
   maxDistanceMeters: number = 65
 ): LandmarkLocation | null {
-  let nearest: LandmarkLocation | null = null;
-  let minDistance = maxDistanceMeters;
-
-  for (const landmark of CAMPUS_AND_DHAKA_LANDMARKS) {
-    const dist = getDistanceMeters(
-      coords.latitude,
-      coords.longitude,
-      landmark.coords.latitude,
-      landmark.coords.longitude
-    );
-    if (dist < minDistance) {
-      minDistance = dist;
-      nearest = landmark;
-    }
-  }
-
-  return nearest;
+  const result = findNearestMasterLocation(coords, maxDistanceMeters);
+  if (!result) return null;
+  const m = result.location;
+  return {
+    name: m.name,
+    nameBn: m.nameBn,
+    zone: m.zone,
+    coords: m.coords,
+    desc: m.address || m.subLocation || (m.zone + ' · ' + m.coords.latitude.toFixed(4) + ', ' + m.coords.longitude.toFixed(4)),
+    type: m.category,
+    keywords: m.keywords,
+  };
 }
 
 export function findLandmarkByName(name?: string | null): LandmarkLocation | null {
   if (!name || !name.trim()) return null;
-  const q = name.trim().toLowerCase();
-  return (
-    CAMPUS_AND_DHAKA_LANDMARKS.find(
-      l =>
-        l.name.toLowerCase() === q ||
-        (l.nameBn && l.nameBn.toLowerCase() === q) ||
-        l.name.toLowerCase().includes(q) ||
-        q.includes(l.name.toLowerCase())
-    ) || null
-  );
+  const m = findMasterLocationByName(name);
+  if (m) {
+    return {
+      name: m.name,
+      nameBn: m.nameBn,
+      zone: m.zone,
+      coords: m.coords,
+      desc: m.address || m.subLocation || (m.zone + ' · ' + m.coords.latitude.toFixed(4) + ', ' + m.coords.longitude.toFixed(4)),
+      type: m.category,
+      keywords: m.keywords,
+    };
+  }
+  return null;
 }
 
 export function searchLandmarks(
@@ -107,49 +105,16 @@ export function searchLandmarks(
   userCoords?: Coordinates | null
 ): LandmarkLocation[] {
   if (!query || !query.trim()) return [];
-  const q = query.trim().toLowerCase();
-
-  const matches = CAMPUS_AND_DHAKA_LANDMARKS.filter(l => {
-    const nameMatch = l.name.toLowerCase().includes(q);
-    const bnMatch = l.nameBn && l.nameBn.toLowerCase().includes(q);
-    const zoneMatch = l.zone.toLowerCase().includes(q);
-    const descMatch = l.desc && l.desc.toLowerCase().includes(q);
-    const kwMatch = l.keywords && l.keywords.some(k => k.toLowerCase().includes(q));
-    return nameMatch || bnMatch || zoneMatch || descMatch || kwMatch;
-  });
-
-  // Smart prefix and relevance sorting
-  matches.sort((a, b) => {
-    const aName = a.name.toLowerCase();
-    const bName = b.name.toLowerCase();
-
-    // 1. Starts with query (e.g. "son" -> "Sony Square")
-    const aStarts = aName.startsWith(q);
-    const bStarts = bName.startsWith(q);
-    if (aStarts && !bStarts) return -1;
-    if (!aStarts && bStarts) return 1;
-
-    if (aStarts && bStarts && aName.length !== bName.length) {
-      return aName.length - bName.length;
-    }
-
-    // 2. Contains any word starting with query (e.g. "square" -> "Sony Square")
-    const aWordStart = aName.split(/\s+/).some(w => w.startsWith(q));
-    const bWordStart = bName.split(/\s+/).some(w => w.startsWith(q));
-    if (aWordStart && !bWordStart) return -1;
-    if (!aWordStart && bWordStart) return 1;
-
-    // 3. Proximity to user's location
-    if (userCoords) {
-      const distA = getDistanceMeters(userCoords.latitude, userCoords.longitude, a.coords.latitude, a.coords.longitude);
-      const distB = getDistanceMeters(userCoords.latitude, userCoords.longitude, b.coords.latitude, b.coords.longitude);
-      return distA - distB;
-    }
-
-    return 0;
-  });
-
-  return matches.slice(0, limit);
+  const results = searchMasterLocations(query, limit, userCoords);
+  return results.map(m => ({
+    name: m.name,
+    nameBn: m.nameBn,
+    zone: m.zone,
+    coords: m.coords,
+    desc: m.address || m.subLocation || (m.zone + ' · ' + m.coords.latitude.toFixed(4) + ', ' + m.coords.longitude.toFixed(4)),
+    type: m.category,
+    keywords: m.keywords,
+  }));
 }
 
 export function searchPlacesLocal(

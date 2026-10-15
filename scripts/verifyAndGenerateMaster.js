@@ -228,6 +228,7 @@ const MICRO_AREAS = [
   { id: 'area_mdpur_college_gate', name: 'Mohammadpur College Gate', nameBn: 'কলেজ গেট (মোহাম্মদপুর)', category: 'transit', zone: 'Dhanmondi & West', zoneBn: 'ধানমন্ডি ও পশ্চিম ঢাকা', subLocation: 'Mirpur Road Link', coords: { latitude: 23.7560, longitude: 90.3660 }, keywords: ['college gate', 'mohammadpur', 'mirpur road', 'কলেজ গেট'] },
 
   // Mirpur Specific Micro-areas
+  { id: 'area_mirpur_central', name: 'Mirpur', nameBn: 'মিরপুর', category: 'area', zone: 'Mirpur & Campus', zoneBn: 'মিরপুর ও ক্যাম্পাস এলাকা', subLocation: 'Mirpur-2 & Central Hub', coords: { latitude: 23.8078, longitude: 90.3582 }, keywords: ['mirpur', 'mirpur central', 'মিরপুর', 'মিরপুর এলাকা'] },
   { id: 'area_mirpur_60ft_main', name: '60 Feet Road (Kamal Sarani Main)', nameBn: '৬০ ফিট রোড (কামাল সরণি)', category: 'area', zone: 'Mirpur & Campus', zoneBn: 'মিরপুর ও ক্যাম্পাস এলাকা', subLocation: 'Mirpur-2 to Agargaon Link', coords: { latitude: 23.7850, longitude: 90.3650 }, keywords: ['60 feet', 'kamal sarani', 'paka masjid', '৬০ ফিট'] },
   { id: 'area_mirpur_60ft_paka_masjid', name: 'Paka Masjid Mor (60 Feet Road)', nameBn: 'পাকা মসজিদ মোড় (৬০ ফিট)', category: 'area', zone: 'Mirpur & Campus', zoneBn: 'মিরপুর ও ক্যাম্পাস এলাকা', subLocation: '60 Feet Road, Mirpur-2', coords: { latitude: 23.7870, longitude: 90.3660 }, keywords: ['paka masjid', '60 feet', 'পাকা মসজিদ'] },
   { id: 'area_mirpur_60ft_agnishikha', name: 'Agnishikha Mor (60 Feet Road)', nameBn: 'অগ্নিশিখা মোড় (৬০ ফিট)', category: 'area', zone: 'Mirpur & Campus', zoneBn: 'মিরপুর ও ক্যাম্পাস এলাকা', subLocation: '60 Feet Road, Pirerbagh Link', coords: { latitude: 23.7820, longitude: 90.3640 }, keywords: ['agnishikha', '60 feet', 'অগ্নিশিখা'] },
@@ -240,6 +241,7 @@ const MICRO_AREAS = [
   { id: 'area_mirpur_nam_garden', name: 'NAM Garden (Mirpur 13)', nameBn: 'নম গার্ডেন (মিরপুর ১৩)', category: 'area', zone: 'Mirpur & Campus', zoneBn: 'মিরপুর ও ক্যাম্পাস এলাকা', subLocation: 'Section 13 Officers Link', coords: { latitude: 23.8040, longitude: 90.3770 }, keywords: ['nam garden', 'mirpur 13', 'নম গার্ডেন'] },
   { id: 'area_mirpur_milk_vita', name: 'Milk Vita Mor (Mirpur 7)', nameBn: 'দুগ্ধ ভিটা মোড় (মিরপুর ৭)', category: 'area', zone: 'Mirpur & Campus', zoneBn: 'মিরপুর ও ক্যাম্পাস এলাকা', subLocation: 'Section 7 Milk Vita Factory', coords: { latitude: 23.8150, longitude: 90.3610 }, keywords: ['milk vita', 'mirpur 7', 'মিল্ক ভিটা'] },
   { id: 'area_mirpur_chalantika', name: 'Chalantika Mor (Mirpur 7)', nameBn: 'চলন্তিকা মোড় (মিরপুর ৭)', category: 'area', zone: 'Mirpur & Campus', zoneBn: 'মিরপুর ও ক্যাম্পাস এলাকা', subLocation: 'Section 7 to Rupnagar Link', coords: { latitude: 23.8180, longitude: 90.3615 }, keywords: ['chalantika', 'mirpur 7', 'rupnagar link', 'চলন্তিকা'] },
+  { id: 'area_mirpur_bauniabadh', name: 'Bauniabadh (Mirpur-11)', nameBn: 'বাউনিয়াবাদ (মিরপুর-১১)', category: 'area', zone: 'Mirpur & Campus', zoneBn: 'মিরপুর ও ক্যাম্পাস এলাকা', subLocation: 'Mirpur-11', coords: { latitude: 23.8210, longitude: 90.3700 }, keywords: ['bauniabadh', 'mirpur 11', 'মিরপুর ১১', 'বাউনিয়াবাদ', 'badh'] },
   { id: 'area_mirpur_vashantek', name: 'Vashantek Mor (Cantonment Link)', nameBn: 'ভাষানটেক মোড়', category: 'area', zone: 'Mirpur & Campus', zoneBn: 'মিরপুর ও ক্যাম্পাস এলাকা', subLocation: 'Mirpur 14 to Cantonment Link', coords: { latitude: 23.8050, longitude: 90.3870 }, keywords: ['vashantek', 'bhashantek', 'cantonment link', 'ভাষানটেক'] },
   { id: 'area_mirpur_ibrahimpur', name: 'Ibrahimpur Bazar (Kafrul)', nameBn: 'ইব্রাহিমপুর বাজার', category: 'area', zone: 'Mirpur & Campus', zoneBn: 'মিরপুর ও ক্যাম্পাস এলাকা', subLocation: 'Kafrul, Mirpur-14 Link', coords: { latitude: 23.7990, longitude: 90.3850 }, keywords: ['ibrahimpur', 'kafrul', 'ইব্রাহিমপুর'] },
 
@@ -280,6 +282,7 @@ const MICRO_AREAS = [
   { id: 'area_bangshal_cycle', name: 'Bangshal Bicycle Market Mor', nameBn: 'বংশাল সাইকেল মার্কেট মোড়', category: 'area', zone: 'Old Dhaka & Sadarghat', zoneBn: 'পুরান ঢাকা ও সদরঘাট', subLocation: 'Kazi Alauddin Road Link', coords: { latitude: 23.7190, longitude: 90.4070 }, keywords: ['bangshal', 'bicycle market', 'বংশাল'] },
 
   // Suburban Hubs
+  { id: 'area_gazipur_central', name: 'Gazipur', nameBn: 'গাজীপুর', category: 'area', zone: 'Greater Dhaka & Suburbs', zoneBn: 'বৃহত্তর ঢাকা ও শহরতলি', subLocation: 'Gazipur Sadar Hub', coords: { latitude: 23.9999, longitude: 90.4203 }, keywords: ['gazipur', 'gazipur sadar', 'গাজীপুর', 'গাজীপুর শহর'] },
   { id: 'area_baipail_ashulia', name: 'Baipail Intersection (EPZ Link)', nameBn: 'বাইপাইল মোড় (ইপিজেড সংযোগ)', category: 'transit', zone: 'Greater Dhaka & Suburbs', zoneBn: 'বৃহত্তর ঢাকা ও শহরতলি', subLocation: 'Dhaka-EPZ Highway, Ashulia', coords: { latitude: 23.9350, longitude: 90.2700 }, keywords: ['baipail', 'ashulia', 'epz', 'বাইপাইল'] },
   { id: 'area_fantasy_kingdom', name: 'Fantasy Kingdom (Ashulia)', nameBn: 'ফ্যান্টাসি কিংডম (আশুলিয়া)', category: 'landmark', zone: 'Greater Dhaka & Suburbs', zoneBn: 'বৃহত্তর ঢাকা ও শহরতলি', subLocation: 'Jamgora, Ashulia', coords: { latitude: 23.9380, longitude: 90.2920 }, keywords: ['fantasy kingdom', 'theme park', 'ashulia', 'ফ্যান্টাসি কিংডম'] },
   { id: 'area_gazipur_chowrasta', name: 'Gazipur Chowrasta Roundabout', nameBn: 'গাজীপুর চৌরাস্তা', category: 'transit', zone: 'Greater Dhaka & Suburbs', zoneBn: 'বৃহত্তর ঢাকা ও শহরতলি', subLocation: 'Dhaka-Mymensingh & Tangail Hwy', coords: { latitude: 23.9920, longitude: 90.3800 }, keywords: ['gazipur chowrasta', 'chowrasta', 'গাজীপুর চৌরাস্তা'] },
@@ -556,26 +559,80 @@ function getDistanceMetersFast(lat1: number, lon1: number, lat2: number, lon2: n
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-const NAME_MAP = new Map<string, MasterLocation>();
-for (const loc of DHAKA_MASTER_LOCATIONS) {
-  NAME_MAP.set(loc.name.toLowerCase(), loc);
-  if (loc.nameBn) {
-    NAME_MAP.set(loc.nameBn.toLowerCase(), loc);
+interface SearchIndexEntry {
+  loc: MasterLocation;
+  cleanName: string;
+  cleanBn: string;
+  lowerName: string;
+  lowerBn: string;
+  lowerZone: string;
+  lowerSub: string;
+  tokens: string[];
+}
+
+const SEARCH_INDEX: SearchIndexEntry[] = DHAKA_MASTER_LOCATIONS.map(loc => ({
+  loc,
+  cleanName: loc.name.toLowerCase().replace(/[^a-z0-9\u0980-\u09FF]/gi, ''),
+  cleanBn: (loc.nameBn || '').toLowerCase().replace(/[^a-z0-9\u0980-\u09FF]/gi, ''),
+  lowerName: loc.name.toLowerCase(),
+  lowerBn: (loc.nameBn || '').toLowerCase(),
+  lowerZone: loc.zone.toLowerCase(),
+  lowerSub: (loc.subLocation || '').toLowerCase(),
+  tokens: [
+    loc.name.toLowerCase(),
+    (loc.nameBn || '').toLowerCase(),
+    loc.zone.toLowerCase(),
+    (loc.subLocation || '').toLowerCase(),
+    ...loc.keywords.map(k => k.toLowerCase()),
+  ],
+}));
+
+const CLEAN_MAP = new Map<string, MasterLocation>();
+for (const item of SEARCH_INDEX) {
+  if (item.cleanName) CLEAN_MAP.set(item.cleanName, item.loc);
+  if (item.cleanBn) CLEAN_MAP.set(item.cleanBn, item.loc);
+  if (item.lowerName) CLEAN_MAP.set(item.lowerName, item.loc);
+  if (item.lowerBn) CLEAN_MAP.set(item.lowerBn, item.loc);
+  for (const kw of item.loc.keywords) {
+    const cleanKw = kw.toLowerCase().replace(/[^a-z0-9\u0980-\u09FF]/gi, '');
+    if (cleanKw.length >= 3 && !CLEAN_MAP.has(cleanKw)) {
+      CLEAN_MAP.set(cleanKw, item.loc);
+    }
   }
 }
 
 export function findMasterLocationByName(name?: string | null): MasterLocation | undefined {
   if (!name || !name.trim()) return undefined;
   const q = name.trim().toLowerCase();
-  const direct = NAME_MAP.get(q);
+  const direct = CLEAN_MAP.get(q);
   if (direct) return direct;
-  return DHAKA_MASTER_LOCATIONS.find(
-    l =>
-      l.name.toLowerCase() === q ||
-      (l.nameBn && l.nameBn.toLowerCase() === q) ||
-      l.name.toLowerCase().includes(q) ||
-      q.includes(l.name.toLowerCase())
-  );
+
+  const cleanQ = q.replace(/[^a-z0-9\u0980-\u09FF]/gi, '');
+  if (cleanQ) {
+    const cleanDirect = CLEAN_MAP.get(cleanQ);
+    if (cleanDirect) return cleanDirect;
+  }
+
+  // Split on delimiters (/ & ( ) ,) to support compound names like "Airport / Ashkona"
+  const parts = q.split(/[/&(),]+/).map(p => p.trim()).filter(Boolean);
+  for (const part of parts) {
+    const partClean = part.replace(/[^a-z0-9\u0980-\u09FF]/gi, '');
+    if (partClean.length >= 3) {
+      const partMatch = CLEAN_MAP.get(partClean);
+      if (partMatch) return partMatch;
+    }
+  }
+
+  // Substring fallback
+  if (cleanQ.length >= 4) {
+    for (const [k, loc] of CLEAN_MAP) {
+      if (k.length >= 4 && (cleanQ.includes(k) || k.includes(cleanQ))) {
+        return loc;
+      }
+    }
+  }
+
+  return undefined;
 }
 
 export function searchMasterLocations(
@@ -585,23 +642,29 @@ export function searchMasterLocations(
 ): MasterLocation[] {
   if (!query || !query.trim()) return [];
   const q = query.trim().toLowerCase();
-  const qClean = q.replace(/[\\s\\-_]+/g, '');
+  const qClean = q.replace(/[^a-z0-9\u0980-\u09FF]/gi, '');
 
-  const matches = DHAKA_MASTER_LOCATIONS.filter(l => {
-    const n = l.name.toLowerCase();
-    const bn = l.nameBn ? l.nameBn.toLowerCase() : '';
-    const z = l.zone.toLowerCase();
-    const s = l.subLocation ? l.subLocation.toLowerCase() : '';
-    const kw = l.keywords;
-
-    if (n.includes(q) || bn.includes(q) || z.includes(q) || s.includes(q)) return true;
-    if (n.replace(/[\\s\\-_]+/g, '').includes(qClean)) return true;
-
-    for (let i = 0; i < kw.length; i++) {
-      if (kw[i].toLowerCase().includes(q)) return true;
+  const matches: MasterLocation[] = [];
+  for (let i = 0; i < SEARCH_INDEX.length; i++) {
+    const item = SEARCH_INDEX[i];
+    if (
+      item.lowerName.includes(q) ||
+      item.lowerBn.includes(q) ||
+      item.lowerZone.includes(q) ||
+      item.lowerSub.includes(q) ||
+      (qClean.length >= 2 && (item.cleanName.includes(qClean) || item.cleanBn.includes(qClean)))
+    ) {
+      matches.push(item.loc);
+      continue;
     }
-    return false;
-  });
+    const tokens = item.tokens;
+    for (let j = 0; j < tokens.length; j++) {
+      if (tokens[j].includes(q)) {
+        matches.push(item.loc);
+        break;
+      }
+    }
+  }
 
   matches.sort((a, b) => {
     const aName = a.name.toLowerCase();
@@ -618,13 +681,6 @@ export function searchMasterLocations(
     if (aStarts && bStarts && aName.length !== bName.length) {
       return aName.length - bName.length;
     }
-
-    const aWords = aName.split(/[\\s\\-_]+/);
-    const bWords = bName.split(/[\\s\\-_]+/);
-    const aWordStart = aWords.some(w => w.startsWith(q));
-    const bWordStart = bWords.some(w => w.startsWith(q));
-    if (aWordStart && !bWordStart) return -1;
-    if (!aWordStart && bWordStart) return 1;
 
     if (userCoords) {
       const distA = getDistanceMetersFast(userCoords.latitude, userCoords.longitude, a.coords.latitude, a.coords.longitude);

@@ -360,29 +360,32 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
 
 ### 5.8 Master Dhaka Locations, Native Geocoding & Map System (`dhakaMasterLocations.ts`, `LocationPickerModal.tsx`, `dhakaHospitalCoords.ts`, `locationService.ts`)
 - **Unified Master Dhaka Locations Catalog (`src/constants/dhakaMasterLocations.ts`):**
-  - **511 Verified Ground-Truth Locations:** Authentic coordinates spanning Dhaka City & suburbs, strictly validated within the official metropolitan bounding box (`23.50 <= lat <= 24.15` and `90.15 <= lon <= 90.65`). Zero fake/hallucinated places.
+  - **516 Verified Ground-Truth Locations:** Authentic coordinates spanning Dhaka City & suburbs, strictly validated within the official metropolitan bounding box (`23.50 <= lat <= 24.15` and `90.15 <= lon <= 90.65`). Zero fake/hallucinated places. Includes exact parent hubs for Mirpur (`23.8078, 90.3582`), Gazipur (`23.9999, 90.4203`), and Bauniabadh (`23.8210, 90.3700`).
   - **Comprehensive Coverage:**
     - 16 MRT-6 Metro Stations (Uttara North to Motijheel).
-    - 28 Campus & Mirpur Vicinity Hubs (BUBT Main, Bldg 4, Bldg 2/3, Commerce College, Sony Square, Cricket Stadium, Zoo, Botanical Garden, Rainkhola, Mirpur 1, 2, 6, 10, 11, 12, Mirpur DOHS, etc.).
+    - 28 Campus & Mirpur Vicinity Hubs (BUBT Main, Bldg 4, Bldg 2/3, Commerce College, Sony Square, Cricket Stadium, Zoo, Botanical Garden, Rainkhola, Mirpur 1, 2, 6, 10, 11, 12, Mirpur DOHS, Bauniabadh, etc.).
     - 29 Universities & Colleges (DU TSC/Curzon/FBS/IBA, BUET, NSU, IUB, AIUB, BRAC, UIU, EWU, DIU Smart City & Dhanmondi, AUST, ULAB, JnU, JU Savar, etc.).
     - 22 Transit Terminals & Bus Stands (Gabtoli, Mohakhali, Sayedabad, Kamalapur Railway, Airport Railway, Airport T1/T2/T3, Sadarghat Launch, Kalyanpur, Shyamoli, Mirpur 12 Depot, Abdullahpur, Jatrabari Bus Stop & Flyover, etc.).
     - 37 Famous Landmarks & Heritage Sites (Jamuna Future Park, Bashundhara City, Hatirjheel, Lalbagh Fort, Ahsan Manzil, Smriti Soudho, Purbachal 300ft, Shahid Minar, Parliament, Baitul Mukarram, etc.).
-    - 110 Micro-Areas & Student Corridors (Uttara sectors 1-18, Bashundhara blocks A-I, Banasree blocks A-F, Dhanmondi corridors, Mohammadpur Town Hall/Krishi Market/Bosila/Japan Garden, Mirpur 60ft/Benarasi Palli/Love Road, etc.).
+    - 112 Micro-Areas & Student Corridors (Uttara sectors 1-18, Bashundhara blocks A-I, Banasree blocks A-F, Dhanmondi corridors, Mohammadpur Town Hall/Krishi Market/Bosila/Japan Garden, Mirpur 60ft/Benarasi Palli/Love Road/Bauniabadh, etc.).
     - 108 Verified Hospitals & Institutes with emergency coordinates.
-    - 156 Dhaka area centers.
+    - 158 Dhaka area centers.
   - **O(1) Indexed Maps & Pre-Sorted Relevance:** O(1) indexed ID and Name maps (`findMasterLocationById`, `findMasterLocationByName`), tokenized prefix-prioritized search (`searchMasterLocations`), and proximity re-ranking (`findNearestMasterLocation`).
+  - **Bengali-Safe Unicode Normalization:** Clean tokens and lookups preserve Bengali characters using `replace(/[^a-z0-9\u0980-\u09FF]/gi, '')`, ensuring searches for "মিরপুর" and "উত্তরা" match with 100% precision.
+  - **Hyphen-Preserving Delimiter Normalization:** Normalization splits on compound delimiters (`/`, `&`, `(`, `)`, `,`) while preserving sector and section hyphens (`Mirpur-11`, `Gulshan-2`, `Dhanmondi-27`), preventing sector truncation into parent hubs.
 - **Instant 0ms Offline Search & Photon Geocoding (`src/services/locationService.ts`):**
-  - Instant Local Search (`searchPlacesLocal`): 0ms latency local landmark match with exact prefix prioritization and calculated Haversine distances.
+  - Instant Local Search (`searchPlacesLocal`): 0ms latency local landmark match with exact prefix prioritization and calculated Haversine distances delegating to precomputed `searchMasterLocations`.
   - Dynamic Online Geocoding (`searchPlacesOnline`): If `>= 6` local matches exist, returns immediately without network roundtrips. For rare search terms, queries Photon (Komoot OSM autocomplete) bounded to Bangladesh, with fallback to OSM Nominatim.
 - **Intelligent Hospital Resolver & Substring Collision Fix (`src/constants/dhakaHospitalCoords.ts`):**
+  - **Master Match Priority:** Resolves through `findMasterLocationByName(rawHosp)` and `findMasterLocationByName(rawArea)` first. Hospital keyword searches match against `hLower` directly (never `combined`), preventing generic area queries like `Mirpur-11` or `Bauniabadh` from falsely matching hospitals like Delta Medical College.
   - **Word-Boundary Match:** Entries are pre-sorted by key length descending (`SORTED_AREA_ENTRIES`) and matched against regex word boundaries `(^|[^a-z0-9])key($|[^a-z0-9])`, completely eliminating substring collision bugs (e.g. `'mirpur-10'` or `'mirpur-11'` erroneously resolving to `'mirpur-1'`).
   - **Square Hospital Fallback Eliminated:** Replaced the legacy 15km fallback jump to Panthapath with exact match lookup against `findMasterLocationByName`, followed by zone-aware centroids (Mirpur, Uttara, Dhanmondi, Gulshan, Shahbagh) and BUBT Main Campus (`23.8119, 90.3572`).
 - **MapLibre Tap-to-Pin & Selection Lock (`src/components/location/LocationPickerModal.tsx`):**
   - **Tap-to-Pin:** MapLibre `map.on('click')` with `map.easeTo({ center: [lng, lat], duration: 350 })` smoothly animates the tapped coordinate directly under the center pin and emits `MAP_TAP`.
-  - **2500ms Selection Timestamp Lock (`selectionLockUntilRef`):** When selecting a search suggestion, commute hub chip, or snapping to BUBT, a 2500ms timestamp lock is set. This prevents MapLibre's camera `moveend` animation event from triggering reverse geocode and overwriting the chosen place name with raw road strings.
-  - **Instant User Touch Unlock:** Lock clears immediately (`selectionLockUntilRef.current = 0`) on genuine user pan gestures (`data.isUserGesture === true` in `MOVE_START`) or `MAP_TAP`, ensuring responsive manual map exploration.
+  - **2500ms Selection Timestamp Lock (`selectionLockUntilRef`):** When selecting a search suggestion, commute hub chip, snapping to BUBT, or opening the modal, a 2500ms timestamp lock is set. This prevents MapLibre's camera `moveend` animation event from triggering reverse geocode and overwriting the chosen place name with raw road strings.
+  - **Instant User Touch & GPS Unlock:** Lock clears immediately (`selectionLockUntilRef.current = 0`) on genuine user pan gestures (`data.isUserGesture === true` in `MOVE_START`), `MAP_TAP`, or when tapping "Use My Current Location", ensuring responsive manual map exploration and instant GPS geocoding.
 - **Cross-Feature Coordinate Wiring:**
-  - `AreaPickerModal.tsx`: Resolves hospital/area coordinates via `findMasterLocationByName` / `resolveHospitalLocation` and returns `(area, subLocation, coords)` to callers.
+  - `AreaPickerModal.tsx`: Resolves hospital/area coordinates via `findMasterLocationByName` / `resolveHospitalLocation` and returns `(area, subLocation, coords)` to callers; passes `initialPlaceName` and `initialCoords` to `LocationPickerModal`.
   - `HospitalMapModal.tsx`: Accepts explicit `coords?: Coordinates` prop, rendering verified pinpoint markers without fuzzy name lookups.
   - `BloodScreen.tsx`: Resolves hospital coordinates directly from `resolveHospitalLocation` and passes them to `HospitalMapModal`.
   - Seamlessly leveraged across `RidePostScreen`, `MarketPostScreen`, and `PostItemFormScreen` via `LocationPickerModal`.

@@ -402,3 +402,28 @@ All hospital locations and blood request navigation interfaces across CampusOne 
   - Floating Google Maps CTA button (`openGmapsBtn`): `height: 58 dp`, `borderRadius: 16 dp`, `Layout.screenPadding = 16 dp`.
   - Center label: `fontSize: 14.5 px`, `FontFamily.jakartaBold`, paired with an 18 px external link vector icon.
 
+---
+
+## 15. Master Locations & Vector Map Standards (`LocationPickerModal.tsx`, `dhakaMasterLocations.ts`)
+
+All location picking, geolocation services, and map-based features adhere to the following master location architecture:
+
+### 1. Ground-Truth Master Dataset (516 Places)
+* **Coverage:** Comprehensive coverage across all Dhaka sectors: MRT-6 metro stations (Diabari to Motijheel), BUBT campus facilities, universities, inter-district transit terminals, all 108 hospitals and specialized clinics, landmarks, and residential areas.
+* **Geographic Bounds Verification:** Every coordinate is strictly bounded within official Dhaka limits (`latitude: 23.50 - 24.15`, `longitude: 90.15 - 90.65`).
+* **Multi-Lingual Parity:** Every record includes English and localized Bengali (`nameBn`, `zoneBn`, `keywords`) ensuring instant search hits in both languages.
+
+### 2. High-Performance Search Indexing (Zero Frame Drops)
+* **Precomputed `SEARCH_INDEX` & O(1) `CLEAN_MAP`:** Search index is constructed once at module evaluation time. Normalizes tokens, English strings, and Bengali characters using `/[^a-z0-9\u0980-\u09FF]/gi`.
+* **Hyphen Preservation:** Delimiter splitting operates on `/`, `&`, `(`, `)`, and `,` while strictly preserving hyphens (`-`). This ensures compound sector names like `Mirpur-11`, `Gulshan-2`, and `Dhanmondi-27` do not truncate into parent hubs.
+
+### 3. Tap-to-Pin & Selection Lock Controls
+* **Tap-to-Pin Centering:** Tapping anywhere on the interactive map animates the camera (`easeTo`) and centers the custom location under the pin.
+* **2500ms Selection Lock:** Programmatic camera moves (from search suggestion selection, quick commute chips, or initial modal load) set `selectionLockUntilRef.current = Date.now() + 2500` to prevent camera settling and reverse-geocoding events from overwriting the chosen location.
+* **Instant GPS Lock Reset:** Tapping "Use My Current Location" clears the selection lock (`selectionLockUntilRef.current = 0`), allowing immediate reverse-geocoding of live device GPS coordinates.
+
+### 4. Dimensional Standards (58 dp / 72 dp)
+* **Control Trigger & Search Bar:** 58 dp fixed outer height (`height: 58`, `borderRadius: 16`).
+* **Selected Place Card:** 72 dp content row (`height: 72`, `borderRadius: 16`) displaying place name, Bengali name, and geographic sub-location with checkmark indicator.
+
+

@@ -669,6 +669,8 @@ export function AreaPickerModal({
         <LocationPickerModal
           visible={mapPickerOpen}
           onClose={() => setMapPickerOpen(false)}
+          initialPlaceName={selectedArea !== 'All' ? selectedArea : undefined}
+          initialCoords={selectedArea !== 'All' ? findMasterLocationByName(selectedArea)?.coords : undefined}
           onSelectLocation={loc => {
             const locName = loc.name || loc.formattedAddress || 'Selected Location';
             const subLoc = loc.zone || loc.subText;
