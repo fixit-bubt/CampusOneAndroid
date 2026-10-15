@@ -639,7 +639,7 @@ export function HospitalMapModal({
           <View style={[styles.header, { borderBottomColor: C.border }]}>
             <View style={styles.headerLeft}>
               <View style={[styles.hospitalIconPill, { backgroundColor: pillBg(SectorColors.blood, isDark), borderColor: SectorColors.blood, borderWidth: 1 }]}>
-                <AnimatedIcon family="mci" name="hospital-building" size={16} color={SectorColors.blood} animation="spring" />
+                <AnimatedIcon family="mci" name="hospital-building" size={16} color={isDark ? '#ffffff' : SectorColors.blood} animation="spring" />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.headerTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>

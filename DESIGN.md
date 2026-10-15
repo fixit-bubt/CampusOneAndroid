@@ -441,7 +441,7 @@ All location and hospital selectors across the Blood Donation system strictly fo
   - Formatted with a prominent 4.5 dp left accent stripe (`borderLeftWidth: 4.5`, `borderLeftColor: SectorColors.blood`).
   - Standard 72 dp content row height (`minHeight: 72`, `paddingVertical: 14`, `paddingHorizontal: 14`, `borderRadius: 16`, `marginBottom: 8`).
   - Child icon container: `width: 44, height: 44, borderRadius: 13`, `backgroundColor: pillBg(SectorColors.blood, isDark)`.
-  - Official hospital vector icon: `hospital-building` (MaterialCommunityIcons, 20 px) rendered in vibrant `SectorColors.blood`.
+  - Official hospital vector icon: `hospital-building` (MaterialCommunityIcons, 20 px) with theme-adaptive contrast: crisp white (`#ffffff`) in dark mode inside the crimson pill for maximum pop, and vivid `SectorColors.blood` in light mode for full readability.
   - Right interactive chevron: `Feather name="chevron-right"` in `SectorColors.blood`.
 
 ### 2. Micro-Animation Architecture (Explore Parity, Zero Looping)

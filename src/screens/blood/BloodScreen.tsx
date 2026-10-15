@@ -637,7 +637,11 @@ export function BloodScreen({ route, navigation }: any) {
                 family={isHospitalFilter ? 'mci' : 'feather'}
                 name={isHospitalFilter ? 'hospital-building' : 'map-pin'}
                 size={14}
-                color={areaFilter !== 'All' ? SectorColors.blood : C.text}
+                color={
+                  areaFilter !== 'All'
+                    ? (isHospitalFilter && isDark ? '#ffffff' : SectorColors.blood)
+                    : C.text
+                }
                 animation="entrance"
               />
             </View>

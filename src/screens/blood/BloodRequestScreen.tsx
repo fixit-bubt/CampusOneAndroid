@@ -441,7 +441,7 @@ export function BloodRequestScreen({ navigation }: any) {
                     family="mci"
                     name={hospital ? 'hospital-building' : 'map-marker-radius'}
                     size={22}
-                    color={hospital ? SectorColors.blood : C.text2}
+                    color={hospital ? (isDark ? '#ffffff' : SectorColors.blood) : C.text2}
                     animation={hospital ? 'spring' : 'entrance'}
                   />
                 </View>

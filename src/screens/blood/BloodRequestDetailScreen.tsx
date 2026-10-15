@@ -379,7 +379,7 @@ export function BloodRequestDetailScreen({ route, navigation }: any) {
               >
                 <View style={styles.locationLine}>
                   <View style={[styles.locIconSquare, { backgroundColor: isDark ? 'rgba(214, 61, 53, 0.15)' : 'rgba(214, 61, 53, 0.10)' }]}>
-                    <MaterialCommunityIcons name="hospital-building" size={14} color={SectorColors.blood} />
+                    <MaterialCommunityIcons name="hospital-building" size={14} color={isDark ? '#ffffff' : SectorColors.blood} />
                   </View>
                   <Text style={[styles.hospitalTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={2}>
                     {req.hospital}

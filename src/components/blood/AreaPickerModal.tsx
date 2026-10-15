@@ -333,7 +333,7 @@ const AreaSectionBar = memo(function AreaSectionBar({
                     family="mci"
                     name="hospital-building"
                     size={20}
-                    color={activeColor}
+                    color={isDark ? '#ffffff' : activeColor}
                     animation="entrance"
                     delay={idx * 25}
                   />
@@ -416,7 +416,7 @@ const SearchResultRow = memo(function SearchResultRow({
         ]}
       >
         {isHospital ? (
-          <AnimatedIcon family="mci" name="hospital-building" size={20} color={activeColor} animation="entrance" />
+          <AnimatedIcon family="mci" name="hospital-building" size={20} color={isDark ? '#ffffff' : activeColor} animation="entrance" />
         ) : (
           <AnimatedIcon family="feather" name="map-pin" size={18} color={activeColor} animation="entrance" />
         )}
