@@ -69,6 +69,32 @@ This document is the single, authoritative reference for any AI agent or develop
   - **Native Image Generation:** Agent `generate_image` tool generates high-resolution app icons, logos, banners, and splash screen artwork directly into project assets.
   - **Brand Identity System:** `brandkit` skill (`~/.gemini/config/skills/brandkit`) standardizes palettes, typography tokens, logo rules, and marketing mockups.
 
+### 2.5 Master Team Account Transition & Infrastructure Roadmap
+The project is consolidating all third-party services and infrastructure under the dedicated team master account **`campusone2026@gmail.com`**:
+1. **Supabase (Completed):**
+   - Transferred ownership to `campusone2026@gmail.com` under organization `campusone`.
+   - Project display name renamed to `campusone` (ref: `xhgpxvyqrufbbuivttmi`).
+   - All tables, registered student accounts, Storage buckets, and Edge Functions are 100% preserved.
+   - Auth Site URL set to `https://campusonebubt.vercel.app`.
+   - Redirect URLs configured for `https://campusonebubt.vercel.app/**` and `https://campusonebubt.vercel.app/#/auth/callback`.
+2. **Web Production Deployment (Live):**
+   - Live URL: `https://campusonebubt.vercel.app`.
+   - Hosted on Vercel, auto-deploying on every push to `main` of `fixit-bubt/CampusOneWeb`.
+3. **Google Cloud Console & OAuth Transition (Pending / Roadmap):**
+   - Creating a centralized Google Cloud project (`campusone`) under `campusone2026@gmail.com`.
+   - **Web OAuth:** Configure OAuth consent screen (App: `CampusOne`, support: `campusone2026@gmail.com`) and Web OAuth Client ID.
+     - Authorized JavaScript origins: `https://campusonebubt.vercel.app`, `https://xhgpxvyqrufbbuivttmi.supabase.co`.
+     - Authorized redirect URI: `https://xhgpxvyqrufbbuivttmi.supabase.co/auth/v1/callback` (resolves `Error 400: redirect_uri_mismatch`).
+     - Paste the new Web Client ID & Secret into Supabase Google provider (`Authentication -> Sign In / Providers -> Google`).
+   - **Android App OAuth:** Create an Android OAuth Client ID in the same Google Cloud project with package name `com.bubt.campusone` and release keystore SHA-1 fingerprint.
+   - **Mobile App Config Sync:** Update `GOOGLE_WEB_CLIENT_ID` in `src/lib/googleAuth.ts` on Android to match the new Web Client ID once generated.
+   - **Firebase & Push Notifications:** Link Firebase project for FCM v1 push notification credentials in `send-push` edge function.
+4. **Vercel Account Transfer (Completed):**
+   - Transferred & deployed directly under master team account `campusone2026@gmail.com` (username `campusone2026-4009`).
+   - Project: `campusonebubt`.
+   - Production URL: `https://campusonebubt.vercel.app`.
+   - CI/CD connected to `fixit-bubt/CampusOneWeb` on `main`, auto-deploying on every push with `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` configured.
+
 ---
 
 ## 3. Critical Non-Negotiable Rules & Workflow
