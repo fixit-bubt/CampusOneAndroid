@@ -807,10 +807,10 @@ Whenever the user instructs to "update memorys", the agent MUST synchronously up
 - **Prominent Category Header & Big Standout Count Box:**
   - Category headers feature a dedicated 34x28dp prominent count box (`borderRadius: 8`, `borderWidth: 1.5`, `FontFamily.jakartaExtraBold`) tinted in the sector's vibrant accent color.
   - When expanded, the header card highlights with a 1.5px sector-colored border and opens smoothly with an active colored chevron.
-- **Icon-Free Indented Separate Child Bars (`styles.childBar`):**
-  - All icons are deliberately removed from nested children (Study Hub, Class Routines, Marketplace, Ride Share, etc.) to eliminate visual clutter and ensure children never look like heavy top-level cards.
-  - Each child is an independent, indented separate bar (`borderRadius: 14`, `borderWidth: 1`, `marginLeft: 12`, `marginBottom: 8`).
-  - **Spatial Identity & Anchor ("Know Where We Are"):** Every separate bar features a bold 4dp colored left accent strip (`borderLeftWidth: 4`, `borderLeftColor: accentColor`) and matching tinted right chevron (`>`) in the parent category's sector color (Academics Cyan, Campus Life Pink, Services Blue, Community Green). This guarantees instant recognition while scrolling.
+- **Full-Width Child Bars with Sector Logos & Category Colored Left Spine (`styles.childBar`):**
+  - Child rows are rendered as full-width separate cards (`Layout.screenPadding` aligned, `marginLeft: 0`), ensuring consistent vertical grid rhythm and generous touch targets without indentation cramping.
+  - Each child displays its authentic, high-recognition vector logo/icon (`SectorIcon` size="md" or dedicated 42x42dp icon box) for rapid visual scanning.
+  - **Spatial Identity & Anchor ("Know Where We Are"):** Every child card features a bold 4.5dp colored left accent strip (`borderLeftWidth: 4.5`, `borderLeftColor: accentColor`) and matching tinted right chevron (`>`) in the parent category's sector color (Academics Cyan, Campus Life Pink, Services Blue, Community Green). This immediately ties all children to their parent section and anchors the user's location when scrolling through open categories.
 - **Default State (Collapsed):** All categories start **collapsed by default** (`defaultOpen = false`).
 - **Accordion Behavior:** Tapping any category smoothly expands it (`chevD` `v`) and closes other open categories, keeping the screen compact.
 - **Admin Dashboard Integrity:** `AdminDashboardScreen.tsx` uses `defaultOpen={true}` with full backward compatibility.

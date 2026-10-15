@@ -9,6 +9,7 @@ import { useT } from '../../i18n';
 import { useAuth } from '../../store/authStore';
 import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
 import { CollapsibleSection } from '../../components/ui/CollapsibleSection';
+import { SectorIcon } from '../../components/ui/SectorIcon';
 import { FontFamily, Layout, SectorColors, pillBg } from '../../theme';
 import type { SectorKey } from '../../theme';
 
@@ -114,6 +115,7 @@ export function ExploreScreen({ navigation }: any) {
         onPress={() => navigation.navigate(SECTOR_ROUTE[s.id])}
         activeOpacity={0.7}
       >
+        <SectorIcon sector={s.id} size="md" />
         <View style={{ flex: 1 }}>
           <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
             {s.en}
@@ -235,6 +237,9 @@ export function ExploreScreen({ navigation }: any) {
               onPress={() => navigation.navigate('Annex')}
               activeOpacity={0.7}
             >
+              <View style={[styles.toolIcon, { backgroundColor: pillBg(SectorColors.announce, isDark) }]}>
+                <AnimatedIcon family="feather" name="external-link" size={20} color={SectorColors.announce} animation="entrance" />
+              </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                   {t.tabs.annex}
@@ -259,6 +264,9 @@ export function ExploreScreen({ navigation }: any) {
               onPress={() => navigation.navigate('Cgpa')}
               activeOpacity={0.7}
             >
+              <View style={[styles.toolIcon, { backgroundColor: pillBg(SectorColors.study, isDark) }]}>
+                <AnimatedIcon family="feather" name="percent" size={20} color={SectorColors.study} animation="entrance" />
+              </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                   {t.cgpa.title}
@@ -284,6 +292,9 @@ export function ExploreScreen({ navigation }: any) {
                 onPress={() => navigation.navigate('PdfMaker')}
                 activeOpacity={0.7}
               >
+                <View style={[styles.toolIcon, { backgroundColor: pillBg(SectorColors.pdfmaker, isDark) }]}>
+                  <AnimatedIcon family="mci" name="file-pdf-box" size={22} color={SectorColors.pdfmaker} animation="entrance" />
+                </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                     {t.pdfmaker.title}
@@ -388,8 +399,8 @@ const styles = StyleSheet.create({
   } as ViewStyle,
 
   toolIcon: {
-    width: 44,
-    height: 44,
+    width: 42,
+    height: 42,
     borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
@@ -398,12 +409,12 @@ const styles = StyleSheet.create({
   childBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 13,
-    paddingHorizontal: 15,
-    borderRadius: 14,
+    gap: 13,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 16,
     borderWidth: 1,
-    borderLeftWidth: 4,
-    marginLeft: 12,
+    borderLeftWidth: 4.5,
     marginBottom: 8,
   } as ViewStyle,
 
