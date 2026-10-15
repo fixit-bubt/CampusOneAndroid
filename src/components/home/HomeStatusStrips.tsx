@@ -210,8 +210,8 @@ interface BusRouteData {
 }
 
 interface StripPillProps {
-  icon: keyof typeof Feather.glyphMap;
-  color: string;
+  icon?: keyof typeof Feather.glyphMap;
+  color?: string;
   title: string;
   onPress: () => void;
   borderRightColor: string;
@@ -220,8 +220,6 @@ interface StripPillProps {
 }
 
 function StripPill({
-  icon,
-  color,
   title,
   onPress,
   borderRightColor,
@@ -234,15 +232,10 @@ function StripPill({
       onPress={onPress}
       style={[styles.leftPill, { borderRightColor }]}
     >
-      <View style={styles.pillLeft}>
-        <View style={styles.pillIconBox}>
-          <AnimatedIcon name={icon} size={16} color={color} animation="spring" />
-        </View>
-        <Text style={[styles.pillText, { color: textColor }]} numberOfLines={1} ellipsizeMode="tail">
-          {title}
-        </Text>
-      </View>
-      <Feather name="chevron-right" size={12} color={chevronColor} />
+      <Text style={[styles.pillText, { color: textColor }]} numberOfLines={1}>
+        {title}
+      </Text>
+      <Feather name="chevron-right" size={13} color={chevronColor} />
     </TouchableOpacity>
   );
 }
@@ -1572,36 +1565,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   leftPill: {
-    width: 98,
+    width: 100,
     height: 48,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingLeft: 6,
+    paddingLeft: 8,
     paddingRight: 6,
     borderRightWidth: 1,
-    overflow: 'visible',
-  },
-  pillLeft: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginRight: 2,
-    overflow: 'visible',
-  },
-  pillIconBox: {
-    width: 22,
-    height: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'visible',
   },
   pillText: {
-    fontSize: 13,
+    flex: 1,
+    fontSize: 13.5,
     fontFamily: FontFamily.jakartaExtraBold,
     letterSpacing: -0.2,
-    flexShrink: 1,
+    marginRight: 2,
   },
   metricsRow: {
     flex: 1,
