@@ -101,7 +101,22 @@ All primary content cards, directory items, department pickers, and feed rows ac
    * Calculation: `48 dp + 12 dp top + 12 dp bottom = 72 dp`.
    * Category badge: `fontSize: 9.5 px`, Title: `13 px` (Bold), Snippet: `11.5 px` (Regular).
 
-5. **Student Profile Direct Action & Status Cards (`StudentProfileScreen.tsx`):**
+5. **Home Campus Pulse Status Strips (`HomeStatusStrips.tsx`):**
+   * Outer strip card: `height: 72 dp`, `paddingHorizontal: 10 dp`, `borderRadius: 16 dp`, `borderWidth: 1 dp`.
+   * Calm neutral foundation: `C.surface` surface and `C.border` subtle outline.
+   * Left pill container (`leftPill`): `width: 98 dp`, `height: 48 dp`, `paddingLeft: 6 dp`, `paddingRight: 6 dp`, `borderRightWidth: 1 dp`, `overflow: 'visible'`.
+   * Dedicated geometric icon container (`pillIconBox`): `width: 22 dp`, `height: 22 dp`, `alignItems: 'center'`, `justifyContent: 'center'`, `overflow: 'visible'` with `AnimatedIcon` using `animation="spring"` (`1.0 -> 1.22 -> 1.0`).
+   * RenderThread Overflow Safety: `pillLeft` flex wrapper strictly uses `overflow: 'visible'`, eliminating Android hardware layer bounding-box clipping so curved icon glyphs (Reports `alert-circle`, Routine `clock`, Lost & Found `search`) never get sliced off.
+   * Safe text truncation: `pillText` specifies `flexShrink: 1`, `numberOfLines={1}`, and `ellipsizeMode="tail"`.
+   * Customization Sheet modal: Full 19 campus features available in catalog. Equal-width 50/50 footer action buttons (`cancelBtn` & `saveBtn`: `flex: 1`, `height: 50 dp`, `borderRadius: 14 dp`).
+
+6. **Home Frequently Used Academic Tools (`HomeFrequentTools.tsx`):**
+   * Shortcut card: `height: 72 dp`, `borderRadius: 14 dp`, `borderWidth: 1 dp`, `paddingHorizontal: 4 dp`, `paddingVertical: 6 dp`.
+   * Calm neutral foundation: `C.surface` background and `C.border` boundary.
+   * Icon box: `34 × 34 dp`, `borderRadius: 10 dp`, `borderWidth: 1 dp`, `alignItems: 'center'`, `justifyContent: 'center'`.
+   * Customization Sheet modal: Full 19 tools catalog with title + subtitle and 40×40dp icon boxes. Equal-width 50/50 footer buttons (`resetBtn` & `saveBtn`: `flex: 1`, `height: 50 dp`, `borderRadius: 14 dp`).
+
+7. **Student Profile Direct Action & Status Cards (`StudentProfileScreen.tsx`):**
    * Outer card: `height: 72 dp`, `paddingHorizontal: 14 dp`, `borderRadius: 16 dp`.
    * Action icon box: `44 × 44 dp`, `borderRadius: 13 dp`, icon `20–22 px`.
    * **Mutually Connected:** Direct 1-tap communication cards: CampusOne In-App Chat (Brand Blue), WhatsApp (`#25D366`), Call Phone (`#10B981`), and Send Email (`#8B5CF6`).
@@ -181,6 +196,11 @@ Always import from `src/theme/spacing.ts`:
    * Announcements / Notices: `#3b82f6` (Electric Blue)
 3. **Contrast & Color Discordance Prevention:**
    * Avoid placing conflicting shades of the same color side-by-side (e.g. Call Phone uses `C.brand`, while WhatsApp exclusively uses official `#25D366`).
+4. **RenderThread Overflow Safety Standard for Vector Icons:**
+   * Never wrap an `AnimatedIcon` using scaling transforms (`spring`, `entrance`, `pulse`) inside a parent or ancestor with `overflow: 'hidden'` on Android. Android hardware layer canvas clipping aggressively slices transformed glyphs at the un-transformed layout boundary.
+   * Container wrappers must explicitly declare `overflow: 'visible'`. Text truncation should always be handled directly on the `<Text>` component (`flexShrink: 1`, `numberOfLines={1}`, `ellipsizeMode="tail"`).
+   * Geometric Icon Boxes: Always give icons a dedicated bounding box (e.g. `pillIconBox`: `22 × 22 dp` for `16 px` icons, `iconBox`: `34 × 34 dp` for `18 px` icons) with centered alignment (`alignItems: 'center'`, `justifyContent: 'center'`) to ensure symmetric scaling around the visual center.
+   * Physics Tuning: Entrance animations start at `scale: 0.85` (never at `0.3`) with zero default delay (`delay ?? 0`) to prevent icons from appearing as tiny shrunken dots or freezing on reload. Spring animations pop from `1.0 ➔ 1.22 ➔ 1.0` for lively tactile feedback without overshooting container boundaries.
 
 ---
 
@@ -227,9 +247,10 @@ The mobile app bottom navigation bar is ported 1:1 from the sibling web app (`Ca
 4. **Clean In-Line Messages Tab (Option 2 — Messages in Center):**
    - Messages button sits cleanly in-line with other tab items in the middle position (tab 3 of 5 for students).
    - Dynamic red unread count badge (`#ef4444`) anchored on the top-right of the message icon.
-5. **Sharp Contrast Typography & Clean Active State:**
-   - **Active Tab:** Electric blue (`#60a5fa`), Plus Jakarta Sans Bold, with native bouncy vector icon entrance pop. Uncluttered design eliminates bottom dots for a clean, distraction-free aesthetic.
-   - **Inactive Tabs:** Sharp high-contrast slate (`rgba(203, 213, 225, 0.85)` / `#cbd5e1`), Plus Jakarta Sans Medium.
+5. **Sharp Contrast Typography & Active Capsule Pill Highlight:**
+   - **Active Tab:** Icon is housed inside an electric blue translucent capsule pill (`width: 48 dp, height: 28 dp, borderRadius: 14 dp`, `backgroundColor: 'rgba(96, 165, 250, 0.20)'`, `borderColor: 'rgba(96, 165, 250, 0.35)'`), with electric blue typography (`#60a5fa`, Plus Jakarta Sans Bold) and native bouncy vector icon entrance pop. Uncluttered design eliminates bottom dots for a clean, distraction-free aesthetic.
+   - **Inactive Tabs:** Soft muted slate (`rgba(148, 163, 184, 0.50)`), Plus Jakarta Sans Medium, delivering effortless glanceability and clear distinction of current location.
+   - **Unread Badge Alignment:** Dynamic badge anchored at `right: 2` relative to the capsule pill boundary.
 6. **Role-Adaptive Tab Layout:**
    - **Students (5 tabs):** `Home` | `Study Hub` | `Messages` | `Explore` | `Settings`
    - **Admin (4 tabs):** `Home` | `Study Hub` | `Explore` | `Settings`

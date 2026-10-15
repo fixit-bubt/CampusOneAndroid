@@ -153,9 +153,10 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
 - **Color Binding:** Always pair icons with their designated `SectorColors.<sector>` accent token rather than arbitrary colors.
 - **Universal AnimatedIcon (`src/components/ui/AnimatedIcon.tsx`):**
   - High performance, 120 FPS native animated component powered by React Native's `Animated` library (`useNativeDriver: true`) running directly on Android's RenderThread.
-  - Supports animations: `spring` (explosive rubberband bounce pop from 1.0 to 1.34 to 1.0 on mount/tab focus), `pulse` (continuous rhythmic heartbeat scale from 1.0 to 1.22 for urgent alerts/AI orb), `float` (continuous smooth vertical hovering translateY from 0 to -4 to 0), `bounce` (periodic spring jump translateY from 0 to -6 to 0), `entrance` (zoom-in from 0.3 to 1.25 to 1.0), `wobble` (rotational shake from -14deg to +14deg with optional loop), and `none`.
+  - Supports animations: `spring` (tactile rubberband bounce pop from 1.0 to 1.22 to 1.0 on mount/tab focus), `pulse` (continuous rhythmic heartbeat scale from 1.0 to 1.22 for urgent alerts/AI orb), `float` (continuous smooth vertical hovering translateY from 0 to -4 to 0), `bounce` (periodic spring jump translateY from 0 to -6 to 0), `entrance` (zoom-in from 0.85 to 1.18 to 1.0 with zero default delay), `wobble` (rotational shake from -14deg to +14deg with optional loop), and `none`.
   - Bottom Tab Bar integration: `BottomTabNavigator` keys tab icons with `${key}-${focused}` to guarantee tactile rubberband pop on every tap.
   - Maps seamlessly across icon families (`feather`, `mci` / MaterialCommunityIcons, `ionicons`).
+  - RenderThread Overflow Safety Rule: Never wrap an `AnimatedIcon` using scaling transforms (`spring`, `entrance`, `pulse`) inside a parent or ancestor with `overflow: 'hidden'` on Android. Android hardware layer canvas clipping aggressively slices transformed glyphs at the un-transformed layout boundary. Containers must declare `overflow: 'visible'`, and icons should be placed inside a dedicated geometric box (e.g. `pillIconBox` 22×22dp for 16px icons) with centered alignment.
 - **Universal StatusBadge (`src/components/ui/StatusBadge.tsx`):**
   - Replaces all raw Unicode emoji stickers across deep features with sleek, theme-aware vector badges:
     - `vehicle`: `car-side`, `taxi`, `motorbike`, `rickshaw`
@@ -178,7 +179,7 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
   - Clean flat top line with retained 20dp smooth rounded corner shoulders (`r = 20 dp`). Zero middle notch dip.
   - Seamless Screen Edge Integration: All 7 tab screens strictly use `<SafeAreaView edges={['top', 'left', 'right']}>`, eliminating any bottom inset bar (`C.bg`: black in dark mode, white in light mode) above the navbar.
   - Clean in-line Messages tab button in the center (tab 3 of 5 for students) with unread badge.
-  - Active tab highlighted in electric Blue (`#60a5fa`) with bold typography and native bouncy vector icon entrance pop. Inactive tabs rendered in sharp slate (`rgba(203, 213, 225, 0.85)` / `#cbd5e1`). Clean distraction-free layout with no bottom dots.
+  - Active tab highlighted with an electric blue translucent capsule pill (`width: 48, height: 28, borderRadius: 14`, `rgba(96, 165, 250, 0.20)` fill, `rgba(96, 165, 250, 0.35)` border), electric blue typography (`#60a5fa`), and native bouncy vector icon entrance pop. Inactive tabs rendered in soft muted slate (`rgba(148, 163, 184, 0.50)`). Clean distraction-free layout with no bottom dots.
   - 120 FPS Elastic Bounce Tap Micro-Interactions on Android RenderThread (`useNativeDriver: true`): Press-in tactile squash to `0.84`, release elastic spring pop (`scale: 0.72 -> 1.30 -> 1.0`, matching Explore entrance physics).
   - Role-adaptive tab count & layout:
     - Students (5 tabs): `Home`, `StudyHub`, `Messages`, `Explore`, `Settings`.
@@ -287,6 +288,22 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
 - **Home Community Updates (`HomeCommunityUpdates.tsx`):**
   - Notice & update feed cards: `padding: 12, borderRadius: 16`, `48 × 48 dp` thumbnail = 72dp.
   - Bottom "View All Campus Notices" button: standardized to 58dp (`height: 58, borderRadius: 16, fontSize: 14`).
+- **Home Campus Pulse Status Strips (`HomeStatusStrips.tsx`):**
+  - Standardized to **72dp fixed height** (`height: 72, borderRadius: 16, borderWidth: 1`).
+  - Calm neutral surface (`C.surface`) and border (`C.border`).
+  - Left pill container (`leftPill`): `width: 98, height: 48, paddingLeft: 6, paddingRight: 6, borderRightWidth: 1, overflow: 'visible'`.
+  - Dedicated geometric icon container (`pillIconBox`): `width: 22, height: 22, alignItems: 'center', justifyContent: 'center', overflow: 'visible'` with `AnimatedIcon` using `animation="spring"` (`1.0 -> 1.22 -> 1.0`).
+  - RenderThread Overflow Safety: `pillLeft` flex wrapper strictly uses `overflow: 'visible'`, eliminating Android hardware layer bounding-box clipping so curved icon glyphs (Reports `alert-circle`, Routine `clock`, Lost & Found `search`) never get sliced off.
+  - Safe text truncation: `pillText` specifies `flexShrink: 1, numberOfLines={1}, ellipsizeMode="tail"`.
+  - Customization Sheet modal: Full 19 campus features available in catalog. Equal-width 50/50 footer action buttons (`cancelBtn` & `saveBtn`: `flex: 1, height: 50, borderRadius: 14`).
+- **Home Frequently Used Academic Tools (`HomeFrequentTools.tsx`):**
+  - Standardized to **72dp fixed height** (`height: 72, borderRadius: 14, borderWidth: 1`).
+  - Calm neutral surface (`C.surface`, `C.border`).
+  - Icon box: `34 × 34 dp, borderRadius: 10, borderWidth: 1, alignItems: 'center', justifyContent: 'center'`.
+  - Customization Sheet modal: Full 19 tools catalog with title + subtitle and 40×40dp icon boxes. Equal-width 50/50 footer buttons (`resetBtn` & `saveBtn`: `flex: 1, height: 50, borderRadius: 14`).
+- **Home Hero Announcement & Event Banner (`HomeHeroBanner.tsx`):**
+  - Strictly capped at 6 live slides (announcements, events, club posts).
+  - Theme-aware line indicators.
 - **Student Profile Direct Action & Status System (`StudentProfileScreen.tsx`):**
   - Hero card cleanup: redundant inline buttons completely removed; clean status badges (`Connected`, `Requested`, `Incoming`) placed directly in `badgeRow` alongside CR and Blood Group.
   - Mutually connected: Direct, 1-tap **72dp action cards** (`height: 72, paddingHorizontal: 14, borderRadius: 16`, `44 × 44 dp` icon box):
