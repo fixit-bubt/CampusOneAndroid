@@ -128,6 +128,9 @@ export const en = {
     campusLife: 'CAMPUS LIFE',
     services: 'SERVICES',
     community: 'COMMUNITY',
+    quickAccess: 'FEATURED & QUICK ACCESS',
+    directory: 'CAMPUS DIRECTORY',
+    itemsCount: (n: number) => `${n} ${n === 1 ? 'item' : 'items'}`,
   },
 
   home: {

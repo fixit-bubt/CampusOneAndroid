@@ -129,6 +129,9 @@ export const bn: Dict = {
     campusLife: 'ক্যাম্পাস লাইফ',
     services: 'সার্ভিসেস',
     community: 'কমিউনিটি',
+    quickAccess: 'ফিচার্ড ও দ্রুত অ্যাক্সেস',
+    directory: 'ক্যাম্পাস ডিরেক্টরি',
+    itemsCount: (n: number) => `${n} টি আইটেম`,
   },
 
   home: {

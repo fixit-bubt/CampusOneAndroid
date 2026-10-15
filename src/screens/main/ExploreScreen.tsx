@@ -10,7 +10,7 @@ import { useAuth } from '../../store/authStore';
 import { SectorIcon } from '../../components/ui/SectorIcon';
 import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
 import { CollapsibleSection } from '../../components/ui/CollapsibleSection';
-import { FontFamily, Layout, SectorColors } from '../../theme';
+import { FontFamily, Layout, SectorColors, pillBg } from '../../theme';
 import type { SectorKey } from '../../theme';
 
 // Maps sector id → app navigator route name
@@ -100,15 +100,21 @@ export function ExploreScreen({ navigation }: any) {
   // section should display in.
   const pick = (ids: SectorKey[]) => ids.map((id) => sectors.find((s) => s.id === id)).filter((s): s is typeof sectors[number] => !!s);
 
-  function renderSectorRow(s: { id: SectorKey; en: string; dEn: string }) {
+  function renderSectorRow(
+    s: { id: SectorKey; en: string; dEn: string },
+    isLast = false,
+  ) {
     return (
       <TouchableOpacity
         key={s.id}
-        style={[styles.toolCard, { backgroundColor: C.surface, borderColor: C.border }]}
+        style={[
+          styles.enclosedRow,
+          !isLast && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border },
+          isLast && styles.enclosedRowLast,
+        ]}
         onPress={() => navigation.navigate(SECTOR_ROUTE[s.id])}
-        activeOpacity={0.75}
+        activeOpacity={0.7}
       >
-        {/* nudged to 44 so every icon lines up with the tool cards above */}
         <SectorIcon sector={s.id} size="md" dark={isDark} style={styles.sectorIcon} animation="entrance" />
         <View style={{ flex: 1 }}>
           <Text style={[styles.cellTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -118,6 +124,7 @@ export function ExploreScreen({ navigation }: any) {
             {s.dEn}
           </Text>
         </View>
+        <Feather name="chevron-right" size={16} color={C.textMuted} />
       </TouchableOpacity>
     );
   }
@@ -126,13 +133,8 @@ export function ExploreScreen({ navigation }: any) {
   const campusLifeSectors = pick(GROUP_CAMPUS_LIFE);
   const servicesSectors = pick(GROUP_SERVICES);
   const communitySectors = pick(GROUP_COMMUNITY);
-  // CGPA/PDF Maker aren't SECTORS entries (they're client-side tools, not a
-  // DB-backed feed), but they belong in Academics alongside Study Hub/Cover
-  // Page - same gating as before (CGPA hidden from staff, PDF Maker
-  // student-only), just relocated from ungrouped top cards into the group.
-  // Every Academics item (sectors and tools alike) is staff-excluded, so the
-  // whole section simply doesn't apply to that role.
   const showAcademics = !isStaff;
+  const academicsCount = academicsSectors.length + 2 + (isStudent ? 1 : 0);
   const [openSection, setOpenSection] = useState<string | null>(null);
   const toggleSection = (id: string) => setOpenSection((prev) => (prev === id ? null : id));
 
@@ -151,14 +153,23 @@ export function ExploreScreen({ navigation }: any) {
         contentContainerStyle={[styles.content, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
       >
+        {/* Featured Tools Header */}
+        {isStudent && (
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionEyebrow, { color: C.text3, fontFamily: FontFamily.jakartaBold }]}>
+              {t.exploreGroups.quickAccess}
+            </Text>
+          </View>
+        )}
+
         {/* AI Chatbot - student-only (also enforced server-side in the edge function) */}
         {isStudent && (
           <TouchableOpacity
-            style={[styles.toolCard, { backgroundColor: C.surface, borderColor: C.border }]}
+            style={[styles.featuredCard, { backgroundColor: C.surface, borderColor: C.border }]}
             onPress={() => navigation.navigate('Chatbot')}
             activeOpacity={0.75}
           >
-            <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
+            <View style={[styles.toolIcon, { backgroundColor: pillBg(C.brand, isDark) }]}>
               <AnimatedIcon family="feather" name="message-circle" size={20} color={C.brand} animation="entrance" />
             </View>
             <View style={{ flex: 1 }}>
@@ -169,17 +180,18 @@ export function ExploreScreen({ navigation }: any) {
                 Ask questions, get help with campus life
               </Text>
             </View>
+            <Feather name="chevron-right" size={16} color={C.textMuted} />
           </TouchableOpacity>
         )}
 
         {/* Campus Issues board - student-only anonymous issues + me-too votes */}
         {isStudent && (
           <TouchableOpacity
-            style={[styles.toolCard, { backgroundColor: C.surface, borderColor: C.border }]}
+            style={[styles.featuredCard, { backgroundColor: C.surface, borderColor: C.border }]}
             onPress={() => navigation.navigate('CampusIssues')}
             activeOpacity={0.75}
           >
-            <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
+            <View style={[styles.toolIcon, { backgroundColor: pillBg(C.danger, isDark) }]}>
               <AnimatedIcon family="feather" name="alert-triangle" size={20} color={C.danger} animation="wobble" loop={false} />
             </View>
             <View style={{ flex: 1 }}>
@@ -190,25 +202,39 @@ export function ExploreScreen({ navigation }: any) {
                 {t.campusIssues.exploreDesc}
               </Text>
             </View>
+            <Feather name="chevron-right" size={16} color={C.textMuted} />
           </TouchableOpacity>
         )}
 
+        {/* Campus Directory Header */}
+        <View style={[styles.sectionHeader, { marginTop: isStudent ? 8 : 0 }]}>
+          <Text style={[styles.sectionEyebrow, { color: C.text3, fontFamily: FontFamily.jakartaBold }]}>
+            {t.exploreGroups.directory}
+          </Text>
+        </View>
+
         {showAcademics && (
           <CollapsibleSection
+            variant="enclosed"
             title={t.exploreGroups.academics}
             icon="study"
+            accentColor={SectorColors.study}
+            badge={t.exploreGroups.itemsCount(academicsCount)}
             open={openSection === 'academics'}
             onToggle={() => toggleSection('academics')}
           >
-            {academicsSectors.map(renderSectorRow)}
+            {academicsSectors.map((s) => renderSectorRow(s, false))}
 
             {/* Annex Portal */}
             <TouchableOpacity
-              style={[styles.toolCard, { backgroundColor: C.surface, borderColor: C.border }]}
+              style={[
+                styles.enclosedRow,
+                { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border },
+              ]}
               onPress={() => navigation.navigate('Annex')}
-              activeOpacity={0.75}
+              activeOpacity={0.7}
             >
-              <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
+              <View style={[styles.toolIcon, { backgroundColor: pillBg(SectorColors.announce, isDark) }]}>
                 <AnimatedIcon family="feather" name="external-link" size={20} color={C.brand} animation="entrance" />
               </View>
               <View style={{ flex: 1 }}>
@@ -219,16 +245,22 @@ export function ExploreScreen({ navigation }: any) {
                   {t.tabs.annexDesc}
                 </Text>
               </View>
+              <Feather name="chevron-right" size={16} color={C.textMuted} />
             </TouchableOpacity>
 
-            {/* Tool: CGPA calculator - academic tool, hidden from maintenance staff */}
+            {/* Tool: CGPA calculator */}
             <TouchableOpacity
-              style={[styles.toolCard, { backgroundColor: C.surface, borderColor: C.border }]}
+              style={[
+                styles.enclosedRow,
+                isStudent
+                  ? { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border }
+                  : styles.enclosedRowLast,
+              ]}
               onPress={() => navigation.navigate('Cgpa')}
-              activeOpacity={0.75}
+              activeOpacity={0.7}
             >
-              <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
-                <AnimatedIcon family="feather" name="percent" size={20} color={C.brand} animation="entrance" />
+              <View style={[styles.toolIcon, { backgroundColor: pillBg(SectorColors.study, isDark) }]}>
+                <AnimatedIcon family="feather" name="percent" size={20} color={SectorColors.study} animation="entrance" />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.cellTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -238,16 +270,17 @@ export function ExploreScreen({ navigation }: any) {
                   {t.cgpa.subtitle}
                 </Text>
               </View>
+              <Feather name="chevron-right" size={16} color={C.textMuted} />
             </TouchableOpacity>
 
-            {/* PDF Maker - student-only, everything runs on the phone */}
+            {/* PDF Maker - student-only */}
             {isStudent && (
               <TouchableOpacity
-                style={[styles.toolCard, { backgroundColor: C.surface, borderColor: C.border }]}
+                style={[styles.enclosedRow, styles.enclosedRowLast]}
                 onPress={() => navigation.navigate('PdfMaker')}
-                activeOpacity={0.75}
+                activeOpacity={0.7}
               >
-                <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
+                <View style={[styles.toolIcon, { backgroundColor: pillBg(SectorColors.pdfmaker, isDark) }]}>
                   <AnimatedIcon family="feather" name="file-plus" size={20} color={SectorColors.pdfmaker} animation="entrance" />
                 </View>
                 <View style={{ flex: 1 }}>
@@ -258,6 +291,7 @@ export function ExploreScreen({ navigation }: any) {
                     {t.pdfmaker.exploreDesc}
                   </Text>
                 </View>
+                <Feather name="chevron-right" size={16} color={C.textMuted} />
               </TouchableOpacity>
             )}
           </CollapsibleSection>
@@ -265,34 +299,49 @@ export function ExploreScreen({ navigation }: any) {
 
         {campusLifeSectors.length > 0 && (
           <CollapsibleSection
+            variant="enclosed"
             title={t.exploreGroups.campusLife}
             icon="events"
+            accentColor={SectorColors.events}
+            badge={t.exploreGroups.itemsCount(campusLifeSectors.length)}
             open={openSection === 'campusLife'}
             onToggle={() => toggleSection('campusLife')}
           >
-            {campusLifeSectors.map(renderSectorRow)}
+            {campusLifeSectors.map((s, idx) =>
+              renderSectorRow(s, idx === campusLifeSectors.length - 1)
+            )}
           </CollapsibleSection>
         )}
 
         {servicesSectors.length > 0 && (
           <CollapsibleSection
+            variant="enclosed"
             title={t.exploreGroups.services}
             icon="wrench"
+            accentColor={SectorColors.reports}
+            badge={t.exploreGroups.itemsCount(servicesSectors.length)}
             open={openSection === 'services'}
             onToggle={() => toggleSection('services')}
           >
-            {servicesSectors.map(renderSectorRow)}
+            {servicesSectors.map((s, idx) =>
+              renderSectorRow(s, idx === servicesSectors.length - 1)
+            )}
           </CollapsibleSection>
         )}
 
         {communitySectors.length > 0 && (
           <CollapsibleSection
+            variant="enclosed"
             title={t.exploreGroups.community}
             icon="market"
+            accentColor={SectorColors.market}
+            badge={t.exploreGroups.itemsCount(communitySectors.length)}
             open={openSection === 'community'}
             onToggle={() => toggleSection('community')}
           >
-            {communitySectors.map(renderSectorRow)}
+            {communitySectors.map((s, idx) =>
+              renderSectorRow(s, idx === communitySectors.length - 1)
+            )}
           </CollapsibleSection>
         )}
 
@@ -325,14 +374,25 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   } as ViewStyle,
 
-  toolCard: {
+  sectionHeader: {
+    paddingVertical: 7,
+    paddingHorizontal: 2,
+    marginBottom: 4,
+  } as ViewStyle,
+
+  sectionEyebrow: {
+    fontSize: 11,
+    letterSpacing: 0.8,
+  } as any,
+
+  featuredCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 13,
     padding: 14,
     borderRadius: 16,
     borderWidth: 1,
-    marginBottom: 11,
+    marginBottom: 10,
   } as ViewStyle,
 
   toolIcon: {
@@ -348,6 +408,20 @@ const styles = StyleSheet.create({
     height: 44,
   } as ViewStyle,
 
+  enclosedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 13,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+  } as ViewStyle,
+
+  enclosedRowLast: {
+    borderBottomWidth: 0,
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
+  } as ViewStyle,
+
   cellTitle: {
     fontSize: 14.5,
     lineHeight: 20,
@@ -356,6 +430,6 @@ const styles = StyleSheet.create({
   cellDesc: {
     fontSize: 11.5,
     lineHeight: 16,
-    marginTop: 3,
+    marginTop: 2,
   } as any,
 });

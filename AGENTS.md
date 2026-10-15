@@ -801,16 +801,20 @@ Whenever the user instructs to "update memorys", the agent MUST synchronously up
 - **Zero Utility Dumps:** Utility tools or document generators (e.g. Cover Page Generator) remain organized in Explore -> Academics and are not dumped in Settings.
 
 ### 17.3 Explore Screen Categories & Accordion UX (`ExploreScreen.tsx` & `CollapsibleSection.tsx`)
-- **Categorization:** High-level grouping matches the web sidebar:
-  - **Academics:** Study Hub, Class Routines, Academic Calendar, Faculty, Cover Page Generator, CGPA Calculator, and PDF Maker.
-  - **Campus Life:** Clubs, Events, Announcements, Prayer Times, Jobs & Internships.
-  - **Services:** Medical Center, Bus Schedule, Lost & Found.
-  - **Community:** Student Marketplace, Ride Share, Blood Donation, Student Directory.
-  - **Top Pinned Cards:** AI Assistant and Campus Issues.
-- **Default State (Collapsed):** All categories start **collapsed by default** (`defaultOpen = false`). When the user taps the Explore tab, only the category headers are visible, preventing an overwhelming 20+ item wall.
-- **Accordion Behavior:** Tapping any category smoothly expands it (`chevD` `v`) and closes other open categories, keeping the screen compact and matching the web application (`AppShell.jsx`) 1:1. Tapping an open category collapses it back (`chevR` `>`).
-- **Feather Icon Reliability:** Directly uses `name={isOpen ? 'chevD' : 'chevR'}` instead of fragile CSS/style rotation transforms on font components.
-- **Admin Dashboard Integrity:** `AdminDashboardScreen.tsx` explicitly sets `defaultOpen={true}` on its single Manage section to maintain visibility on the dashboard.
+- **Categorization & Hierarchy:** High-level grouping matches the web sidebar:
+  - **Featured & Quick Access:** AI Assistant and Campus Issues separated at the top with a dedicated section eyebrow and right navigation chevrons.
+  - **Campus Directory Categories:** Academics, Campus Life, Services, and Community under a dedicated section eyebrow.
+- **Unified Enclosed Group Container (`variant="enclosed"`):**
+  - Instead of detached floating cards, each category acts as a single, cohesive container card (`borderRadius: 16`).
+  - When expanded, the header is cleanly separated from its children with a hairline divider (`borderBottomWidth: StyleSheet.hairlineWidth`).
+  - Child tools are rendered as compact enclosed rows (`styles.enclosedRow`) separated by subtle hairline dividers, each with its own sector icon and right navigation chevron (`>`).
+  - The active container receives a crisp sector-colored highlight border (`accentColor + '70'` dark / `'55'` light, `borderWidth: 1.5`) so users never lose their spatial context while scrolling.
+- **Sector Accents & Dynamic Item Count Badges:**
+  - Each category features its dedicated sector color token: Academics (`SectorColors.study`), Campus Life (`SectorColors.events`), Services (`SectorColors.reports`), and Community (`SectorColors.market`).
+  - Headers display dynamic count pills (e.g. `4 items`, `5 items`, `8 tools`) in both collapsed and expanded states.
+- **Default State (Collapsed):** All categories start **collapsed by default** (`defaultOpen = false`).
+- **Accordion Behavior:** Tapping any category smoothly expands it (`chevD` `v`) and closes other open categories, keeping the screen compact.
+- **Admin Dashboard Integrity:** `AdminDashboardScreen.tsx` uses `defaultOpen={true}` with `variant="classic"` (default), ensuring 100% backward compatibility.
 
 ---
 
