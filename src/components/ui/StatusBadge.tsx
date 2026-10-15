@@ -89,8 +89,8 @@ export function StatusBadge({
       case 'role': {
         const isRequest = value === 'request' || value === 'Need Ride';
         return {
-          family: isRequest ? 'feather' : 'mci',
-          icon: isRequest ? 'navigation' : 'car-side',
+          family: 'mci',
+          icon: isRequest ? 'hand-back-right' : 'steering',
           label: label || (isRequest ? 'Need Ride' : 'Offer'),
           fg: isRequest ? (isDark ? '#c084fc' : '#9333ea') : (isDark ? '#818cf8' : '#4f46e5'),
           bg: isRequest

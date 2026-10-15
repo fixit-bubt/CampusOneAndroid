@@ -458,5 +458,45 @@ All location and hospital selectors across the Blood Donation system strictly fo
   - Clinical Case Reasons: Distinct semantic color tokens (Surgery `SectorColors.blood`, Dengue `#eab308`, Trauma `#f87171`, Childbirth `#ec4899`, Thalassemia `SectorColors.blood`, ICU `#8b5cf6`, Other `#3b82f6`) with matching 4 dp left accent stripes and tinted icon pills.
   - Campus Affiliation: Semantic category colors (Student `#3b82f6`, Faculty `#8b5cf6`, Family `#10b981`, General `#64748b`) with matching 4 dp left stripes and tinted icon pills.
 
+---
+
+## 17. Ride Share Uber-Style Connected Route Spine & In-App Map Architecture (`RidesScreen.tsx`, `RidePostScreen.tsx`, `RideDetailScreen.tsx`, `RideRouteMapModal.tsx`, `CommuteAreaPickerModal.tsx`)
+
+### 1. Distinct Role & Vehicle Iconography Standard (`StatusBadge.tsx`)
+- **Zero-Duplicate Icon Rule:** Replaced the legacy `car-side` icon for ride offers with `steering` (MaterialCommunityIcons steering wheel), clearly distinguishing drivers from passengers and vehicles.
+- **Role Variants:**
+  - `Offer` (Driver): `steering` (MaterialCommunityIcons, 🛞 steering wheel in Indigo/Slate).
+  - `Need Ride` (Passenger): `hand-back-right` (MaterialCommunityIcons, 🙋 raised hailing hand in Purple).
+- **Vehicle Badges:**
+  - `Rickshaw`: `rickshaw` in Sky Blue.
+  - `Bike`: `motorbike` in Orange.
+  - `CNG`: `taxi` in Emerald.
+  - `Car`: `car-side` in Indigo.
+  - Eliminates duplicate car glyphs (e.g. `[ 🛞 Offers ] [ 🛺 CNG ]` instead of duplicate cars).
+
+### 2. Uber Connected Route Timeline & Zero-Clipping Ergonomics (`RideDetailScreen.tsx`)
+- **Connected Visual Spine:**
+  - 🟢 **Pickup Point:** Circular beacon with emerald dot and zone subtitle (e.g., `Permanent Campus · Rupnagar, Mirpur 2`).
+  - 📍 **Meeting Landmark:** Compact callout attached along the route spine with inline label and note text (e.g., `MEETING SPOT: Gate 1 near Cafeteria`).
+  - 🔴 **Destination:** Square beacon with crimson dot and zone subtitle (e.g., `Dhanmondi 27 · Dhaka South`).
+- **Live GPS Proximity Placement:**
+  - Distance and walking/driving estimates (`241m from you · ~3 min walk`) are positioned directly inside the Pickup stop container (`alignSelf: 'flex-start'`) rather than squeezed into the card header. Completely prevents text clipping on all mobile viewports.
+- **Decluttered Header:** Removed internal database codes (`RD-xxx`) from user-facing hero badges; consolidated departure time and pricing.
+
+### 3. In-App Interactive Route Map Modal (`RideRouteMapModal.tsx`)
+- **In-App MapLibre GL Integration:** Tapping "View In-App Route Map" opens a full vector map view directly inside CampusOne rather than immediately launching external browser/Google Maps apps.
+- **Custom Visual Markers:**
+  - Green pulsing marker for Pickup (`●`).
+  - Red pulsing marker for Destination (`■`).
+  - Dashed blue route line connecting origin and destination.
+  - `fitBounds` with `{ maxZoom: 15.5, padding: { top: 90, bottom: 200, left: 60, right: 60 } }` framing the whole commute route.
+- **XSS & Injection Hardening:** Safe DOM label construction using `textContent` and `JSON.stringify` serialization.
+- **Optional Turn-by-Turn Navigation:** Dedicated 58dp action button in the bottom sheet allows drivers to launch external Google Maps for voice directions when driving.
+
+### 4. Universal 58dp & 72dp Bar Standard Alignment
+- Departure Time selector standardized to 72dp Dropdown Card (`height: 72`, `borderRadius: 16`, 44×44 icon box).
+- Stepper, Fare, Meeting Point, Search, and Action Buttons strictly standardized to the Universal 58dp height standard (`height: 58`, `borderRadius: 16`).
+
+
 
 

@@ -39,6 +39,8 @@ import {
   type MasterLocation,
 } from '../constants/dhakaMasterLocations';
 
+export { findMasterLocationByName };
+
 export const CAMPUS_AND_DHAKA_LANDMARKS: LandmarkLocation[] = DHAKA_MASTER_LOCATIONS.map(m => ({
   name: m.name,
   nameBn: m.nameBn,

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   ActivityIndicator, Alert, type ViewStyle, type TextStyle,
@@ -23,6 +23,14 @@ import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 import { ContactSheet } from '../../components/ui/ContactSheet';
 import { formatPrice, formatDate, formatTime, localToday } from '../../utils/format';
 import { openUrl, waHref } from '../../utils/link';
+import {
+  getCurrentUserCoordinates,
+  getDistanceMeters,
+  BUBT_COORDS,
+  type Coordinates,
+} from '../../services/locationService';
+import { findMasterLocationByName } from '../../constants/dhakaMasterLocations';
+import { RideRouteMapModal } from '../../components/rides/RideRouteMapModal';
 
 const RIDE_COLOR = SectorColors.ride;
 const RIDE_BG    = `${SectorColors.ride}1e`;
@@ -57,6 +65,18 @@ export function RideDetailScreen({ route, navigation }: any) {
   const [contactTarget, setContactTarget] = useState<{ name: string; phone?: string; id?: string } | null>(null);
   const [isOffline, setIsOffline] = useState(false);
   const [actionBusy, setActionBusy] = useState(false);
+  const [userCoords, setUserCoords] = useState<Coordinates | null>(null);
+  const [showRouteMap, setShowRouteMap] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    getCurrentUserCoordinates().then(coords => {
+      if (mounted && coords) {
+        setUserCoords(coords);
+      }
+    });
+    return () => { mounted = false; };
+  }, []);
 
   const load = useCallback(async () => {
     if (!rideId) { setLoadFailed(true); return; }
@@ -377,9 +397,50 @@ export function RideDetailScreen({ route, navigation }: any) {
     );
   }
 
+  const originLoc = ride?.origin ? findMasterLocationByName(ride.origin) : null;
+  const destLoc = ride?.destination ? findMasterLocationByName(ride.destination) : null;
+
+  const originCoords = originLoc?.coords || (ride?.origin?.toLowerCase().includes('bubt') ? BUBT_COORDS : null);
+  const destCoords = destLoc?.coords || (ride?.destination?.toLowerCase().includes('bubt') ? BUBT_COORDS : null);
+
+  let proximityText: string | null = null;
+  let proximityEstimate: string | null = null;
+
+  if (userCoords && originCoords) {
+    const distMeters = getDistanceMeters(
+      userCoords.latitude,
+      userCoords.longitude,
+      originCoords.latitude,
+      originCoords.longitude
+    );
+    if (distMeters < 1000) {
+      proximityText = `${Math.round(distMeters)}m from you`;
+      const walkMin = Math.max(1, Math.round(distMeters / 80));
+      proximityEstimate = `~${walkMin} min walk`;
+    } else {
+      const km = (distMeters / 1000).toFixed(1);
+      proximityText = `${km} km from you`;
+      const driveMin = Math.max(3, Math.round((distMeters / 1000) / 25 * 60));
+      proximityEstimate = `~${driveMin} min drive`;
+    }
+  }
+
+  function openRouteNavigation() {
+    if (!ride) return;
+    const originParam = originCoords
+      ? `${originCoords.latitude},${originCoords.longitude}`
+      : encodeURIComponent(`${ride.origin}, Dhaka`);
+    const destParam = destCoords
+      ? `${destCoords.latitude},${destCoords.longitude}`
+      : encodeURIComponent(`${ride.destination}, Dhaka`);
+    openUrl(`https://www.google.com/maps/dir/?api=1&origin=${originParam}&destination=${destParam}&travelmode=driving`);
+  }
+
   function openGoogleMaps() {
     if (!ride) return;
-    const query = encodeURIComponent(`${ride.origin}, Dhaka`);
+    const query = originCoords
+      ? `${originCoords.latitude},${originCoords.longitude}`
+      : encodeURIComponent(`${ride.origin}, Dhaka`);
     openUrl(`https://www.google.com/maps/search/?api=1&query=${query}`);
   }
 
@@ -440,13 +501,6 @@ export function RideDetailScreen({ route, navigation }: any) {
                   {ride.direction === 'To Campus' ? (t.rides2.toCampus ?? 'To Campus') : (t.rides2.fromCampus ?? 'From Campus')}
                 </Text>
               </View>
-              {ride.code ? (
-                <View style={[styles.pill, { backgroundColor: C.surface2 }]}>
-                  <Text style={[styles.pillTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                    {ride.code}
-                  </Text>
-                </View>
-              ) : null}
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
               <Feather name="clock" size={12} color={C.textMuted} style={{ marginRight: 4 }} />
@@ -476,6 +530,124 @@ export function RideDetailScreen({ route, navigation }: any) {
             <Text style={[styles.infoCellTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
               {formatPrice(ride.fare)}
             </Text>
+          </View>
+        </View>
+
+        {/* Uber Connected Route Card */}
+        <View style={[styles.uberRouteCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+          <View style={styles.uberCardHeader}>
+            <View style={styles.uberCardHeaderLeft}>
+              <View style={[styles.microIconBox, { backgroundColor: RIDE_BG }]}>
+                <Feather name="navigation" size={12} color={RIDE_COLOR} />
+              </View>
+              <Text style={[styles.uberCardTitle, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
+                ROUTE & PICKUP TIMELINE
+              </Text>
+            </View>
+          </View>
+
+          {/* Connected Route Spine */}
+          <View style={styles.routeSpineContainer}>
+            {/* Continuous vertical connecting line */}
+            <View style={[styles.spineTrackLine, { backgroundColor: isDark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.1)' }]} />
+
+            {/* 🟢 Pickup Point */}
+            <View style={styles.spineStopRow}>
+              <View style={[styles.pickupBeaconOuter, { borderColor: isDark ? '#064e3b' : '#a7f3d0', backgroundColor: isDark ? 'rgba(16, 185, 129, 0.2)' : '#d1fae5' }]}>
+                <View style={[styles.pickupBeaconInner, { backgroundColor: '#10b981' }]} />
+              </View>
+              <View style={styles.spineStopContent}>
+                <View style={styles.stopHeaderRow}>
+                  <Text style={[styles.stopMicroTag, { color: '#10b981', fontFamily: FontFamily.jakartaBold }]}>
+                    PICKUP
+                  </Text>
+                  {originLoc?.zone ? (
+                    <Text style={[styles.zoneBadge, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                      · {originLoc.zone}
+                    </Text>
+                  ) : null}
+                </View>
+                <Text style={[styles.spineStopTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  {ride.origin}
+                </Text>
+                {originLoc?.subLocation || originLoc?.address ? (
+                  <Text style={[styles.spineStopSub, { color: C.text2, fontFamily: FontFamily.jakartaRegular }]}>
+                    {originLoc.subLocation || originLoc.address}
+                  </Text>
+                ) : null}
+
+                {/* Live GPS Proximity directly under Pickup (Zero-Cutoff Ergonomics) */}
+                {proximityText ? (
+                  <View style={[styles.proximityBeacon, { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.15)' : '#ecfdf5', borderColor: isDark ? 'rgba(16, 185, 129, 0.3)' : '#a7f3d0' }]}>
+                    <AnimatedIcon family="feather" name="map-pin" size={11} color="#10b981" animation="pulse" />
+                    <Text style={[styles.proximityTxt, { color: '#10b981', fontFamily: FontFamily.jakartaBold }]}>
+                      {proximityText} {proximityEstimate ? `· ${proximityEstimate}` : ''}
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
+            </View>
+
+            {/* 📍 Meeting Spot / Notes (along the spine) */}
+            {ride.notes ? (
+              <View style={styles.meetingSpotRow}>
+                <View style={[styles.meetingSpotNode, { backgroundColor: isDark ? '#78350f' : '#fef3c7', borderColor: isDark ? '#f59e0b' : '#fbbf24' }]}>
+                  <Feather name="map-pin" size={10} color="#f59e0b" />
+                </View>
+                <View style={[styles.meetingSpotBubble, { backgroundColor: isDark ? 'rgba(245, 158, 11, 0.08)' : '#fffdf5', borderColor: isDark ? 'rgba(245, 158, 11, 0.25)' : '#fde68a' }]}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                    <Text style={[styles.meetingSpotLabel, { color: isDark ? '#fbbf24' : '#d97706', fontFamily: FontFamily.jakartaBold }]}>
+                      MEETING SPOT:
+                    </Text>
+                    <Text style={[styles.meetingSpotTxt, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>
+                      {ride.notes}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            ) : null}
+
+            {/* 🔴 Drop-off / Destination */}
+            <View style={styles.spineStopRow}>
+              <View style={[styles.dropoffBeaconOuter, { borderColor: isDark ? '#7f1d1d' : '#fecaca', backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : '#fee2e2' }]}>
+                <View style={[styles.dropoffBeaconInner, { backgroundColor: '#ef4444' }]} />
+              </View>
+              <View style={styles.spineStopContent}>
+                <View style={styles.stopHeaderRow}>
+                  <Text style={[styles.stopMicroTag, { color: '#ef4444', fontFamily: FontFamily.jakartaBold }]}>
+                    DESTINATION
+                  </Text>
+                  {destLoc?.zone ? (
+                    <Text style={[styles.zoneBadge, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                      · {destLoc.zone}
+                    </Text>
+                  ) : null}
+                </View>
+                <Text style={[styles.spineStopTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  {ride.destination}
+                </Text>
+                {destLoc?.subLocation || destLoc?.address ? (
+                  <Text style={[styles.spineStopSub, { color: C.text2, fontFamily: FontFamily.jakartaRegular }]}>
+                    {destLoc.subLocation || destLoc.address}
+                  </Text>
+                ) : null}
+              </View>
+            </View>
+          </View>
+
+          {/* Action Row inside Card: 58dp Navigation Bar */}
+          <View style={styles.routeActionWrap}>
+            <TouchableOpacity
+              style={[styles.routeNavBtn, { backgroundColor: isDark ? 'rgba(39, 94, 254, 0.15)' : '#eff6ff', borderColor: isDark ? 'rgba(39, 94, 254, 0.35)' : '#bfdbfe' }]}
+              onPress={() => setShowRouteMap(true)}
+              activeOpacity={0.8}
+            >
+              <Feather name="map" size={17} color={C.brand} />
+              <Text style={[styles.routeNavBtnTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+                View In-App Route Map
+              </Text>
+              <Feather name="maximize-2" size={14} color={C.brand} />
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -521,34 +693,6 @@ export function RideDetailScreen({ route, navigation }: any) {
             </TouchableOpacity>
           )}
         </View>
-
-        {/* Pickup & Maps Button */}
-        <View style={styles.mapsRow}>
-          <TouchableOpacity
-            style={[styles.mapsBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
-            onPress={openGoogleMaps}
-            activeOpacity={0.75}
-          >
-            <Feather name="map-pin" size={14} color={C.brand} />
-            <Text style={[styles.mapsBtnTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
-              {t.rides2.openInMaps ?? 'Open in Maps'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Notes (if present) */}
-        {ride.notes ? (
-          <>
-            <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
-              {t.rides2.notes ?? 'NOTES'}
-            </Text>
-            <View style={[styles.notesCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-              <Text style={[styles.notesTxt, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
-                {ride.notes}
-              </Text>
-            </View>
-          </>
-        ) : null}
 
         {/* Recurring routine pills (if present) */}
         {Array.isArray(ride.recurring) && ride.recurring.length > 0 ? (
@@ -843,6 +987,20 @@ export function RideDetailScreen({ route, navigation }: any) {
             : undefined
         }
       />
+
+      {/* In-App Interactive Route Map Modal */}
+      <RideRouteMapModal
+        visible={showRouteMap}
+        onClose={() => setShowRouteMap(false)}
+        origin={ride.origin}
+        destination={ride.destination}
+        originCoords={originCoords}
+        destCoords={destCoords}
+        notes={ride.notes}
+        fare={ride.fare}
+        vehicle={ride.vehicle}
+        direction={ride.direction}
+      />
     </SafeAreaView>
   );
 }
@@ -930,28 +1088,174 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  mapsRow: {
-    marginTop: 10,
+  uberRouteCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+    marginTop: 16,
   },
-  mapsBtn: {
+  uberCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  uberCardHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  microIconBox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  uberCardTitle: {
+    fontSize: 11,
+    letterSpacing: 0.8,
+  } as TextStyle,
+  proximityBeacon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 9,
+    paddingVertical: 4.5,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignSelf: 'flex-start',
+    marginTop: 6,
+  },
+  proximityTxt: {
+    fontSize: 11,
+  } as TextStyle,
+
+  routeSpineContainer: {
+    position: 'relative',
+    paddingLeft: 6,
+    paddingRight: 4,
+  },
+  spineTrackLine: {
+    position: 'absolute',
+    left: 17,
+    top: 14,
+    bottom: 24,
+    width: 2,
+    borderRadius: 1,
+  },
+  spineStopRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 14,
+  },
+  pickupBeaconOuter: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+    zIndex: 2,
+  },
+  pickupBeaconInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  dropoffBeaconOuter: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+    zIndex: 2,
+  },
+  dropoffBeaconInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 2,
+  },
+  spineStopContent: {
+    flex: 1,
+    paddingBottom: 16,
+  },
+  stopHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 2,
+  },
+  stopMicroTag: {
+    fontSize: 10.5,
+    letterSpacing: 0.6,
+  } as TextStyle,
+  zoneBadge: {
+    fontSize: 10.5,
+  } as TextStyle,
+  spineStopTitle: {
+    fontSize: 15,
+    lineHeight: 20,
+  } as TextStyle,
+  spineStopSub: {
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 2,
+  } as TextStyle,
+
+  meetingSpotRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 14,
+    marginBottom: 16,
+    marginLeft: 3,
+  },
+  meetingSpotNode: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
+    zIndex: 2,
+  },
+  meetingSpotBubble: {
+    flex: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  meetingSpotLabel: {
+    fontSize: 9.5,
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  } as TextStyle,
+  meetingSpotTxt: {
+    fontSize: 12.5,
+    lineHeight: 17,
+  } as TextStyle,
+
+  routeActionWrap: {
+    marginTop: 4,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(255,255,255,0.08)',
+  },
+  routeNavBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 7,
-    height: 42,
-    borderRadius: 12,
+    gap: 8,
+    height: 58,
+    borderRadius: 16,
     borderWidth: 1,
   },
-  mapsBtnTxt: { fontSize: 13 } as TextStyle,
-
-  notesCard: {
-    padding: 14,
-    borderRadius: 14,
-    borderWidth: 1,
-  },
-  notesTxt: {
-    fontSize: 13,
-    lineHeight: 19,
+  routeNavBtnTxt: {
+    fontSize: 13.5,
   } as TextStyle,
 
   dayRow: {
@@ -1002,15 +1306,15 @@ const styles = StyleSheet.create({
 
   bookedActionBlock: {
     marginTop: 20,
-    gap: 10,
+    gap: 12,
   },
   confirmedBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    height: 46,
-    borderRadius: 12,
+    height: 52,
+    borderRadius: 16,
   },
   confirmedTxt: { fontSize: 14 } as TextStyle,
   whatsappBtn: {
@@ -1018,20 +1322,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    height: 48,
-    borderRadius: 12,
+    height: 58,
+    borderRadius: 16,
   },
-  whatsappBtnTxt: { fontSize: 14 } as TextStyle,
+  whatsappBtnTxt: { fontSize: 15 } as TextStyle,
   cancelSeatBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 7,
-    height: 46,
-    borderRadius: 12,
+    height: 58,
+    borderRadius: 16,
     borderWidth: 1,
   },
-  cancelSeatTxt: { fontSize: 13.5 } as TextStyle,
+  cancelSeatTxt: { fontSize: 14 } as TextStyle,
 
   actionBtn: {
     flexDirection: 'row',
@@ -1049,8 +1353,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    height: 46,
-    borderRadius: 12,
+    height: 58,
+    borderRadius: 16,
     marginTop: 18,
   },
   deleteRideTxt: { fontSize: 14 } as TextStyle,
@@ -1060,10 +1364,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    height: 48,
-    borderRadius: 12,
+    height: 58,
+    borderRadius: 16,
   },
-  inAppChatBtnTxt: { fontSize: 14 } as TextStyle,
+  inAppChatBtnTxt: { fontSize: 15 } as TextStyle,
 
   ownRideBanner: {
     flexDirection: 'row',

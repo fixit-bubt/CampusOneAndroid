@@ -1,12 +1,12 @@
-import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
-  RefreshControl, ActivityIndicator, TextInput, Animated,
+  RefreshControl, ActivityIndicator, TextInput,
   type ViewStyle, type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
 import { SubBar } from '../../components/layout/TopBar';
@@ -17,7 +17,7 @@ import { StatusBadge } from '../../components/ui/StatusBadge';
 import { useToast } from '../../components/ui/Toast';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
-import { FontFamily, Layout, SectorColors } from '../../theme';
+import { FontFamily, Layout, SectorColors, pillBg } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { fetchPeople } from '../../services/peopleService';
 import { localToday, nowDhakaMinutes, formatTime, formatPrice, formatDate } from '../../utils/format';
@@ -26,15 +26,13 @@ import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 import type { Ride as RideRow } from '../../types/database';
 
 const RIDE_COLOR = SectorColors.ride;
-const RIDE_BG    = `${SectorColors.ride}1e`;
 
 type Ride = RideRow & {
   driver_name?: string;
   driver_dept?: string;
 };
 
-type TabKey = 'all' | 'to' | 'from' | 'mine';
-
+type TabKey = 'to' | 'from' | 'mine';
 
 function isRideDeparted(dateStr: string, timeStr: string): boolean {
   const today = localToday();
@@ -67,14 +65,13 @@ export function RidesScreen({ navigation }: any) {
   const [rides, setRides] = useState<Ride[]>([]);
   const [requestedIds, setRequestedIds] = useState<Set<string>>(new Set());
   const [takenCounts, setTakenCounts] = useState<Record<string, number>>({});
-  const [tab, setTab] = useState<TabKey>('all');
-  const [postTypeFilter, setPostTypeFilter] = useState<'all' | 'offer' | 'request'>('all');
+  const [tab, setTab] = useState<TabKey>('to');
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isOffline, setIsOffline] = useState(false);
 
-
+  const searchInputRef = useRef<TextInput>(null);
 
   const load = useCallback(async () => {
     // 1. Optimistic cache load
@@ -184,29 +181,12 @@ export function RidesScreen({ navigation }: any) {
     return rides.filter(r => r.driver_id === user?.id || requestedIds.has(r.id)).length;
   }, [rides, user?.id, requestedIds]);
 
-  // Direction tab definitions (strictly 3 tabs: All, To Campus, From Campus)
-  const DIRECTION_TABS: TabItem<'all' | 'to' | 'from'>[] = useMemo(() => [
-    { id: 'all',  label: t.common.all ?? 'All', color: RIDE_COLOR },
-    { id: 'to',   label: t.rides2.toCampus ?? 'To Campus', color: '#16a34a' },
+  // Clean 3-Tab Definition: To Campus, From Campus, My Rides
+  const DIRECTION_TABS: TabItem<TabKey>[] = useMemo(() => [
+    { id: 'to',   label: t.rides2.toCampus ?? 'To Campus',   color: '#16a34a' },
     { id: 'from', label: t.rides2.fromCampus ?? 'From Campus', color: '#2563eb' },
-  ], [t]);
-
-  // Base counts for post types (All, Offers, Requests) in current tab
-  const postCounts = useMemo(() => {
-    let base = rides;
-    if (tab === 'mine') {
-      base = base.filter(r => r.driver_id === user?.id || requestedIds.has(r.id));
-    } else if (tab === 'to') {
-      base = base.filter(r => r.direction === 'To Campus' && (!isRideDeparted(r.date, r.time) || r.driver_id === user?.id || requestedIds.has(r.id)));
-    } else if (tab === 'from') {
-      base = base.filter(r => r.direction === 'From Campus' && (!isRideDeparted(r.date, r.time) || r.driver_id === user?.id || requestedIds.has(r.id)));
-    } else {
-      base = base.filter(r => !isRideDeparted(r.date, r.time) || r.driver_id === user?.id || requestedIds.has(r.id));
-    }
-    const offers = base.filter(r => (r.post_type ?? 'offer') === 'offer').length;
-    const requests = base.filter(r => r.post_type === 'request').length;
-    return { all: base.length, offers, requests };
-  }, [rides, tab, user?.id, requestedIds]);
+    { id: 'mine', label: t.rides2.myRidesTab ?? 'My Rides', count: myRidesCount > 0 ? myRidesCount : undefined, color: RIDE_COLOR },
+  ], [t, myRidesCount]);
 
   // Filter pipeline
   const filteredRides = useMemo(() => {
@@ -221,16 +201,9 @@ export function RidesScreen({ navigation }: any) {
     } else if (tab === 'from') {
       list = list.filter(r => r.direction === 'From Campus');
       list = list.filter(r => !isRideDeparted(r.date, r.time) || r.driver_id === user?.id || requestedIds.has(r.id));
-    } else {
-      list = list.filter(r => !isRideDeparted(r.date, r.time) || r.driver_id === user?.id || requestedIds.has(r.id));
     }
 
-    // 2. Post type filter (All, Offers, Requests)
-    if (postTypeFilter !== 'all') {
-      list = list.filter(r => (r.post_type ?? 'offer') === postTypeFilter);
-    }
-
-    // 3. Search query
+    // 2. Search query (matches origin, destination, driver name, vehicle, or route notes)
     const q = searchQuery.trim().toLowerCase();
     if (q) {
       list = list.filter(r =>
@@ -243,44 +216,14 @@ export function RidesScreen({ navigation }: any) {
     }
 
     return list;
-  }, [rides, tab, postTypeFilter, searchQuery, user?.id, requestedIds]);
-
-  const POST_FILTER_TABS: TabItem<'all' | 'offer' | 'request'>[] = useMemo(() => [
-    { id: 'all',     label: t.common.all ?? 'All',            color: C.text },
-    { id: 'offer',   label: t.rides2.offers ?? 'Offers',      count: postCounts.offers > 0 ? postCounts.offers : undefined, color: RIDE_COLOR },
-    { id: 'request', label: t.rides2.needRide ?? 'Need Ride', count: postCounts.requests > 0 ? postCounts.requests : undefined, color: isDark ? '#c4b5fd' : '#7c3aed' },
-  ], [t, postCounts, C.text, isDark]);
+  }, [rides, tab, searchQuery, user?.id, requestedIds]);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
+      {/* SubBar: Without rightSlot override, SubBar restores CampusOne Logo on top right */}
       <SubBar
         title={t.rides2.rideShareTitle}
         onBack={() => navigation.goBack()}
-        rightSlot={
-          <TouchableOpacity
-            style={[
-              styles.myRidesHeaderBtn,
-              {
-                backgroundColor: tab === 'mine' ? RIDE_COLOR : C.surface2,
-                borderColor: tab === 'mine' ? RIDE_COLOR : C.border,
-              },
-            ]}
-            onPress={() => setTab(tab === 'mine' ? 'all' : 'mine')}
-            activeOpacity={0.8}
-          >
-            <Feather name="user" size={13} color={tab === 'mine' ? '#fff' : C.text} />
-            <Text style={[styles.myRidesHeaderTxt, { color: tab === 'mine' ? '#fff' : C.text, fontFamily: FontFamily.jakartaBold }]}>
-              {t.rides2.myRidesTab ?? 'My Rides'}
-            </Text>
-            {myRidesCount > 0 && (
-              <View style={[styles.myRidesBadge, { backgroundColor: tab === 'mine' ? '#fff' : RIDE_COLOR }]}>
-                <Text style={[styles.myRidesBadgeTxt, { color: tab === 'mine' ? RIDE_COLOR : '#fff', fontFamily: FontFamily.jakartaBold }]}>
-                  {myRidesCount}
-                </Text>
-              </View>
-            )}
-          </TouchableOpacity>
-        }
       />
 
       <OfflineBanner
@@ -288,8 +231,8 @@ export function RidesScreen({ navigation }: any) {
         message="Showing cached campus rides. Connect to the internet to request seats or post rides."
       />
 
-      {/* Prominent Hero Action Bar (Option 1: Parity with Blood Donation & Lost/Found) */}
-      <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 6, paddingBottom: 4 }}>
+      {/* Prominent Hero Action Bar (Universal 58dp Standard) */}
+      <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 6, paddingBottom: 6 }}>
         <TouchableOpacity
           style={[styles.heroActBtn, { backgroundColor: RIDE_COLOR }]}
           onPress={() => navigation.navigate('RidePost', { postType: 'offer' })}
@@ -302,22 +245,25 @@ export function RidesScreen({ navigation }: any) {
         </TouchableOpacity>
       </View>
 
-      {/* Unified Segmented Track Switcher with Native Spring Animation & Colors */}
+      {/* Single Unified 58dp Segmented Tab Bar: [ To Campus ] [ From Campus ] [ My Rides ] */}
       <View style={{ paddingHorizontal: Layout.screenPadding, marginBottom: 8 }}>
-        <SegmentedTabs<'all' | 'to' | 'from'>
+        <SegmentedTabs<TabKey>
           tabs={DIRECTION_TABS}
-          activeTab={tab === 'mine' ? ('' as any) : tab}
-          onTabChange={(nextTab) => setTab(nextTab)}
+          activeTab={tab}
+          onTabChange={setTab}
         />
       </View>
 
-      {/* Clutter-Free Search Bar */}
-      <View style={[styles.searchWrapper, { paddingHorizontal: Layout.screenPadding }]}>
+      {/* Universal 58dp Full-Width Search Bar */}
+      <View style={{ paddingHorizontal: Layout.screenPadding, marginBottom: 8 }}>
         <View style={[styles.searchBar, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <Icon name="search" size={18} color={C.textMuted} />
+          <TouchableOpacity onPress={() => searchInputRef.current?.focus()}>
+            <Icon name="search" size={18} color={C.textMuted} />
+          </TouchableOpacity>
           <TextInput
+            ref={searchInputRef}
             style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-            placeholder={t.rides2.searchPlaceholder ?? 'Search pickup, destination, or area…'}
+            placeholder={t.rides2.searchPlaceholder ?? 'Search pickup, destination, or driver…'}
             placeholderTextColor={C.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -331,16 +277,6 @@ export function RidesScreen({ navigation }: any) {
         </View>
       </View>
 
-      {/* Unified Segmented Post Type Filter Bar (All, Offers, Need Ride) with Native Spring Animation */}
-      <View style={{ paddingHorizontal: Layout.screenPadding, marginTop: 8, marginBottom: 4 }}>
-        <SegmentedTabs<'all' | 'offer' | 'request'>
-          size="sm"
-          tabs={POST_FILTER_TABS}
-          activeTab={postTypeFilter}
-          onTabChange={setPostTypeFilter}
-        />
-      </View>
-
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
@@ -348,65 +284,43 @@ export function RidesScreen({ navigation }: any) {
         keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
-        {loading && rides.length === 0 ? (
-          <ActivityIndicator style={{ marginTop: 60 }} color={C.brand} />
+        {loading ? (
+          <View style={{ paddingTop: 60, alignItems: 'center' }}>
+            <ActivityIndicator color={RIDE_COLOR} />
+          </View>
         ) : filteredRides.length === 0 ? (
           <View style={styles.empty}>
-            <Icon name="ride" size={32} color={C.textMuted} />
+            <AnimatedIcon family="feather" name="navigation" size={36} color={C.textMuted} animation="entrance" />
             <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-              {searchQuery
-                ? t.common.noResults
-                : tab === 'mine'
-                ? (t.rides2.noMyRidesTitle ?? 'No Rides Yet')
-                : (t.rides2.noRidesTitle ?? 'No rides available')}
+              {tab === 'mine' ? (t.rides2.noMyRidesTitle ?? 'No rides found') : (t.rides2.noRidesTitle ?? 'No rides available')}
             </Text>
-            <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-              {searchQuery
-                ? 'Try clearing your search query'
-                : tab === 'mine'
-                ? (t.rides2.noMyRidesSub ?? "You haven't offered or requested any rides yet.")
-                : (t.rides2.noRidesSub ?? 'No campus rides currently posted for this route.')}
+            <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+              {tab === 'mine'
+                ? 'Rides you post or seats you request will appear here.'
+                : searchQuery
+                ? 'Try clearing your search terms.'
+                : tab === 'to'
+                ? 'Be the first to offer or request a ride to campus!'
+                : 'Be the first to offer or request a ride from campus!'}
             </Text>
-            {searchQuery.length > 0 ? (
+            {searchQuery.length > 0 && (
               <TouchableOpacity
-                style={[styles.clearBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+                style={[styles.clearBtn, { borderColor: C.border }]}
                 onPress={() => setSearchQuery('')}
-                activeOpacity={0.75}
               >
-                <Text style={[styles.clearBtnTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
-                  Clear search
+                <Text style={[styles.clearBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  Clear Search
                 </Text>
               </TouchableOpacity>
-            ) : tab === 'mine' ? (
-              <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
-                <TouchableOpacity
-                  style={[styles.clearBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
-                  onPress={() => navigation.navigate('RidePost', { postType: 'offer' })}
-                  activeOpacity={0.75}
-                >
-                  <Text style={[styles.clearBtnTxt, { color: RIDE_COLOR, fontFamily: FontFamily.jakartaBold }]}>
-                    Offer Ride
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.clearBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
-                  onPress={() => navigation.navigate('RidePost', { postType: 'request' })}
-                  activeOpacity={0.75}
-                >
-                  <Text style={[styles.clearBtnTxt, { color: RIDE_COLOR, fontFamily: FontFamily.jakartaBold }]}>
-                    Request Ride
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            ) : null}
+            )}
           </View>
         ) : (
           <View style={styles.list}>
             {filteredRides.map(r => {
-              const taken = takenCounts[r.id] ?? 0;
-              const isRequested = requestedIds.has(r.id);
               const isOwnRide = r.driver_id === user?.id;
+              const isRequested = requestedIds.has(r.id);
               const isPassengerRequest = r.post_type === 'request';
+              const taken = takenCounts[r.id] ?? 0;
               const seatsLeft = r.seats_total - taken;
               const isFull = seatsLeft <= 0 && !isRequested;
               const departureText = formatDepartureLabel(r.date, r.time, t);
@@ -418,73 +332,106 @@ export function RidesScreen({ navigation }: any) {
                   onPress={() => navigation.navigate('RideDetail', { rideId: r.id })}
                   activeOpacity={0.85}
                 >
-                  {/* Top route & fare */}
+                  {/* Top Metadata: Role & Vehicle Badges, Time, and Fare */}
                   <View style={styles.cardHeader}>
-                    <View style={styles.routeCol}>
-                      <Text style={[styles.routeTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]} numberOfLines={1}>
-                        {r.origin} → {r.destination}
-                      </Text>
-                      {/* Vehicle & Type & Time Row */}
-                      <View style={styles.subMetaRow}>
-                        <StatusBadge
-                          variant="role"
-                          value={isPassengerRequest ? 'request' : 'offer'}
-                          label={isPassengerRequest ? (t.rides2.needRide ?? 'Need Ride') : (t.rides2.offers ?? 'Offer')}
-                          size="sm"
-                        />
-                        <StatusBadge
-                          variant="vehicle"
-                          value={r.vehicle}
-                          size="sm"
-                        />
-                        <View style={[styles.dirPill, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : C.surface2 }]}>
-                          <Text style={[styles.dirPillTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                            {r.direction === 'To Campus' ? (t.rides2.toCampus ?? 'To Campus') : (t.rides2.fromCampus ?? 'From Campus')}
-                          </Text>
-                        </View>
-                        <Text style={[styles.timeTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                    <View style={styles.metaBadgesRow}>
+                      <StatusBadge
+                        variant="role"
+                        value={isPassengerRequest ? 'request' : 'offer'}
+                        label={isPassengerRequest ? (t.rides2.needRide ?? 'Need Ride') : (t.rides2.offers ?? 'Offer')}
+                        size="sm"
+                      />
+                      <StatusBadge
+                        variant="vehicle"
+                        value={r.vehicle}
+                        size="sm"
+                      />
+                      <View style={[styles.timePill, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : C.surface2 }]}>
+                        <Feather name="clock" size={11} color={C.textMuted} />
+                        <Text style={[styles.timeTxt, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
                           {departureText}
                         </Text>
                       </View>
                     </View>
 
-                    <Text style={[styles.fare, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-                      {formatPrice(r.fare)}
-                    </Text>
+                    <View style={styles.fareStack}>
+                      <Text style={[styles.fare, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+                        {formatPrice(r.fare)}
+                      </Text>
+                      <Text style={[styles.fareSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+                        {isPassengerRequest ? 'budget' : 'per seat'}
+                      </Text>
+                    </View>
                   </View>
 
-                  {/* Notes snippet if present */}
+                  {/* Uber-Style Route Track */}
+                  <View style={styles.routeTrack}>
+                    <View style={[styles.routeTrackLine, { backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)' }]} />
+
+                    {/* Origin / Pickup */}
+                    <View style={styles.stopRow}>
+                      <View style={[styles.pickupDot, { backgroundColor: '#10b981', borderColor: isDark ? '#064e3b' : '#a7f3d0' }]} />
+                      <View style={styles.stopContent}>
+                        <Text style={[styles.stopMicroLabel, { color: '#10b981', fontFamily: FontFamily.jakartaBold }]}>
+                          PICKUP
+                        </Text>
+                        <Text style={[styles.stopTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                          {r.origin}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Destination / Drop-off */}
+                    <View style={styles.stopRow}>
+                      <View style={[styles.dropoffDot, { backgroundColor: '#ef4444', borderColor: isDark ? '#7f1d1d' : '#fecaca' }]} />
+                      <View style={styles.stopContent}>
+                        <Text style={[styles.stopMicroLabel, { color: '#ef4444', fontFamily: FontFamily.jakartaBold }]}>
+                          DESTINATION
+                        </Text>
+                        <Text style={[styles.stopTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                          {r.destination}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* Meeting Landmark / Notes snippet if present */}
                   {r.notes ? (
-                    <Text style={[styles.notesSnippet, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
-                      {r.notes}
-                    </Text>
+                    <View style={[styles.landmarkBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : C.surface2, borderColor: C.border }]}>
+                      <Feather name="map-pin" size={12} color={RIDE_COLOR} />
+                      <Text style={[styles.landmarkTxt, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                        {r.notes}
+                      </Text>
+                    </View>
                   ) : null}
 
                   {/* Driver / Passenger Identity & seats row */}
                   <View style={styles.driverRow}>
                     <View style={styles.driverIdentity}>
                       <Avatar name={r.driver_name} size="xs" />
-                      <View style={{ minWidth: 0 }}>
+                      <View style={{ minWidth: 0, flex: 1 }}>
                         <Text style={[styles.driverName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                           {isOwnRide
                             ? (isPassengerRequest ? 'You (Passenger)' : 'You (Driver)')
                             : (r.driver_name ?? (isPassengerRequest ? 'Passenger' : t.rides2.driverFallback))}
                         </Text>
                         {r.driver_dept ? (
-                          <Text style={[styles.driverDept, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                          <Text style={[styles.driverDept, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
                             {r.driver_dept}
                           </Text>
                         ) : null}
                       </View>
                     </View>
 
-                    <Text style={[styles.seatsCount, { color: isFull ? C.danger : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                      {isPassengerRequest
-                        ? `${r.seats_total} seat${r.seats_total === 1 ? '' : 's'} needed`
-                        : isFull
-                        ? (t.rides2.full ?? 'Full')
-                        : `${Math.max(seatsLeft, 0)} ${t.rides2.seatsLeftCount(Math.max(seatsLeft, 0))}`}
-                    </Text>
+                    <View style={[styles.seatsPill, { backgroundColor: isFull ? (isDark ? 'rgba(239,68,68,0.15)' : '#fee2e2') : (isDark ? 'rgba(255,255,255,0.05)' : C.surface2) }]}>
+                      <Text style={[styles.seatsCount, { color: isFull ? C.danger : C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                        {isPassengerRequest
+                          ? `${r.seats_total} seat${r.seats_total === 1 ? '' : 's'} needed`
+                          : isFull
+                          ? (t.rides2.full ?? 'Full')
+                          : `${Math.max(seatsLeft, 0)} ${t.rides2.seatsLeftCount(Math.max(seatsLeft, 0))}`}
+                      </Text>
+                    </View>
                   </View>
 
                   {/* Action Button & Status */}
@@ -560,7 +507,7 @@ export function RidesScreen({ navigation }: any) {
             })}
           </View>
         )}
-        <View style={{ height: 16 }} />
+        <View style={{ height: 24 }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -586,40 +533,19 @@ const styles = StyleSheet.create({
     fontSize: 14.5,
   } as TextStyle,
 
-  myRidesHeaderBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-    borderRadius: 12,
-    borderWidth: 1,
-  } as ViewStyle,
-  myRidesHeaderTxt: {
-    fontSize: 12,
-  } as TextStyle,
-  myRidesBadge: {
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    borderRadius: 999,
-  } as ViewStyle,
-  myRidesBadgeTxt: {
-    fontSize: 10,
-  } as TextStyle,
-
-  searchWrapper: { paddingTop: 2, paddingBottom: 6 },
   searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 9,
     height: 58,
     borderRadius: 16,
     borderWidth: 1,
-    paddingHorizontal: 16,
-  },
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    gap: 9,
+  } as ViewStyle,
   searchInput: {
     flex: 1,
-    fontSize: 14.5,
+    height: '100%',
+    fontSize: 14,
     paddingVertical: 0,
   } as TextStyle,
 
@@ -628,56 +554,101 @@ const styles = StyleSheet.create({
 
   card: {
     padding: 15,
-    borderRadius: 16,
+    borderRadius: 18,
     borderWidth: 1,
-  },
+  } as ViewStyle,
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     gap: 12,
-  },
-  routeCol: { flex: 1 },
-  routeTitle: {
-    fontSize: 15.5,
-    lineHeight: 22,
-  } as TextStyle,
-  fare: {
-    fontSize: 16,
-    flexShrink: 0,
-    marginTop: 2,
-  } as TextStyle,
-
-  subMetaRow: {
+  } as ViewStyle,
+  metaBadgesRow: {
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
     gap: 6,
-    marginTop: 6,
-  },
-  typePill: {
+    flex: 1,
+  } as ViewStyle,
+  timePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  typePillTxt: { fontSize: 10.5 } as TextStyle,
-  vehPill: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  vehTxt: { fontSize: 11 } as TextStyle,
-  dirPill: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  dirPillTxt: { fontSize: 11 } as TextStyle,
-  timeTxt: { fontSize: 12 } as TextStyle,
+    paddingVertical: 3.5,
+    borderRadius: 7,
+  } as ViewStyle,
+  timeTxt: { fontSize: 11 } as TextStyle,
 
-  notesSnippet: {
+  fareStack: {
+    alignItems: 'flex-end',
+    flexShrink: 0,
+  } as ViewStyle,
+  fare: {
+    fontSize: 17,
+  } as TextStyle,
+  fareSub: {
+    fontSize: 10,
+    marginTop: -1,
+  } as TextStyle,
+
+  /* Uber-Style Route Track */
+  routeTrack: {
+    marginTop: 12,
+    paddingLeft: 2,
+    position: 'relative',
+    gap: 10,
+  } as ViewStyle,
+  routeTrackLine: {
+    position: 'absolute',
+    left: 8,
+    top: 14,
+    bottom: 14,
+    width: 2,
+    borderRadius: 1,
+  } as ViewStyle,
+  stopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  } as ViewStyle,
+  pickupDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 2.5,
+  } as ViewStyle,
+  dropoffDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 2.5,
+  } as ViewStyle,
+  stopContent: {
+    flex: 1,
+  } as ViewStyle,
+  stopMicroLabel: {
+    fontSize: 9,
+    letterSpacing: 0.6,
+  } as TextStyle,
+  stopTitle: {
+    fontSize: 14,
+    marginTop: 1,
+  } as TextStyle,
+
+  landmarkBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginTop: 10,
+  } as ViewStyle,
+  landmarkTxt: {
     fontSize: 12,
-    marginTop: 8,
+    flex: 1,
   } as TextStyle,
 
   driverRow: {
@@ -688,17 +659,24 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: 'rgba(150, 150, 150, 0.2)',
-  },
+  } as ViewStyle,
   driverIdentity: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     flex: 1,
     minWidth: 0,
-  },
-  driverName: { fontSize: 12.5 } as TextStyle,
+    paddingRight: 8,
+  } as ViewStyle,
+  driverName: { fontSize: 13 } as TextStyle,
   driverDept: { fontSize: 11 } as TextStyle,
-  seatsCount: { fontSize: 12 } as TextStyle,
+
+  seatsPill: {
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 8,
+  } as ViewStyle,
+  seatsCount: { fontSize: 11.5 } as TextStyle,
 
   requestBtn: {
     flexDirection: 'row',
@@ -708,7 +686,7 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 12,
     marginTop: 12,
-  },
+  } as ViewStyle,
   requestBtnTxt: { fontSize: 13.5 } as TextStyle,
 
   requestedBanner: {
@@ -719,7 +697,7 @@ const styles = StyleSheet.create({
     height: 42,
     borderRadius: 12,
     marginTop: 12,
-  },
+  } as ViewStyle,
   requestedTxt: { fontSize: 13 } as TextStyle,
 
   ownRideBadge: {
@@ -728,69 +706,22 @@ const styles = StyleSheet.create({
     height: 42,
     borderRadius: 12,
     marginTop: 12,
-  },
+  } as ViewStyle,
   ownRideTxt: { fontSize: 13 } as TextStyle,
 
   empty: {
     alignItems: 'center',
     paddingTop: 60,
     gap: 8,
-  },
+  } as ViewStyle,
   emptyTitle: { fontSize: 16 } as TextStyle,
-  emptySub: { fontSize: 13 } as TextStyle,
+  emptySub: { fontSize: 13, textAlign: 'center', paddingHorizontal: 20 } as TextStyle,
   clearBtn: {
     marginTop: 12,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 999,
     borderWidth: 1,
-  },
+  } as ViewStyle,
   clearBtnTxt: { fontSize: 12.5 } as TextStyle,
-  postFilterContainer: {
-    flexDirection: 'row',
-    borderRadius: 14,
-    padding: 3,
-    marginHorizontal: Layout.screenPadding,
-    marginTop: 2,
-    marginBottom: 8,
-    position: 'relative',
-  } as ViewStyle,
-  postFilterIndicator: {
-    position: 'absolute',
-    top: 3,
-    left: 3,
-    bottom: 3,
-    borderRadius: 11,
-    borderWidth: 1.5,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1.5 },
-    shadowOpacity: 0.12,
-    shadowRadius: 3,
-  } as ViewStyle,
-  postFilterBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    paddingVertical: 7,
-    minHeight: 38,
-    borderRadius: 11,
-    zIndex: 1,
-  } as ViewStyle,
-  postFilterIcon: {
-    fontSize: 11,
-  } as TextStyle,
-  postFilterBtnTxt: {
-    fontSize: 12,
-  } as TextStyle,
-  postFilterBadge: {
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    borderRadius: 999,
-  } as ViewStyle,
-  postFilterBadgeTxt: {
-    fontSize: 10,
-  } as TextStyle,
 });
