@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { TactileSwitch } from '../../components/ui/TactileSwitch';
 import { useFocusEffect } from '@react-navigation/native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { useToast } from '../../components/ui/Toast';
@@ -329,6 +329,7 @@ const sheetStyles = StyleSheet.create({
 
 export function StudyHubScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
   const t = useT();
   const { user, profile } = useAuth();
   const isAdmin = profile?.role === 'admin';
@@ -1428,7 +1429,7 @@ export function StudyHubScreen({ navigation }: any) {
   const isRootTab = !isAdmin && sub === 'home';
 
   return (
-    <SafeAreaView edges={['top', 'left', 'right']} style={[s.safe, { backgroundColor: C.bg }]}>
+    <View style={[s.safe, { backgroundColor: C.bg, paddingTop: insets.top }]}>
       {isRootTab ? (
         <TopBar title={t.study2.studyHub} subtitle={t.study2.studyHubSubtitle} />
       ) : (
@@ -1560,7 +1561,7 @@ export function StudyHubScreen({ navigation }: any) {
           </View>
         </KeyboardAvoidingView>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 

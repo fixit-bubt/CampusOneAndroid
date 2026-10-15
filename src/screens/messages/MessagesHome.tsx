@@ -6,7 +6,7 @@ import {
   View, Text, TouchableOpacity, FlatList, StyleSheet, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
@@ -41,6 +41,7 @@ function timeAgo(iso: string): string {
 
 export function MessagesHome({ navigation }: any) {
   const { C } = useTheme();
+  const insets = useSafeAreaInsets();
   const t = useT();
   const { user } = useAuth();
   const myId = user?.id ?? null;
@@ -147,7 +148,7 @@ export function MessagesHome({ navigation }: any) {
   }, [lastByConv, navigation, C]);
 
   return (
-    <SafeAreaView edges={['top', 'left', 'right']} style={[styles.safe, { backgroundColor: C.bg }]}>
+    <View style={[styles.safe, { backgroundColor: C.bg, paddingTop: insets.top }]}>
       <TopBar
         title={t.messages.title}
         subtitle={t.messages.subtitle}
@@ -171,7 +172,7 @@ export function MessagesHome({ navigation }: any) {
         initialNumToRender={10}
         maxToRenderPerBatch={10}
         windowSize={5}
-        contentContainerStyle={{ paddingHorizontal: Layout.screenPadding, paddingTop: 6, paddingBottom: 24 }}
+        contentContainerStyle={{ paddingHorizontal: Layout.screenPadding, paddingTop: 10, paddingBottom: 24 }}
         showsVerticalScrollIndicator={false}
         ItemSeparatorComponent={() => <View style={[styles.divider, { backgroundColor: C.border }]} />}
         ListEmptyComponent={
@@ -191,7 +192,7 @@ export function MessagesHome({ navigation }: any) {
         }
         renderItem={renderRow}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 

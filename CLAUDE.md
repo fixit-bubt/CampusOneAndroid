@@ -176,11 +176,10 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
   - Strict ban on raw Unicode emojis (`🚗`, `🛺`, `🏍️`, `🩸`, `⚡`, `🎉`, `✨`, etc.) in button text, filter chips, list badges, and UI copy. All status indicators and categorizations must use vector badges (`StatusBadge` or `@expo/vector-icons`).
 - **1:1 Sibling Web Mobile Bottom Navigation Bar (`BottomTabNavigator.tsx`):**
   - Midnight Navy Gradient (`#0f2862` to `#0a1b42`) with crisp 1px top rim highlight stroke (`rgba(255, 255, 255, 0.16)`).
-  - Clean flat top line with retained 20dp smooth rounded corner shoulders (`r = 20 dp`). Zero middle notch dip.
-  - Seamless Screen Edge Integration: All 7 tab screens strictly use `<SafeAreaView edges={['top', 'left', 'right']}>`, eliminating any bottom inset bar (`C.bg`: black in dark mode, white in light mode) above the navbar.
+  - Seamless Screen Edge Integration & Zero-Jank Inset Stability: All 7 root tab screens strictly use `useSafeAreaInsets()` from `react-native-safe-area-context` paired with standard `<View style={[styles.safe, { backgroundColor: C.bg, paddingTop: insets.top }]}>`. Combined with `<Tab.Navigator detachInactiveScreens={false}>`, screens are permanently attached in the native view hierarchy, eliminating native Android fragment re-mounts, window inset resets, and vertical jumping. Content below the 60dp `TopBar` is standardized to start at exactly 10dp across all tabs.
   - Clean in-line Messages tab button in the center (tab 3 of 5 for students) with unread badge.
   - Active tab highlighted with an electric blue translucent capsule pill (`width: 48, height: 28, borderRadius: 14`, `rgba(96, 165, 250, 0.20)` fill, `rgba(96, 165, 250, 0.35)` border), electric blue typography (`#60a5fa`), and native bouncy vector icon entrance pop. Inactive tabs rendered in soft muted slate (`rgba(148, 163, 184, 0.50)`). Clean distraction-free layout with no bottom dots.
-  - 120 FPS Elastic Bounce Tap Micro-Interactions on Android RenderThread (`useNativeDriver: true`): Press-in tactile squash to `0.84`, release elastic spring pop (`scale: 0.72 -> 1.30 -> 1.0`, matching Explore entrance physics).
+  - 120 FPS Elastic Bounce Tap Micro-Interactions on Android RenderThread (`useNativeDriver: true`): Press-in tactile squash to `0.88`, release elastic spring pop (`scale: 1.15 -> 1.0`, matching Explore entrance physics) with zero abrupt `setValue` snapping.
   - Role-adaptive tab count & layout:
     - Students (5 tabs): `Home`, `StudyHub`, `Messages`, `Explore`, `Settings`.
     - Admin (4 tabs): `Home`, `StudyHub`, `Explore`, `Settings`.

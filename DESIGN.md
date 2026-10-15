@@ -332,5 +332,25 @@ Bengali typography utilizes diacritics (matras) and compound characters that can
 4. **Bilingual Parity Coverage:**
    - All sector titles, sector descriptions, shortcut tool titles, status strip metrics, and community updates must have matching localized Bengali entries in `src/i18n/bn.ts`.
 
+---
 
+## 13. Zero-Jank Tab Switching & Native Inset Stability Standard
 
+Switching between bottom navigation tabs must be completely seamless, 120 FPS instantaneous, and physically free of any vertical jumping or safe area flickering.
+
+### 1. Root Cause Analysis
+1. **Android Fragment Detachment (`detachInactiveScreens`):** In React Navigation bottom tabs on Android, `detachInactiveScreens` defaults to `true`. When navigating to a tab, `react-native-screens` attaches the Android native `ScreenFragment` to the window.
+2. **Native `RNCSafeAreaView` Latency:** When an Android Fragment is attached, the native `RNCSafeAreaView` component inside it mounts with `insets.top = 0` on its first frame. 16-32ms later, Android dispatches `onApplyWindowInsets`, jumping `paddingTop` from `0` to `36-40 dp`, causing the entire screen (topbar + content) to visibly leap down.
+3. **Abrupt Tab Scale Snapping:** Hard `scale.setValue(0.72)` on tab button press abruptly snaps the icon size during route changes.
+
+### 2. Mandatory Architecture & Layout Rules
+1. **Permanent Native Fragment Attachment (`detachInactiveScreens: false`):**
+   - In `src/navigation/BottomTabNavigator.tsx`, `<Tab.Navigator>` declares `detachInactiveScreens={false}`.
+   - All 5 root screens remain permanently attached in the native view hierarchy, preventing Android fragment re-mounts, window inset resets, and scroll position drops.
+2. **Synchronous React Insets (`useSafeAreaInsets`):**
+   - Root tab screens (`HomeScreen`, `StudyHubScreen`, `MessagesHome`, `ExploreScreen`, `SettingsScreen`, `AdminDashboardScreen`, `StaffDashboardScreen`) MUST use `useSafeAreaInsets()` from `react-native-safe-area-context` paired with a standard `<View style={[styles.safe, { backgroundColor: C.bg, paddingTop: insets.top }]}>`.
+   - Never use native `<SafeAreaView edges={['top', ...]}>` on bottom tab root screens. `insets.top` from the root `<SafeAreaProvider>` is known synchronously in JavaScript on render frame 1, guaranteeing zero layout shift.
+3. **Pixel-Identical 10 dp Content Distance:**
+   - Content immediately below the 60 dp `TopBar` is standardized across all tabs to start at exactly **10 dp** (`styles.scroll` `paddingTop: 10`, `FlatList` `paddingTop: 10`, or `marginTop: 10`), ensuring identical vertical baseline alignment when switching tabs.
+4. **Smooth Spring Tap Micro-Interactions:**
+   - Tab button tap uses continuous spring transitions (`scale: 0.88 -> 1.15 -> 1.0`) with zero hard `setValue` resets.

@@ -7,7 +7,7 @@ import { TactileSwitch } from '../../components/ui/TactileSwitch';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Notifications from 'expo-notifications';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
@@ -74,6 +74,7 @@ function SettingCard({ icon, iconFamily = 'feather', iconColor, animation = 'ent
 
 export function SettingsScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
   const t = useT();
   const toast = useToast();
   const { profile, signOut, deleteAccount } = useAuth();
@@ -200,7 +201,7 @@ export function SettingsScreen({ navigation }: any) {
   }, [pwNew, pwConfirm, pwBusy, t, toast]);
 
   return (
-    <SafeAreaView edges={['top', 'left', 'right']} style={[styles.safe, { backgroundColor: C.bg }]}>
+    <View style={[styles.safe, { backgroundColor: C.bg, paddingTop: insets.top }]}>
       <TopBar
         title={t.tabs.settings}
         subtitle={t.mainx.settingsSubtitle}
@@ -645,18 +646,18 @@ export function SettingsScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
 
-  scroll: { paddingTop: 8, paddingBottom: 24 } as ViewStyle,
+  scroll: { paddingTop: 10, paddingBottom: 24 } as ViewStyle,
 
   profileCard: {
     flexDirection: 'row', alignItems: 'center', gap: 14,
-    padding: 16, borderRadius: 18, borderWidth: 1, marginTop: 4,
+    padding: 16, borderRadius: 18, borderWidth: 1, marginTop: 0,
   } as ViewStyle,
   profileInfo: { flex: 1 } as ViewStyle,
   profileName: { fontSize: 17, letterSpacing: -0.2 } as any,

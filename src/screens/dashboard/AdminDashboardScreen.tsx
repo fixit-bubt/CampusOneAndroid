@@ -4,7 +4,7 @@ import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
   RefreshControl, Modal, type ViewStyle,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { TopBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
@@ -156,6 +156,7 @@ const MANAGE_TILES = [
 
 export function AdminDashboardScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
   const t = useT();
   const toast = useToast();
   const { profile } = useAuth();
@@ -230,14 +231,14 @@ export function AdminDashboardScreen({ navigation }: any) {
 
   if (profile && profile.role !== 'admin') {
     return (
-      <SafeAreaView edges={['top', 'left', 'right']} style={[styles.safe, { backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' }]}>
+      <View style={[styles.safe, { backgroundColor: C.bg, paddingTop: insets.top, alignItems: 'center', justifyContent: 'center' }]}>
         <Text style={{ color: C.textMuted, fontFamily: FontFamily.jakartaMedium }}>Admin access required</Text>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView edges={['top', 'left', 'right']} style={[styles.safe, { backgroundColor: C.bg }]}>
+    <View style={[styles.safe, { backgroundColor: C.bg, paddingTop: insets.top }]}>
       <TopBar
         profile={profile}
         unread={unread}
@@ -358,13 +359,13 @@ export function AdminDashboardScreen({ navigation }: any) {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
-  scroll: { paddingTop: 8, paddingBottom: 20 } as ViewStyle,
+  scroll: { paddingTop: 10, paddingBottom: 20 } as ViewStyle,
   pageTitle: { fontSize: 19, letterSpacing: -0.3 } as any,
   intro: { fontSize: 13.5, marginTop: 2, marginBottom: 12 } as any,
   statGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 } as ViewStyle,

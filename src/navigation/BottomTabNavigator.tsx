@@ -15,6 +15,7 @@ import Svg, { Path, Defs, LinearGradient as SvgLinearGradient, Stop } from 'reac
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../store/authStore';
+import { useTheme } from '../hooks/useTheme';
 import { useMessages } from '../store/messagesStore';
 import { useT } from '../i18n';
 import { AnimatedIcon } from '../components/ui/AnimatedIcon';
@@ -96,7 +97,7 @@ function StandardTabButton({
 
   const handlePressIn = () => {
     Animated.spring(scale, {
-      toValue: 0.84,
+      toValue: 0.88,
       tension: 400,
       friction: 12,
       useNativeDriver: true,
@@ -104,17 +105,16 @@ function StandardTabButton({
   };
 
   const handlePress = () => {
-    scale.setValue(0.72);
     Animated.sequence([
       Animated.spring(scale, {
-        toValue: 1.30,
+        toValue: 1.15,
         tension: 320,
-        friction: 6,
+        friction: 7,
         useNativeDriver: true,
       }),
       Animated.spring(scale, {
         toValue: 1.0,
-        tension: 220,
+        tension: 240,
         friction: 9,
         useNativeDriver: true,
       }),
@@ -227,6 +227,7 @@ function CustomBottomTabBar(props: BottomTabBarProps) {
 
 export function BottomTabNavigator() {
   const { profile } = useAuth();
+  const { C } = useTheme();
   const isStudent = profile?.role === 'student';
   const showStudyHub = profile?.role !== 'staff';
 
@@ -238,7 +239,13 @@ export function BottomTabNavigator() {
   return (
     <Tab.Navigator
       tabBar={(props) => <CustomBottomTabBar {...props} />}
-      screenOptions={{ headerShown: false }}
+      detachInactiveScreens={false}
+      screenOptions={{
+        headerShown: false,
+        animation: 'none',
+        freezeOnBlur: false,
+        sceneStyle: { backgroundColor: C.bg },
+      }}
     >
       <Tab.Screen name="Home" component={HomeComponent} />
       {showStudyHub && (

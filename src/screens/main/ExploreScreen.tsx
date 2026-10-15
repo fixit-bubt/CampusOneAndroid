@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet, type ViewStyle,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
@@ -76,6 +76,7 @@ const GROUP_COMMUNITY: SectorKey[] = ['market', 'ride', 'blood', 'directory'];
 
 export function ExploreScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
   const t = useT();
   const { profile } = useAuth();
   const role = profile?.role;
@@ -142,7 +143,7 @@ export function ExploreScreen({ navigation }: any) {
   const toggleSection = (id: string) => setOpenSection((prev) => (prev === id ? null : id));
 
   return (
-    <SafeAreaView edges={['top', 'left', 'right']} style={[styles.safe, { backgroundColor: C.bg }]}>
+    <View style={[styles.safe, { backgroundColor: C.bg, paddingTop: insets.top }]}>
       <TopBar
         title={t.tabs.explore}
         subtitle={t.exploreGroups?.exploreSubtitle}
@@ -357,7 +358,7 @@ export function ExploreScreen({ navigation }: any) {
 
         <View style={{ height: 20 }} />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -365,12 +366,13 @@ const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
 
   content: {
-    paddingTop: 8,
+    paddingTop: 4,
     paddingBottom: 20,
   } as ViewStyle,
 
   sectionHeader: {
-    paddingVertical: 7,
+    paddingTop: 6,
+    paddingBottom: 4,
     paddingHorizontal: 2,
     marginBottom: 4,
   } as ViewStyle,

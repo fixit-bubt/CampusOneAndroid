@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
   type ViewStyle,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
 import { TopBar } from '../../components/layout/TopBar';
@@ -22,6 +22,7 @@ import { getMyNotifications } from '../../services/notificationsService';
 export function HomeScreen({ navigation }: any) {
   const { C } = useTheme();
   const { profile, user } = useAuth();
+  const insets = useSafeAreaInsets();
 
   const [unread, setUnread] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
@@ -50,20 +51,19 @@ export function HomeScreen({ navigation }: any) {
 
   if (profile && profile.role !== 'student') {
     return (
-      <SafeAreaView
-        edges={['top', 'left', 'right']}
+      <View
         style={[
           styles.safe,
-          { backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' },
+          { backgroundColor: C.bg, paddingTop: insets.top, alignItems: 'center', justifyContent: 'center' },
         ]}
       >
         <ActivityIndicator color={C.brand} size="large" />
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView edges={['top', 'left', 'right']} style={[styles.safe, { backgroundColor: C.bg }]}>
+    <View style={[styles.safe, { backgroundColor: C.bg, paddingTop: insets.top }]}>
       <TopBar
         profile={profile}
         unread={unread}
@@ -91,7 +91,7 @@ export function HomeScreen({ navigation }: any) {
 
         <View style={{ height: 16 }} />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
