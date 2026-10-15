@@ -209,6 +209,44 @@ interface BusRouteData {
   from_departures: string[];
 }
 
+interface StripPillProps {
+  icon: keyof typeof Feather.glyphMap;
+  color: string;
+  title: string;
+  onPress: () => void;
+  borderRightColor: string;
+  textColor: string;
+  chevronColor: string;
+}
+
+function StripPill({
+  icon,
+  color,
+  title,
+  onPress,
+  borderRightColor,
+  textColor,
+  chevronColor,
+}: StripPillProps) {
+  return (
+    <TouchableOpacity
+      activeOpacity={0.8}
+      onPress={onPress}
+      style={[styles.leftPill, { borderRightColor }]}
+    >
+      <View style={styles.pillLeft}>
+        <View style={styles.pillIconBox}>
+          <AnimatedIcon name={icon} size={16} color={color} animation="spring" />
+        </View>
+        <Text style={[styles.pillText, { color: textColor }]} numberOfLines={1} ellipsizeMode="tail">
+          {title}
+        </Text>
+      </View>
+      <Feather name="chevron-right" size={12} color={chevronColor} />
+    </TouchableOpacity>
+  );
+}
+
 export function HomeStatusStrips() {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
@@ -582,17 +620,15 @@ export function HomeStatusStrips() {
       case 'reports':
         return (
           <View key="reports" style={[styles.strip, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <TouchableOpacity
-              activeOpacity={0.8}
+            <StripPill
+              icon="alert-circle"
+              color={SectorColors.reports}
+              title="Reports"
               onPress={() => navigation.navigate('MyReports')}
-              style={[styles.leftPill, { borderRightColor: C.border }]}
-            >
-              <View style={styles.pillLeft}>
-                <AnimatedIcon name="alert-circle" size={16} color={SectorColors.reports} animation="entrance" />
-                <Text style={[styles.pillText, { color: C.text }]} numberOfLines={1} ellipsizeMode="tail">Reports</Text>
-              </View>
-              <Feather name="chevron-right" size={12} color={C.textMuted} />
-            </TouchableOpacity>
+              borderRightColor={C.border}
+              textColor={C.text}
+              chevronColor={C.textMuted}
+            />
 
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('MyReports')} style={styles.metricCol}>
@@ -616,17 +652,15 @@ export function HomeStatusStrips() {
       case 'bus':
         return (
           <View key="bus" style={[styles.strip, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <TouchableOpacity
-              activeOpacity={0.8}
+            <StripPill
+              icon="truck"
+              color={SectorColors.bus}
+              title="Bus"
               onPress={() => navigation.navigate('Bus')}
-              style={[styles.leftPill, { borderRightColor: C.border }]}
-            >
-              <View style={styles.pillLeft}>
-                <AnimatedIcon name="truck" size={16} color={SectorColors.bus} animation="entrance" />
-                <Text style={[styles.pillText, { color: C.text }]} numberOfLines={1} ellipsizeMode="tail">Bus</Text>
-              </View>
-              <Feather name="chevron-right" size={12} color={C.textMuted} />
-            </TouchableOpacity>
+              borderRightColor={C.border}
+              textColor={C.text}
+              chevronColor={C.textMuted}
+            />
 
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Bus')} style={styles.metricCol}>
@@ -658,17 +692,15 @@ export function HomeStatusStrips() {
       case 'prayer':
         return (
           <View key="prayer" style={[styles.strip, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <TouchableOpacity
-              activeOpacity={0.8}
+            <StripPill
+              icon="sun"
+              color={SectorColors.prayer}
+              title="Prayer"
               onPress={() => navigation.navigate('Prayer')}
-              style={[styles.leftPill, { borderRightColor: C.border }]}
-            >
-              <View style={styles.pillLeft}>
-                <AnimatedIcon name="sun" size={16} color={SectorColors.prayer} animation="entrance" />
-                <Text style={[styles.pillText, { color: C.text }]} numberOfLines={1} ellipsizeMode="tail">Prayer</Text>
-              </View>
-              <Feather name="chevron-right" size={12} color={C.textMuted} />
-            </TouchableOpacity>
+              borderRightColor={C.border}
+              textColor={C.text}
+              chevronColor={C.textMuted}
+            />
 
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Prayer')} style={styles.metricCol}>
@@ -700,17 +732,15 @@ export function HomeStatusStrips() {
       case 'blood':
         return (
           <View key="blood" style={[styles.strip, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <TouchableOpacity
-              activeOpacity={0.8}
+            <StripPill
+              icon="heart"
+              color={SectorColors.blood}
+              title="Blood"
               onPress={() => navigation.navigate('Blood')}
-              style={[styles.leftPill, { borderRightColor: C.border }]}
-            >
-              <View style={styles.pillLeft}>
-                <AnimatedIcon name="heart" size={16} color={SectorColors.blood} animation="entrance" />
-                <Text style={[styles.pillText, { color: C.text }]} numberOfLines={1} ellipsizeMode="tail">Blood</Text>
-              </View>
-              <Feather name="chevron-right" size={12} color={C.textMuted} />
-            </TouchableOpacity>
+              borderRightColor={C.border}
+              textColor={C.text}
+              chevronColor={C.textMuted}
+            />
 
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Blood')} style={styles.metricCol}>
@@ -736,17 +766,15 @@ export function HomeStatusStrips() {
       case 'rides':
         return (
           <View key="rides" style={[styles.strip, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <TouchableOpacity
-              activeOpacity={0.8}
+            <StripPill
+              icon="navigation"
+              color={SectorColors.ride}
+              title="Rides"
               onPress={() => navigation.navigate('Rides')}
-              style={[styles.leftPill, { borderRightColor: C.border }]}
-            >
-              <View style={styles.pillLeft}>
-                <AnimatedIcon name="navigation" size={16} color={SectorColors.ride} animation="entrance" />
-                <Text style={[styles.pillText, { color: C.text }]} numberOfLines={1} ellipsizeMode="tail">Rides</Text>
-              </View>
-              <Feather name="chevron-right" size={12} color={C.textMuted} />
-            </TouchableOpacity>
+              borderRightColor={C.border}
+              textColor={C.text}
+              chevronColor={C.textMuted}
+            />
 
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Rides')} style={styles.metricCol}>
@@ -770,17 +798,15 @@ export function HomeStatusStrips() {
       case 'market':
         return (
           <View key="market" style={[styles.strip, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <TouchableOpacity
-              activeOpacity={0.8}
+            <StripPill
+              icon="shopping-bag"
+              color={SectorColors.market}
+              title="Market"
               onPress={() => navigation.navigate('Market')}
-              style={[styles.leftPill, { borderRightColor: C.border }]}
-            >
-              <View style={styles.pillLeft}>
-                <AnimatedIcon name="shopping-bag" size={16} color={SectorColors.market} animation="entrance" />
-                <Text style={[styles.pillText, { color: C.text }]} numberOfLines={1} ellipsizeMode="tail">Market</Text>
-              </View>
-              <Feather name="chevron-right" size={12} color={C.textMuted} />
-            </TouchableOpacity>
+              borderRightColor={C.border}
+              textColor={C.text}
+              chevronColor={C.textMuted}
+            />
 
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Market')} style={styles.metricCol}>
@@ -804,17 +830,15 @@ export function HomeStatusStrips() {
       case 'lostfound':
         return (
           <View key="lostfound" style={[styles.strip, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <TouchableOpacity
-              activeOpacity={0.8}
+            <StripPill
+              icon="search"
+              color={SectorColors.lostfound}
+              title="Lost"
               onPress={() => navigation.navigate('LostFoundBrowse')}
-              style={[styles.leftPill, { borderRightColor: C.border }]}
-            >
-              <View style={styles.pillLeft}>
-                <AnimatedIcon name="search" size={16} color={SectorColors.lostfound} animation="entrance" />
-                <Text style={[styles.pillText, { color: C.text }]} numberOfLines={1} ellipsizeMode="tail">Lost</Text>
-              </View>
-              <Feather name="chevron-right" size={12} color={C.textMuted} />
-            </TouchableOpacity>
+              borderRightColor={C.border}
+              textColor={C.text}
+              chevronColor={C.textMuted}
+            />
 
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('LostFoundBrowse')} style={styles.metricCol}>
@@ -838,17 +862,15 @@ export function HomeStatusStrips() {
       case 'jobs':
         return (
           <View key="jobs" style={[styles.strip, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <TouchableOpacity
-              activeOpacity={0.8}
+            <StripPill
+              icon="briefcase"
+              color={SectorColors.jobs}
+              title="Jobs"
               onPress={() => navigation.navigate('JobsBrowse')}
-              style={[styles.leftPill, { borderRightColor: C.border }]}
-            >
-              <View style={styles.pillLeft}>
-                <AnimatedIcon name="briefcase" size={16} color={SectorColors.jobs} animation="entrance" />
-                <Text style={[styles.pillText, { color: C.text }]} numberOfLines={1} ellipsizeMode="tail">Jobs</Text>
-              </View>
-              <Feather name="chevron-right" size={12} color={C.textMuted} />
-            </TouchableOpacity>
+              borderRightColor={C.border}
+              textColor={C.text}
+              chevronColor={C.textMuted}
+            />
 
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('JobsBrowse')} style={styles.metricCol}>
@@ -872,17 +894,15 @@ export function HomeStatusStrips() {
       case 'study':
         return (
           <View key="study" style={[styles.strip, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <TouchableOpacity
-              activeOpacity={0.8}
+            <StripPill
+              icon="book-open"
+              color={SectorColors.study}
+              title="Study"
               onPress={() => navigation.navigate('StudyHub')}
-              style={[styles.leftPill, { borderRightColor: C.border }]}
-            >
-              <View style={styles.pillLeft}>
-                <AnimatedIcon name="book-open" size={16} color={SectorColors.study} animation="entrance" />
-                <Text style={[styles.pillText, { color: C.text }]} numberOfLines={1} ellipsizeMode="tail">Study</Text>
-              </View>
-              <Feather name="chevron-right" size={12} color={C.textMuted} />
-            </TouchableOpacity>
+              borderRightColor={C.border}
+              textColor={C.text}
+              chevronColor={C.textMuted}
+            />
 
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('StudyHub')} style={styles.metricCol}>
@@ -906,17 +926,15 @@ export function HomeStatusStrips() {
       case 'events':
         return (
           <View key="events" style={[styles.strip, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <TouchableOpacity
-              activeOpacity={0.8}
+            <StripPill
+              icon="calendar"
+              color={SectorColors.events}
+              title="Events"
               onPress={() => navigation.navigate('EventsBrowse')}
-              style={[styles.leftPill, { borderRightColor: C.border }]}
-            >
-              <View style={styles.pillLeft}>
-                <AnimatedIcon name="calendar" size={16} color={SectorColors.events} animation="entrance" />
-                <Text style={[styles.pillText, { color: C.text }]} numberOfLines={1} ellipsizeMode="tail">Events</Text>
-              </View>
-              <Feather name="chevron-right" size={12} color={C.textMuted} />
-            </TouchableOpacity>
+              borderRightColor={C.border}
+              textColor={C.text}
+              chevronColor={C.textMuted}
+            />
 
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('EventsBrowse')} style={styles.metricCol}>
@@ -940,17 +958,15 @@ export function HomeStatusStrips() {
       case 'clubs':
         return (
           <View key="clubs" style={[styles.strip, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <TouchableOpacity
-              activeOpacity={0.8}
+            <StripPill
+              icon="users"
+              color={SectorColors.clubs}
+              title="Clubs"
               onPress={() => navigation.navigate('Clubs')}
-              style={[styles.leftPill, { borderRightColor: C.border }]}
-            >
-              <View style={styles.pillLeft}>
-                <AnimatedIcon name="users" size={16} color={SectorColors.clubs} animation="entrance" />
-                <Text style={[styles.pillText, { color: C.text }]} numberOfLines={1} ellipsizeMode="tail">Clubs</Text>
-              </View>
-              <Feather name="chevron-right" size={12} color={C.textMuted} />
-            </TouchableOpacity>
+              borderRightColor={C.border}
+              textColor={C.text}
+              chevronColor={C.textMuted}
+            />
 
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Clubs')} style={styles.metricCol}>
@@ -974,21 +990,19 @@ export function HomeStatusStrips() {
       case 'medical':
         return (
           <View key="medical" style={[styles.strip, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <TouchableOpacity
-              activeOpacity={0.8}
+            <StripPill
+              icon="activity"
+              color={SectorColors.medical}
+              title="Medical"
               onPress={() => navigation.navigate('Medical')}
-              style={[styles.leftPill, { borderRightColor: C.border }]}
-            >
-              <View style={styles.pillLeft}>
-                <AnimatedIcon name="activity" size={16} color={SectorColors.medical} animation="entrance" />
-                <Text style={[styles.pillText, { color: C.text }]} numberOfLines={1} ellipsizeMode="tail">Medical</Text>
-              </View>
-              <Feather name="chevron-right" size={12} color={C.textMuted} />
-            </TouchableOpacity>
+              borderRightColor={C.border}
+              textColor={C.text}
+              chevronColor={C.textMuted}
+            />
 
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Medical')} style={styles.metricCol}>
-                <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{doctorStats.onDuty}</Text>
+                <Text style={[styles.metricVal, { color: doctorStats.onDuty > 0 ? C.text : C.danger }]} numberOfLines={1}>{doctorStats.onDuty}</Text>
                 <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>On Duty</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
@@ -1008,17 +1022,15 @@ export function HomeStatusStrips() {
       case 'directory':
         return (
           <View key="directory" style={[styles.strip, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <TouchableOpacity
-              activeOpacity={0.8}
+            <StripPill
+              icon="user"
+              color={SectorColors.directory}
+              title="Directory"
               onPress={() => navigation.navigate('Directory')}
-              style={[styles.leftPill, { borderRightColor: C.border }]}
-            >
-              <View style={styles.pillLeft}>
-                <AnimatedIcon name="user" size={16} color={SectorColors.directory} animation="entrance" />
-                <Text style={[styles.pillText, { color: C.text }]} numberOfLines={1} ellipsizeMode="tail">Directory</Text>
-              </View>
-              <Feather name="chevron-right" size={12} color={C.textMuted} />
-            </TouchableOpacity>
+              borderRightColor={C.border}
+              textColor={C.text}
+              chevronColor={C.textMuted}
+            />
 
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Directory')} style={styles.metricCol}>
@@ -1042,17 +1054,15 @@ export function HomeStatusStrips() {
       case 'faculty':
         return (
           <View key="faculty" style={[styles.strip, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <TouchableOpacity
-              activeOpacity={0.8}
+            <StripPill
+              icon="user-check"
+              color={SectorColors.faculty}
+              title="Faculty"
               onPress={() => navigation.navigate('Faculty')}
-              style={[styles.leftPill, { borderRightColor: C.border }]}
-            >
-              <View style={styles.pillLeft}>
-                <AnimatedIcon name="user-check" size={16} color={SectorColors.faculty} animation="entrance" />
-                <Text style={[styles.pillText, { color: C.text }]} numberOfLines={1} ellipsizeMode="tail">Faculty</Text>
-              </View>
-              <Feather name="chevron-right" size={12} color={C.textMuted} />
-            </TouchableOpacity>
+              borderRightColor={C.border}
+              textColor={C.text}
+              chevronColor={C.textMuted}
+            />
 
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Faculty')} style={styles.metricCol}>
@@ -1076,17 +1086,15 @@ export function HomeStatusStrips() {
       case 'routines':
         return (
           <View key="routines" style={[styles.strip, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <TouchableOpacity
-              activeOpacity={0.8}
+            <StripPill
+              icon="clock"
+              color={SectorColors.routines}
+              title="Routine"
               onPress={() => navigation.navigate('RoutinesBrowse')}
-              style={[styles.leftPill, { borderRightColor: C.border }]}
-            >
-              <View style={styles.pillLeft}>
-                <AnimatedIcon name="clock" size={16} color={SectorColors.routines} animation="entrance" />
-                <Text style={[styles.pillText, { color: C.text }]} numberOfLines={1} ellipsizeMode="tail">Routine</Text>
-              </View>
-              <Feather name="chevron-right" size={12} color={C.textMuted} />
-            </TouchableOpacity>
+              borderRightColor={C.border}
+              textColor={C.text}
+              chevronColor={C.textMuted}
+            />
 
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('RoutinesBrowse')} style={styles.metricCol}>
@@ -1110,17 +1118,15 @@ export function HomeStatusStrips() {
       case 'calendar':
         return (
           <View key="calendar" style={[styles.strip, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <TouchableOpacity
-              activeOpacity={0.8}
+            <StripPill
+              icon="calendar"
+              color={SectorColors.calendar}
+              title="Calendar"
               onPress={() => navigation.navigate('AcademicCalendar')}
-              style={[styles.leftPill, { borderRightColor: C.border }]}
-            >
-              <View style={styles.pillLeft}>
-                <AnimatedIcon name="calendar" size={16} color={SectorColors.calendar} animation="entrance" />
-                <Text style={[styles.pillText, { color: C.text }]} numberOfLines={1} ellipsizeMode="tail">Calendar</Text>
-              </View>
-              <Feather name="chevron-right" size={12} color={C.textMuted} />
-            </TouchableOpacity>
+              borderRightColor={C.border}
+              textColor={C.text}
+              chevronColor={C.textMuted}
+            />
 
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('AcademicCalendar')} style={styles.metricCol}>
@@ -1144,17 +1150,15 @@ export function HomeStatusStrips() {
       case 'pdfmaker':
         return (
           <View key="pdfmaker" style={[styles.strip, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <TouchableOpacity
-              activeOpacity={0.8}
+            <StripPill
+              icon="file"
+              color={SectorColors.pdfmaker}
+              title="PDF"
               onPress={() => navigation.navigate('PdfMaker')}
-              style={[styles.leftPill, { borderRightColor: C.border }]}
-            >
-              <View style={styles.pillLeft}>
-                <AnimatedIcon name="file" size={16} color={SectorColors.pdfmaker} animation="entrance" />
-                <Text style={[styles.pillText, { color: C.text }]} numberOfLines={1} ellipsizeMode="tail">PDF</Text>
-              </View>
-              <Feather name="chevron-right" size={12} color={C.textMuted} />
-            </TouchableOpacity>
+              borderRightColor={C.border}
+              textColor={C.text}
+              chevronColor={C.textMuted}
+            />
 
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('PdfMaker')} style={styles.metricCol}>
@@ -1178,17 +1182,15 @@ export function HomeStatusStrips() {
       case 'coverpage':
         return (
           <View key="coverpage" style={[styles.strip, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <TouchableOpacity
-              activeOpacity={0.8}
+            <StripPill
+              icon="file-text"
+              color={SectorColors.coverpage}
+              title="Cover"
               onPress={() => navigation.navigate('CoverPageForm')}
-              style={[styles.leftPill, { borderRightColor: C.border }]}
-            >
-              <View style={styles.pillLeft}>
-                <AnimatedIcon name="file-text" size={16} color={SectorColors.coverpage} animation="entrance" />
-                <Text style={[styles.pillText, { color: C.text }]} numberOfLines={1} ellipsizeMode="tail">Cover</Text>
-              </View>
-              <Feather name="chevron-right" size={12} color={C.textMuted} />
-            </TouchableOpacity>
+              borderRightColor={C.border}
+              textColor={C.text}
+              chevronColor={C.textMuted}
+            />
 
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('CoverPageForm')} style={styles.metricCol}>
@@ -1212,17 +1214,15 @@ export function HomeStatusStrips() {
       case 'cgpa':
         return (
           <View key="cgpa" style={[styles.strip, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <TouchableOpacity
-              activeOpacity={0.8}
+            <StripPill
+              icon="percent"
+              color="#0e9c8a"
+              title="CGPA"
               onPress={() => navigation.navigate('Cgpa')}
-              style={[styles.leftPill, { borderRightColor: C.border }]}
-            >
-              <View style={styles.pillLeft}>
-                <AnimatedIcon name="percent" size={16} color="#0e9c8a" animation="entrance" />
-                <Text style={[styles.pillText, { color: C.text }]} numberOfLines={1} ellipsizeMode="tail">CGPA</Text>
-              </View>
-              <Feather name="chevron-right" size={12} color={C.textMuted} />
-            </TouchableOpacity>
+              borderRightColor={C.border}
+              textColor={C.text}
+              chevronColor={C.textMuted}
+            />
 
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Cgpa')} style={styles.metricCol}>
@@ -1572,22 +1572,30 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   leftPill: {
-    width: 96,
+    width: 98,
     height: 48,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingLeft: 2,
+    paddingLeft: 6,
     paddingRight: 6,
     borderRightWidth: 1,
+    overflow: 'visible',
   },
   pillLeft: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 6,
     marginRight: 2,
-    overflow: 'hidden',
+    overflow: 'visible',
+  },
+  pillIconBox: {
+    width: 22,
+    height: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'visible',
   },
   pillText: {
     fontSize: 13,

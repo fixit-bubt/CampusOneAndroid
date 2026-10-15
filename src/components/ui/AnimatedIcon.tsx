@@ -34,7 +34,7 @@ export function AnimatedIcon({
   onPress,
   style,
 }: AnimatedIconProps) {
-  const scale = useRef(new Animated.Value(animation === 'entrance' ? 0.3 : 1)).current;
+  const scale = useRef(new Animated.Value(animation === 'entrance' ? 0.85 : 1)).current;
   const rotation = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(0)).current;
 
@@ -42,12 +42,12 @@ export function AnimatedIcon({
     let animLoop: Animated.CompositeAnimation | null = null;
 
     if (animation === 'entrance') {
-      scale.setValue(0.3);
+      scale.setValue(0.85);
       const entranceAnim = [
         Animated.spring(scale, {
-          toValue: 1.25,
+          toValue: 1.18,
           tension: 280,
-          friction: 6,
+          friction: 7,
           useNativeDriver: true,
         }),
         Animated.spring(scale, {
@@ -57,7 +57,7 @@ export function AnimatedIcon({
           useNativeDriver: true,
         }),
       ];
-      const wait = delay ?? 160;
+      const wait = delay ?? 0;
       if (wait > 0) {
         Animated.sequence([Animated.delay(wait), ...entranceAnim]).start();
       } else {
@@ -67,9 +67,9 @@ export function AnimatedIcon({
       scale.setValue(1);
       const springAnim = [
         Animated.spring(scale, {
-          toValue: 1.34,
-          tension: 320,
-          friction: 6,
+          toValue: 1.22,
+          tension: 300,
+          friction: 8,
           useNativeDriver: true,
         }),
         Animated.spring(scale, {
@@ -212,6 +212,9 @@ export function AnimatedIcon({
   });
 
   const animatedStyle = {
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    overflow: 'visible' as const,
     transform: [
       { scale },
       { translateY },
