@@ -12,6 +12,7 @@ import { Icon } from '../../components/ui/Icon';
 import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
 import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { SkeletonList, LoadError } from '../../components/ui/LoadState';
+import { LiquidToggle } from '../../components/ui/LiquidToggle';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { useToast } from '../../components/ui/Toast';
 import { FontFamily, Layout, SectorColors, Accent, pillBg } from '../../theme';
@@ -34,14 +35,13 @@ const JOB_COLOR = SectorColors.jobs;
 const JOB_BG    = `${SectorColors.jobs}1e`;
 
 export type MainTab = 'browse' | 'saved' | 'my_applications';
-export type TypeFilter = 'all' | 'internship' | 'tuition' | 'on_campus' | 'part_time' | 'full_time' | 'freelance';
+export type TypeFilter = 'all' | 'internship' | 'tuition' | 'on_campus' | 'part_time' | 'full_time' | 'freelance' | 'expired';
 
 export interface JobTypeConfig {
   id: TypeFilter;
   label: string;
   subtitle: string;
   icon: keyof typeof Feather.glyphMap;
-  color: string;
 }
 
 export const JOB_TYPE_CONFIGS: JobTypeConfig[] = [
@@ -49,50 +49,49 @@ export const JOB_TYPE_CONFIGS: JobTypeConfig[] = [
     id: 'all',
     label: 'All Categories',
     subtitle: 'View all active campus opportunities',
-    icon: 'globe',
-    color: SectorColors.jobs,
+    icon: 'grid',
   },
   {
     id: 'internship',
     label: 'Internships',
     subtitle: 'Industry internships & trainee programs',
     icon: 'briefcase',
-    color: Accent.purple,
   },
   {
     id: 'tuition',
     label: 'Private Tuition',
     subtitle: 'Home & online tutoring for school/college',
-    icon: 'book',
-    color: Accent.teal,
+    icon: 'edit-3',
   },
   {
     id: 'on_campus',
     label: 'On-Campus Jobs',
     subtitle: 'TA, lab assistant, library & campus roles',
     icon: 'home',
-    color: '#f59e0b',
   },
   {
     id: 'part_time',
     label: 'Part-Time',
     subtitle: 'Flexible work hours alongside classes',
     icon: 'clock',
-    color: '#06b6d4',
   },
   {
     id: 'full_time',
     label: 'Full-Time',
     subtitle: 'Graduate & entry-level career openings',
     icon: 'award',
-    color: Accent.blue,
   },
   {
     id: 'freelance',
     label: 'Freelance & Projects',
     subtitle: 'Project-based gigs & contract work',
     icon: 'code',
-    color: '#ec4899',
+  },
+  {
+    id: 'expired',
+    label: 'Past & Expired Archive',
+    subtitle: 'View closed and past circulars',
+    icon: 'archive',
   },
 ];
 
@@ -101,7 +100,6 @@ export interface DeptConfig {
   name: string;
   faculty: string;
   icon: keyof typeof Feather.glyphMap;
-  color: string;
 }
 
 export const DEPT_CONFIGS: DeptConfig[] = [
@@ -109,71 +107,61 @@ export const DEPT_CONFIGS: DeptConfig[] = [
     code: 'ALL',
     name: 'All Departments',
     faculty: 'Open to students of all faculties',
-    icon: 'globe',
-    color: SectorColors.jobs,
+    icon: 'layers',
   },
   {
     code: 'CSE',
     name: 'Computer Science & Engineering',
     faculty: 'Faculty of Engineering & Applied Sciences',
     icon: 'cpu',
-    color: '#0891b2',
   },
   {
     code: 'EEE',
     name: 'Electrical & Electronic Engineering',
     faculty: 'Faculty of Engineering & Applied Sciences',
     icon: 'zap',
-    color: '#d97706',
   },
   {
     code: 'BBA',
     name: 'Business Administration',
     faculty: 'Faculty of Business',
-    icon: 'briefcase',
-    color: '#059669',
+    icon: 'trending-up',
   },
   {
     code: 'LAW',
     name: 'Department of Law',
     faculty: 'Faculty of Law',
     icon: 'shield',
-    color: '#e11d48',
   },
   {
     code: 'ENG',
     name: 'Department of English',
     faculty: 'Faculty of Arts & Humanities',
-    icon: 'book-open',
-    color: '#7c3aed',
+    icon: 'book',
   },
   {
     code: 'ECO',
     name: 'Department of Economics',
     faculty: 'Faculty of Business',
-    icon: 'trending-up',
-    color: '#2563eb',
+    icon: 'bar-chart-2',
   },
   {
     code: 'MATH',
     name: 'Department of Mathematics',
     faculty: 'Faculty of Science & Information Technology',
     icon: 'percent',
-    color: '#4f46e5',
   },
   {
     code: 'TEX',
     name: 'Textile Engineering',
     faculty: 'Faculty of Engineering & Applied Sciences',
-    icon: 'layers',
-    color: '#0d9488',
+    icon: 'scissors',
   },
   {
     code: 'CIVIL',
     name: 'Civil Engineering',
     faculty: 'Faculty of Engineering & Applied Sciences',
     icon: 'compass',
-    color: '#ea580c',
   },
 ];
 
@@ -364,6 +352,9 @@ export function JobsBrowseScreen({ navigation }: any) {
 
   const typeFiltered = useMemo(() => {
     if (typeFilter === 'all') return searched;
+    if (typeFilter === 'expired') {
+      return searched.filter(j => computeJobStatus(j) === 'expired');
+    }
     return searched.filter(j => j.job_type === typeFilter);
   }, [searched, typeFilter]);
 
@@ -383,8 +374,11 @@ export function JobsBrowseScreen({ navigation }: any) {
   }, [deptFiltered]);
 
   const expiredCount = useMemo(() => {
-    return deptFiltered.filter(j => computeJobStatus(j) === 'expired').length;
-  }, [deptFiltered]);
+    const base = deptFilter === 'ALL'
+      ? searched
+      : searched.filter(j => j.department_code === deptFilter || j.department_code === 'ALL' || !j.department_code);
+    return base.filter(j => computeJobStatus(j) === 'expired').length;
+  }, [searched, deptFilter]);
 
   const browseList = useMemo(() => {
     if (mainTab === 'saved') {
@@ -392,11 +386,14 @@ export function JobsBrowseScreen({ navigation }: any) {
         .filter(j => savedIds.has(j.id))
         .sort((a, b) => (a.deadline ?? '9999').localeCompare(b.deadline ?? '9999'));
     }
+    if (typeFilter === 'expired') {
+      return deptFiltered.filter(j => computeJobStatus(j) === 'expired');
+    }
     if (includeExpired) {
       return deptFiltered.filter(j => computeJobStatus(j) !== 'removed');
     }
     return activeJobs;
-  }, [deptFiltered, savedIds, mainTab, includeExpired, activeJobs]);
+  }, [deptFiltered, savedIds, mainTab, includeExpired, typeFilter, activeJobs]);
 
   const currentTypeConfig = useMemo(() => {
     return JOB_TYPE_CONFIGS.find(o => o.id === typeFilter) ?? JOB_TYPE_CONFIGS[0];
@@ -407,10 +404,19 @@ export function JobsBrowseScreen({ navigation }: any) {
   }, [deptFilter]);
 
   const mainTabs: TabItem<MainTab>[] = useMemo(() => [
-    { id: 'browse', label: t.jobs2?.browseTab ?? 'Browse', count: activeJobs.length, accentColor: SectorColors.jobs },
+    {
+      id: 'browse',
+      label: t.jobs2?.browseTab ?? 'Browse',
+      count: typeFilter === 'expired'
+        ? browseList.length
+        : includeExpired
+        ? deptFiltered.filter(j => computeJobStatus(j) !== 'removed').length
+        : activeJobs.length,
+      accentColor: SectorColors.jobs,
+    },
     { id: 'saved', label: t.jobs2?.savedTab ?? 'Saved', count: savedIds.size, accentColor: Accent.gold },
     { id: 'my_applications', label: 'Applied', count: applications.length, accentColor: Accent.purple },
-  ], [t.jobs2, activeJobs.length, savedIds.size, applications.length]);
+  ], [t.jobs2, typeFilter, browseList.length, includeExpired, deptFiltered, activeJobs.length, savedIds.size, applications.length]);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -472,12 +478,10 @@ export function JobsBrowseScreen({ navigation }: any) {
             onPress={() => setTypeModalVisible(true)}
             activeOpacity={0.75}
           >
-            <AnimatedIcon
-              family="feather"
-              name={currentTypeConfig.icon}
+            <Feather
+              name={typeFilter === 'all' ? 'briefcase' : currentTypeConfig.icon}
               size={16}
               color={typeFilter !== 'all' ? (isDark ? '#fff' : SectorColors.jobs) : C.text2}
-              animation={typeFilter !== 'all' ? 'spring' : 'none'}
             />
             <Text
               style={[
@@ -489,7 +493,9 @@ export function JobsBrowseScreen({ navigation }: any) {
               ]}
               numberOfLines={1}
             >
-              {typeFilter === 'all' ? 'All Types' : currentTypeConfig.label}
+              {typeFilter === 'all'
+                ? (includeExpired ? 'All (+ Expired)' : 'All Types')
+                : currentTypeConfig.label}
             </Text>
             <Feather
               name="chevron-down"
@@ -506,8 +512,8 @@ export function JobsBrowseScreen({ navigation }: any) {
                 ? [
                     styles.dualBarBtnActive,
                     {
-                      backgroundColor: isDark ? `${currentDeptConfig.color}22` : `${currentDeptConfig.color}14`,
-                      borderColor: isDark ? `${currentDeptConfig.color}77` : currentDeptConfig.color,
+                      backgroundColor: isDark ? 'rgba(14, 156, 138, 0.18)' : '#e0f4f0',
+                      borderColor: SectorColors.jobs,
                     },
                   ]
                 : [styles.dualBarBtnInactive, { backgroundColor: C.surface, borderColor: C.border }],
@@ -515,18 +521,16 @@ export function JobsBrowseScreen({ navigation }: any) {
             onPress={() => setDeptModalVisible(true)}
             activeOpacity={0.75}
           >
-            <AnimatedIcon
-              family="feather"
-              name={currentDeptConfig.icon}
+            <Feather
+              name={deptFilter === 'ALL' ? 'book-open' : currentDeptConfig.icon}
               size={16}
-              color={deptFilter !== 'ALL' ? (isDark ? '#fff' : currentDeptConfig.color) : C.text2}
-              animation={deptFilter !== 'ALL' ? 'spring' : 'none'}
+              color={deptFilter !== 'ALL' ? (isDark ? '#fff' : SectorColors.jobs) : C.text2}
             />
             <Text
               style={[
                 styles.dualBarTxt,
                 {
-                  color: deptFilter !== 'ALL' ? (isDark ? '#fff' : currentDeptConfig.color) : C.text,
+                  color: deptFilter !== 'ALL' ? (isDark ? '#fff' : SectorColors.jobs) : C.text,
                   fontFamily: FontFamily.jakartaBold,
                 },
               ]}
@@ -537,7 +541,7 @@ export function JobsBrowseScreen({ navigation }: any) {
             <Feather
               name="chevron-down"
               size={15}
-              color={deptFilter !== 'ALL' ? (isDark ? '#fff' : currentDeptConfig.color) : C.textMuted}
+              color={deptFilter !== 'ALL' ? (isDark ? '#fff' : SectorColors.jobs) : C.textMuted}
             />
           </TouchableOpacity>
         </View>
@@ -663,6 +667,8 @@ export function JobsBrowseScreen({ navigation }: any) {
             <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
               {mainTab === 'saved'
                 ? (t.jobs2?.noSavedJobs ?? 'No Saved Jobs')
+                : typeFilter === 'expired'
+                ? 'No Expired Circulars'
                 : activeJobs.length === 0 && expiredCount > 0
                 ? 'No Active Openings'
                 : t.common.noResults}
@@ -670,6 +676,10 @@ export function JobsBrowseScreen({ navigation }: any) {
             {mainTab === 'saved' ? (
               <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
                 {t.jobs2?.noSavedJobsSub ?? 'Star any job listing to quickly access it here.'}
+              </Text>
+            ) : typeFilter === 'expired' ? (
+              <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                No past circulars found matching your current search or department filter.
               </Text>
             ) : activeJobs.length === 0 && expiredCount > 0 ? (
               <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
@@ -683,15 +693,15 @@ export function JobsBrowseScreen({ navigation }: any) {
 
             {mainTab === 'browse' && (
               <View style={{ flexDirection: 'row', gap: 10, marginTop: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
-                {expiredCount > 0 && (
+                {expiredCount > 0 && typeFilter !== 'expired' && (
                   <TouchableOpacity
                     style={[styles.resetFilterBtn, { backgroundColor: C.surface, borderColor: C.border }]}
-                    onPress={() => setIncludeExpired(prev => !prev)}
+                    onPress={() => setTypeFilter('expired')}
                     activeOpacity={0.8}
                   >
-                    <Feather name="clock" size={13} color={C.warn} style={{ marginRight: 6 }} />
+                    <Feather name="archive" size={13} color={C.warn} style={{ marginRight: 6 }} />
                     <Text style={[styles.resetFilterBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                      {includeExpired ? 'Hide Expired' : `View ${expiredCount} Expired`}
+                      View {expiredCount} Expired Archive
                     </Text>
                   </TouchableOpacity>
                 )}
@@ -723,8 +733,6 @@ export function JobsBrowseScreen({ navigation }: any) {
               const s = jobStatusTone(C, t, status, isDark);
               const isSaved = savedIds.has(j.id);
               const typeConfig = JOB_TYPE_CONFIGS.find(o => o.id === j.job_type) ?? JOB_TYPE_CONFIGS[1];
-              const typeColor = typeConfig.color;
-              const typeBg = pillBg(typeColor, isDark);
               const daysLeft = daysRemainingLabel(j.deadline, {
                 today: t.jobs2?.closesToday,
                 tomorrow: t.jobs2?.closesTomorrow,
@@ -739,8 +747,8 @@ export function JobsBrowseScreen({ navigation }: any) {
                     onPress={() => navigation.navigate('JobDetail', { jobId: j.id })}
                     activeOpacity={0.75}
                   >
-                    <View style={[styles.thumb, { backgroundColor: isDark ? `${typeColor}22` : `${typeColor}14` }]}>
-                      <AnimatedIcon family="feather" name={typeConfig.icon} size={22} color={typeColor} animation="entrance" />
+                    <View style={[styles.thumb, { backgroundColor: isDark ? 'rgba(14, 156, 138, 0.16)' : '#e0f4f0' }]}>
+                      <Feather name={typeConfig.icon} size={20} color={isDark ? '#5eead4' : SectorColors.jobs} />
                     </View>
                     <View style={styles.cardBody}>
                       <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -759,8 +767,8 @@ export function JobsBrowseScreen({ navigation }: any) {
                           </Text>
                         </View>
 
-                        <View style={[styles.catBadge, { backgroundColor: typeBg }]}>
-                          <Text style={[styles.catBadgeTxt, { color: typeColor, fontFamily: FontFamily.jakartaBold }]}>
+                        <View style={[styles.catBadge, { backgroundColor: isDark ? 'rgba(14, 156, 138, 0.14)' : '#e0f4f0' }]}>
+                          <Text style={[styles.catBadgeTxt, { color: isDark ? '#5eead4' : SectorColors.jobs, fontFamily: FontFamily.jakartaBold }]}>
                             {getTypeLabel(t, j.job_type)}
                           </Text>
                         </View>
@@ -883,12 +891,14 @@ export function JobsBrowseScreen({ navigation }: any) {
               </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 460 }} contentContainerStyle={{ paddingBottom: 10 }}>
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 420 }} contentContainerStyle={{ paddingBottom: 6 }}>
               {JOB_TYPE_CONFIGS.map(opt => {
                 const selected = typeFilter === opt.id;
                 const count = opt.id === 'all'
-                  ? deptFiltered.length
-                  : deptFiltered.filter(j => j.job_type === opt.id).length;
+                  ? deptFiltered.filter(j => computeJobStatus(j) !== 'expired' && computeJobStatus(j) !== 'removed').length
+                  : opt.id === 'expired'
+                  ? expiredCount
+                  : deptFiltered.filter(j => j.job_type === opt.id && computeJobStatus(j) !== 'expired' && computeJobStatus(j) !== 'removed').length;
                 return (
                   <TouchableOpacity
                     key={opt.id}
@@ -908,8 +918,21 @@ export function JobsBrowseScreen({ navigation }: any) {
                     }}
                     activeOpacity={0.75}
                   >
-                    <View style={[styles.card72IconBox, { backgroundColor: isDark ? `${opt.color}26` : `${opt.color}15` }]}>
-                      <AnimatedIcon family="feather" name={opt.icon} size={20} color={opt.color} animation={selected ? 'spring' : 'none'} />
+                    <View
+                      style={[
+                        styles.card72IconBox,
+                        {
+                          backgroundColor: selected
+                            ? (isDark ? 'rgba(14, 156, 138, 0.28)' : 'rgba(14, 156, 138, 0.18)')
+                            : C.surface2,
+                        },
+                      ]}
+                    >
+                      <Feather
+                        name={opt.icon}
+                        size={20}
+                        color={selected ? (isDark ? '#5eead4' : SectorColors.jobs) : C.text2}
+                      />
                     </View>
                     <View style={styles.card72Info}>
                       <Text
@@ -961,6 +984,36 @@ export function JobsBrowseScreen({ navigation }: any) {
                 );
               })}
             </ScrollView>
+
+            {/* Quick Toggle: Include Expired in Main Feed */}
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingVertical: 12,
+                paddingHorizontal: 14,
+                marginTop: 6,
+                borderRadius: 14,
+                backgroundColor: C.surface2,
+                borderWidth: 1,
+                borderColor: C.border,
+              }}
+            >
+              <View style={{ flex: 1, marginRight: 12 }}>
+                <Text style={{ fontSize: 13, color: C.text, fontFamily: FontFamily.jakartaBold }}>
+                  Include Expired in Active Feed
+                </Text>
+                <Text style={{ fontSize: 11, color: C.textMuted, fontFamily: FontFamily.jakartaMedium, marginTop: 1 }}>
+                  Show past circulars alongside active openings
+                </Text>
+              </View>
+              <LiquidToggle
+                size="sm"
+                checked={includeExpired}
+                onCheckedChange={setIncludeExpired}
+              />
+            </View>
           </View>
         </View>
       </Modal>
@@ -994,10 +1047,10 @@ export function JobsBrowseScreen({ navigation }: any) {
                 <View
                   style={[
                     styles.modalHeaderIcon,
-                    { backgroundColor: isDark ? 'rgba(8, 145, 178, 0.2)' : 'rgba(8, 145, 178, 0.1)' },
+                    { backgroundColor: isDark ? 'rgba(14, 156, 138, 0.2)' : 'rgba(14, 156, 138, 0.1)' },
                   ]}
                 >
-                  <Feather name="book-open" size={17} color="#0891b2" />
+                  <Feather name="book-open" size={17} color={SectorColors.jobs} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.modalTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -1033,9 +1086,9 @@ export function JobsBrowseScreen({ navigation }: any) {
                       styles.card72,
                       {
                         backgroundColor: selected
-                          ? (isDark ? `${dept.color}22` : `${dept.color}10`)
+                          ? (isDark ? 'rgba(14, 156, 138, 0.16)' : '#e0f4f0')
                           : C.surface,
-                        borderColor: selected ? dept.color : C.border,
+                        borderColor: selected ? SectorColors.jobs : C.border,
                         borderWidth: selected ? 1.5 : 1,
                       },
                     ]}
@@ -1045,8 +1098,21 @@ export function JobsBrowseScreen({ navigation }: any) {
                     }}
                     activeOpacity={0.75}
                   >
-                    <View style={[styles.card72IconBox, { backgroundColor: isDark ? `${dept.color}28` : `${dept.color}15` }]}>
-                      <AnimatedIcon family="feather" name={dept.icon} size={20} color={dept.color} animation={selected ? 'spring' : 'none'} />
+                    <View
+                      style={[
+                        styles.card72IconBox,
+                        {
+                          backgroundColor: selected
+                            ? (isDark ? 'rgba(14, 156, 138, 0.28)' : 'rgba(14, 156, 138, 0.18)')
+                            : C.surface2,
+                        },
+                      ]}
+                    >
+                      <Feather
+                        name={dept.icon}
+                        size={20}
+                        color={selected ? (isDark ? '#5eead4' : SectorColors.jobs) : C.text2}
+                      />
                     </View>
                     <View style={styles.card72Info}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -1054,7 +1120,7 @@ export function JobsBrowseScreen({ navigation }: any) {
                           style={[
                             styles.card72Title,
                             {
-                              color: selected ? (isDark ? '#fff' : dept.color) : C.text,
+                              color: selected ? (isDark ? '#fff' : SectorColors.jobs) : C.text,
                               fontFamily: FontFamily.jakartaBold,
                             },
                           ]}
@@ -1080,7 +1146,7 @@ export function JobsBrowseScreen({ navigation }: any) {
                           styles.card72CountBadge,
                           {
                             backgroundColor: selected
-                              ? (isDark ? `${dept.color}40` : `${dept.color}20`)
+                              ? (isDark ? 'rgba(14, 156, 138, 0.35)' : 'rgba(14, 156, 138, 0.2)')
                               : C.surface2,
                           },
                         ]}
@@ -1089,7 +1155,7 @@ export function JobsBrowseScreen({ navigation }: any) {
                           style={[
                             styles.card72CountTxt,
                             {
-                              color: selected ? (isDark ? '#fff' : dept.color) : C.text2,
+                              color: selected ? (isDark ? '#fff' : SectorColors.jobs) : C.text2,
                               fontFamily: FontFamily.jakartaBold,
                             },
                           ]}
@@ -1098,7 +1164,7 @@ export function JobsBrowseScreen({ navigation }: any) {
                         </Text>
                       </View>
                       {selected && (
-                        <View style={[styles.card72Check, { backgroundColor: dept.color }]}>
+                        <View style={[styles.card72Check, { backgroundColor: SectorColors.jobs }]}>
                           <Feather name="check" size={13} color="#fff" />
                         </View>
                       )}
