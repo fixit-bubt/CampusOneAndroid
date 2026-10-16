@@ -9,6 +9,7 @@ import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
+import { LogoMark } from '../../components/ui/Logo';
 import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
 import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { SkeletonList, LoadError } from '../../components/ui/LoadState';
@@ -440,28 +441,27 @@ export function JobsBrowseScreen({ navigation }: any) {
         title={t.jobs2?.jobsTitle ?? "Jobs"}
         onBack={() => navigation.goBack()}
         rightSlot={
-          (canPost || isAdmin) ? (
-            <View style={{ flexDirection: 'row' }}>
-              {isAdmin && (
-                <TouchableOpacity
-                  style={styles.iconBtn}
-                  onPress={() => navigation.navigate('JobsModerate')}
-                  activeOpacity={0.75}
-                >
-                  <Feather name="shield" size={19} color={C.text} />
-                </TouchableOpacity>
-              )}
-              {canPost && (
-                <TouchableOpacity
-                  style={styles.iconBtn}
-                  onPress={() => navigation.navigate('JobPost')}
-                  activeOpacity={0.75}
-                >
-                  <Feather name="plus" size={22} color={C.text} />
-                </TouchableOpacity>
-              )}
-            </View>
-          ) : <View style={{ width: 28 }} />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            {isAdmin && (
+              <TouchableOpacity
+                style={styles.iconBtn}
+                onPress={() => navigation.navigate('JobsModerate')}
+                activeOpacity={0.75}
+              >
+                <Feather name="shield" size={19} color={C.text} />
+              </TouchableOpacity>
+            )}
+            {canPost && (
+              <TouchableOpacity
+                style={styles.iconBtn}
+                onPress={() => navigation.navigate('JobPost')}
+                activeOpacity={0.75}
+              >
+                <Feather name="plus" size={22} color={C.text} />
+              </TouchableOpacity>
+            )}
+            <LogoMark size={28} shadow={false} />
+          </View>
         }
       />
 
