@@ -74,10 +74,13 @@ export async function runEventsAdapter(
     });
   }
 
+  // Reverse rawCards so newest articles from BUBT news are prioritized at index 0
+  rawCards.reverse();
+
   // 3. Check existing events in DB to skip redundant network calls
   const { data: existingEvents } = await supabase
     .from('events')
-    .select('code, external_id, date, banner_url, content_hash')
+    .select('code, external_id, title, description, venue, category, club_id, date, banner_url, content_hash, deleted_at')
     .eq('source', 'bubt_news');
 
   const existingMap = new Map<string, any>();
@@ -105,13 +108,24 @@ export async function runEventsAdapter(
       let description = card.snippet;
       let eventDate = parseDhakaDate(title);
       let imageUrl = card.thumbnail;
+      let category: 'Academic' | 'Cultural' | 'Sports' | 'Club' | 'Career' = resolveEventCategory(title, description);
+      let venue = resolveEventVenue(description);
 
       const existing = existingMap.get(externalId);
 
-      // If already stored and has a valid date and banner, reuse cached details
-      if (existing && existing.date && existing.banner_url) {
+      // If already recorded as archived/deleted, skip completely without network call
+      if (existing && existing.deleted_at) {
+        return null;
+      }
+
+      // If already stored and has a valid date, banner, and full description, reuse cached details
+      if (existing && existing.date && existing.description && existing.description.length > 200 && !existing.description.endsWith('...')) {
+        title = existing.title || card.title;
+        description = existing.description;
         eventDate = existing.date;
-        imageUrl = existing.banner_url;
+        imageUrl = existing.banner_url || card.thumbnail;
+        category = (existing.category as any) || category;
+        venue = existing.venue || venue;
       } else {
         // Fetch article detail page concurrently
         try {
@@ -123,9 +137,15 @@ export async function runEventsAdapter(
           const dateMatch = artHtml.match(/(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s+\d{4}/i);
           if (dateMatch) eventDate = parseDhakaDate(dateMatch[0]);
 
-          const pMatch = artHtml.match(/<article[^>]*>([\s\S]*?)<\/article>/i) || artHtml.match(/<main[^>]*>([\s\S]*?)<\/main>/i);
-          if (pMatch) {
-            description = stripHtml(pMatch[1]).slice(0, 600);
+          // Extract clean editorial prose without banner headers or metadata badges
+          const proseMatch = artHtml.match(/<div[^>]*class=["'][^"']*prose[^"']*["'][^>]*>([\s\S]*?)<\/div>/i);
+          if (proseMatch) {
+            description = stripHtml(proseMatch[1]).slice(0, 600);
+          } else {
+            const pMatch = artHtml.match(/<article[^>]*>([\s\S]*?)<\/article>/i) || artHtml.match(/<main[^>]*>([\s\S]*?)<\/main>/i);
+            if (pMatch) {
+              description = stripHtml(pMatch[1]).slice(0, 600);
+            }
           }
 
           // Detail image check: only overwrite if not generic no-image
@@ -133,19 +153,17 @@ export async function runEventsAdapter(
           if (detailImgMatch) {
             imageUrl = detailImgMatch[1].startsWith('http') ? detailImgMatch[1] : `https://www.bubt.edu.bd${detailImgMatch[1]}`;
           }
+
+          category = resolveEventCategory(title, description);
+          venue = resolveEventVenue(description);
         } catch {
           // Fall back gracefully to card data
         }
       }
 
-      // Enforce 120-Day Cutoff: Skip ancient historical events
+      // Enforce 120-Day Cutoff: Skip ancient historical events from student feed
       const eventTimeMs = new Date(eventDate).getTime();
-      if (!isNaN(eventTimeMs) && eventTimeMs < fourMonthsAgoMs) {
-        return null;
-      }
-
-      const category = resolveEventCategory(title, description);
-      const venue = resolveEventVenue(description);
+      const isHistorical = !isNaN(eventTimeMs) && eventTimeMs < fourMonthsAgoMs;
 
       let matchedClubId: string | null = null;
       if (clubsList && clubsList.length > 0) {
@@ -158,7 +176,12 @@ export async function runEventsAdapter(
         }
       }
 
-      const fingerprint = await computeFingerprint(`${title}|${eventDate}|${venue}|${imageUrl || ''}`);
+      const fingerprint = await computeFingerprint(`${title}|${eventDate}|${venue}|${imageUrl || ''}|${isHistorical ? 'archived' : 'active'}`);
+
+      // If historical and already tracked in DB, skip from update batch
+      if (isHistorical && existing) {
+        return null;
+      }
 
       return {
         code,
@@ -177,6 +200,7 @@ export async function runEventsAdapter(
         club_id: matchedClubId,
         tags: [category.toLowerCase(), 'official_bubt'],
         content_hash: fingerprint,
+        deleted_at: isHistorical ? new Date().toISOString() : null,
       } as EventItem;
     })
   );

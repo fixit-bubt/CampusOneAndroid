@@ -20,6 +20,7 @@ import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { getCache, setCache, CacheKeys } from '../../services/cacheService';
+import { openUrl } from '../../utils/link';
 import {
   minutesToHHMM,
   nowDhakaMinutes,
@@ -71,6 +72,7 @@ export function BusScreen({ navigation }: any) {
   const [isOffline, setIsOffline] = useState(false);
   const [form, setForm] = useState<RouteForm | null>(null);
   const [saving, setSaving] = useState(false);
+  const [busPdfUrl, setBusPdfUrl] = useState<string | null>(null);
 
   const directionTabs: TabItem<'to' | 'from'>[] = useMemo(
     () => [
@@ -81,6 +83,10 @@ export function BusScreen({ navigation }: any) {
   );
 
   const load = useCallback(async () => {
+    // Instant cached official bus schedule circular PDF
+    const cachedBusPdf = await getCache<string>(CacheKeys.BUS_SCHEDULE_PDF_URL);
+    if (cachedBusPdf) setBusPdfUrl(cachedBusPdf);
+
     const cachedRoutes = await getCache<BusRoute[]>(CacheKeys.BUS_ROUTES);
     if (cachedRoutes && cachedRoutes.length > 0) {
       setRoutes(cachedRoutes);
@@ -95,6 +101,19 @@ export function BusScreen({ navigation }: any) {
       supabase.from('bus_routes').select('*').eq('active', true).order('name').limit(50),
       supabase.from('saved_bus_routes').select('route_id').eq('user_id', user?.id ?? '').limit(50),
     ]);
+
+    // Fetch dynamic bus schedule PDF url from app_config if available
+    supabase
+      .from('app_config')
+      .select('value')
+      .eq('key', 'latest_bus_schedule_url')
+      .maybeSingle()
+      .then(({ data: cfg }) => {
+        if (cfg?.value) {
+          setBusPdfUrl(cfg.value);
+          setCache(CacheKeys.BUS_SCHEDULE_PDF_URL, cfg.value);
+        }
+      });
 
     if (routesRes.error) {
       if (!cachedRoutes || cachedRoutes.length === 0) {
@@ -250,11 +269,26 @@ export function BusScreen({ navigation }: any) {
       <SubBar
         title={t.bus2.scheduleTitle}
         onBack={() => navigation.goBack()}
-        rightSlot={isAdmin ? (
-          <TouchableOpacity onPress={() => openEditor()} hitSlop={8} activeOpacity={0.7}>
-            <Feather name="plus-circle" size={20} color={BUS_COLOR} />
-          </TouchableOpacity>
-        ) : undefined}
+        rightSlot={(
+          <View style={styles.headerActions}>
+            {busPdfUrl ? (
+              <TouchableOpacity
+                style={[styles.pdfBtn, { borderColor: C.border }]}
+                onPress={() => openUrl(busPdfUrl)}
+                accessibilityLabel={isBn ? 'অফিসিয়াল বাস রুট শিডিউল পিডিএফ' : 'Official Bus Schedule PDF'}
+                activeOpacity={0.7}
+              >
+                <Feather name="file-text" size={13} color={C.text2} />
+                <Text style={[styles.pdfTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>PDF</Text>
+              </TouchableOpacity>
+            ) : null}
+            {isAdmin && (
+              <TouchableOpacity onPress={() => openEditor()} hitSlop={8} activeOpacity={0.7}>
+                <Feather name="plus-circle" size={20} color={BUS_COLOR} />
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
       />
 
       {/* 58dp Direction Switcher */}
@@ -795,4 +829,22 @@ const styles = StyleSheet.create({
     marginTop: 6,
   } as ViewStyle,
   sheetBtnTxt: { color: '#fff', fontSize: 15 } as any,
+
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  } as ViewStyle,
+  pdfBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+  } as ViewStyle,
+  pdfTxt: {
+    fontSize: 11.5,
+  } as any,
 });

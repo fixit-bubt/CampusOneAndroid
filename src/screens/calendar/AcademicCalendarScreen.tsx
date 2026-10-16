@@ -112,6 +112,10 @@ export function AcademicCalendarScreen({ navigation }: any) {
     setEvents(data as CalendarEvent[]);
     setCache(calKey, data as CalendarEvent[]);
 
+    // Instant cached calendar PDF url
+    const cachedPdf = await getCache<string>(CacheKeys.CALENDAR_PDF_URL);
+    if (cachedPdf) setCalendarPdfUrl(cachedPdf);
+
     // Fetch dynamic calendar PDF url from app_config if available
     supabase
       .from('app_config')
@@ -119,7 +123,10 @@ export function AcademicCalendarScreen({ navigation }: any) {
       .eq('key', 'current_academic_calendar_url')
       .maybeSingle()
       .then(({ data: cfg }) => {
-        if (cfg?.value) setCalendarPdfUrl(cfg.value);
+        if (cfg?.value) {
+          setCalendarPdfUrl(cfg.value);
+          setCache(CacheKeys.CALENDAR_PDF_URL, cfg.value);
+        }
       });
   }, [year, month]);
 

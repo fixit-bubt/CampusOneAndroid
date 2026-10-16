@@ -46,43 +46,85 @@ export function resolveDepartment(
   const oId = officeId != null ? Number(officeId) : null;
   const t = text.toLowerCase();
 
-  // 1. Check numeric BUBT department IDs
-  if (dId === 27 || t.includes('computer science') || t.includes('cse') || t.includes('data science')) {
-    return { department: 'Computer Science & Engineering', deptCode: 'CSE' };
-  }
-  if (dId === 37 || t.includes('civil engineering')) {
-    return { department: 'Civil Engineering', deptCode: 'Civil' };
-  }
-  if (dId === 29 || t.includes('electrical & electronic') || t.includes('eee')) {
-    return { department: 'Electrical & Electronic Engineering', deptCode: 'EEE' };
-  }
-  if (dId === 38 || t.includes('textile engineering')) {
-    return { department: 'Textile Engineering', deptCode: 'Textile' };
-  }
-  if (dId === 36 || t.includes('law & justice') || t.includes('ll.b') || t.includes('ll.m')) {
+  // 1. Explicit Department Keyword Matches in Title & Body (Highest Precedence)
+  // Law & Justice
+  if (/\b(ll\.?b|ll\.?m|law|justice|moot\s*court|legal|manupatra)\b/i.test(t)) {
     return { department: 'Law & Justice', deptCode: 'Law' };
   }
-  if (dId === 30 || t.includes('economic')) {
+  // Computer Science & Engineering / Data Science
+  if (/\b(cse|computer\s*science|data\s*science|dse)\b/i.test(t)) {
+    return { department: 'Computer Science & Engineering', deptCode: 'CSE' };
+  }
+  // Civil Engineering
+  if (/\b(civil\s*engineering|civil|ce\s*day|ce\s*evening)\b/i.test(t)) {
+    return { department: 'Civil Engineering', deptCode: 'Civil' };
+  }
+  // Electrical & Electronic Engineering
+  if (/\b(eee|electrical\s*&?\s*electronic)\b/i.test(t)) {
+    return { department: 'Electrical & Electronic Engineering', deptCode: 'EEE' };
+  }
+  // Textile Engineering
+  if (/\b(textile\s*engineering|textile)\b/i.test(t)) {
+    return { department: 'Textile Engineering', deptCode: 'Textile' };
+  }
+  // Faculty of Business (BBA / MBA / EMBA)
+  if (/\b(bba|mba|emba|faculty\s*of\s*business|accounting|finance|marketing|management)\b/i.test(t)) {
+    return { department: 'Faculty of Business', deptCode: 'BBA' };
+  }
+  // Economics
+  if (/\b(economics?|b\.?\s*sc\.?\s*in\s*economics|ede)\b/i.test(t)) {
     return { department: 'Economics', deptCode: 'ECON' };
   }
+  // English
+  if (/\b(english|b\.?\s*a\.?\s*in\s*english)\b/i.test(t)) {
+    return { department: 'Department of English', deptCode: 'ENG' };
+  }
+  // Mathematics & Statistics
+  if (/\b(mathematics|statistics)\b/i.test(t)) {
+    return { department: 'Department of Mathematics & Statistics', deptCode: 'MATH' };
+  }
 
-  // 2. Check numeric BUBT administrative office IDs
-  if (oId === 13 || t.includes('exam') || t.includes('controller of examination')) {
+  // 2. Numeric BUBT Department IDs (Official Ground Truth from BUBT DB)
+  if (dId === 27 || dId === 39) {
+    return { department: 'Computer Science & Engineering', deptCode: 'CSE' };
+  }
+  if (dId === 29) {
+    return { department: 'Law & Justice', deptCode: 'Law' };
+  }
+  if (dId === 35) {
+    return { department: 'Electrical & Electronic Engineering', deptCode: 'EEE' };
+  }
+  if (dId === 36) {
+    return { department: 'Textile Engineering', deptCode: 'Textile' };
+  }
+  if (dId === 37) {
+    return { department: 'Civil Engineering', deptCode: 'Civil' };
+  }
+  if (dId === 38 || dId === 26 || dId === 32 || dId === 33 || dId === 34) {
+    return { department: 'Faculty of Business', deptCode: 'BBA' };
+  }
+  if (dId === 30) {
+    return { department: 'Department of English', deptCode: 'ENG' };
+  }
+  if (dId === 31) {
+    return { department: 'Economics', deptCode: 'ECON' };
+  }
+  if (dId === 28) {
+    return { department: 'Department of Mathematics & Statistics', deptCode: 'MATH' };
+  }
+
+  // 3. Administrative Office IDs & Keywords
+  if (oId === 13 || /\b(exam|examination|controller\s*of\s*examinations?|admit\s*card)\b/i.test(t)) {
     return { department: 'Controller of Examinations', deptCode: 'EXAM' };
   }
-  if (oId === 14 || t.includes('registrar')) {
+  if (oId === 14 || /\b(registrar|registration|rescheduling)\b/i.test(t)) {
     return { department: 'Office of the Registrar', deptCode: 'REG' };
   }
-  if (oId === 16 || t.includes('accounts') || t.includes('tuition fee')) {
+  if (oId === 16 || /\b(accounts|tuition|waiver|installment)\b/i.test(t)) {
     return { department: 'Accounts & Admission', deptCode: 'ALL' };
   }
-
-  // 3. Department text heuristics
-  if (t.includes('department of english') || t.includes('b.a. in english')) {
-    return { department: 'English', deptCode: 'ENG' };
-  }
-  if (t.includes('business') || t.includes('bba') || t.includes('mba') || t.includes('accounting') || t.includes('finance') || t.includes('marketing') || t.includes('management')) {
-    return { department: 'Faculty of Business', deptCode: 'BBA' };
+  if (oId === 19 || /\b(proctor|disciplinary|harassment)\b/i.test(t)) {
+    return { department: 'Proctor Office', deptCode: 'ALL' };
   }
 
   return { department: 'University-Wide', deptCode: 'ALL' };

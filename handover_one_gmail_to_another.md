@@ -13,7 +13,7 @@ This document tracks every service, database, login system, notification service
 | **Supabase (Database, Auth, Storage)** | Personal account | `campusone2026@gmail.com` (`campusone` org) | **100% Completed** |
 | **Vercel (Web Hosting)** | Personal account | `campusone2026@gmail.com` (`campusone2026-4009`) | **100% Completed** |
 | **GitHub (Web & Android Repos)** | `fixit-bubt` organization | `fixit-bubt` organization | **100% Completed** |
-| **Google Cloud Console (OAuth & Sign-In)** | Old personal Google Cloud (`331304129737`) | Pending under `campusone2026@gmail.com` | ⚠️ **Action Required** |
+| **Google Cloud Console (OAuth & Sign-In)** | `campusone2026@gmail.com` (`campusone-511812`) | Web & Android OAuth Clients Active | **100% Completed** |
 | **Firebase (Push Notifications)** | `campusone-853e6` | Needs linking to `campusone2026@gmail.com` | ⚠️ **Action Required** |
 | **Custom SMTP (Verification Codes & OTPs)** | Default Supabase free tier | Needs custom provider (Resend / Brevo) | ⚠️ **Action Required** |
 | **Google Play Console (App Store)** | Personal Account (`nawyaj morshed`) | In progress (NID/Passport & 20-tester rule) | ⏳ **In Progress** |
@@ -39,11 +39,22 @@ This document tracks every service, database, login system, notification service
 - **Environment Variables:** `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` configured in Vercel.
 
 ### 2.3 Web In-App Notifications
-- In-app notification center and top header bell counter are 100% working live with real-time database updates.
+- In-app notification center ([Notifications.jsx](file:///c:/Users/dracu/Desktop/CampusOneWeb/CampusOneWeb/src/screens/notifications/Notifications.jsx)) and top header bell counter are 100% working live with real-time database updates.
 
 ### 2.4 Android Mobile App Core Code
 - Android app builds locally with release keystore (`campusone-release.keystore`, alias: `campusone`, pass: `campusone2026`).
-- Native Google Sign-In currently works on phone using the existing client ID (`331304129737-lg7e884a878ep4sgcm5dtmrsm38q5skn.apps.googleusercontent.com`).
+
+### 2.5 Google Cloud Console & Unified Sign-In (Web + Android)
+- **Project:** `campusone` (Project ID: `campusone-511812`, Project number: `22710751786`) under `campusone2026@gmail.com`.
+- **OAuth Consent Screen:** Configured with user type External, published live to Production.
+- **Web OAuth Client ID:** `22710751786-rbud0t5dkb7hiij9vtj6pumkdc29lrha.apps.googleusercontent.com`
+  - Origins: `https://campusonebubt.vercel.app`, `https://xhgpxvyqrufbbuivttmi.supabase.co`
+  - Redirect URI: `https://xhgpxvyqrufbbuivttmi.supabase.co/auth/v1/callback`
+  - Synced to Supabase Authentication Google Provider.
+  - Synced to Android `src/lib/googleAuth.ts` (`GOOGLE_WEB_CLIENT_ID`).
+- **Android OAuth Client ID:** `22710751786-udnebs4hqg7e775ru67flmgpb84gjnkd.apps.googleusercontent.com`
+  - Package: `com.bubt.campusone`
+  - SHA-1 Fingerprint: `96:1D:69:A2:BB:57:98:4F:C2:EC:B7:BC:3B:59:09:3A:A9:31:34:72` (from `campusone-release.keystore`).
 
 ---
 
@@ -51,34 +62,9 @@ This document tracks every service, database, login system, notification service
 
 ---
 
-### Task 1: Google Cloud Console & Web Google Sign-In
-* **Why it is needed:** While Google Sign-In works on Android phones via native Play Services, clicking "Continue with Google" on the website currently fails with `redirect_uri_mismatch` because Google has not been told that `campusonebubt.vercel.app` is an authorized domain.
-* **Steps to Complete:**
-  1. Go to [Google Cloud Console](https://console.cloud.google.com/) and sign in with **`campusone2026@gmail.com`**.
-  2. Create a new project named **`campusone`**.
-  3. Go to **APIs & Services -> OAuth consent screen**:
-     - User Type: **External**
-     - App name: **CampusOne**
-     - User support email: `campusone2026@gmail.com`
-     - App domain: `https://campusonebubt.vercel.app`
-     - Developer contact email: `campusone2026@gmail.com`
-  4. Go to **Credentials -> Create Credentials -> OAuth Client ID**:
-     - Application type: **Web application**
-     - Name: **CampusOne Web & Supabase**
-     - **Authorized JavaScript origins:**
-       - `https://campusonebubt.vercel.app`
-       - `https://xhgpxvyqrufbbuivttmi.supabase.co`
-     - **Authorized redirect URIs:**
-       - `https://xhgpxvyqrufbbuivttmi.supabase.co/auth/v1/callback`
-  5. Copy the generated **Client ID** and **Client Secret**.
-  6. Go to **Supabase Dashboard** (`Authentication -> Sign In / Providers -> Google`):
-     - Enable Google.
-     - Paste the **Client ID** and **Client Secret**.
-     - Save.
-  7. Create an **Android OAuth Client ID** in the same Google Cloud project:
-     - Package name: `com.bubt.campusone`
-     - SHA-1 certificate fingerprint from `campusone-release.keystore`.
-  8. Update `GOOGLE_WEB_CLIENT_ID` in `src/lib/googleAuth.ts` on Android to match the new Web Client ID once ready.
+### Task 1: Google Cloud Console & Web Google Sign-In — ✅ COMPLETED
+* **Completed on:** October 16, 2026.
+* **Result:** Web Google Sign-In works without `redirect_uri_mismatch`, and Android Google Sign-In is linked to the unified master project.
 
 ---
 

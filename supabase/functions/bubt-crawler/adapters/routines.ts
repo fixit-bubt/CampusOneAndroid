@@ -70,35 +70,66 @@ export async function runRoutinesAdapter(
     });
   }
 
-  // Query existing content hashes for deduplication
-  const hashes = routineItems.map(r => r.content_hash);
+  // Query existing routines to match by file_url or title
   const { data: existingRows } = await supabase
     .from('routines')
-    .select('content_hash')
-    .in('content_hash', hashes);
+    .select('id, title, file_url, content_hash');
 
-  const existingHashSet = new Set<string>((existingRows || []).map((r: any) => r.content_hash));
-  const seenBatchHashes = new Set<string>();
+  const byFileUrl = new Map<string, any>();
+  const byTitle = new Map<string, any>();
+
+  for (const r of existingRows || []) {
+    if (r.file_url) byFileUrl.set(r.file_url, r);
+    if (r.title) byTitle.set(r.title.toLowerCase().trim(), r);
+  }
 
   const toInsert: RoutineItem[] = [];
+  const toUpdate: any[] = [];
+  const seenBatchKeys = new Set<string>();
   let unchangedCount = 0;
 
   for (const item of routineItems) {
-    if (existingHashSet.has(item.content_hash) || seenBatchHashes.has(item.content_hash)) {
-      unchangedCount++;
+    const batchKey = (item.file_url || item.title).toLowerCase().trim();
+    if (seenBatchKeys.has(batchKey)) {
+      continue;
+    }
+    seenBatchKeys.add(batchKey);
+
+    const existing = (item.file_url ? byFileUrl.get(item.file_url) : null)
+      || byTitle.get(item.title.toLowerCase().trim());
+
+    if (existing) {
+      if (existing.content_hash === item.content_hash) {
+        unchangedCount++;
+      } else {
+        toUpdate.push({
+          id: existing.id,
+          ...item,
+        });
+      }
     } else {
-      seenBatchHashes.add(item.content_hash);
       toInsert.push(item);
     }
   }
 
   let added = 0;
+  let updated = 0;
+
   if (toInsert.length > 0) {
-    const { error } = await supabase.from('routines').upsert(toInsert, { onConflict: 'content_hash' });
+    const { error } = await supabase.from('routines').insert(toInsert);
     if (!error) {
       added = toInsert.length;
     } else {
-      console.error('Routines upsert error:', error.message);
+      console.error('Routines insert error:', error.message);
+    }
+  }
+
+  if (toUpdate.length > 0) {
+    const { error } = await supabase.from('routines').upsert(toUpdate, { onConflict: 'id' });
+    if (!error) {
+      updated = toUpdate.length;
+    } else {
+      console.error('Routines update error:', error.message);
     }
   }
 
@@ -106,7 +137,7 @@ export async function runRoutinesAdapter(
     feature: 'routines',
     scanned: routineCandidates.length,
     added,
-    updated: 0,
+    updated,
     unchanged: unchangedCount,
   };
 }

@@ -53,6 +53,7 @@ export interface EventItem {
   club_id: string | null;
   tags: string[];
   content_hash: string;
+  deleted_at?: string | null;
 }
 
 export interface FacultyItem {

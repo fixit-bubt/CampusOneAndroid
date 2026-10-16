@@ -80,15 +80,13 @@ The project is consolidating all third-party services and infrastructure under t
 2. **Web Production Deployment (Live):**
    - Live URL: `https://campusonebubt.vercel.app`.
    - Hosted on Vercel, auto-deploying on every push to `main` of `fixit-bubt/CampusOneWeb`.
-3. **Google Cloud Console & OAuth Transition (Pending / Roadmap):**
-   - Creating a centralized Google Cloud project (`campusone`) under `campusone2026@gmail.com`.
-   - **Web OAuth:** Configure OAuth consent screen (App: `CampusOne`, support: `campusone2026@gmail.com`) and Web OAuth Client ID.
-     - Authorized JavaScript origins: `https://campusonebubt.vercel.app`, `https://xhgpxvyqrufbbuivttmi.supabase.co`.
-     - Authorized redirect URI: `https://xhgpxvyqrufbbuivttmi.supabase.co/auth/v1/callback` (resolves `Error 400: redirect_uri_mismatch`).
-     - Paste the new Web Client ID & Secret into Supabase Google provider (`Authentication -> Sign In / Providers -> Google`).
-   - **Android App OAuth:** Create an Android OAuth Client ID in the same Google Cloud project with package name `com.bubt.campusone` and release keystore SHA-1 fingerprint.
-   - **Mobile App Config Sync:** Update `GOOGLE_WEB_CLIENT_ID` in `src/lib/googleAuth.ts` on Android to match the new Web Client ID once generated.
-   - **Firebase & Push Notifications:** Link Firebase project for FCM v1 push notification credentials in `send-push` edge function.
+3. **Google Cloud Console & OAuth Transition (Completed):**
+   - Centralized Google Cloud project (`campusone`, ID: `campusone-511812`, number: `22710751786`) created under `campusone2026@gmail.com`.
+   - **OAuth Consent Screen:** External, published to Production.
+   - **Web OAuth:** Web Client ID `22710751786-rbud0t5dkb7hiij9vtj6pumkdc29lrha.apps.googleusercontent.com` configured with origins `https://campusonebubt.vercel.app` & `https://xhgpxvyqrufbbuivttmi.supabase.co` and redirect URI `https://xhgpxvyqrufbbuivttmi.supabase.co/auth/v1/callback`. Connected to Supabase Google provider.
+   - **Android OAuth Client ID:** `22710751786-udnebs4hqg7e775ru67flmgpb84gjnkd.apps.googleusercontent.com` created with package `com.bubt.campusone` and release keystore SHA-1 (`96:1D:69:A2:BB:57:98:4F:C2:EC:B7:BC:3B:59:09:3A:A9:31:34:72`).
+   - **Mobile App Config Synced:** `GOOGLE_WEB_CLIENT_ID` updated in `src/lib/googleAuth.ts`.
+   - **Firebase & Push Notifications (Next):** Link Firebase project for FCM v1 push notification credentials in `send-push` edge function.
 4. **Vercel Account Transfer (Completed):**
    - Transferred & deployed directly under master team account `campusone2026@gmail.com` (username `campusone2026-4009`).
    - Project: `campusonebubt`.

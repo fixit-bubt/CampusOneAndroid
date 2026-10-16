@@ -16,6 +16,8 @@ export const CacheKeys = {
   MUSALLAH_LOCATIONS: 'musallah_locations',
   ROUTINES: 'routines_all',
   ACADEMIC_CALENDAR: 'academic_calendar',
+  CALENDAR_PDF_URL: 'calendar_pdf_url',
+  BUS_SCHEDULE_PDF_URL: 'bus_schedule_pdf_url',
   FACULTY_DEPTS: 'faculty_depts',
   FACULTY_LIST: 'faculty_list',
   FACULTY_BOOKMARKS: (uid: string) => `faculty_bookmarks_${uid}`,
