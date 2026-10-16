@@ -15,6 +15,18 @@ import { FontFamily, Layout, Radius, Spacing } from '../../theme';
 
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
+const BUBT_DEFAULT_DEPTS = [
+  'Computer Science & Engineering (CSE)',
+  'Electrical & Electronic Engineering (EEE)',
+  'Business Administration (BBA)',
+  'English',
+  'Law & Justice',
+  'Civil Engineering',
+  'Textile Engineering',
+  'Economics',
+  'Mathematics & Statistics',
+];
+
 export function OnboardingScreen() {
   const { C } = useTheme();
   const { user, profile, refreshProfile, signOut } = useAuth();
@@ -30,14 +42,18 @@ export function OnboardingScreen() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
 
-  const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
+  const [departments, setDepartments] = useState<string[]>(BUBT_DEFAULT_DEPTS);
   const [deptModal, setDeptModal] = useState(false);
   const [bloodModal, setBloodModal] = useState(false);
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.from('departments').select('id, name').order('name');
-      setDepartments((data ?? []) as { id: string; name: string }[]);
+      try {
+        const { data } = await supabase.from('departments').select('name').order('name');
+        if (data && data.length > 0) {
+          setDepartments(data.map((d: any) => d.name));
+        }
+      } catch {}
     })();
   }, []);
 
@@ -71,7 +87,10 @@ export function OnboardingScreen() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
         <ScrollView
           contentContainerStyle={[styles.content, { paddingHorizontal: Layout.screenPadding }]}
           keyboardDismissMode="on-drag"
@@ -87,30 +106,30 @@ export function OnboardingScreen() {
             A few details so classmates and staff can find you. You can edit these later in Settings.
           </Text>
 
-          <Field C={C} label="Student ID" required value={studentId} onChange={setStudentId}
+          <Field C={C} label="STUDENT ID" required value={studentId} onChange={setStudentId}
             placeholder="e.g. 20234208032" keyboardType="number-pad" />
 
-          <PickerField C={C} label="Department" required value={department}
+          <PickerField C={C} label="DEPARTMENT" required value={department}
             placeholder="Select department" onPress={() => setDeptModal(true)} />
 
-          <Field C={C} label="Program" value={program} onChange={setProgram} placeholder="e.g. B.Sc. in CSE" />
+          <Field C={C} label="PROGRAM" value={program} onChange={setProgram} placeholder="e.g. B.Sc. in CSE" />
 
           <View style={styles.row}>
             <View style={{ flex: 1 }}>
-              <Field C={C} label="Intake" required value={intake} onChange={setIntake} placeholder="e.g. 50" />
+              <Field C={C} label="INTAKE" required value={intake} onChange={setIntake} placeholder="e.g. 50" />
             </View>
             <View style={{ flex: 1 }}>
-              <Field C={C} label="Section" required value={section} onChange={setSection} placeholder="e.g. 1" />
+              <Field C={C} label="SECTION" required value={section} onChange={setSection} placeholder="e.g. 1" />
             </View>
           </View>
 
-          <PickerField C={C} label="Blood Group" value={bloodGroup}
+          <PickerField C={C} label="BLOOD GROUP" value={bloodGroup}
             placeholder="Select blood group" onPress={() => setBloodModal(true)} />
 
-          <Field C={C} label="Phone" value={phone} onChange={setPhone}
+          <Field C={C} label="PHONE" value={phone} onChange={setPhone}
             placeholder="e.g. 01XXXXXXXXX" keyboardType="phone-pad" />
 
-          <Field C={C} label="Present Address" value={address} onChange={setAddress}
+          <Field C={C} label="PRESENT ADDRESS" value={address} onChange={setAddress}
             placeholder="e.g. Mirpur, Dhaka" />
 
           {!!err && (
@@ -119,7 +138,7 @@ export function OnboardingScreen() {
 
           <TouchableOpacity
             style={[styles.btn, { backgroundColor: C.brand, opacity: ok ? 1 : 0.5, marginTop: 22 }]}
-            onPress={handleSave} disabled={!ok || busy} activeOpacity={0.85}
+            onPress={handleSave} disabled={!ok || busy} activeOpacity={0.82}
           >
             {busy ? <ActivityIndicator color="#fff" /> : (
               <View style={styles.btnRow}>
@@ -136,7 +155,7 @@ export function OnboardingScreen() {
       </KeyboardAvoidingView>
 
       <PickerSheet visible={deptModal} title="Select Department" C={C} onClose={() => setDeptModal(false)}
-        data={departments.map(d => d.name)}
+        data={departments}
         onPick={(v) => { setDepartment(v); setDeptModal(false); }} />
 
       <PickerSheet visible={bloodModal} title="Select Blood Group" C={C} onClose={() => setBloodModal(false)}
@@ -202,7 +221,7 @@ function PickerSheet({ visible, title, C, data, onPick, onClose }: {
             )}
             ListEmptyComponent={<Text style={{ color: C.textMuted, textAlign: 'center', marginTop: 24 }}>None found</Text>}
           />
-          <TouchableOpacity style={[styles.closeBtn, { borderColor: C.border }]} onPress={onClose}>
+          <TouchableOpacity style={[styles.closeBtn, { borderColor: C.border, backgroundColor: C.surface2 }]} onPress={onClose}>
             <Text style={[styles.closeTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Close</Text>
           </TouchableOpacity>
         </View>
@@ -214,23 +233,23 @@ function PickerSheet({ visible, title, C, data, onPick, onClose }: {
 const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
   content: { paddingTop: 32, paddingBottom: 48 } as ViewStyle,
-  h1: { fontSize: 22, marginBottom: 6 } as any,
-  sub: { fontSize: 13.5, lineHeight: 19, marginBottom: 12 } as any,
-  label: { fontSize: 13, marginBottom: 6, marginTop: 14 } as any,
-  input: { height: 50, borderRadius: 14, borderWidth: 1.5, paddingHorizontal: 14, fontSize: 15 } as any,
+  h1: { fontSize: 24, marginBottom: 6, includeFontPadding: false } as any,
+  sub: { fontSize: 14, lineHeight: 20, marginBottom: 12, includeFontPadding: false } as any,
+  label: { fontSize: 11.5, letterSpacing: 0.6, marginBottom: 8, marginTop: 14, includeFontPadding: false } as any,
+  input: { height: Layout.controlHeight, borderRadius: Layout.controlRadius, borderWidth: 1.5, paddingHorizontal: 14, fontSize: 15, includeFontPadding: false } as any,
   pickRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' } as ViewStyle,
   row: { flexDirection: 'row', gap: 12 } as ViewStyle,
-  err: { fontSize: 13, marginTop: 10 } as any,
-  btn: { height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
-  btnRow: { flexDirection: 'row', alignItems: 'center', gap: 6 } as ViewStyle,
-  btnTxt: { fontSize: 15, color: '#fff' } as any,
-  signout: { fontSize: 13 } as any,
-  overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' } as ViewStyle,
+  err: { fontSize: 13, marginTop: 10, includeFontPadding: false } as any,
+  btn: { height: Layout.controlHeight, borderRadius: Layout.controlRadius, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
+  btnRow: { flexDirection: 'row', alignItems: 'center', gap: 8 } as ViewStyle,
+  btnTxt: { fontSize: 16, color: '#fff', includeFontPadding: false } as any,
+  signout: { fontSize: 13, includeFontPadding: false } as any,
+  overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' } as ViewStyle,
   sheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: Layout.screenPadding, paddingBottom: Layout.screenPadding, maxHeight: '80%' } as ViewStyle,
   handle: { alignItems: 'center', paddingVertical: Spacing[3] } as ViewStyle,
   handleBar: { width: 36, height: 4, borderRadius: 2 } as ViewStyle,
-  sheetTitle: { fontSize: 18, textAlign: 'center', marginBottom: Spacing[3] } as any,
+  sheetTitle: { fontSize: 18, textAlign: 'center', marginBottom: Spacing[3], includeFontPadding: false } as any,
   listRow: { paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth } as ViewStyle,
-  closeBtn: { height: 44, borderRadius: Radius.md, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginTop: Spacing[3] } as ViewStyle,
-  closeTxt: { fontSize: 15 } as any,
+  closeBtn: { height: Layout.controlHeight, borderRadius: Layout.controlRadius, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginTop: Spacing[3] } as ViewStyle,
+  closeTxt: { fontSize: 15, includeFontPadding: false } as any,
 });

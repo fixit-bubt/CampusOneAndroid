@@ -181,9 +181,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       return;
     }
+
+    // Auto-sync any student signup credentials stored in user_metadata
+    const profileData = data as Profile;
+    const sessionRes = await supabase.auth.getSession();
+    const sessionUser = sessionRes.data.session?.user ?? state.session?.user;
+    if (sessionUser && !profileData.student_id && sessionUser.user_metadata?.student_id) {
+      const meta = sessionUser.user_metadata;
+      try {
+        await supabase
+          .from('profiles')
+          .update({
+            student_id: meta.student_id,
+            department: meta.department ?? profileData.department,
+            intake: meta.intake ?? profileData.intake,
+            section: meta.section ?? profileData.section,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', userId);
+        profileData.student_id = meta.student_id;
+        if (meta.department) profileData.department = meta.department;
+        if (meta.intake) profileData.intake = meta.intake;
+        if (meta.section) profileData.section = meta.section;
+      } catch {}
+    }
+
     // Persist latest profile for offline launches
-    await setCachedProfile(userId, data as Profile);
-    dispatch({ type: 'SET_PROFILE', profile: data as Profile });
+    await setCachedProfile(userId, profileData);
+    dispatch({ type: 'SET_PROFILE', profile: profileData });
   }
 
   async function signIn(email: string, password: string) {

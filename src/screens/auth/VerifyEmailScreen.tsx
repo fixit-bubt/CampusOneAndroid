@@ -10,16 +10,13 @@ import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
 import { supabase } from '../../lib/supabase';
 import { Icon } from '../../components/ui/Icon';
-import { Brand } from './LandingScreen';
+import { LogoMark } from '../../components/ui/Logo';
 import { FontFamily, Layout, Accent } from '../../theme';
 import type { AuthStackParams } from '../../types/navigation';
 
 type Props = NativeStackScreenProps<AuthStackParams, 'VerifyEmail'>;
 
-// Email verification at signup. Only reached when "Confirm email" is enabled
-// in the dashboard (signUp then returns no session). verifyOtp with the
-// emailed code opens the session; authStore routes into onboarding from there.
-export function VerifyEmailScreen({ route }: Props) {
+export function VerifyEmailScreen({ route, navigation }: Props) {
   const { C } = useTheme();
   const t = useT();
   const email = route.params?.email ?? '';
@@ -38,8 +35,27 @@ export function VerifyEmailScreen({ route }: Props) {
     setBusy(true);
     setErr('');
     try {
-      const { error } = await supabase.auth.verifyOtp({ email, token, type: 'signup' });
+      const { data, error } = await supabase.auth.verifyOtp({ email, token, type: 'signup' });
       if (error) { setErr(t.auth.verifyCodeInvalid); return; }
+
+      // If user metadata had student credentials, ensure profiles row is updated
+      if (data.session?.user) {
+        const meta = data.session.user.user_metadata;
+        if (meta?.student_id) {
+          try {
+            await supabase
+              .from('profiles')
+              .update({
+                student_id: meta.student_id,
+                department: meta.department,
+                intake: meta.intake,
+                section: meta.section,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', data.session.user.id);
+          } catch {}
+        }
+      }
       // Session is open now; onAuthStateChange routes into the app.
     } finally {
       busyRef.current = false;
@@ -65,19 +81,33 @@ export function VerifyEmailScreen({ route }: Props) {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
+      {/* 58dp SubBar */}
+      <View style={[styles.subbar, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={[styles.iconBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+          hitSlop={8}
+          activeOpacity={0.75}
+        >
+          <Icon name="arrowL" size={20} color={C.text} />
+        </TouchableOpacity>
+        <Text style={[styles.subbarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+          {t.auth.verifyTitle}
+        </Text>
+        <View style={styles.subbarRightBox}>
+          <LogoMark size={28} shadow={false} />
+        </View>
+      </View>
+
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior="padding"
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
           contentContainerStyle={[styles.content, { paddingHorizontal: Layout.screenPadding }]}
           keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps="handled"
         >
-          <View style={{ marginBottom: 24 }}>
-            <Brand size={44} />
-          </View>
-
           <Text style={[styles.h1, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
             {t.auth.verifyTitle}
           </Text>
@@ -86,10 +116,19 @@ export function VerifyEmailScreen({ route }: Props) {
           </Text>
 
           <Text style={[styles.label, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>
-            {t.auth.resetCodeLabel}
+            {t.auth.resetCodeLabel.toUpperCase()}
           </Text>
           <TextInput
-            style={[styles.input, styles.codeInput, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaBold }]}
+            style={[
+              styles.input,
+              styles.codeInput,
+              {
+                backgroundColor: C.surface,
+                borderColor: C.border,
+                color: C.text,
+                fontFamily: FontFamily.jakartaBold,
+              },
+            ]}
             value={code}
             onChangeText={v => setCode(v.replace(/\D/g, '').slice(0, 6))}
             keyboardType="number-pad"
@@ -112,11 +151,12 @@ export function VerifyEmailScreen({ route }: Props) {
             <Text style={[styles.msg, { color: C.danger, fontFamily: FontFamily.jakartaMedium }]}>{err}</Text>
           )}
 
+          {/* 58dp Primary CTA */}
           <TouchableOpacity
-            style={[styles.btnPrimary, { backgroundColor: C.brand, marginTop: 22 }]}
+            style={[styles.btnPrimary, { backgroundColor: C.brand, marginTop: 22, opacity: code.length === 6 ? 1 : 0.6 }]}
             onPress={verify}
-            disabled={busy}
-            activeOpacity={0.85}
+            disabled={busy || code.length < 6}
+            activeOpacity={0.82}
           >
             {busy ? (
               <ActivityIndicator color="#fff" />
@@ -135,16 +175,113 @@ export function VerifyEmailScreen({ route }: Props) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
-  content: { paddingTop: 48, paddingBottom: 40 } as ViewStyle,
-  h1: { fontSize: 22, marginBottom: 6 } as any,
-  sub: { fontSize: 13.5, lineHeight: 19, marginBottom: 6 } as any,
-  label: { fontSize: 13, marginBottom: 6, marginTop: 14 } as any,
-  input: { height: 50, borderRadius: 14, borderWidth: 1.5, paddingHorizontal: 14, fontSize: 15 } as any,
-  codeInput: { letterSpacing: 3, textAlign: 'center', textAlignVertical: 'center', includeFontPadding: false, fontSize: 22 } as any,
-  msg: { fontSize: 13, marginTop: 10 } as any,
-  btnPrimary: { height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
-  btnRow: { flexDirection: 'row', alignItems: 'center', gap: 6 } as ViewStyle,
-  btnText: { fontSize: 15, color: '#fff' } as any,
-  resendRow: { alignSelf: 'flex-end', marginTop: 10 } as ViewStyle,
-  resendTxt: { fontSize: 13 } as any,
+
+  subbar: {
+    height: Layout.controlHeight, // 58dp
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    gap: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  } as ViewStyle,
+
+  subbarTitle: {
+    flex: 1,
+    fontSize: 16.5,
+    textAlign: 'center',
+    includeFontPadding: false,
+  } as any,
+
+  subbarRightBox: {
+    width: 38,
+    height: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+
+  iconBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+
+  content: {
+    paddingTop: 32,
+    paddingBottom: 40,
+  } as ViewStyle,
+
+  h1: {
+    fontSize: 24,
+    marginBottom: 6,
+    includeFontPadding: false,
+  } as any,
+
+  sub: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 16,
+    includeFontPadding: false,
+  } as any,
+
+  label: {
+    fontSize: 11.5,
+    letterSpacing: 0.6,
+    marginBottom: 8,
+    includeFontPadding: false,
+  } as any,
+
+  input: {
+    height: Layout.controlHeight, // 58dp
+    borderRadius: Layout.controlRadius, // 16dp
+    borderWidth: 1.5,
+    paddingHorizontal: 14,
+    fontSize: 16,
+  } as any,
+
+  codeInput: {
+    letterSpacing: 6,
+    textAlign: 'center',
+    textAlignVertical: 'center',
+    includeFontPadding: false,
+    fontSize: 24,
+  } as any,
+
+  msg: {
+    fontSize: 13,
+    marginTop: 10,
+    includeFontPadding: false,
+  } as any,
+
+  btnPrimary: {
+    height: Layout.controlHeight, // 58dp
+    borderRadius: Layout.controlRadius, // 16dp
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+
+  btnRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  } as ViewStyle,
+
+  btnText: {
+    fontSize: 16,
+    color: '#fff',
+    includeFontPadding: false,
+  } as any,
+
+  resendRow: {
+    alignSelf: 'flex-end',
+    marginTop: 10,
+    paddingVertical: 4,
+  } as ViewStyle,
+
+  resendTxt: {
+    fontSize: 13,
+    includeFontPadding: false,
+  } as any,
 });
