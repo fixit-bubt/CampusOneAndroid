@@ -9,6 +9,7 @@ import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
+import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
 import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { SkeletonList, LoadError } from '../../components/ui/LoadState';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
@@ -18,7 +19,6 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { formatDate } from '../../utils/format';
-import { JOB_DEPARTMENTS } from '../../constants/app';
 import {
   computeJobStatus,
   daysRemainingLabel,
@@ -32,6 +32,150 @@ import type { Job, JobApplication } from '../../types/database';
 
 const JOB_COLOR = SectorColors.jobs;
 const JOB_BG    = `${SectorColors.jobs}1e`;
+
+export type MainTab = 'browse' | 'saved' | 'my_applications';
+export type TypeFilter = 'all' | 'internship' | 'tuition' | 'on_campus' | 'part_time' | 'full_time' | 'freelance';
+
+export interface JobTypeConfig {
+  id: TypeFilter;
+  label: string;
+  subtitle: string;
+  icon: keyof typeof Feather.glyphMap;
+  color: string;
+}
+
+export const JOB_TYPE_CONFIGS: JobTypeConfig[] = [
+  {
+    id: 'all',
+    label: 'All Categories',
+    subtitle: 'View all active campus opportunities',
+    icon: 'globe',
+    color: SectorColors.jobs,
+  },
+  {
+    id: 'internship',
+    label: 'Internships',
+    subtitle: 'Industry internships & trainee programs',
+    icon: 'briefcase',
+    color: Accent.purple,
+  },
+  {
+    id: 'tuition',
+    label: 'Private Tuition',
+    subtitle: 'Home & online tutoring for school/college',
+    icon: 'book',
+    color: Accent.teal,
+  },
+  {
+    id: 'on_campus',
+    label: 'On-Campus Jobs',
+    subtitle: 'TA, lab assistant, library & campus roles',
+    icon: 'home',
+    color: '#f59e0b',
+  },
+  {
+    id: 'part_time',
+    label: 'Part-Time',
+    subtitle: 'Flexible work hours alongside classes',
+    icon: 'clock',
+    color: '#06b6d4',
+  },
+  {
+    id: 'full_time',
+    label: 'Full-Time',
+    subtitle: 'Graduate & entry-level career openings',
+    icon: 'award',
+    color: Accent.blue,
+  },
+  {
+    id: 'freelance',
+    label: 'Freelance & Projects',
+    subtitle: 'Project-based gigs & contract work',
+    icon: 'code',
+    color: '#ec4899',
+  },
+];
+
+export interface DeptConfig {
+  code: string;
+  name: string;
+  faculty: string;
+  icon: keyof typeof Feather.glyphMap;
+  color: string;
+}
+
+export const DEPT_CONFIGS: DeptConfig[] = [
+  {
+    code: 'ALL',
+    name: 'All Departments',
+    faculty: 'Open to students of all faculties',
+    icon: 'globe',
+    color: SectorColors.jobs,
+  },
+  {
+    code: 'CSE',
+    name: 'Computer Science & Engineering',
+    faculty: 'Faculty of Engineering & Applied Sciences',
+    icon: 'cpu',
+    color: '#0891b2',
+  },
+  {
+    code: 'EEE',
+    name: 'Electrical & Electronic Engineering',
+    faculty: 'Faculty of Engineering & Applied Sciences',
+    icon: 'zap',
+    color: '#d97706',
+  },
+  {
+    code: 'BBA',
+    name: 'Business Administration',
+    faculty: 'Faculty of Business',
+    icon: 'briefcase',
+    color: '#059669',
+  },
+  {
+    code: 'LAW',
+    name: 'Department of Law',
+    faculty: 'Faculty of Law',
+    icon: 'shield',
+    color: '#e11d48',
+  },
+  {
+    code: 'ENG',
+    name: 'Department of English',
+    faculty: 'Faculty of Arts & Humanities',
+    icon: 'book-open',
+    color: '#7c3aed',
+  },
+  {
+    code: 'ECO',
+    name: 'Department of Economics',
+    faculty: 'Faculty of Business',
+    icon: 'trending-up',
+    color: '#2563eb',
+  },
+  {
+    code: 'MATH',
+    name: 'Department of Mathematics',
+    faculty: 'Faculty of Science & Information Technology',
+    icon: 'percent',
+    color: '#4f46e5',
+  },
+  {
+    code: 'TEX',
+    name: 'Textile Engineering',
+    faculty: 'Faculty of Engineering & Applied Sciences',
+    icon: 'layers',
+    color: '#0d9488',
+  },
+  {
+    code: 'CIVIL',
+    name: 'Civil Engineering',
+    faculty: 'Faculty of Engineering & Applied Sciences',
+    icon: 'compass',
+    color: '#ea580c',
+  },
+];
 
 // Status styling with dark-mode aware tokens
 function jobStatusTone(C: any, t: any, k: JobStatus, isDark?: boolean): { label: string; fg: string; bg: string } {
@@ -88,10 +232,6 @@ function getTypeLabel(t: any, type: string): string {
   }
 }
 
-type MainTab = 'browse' | 'saved' | 'my_applications';
-type StatusFilter = 'open' | 'closing' | 'expired';
-type TypeFilter = 'all' | 'internship' | 'tuition' | 'on_campus' | 'part_time' | 'full_time' | 'freelance';
-
 export function JobsBrowseScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
   const insets = useSafeAreaInsets();
@@ -102,9 +242,9 @@ export function JobsBrowseScreen({ navigation }: any) {
 
   const [canPost, setCanPost] = useState(isAdmin);
   const [mainTab, setMainTab] = useState<MainTab>('browse');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('open');
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
   const [deptFilter, setDeptFilter] = useState<string>('ALL');
+  const [includeExpired, setIncludeExpired] = useState(false);
   const [query, setQuery] = useState('');
   const [jobs, setJobs] = useState<Job[]>([]);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
@@ -114,10 +254,9 @@ export function JobsBrowseScreen({ navigation }: any) {
   const [loadFailed, setLoadFailed] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
 
-  // Dropdown bottom sheet modals
+  // Bottom sheet dropdown modals
   const [typeModalVisible, setTypeModalVisible] = useState(false);
   const [deptModalVisible, setDeptModalVisible] = useState(false);
-
 
   const load = useCallback(async () => {
     const [jobsRes, appsRes] = await Promise.all([
@@ -172,11 +311,11 @@ export function JobsBrowseScreen({ navigation }: any) {
     const isSaved = savedIds.has(jobId);
     const next = new Set(savedIds);
     isSaved ? next.delete(jobId) : next.add(jobId);
-    setSavedIds(next); // optimistic update
+    setSavedIds(next);
 
     const res = await toggleJobBookmark(jobId, user.id, isSaved);
     if (!res.success) {
-      setSavedIds(savedIds); // rollback
+      setSavedIds(savedIds);
       toast({ type: 'error', title: t.common.error, message: res.error });
     }
   }
@@ -235,11 +374,17 @@ export function JobsBrowseScreen({ navigation }: any) {
     );
   }, [typeFiltered, deptFilter]);
 
-  const browseCounts: Record<StatusFilter, number> = useMemo(() => ({
-    open: deptFiltered.filter(j => computeJobStatus(j) === 'open').length,
-    closing: deptFiltered.filter(j => computeJobStatus(j) === 'closing').length,
-    expired: deptFiltered.filter(j => computeJobStatus(j) === 'expired').length,
-  }), [deptFiltered]);
+  // Active vs Expired separation
+  const activeJobs = useMemo(() => {
+    return deptFiltered.filter(j => {
+      const s = computeJobStatus(j);
+      return s !== 'expired' && s !== 'removed';
+    });
+  }, [deptFiltered]);
+
+  const expiredCount = useMemo(() => {
+    return deptFiltered.filter(j => computeJobStatus(j) === 'expired').length;
+  }, [deptFiltered]);
 
   const browseList = useMemo(() => {
     if (mainTab === 'saved') {
@@ -247,41 +392,25 @@ export function JobsBrowseScreen({ navigation }: any) {
         .filter(j => savedIds.has(j.id))
         .sort((a, b) => (a.deadline ?? '9999').localeCompare(b.deadline ?? '9999'));
     }
-    return deptFiltered.filter(j => computeJobStatus(j) === statusFilter);
-  }, [deptFiltered, savedIds, mainTab, statusFilter]);
+    if (includeExpired) {
+      return deptFiltered.filter(j => computeJobStatus(j) !== 'removed');
+    }
+    return activeJobs;
+  }, [deptFiltered, savedIds, mainTab, includeExpired, activeJobs]);
 
-  const TYPE_OPTIONS: { id: TypeFilter; label: string }[] = useMemo(() => [
-    { id: 'all',        label: t.jobs2?.allTypes ?? 'All Types' },
-    { id: 'internship', label: t.jobs2?.internship ?? 'Internships' },
-    { id: 'tuition',    label: t.jobs2?.tuition ?? 'Tuition' },
-    { id: 'on_campus',  label: t.jobs2?.onCampus ?? 'On-Campus' },
-    { id: 'part_time',  label: t.jobs2?.partTime ?? 'Part-time' },
-    { id: 'full_time',  label: t.jobs2?.fullTime ?? 'Full-time' },
-    { id: 'freelance',  label: t.jobs2?.freelance ?? 'Freelance' },
-  ], [t]);
+  const currentTypeConfig = useMemo(() => {
+    return JOB_TYPE_CONFIGS.find(o => o.id === typeFilter) ?? JOB_TYPE_CONFIGS[0];
+  }, [typeFilter]);
 
-  const currentTypeLabel = useMemo(() => {
-    const found = TYPE_OPTIONS.find(o => o.id === typeFilter);
-    return found ? found.label : (t.jobs2?.allTypes ?? 'All Types');
-  }, [TYPE_OPTIONS, typeFilter, t]);
-
-  const currentDeptLabel = useMemo(() => {
-    if (deptFilter === 'ALL') return t.jobs2?.allDepts ?? 'All Depts';
-    const found = JOB_DEPARTMENTS.find(d => d.code === deptFilter);
-    return found ? found.label : deptFilter;
-  }, [deptFilter, t]);
+  const currentDeptConfig = useMemo(() => {
+    return DEPT_CONFIGS.find(d => d.code === deptFilter) ?? DEPT_CONFIGS[0];
+  }, [deptFilter]);
 
   const mainTabs: TabItem<MainTab>[] = useMemo(() => [
-    { id: 'browse', label: t.jobs2?.browseTab ?? 'Browse', count: deptFiltered.length, accentColor: SectorColors.jobs },
+    { id: 'browse', label: t.jobs2?.browseTab ?? 'Browse', count: activeJobs.length, accentColor: SectorColors.jobs },
     { id: 'saved', label: t.jobs2?.savedTab ?? 'Saved', count: savedIds.size, accentColor: Accent.gold },
     { id: 'my_applications', label: 'Applied', count: applications.length, accentColor: Accent.purple },
-  ], [t.jobs2, deptFiltered.length, savedIds.size, applications.length]);
-
-  const statusTabs: TabItem<StatusFilter>[] = useMemo(() => [
-    { id: 'open', label: 'Open', count: browseCounts.open, showZeroCount: true, accentColor: Accent.teal },
-    { id: 'closing', label: 'Closing', count: browseCounts.closing, showZeroCount: true, accentColor: C.warn },
-    { id: 'expired', label: 'Expired', count: browseCounts.expired, showZeroCount: true, accentColor: Accent.slate },
-  ], [browseCounts, C.warn]);
+  ], [t.jobs2, activeJobs.length, savedIds.size, applications.length]);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -314,7 +443,7 @@ export function JobsBrowseScreen({ navigation }: any) {
         }
       />
 
-      {/* 1. Animated Main Tab Switcher (Browse | Saved | Applications) */}
+      {/* 1. Primary Segmented Tabs (Browse | Saved | Applied) - Height 58dp */}
       <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 6 }}>
         <SegmentedTabs
           tabs={mainTabs}
@@ -323,76 +452,49 @@ export function JobsBrowseScreen({ navigation }: any) {
         />
       </View>
 
-      {/* 2. Animated Status Switcher (Open | Closing Soon | Expired) */}
-      {mainTab === 'browse' && (
-        <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 8 }}>
-          <SegmentedTabs
-            tabs={statusTabs}
-            activeTab={statusFilter}
-            onTabChange={setStatusFilter}
-          />
-        </View>
-      )}
-
-      {/* 3. Search Bar (Browse & Saved) */}
+      {/* 2. Structured 50/50 Dual Control Bar (Job Type & Department) - Height 58dp */}
       {mainTab !== 'my_applications' && (
-        <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 8 }}>
-          <View style={[styles.searchBar, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <Icon name="search" size={18} color={C.textMuted} />
-            <TextInput
-              style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
-              placeholder={t.jobs.searchPlaceholder}
-              placeholderTextColor={C.textMuted}
-              value={query}
-              onChangeText={setQuery}
-            />
-            {query.length > 0 && (
-              <TouchableOpacity onPress={() => setQuery('')} hitSlop={8}>
-                <Feather name="x" size={16} color={C.textMuted} />
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-      )}
-
-      {/* 4. Dropdowns Row: Job Type & Department (Replacing Horizontal Scrolling Pills) */}
-      {mainTab !== 'my_applications' && (
-        <View style={[styles.dualBarRow, { paddingHorizontal: Layout.screenPadding, paddingTop: 8, paddingBottom: 4 }]}>
+        <View style={[styles.dualBarRow, { paddingHorizontal: Layout.screenPadding, paddingTop: 8 }]}>
           {/* Job Type Dropdown Button */}
           <TouchableOpacity
             style={[
               styles.dualBarBtn,
               typeFilter !== 'all'
-                ? {
-                    backgroundColor: isDark ? 'rgba(14, 156, 138, 0.18)' : '#e0f4f0',
-                    borderColor: SectorColors.jobs,
-                  }
-                : { backgroundColor: C.surface, borderColor: C.border },
+                ? [
+                    styles.dualBarBtnActive,
+                    {
+                      backgroundColor: isDark ? 'rgba(14, 156, 138, 0.18)' : '#e0f4f0',
+                      borderColor: SectorColors.jobs,
+                    },
+                  ]
+                : [styles.dualBarBtnInactive, { backgroundColor: C.surface, borderColor: C.border }],
             ]}
             onPress={() => setTypeModalVisible(true)}
             activeOpacity={0.75}
           >
-            <Feather
-              name="briefcase"
+            <AnimatedIcon
+              family="feather"
+              name={currentTypeConfig.icon}
               size={16}
-              color={typeFilter !== 'all' ? SectorColors.jobs : C.textMuted}
+              color={typeFilter !== 'all' ? (isDark ? '#fff' : SectorColors.jobs) : C.text2}
+              animation={typeFilter !== 'all' ? 'spring' : 'none'}
             />
             <Text
               style={[
                 styles.dualBarTxt,
                 {
-                  color: typeFilter !== 'all' ? SectorColors.jobs : C.text,
+                  color: typeFilter !== 'all' ? (isDark ? '#fff' : SectorColors.jobs) : C.text,
                   fontFamily: FontFamily.jakartaBold,
                 },
               ]}
               numberOfLines={1}
             >
-              {currentTypeLabel}
+              {typeFilter === 'all' ? 'All Types' : currentTypeConfig.label}
             </Text>
             <Feather
               name="chevron-down"
-              size={16}
-              color={typeFilter !== 'all' ? SectorColors.jobs : C.textMuted}
+              size={15}
+              color={typeFilter !== 'all' ? (isDark ? '#fff' : SectorColors.jobs) : C.textMuted}
             />
           </TouchableOpacity>
 
@@ -401,38 +503,65 @@ export function JobsBrowseScreen({ navigation }: any) {
             style={[
               styles.dualBarBtn,
               deptFilter !== 'ALL'
-                ? {
-                    backgroundColor: isDark ? 'rgba(14, 156, 138, 0.18)' : '#e0f4f0',
-                    borderColor: SectorColors.jobs,
-                  }
-                : { backgroundColor: C.surface, borderColor: C.border },
+                ? [
+                    styles.dualBarBtnActive,
+                    {
+                      backgroundColor: isDark ? `${currentDeptConfig.color}22` : `${currentDeptConfig.color}14`,
+                      borderColor: isDark ? `${currentDeptConfig.color}77` : currentDeptConfig.color,
+                    },
+                  ]
+                : [styles.dualBarBtnInactive, { backgroundColor: C.surface, borderColor: C.border }],
             ]}
             onPress={() => setDeptModalVisible(true)}
             activeOpacity={0.75}
           >
-            <Feather
-              name="book-open"
+            <AnimatedIcon
+              family="feather"
+              name={currentDeptConfig.icon}
               size={16}
-              color={deptFilter !== 'ALL' ? SectorColors.jobs : C.textMuted}
+              color={deptFilter !== 'ALL' ? (isDark ? '#fff' : currentDeptConfig.color) : C.text2}
+              animation={deptFilter !== 'ALL' ? 'spring' : 'none'}
             />
             <Text
               style={[
                 styles.dualBarTxt,
                 {
-                  color: deptFilter !== 'ALL' ? SectorColors.jobs : C.text,
+                  color: deptFilter !== 'ALL' ? (isDark ? '#fff' : currentDeptConfig.color) : C.text,
                   fontFamily: FontFamily.jakartaBold,
                 },
               ]}
               numberOfLines={1}
             >
-              {currentDeptLabel}
+              {deptFilter === 'ALL' ? 'All Depts' : deptFilter}
             </Text>
             <Feather
               name="chevron-down"
-              size={16}
-              color={deptFilter !== 'ALL' ? SectorColors.jobs : C.textMuted}
+              size={15}
+              color={deptFilter !== 'ALL' ? (isDark ? '#fff' : currentDeptConfig.color) : C.textMuted}
             />
           </TouchableOpacity>
+        </View>
+      )}
+
+      {/* 3. Search Bar (Directly Above Results Feed) - Height 58dp */}
+      {mainTab !== 'my_applications' && (
+        <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 8, paddingBottom: 4 }}>
+          <View style={[styles.searchBar, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <Icon name="search" size={18} color={C.textMuted} />
+            <TextInput
+              style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
+              placeholder={t.jobs?.searchPlaceholder ?? 'Search title, company, skills, area...'}
+              placeholderTextColor={C.textMuted}
+              value={query}
+              onChangeText={setQuery}
+              autoCapitalize="none"
+            />
+            {query.length > 0 && (
+              <TouchableOpacity onPress={() => setQuery('')} hitSlop={8}>
+                <Feather name="x" size={16} color={C.textMuted} />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
       )}
 
@@ -534,7 +663,7 @@ export function JobsBrowseScreen({ navigation }: any) {
             <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
               {mainTab === 'saved'
                 ? (t.jobs2?.noSavedJobs ?? 'No Saved Jobs')
-                : statusFilter === 'open' && browseCounts.expired > 0
+                : activeJobs.length === 0 && expiredCount > 0
                 ? 'No Active Openings'
                 : t.common.noResults}
             </Text>
@@ -542,37 +671,48 @@ export function JobsBrowseScreen({ navigation }: any) {
               <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
                 {t.jobs2?.noSavedJobsSub ?? 'Star any job listing to quickly access it here.'}
               </Text>
-            ) : statusFilter === 'open' && browseCounts.expired > 0 ? (
+            ) : activeJobs.length === 0 && expiredCount > 0 ? (
               <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                There are {browseCounts.expired} past opportunities in the Expired tab.
+                There are {expiredCount} past opportunities in the archive.
               </Text>
             ) : (
               <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
                 Try adjusting your search keywords, job type, or department filter.
               </Text>
             )}
-            {mainTab === 'browse' && (query.length > 0 || typeFilter !== 'all' || deptFilter !== 'ALL' || (statusFilter === 'open' && browseCounts.expired > 0)) && (
-              <TouchableOpacity
-                style={[styles.resetFilterBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
-                onPress={() => {
-                  if (statusFilter === 'open' && browseCounts.open === 0 && browseCounts.expired > 0 && query.length === 0 && typeFilter === 'all' && deptFilter === 'ALL') {
-                    setStatusFilter('expired');
-                  } else {
-                    setQuery('');
-                    setTypeFilter('all');
-                    setDeptFilter('ALL');
-                    if (browseCounts.open === 0 && browseCounts.expired > 0) setStatusFilter('expired');
-                  }
-                }}
-                activeOpacity={0.8}
-              >
-                <Feather name="rotate-ccw" size={13} color={C.text} style={{ marginRight: 6 }} />
-                <Text style={[styles.resetFilterBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                  {statusFilter === 'open' && browseCounts.open === 0 && browseCounts.expired > 0 && query.length === 0 && typeFilter === 'all' && deptFilter === 'ALL'
-                    ? 'View Expired Listings'
-                    : 'Reset Filters'}
-                </Text>
-              </TouchableOpacity>
+
+            {mainTab === 'browse' && (
+              <View style={{ flexDirection: 'row', gap: 10, marginTop: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
+                {expiredCount > 0 && (
+                  <TouchableOpacity
+                    style={[styles.resetFilterBtn, { backgroundColor: C.surface, borderColor: C.border }]}
+                    onPress={() => setIncludeExpired(prev => !prev)}
+                    activeOpacity={0.8}
+                  >
+                    <Feather name="clock" size={13} color={C.warn} style={{ marginRight: 6 }} />
+                    <Text style={[styles.resetFilterBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                      {includeExpired ? 'Hide Expired' : `View ${expiredCount} Expired`}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+
+                {(query.length > 0 || typeFilter !== 'all' || deptFilter !== 'ALL') && (
+                  <TouchableOpacity
+                    style={[styles.resetFilterBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+                    onPress={() => {
+                      setQuery('');
+                      setTypeFilter('all');
+                      setDeptFilter('ALL');
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Feather name="rotate-ccw" size={13} color={C.text} style={{ marginRight: 6 }} />
+                    <Text style={[styles.resetFilterBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                      Reset Filters
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             )}
           </View>
         ) : (
@@ -582,7 +722,8 @@ export function JobsBrowseScreen({ navigation }: any) {
               const status = computeJobStatus(j);
               const s = jobStatusTone(C, t, status, isDark);
               const isSaved = savedIds.has(j.id);
-              const typeColor = TYPE_COLORS[j.job_type] ?? Accent.teal;
+              const typeConfig = JOB_TYPE_CONFIGS.find(o => o.id === j.job_type) ?? JOB_TYPE_CONFIGS[1];
+              const typeColor = typeConfig.color;
               const typeBg = pillBg(typeColor, isDark);
               const daysLeft = daysRemainingLabel(j.deadline, {
                 today: t.jobs2?.closesToday,
@@ -598,8 +739,8 @@ export function JobsBrowseScreen({ navigation }: any) {
                     onPress={() => navigation.navigate('JobDetail', { jobId: j.id })}
                     activeOpacity={0.75}
                   >
-                    <View style={[styles.thumb, { backgroundColor: JOB_BG }]}>
-                      <Icon name="jobs" size={22} color={JOB_COLOR} />
+                    <View style={[styles.thumb, { backgroundColor: isDark ? `${typeColor}22` : `${typeColor}14` }]}>
+                      <AnimatedIcon family="feather" name={typeConfig.icon} size={22} color={typeColor} animation="entrance" />
                     </View>
                     <View style={styles.cardBody}>
                       <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -634,7 +775,7 @@ export function JobsBrowseScreen({ navigation }: any) {
 
                         {j.stipend ? (
                           <View style={[styles.stipendBadge, { backgroundColor: C.surface2 }]}>
-                            <Text style={[styles.stipendTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                            <Text style={[styles.stipendTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                               {formatSalary(j.stipend)}
                             </Text>
                           </View>
@@ -691,7 +832,7 @@ export function JobsBrowseScreen({ navigation }: any) {
         <View style={{ height: 24 }} />
       </ScrollView>
 
-      {/* Modal 1: Filter by Job Type (Bottom Sheet Dropdown) */}
+      {/* Modal 1: Filter by Job Type (72dp Cards Bottom Sheet) */}
       <Modal
         visible={typeModalVisible}
         transparent
@@ -716,9 +857,24 @@ export function JobsBrowseScreen({ navigation }: any) {
           >
             <View style={styles.sheetHandle} />
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-                Filter by Job Type
-              </Text>
+              <View style={styles.modalHeaderLeft}>
+                <View
+                  style={[
+                    styles.modalHeaderIcon,
+                    { backgroundColor: isDark ? 'rgba(14, 156, 138, 0.2)' : 'rgba(14, 156, 138, 0.1)' },
+                  ]}
+                >
+                  <Feather name="briefcase" size={17} color={SectorColors.jobs} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.modalTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    Filter by Job Type
+                  </Text>
+                  <Text style={[styles.modalSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                    Select category to narrow opportunities
+                  </Text>
+                </View>
+              </View>
               <TouchableOpacity
                 onPress={() => setTypeModalVisible(false)}
                 style={[styles.modalCloseBtn, { backgroundColor: C.surface2 }]}
@@ -727,8 +883,8 @@ export function JobsBrowseScreen({ navigation }: any) {
               </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 420 }}>
-              {TYPE_OPTIONS.map(opt => {
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 460 }} contentContainerStyle={{ paddingBottom: 10 }}>
+              {JOB_TYPE_CONFIGS.map(opt => {
                 const selected = typeFilter === opt.id;
                 const count = opt.id === 'all'
                   ? deptFiltered.length
@@ -737,11 +893,13 @@ export function JobsBrowseScreen({ navigation }: any) {
                   <TouchableOpacity
                     key={opt.id}
                     style={[
-                      styles.modalOptionItem,
-                      { borderColor: C.border },
-                      selected && {
-                        backgroundColor: isDark ? 'rgba(14, 156, 138, 0.15)' : '#e0f4f0',
-                        borderColor: SectorColors.jobs,
+                      styles.card72,
+                      {
+                        backgroundColor: selected
+                          ? (isDark ? 'rgba(14, 156, 138, 0.16)' : '#e0f4f0')
+                          : C.surface,
+                        borderColor: selected ? SectorColors.jobs : C.border,
+                        borderWidth: selected ? 1.5 : 1,
                       },
                     ]}
                     onPress={() => {
@@ -750,31 +908,55 @@ export function JobsBrowseScreen({ navigation }: any) {
                     }}
                     activeOpacity={0.75}
                   >
-                    <View style={{ flex: 1 }}>
+                    <View style={[styles.card72IconBox, { backgroundColor: isDark ? `${opt.color}26` : `${opt.color}15` }]}>
+                      <AnimatedIcon family="feather" name={opt.icon} size={20} color={opt.color} animation={selected ? 'spring' : 'none'} />
+                    </View>
+                    <View style={styles.card72Info}>
                       <Text
                         style={[
-                          styles.modalOptionTxt,
+                          styles.card72Title,
                           {
-                            color: selected ? SectorColors.jobs : C.text,
-                            fontFamily: selected ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                            color: selected ? (isDark ? '#fff' : SectorColors.jobs) : C.text,
+                            fontFamily: FontFamily.jakartaBold,
                           },
                         ]}
+                        numberOfLines={1}
                       >
                         {opt.label}
                       </Text>
+                      <Text style={[styles.card72Sub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                        {opt.subtitle}
+                      </Text>
                     </View>
-                    <Text
-                      style={[
-                        styles.modalOptionCount,
-                        {
-                          color: selected ? SectorColors.jobs : C.textMuted,
-                          fontFamily: FontFamily.jakartaBold,
-                        },
-                      ]}
-                    >
-                      {count}
-                    </Text>
-                    {selected && <Feather name="check" size={16} color={SectorColors.jobs} style={{ marginLeft: 6 }} />}
+                    <View style={styles.card72Right}>
+                      <View
+                        style={[
+                          styles.card72CountBadge,
+                          {
+                            backgroundColor: selected
+                              ? (isDark ? 'rgba(14, 156, 138, 0.35)' : 'rgba(14, 156, 138, 0.2)')
+                              : C.surface2,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.card72CountTxt,
+                            {
+                              color: selected ? (isDark ? '#fff' : SectorColors.jobs) : C.text2,
+                              fontFamily: FontFamily.jakartaBold,
+                            },
+                          ]}
+                        >
+                          {count}
+                        </Text>
+                      </View>
+                      {selected && (
+                        <View style={[styles.card72Check, { backgroundColor: SectorColors.jobs }]}>
+                          <Feather name="check" size={13} color="#fff" />
+                        </View>
+                      )}
+                    </View>
                   </TouchableOpacity>
                 );
               })}
@@ -783,7 +965,7 @@ export function JobsBrowseScreen({ navigation }: any) {
         </View>
       </Modal>
 
-      {/* Modal 2: Target Department (Bottom Sheet Dropdown) */}
+      {/* Modal 2: Target Department (72dp Cards Bottom Sheet) */}
       <Modal
         visible={deptModalVisible}
         transparent
@@ -808,9 +990,24 @@ export function JobsBrowseScreen({ navigation }: any) {
           >
             <View style={styles.sheetHandle} />
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-                Target Department
-              </Text>
+              <View style={styles.modalHeaderLeft}>
+                <View
+                  style={[
+                    styles.modalHeaderIcon,
+                    { backgroundColor: isDark ? 'rgba(8, 145, 178, 0.2)' : 'rgba(8, 145, 178, 0.1)' },
+                  ]}
+                >
+                  <Feather name="book-open" size={17} color="#0891b2" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.modalTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    Target Department
+                  </Text>
+                  <Text style={[styles.modalSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                    Find opportunities for your field of study
+                  </Text>
+                </View>
+              </View>
               <TouchableOpacity
                 onPress={() => setDeptModalVisible(false)}
                 style={[styles.modalCloseBtn, { backgroundColor: C.surface2 }]}
@@ -819,10 +1016,13 @@ export function JobsBrowseScreen({ navigation }: any) {
               </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 420 }}>
-              {JOB_DEPARTMENTS.map(dept => {
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 460 }} contentContainerStyle={{ paddingBottom: 10 }}>
+              {DEPT_CONFIGS.map(dept => {
                 const selected = deptFilter === dept.code;
-                const isUserDept = profile?.department && dept.label.toLowerCase().includes(profile.department.toLowerCase());
+                const isUserDept = profile?.department && (
+                  dept.code.toLowerCase() === profile.department.toLowerCase() ||
+                  dept.name.toLowerCase().includes(profile.department.toLowerCase())
+                );
                 const count = dept.code === 'ALL'
                   ? typeFiltered.length
                   : typeFiltered.filter(j => j.department_code === dept.code).length;
@@ -830,11 +1030,13 @@ export function JobsBrowseScreen({ navigation }: any) {
                   <TouchableOpacity
                     key={dept.code}
                     style={[
-                      styles.modalOptionItem,
-                      { borderColor: C.border },
-                      selected && {
-                        backgroundColor: isDark ? 'rgba(14, 156, 138, 0.15)' : '#e0f4f0',
-                        borderColor: SectorColors.jobs,
+                      styles.card72,
+                      {
+                        backgroundColor: selected
+                          ? (isDark ? `${dept.color}22` : `${dept.color}10`)
+                          : C.surface,
+                        borderColor: selected ? dept.color : C.border,
+                        borderWidth: selected ? 1.5 : 1,
                       },
                     ]}
                     onPress={() => {
@@ -843,18 +1045,22 @@ export function JobsBrowseScreen({ navigation }: any) {
                     }}
                     activeOpacity={0.75}
                   >
-                    <View style={{ flex: 1 }}>
+                    <View style={[styles.card72IconBox, { backgroundColor: isDark ? `${dept.color}28` : `${dept.color}15` }]}>
+                      <AnimatedIcon family="feather" name={dept.icon} size={20} color={dept.color} animation={selected ? 'spring' : 'none'} />
+                    </View>
+                    <View style={styles.card72Info}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                         <Text
                           style={[
-                            styles.modalOptionTxt,
+                            styles.card72Title,
                             {
-                              color: selected ? SectorColors.jobs : C.text,
-                              fontFamily: selected ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                              color: selected ? (isDark ? '#fff' : dept.color) : C.text,
+                              fontFamily: FontFamily.jakartaBold,
                             },
                           ]}
+                          numberOfLines={1}
                         >
-                          {dept.code === 'ALL' ? 'All Departments' : dept.label}
+                          {dept.code === 'ALL' ? dept.name : `${dept.code} · ${dept.name}`}
                         </Text>
                         {isUserDept && (
                           <View style={[styles.myDeptBadge, { backgroundColor: isDark ? 'rgba(14, 156, 138, 0.25)' : '#e0f4f0' }]}>
@@ -864,19 +1070,39 @@ export function JobsBrowseScreen({ navigation }: any) {
                           </View>
                         )}
                       </View>
+                      <Text style={[styles.card72Sub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                        {dept.faculty}
+                      </Text>
                     </View>
-                    <Text
-                      style={[
-                        styles.modalOptionCount,
-                        {
-                          color: selected ? SectorColors.jobs : C.textMuted,
-                          fontFamily: FontFamily.jakartaBold,
-                        },
-                      ]}
-                    >
-                      {count}
-                    </Text>
-                    {selected && <Feather name="check" size={16} color={SectorColors.jobs} style={{ marginLeft: 6 }} />}
+                    <View style={styles.card72Right}>
+                      <View
+                        style={[
+                          styles.card72CountBadge,
+                          {
+                            backgroundColor: selected
+                              ? (isDark ? `${dept.color}40` : `${dept.color}20`)
+                              : C.surface2,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.card72CountTxt,
+                            {
+                              color: selected ? (isDark ? '#fff' : dept.color) : C.text2,
+                              fontFamily: FontFamily.jakartaBold,
+                            },
+                          ]}
+                        >
+                          {count}
+                        </Text>
+                      </View>
+                      {selected && (
+                        <View style={[styles.card72Check, { backgroundColor: dept.color }]}>
+                          <Feather name="check" size={13} color="#fff" />
+                        </View>
+                      )}
+                    </View>
                   </TouchableOpacity>
                 );
               })}
@@ -891,73 +1117,7 @@ export function JobsBrowseScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
 
-  // Animated Tab Track (Browse | Saved | Applications)
-  tabTrack: {
-    height: 44,
-    borderRadius: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 3,
-    position: 'relative',
-  } as ViewStyle,
-  tabIndicator: {
-    position: 'absolute',
-    top: 3,
-    bottom: 3,
-    left: 3,
-    borderRadius: 11,
-    borderWidth: 1,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1.5 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-  } as ViewStyle,
-  tabBtn: {
-    flex: 1,
-    height: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    gap: 6,
-    zIndex: 1,
-  } as ViewStyle,
-  tabBtnTxt: {
-    fontSize: 12.5,
-  } as any,
-  tabBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 1.5,
-    borderRadius: 10,
-    minWidth: 18,
-    alignItems: 'center',
-  } as ViewStyle,
-  tabBadgeTxt: {
-    fontSize: 10.5,
-  } as any,
-
-  // Animated Status Track (Open | Closing Soon | Expired)
-  statusTrack: {
-    height: 38,
-    borderRadius: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 3,
-    position: 'relative',
-  } as ViewStyle,
-  statusDotSmall: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  } as ViewStyle,
-  statusBtnTxt: {
-    fontSize: 12,
-  } as any,
-  statusCountTxt: {
-    fontSize: 11,
-  } as any,
-
-  // Search Bar
+  // Search Bar (Height 58dp)
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -973,7 +1133,7 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   } as TextStyle,
 
-  // Dual Dropdown Buttons Row
+  // Dual Dropdown Buttons Row (Height 58dp)
   dualBarRow: {
     flexDirection: 'row',
     gap: 9,
@@ -987,28 +1147,37 @@ const styles = StyleSheet.create({
     height: 58,
     borderRadius: 16,
     borderWidth: 1,
-    gap: 6,
+    gap: 7,
   } as ViewStyle,
+  dualBarBtnActive: {
+    borderWidth: 1.5,
+  } as ViewStyle,
+  dualBarBtnInactive: {} as ViewStyle,
   dualBarTxt: {
     flex: 1,
     fontSize: 13.5,
-  } as any,
+  } as TextStyle,
 
   // Dropdown Modal Sheets
   modalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
   } as ViewStyle,
   modalBackdrop: {
-    flex: 1,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   } as ViewStyle,
   modalSheet: {
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     borderTopWidth: 1,
-    paddingHorizontal: 18,
-    paddingTop: 12,
+    paddingHorizontal: Layout.screenPadding,
+    paddingTop: 10,
+    maxHeight: '85%',
   } as ViewStyle,
   sheetHandle: {
     width: 36,
@@ -1022,34 +1191,92 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 14,
+    paddingBottom: 14,
+  } as ViewStyle,
+  modalHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  } as ViewStyle,
+  modalHeaderIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
   } as ViewStyle,
   modalTitle: {
     fontSize: 16,
     letterSpacing: -0.2,
-  } as any,
+  } as TextStyle,
+  modalSub: {
+    fontSize: 11.5,
+    marginTop: 1,
+  } as TextStyle,
   modalCloseBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
-  modalOptionItem: {
+
+  // 72dp Bottom Sheet Option Cards
+  card72: {
+    height: 72,
+    borderRadius: 16,
+    paddingHorizontal: 14,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    borderRadius: 13,
-    borderWidth: 1,
+    gap: 12,
     marginBottom: 8,
   } as ViewStyle,
-  modalOptionTxt: {
-    fontSize: 13.5,
-  } as any,
-  modalOptionCount: {
+  card72IconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  } as ViewStyle,
+  card72Info: {
+    flex: 1,
+    minWidth: 0,
+    justifyContent: 'center',
+  } as ViewStyle,
+  card72Title: {
+    fontSize: 14.5,
+    letterSpacing: -0.1,
+  } as TextStyle,
+  card72Sub: {
     fontSize: 12,
-  } as any,
+    marginTop: 2,
+  } as TextStyle,
+  card72Right: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexShrink: 0,
+  } as ViewStyle,
+  card72CountBadge: {
+    paddingHorizontal: 8.5,
+    paddingVertical: 3,
+    borderRadius: 10,
+    minWidth: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  card72CountTxt: {
+    fontSize: 11.5,
+  } as TextStyle,
+  card72Check: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
   myDeptBadge: {
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -1057,7 +1284,7 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   myDeptBadgeTxt: {
     fontSize: 10,
-  } as any,
+  } as TextStyle,
 
   // List & Cards
   scroll: { paddingTop: 6, paddingBottom: 28 } as ViewStyle,
@@ -1066,36 +1293,35 @@ const styles = StyleSheet.create({
   cardMain: { flexDirection: 'row', alignItems: 'center', gap: 13, flex: 1, minWidth: 0 } as ViewStyle,
   thumb: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center', flexShrink: 0 } as ViewStyle,
   cardBody: { flex: 1 } as ViewStyle,
-  cardTitle: { fontSize: 14.5 } as any,
-  cardSub: { fontSize: 12, marginTop: 2 } as any,
+  cardTitle: { fontSize: 14.5 } as TextStyle,
+  cardSub: { fontSize: 12, marginTop: 2 } as TextStyle,
   cardMeta: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6, flexWrap: 'wrap' } as ViewStyle,
   statusPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 } as ViewStyle,
   statusDot: { width: 6, height: 6, borderRadius: 3 } as ViewStyle,
-  statusTxt: { fontSize: 11 } as any,
+  statusTxt: { fontSize: 11 } as TextStyle,
   catBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 } as ViewStyle,
-  catBadgeTxt: { fontSize: 11 } as any,
+  catBadgeTxt: { fontSize: 11 } as TextStyle,
   stipendBadge: { paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6 } as ViewStyle,
-  stipendTxt: { fontSize: 10.5 } as any,
+  stipendTxt: { fontSize: 10.5 } as TextStyle,
   alumniBadgeSmall: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 6, paddingVertical: 3, borderRadius: 6 } as ViewStyle,
-  alumniBadgeSmallTxt: { fontSize: 10.5 } as any,
+  alumniBadgeSmallTxt: { fontSize: 10.5 } as TextStyle,
   cardFooter: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 5 } as ViewStyle,
-  deadlineTxt: { fontSize: 11 } as any,
+  deadlineTxt: { fontSize: 11 } as TextStyle,
   saveBtn: { padding: 8, marginLeft: 4 } as ViewStyle,
   withdrawBtn: { padding: 8, marginLeft: 4 } as ViewStyle,
   iconBtn: { padding: 8 } as ViewStyle,
   empty: { alignItems: 'center', paddingTop: 60, gap: 8 } as ViewStyle,
-  emptyTitle: { fontSize: 16 } as any,
-  emptySub: { fontSize: 13, textAlign: 'center', paddingHorizontal: 24, lineHeight: 18 } as any,
+  emptyTitle: { fontSize: 16 } as TextStyle,
+  emptySub: { fontSize: 13, textAlign: 'center', paddingHorizontal: 24, lineHeight: 18 } as TextStyle,
   exploreBtn: { marginTop: 14, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12 } as ViewStyle,
-  exploreBtnTxt: { fontSize: 13.5 } as any,
+  exploreBtnTxt: { fontSize: 13.5 } as TextStyle,
   resetFilterBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 12,
     paddingHorizontal: 16,
     paddingVertical: 9,
     borderRadius: 12,
     borderWidth: 1,
   } as ViewStyle,
-  resetFilterBtnTxt: { fontSize: 13 } as any,
+  resetFilterBtnTxt: { fontSize: 13 } as TextStyle,
 });
