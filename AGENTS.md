@@ -252,8 +252,7 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
   - `FacultyScreen`: Main 3-tab switcher (`Depts` / `Mentors` / `Saved` with bookmark counts, no icons).
   - `DirectoryScreen`: Main 3-tab switcher (`All` / `Connections` / `Requests` with counts, no icons; legacy spring anim eliminated).
   - `AnnouncementsScreen`: Main 3-tab switcher (`All` / `Urgent` / `Saved` with counts, no icons).
-  - `AnnouncePostScreen`: Priority selector (3 tabs: `Urgent` / `Important` / `General`).
-  - `JobsBrowseScreen`: Main tabs (3 tabs: `Browse` / `Saved` / `Applied`), Status filter (3 tabs: `Open` / `Closing` / `Expired`).
+  - `JobsBrowseScreen`: Primary 58dp SegmentedTabs (3 tabs: `Browse` / `Saved` / `Applied` with animated vector icons and circular counts; redundant 4th status bar eliminated in favor of structured 58dp Dual Bar + 72dp modal sheets).
   - `JobPostScreen`: Work Mode (3 tabs: `On-site` / `Remote` / `Hybrid`), Compensation model (3 tabs: `Paid` / `Conveyance` / `Negotiable`), How to Apply (3 tabs: `Email` / `Link` / `PDF`).
   - `JobsModerateScreen`: Moderation tabs (2 tabs: `Reported` / `Removed`, no icons).
   - `EventsBrowseScreen`: Main 3-tab switcher (`Upcoming` / `Past` / `Saved` with counts; legacy static chips eliminated).
@@ -1171,7 +1170,7 @@ The following screens contain segmented control bars slated for this animated pa
 1. **Lost & Found (`LostFoundBrowseScreen.tsx`):** `All` (Sector Amber) · `Lost` (Crimson) · `Found` (Emerald) · `My Posts` (Violet) [Implemented].
 2. **Blood Donation (`BloodScreen.tsx`):** `Requests` (Blood Crimson `#d63d35`) vs `Donors` (Medical Emerald `#16a34a`) [Implemented].
 3. **Home Community Updates (`HomeCommunityUpdates.tsx`):** `All` (Brand Blue `#2563eb`) · `Notices` (Announce Orange `#ea580c`) · `Clubs` (Emerald `#059669`) · `Events` (Violet `#8b5cf6`) [Implemented].
-4. **Student Jobs (`JobsBrowseScreen.tsx`):** `Open` (Emerald) · `Closing Soon` (Amber) · `Expired` (Slate) · `Saved` (Rose/Pink) (4 tabs).
+4. **Student Jobs (`JobsBrowseScreen.tsx`):** `Browse` (Jobs Teal `#0e9c8a`) · `Saved` (Gold `#eab308`) · `Applied` (Purple `#a855f7`) with animated vector icons and dynamic circular counts [Implemented].
 5. **Marketplace (`MarketScreen.tsx`):** `All Listings` (Slate/Brand) vs `My Listings` (Market Amber) (2 tabs).
 6. **Campus Rides (`RidesScreen.tsx`):** `All` (Ride Cyan) · `To Campus` (Emerald) · `From Campus` (Royal Blue) (3 tabs).
 7. **Campus Events (`EventsBrowseScreen.tsx`):** `Upcoming` (Violet) vs `Past` (Muted Slate) (2 tabs).
@@ -1337,13 +1336,15 @@ The Jobs & Internships module (`JobsBrowseScreen.tsx`, `JobDetailScreen.tsx`, `J
    - RLS Enforcement: Applicants can view/insert their own applications; recruiters/posters can view applications and update applicant statuses for their own jobs.
    - Realtime Triggers: Database triggers notify the recruiter upon new application submission (`trg_notify_job_application`) and notify the applicant upon status advancement (`trg_notify_application_status`).
 3. **Browse UI Overhaul & Anti-Clutter Design (`JobsBrowseScreen.tsx`):**
-   - **Spring-Animated Main Tabs:** Single segmented bar with spring-animated sliding pill indicator (`tension: 68, friction: 10, useNativeDriver: true`) switching between `Browse`, `Saved`, and `My Applications`.
-   - **Spring-Animated Status Switcher:** Sliding indicator across `Open`, `Closing Soon` (≤ 3 days left), and `Expired`.
-   - **Dual Dropdown Filter Row:** Clean horizontal row replacing stacked scrolling bars:
-     - Left: `[ Type ∨ ]` opens a native bottom-sheet modal with job types, post counts, and active checkmarks.
-     - Right: `[ Dept ∨ ]` opens a native bottom-sheet modal with departments, featuring a "Your Dept" highlight badge.
-   - Active filter indicators display accent pills when non-default criteria are active.
-   - FAB button `[ + Post Job ]` elevated with theme shadow and colors.
+   - **Triple 58dp Structured Control Bar System:** Eliminated redundant stacked switcher bars to preserve feed view above the fold:
+     1. Primary `SegmentedTabs` (58dp): `Browse` (with `briefcase` icon), `Saved` (with `star` icon), and `Applied` (with `file-text` icon) featuring memoized `translateX` interpolation, synchronous 0ms touch spring physics (`tension: 240, friction: 18, useNativeDriver: true`), elevated `#1e1e1e` indicator contrast with `rgba(255, 255, 255, 0.16)` border, and animated icon rubberband pops.
+     2. Structured 50/50 Dual Bar (58dp): Left button for Job Type (`briefcase` default), Right button for Department (`book-open` default), lighting up with `SectorColors.jobs` (`#0e9c8a`) and spring-popping on selection.
+     3. Search Bar (58dp): Integrated directly above feed with instant clear trigger.
+   - **72dp High Bottom Sheet Option Cards:** Both Job Type and Department bottom sheets render spacious 72dp cards with 44dp icon boxes, titles, subtitles, count badges, and animated checkmarks on active selection.
+   - **Anti-Rainbow Monochrome Zinc Theme:** Replaced multi-color neon palettes with clean monochrome zinc surfaces (`C.surface`, `C.surface2`, `C.border`, `C.text2`) and a single Jobs Teal (`#0e9c8a`) active state.
+   - **Past & Expired Circulars Access:** Accessible directly via the "Past & Expired Archive" 72dp card (with real-time count) and an in-sheet "Include Expired in Active Feed" `LiquidToggle` switch, backed by a 1-tap "View Expired Archive" button on empty search results.
+   - **SubBar App Icon Integration:** Restores the official CampusOne `LogoMark` (28dp) in the top-right header alongside poster/admin actions (`plus` / `shield`).
+   - **Smooth 120 FPS List Rendering:** Static vector icons in list thumbnails eliminate scroll jitter, while interactive touches trigger native RenderThread spring bounce pops.
 4. **Detailed Job View & Poster Controls (`JobDetailScreen.tsx`):**
    - **Dhaka Countdown:** Deterministic deadline calculation using `localToday()` to avoid UTC midnight shifts.
    - **4-Cell Specs Grid:** Compensation, Workplace Mode, Min Semester, and Referral badges.
