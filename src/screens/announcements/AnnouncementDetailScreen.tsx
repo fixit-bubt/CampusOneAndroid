@@ -5,9 +5,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { WebView } from 'react-native-webview';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
+import { CampusPdfViewerModal } from '../../components/pdf/CampusPdfViewerModal';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
@@ -206,9 +206,6 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
   const displayImageUrl = item.image_url ||
     (item.attachment_url && /\.(jpe?g|png|webp|gif)$/i.test(item.attachment_url) ? item.attachment_url : null);
   const resolvedNoticeImg = resolveNoticeImage(displayImageUrl);
-  const googleDocsPdfViewer = item.attachment_url
-    ? `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(item.attachment_url)}`
-    : null;
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -488,136 +485,17 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
       </ScrollView>
 
       {/* =========================================================================
-          MODAL 1: IN-APP PDF VIEWER MODAL
+          HIGH-DPI IN-APP PDF VIEWER (Zero Google Docs, 100% Offline, Native Feel)
          ========================================================================= */}
-      <Modal
+      <CampusPdfViewerModal
         visible={pdfModalVisible}
-        animationType="slide"
-        onRequestClose={() => setPdfModalVisible(false)}
-      >
-        <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-          <View style={[styles.pdfHeader, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-            <TouchableOpacity onPress={() => setPdfModalVisible(false)} hitSlop={8} style={{ padding: 4 }}>
-              <Feather name="x" size={22} color={C.text} />
-            </TouchableOpacity>
-            <Text style={[styles.pdfHeaderTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-              {item.attachment_name || 'Notice PDF'}
-            </Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              {item.attachment_url && (
-                <TouchableOpacity
-                  onPress={() => openUrl(item.attachment_url!)}
-                  hitSlop={8}
-                  style={{ padding: 4 }}
-                >
-                  <Feather name="external-link" size={18} color={C.text} />
-                </TouchableOpacity>
-              )}
-              <TouchableOpacity onPress={handleDownloadPdf} hitSlop={8} style={{ padding: 4 }}>
-                <Feather name="download" size={19} color={C.text} />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {pdfModalVisible && googleDocsPdfViewer && (
-            <WebView
-              source={{ uri: googleDocsPdfViewer }}
-              style={{ flex: 1, backgroundColor: '#f8fafc' }}
-              scalesPageToFit={false}
-              javaScriptEnabled={true}
-              domStorageEnabled={true}
-              originWhitelist={['*']}
-              mixedContentMode="always"
-              setSupportMultipleWindows={false}
-              showsHorizontalScrollIndicator={false}
-              showsVerticalScrollIndicator={true}
-              injectedJavaScriptBeforeContentLoaded={`
-                (function() {
-                  const meta = document.createElement('meta');
-                  meta.name = 'viewport';
-                  meta.content = 'width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=4.0, user-scalable=yes';
-                  document.head && document.head.appendChild(meta);
-                })();
-                true;
-              `}
-              injectedJavaScript={`
-                (function() {
-                  function cleanViewer() {
-                    const styleId = 'campusone-pdf-styles';
-                    if (!document.getElementById(styleId)) {
-                      const style = document.createElement('style');
-                      style.id = styleId;
-                      style.innerHTML = \`
-                        html, body {
-                          width: 100% !important;
-                          margin: 0 !important;
-                          padding: 0 !important;
-                          background: #f8fafc !important;
-                          overflow-x: auto !important;
-                        }
-                        .ndfHFb-c4YZDc-Wrql6b,
-                        .drive-viewer-toolstrip,
-                        div[role="toolbar"],
-                        .goog-inline-block.ndfHFb-c4YZDc-to915-LgbsSe,
-                        a[href*="docs.google.com"],
-                        .ndfHFb-c4YZDc-V67aGc {
-                          display: none !important;
-                          visibility: hidden !important;
-                          height: 0 !important;
-                          opacity: 0 !important;
-                        }
-                        .ndfHFb-c4YZDc-bC7sje,
-                        .ndfHFb-c4YZDc-c3fl2b,
-                        .ndfHFb-c4YZDc-cYSp0e-tJHJj,
-                        .ndfHFb-c4YZDc-s2gQvd,
-                        .ndfHFb-c4YZDc-bC7sje-tJHJj,
-                        .ndfHFb-c4YZDc-AWhBae {
-                          background: #f8fafc !important;
-                          background-color: #f8fafc !important;
-                          width: 100% !important;
-                          max-width: 100% !important;
-                          min-width: 100% !important;
-                          margin: 0 !important;
-                          padding: 0 !important;
-                          box-shadow: none !important;
-                        }
-                        .ndfHFb-c4YZDc-s2gQvd img,
-                        .ndfHFb-c4YZDc-bC7sje img,
-                        .ndfHFb-c4YZDc-cYSp0e-tJHJj img,
-                        .ndfHFb-c4YZDc-c3fl2b img,
-                        .ndfHFb-c4YZDc-AWhBae img,
-                        canvas,
-                        img {
-                          width: 100% !important;
-                          min-width: 100% !important;
-                          max-width: 100% !important;
-                          height: auto !important;
-                          margin: 0 0 10px 0 !important;
-                          display: block !important;
-                          box-shadow: 0 2px 8px rgba(0,0,0,0.12) !important;
-                        }
-                      \`;
-                      document.head && document.head.appendChild(style);
-                    }
-                  }
-                  cleanViewer();
-                  setInterval(cleanViewer, 400);
-                })();
-                true;
-              `}
-              startInLoadingState
-              renderLoading={() => (
-                <View style={[styles.pdfLoading, { backgroundColor: C.bg }]}>
-                  <ActivityIndicator size="large" color={C.brand} />
-                  <Text style={[styles.pdfLoadingTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                    Loading official PDF…
-                  </Text>
-                </View>
-              )}
-            />
-          )}
-        </SafeAreaView>
-      </Modal>
+        onClose={() => setPdfModalVisible(false)}
+        title={item.title || item.attachment_name || 'Notice PDF'}
+        subtitle={item.department ? `${item.department} · BUBT` : 'BUBT Official Notice'}
+        category={item.priority === 'Urgent' ? 'Urgent Notice' : 'Official Notice'}
+        fileUrl={item.attachment_url}
+        fileName={item.attachment_name || 'notice.pdf'}
+      />
 
       {/* =========================================================================
           MODAL 2: FULLSCREEN IMAGE VIEWER MODAL WITH PINCH-TO-ZOOM

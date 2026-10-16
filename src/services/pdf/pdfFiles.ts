@@ -55,7 +55,7 @@ export async function sharePdf(uri: string, dialogTitle: string): Promise<void> 
 
 // Files the engine folder owns. Anything else in there is a document being
 // worked on, and is disposable.
-export const ENGINE_RUNTIME = ['engine.html', 'pdf.min.mjs', 'pdf.worker.min.mjs'];
+export const ENGINE_RUNTIME = ['engine.html', 'viewer.html', 'pdf.min.mjs', 'pdf.worker.min.mjs'];
 const ENGINE_SOURCE = 'source.pdf';
 
 // The WebView is only granted read access to engineDir(), so anything it must
