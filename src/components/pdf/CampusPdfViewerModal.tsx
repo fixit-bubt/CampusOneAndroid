@@ -23,6 +23,7 @@ import {
   prepareDocumentForViewer,
   shareDownloadedPdf,
 } from '../../services/pdf/pdfViewerService';
+import { SquareLoader } from '../ui/SquareLoader';
 
 interface CampusPdfViewerModalProps {
   visible: boolean;
@@ -67,6 +68,35 @@ export function CampusPdfViewerModal({
 
   // Fade animation for document appearance
   const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  // Fluid breathing pulse animation for document skeleton loading
+  const pulseAnim = useRef(new Animated.Value(0.4)).current;
+
+  useEffect(() => {
+    let anim: Animated.CompositeAnimation | null = null;
+    if (loading) {
+      anim = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 0.95,
+            duration: 750,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 0.4,
+            duration: 750,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      anim.start();
+    } else {
+      pulseAnim.setValue(0.4);
+    }
+    return () => {
+      anim?.stop();
+    };
+  }, [loading, pulseAnim]);
 
   const sendDocumentToWebView = useCallback(() => {
     if (!webViewReadyRef.current || !docPayloadRef.current) return;
@@ -139,6 +169,8 @@ export function CampusPdfViewerModal({
       if (data.type === 'viewerReady') {
         webViewReadyRef.current = true;
         sendDocumentToWebView();
+      } else if (data.type === 'rendering') {
+        setLoadingMessage('Rendering official notice…');
       } else if (data.type === 'docOpened') {
         setTotalPages(data.totalPages || 1);
         setLoading(false);
@@ -297,36 +329,44 @@ export function CampusPdfViewerModal({
           {loading && !errorMsg && (
             <View style={[styles.centerOverlay, { backgroundColor: isDark ? '#000000' : '#f1f5f9' }]}>
               <View style={[styles.skeletonSheet, { backgroundColor: isDark ? '#141416' : '#ffffff', borderColor: isDark ? '#262626' : '#e2e8f0' }]}>
-                {/* Simulated Notice Letterhead */}
-                <View style={styles.skelHeader}>
-                  <View style={[styles.skelCircle, { backgroundColor: isDark ? '#262626' : '#e2e8f0' }]} />
-                  <View style={styles.skelHeaderLines}>
-                    <View style={[styles.skelLine, { width: '80%', height: 10, backgroundColor: isDark ? '#262626' : '#e2e8f0' }]} />
-                    <View style={[styles.skelLine, { width: '55%', height: 7, backgroundColor: isDark ? '#222222' : '#edf2f7', marginTop: 6 }]} />
+                {/* Simulated Notice Letterhead & Content with Fluid Pulse Shimmer */}
+                <Animated.View style={{ opacity: pulseAnim, width: '100%' }}>
+                  <View style={styles.skelHeader}>
+                    <View style={[styles.skelCircle, { backgroundColor: isDark ? '#262626' : '#e2e8f0' }]} />
+                    <View style={styles.skelHeaderLines}>
+                      <View style={[styles.skelLine, { width: '80%', height: 10, backgroundColor: isDark ? '#262626' : '#e2e8f0' }]} />
+                      <View style={[styles.skelLine, { width: '55%', height: 7, backgroundColor: isDark ? '#222222' : '#edf2f7', marginTop: 6 }]} />
+                    </View>
                   </View>
-                </View>
-                <View style={[styles.skelDivider, { backgroundColor: isDark ? '#222222' : '#e2e8f0' }]} />
+                  <View style={[styles.skelDivider, { backgroundColor: isDark ? '#222222' : '#e2e8f0' }]} />
 
-                {/* Simulated Notice Heading */}
-                <View style={[styles.skelLine, { width: '75%', height: 11, alignSelf: 'center', backgroundColor: isDark ? '#262626' : '#e2e8f0', marginTop: 14 }]} />
-                <View style={[styles.skelLine, { width: '50%', height: 11, alignSelf: 'center', backgroundColor: isDark ? '#262626' : '#e2e8f0', marginTop: 7 }]} />
+                  {/* Simulated Notice Heading */}
+                  <View style={[styles.skelLine, { width: '75%', height: 11, alignSelf: 'center', backgroundColor: isDark ? '#262626' : '#e2e8f0', marginTop: 14 }]} />
+                  <View style={[styles.skelLine, { width: '50%', height: 11, alignSelf: 'center', backgroundColor: isDark ? '#262626' : '#e2e8f0', marginTop: 7 }]} />
 
-                {/* Simulated Notice Body Paragraphs */}
-                <View style={{ marginTop: 28, gap: 10 }}>
-                  <View style={[styles.skelLine, { width: '96%', height: 8, backgroundColor: isDark ? '#202022' : '#f1f5f9' }]} />
-                  <View style={[styles.skelLine, { width: '92%', height: 8, backgroundColor: isDark ? '#202022' : '#f1f5f9' }]} />
-                  <View style={[styles.skelLine, { width: '94%', height: 8, backgroundColor: isDark ? '#202022' : '#f1f5f9' }]} />
-                  <View style={[styles.skelLine, { width: '70%', height: 8, backgroundColor: isDark ? '#202022' : '#f1f5f9' }]} />
-                  <View style={{ height: 12 }} />
-                  <View style={[styles.skelLine, { width: '95%', height: 8, backgroundColor: isDark ? '#202022' : '#f1f5f9' }]} />
-                  <View style={[styles.skelLine, { width: '88%', height: 8, backgroundColor: isDark ? '#202022' : '#f1f5f9' }]} />
-                  <View style={[styles.skelLine, { width: '65%', height: 8, backgroundColor: isDark ? '#202022' : '#f1f5f9' }]} />
+                  {/* Simulated Notice Body Paragraphs */}
+                  <View style={{ marginTop: 28, gap: 10 }}>
+                    <View style={[styles.skelLine, { width: '96%', height: 8, backgroundColor: isDark ? '#202022' : '#f1f5f9' }]} />
+                    <View style={[styles.skelLine, { width: '92%', height: 8, backgroundColor: isDark ? '#202022' : '#f1f5f9' }]} />
+                    <View style={[styles.skelLine, { width: '94%', height: 8, backgroundColor: isDark ? '#202022' : '#f1f5f9' }]} />
+                    <View style={[styles.skelLine, { width: '70%', height: 8, backgroundColor: isDark ? '#202022' : '#f1f5f9' }]} />
+                    <View style={{ height: 12 }} />
+                    <View style={[styles.skelLine, { width: '95%', height: 8, backgroundColor: isDark ? '#202022' : '#f1f5f9' }]} />
+                    <View style={[styles.skelLine, { width: '88%', height: 8, backgroundColor: isDark ? '#202022' : '#f1f5f9' }]} />
+                    <View style={[styles.skelLine, { width: '65%', height: 8, backgroundColor: isDark ? '#202022' : '#f1f5f9' }]} />
+                  </View>
+                </Animated.View>
+
+                {/* Signature CampusOne Chasing Squares Diamond Loader */}
+                <View style={styles.diamondLoaderCenter} pointerEvents="none">
+                  <View style={[styles.ambientGlow, { backgroundColor: isDark ? 'rgba(91, 133, 247, 0.16)' : 'rgba(43, 91, 227, 0.10)' }]} />
+                  <SquareLoader scale={0.68} />
                 </View>
 
                 {/* Centered Floating Status Pill */}
-                <View style={[styles.skelStatusPill, { backgroundColor: isDark ? 'rgba(30, 41, 59, 0.92)' : 'rgba(241, 245, 249, 0.95)', borderColor: isDark ? '#334155' : '#cbd5e1' }]}>
+                <View style={[styles.skelStatusPill, { backgroundColor: isDark ? 'rgba(24, 24, 27, 0.96)' : 'rgba(255, 255, 255, 0.96)', borderColor: isDark ? '#3f3f46' : '#cbd5e1' }]}>
                   <ActivityIndicator size="small" color={C.brand} style={{ marginRight: 8 }} />
-                  <Text style={[styles.skelStatusTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>
+                  <Text style={[styles.skelStatusTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                     {loadingMessage}
                   </Text>
                 </View>
@@ -575,6 +615,18 @@ const styles = StyleSheet.create({
     height: 1,
     width: '100%',
     marginTop: 16,
+  },
+  diamondLoaderCenter: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingBottom: 48,
+  },
+  ambientGlow: {
+    position: 'absolute',
+    width: 130,
+    height: 130,
+    borderRadius: 65,
   },
   skelStatusPill: {
     position: 'absolute',

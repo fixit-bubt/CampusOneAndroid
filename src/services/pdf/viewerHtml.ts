@@ -92,6 +92,50 @@ export function buildViewerHtml(isDark: boolean = true): string {
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
+    .square-stage {
+      width: 80px;
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .square-diamond {
+      position: relative;
+      width: 60px;
+      height: 60px;
+      transform: rotate(45deg);
+    }
+    .chase-sq {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 17px;
+      height: 17px;
+      border-radius: 3px;
+      background-color: ${isDark ? '#ffffff' : '#2b5be3'};
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+      animation: chase-animation 7.5s ease-in-out infinite both;
+    }
+    .csq-0 { animation-delay: 0s; }
+    .csq-1 { animation-delay: -1.0714s; }
+    .csq-2 { animation-delay: -2.1428s; }
+    .csq-3 { animation-delay: -3.2142s; }
+    .csq-4 { animation-delay: -4.2857s; }
+    .csq-5 { animation-delay: -5.3571s; }
+    .csq-6 { animation-delay: -6.4285s; }
+
+    @keyframes chase-animation {
+      0%, 10.5% { left: 0; top: 0; }
+      12.5%, 23% { left: 20px; top: 0; }
+      25%, 35.5% { left: 40px; top: 0; }
+      37.5%, 48% { left: 40px; top: 20px; }
+      50%, 60.5% { left: 20px; top: 20px; }
+      62.5%, 73% { left: 20px; top: 40px; }
+      75%, 85.5% { left: 0; top: 40px; }
+      87.5%, 98% { left: 0; top: 20px; }
+      100% { left: 0; top: 0; }
+    }
     #init-loader {
       display: flex;
       flex-direction: column;
@@ -100,14 +144,24 @@ export function buildViewerHtml(isDark: boolean = true): string {
       padding-top: 60px;
       color: ${textColor};
       font-size: 14px;
-      gap: 12px;
+      gap: 16px;
     }
   </style>
 </head>
 <body>
   <div id="viewer-container">
     <div id="init-loader">
-      <div class="spinner"></div>
+      <div class="square-stage">
+        <div class="square-diamond">
+          <div class="chase-sq csq-0"></div>
+          <div class="chase-sq csq-1"></div>
+          <div class="chase-sq csq-2"></div>
+          <div class="chase-sq csq-3"></div>
+          <div class="chase-sq csq-4"></div>
+          <div class="chase-sq csq-5"></div>
+          <div class="chase-sq csq-6"></div>
+        </div>
+      </div>
       <div>Preparing notice…</div>
     </div>
   </div>
@@ -177,6 +231,7 @@ export function buildViewerHtml(isDark: boolean = true): string {
         }).promise;
 
         totalPages = pdfDoc.numPages;
+        send({ type: 'rendering', total: totalPages });
         if (initLoader) initLoader.style.display = 'none';
 
         // Create page placeholders with full A4 proportion

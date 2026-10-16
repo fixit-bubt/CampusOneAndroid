@@ -36,5 +36,11 @@ describe('buildViewerHtml', () => {
     expect(darkHtml).toContain('window.scrollToPage');
     expect(darkHtml).toContain('setupDoubleTapZoom');
   });
+
+  it('contains chasing square diamond loader matching website brand animation', () => {
+    expect(darkHtml).toContain('square-diamond');
+    expect(darkHtml).toContain('chase-sq');
+    expect(darkHtml).toContain('@keyframes chase-animation');
+  });
 });
 

@@ -16,3 +16,4 @@ export {
   LiquidSwitch,
   TactileSwitch,
 } from './LiquidToggle';
+export { SquareLoader } from './SquareLoader';
