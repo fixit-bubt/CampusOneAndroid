@@ -121,6 +121,7 @@ function getDoctorDuty(doc: Doctor, C: any, t: Dict): DutyState {
       return {
         badge: 'off_duty',
         label: `${t.medical2.today} ${formatTime12(doc.start_time)}`,
+        sub: `${formatTime12(doc.start_time)} - ${formatTime12(doc.end_time)}`,
         color: C.textMuted,
         bg: C.surface2,
       };
@@ -136,8 +137,8 @@ function getDoctorDuty(doc: Doctor, C: any, t: Dict): DutyState {
 
   return {
     badge: 'off_duty',
-    label: `${formatTime12(doc.start_time)} - ${formatTime12(doc.end_time)}`,
-    sub: days.length > 0 ? days.join(', ') : undefined,
+    label: t.medical2.notAvailableNow,
+    sub: `${formatTime12(doc.start_time)} - ${formatTime12(doc.end_time)}${days.length > 0 ? ` · ${days.join(', ')}` : ''}`,
     color: C.textMuted,
     bg: C.surface2,
   };
@@ -162,6 +163,7 @@ export function MedicalScreen({ navigation }: any) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<FilterType>('all');
   const [filterModalVisible, setFilterModalVisible] = useState(false);
+  const [dispensaryOpen, setDispensaryOpen] = useState(false);
   const [medSearchQuery, setMedSearchQuery] = useState('');
   const [mapHospital, setMapHospital] = useState<EmergencyHospital | null>(null);
 
@@ -214,9 +216,9 @@ export function MedicalScreen({ navigation }: any) {
 
   const tabs: TabItem<MedicalTab>[] = useMemo(
     () => [
-      { id: 'staff', label: t.medical2.tabStaff, icon: 'user-check', accentColor: MED_COLOR },
-      { id: 'services', label: t.medical2.tabServices, icon: 'activity', accentColor: MED_COLOR },
-      { id: 'emergency', label: t.medical2.tabEmergency, icon: 'alert-triangle', accentColor: C.danger },
+      { id: 'staff', label: t.medical2.tabStaff, accentColor: MED_COLOR },
+      { id: 'services', label: t.medical2.tabServices, accentColor: MED_COLOR },
+      { id: 'emergency', label: t.medical2.tabEmergency, accentColor: C.danger },
     ],
     [t, C.danger]
   );
@@ -225,7 +227,7 @@ export function MedicalScreen({ navigation }: any) {
     () => [
       {
         id: 'all' as FilterType,
-        label: t.medical2.filterAll,
+        label: isBn ? 'সকল ডাক্তার ও স্পেশালিস্ট' : 'All Doctors & Specialists',
         sub: isBn ? 'সব মেডিকেল অফিসার ও কাউন্সেলিং বিশেষজ্ঞ' : 'All medical officers and counseling specialists',
         icon: 'medical',
       },
@@ -427,9 +429,11 @@ export function MedicalScreen({ navigation }: any) {
 
           <View style={[styles.heroDivider, { backgroundColor: C.border }]} />
 
-          <View style={styles.heroBottomRow}>
-            <View style={styles.heroHoursCol}>
-              <Icon name="clock" size={13} color={C.textMuted} />
+          <View style={styles.heroBottomStack}>
+            <View style={styles.heroHoursRow}>
+              <View style={[styles.heroMiniIcon, { backgroundColor: C.surface2 }]}>
+                <Icon name="clock" size={12} color={C.textMuted} />
+              </View>
               <Text
                 style={[
                   styles.heroHoursTxt,
@@ -451,8 +455,11 @@ export function MedicalScreen({ navigation }: any) {
                   styles.heroCallBtnTxt,
                   { color: MED_COLOR, fontFamily: FontFamily.jakartaBold },
                 ]}
+                numberOfLines={1}
               >
-                {t.medical2.callDesk}
+                {isBn
+                  ? `মেডিকেল ডেস্ক: ${BUBT_CLINIC_INFO.phoneDirect} (রুম ২০৫, এক্সট. ${BUBT_CLINIC_INFO.phoneExt})`
+                  : `Medical Desk: ${BUBT_CLINIC_INFO.phoneDirect} (Ext. ${BUBT_CLINIC_INFO.phoneExt})`}
               </Text>
             </TouchableOpacity>
           </View>
@@ -497,7 +504,7 @@ export function MedicalScreen({ navigation }: any) {
               )}
             </View>
 
-            {/* 58dp Universal Dropdown Selector Bar */}
+            {/* 72dp Universal Dropdown Selector Card Standard */}
             <TouchableOpacity
               style={[
                 styles.dropdownBar,
@@ -507,13 +514,13 @@ export function MedicalScreen({ navigation }: any) {
               activeOpacity={0.75}
             >
               <View style={[styles.dropdownIconTile, { backgroundColor: MED_BG }]}>
-                <Icon name={selectedFilterObj.icon} size={17} color={MED_COLOR} />
+                <Icon name={selectedFilterObj.icon} size={20} color={MED_COLOR} />
               </View>
               <View style={styles.dropdownBody}>
                 <Text
                   style={[
                     styles.dropdownLabel,
-                    { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
+                    { color: C.textMuted, fontFamily: FontFamily.jakartaBold },
                   ]}
                 >
                   {isBn ? 'তালিকা ফিল্টার' : 'ROSTER FILTER'}
@@ -528,7 +535,7 @@ export function MedicalScreen({ navigation }: any) {
                   {selectedFilterObj.label}
                 </Text>
               </View>
-              <Icon name="chevD" size={17} color={C.textMuted} />
+              <Icon name="chevD" size={18} color={C.textMuted} />
             </TouchableOpacity>
 
             {/* Doctor List */}
@@ -559,7 +566,7 @@ export function MedicalScreen({ navigation }: any) {
                     <TouchableOpacity
                       key={doc.id}
                       style={[
-                        styles.doctorCard,
+                        styles.doctorCard72,
                         { backgroundColor: C.surface, borderColor: C.border },
                       ]}
                       onPress={() =>
@@ -569,7 +576,7 @@ export function MedicalScreen({ navigation }: any) {
                     >
                       <View
                         style={[
-                          styles.docThumb,
+                          styles.docThumb44,
                           {
                             backgroundColor: isPsych
                               ? isDark
@@ -581,106 +588,76 @@ export function MedicalScreen({ navigation }: any) {
                       >
                         <Icon
                           name={isPsych ? 'heart' : 'medical'}
-                          size={22}
+                          size={20}
                           color={isPsych ? '#a855f7' : MED_COLOR}
                         />
                       </View>
 
-                      <View style={styles.docCardBody}>
-                        <View style={styles.docNameRow}>
-                          <Text
-                            style={[
-                              styles.docName,
-                              { color: C.text, fontFamily: FontFamily.jakartaBold },
-                            ]}
-                            numberOfLines={1}
-                          >
-                            {doc.name}
-                          </Text>
-                        </View>
-
+                      <View style={styles.docBody72}>
                         <Text
                           style={[
-                            styles.docSpec,
+                            styles.docName72,
+                            { color: C.text, fontFamily: FontFamily.jakartaBold },
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {doc.name}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.docSub72,
                             {
-                              color: isPsych ? '#a855f7' : C.text2,
+                              color: isPsych ? '#a855f7' : C.textMuted,
                               fontFamily: FontFamily.jakartaMedium,
                             },
                           ]}
                           numberOfLines={1}
                         >
-                          {doc.specialty}
-                          {doc.qualifications ? ` · ${doc.qualifications}` : ''}
+                          {doc.specialty} · {doc.room ?? BUBT_CLINIC_INFO.room}
                         </Text>
-
-                        <Text
-                          style={[
-                            styles.docRoom,
-                            { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
-                          ]}
-                          numberOfLines={1}
-                        >
-                          {doc.room ?? BUBT_CLINIC_INFO.room}
-                        </Text>
-
-                        <View style={styles.docDutyRow}>
-                          <View
-                            style={[
-                              styles.dutyBadge,
-                              { backgroundColor: duty.bg },
-                            ]}
-                          >
-                            {duty.badge === 'on_duty' && (
-                              <View
-                                style={[
-                                  styles.dutyLiveDot,
-                                  { backgroundColor: duty.color },
-                                ]}
-                              />
-                            )}
-                            <Text
-                              style={[
-                                styles.dutyBadgeTxt,
-                                {
-                                  color: duty.color,
-                                  fontFamily: FontFamily.jakartaBold,
-                                },
-                              ]}
-                            >
-                              {duty.label}
-                            </Text>
-                          </View>
-
-                          {duty.sub ? (
-                            <Text
-                              style={[
-                                styles.dutySubTxt,
-                                {
-                                  color: C.textMuted,
-                                  fontFamily: FontFamily.jakartaMedium,
-                                },
-                              ]}
-                            >
-                              {duty.sub}
-                            </Text>
-                          ) : null}
-                        </View>
                       </View>
 
-                      <View style={styles.cardRightCol}>
+                      <View style={styles.docRight72}>
+                        <View
+                          style={[
+                            styles.dutyBadge72,
+                            { backgroundColor: duty.bg },
+                          ]}
+                        >
+                          {duty.badge === 'on_duty' && (
+                            <View
+                              style={[
+                                styles.dutyLiveDot,
+                                { backgroundColor: duty.color },
+                              ]}
+                            />
+                          )}
+                          <Text
+                            style={[
+                              styles.dutyBadgeTxt72,
+                              {
+                                color: duty.color,
+                                fontFamily: FontFamily.jakartaBold,
+                              },
+                            ]}
+                            numberOfLines={1}
+                          >
+                            {duty.label}
+                          </Text>
+                        </View>
                         {isAdmin && (
                           <TouchableOpacity
                             style={[
-                              styles.adminQuickBtn,
+                              styles.adminQuickBtn36,
                               { backgroundColor: C.surface2 },
                             ]}
                             onPress={() => openEditModal(doc)}
                             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                           >
-                            <Icon name="sliders" size={14} color={C.textMuted} />
+                            <Icon name="sliders" size={13} color={C.textMuted} />
                           </TouchableOpacity>
                         )}
-                        <Icon name="chevR" size={17} color={C.textMuted} />
+                        <Icon name="chevR" size={16} color={C.textMuted} />
                       </View>
                     </TouchableOpacity>
                   );
@@ -735,174 +712,236 @@ export function MedicalScreen({ navigation }: any) {
               {t.medical2.servicesOverview}
             </Text>
 
-            <View style={styles.serviceGrid}>
+            <View style={styles.serviceList72}>
               {CLINIC_SERVICES.map((srv) => (
                 <View
                   key={srv.id}
                   style={[
-                    styles.serviceCard,
+                    styles.serviceCard72,
                     { backgroundColor: C.surface, borderColor: C.border },
                   ]}
                 >
-                  <View style={styles.serviceTop}>
-                    <View style={[styles.srvIconBox, { backgroundColor: MED_BG }]}>
-                      <Icon name={srv.icon} size={18} color={MED_COLOR} />
-                    </View>
-                    <View
+                  <View
+                    style={[
+                      styles.srvIconBox44,
+                      {
+                        backgroundColor:
+                          srv.id === 'mental_health'
+                            ? isDark
+                              ? 'rgba(168, 85, 247, 0.16)'
+                              : 'rgba(147, 51, 234, 0.1)'
+                            : MED_BG,
+                      },
+                    ]}
+                  >
+                    <Icon
+                      name={srv.icon}
+                      size={20}
+                      color={srv.id === 'mental_health' ? '#a855f7' : MED_COLOR}
+                    />
+                  </View>
+                  <View style={styles.srvBody72}>
+                    <Text
                       style={[
-                        styles.srvBadge,
+                        styles.srvTitle72,
+                        { color: C.text, fontFamily: FontFamily.jakartaBold },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {isBn ? srv.titleBn : srv.title}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.srvDesc72,
+                        { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {isBn ? srv.descBn : srv.desc}
+                    </Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.srvBadge72,
+                      {
+                        backgroundColor:
+                          srv.id === 'mental_health'
+                            ? isDark
+                              ? 'rgba(168, 85, 247, 0.16)'
+                              : 'rgba(147, 51, 234, 0.1)'
+                            : C.surface2,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.srvBadgeTxt72,
                         {
-                          backgroundColor:
-                            srv.id === 'mental_health'
-                              ? isDark
-                                ? 'rgba(168, 85, 247, 0.16)'
-                                : 'rgba(147, 51, 234, 0.1)'
-                              : C.surface2,
+                          color: srv.id === 'mental_health' ? '#a855f7' : C.text2,
+                          fontFamily: FontFamily.jakartaBold,
                         },
                       ]}
+                      numberOfLines={1}
                     >
-                      <Text
-                        style={[
-                          styles.srvBadgeTxt,
-                          {
-                            color: srv.id === 'mental_health' ? '#a855f7' : C.text2,
-                            fontFamily: FontFamily.jakartaBold,
-                          },
-                        ]}
-                      >
-                        {isBn ? srv.badgeBn : srv.badge}
-                      </Text>
-                    </View>
+                      {isBn ? srv.badgeBn : srv.badge}
+                    </Text>
                   </View>
-                  <Text
-                    style={[
-                      styles.srvTitle,
-                      { color: C.text, fontFamily: FontFamily.jakartaBold },
-                    ]}
-                  >
-                    {isBn ? srv.titleBn : srv.title}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.srvDesc,
-                      { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
-                    ]}
-                  >
-                    {isBn ? srv.descBn : srv.desc}
-                  </Text>
                 </View>
               ))}
             </View>
 
-            {/* Free Dispensary Medicines */}
-            <Text
+            {/* Free Dispensary Medicines Dropdown Accordion (72dp Bar Standard) */}
+            <TouchableOpacity
               style={[
-                styles.sectionHeader,
-                { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold, marginTop: 22 },
+                styles.dispensaryHeaderBar72,
+                { backgroundColor: C.surface, borderColor: C.border },
               ]}
+              onPress={() => setDispensaryOpen((prev) => !prev)}
+              activeOpacity={0.75}
             >
-              {t.medical2.dispensaryTitle}
-            </Text>
-            <Text
-              style={[
-                styles.sectionSub,
-                { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
-              ]}
-            >
-              {t.medical2.dispensarySub}
-            </Text>
-
-            {/* 58dp Universal Medicine Search Bar */}
-            <View
-              style={[
-                styles.searchBox,
-                { backgroundColor: C.surface, borderColor: C.border, marginBottom: 12 },
-              ]}
-            >
-              <Icon name="search" size={18} color={C.textMuted} />
-              <TextInput
-                style={[
-                  styles.searchInput,
-                  { color: C.text, fontFamily: FontFamily.jakartaMedium },
-                ]}
-                placeholder={isBn ? 'ওষুধ বা লক্ষণ খুঁজুন (যেমন প্যারাসিটামল, গ্যাস্ট্রিক)...' : 'Search medicine or symptom (e.g. Napa, Antacid)...'}
-                placeholderTextColor={C.textMuted}
-                value={medSearchQuery}
-                onChangeText={setMedSearchQuery}
-                autoCorrect={false}
-              />
-              {medSearchQuery.length > 0 && (
-                <TouchableOpacity
-                  onPress={() => setMedSearchQuery('')}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              <View style={[styles.srvIconBox44, { backgroundColor: MED_BG }]}>
+                <Icon name="shield" size={20} color={MED_COLOR} />
+              </View>
+              <View style={styles.srvBody72}>
+                <Text
+                  style={[
+                    styles.srvTitle72,
+                    { color: C.text, fontFamily: FontFamily.jakartaBold },
+                  ]}
+                  numberOfLines={1}
                 >
-                  <Icon name="close" size={14} color={C.textMuted} />
-                </TouchableOpacity>
-              )}
-            </View>
+                  {t.medical2.dispensaryTitle}
+                </Text>
+                <Text
+                  style={[
+                    styles.srvDesc72,
+                    { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {dispensaryOpen
+                    ? (isBn ? 'ওষুধের তালিকা লুকাতে ট্যাপ করুন' : 'Tap to collapse medicine list')
+                    : (isBn ? 'রুম ২০৫-এ সংরক্ষিত ওষুধ · তালিকা দেখতে ট্যাপ করুন' : 'Room 205 · Tap to expand medicine list')}
+                </Text>
+              </View>
+              <Icon
+                name={dispensaryOpen ? 'chevU' : 'chevD'}
+                size={18}
+                color={C.textMuted}
+              />
+            </TouchableOpacity>
 
-            <View style={styles.medsList}>
-              {filteredMeds.length === 0 ? (
-                <View style={styles.empty}>
-                  <Icon name="medical" size={26} color={C.textMuted} />
-                  <Text
+            {dispensaryOpen && (
+              <View style={styles.dispensaryContent}>
+                {/* 58dp Universal Medicine Search Bar */}
+                <View
+                  style={[
+                    styles.searchBox,
+                    { backgroundColor: C.surface, borderColor: C.border, marginBottom: 10 },
+                  ]}
+                >
+                  <Icon name="search" size={18} color={C.textMuted} />
+                  <TextInput
                     style={[
-                      styles.emptyTitle,
-                      { color: C.text, fontFamily: FontFamily.jakartaBold },
+                      styles.searchInput,
+                      { color: C.text, fontFamily: FontFamily.jakartaMedium },
                     ]}
-                  >
-                    {isBn ? 'আপনার অনুসন্ধানের সাথে কোনো ওষুধ মেলেনি' : 'No medicines matched your search'}
-                  </Text>
+                    placeholder={
+                      isBn
+                        ? 'ওষুধ বা লক্ষণ খুঁজুন (যেমন প্যারাসিটামল, গ্যাস্ট্রিক)...'
+                        : 'Search medicine or symptom (e.g. Napa, Antacid)...'
+                    }
+                    placeholderTextColor={C.textMuted}
+                    value={medSearchQuery}
+                    onChangeText={setMedSearchQuery}
+                    autoCorrect={false}
+                  />
+                  {medSearchQuery.length > 0 && (
+                    <TouchableOpacity
+                      onPress={() => setMedSearchQuery('')}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <Icon name="close" size={14} color={C.textMuted} />
+                    </TouchableOpacity>
+                  )}
                 </View>
-              ) : (
-                filteredMeds.map((med, idx) => (
-                  <View
-                    key={med.id}
-                    style={[
-                      styles.medRow,
-                      { backgroundColor: C.surface, borderColor: C.border },
-                    ]}
-                  >
-                    <View style={[styles.medIndexBadge, { backgroundColor: C.surface2 }]}>
+
+                {/* 72dp Medicine List Rows */}
+                <View style={styles.medsList72}>
+                  {filteredMeds.length === 0 ? (
+                    <View style={styles.empty}>
+                      <Icon name="medical" size={26} color={C.textMuted} />
                       <Text
                         style={[
-                          styles.medIndexTxt,
-                          { color: C.text2, fontFamily: FontFamily.jakartaBold },
-                        ]}
-                      >
-                        {idx + 1}
-                      </Text>
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text
-                        style={[
-                          styles.medName,
+                          styles.emptyTitle,
                           { color: C.text, fontFamily: FontFamily.jakartaBold },
                         ]}
                       >
-                        {isBn ? med.nameBn : med.name}
-                      </Text>
-                      <Text
-                        style={[
-                          styles.medCategory,
-                          { color: MED_COLOR, fontFamily: FontFamily.jakartaMedium },
-                        ]}
-                      >
-                        {isBn ? med.categoryBn : med.category}
-                      </Text>
-                      <Text
-                        style={[
-                          styles.medUse,
-                          { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
-                        ]}
-                      >
-                        {isBn ? `ব্যবহার: ${med.useForBn}` : `Indications: ${med.useFor}`}
+                        {isBn
+                          ? 'আপনার অনুসন্ধানের সাথে কোনো ওষুধ মেলেনি'
+                          : 'No medicines matched your search'}
                       </Text>
                     </View>
-                  </View>
-                ))
-              )}
-            </View>
+                  ) : (
+                    filteredMeds.map((med, idx) => (
+                      <View
+                        key={med.id}
+                        style={[
+                          styles.medRow72,
+                          { backgroundColor: C.surface, borderColor: C.border },
+                        ]}
+                      >
+                        <View style={[styles.medIndexBadge44, { backgroundColor: C.surface2 }]}>
+                          <Text
+                            style={[
+                              styles.medIndexTxt,
+                              { color: C.text2, fontFamily: FontFamily.jakartaBold },
+                            ]}
+                          >
+                            {idx + 1}
+                          </Text>
+                        </View>
+                        <View style={styles.medBody72}>
+                          <Text
+                            style={[
+                              styles.medName72,
+                              { color: C.text, fontFamily: FontFamily.jakartaBold },
+                            ]}
+                            numberOfLines={1}
+                          >
+                            {isBn ? med.nameBn : med.name}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.medSub72,
+                              { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
+                            ]}
+                            numberOfLines={1}
+                          >
+                            {isBn ? med.categoryBn : med.category} · {isBn ? med.useForBn : med.useFor}
+                          </Text>
+                        </View>
+                        <View
+                          style={[
+                            styles.freeBadge,
+                            { backgroundColor: C.successBg },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.freeBadgeTxt,
+                              { color: C.success, fontFamily: FontFamily.jakartaBold },
+                            ]}
+                          >
+                            {isBn ? 'ফ্রি' : 'Free'}
+                          </Text>
+                        </View>
+                      </View>
+                    ))
+                  )}
+                </View>
+              </View>
+            )}
           </View>
         )}
 
@@ -1072,99 +1111,63 @@ export function MedicalScreen({ navigation }: any) {
               {t.medical2.nearbyHospitalsSub}
             </Text>
 
-            <View style={styles.hospitalList}>
+            <View style={styles.hospitalList72}>
               {NEARBY_HOSPITALS.map((hosp) => (
                 <View
                   key={hosp.id}
                   style={[
-                    styles.hospCard,
+                    styles.hospCard72,
                     { backgroundColor: C.surface, borderColor: C.border },
                   ]}
                 >
-                  <View style={styles.hospTopRow}>
-                    <View style={{ flex: 1 }}>
-                      <Text
-                        style={[
-                          styles.hospName,
-                          { color: C.text, fontFamily: FontFamily.jakartaBold },
-                        ]}
-                      >
-                        {isBn ? hosp.nameBn : hosp.name}
-                      </Text>
-                      <Text
-                        style={[
-                          styles.hospType,
-                          { color: MED_COLOR, fontFamily: FontFamily.jakartaMedium },
-                        ]}
-                      >
-                        {isBn ? hosp.typeBn : hosp.type}
-                      </Text>
-                      <Text
-                        style={[
-                          styles.hospAddress,
-                          { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
-                        ]}
-                      >
-                        {hosp.address}
-                      </Text>
-                    </View>
-
-                    <View style={[styles.distBadge, { backgroundColor: C.surface2 }]}>
-                      <Icon name="pin" size={12} color={C.text2} />
-                      <Text
-                        style={[
-                          styles.distBadgeTxt,
-                          { color: C.text2, fontFamily: FontFamily.jakartaBold },
-                        ]}
-                      >
-                        {isBn ? hosp.distanceBn : hosp.distance}
-                      </Text>
-                    </View>
+                  <View style={[styles.hospIconBox44, { backgroundColor: MED_BG }]}>
+                    <Icon name="activity" size={20} color={MED_COLOR} />
                   </View>
 
-                  <View style={[styles.hospDivider, { backgroundColor: C.border }]} />
+                  <View style={styles.hospBody72}>
+                    <Text
+                      style={[
+                        styles.hospName72,
+                        { color: C.text, fontFamily: FontFamily.jakartaBold },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {isBn ? hosp.nameBn : hosp.name}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.hospSub72,
+                        { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {isBn ? hosp.distanceBn : hosp.distance} · {isBn ? hosp.typeBn : hosp.type}
+                    </Text>
+                  </View>
 
-                  <View style={styles.hospActionsRow}>
+                  <View style={styles.hospBtnsRow}>
                     <TouchableOpacity
                       style={[
-                        styles.hospActionBtn,
+                        styles.hospCallMiniBtn,
                         { backgroundColor: MED_BG },
                       ]}
                       onPress={() => handleDialPhone(hosp.hotline)}
                       activeOpacity={0.75}
+                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                     >
-                      <Icon name="phone" size={14} color={MED_COLOR} />
-                      <Text
-                        style={[
-                          styles.hospActionTxt,
-                          { color: MED_COLOR, fontFamily: FontFamily.jakartaBold },
-                        ]}
-                        numberOfLines={1}
-                        adjustsFontSizeToFit
-                        minimumFontScale={0.82}
-                      >
-                        {t.medical2.callHotline} ({hosp.hotline})
-                      </Text>
+                      <Icon name="phone" size={15} color={MED_COLOR} />
                     </TouchableOpacity>
 
                     <TouchableOpacity
                       style={[
-                        styles.hospMapBtn,
+                        styles.hospMapMiniBtn,
                         { backgroundColor: C.surface2, borderColor: C.border },
                       ]}
                       onPress={() => handleOpenHospitalMap(hosp)}
                       activeOpacity={0.75}
+                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                     >
-                      <Icon name="navigation" size={14} color={C.text} />
-                      <Text
-                        style={[
-                          styles.hospMapTxt,
-                          { color: C.text, fontFamily: FontFamily.jakartaBold },
-                        ]}
-                        numberOfLines={1}
-                      >
-                        {t.medical2.getDirections}
-                      </Text>
+                      <Icon name="navigation" size={15} color={C.text} />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -1477,6 +1480,7 @@ export function MedicalScreen({ navigation }: any) {
           onClose={() => setMapHospital(null)}
           destination={mapHospital.name}
           destinationSub={mapHospital.address}
+          destinationCoords={mapHospital.coords}
           title={isBn ? mapHospital.nameBn : mapHospital.name}
           sectorColor={MED_COLOR}
           iconName="activity"
@@ -1494,9 +1498,9 @@ const styles = StyleSheet.create({
   // Hero Card
   heroCard: {
     padding: 16,
-    borderRadius: 18,
+    borderRadius: 16,
     borderWidth: 1,
-    marginBottom: 14,
+    marginBottom: 12,
   } as ViewStyle,
   heroTopRow: {
     flexDirection: 'row',
@@ -1524,26 +1528,29 @@ const styles = StyleSheet.create({
   openDot: { width: 6, height: 6, borderRadius: 3 } as ViewStyle,
   openTxt: { fontSize: 11 } as any,
   heroDivider: { height: StyleSheet.hairlineWidth, marginVertical: 12 } as ViewStyle,
-  heroBottomRow: {
-    flexDirection: 'row',
+  heroBottomStack: { gap: 8 } as ViewStyle,
+  heroHoursRow: { flexDirection: 'row', alignItems: 'center', gap: 8 } as ViewStyle,
+  heroMiniIcon: {
+    width: 22,
+    height: 22,
+    borderRadius: 7,
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 10,
+    justifyContent: 'center',
   } as ViewStyle,
-  heroHoursCol: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 } as ViewStyle,
-  heroHoursTxt: { fontSize: 11.5 } as any,
+  heroHoursTxt: { fontSize: 12 } as any,
   heroCallBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    gap: 7,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
     borderRadius: 10,
+    alignSelf: 'flex-start',
   } as ViewStyle,
-  heroCallBtnTxt: { fontSize: 11.5 } as any,
+  heroCallBtnTxt: { fontSize: 12 } as any,
 
   // Tabs
-  tabContainer: { marginBottom: 14 } as ViewStyle,
+  tabContainer: { marginBottom: 12 } as ViewStyle,
   tabContent: {} as ViewStyle,
 
   // Search & Filters
@@ -1562,16 +1569,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    height: 58,
+    height: 72,
     borderRadius: 16,
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     borderWidth: 1,
-    marginBottom: 12,
+    marginBottom: 10,
   } as ViewStyle,
   dropdownIconTile: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
@@ -1581,70 +1588,61 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   dropdownLabel: {
     fontSize: 11,
-    letterSpacing: 0.3,
+    letterSpacing: 0.5,
     textTransform: 'uppercase',
   } as any,
   dropdownValue: {
-    fontSize: 13.5,
+    fontSize: 14.5,
     marginTop: 2,
   } as any,
 
-  // Doctor List
+  // Doctor List (72dp Fixed Height Card Standard)
   doctorList: { gap: 10 } as ViewStyle,
-  doctorCard: {
+  doctorCard72: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    padding: 13,
+    height: 72,
+    paddingHorizontal: 14,
     borderRadius: 16,
     borderWidth: 1,
   } as ViewStyle,
-  docThumb: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
+  docThumb44: {
+    width: 44,
+    height: 44,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
   } as ViewStyle,
-  docCardBody: { flex: 1 } as ViewStyle,
-  docNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 } as ViewStyle,
-  docName: { fontSize: 14.5 } as any,
-  docSpec: { fontSize: 12, marginTop: 2 } as any,
-  docRoom: { fontSize: 11.5, marginTop: 2 } as any,
-  docDutyRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    marginTop: 6,
-    flexWrap: 'wrap',
-  } as ViewStyle,
-  dutyBadge: {
+  docBody72: { flex: 1, minWidth: 0, justifyContent: 'center' } as ViewStyle,
+  docName72: { fontSize: 14.5, letterSpacing: -0.2 } as any,
+  docSub72: { fontSize: 11.5, marginTop: 2 } as any,
+  docRight72: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 } as ViewStyle,
+  dutyBadge72: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
     paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 12,
+    paddingVertical: 4,
+    borderRadius: 8,
   } as ViewStyle,
   dutyLiveDot: { width: 5.5, height: 5.5, borderRadius: 3 } as ViewStyle,
-  dutyBadgeTxt: { fontSize: 11 } as any,
-  dutySubTxt: { fontSize: 11 } as any,
-  cardRightCol: { flexDirection: 'row', alignItems: 'center', gap: 6 } as ViewStyle,
-  adminQuickBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+  dutyBadgeTxt72: { fontSize: 10.5 } as any,
+  adminQuickBtn36: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
 
-  // Tab 2: Policy & Services
+  // Tab 2: Policy & Services (72dp Fixed Height Standard)
   policyCard: {
-    padding: 13,
-    borderRadius: 14,
+    padding: 14,
+    borderRadius: 16,
     borderWidth: 1,
-    marginBottom: 16,
+    marginBottom: 14,
   } as ViewStyle,
   policyRow: { flexDirection: 'row', alignItems: 'center', gap: 10 } as ViewStyle,
   policyIconBadge: {
@@ -1658,54 +1656,68 @@ const styles = StyleSheet.create({
   policySub: { fontSize: 11.5, marginTop: 2 } as any,
   sectionHeader: { fontSize: 11, letterSpacing: 0.8, marginBottom: 8 } as any,
   sectionSub: { fontSize: 12, marginBottom: 10 } as any,
-  serviceGrid: { gap: 10 } as ViewStyle,
-  serviceCard: {
-    padding: 13,
-    borderRadius: 14,
+  serviceList72: { gap: 10 } as ViewStyle,
+  serviceCard72: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    height: 72,
+    paddingHorizontal: 14,
+    borderRadius: 16,
     borderWidth: 1,
   } as ViewStyle,
-  serviceTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  } as ViewStyle,
-  srvIconBox: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
+  srvIconBox44: {
+    width: 44,
+    height: 44,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   } as ViewStyle,
-  srvBadge: { paddingHorizontal: 7, paddingVertical: 3, borderRadius: 10 } as ViewStyle,
-  srvBadgeTxt: { fontSize: 10.5 } as any,
-  srvTitle: { fontSize: 14 } as any,
-  srvDesc: { fontSize: 12, marginTop: 3 } as any,
+  srvBody72: { flex: 1, minWidth: 0, justifyContent: 'center' } as ViewStyle,
+  srvTitle72: { fontSize: 14.5 } as any,
+  srvDesc72: { fontSize: 11.5, marginTop: 2 } as any,
+  srvBadge72: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 } as ViewStyle,
+  srvBadgeTxt72: { fontSize: 10.5 } as any,
 
-  // Dispensary Meds
-  medsList: { gap: 8 } as ViewStyle,
-  medRow: {
+  // Dispensary Meds Dropdown & 72dp Rows
+  dispensaryHeaderBar72: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 11,
-    padding: 12,
-    borderRadius: 14,
+    alignItems: 'center',
+    gap: 12,
+    height: 72,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    marginTop: 14,
+  } as ViewStyle,
+  dispensaryContent: { marginTop: 10 } as ViewStyle,
+  medsList72: { gap: 8 } as ViewStyle,
+  medRow72: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    height: 72,
+    paddingHorizontal: 14,
+    borderRadius: 16,
     borderWidth: 1,
   } as ViewStyle,
-  medIndexBadge: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+  medIndexBadge44: {
+    width: 44,
+    height: 44,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 2,
+    flexShrink: 0,
   } as ViewStyle,
-  medIndexTxt: { fontSize: 11 } as any,
-  medName: { fontSize: 13.5 } as any,
-  medCategory: { fontSize: 11.5, marginTop: 2 } as any,
-  medUse: { fontSize: 11.5, marginTop: 3 } as any,
+  medIndexTxt: { fontSize: 12 } as any,
+  medBody72: { flex: 1, minWidth: 0, justifyContent: 'center' } as ViewStyle,
+  medName72: { fontSize: 14.5 } as any,
+  medSub72: { fontSize: 11.5, marginTop: 2 } as any,
+  freeBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 } as ViewStyle,
+  freeBadgeTxt: { fontSize: 11 } as any,
 
-  // Tab 3: Emergency
+  // Tab 3: Emergency & Hotlines
   emergencyBanner: {
     padding: 14,
     borderRadius: 16,
@@ -1752,54 +1764,44 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   callBadgeTxt: { fontSize: 11.5 } as any,
 
-  // Hospitals
-  hospitalList: { gap: 11 } as ViewStyle,
-  hospCard: {
-    padding: 14,
+  // Nearby Hospitals (72dp Fixed Height Card Standard)
+  hospitalList72: { gap: 10 } as ViewStyle,
+  hospCard72: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    height: 72,
+    paddingHorizontal: 14,
     borderRadius: 16,
     borderWidth: 1,
   } as ViewStyle,
-  hospTopRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-  } as ViewStyle,
-  hospName: { fontSize: 14 } as any,
-  hospType: { fontSize: 12, marginTop: 2 } as any,
-  hospAddress: { fontSize: 11.5, marginTop: 2 } as any,
-  distBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 7,
-    paddingVertical: 3.5,
-    borderRadius: 8,
-  } as ViewStyle,
-  distBadgeTxt: { fontSize: 11 } as any,
-  hospDivider: { height: StyleSheet.hairlineWidth, marginVertical: 11 } as ViewStyle,
-  hospActionsRow: { flexDirection: 'row', gap: 10, marginTop: 11 } as ViewStyle,
-  hospActionBtn: {
-    flex: 1,
-    height: 58,
-    borderRadius: 16,
-    paddingHorizontal: 10,
-    flexDirection: 'row',
+  hospIconBox44: {
+    width: 44,
+    height: 44,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    flexShrink: 0,
   } as ViewStyle,
-  hospActionTxt: { fontSize: 13, flexShrink: 1 } as any,
-  hospMapBtn: {
-    height: 58,
-    borderRadius: 16,
-    flexDirection: 'row',
+  hospBody72: { flex: 1, minWidth: 0, justifyContent: 'center' } as ViewStyle,
+  hospName72: { fontSize: 14.5 } as any,
+  hospSub72: { fontSize: 11.5, marginTop: 2 } as any,
+  hospBtnsRow: { flexDirection: 'row', alignItems: 'center', gap: 7, flexShrink: 0 } as ViewStyle,
+  hospCallMiniBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    paddingHorizontal: 16,
+  } as ViewStyle,
+  hospMapMiniBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1,
   } as ViewStyle,
-  hospMapTxt: { fontSize: 13 } as any,
 
   // Emergency Blood Bridge Card (72dp 2-Line Standard)
   bloodBridgeCard: {

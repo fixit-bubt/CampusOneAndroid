@@ -49,6 +49,10 @@ export interface EmergencyHospital {
   phone: string;
   hotline: string;
   mapQuery: string;
+  coords: {
+    latitude: number;
+    longitude: number;
+  };
 }
 
 export interface EmergencyContact {
@@ -247,6 +251,7 @@ export const NEARBY_HOSPITALS: EmergencyHospital[] = [
     phone: '0258054708',
     hotline: '01713007419',
     mapQuery: 'National+Heart+Foundation+Hospital+Mirpur+Dhaka',
+    coords: { latitude: 23.8055, longitude: 90.3600 },
   },
   {
     id: 'delta',
@@ -260,6 +265,7 @@ export const NEARBY_HOSPITALS: EmergencyHospital[] = [
     phone: '029010044',
     hotline: '01777755500',
     mapQuery: 'Delta+Medical+College+Hospital+Mirpur+Dhaka',
+    coords: { latitude: 23.7997, longitude: 90.3533 },
   },
   {
     id: 'mirpur_gen',
@@ -273,6 +279,7 @@ export const NEARBY_HOSPITALS: EmergencyHospital[] = [
     phone: '01712285141',
     hotline: '01712285141',
     mapQuery: 'Mirpur+General+Hospital+Dhaka',
+    coords: { latitude: 23.8072, longitude: 90.3625 },
   },
   {
     id: 'kidney_fdn',
@@ -286,6 +293,7 @@ export const NEARBY_HOSPITALS: EmergencyHospital[] = [
     phone: '0244807444',
     hotline: '01713017449',
     mapQuery: 'Kidney+Foundation+Hospital+Mirpur+Dhaka',
+    coords: { latitude: 23.8048, longitude: 90.3610 },
   },
   {
     id: 'dhaka_dental',
@@ -299,6 +307,7 @@ export const NEARBY_HOSPITALS: EmergencyHospital[] = [
     phone: '029011938',
     hotline: '029011938',
     mapQuery: 'Dhaka+Dental+College+Hospital+Mirpur',
+    coords: { latitude: 23.8091, longitude: 90.3835 },
   },
 ];
 
