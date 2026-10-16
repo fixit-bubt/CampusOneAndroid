@@ -61,8 +61,22 @@ export function CampusPdfViewerModal({
   const [pageSelectorVisible, setPageSelectorVisible] = useState(false);
   const [sharing, setSharing] = useState(false);
 
+  // Synchronization refs to eliminate any race condition between WebView boot and document download
+  const webViewReadyRef = useRef(false);
+  const docPayloadRef = useRef<{ base64?: string; fileUri?: string } | null>(null);
+
   // Fade animation for document appearance
   const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  const sendDocumentToWebView = useCallback(() => {
+    if (!webViewReadyRef.current || !docPayloadRef.current) return;
+    const payload = docPayloadRef.current;
+    if (payload.base64) {
+      webRef.current?.injectJavaScript(`window.loadPdfData(${JSON.stringify(payload.base64)}); true;`);
+    } else if (payload.fileUri) {
+      webRef.current?.injectJavaScript(`window.loadPdfDoc(${JSON.stringify(payload.fileUri)}); true;`);
+    }
+  }, []);
 
   // Initialize and prepare engine + document
   const initViewer = useCallback(async (forceRefresh = false) => {
@@ -79,28 +93,39 @@ export function CampusPdfViewerModal({
 
       // 1. Prepare engine runtime & HTML
       const env = await prepareViewerEnvironment(isDark);
-      setHtmlUri(env.htmlUri);
       setEngineDirUri(env.engineDirUri);
+      setHtmlUri(env.htmlUri);
 
       // 2. Download and prepare document
       setLoadingMessage('Downloading official notice…');
       const doc = await prepareDocumentForViewer(fileUrl, fileName, forceRefresh);
       setLocalFileUri(doc.localFileUri);
 
+      // 3. Store payload and trigger load once both are ready
+      docPayloadRef.current = {
+        base64: doc.base64Data,
+        fileUri: doc.engineFileUri,
+      };
+      sendDocumentToWebView();
+
     } catch (err: any) {
       console.error('PDF Viewer init error:', err);
       setErrorMsg(err.message || 'Could not load official PDF notice.');
       setLoading(false);
     }
-  }, [fileUrl, fileName, isDark]);
+  }, [fileUrl, fileName, isDark, sendDocumentToWebView]);
 
   useEffect(() => {
     if (visible && fileUrl) {
       fadeAnim.setValue(0);
       setCurrentPage(1);
       setTotalPages(1);
+      webViewReadyRef.current = false;
+      docPayloadRef.current = null;
       initViewer();
     } else {
+      webViewReadyRef.current = false;
+      docPayloadRef.current = null;
       setHtmlUri(null);
       setLocalFileUri(null);
       setErrorMsg(null);
@@ -112,8 +137,8 @@ export function CampusPdfViewerModal({
     try {
       const data = JSON.parse(event.nativeEvent.data);
       if (data.type === 'viewerReady') {
-        // WebView is booted and module is imported - instruct it to load the document
-        webRef.current?.injectJavaScript(`window.loadPdfDoc('./active_viewer_doc.pdf'); true;`);
+        webViewReadyRef.current = true;
+        sendDocumentToWebView();
       } else if (data.type === 'docOpened') {
         setTotalPages(data.totalPages || 1);
         setLoading(false);
@@ -132,7 +157,7 @@ export function CampusPdfViewerModal({
     } catch {
       // ignore malformed messages
     }
-  }, [fadeAnim]);
+  }, [fadeAnim, sendDocumentToWebView]);
 
   // Share handler
   const handleShare = useCallback(async () => {

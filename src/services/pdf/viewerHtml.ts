@@ -1,5 +1,6 @@
 // Self-contained HTML for the in-app PDF viewer.
 // Runs locally in a WebView over file:// next to the vendored pdf.js runtime.
+// Supports direct memory base64 loading and local XHR fallback.
 // No external network requests, zero Google Docs dependency, 100% offline-ready.
 
 export function buildViewerHtml(isDark: boolean = true): string {
@@ -100,6 +101,18 @@ export function buildViewerHtml(isDark: boolean = true): string {
     </div>
   </div>
 
+  <script>
+    // Global fallback error reporter
+    window.addEventListener('error', function(e) {
+      if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({
+          type: 'error',
+          message: (e && e.message) ? e.message : 'Viewer runtime initialization error'
+        }));
+      }
+    }, true);
+  </script>
+
   <script type="module">
     import * as pdfjs from './pdf.min.mjs';
     pdfjs.GlobalWorkerOptions.workerSrc = './pdf.worker.min.mjs';
@@ -117,7 +130,7 @@ export function buildViewerHtml(isDark: boolean = true): string {
     const container = document.getElementById('viewer-container');
     const initLoader = document.getElementById('init-loader');
 
-    // Read a local sibling file as bytes over XHR
+    // Read a local sibling file as bytes over XHR with relative fallback
     function readLocalBytes(path) {
       return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
@@ -128,17 +141,27 @@ export function buildViewerHtml(isDark: boolean = true): string {
           else reject(new Error('Empty response'));
         };
         xhr.onerror = function() {
-          reject(new Error('Failed to read document'));
+          // Fallback to relative path if absolute file:/// had issues
+          const relXhr = new XMLHttpRequest();
+          relXhr.open('GET', './active_viewer_doc.pdf', true);
+          relXhr.responseType = 'arraybuffer';
+          relXhr.onload = function() {
+            if (relXhr.response) resolve(relXhr.response);
+            else reject(new Error('Empty fallback response'));
+          };
+          relXhr.onerror = function() {
+            reject(new Error('Failed to read document'));
+          };
+          relXhr.send();
         };
         xhr.send();
       });
     }
 
-    window.loadPdfDoc = async function(filePath) {
+    async function initPdfWithBytes(bytes) {
       try {
-        const buffer = await readLocalBytes(filePath);
         pdfDoc = await pdfjs.getDocument({
-          data: new Uint8Array(buffer),
+          data: bytes,
           useSystemFonts: true
         }).promise;
 
@@ -174,6 +197,31 @@ export function buildViewerHtml(isDark: boolean = true): string {
         setupIntersectionObservers();
         setupDoubleTapZoom();
 
+      } catch (err) {
+        send({ type: 'error', message: String(err && err.message ? err.message : err) });
+      }
+    }
+
+    // Direct memory loading via base64: eliminates XHR, CORS, and file path issues entirely
+    window.loadPdfData = async function(base64Data) {
+      try {
+        const binaryString = atob(base64Data);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        await initPdfWithBytes(bytes);
+      } catch (e) {
+        send({ type: 'error', message: 'Decode error: ' + (e && e.message ? e.message : e) });
+      }
+    };
+
+    // File path loading via XHR
+    window.loadPdfDoc = async function(filePath) {
+      try {
+        const buffer = await readLocalBytes(filePath);
+        await initPdfWithBytes(new Uint8Array(buffer));
       } catch (err) {
         send({ type: 'error', message: String(err && err.message ? err.message : err) });
       }
@@ -301,4 +349,3 @@ export function buildViewerHtml(isDark: boolean = true): string {
 </body>
 </html>`;
 }
-
