@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -61,26 +61,50 @@ export function SegmentedTabs<T extends string = string>({
   const animIndex = useRef(new Animated.Value(Math.max(0, activeIndex))).current;
   const prevIndexRef = useRef(activeIndex);
 
+  const innerTrackWidth = Math.max(0, trackWidth - trackPadding * 2);
+  const numTabs = Math.max(1, tabs.length);
+  const tabWidth = innerTrackWidth > 0 ? innerTrackWidth / numTabs : 0;
+
+  const handleTabPress = (idx: number, id: T) => {
+    if (idx !== activeIndex) {
+      prevIndexRef.current = idx;
+      Animated.spring(animIndex, {
+        toValue: idx,
+        tension: 240,
+        friction: 18,
+        useNativeDriver: true,
+      }).start();
+    }
+    onTabChange(id);
+  };
+
   useEffect(() => {
     if (activeIndex >= 0 && prevIndexRef.current !== activeIndex) {
       prevIndexRef.current = activeIndex;
       Animated.spring(animIndex, {
         toValue: activeIndex,
-        tension: 190,
+        tension: 240,
         friction: 18,
         useNativeDriver: true,
       }).start();
     }
   }, [activeIndex, animIndex]);
 
-  const innerTrackWidth = Math.max(0, trackWidth - trackPadding * 2);
-  const numTabs = Math.max(1, tabs.length);
-  const tabWidth = innerTrackWidth > 0 ? innerTrackWidth / numTabs : 0;
-
-  const translateX = animIndex.interpolate({
-    inputRange: tabs.length > 1 ? tabs.map((_, i) => i) : [0, 1],
-    outputRange: tabs.length > 1 ? tabs.map((_, i) => i * tabWidth) : [0, tabWidth],
-  });
+  const translateX = useMemo(() => {
+    const count = Math.max(1, tabs.length);
+    if (tabWidth <= 0) {
+      return animIndex.interpolate({
+        inputRange: [0, 1],
+        outputRange: [0, 1],
+      });
+    }
+    const input = Array.from({ length: count }, (_, i) => i);
+    const output = Array.from({ length: count }, (_, i) => i * tabWidth);
+    return animIndex.interpolate({
+      inputRange: input.length > 1 ? input : [0, 1],
+      outputRange: output.length > 1 ? output : [0, tabWidth],
+    });
+  }, [animIndex, tabs.length, tabWidth]);
 
   return (
     <View
@@ -108,8 +132,8 @@ export function SegmentedTabs<T extends string = string>({
               width: tabWidth,
               borderRadius: indicatorRadius,
               transform: [{ translateX }],
-              backgroundColor: C.surface,
-              borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
+              backgroundColor: isDark ? '#1e1e1e' : C.surface,
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.16)' : 'rgba(0, 0, 0, 0.08)',
             },
           ]}
         />
@@ -132,7 +156,7 @@ export function SegmentedTabs<T extends string = string>({
                 gap: 5.5,
               },
             ]}
-            onPress={() => onTabChange(tab.id)}
+            onPress={() => handleTabPress(idx, tab.id)}
             activeOpacity={0.75}
           >
             {tab.iconConfig ? (

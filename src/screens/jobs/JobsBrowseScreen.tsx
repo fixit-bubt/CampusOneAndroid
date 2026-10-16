@@ -407,15 +407,31 @@ export function JobsBrowseScreen({ navigation }: any) {
     {
       id: 'browse',
       label: t.jobs2?.browseTab ?? 'Browse',
+      icon: 'briefcase',
       count: typeFilter === 'expired'
         ? browseList.length
         : includeExpired
         ? deptFiltered.filter(j => computeJobStatus(j) !== 'removed').length
         : activeJobs.length,
       accentColor: SectorColors.jobs,
+      color: SectorColors.jobs,
     },
-    { id: 'saved', label: t.jobs2?.savedTab ?? 'Saved', count: savedIds.size, accentColor: Accent.gold },
-    { id: 'my_applications', label: 'Applied', count: applications.length, accentColor: Accent.purple },
+    {
+      id: 'saved',
+      label: t.jobs2?.savedTab ?? 'Saved',
+      icon: 'star',
+      count: savedIds.size,
+      accentColor: Accent.gold,
+      color: Accent.gold,
+    },
+    {
+      id: 'my_applications',
+      label: 'Applied',
+      icon: 'file-text',
+      count: applications.length,
+      accentColor: Accent.purple,
+      color: Accent.purple,
+    },
   ], [t.jobs2, typeFilter, browseList.length, includeExpired, deptFiltered, activeJobs.length, savedIds.size, applications.length]);
 
   return (
@@ -478,10 +494,12 @@ export function JobsBrowseScreen({ navigation }: any) {
             onPress={() => setTypeModalVisible(true)}
             activeOpacity={0.75}
           >
-            <Feather
+            <AnimatedIcon
+              family="feather"
               name={typeFilter === 'all' ? 'briefcase' : currentTypeConfig.icon}
               size={16}
               color={typeFilter !== 'all' ? (isDark ? '#fff' : SectorColors.jobs) : C.text2}
+              animation={typeFilter !== 'all' ? 'spring' : 'none'}
             />
             <Text
               style={[
@@ -521,10 +539,12 @@ export function JobsBrowseScreen({ navigation }: any) {
             onPress={() => setDeptModalVisible(true)}
             activeOpacity={0.75}
           >
-            <Feather
+            <AnimatedIcon
+              family="feather"
               name={deptFilter === 'ALL' ? 'book-open' : currentDeptConfig.icon}
               size={16}
               color={deptFilter !== 'ALL' ? (isDark ? '#fff' : SectorColors.jobs) : C.text2}
+              animation={deptFilter !== 'ALL' ? 'spring' : 'none'}
             />
             <Text
               style={[
@@ -826,10 +846,12 @@ export function JobsBrowseScreen({ navigation }: any) {
                     onPress={() => handleToggleSave(j.id)}
                     activeOpacity={0.75}
                   >
-                    <Feather
+                    <AnimatedIcon
+                      family="feather"
                       name="star"
                       size={20}
                       color={isSaved ? Accent.gold : C.textMuted}
+                      animation={isSaved ? 'spring' : 'none'}
                     />
                   </TouchableOpacity>
                 </View>
@@ -928,10 +950,12 @@ export function JobsBrowseScreen({ navigation }: any) {
                         },
                       ]}
                     >
-                      <Feather
+                      <AnimatedIcon
+                        family="feather"
                         name={opt.icon}
                         size={20}
                         color={selected ? (isDark ? '#5eead4' : SectorColors.jobs) : C.text2}
+                        animation={selected ? 'spring' : 'none'}
                       />
                     </View>
                     <View style={styles.card72Info}>
@@ -1108,10 +1132,12 @@ export function JobsBrowseScreen({ navigation }: any) {
                         },
                       ]}
                     >
-                      <Feather
+                      <AnimatedIcon
+                        family="feather"
                         name={dept.icon}
                         size={20}
                         color={selected ? (isDark ? '#5eead4' : SectorColors.jobs) : C.text2}
+                        animation={selected ? 'spring' : 'none'}
                       />
                     </View>
                     <View style={styles.card72Info}>
