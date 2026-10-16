@@ -1,21 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert,
-  TextInput, Platform, KeyboardAvoidingView, ActivityIndicator,
-  Modal, FlatList, Image,
+  TextInput, KeyboardAvoidingView, ActivityIndicator,
+  Modal, FlatList, Image, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Feather } from '@expo/vector-icons';
 import * as Print from 'expo-print';
-import * as Sharing from 'expo-sharing';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
+import { useToast } from '../../components/ui/Toast';
 import { SubBar } from '../../components/layout/TopBar';
-import { Icon } from '../../components/ui/Icon';
 import { Avatar } from '../../components/ui/Avatar';
 import { supabase } from '../../lib/supabase';
 import { localToday } from '../../utils/format';
 import { FontFamily, FontSize, Layout, Radius, Spacing, SectorColors, Accent, pillBg } from '../../theme';
+import { sharePdf, savePdfToDevice } from '../../services/pdf/pdfFiles';
+import { CampusPdfViewerModal } from '../../components/pdf/CampusPdfViewerModal';
 import { BUBT_LOGO_CREST, BUBT_LOGO_HEADER } from './logos';
 
 type DocType = 'assignment' | 'lab_report' | 'project_report' | 'index_page' | 'internship_report';
@@ -37,7 +39,7 @@ const UNI = 'Bangladesh University of Business and Technology';
 const SANS = 'Helvetica, Arial, sans-serif';
 const SERIF = "'Times New Roman', Times, serif";
 
-// Rendered template previews for document styles.
+// Rendered template previews for document styles
 const PREV: Record<string, any> = {
   assign_default: require('./previews/assign_default.jpg'),
   assign_classic: require('./previews/assign_classic.jpg'),
@@ -73,7 +75,11 @@ function esc(s: string): string {
   return (s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-// YYYY-MM-DD -> MM/dd/yyyy.
+function valOrBlank(val: string, fallbackDashes: string = '________________________________'): string {
+  return (val ?? '').trim() ? esc(val.trim()) : fallbackDashes;
+}
+
+// YYYY-MM-DD -> MM/dd/yyyy
 function fmtDate(s: string): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec((s ?? '').trim());
   return m ? `${m[2]}/${m[3]}/${m[1]}` : s;
@@ -167,96 +173,95 @@ function labelBlock(cfg: StyleCfg, text: string): string {
 
 function bodyAssignLab(f: HtmlData): string {
   const cfg = styleCfg(f.template);
-  const e = esc;
   const kv = f.docType === 'lab_report'
     ? `<div class="kv">
-        <div class="row"><span class="k">Experiment Date</span>: ${e(f.experimentDate)}</div>
-        <div class="row"><span class="k">Experiment No</span>: ${e(f.assignmentNo)}</div>
-        <div class="row"><span class="k">Course Title</span>: ${e(f.courseTitle)}</div>
-        <div class="row"><span class="k">Course Code</span>: ${e(f.courseCode)}</div>
-        <div class="row"><span class="k">Experiment Name</span>: ${e(f.experimentName)}</div>
+        <div class="row"><span class="k">Experiment Date</span>: ${valOrBlank(f.experimentDate, '____ / ____ / 2026')}</div>
+        <div class="row"><span class="k">Experiment No</span>: ${valOrBlank(f.assignmentNo, '____')}</div>
+        <div class="row"><span class="k">Course Title</span>: ${valOrBlank(f.courseTitle)}</div>
+        <div class="row"><span class="k">Course Code</span>: ${valOrBlank(f.courseCode, '____________')}</div>
+        <div class="row"><span class="k">Experiment Name</span>: ${valOrBlank(f.experimentName)}</div>
       </div>`
     : `<div class="kv">
-        <div class="row"><span class="k">Assignment No</span>: ${e(f.assignmentNo)}</div>
-        <div class="row"><span class="k">Course Code</span>: ${e(f.courseCode)}</div>
-        <div class="row"><span class="k">Course Title</span>: ${e(f.courseTitle)}</div>
-        ${f.experimentName ? `<div class="row"><span class="k">Topic</span>: ${e(f.experimentName)}</div>` : ''}
+        <div class="row"><span class="k">Assignment No</span>: ${valOrBlank(f.assignmentNo, '____')}</div>
+        <div class="row"><span class="k">Course Code</span>: ${valOrBlank(f.courseCode, '____________')}</div>
+        <div class="row"><span class="k">Course Title</span>: ${valOrBlank(f.courseTitle)}</div>
+        ${f.experimentName ? `<div class="row"><span class="k">Topic</span>: ${valOrBlank(f.experimentName)}</div>` : ''}
       </div>`;
 
   const boxes = `<div class="boxes">
       <div class="box">
         <div class="bh">Submitted By:</div>
-        <div class="row">Name : ${e(f.studentName)}</div>
-        <div class="row">ID No : ${e(f.studentId)}</div>
-        <div class="row">Intake : ${e(f.intake)}</div>
-        <div class="row">Section : ${e(f.section)}</div>
-        <div class="row">Program : ${e(f.program)}</div>
+        <div class="row">Name : ${valOrBlank(f.studentName)}</div>
+        <div class="row">ID No : ${valOrBlank(f.studentId, '____________________')}</div>
+        <div class="row">Intake : ${valOrBlank(f.intake, '________')}</div>
+        <div class="row">Section : ${valOrBlank(f.section, '____')}</div>
+        <div class="row">Program : ${valOrBlank(f.program)}</div>
       </div>
       <div class="box">
         <div class="bh">Submitted To:</div>
-        <div class="row">Name : ${e(f.teacherName)}</div>
-        ${f.teacherDesig ? `<div class="desig">(${e(f.teacherDesig)})</div>` : '<div class="gap"></div>'}
+        <div class="row">Name : ${valOrBlank(f.teacherName)}</div>
+        ${f.teacherDesig ? `<div class="desig">(${esc(f.teacherDesig)})</div>` : '<div class="gap"></div>'}
         <div class="gap"></div>
-        <div class="row">Dept. of ${e(f.dept)}</div>
-        <div class="uni">${e(UNI)}</div>
+        <div class="row">Dept. of ${valOrBlank(f.dept)}</div>
+        <div class="uni">${esc(UNI)}</div>
       </div>
     </div>`;
 
-  const date = `<div class="date">Date of Submission : ${e(f.date)}</div>`;
-  return wrap(cfg, headerBlock(cfg, f) + labelBlock(cfg, e(f.docTypeLabel).toUpperCase()) + kv + boxes + date);
+  const date = `<div class="date">Date of Submission : ${valOrBlank(f.date, '____ / ____ / 2026')}</div>`;
+  return wrap(cfg, headerBlock(cfg, f) + labelBlock(cfg, esc(f.docTypeLabel).toUpperCase()) + kv + boxes + date);
 }
 
 function bodyProject(f: HtmlData): string {
-  const cfg = styleCfg('classic'); // header logo, sans, sharp border
+  const cfg = styleCfg('classic');
   const e = esc;
   const rows = f.members.map((m, i) =>
-    `<tr><td>${i + 1}</td><td style="text-align:left">${e(m.name)}</td><td>${e(m.id)}</td></tr>`).join('');
+    `<tr><td>${i + 1}</td><td style="text-align:left">${valOrBlank(m.name)}</td><td>${valOrBlank(m.id, '____________')}</td></tr>`).join('');
   const inner = `<img class="hdr" src="${f.logoHeader}" />
     ${labelBlock(cfg, 'PROJECT REPORT')}
-    <div class="ptitle">${e(f.reportTitle)}</div>
-    <div class="cc">Course Title : ${e(f.courseTitle)}</div>
-    <div class="cc">Course Code : ${e(f.courseCode)}</div>
+    <div class="ptitle">${valOrBlank(f.reportTitle, 'TITLE OF THE PROJECT REPORT')}</div>
+    <div class="cc">Course Title : ${valOrBlank(f.courseTitle)}</div>
+    <div class="cc">Course Code : ${valOrBlank(f.courseCode, '____________')}</div>
     <div class="subh">Submitted to:</div>
-    <div class="ctrb">${e(f.teacherName)}</div>
+    <div class="ctrb">${valOrBlank(f.teacherName)}</div>
     ${f.teacherDesig ? `<div class="ctr">(${e(f.teacherDesig)})</div>` : ''}
-    <div class="ctr">Department of ${e(f.dept)}</div>
+    <div class="ctr">Department of ${valOrBlank(f.dept)}</div>
     <div class="ctr">${e(UNI)} (BUBT)</div>
     <div class="subh">Submitted by:</div>
     <table class="mt"><tr><th>Sl No</th><th>Name</th><th>ID</th></tr>${rows}</table>
-    <div class="ctr" style="margin-top:10px">Intake : ${e(f.intake)}, Section : ${e(f.section)}</div>
-    <div class="ctr">${e(f.program)}</div>
+    <div class="ctr" style="margin-top:10px">Intake : ${valOrBlank(f.intake, '____')}, Section : ${valOrBlank(f.section, '____')}</div>
+    <div class="ctr">${valOrBlank(f.program)}</div>
     <div class="ctr">${e(UNI)} (BUBT)</div>
-    <div class="date">Date of Submission : ${e(f.date)}</div>`;
+    <div class="date">Date of Submission : ${valOrBlank(f.date, '____ / ____ / 2026')}</div>`;
   return wrap(cfg, inner);
 }
 
 function bodyInternship(f: HtmlData): string {
-  const cfg = styleCfg('default'); // crest, sans, has title
+  const cfg = styleCfg('default');
   const e = esc;
   const inner = `<div class="utitle">${e(UNI)} (BUBT)</div>
     <img class="crest" src="${f.logoCrest}" />
-    <div class="ititle">Internship Report<br/>on<br/><b>${e(f.reportTitle)}</b></div>
+    <div class="ititle">Internship Report<br/>on<br/><b>${valOrBlank(f.reportTitle, 'INTERNSHIP TOPIC')}</b></div>
     ${f.company ? `<div class="ctrb" style="margin-bottom:4px">${e(f.company)}</div>` : ''}
     ${f.duration ? `<div class="ctr" style="margin-bottom:6px">Duration: ${e(f.duration)}</div>` : ''}
     <div class="subh2">Supervised By</div>
-    <div class="ctrb">${e(f.teacherName)}</div>
+    <div class="ctrb">${valOrBlank(f.teacherName)}</div>
     ${f.teacherDesig ? `<div class="ctr">${e(f.teacherDesig)}</div>` : ''}
-    <div class="ctr">Department of ${e(f.dept)}</div>
+    <div class="ctr">Department of ${valOrBlank(f.dept)}</div>
     <div class="ctr">${e(UNI)} (BUBT)</div>
     <div class="subh2">Submitted By</div>
-    <div class="ctrb">${e(f.studentName)}</div>
-    <div class="ctr">ID: ${e(f.studentId)}</div>
-    <div class="ctr">Intake: ${e(f.intake)}</div>
-    <div class="ctr">Program: ${e(f.program)}</div>
-    <div class="ctr">Section: ${e(f.section)}</div>
-    <div class="ctr">Department of ${e(f.dept)}</div>
+    <div class="ctrb">${valOrBlank(f.studentName)}</div>
+    <div class="ctr">ID: ${valOrBlank(f.studentId, '____________________')}</div>
+    <div class="ctr">Intake: ${valOrBlank(f.intake, '________')}</div>
+    <div class="ctr">Program: ${valOrBlank(f.program)}</div>
+    <div class="ctr">Section: ${valOrBlank(f.section, '____')}</div>
+    <div class="ctr">Department of ${valOrBlank(f.dept)}</div>
     <div class="ctr">${e(UNI)} (BUBT)</div>
-    <div class="date">Date of Submission : ${e(f.date)}</div>`;
+    <div class="date">Date of Submission : ${valOrBlank(f.date, '____ / ____ / 2026')}</div>`;
   return wrap(cfg, inner);
 }
 
 function bodyIndex(f: HtmlData): string {
-  const cfg = styleCfg('classic'); // header logo, sans
+  const cfg = styleCfg('classic');
   const e = esc;
   const ul = (v: string) => `<u>&nbsp;${e(v) || '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'}&nbsp;</u>`;
   let rows = '';
@@ -273,7 +278,7 @@ function bodyIndex(f: HtmlData): string {
       <tr><th style="width:8%">SL</th><th style="width:18%">Date</th><th>Title of Experiment / Topic</th><th style="width:10%">Page</th><th style="width:16%">Remarks</th></tr>
       ${rows}
     </table>
-    <div class="ixfoot">Generated by CampusOne on ${e(f.date)}</div>`;
+    <div class="ixfoot">Generated by CampusOne on ${valOrBlank(f.date, 'Today')}</div>`;
   return wrap(cfg, inner);
 }
 
@@ -284,14 +289,16 @@ function buildHtml(f: HtmlData): string {
   return bodyAssignLab(f);
 }
 
-// Main Screen
 export function CoverPageFormScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
   const { profile } = useAuth();
   const t = useT();
+  const toast = useToast();
 
   const [docType, setDocType] = useState<DocType>('assignment');
+  const [docTypeModal, setDocTypeModal] = useState(false);
   const [template, setTemplate] = useState<TemplateStyle>('default');
+
   const [courseCode, setCourseCode] = useState('');
   const [courseTitle, setCourseTitle] = useState('');
   const [assignmentNo, setAssignmentNo] = useState('');
@@ -301,18 +308,24 @@ export function CoverPageFormScreen({ navigation }: any) {
   const [company, setCompany] = useState('');
   const [duration, setDuration] = useState('');
   const [indexRows, setIndexRows] = useState('15');
+
   const [studentName, setStudentName] = useState(profile?.full_name ?? '');
   const [studentId, setStudentId] = useState(profile?.student_id ?? '');
   const [department, setDepartment] = useState(profile?.department ?? '');
   const [intake, setIntake] = useState(profile?.intake ?? '');
   const [section, setSection] = useState(profile?.section ?? '');
   const [program, setProgram] = useState(profile?.program ?? '');
+
   const [teacherName, setTeacherName] = useState('');
   const [teacherDesig, setTeacherDesig] = useState('');
   const [teacherDept, setTeacherDept] = useState('');
-  const [members, setMembers] = useState<Member[]>([{ key: 'm-0', name: profile?.full_name ?? '', id: '' }]);
+  const [members, setMembers] = useState<Member[]>([{ key: 'm-0', name: profile?.full_name ?? '', id: profile?.student_id ?? '' }]);
   const [dateOfSubmission, setDateOfSubmission] = useState(localToday());
+
   const [generating, setGenerating] = useState(false);
+  const [lastPdfUri, setLastPdfUri] = useState<string | null>(null);
+  const [lastHtml, setLastHtml] = useState<string | null>(null);
+  const [viewerVisible, setViewerVisible] = useState(false);
 
   const [facultyList, setFacultyList] = useState<FacultyRow[]>([]);
   const [facultyModal, setFacultyModal] = useState(false);
@@ -340,44 +353,66 @@ export function CoverPageFormScreen({ navigation }: any) {
   }, []);
 
   const docTypeLabel = (dt: DocType) => ({
-    assignment: t.coverpage2.typeAssignment,
-    lab_report: t.coverpage2.typeLabReport,
-    project_report: t.coverpage2.typeProjectReport,
-    index_page: t.coverpage2.typeIndexPage,
-    internship_report: t.coverpage2.typeInternshipReport,
+    assignment: t.coverpage2?.typeAssignment ?? 'Assignment',
+    lab_report: t.coverpage2?.typeLabReport ?? 'Lab Report',
+    project_report: t.coverpage2?.typeProjectReport ?? 'Project Report',
+    index_page: t.coverpage2?.typeIndexPage ?? 'Index Page',
+    internship_report: t.coverpage2?.typeInternshipReport ?? 'Internship Report',
+  }[dt]);
+
+  const docTypeIcon = (dt: DocType): keyof typeof Feather.glyphMap => ({
+    assignment: 'file-text' as const,
+    lab_report: 'layers' as const,
+    project_report: 'award' as const,
+    index_page: 'list' as const,
+    internship_report: 'briefcase' as const,
+  }[dt]);
+
+  const docTypeDesc = (dt: DocType) => ({
+    assignment: 'Standard individual assignment cover for all BUBT courses',
+    lab_report: 'Laboratory experiment report with experiment date and number',
+    project_report: 'Semester project or capstone with group members list',
+    index_page: 'Full-page printable experiment index table with rows',
+    internship_report: 'Academic & company supervisor report with organization info',
   }[dt]);
 
   const needCourse = docType === 'assignment' || docType === 'lab_report' || docType === 'index_page';
   const needTitle = docType === 'project_report' || docType === 'internship_report';
   const needFaculty = docType !== 'index_page';
-  const canGenerate = !!(studentName.trim() && studentId.trim()
-    && (!needCourse || (courseTitle.trim() && courseCode.trim()))
-    && (!needTitle || reportTitle.trim()));
 
   function selectCourse(c: { code: string; name: string }) {
-    setCourseCode(c.code); setCourseTitle(c.name);
-    setCourseModal(false); setCourseSearch('');
+    setCourseCode(c.code);
+    setCourseTitle(c.name);
+    setCourseModal(false);
+    setCourseSearch('');
   }
 
   function selectTeacher(f: FacultyRow) {
-    setTeacherName(f.name); setTeacherDesig(f.designation);
+    setTeacherName(f.name);
+    setTeacherDesig(f.designation);
     const dn = (f.dept_name ?? '').replace(/^Department of\s*/i, '');
     if (dn) setTeacherDept(dn);
     if (dn && !department) setDepartment(dn);
-    setFacultyModal(false); setFacultySearch('');
+    setFacultyModal(false);
+    setFacultySearch('');
   }
 
   function selectProgram(d: { id: string; name: string }) {
     const s = d.name.replace(/^Department of\s*/i, '');
-    setProgram(s); if (!department) setDepartment(s);
+    setProgram(s);
+    if (!department) setDepartment(s);
     setDeptModal(false);
   }
 
   function updateMember(i: number, patch: Partial<Member>) {
     setMembers(prev => prev.map((m, idx) => idx === i ? { ...m, ...patch } : m));
   }
-  function addMember() { setMembers(prev => [...prev, { key: `m-${Date.now()}-${prev.length}`, name: '', id: '' }]); }
-  function removeMember(i: number) { setMembers(prev => prev.filter((_, idx) => idx !== i)); }
+  function addMember() {
+    setMembers(prev => [...prev, { key: `m-${Date.now()}-${prev.length}`, name: '', id: '' }]);
+  }
+  function removeMember(i: number) {
+    setMembers(prev => prev.filter((_, idx) => idx !== i));
+  }
 
   const filteredFaculty = facultySearch
     ? facultyList.filter(f => f.name.toLowerCase().includes(facultySearch.toLowerCase()) || (f.dept_name ?? '').toLowerCase().includes(facultySearch.toLowerCase()))
@@ -388,39 +423,86 @@ export function CoverPageFormScreen({ navigation }: any) {
     : courseList;
 
   async function handleGenerate() {
-    if (!canGenerate) return;
     setGenerating(true);
     try {
-      const dept = (teacherDept.trim() || department.trim() || program.trim() || 'N/A');
+      const dept = (teacherDept.trim() || department.trim() || program.trim() || 'Computer Science and Engineering');
       const cleanMembers = members.filter(m => m.name.trim() || m.id.trim());
       const html = buildHtml({
-        template, docType, docTypeLabel: docTypeLabel(docType),
-        courseCode: courseCode.trim(), courseTitle: courseTitle.trim(),
+        template,
+        docType,
+        docTypeLabel: docTypeLabel(docType),
+        courseCode: courseCode.trim(),
+        courseTitle: courseTitle.trim(),
         assignmentNo: assignmentNo.trim(),
-        experimentDate: fmtDate(experimentDate), experimentName: experimentName.trim(),
+        experimentDate: fmtDate(experimentDate),
+        experimentName: experimentName.trim(),
         reportTitle: reportTitle.trim(),
-        studentName: studentName.trim(), studentId: studentId.trim(),
-        intake: intake.trim(), section: section.trim(),
-        program: program.trim() || department.trim() || 'N/A',
+        studentName: studentName.trim(),
+        studentId: studentId.trim(),
+        intake: intake.trim(),
+        section: section.trim(),
+        program: program.trim() || department.trim() || 'B.Sc. in CSE',
         dept,
-        teacherName: teacherName.trim() || 'N/A', teacherDesig: teacherDesig.trim(),
+        teacherName: teacherName.trim(),
+        teacherDesig: teacherDesig.trim(),
         members: cleanMembers.length ? cleanMembers : [{ name: studentName.trim(), id: studentId.trim() }],
-        company: company.trim(), duration: duration.trim(),
+        company: company.trim(),
+        duration: duration.trim(),
         indexRows: parseInt(indexRows, 10) || 15,
         date: fmtDate(dateOfSubmission),
-        logoCrest: BUBT_LOGO_CREST, logoHeader: BUBT_LOGO_HEADER,
+        logoCrest: BUBT_LOGO_CREST,
+        logoHeader: BUBT_LOGO_HEADER,
       });
+
       const { uri } = await Print.printToFileAsync({ html, base64: false });
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: t.coverpage2.shareOrSave, UTI: 'com.adobe.pdf' });
-      } else { Alert.alert(t.coverpage2.preview, uri); }
-    } catch { Alert.alert(t.common.error, t.coverpage2.generationFailed); }
-    finally { setGenerating(false); }
+      setLastPdfUri(uri);
+      setLastHtml(html);
+      toast({
+        type: 'success',
+        title: 'Cover Page Ready',
+        message: 'You can now View, Download, or Share your document below',
+      });
+    } catch {
+      Alert.alert(t.common?.error ?? 'Error', t.coverpage2?.generationFailed ?? 'Failed to generate PDF');
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  async function handleSaveDevice() {
+    if (!lastPdfUri) return;
+    try {
+      const name = `BUBT_${docTypeLabel(docType)}_${courseCode || 'Cover'}`;
+      const res = await savePdfToDevice(lastPdfUri, name);
+      if (res.success) {
+        toast({ type: 'success', title: 'Saved to Downloads' });
+      }
+    } catch {
+      toast({ type: 'error', title: 'Save Failed', message: 'Could not save file to device' });
+    }
+  }
+
+  async function handleShare() {
+    if (!lastPdfUri) return;
+    try {
+      await sharePdf(lastPdfUri, 'Share BUBT Cover Page');
+    } catch {
+      toast({ type: 'error', title: 'Share Failed' });
+    }
+  }
+
+  async function handlePrintDirect() {
+    if (!lastHtml) return;
+    try {
+      await Print.printAsync({ html: lastHtml });
+    } catch {
+      toast({ type: 'error', title: 'Print Cancelled' });
+    }
   }
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-      <SubBar title={t.coverpage2.title} onBack={() => navigation.goBack()} />
+      <SubBar title={t.coverpage2?.title ?? 'Cover Page Generator'} onBack={() => navigation.goBack()} />
       <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
         <ScrollView
           contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
@@ -429,32 +511,52 @@ export function CoverPageFormScreen({ navigation }: any) {
           keyboardShouldPersistTaps="handled"
         >
 
-          {/* Doc type tabs */}
-          <View style={styles.typeRow}>
-            {DOC_TYPES.map(dt => {
-              const a = docType === dt;
-              return (
-                <TouchableOpacity key={dt} style={[styles.typeChip, { borderColor: a ? SectorColors.coverpage : C.border, backgroundColor: a ? SectorColors.coverpage : C.surface2 }]} onPress={() => setDocType(dt)}>
-                  <Icon name={dt === 'lab_report' ? 'layers' : dt === 'index_page' ? 'inbox' : dt === 'internship_report' ? 'bag' : 'fileText'} size={14} color={a ? C.white : C.text2} />
-                  <Text style={[styles.typeChipText, { color: a ? C.white : C.text2, fontFamily: a ? FontFamily.jakartaBold : FontFamily.jakartaMedium }]}>{docTypeLabel(dt)}</Text>
-                </TouchableOpacity>
-              );
-            })}
+          {/* Section: Document Type */}
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionEyebrow, { color: C.text3, fontFamily: FontFamily.jakartaBold }]}>
+              DOCUMENT TYPE
+            </Text>
           </View>
+          <Bar72
+            icon={docTypeIcon(docType)}
+            label="SELECT DOCUMENT TYPE"
+            value={docTypeLabel(docType)}
+            desc={docTypeDesc(docType)}
+            onPress={() => setDocTypeModal(true)}
+            accentColor={SectorColors.coverpage}
+            C={C}
+          />
 
           {/* Template selection (assignment & lab only) */}
           {hasStyles(docType) ? (
             <>
-              <Sec icon="grid" label="Select Template" C={C} count={TEMPLATES.length} />
+              <View style={[styles.sectionHeader, { marginTop: 14 }]}>
+                <Text style={[styles.sectionEyebrow, { color: C.text3, fontFamily: FontFamily.jakartaBold }]}>
+                  SELECT TEMPLATE
+                </Text>
+              </View>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: Spacing[3] }}>
                 {TEMPLATES.map(tmpl => {
                   const a = template === tmpl;
                   return (
-                    <TouchableOpacity key={tmpl} style={[styles.tCard, { borderColor: a ? SectorColors.coverpage : C.border, borderWidth: a ? 2.5 : 1, backgroundColor: C.surface }]} onPress={() => setTemplate(tmpl)} activeOpacity={0.8}>
+                    <TouchableOpacity
+                      key={tmpl}
+                      style={[styles.tCard, { borderColor: a ? SectorColors.coverpage : C.border, borderWidth: a ? 2.5 : 1, backgroundColor: C.surface }]}
+                      onPress={() => setTemplate(tmpl)}
+                      activeOpacity={0.8}
+                    >
                       <Image source={previewFor(docType, tmpl)} style={styles.tImg} resizeMode="contain" />
-                      {a && <View style={[styles.chk, { backgroundColor: SectorColors.coverpage }]}><Icon name="check" size={12} color={C.white} /></View>}
-                      <View style={[styles.freeBadge, { backgroundColor: Accent.teal }]}><Text style={styles.freeTxt}>FREE</Text></View>
-                      <Text style={[styles.tLabel, { color: a ? SectorColors.coverpage : C.text2, fontFamily: a ? FontFamily.jakartaBold : FontFamily.jakartaMedium }]}>{TEMPLATE_LABELS[tmpl]}</Text>
+                      {a && (
+                        <View style={[styles.chk, { backgroundColor: SectorColors.coverpage }]}>
+                          <Feather name="check" size={12} color={C.white} />
+                        </View>
+                      )}
+                      <View style={[styles.freeBadge, { backgroundColor: Accent.teal }]}>
+                        <Text style={styles.freeTxt}>FREE</Text>
+                      </View>
+                      <Text style={[styles.tLabel, { color: a ? SectorColors.coverpage : C.text2, fontFamily: a ? FontFamily.jakartaBold : FontFamily.jakartaMedium }]}>
+                        {TEMPLATE_LABELS[tmpl]}
+                      </Text>
                     </TouchableOpacity>
                   );
                 })}
@@ -462,194 +564,835 @@ export function CoverPageFormScreen({ navigation }: any) {
             </>
           ) : (
             <>
-              <Sec icon="eye" label="Layout Preview" C={C} />
+              <View style={[styles.sectionHeader, { marginTop: 14 }]}>
+                <Text style={[styles.sectionEyebrow, { color: C.text3, fontFamily: FontFamily.jakartaBold }]}>
+                  LAYOUT PREVIEW
+                </Text>
+              </View>
               <Image source={previewFor(docType, template)} style={[styles.bigPrev, { borderColor: C.border, backgroundColor: '#fff' }]} resizeMode="contain" />
             </>
           )}
 
-          {/* Course Details */}
+          {/* Section: Course Details */}
           {needCourse && (
             <>
-              <Sec icon="box" label="Course Details" C={C} />
-              <IconField icon="chevR" C={C} isDark={isDark} value={courseCode} onChange={setCourseCode} placeholder="Course Code"
-                badge="Autofill" onBadge={() => setCourseModal(true)} badgeIcon="chevD" />
-              <IconField icon="sparkle" C={C} value={courseTitle} onChange={setCourseTitle} placeholder="Course Title" />
+              <View style={[styles.sectionHeader, { marginTop: 14 }]}>
+                <Text style={[styles.sectionEyebrow, { color: C.text3, fontFamily: FontFamily.jakartaBold }]}>
+                  COURSE DETAILS
+                </Text>
+              </View>
+              <Bar72
+                icon="search"
+                label="AUTOFILL COURSE"
+                value={courseCode ? `${courseCode} · ${courseTitle}` : ''}
+                placeholder="Tap to search & autofill course..."
+                onPress={() => setCourseModal(true)}
+                accentColor={SectorColors.coverpage}
+                badge="Autofill"
+                C={C}
+              />
+              <InputBar72
+                icon="hash"
+                label="COURSE CODE"
+                value={courseCode}
+                onChange={setCourseCode}
+                placeholder="e.g. CSE 111"
+                accentColor={SectorColors.coverpage}
+                C={C}
+              />
+              <InputBar72
+                icon="book-open"
+                label="COURSE TITLE"
+                value={courseTitle}
+                onChange={setCourseTitle}
+                placeholder="e.g. Structured Programming Language"
+                accentColor={SectorColors.coverpage}
+                C={C}
+              />
             </>
           )}
 
-          {/* Report Title (project / internship) */}
+          {/* Section: Project or Internship details */}
           {needTitle && (
             <>
-              <Sec icon="fileText" label={docType === 'project_report' ? 'Project Details' : 'Internship Details'} C={C} />
-              <IconField icon="fileText" C={C} value={reportTitle} onChange={setReportTitle}
-                placeholder={docType === 'project_report' ? 'Project Title' : 'Internship Topic'} />
-              <IconField icon="chevR" C={C} value={courseCode} onChange={setCourseCode} placeholder="Course Code (optional)"
-                badge="Autofill" onBadge={() => setCourseModal(true)} badgeIcon="chevD" />
-              <IconField icon="sparkle" C={C} value={courseTitle} onChange={setCourseTitle} placeholder="Course Title (optional)" />
+              <View style={[styles.sectionHeader, { marginTop: 14 }]}>
+                <Text style={[styles.sectionEyebrow, { color: C.text3, fontFamily: FontFamily.jakartaBold }]}>
+                  {docType === 'project_report' ? 'PROJECT DETAILS' : 'INTERNSHIP DETAILS'}
+                </Text>
+              </View>
+              <InputBar72
+                icon="file-text"
+                label={docType === 'project_report' ? 'PROJECT TITLE' : 'INTERNSHIP TOPIC'}
+                value={reportTitle}
+                onChange={setReportTitle}
+                placeholder={docType === 'project_report' ? 'Enter project report title' : 'Enter internship topic'}
+                accentColor={SectorColors.coverpage}
+                C={C}
+              />
+              <Bar72
+                icon="search"
+                label="OPTIONAL COURSE AUTOFILL"
+                value={courseCode ? `${courseCode} · ${courseTitle}` : ''}
+                placeholder="Tap to autofill course (optional)..."
+                onPress={() => setCourseModal(true)}
+                accentColor={SectorColors.coverpage}
+                badge="Autofill"
+                C={C}
+              />
+              <InputBar72
+                icon="hash"
+                label="COURSE CODE"
+                value={courseCode}
+                onChange={setCourseCode}
+                placeholder="Course code (optional)"
+                accentColor={SectorColors.coverpage}
+                C={C}
+              />
+              <InputBar72
+                icon="book-open"
+                label="COURSE TITLE"
+                value={courseTitle}
+                onChange={setCourseTitle}
+                placeholder="Course title (optional)"
+                accentColor={SectorColors.coverpage}
+                C={C}
+              />
               {docType === 'internship_report' && (
                 <>
-                  <IconField icon="box" C={C} value={company} onChange={setCompany} placeholder="Company / Organization Name (optional)" />
-                  <IconField icon="calendar" C={C} value={duration} onChange={setDuration} placeholder="Duration (optional)" />
+                  <InputBar72
+                    icon="briefcase"
+                    label="COMPANY / ORGANIZATION NAME"
+                    value={company}
+                    onChange={setCompany}
+                    placeholder="e.g. Grameenphone Ltd."
+                    accentColor={SectorColors.coverpage}
+                    C={C}
+                  />
+                  <InputBar72
+                    icon="calendar"
+                    label="DURATION"
+                    value={duration}
+                    onChange={setDuration}
+                    placeholder="e.g. 3 Months (Jan 2026 - Mar 2026)"
+                    accentColor={SectorColors.coverpage}
+                    C={C}
+                  />
                 </>
               )}
             </>
           )}
 
-          {/* Index rows */}
+          {/* Section: Index Rows */}
           {docType === 'index_page' && (
             <>
-              <Sec icon="inbox" label="Index Table" C={C} />
-              <IconField icon="layers" C={C} value={indexRows} onChange={setIndexRows} placeholder="Number of Rows (e.g. 15)" />
+              <View style={[styles.sectionHeader, { marginTop: 14 }]}>
+                <Text style={[styles.sectionEyebrow, { color: C.text3, fontFamily: FontFamily.jakartaBold }]}>
+                  INDEX TABLE ROWS
+                </Text>
+              </View>
+              <InputBar72
+                icon="list"
+                label="NUMBER OF TABLE ROWS"
+                value={indexRows}
+                onChange={setIndexRows}
+                placeholder="e.g. 15 (default is 15 rows)"
+                accentColor={SectorColors.coverpage}
+                keyboardType="numeric"
+                C={C}
+              />
             </>
           )}
 
-          {/* Assignment / Lab details */}
+          {/* Section: Assignment Details */}
           {docType === 'assignment' && (
             <>
-              <Sec icon="fileText" label="Assignment Details" C={C} />
-              <IconField icon="flag" C={C} value={assignmentNo} onChange={setAssignmentNo} placeholder="Assignment No" />
-              <IconField icon="layers" C={C} value={experimentName} onChange={setExperimentName} placeholder="Topic (optional)" />
-            </>
-          )}
-          {docType === 'lab_report' && (
-            <>
-              <Sec icon="layers" label="Lab Report Details" C={C} />
-              <IconField icon="calendar" C={C} value={experimentDate} onChange={setExperimentDate} placeholder="Experiment Date (YYYY-MM-DD)" />
-              <IconField icon="flag" C={C} value={assignmentNo} onChange={setAssignmentNo} placeholder="Experiment No" />
-              <IconField icon="layers" C={C} value={experimentName} onChange={setExperimentName} placeholder="Experiment Name" />
+              <View style={[styles.sectionHeader, { marginTop: 14 }]}>
+                <Text style={[styles.sectionEyebrow, { color: C.text3, fontFamily: FontFamily.jakartaBold }]}>
+                  ASSIGNMENT DETAILS
+                </Text>
+              </View>
+              <InputBar72
+                icon="hash"
+                label="ASSIGNMENT NO"
+                value={assignmentNo}
+                onChange={setAssignmentNo}
+                placeholder="e.g. 01 or 02"
+                accentColor={SectorColors.coverpage}
+                C={C}
+              />
+              <InputBar72
+                icon="file-text"
+                label="ASSIGNMENT TOPIC"
+                value={experimentName}
+                onChange={setExperimentName}
+                placeholder="e.g. Memory Management & Pointers (optional)"
+                accentColor={SectorColors.coverpage}
+                C={C}
+              />
             </>
           )}
 
-          {/* Student Information */}
-          <Sec icon="user" label="Student Information" C={C} />
-          <IconField icon="user" C={C} value={studentName} onChange={setStudentName} placeholder="Student Name" />
-          <IconField icon="idcard" C={C} value={studentId} onChange={setStudentId} placeholder="Student ID" />
-          <View style={hStyles.row}>
+          {/* Section: Lab Details */}
+          {docType === 'lab_report' && (
+            <>
+              <View style={[styles.sectionHeader, { marginTop: 14 }]}>
+                <Text style={[styles.sectionEyebrow, { color: C.text3, fontFamily: FontFamily.jakartaBold }]}>
+                  LAB REPORT DETAILS
+                </Text>
+              </View>
+              <InputBar72
+                icon="calendar"
+                label="EXPERIMENT DATE (PERFORMANCE)"
+                value={experimentDate}
+                onChange={setExperimentDate}
+                placeholder="YYYY-MM-DD"
+                accentColor={SectorColors.coverpage}
+                C={C}
+              />
+              <InputBar72
+                icon="hash"
+                label="EXPERIMENT NO"
+                value={assignmentNo}
+                onChange={setAssignmentNo}
+                placeholder="e.g. 01 or 03"
+                accentColor={SectorColors.coverpage}
+                C={C}
+              />
+              <InputBar72
+                icon="layers"
+                label="EXPERIMENT NAME"
+                value={experimentName}
+                onChange={setExperimentName}
+                placeholder="e.g. Study of Logic Gates and Implementation"
+                accentColor={SectorColors.coverpage}
+                C={C}
+              />
+            </>
+          )}
+
+          {/* Section: Student Information */}
+          <View style={[styles.sectionHeader, { marginTop: 14 }]}>
+            <Text style={[styles.sectionEyebrow, { color: C.text3, fontFamily: FontFamily.jakartaBold }]}>
+              STUDENT INFORMATION
+            </Text>
+          </View>
+          <InputBar72
+            icon="user"
+            label="STUDENT FULL NAME"
+            value={studentName}
+            onChange={setStudentName}
+            placeholder="Student Name (or leave blank to write with pen)"
+            accentColor={SectorColors.coverpage}
+            C={C}
+          />
+          <InputBar72
+            icon="credit-card"
+            label="STUDENT ID"
+            value={studentId}
+            onChange={setStudentId}
+            placeholder="e.g. 22235103199"
+            accentColor={SectorColors.coverpage}
+            C={C}
+          />
+          <View style={{ flexDirection: 'row', gap: 10 }}>
             <View style={{ flex: 1 }}>
-              <IconField icon="inbox" C={C} value={intake} onChange={setIntake} placeholder="Intake" />
+              <InputBar72
+                icon="grid"
+                label="INTAKE"
+                value={intake}
+                onChange={setIntake}
+                placeholder="e.g. 51"
+                accentColor={SectorColors.coverpage}
+                C={C}
+              />
             </View>
             <View style={{ flex: 1 }}>
-              <IconField icon="grid" C={C} value={section} onChange={setSection} placeholder="Section" />
+              <InputBar72
+                icon="layers"
+                label="SECTION"
+                value={section}
+                onChange={setSection}
+                placeholder="e.g. 02"
+                accentColor={SectorColors.coverpage}
+                C={C}
+              />
             </View>
           </View>
           {docType !== 'index_page' && (
-            <IconField icon="award" C={C} value={program} placeholder="Program" onPress={() => setDeptModal(true)} chevron />
+            <Bar72
+              icon="award"
+              label="PROGRAM / DEGREE"
+              value={program}
+              placeholder="Select Program / Degree..."
+              onPress={() => setDeptModal(true)}
+              accentColor={SectorColors.coverpage}
+              C={C}
+            />
           )}
 
-          {/* Group Members (project only) */}
+          {/* Section: Group Members (Project Only) */}
           {docType === 'project_report' && (
             <>
-              <Sec icon="user" label="Group Members" C={C} count={members.length} />
+              <View style={[styles.sectionHeader, { marginTop: 14 }]}>
+                <Text style={[styles.sectionEyebrow, { color: C.text3, fontFamily: FontFamily.jakartaBold }]}>
+                  GROUP MEMBERS ({members.length})
+                </Text>
+              </View>
               {members.map((m, i) => (
-                <View key={m.key ?? `m-${i}`} style={hStyles.row}>
-                  <View style={{ flex: 1.4 }}>
-                    <IconField icon="user" C={C} value={m.name} onChange={v => updateMember(i, { name: v })} placeholder={`Member ${i + 1} Name`} />
+                <View key={m.key ?? `m-${i}`} style={[styles.bar72, { backgroundColor: C.surface, borderColor: C.border, borderLeftColor: SectorColors.coverpage, marginBottom: 8 }]}>
+                  <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
+                    <Text style={{ fontFamily: FontFamily.jakartaBold, fontSize: 13, color: C.text }}>{i + 1}</Text>
+                  </View>
+                  <View style={{ flex: 1.3, marginRight: 8 }}>
+                    <Text style={[styles.barLabel, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                      MEMBER {i + 1} NAME
+                    </Text>
+                    <TextInput
+                      style={[styles.barInput, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}
+                      value={m.name}
+                      onChangeText={v => updateMember(i, { name: v })}
+                      placeholder="Name"
+                      placeholderTextColor={C.textMuted}
+                    />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <IconField icon="idcard" C={C} value={m.id} onChange={v => updateMember(i, { id: v })} placeholder="ID" />
+                    <Text style={[styles.barLabel, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                      ID
+                    </Text>
+                    <TextInput
+                      style={[styles.barInput, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}
+                      value={m.id}
+                      onChangeText={v => updateMember(i, { id: v })}
+                      placeholder="ID"
+                      placeholderTextColor={C.textMuted}
+                    />
                   </View>
                   {members.length > 1 && (
                     <TouchableOpacity style={[styles.delMember, { borderColor: C.border }]} onPress={() => removeMember(i)}>
-                      <Icon name="trash" size={16} color={C.danger ?? '#e23'} />
+                      <Feather name="trash-2" size={16} color={C.danger ?? '#e23'} />
                     </TouchableOpacity>
                   )}
                 </View>
               ))}
-              <TouchableOpacity style={[styles.addBtn, { borderColor: SectorColors.coverpage }]} onPress={addMember}>
-                <Icon name="plus" size={16} color={SectorColors.coverpage} />
-                <Text style={[styles.addTxt, { color: SectorColors.coverpage, fontFamily: FontFamily.jakartaBold }]}>Add Member</Text>
+              <TouchableOpacity
+                style={[styles.childBar72, { backgroundColor: C.surface, borderColor: SectorColors.coverpage, borderStyle: 'dashed' }]}
+                onPress={addMember}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
+                  <Feather name="plus" size={18} color={SectorColors.coverpage} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.childTitle, { color: SectorColors.coverpage, fontFamily: FontFamily.jakartaBold }]}>
+                    Add Group Member
+                  </Text>
+                  <Text style={[styles.childDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
+                    Add up to 5 project teammates with ID
+                  </Text>
+                </View>
+                <Feather name="chevron-right" size={17} color={SectorColors.coverpage} />
               </TouchableOpacity>
             </>
           )}
 
-          {/* Faculty Details */}
+          {/* Section: Faculty Details */}
           {needFaculty && (
             <>
-              <Sec icon="user" label={docType === 'internship_report' ? 'Supervisor Details' : 'Faculty Details'} C={C} />
-              <IconField icon="user" C={C} isDark={isDark} value={teacherName} onChange={setTeacherName} placeholder="Teacher Name"
-                badge="Autofill" onBadge={() => setFacultyModal(true)} badgeIcon="chevD" />
-              <IconField icon="grid" C={C} value={teacherDept} onChange={setTeacherDept} placeholder="Department" />
-              <IconField icon="award" C={C} value={teacherDesig} placeholder="Designation" onPress={() => setDesigModal(true)} chevron />
+              <View style={[styles.sectionHeader, { marginTop: 14 }]}>
+                <Text style={[styles.sectionEyebrow, { color: C.text3, fontFamily: FontFamily.jakartaBold }]}>
+                  {docType === 'internship_report' ? 'SUPERVISOR DETAILS' : 'FACULTY DETAILS'}
+                </Text>
+              </View>
+              <Bar72
+                icon="user-check"
+                label="TEACHER / SUPERVISOR"
+                value={teacherName ? `${teacherName} ${teacherDesig ? `(${teacherDesig})` : ''}` : ''}
+                placeholder="Tap to select teacher from directory..."
+                onPress={() => setFacultyModal(true)}
+                accentColor={SectorColors.coverpage}
+                badge="Autofill"
+                C={C}
+              />
+              <InputBar72
+                icon="user"
+                label="TEACHER NAME"
+                value={teacherName}
+                onChange={setTeacherName}
+                placeholder="Teacher Name"
+                accentColor={SectorColors.coverpage}
+                C={C}
+              />
+              <Bar72
+                icon="bookmark"
+                label="DESIGNATION"
+                value={teacherDesig}
+                placeholder="Select Designation (e.g. Assistant Professor)..."
+                onPress={() => setDesigModal(true)}
+                accentColor={SectorColors.coverpage}
+                C={C}
+              />
+              <InputBar72
+                icon="home"
+                label="TEACHER DEPARTMENT"
+                value={teacherDept}
+                onChange={setTeacherDept}
+                placeholder="e.g. Computer Science and Engineering"
+                accentColor={SectorColors.coverpage}
+                C={C}
+              />
             </>
           )}
 
-          {/* Date */}
-          <Sec icon="calendar" label="Date of Submission" C={C} />
-          <IconField icon="calendar" C={C} value={dateOfSubmission} onChange={setDateOfSubmission} placeholder="YYYY-MM-DD" />
+          {/* Section: Submission Date */}
+          <View style={[styles.sectionHeader, { marginTop: 14 }]}>
+            <Text style={[styles.sectionEyebrow, { color: C.text3, fontFamily: FontFamily.jakartaBold }]}>
+              DATE OF SUBMISSION
+            </Text>
+          </View>
+          <InputBar72
+            icon="calendar"
+            label="SUBMISSION DATE"
+            value={dateOfSubmission}
+            onChange={setDateOfSubmission}
+            placeholder="YYYY-MM-DD"
+            accentColor={SectorColors.coverpage}
+            C={C}
+          />
 
-          {/* Generate */}
-          <TouchableOpacity style={[styles.genBtn, { backgroundColor: SectorColors.coverpage, opacity: !canGenerate || generating ? 0.5 : 1 }]} onPress={handleGenerate} disabled={!canGenerate || generating}>
-            {generating ? <ActivityIndicator color={C.white} size="small" /> : <Icon name="sparkles" size={18} color={C.white} />}
-            <Text style={[styles.genBtnText, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>{generating ? t.coverpage2.generating : 'Generate Document'}</Text>
+          {/* Primary Action Button */}
+          <TouchableOpacity
+            style={[styles.genBtn, { backgroundColor: SectorColors.coverpage }]}
+            onPress={handleGenerate}
+            disabled={generating}
+            activeOpacity={0.85}
+          >
+            {generating ? (
+              <ActivityIndicator color={C.white} size="small" />
+            ) : (
+              <Feather name="file-text" size={18} color={C.white} />
+            )}
+            <Text style={[styles.genBtnText, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>
+              {generating ? (t.coverpage2?.generating ?? 'Generating PDF…') : 'Generate Official Cover Page'}
+            </Text>
           </TouchableOpacity>
+
+          {/* Result Action Bars (72 Size) when generated */}
+          {lastPdfUri && (
+            <View style={{ marginTop: 18 }}>
+              <View style={styles.sectionHeader}>
+                <Text style={[styles.sectionEyebrow, { color: SectorColors.coverpage, fontFamily: FontFamily.jakartaBold }]}>
+                  READY TO VIEW & EXPORT
+                </Text>
+              </View>
+
+              {/* View Document Bar */}
+              <TouchableOpacity
+                style={[styles.childBar72, { backgroundColor: C.surface, borderColor: C.border, borderLeftColor: SectorColors.coverpage }]}
+                onPress={() => setViewerVisible(true)}
+                activeOpacity={0.75}
+              >
+                <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
+                  <Feather name="eye" size={20} color={SectorColors.coverpage} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                    View Document
+                  </Text>
+                  <Text style={[styles.childDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                    Open full-screen interactive preview with zoom & pan
+                  </Text>
+                </View>
+                <Feather name="chevron-right" size={17} color={SectorColors.coverpage} />
+              </TouchableOpacity>
+
+              {/* Download Bar */}
+              <TouchableOpacity
+                style={[styles.childBar72, { backgroundColor: C.surface, borderColor: C.border, borderLeftColor: SectorColors.coverpage }]}
+                onPress={handleSaveDevice}
+                activeOpacity={0.75}
+              >
+                <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
+                  <Feather name="download" size={20} color={SectorColors.coverpage} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                    Save to Device / Download
+                  </Text>
+                  <Text style={[styles.childDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                    Save high-resolution PDF to phone Downloads
+                  </Text>
+                </View>
+                <Feather name="chevron-right" size={17} color={SectorColors.coverpage} />
+              </TouchableOpacity>
+
+              {/* Share Bar */}
+              <TouchableOpacity
+                style={[styles.childBar72, { backgroundColor: C.surface, borderColor: C.border, borderLeftColor: SectorColors.coverpage }]}
+                onPress={handleShare}
+                activeOpacity={0.75}
+              >
+                <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
+                  <Feather name="share-2" size={20} color={SectorColors.coverpage} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                    Share Cover Page
+                  </Text>
+                  <Text style={[styles.childDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                    Send via WhatsApp, Telegram, Google Drive
+                  </Text>
+                </View>
+                <Feather name="chevron-right" size={17} color={SectorColors.coverpage} />
+              </TouchableOpacity>
+
+              {/* Direct Print Bar */}
+              <TouchableOpacity
+                style={[styles.childBar72, { backgroundColor: C.surface, borderColor: C.border, borderLeftColor: SectorColors.coverpage }]}
+                onPress={handlePrintDirect}
+                activeOpacity={0.75}
+              >
+                <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
+                  <Feather name="printer" size={20} color={SectorColors.coverpage} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                    Print Directly
+                  </Text>
+                  <Text style={[styles.childDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                    Send directly to wireless printer or campus xerox
+                  </Text>
+                </View>
+                <Feather name="chevron-right" size={17} color={SectorColors.coverpage} />
+              </TouchableOpacity>
+            </View>
+          )}
+
           <View style={{ height: 40 }} />
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Course picker */}
+      {/* Document Type Picker Sheet (Each item is a 72-size bar) */}
+      <BottomSheet visible={docTypeModal} onClose={() => setDocTypeModal(false)} title="Select Document Type" C={C}>
+        <FlatList
+          data={DOC_TYPES}
+          keyExtractor={i => i}
+          style={{ maxHeight: 420 }}
+          renderItem={({ item }) => {
+            const isSel = docType === item;
+            return (
+              <TouchableOpacity
+                style={[
+                  styles.childBar72,
+                  {
+                    backgroundColor: C.surface,
+                    borderColor: isSel ? SectorColors.coverpage : C.border,
+                    borderLeftColor: SectorColors.coverpage,
+                  },
+                ]}
+                onPress={() => { setDocType(item); setDocTypeModal(false); }}
+                activeOpacity={0.75}
+              >
+                <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
+                  <Feather name={docTypeIcon(item)} size={20} color={isSel ? SectorColors.coverpage : C.text2} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                    {docTypeLabel(item)}
+                  </Text>
+                  <Text style={[styles.childDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                    {docTypeDesc(item)}
+                  </Text>
+                </View>
+                {isSel ? (
+                  <Feather name="check" size={18} color={SectorColors.coverpage} />
+                ) : (
+                  <Feather name="chevron-right" size={17} color={C.textMuted} />
+                )}
+              </TouchableOpacity>
+            );
+          }}
+        />
+      </BottomSheet>
+
+      {/* Course Picker Sheet (Each item is a 72-size bar) */}
       <BottomSheet visible={courseModal} onClose={() => { setCourseModal(false); setCourseSearch(''); }} title="Select Course" C={C}>
         <View style={[styles.sBar, { backgroundColor: C.surface2, borderColor: C.border }]}>
-          <Icon name="search" size={18} color={C.textMuted} />
-          <TextInput style={[styles.sInput, { color: C.text, fontFamily: FontFamily.jakartaRegular }]} value={courseSearch} onChangeText={setCourseSearch} placeholder="Search course code or title..." placeholderTextColor={C.textMuted} autoFocus />
+          <Feather name="search" size={18} color={C.textMuted} />
+          <TextInput
+            style={[styles.sInput, { color: C.text, fontFamily: FontFamily.jakartaRegular }]}
+            value={courseSearch}
+            onChangeText={setCourseSearch}
+            placeholder="Search course code or title..."
+            placeholderTextColor={C.textMuted}
+            autoFocus
+          />
         </View>
-        <FlatList data={filteredCourses} keyExtractor={i => i.code} style={{ maxHeight: 380 }}
+        <FlatList
+          data={filteredCourses}
+          keyExtractor={i => i.code}
+          style={{ maxHeight: 380 }}
           renderItem={({ item }) => (
-            <TouchableOpacity style={[styles.listRow, { borderBottomColor: C.border }]} onPress={() => selectCourse(item)} activeOpacity={0.7}>
-              <Text style={[styles.courseCode, { color: SectorColors.coverpage, fontFamily: FontFamily.jakartaBold }]}>{item.code}</Text>
-              <Text style={[styles.courseName, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>{item.name}</Text>
+            <TouchableOpacity
+              style={[
+                styles.childBar72,
+                {
+                  backgroundColor: C.surface,
+                  borderColor: C.border,
+                  borderLeftColor: SectorColors.coverpage,
+                },
+              ]}
+              onPress={() => selectCourse(item)}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
+                <Feather name="book-open" size={18} color={SectorColors.coverpage} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                  {item.code}
+                </Text>
+                <Text style={[styles.childDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                  {item.name}
+                </Text>
+              </View>
+              <Feather name="chevron-right" size={17} color={C.textMuted} />
             </TouchableOpacity>
           )}
           ListEmptyComponent={<Text style={[styles.empty, { color: C.textMuted }]}>No courses found</Text>}
         />
       </BottomSheet>
 
-      {/* Faculty picker */}
-      <BottomSheet visible={facultyModal} onClose={() => { setFacultyModal(false); setFacultySearch(''); }} title="Select Teacher" C={C}>
+      {/* Faculty Picker Sheet (Each item is a 72-size bar) */}
+      <BottomSheet visible={facultyModal} onClose={() => { setFacultyModal(false); setFacultySearch(''); }} title="Select Faculty / Teacher" C={C}>
         <View style={[styles.sBar, { backgroundColor: C.surface2, borderColor: C.border }]}>
-          <Icon name="search" size={18} color={C.textMuted} />
-          <TextInput style={[styles.sInput, { color: C.text, fontFamily: FontFamily.jakartaRegular }]} value={facultySearch} onChangeText={setFacultySearch} placeholder="Search teacher name..." placeholderTextColor={C.textMuted} autoFocus />
+          <Feather name="search" size={18} color={C.textMuted} />
+          <TextInput
+            style={[styles.sInput, { color: C.text, fontFamily: FontFamily.jakartaRegular }]}
+            value={facultySearch}
+            onChangeText={setFacultySearch}
+            placeholder="Search teacher name..."
+            placeholderTextColor={C.textMuted}
+            autoFocus
+          />
         </View>
-        <FlatList data={filteredFaculty} keyExtractor={i => i.id} style={{ maxHeight: 380 }}
+        <FlatList
+          data={filteredFaculty}
+          keyExtractor={i => i.id}
+          style={{ maxHeight: 380 }}
           renderItem={({ item }) => (
-            <TouchableOpacity style={[styles.listRow, { borderBottomColor: C.border }]} onPress={() => selectTeacher(item)} activeOpacity={0.7}>
+            <TouchableOpacity
+              style={[
+                styles.childBar72,
+                {
+                  backgroundColor: C.surface,
+                  borderColor: C.border,
+                  borderLeftColor: SectorColors.coverpage,
+                },
+              ]}
+              onPress={() => selectTeacher(item)}
+              activeOpacity={0.7}
+            >
               <Avatar uri={item.photo_url} name={item.name} size="sm" />
-              <View style={{ flex: 1, marginLeft: Spacing[3] }}>
-                <Text style={[styles.fName, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]} numberOfLines={1}>{item.name}</Text>
-                <Text style={[styles.fMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>{(item.dept_name ?? '').replace(/^Department of\s*/i, '')}{item.designation ? ` · ${item.designation}` : ''}</Text>
+              <View style={{ flex: 1, marginLeft: 4 }}>
+                <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                  {item.name}
+                </Text>
+                <Text style={[styles.childDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                  {(item.dept_name ?? '').replace(/^Department of\s*/i, '')}{item.designation ? ` · ${item.designation}` : ''}
+                </Text>
               </View>
+              <Feather name="chevron-right" size={17} color={C.textMuted} />
             </TouchableOpacity>
           )}
           ListEmptyComponent={<Text style={[styles.empty, { color: C.textMuted }]}>No teachers found</Text>}
         />
       </BottomSheet>
 
-      {/* Program picker */}
-      <BottomSheet visible={deptModal} onClose={() => setDeptModal(false)} title="Select Program" C={C}>
-        <FlatList data={departments} keyExtractor={i => i.id} style={{ maxHeight: 380 }}
+      {/* Program Picker Sheet (Each item is a 72-size bar) */}
+      <BottomSheet visible={deptModal} onClose={() => setDeptModal(false)} title="Select Program / Degree" C={C}>
+        <FlatList
+          data={departments}
+          keyExtractor={i => i.id}
+          style={{ maxHeight: 380 }}
           renderItem={({ item }) => (
-            <TouchableOpacity style={[styles.listRow, { borderBottomColor: C.border }]} onPress={() => selectProgram(item)} activeOpacity={0.7}>
-              <Text style={[styles.deptText, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>{item.name.replace(/^Department of\s*/i, '')}</Text>
+            <TouchableOpacity
+              style={[
+                styles.childBar72,
+                {
+                  backgroundColor: C.surface,
+                  borderColor: C.border,
+                  borderLeftColor: SectorColors.coverpage,
+                },
+              ]}
+              onPress={() => selectProgram(item)}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
+                <Feather name="award" size={18} color={SectorColors.coverpage} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                  {item.name.replace(/^Department of\s*/i, '')}
+                </Text>
+              </View>
+              <Feather name="chevron-right" size={17} color={C.textMuted} />
             </TouchableOpacity>
           )}
         />
       </BottomSheet>
 
-      {/* Designation picker */}
+      {/* Designation Picker Sheet (Each item is a 72-size bar) */}
       <BottomSheet visible={desigModal} onClose={() => setDesigModal(false)} title="Select Designation" C={C}>
-        <FlatList data={DESIGNATIONS} keyExtractor={i => i} style={{ maxHeight: 380 }}
+        <FlatList
+          data={DESIGNATIONS}
+          keyExtractor={i => i}
+          style={{ maxHeight: 380 }}
           renderItem={({ item }) => (
-            <TouchableOpacity style={[styles.listRow, { borderBottomColor: C.border }]} onPress={() => { setTeacherDesig(item); setDesigModal(false); }} activeOpacity={0.7}>
-              <Text style={[styles.deptText, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>{item}</Text>
+            <TouchableOpacity
+              style={[
+                styles.childBar72,
+                {
+                  backgroundColor: C.surface,
+                  borderColor: C.border,
+                  borderLeftColor: SectorColors.coverpage,
+                },
+              ]}
+              onPress={() => { setTeacherDesig(item); setDesigModal(false); }}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
+                <Feather name="bookmark" size={18} color={SectorColors.coverpage} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                  {item}
+                </Text>
+              </View>
+              <Feather name="chevron-right" size={17} color={C.textMuted} />
             </TouchableOpacity>
           )}
         />
       </BottomSheet>
+
+      {/* In-App Fullscreen Interactive PDF Viewer Modal */}
+      <CampusPdfViewerModal
+        visible={viewerVisible}
+        onClose={() => setViewerVisible(false)}
+        title="BUBT Cover Page"
+        subtitle={docTypeLabel(docType)}
+        fileUrl={lastPdfUri}
+        fileName={`BUBT_${docTypeLabel(docType)}.pdf`}
+      />
     </SafeAreaView>
   );
 }
 
-// Helpers
-function BottomSheet({ visible, onClose, title, C, children }: { visible: boolean; onClose: () => void; title: string; C: any; children: React.ReactNode }) {
+// 72-Size Clickable Bar Component
+function Bar72({
+  icon, label, value, desc, placeholder, onPress, accentColor, badge, onBadge, C,
+}: {
+  icon: keyof typeof Feather.glyphMap;
+  label: string;
+  value?: string;
+  desc?: string;
+  placeholder?: string;
+  onPress?: () => void;
+  accentColor?: string;
+  badge?: string;
+  onBadge?: () => void;
+  C: any;
+}) {
+  return (
+    <TouchableOpacity
+      style={[
+        styles.bar72,
+        {
+          backgroundColor: C.surface,
+          borderColor: C.border,
+          borderLeftColor: accentColor ?? SectorColors.coverpage,
+        },
+      ]}
+      onPress={onPress}
+      activeOpacity={0.75}
+    >
+      <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
+        <Feather name={icon} size={20} color={C.text2} />
+      </View>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text style={[styles.barLabel, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+          {label}
+        </Text>
+        <Text style={[styles.barValue, { color: value ? C.text : C.textMuted, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+          {value || placeholder || ''}
+        </Text>
+        {desc && !value ? (
+          <Text style={[styles.barDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+            {desc}
+          </Text>
+        ) : null}
+      </View>
+      {badge ? (
+        <TouchableOpacity style={[styles.badgePill, { backgroundColor: pillBg(Accent.teal, false) }]} onPress={onBadge}>
+          <Feather name="zap" size={11} color={Accent.teal} />
+          <Text style={[styles.badgeTxt, { color: Accent.teal, fontFamily: FontFamily.jakartaBold }]}>{badge}</Text>
+        </TouchableOpacity>
+      ) : (
+        <Feather name="chevron-down" size={18} color={C.textMuted} />
+      )}
+    </TouchableOpacity>
+  );
+}
+
+// 72-Size Editable Input Bar Component
+function InputBar72({
+  icon, label, value, onChange, placeholder, accentColor, keyboardType, C,
+}: {
+  icon: keyof typeof Feather.glyphMap;
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+  accentColor?: string;
+  keyboardType?: 'default' | 'numeric';
+  C: any;
+}) {
+  return (
+    <View
+      style={[
+        styles.bar72,
+        {
+          backgroundColor: C.surface,
+          borderColor: C.border,
+          borderLeftColor: accentColor ?? SectorColors.coverpage,
+        },
+      ]}
+    >
+      <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
+        <Feather name={icon} size={20} color={C.text2} />
+      </View>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text style={[styles.barLabel, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+          {label}
+        </Text>
+        <TextInput
+          style={[styles.barInput, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}
+          value={value}
+          onChangeText={onChange}
+          placeholder={placeholder}
+          placeholderTextColor={C.textMuted}
+          keyboardType={keyboardType ?? 'default'}
+        />
+      </View>
+    </View>
+  );
+}
+
+// BottomSheet helper
+function BottomSheet({
+  visible, onClose, title, C, children,
+}: {
+  visible: boolean; onClose: () => void; title: string; C: any; children: React.ReactNode;
+}) {
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.overlay}>
@@ -666,101 +1409,245 @@ function BottomSheet({ visible, onClose, title, C, children }: { visible: boolea
   );
 }
 
-function IconField({ icon, C, value, onChange, placeholder, badge, onBadge, badgeIcon, chevron, onPress, isDark }: {
-  icon: string; C: any; value: string; onChange?: (v: string) => void;
-  placeholder: string; badge?: string; onBadge?: () => void; badgeIcon?: string;
-  chevron?: boolean; onPress?: () => void; isDark?: boolean;
-}) {
-  const content = (
-    <View style={[ifStyles.wrap, { backgroundColor: C.surface, borderColor: C.border }]}>
-      <Icon name={icon} size={18} color={C.textMuted} />
-      {onChange && !onPress ? (
-        <TextInput
-          style={[ifStyles.input, { color: C.text, fontFamily: FontFamily.jakartaRegular }]}
-          value={value} onChangeText={onChange}
-          placeholder={placeholder} placeholderTextColor={C.textMuted}
-        />
-      ) : (
-        <Text style={[ifStyles.input, { color: value ? C.text : C.textMuted, fontFamily: FontFamily.jakartaRegular, paddingVertical: 14 }]} numberOfLines={1}>
-          {value || placeholder}
-        </Text>
-      )}
-      {badge && (
-        <TouchableOpacity style={[ifStyles.badge, { backgroundColor: pillBg(Accent.teal, isDark) }]} onPress={onBadge}>
-          <Icon name="sparkle" size={11} color={Accent.teal} />
-          <Text style={[ifStyles.badgeTxt, { color: Accent.teal, fontFamily: FontFamily.jakartaBold }]}>{badge}</Text>
-          {badgeIcon && <Icon name={badgeIcon} size={11} color={Accent.teal} />}
-        </TouchableOpacity>
-      )}
-      {chevron && <Icon name="chevD" size={16} color={C.textMuted} />}
-    </View>
-  );
-  if (onPress) return <TouchableOpacity onPress={onPress} activeOpacity={0.7}>{content}</TouchableOpacity>;
-  return content;
-}
-
-const ifStyles = StyleSheet.create({
-  wrap: { flexDirection: 'row', alignItems: 'center', height: 56, borderRadius: 14, borderWidth: 1.5, paddingHorizontal: Spacing[4], gap: Spacing[3], marginBottom: Spacing[3] },
-  input: { flex: 1, fontSize: FontSize.base, padding: 0 },
-  badge: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 8, paddingVertical: 4, borderRadius: Radius.full },
-  badgeTxt: { fontSize: 11 },
-});
-
-function Sec({ icon, label, C, count }: { icon: string; label: string; C: any; count?: number }) {
-  return (
-    <View style={[hStyles.sec, { borderBottomColor: C.border }]}>
-      <View style={[hStyles.dot, { backgroundColor: SectorColors.coverpage }]} />
-      <Text style={[hStyles.secText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{label}</Text>
-      {count !== undefined && (
-        <View style={[hStyles.countBadge, { backgroundColor: SectorColors.coverpage }]}>
-          <Text style={hStyles.countTxt}>{count}</Text>
-        </View>
-      )}
-    </View>
-  );
-}
-
-const hStyles = StyleSheet.create({
-  sec: { flexDirection: 'row', alignItems: 'center', gap: Spacing[2], marginTop: Spacing[5], paddingBottom: Spacing[2], borderBottomWidth: StyleSheet.hairlineWidth },
-  dot: { width: 4, height: 18, borderRadius: 2 },
-  secText: { fontSize: FontSize.md, flex: 1 },
-  countBadge: { width: 22, height: 22, borderRadius: 11, alignItems: 'center' as const, justifyContent: 'center' as const },
-  countTxt: { color: '#fff', fontSize: 11, fontWeight: '700' as const },
-  row: { flexDirection: 'row', gap: Spacing[3], alignItems: 'center' },
-});
-
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
-  scroll: { paddingBottom: 20, paddingTop: Spacing[2] },
-  typeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing[2], marginBottom: Spacing[2] },
-  typeChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: Spacing[4], paddingVertical: Spacing[2], borderRadius: Radius.full, borderWidth: 1.5 },
-  typeChipText: { fontSize: FontSize.sm },
-  tCard: { width: 124, borderRadius: Radius.md, marginRight: Spacing[3], overflow: 'hidden' },
-  tImg: { width: '100%', height: 160 },
-  bigPrev: { width: '100%', height: 460, borderRadius: Radius.md, borderWidth: 1, marginTop: Spacing[3] },
-  chk: { position: 'absolute', top: 6, left: 6, width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  freeBadge: { position: 'absolute', top: 6, right: 6, paddingHorizontal: 5, paddingVertical: 2, borderRadius: 4 },
-  freeTxt: { color: '#fff', fontSize: 8, fontWeight: '800', letterSpacing: 0.5 },
-  tLabel: { textAlign: 'center', fontSize: FontSize.xs, paddingVertical: Spacing[2] },
-  delMember: { width: 44, height: 44, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginBottom: Spacing[3] },
-  addBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, height: 46, borderRadius: 12, borderWidth: 1.5, borderStyle: 'dashed', marginTop: Spacing[1] },
-  addTxt: { fontSize: FontSize.sm },
-  genBtn: { flexDirection: 'row', height: 58, borderRadius: 16, alignItems: 'center', justifyContent: 'center', gap: 9, marginTop: Spacing[6] },
-  genBtnText: { fontSize: FontSize.lg },
-  overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' },
-  sheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: Layout.screenPadding, paddingBottom: Layout.screenPadding, maxHeight: '80%' },
-  handle: { alignItems: 'center', paddingVertical: Spacing[3] },
-  handleBar: { width: 36, height: 4, borderRadius: 2 },
-  sheetTitle: { fontSize: FontSize['2xl'], textAlign: 'center', marginBottom: Spacing[3] },
-  sBar: { flexDirection: 'row', alignItems: 'center', height: 58, borderRadius: 16, borderWidth: 1, paddingHorizontal: 16, gap: 10, marginBottom: Spacing[3] },
-  sInput: { flex: 1, fontSize: 14.5, padding: 0 },
-  listRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing[3], borderBottomWidth: StyleSheet.hairlineWidth },
-  courseCode: { fontSize: FontSize.md, width: 80 },
-  courseName: { flex: 1, fontSize: FontSize.sm },
-  fName: { fontSize: FontSize.md },
-  fMeta: { fontSize: FontSize.xs, marginTop: 2 },
-  deptText: { fontSize: FontSize.md },
-  empty: { textAlign: 'center', marginTop: Spacing[6], fontSize: FontSize.base },
-  closeBtn: { height: 44, borderRadius: Radius.md, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginTop: Spacing[3] },
-  closeTxt: { fontSize: FontSize.base },
+  safe: { flex: 1 } as ViewStyle,
+  scroll: { paddingBottom: 24, paddingTop: 10 } as ViewStyle,
+
+  sectionHeader: {
+    paddingTop: 4,
+    paddingBottom: 4,
+    paddingHorizontal: 2,
+    marginBottom: 6,
+  } as ViewStyle,
+
+  sectionEyebrow: {
+    fontSize: 11,
+    letterSpacing: 0.8,
+  } as any,
+
+  // 72-Size Bar (Matches Explore tool cards)
+  bar72: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 13,
+    height: 72,
+    paddingHorizontal: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderLeftWidth: 4.5,
+    marginBottom: 10,
+  } as ViewStyle,
+
+  // 72-Size Child / Action Bar
+  childBar72: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 13,
+    height: 72,
+    paddingHorizontal: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderLeftWidth: 4.5,
+    marginBottom: 8,
+  } as ViewStyle,
+
+  toolIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+
+  barLabel: {
+    fontSize: 11,
+    lineHeight: 15,
+  } as any,
+
+  barValue: {
+    fontSize: 14.5,
+    lineHeight: 20,
+    marginTop: 2,
+  } as any,
+
+  barDesc: {
+    fontSize: 11,
+    lineHeight: 15,
+    marginTop: 1,
+  } as any,
+
+  barInput: {
+    fontSize: 14.5,
+    lineHeight: 20,
+    padding: 0,
+    marginTop: 2,
+  } as any,
+
+  childTitle: {
+    fontSize: 14.5,
+    lineHeight: 20,
+  } as any,
+
+  childDesc: {
+    fontSize: 11.5,
+    lineHeight: 16,
+    marginTop: 2,
+  } as any,
+
+  badgePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: Radius.full,
+  } as ViewStyle,
+
+  badgeTxt: {
+    fontSize: 11,
+  } as any,
+
+  tCard: {
+    width: 124,
+    borderRadius: Radius.md,
+    marginRight: Spacing[3],
+    overflow: 'hidden',
+  } as ViewStyle,
+
+  tImg: {
+    width: '100%',
+    height: 160,
+  } as any,
+
+  bigPrev: {
+    width: '100%',
+    height: 460,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    marginTop: Spacing[2],
+    marginBottom: Spacing[3],
+  } as any,
+
+  chk: {
+    position: 'absolute',
+    top: 6,
+    left: 6,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+
+  freeBadge: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 4,
+  } as ViewStyle,
+
+  freeTxt: {
+    color: '#fff',
+    fontSize: 8,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  } as any,
+
+  tLabel: {
+    textAlign: 'center',
+    fontSize: FontSize.xs,
+    paddingVertical: Spacing[2],
+  } as any,
+
+  delMember: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+
+  genBtn: {
+    flexDirection: 'row',
+    height: 58,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 9,
+    marginTop: Spacing[4],
+  } as ViewStyle,
+
+  genBtnText: {
+    fontSize: FontSize.lg,
+  } as any,
+
+  overlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  } as ViewStyle,
+
+  sheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: Layout.screenPadding,
+    paddingBottom: Layout.screenPadding,
+    maxHeight: '82%',
+  } as ViewStyle,
+
+  handle: {
+    alignItems: 'center',
+    paddingVertical: Spacing[3],
+  } as ViewStyle,
+
+  handleBar: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+  } as ViewStyle,
+
+  sheetTitle: {
+    fontSize: FontSize['2xl'],
+    textAlign: 'center',
+    marginBottom: Spacing[3],
+  } as any,
+
+  sBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 56,
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    gap: 10,
+    marginBottom: Spacing[3],
+  } as ViewStyle,
+
+  sInput: {
+    flex: 1,
+    fontSize: 14.5,
+    padding: 0,
+  } as any,
+
+  empty: {
+    textAlign: 'center',
+    marginVertical: Spacing[6],
+    fontSize: FontSize.base,
+  } as any,
+
+  closeBtn: {
+    height: 48,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: Spacing[3],
+  } as ViewStyle,
+
+  closeTxt: {
+    fontSize: FontSize.base,
+  } as any,
 });
