@@ -213,7 +213,6 @@ export function StudyUploadScreen({ route, navigation }: any) {
           tabs={UPLOAD_TYPE_TABS}
           activeTab={fileType}
           onTabChange={setFileType}
-          size="sm"
         />
 
         {/* Material type (materials only) - must match DB CHECK */}

@@ -330,7 +330,6 @@ export function JobsBrowseScreen({ navigation }: any) {
             tabs={statusTabs}
             activeTab={statusFilter}
             onTabChange={setStatusFilter}
-            size="sm"
           />
         </View>
       )}

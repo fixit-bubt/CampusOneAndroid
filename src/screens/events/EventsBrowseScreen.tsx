@@ -15,8 +15,9 @@ import { Icon } from '../../components/ui/Icon';
 import { LogoMark } from '../../components/ui/Logo';
 import { SkeletonList, LoadError } from '../../components/ui/LoadState';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
+import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
 import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
-import { FontFamily, Layout, SectorColors, Accent } from '../../theme';
+import { FontFamily, Layout, SectorColors, Accent, pillBg } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 import { localToday } from '../../utils/format';
@@ -34,17 +35,18 @@ import type { Event } from '../../types/database';
 export interface EventCategoryOption {
   id: string;
   label: string;
+  desc?: string;
   icon: React.ComponentProps<typeof Feather>['name'];
   color?: string;
 }
 
 export const EVENT_CATEGORIES: EventCategoryOption[] = [
-  { id: 'All',      label: 'All Categories', icon: 'layers' },
-  { id: 'Academic', label: 'Academic',       icon: 'book-open', color: SectorColors.reports },
-  { id: 'Cultural', label: 'Cultural',       icon: 'music',     color: SectorColors.events },
-  { id: 'Sports',   label: 'Sports',         icon: 'activity',  color: SectorColors.market },
-  { id: 'Club',     label: 'Club',           icon: 'users',     color: SectorColors.clubs },
-  { id: 'Career',   label: 'Career',         icon: 'briefcase', color: SectorColors.jobs },
+  { id: 'All',      label: 'All Categories', desc: 'Browse all campus events',     icon: 'layers' },
+  { id: 'Academic', label: 'Academic',       desc: 'Seminars, workshops & exams',  icon: 'book-open', color: SectorColors.reports },
+  { id: 'Cultural', label: 'Cultural',       desc: 'Festivals, music & drama',     icon: 'music',     color: SectorColors.events },
+  { id: 'Sports',   label: 'Sports',         desc: 'Tournaments & athletic meets', icon: 'activity',  color: SectorColors.market },
+  { id: 'Club',     label: 'Club',           desc: 'Club sessions & orientations', icon: 'users',     color: SectorColors.clubs },
+  { id: 'Career',   label: 'Career',         desc: 'Job fairs & industry talks',   icon: 'briefcase', color: SectorColors.jobs },
 ];
 
 const CAT_COLOR: Record<string, string> = {
@@ -238,9 +240,6 @@ export function EventsBrowseScreen({ navigation }: any) {
   const [tab, setTab] = useState<EventTab>('upcoming');
   const [category, setCategory] = useState('All');
   const [search, setSearch] = useState('');
-  const [view, setView] = useState<'list' | 'calendar'>('list');
-  const [selectedDay, setSelectedDay] = useState<string | null>(null);
-  const [monthOffset, setMonthOffset] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [loadState, setLoadState] = useState<'loading' | 'error' | 'ready'>('loading');
@@ -382,6 +381,16 @@ export function EventsBrowseScreen({ navigation }: any) {
     { id: 'saved',    label: 'Saved',    count: savedList.length > 0 ? savedList.length : undefined, color: Accent.gold },
   ], [upcomingList.length, pastList.length, savedList.length, C.brand, C.text2]);
 
+  const catCounts = useMemo(() => {
+    const counts: Record<string, number> = { All: events.length };
+    for (const e of events) {
+      if (e.category) {
+        counts[e.category] = (counts[e.category] || 0) + 1;
+      }
+    }
+    return counts;
+  }, [events]);
+
   const activeCatObj = EVENT_CATEGORIES.find(c => c.id === category) ?? EVENT_CATEGORIES[0];
   const isCatActive = category !== 'All';
   const activeCatColor = activeCatObj.color ?? C.brand;
@@ -393,13 +402,6 @@ export function EventsBrowseScreen({ navigation }: any) {
         onBack={() => navigation.goBack()}
         rightSlot={
           <View style={styles.topRightSlots}>
-            <TouchableOpacity
-              style={styles.iconBtn}
-              onPress={() => setView(v => (v === 'list' ? 'calendar' : 'list'))}
-              activeOpacity={0.75}
-            >
-              <Feather name={view === 'list' ? 'calendar' : 'list'} size={19} color={C.text} />
-            </TouchableOpacity>
             {canPost && (
               <TouchableOpacity
                 style={styles.iconBtn}
@@ -440,60 +442,102 @@ export function EventsBrowseScreen({ navigation }: any) {
           tabs={EVENT_TABS}
           activeTab={tab}
           onTabChange={setTab}
-          size="sm"
         />
       </View>
 
-      {/* Category Dropdown Bar (58dp Standard) */}
+      {/* Category Bar (72dp Standard matching Explore Community Bar) */}
       <View style={[styles.catBarRow, { paddingHorizontal: Layout.screenPadding }]}>
         <TouchableOpacity
           style={[
             styles.catDropdownBtn,
             isCatActive
               ? {
-                  backgroundColor: isDark ? `${activeCatColor}1e` : `${activeCatColor}12`,
-                  borderColor: activeCatColor,
+                  backgroundColor: isDark ? `${activeCatColor}16` : `${activeCatColor}0e`,
+                  borderColor: isDark ? `${activeCatColor}85` : `${activeCatColor}65`,
+                  borderWidth: 1.5,
                 }
               : {
                   backgroundColor: C.surface,
                   borderColor: C.border,
+                  borderWidth: 1,
                 },
           ]}
           onPress={() => setCategoryModalVisible(true)}
           activeOpacity={0.75}
         >
-          <View style={styles.catDropdownLeft}>
-            <View
+          <View
+            style={[
+              styles.catIconBox,
+              {
+                backgroundColor: isCatActive
+                  ? pillBg(activeCatColor, isDark)
+                  : C.surface2,
+              },
+            ]}
+          >
+            <AnimatedIcon
+              family="feather"
+              name={activeCatObj.icon}
+              size={20}
+              color={isCatActive ? activeCatColor : C.textMuted}
+              animation="spring"
+            />
+          </View>
+
+          <View style={styles.catTextWrap}>
+            <Text
               style={[
-                styles.catIconBox,
+                styles.catTitleTxt,
                 {
-                  backgroundColor: isCatActive
-                    ? (isDark ? `${activeCatColor}33` : `${activeCatColor}22`)
-                    : C.surface2,
+                  color: isCatActive ? activeCatColor : C.text,
+                  fontFamily: FontFamily.jakartaBold,
+                },
+              ]}
+              numberOfLines={1}
+            >
+              {activeCatObj.label}
+            </Text>
+            <Text
+              style={[
+                styles.catSubTxt,
+                {
+                  color: C.text3,
+                  fontFamily: FontFamily.jakartaMedium,
+                },
+              ]}
+              numberOfLines={1}
+            >
+              {activeCatObj.desc ?? 'Filter campus events'}
+            </Text>
+          </View>
+
+          <View style={[styles.catDivider, { backgroundColor: C.border }]} />
+
+          <View style={styles.catStatCol}>
+            <Text
+              style={[
+                styles.catStatVal,
+                {
+                  color: isCatActive ? activeCatColor : C.text,
+                  fontFamily: FontFamily.jakartaExtraBold,
                 },
               ]}
             >
-              <Feather
-                name={activeCatObj.icon}
-                size={18}
-                color={isCatActive ? activeCatColor : C.textMuted}
-              />
-            </View>
-            <View style={styles.catTextWrap}>
-              <Text
-                style={[
-                  styles.catTitleTxt,
-                  {
-                    color: isCatActive ? activeCatColor : C.text,
-                    fontFamily: isCatActive ? FontFamily.jakartaBold : FontFamily.jakartaSemiBold,
-                  },
-                ]}
-                numberOfLines={1}
-              >
-                {activeCatObj.label}
-              </Text>
-            </View>
+              {catCounts[category] ?? 0}
+            </Text>
+            <Text
+              style={[
+                styles.catStatSub,
+                {
+                  color: C.text3,
+                  fontFamily: FontFamily.jakartaBold,
+                },
+              ]}
+            >
+              EVENTS
+            </Text>
           </View>
+
           <View style={styles.catDropdownRight}>
             {isCatActive && (
               <TouchableOpacity
@@ -504,11 +548,13 @@ export function EventsBrowseScreen({ navigation }: any) {
                 <Feather name="x" size={15} color={activeCatColor} />
               </TouchableOpacity>
             )}
-            <Feather
-              name="chevron-down"
-              size={18}
-              color={isCatActive ? activeCatColor : C.textMuted}
-            />
+            <View style={styles.chevBox}>
+              <Icon
+                name="chevD"
+                size={18}
+                color={isCatActive ? activeCatColor : C.textMuted}
+              />
+            </View>
           </View>
         </TouchableOpacity>
       </View>
@@ -525,130 +571,6 @@ export function EventsBrowseScreen({ navigation }: any) {
           <SkeletonList />
         ) : loadState === 'error' && events.length === 0 ? (
           <LoadError onRetry={load} />
-        ) : view === 'calendar' ? (
-          (() => {
-            const base = new Date();
-            base.setDate(1);
-            base.setMonth(base.getMonth() + monthOffset);
-            const year = base.getFullYear();
-            const month = base.getMonth();
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            const firstDow = new Date(year, month, 1).getDay();
-            const iso = (d: number) =>
-              `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-            const eventDays = new Set(searchedEvents.map(e => e.date));
-            const cells: (number | null)[] = [
-              ...Array.from({ length: firstDow }, () => null),
-              ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
-            ];
-            const dayEvents = selectedDay ? searchedEvents.filter(e => e.date === selectedDay) : [];
-
-            return (
-              <View>
-                <View style={styles.calNav}>
-                  <TouchableOpacity
-                    onPress={() => {
-                      setSelectedDay(null);
-                      setMonthOffset(o => o - 1);
-                    }}
-                    hitSlop={10}
-                    activeOpacity={0.7}
-                  >
-                    <Feather name="chevron-left" size={22} color={C.text} />
-                  </TouchableOpacity>
-                  <Text style={[styles.calTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-                    {base.toLocaleString('en', { month: 'long' })} {year}
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() => {
-                      setSelectedDay(null);
-                      setMonthOffset(o => o + 1);
-                    }}
-                    hitSlop={10}
-                    activeOpacity={0.7}
-                  >
-                    <Feather name="chevron-right" size={22} color={C.text} />
-                  </TouchableOpacity>
-                </View>
-
-                <View style={styles.calGrid}>
-                  {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
-                    <View key={`h${i}`} style={styles.calCell}>
-                      <Text style={[styles.calHead, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                        {d}
-                      </Text>
-                    </View>
-                  ))}
-                  {cells.map((d, i) => {
-                    if (d === null) return <View key={`e${i}`} style={styles.calCell} />;
-                    const dayISO = iso(d);
-                    const has = eventDays.has(dayISO);
-                    const isToday = dayISO === todayStr;
-                    const isSel = selectedDay === dayISO;
-                    return (
-                      <TouchableOpacity
-                        key={dayISO}
-                        style={[
-                          styles.calCell,
-                          isSel && { backgroundColor: C.brand, borderRadius: 10 },
-                          !isSel && isToday && { backgroundColor: C.surface2, borderRadius: 10 },
-                        ]}
-                        onPress={() => setSelectedDay(isSel ? null : dayISO)}
-                        activeOpacity={0.7}
-                      >
-                        <Text
-                          style={[
-                            styles.calDay,
-                            {
-                              color: isSel ? C.white : isToday ? C.brand : C.text,
-                              fontFamily: has || isToday ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                            },
-                          ]}
-                        >
-                          {d}
-                        </Text>
-                        {has && (
-                          <View
-                            style={[
-                              styles.calDot,
-                              { backgroundColor: isSel ? C.white : C.brand },
-                            ]}
-                          />
-                        )}
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-
-                {/* Day Agenda */}
-                {selectedDay && (
-                  <View style={[styles.list, { marginTop: 16 }]}>
-                    <Text style={[styles.agendaHeader, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                      Schedule for {selectedDay}
-                    </Text>
-                    {dayEvents.length === 0 ? (
-                      <View style={[styles.emptyDayBox, { backgroundColor: C.surface, borderColor: C.border }]}>
-                        <Text style={{ color: C.textMuted, fontFamily: FontFamily.jakartaMedium, fontSize: 13 }}>
-                          No campus events scheduled for this day
-                        </Text>
-                      </View>
-                    ) : (
-                      dayEvents.map(e => (
-                        <EventCard
-                          key={e.id}
-                          e={e}
-                          C={C}
-                          isSaved={savedIds.has(e.id)}
-                          onToggleSave={() => handleToggleBookmark(e.id)}
-                          onPress={() => navigation.navigate('EventDetail', { eventId: e.id })}
-                        />
-                      ))
-                    )}
-                  </View>
-                )}
-              </View>
-            );
-          })()
         ) : displayList.length === 0 ? (
           <View style={styles.empty}>
             <Icon name="events" size={32} color={C.textMuted} />
@@ -682,7 +604,7 @@ export function EventsBrowseScreen({ navigation }: any) {
         <View style={{ height: 24 }} />
       </ScrollView>
 
-      {/* Category Selection Bottom Sheet Modal (58dp Distinct Bars) */}
+      {/* Category Selection Bottom Sheet Modal (72dp Standard) */}
       <Modal
         visible={categoryModalVisible}
         transparent
@@ -704,11 +626,12 @@ export function EventsBrowseScreen({ navigation }: any) {
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={{ maxHeight: 440 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+            <ScrollView style={{ maxHeight: 460 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
               <View style={styles.modalBarsContainer}>
-                {EVENT_CATEGORIES.map(cat => {
+                {EVENT_CATEGORIES.map((cat, idx) => {
                   const active = category === cat.id;
                   const catThemeColor = cat.color ?? C.brand;
+                  const catCount = catCounts[cat.id] ?? 0;
                   return (
                     <TouchableOpacity
                       key={cat.id}
@@ -716,8 +639,9 @@ export function EventsBrowseScreen({ navigation }: any) {
                         styles.pickerBar,
                         { backgroundColor: C.surface, borderColor: C.border },
                         active && {
-                          backgroundColor: isDark ? `${catThemeColor}1f` : `${catThemeColor}14`,
-                          borderColor: catThemeColor,
+                          backgroundColor: isDark ? `${catThemeColor}16` : `${catThemeColor}0e`,
+                          borderColor: isDark ? `${catThemeColor}85` : `${catThemeColor}65`,
+                          borderWidth: 1.5,
                         },
                       ]}
                       onPress={() => {
@@ -726,35 +650,79 @@ export function EventsBrowseScreen({ navigation }: any) {
                       }}
                       activeOpacity={0.75}
                     >
-                      <View style={styles.pickerBarLeft}>
-                        <View
-                          style={[
-                            styles.pickerBarIconBox,
-                            {
-                              backgroundColor: active
-                                ? (isDark ? `${catThemeColor}33` : `${catThemeColor}24`)
-                                : C.surface2,
-                            },
-                          ]}
-                        >
-                          <Feather
-                            name={cat.icon}
-                            size={18}
-                            color={active ? catThemeColor : C.textMuted}
-                          />
-                        </View>
+                      <View
+                        style={[
+                          styles.pickerBarIconBox,
+                          {
+                            backgroundColor: active
+                              ? pillBg(catThemeColor, isDark)
+                              : C.surface2,
+                          },
+                        ]}
+                      >
+                        <AnimatedIcon
+                          family="feather"
+                          name={cat.icon}
+                          size={20}
+                          color={active ? catThemeColor : C.textMuted}
+                          animation={active ? 'spring' : 'entrance'}
+                          delay={idx * 30}
+                        />
+                      </View>
+                      <View style={styles.pickerBarTextWrap}>
                         <Text
                           style={[
                             styles.pickerBarTitle,
                             {
                               color: active ? catThemeColor : C.text,
-                              fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                              fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaSemiBold,
                             },
                           ]}
+                          numberOfLines={1}
                         >
                           {cat.label}
                         </Text>
+                        <Text
+                          style={[
+                            styles.pickerBarSub,
+                            {
+                              color: C.text3,
+                              fontFamily: FontFamily.jakartaMedium,
+                            },
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {cat.desc ?? 'Campus events'}
+                        </Text>
                       </View>
+
+                      <View style={[styles.catDivider, { backgroundColor: C.border }]} />
+
+                      <View style={styles.catStatCol}>
+                        <Text
+                          style={[
+                            styles.catStatVal,
+                            {
+                              color: active ? catThemeColor : C.text,
+                              fontFamily: FontFamily.jakartaExtraBold,
+                            },
+                          ]}
+                        >
+                          {catCount}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.catStatSub,
+                            {
+                              color: C.text3,
+                              fontFamily: FontFamily.jakartaBold,
+                            },
+                          ]}
+                        >
+                          EVENTS
+                        </Text>
+                      </View>
+
                       {active ? (
                         <Feather name="check-circle" size={20} color={catThemeColor} />
                       ) : (
@@ -787,46 +755,78 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   searchInput: { flex: 1, fontSize: 14.5, paddingVertical: 0 } as any,
 
-  // Category Dropdown Bar (58dp Standard)
+  // Category Dropdown Bar (72dp Standard matching Explore Community Bar)
   catBarRow: {
     paddingBottom: 10,
   } as ViewStyle,
   catDropdownBtn: {
-    height: 58,
+    height: 72,
     borderRadius: 16,
     borderWidth: 1,
     paddingHorizontal: 14,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-  } as ViewStyle,
-  catDropdownLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flex: 1,
+    overflow: 'visible',
   } as ViewStyle,
   catIconBox: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'visible',
   } as ViewStyle,
   catTextWrap: {
     flex: 1,
     justifyContent: 'center',
+    marginLeft: 12,
   } as ViewStyle,
   catTitleTxt: {
     fontSize: 14.5,
+    lineHeight: 20,
+  } as any,
+  catSubTxt: {
+    fontSize: 11.5,
+    lineHeight: 16,
+    marginTop: 2,
+  } as any,
+  catDivider: {
+    width: 1,
+    height: 30,
+    marginHorizontal: 4,
+  } as ViewStyle,
+  catStatCol: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 40,
+    marginRight: 6,
+  } as ViewStyle,
+  catStatVal: {
+    fontSize: 16.5,
+    lineHeight: 20,
+    textAlign: 'center',
+  } as any,
+  catStatSub: {
+    fontSize: 9.5,
+    lineHeight: 12,
+    letterSpacing: 0.5,
+    textAlign: 'center',
+    marginTop: 1,
   } as any,
   catDropdownRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
+  } as ViewStyle,
+  chevBox: {
+    width: 22,
+    height: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'visible',
   } as ViewStyle,
 
-  // Modal Sheet & Distinct Bars (58dp Standard)
+  // Modal Sheet & Distinct Bars (72dp Standard)
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -858,32 +858,37 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   } as ViewStyle,
 
-  // Distinct Rounded Picker Bar (Inside Modal - 58dp Standard)
+  // Distinct Rounded Picker Bar (Inside Modal - 72dp Standard)
   pickerBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    height: 58,
+    paddingHorizontal: 14,
+    height: 72,
     borderRadius: 16,
     borderWidth: 1,
-  } as ViewStyle,
-  pickerBarLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flex: 1,
+    overflow: 'visible',
   } as ViewStyle,
   pickerBarIconBox: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'visible',
+  } as ViewStyle,
+  pickerBarTextWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    marginLeft: 12,
   } as ViewStyle,
   pickerBarTitle: {
     fontSize: 14.5,
-    flex: 1,
+    lineHeight: 20,
+  } as any,
+  pickerBarSub: {
+    fontSize: 11.5,
+    lineHeight: 16,
+    marginTop: 2,
   } as any,
   radioOutline: {
     width: 20,
@@ -966,25 +971,6 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
   } as ViewStyle,
   organizerText: { fontSize: 12, flex: 1, marginRight: 8 } as any,
-  calNav: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  } as ViewStyle,
-  calTitle: { fontSize: 15.5 } as any,
-  calGrid: { flexDirection: 'row', flexWrap: 'wrap' } as ViewStyle,
-  calCell: { width: `${100 / 7}%`, alignItems: 'center', paddingVertical: 8, gap: 2 } as ViewStyle,
-  calHead: { fontSize: 11 } as any,
-  calDay: { fontSize: 13 } as any,
-  calDot: { width: 5, height: 5, borderRadius: 2.5 } as ViewStyle,
-  agendaHeader: { fontSize: 14, marginBottom: 8 } as any,
-  emptyDayBox: {
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    alignItems: 'center',
-  } as ViewStyle,
   empty: { alignItems: 'center', paddingTop: 60, paddingHorizontal: 24, gap: 8 } as ViewStyle,
   emptyTitle: { fontSize: 16 } as any,
   emptySub: { fontSize: 13, textAlign: 'center', lineHeight: 18 } as any,

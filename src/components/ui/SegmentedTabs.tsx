@@ -44,17 +44,16 @@ export function SegmentedTabs<T extends string = string>({
   const { C, isDark } = useTheme();
   const [trackWidth, setTrackWidth] = useState(0);
 
-  const isSm = size === 'sm';
-  const trackHeight = isSm ? 38 : 58;
-  const trackRadius = isSm ? 12 : 16;
-  const trackPadding = isSm ? 3 : 4;
-  const indicatorRadius = isSm ? 9 : 12;
-  const iconSize = isSm ? 13 : 15.5;
-  const fontSize = isSm ? 12 : 13.5;
-  const badgeHeight = isSm ? 18 : 22;
-  const badgeMinWidth = isSm ? 16 : 20;
-  const badgePaddingHorizontal = isSm ? 5 : 6.5;
-  const badgeFontSize = isSm ? 9.5 : 11;
+  const trackHeight = 58;
+  const trackRadius = 16;
+  const trackPadding = 4;
+  const indicatorRadius = 12;
+  const iconSize = 15.5;
+  const fontSize = 13.5;
+  const badgeHeight = 22;
+  const badgeMinWidth = 20;
+  const badgePaddingHorizontal = 6.5;
+  const badgeFontSize = 11;
 
   const foundIdx = tabs.findIndex((t) => t.id === activeTab);
   const activeIndex = foundIdx >= 0 ? foundIdx : -1;
@@ -129,7 +128,7 @@ export function SegmentedTabs<T extends string = string>({
               {
                 borderRadius: indicatorRadius,
                 paddingHorizontal: 4,
-                gap: isSm ? 4 : 5.5,
+                gap: 5.5,
               },
             ]}
             onPress={() => onTabChange(tab.id)}

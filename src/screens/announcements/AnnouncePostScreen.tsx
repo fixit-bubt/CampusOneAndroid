@@ -176,7 +176,6 @@ export function AnnouncePostScreen({ navigation }: any) {
           tabs={priorityTabs}
           activeTab={priority}
           onTabChange={setPriority}
-          size="sm"
         />
 
         <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.announce2.labelBody}</Text>
