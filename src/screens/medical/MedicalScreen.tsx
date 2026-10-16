@@ -63,7 +63,7 @@ interface DutyState {
   bg: string;
 }
 
-function getDoctorIconConfig(doc: Doctor, isDark: boolean) {
+function getDoctorIconConfig(doc: Doctor, _isDark?: boolean) {
   const isPsych =
     doc.role_type === 'psychologist' ||
     (doc.specialty && doc.specialty.toLowerCase().includes('psycholog'));
@@ -79,8 +79,8 @@ function getDoctorIconConfig(doc: Doctor, isDark: boolean) {
     return {
       family: 'feather' as IconFamily,
       name: 'heart',
-      color: '#a855f7',
-      bg: isDark ? 'rgba(168, 85, 247, 0.16)' : 'rgba(147, 51, 234, 0.1)',
+      color: MED_COLOR,
+      bg: MED_BG,
       animation: 'pulse' as AnimationType,
       loop: true,
     };
@@ -90,8 +90,8 @@ function getDoctorIconConfig(doc: Doctor, isDark: boolean) {
     return {
       family: 'mci' as IconFamily,
       name: 'needle',
-      color: '#f59e0b',
-      bg: isDark ? 'rgba(245, 158, 11, 0.16)' : 'rgba(245, 158, 11, 0.1)',
+      color: MED_COLOR,
+      bg: MED_BG,
       animation: 'spring' as AnimationType,
       loop: false,
     };
@@ -101,8 +101,8 @@ function getDoctorIconConfig(doc: Doctor, isDark: boolean) {
     return {
       family: 'feather' as IconFamily,
       name: 'award',
-      color: '#06b6d4',
-      bg: isDark ? 'rgba(6, 182, 212, 0.16)' : 'rgba(6, 182, 212, 0.1)',
+      color: MED_COLOR,
+      bg: MED_BG,
       animation: 'entrance' as AnimationType,
       loop: false,
     };
@@ -118,14 +118,14 @@ function getDoctorIconConfig(doc: Doctor, isDark: boolean) {
   };
 }
 
-function getServiceIconConfig(srvId: string, isDark: boolean) {
+function getServiceIconConfig(srvId: string, _isDark?: boolean) {
   switch (srvId) {
     case 'mental_health':
       return {
         family: 'feather' as IconFamily,
         name: 'heart',
-        color: '#a855f7',
-        bg: isDark ? 'rgba(168, 85, 247, 0.16)' : 'rgba(147, 51, 234, 0.1)',
+        color: MED_COLOR,
+        bg: MED_BG,
         animation: 'pulse' as AnimationType,
         loop: true,
       };
@@ -133,8 +133,8 @@ function getServiceIconConfig(srvId: string, isDark: boolean) {
       return {
         family: 'feather' as IconFamily,
         name: 'activity',
-        color: '#10b981',
-        bg: isDark ? 'rgba(16, 185, 129, 0.16)' : 'rgba(16, 185, 129, 0.1)',
+        color: MED_COLOR,
+        bg: MED_BG,
         animation: 'bounce' as AnimationType,
         loop: false,
       };
@@ -142,8 +142,8 @@ function getServiceIconConfig(srvId: string, isDark: boolean) {
       return {
         family: 'feather' as IconFamily,
         name: 'shield',
-        color: '#f59e0b',
-        bg: isDark ? 'rgba(245, 158, 11, 0.16)' : 'rgba(245, 158, 11, 0.1)',
+        color: MED_COLOR,
+        bg: MED_BG,
         animation: 'spring' as AnimationType,
         loop: false,
       };
@@ -166,8 +166,8 @@ function getHospitalIconConfig(hospId: string) {
       return {
         family: 'feather' as IconFamily,
         name: 'heart',
-        color: '#ef4444',
-        bg: 'rgba(239, 68, 68, 0.14)',
+        color: MED_COLOR,
+        bg: MED_BG,
         animation: 'pulse' as AnimationType,
         loop: true,
       };
@@ -175,8 +175,8 @@ function getHospitalIconConfig(hospId: string) {
       return {
         family: 'mci' as IconFamily,
         name: 'hospital-building',
-        color: '#3b82f6',
-        bg: 'rgba(59, 130, 246, 0.14)',
+        color: MED_COLOR,
+        bg: MED_BG,
         animation: 'entrance' as AnimationType,
         loop: false,
       };
@@ -184,8 +184,8 @@ function getHospitalIconConfig(hospId: string) {
       return {
         family: 'feather' as IconFamily,
         name: 'activity',
-        color: '#10b981',
-        bg: 'rgba(16, 185, 129, 0.14)',
+        color: MED_COLOR,
+        bg: MED_BG,
         animation: 'bounce' as AnimationType,
         loop: false,
       };
@@ -193,8 +193,8 @@ function getHospitalIconConfig(hospId: string) {
       return {
         family: 'feather' as IconFamily,
         name: 'droplet',
-        color: '#8b5cf6',
-        bg: 'rgba(139, 92, 246, 0.14)',
+        color: MED_COLOR,
+        bg: MED_BG,
         animation: 'float' as AnimationType,
         loop: false,
       };
@@ -202,8 +202,8 @@ function getHospitalIconConfig(hospId: string) {
       return {
         family: 'mci' as IconFamily,
         name: 'tooth-outline',
-        color: '#06b6d4',
-        bg: 'rgba(6, 182, 212, 0.14)',
+        color: MED_COLOR,
+        bg: MED_BG,
         animation: 'spring' as AnimationType,
         loop: false,
       };
@@ -398,8 +398,8 @@ export function MedicalScreen({ navigation }: any) {
         sub: isBn ? 'জ্বর, ঠাণ্ডা ও সাধারণ চিকিৎসার এমবিবিএস ডাক্তার' : 'General physicians for consultations and primary care',
         icon: 'stethoscope',
         iconFamily: 'mci' as IconFamily,
-        color: '#0284c7',
-        bg: isDark ? 'rgba(2, 132, 199, 0.16)' : 'rgba(2, 132, 199, 0.1)',
+        color: MED_COLOR,
+        bg: MED_BG,
       },
       {
         id: 'psychologist' as FilterType,
@@ -407,8 +407,8 @@ export function MedicalScreen({ navigation }: any) {
         sub: isBn ? 'মানসিক স্বাস্থ্য সহায়তা ও গোপনীয় কাউন্সেলিং' : 'Confidential psychological support and counseling',
         icon: 'heart',
         iconFamily: 'feather' as IconFamily,
-        color: '#a855f7',
-        bg: isDark ? 'rgba(168, 85, 247, 0.16)' : 'rgba(168, 85, 247, 0.1)',
+        color: MED_COLOR,
+        bg: MED_BG,
       },
       {
         id: 'today' as FilterType,
@@ -416,11 +416,11 @@ export function MedicalScreen({ navigation }: any) {
         sub: isBn ? 'আজ যাদের নির্ধারিত ডিউটি ও পরামর্শের সময় রয়েছে' : 'Staff members with active consultation hours today',
         icon: 'clock',
         iconFamily: 'feather' as IconFamily,
-        color: '#10b981',
-        bg: isDark ? 'rgba(16, 185, 129, 0.16)' : 'rgba(16, 185, 129, 0.1)',
+        color: MED_COLOR,
+        bg: MED_BG,
       },
     ],
-    [t, isBn, isDark]
+    [t, isBn]
   );
 
   const selectedFilterObj = useMemo(
@@ -867,7 +867,7 @@ export function MedicalScreen({ navigation }: any) {
                           style={[
                             styles.docSub72,
                             {
-                              color: iconCfg.color === MED_COLOR ? C.textMuted : iconCfg.color,
+                              color: C.textMuted,
                               fontFamily: FontFamily.jakartaMedium,
                             },
                           ]}
@@ -1055,12 +1055,12 @@ export function MedicalScreen({ navigation }: any) {
               onPress={() => setDispensaryOpen((prev) => !prev)}
               activeOpacity={0.75}
             >
-              <View style={[styles.srvIconBox44, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.16)' : 'rgba(239, 68, 68, 0.1)' }]}>
+              <View style={[styles.srvIconBox44, { backgroundColor: MED_BG }]}>
                 <AnimatedIcon
                   family="mci"
                   name="pill"
                   size={20}
-                  color="#ef4444"
+                  color={MED_COLOR}
                   animation={dispensaryOpen ? 'spring' : 'none'}
                 />
               </View>
@@ -1153,12 +1153,12 @@ export function MedicalScreen({ navigation }: any) {
                           { backgroundColor: C.surface, borderColor: C.border },
                         ]}
                       >
-                        <View style={[styles.medIndexBadge44, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.14)' : 'rgba(239, 68, 68, 0.08)' }]}>
+                        <View style={[styles.medIndexBadge44, { backgroundColor: MED_BG }]}>
                           <AnimatedIcon
                             family="mci"
                             name="pill"
                             size={18}
-                            color="#ef4444"
+                            color={MED_COLOR}
                             animation="spring"
                             delay={Math.min(idx * 30, 300)}
                           />
