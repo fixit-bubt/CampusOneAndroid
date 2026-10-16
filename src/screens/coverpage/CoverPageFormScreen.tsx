@@ -388,8 +388,8 @@ export function CoverPageFormScreen({ navigation }: any) {
   }
 
   function selectTeacher(f: FacultyRow) {
-    setTeacherName(f.name);
-    setTeacherDesig(f.designation);
+    setTeacherName(f.name ?? '');
+    setTeacherDesig(f.designation ?? '');
     const dn = (f.dept_name ?? '').replace(/^Department of\s*/i, '');
     if (dn) setTeacherDept(dn);
     if (dn && !department) setDepartment(dn);
@@ -426,7 +426,7 @@ export function CoverPageFormScreen({ navigation }: any) {
     setGenerating(true);
     try {
       const dept = (teacherDept.trim() || department.trim() || program.trim() || 'Computer Science and Engineering');
-      const cleanMembers = members.filter(m => m.name.trim() || m.id.trim());
+      const cleanMembers = members.filter(m => (m?.name ?? '').trim() || (m?.id ?? '').trim());
       const html = buildHtml({
         template,
         docType,
