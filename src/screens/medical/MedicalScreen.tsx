@@ -12,6 +12,7 @@ import {
   Platform,
   KeyboardAvoidingView,
   type ViewStyle,
+  type TextStyle,
 } from 'react-native';
 import { TactileSwitch } from '../../components/ui/TactileSwitch';
 import { useFocusEffect } from '@react-navigation/native';
@@ -21,6 +22,7 @@ import { useAuth } from '../../store/authStore';
 import { useApp } from '../../store/appStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
+import { AnimatedIcon, type IconFamily, type AnimationType } from '../../components/ui/AnimatedIcon';
 import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { useToast } from '../../components/ui/Toast';
@@ -59,6 +61,162 @@ interface DutyState {
   sub?: string;
   color: string;
   bg: string;
+}
+
+function getDoctorIconConfig(doc: Doctor, isDark: boolean) {
+  const isPsych =
+    doc.role_type === 'psychologist' ||
+    (doc.specialty && doc.specialty.toLowerCase().includes('psycholog'));
+  const isNurse =
+    doc.role_type === 'nurse' ||
+    (doc.specialty && doc.specialty.toLowerCase().includes('nurs')) ||
+    (doc.specialty && doc.specialty.toLowerCase().includes('first aid'));
+  const isConsultant =
+    (doc.qualifications && doc.qualifications.toLowerCase().includes('consultant')) ||
+    (doc.specialty && doc.specialty.toLowerCase().includes('consultant'));
+
+  if (isPsych) {
+    return {
+      family: 'feather' as IconFamily,
+      name: 'heart',
+      color: '#a855f7',
+      bg: isDark ? 'rgba(168, 85, 247, 0.16)' : 'rgba(147, 51, 234, 0.1)',
+      animation: 'pulse' as AnimationType,
+      loop: true,
+    };
+  }
+
+  if (isNurse) {
+    return {
+      family: 'mci' as IconFamily,
+      name: 'needle',
+      color: '#f59e0b',
+      bg: isDark ? 'rgba(245, 158, 11, 0.16)' : 'rgba(245, 158, 11, 0.1)',
+      animation: 'spring' as AnimationType,
+      loop: false,
+    };
+  }
+
+  if (isConsultant) {
+    return {
+      family: 'feather' as IconFamily,
+      name: 'award',
+      color: '#06b6d4',
+      bg: isDark ? 'rgba(6, 182, 212, 0.16)' : 'rgba(6, 182, 212, 0.1)',
+      animation: 'entrance' as AnimationType,
+      loop: false,
+    };
+  }
+
+  return {
+    family: 'mci' as IconFamily,
+    name: 'stethoscope',
+    color: MED_COLOR,
+    bg: MED_BG,
+    animation: 'entrance' as AnimationType,
+    loop: false,
+  };
+}
+
+function getServiceIconConfig(srvId: string, isDark: boolean) {
+  switch (srvId) {
+    case 'mental_health':
+      return {
+        family: 'feather' as IconFamily,
+        name: 'heart',
+        color: '#a855f7',
+        bg: isDark ? 'rgba(168, 85, 247, 0.16)' : 'rgba(147, 51, 234, 0.1)',
+        animation: 'pulse' as AnimationType,
+        loop: true,
+      };
+    case 'vitals_monitoring':
+      return {
+        family: 'feather' as IconFamily,
+        name: 'activity',
+        color: '#10b981',
+        bg: isDark ? 'rgba(16, 185, 129, 0.16)' : 'rgba(16, 185, 129, 0.1)',
+        animation: 'bounce' as AnimationType,
+        loop: false,
+      };
+    case 'first_aid':
+      return {
+        family: 'feather' as IconFamily,
+        name: 'shield',
+        color: '#f59e0b',
+        bg: isDark ? 'rgba(245, 158, 11, 0.16)' : 'rgba(245, 158, 11, 0.1)',
+        animation: 'spring' as AnimationType,
+        loop: false,
+      };
+    case 'doctor_consultation':
+    default:
+      return {
+        family: 'mci' as IconFamily,
+        name: 'stethoscope',
+        color: MED_COLOR,
+        bg: MED_BG,
+        animation: 'entrance' as AnimationType,
+        loop: false,
+      };
+  }
+}
+
+function getHospitalIconConfig(hospId: string) {
+  switch (hospId) {
+    case 'nhf':
+      return {
+        family: 'feather' as IconFamily,
+        name: 'heart',
+        color: '#ef4444',
+        bg: 'rgba(239, 68, 68, 0.14)',
+        animation: 'pulse' as AnimationType,
+        loop: true,
+      };
+    case 'delta':
+      return {
+        family: 'mci' as IconFamily,
+        name: 'hospital-building',
+        color: '#3b82f6',
+        bg: 'rgba(59, 130, 246, 0.14)',
+        animation: 'entrance' as AnimationType,
+        loop: false,
+      };
+    case 'mirpur_gen':
+      return {
+        family: 'feather' as IconFamily,
+        name: 'activity',
+        color: '#10b981',
+        bg: 'rgba(16, 185, 129, 0.14)',
+        animation: 'bounce' as AnimationType,
+        loop: false,
+      };
+    case 'kidney_fdn':
+      return {
+        family: 'feather' as IconFamily,
+        name: 'droplet',
+        color: '#8b5cf6',
+        bg: 'rgba(139, 92, 246, 0.14)',
+        animation: 'float' as AnimationType,
+        loop: false,
+      };
+    case 'dhaka_dental':
+      return {
+        family: 'mci' as IconFamily,
+        name: 'tooth-outline',
+        color: '#06b6d4',
+        bg: 'rgba(6, 182, 212, 0.14)',
+        animation: 'spring' as AnimationType,
+        loop: false,
+      };
+    default:
+      return {
+        family: 'feather' as IconFamily,
+        name: 'activity',
+        color: MED_COLOR,
+        bg: MED_BG,
+        animation: 'entrance' as AnimationType,
+        loop: false,
+      };
+  }
 }
 
 function isClinicOpenNow(): boolean {
@@ -228,29 +386,41 @@ export function MedicalScreen({ navigation }: any) {
       {
         id: 'all' as FilterType,
         label: isBn ? 'সকল ডাক্তার ও স্পেশালিস্ট' : 'All Doctors & Specialists',
-        sub: isBn ? 'সব মেডিকেল অফিসার ও কাউন্সেলিং বিশেষজ্ঞ' : 'All medical officers and counseling specialists',
-        icon: 'medical',
+        sub: isBn ? 'সব মেডিকেল অফিসার, সাইকোলজিস্ট ও নার্সিং স্টাফ' : 'All medical officers, psychologists and staff',
+        icon: 'account-group',
+        iconFamily: 'mci' as IconFamily,
+        color: MED_COLOR,
+        bg: MED_BG,
       },
       {
         id: 'doctors' as FilterType,
         label: t.medical2.filterDoctors,
-        sub: isBn ? 'জ্বর, ঠাণ্ডা ও সাধারণ চিকিৎসার এমবিবিএস ডাক্তার' : 'General physicians for fever, cold and consultations',
-        icon: 'user-check',
+        sub: isBn ? 'জ্বর, ঠাণ্ডা ও সাধারণ চিকিৎসার এমবিবিএস ডাক্তার' : 'General physicians for consultations and primary care',
+        icon: 'stethoscope',
+        iconFamily: 'mci' as IconFamily,
+        color: '#0284c7',
+        bg: isDark ? 'rgba(2, 132, 199, 0.16)' : 'rgba(2, 132, 199, 0.1)',
       },
       {
         id: 'psychologist' as FilterType,
         label: t.medical2.filterCounseling,
         sub: isBn ? 'মানসিক স্বাস্থ্য সহায়তা ও গোপনীয় কাউন্সেলিং' : 'Confidential psychological support and counseling',
         icon: 'heart',
+        iconFamily: 'feather' as IconFamily,
+        color: '#a855f7',
+        bg: isDark ? 'rgba(168, 85, 247, 0.16)' : 'rgba(168, 85, 247, 0.1)',
       },
       {
         id: 'today' as FilterType,
         label: t.medical2.filterOnDuty,
         sub: isBn ? 'আজ যাদের নির্ধারিত ডিউটি ও পরামর্শের সময় রয়েছে' : 'Staff members with active consultation hours today',
         icon: 'clock',
+        iconFamily: 'feather' as IconFamily,
+        color: '#10b981',
+        bg: isDark ? 'rgba(16, 185, 129, 0.16)' : 'rgba(16, 185, 129, 0.1)',
       },
     ],
-    [t, isBn]
+    [t, isBn, isDark]
   );
 
   const selectedFilterObj = useMemo(
@@ -429,38 +599,96 @@ export function MedicalScreen({ navigation }: any) {
 
           <View style={[styles.heroDivider, { backgroundColor: C.border }]} />
 
-          <View style={styles.heroBottomStack}>
-            <View style={styles.heroHoursRow}>
-              <View style={[styles.heroMiniIcon, { backgroundColor: C.surface2 }]}>
-                <Icon name="clock" size={12} color={C.textMuted} />
-              </View>
-              <Text
+          {/* Dual Medicine Tablet Pills for Schedule & Desk Contact */}
+          <View style={styles.heroTabletsContainer}>
+            {/* Tablet 1: Schedule Tablet */}
+            <View
+              style={[
+                styles.heroTablet,
+                { backgroundColor: C.surface2, borderColor: C.border },
+              ]}
+            >
+              <View
                 style={[
-                  styles.heroHoursTxt,
-                  { color: C.text2, fontFamily: FontFamily.jakartaMedium },
+                  styles.heroTabletIconBox,
+                  { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)' },
                 ]}
               >
-                {t.medical2.hoursToday}
-              </Text>
+                <AnimatedIcon family="feather" name="clock" size={14} color={C.text2} animation="entrance" />
+              </View>
+              <View style={styles.heroTabletBody}>
+                <Text
+                  style={[
+                    styles.heroTabletLabel,
+                    { color: C.textMuted, fontFamily: FontFamily.jakartaBold },
+                  ]}
+                >
+                  {isBn ? 'সাপ্তাহিক সময়সূচি' : 'CLINIC HOURS'}
+                </Text>
+                <Text
+                  style={[
+                    styles.heroTabletValue,
+                    { color: C.text, fontFamily: FontFamily.jakartaBold },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {t.medical2.hoursToday}
+                </Text>
+              </View>
             </View>
 
+            {/* Tablet 2: Contact Desk Action Tablet */}
             <TouchableOpacity
-              style={[styles.heroCallBtn, { backgroundColor: MED_BG }]}
+              style={[
+                styles.heroTablet,
+                {
+                  backgroundColor: MED_BG,
+                  borderColor: isDark ? `${MED_COLOR}50` : `${MED_COLOR}35`,
+                },
+              ]}
               onPress={() => handleDialPhone(BUBT_CLINIC_INFO.phoneDirect)}
               activeOpacity={0.75}
             >
-              <Icon name="phone" size={13} color={MED_COLOR} />
-              <Text
+              <View
                 style={[
-                  styles.heroCallBtnTxt,
-                  { color: MED_COLOR, fontFamily: FontFamily.jakartaBold },
+                  styles.heroTabletIconBox,
+                  { backgroundColor: `${MED_COLOR}25` },
                 ]}
-                numberOfLines={1}
               >
-                {isBn
-                  ? `মেডিকেল ডেস্ক: ${BUBT_CLINIC_INFO.phoneDirect} (রুম ২০৫, এক্সট. ${BUBT_CLINIC_INFO.phoneExt})`
-                  : `Medical Desk: ${BUBT_CLINIC_INFO.phoneDirect} (Ext. ${BUBT_CLINIC_INFO.phoneExt})`}
-              </Text>
+                <AnimatedIcon family="feather" name="phone-call" size={14} color={MED_COLOR} animation="bounce" />
+              </View>
+              <View style={styles.heroTabletBody}>
+                <Text
+                  style={[
+                    styles.heroTabletLabel,
+                    { color: MED_COLOR, fontFamily: FontFamily.jakartaBold },
+                  ]}
+                >
+                  {isBn ? 'জরুরি কল ও ইন্টারকম' : 'DIRECT DESK & INTERCOM'}
+                </Text>
+                <Text
+                  style={[
+                    styles.heroTabletValue,
+                    { color: C.text, fontFamily: FontFamily.jakartaBold },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {isBn
+                    ? `${BUBT_CLINIC_INFO.phoneDirect} (এক্সট. ${BUBT_CLINIC_INFO.phoneExt})`
+                    : `${BUBT_CLINIC_INFO.phoneDirect} (Ext. ${BUBT_CLINIC_INFO.phoneExt})`}
+                </Text>
+              </View>
+              <View style={[styles.heroTabletPillBadge, { backgroundColor: MED_COLOR }]}>
+                <Icon name="phone" size={11} color={C.white} />
+                <Text
+                  style={[
+                    styles.heroTabletPillTxt,
+                    { color: C.white, fontFamily: FontFamily.jakartaBold },
+                  ]}
+                >
+                  {isBn ? 'কল' : 'CALL'}
+                </Text>
+              </View>
             </TouchableOpacity>
           </View>
         </View>
@@ -513,8 +741,14 @@ export function MedicalScreen({ navigation }: any) {
               onPress={() => setFilterModalVisible(true)}
               activeOpacity={0.75}
             >
-              <View style={[styles.dropdownIconTile, { backgroundColor: MED_BG }]}>
-                <Icon name={selectedFilterObj.icon} size={20} color={MED_COLOR} />
+              <View style={[styles.dropdownIconTile, { backgroundColor: selectedFilterObj.bg ?? MED_BG }]}>
+                <AnimatedIcon
+                  family={selectedFilterObj.iconFamily ?? 'mci'}
+                  name={selectedFilterObj.icon}
+                  size={20}
+                  color={selectedFilterObj.color ?? MED_COLOR}
+                  animation="spring"
+                />
               </View>
               <View style={styles.dropdownBody}>
                 <Text
@@ -535,7 +769,37 @@ export function MedicalScreen({ navigation }: any) {
                   {selectedFilterObj.label}
                 </Text>
               </View>
-              <Icon name="chevD" size={18} color={C.textMuted} />
+
+              {/* Vertical divider line and stat column like Explore Services button */}
+              <View style={[styles.dropdownDivider, { backgroundColor: C.border }]} />
+              <View style={styles.dropdownStatCol}>
+                <Text
+                  style={[
+                    styles.dropdownStatVal,
+                    {
+                      color: selectedFilterObj.color ?? MED_COLOR,
+                      fontFamily: FontFamily.jakartaExtraBold,
+                    },
+                  ]}
+                >
+                  {filteredDoctors.length}
+                </Text>
+                <Text
+                  style={[
+                    styles.dropdownStatSub,
+                    {
+                      color: C.textMuted,
+                      fontFamily: FontFamily.jakartaBold,
+                    },
+                  ]}
+                >
+                  {isBn ? 'স্টাফ' : 'STAFF'}
+                </Text>
+              </View>
+
+              <View style={styles.dropdownChevBox}>
+                <Icon name="chevD" size={18} color={C.textMuted} />
+              </View>
             </TouchableOpacity>
 
             {/* Doctor List */}
@@ -557,10 +821,7 @@ export function MedicalScreen({ navigation }: any) {
               <View style={styles.doctorList}>
                 {filteredDoctors.map((doc) => {
                   const duty = getDoctorDuty(doc, C, t);
-                  const isPsych =
-                    doc.role_type === 'psychologist' ||
-                    (doc.specialty &&
-                      doc.specialty.toLowerCase().includes('psycholog'));
+                  const iconCfg = getDoctorIconConfig(doc, isDark);
 
                   return (
                     <TouchableOpacity
@@ -578,18 +839,17 @@ export function MedicalScreen({ navigation }: any) {
                         style={[
                           styles.docThumb44,
                           {
-                            backgroundColor: isPsych
-                              ? isDark
-                                ? 'rgba(168, 85, 247, 0.16)'
-                                : 'rgba(147, 51, 234, 0.1)'
-                              : MED_BG,
+                            backgroundColor: iconCfg.bg,
                           },
                         ]}
                       >
-                        <Icon
-                          name={isPsych ? 'heart' : 'medical'}
+                        <AnimatedIcon
+                          family={iconCfg.family}
+                          name={iconCfg.name}
                           size={20}
-                          color={isPsych ? '#a855f7' : MED_COLOR}
+                          color={iconCfg.color}
+                          animation={iconCfg.animation}
+                          loop={iconCfg.loop}
                         />
                       </View>
 
@@ -607,7 +867,7 @@ export function MedicalScreen({ navigation }: any) {
                           style={[
                             styles.docSub72,
                             {
-                              color: isPsych ? '#a855f7' : C.textMuted,
+                              color: iconCfg.color === MED_COLOR ? C.textMuted : iconCfg.color,
                               fontFamily: FontFamily.jakartaMedium,
                             },
                           ]}
@@ -713,81 +973,77 @@ export function MedicalScreen({ navigation }: any) {
             </Text>
 
             <View style={styles.serviceList72}>
-              {CLINIC_SERVICES.map((srv) => (
-                <View
-                  key={srv.id}
-                  style={[
-                    styles.serviceCard72,
-                    { backgroundColor: C.surface, borderColor: C.border },
-                  ]}
-                >
+              {CLINIC_SERVICES.map((srv) => {
+                const srvCfg = getServiceIconConfig(srv.id, isDark);
+                return (
                   <View
+                    key={srv.id}
                     style={[
-                      styles.srvIconBox44,
-                      {
-                        backgroundColor:
-                          srv.id === 'mental_health'
-                            ? isDark
-                              ? 'rgba(168, 85, 247, 0.16)'
-                              : 'rgba(147, 51, 234, 0.1)'
-                            : MED_BG,
-                      },
+                      styles.serviceCard72,
+                      { backgroundColor: C.surface, borderColor: C.border },
                     ]}
                   >
-                    <Icon
-                      name={srv.icon}
-                      size={20}
-                      color={srv.id === 'mental_health' ? '#a855f7' : MED_COLOR}
-                    />
-                  </View>
-                  <View style={styles.srvBody72}>
-                    <Text
+                    <View
                       style={[
-                        styles.srvTitle72,
-                        { color: C.text, fontFamily: FontFamily.jakartaBold },
-                      ]}
-                      numberOfLines={1}
-                    >
-                      {isBn ? srv.titleBn : srv.title}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.srvDesc72,
-                        { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
-                      ]}
-                      numberOfLines={1}
-                    >
-                      {isBn ? srv.descBn : srv.desc}
-                    </Text>
-                  </View>
-                  <View
-                    style={[
-                      styles.srvBadge72,
-                      {
-                        backgroundColor:
-                          srv.id === 'mental_health'
-                            ? isDark
-                              ? 'rgba(168, 85, 247, 0.16)'
-                              : 'rgba(147, 51, 234, 0.1)'
-                            : C.surface2,
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.srvBadgeTxt72,
+                        styles.srvIconBox44,
                         {
-                          color: srv.id === 'mental_health' ? '#a855f7' : C.text2,
-                          fontFamily: FontFamily.jakartaBold,
+                          backgroundColor: srvCfg.bg,
                         },
                       ]}
-                      numberOfLines={1}
                     >
-                      {isBn ? srv.badgeBn : srv.badge}
-                    </Text>
+                      <AnimatedIcon
+                        family={srvCfg.family}
+                        name={srvCfg.name}
+                        size={20}
+                        color={srvCfg.color}
+                        animation={srvCfg.animation}
+                        loop={srvCfg.loop}
+                      />
+                    </View>
+                    <View style={styles.srvBody72}>
+                      <Text
+                        style={[
+                          styles.srvTitle72,
+                          { color: C.text, fontFamily: FontFamily.jakartaBold },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {isBn ? srv.titleBn : srv.title}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.srvDesc72,
+                          { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {isBn ? srv.descBn : srv.desc}
+                      </Text>
+                    </View>
+                    <View
+                      style={[
+                        styles.srvBadge72,
+                        {
+                          backgroundColor: srvCfg.bg,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.srvBadgeTxt72,
+                          {
+                            color: srvCfg.color,
+                            fontFamily: FontFamily.jakartaBold,
+                          },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {isBn ? srv.badgeBn : srv.badge}
+                      </Text>
+                    </View>
                   </View>
-                </View>
-              ))}
+                );
+              })}
             </View>
 
             {/* Free Dispensary Medicines Dropdown Accordion (72dp Bar Standard) */}
@@ -799,8 +1055,14 @@ export function MedicalScreen({ navigation }: any) {
               onPress={() => setDispensaryOpen((prev) => !prev)}
               activeOpacity={0.75}
             >
-              <View style={[styles.srvIconBox44, { backgroundColor: MED_BG }]}>
-                <Icon name="shield" size={20} color={MED_COLOR} />
+              <View style={[styles.srvIconBox44, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.16)' : 'rgba(239, 68, 68, 0.1)' }]}>
+                <AnimatedIcon
+                  family="mci"
+                  name="pill"
+                  size={20}
+                  color="#ef4444"
+                  animation={dispensaryOpen ? 'spring' : 'none'}
+                />
               </View>
               <View style={styles.srvBody72}>
                 <Text
@@ -891,15 +1153,15 @@ export function MedicalScreen({ navigation }: any) {
                           { backgroundColor: C.surface, borderColor: C.border },
                         ]}
                       >
-                        <View style={[styles.medIndexBadge44, { backgroundColor: C.surface2 }]}>
-                          <Text
-                            style={[
-                              styles.medIndexTxt,
-                              { color: C.text2, fontFamily: FontFamily.jakartaBold },
-                            ]}
-                          >
-                            {idx + 1}
-                          </Text>
+                        <View style={[styles.medIndexBadge44, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.14)' : 'rgba(239, 68, 68, 0.08)' }]}>
+                          <AnimatedIcon
+                            family="mci"
+                            name="pill"
+                            size={18}
+                            color="#ef4444"
+                            animation="spring"
+                            delay={Math.min(idx * 30, 300)}
+                          />
                         </View>
                         <View style={styles.medBody72}>
                           <Text
@@ -957,7 +1219,7 @@ export function MedicalScreen({ navigation }: any) {
             >
               <View style={styles.emergencyBannerTop}>
                 <View style={[styles.emIconRound, { backgroundColor: C.danger }]}>
-                  <Icon name="alert-triangle" size={20} color={C.white} animation="pulse" />
+                  <AnimatedIcon family="feather" name="alert-triangle" size={20} color={C.white} animation="pulse" loop />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text
@@ -982,80 +1244,91 @@ export function MedicalScreen({ navigation }: any) {
 
             {/* Immediate Contacts (72dp Standard) */}
             <View style={styles.hotlineList}>
-              {EMERGENCY_CONTACTS.map((cnt) => (
-                <TouchableOpacity
-                  key={cnt.id}
-                  style={[
-                    styles.hotlineCard,
-                    {
-                      backgroundColor: cnt.isNational ? C.dangerBg : C.surface,
-                      borderColor: cnt.isNational ? C.danger : C.border,
-                    },
-                  ]}
-                  onPress={() => handleDialPhone(cnt.phone)}
-                  activeOpacity={0.75}
-                >
-                  <View
+              {EMERGENCY_CONTACTS.map((cnt) => {
+                const isAmbulance = cnt.id === 'ambulance';
+                const is999 = cnt.id === 'national_999';
+                const iconFamily: IconFamily = isAmbulance ? 'mci' : 'feather';
+                const iconName = isAmbulance ? 'ambulance' : cnt.icon;
+                const animType: AnimationType = is999 ? 'pulse' : isAmbulance ? 'bounce' : 'spring';
+
+                return (
+                  <TouchableOpacity
+                    key={cnt.id}
                     style={[
-                      styles.hotlineIconBox,
+                      styles.hotlineCard,
                       {
-                        backgroundColor: cnt.isNational
-                          ? C.danger
-                          : `${C.info}1e`,
+                        backgroundColor: cnt.isNational ? C.dangerBg : C.surface,
+                        borderColor: cnt.isNational ? C.danger : C.border,
                       },
                     ]}
+                    onPress={() => handleDialPhone(cnt.phone)}
+                    activeOpacity={0.75}
                   >
-                    <Icon
-                      name={cnt.icon}
-                      size={20}
-                      color={cnt.isNational ? C.white : C.info}
-                    />
-                  </View>
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text
+                    <View
                       style={[
-                        styles.hotlineTitle,
+                        styles.hotlineIconBox,
                         {
-                          color: cnt.isNational ? C.danger : C.text,
-                          fontFamily: FontFamily.jakartaBold,
+                          backgroundColor: cnt.isNational
+                            ? C.danger
+                            : `${C.info}1e`,
                         },
                       ]}
-                      numberOfLines={1}
                     >
-                      {isBn ? cnt.titleBn : cnt.title}
-                    </Text>
-                    <Text
+                      <AnimatedIcon
+                        family={iconFamily}
+                        name={iconName}
+                        size={20}
+                        color={cnt.isNational ? C.white : C.info}
+                        animation={animType}
+                        loop={is999}
+                      />
+                    </View>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text
+                        style={[
+                          styles.hotlineTitle,
+                          {
+                            color: cnt.isNational ? C.danger : C.text,
+                            fontFamily: FontFamily.jakartaBold,
+                          },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {isBn ? cnt.titleBn : cnt.title}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.hotlineSub,
+                          { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {isBn ? cnt.subBn : cnt.sub}
+                      </Text>
+                    </View>
+                    <View
                       style={[
-                        styles.hotlineSub,
-                        { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
-                      ]}
-                      numberOfLines={1}
-                    >
-                      {isBn ? cnt.subBn : cnt.sub}
-                    </Text>
-                  </View>
-                  <View
-                    style={[
-                      styles.callBadge,
-                      {
-                        backgroundColor: cnt.isNational
-                          ? C.danger
-                          : MED_COLOR,
-                      },
-                    ]}
-                  >
-                    <Icon name="phone" size={13} color={C.white} />
-                    <Text
-                      style={[
-                        styles.callBadgeTxt,
-                        { color: C.white, fontFamily: FontFamily.jakartaBold },
+                        styles.callBadge,
+                        {
+                          backgroundColor: cnt.isNational
+                            ? C.danger
+                            : MED_COLOR,
+                        },
                       ]}
                     >
-                      {cnt.phone}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
+                      <Icon name="phone" size={13} color={C.white} />
+                      <Text
+                        style={[
+                          styles.callBadgeTxt,
+                          { color: C.white, fontFamily: FontFamily.jakartaBold },
+                        ]}
+                      >
+                        {cnt.phone}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
 
             {/* Emergency Blood Request Bridge (72dp Standard) */}
@@ -1068,7 +1341,7 @@ export function MedicalScreen({ navigation }: any) {
               activeOpacity={0.75}
             >
               <View style={[styles.bloodBridgeIconTile, { backgroundColor: `${SectorColors.blood}18` }]}>
-                <Icon name="blood" size={20} color={SectorColors.blood} />
+                <AnimatedIcon family="feather" name="droplet" size={20} color={SectorColors.blood} animation="pulse" loop />
               </View>
               <View style={styles.bloodBridgeBody}>
                 <Text
@@ -1112,66 +1385,76 @@ export function MedicalScreen({ navigation }: any) {
             </Text>
 
             <View style={styles.hospitalList72}>
-              {NEARBY_HOSPITALS.map((hosp) => (
-                <View
-                  key={hosp.id}
-                  style={[
-                    styles.hospCard72,
-                    { backgroundColor: C.surface, borderColor: C.border },
-                  ]}
-                >
-                  <View style={[styles.hospIconBox44, { backgroundColor: MED_BG }]}>
-                    <Icon name="activity" size={20} color={MED_COLOR} />
-                  </View>
+              {NEARBY_HOSPITALS.map((hosp) => {
+                const hospCfg = getHospitalIconConfig(hosp.id);
+                return (
+                  <View
+                    key={hosp.id}
+                    style={[
+                      styles.hospCard72,
+                      { backgroundColor: C.surface, borderColor: C.border },
+                    ]}
+                  >
+                    <View style={[styles.hospIconBox44, { backgroundColor: hospCfg.bg }]}>
+                      <AnimatedIcon
+                        family={hospCfg.family}
+                        name={hospCfg.name}
+                        size={20}
+                        color={hospCfg.color}
+                        animation={hospCfg.animation}
+                        loop={hospCfg.loop}
+                      />
+                    </View>
 
-                  <View style={styles.hospBody72}>
-                    <Text
-                      style={[
-                        styles.hospName72,
-                        { color: C.text, fontFamily: FontFamily.jakartaBold },
-                      ]}
-                      numberOfLines={1}
-                    >
-                      {isBn ? hosp.nameBn : hosp.name}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.hospSub72,
-                        { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
-                      ]}
-                      numberOfLines={1}
-                    >
-                      {isBn ? hosp.distanceBn : hosp.distance} · {isBn ? hosp.typeBn : hosp.type}
-                    </Text>
-                  </View>
+                    <View style={styles.hospBody72}>
+                      <Text
+                        style={[
+                          styles.hospName72,
+                          { color: C.text, fontFamily: FontFamily.jakartaBold },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {isBn ? hosp.nameBn : hosp.name}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.hospSub72,
+                          { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {isBn ? hosp.distanceBn : hosp.distance} · {isBn ? hosp.typeBn : hosp.type}
+                      </Text>
+                    </View>
 
-                  <View style={styles.hospBtnsRow}>
-                    <TouchableOpacity
-                      style={[
-                        styles.hospCallMiniBtn,
-                        { backgroundColor: MED_BG },
-                      ]}
-                      onPress={() => handleDialPhone(hosp.hotline)}
-                      activeOpacity={0.75}
-                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                    >
-                      <Icon name="phone" size={15} color={MED_COLOR} />
-                    </TouchableOpacity>
+                    <View style={styles.hospBtnsRow}>
+                      <TouchableOpacity
+                        style={[
+                          styles.hospCallMiniBtn,
+                          { backgroundColor: hospCfg.bg },
+                        ]}
+                        onPress={() => handleDialPhone(hosp.hotline)}
+                        activeOpacity={0.75}
+                        hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                      >
+                        <Icon name="phone" size={15} color={hospCfg.color} />
+                      </TouchableOpacity>
 
-                    <TouchableOpacity
-                      style={[
-                        styles.hospMapMiniBtn,
-                        { backgroundColor: C.surface2, borderColor: C.border },
-                      ]}
-                      onPress={() => handleOpenHospitalMap(hosp)}
-                      activeOpacity={0.75}
-                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                    >
-                      <Icon name="navigation" size={15} color={C.text} />
-                    </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          styles.hospMapMiniBtn,
+                          { backgroundColor: C.surface2, borderColor: C.border },
+                        ]}
+                        onPress={() => handleOpenHospitalMap(hosp)}
+                        activeOpacity={0.75}
+                        hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                      >
+                        <Icon name="navigation" size={15} color={C.text} />
+                      </TouchableOpacity>
+                    </View>
                   </View>
-                </View>
-              ))}
+                );
+              })}
             </View>
           </View>
         )}
@@ -1218,18 +1501,17 @@ export function MedicalScreen({ navigation }: any) {
             <View style={{ gap: 8, marginTop: 10 }}>
               {filterOptions.map((opt) => {
                 const isSelected = selectedFilter === opt.id;
+                const optColor = opt.color ?? MED_COLOR;
+                const optBg = opt.bg ?? (isDark ? `${MED_COLOR}22` : `${MED_COLOR}12`);
+
                 return (
                   <TouchableOpacity
                     key={opt.id}
                     style={[
                       styles.pickerBar,
                       {
-                        backgroundColor: isSelected
-                          ? isDark
-                            ? `${MED_COLOR}22`
-                            : `${MED_COLOR}12`
-                          : C.surface2,
-                        borderColor: isSelected ? MED_COLOR : C.border,
+                        backgroundColor: isSelected ? optBg : C.surface2,
+                        borderColor: isSelected ? optColor : C.border,
                       },
                     ]}
                     onPress={() => {
@@ -1243,17 +1525,19 @@ export function MedicalScreen({ navigation }: any) {
                         styles.pickerIconTile,
                         {
                           backgroundColor: isSelected
-                            ? MED_COLOR
+                            ? optColor
                             : isDark
                             ? 'rgba(255,255,255,0.06)'
                             : 'rgba(0,0,0,0.05)',
                         },
                       ]}
                     >
-                      <Icon
+                      <AnimatedIcon
+                        family={opt.iconFamily ?? 'mci'}
                         name={opt.icon}
                         size={18}
-                        color={isSelected ? C.white : MED_COLOR}
+                        color={isSelected ? C.white : optColor}
+                        animation={isSelected ? 'spring' : 'none'}
                       />
                     </View>
                     <View style={{ flex: 1, minWidth: 0 }}>
@@ -1261,7 +1545,7 @@ export function MedicalScreen({ navigation }: any) {
                         style={[
                           styles.pickerBarText,
                           {
-                            color: isSelected ? MED_COLOR : C.text,
+                            color: isSelected ? optColor : C.text,
                             fontFamily: FontFamily.jakartaBold,
                           },
                         ]}
@@ -1280,7 +1564,7 @@ export function MedicalScreen({ navigation }: any) {
                       </Text>
                     </View>
                     {isSelected ? (
-                      <View style={[styles.checkCircle, { backgroundColor: MED_COLOR }]}>
+                      <View style={[styles.checkCircle, { backgroundColor: optColor }]}>
                         <Icon name="check" size={13} color={C.white} />
                       </View>
                     ) : (
@@ -1528,26 +1812,55 @@ const styles = StyleSheet.create({
   openDot: { width: 6, height: 6, borderRadius: 3 } as ViewStyle,
   openTxt: { fontSize: 11 } as any,
   heroDivider: { height: StyleSheet.hairlineWidth, marginVertical: 12 } as ViewStyle,
-  heroBottomStack: { gap: 8 } as ViewStyle,
-  heroHoursRow: { flexDirection: 'row', alignItems: 'center', gap: 8 } as ViewStyle,
-  heroMiniIcon: {
-    width: 22,
-    height: 22,
-    borderRadius: 7,
-    alignItems: 'center',
-    justifyContent: 'center',
+  // Dual Medicine Tablet Pills (Schedule & Desk Contact)
+  heroTabletsContainer: {
+    gap: 8,
   } as ViewStyle,
-  heroHoursTxt: { fontSize: 12 } as any,
-  heroCallBtn: {
+  heroTablet: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 7,
+    gap: 10,
     paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 10,
-    alignSelf: 'flex-start',
+    height: 52,
+    borderRadius: 16,
+    borderWidth: 1,
   } as ViewStyle,
-  heroCallBtnTxt: { fontSize: 12 } as any,
+  heroTabletIconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    overflow: 'visible',
+  } as ViewStyle,
+  heroTabletBody: {
+    flex: 1,
+    minWidth: 0,
+    justifyContent: 'center',
+  } as ViewStyle,
+  heroTabletLabel: {
+    fontSize: 9.5,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  } as TextStyle,
+  heroTabletValue: {
+    fontSize: 12.5,
+    marginTop: 1,
+  } as TextStyle,
+  heroTabletPillBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 10,
+    flexShrink: 0,
+  } as ViewStyle,
+  heroTabletPillTxt: {
+    fontSize: 11,
+    letterSpacing: 0.3,
+  } as TextStyle,
 
   // Tabs
   tabContainer: { marginBottom: 12 } as ViewStyle,
@@ -1595,6 +1908,34 @@ const styles = StyleSheet.create({
     fontSize: 14.5,
     marginTop: 2,
   } as any,
+  dropdownDivider: {
+    width: 1,
+    height: 30,
+    marginHorizontal: 2,
+  } as ViewStyle,
+  dropdownStatCol: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 42,
+    marginRight: 4,
+  } as ViewStyle,
+  dropdownStatVal: {
+    fontSize: 16.5,
+    lineHeight: 20,
+    textAlign: 'center',
+  } as TextStyle,
+  dropdownStatSub: {
+    fontSize: 9.5,
+    lineHeight: 12,
+    letterSpacing: 0.5,
+    textAlign: 'center',
+    marginTop: 1,
+  } as TextStyle,
+  dropdownChevBox: {
+    width: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
 
   // Doctor List (72dp Fixed Height Card Standard)
   doctorList: { gap: 10 } as ViewStyle,
