@@ -2009,6 +2009,23 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 - **Universal 58dp Form Standard:** All text inputs, textareas, and category selector cards in `PostItemFormScreen.tsx` standardized to the Universal 58dp Standard (`height: 58`, `borderRadius: 16`, `paddingHorizontal: 16`).
 - **Defensive Storage File Cleanup:** Automatically removes uploaded photos via `deleteFile(BUCKETS.photos, ...)` on image change or transaction error rollback, preventing orphaned storage bloat in Supabase.
 
+---
+
+## 42. Minimalist De-Cluttering & Theme Unification (Medical & Lost and Found)
+
+### 42.1 Medical Screen Minimal Monochromatic Palette (`MedicalScreen.tsx`)
+- **Eliminated Multi-Color Clutter:** Replaced discordant rainbow colors across doctor roles, clinical services, nearby emergency hospitals, and dispensary medicines with unified BUBT Medical Crimson (`MED_COLOR` = `SectorColors.medical` `#e2483d`, `MED_BG` = `${SectorColors.medical}1e`).
+- **Icon Variety Preserved:** Maintained distinct vector glyphs (`heart`, `needle`, `award`, `stethoscope`, `activity`, `shield`, `droplet`, `tooth-outline`) and smooth 120 FPS native transforms (`spring`, `pulse`, `bounce`, `entrance`) while unifying icon background and foreground tokens.
+- **Roster Filter Dropdown & Sheet:** All 4 options (`all`, `doctors`, `psychologist`, `today`) standardized to `MED_COLOR` and `MED_BG`. Selected state in the 72dp dropdown card and bottom sheet modal highlights cleanly in Medical Crimson.
+- **Dispensary & Medicine Rows:** Dispensary accordion trigger and medicine row pill badges unified to `MED_BG` and `MED_COLOR`. Doctor subtitles reset to clean `C.textMuted`.
+
+### 42.2 Lost & Found Filter & Card Minimal Gold Palette (`LostFoundBrowseScreen.tsx`)
+- **Eliminated Filter Modal Rainbow Collages:** Replaced individual saturated color fills (blue for Personal/All, amber for Electronics/Open, green for Documents/Resolved, slate for Other) with the unified warm amber/gold Lost & Found identity (`LF_COLOR` = `SectorColors.lostfound` `#c77d1a`, `LF_BG` = `${SectorColors.lostfound}18`).
+- **Clean Inactive States:** Filter options display on neutral dark-glass surfaces (`C.surface2`, `C.border`, `C.text2`) and gracefully highlight with `LF_BG` and `LF_COLOR` on selection.
+- **Top Segmented Tab Switcher:** Cleaned up the 'Mine' tab from arbitrary purple (`#8B5CF6`) to `LF_COLOR`.
+- **Card Focal Hierarchy:** Category badges on `LFCard` converted to neutral dark-glass pills (`isDark ? rgba(255,255,255,0.06) : C.surface2`, text `C.text2`), ensuring the core semantic `Lost` (Crimson / Red) and `Found` (Emerald / Green) badges remain the clear, uncluttered visual focus.
+
+
 
 
 
