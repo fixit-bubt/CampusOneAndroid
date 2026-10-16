@@ -581,4 +581,41 @@ To maintain zero code bloat and unified design integrity across the entire appli
 - **Weekend Badges:** Deterministic `Sat: HH:MM AM` badges on weekend departures.
 - **Bilingual Transit Link Cards:** Equal typography and responsive text containers for Metro Rail and Hotline cards across English and Bengali.
 
+---
+
+## 21. Medical Screen Minimal Monochromatic Standards (`MedicalScreen.tsx`)
+
+### 1. Unified Medical Crimson Identity
+- **Monochromatic Foundation:** Replaced rainbow multi-color clutters across doctor roles, service cards, emergency hospitals, and dispensary medicines with unified BUBT Medical Crimson (`MED_COLOR` = `SectorColors.medical` `#e2483d`, `MED_BG` = `${SectorColors.medical}1e`).
+- **Icon Diversity Preserved:** Maintained distinct vector glyphs (`heart`, `needle`, `award`, `stethoscope`, `activity`, `shield`, `droplet`, `tooth-outline`) and smooth 120 FPS native transforms (`spring`, `pulse`, `bounce`, `entrance`) while standardizing icon containers and typography.
+- **Roster Filter Dropdown & Sheet:** All 4 roster options (`all`, `doctors`, `psychologist`, `today`) standardized to `MED_COLOR` and `MED_BG`. Selected state in the 72dp dropdown card and bottom sheet modal highlights cleanly in Medical Crimson.
+- **Dispensary & Medicine Badges:** Dispensary accordion trigger and medicine row pill badges unified to `MED_BG` and `MED_COLOR`. Doctor subtitles reset to clean `C.textMuted`.
+
+---
+
+## 22. Lost & Found Filter & Card Minimal Gold Palette (`LostFoundBrowseScreen.tsx`)
+
+### 1. Warm Amber Identity & Contrast Protection
+- **Eliminated Rainbow Collages:** Replaced discordant multi-color fills (blue for Personal/All, amber for Electronics/Open, green for Documents/Resolved, slate for Other) with the unified warm amber/gold Lost & Found identity (`LF_COLOR` = `SectorColors.lostfound` `#c77d1a`, `LF_BG` = `${SectorColors.lostfound}18`).
+- **Clean Inactive States:** Filter options display on neutral dark-glass surfaces (`C.surface2`, `C.border`, `C.text2`) and gracefully highlight with `LF_BG` and `LF_COLOR` on selection.
+- **Top Segmented Tab Switcher:** Cleaned up the 'Mine' tab from arbitrary purple (`#8B5CF6`) to `LF_COLOR`.
+- **Card Focal Hierarchy:** Category badges on `LFCard` converted to neutral dark-glass pills (`isDark ? rgba(255,255,255,0.06) : C.surface2`, text `C.text2`), ensuring the core semantic `Lost` (Crimson / Red) and `Found` (Emerald / Green) badges remain the clear, uncluttered visual focus.
+
+---
+
+## 23. Lost & Found 72dp Dropdown & Unified Map Selector Architecture (`PostItemFormScreen.tsx`)
+
+### 1. Universal 72dp Category Dropdown Standard
+- **Outer Dropdown Card (`styles.dropdownCard72`):** Standardized to strict `height: 72`, `borderRadius: 16`, with `44×44dp` icon box (`styles.dropdownIconTile44`, `borderRadius: 14`), animated icon bouncy entrance (`AnimatedIcon`), dynamic category title, subtitle preview, and dropdown chevron.
+- **Inside Bottom Sheet Modal (`catModalVisible`):** Each category option card (`optionCard72`) is strictly `height: 72`, `borderRadius: 16`, with a `44×44dp` icon box, bilingual category label and examples, and gold checkmark badge when selected. Tapping selects the category and automatically closes the sheet.
+
+### 2. Multi-Tier Location Selector Architecture
+- **Outer Location Card (`styles.dropdownCard72`):** Standardized to `height: 72`, `borderRadius: 16`. Displays type-aware placeholder ("Where was it lost?" / "Where was it found?"), clear button (`clearPill32`), and a dedicated 36dp mini map shortcut button (`mapMiniBtn36`) allowing 1-tap jump to the interactive map.
+- **Inside Location Bottom Sheet Modal (`locModalVisible`):**
+  1. **Custom Spot / Room TextInput:** Universal 58dp fixed outer height standard (`styles.locInputRow58`, `height: 58`), featuring a 58dp TextInput and 58dp "Set" button (`locSetBtn`) with check icon for instant room entry (e.g. "Room 402, B2").
+  2. **Unified Interactive Map & GPS Action Card (`styles.mapActionCard72`):** Strictly 72dp card with pulsing map pin icon (`AnimatedIcon animation="pulse"`), gold border highlight, and direct connection to the existing unified `LocationPickerModal` with MapLibre & live GPS reverse-geocoding. Zero redundant map code or duplicate engines.
+  3. **BUBT Campus Presets:** All 9 BUBT Campus Presets (Central Library, Cafeteria, B1 Admin & Academic, B2 Academic Complex, B3/Annex, Campus Mosque, Computer Labs, Exam Hall & Auditorium, Campus Grounds) rendered as strict 72dp cards (`styles.optionCard72`) with 44×44dp icon tiles, bilingual titles, and selection checkmarks.
+- **Unified Location Picker Callback:** When a location is picked on the MapLibre map or reverse-geocoded via GPS, the address updates seamlessly across `loc` and `locInputText`.
+
+
 
