@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
-  RefreshControl, type ViewStyle,
+  RefreshControl, ActivityIndicator, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
@@ -15,7 +15,7 @@ import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { FontFamily, Layout } from '../../theme';
 import { SectorColors, type SectorKey } from '../../theme';
-import { getCache, setCache, CacheKeys } from '../../services/cacheService';
+import { getCache, getCacheSync, hasCacheSync, setCache, CacheKeys } from '../../services/cacheService';
 import {
   getMyNotifications, markAllRead, markRead,
   type Notification,
@@ -118,7 +118,11 @@ export function NotificationsScreen({ navigation }: any) {
   const toast = useToast();
   const { reload: reloadMessages } = useMessages();
   const { user } = useAuth();
-  const [notifs, setNotifs]     = useState<Notification[]>([]);
+  const cacheKey = CacheKeys.NOTIFICATIONS(user?.id ?? 'anon');
+  const [notifs, setNotifs]     = useState<Notification[]>(
+    () => getCacheSync<Notification[]>(cacheKey) ?? []
+  );
+  const [loading, setLoading]   = useState(() => !hasCacheSync(cacheKey));
   const [filter, setFilter]     = useState<Filter>('all');
   const [refreshing, setRefreshing] = useState(false);
   const [handled, setHandled]   = useState<Record<string, 'accepted' | 'declined'>>({});
@@ -126,11 +130,12 @@ export function NotificationsScreen({ navigation }: any) {
   const [isOffline, setIsOffline] = useState(false);
 
   const load = useCallback(async () => {
-    const cacheKey = CacheKeys.NOTIFICATIONS(user?.id ?? 'anon');
-
     // 1. Optimistic cache load
     const cached = await getCache<Notification[]>(cacheKey);
-    if (cached && cached.length) setNotifs(cached);
+    if (cached && cached.length) {
+      setNotifs(cached);
+      setLoading(false);
+    }
 
     // 2. Network sync
     try {
@@ -152,8 +157,10 @@ export function NotificationsScreen({ navigation }: any) {
       if (st.ok) setConnStates(st.data);
     } catch {
       if (cached && cached.length) setIsOffline(true);
+    } finally {
+      setLoading(false);
     }
-  }, [user?.id]);
+  }, [user?.id, cacheKey]);
 
   // Reload every time the screen regains focus so new notifications appear
   // without a manual pull-to-refresh.
@@ -274,7 +281,11 @@ export function NotificationsScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
-        {buckets.length === 0 ? (
+        {loading ? (
+          <View style={{ paddingVertical: 48, alignItems: 'center', justifyContent: 'center' }}>
+            <ActivityIndicator size="small" color={C.brand} />
+          </View>
+        ) : buckets.length === 0 ? (
           <Empty C={C} />
         ) : (
           buckets.map(g => (

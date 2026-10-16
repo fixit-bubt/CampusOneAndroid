@@ -44,8 +44,17 @@ export function SegmentedTabs<T extends string = string>({
   const { C, isDark } = useTheme();
   const [trackWidth, setTrackWidth] = useState(0);
 
-  const trackPadding = 4;
-  const iconSize = 15.5;
+  const isSm = size === 'sm';
+  const trackHeight = isSm ? 38 : 58;
+  const trackRadius = isSm ? 12 : 16;
+  const trackPadding = isSm ? 3 : 4;
+  const indicatorRadius = isSm ? 9 : 12;
+  const iconSize = isSm ? 13 : 15.5;
+  const fontSize = isSm ? 12 : 13.5;
+  const badgeHeight = isSm ? 18 : 22;
+  const badgeMinWidth = isSm ? 16 : 20;
+  const badgePaddingHorizontal = isSm ? 5 : 6.5;
+  const badgeFontSize = isSm ? 9.5 : 11;
 
   const foundIdx = tabs.findIndex((t) => t.id === activeTab);
   const activeIndex = foundIdx >= 0 ? foundIdx : -1;
@@ -78,8 +87,9 @@ export function SegmentedTabs<T extends string = string>({
       style={[
         styles.track,
         {
+          height: trackHeight,
           padding: trackPadding,
-          borderRadius: 16,
+          borderRadius: trackRadius,
           backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : C.surface2,
           borderColor: isDark ? 'rgba(255, 255, 255, 0.07)' : 'rgba(0, 0, 0, 0.05)',
         },
@@ -96,7 +106,7 @@ export function SegmentedTabs<T extends string = string>({
               left: trackPadding,
               bottom: trackPadding,
               width: tabWidth,
-              borderRadius: 12,
+              borderRadius: indicatorRadius,
               transform: [{ translateX }],
               backgroundColor: C.surface,
               borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
@@ -117,9 +127,9 @@ export function SegmentedTabs<T extends string = string>({
             style={[
               styles.tabBtn,
               {
-                borderRadius: 12,
+                borderRadius: indicatorRadius,
                 paddingHorizontal: 4,
-                gap: 5.5,
+                gap: isSm ? 4 : 5.5,
               },
             ]}
             onPress={() => onTabChange(tab.id)}
@@ -146,7 +156,7 @@ export function SegmentedTabs<T extends string = string>({
               style={[
                 styles.tabLabel,
                 {
-                  fontSize: 13.5,
+                  fontSize,
                   color: isActive ? C.text : C.textMuted,
                   fontFamily: isActive ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
                 },
@@ -163,8 +173,9 @@ export function SegmentedTabs<T extends string = string>({
                 style={[
                   styles.badge,
                   {
-                    paddingHorizontal: 6.5,
-                    minWidth: 20,
+                    height: badgeHeight,
+                    paddingHorizontal: badgePaddingHorizontal,
+                    minWidth: badgeMinWidth,
                   },
                   isActive
                     ? {
@@ -181,7 +192,7 @@ export function SegmentedTabs<T extends string = string>({
                   style={[
                     styles.badgeText,
                     {
-                      fontSize: 11,
+                      fontSize: badgeFontSize,
                       color: isActive ? color : C.textMuted,
                       fontFamily: isActive ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
                     },

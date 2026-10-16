@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, FlatList, StyleSheet,
-  RefreshControl, type ViewStyle, type TextStyle,
+  RefreshControl, ActivityIndicator, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -58,23 +58,28 @@ export function AssignedToMeScreen({ navigation }: any) {
   const { user } = useAuth();
   const t = useT();
   const [reports, setReports] = useState<AssignedReport[]>([]);
+  const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<StatusFilter>('All');
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     if (!user) return;
-    const { data } = await supabase
-      .from('reports')
-      .select('*')
-      .eq('assigned_staff_id', user.id)
-      .is('deleted_at', null)
-      .order('created_at', { ascending: false });
-    if (data) {
-      // profiles RLS is self/admin only, so staff resolve reporter names through
-      // the roster RPC instead of an embed.
-      const people = await fetchPeople((data as any[]).map(r => r.reporter_id));
-      setReports(data.map((r: any) => ({ ...r, reporter_name: people[r.reporter_id]?.full_name })));
+    try {
+      const { data } = await supabase
+        .from('reports')
+        .select('*')
+        .eq('assigned_staff_id', user.id)
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false });
+      if (data) {
+        // profiles RLS is self/admin only, so staff resolve reporter names through
+        // the roster RPC instead of an embed.
+        const people = await fetchPeople((data as any[]).map(r => r.reporter_id));
+        setReports(data.map((r: any) => ({ ...r, reporter_name: people[r.reporter_id]?.full_name })));
+      }
+    } finally {
+      setLoading(false);
     }
   }, [user]);
 
@@ -162,15 +167,21 @@ export function AssignedToMeScreen({ navigation }: any) {
           </View>
         }
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <Feather name="clipboard" size={28} color={C.textMuted} />
-            <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-              {t.reports.noReportsTitle}
-            </Text>
-            <Text style={[styles.emptyBody, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-              {t.reports.noReportsBody}
-            </Text>
-          </View>
+          loading ? (
+            <View style={{ paddingVertical: 40, alignItems: 'center', justifyContent: 'center' }}>
+              <ActivityIndicator size="small" color={C.brand} />
+            </View>
+          ) : (
+            <View style={styles.empty}>
+              <Feather name="clipboard" size={28} color={C.textMuted} />
+              <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                {t.reports.noReportsTitle}
+              </Text>
+              <Text style={[styles.emptyBody, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                {t.reports.noReportsBody}
+              </Text>
+            </View>
+          )
         }
         renderItem={({ item: r }) => {
           const cat = CATEGORY_ICON[r.category] ?? CATEGORY_ICON.Other;

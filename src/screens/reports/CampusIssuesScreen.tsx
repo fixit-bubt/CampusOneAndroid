@@ -5,7 +5,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, FlatList, StyleSheet,
-  RefreshControl, Platform, type ViewStyle, type TextStyle,
+  RefreshControl, Platform, ActivityIndicator, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -52,6 +52,7 @@ export function CampusIssuesScreen({ navigation }: any) {
   const t = useT();
   const toast = useToast();
   const [issues, setIssues] = useState<CampusIssue[]>([]);
+  const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<StatusFilter>('All');
   const [refreshing, setRefreshing] = useState(false);
@@ -59,9 +60,13 @@ export function CampusIssuesScreen({ navigation }: any) {
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const res = await getCampusIssues();
-    if (res.ok) { setIssues(res.data); setLoadError(null); }
-    else setLoadError(res.error);
+    try {
+      const res = await getCampusIssues();
+      if (res.ok) { setIssues(res.data); setLoadError(null); }
+      else setLoadError(res.error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -162,26 +167,32 @@ export function CampusIssuesScreen({ navigation }: any) {
           </View>
         }
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <Feather name={loadError ? 'alert-circle' : 'users'} size={28} color={C.textMuted} />
-            <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-              {loadError ? t.common.error : t.campusIssues.emptyTitle}
-            </Text>
-            <Text style={[styles.emptyBody, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-              {loadError ?? t.campusIssues.emptyBody}
-            </Text>
-            {loadError && (
-              <TouchableOpacity
-                style={[styles.retryBtn, { backgroundColor: C.brand }]}
-                onPress={load}
-                activeOpacity={0.85}
-              >
-                <Text style={[styles.retryTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>
-                  {t.common.retry}
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
+          loading ? (
+            <View style={{ paddingVertical: 40, alignItems: 'center', justifyContent: 'center' }}>
+              <ActivityIndicator size="small" color={C.brand} />
+            </View>
+          ) : (
+            <View style={styles.empty}>
+              <Feather name={loadError ? 'alert-circle' : 'users'} size={28} color={C.textMuted} />
+              <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                {loadError ? t.common.error : t.campusIssues.emptyTitle}
+              </Text>
+              <Text style={[styles.emptyBody, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                {loadError ?? t.campusIssues.emptyBody}
+              </Text>
+              {loadError && (
+                <TouchableOpacity
+                  style={[styles.retryBtn, { backgroundColor: C.brand }]}
+                  onPress={load}
+                  activeOpacity={0.85}
+                >
+                  <Text style={[styles.retryTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>
+                    {t.common.retry}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )
         }
         renderItem={({ item: r }) => {
           const cat = CATEGORY_ICON[r.category] ?? CATEGORY_ICON.Other;

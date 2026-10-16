@@ -3,7 +3,7 @@
 // row opens the thread; the tab badge shows total unread (from the store).
 import { useState, useEffect, useCallback } from 'react';
 import {
-  View, Text, TouchableOpacity, FlatList, StyleSheet, type ViewStyle, type TextStyle,
+  View, Text, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -45,7 +45,7 @@ export function MessagesHome({ navigation }: any) {
   const t = useT();
   const { user } = useAuth();
   const myId = user?.id ?? null;
-  const { messages, dmPartners, myClubs, mySections, unreadByConv, reload } = useMessages();
+  const { messages, dmPartners, myClubs, mySections, unreadByConv, loading, reload } = useMessages();
   const [profileMap, setProfileMap] = useState<Record<string, { full_name: string; avatar_url: string | null }>>({});
 
   // Refresh the roster on focus so a just-accepted connection shows up.
@@ -175,19 +175,25 @@ export function MessagesHome({ navigation }: any) {
         showsVerticalScrollIndicator={false}
         ItemSeparatorComponent={() => <View style={[styles.divider, { backgroundColor: C.border }]} />}
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <Feather name="message-circle" size={30} color={C.textMuted} />
-            <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.messages.emptyTitle}</Text>
-            <Text style={[styles.emptyBody, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{t.messages.emptyBody}</Text>
-            <View style={styles.emptyBtns}>
-              <TouchableOpacity style={[styles.emptyBtn, { backgroundColor: C.brand }]} onPress={() => navigation.navigate('Directory')} activeOpacity={0.85}>
-                <Text style={[styles.emptyBtnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>{t.messages.findStudents}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.emptyBtn, { backgroundColor: C.surface2 }]} onPress={() => navigation.navigate('Clubs')} activeOpacity={0.85}>
-                <Text style={[styles.emptyBtnTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>{t.messages.browseClubs}</Text>
-              </TouchableOpacity>
+          loading ? (
+            <View style={{ paddingVertical: 48, alignItems: 'center', justifyContent: 'center' }}>
+              <ActivityIndicator size="small" color={C.brand} />
             </View>
-          </View>
+          ) : (
+            <View style={styles.empty}>
+              <Feather name="message-circle" size={30} color={C.textMuted} />
+              <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.messages.emptyTitle}</Text>
+              <Text style={[styles.emptyBody, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{t.messages.emptyBody}</Text>
+              <View style={styles.emptyBtns}>
+                <TouchableOpacity style={[styles.emptyBtn, { backgroundColor: C.brand }]} onPress={() => navigation.navigate('Directory')} activeOpacity={0.85}>
+                  <Text style={[styles.emptyBtnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>{t.messages.findStudents}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.emptyBtn, { backgroundColor: C.surface2 }]} onPress={() => navigation.navigate('Clubs')} activeOpacity={0.85}>
+                  <Text style={[styles.emptyBtnTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>{t.messages.browseClubs}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )
         }
         renderItem={renderRow}
       />

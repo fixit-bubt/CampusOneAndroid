@@ -14,6 +14,7 @@ import { supabase } from '../../lib/supabase';
 import { localToday } from '../../utils/format';
 import { FontFamily } from '../../theme';
 import { useTheme } from '../../hooks/useTheme';
+import { getCacheSync, setCache, CacheKeys } from '../../services/cacheService';
 
 export interface BannerSlide {
   id: string;
@@ -104,10 +105,16 @@ const FALLBACK_SLIDES: BannerSlide[] = [
   },
 ];
 
-export function HomeHeroBanner() {
+export interface HomeHeroBannerProps {
+  refreshTrigger?: number;
+}
+
+export function HomeHeroBanner({ refreshTrigger }: HomeHeroBannerProps = {}) {
   const navigation = useNavigation<any>();
   const { C, isDark } = useTheme();
-  const [slides, setSlides] = useState<BannerSlide[]>(FALLBACK_SLIDES);
+  const [slides, setSlides] = useState<BannerSlide[]>(
+    () => getCacheSync<BannerSlide[]>(CacheKeys.HOME_BANNER) ?? FALLBACK_SLIDES
+  );
   const [currentIndex, setCurrentIndex] = useState(0);
   const touchStartX = useRef<number | null>(null);
 
@@ -200,6 +207,7 @@ export function HomeHeroBanner() {
 
       if (cappedList.length > 0) {
         setSlides(cappedList);
+        setCache(CacheKeys.HOME_BANNER, cappedList);
       } else {
         setSlides(FALLBACK_SLIDES.slice(0, 6));
       }
@@ -213,6 +221,12 @@ export function HomeHeroBanner() {
       fetchLiveSlides();
     }, [fetchLiveSlides])
   );
+
+  useEffect(() => {
+    if (refreshTrigger) {
+      fetchLiveSlides();
+    }
+  }, [refreshTrigger, fetchLiveSlides]);
 
   // 4.2 second auto-rotation
   useEffect(() => {

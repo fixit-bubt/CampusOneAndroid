@@ -25,6 +25,7 @@ export const CacheKeys = {
 
   // Feeds & Community
   HOME_STATUS: (uid: string) => `home_status_${uid}`,
+  HOME_BANNER: 'home_hero_banner',
   HOME_UPDATES: 'home_updates',
   ANNOUNCEMENTS: 'announcements_feed',
   ANNOUNCEMENT_READS: (uid: string) => `announcement_reads_${uid}`,
@@ -47,6 +48,19 @@ export const CacheKeys = {
   DIRECTORY: (uid: string) => `student_dir_${uid}`,
   NOTIFICATIONS: (uid: string) => `notifications_${uid}`,
 } as const;
+
+export function getCacheSync<T>(key: string): T | null {
+  const fullKey = `${CACHE_PREFIX}${key}`;
+  if (memoryCache.has(fullKey)) {
+    return memoryCache.get(fullKey)!.data as T;
+  }
+  return null;
+}
+
+export function hasCacheSync(key: string): boolean {
+  const fullKey = `${CACHE_PREFIX}${key}`;
+  return memoryCache.has(fullKey);
+}
 
 export async function getCache<T>(key: string): Promise<T | null> {
   const fullKey = `${CACHE_PREFIX}${key}`;

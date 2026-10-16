@@ -14,7 +14,7 @@ This document tracks every service, database, login system, notification service
 | **Vercel (Web Hosting)** | Personal account | `campusone2026@gmail.com` (`campusone2026-4009`) | **100% Completed** |
 | **GitHub (Web & Android Repos)** | `fixit-bubt` organization | `fixit-bubt` organization | **100% Completed** |
 | **Google Cloud Console (OAuth & Sign-In)** | `campusone2026@gmail.com` (`campusone-511812`) | Web & Android OAuth Clients Active | **100% Completed** |
-| **Firebase (Push Notifications)** | `campusone-853e6` | Needs linking to `campusone2026@gmail.com` | ⚠️ **Action Required** |
+| **Firebase (Push Notifications)** | `campusone2026@gmail.com` (`campusone-511812`) | Service Account & FCM Active | **100% Completed** |
 | **Custom SMTP (Verification Codes & OTPs)** | Default Supabase free tier | Needs custom provider (Resend / Brevo) | ⚠️ **Action Required** |
 | **Google Play Console (App Store)** | Personal Account (`nawyaj morshed`) | In progress (NID/Passport & 20-tester rule) | ⏳ **In Progress** |
 
@@ -56,6 +56,13 @@ This document tracks every service, database, login system, notification service
   - Package: `com.bubt.campusone`
   - SHA-1 Fingerprint: `96:1D:69:A2:BB:57:98:4F:C2:EC:B7:BC:3B:59:09:3A:A9:31:34:72` (from `campusone-release.keystore`).
 
+### 2.6 Firebase & Lockscreen Push Notifications
+- **Firebase Project:** `campusone-511812` active under `campusone2026@gmail.com`.
+- **Android App Registered:** `com.bubt.campusone` (SHA-1: `96:1D:69:A2:BB:57:98:4F:C2:EC:B7:BC:3B:59:09:3A:A9:31:34:72`).
+- **Android Config:** `CampusOne/android/app/google-services.json` updated with project `22710751786` and client ID `22710751786-rbud0t5dkb7hiij9vtj6pumkdc29lrha.apps.googleusercontent.com`.
+- **FCM Service Account Key:** Generated and securely deployed to Supabase Edge Function Secrets as `FCM_SERVICE_ACCOUNT`.
+- **Push Pipeline:** Supabase `send-push` Edge Function and database triggers (`trg_push_on_notification`) are fully active for delivering urgent blood requests, ride bookings, and issue tracking directly to student lockscreens.
+
 ---
 
 ## 3. Pending Work (What Is Left To Hand Over & Configure)
@@ -68,21 +75,9 @@ This document tracks every service, database, login system, notification service
 
 ---
 
-### Task 2: Firebase & Lockscreen Push Notifications
-* **Why it is needed:** The Android app code (`push.ts`) and Supabase Edge Function (`send-push`) are fully coded. However, for Supabase to deliver lockscreen notifications through Google's servers to student phones, it needs the Firebase Service Account private key under the master team account.
-* **Steps to Complete:**
-  1. Go to [Firebase Console](https://console.firebase.google.com/) using `campusone2026@gmail.com`.
-  2. Open or create the project for CampusOne (or transfer the existing `campusone-853e6`).
-  3. Go to **Project Settings -> General**:
-     - Download the latest `google-services.json` and replace `CampusOne/android/app/google-services.json`.
-  4. Go to **Project Settings -> Service accounts**:
-     - Click **Generate new private key**.
-     - Download the JSON file.
-  5. Open **Supabase Dashboard -> Project Settings -> Edge Functions -> Secrets**:
-     - Add/update secret named: **`FCM_SERVICE_ACCOUNT`**
-     - Value: Paste the **entire contents of the downloaded JSON file**.
-     - Save.
-  6. **Result:** All campus notifications (urgent blood alerts, ride requests, issue updates) will immediately pop up on student Android lockscreens.
+### Task 2: Firebase & Lockscreen Push Notifications — ✅ COMPLETED
+* **Completed on:** October 16, 2026.
+* **Result:** Firebase Admin SDK private key is configured as `FCM_SERVICE_ACCOUNT` in Supabase Secrets, and `google-services.json` is updated in the Android app. Lockscreen push notifications are live and fully operational.
 
 ---
 

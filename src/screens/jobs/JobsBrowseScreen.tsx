@@ -52,6 +52,21 @@ function appStatusTone(C: any, t: any, status: JobApplication['status']) {
   }
 }
 
+function formatSalary(stipend?: string | null): string {
+  if (!stipend) return '';
+  const trimmed = stipend.trim();
+  if (/^\d+$/.test(trimmed)) {
+    return `৳${Number(trimmed).toLocaleString('en-US')}`;
+  }
+  if (!trimmed.startsWith('৳') && !trimmed.toLowerCase().startsWith('bdt')) {
+    const numMatch = trimmed.match(/^(\d+)(.*)$/);
+    if (numMatch) {
+      return `৳${Number(numMatch[1]).toLocaleString('en-US')}${numMatch[2]}`;
+    }
+  }
+  return trimmed;
+}
+
 const TYPE_COLORS: Record<string, string> = {
   internship: Accent.purple,
   tuition:    Accent.teal,
@@ -251,7 +266,7 @@ export function JobsBrowseScreen({ navigation }: any) {
   }, [TYPE_OPTIONS, typeFilter, t]);
 
   const currentDeptLabel = useMemo(() => {
-    if (deptFilter === 'ALL') return t.jobs2?.allDepts ?? 'All Departments';
+    if (deptFilter === 'ALL') return t.jobs2?.allDepts ?? 'All Depts';
     const found = JOB_DEPARTMENTS.find(d => d.code === deptFilter);
     return found ? found.label : deptFilter;
   }, [deptFilter, t]);
@@ -263,10 +278,10 @@ export function JobsBrowseScreen({ navigation }: any) {
   ], [t.jobs2, deptFiltered.length, savedIds.size, applications.length]);
 
   const statusTabs: TabItem<StatusFilter>[] = useMemo(() => [
-    { id: 'open', label: 'Open', accentColor: Accent.teal },
-    { id: 'closing', label: 'Closing', accentColor: C.warn },
-    { id: 'expired', label: 'Expired', accentColor: Accent.slate },
-  ], [C.warn]);
+    { id: 'open', label: 'Open', count: browseCounts.open, showZeroCount: true, accentColor: Accent.teal },
+    { id: 'closing', label: 'Closing', count: browseCounts.closing, showZeroCount: true, accentColor: C.warn },
+    { id: 'expired', label: 'Expired', count: browseCounts.expired, showZeroCount: true, accentColor: Accent.slate },
+  ], [browseCounts, C.warn]);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -295,7 +310,7 @@ export function JobsBrowseScreen({ navigation }: any) {
                 </TouchableOpacity>
               )}
             </View>
-          ) : undefined
+          ) : <View style={{ width: 28 }} />
         }
       />
 
@@ -518,12 +533,47 @@ export function JobsBrowseScreen({ navigation }: any) {
           <View style={styles.empty}>
             <Icon name="jobs" size={28} color={C.textMuted} />
             <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-              {mainTab === 'saved' ? (t.jobs2?.noSavedJobs ?? 'No Saved Jobs') : t.common.noResults}
+              {mainTab === 'saved'
+                ? (t.jobs2?.noSavedJobs ?? 'No Saved Jobs')
+                : statusFilter === 'open' && browseCounts.expired > 0
+                ? 'No Active Openings'
+                : t.common.noResults}
             </Text>
-            {mainTab === 'saved' && (
+            {mainTab === 'saved' ? (
               <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
                 {t.jobs2?.noSavedJobsSub ?? 'Star any job listing to quickly access it here.'}
               </Text>
+            ) : statusFilter === 'open' && browseCounts.expired > 0 ? (
+              <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                There are {browseCounts.expired} past opportunities in the Expired tab.
+              </Text>
+            ) : (
+              <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                Try adjusting your search keywords, job type, or department filter.
+              </Text>
+            )}
+            {mainTab === 'browse' && (query.length > 0 || typeFilter !== 'all' || deptFilter !== 'ALL' || (statusFilter === 'open' && browseCounts.expired > 0)) && (
+              <TouchableOpacity
+                style={[styles.resetFilterBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+                onPress={() => {
+                  if (statusFilter === 'open' && browseCounts.open === 0 && browseCounts.expired > 0 && query.length === 0 && typeFilter === 'all' && deptFilter === 'ALL') {
+                    setStatusFilter('expired');
+                  } else {
+                    setQuery('');
+                    setTypeFilter('all');
+                    setDeptFilter('ALL');
+                    if (browseCounts.open === 0 && browseCounts.expired > 0) setStatusFilter('expired');
+                  }
+                }}
+                activeOpacity={0.8}
+              >
+                <Feather name="rotate-ccw" size={13} color={C.text} style={{ marginRight: 6 }} />
+                <Text style={[styles.resetFilterBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  {statusFilter === 'open' && browseCounts.open === 0 && browseCounts.expired > 0 && query.length === 0 && typeFilter === 'all' && deptFilter === 'ALL'
+                    ? 'View Expired Listings'
+                    : 'Reset Filters'}
+                </Text>
+              </TouchableOpacity>
             )}
           </View>
         ) : (
@@ -586,7 +636,7 @@ export function JobsBrowseScreen({ navigation }: any) {
                         {j.stipend ? (
                           <View style={[styles.stipendBadge, { backgroundColor: C.surface2 }]}>
                             <Text style={[styles.stipendTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                              {j.stipend}
+                              {formatSalary(j.stipend)}
                             </Text>
                           </View>
                         ) : null}
@@ -776,9 +826,7 @@ export function JobsBrowseScreen({ navigation }: any) {
                 const isUserDept = profile?.department && dept.label.toLowerCase().includes(profile.department.toLowerCase());
                 const count = dept.code === 'ALL'
                   ? typeFiltered.length
-                  : typeFiltered.filter(
-                      j => j.department_code === dept.code || j.department_code === 'ALL' || !j.department_code
-                    ).length;
+                  : typeFiltered.filter(j => j.department_code === dept.code).length;
                 return (
                   <TouchableOpacity
                     key={dept.code}
@@ -1041,4 +1089,14 @@ const styles = StyleSheet.create({
   emptySub: { fontSize: 13, textAlign: 'center', paddingHorizontal: 24, lineHeight: 18 } as any,
   exploreBtn: { marginTop: 14, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12 } as ViewStyle,
   exploreBtnTxt: { fontSize: 13.5 } as any,
+  resetFilterBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderRadius: 12,
+    borderWidth: 1,
+  } as ViewStyle,
+  resetFilterBtnTxt: { fontSize: 13 } as any,
 });

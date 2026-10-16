@@ -18,7 +18,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
 import { AnimatedIcon } from '../ui/AnimatedIcon';
 import { getMyReports } from '../../services/reportsService';
-import { getCache, setCache, CacheKeys } from '../../services/cacheService';
+import { getCache, getCacheSync, setCache, CacheKeys } from '../../services/cacheService';
 import type { Report } from '../../types/database';
 import {
   nextDeparture,
@@ -201,6 +201,8 @@ export const ALL_STATUS_STRIPS: StatusStripOption[] = [
 
 export const DEFAULT_STATUS_STRIP_IDS: StatusStripId[] = ['reports', 'bus', 'prayer'];
 
+const inMemorySelectedStrips: Record<string, StatusStripId[]> = {};
+
 const STORAGE_KEY = (uid?: string) => `@campusone_status_strips_${uid || 'guest'}`;
 
 interface BusRouteData {
@@ -245,70 +247,60 @@ function StripPill({
   );
 }
 
-export function HomeStatusStrips() {
+export function HomeStatusStrips({ refreshTrigger }: { refreshTrigger?: number }) {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
   const { C, isDark } = useTheme();
   const { user } = useAuth();
   const t = useT();
+  const uid = user?.id || 'guest';
 
-  const [selectedStrips, setSelectedStrips] = useState<StatusStripId[]>(DEFAULT_STATUS_STRIP_IDS);
+  const [selectedStrips, setSelectedStrips] = useState<StatusStripId[]>(
+    () => inMemorySelectedStrips[uid] ?? DEFAULT_STATUS_STRIP_IDS
+  );
   const [modalVisible, setModalVisible] = useState(false);
-  const [tempSelected, setTempSelected] = useState<StatusStripId[]>(DEFAULT_STATUS_STRIP_IDS);
+  const [tempSelected, setTempSelected] = useState<StatusStripId[]>(
+    () => inMemorySelectedStrips[uid] ?? DEFAULT_STATUS_STRIP_IDS
+  );
+
+  // Synchronously initialize stats from memory cache if available
+  const initialCache = getCacheSync<any>(CacheKeys.HOME_STATUS(uid));
 
   // Feature stats states
-  const [reports, setReports] = useState<Report[]>([]);
-  const [busRoutes, setBusRoutes] = useState<BusRouteData[]>([]);
-  const [savedBusRoutes, setSavedBusRoutes] = useState<string[]>([]);
-  const [prayerList, setPrayerList] = useState<PrayerItem[]>([]);
-  const [bloodStats, setBloodStats] = useState<{ urgent: number; total: number; donors: number }>({
-    urgent: 0,
-    total: 0,
-    donors: 0,
-  });
-  const [rideStats, setRideStats] = useState<{ offers: number; requests: number; seats: number }>({
-    offers: 0,
-    requests: 0,
-    seats: 0,
-  });
-  const [marketStats, setMarketStats] = useState<{ total: number; active: number; saved: number }>({
-    total: 0,
-    active: 0,
-    saved: 0,
-  });
-  const [lostStats, setLostStats] = useState<{ lost: number; found: number; claims: number }>({
-    lost: 0,
-    found: 0,
-    claims: 0,
-  });
-  const [jobStats, setJobStats] = useState<{ open: number; interns: number; applied: number }>({
-    open: 0,
-    interns: 0,
-    applied: 0,
-  });
-  const [studyStats, setStudyStats] = useState<{ notes: number; files: number; saved: number }>({
-    notes: 0,
-    files: 0,
-    saved: 0,
-  });
-  const [eventStats, setEventStats] = useState<{ upcoming: number; thisWeek: number; going: number }>({
-    upcoming: 0,
-    thisWeek: 0,
-    going: 0,
-  });
-  const [clubStats, setClubStats] = useState<{ total: number; joined: number; posts: number }>({
-    total: 0,
-    joined: 0,
-    posts: 0,
-  });
-  const [doctorStats, setDoctorStats] = useState<{ onDuty: number; total: number }>({
-    onDuty: 0,
-    total: 0,
-  });
-  const [facultyStats, setFacultyStats] = useState<{ total: number; mentors: number }>({
-    total: 0,
-    mentors: 0,
-  });
+  const [reports, setReports] = useState<Report[]>(() => initialCache?.reports ?? []);
+  const [busRoutes, setBusRoutes] = useState<BusRouteData[]>(() => initialCache?.busRoutes ?? []);
+  const [savedBusRoutes, setSavedBusRoutes] = useState<string[]>(() => initialCache?.savedBusRoutes ?? []);
+  const [prayerList, setPrayerList] = useState<PrayerItem[]>(() => initialCache?.prayerList ?? []);
+  const [bloodStats, setBloodStats] = useState<{ urgent: number; total: number; donors: number }>(
+    () => initialCache?.bloodStats ?? { urgent: 0, total: 0, donors: 0 }
+  );
+  const [rideStats, setRideStats] = useState<{ offers: number; requests: number; seats: number }>(
+    () => initialCache?.rideStats ?? { offers: 0, requests: 0, seats: 0 }
+  );
+  const [marketStats, setMarketStats] = useState<{ total: number; active: number; saved: number }>(
+    () => initialCache?.marketStats ?? { total: 0, active: 0, saved: 0 }
+  );
+  const [lostStats, setLostStats] = useState<{ lost: number; found: number; claims: number }>(
+    () => initialCache?.lostStats ?? { lost: 0, found: 0, claims: 0 }
+  );
+  const [jobStats, setJobStats] = useState<{ open: number; interns: number; applied: number }>(
+    () => initialCache?.jobStats ?? { open: 0, interns: 0, applied: 0 }
+  );
+  const [studyStats, setStudyStats] = useState<{ notes: number; files: number; saved: number }>(
+    () => initialCache?.studyStats ?? { notes: 0, files: 0, saved: 0 }
+  );
+  const [eventStats, setEventStats] = useState<{ upcoming: number; thisWeek: number; going: number }>(
+    () => initialCache?.eventStats ?? { upcoming: 0, thisWeek: 0, going: 0 }
+  );
+  const [clubStats, setClubStats] = useState<{ total: number; joined: number; posts: number }>(
+    () => initialCache?.clubStats ?? { total: 0, joined: 0, posts: 0 }
+  );
+  const [doctorStats, setDoctorStats] = useState<{ onDuty: number; total: number }>(
+    () => initialCache?.doctorStats ?? { onDuty: 0, total: 0 }
+  );
+  const [facultyStats, setFacultyStats] = useState<{ total: number; mentors: number }>(
+    () => initialCache?.facultyStats ?? { total: 0, mentors: 0 }
+  );
 
   const [tick, setTick] = useState(0);
 
@@ -320,6 +312,7 @@ export function HomeStatusStrips() {
         if (saved) {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed) && parsed.length === 3) {
+            inMemorySelectedStrips[uid] = parsed;
             setSelectedStrips(parsed);
             setTempSelected(parsed);
           }
@@ -328,7 +321,7 @@ export function HomeStatusStrips() {
         // quiet fallback
       }
     })();
-  }, [user?.id]);
+  }, [user?.id, uid]);
 
   // Initial and refresh data fetch
   const loadData = useCallback(async () => {
@@ -528,6 +521,12 @@ export function HomeStatusStrips() {
     }, [loadData])
   );
 
+  useEffect(() => {
+    if (refreshTrigger) {
+      loadData();
+    }
+  }, [refreshTrigger, loadData]);
+
   // Local 15-second tick loop to recalculate countdowns and progress bars
   useEffect(() => {
     const timer = setInterval(() => {
@@ -606,6 +605,7 @@ export function HomeStatusStrips() {
     if (tempSelected.length !== 3) return;
     try {
       await AsyncStorage.setItem(STORAGE_KEY(user?.id), JSON.stringify(tempSelected));
+      inMemorySelectedStrips[uid] = tempSelected;
       setSelectedStrips(tempSelected);
     } catch {
       // quiet fallback

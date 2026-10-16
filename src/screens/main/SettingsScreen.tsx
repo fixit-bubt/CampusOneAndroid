@@ -29,6 +29,8 @@ import {
 
 const ROLE_TOKEN = { student: 'roleStudent', staff: 'roleStaff', admin: 'roleAdmin' } as const;
 
+let inMemoryOptSync: boolean | null = null;
+
 function hexAlpha(hex: string, a: number): string {
   const n = parseInt(hex.slice(1), 16);
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
@@ -87,7 +89,7 @@ export function SettingsScreen({ navigation }: any) {
     student: t.mainx.roleStudent, staff: t.mainx.roleStaff, admin: t.mainx.roleAdmin,
   };
 
-  const [optSync, setOptSync] = useState(true);
+  const [optSync, setOptSync] = useState<boolean>(() => inMemoryOptSync ?? true);
   const [dataCacheOpen, setDataCacheOpen] = useState(false);
   const [cacheBytes, setCacheBytes] = useState(0);
   const [clearingCache, setClearingCache] = useState(false);
@@ -136,12 +138,17 @@ export function SettingsScreen({ navigation }: any) {
   useEffect(() => {
     AsyncStorage.getItem('app.optSync')
       .then(v => {
-        if (v !== null) setOptSync(v === 'true');
+        if (v !== null) {
+          const val = v === 'true';
+          inMemoryOptSync = val;
+          setOptSync(val);
+        }
       })
       .catch(() => {});
   }, []);
 
   const handleToggleOptSync = (v: boolean) => {
+    inMemoryOptSync = v;
     setOptSync(v);
     AsyncStorage.setItem('app.optSync', String(v)).catch(() => {});
   };

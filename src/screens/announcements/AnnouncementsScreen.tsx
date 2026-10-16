@@ -15,7 +15,7 @@ import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { LogoMark } from '../../components/ui/Logo';
 import { FontFamily, Layout, Accent, SectorColors, pillBg, Radius } from '../../theme';
 import { supabase } from '../../lib/supabase';
-import { getCache, CacheKeys } from '../../services/cacheService';
+import { getCache, getCacheSync, hasCacheSync, CacheKeys } from '../../services/cacheService';
 import { useToast } from '../../components/ui/Toast';
 import { useT } from '../../i18n';
 import type { Announcement } from '../../types/database';
@@ -193,9 +193,21 @@ export function AnnouncementsScreen({ navigation }: any) {
   const isAdmin = profile?.role === 'admin';
   const studentDept = profile?.department || '';
 
-  const [items, setItems] = useState<Announcement[]>([]);
-  const [readIds, setReadIds] = useState<Set<string>>(new Set());
-  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const [items, setItems] = useState<Announcement[]>(
+    () => getCacheSync<Announcement[]>(CacheKeys.ANNOUNCEMENTS) ?? []
+  );
+  const [readIds, setReadIds] = useState<Set<string>>(() => {
+    const uid = user?.id;
+    if (!uid) return new Set();
+    const cachedReads = getCacheSync<string[]>(CacheKeys.ANNOUNCEMENT_READS(uid));
+    return cachedReads ? new Set(cachedReads) : new Set();
+  });
+  const [savedIds, setSavedIds] = useState<Set<string>>(() => {
+    const uid = user?.id;
+    if (!uid) return new Set();
+    const cachedSaves = getCacheSync<string[]>(CacheKeys.ANNOUNCEMENT_BOOKMARKS(uid));
+    return cachedSaves ? new Set(cachedSaves) : new Set();
+  });
   const [mainTab, setMainTab] = useState<MainTab>('all');
   const [expanded, setExpanded] = useState(false);
   const [query, setQuery] = useState('');
@@ -204,35 +216,41 @@ export function AnnouncementsScreen({ navigation }: any) {
   const [includeUniversal, setIncludeUniversal] = useState(true);
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
   const [deptModalVisible, setDeptModalVisible] = useState(false);
+  const [loading, setLoading] = useState(() => !hasCacheSync(CacheKeys.ANNOUNCEMENTS));
   const [refreshing, setRefreshing] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
 
 
   const load = useCallback(async () => {
-    // 1. Instant Cache Load
-    const cachedItems = await getCache<Announcement[]>(CacheKeys.ANNOUNCEMENTS);
-    if (cachedItems && cachedItems.length > 0) {
-      setItems(cachedItems);
-    }
-    if (user?.id) {
-      const cachedReads = await getCache<string[]>(CacheKeys.ANNOUNCEMENT_READS(user.id));
-      if (cachedReads) setReadIds(new Set(cachedReads));
-      const cachedSaves = await getCache<string[]>(CacheKeys.ANNOUNCEMENT_BOOKMARKS(user.id));
-      if (cachedSaves) setSavedIds(new Set(cachedSaves));
-    }
+    try {
+      // 1. Instant Cache Load
+      const cachedItems = await getCache<Announcement[]>(CacheKeys.ANNOUNCEMENTS);
+      if (cachedItems && cachedItems.length > 0) {
+        setItems(cachedItems);
+        setLoading(false);
+      }
+      if (user?.id) {
+        const cachedReads = await getCache<string[]>(CacheKeys.ANNOUNCEMENT_READS(user.id));
+        if (cachedReads) setReadIds(new Set(cachedReads));
+        const cachedSaves = await getCache<string[]>(CacheKeys.ANNOUNCEMENT_BOOKMARKS(user.id));
+        if (cachedSaves) setSavedIds(new Set(cachedSaves));
+      }
 
-    // 2. Fetch fresh
-    const res = await fetchAnnouncementsFeed(user?.id);
-    if (res.error) {
-      if (cachedItems && cachedItems.length > 0) setIsOffline(true);
-      return;
-    }
+      // 2. Fetch fresh
+      const res = await fetchAnnouncementsFeed(user?.id);
+      if (res.error) {
+        if (cachedItems && cachedItems.length > 0) setIsOffline(true);
+        return;
+      }
 
-    setIsOffline(false);
-    setItems(res.items);
-    setReadIds(res.readIds);
-    setSavedIds(res.savedIds);
+      setIsOffline(false);
+      setItems(res.items);
+      setReadIds(res.readIds);
+      setSavedIds(res.savedIds);
+    } finally {
+      setLoading(false);
+    }
   }, [user?.id]);
 
   useEffect(() => {
@@ -648,49 +666,55 @@ export function AnnouncementsScreen({ navigation }: any) {
         ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
         ListHeaderComponent={<OfflineBanner visible={isOffline} onRetry={load} />}
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <Icon name="announce" size={36} color={C.textMuted} />
-            <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-              {mainTab === 'saved' ? t.announce2.noSavedNotices : t.announce2.noNoticesFound}
-            </Text>
-            <Text style={[styles.emptyDesc, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-              {mainTab === 'saved'
-                ? t.announce2.noSavedNoticesBody
-                : deptFilter !== 'ALL'
-                ? `BUBT has not posted specific circulars for ${activeDeptLabel} in this section. General exam schedules and holiday notices are published campus-wide.`
-                : t.announce2.noNoticesMatching}
-            </Text>
-
-            <View style={styles.emptyActionRow}>
-              {deptFilter !== 'ALL' && (
-                <TouchableOpacity
-                  style={[styles.resetBtn, { backgroundColor: C.brand, borderColor: C.brand }]}
-                  onPress={() => setDeptFilter('ALL')}
-                  activeOpacity={0.75}
-                >
-                  <Text style={[styles.resetBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
-                    Show All Campus Notices
-                  </Text>
-                </TouchableOpacity>
-              )}
-
-              {(categoryFilter !== 'all' || deptFilter !== 'ALL' || query.length > 0) && (
-                <TouchableOpacity
-                  style={[styles.resetBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
-                  onPress={() => {
-                    setCategoryFilter('all');
-                    setDeptFilter('ALL');
-                    setQuery('');
-                  }}
-                  activeOpacity={0.75}
-                >
-                  <Text style={[styles.resetBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                    {t.announce2.resetFilters}
-                  </Text>
-                </TouchableOpacity>
-              )}
+          loading ? (
+            <View style={{ paddingVertical: 48, alignItems: 'center', justifyContent: 'center' }}>
+              <ActivityIndicator size="small" color={C.brand} />
             </View>
-          </View>
+          ) : (
+            <View style={styles.empty}>
+              <Icon name="announce" size={36} color={C.textMuted} />
+              <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                {mainTab === 'saved' ? t.announce2.noSavedNotices : t.announce2.noNoticesFound}
+              </Text>
+              <Text style={[styles.emptyDesc, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+                {mainTab === 'saved'
+                  ? t.announce2.noSavedNoticesBody
+                  : deptFilter !== 'ALL'
+                  ? `BUBT has not posted specific circulars for ${activeDeptLabel} in this section. General exam schedules and holiday notices are published campus-wide.`
+                  : t.announce2.noNoticesMatching}
+              </Text>
+
+              <View style={styles.emptyActionRow}>
+                {deptFilter !== 'ALL' && (
+                  <TouchableOpacity
+                    style={[styles.resetBtn, { backgroundColor: C.brand, borderColor: C.brand }]}
+                    onPress={() => setDeptFilter('ALL')}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={[styles.resetBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                      Show All Campus Notices
+                    </Text>
+                  </TouchableOpacity>
+                )}
+
+                {(categoryFilter !== 'all' || deptFilter !== 'ALL' || query.length > 0) && (
+                  <TouchableOpacity
+                    style={[styles.resetBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+                    onPress={() => {
+                      setCategoryFilter('all');
+                      setDeptFilter('ALL');
+                      setQuery('');
+                    }}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={[styles.resetBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                      {t.announce2.resetFilters}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+          )
         }
         ListFooterComponent={
           shouldTruncate ? (

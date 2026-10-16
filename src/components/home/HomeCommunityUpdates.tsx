@@ -21,7 +21,7 @@ import { FontFamily, SectorColors, pillBg } from '../../theme';
 import { SegmentedTabs, type TabItem } from '../ui/SegmentedTabs';
 import { supabase } from '../../lib/supabase';
 import { localToday, formatDate } from '../../utils/format';
-import { getCache, setCache, CacheKeys } from '../../services/cacheService';
+import { getCache, getCacheSync, hasCacheSync, setCache, CacheKeys } from '../../services/cacheService';
 import { markAnnouncementAsRead } from '../../services/announcementService';
 
 export type CommunityTab = 'Notices' | 'Clubs' | 'Events';
@@ -140,17 +140,27 @@ const DEFAULT_NEWS: CommunityItem[] = [
   },
 ];
 
-export function HomeCommunityUpdates() {
+export interface HomeCommunityUpdatesProps {
+  refreshTrigger?: number;
+}
+
+export function HomeCommunityUpdates({ refreshTrigger }: HomeCommunityUpdatesProps = {}) {
   const navigation = useNavigation<any>();
   const { C, isDark } = useTheme();
   const { user } = useAuth();
   const t = useT();
 
   const [activeTab, setActiveTab] = useState<CommunityTab>('Notices');
-  const [items, setItems] = useState<CommunityItem[]>(DEFAULT_NEWS);
-  const [readIds, setReadIds] = useState<Set<string>>(new Set());
+  const [items, setItems] = useState<CommunityItem[]>(
+    () => getCacheSync<CommunityItem[]>(CacheKeys.HOME_UPDATES) ?? DEFAULT_NEWS
+  );
+  const [readIds, setReadIds] = useState<Set<string>>(() => {
+    const uid = user?.id || 'guest';
+    const cachedReads = getCacheSync<string[]>(CacheKeys.ANNOUNCEMENT_READS(uid));
+    return cachedReads ? new Set(cachedReads) : new Set();
+  });
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !hasCacheSync(CacheKeys.HOME_UPDATES));
 
   const loadData = useCallback(async () => {
     // 1. Instant cache load
@@ -346,6 +356,12 @@ export function HomeCommunityUpdates() {
       supabase.removeChannel(channel);
     };
   }, [loadData, user?.id]);
+
+  useEffect(() => {
+    if (refreshTrigger) {
+      loadData();
+    }
+  }, [refreshTrigger, loadData]);
 
   // Tab counts (Unread notices count for Notices, total for Clubs and Events)
   const counts = useMemo(() => {

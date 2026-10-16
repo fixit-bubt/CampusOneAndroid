@@ -2,6 +2,7 @@ import React, { useState, useCallback, useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert,
   RefreshControl, TextInput, Modal, Platform, KeyboardAvoidingView,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -13,13 +14,15 @@ import { Icon } from '../../components/ui/Icon';
 import { Pill } from '../../components/ui/Pill';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { supabase } from '../../lib/supabase';
-import { getCache, setCache, CacheKeys } from '../../services/cacheService';
+import { getCache, getCacheSync, hasCacheSync, setCache, CacheKeys } from '../../services/cacheService';
 import { openUrl } from '../../utils/link';
 import { localToday } from '../../utils/format';
 import { FontFamily, FontSize, Layout, Radius, Spacing, SectorColors, Accent } from '../../theme';
 
 // Official academic-calendar PDF, served from the campus web app.
 const CALENDAR_PDF_URL = 'https://fixit-campus-theta.vercel.app/bubt-academic-calendar-summer-2026.pdf';
+
+const inMemoryCalendar: Record<string, CalendarEvent[]> = {};
 
 interface CalendarEvent {
   id: string;
@@ -71,7 +74,15 @@ export function AcademicCalendarScreen({ navigation }: any) {
   });
   const year = yearMonth[0];
   const month = yearMonth[1];
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const monthKey = `${year}_${month}`;
+  const calKey = `${CacheKeys.ACADEMIC_CALENDAR}_${monthKey}`;
+
+  const [eventsByMonth, setEventsByMonth] = useState<Record<string, CalendarEvent[]>>({});
+  const [loadingMonths, setLoadingMonths] = useState<Record<string, boolean>>({});
+
+  const events = eventsByMonth[monthKey] ?? inMemoryCalendar[monthKey] ?? getCacheSync<CalendarEvent[]>(calKey) ?? [];
+  const isLoading = loadingMonths[monthKey] ?? (!inMemoryCalendar[monthKey] && !hasCacheSync(calKey));
+
   const [refreshing, setRefreshing] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
@@ -87,30 +98,40 @@ export function AcademicCalendarScreen({ navigation }: any) {
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
-    const calKey = `${CacheKeys.ACADEMIC_CALENDAR}_${year}_${month}`;
-    const cached = await getCache<CalendarEvent[]>(calKey);
+    const mKey = `${year}_${month}`;
+    const cKey = `${CacheKeys.ACADEMIC_CALENDAR}_${mKey}`;
+    setLoadingMonths(prev => ({ ...prev, [mKey]: true }));
+
+    const cached = await getCache<CalendarEvent[]>(cKey);
     if (cached && cached.length > 0) {
-      setEvents(cached);
+      inMemoryCalendar[mKey] = cached;
+      setEventsByMonth(prev => ({ ...prev, [mKey]: cached }));
     }
 
-    const monthStart = `${year}-${String(month + 1).padStart(2, '0')}-01`;
-    const monthEnd = `${year}-${String(month + 1).padStart(2, '0')}-${getDaysInMonth(year, month)}`;
-    const { data, error } = await supabase
-      .from('academic_calendar')
-      .select('*')
-      .or(`and(event_date.gte.${monthStart},event_date.lte.${monthEnd}),and(end_date.gte.${monthStart},event_date.lt.${monthStart})`)
-      .order('event_date', { ascending: true });
+    try {
+      const monthStart = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+      const monthEnd = `${year}-${String(month + 1).padStart(2, '0')}-${getDaysInMonth(year, month)}`;
+      const { data, error } = await supabase
+        .from('academic_calendar')
+        .select('*')
+        .or(`and(event_date.gte.${monthStart},event_date.lte.${monthEnd}),and(end_date.gte.${monthStart},event_date.lt.${monthStart})`)
+        .order('event_date', { ascending: true });
 
-    if (error || !data) {
-      if (cached && cached.length > 0) {
-        setIsOffline(true);
+      if (error || !data) {
+        if (cached && cached.length > 0) {
+          setIsOffline(true);
+        }
+        return;
       }
-      return;
-    }
 
-    setIsOffline(false);
-    setEvents(data as CalendarEvent[]);
-    setCache(calKey, data as CalendarEvent[]);
+      setIsOffline(false);
+      const evList = data as CalendarEvent[];
+      inMemoryCalendar[mKey] = evList;
+      setEventsByMonth(prev => ({ ...prev, [mKey]: evList }));
+      setCache(cKey, evList);
+    } finally {
+      setLoadingMonths(prev => ({ ...prev, [mKey]: false }));
+    }
 
     // Instant cached calendar PDF url
     const cachedPdf = await getCache<string>(CacheKeys.CALENDAR_PDF_URL);
@@ -151,11 +172,15 @@ export function AcademicCalendarScreen({ navigation }: any) {
 
   const { eventsByDate, weeks } = useMemo(() => {
     const ebd = new Map<number, CalendarEvent[]>();
+    const curPrefix = `${year}-${String(month + 1).padStart(2, '0')}`;
     for (const ev of events) {
+      if (!ev.event_date.startsWith(curPrefix)) continue;
       const day = parseInt(ev.event_date.split('-')[2], 10);
-      const arr = ebd.get(day) ?? [];
-      arr.push(ev);
-      ebd.set(day, arr);
+      if (!isNaN(day)) {
+        const arr = ebd.get(day) ?? [];
+        arr.push(ev);
+        ebd.set(day, arr);
+      }
     }
 
     const wks: (number | null)[][] = [];
@@ -169,7 +194,7 @@ export function AcademicCalendarScreen({ navigation }: any) {
       wks.push(wk);
     }
     return { eventsByDate: ebd, weeks: wks };
-  }, [events, daysInMonth, firstDay]);
+  }, [events, daysInMonth, firstDay, year, month]);
 
   const todayDay = useMemo(() => {
     const [y, m, d] = localToday().split('-').map(Number);
@@ -350,9 +375,15 @@ export function AcademicCalendarScreen({ navigation }: any) {
         {/* Events list */}
         <View style={{ paddingHorizontal: Layout.screenPadding, paddingBottom: 32 }}>
           {events.length === 0 ? (
-            <Text style={[styles.empty, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-              {t.calendar2.noEvents}
-            </Text>
+            isLoading ? (
+              <View style={{ paddingVertical: 32, alignItems: 'center', justifyContent: 'center' }}>
+                <ActivityIndicator size="small" color={C.brand} />
+              </View>
+            ) : (
+              <Text style={[styles.empty, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                {t.calendar2.noEvents}
+              </Text>
+            )
           ) : (
             events.map(ev => (
               <TouchableOpacity

@@ -67,6 +67,21 @@ function formatSemester(sem?: number | null, t?: any): string {
   return `${ord} Sem+`;
 }
 
+function formatSalary(stipend?: string | null): string {
+  if (!stipend) return '';
+  const trimmed = stipend.trim();
+  if (/^\d+$/.test(trimmed)) {
+    return `৳${Number(trimmed).toLocaleString('en-US')}`;
+  }
+  if (!trimmed.startsWith('৳') && !trimmed.toLowerCase().startsWith('bdt')) {
+    const numMatch = trimmed.match(/^(\d+)(.*)$/);
+    if (numMatch) {
+      return `৳${Number(numMatch[1]).toLocaleString('en-US')}${numMatch[2]}`;
+    }
+  }
+  return trimmed;
+}
+
 const REPORT_REASONS = ['Spam', 'Scam', 'Expired', 'Inappropriate'];
 
 export function JobDetailScreen({ route, navigation }: any) {
@@ -438,9 +453,9 @@ export function JobDetailScreen({ route, navigation }: any) {
                 {t.jobs2.salary}
               </Text>
               <View style={styles.specsVal}>
-                <Feather name="dollar-sign" size={13} color={C.textMuted} />
+                <Text style={{ fontSize: 13, color: C.textMuted, fontFamily: FontFamily.jakartaBold }}>৳</Text>
                 <Text style={[styles.specsValTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                  {job.stipend ?? t.jobs2?.negotiable ?? 'Negotiable'}
+                  {formatSalary(job.stipend) || (t.jobs2?.negotiable ?? 'Negotiable')}
                 </Text>
               </View>
             </View>
@@ -645,37 +660,49 @@ export function JobDetailScreen({ route, navigation }: any) {
               </TouchableOpacity>
             )}
 
-            {/* External / Circular Direct Link Buttons */}
-            {job.apply_method === 'link' && job.apply_value && !isOwn && (
-              <TouchableOpacity
-                style={[styles.secondaryBtn, { backgroundColor: C.surface, borderColor: C.border }]}
-                onPress={() => {
-                  const href = /^https?:\/\//i.test(job.apply_value) ? job.apply_value : `https://${job.apply_value}`;
-                  openUrl(href);
-                }}
-                activeOpacity={0.85}
-              >
-                <Feather name="external-link" size={16} color={C.text} />
-                <Text style={[styles.secondaryTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                  Apply on External Website
+            {/* Expired Closed Banner or Live External / Direct Apply Buttons */}
+            {isExpired ? (
+              <View style={[styles.closedBanner, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                <Feather name="calendar" size={15} color={C.textMuted} />
+                <Text style={[styles.closedBannerTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                  Applications are closed for this position
                 </Text>
-              </TouchableOpacity>
-            )}
+              </View>
+            ) : (
+              <>
+                {/* External / Circular Direct Link Buttons */}
+                {job.apply_method === 'link' && job.apply_value && !isOwn && (
+                  <TouchableOpacity
+                    style={[styles.secondaryBtn, { backgroundColor: C.surface, borderColor: C.border }]}
+                    onPress={() => {
+                      const href = /^https?:\/\//i.test(job.apply_value) ? job.apply_value : `https://${job.apply_value}`;
+                      openUrl(href);
+                    }}
+                    activeOpacity={0.85}
+                  >
+                    <Feather name="external-link" size={16} color={C.text} />
+                    <Text style={[styles.secondaryTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                      Apply on External Website
+                    </Text>
+                  </TouchableOpacity>
+                )}
 
-            {job.apply_method === 'email' && job.apply_value && !isOwn && (
-              <TouchableOpacity
-                style={[styles.secondaryBtn, { backgroundColor: C.surface, borderColor: C.border }]}
-                onPress={() => {
-                  const subject = encodeURIComponent(`Application for ${job.title}`);
-                  openUrl(`mailto:${job.apply_value}?subject=${subject}`);
-                }}
-                activeOpacity={0.85}
-              >
-                <Feather name="mail" size={16} color={C.text} />
-                <Text style={[styles.secondaryTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                  Send Email to Poster
-                </Text>
-              </TouchableOpacity>
+                {job.apply_method === 'email' && job.apply_value && !isOwn && (
+                  <TouchableOpacity
+                    style={[styles.secondaryBtn, { backgroundColor: C.surface, borderColor: C.border }]}
+                    onPress={() => {
+                      const subject = encodeURIComponent(`Application for ${job.title}`);
+                      openUrl(`mailto:${job.apply_value}?subject=${subject}`);
+                    }}
+                    activeOpacity={0.85}
+                  >
+                    <Feather name="mail" size={16} color={C.text} />
+                    <Text style={[styles.secondaryTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                      Send Email to Poster
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </>
             )}
 
             {job.apply_file_url && job.apply_method !== 'file' && (
@@ -1153,4 +1180,16 @@ const styles = StyleSheet.create({
   reasonRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 } as ViewStyle,
   reasonChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1 } as ViewStyle,
   reasonTxt: { fontSize: 13 } as any,
+  closedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginTop: 14,
+  } as ViewStyle,
+  closedBannerTxt: { fontSize: 13.5 } as any,
 });

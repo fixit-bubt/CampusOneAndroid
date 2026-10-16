@@ -51,26 +51,36 @@ export const ALL_TOOLS: FrequentTool[] = [
 
 export const DEFAULT_TOOL_IDS = ['study-hub', 'routines', 'cover-page', 'cgpa'];
 
+const inMemoryFrequentTools: Record<string, string[]> = {};
+
 const STORAGE_KEY = (uid?: string) => `@campusone_frequent_tools_${uid || 'guest'}`;
 
-export function HomeFrequentTools() {
+export interface HomeFrequentToolsProps {
+  refreshTrigger?: number;
+}
+
+export function HomeFrequentTools({ refreshTrigger }: HomeFrequentToolsProps = {}) {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
   const { C, isDark } = useTheme();
   const { user } = useAuth();
+  const uid = user?.id || 'guest';
   const t = useT();
 
-  const [selectedIds, setSelectedIds] = useState<string[]>(DEFAULT_TOOL_IDS);
+  const [selectedIds, setSelectedIds] = useState<string[]>(
+    () => inMemoryFrequentTools[uid] ?? DEFAULT_TOOL_IDS
+  );
   const [modalVisible, setModalVisible] = useState(false);
   const [tempSelected, setTempSelected] = useState<string[]>(DEFAULT_TOOL_IDS);
 
   useEffect(() => {
     (async () => {
       try {
-        const raw = await AsyncStorage.getItem(STORAGE_KEY(user?.id));
+        const raw = await AsyncStorage.getItem(STORAGE_KEY(uid));
         if (raw) {
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed) && parsed.length === 4) {
+            inMemoryFrequentTools[uid] = parsed;
             setSelectedIds(parsed);
             return;
           }
@@ -80,7 +90,7 @@ export function HomeFrequentTools() {
       }
       setSelectedIds(DEFAULT_TOOL_IDS);
     })();
-  }, [user?.id]);
+  }, [uid]);
 
   const activeTools = useMemo(() => {
     const list = selectedIds
@@ -117,7 +127,8 @@ export function HomeFrequentTools() {
   const handleSave = async () => {
     if (tempSelected.length !== 4) return;
     try {
-      await AsyncStorage.setItem(STORAGE_KEY(user?.id), JSON.stringify(tempSelected));
+      await AsyncStorage.setItem(STORAGE_KEY(uid), JSON.stringify(tempSelected));
+      inMemoryFrequentTools[uid] = tempSelected;
       setSelectedIds(tempSelected);
     } catch {
       // quiet fallback

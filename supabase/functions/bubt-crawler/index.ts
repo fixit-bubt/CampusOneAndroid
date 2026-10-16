@@ -5,6 +5,7 @@ import { runRoutinesAdapter } from './adapters/routines.ts';
 import { runCalendarAdapter } from './adapters/calendar.ts';
 import { runFacultyAdapter } from './adapters/faculty.ts';
 import { runBusAdapter } from './adapters/bus.ts';
+import { runJobsAdapter } from './adapters/jobs.ts';
 import type { AdapterResult } from './types.ts';
 
 const CORS_HEADERS = {
@@ -194,12 +195,17 @@ Deno.serve(async (req: Request) => {
       const { rawNotices } = await runNoticesAdapter(supabase, systemAdminId);
       const busRes = await runBusAdapter(supabase, rawNotices);
       results.bus = busRes;
+    } else if (feature === 'jobs') {
+      // Standalone Jobs & Recruitment Sync
+      const { rawNotices } = await runNoticesAdapter(supabase, systemAdminId);
+      const jobRes = await runJobsAdapter(supabase, rawNotices, systemAdminId);
+      results.jobs = jobRes;
     } else {
       // Tier 1 Fast Cycle: Run Notices first, then parallel sub-adapters
       const { result: noticeRes, rawNotices } = await runNoticesAdapter(supabase, systemAdminId);
       results.notices = noticeRes;
 
-      const [eventRes, routineRes, calRes, busRes] = await Promise.all([
+      const [eventRes, routineRes, calRes, busRes, jobRes] = await Promise.all([
         runEventsAdapter(supabase, systemAdminId).catch((err) => ({
           feature: 'events',
           scanned: 0,
@@ -232,12 +238,21 @@ Deno.serve(async (req: Request) => {
           unchanged: 0,
           error: err.message,
         })),
+        runJobsAdapter(supabase, rawNotices, systemAdminId).catch((err) => ({
+          feature: 'jobs',
+          scanned: 0,
+          added: 0,
+          updated: 0,
+          unchanged: 0,
+          error: err.message,
+        })),
       ]);
 
       results.events = eventRes;
       results.routines = routineRes;
       results.calendar = calRes;
       results.bus = busRes;
+      results.jobs = jobRes;
 
       // If user explicitly requested deep 'all', also run faculty
       if (tier === 'all') {

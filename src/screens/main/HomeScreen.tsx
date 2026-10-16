@@ -78,16 +78,16 @@ export function HomeScreen({ navigation }: any) {
         }
       >
         {/* 1. Hero Auto-Changing Announcement & Event Banner */}
-        <HomeHeroBanner key={`banner-${refreshKey}`} />
+        <HomeHeroBanner refreshTrigger={refreshKey} />
 
         {/* 2. Luxury Status Strips (Reports, Bus, Prayer, Blood) */}
-        <HomeStatusStrips key={`strips-${refreshKey}`} />
+        <HomeStatusStrips refreshTrigger={refreshKey} />
 
         {/* 3. Frequently Used Academic Tools */}
-        <HomeFrequentTools />
+        <HomeFrequentTools refreshTrigger={refreshKey} />
 
         {/* 4. Community Updates Feed */}
-        <HomeCommunityUpdates key={`news-${refreshKey}`} />
+        <HomeCommunityUpdates refreshTrigger={refreshKey} />
 
         <View style={{ height: 16 }} />
       </ScrollView>

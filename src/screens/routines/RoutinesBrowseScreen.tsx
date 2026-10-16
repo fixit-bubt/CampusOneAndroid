@@ -2,7 +2,7 @@ import React, { useState, useCallback, useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, FlatList, StyleSheet, Alert,
   TextInput, Modal, Platform, KeyboardAvoidingView,
-  RefreshControl, Image,
+  RefreshControl, Image, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -16,7 +16,7 @@ import { Pill } from '../../components/ui/Pill';
 import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { supabase } from '../../lib/supabase';
-import { getCache, setCache, CacheKeys } from '../../services/cacheService';
+import { getCache, getCacheSync, hasCacheSync, setCache, CacheKeys } from '../../services/cacheService';
 import { uploadFile } from '../../utils/storage';
 import { isImageFile } from '../../utils/imageCompress';
 import { MAX_FILE_SIZE_MB } from '../../constants/app';
@@ -49,7 +49,10 @@ export function RoutinesBrowseScreen({ navigation }: any) {
   const canPost = profile?.role === 'admin' || profile?.role === 'staff';
 
   const [tab, setTab] = useState<Tab>('class');
-  const [routines, setRoutines] = useState<Routine[]>([]);
+  const [routines, setRoutines] = useState<Routine[]>(
+    () => getCacheSync<Routine[]>(CacheKeys.ROUTINES) ?? []
+  );
+  const [loading, setLoading] = useState(() => !hasCacheSync(CacheKeys.ROUTINES));
   const [search, setSearch] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
@@ -66,28 +69,33 @@ export function RoutinesBrowseScreen({ navigation }: any) {
   const [posting, setPosting] = useState(false);
 
   const load = useCallback(async () => {
-    // 1. Instant cache load
-    const cached = await getCache<Routine[]>(CacheKeys.ROUTINES);
-    if (cached && cached.length > 0) {
-      setRoutines(cached);
-    }
-
-    // 2. Fetch fresh
-    const { data, error } = await supabase
-      .from('routines')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error || !data) {
+    try {
+      // 1. Instant cache load
+      const cached = await getCache<Routine[]>(CacheKeys.ROUTINES);
       if (cached && cached.length > 0) {
-        setIsOffline(true);
+        setRoutines(cached);
+        setLoading(false);
       }
-      return;
-    }
 
-    setIsOffline(false);
-    setRoutines(data as Routine[]);
-    setCache(CacheKeys.ROUTINES, data as Routine[]);
+      // 2. Fetch fresh
+      const { data, error } = await supabase
+        .from('routines')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error || !data) {
+        if (cached && cached.length > 0) {
+          setIsOffline(true);
+        }
+        return;
+      }
+
+      setIsOffline(false);
+      setRoutines(data as Routine[]);
+      setCache(CacheKeys.ROUTINES, data as Routine[]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -309,9 +317,15 @@ export function RoutinesBrowseScreen({ navigation }: any) {
         contentContainerStyle={{ paddingHorizontal: Layout.screenPadding, paddingBottom: 32 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
         ListEmptyComponent={
-          <Text style={[styles.empty, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-            {t.routines2.noRoutines}
-          </Text>
+          loading ? (
+            <View style={{ paddingVertical: 40, alignItems: 'center', justifyContent: 'center' }}>
+              <ActivityIndicator size="small" color={C.brand} />
+            </View>
+          ) : (
+            <Text style={[styles.empty, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+              {t.routines2.noRoutines}
+            </Text>
+          )
         }
       />
 

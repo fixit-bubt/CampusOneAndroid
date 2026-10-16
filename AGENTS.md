@@ -86,7 +86,7 @@ The project is consolidating all third-party services and infrastructure under t
    - **Web OAuth:** Web Client ID `22710751786-rbud0t5dkb7hiij9vtj6pumkdc29lrha.apps.googleusercontent.com` configured with origins `https://campusonebubt.vercel.app` & `https://xhgpxvyqrufbbuivttmi.supabase.co` and redirect URI `https://xhgpxvyqrufbbuivttmi.supabase.co/auth/v1/callback`. Connected to Supabase Google provider.
    - **Android OAuth Client ID:** `22710751786-udnebs4hqg7e775ru67flmgpb84gjnkd.apps.googleusercontent.com` created with package `com.bubt.campusone` and release keystore SHA-1 (`96:1D:69:A2:BB:57:98:4F:C2:EC:B7:BC:3B:59:09:3A:A9:31:34:72`).
    - **Mobile App Config Synced:** `GOOGLE_WEB_CLIENT_ID` updated in `src/lib/googleAuth.ts`.
-   - **Firebase & Push Notifications (Next):** Link Firebase project for FCM v1 push notification credentials in `send-push` edge function.
+   - **Firebase & Push Notifications (Completed):** Firebase project `campusone-511812` active under `campusone2026@gmail.com`; FCM service account key deployed to Supabase Edge Function secrets as `FCM_SERVICE_ACCOUNT`; Android client configured with `google-services.json`. Push notifications operational.
 4. **Vercel Account Transfer (Completed):**
    - Transferred & deployed directly under master team account `campusone2026@gmail.com` (username `campusone2026-4009`).
    - Project: `campusonebubt`.

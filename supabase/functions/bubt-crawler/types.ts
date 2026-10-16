@@ -1,6 +1,6 @@
 export interface CrawlerOptions {
   tier?: 'fast' | 'faculty' | 'all';
-  feature?: 'notices' | 'events' | 'faculty' | 'routines' | 'calendar' | 'bus' | 'all';
+  feature?: 'notices' | 'events' | 'faculty' | 'routines' | 'calendar' | 'bus' | 'jobs' | 'all';
   triggeredBy?: string;
   force?: boolean;
 }

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, FlatList, StyleSheet,
-  RefreshControl, Alert, type ViewStyle, type TextStyle,
+  RefreshControl, Alert, ActivityIndicator, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -56,6 +56,7 @@ export function MyReportsScreen({ navigation }: any) {
   const t = useT();
   const toast = useToast();
   const [reports, setReports] = useState<CampusReport[]>([]);
+  const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<StatusFilter>('All');
   const [scope, setScope] = useState<'everyone' | 'mine'>('everyone');
@@ -65,17 +66,21 @@ export function MyReportsScreen({ navigation }: any) {
 
   const load = useCallback(async () => {
     if (!user) return;
-    const res = await getCampusReports();
-    if (res.ok) setReports(res.data);
-    // campus_reports() doesn't project show_on_board, so pull the board state of
-    // the caller's own reports directly for the per-report visibility toggle.
-    // show_on_board is NOT NULL DEFAULT false, so an unknown id means OFF - the
-    // toggle stays hidden until this resolves rather than guessing.
-    const { data: mine, error: mineErr } = await supabase
-      .from('reports').select('id, show_on_board').eq('reporter_id', user.id).is('deleted_at', null);
-    if (!mineErr && mine) {
-      setBoardMap(Object.fromEntries(mine.map(m => [m.id, m.show_on_board === true])));
-      setBoardLoaded(true);
+    try {
+      const res = await getCampusReports();
+      if (res.ok) setReports(res.data);
+      // campus_reports() doesn't project show_on_board, so pull the board state of
+      // the caller's own reports directly for the per-report visibility toggle.
+      // show_on_board is NOT NULL DEFAULT false, so an unknown id means OFF - the
+      // toggle stays hidden until this resolves rather than guessing.
+      const { data: mine, error: mineErr } = await supabase
+        .from('reports').select('id, show_on_board').eq('reporter_id', user.id).is('deleted_at', null);
+      if (!mineErr && mine) {
+        setBoardMap(Object.fromEntries(mine.map(m => [m.id, m.show_on_board === true])));
+        setBoardLoaded(true);
+      }
+    } finally {
+      setLoading(false);
     }
   }, [user]);
 
@@ -232,15 +237,21 @@ export function MyReportsScreen({ navigation }: any) {
           </View>
         }
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <Feather name="inbox" size={28} color={C.textMuted} />
-            <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-              {t.reports.noReportsTitle}
-            </Text>
-            <Text style={[styles.emptyBody, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-              {t.reports.noReportsBody}
-            </Text>
-          </View>
+          loading ? (
+            <View style={{ paddingVertical: 40, alignItems: 'center', justifyContent: 'center' }}>
+              <ActivityIndicator size="small" color={C.brand} />
+            </View>
+          ) : (
+            <View style={styles.empty}>
+              <Feather name="inbox" size={28} color={C.textMuted} />
+              <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                {t.reports.noReportsTitle}
+              </Text>
+              <Text style={[styles.emptyBody, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                {t.reports.noReportsBody}
+              </Text>
+            </View>
+          )
         }
         renderItem={({ item: r }) => {
           const cat = CATEGORY_ICON[r.category] ?? CATEGORY_ICON.Other;
