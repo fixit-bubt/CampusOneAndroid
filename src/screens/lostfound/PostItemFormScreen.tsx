@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet, Image,
   TextInput, KeyboardAvoidingView, ActivityIndicator, Modal,
@@ -9,11 +9,13 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
+import { useApp } from '../../store/appStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
+import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
 import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { LocationPickerModal } from '../../components/location/LocationPickerModal';
-import { FontFamily, Layout, SectorColors, Accent, pillBg } from '../../theme';
+import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { localToday } from '../../utils/format';
 import { rankMatches, type MatchItem } from '../../utils/lostFoundMatch';
@@ -23,22 +25,135 @@ import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 import type { LostFoundItem } from '../../types/database';
 import { useT } from '../../i18n';
 
-const LF_CATS: { id: LostFoundItem['category']; icon: string; fg: string; en: string }[] = [
-  { id: 'Personal',    icon: 'user',       fg: Accent.blue, en: 'Personal' },
-  { id: 'Electronics', icon: 'smartphone', fg: SectorColors.lostfound, en: 'Electronics' },
-  { id: 'Documents',   icon: 'layers',     fg: Accent.green, en: 'Documents' },
-  { id: 'Other',       icon: 'inbox',      fg: Accent.slate, en: 'Other' },
+const LF_COLOR = SectorColors.lostfound;
+const LF_BG = `${SectorColors.lostfound}18`;
+
+interface CategoryOption {
+  id: LostFoundItem['category'];
+  icon: string;
+  label: string;
+  labelBn: string;
+  sub: string;
+  subBn: string;
+}
+
+const LF_CATS: CategoryOption[] = [
+  {
+    id: 'Personal',
+    icon: 'user',
+    label: 'Personal Items',
+    labelBn: 'ব্যক্তিগত সামগ্রী',
+    sub: 'Wallets, keys, bags, watch, bottle',
+    subBn: 'মানিব্যাগ, চাবি, ব্যাগ, ঘড়ি, বোতল',
+  },
+  {
+    id: 'Electronics',
+    icon: 'smartphone',
+    label: 'Electronics & Gadgets',
+    labelBn: 'ইলেকট্রনিক্স ও গ্যাজেট',
+    sub: 'Phones, chargers, calculator, laptop',
+    subBn: 'ফোন, চার্জার, ক্যালকুলেটর, ল্যাপটপ',
+  },
+  {
+    id: 'Documents',
+    icon: 'layers',
+    label: 'Documents & Cards',
+    labelBn: 'কাগজপত্র ও আইডি কার্ড',
+    sub: 'Student ID, notebooks, files, admit card',
+    subBn: 'আইডি কার্ড, খাতা, ফাইল, এডমিট কার্ড',
+  },
+  {
+    id: 'Other',
+    icon: 'inbox',
+    label: 'Other Items',
+    labelBn: 'অন্যান্য জিনিসপত্র',
+    sub: 'Umbrellas, clothing, glasses, stationery',
+    subBn: 'ছাতা, পোশাক, চশমা, অন্যান্য সামগ্রী',
+  },
 ];
 
-const QUICK_LOCATIONS = [
-  'Library',
-  'Cafeteria',
-  'Building 2',
-  'Room 402',
-  'Exam Hall',
-  'Mosque',
-  'Computer Lab',
-  'Campus Grounds',
+interface CampusHub {
+  id: string;
+  name: string;
+  nameBn: string;
+  sub: string;
+  subBn: string;
+  icon: string;
+}
+
+const BUBT_CAMPUS_HUBS: CampusHub[] = [
+  {
+    id: 'library',
+    name: 'Central Library',
+    nameBn: 'সেন্ট্রাল লাইব্রেরি',
+    sub: 'Building 2, Level 6',
+    subBn: 'ভবন ২, ৬ষ্ঠ তলা',
+    icon: 'book',
+  },
+  {
+    id: 'cafeteria',
+    name: 'Campus Cafeteria',
+    nameBn: 'ক্যাম্পাস ক্যাফেটেরিয়া',
+    sub: 'Building 1, Ground Floor',
+    subBn: 'ভবন ১, নিচতলা',
+    icon: 'coffee',
+  },
+  {
+    id: 'b2',
+    name: 'Building 2 (Academic Complex)',
+    nameBn: 'ভবন ২ (একাডেমিক ভবন)',
+    sub: 'Classrooms, Dean Office, Labs',
+    subBn: 'ক্লাসরুম, ডিন অফিস ও ল্যাব',
+    icon: 'home',
+  },
+  {
+    id: 'b1',
+    name: 'Building 1 (Admin & Academic)',
+    nameBn: 'ভবন ১ (প্রশাসনিক ও একাডেমিক)',
+    sub: 'Admission, Accounts & Classrooms',
+    subBn: 'ভর্তি, হিসাব ও ক্লাসরুম',
+    icon: 'home',
+  },
+  {
+    id: 'b3',
+    name: 'Building 3 / Annex',
+    nameBn: 'ভবন ৩ / অ্যানেক্স',
+    sub: 'Department offices & classes',
+    subBn: 'বিভাগীয় অফিস ও ক্লাস',
+    icon: 'home',
+  },
+  {
+    id: 'mosque',
+    name: 'Campus Mosque',
+    nameBn: 'ক্যাম্পাস মসজিদ',
+    sub: 'Prayer Hall & Ablution area',
+    subBn: 'নামাজের স্থান ও ওজুখানা',
+    icon: 'compass',
+  },
+  {
+    id: 'com_lab',
+    name: 'Computer Labs',
+    nameBn: 'কম্পিউটার ল্যাব',
+    sub: 'Building 2, Level 5',
+    subBn: 'ভবন ২, ৫ম তলা',
+    icon: 'monitor',
+  },
+  {
+    id: 'exam_hall',
+    name: 'Examination Hall & Auditorium',
+    nameBn: 'পরীক্ষা হল ও অডিটোরিয়াম',
+    sub: 'Building 1, Top Floor',
+    subBn: 'ভবন ১, শীর্ষ তলা',
+    icon: 'file-text',
+  },
+  {
+    id: 'grounds',
+    name: 'Campus Playground & Grounds',
+    nameBn: 'ক্যাম্পাস মাঠ ও চত্বর',
+    sub: 'Open courtyard & sports area',
+    subBn: 'খোলা মাঠ ও খেলাধুলার স্থান',
+    icon: 'sun',
+  },
 ];
 
 function hexAlpha(hex: string, a: number) {
@@ -56,6 +171,8 @@ function extractPhotoStoragePath(url: string | null): string | null {
 export function PostItemFormScreen({ route, navigation }: any) {
   const { C, isDark } = useTheme();
   const { user } = useAuth();
+  const { lang } = useApp();
+  const isBn = lang === 'bn';
   const insets = useSafeAreaInsets();
   const t = useT();
   const editId: string | undefined = route.params?.itemId;
@@ -72,8 +189,13 @@ export function PostItemFormScreen({ route, navigation }: any) {
   const [existingPhotoUrl, setExistingPhotoUrl] = useState<string | null>(null);
   const [originalPhotoUrl, setOriginalPhotoUrl] = useState<string | null>(null);
   const [photoPickerVisible, setPhotoPickerVisible] = useState(false);
+  const [catModalVisible, setCatModalVisible] = useState(false);
+  const [locModalVisible, setLocModalVisible] = useState(false);
+  const [locInputText, setLocInputText] = useState('');
   const [mapModalVisible, setMapModalVisible] = useState(false);
   const [matches, setMatches] = useState<MatchItem[]>([]);
+
+  const selectedCatObj = useMemo(() => LF_CATS.find(c => c.id === cat), [cat]);
 
   const TYPE_TABS: TabItem<'Lost' | 'Found'>[] = [
     { id: 'Lost',  label: t.lf.lost,  icon: 'alert-circle', color: C.danger },
@@ -277,44 +399,65 @@ export function PostItemFormScreen({ route, navigation }: any) {
             onTabChange={setType}
           />
 
-          {/* Category: 2x2 Symmetrical Grid */}
+          {/* 1. Category: 72dp Universal Dropdown Selector Card Standard */}
           <Text style={[styles.label, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>
-            {t.lf.categoryLabel}
+            {t.lf.categoryLabel} *
           </Text>
-          <View style={styles.catGrid}>
-            {LF_CATS.map(c => {
-              const on = cat === c.id;
-              const fg = c.fg;
-              const bg = pillBg(fg, isDark);
-              const label = c.id === 'Personal' ? t.lf.catPersonal
-                : c.id === 'Electronics' ? t.lf.catElectronics
-                : c.id === 'Documents' ? t.lf.catDocuments
-                : t.lf.catOther;
-
-              return (
-                <TouchableOpacity
-                  key={c.id}
-                  style={[
-                    styles.catCard,
-                    {
-                      backgroundColor: on ? bg : C.surface,
-                      borderColor: on ? fg : C.border,
-                      borderWidth: on ? 1.5 : 1,
-                    },
-                  ]}
-                  onPress={() => setCat(c.id)}
-                  activeOpacity={0.75}
-                >
-                  <View style={[styles.catIcon, { backgroundColor: on ? `${fg}28` : bg }]}>
-                    <Icon name={c.icon} size={16} color={fg} />
-                  </View>
-                  <Text style={[styles.catLabel, { color: on ? fg : C.text, fontFamily: FontFamily.jakartaBold }]}>
-                    {label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+          <TouchableOpacity
+            style={[
+              styles.dropdownCard72,
+              {
+                backgroundColor: C.surface,
+                borderColor: cat ? LF_COLOR : C.border,
+                borderWidth: cat ? 1.5 : 1,
+              },
+            ]}
+            onPress={() => setCatModalVisible(true)}
+            activeOpacity={0.75}
+          >
+            <View
+              style={[
+                styles.dropdownIconTile44,
+                {
+                  backgroundColor: cat ? LF_BG : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2),
+                },
+              ]}
+            >
+              <AnimatedIcon
+                family="feather"
+                name={selectedCatObj ? selectedCatObj.icon : 'inbox'}
+                size={20}
+                color={cat ? LF_COLOR : C.text2}
+                animation="spring"
+              />
+            </View>
+            <View style={styles.dropdownInfo}>
+              <Text
+                style={[
+                  styles.dropdownTitle,
+                  {
+                    color: cat ? C.text : C.textMuted,
+                    fontFamily: cat ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                  },
+                ]}
+                numberOfLines={1}
+              >
+                {selectedCatObj ? (isBn ? selectedCatObj.labelBn : selectedCatObj.label) : (isBn ? 'ক্যাটাগরি নির্বাচন করুন' : 'Select Category...')}
+              </Text>
+              <Text
+                style={[
+                  styles.dropdownSub,
+                  { color: C.textMuted, fontFamily: FontFamily.jakartaRegular },
+                ]}
+                numberOfLines={1}
+              >
+                {selectedCatObj ? (isBn ? selectedCatObj.subBn : selectedCatObj.sub) : (isBn ? 'আইটেম ক্যাটাগরি বেছে নিতে ট্যাপ করুন' : 'Tap to select item category')}
+              </Text>
+            </View>
+            <View style={styles.dropdownChevBox}>
+              <Icon name="chevD" size={18} color={C.textMuted} />
+            </View>
+          </TouchableOpacity>
 
           {/* Item name */}
           <Text style={[styles.label, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>{t.lf.itemName}</Text>
@@ -328,10 +471,10 @@ export function PostItemFormScreen({ route, navigation }: any) {
 
           {/* Pre-post smart match hint */}
           {matches.length > 0 && (
-            <View style={[styles.matchWrap, { backgroundColor: isDark ? 'rgba(217, 135, 11, 0.14)' : '#fffbeb', borderColor: Accent.amber }]}>
+            <View style={[styles.matchWrap, { backgroundColor: isDark ? 'rgba(217, 135, 11, 0.14)' : '#fffbeb', borderColor: LF_COLOR }]}>
               <View style={styles.matchHeaderRow}>
-                <Feather name="alert-circle" size={15} color={Accent.amber} />
-                <Text style={[styles.matchHead, { color: Accent.amber, fontFamily: FontFamily.jakartaExtraBold }]}>
+                <Feather name="alert-circle" size={15} color={LF_COLOR} />
+                <Text style={[styles.matchHead, { color: LF_COLOR, fontFamily: FontFamily.jakartaExtraBold }]}>
                   {t.lf.possibleMatchAlert.toUpperCase()}
                 </Text>
               </View>
@@ -347,8 +490,8 @@ export function PostItemFormScreen({ route, navigation }: any) {
                     onPress={() => navigation.navigate('LostFoundDetail', { itemId: m.id })}
                     activeOpacity={0.75}
                   >
-                    <View style={[styles.matchIcon, { backgroundColor: hexAlpha(mc.fg, 0.14) }]}>
-                      <Icon name={mc.icon} size={15} color={mc.fg} />
+                    <View style={[styles.matchIcon, { backgroundColor: LF_BG }]}>
+                      <Icon name={mc.icon} size={15} color={LF_COLOR} />
                     </View>
                     <View style={{ flex: 1, minWidth: 0 }}>
                       <Text style={[styles.matchName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>{m.title}</Text>
@@ -361,59 +504,102 @@ export function PostItemFormScreen({ route, navigation }: any) {
             </View>
           )}
 
-          {/* Location */}
-          <Text style={[styles.label, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>{t.lf.locationLabel}</Text>
-          <TextInput
-            style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaRegular }]}
-            value={loc}
-            onChangeText={setLoc}
-            placeholder={t.lf.locationPlaceholder}
-            placeholderTextColor={C.textMuted}
-          />
-
-          {/* Quick Location Chips */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={styles.quickLocRow}
+          {/* 2. Location: 72dp Universal Dropdown Selector Card Standard */}
+          <Text style={[styles.label, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold, marginTop: 14 }]}>
+            {t.lf.locationLabel} *
+          </Text>
+          <View
+            style={[
+              styles.dropdownCard72,
+              {
+                backgroundColor: C.surface,
+                borderColor: loc ? LF_COLOR : C.border,
+                borderWidth: loc ? 1.5 : 1,
+              },
+            ]}
           >
             <TouchableOpacity
-              style={[
-                styles.quickLocChip,
-                {
-                  backgroundColor: isDark ? `${SectorColors.lostfound}22` : `${SectorColors.lostfound}14`,
-                  borderColor: SectorColors.lostfound,
-                },
-              ]}
-              onPress={() => setMapModalVisible(true)}
+              style={styles.dropdownMain}
+              onPress={() => {
+                setLocInputText(loc);
+                setLocModalVisible(true);
+              }}
               activeOpacity={0.75}
             >
-              <Feather name="map" size={12} color={SectorColors.lostfound} />
-              <Text style={[styles.quickLocTxt, { color: SectorColors.lostfound, fontFamily: FontFamily.jakartaBold }]}>
-                Pick on Map
-              </Text>
-            </TouchableOpacity>
-            {QUICK_LOCATIONS.map(place => (
-              <TouchableOpacity
-                key={place}
+              <View
                 style={[
-                  styles.quickLocChip,
+                  styles.dropdownIconTile44,
                   {
-                    backgroundColor: loc === place ? (isDark ? 'rgba(255,255,255,0.1)' : C.surface2) : C.surface,
-                    borderColor: loc === place ? C.text : C.border,
+                    backgroundColor: loc ? LF_BG : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2),
                   },
                 ]}
-                onPress={() => setLoc(place)}
-                activeOpacity={0.75}
               >
-                <Feather name="map-pin" size={11} color={loc === place ? C.text : C.textMuted} />
-                <Text style={[styles.quickLocTxt, { color: loc === place ? C.text : C.text2, fontFamily: FontFamily.jakartaMedium }]}>
-                  {place}
+                <AnimatedIcon
+                  key={`loc-${loc}`}
+                  family="feather"
+                  name="map-pin"
+                  size={20}
+                  color={loc ? LF_COLOR : C.text2}
+                  animation={loc ? 'spring' : 'entrance'}
+                />
+              </View>
+              <View style={styles.dropdownInfo}>
+                <Text
+                  style={[
+                    styles.dropdownTitle,
+                    {
+                      color: loc ? C.text : C.textMuted,
+                      fontFamily: loc ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                    },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {loc || (type === 'Lost'
+                    ? (isBn ? 'কোথায় হারিয়ে গেছে?' : 'Where was it lost?')
+                    : (isBn ? 'কোথায় পাওয়া গেছে?' : 'Where was it found?'))}
                 </Text>
+                <Text
+                  style={[
+                    styles.dropdownSub,
+                    { color: C.textMuted, fontFamily: FontFamily.jakartaRegular },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {loc
+                    ? (isBn ? 'স্থান বা রুম পরিবর্তন করতে ট্যাপ করুন' : 'Tap to change spot or room')
+                    : (isBn ? 'BUBT স্পট, রুম নম্বর বা ম্যাপ থেকে বেছে নিন' : 'BUBT spot, room number, or map')}
+                </Text>
+              </View>
+            </TouchableOpacity>
+            <View style={styles.dropdownRightBtns}>
+              {loc ? (
+                <TouchableOpacity
+                  onPress={() => {
+                    setLoc('');
+                    setLocInputText('');
+                  }}
+                  style={[styles.clearPill32, { backgroundColor: C.surface2, borderColor: C.border }]}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Feather name="x" size={14} color={C.textMuted} />
+                </TouchableOpacity>
+              ) : null}
+              <TouchableOpacity
+                style={[
+                  styles.mapMiniBtn36,
+                  {
+                    backgroundColor: LF_BG,
+                    borderColor: isDark ? `${LF_COLOR}40` : `${LF_COLOR}25`,
+                  },
+                ]}
+                onPress={() => setMapModalVisible(true)}
+                activeOpacity={0.75}
+                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+              >
+                <Feather name="map" size={16} color={LF_COLOR} />
               </TouchableOpacity>
-            ))}
-          </ScrollView>
+            </View>
+          </View>
 
           {/* Description */}
           <Text style={[styles.label, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>{t.lf.descriptionLabel}</Text>
@@ -530,7 +716,7 @@ export function PostItemFormScreen({ route, navigation }: any) {
               onPress={pickFromGallery}
               activeOpacity={0.75}
             >
-              <Feather name="image" size={18} color={Accent.blue} />
+              <Feather name="image" size={18} color={C.brand} />
               <Text style={[styles.pickerModalOptTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                 {t.lf.chooseGallery}
               </Text>
@@ -549,15 +735,393 @@ export function PostItemFormScreen({ route, navigation }: any) {
         </TouchableOpacity>
       </Modal>
 
-      {/* Interactive Map & GPS Picker Modal */}
+      {/* Category Selection Modal (Strict 72dp Cards Inside) */}
+      <Modal
+        visible={catModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setCatModalVisible(false)}
+      >
+        <View style={styles.sheetOverlay}>
+          <TouchableOpacity
+            style={styles.sheetBackdrop}
+            activeOpacity={1}
+            onPress={() => setCatModalVisible(false)}
+          />
+          <View
+            style={[
+              styles.sheetContent,
+              {
+                backgroundColor: C.surface,
+                borderColor: C.border,
+                paddingBottom: Math.max(insets.bottom, 16),
+              },
+            ]}
+          >
+            <View style={styles.sheetHandle}>
+              <View style={[styles.sheetHandleBar, { backgroundColor: C.border }]} />
+            </View>
+
+            <View style={styles.sheetHeader}>
+              <View style={styles.sheetHeaderLeft}>
+                <View style={[styles.sheetHeaderIcon, { backgroundColor: LF_BG }]}>
+                  <Feather name="grid" size={18} color={LF_COLOR} />
+                </View>
+                <View>
+                  <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    {isBn ? 'ক্যাটাগরি নির্বাচন করুন' : 'Select Category'}
+                  </Text>
+                  <Text style={[styles.sheetSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+                    {isBn ? 'আইটেম অনুযায়ী সঠিক ক্যাটাগরি বেছে নিন' : 'Choose the best matching category'}
+                  </Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                style={[styles.sheetCloseBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+                onPress={() => setCatModalVisible(false)}
+                activeOpacity={0.75}
+              >
+                <Feather name="x" size={16} color={C.textMuted} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ gap: 10, marginTop: 12 }}>
+              {LF_CATS.map((item) => {
+                const isSelected = cat === item.id;
+                return (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={[
+                      styles.optionCard72,
+                      {
+                        backgroundColor: isSelected ? LF_BG : (isDark ? C.surface2 : '#ffffff'),
+                        borderColor: isSelected ? LF_COLOR : C.border,
+                        borderWidth: isSelected ? 1.5 : 1,
+                      },
+                    ]}
+                    onPress={() => {
+                      setCat(item.id);
+                      setCatModalVisible(false);
+                    }}
+                    activeOpacity={0.75}
+                  >
+                    <View
+                      style={[
+                        styles.dropdownIconTile44,
+                        {
+                          backgroundColor: isSelected
+                            ? (isDark ? 'rgba(217, 135, 11, 0.28)' : 'rgba(217, 135, 11, 0.16)')
+                            : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2),
+                        },
+                      ]}
+                    >
+                      <AnimatedIcon
+                        family="feather"
+                        name={item.icon}
+                        size={20}
+                        color={isSelected ? LF_COLOR : C.text2}
+                        animation={isSelected ? 'spring' : 'none'}
+                      />
+                    </View>
+                    <View style={styles.dropdownInfo}>
+                      <Text
+                        style={[
+                          styles.optionTitle,
+                          {
+                            color: isSelected ? (isDark ? '#fbbf24' : '#b45309') : C.text,
+                            fontFamily: isSelected ? FontFamily.jakartaBold : FontFamily.jakartaSemiBold,
+                          },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {isBn ? item.labelBn : item.label}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.optionSub,
+                          { color: C.textMuted, fontFamily: FontFamily.jakartaRegular },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {isBn ? item.subBn : item.sub}
+                      </Text>
+                    </View>
+                    <View style={styles.dropdownChevBox}>
+                      {isSelected ? (
+                        <View style={[styles.checkCircle, { backgroundColor: LF_COLOR }]}>
+                          <Feather name="check" size={13} color="#ffffff" />
+                        </View>
+                      ) : (
+                        <View style={[styles.emptyCircle, { borderColor: C.border }]} />
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Location Selection Modal (58dp Text Input, 72dp Interactive Map Card, 72dp Campus Presets) */}
+      <Modal
+        visible={locModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setLocModalVisible(false)}
+      >
+        <View style={styles.sheetOverlay}>
+          <TouchableOpacity
+            style={styles.sheetBackdrop}
+            activeOpacity={1}
+            onPress={() => setLocModalVisible(false)}
+          />
+          <View
+            style={[
+              styles.sheetContent,
+              {
+                backgroundColor: C.surface,
+                borderColor: C.border,
+                maxHeight: '88%',
+                paddingBottom: Math.max(insets.bottom, 16),
+              },
+            ]}
+          >
+            <View style={styles.sheetHandle}>
+              <View style={[styles.sheetHandleBar, { backgroundColor: C.border }]} />
+            </View>
+
+            <View style={styles.sheetHeader}>
+              <View style={styles.sheetHeaderLeft}>
+                <View style={[styles.sheetHeaderIcon, { backgroundColor: LF_BG }]}>
+                  <Feather name="map-pin" size={18} color={LF_COLOR} />
+                </View>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    {type === 'Lost'
+                      ? (isBn ? 'কোথায় হারিয়ে গেছে?' : 'Where was it lost?')
+                      : (isBn ? 'কোথায় পাওয়া গেছে?' : 'Where was it found?')}
+                  </Text>
+                  <Text style={[styles.sheetSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+                    {isBn ? 'রুম নম্বর, ম্যাপ বা BUBT স্পট নির্বাচন করুন' : 'Select room, map pin, or campus building'}
+                  </Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                style={[styles.sheetCloseBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+                onPress={() => setLocModalVisible(false)}
+                activeOpacity={0.75}
+              >
+                <Feather name="x" size={16} color={C.textMuted} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={{ paddingTop: 10, paddingBottom: 16 }}
+            >
+              {/* Option 1: Custom Room or Spot Text Input (Universal 58dp Standard) */}
+              <Text style={[styles.sheetSectionLabel, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                {isBn ? 'নির্দিষ্ট রুম বা স্পট লিখুন' : 'CUSTOM ROOM OR SPOT'}
+              </Text>
+              <View style={styles.locInputRow58}>
+                <TextInput
+                  style={[
+                    styles.locInputText58,
+                    {
+                      backgroundColor: isDark ? C.surface2 : '#ffffff',
+                      borderColor: C.border,
+                      color: C.text,
+                      fontFamily: FontFamily.jakartaMedium,
+                    },
+                  ]}
+                  value={locInputText}
+                  onChangeText={setLocInputText}
+                  placeholder={isBn ? 'রুম নম্বর লিখুন (যেমন: Room 402, B2)' : 'Enter room or spot (e.g. Room 402, B2)'}
+                  placeholderTextColor={C.textMuted}
+                />
+                <TouchableOpacity
+                  style={[
+                    styles.locSetBtn,
+                    {
+                      backgroundColor: LF_COLOR,
+                      opacity: locInputText.trim().length > 0 ? 1 : 0.6,
+                    },
+                  ]}
+                  onPress={() => {
+                    const clean = locInputText.trim();
+                    if (clean) {
+                      setLoc(clean);
+                      setLocModalVisible(false);
+                    }
+                  }}
+                  disabled={locInputText.trim().length === 0}
+                  activeOpacity={0.75}
+                >
+                  <Feather name="check" size={16} color="#ffffff" />
+                  <Text style={[styles.locSetBtnTxt, { fontFamily: FontFamily.jakartaBold }]}>
+                    {isBn ? 'প্রয়োগ' : 'Set'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Option 2: Unified Interactive Vector Map & GPS (Strict 72dp Card) */}
+              <Text style={[styles.sheetSectionLabel, { color: C.text2, fontFamily: FontFamily.jakartaBold, marginTop: 14 }]}>
+                {isBn ? 'অফ-ক্যাম্পাস ও ম্যাপ লোকেশন' : 'OFF-CAMPUS & MAP LOCATION'}
+              </Text>
+              <TouchableOpacity
+                style={[
+                  styles.optionCard72,
+                  styles.mapActionCard72,
+                  {
+                    backgroundColor: isDark ? 'rgba(217, 135, 11, 0.12)' : 'rgba(217, 135, 11, 0.08)',
+                    borderColor: isDark ? 'rgba(217, 135, 11, 0.45)' : 'rgba(217, 135, 11, 0.35)',
+                  },
+                ]}
+                onPress={() => {
+                  setLocModalVisible(false);
+                  setMapModalVisible(true);
+                }}
+                activeOpacity={0.75}
+              >
+                <View
+                  style={[
+                    styles.dropdownIconTile44,
+                    {
+                      backgroundColor: isDark ? 'rgba(217, 135, 11, 0.28)' : 'rgba(217, 135, 11, 0.18)',
+                    },
+                  ]}
+                >
+                  <AnimatedIcon
+                    family="feather"
+                    name="map"
+                    size={20}
+                    color={LF_COLOR}
+                    animation="pulse"
+                  />
+                </View>
+                <View style={styles.dropdownInfo}>
+                  <Text
+                    style={[
+                      styles.optionTitle,
+                      { color: isDark ? '#fbbf24' : '#b45309', fontFamily: FontFamily.jakartaBold },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {isBn ? 'ইন্টারেক্টিভ ম্যাপ ও জিপিএস' : 'Interactive Map & GPS'}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.optionSub,
+                      { color: C.textMuted, fontFamily: FontFamily.jakartaRegular },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {isBn ? 'মিরপুর বা ক্যাম্পাসের বাইরের সঠিক অবস্থান পিন করুন' : 'Pin exact off-campus, transit, or Mirpur spot'}
+                  </Text>
+                </View>
+                <View style={styles.dropdownChevBox}>
+                  <Feather name="arrow-up-right" size={18} color={LF_COLOR} />
+                </View>
+              </TouchableOpacity>
+
+              {/* Option 3: BUBT Campus Presets (Strict 72dp Cards) */}
+              <Text style={[styles.sheetSectionLabel, { color: C.text2, fontFamily: FontFamily.jakartaBold, marginTop: 14 }]}>
+                {isBn ? 'BUBT ক্যাম্পাস স্পট সমূহ' : 'BUBT CAMPUS PRESETS'}
+              </Text>
+              <View style={{ gap: 9 }}>
+                {BUBT_CAMPUS_HUBS.map((hub) => {
+                  const hubName = isBn ? hub.nameBn : hub.name;
+                  const isSelected = loc === hubName || loc === hub.name || loc === hub.nameBn;
+                  return (
+                    <TouchableOpacity
+                      key={hub.id}
+                      style={[
+                        styles.optionCard72,
+                        {
+                          backgroundColor: isSelected ? LF_BG : (isDark ? C.surface2 : '#ffffff'),
+                          borderColor: isSelected ? LF_COLOR : C.border,
+                          borderWidth: isSelected ? 1.5 : 1,
+                        },
+                      ]}
+                      onPress={() => {
+                        setLoc(hubName);
+                        setLocInputText(hubName);
+                        setLocModalVisible(false);
+                      }}
+                      activeOpacity={0.75}
+                    >
+                      <View
+                        style={[
+                          styles.dropdownIconTile44,
+                          {
+                            backgroundColor: isSelected
+                              ? (isDark ? 'rgba(217, 135, 11, 0.28)' : 'rgba(217, 135, 11, 0.16)')
+                              : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2),
+                          },
+                        ]}
+                      >
+                        <AnimatedIcon
+                          family="feather"
+                          name={hub.icon}
+                          size={20}
+                          color={isSelected ? LF_COLOR : C.text2}
+                          animation={isSelected ? 'spring' : 'none'}
+                        />
+                      </View>
+                      <View style={styles.dropdownInfo}>
+                        <Text
+                          style={[
+                            styles.optionTitle,
+                            {
+                              color: isSelected ? (isDark ? '#fbbf24' : '#b45309') : C.text,
+                              fontFamily: isSelected ? FontFamily.jakartaBold : FontFamily.jakartaSemiBold,
+                            },
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {hubName}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.optionSub,
+                            { color: C.textMuted, fontFamily: FontFamily.jakartaRegular },
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {isBn ? hub.subBn : hub.sub}
+                        </Text>
+                      </View>
+                      <View style={styles.dropdownChevBox}>
+                        {isSelected ? (
+                          <View style={[styles.checkCircle, { backgroundColor: LF_COLOR }]}>
+                            <Feather name="check" size={13} color="#ffffff" />
+                          </View>
+                        ) : (
+                          <View style={[styles.emptyCircle, { borderColor: C.border }]} />
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Unified Interactive Map & GPS Picker Modal */}
       <LocationPickerModal
         visible={mapModalVisible}
         onClose={() => setMapModalVisible(false)}
         accentColor={SectorColors.lostfound}
-        title="Pick Lost / Found Location"
+        title={type === 'Lost' ? (isBn ? 'হারানোর স্থান নির্বাচন করুন' : 'Pick Lost Location') : (isBn ? 'পাওয়ার স্থান নির্বাচন করুন' : 'Pick Found Location')}
         initialPlaceName={loc}
         onSelectLocation={(place) => {
           setLoc(place.formattedAddress);
+          setLocInputText(place.formattedAddress);
+          setMapModalVisible(false);
         }}
       />
     </SafeAreaView>
@@ -570,31 +1134,230 @@ const styles = StyleSheet.create({
 
   label: { fontSize: 13, marginBottom: 8, marginTop: 16 } as TextStyle,
 
-  catGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 9,
-  } as ViewStyle,
-
-  catCard: {
-    width: '48.5%',
+  dropdownCard72: {
+    height: 72,
+    borderRadius: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    height: 58,
     paddingHorizontal: 14,
-    borderRadius: 16,
   } as ViewStyle,
 
-  catIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+  dropdownMain: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    minWidth: 0,
+  } as ViewStyle,
+
+  dropdownIconTile44: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
 
-  catLabel: { fontSize: 13.5 } as TextStyle,
+  dropdownInfo: {
+    flex: 1,
+    minWidth: 0,
+    justifyContent: 'center',
+  } as ViewStyle,
+
+  dropdownTitle: {
+    fontSize: 15,
+    lineHeight: 20,
+  } as TextStyle,
+
+  dropdownSub: {
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 2,
+  } as TextStyle,
+
+  dropdownChevBox: {
+    width: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+
+  dropdownRightBtns: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginLeft: 8,
+  } as ViewStyle,
+
+  clearPill32: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+
+  mapMiniBtn36: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+
+  optionCard72: {
+    height: 72,
+    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    gap: 12,
+  } as ViewStyle,
+
+  optionTitle: {
+    fontSize: 15,
+    lineHeight: 20,
+  } as TextStyle,
+
+  optionSub: {
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 2,
+  } as TextStyle,
+
+  checkCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+
+  emptyCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 1.5,
+  } as ViewStyle,
+
+  sheetOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    justifyContent: 'flex-end',
+  } as ViewStyle,
+
+  sheetBackdrop: {
+    ...StyleSheet.absoluteFill as ViewStyle,
+  } as ViewStyle,
+
+  sheetHandle: {
+    alignItems: 'center',
+    paddingTop: 10,
+    paddingBottom: 6,
+  } as ViewStyle,
+
+  sheetHandleBar: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+  } as ViewStyle,
+
+  sheetContent: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    paddingHorizontal: 18,
+    paddingTop: 4,
+  } as ViewStyle,
+
+  sheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(150, 150, 150, 0.15)',
+  } as ViewStyle,
+
+  sheetHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+    minWidth: 0,
+  } as ViewStyle,
+
+  sheetHeaderIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+
+  sheetTitle: {
+    fontSize: 16,
+    lineHeight: 21,
+  } as TextStyle,
+
+  sheetSub: {
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 2,
+  } as TextStyle,
+
+  sheetCloseBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 11,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
+  } as ViewStyle,
+
+  sheetSectionLabel: {
+    fontSize: 11.5,
+    letterSpacing: 0.6,
+    marginBottom: 8,
+  } as TextStyle,
+
+  locInputRow58: {
+    height: 58,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  } as ViewStyle,
+
+  locInputText58: {
+    flex: 1,
+    height: 58,
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    fontSize: 14.5,
+  } as TextStyle,
+
+  locSetBtn: {
+    height: 58,
+    paddingHorizontal: 18,
+    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  } as ViewStyle,
+
+  locSetBtnTxt: {
+    fontSize: 14,
+    color: '#ffffff',
+  } as TextStyle,
+
+  mapActionCard72: {
+    borderStyle: 'solid',
+  } as ViewStyle,
 
   matchWrap: {
     marginTop: 14,
@@ -628,26 +1391,6 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     paddingHorizontal: 16,
     fontSize: 14.5,
-  } as TextStyle,
-
-  quickLocRow: {
-    flexDirection: 'row',
-    gap: 6,
-    paddingTop: 8,
-    paddingBottom: 2,
-  } as ViewStyle,
-  quickLocChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    minHeight: 38,
-    borderRadius: 10,
-    borderWidth: 1,
-  } as ViewStyle,
-  quickLocTxt: {
-    fontSize: 12,
   } as TextStyle,
 
   textarea: {
