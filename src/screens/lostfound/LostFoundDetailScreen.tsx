@@ -16,13 +16,13 @@ import { Icon } from '../../components/ui/Icon';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { LoadError } from '../../components/ui/LoadState';
 import { FontFamily, Layout, SectorColors, Accent } from '../../theme';
-import { supabase } from '../../lib/supabase';
+import { supabase, supabaseUrl } from '../../lib/supabase';
 import { fetchPeople } from '../../services/peopleService';
 import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 import { formatRelativeTime } from '../../utils/format';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
-import { openUrl, waHref } from '../../utils/link';
+import { openUrl } from '../../utils/link';
 import { rankMatches, type MatchItem } from '../../utils/lostFoundMatch';
 import { uploadProof, deleteFile, getSignedUrl } from '../../utils/storage';
 import { ContactSheet } from '../../components/ui/ContactSheet';
@@ -40,7 +40,7 @@ const CAT_COLOR: Record<string, string> = {
   Personal: Accent.blue, Electronics: SectorColors.lostfound, Documents: Accent.green, Other: Accent.slate,
 };
 const CAT_ICON: Record<string, string> = {
-  Personal: 'user', Electronics: 'phone', Documents: 'layers', Other: 'inbox',
+  Personal: 'user', Electronics: 'smartphone', Documents: 'layers', Other: 'inbox',
 };
 
 interface ClaimRow {
@@ -64,7 +64,8 @@ interface Contact {
 
 export function LostFoundDetailScreen({ route, navigation }: any) {
   const { C } = useTheme();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const isAdmin = profile?.role === 'admin';
   const t = useT();
   // Hooks must run unconditionally - the missing-param bail-out lives below them.
   const { itemId } = route.params ?? {};
@@ -115,7 +116,6 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
   const myPendingClaim = claims.find(c => c.claimant_id === user?.id && c.status === 'Pending') ?? null;
   const myActiveClaim = myApprovedClaim || myPendingClaim;
   const myRejectedClaim = claims.find(c => c.claimant_id === user?.id && c.status === 'Rejected') ?? null;
-  const myClaim = myActiveClaim || myRejectedClaim;
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -344,7 +344,7 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
   }
 
   function handleDeleteItem() {
-    if (!item || !isMine) return;
+    if (!item || (!isMine && !isAdmin)) return;
     Alert.alert(
       t.lf.deletePostTitle,
       t.lf.deletePostBody,
@@ -376,10 +376,39 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
     );
   }
 
+  function handleWithdrawClaim() {
+    if (!myPendingClaim || busy) return;
+    Alert.alert(
+      'Withdraw claim?',
+      'Are you sure you want to withdraw your pending claim?',
+      [
+        { text: t.common.cancel, style: 'cancel' },
+        {
+          text: 'Withdraw',
+          style: 'destructive',
+          onPress: async () => {
+            setBusy(true);
+            const proofPath = myPendingClaim.proof_url;
+            const { error } = await supabase.from('claims').delete().eq('id', myPendingClaim.id);
+            setBusy(false);
+            if (error) {
+              toast({ type: 'error', title: t.common.error, message: error.message });
+              return;
+            }
+            if (proofPath && !proofPath.startsWith('http')) {
+              await deleteFile(BUCKETS.proofs, proofPath).catch(() => {});
+            }
+            await load();
+          },
+        },
+      ],
+    );
+  }
+
   async function viewProof(claim: ClaimRow) {
     if (!claim.proof_url) return;
     let url: string | null = null;
-    if (claim.proof_url.startsWith('https://xhgpxvyqrufbbuivttmi.supabase.co/')) {
+    if (claim.proof_url.startsWith(`${supabaseUrl}/`)) {
       url = claim.proof_url;
     } else if (!claim.proof_url.startsWith('http')) {
       url = await getSignedUrl(BUCKETS.proofs, claim.proof_url);
@@ -396,7 +425,7 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
   if (!item) {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-        <SubBar title="Lost & Found" onBack={() => navigation.goBack()} />
+        <SubBar title={t.lf.title} onBack={() => navigation.goBack()} />
         <View style={styles.center}>
           {notFound ? (
             <Text style={{ color: C.textMuted, fontFamily: FontFamily.jakartaMedium }}>{t.common.notFound}</Text>
@@ -422,7 +451,7 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-      <SubBar title="Lost & Found" onBack={() => navigation.goBack()} />
+      <SubBar title={t.lf.title} onBack={() => navigation.goBack()} />
       <OfflineBanner
         visible={isOffline}
         message="Showing cached item details. Connect to the internet to submit claims or manage item."
@@ -479,7 +508,7 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
         </View>
 
         <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
-          DETAILS
+          {t.lf.detailsLabel}
         </Text>
         <Text style={[styles.body, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
           {item.description}
@@ -532,8 +561,8 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
           </View>
         </View>
 
-        {/* Owner Management Controls */}
-        {isMine && (
+        {/* Owner / Admin Management Controls */}
+        {(isMine || isAdmin) && (
           <View style={[styles.ownerCard, { backgroundColor: C.surface, borderColor: C.border }]}>
             <View style={styles.ownerHeader}>
               <Feather name="shield" size={13} color={C.textMuted} />
@@ -542,18 +571,20 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
               </Text>
             </View>
             <View style={styles.ownerActionsRow}>
-              <TouchableOpacity
-                style={[styles.ownerBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
-                onPress={() => navigation.navigate('LostFoundEdit', { itemId: item.id })}
-                activeOpacity={0.75}
-              >
-                <Feather name="edit-2" size={13} color={C.text} />
-                <Text style={[styles.ownerBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                  {t.lf.editPost}
-                </Text>
-              </TouchableOpacity>
+              {isMine && (
+                <TouchableOpacity
+                  style={[styles.ownerBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+                  onPress={() => navigation.navigate('LostFoundEdit', { itemId: item.id })}
+                  activeOpacity={0.75}
+                >
+                  <Feather name="edit-2" size={13} color={C.text} />
+                  <Text style={[styles.ownerBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    {t.lf.editPost}
+                  </Text>
+                </TouchableOpacity>
+              )}
 
-              {!resolved && (
+              {isMine && !resolved && (
                 <TouchableOpacity
                   style={[styles.ownerBtn, { backgroundColor: C.successBg, borderColor: C.success }]}
                   onPress={handleMarkResolved}
@@ -764,6 +795,19 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
             <Text style={[styles.myClaimTxt, { color: claimBadge(myActiveClaim.status).fg, fontFamily: FontFamily.jakartaBold }]}>
               {myActiveClaim.status === 'Approved' ? t.lostfound.claimStatusApproved : t.lostfound.claimStatusPending}
             </Text>
+            {myActiveClaim.status === 'Pending' && (
+              <TouchableOpacity
+                style={[styles.withdrawClaimBtn, { backgroundColor: C.dangerBg, borderColor: C.danger }]}
+                onPress={handleWithdrawClaim}
+                disabled={busy}
+                activeOpacity={0.75}
+              >
+                <Feather name="x-circle" size={13} color={C.danger} />
+                <Text style={[styles.withdrawClaimTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
+                  Withdraw
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
 
@@ -1107,8 +1151,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    height: 42,
-    borderRadius: 10,
+    height: 48,
+    borderRadius: 12,
     borderWidth: 1,
   } as ViewStyle,
   ownerBtnTxt: {
@@ -1124,6 +1168,19 @@ const styles = StyleSheet.create({
     marginTop: 18,
   } as ViewStyle,
   myClaimTxt: { flex: 1, fontSize: 13, lineHeight: 18 } as any,
+  withdrawClaimBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+    minHeight: 36,
+    borderRadius: 10,
+    borderWidth: 1,
+  } as ViewStyle,
+  withdrawClaimTxt: {
+    fontSize: 12,
+  } as TextStyle,
 
   myRejectedCard: {
     borderRadius: 14,
@@ -1141,8 +1198,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    height: 40,
-    borderRadius: 10,
+    height: 48,
+    borderRadius: 12,
     borderWidth: 1,
     marginTop: 4,
   } as ViewStyle,
@@ -1166,8 +1223,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    height: 46,
-    borderRadius: 12,
+    height: 58,
+    borderRadius: 16,
     borderWidth: 1.5,
     borderStyle: 'dashed',
   } as ViewStyle,

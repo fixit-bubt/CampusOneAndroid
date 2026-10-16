@@ -17,16 +17,17 @@ import { FontFamily, Layout, SectorColors, Accent, pillBg } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { localToday } from '../../utils/format';
 import { rankMatches, type MatchItem } from '../../utils/lostFoundMatch';
-import { uploadPhoto } from '../../utils/storage';
+import { uploadPhoto, deleteFile } from '../../utils/storage';
+import { BUCKETS } from '../../constants/app';
 import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 import type { LostFoundItem } from '../../types/database';
 import { useT } from '../../i18n';
 
 const LF_CATS: { id: LostFoundItem['category']; icon: string; fg: string; en: string }[] = [
-  { id: 'Personal',    icon: 'user',   fg: Accent.blue, en: 'Personal' },
-  { id: 'Electronics', icon: 'phone',  fg: SectorColors.lostfound, en: 'Electronics' },
-  { id: 'Documents',   icon: 'layers', fg: Accent.green, en: 'Documents' },
-  { id: 'Other',       icon: 'inbox',  fg: Accent.slate, en: 'Other' },
+  { id: 'Personal',    icon: 'user',       fg: Accent.blue, en: 'Personal' },
+  { id: 'Electronics', icon: 'smartphone', fg: SectorColors.lostfound, en: 'Electronics' },
+  { id: 'Documents',   icon: 'layers',     fg: Accent.green, en: 'Documents' },
+  { id: 'Other',       icon: 'inbox',      fg: Accent.slate, en: 'Other' },
 ];
 
 const QUICK_LOCATIONS = [
@@ -43,6 +44,13 @@ const QUICK_LOCATIONS = [
 function hexAlpha(hex: string, a: number) {
   const n = parseInt(hex.slice(1), 16);
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+}
+
+function extractPhotoStoragePath(url: string | null): string | null {
+  if (!url) return null;
+  const marker = `/storage/v1/object/public/${BUCKETS.photos}/`;
+  const idx = url.indexOf(marker);
+  return idx !== -1 ? url.slice(idx + marker.length) : null;
 }
 
 export function PostItemFormScreen({ route, navigation }: any) {
@@ -62,6 +70,7 @@ export function PostItemFormScreen({ route, navigation }: any) {
   const [err, setErr]     = useState('');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [existingPhotoUrl, setExistingPhotoUrl] = useState<string | null>(null);
+  const [originalPhotoUrl, setOriginalPhotoUrl] = useState<string | null>(null);
   const [photoPickerVisible, setPhotoPickerVisible] = useState(false);
   const [mapModalVisible, setMapModalVisible] = useState(false);
   const [matches, setMatches] = useState<MatchItem[]>([]);
@@ -87,6 +96,7 @@ export function PostItemFormScreen({ route, navigation }: any) {
         setLoc(data.location ?? '');
         setDesc(data.description ?? '');
         setExistingPhotoUrl(data.photo_url ?? null);
+        setOriginalPhotoUrl(data.photo_url ?? null);
       }
     })();
   }, [editId]);
@@ -158,6 +168,7 @@ export function PostItemFormScreen({ route, navigation }: any) {
     setBusy(true);
     setErr('');
     let photoUrl: string | null = existingPhotoUrl;
+    let uploadedPath: string | null = null;
     if (photoUri) {
       const up = await uploadPhoto(photoUri, 'lostfound', user.id);
       if (!up.success) {
@@ -166,6 +177,7 @@ export function PostItemFormScreen({ route, navigation }: any) {
         return;
       }
       photoUrl = up.url;
+      uploadedPath = up.path;
     }
 
     if (isEdit) {
@@ -185,8 +197,17 @@ export function PostItemFormScreen({ route, navigation }: any) {
 
       setBusy(false);
       if (error) {
+        if (uploadedPath) {
+          await deleteFile(BUCKETS.photos, uploadedPath).catch(() => {});
+        }
         setErr(error.message);
       } else {
+        if (originalPhotoUrl && originalPhotoUrl !== photoUrl) {
+          const oldPath = extractPhotoStoragePath(originalPhotoUrl);
+          if (oldPath) {
+            await deleteFile(BUCKETS.photos, oldPath).catch(() => {});
+          }
+        }
         if (data) {
           const cached = await getCache<LostFoundItem[]>(CacheKeys.LOST_FOUND);
           if (cached) {
@@ -217,6 +238,9 @@ export function PostItemFormScreen({ route, navigation }: any) {
 
       setBusy(false);
       if (error) {
+        if (uploadedPath) {
+          await deleteFile(BUCKETS.photos, uploadedPath).catch(() => {});
+        }
         setErr(error.message);
       } else {
         if (data) {
@@ -557,20 +581,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 11,
-    borderRadius: 14,
+    height: 58,
+    paddingHorizontal: 14,
+    borderRadius: 16,
   } as ViewStyle,
 
   catIcon: {
-    width: 32,
-    height: 32,
+    width: 36,
+    height: 36,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
 
-  catLabel: { fontSize: 13 } as TextStyle,
+  catLabel: { fontSize: 13.5 } as TextStyle,
 
   matchWrap: {
     marginTop: 14,
@@ -599,10 +623,10 @@ const styles = StyleSheet.create({
   matchLoc: { fontSize: 11.5, marginTop: 1 } as TextStyle,
 
   input: {
-    height: 48,
-    borderRadius: 13,
+    height: 58,
+    borderRadius: 16,
     borderWidth: 1.5,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     fontSize: 14.5,
   } as TextStyle,
 
@@ -627,10 +651,10 @@ const styles = StyleSheet.create({
   } as TextStyle,
 
   textarea: {
-    borderRadius: 13,
+    borderRadius: 16,
     borderWidth: 1.5,
-    paddingHorizontal: 14,
-    paddingTop: 12,
+    paddingHorizontal: 16,
+    paddingTop: 14,
     fontSize: 14.5,
     minHeight: 100,
   } as TextStyle,
@@ -707,8 +731,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 9,
-    height: 48,
-    borderRadius: 13,
+    height: 58,
+    borderRadius: 16,
   } as ViewStyle,
   pickerModalOptTxt: {
     fontSize: 14,

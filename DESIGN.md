@@ -566,3 +566,19 @@ To maintain zero code bloat and unified design integrity across the entire appli
   - **Campus Rides:** Route overview and directions in `RideDetailScreen.tsx`.
   - **Lost & Found:** Item location and handover spot directions in `LostFoundDetailScreen.tsx`.
 
+---
+
+## 20. Campus Bus Transit & Lost & Found Form Control Standards
+
+### 1. Lost & Found 58dp Form Standard & Claim Withdrawal Design
+- **Posting Inputs (`PostItemFormScreen.tsx`):** Title input, location input, and description textarea standardized to the Universal 58dp Standard (`height: 58`, `borderRadius: 16`, `paddingHorizontal: 16`).
+- **Category Trigger Cards:** Category buttons standardized to `height: 58`, `borderRadius: 16`, `paddingHorizontal: 14`, with `36 × 36 dp` icon boxes.
+- **Claim Withdrawal Action:** Pending claims display a danger pill button (`height: 36`, `borderRadius: 10`, `paddingHorizontal: 11`) allowing claimants to cleanly cancel their claim.
+- **Defensive Storage Hygiene:** Automatic file cleanup on image replacement via `deleteFile`.
+
+### 2. Campus Bus UI & Transport Desk Standards (`BusScreen.tsx`)
+- **Transport Desk Hotline:** Enhanced call button (`height: 44`, `borderRadius: 12`, `paddingHorizontal: 14`) with Feather phone icon.
+- **Weekend Badges:** Deterministic `Sat: HH:MM AM` badges on weekend departures.
+- **Bilingual Transit Link Cards:** Equal typography and responsive text containers for Metro Rail and Hotline cards across English and Bengali.
+
+

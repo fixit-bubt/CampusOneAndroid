@@ -1,7 +1,7 @@
-import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
+import { useState, useCallback, useRef, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Image,
-  RefreshControl, Keyboard, Modal, KeyboardAvoidingView, Animated, type ViewStyle, type TextStyle,
+  RefreshControl, Keyboard, Modal, KeyboardAvoidingView, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -33,7 +33,7 @@ const CAT_COLOR: Record<string, string> = {
 
 const CAT_ICON: Record<string, string> = {
   Personal: 'user',
-  Electronics: 'phone',
+  Electronics: 'smartphone',
   Documents: 'layers',
   Other: 'inbox',
 };
@@ -41,7 +41,7 @@ const CAT_ICON: Record<string, string> = {
 const CATEGORIES: { id: CategoryFilter; icon: string; fg: string }[] = [
   { id: 'All', icon: 'grid', fg: Accent.slate },
   { id: 'Personal', icon: 'user', fg: Accent.blue },
-  { id: 'Electronics', icon: 'phone', fg: SectorColors.lostfound },
+  { id: 'Electronics', icon: 'smartphone', fg: SectorColors.lostfound },
   { id: 'Documents', icon: 'layers', fg: Accent.green },
   { id: 'Other', icon: 'inbox', fg: Accent.slate },
 ];
@@ -123,6 +123,7 @@ export function LostFoundBrowseScreen({ navigation }: any) {
   const { user, profile } = useAuth();
   const insets = useSafeAreaInsets();
   const isStudent = profile?.role === 'student';
+  const isAdmin = profile?.role === 'admin';
   const t = useT();
 
   const [items, setItems] = useState<LostFoundItem[]>([]);
@@ -142,10 +143,8 @@ export function LostFoundBrowseScreen({ navigation }: any) {
 
   const searchInputRef = useRef<TextInput>(null);
 
-
-
   const load = useCallback(async () => {
-    if (profile && !isStudent && profile.role !== 'admin') return;
+    if (profile && !isStudent && !isAdmin) return;
 
     // 1. Optimistic cache load
     const cached = await getCache<LostFoundItem[]>(CacheKeys.LOST_FOUND);
@@ -177,7 +176,7 @@ export function LostFoundBrowseScreen({ navigation }: any) {
       if (!cached || cached.length === 0) setLoadState('error');
       setIsOffline(true);
     }
-  }, [isStudent, profile]);
+  }, [isStudent, isAdmin, profile]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -187,36 +186,63 @@ export function LostFoundBrowseScreen({ navigation }: any) {
     setRefreshing(false);
   }
 
-  // Counts calculated for the segmented track
+  const q = searchQuery.trim().toLowerCase();
+
+  const matchesSearch = useCallback((i: LostFoundItem) => {
+    if (!q) return true;
+    return (
+      (i.title || '').toLowerCase().includes(q) ||
+      (i.location || '').toLowerCase().includes(q) ||
+      (i.description || '').toLowerCase().includes(q) ||
+      (i.category || '').toLowerCase().includes(q)
+    );
+  }, [q]);
+
+  // Counts calculated for the segmented track (scoped by active status, category, and search)
   const counts = useMemo(() => {
-    const base = statusFilter === 'All' ? items : items.filter(i => i.status === statusFilter);
+    const base = items.filter(i => {
+      if (statusFilter === 'Open' && i.status !== 'Open') return false;
+      if (statusFilter === 'Resolved' && i.status !== 'Resolved') return false;
+      if (categoryFilter !== 'All' && i.category !== categoryFilter) return false;
+      return matchesSearch(i);
+    });
     return {
       all: base.length,
       Lost: base.filter(i => i.type === 'Lost').length,
       Found: base.filter(i => i.type === 'Found').length,
       mine: base.filter(i => i.poster_id === user?.id).length,
     };
-  }, [items, statusFilter, user?.id]);
+  }, [items, statusFilter, categoryFilter, matchesSearch, user?.id]);
 
-  // Category counts for modal
+  // Items scoped to the currently active tab + search query for modal filter counts
+  const tabScopedItems = useMemo(() => {
+    return items.filter(i => {
+      if (filter === 'Lost' && i.type !== 'Lost') return false;
+      if (filter === 'Found' && i.type !== 'Found') return false;
+      if (filter === 'mine' && i.poster_id !== user?.id) return false;
+      return matchesSearch(i);
+    });
+  }, [items, filter, user?.id, matchesSearch]);
+
+  // Category counts for modal (scoped to active tab and draft status)
   const catCounts = useMemo(() => {
-    const map: Record<string, number> = { All: items.length };
-    items.forEach(i => {
+    const base = draftStatus === 'All' ? tabScopedItems : tabScopedItems.filter(i => i.status === draftStatus);
+    const map: Record<string, number> = { All: base.length };
+    base.forEach(i => {
       map[i.category] = (map[i.category] ?? 0) + 1;
     });
     return map;
-  }, [items]);
+  }, [tabScopedItems, draftStatus]);
 
-  // Status counts for modal
+  // Status counts for modal (scoped to active tab and draft category)
   const statusCounts = useMemo(() => {
+    const base = draftCategory === 'All' ? tabScopedItems : tabScopedItems.filter(i => i.category === draftCategory);
     return {
-      Open: items.filter(i => i.status === 'Open').length,
-      Resolved: items.filter(i => i.status === 'Resolved').length,
-      All: items.length,
+      Open: base.filter(i => i.status === 'Open').length,
+      Resolved: base.filter(i => i.status === 'Resolved').length,
+      All: base.length,
     };
-  }, [items]);
-
-  const q = searchQuery.trim().toLowerCase();
+  }, [tabScopedItems, draftCategory]);
 
   const filteredList = useMemo(() => {
     return items
@@ -235,16 +261,8 @@ export function LostFoundBrowseScreen({ navigation }: any) {
         if (categoryFilter === 'All') return true;
         return i.category === categoryFilter;
       })
-      .filter(i => {
-        if (!q) return true;
-        return (
-          (i.title || '').toLowerCase().includes(q) ||
-          (i.location || '').toLowerCase().includes(q) ||
-          (i.description || '').toLowerCase().includes(q) ||
-          (i.category || '').toLowerCase().includes(q)
-        );
-      });
-  }, [items, filter, statusFilter, categoryFilter, q, user?.id]);
+      .filter(matchesSearch);
+  }, [items, filter, statusFilter, categoryFilter, matchesSearch, user?.id]);
 
   // Count active non-default filters
   const appliedFiltersCount = useMemo(() => {
@@ -280,9 +298,9 @@ export function LostFoundBrowseScreen({ navigation }: any) {
   }
 
   const TABS: TabItem<TabFilter>[] = useMemo(() => [
-    { id: 'Lost',  label: t.lf.lost,  count: counts.Lost,  color: C.danger },
-    { id: 'Found', label: t.lf.found, count: counts.Found, color: C.success },
-    { id: 'mine',  label: 'Mine',     count: counts.mine,  color: '#8B5CF6' },
+    { id: 'Lost',  label: t.lf.lost,  icon: 'alert-circle', count: counts.Lost,  color: C.danger },
+    { id: 'Found', label: t.lf.found, icon: 'check-circle', count: counts.Found, color: C.success },
+    { id: 'mine',  label: t.lf.mine,  icon: 'user',         count: counts.mine,  color: '#8B5CF6' },
   ], [t.lf, counts.Lost, counts.Found, counts.mine, C.danger, C.success]);
 
   const STATUS_OPTIONS: {
@@ -424,7 +442,7 @@ export function LostFoundBrowseScreen({ navigation }: any) {
         keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={SectorColors.lostfound} />}
       >
-        {!isStudent ? (
+        {!isStudent && !isAdmin ? (
           <View style={styles.empty}>
             <Icon name="found" size={28} color={C.textMuted} />
             <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -492,7 +510,7 @@ export function LostFoundBrowseScreen({ navigation }: any) {
             onPress={() => setFilterModalVisible(false)}
           />
 
-          <View style={[styles.sheetContent, { backgroundColor: C.surface, borderColor: C.border, paddingBottom: Math.max(insets.bottom, 18) }]}>
+          <View style={[styles.sheetContent, { backgroundColor: C.surface, borderColor: C.border, paddingBottom: Math.max(insets.bottom + 12, 20) }]}>
             {/* Grab Handle */}
             <View style={[styles.sheetHandle, { backgroundColor: C.border }]} />
 
@@ -507,7 +525,7 @@ export function LostFoundBrowseScreen({ navigation }: any) {
                     {t.lf.filtersTitle}
                   </Text>
                   <Text style={[styles.sheetSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                    {filteredList.length} items matching
+                    {catCounts[draftCategory] ?? 0} items matching
                   </Text>
                 </View>
               </View>
@@ -546,7 +564,7 @@ export function LostFoundBrowseScreen({ navigation }: any) {
                       activeOpacity={0.75}
                     >
                       <View style={[styles.catOptionIcon, { backgroundColor: selected ? `${fg}28` : bg }]}>
-                        <Feather name={s.icon as any} size={16} color={fg} />
+                        <Feather name={s.icon as any} size={18} color={fg} />
                       </View>
                       <View style={{ flex: 1, minWidth: 0 }}>
                         <Text style={[styles.catOptionTitle, { color: selected ? fg : C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -584,8 +602,8 @@ export function LostFoundBrowseScreen({ navigation }: any) {
                     : t.lf.catOther;
 
                   const hint = cat.id === 'Personal' ? t.lf.catPersonalHint
-                    : cat.id === 'Electronics' ? t.lf.catElectronics
-                    : cat.id === 'Documents' ? t.lf.catDocuments
+                    : cat.id === 'Electronics' ? t.lf.catElectronicsHint
+                    : cat.id === 'Documents' ? t.lf.catDocumentsHint
                     : cat.id === 'Other' ? t.lf.catOtherHint
                     : null;
 
@@ -604,7 +622,7 @@ export function LostFoundBrowseScreen({ navigation }: any) {
                       activeOpacity={0.75}
                     >
                       <View style={[styles.catOptionIcon, { backgroundColor: selected ? `${fg}28` : bg }]}>
-                        <Icon name={cat.icon} size={16} color={fg} />
+                        <Icon name={cat.icon} size={18} color={fg} />
                       </View>
                       <View style={{ flex: 1, minWidth: 0 }}>
                         <Text style={[styles.catOptionTitle, { color: selected ? fg : C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -677,47 +695,6 @@ const styles = StyleSheet.create({
   actBtnTxt: {
     fontSize: 14.5,
   } as any,
-
-  tabContainer: {
-    flexDirection: 'row',
-    borderRadius: 14,
-    padding: 3,
-    marginHorizontal: Layout.screenPadding,
-    marginTop: 6,
-    marginBottom: 8,
-    position: 'relative',
-  } as ViewStyle,
-  activeIndicator: {
-    position: 'absolute',
-    top: 3,
-    left: 3,
-    bottom: 3,
-    borderRadius: 11,
-    borderWidth: 1.5,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1.5 },
-    shadowOpacity: 0.12,
-    shadowRadius: 3,
-  } as ViewStyle,
-  tabBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-    paddingVertical: 8,
-    minHeight: 42,
-    borderRadius: 11,
-    zIndex: 1,
-  } as ViewStyle,
-  tabBtnTxt: { fontSize: 12.5 } as any,
-  tabBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 1.5,
-    borderRadius: 999,
-  } as ViewStyle,
-  tabBadgeTxt: { fontSize: 10.5 } as any,
 
   searchFilterRow: {
     flexDirection: 'row',
@@ -946,20 +923,20 @@ const styles = StyleSheet.create({
 
 
   catOptionsList: {
-    gap: 7,
+    gap: 8,
   } as ViewStyle,
   catOptionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 11,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 14,
+    gap: 12,
+    height: 72,
+    paddingHorizontal: 14,
+    borderRadius: 16,
   } as ViewStyle,
   catOptionIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
@@ -987,8 +964,8 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   sheetResetBtn: {
     flex: 1,
-    height: 44,
-    borderRadius: 12,
+    height: 58,
+    borderRadius: 16,
     borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
@@ -996,18 +973,18 @@ const styles = StyleSheet.create({
     gap: 6,
   } as ViewStyle,
   sheetResetTxt: {
-    fontSize: 13.5,
+    fontSize: 14,
   } as TextStyle,
   sheetApplyBtn: {
     flex: 1,
-    height: 44,
-    borderRadius: 12,
+    height: 58,
+    borderRadius: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
   } as ViewStyle,
   sheetApplyTxt: {
-    fontSize: 13.5,
+    fontSize: 14,
   } as TextStyle,
 });

@@ -1963,6 +1963,25 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 - **Interactive Map & GPS Trigger Card (`styles.mapTriggerCard72`):** Standardized to `height: 72`, `borderRadius: 16`, `44 × 44 dp` icon box, matching the 72dp card row standard.
 - **Multi-Line Text Truncation Safety:** Enforces `numberOfLines={1}` across title, subtitle, and Bengali annotations. Completely eliminates uneven card heights where 1-line and 2-line descriptions produced inconsistent card heights ("some are littel and some are big").
 
+---
+
+## 41. Campus Bus Weekend Transit Logic & Lost & Found Claim Lifecycle Architecture
+
+### 41.1 Campus Bus Weekend Departure & Transport Desk Localization (`BusScreen.tsx`, `transitPrayer.ts`)
+- **Deterministic Weekend Transit Schedules:** Enhanced `nextDeparture()` in `src/utils/transitPrayer.ts` to account for university weekend operations (BUBT operates Saturday to Thursday, Friday closed):
+  - On **Thursday evening** after all buses departed, calculates Saturday morning first bus (+48h) with `nextDayLabel: 'Sat'`.
+  - On **Friday**, calculates Saturday morning first bus (+24h) with `nextDayLabel: 'Sat'`.
+  - Bus card badges clearly display `Sat: HH:MM AM` instead of ambiguous `Tmrw` on Thursdays/Fridays.
+- **Transport Desk & Metro Rail Localization:** Localized Metro Rail & MRT Line-6 campus link and BUBT Transport Desk One Stop Service hotline cards across English and Bengali (`isBn`).
+- **One-Tap Hotline Dialer:** Transport Desk Call button enhanced with `Feather phone` icon, 44dp touch target, and `hitSlop={8}`.
+- **Admin Bus Route Management:** Admin modal form inputs localized (`t.bus2.fieldName`, `fieldArea`, etc.) with `ActivityIndicator` loading state and disabled state on the save button to prevent double-submissions.
+
+### 41.2 Lost & Found Claim Withdrawal & Form 58dp Standard (`LostFoundDetailScreen.tsx`, `PostItemFormScreen.tsx`)
+- **Claim Withdrawal Action:** Claimants who submitted a claim that is still in `Pending` review status can now withdraw it directly from `LostFoundDetailScreen.tsx` with a dedicated `Withdraw` button (`handleWithdrawClaim`). Deletes the pending claim from `claim_requests` and invalidates cache.
+- **Universal 58dp Form Standard:** All text inputs, textareas, and category selector cards in `PostItemFormScreen.tsx` standardized to the Universal 58dp Standard (`height: 58`, `borderRadius: 16`, `paddingHorizontal: 16`).
+- **Defensive Storage File Cleanup:** Automatically removes uploaded photos via `deleteFile(BUCKETS.photos, ...)` on image change or transaction error rollback, preventing orphaned storage bloat in Supabase.
+
+
 
 
 

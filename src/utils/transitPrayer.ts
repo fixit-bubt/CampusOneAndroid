@@ -61,18 +61,40 @@ export interface NextDepartureResult {
   mins: number;
   wait: number;
   tomorrow: boolean;
+  nextDayLabel?: string;
 }
 
 export function nextDeparture(times: string[]): NextDepartureResult | null {
   if (!times || times.length === 0) return null;
   const now = nowDhakaMinutes();
+  const day = dhakaWeekday();
   const sorted = [...times].map(toMinutes).sort((a, b) => a - b);
+  const first = sorted[0];
+
+  if (day === 'Fri') {
+    return {
+      mins: first,
+      wait: 24 * 60 - now + first,
+      tomorrow: true,
+      nextDayLabel: 'Sat',
+    };
+  }
+
   for (const t of sorted) {
     if (t >= now) {
       return { mins: t, wait: t - now, tomorrow: false };
     }
   }
-  const first = sorted[0];
+
+  if (day === 'Thu') {
+    return {
+      mins: first,
+      wait: 48 * 60 - now + first,
+      tomorrow: true,
+      nextDayLabel: 'Sat',
+    };
+  }
+
   return { mins: first, wait: 24 * 60 - now + first, tomorrow: true };
 }
 

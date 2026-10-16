@@ -1,15 +1,16 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, Modal, ScrollView,
-  StyleSheet, RefreshControl, KeyboardAvoidingView, Linking, type ViewStyle,
+  StyleSheet, RefreshControl, KeyboardAvoidingView, Linking, ActivityIndicator, type ViewStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useToast } from '../../components/ui/Toast';
 import { useT } from '../../i18n';
 import { useAuth } from '../../store/authStore';
+import { useApp } from '../../store/appStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
@@ -32,11 +33,6 @@ import type { BusRoute } from '../../types/database';
 const BUS_COLOR = SectorColors.bus;
 const BUS_BG    = `${SectorColors.bus}1e`;
 
-const DIRECTION_TABS: TabItem<'to' | 'from'>[] = [
-  { id: 'to', label: 'To Campus', icon: 'arrow-right' },
-  { id: 'from', label: 'From Campus', icon: 'arrow-left' },
-];
-
 interface RouteForm {
   id: string | null;
   name: string;
@@ -54,8 +50,11 @@ const uncsv = (s: string) => s.split(',').map(x => x.trim()).filter(Boolean);
 
 export function BusScreen({ navigation }: any) {
   const { C } = useTheme();
+  const insets = useSafeAreaInsets();
   const toast = useToast();
   const t = useT();
+  const { lang } = useApp();
+  const isBn = lang === 'bn';
   const { user, profile } = useAuth();
   const isAdmin = profile?.role === 'admin';
 
@@ -71,6 +70,15 @@ export function BusScreen({ navigation }: any) {
   const [loadFailed, setLoadFailed] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
   const [form, setForm] = useState<RouteForm | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const directionTabs: TabItem<'to' | 'from'>[] = useMemo(
+    () => [
+      { id: 'to', label: isBn ? 'ক্যাম্পাসে আসা' : 'To Campus', icon: 'arrow-right', accentColor: BUS_COLOR },
+      { id: 'from', label: isBn ? 'ক্যাম্পাস থেকে ফেরা' : 'From Campus', icon: 'arrow-left', accentColor: BUS_COLOR },
+    ],
+    [isBn]
+  );
 
   const load = useCallback(async () => {
     const cachedRoutes = await getCache<BusRoute[]>(CacheKeys.BUS_ROUTES);
@@ -150,7 +158,8 @@ export function BusScreen({ navigation }: any) {
   }
 
   async function saveRoute() {
-    if (!form || !form.name.trim()) return;
+    if (!form || !form.name.trim() || saving) return;
+    setSaving(true);
     const row = {
       name: form.name.trim(),
       area: form.area.trim() || '',
@@ -164,12 +173,22 @@ export function BusScreen({ navigation }: any) {
     };
     if (form.id) {
       const { error } = await supabase.from('bus_routes').update(row).eq('id', form.id);
-      if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }
+      if (error) {
+        setSaving(false);
+        toast({ type: 'error', title: t.common.error, message: error.message });
+        return;
+      }
     } else {
-      const id = form.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40);
+      const slug = form.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
+      const id = slug || `br-${Date.now().toString(36)}`;
       const { error } = await supabase.from('bus_routes').insert({ id, ...row });
-      if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }
+      if (error) {
+        setSaving(false);
+        toast({ type: 'error', title: t.common.error, message: error.message });
+        return;
+      }
     }
+    setSaving(false);
     setForm(null);
     load();
   }
@@ -229,7 +248,7 @@ export function BusScreen({ navigation }: any) {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar
-        title="Bus Schedule"
+        title={t.bus2.scheduleTitle}
         onBack={() => navigation.goBack()}
         rightSlot={isAdmin ? (
           <TouchableOpacity onPress={() => openEditor()} hitSlop={8} activeOpacity={0.7}>
@@ -241,7 +260,7 @@ export function BusScreen({ navigation }: any) {
       {/* 58dp Direction Switcher */}
       <View style={{ paddingHorizontal: Layout.screenPadding, marginTop: 4, marginBottom: 8 }}>
         <SegmentedTabs<'to' | 'from'>
-          tabs={DIRECTION_TABS}
+          tabs={directionTabs}
           activeTab={direction}
           onTabChange={setDirection}
         />
@@ -253,7 +272,7 @@ export function BusScreen({ navigation }: any) {
           <Icon name="search" size={18} color={C.textMuted} />
           <TextInput
             style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-            placeholder="Search route, stop, or area…"
+            placeholder={isBn ? 'রুট, স্টপেজ বা এলাকা খুঁজুন…' : 'Search route, stop, or area…'}
             placeholderTextColor={C.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -281,7 +300,9 @@ export function BusScreen({ navigation }: any) {
           <View style={[styles.noticeBanner, { backgroundColor: C.surface, borderColor: C.warn }]}>
             <Icon name="alert-triangle" size={16} color={C.warn} />
             <Text style={[styles.noticeText, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>
-              Friday service is suspended for regular classes. Special exam or event shuttles may operate.
+              {isBn
+                ? 'শুক্রবার নিয়মিত ক্লাসের শাটল বাস বন্ধ থাকে। বিশেষ পরীক্ষা বা ইভেন্টের বাস চলতে পারে।'
+                : 'Friday service is suspended for regular classes. Special exam or event shuttles may operate.'}
             </Text>
           </View>
         )}
@@ -295,14 +316,20 @@ export function BusScreen({ navigation }: any) {
           >
             <View style={styles.heroTop}>
               <View style={[styles.heroBadge, { backgroundColor: BUS_BG }]}>
-                <AnimatedIcon family="feather" name="clock" size={13} color={BUS_COLOR} animation="spring" />
+                <AnimatedIcon key={direction} family="feather" name="clock" size={13} color={BUS_COLOR} animation="spring" />
                 <Text style={[styles.heroBadgeTxt, { color: BUS_COLOR, fontFamily: FontFamily.jakartaBold }]}>
-                  {direction === 'to' ? 'Next shuttle to campus' : 'Next shuttle from campus'}
+                  {direction === 'to'
+                    ? (isBn ? 'ক্যাম্পাসে যাওয়ার পরবর্তী বাস' : 'Next shuttle to campus')
+                    : (isBn ? 'ক্যাম্পাস থেকে ফেরার পরবর্তী বাস' : 'Next shuttle from campus')}
                 </Text>
               </View>
               <View style={[styles.waitPill, { backgroundColor: hero.tomorrow ? C.surface2 : `${BUS_COLOR}1e` }]}>
                 <Text style={[styles.waitPillTxt, { color: hero.tomorrow ? C.textMuted : BUS_COLOR, fontFamily: FontFamily.jakartaBold }]}>
-                  {hero.tomorrow ? 'Tomorrow' : `in ${fmtCountdown(hero.wait)}`}
+                  {hero.nextDayLabel === 'Sat'
+                    ? (isBn ? 'শনিবার' : 'Saturday')
+                    : hero.tomorrow
+                    ? (isBn ? 'আগামীকাল' : 'Tomorrow')
+                    : `in ${fmtCountdown(hero.wait)}`}
                 </Text>
               </View>
             </View>
@@ -319,7 +346,9 @@ export function BusScreen({ navigation }: any) {
             <View style={[styles.heroFooter, { borderColor: C.border }]}>
               <Text style={[styles.heroMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
                 {hero.route.bus_no ? `${hero.route.bus_no} · ` : ''}
-                {direction === 'to' ? `Starts from ${hero.route.stops?.[0] ?? hero.route.area}` : 'Departs from BUBT Main Campus'}
+                {direction === 'to'
+                  ? (isBn ? `শুরু: ${hero.route.stops?.[0] ?? hero.route.area}` : `Starts from ${hero.route.stops?.[0] ?? hero.route.area}`)
+                  : (isBn ? 'বিইউবিটি মেইন ক্যাম্পাস থেকে ছাড়বে' : 'Departs from BUBT Main Campus')}
               </Text>
               <Feather name="chevron-right" size={16} color={C.textMuted} />
             </View>
@@ -343,7 +372,7 @@ export function BusScreen({ navigation }: any) {
                 activeOpacity={0.75}
               >
                 <Text style={[styles.clearBtnTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
-                  Clear search
+                  {isBn ? 'অনুসন্ধান মুছুন' : 'Clear search'}
                 </Text>
               </TouchableOpacity>
             ) : null}
@@ -382,14 +411,14 @@ export function BusScreen({ navigation }: any) {
                     </View>
 
                     <Text style={[styles.cardStops, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                      {(r.stops ?? []).length} stops · {r.area}
+                      {t.bus2.stopsCount((r.stops ?? []).length)} · {r.area}
                     </Text>
 
                     {matchedStop && (
                       <View style={[styles.matchedPill, { backgroundColor: `${C.brand}14` }]}>
                         <Feather name="map-pin" size={11} color={C.brand} />
                         <Text style={[styles.matchedPillTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
-                          Stops at {matchedStop}
+                          {isBn ? `স্টপেজ: ${matchedStop}` : `Stops at ${matchedStop}`}
                         </Text>
                       </View>
                     )}
@@ -399,7 +428,7 @@ export function BusScreen({ navigation }: any) {
                         <View style={[styles.timeDot, { backgroundColor: BUS_COLOR }]} />
                         <Text style={[styles.timeTxt, { color: BUS_COLOR, fontFamily: FontFamily.jakartaBold }]}>
                           {dep
-                            ? `${dep.tomorrow ? 'Tmrw' : 'Next'}: ${formatTime12(minutesToHHMM(dep.mins))}`
+                            ? `${dep.nextDayLabel === 'Sat' ? 'Sat' : dep.tomorrow ? 'Tmrw' : 'Next'}: ${formatTime12(minutesToHHMM(dep.mins))}`
                             : 'No service'}
                         </Text>
                       </View>
@@ -427,10 +456,12 @@ export function BusScreen({ navigation }: any) {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.transitTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                Metro Rail & Campus Link
+                {isBn ? 'মেট্রোরেল ও ক্যাম্পাস সংযোগ' : 'Metro Rail & Campus Link'}
               </Text>
               <Text style={[styles.transitSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                Pallabi & Mirpur-11 Metro Stations (MRT Line-6) are 5-10 min from Rupnagar Campus.
+                {isBn
+                  ? 'পল্লবী ও মিরপুর-১১ মেট্রো স্টেশন (MRT Line-6) রূপনগর ক্যাম্পাস থেকে ৫-১০ মিনিটের দূরত্বে।'
+                  : 'Pallabi & Mirpur-11 Metro Stations (MRT Line-6) are 5-10 min from Rupnagar Campus.'}
               </Text>
             </View>
           </View>
@@ -443,18 +474,24 @@ export function BusScreen({ navigation }: any) {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.transitTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                BUBT Transport Desk
+                {isBn ? 'বিইউবিটি ট্রান্সপোর্ট ডেস্ক' : 'BUBT Transport Desk'}
               </Text>
               <Text style={[styles.transitSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                One Stop Service Hotline: 01810033740 · Free with BUBT ID
+                {isBn
+                  ? 'ওয়ান স্টপ সার্ভিস হটলাইন: 01810033740 · বিইউবিটি আইডি কার্ডে ফ্রি'
+                  : 'One Stop Service Hotline: 01810033740 · Free with BUBT ID'}
               </Text>
             </View>
             <TouchableOpacity
               style={[styles.callBtn, { backgroundColor: C.success }]}
               onPress={() => Linking.openURL('tel:01810033740')}
+              hitSlop={8}
               activeOpacity={0.8}
             >
-              <Text style={[styles.callBtnTxt, { fontFamily: FontFamily.jakartaBold }]}>Call</Text>
+              <Feather name="phone" size={13} color="#fff" />
+              <Text style={[styles.callBtnTxt, { fontFamily: FontFamily.jakartaBold }]}>
+                {isBn ? 'কল' : 'Call'}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -466,38 +503,42 @@ export function BusScreen({ navigation }: any) {
       <Modal visible={!!form} transparent animationType="slide" onRequestClose={() => setForm(null)}>
         <KeyboardAvoidingView style={styles.overlay} behavior="padding">
           <TouchableOpacity style={{ flex: 1 }} onPress={() => setForm(null)} />
-          <View style={[styles.sheet, { backgroundColor: C.surface }]}>
+          <View style={[styles.sheet, { backgroundColor: C.surface, paddingBottom: Math.max(insets.bottom + 16, 36) }]}>
             <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-              {form?.id ? 'Edit route' : 'Add route'}
+              {form?.id ? t.bus2.editRoute : t.bus2.addRoute}
             </Text>
             <ScrollView style={{ maxHeight: 420 }} keyboardShouldPersistTaps="handled">
               {([
-                ['name', 'Route name *'],
-                ['area', 'Area'],
-                ['bus_no', 'Bus number (e.g. BUBT-07)'],
-                ['helper_name', 'Helper name'],
-                ['helper_phone', 'Helper phone (+8801...)'],
-                ['stops', 'Stops (comma-separated)'],
-                ['to_departures', 'To campus times (06:45, 07:30)'],
-                ['from_departures', 'From campus times (16:30, 18:00)'],
+                ['name', t.bus2.fieldName],
+                ['area', t.bus2.fieldArea],
+                ['bus_no', t.bus2.fieldBusNo],
+                ['helper_name', t.bus2.fieldHelperName],
+                ['helper_phone', t.bus2.fieldHelperPhone],
+                ['stops', t.bus2.fieldStops],
+                ['to_departures', t.bus2.fieldToTimes],
+                ['from_departures', t.bus2.fieldFromTimes],
               ] as [keyof RouteForm, string][]).map(([key, label]) => (
                 <TextInput
                   key={key}
                   style={[styles.sheetInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                   value={(form?.[key] as string) ?? ''}
-                  onChangeText={t => setForm(f => f ? { ...f, [key]: t } : f)}
+                  onChangeText={val => setForm(f => f ? { ...f, [key]: val } : f)}
                   placeholder={label}
                   placeholderTextColor={C.textMuted}
                 />
               ))}
             </ScrollView>
             <TouchableOpacity
-              style={[styles.sheetBtn, { backgroundColor: BUS_COLOR, opacity: form?.name.trim() ? 1 : 0.5 }]}
+              style={[styles.sheetBtn, { backgroundColor: BUS_COLOR, opacity: form?.name.trim() && !saving ? 1 : 0.5 }]}
               onPress={saveRoute}
-              disabled={!form?.name.trim()}
+              disabled={!form?.name.trim() || saving}
               activeOpacity={0.8}
             >
-              <Text style={[styles.sheetBtnTxt, { fontFamily: FontFamily.jakartaBold }]}>{t.bus2.saveRoute}</Text>
+              {saving ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <Text style={[styles.sheetBtnTxt, { fontFamily: FontFamily.jakartaBold }]}>{t.bus2.saveRoute}</Text>
+              )}
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
@@ -560,6 +601,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 9,
     paddingVertical: 4,
     borderRadius: 8,
+    overflow: 'visible',
   } as ViewStyle,
   heroBadgeTxt: {
     fontSize: 12,
@@ -712,9 +754,13 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   } as ViewStyle,
   callBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
+    height: 44,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
   } as ViewStyle,
   callBtnTxt: {
     color: '#fff',

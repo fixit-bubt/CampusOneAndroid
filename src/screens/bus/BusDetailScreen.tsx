@@ -8,6 +8,7 @@ import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
+import { useApp } from '../../store/appStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
@@ -25,11 +26,6 @@ import {
 } from '../../utils/transitPrayer';
 import type { BusRoute } from '../../types/database';
 
-const DIRECTION_TABS: TabItem<'to' | 'from'>[] = [
-  { id: 'to', label: 'To Campus', icon: 'arrow-right' },
-  { id: 'from', label: 'From Campus', icon: 'arrow-left' },
-];
-
 function cleanWhatsAppPhone(phone?: string | null): string {
   if (!phone) return '';
   const digits = phone.replace(/[^0-9]/g, '');
@@ -41,6 +37,8 @@ function cleanWhatsAppPhone(phone?: string | null): string {
 export function BusDetailScreen({ route, navigation }: any) {
   const { C } = useTheme();
   const t = useT();
+  const { lang } = useApp();
+  const isBn = lang === 'bn';
   const { id, initialDirection } = route.params ?? {};
 
   const [busRoute, setBusRoute] = useState<BusRoute | null>(null);
@@ -50,6 +48,14 @@ export function BusDetailScreen({ route, navigation }: any) {
     return Math.floor(nowDhakaMinutes() / 60) >= 12 ? 'from' : 'to';
   });
   const [selectedDepIndex, setSelectedDepIndex] = useState(0);
+
+  const directionTabs: TabItem<'to' | 'from'>[] = useMemo(
+    () => [
+      { id: 'to', label: isBn ? 'ক্যাম্পাসে আসা' : 'To Campus', icon: 'arrow-right', accentColor: SectorColors.bus },
+      { id: 'from', label: isBn ? 'ক্যাম্পাস থেকে ফেরা' : 'From Campus', icon: 'arrow-left', accentColor: SectorColors.bus },
+    ],
+    [isBn]
+  );
 
   useEffect(() => {
     if (!id) { setFailed(true); return; }
@@ -114,6 +120,7 @@ export function BusDetailScreen({ route, navigation }: any) {
   });
 
   const cleanPhone = cleanWhatsAppPhone(busRoute.helper_phone);
+  const cleanFridayNote = (busRoute.friday_note || (isBn ? 'শুক্রবার ও সরকারি ছুটির দিনে নিয়মিত বাস সার্ভিস বন্ধ থাকে।' : 'No regular service on Friday & government holidays.')).replace(/–/g, '-');
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -129,7 +136,7 @@ export function BusDetailScreen({ route, navigation }: any) {
         {/* Direction Switcher (58dp SegmentedTabs) */}
         <View style={{ marginBottom: 12 }}>
           <SegmentedTabs<'to' | 'from'>
-            tabs={DIRECTION_TABS}
+            tabs={directionTabs}
             activeTab={direction}
             onTabChange={setDirection}
           />
@@ -143,23 +150,29 @@ export function BusDetailScreen({ route, navigation }: any) {
           style={styles.nextCard}
         >
           <View style={styles.nextIcon}>
-            <AnimatedIcon family="feather" name="clock" size={24} color="#fff" animation="spring" />
+            <AnimatedIcon key={direction} family="feather" name="clock" size={24} color="#fff" animation="spring" />
           </View>
           <View style={{ flex: 1 }}>
             <View style={styles.heroRow}>
               <Text style={[styles.nextLabel, { fontFamily: FontFamily.jakartaMedium }]}>
-                {direction === 'to' ? 'Next Departure to Campus' : 'Next Departure from Campus'}
+                {direction === 'to'
+                  ? (isBn ? 'ক্যাম্পাসে যাওয়ার পরবর্তী বাস' : 'Next Departure to Campus')
+                  : (isBn ? 'ক্যাম্পাস থেকে ফেরার পরবর্তী বাস' : 'Next Departure from Campus')}
               </Text>
               {nextDep && (
                 <View style={styles.heroCountdownBadge}>
                   <Text style={[styles.heroCountdownTxt, { fontFamily: FontFamily.jakartaBold }]}>
-                    {nextDep.tomorrow ? 'Tomorrow' : `in ${fmtCountdown(nextDep.wait)}`}
+                    {nextDep.nextDayLabel === 'Sat'
+                      ? (isBn ? 'শনিবার' : 'Saturday')
+                      : nextDep.tomorrow
+                      ? (isBn ? 'আগামীকাল' : 'Tomorrow')
+                      : `in ${fmtCountdown(nextDep.wait)}`}
                   </Text>
                 </View>
               )}
             </View>
             <Text style={[styles.nextTime, { fontFamily: FontFamily.jakartaExtraBold }]}>
-              {nextDep ? formatTime12(minutesToHHMM(nextDep.mins)) : 'No departures'}
+              {nextDep ? formatTime12(minutesToHHMM(nextDep.mins)) : (isBn ? 'কোনো ট্রিপ নেই' : 'No departures')}
             </Text>
           </View>
         </LinearGradient>
@@ -168,7 +181,7 @@ export function BusDetailScreen({ route, navigation }: any) {
         {departures.length > 0 && (
           <View style={styles.tripsSection}>
             <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
-              SELECT TRIP TIMETABLE
+              {isBn ? 'ট্রিপের সময়সূচি নির্বাচন করুন' : 'SELECT TRIP TIMETABLE'}
             </Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tripsRow}>
               {departures.map((dep, idx) => {
@@ -195,7 +208,7 @@ export function BusDetailScreen({ route, navigation }: any) {
                         },
                       ]}
                     >
-                      Trip {idx + 1}
+                      {isBn ? `ট্রিপ ${idx + 1}` : `Trip ${idx + 1}`}
                     </Text>
                     <Text
                       style={[
@@ -218,10 +231,10 @@ export function BusDetailScreen({ route, navigation }: any) {
         {/* Timetable Section */}
         <View style={styles.timetableHeader}>
           <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
-            ROUTE STOPS & ARRIVAL TIMES
+            {isBn ? 'স্টপেজ ও পৌঁছানোর সময়' : 'ROUTE STOPS & ARRIVAL TIMES'}
           </Text>
           <Text style={[styles.timetableTripHint, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-            Based on {formatTime12(selectedTimeStr)} departure
+            {isBn ? `${formatTime12(selectedTimeStr)} ছাড়ার সময় অনুযায়ী` : `Based on ${formatTime12(selectedTimeStr)} departure`}
           </Text>
         </View>
 
@@ -255,7 +268,9 @@ export function BusDetailScreen({ route, navigation }: any) {
                   {row.stop}
                 </Text>
                 <Text style={[styles.stopOffset, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                  {row.isFirst ? 'Starting point' : `+${row.minsOffset} min from start`}
+                  {row.isFirst
+                    ? (isBn ? 'শুরুর স্থান' : 'Starting point')
+                    : (isBn ? `শুরু থেকে +${row.minsOffset} মিনিট` : `+${row.minsOffset} min from start`)}
                 </Text>
               </View>
 
@@ -278,10 +293,10 @@ export function BusDetailScreen({ route, navigation }: any) {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.helperRole, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                  Route In-Charge / Helper
+                  {isBn ? 'রুট ইনচার্জ / হেল্পার' : 'Route In-Charge / Helper'}
                 </Text>
                 <Text style={[styles.helperName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                  {busRoute.helper_name || 'Designated Driver'}
+                  {busRoute.helper_name || (isBn ? 'নির্ধারিত ড্রাইভার' : 'Designated Driver')}
                 </Text>
                 <Text style={[styles.helperSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
                   {busRoute.bus_no ? `Bus: ${busRoute.bus_no} · ` : ''}{busRoute.helper_phone || 'Contact via helpline'}
@@ -296,19 +311,19 @@ export function BusDetailScreen({ route, navigation }: any) {
                   onPress={() => Linking.openURL(`tel:${busRoute.helper_phone}`)}
                   activeOpacity={0.75}
                 >
-                  <Feather name="phone" size={15} color={C.text} />
+                  <Feather name="phone" size={16} color={C.text} />
                   <Text style={[styles.actionBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                    Call Helper
+                    {isBn ? 'হেল্পারকে কল করুন' : 'Call Helper'}
                   </Text>
                 </TouchableOpacity>
 
                 {cleanPhone ? (
                   <TouchableOpacity
-                    style={[styles.actionBtn, { backgroundColor: '#10b981', borderColor: '#10b981' }]}
+                    style={[styles.actionBtn, { backgroundColor: '#25D366', borderColor: '#25D366' }]}
                     onPress={() => Linking.openURL(`https://wa.me/${cleanPhone}`)}
                     activeOpacity={0.75}
                   >
-                    <Feather name="message-circle" size={15} color="#fff" />
+                    <Feather name="message-circle" size={16} color="#fff" />
                     <Text style={[styles.actionBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
                       WhatsApp
                     </Text>
@@ -322,32 +337,38 @@ export function BusDetailScreen({ route, navigation }: any) {
         {/* Campus Transport Policies & Rules */}
         <View style={[styles.policyCard, { backgroundColor: C.surface, borderColor: C.border }]}>
           <Text style={[styles.policyHeader, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-            Campus Shuttle Guidelines
+            {isBn ? 'ক্যাম্পাস শাটল বাসের নিয়মাবলি' : 'Campus Shuttle Guidelines'}
           </Text>
 
           <View style={styles.policyRow}>
             <Feather name="shield" size={15} color={SectorColors.bus} />
             <Text style={[styles.policyTxt, { color: C.text2, fontFamily: FontFamily.jakartaRegular }]}>
-              100% free service for BUBT students, faculty, and campus staff.
+              {isBn
+                ? 'বিইউবিটি-এর সকল শিক্ষার্থী, শিক্ষক ও কর্মকর্তাদের জন্য ১০০% ফ্রি সেবা।'
+                : '100% free service for BUBT students, faculty, and campus staff.'}
             </Text>
           </View>
 
           <View style={styles.policyRow}>
             <Feather name="credit-card" size={15} color={C.warn} />
             <Text style={[styles.policyTxt, { color: C.text2, fontFamily: FontFamily.jakartaRegular }]}>
-              Must show your physical BUBT Student ID card when boarding.
+              {isBn
+                ? 'বাসে ওঠার সময় অবশ্যই বিইউবিটি স্টুডেন্ট আইডি কার্ড প্রদর্শন করতে হবে।'
+                : 'Must show your physical BUBT Student ID card when boarding.'}
             </Text>
           </View>
 
           <View style={styles.policyRow}>
             <Feather name="calendar" size={15} color={C.brand} />
             <Text style={[styles.policyTxt, { color: C.text2, fontFamily: FontFamily.jakartaRegular }]}>
-              Operates Saturday to Wednesday. {busRoute.friday_note || 'No service on Friday & government holidays.'}
+              {isBn
+                ? `শনিবার থেকে বৃহস্পতিবার চলাচল করে। ${cleanFridayNote}`
+                : `Operates Saturday to Thursday. ${cleanFridayNote}`}
             </Text>
           </View>
         </View>
 
-        {/* Cross-Feature Synergies */}
+        {/* Cross-Feature Synergies (72dp Standard) */}
         <View style={styles.synergyRow}>
           <TouchableOpacity
             style={[styles.synergyCard, { backgroundColor: C.surface, borderColor: C.border }]}
@@ -355,17 +376,17 @@ export function BusDetailScreen({ route, navigation }: any) {
             activeOpacity={0.75}
           >
             <View style={[styles.synergyIcon, { backgroundColor: `${SectorColors.ride}1e` }]}>
-              <Icon name="ride" size={18} color={SectorColors.ride} />
+              <Icon name="ride" size={20} color={SectorColors.ride} />
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.synergyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                Missed the Bus?
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={[styles.synergyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                {isBn ? 'বাস মিস করেছেন?' : 'Missed the Bus?'}
               </Text>
-              <Text style={[styles.synergySub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                Check student campus rides
+              <Text style={[styles.synergySub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
+                {isBn ? 'সহপাঠীদের ক্যাম্পাস রাইড শেয়ার দেখুন' : 'Check student campus rides'}
               </Text>
             </View>
-            <Feather name="chevron-right" size={15} color={C.textMuted} />
+            <Feather name="chevron-right" size={16} color={C.textMuted} />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -374,17 +395,17 @@ export function BusDetailScreen({ route, navigation }: any) {
             activeOpacity={0.75}
           >
             <View style={[styles.synergyIcon, { backgroundColor: `${SectorColors.lostfound}1e` }]}>
-              <Icon name="lostfound" size={18} color={SectorColors.lostfound} />
+              <Icon name="lostfound" size={20} color={SectorColors.lostfound} />
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.synergyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                Lost Item on Bus?
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={[styles.synergyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                {isBn ? 'বাসে কিছু হারিয়েছেন?' : 'Lost Item on Bus?'}
               </Text>
-              <Text style={[styles.synergySub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                Report in Lost & Found
+              <Text style={[styles.synergySub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
+                {isBn ? 'লস্ট অ্যান্ড ফাউন্ডে পোস্ট করুন' : 'Report in Lost & Found'}
               </Text>
             </View>
-            <Feather name="chevron-right" size={15} color={C.textMuted} />
+            <Feather name="chevron-right" size={16} color={C.textMuted} />
           </TouchableOpacity>
         </View>
 
@@ -414,6 +435,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.18)',
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'visible',
   } as ViewStyle,
   heroRow: {
     flexDirection: 'row',
@@ -492,7 +514,9 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   trackCol: {
     width: 26,
+    alignSelf: 'stretch',
     alignItems: 'center',
+    justifyContent: 'center',
     position: 'relative',
   } as ViewStyle,
   trackDot: {
@@ -504,9 +528,9 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   trackLine: {
     position: 'absolute',
-    top: 12,
+    top: '50%',
+    bottom: -24,
     width: 2,
-    height: 38,
     zIndex: 1,
   } as ViewStyle,
   stopInfo: {
@@ -560,21 +584,21 @@ const styles = StyleSheet.create({
   } as any,
   helperActions: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 10,
     marginTop: 12,
   } as ViewStyle,
   actionBtn: {
     flex: 1,
-    height: 44,
-    borderRadius: 12,
+    height: 58,
+    borderRadius: 16,
     borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 7,
+    gap: 8,
   } as ViewStyle,
   actionBtnTxt: {
-    fontSize: 13,
+    fontSize: 14.5,
   } as any,
 
   policyCard: {
@@ -600,28 +624,29 @@ const styles = StyleSheet.create({
   } as any,
 
   synergyRow: {
-    gap: 9,
+    gap: 10,
   } as ViewStyle,
   synergyCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    borderRadius: 14,
+    height: 72,
+    paddingHorizontal: 14,
+    borderRadius: 16,
     borderWidth: 1,
-    gap: 11,
+    gap: 12,
   } as ViewStyle,
   synergyIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
   synergyTitle: {
-    fontSize: 13,
+    fontSize: 14,
   } as any,
   synergySub: {
     fontSize: 11.5,
-    marginTop: 1,
+    marginTop: 2,
   } as any,
 });
