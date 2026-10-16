@@ -37,10 +37,10 @@ describe('buildViewerHtml', () => {
     expect(darkHtml).toContain('setupDoubleTapZoom');
   });
 
-  it('contains chasing square diamond loader matching website brand animation', () => {
-    expect(darkHtml).toContain('square-diamond');
-    expect(darkHtml).toContain('chase-sq');
-    expect(darkHtml).toContain('@keyframes chase-animation');
+  it('renders clean page placeholders without spinners or loading clutter', () => {
+    expect(darkHtml).toContain('.page-placeholder');
+    expect(darkHtml).not.toContain('.spinner');
+    expect(darkHtml).not.toContain('init-loader');
   });
 });
 

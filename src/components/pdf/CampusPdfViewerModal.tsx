@@ -23,7 +23,6 @@ import {
   prepareDocumentForViewer,
   shareDownloadedPdf,
 } from '../../services/pdf/pdfViewerService';
-import { SquareLoader } from '../ui/SquareLoader';
 
 interface CampusPdfViewerModalProps {
   visible: boolean;
@@ -65,38 +64,6 @@ export function CampusPdfViewerModal({
   // Synchronization refs to eliminate any race condition between WebView boot and document download
   const webViewReadyRef = useRef(false);
   const docPayloadRef = useRef<{ base64?: string; fileUri?: string } | null>(null);
-
-  // Fade animation for document appearance
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-
-  // Fluid breathing pulse animation for document skeleton loading
-  const pulseAnim = useRef(new Animated.Value(0.4)).current;
-
-  useEffect(() => {
-    let anim: Animated.CompositeAnimation | null = null;
-    if (loading) {
-      anim = Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 0.95,
-            duration: 750,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 0.4,
-            duration: 750,
-            useNativeDriver: true,
-          }),
-        ])
-      );
-      anim.start();
-    } else {
-      pulseAnim.setValue(0.4);
-    }
-    return () => {
-      anim?.stop();
-    };
-  }, [loading, pulseAnim]);
 
   const sendDocumentToWebView = useCallback(() => {
     if (!webViewReadyRef.current || !docPayloadRef.current) return;
@@ -147,7 +114,6 @@ export function CampusPdfViewerModal({
 
   useEffect(() => {
     if (visible && fileUrl) {
-      fadeAnim.setValue(0);
       setCurrentPage(1);
       setTotalPages(1);
       webViewReadyRef.current = false;
@@ -160,7 +126,7 @@ export function CampusPdfViewerModal({
       setLocalFileUri(null);
       setErrorMsg(null);
     }
-  }, [visible, fileUrl, initViewer, fadeAnim]);
+  }, [visible, fileUrl, initViewer]);
 
   // Handle messages from the WebView
   const handleMessage = useCallback((event: any) => {
@@ -174,11 +140,6 @@ export function CampusPdfViewerModal({
       } else if (data.type === 'docOpened') {
         setTotalPages(data.totalPages || 1);
         setLoading(false);
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 250,
-          useNativeDriver: true,
-        }).start();
       } else if (data.type === 'pageChange') {
         if (data.page) setCurrentPage(data.page);
         if (data.total) setTotalPages(data.total);
@@ -189,7 +150,7 @@ export function CampusPdfViewerModal({
     } catch {
       // ignore malformed messages
     }
-  }, [fadeAnim, sendDocumentToWebView]);
+  }, [sendDocumentToWebView]);
 
   // Share handler
   const handleShare = useCallback(async () => {
@@ -302,7 +263,7 @@ export function CampusPdfViewerModal({
            ========================================================================= */}
         <View style={styles.viewerWrapper}>
           {htmlUri && (
-            <Animated.View style={[StyleSheet.absoluteFill, { opacity: fadeAnim }]}>
+            <View style={StyleSheet.absoluteFill}>
               <WebView
                 ref={webRef}
                 source={{ uri: htmlUri }}
@@ -322,55 +283,6 @@ export function CampusPdfViewerModal({
                   setLoading(false);
                 }}
               />
-            </Animated.View>
-          )}
-
-          {/* Elegant Document Skeleton Loading Preview */}
-          {loading && !errorMsg && (
-            <View style={[styles.centerOverlay, { backgroundColor: isDark ? '#000000' : '#f1f5f9' }]}>
-              <View style={[styles.skeletonSheet, { backgroundColor: isDark ? '#141416' : '#ffffff', borderColor: isDark ? '#262626' : '#e2e8f0' }]}>
-                {/* Simulated Notice Letterhead & Content with Fluid Pulse Shimmer */}
-                <Animated.View style={{ opacity: pulseAnim, width: '100%' }}>
-                  <View style={styles.skelHeader}>
-                    <View style={[styles.skelCircle, { backgroundColor: isDark ? '#262626' : '#e2e8f0' }]} />
-                    <View style={styles.skelHeaderLines}>
-                      <View style={[styles.skelLine, { width: '80%', height: 10, backgroundColor: isDark ? '#262626' : '#e2e8f0' }]} />
-                      <View style={[styles.skelLine, { width: '55%', height: 7, backgroundColor: isDark ? '#222222' : '#edf2f7', marginTop: 6 }]} />
-                    </View>
-                  </View>
-                  <View style={[styles.skelDivider, { backgroundColor: isDark ? '#222222' : '#e2e8f0' }]} />
-
-                  {/* Simulated Notice Heading */}
-                  <View style={[styles.skelLine, { width: '75%', height: 11, alignSelf: 'center', backgroundColor: isDark ? '#262626' : '#e2e8f0', marginTop: 14 }]} />
-                  <View style={[styles.skelLine, { width: '50%', height: 11, alignSelf: 'center', backgroundColor: isDark ? '#262626' : '#e2e8f0', marginTop: 7 }]} />
-
-                  {/* Simulated Notice Body Paragraphs */}
-                  <View style={{ marginTop: 28, gap: 10 }}>
-                    <View style={[styles.skelLine, { width: '96%', height: 8, backgroundColor: isDark ? '#202022' : '#f1f5f9' }]} />
-                    <View style={[styles.skelLine, { width: '92%', height: 8, backgroundColor: isDark ? '#202022' : '#f1f5f9' }]} />
-                    <View style={[styles.skelLine, { width: '94%', height: 8, backgroundColor: isDark ? '#202022' : '#f1f5f9' }]} />
-                    <View style={[styles.skelLine, { width: '70%', height: 8, backgroundColor: isDark ? '#202022' : '#f1f5f9' }]} />
-                    <View style={{ height: 12 }} />
-                    <View style={[styles.skelLine, { width: '95%', height: 8, backgroundColor: isDark ? '#202022' : '#f1f5f9' }]} />
-                    <View style={[styles.skelLine, { width: '88%', height: 8, backgroundColor: isDark ? '#202022' : '#f1f5f9' }]} />
-                    <View style={[styles.skelLine, { width: '65%', height: 8, backgroundColor: isDark ? '#202022' : '#f1f5f9' }]} />
-                  </View>
-                </Animated.View>
-
-                {/* Signature CampusOne Chasing Squares Diamond Loader */}
-                <View style={styles.diamondLoaderCenter} pointerEvents="none">
-                  <View style={[styles.ambientGlow, { backgroundColor: isDark ? 'rgba(91, 133, 247, 0.16)' : 'rgba(43, 91, 227, 0.10)' }]} />
-                  <SquareLoader scale={0.68} />
-                </View>
-
-                {/* Centered Floating Status Pill */}
-                <View style={[styles.skelStatusPill, { backgroundColor: isDark ? 'rgba(24, 24, 27, 0.96)' : 'rgba(255, 255, 255, 0.96)', borderColor: isDark ? '#3f3f46' : '#cbd5e1' }]}>
-                  <ActivityIndicator size="small" color={C.brand} style={{ marginRight: 8 }} />
-                  <Text style={[styles.skelStatusTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                    {loadingMessage}
-                  </Text>
-                </View>
-              </View>
             </View>
           )}
 
@@ -579,73 +491,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
-  },
-  skeletonSheet: {
-    width: '92%',
-    maxWidth: 420,
-    height: 520,
-    borderRadius: 8,
-    borderWidth: 1,
-    padding: 24,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 16,
-    elevation: 8,
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  skelHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  skelCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-  },
-  skelHeaderLines: {
-    flex: 1,
-  },
-  skelLine: {
-    borderRadius: 4,
-  },
-  skelDivider: {
-    height: 1,
-    width: '100%',
-    marginTop: 16,
-  },
-  diamondLoaderCenter: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingBottom: 48,
-  },
-  ambientGlow: {
-    position: 'absolute',
-    width: 130,
-    height: 130,
-    borderRadius: 65,
-  },
-  skelStatusPill: {
-    position: 'absolute',
-    bottom: 28,
-    alignSelf: 'center',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 24,
-    borderWidth: 1,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  skelStatusTxt: {
-    fontSize: 13,
   },
   errorCard: {
     width: '90%',
