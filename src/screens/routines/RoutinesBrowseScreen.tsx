@@ -2,7 +2,7 @@ import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, FlatList, StyleSheet, Alert,
   TextInput, Modal, Platform, KeyboardAvoidingView,
-  RefreshControl, Image, ActivityIndicator, Dimensions,
+  RefreshControl, Image, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -15,7 +15,6 @@ import { Icon } from '../../components/ui/Icon';
 import { Pill } from '../../components/ui/Pill';
 import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { supabase } from '../../lib/supabase';
-import { getCache, getCacheSync, hasCacheSync, setCache, CacheKeys } from '../../services/cacheService';
 import { uploadFile } from '../../utils/storage';
 import { isImageFile } from '../../utils/imageCompress';
 import { MAX_FILE_SIZE_MB } from '../../constants/app';
@@ -37,31 +36,28 @@ export const BUBT_TIME_SLOTS = [
   { index: 5, label: '04:15 PM to 05:45 PM', short: '04:15 - 05:45' },
 ];
 
-export const BUBT_EXAM_SHIFTS = [
-  { shift: 'Shift 1', label: '09:30 AM to 11:30 AM (Shift 1)', short: '09:30 - 11:30' },
-  { shift: 'Shift 2', label: '01:30 PM to 03:30 PM (Shift 2)', short: '01:30 - 03:30' },
+const DEPARTMENTS = [
+  { code: 'CSE', name: 'Computer Science & Engineering' },
+  { code: 'EEE', name: 'Electrical & Electronic Engineering' },
+  { code: 'BBA', name: 'Business Administration' },
+  { code: 'English', name: 'English' },
+  { code: 'Law', name: 'Law & Justice' },
+  { code: 'Civil', name: 'Civil Engineering' },
+  { code: 'Textile', name: 'Textile Engineering' },
+  { code: 'Economics', name: 'Economics' },
 ];
 
-const DEPARTMENTS = ['CSE', 'EEE', 'BBA', 'English', 'Law', 'Civil', 'Textile', 'Economics'];
-
-interface OfficialRoutine {
-  id: string;
-  type: 'class' | 'exam';
-  title: string;
-  department: string | null;
-  semester: string | null;
-  intake: string | null;
-  section: string | null;
-  file_url: string | null;
-  image_url: string | null;
-  published_by: string | null;
-  created_at: string;
-}
-
-type RoutineTab = 'class' | 'exam' | 'pdfs';
-
-interface MergedSlot extends RoutineSlot {
-  isRetake?: boolean;
+export function normalizeDeptCode(dept: string): string {
+  const d = (dept || '').toLowerCase();
+  if (d.includes('computer') || d.includes('cse')) return 'CSE';
+  if (d.includes('electrical') || d.includes('eee')) return 'EEE';
+  if (d.includes('business') || d.includes('bba')) return 'BBA';
+  if (d.includes('law')) return 'Law';
+  if (d.includes('english')) return 'English';
+  if (d.includes('civil')) return 'Civil';
+  if (d.includes('textile')) return 'Textile';
+  if (d.includes('economics')) return 'Economics';
+  return dept.trim() || 'CSE';
 }
 
 function getOrdinal(n: number) {
@@ -94,6 +90,27 @@ function decodeRoom(roomStr: string) {
   };
 }
 
+interface OfficialRoutine {
+  id: string;
+  type: 'class' | 'exam';
+  title: string;
+  department: string | null;
+  semester: string | null;
+  intake: string | null;
+  section: string | null;
+  file_url: string | null;
+  image_url: string | null;
+  published_by: string | null;
+  created_at: string;
+}
+
+type MainTab = 'my_routine' | 'other_routines' | 'official_pdfs';
+type SubScheduleType = 'class' | 'exam';
+
+interface MergedSlot extends RoutineSlot {
+  isRetake?: boolean;
+}
+
 export function RoutinesBrowseScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
   const { user, profile } = useAuth();
@@ -101,24 +118,28 @@ export function RoutinesBrowseScreen({ navigation }: any) {
   const toast = useToast();
   const canPost = profile?.role === 'admin' || profile?.role === 'staff';
 
-  // 1. Navigation & Tab state (Strict 3 Tabs Max)
-  const [tab, setTab] = useState<RoutineTab>('class');
+  // 1. Primary 58dp Navigation Tabs (Strictly 3 Tabs Max)
+  const [mainTab, setMainTab] = useState<MainTab>('my_routine');
 
-  // 2. Active Department, Intake, Section Context
-  const myDept = profile?.department?.trim() || 'CSE';
+  // Sub-toggle for Class Schedule vs Exam Schedule inside the routine
+  const [subType, setSubType] = useState<SubScheduleType>('class');
+
+  // 2. Personalized User Profile Defaults
+  const myDeptCode = useMemo(() => normalizeDeptCode(profile?.department || 'CSE'), [profile?.department]);
   const myIntake = profile?.intake?.trim() || '51';
-  const mySec = profile?.section?.trim() || '2';
+  const mySec = profile?.section?.trim() || '1';
 
-  const [activeDept, setActiveDept] = useState(myDept);
-  const [activeIntake, setActiveIntake] = useState(myIntake);
-  const [activeSec, setActiveSec] = useState(mySec);
+  // 3. Other Section Explorer State (Dedicated Bar)
+  const [otherDeptCode, setOtherDeptCode] = useState(myDeptCode === 'CSE' ? 'CSE' : 'CSE');
+  const [otherIntake, setOtherIntake] = useState(myIntake === '51' ? '51' : '51');
+  const [otherSec, setOtherSec] = useState(mySec === '1' ? '2' : '1');
 
-  const isViewingMySection =
-    activeDept.toLowerCase() === myDept.toLowerCase() &&
-    activeIntake === myIntake &&
-    activeSec === mySec;
+  // Resolved Active Scope based on active mainTab
+  const activeDept = mainTab === 'my_routine' ? myDeptCode : otherDeptCode;
+  const activeIntake = mainTab === 'my_routine' ? myIntake : otherIntake;
+  const activeSec = mainTab === 'my_routine' ? mySec : otherSec;
 
-  // 3. Class & Exam Slot Data
+  // Data State
   const [classSlots, setClassSlots] = useState<MergedSlot[]>([]);
   const [userRetakeSlots, setUserRetakeSlots] = useState<MergedSlot[]>([]);
   const [examSlots, setExamSlots] = useState<ExamSlot[]>([]);
@@ -127,18 +148,18 @@ export function RoutinesBrowseScreen({ navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // 4. Modals
-  const [sectionModalVisible, setSectionModalVisible] = useState(false);
+  // Modals
+  const [otherPickerVisible, setOtherPickerVisible] = useState(false);
   const [retakeModalVisible, setRetakeModalVisible] = useState(false);
   const [slotDetailModalVisible, setSlotDetailModalVisible] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<MergedSlot | null>(null);
   const [selectedClashSlots, setSelectedClashSlots] = useState<MergedSlot[] | null>(null);
   const [pdfUploadModalVisible, setPdfUploadModalVisible] = useState(false);
 
-  // Section Selector Draft State
-  const [draftDept, setDraftDept] = useState(activeDept);
-  const [draftIntake, setDraftIntake] = useState(activeIntake);
-  const [draftSec, setDraftSec] = useState(activeSec);
+  // Draft state for Other Routine Selector
+  const [draftDept, setDraftDept] = useState(otherDeptCode);
+  const [draftIntake, setDraftIntake] = useState(otherIntake);
+  const [draftSec, setDraftSec] = useState(otherSec);
 
   // Retake Finder State
   const [retakeQuery, setRetakeQuery] = useState('');
@@ -155,14 +176,20 @@ export function RoutinesBrowseScreen({ navigation }: any) {
   const [pickedFile, setPickedFile] = useState<{ uri: string; name: string; mimeType: string } | null>(null);
   const [postingPdf, setPostingPdf] = useState(false);
 
-  // Tab definitions
-  const ROUTINE_TABS: TabItem<RoutineTab>[] = useMemo(() => [
-    { id: 'class', label: t.routines2.tabClassGrid || 'Class Grid', icon: 'calendar', color: SectorColors.routines },
-    { id: 'exam', label: t.routines2.tabExamGrid || 'Exam Grid', icon: 'file-text', color: SectorColors.routines },
-    { id: 'pdfs', label: t.routines2.tabOfficialPdfs || 'Official PDFs', icon: 'download', color: SectorColors.routines },
-  ], [t.routines2]);
+  // 58dp Primary Tabs
+  const MAIN_TABS: TabItem<MainTab>[] = useMemo(() => [
+    { id: 'my_routine', label: 'My Routine', icon: 'calendar', color: SectorColors.routines },
+    { id: 'other_routines', label: 'Other Routines', icon: 'compass', color: C.brand },
+    { id: 'official_pdfs', label: 'Official PDFs', icon: 'download', color: C.text3 },
+  ], [C.brand, C.text3]);
 
-  // Load Faculty lookup for short-codes
+  // 58dp Sub-Toggle Tabs
+  const SUB_TABS: TabItem<SubScheduleType>[] = useMemo(() => [
+    { id: 'class', label: 'Class Schedule', icon: 'clock', color: SectorColors.routines },
+    { id: 'exam', label: 'Exam Schedule', icon: 'file-text', color: SectorColors.routines },
+  ], []);
+
+  // Faculty Map Loader
   const loadFaculty = useCallback(async () => {
     try {
       const { data } = await supabase
@@ -180,16 +207,16 @@ export function RoutinesBrowseScreen({ navigation }: any) {
     } catch {}
   }, []);
 
-  // Main data loader
+  // Main Data Loader with Department Normalization
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
 
-      // A. Load Main Routine Slots for current section
+      // Query routine_slots using normalized department matching
       const { data: slotsData } = await supabase
         .from('routine_slots')
         .select('*')
-        .eq('department', activeDept)
+        .or(`department.eq.${activeDept},department.ilike.%${activeDept}%`)
         .eq('intake', activeIntake)
         .eq('section', activeSec);
 
@@ -198,9 +225,9 @@ export function RoutinesBrowseScreen({ navigation }: any) {
         isRetake: false,
       }));
 
-      // B. If viewing my personal section, load my custom retake slots
+      // If My Routine tab, also fetch personalized retake courses
       let combinedSlots = baseSlots;
-      if (isViewingMySection && user) {
+      if (mainTab === 'my_routine' && user) {
         const { data: customData } = await supabase
           .from('user_custom_routine_slots')
           .select('slot_id, routine_slots(*)')
@@ -220,18 +247,18 @@ export function RoutinesBrowseScreen({ navigation }: any) {
 
       setClassSlots(combinedSlots);
 
-      // C. Load Exam Slots for current section
+      // Query exam_slots
       const { data: examData } = await supabase
         .from('exam_slots')
         .select('*')
-        .eq('department', activeDept)
+        .or(`department.eq.${activeDept},department.ilike.%${activeDept}%`)
         .eq('intake', activeIntake)
         .eq('section', activeSec)
         .order('exam_date', { ascending: true });
 
       setExamSlots((examData as ExamSlot[]) || []);
 
-      // D. Load Official PDF Circulars
+      // Query official PDF circulars
       const { data: pdfsData } = await supabase
         .from('routines')
         .select('*')
@@ -243,7 +270,7 @@ export function RoutinesBrowseScreen({ navigation }: any) {
     } finally {
       setLoading(false);
     }
-  }, [activeDept, activeIntake, activeSec, isViewingMySection, user]);
+  }, [activeDept, activeIntake, activeSec, mainTab, user]);
 
   useEffect(() => {
     loadFaculty();
@@ -288,25 +315,18 @@ export function RoutinesBrowseScreen({ navigation }: any) {
   }, [gridMatrix]);
 
   // Section Selector handlers
-  function openSectionModal() {
-    setDraftDept(activeDept);
-    setDraftIntake(activeIntake);
-    setDraftSec(activeSec);
-    setSectionModalVisible(true);
+  function openOtherPicker() {
+    setDraftDept(otherDeptCode);
+    setDraftIntake(otherIntake);
+    setDraftSec(otherSec);
+    setOtherPickerVisible(true);
   }
 
-  function applySectionSelection() {
-    setActiveDept(draftDept);
-    setActiveIntake(draftIntake);
-    setActiveSec(draftSec);
-    setSectionModalVisible(false);
-  }
-
-  function resetToMyRoutine() {
-    setActiveDept(myDept);
-    setActiveIntake(myIntake);
-    setActiveSec(mySec);
-    setSectionModalVisible(false);
+  function applyOtherSelection() {
+    setOtherDeptCode(draftDept);
+    setOtherIntake(draftIntake);
+    setOtherSec(draftSec);
+    setOtherPickerVisible(false);
   }
 
   // Retake Search
@@ -325,7 +345,6 @@ export function RoutinesBrowseScreen({ navigation }: any) {
         .or(`course_code.ilike.%${clean}%,course_title.ilike.%${clean}%`)
         .limit(30);
 
-      // Filter out slots that belong to the current section
       const filtered = ((data as RoutineSlot[]) || []).filter(
         s => !(s.department === activeDept && s.intake === activeIntake && s.section === activeSec)
       );
@@ -351,7 +370,7 @@ export function RoutinesBrowseScreen({ navigation }: any) {
         }
         throw error;
       }
-      toast({ type: 'success', title: 'Added', message: t.routines2.retakeAdded || 'Added to your personal routine' });
+      toast({ type: 'success', title: 'Added', message: 'Added to your personal routine' });
       await loadData();
     } catch (err: any) {
       Alert.alert(t.common.error, err?.message || 'Could not add retake course.');
@@ -373,16 +392,14 @@ export function RoutinesBrowseScreen({ navigation }: any) {
     } catch {}
   }
 
-  // Handle tap on a cell
+  // Cell Tap handler
   function handleCellPress(slotsInCell: MergedSlot[]) {
     if (slotsInCell.length === 0) return;
     if (slotsInCell.length > 1) {
-      // Clash! Open conflict resolver
       setSelectedClashSlots(slotsInCell);
       setSelectedSlot(null);
       setSlotDetailModalVisible(true);
     } else {
-      // Single slot: open faculty & room details
       setSelectedSlot(slotsInCell[0]);
       setSelectedClashSlots(null);
       setSlotDetailModalVisible(true);
@@ -452,10 +469,45 @@ export function RoutinesBrowseScreen({ navigation }: any) {
     }
   }
 
-  // RENDER: Class Timetable Grid
+  // Selected faculty info for modal
+  const activeFaculty = selectedSlot?.teacher_short_code
+    ? facultyMap[selectedSlot.teacher_short_code.toUpperCase().trim()]
+    : null;
+
+  const decodedActiveRoom = selectedSlot ? decodeRoom(selectedSlot.room) : null;
+
+  // RENDER: Authentic Class Timetable Grid
   function renderClassGrid() {
-    const colWidth = 138;
-    const dayColWidth = 60;
+    const colWidth = 142;
+    const dayColWidth = 66;
+
+    if (classSlots.length === 0) {
+      return (
+        <ScrollView
+          style={styles.gridOuterScroll}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
+          contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
+        >
+          <View style={styles.emptyState}>
+            <Icon name="calendar" size={48} color={C.textMuted} />
+            <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              No Classes Scheduled
+            </Text>
+            <Text style={[styles.emptySub, { color: C.textMuted }]}>
+              Class routine for {activeDept} Intake {activeIntake}-{activeSec} has not been published yet.
+            </Text>
+            {mainTab === 'other_routines' && (
+              <TouchableOpacity
+                style={[styles.primaryBtn58, { backgroundColor: C.brand, marginTop: 16, paddingHorizontal: 24 }]}
+                onPress={openOtherPicker}
+              >
+                <Text style={styles.primaryBtnText}>Choose Another Section</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </ScrollView>
+      );
+    }
 
     return (
       <ScrollView
@@ -467,7 +519,7 @@ export function RoutinesBrowseScreen({ navigation }: any) {
           <View style={[styles.clashBanner, { backgroundColor: '#f8717118', borderColor: '#f87171' }]}>
             <Icon name="alert-triangle" size={18} color="#f87171" />
             <Text style={[styles.clashBannerText, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>
-              {`${clashCount} ${t.routines2.clashDetected || 'Time Conflict Detected'}`}
+              {`${clashCount} Time Conflict Detected between regular and retake classes`}
             </Text>
           </View>
         ) : null}
@@ -493,13 +545,20 @@ export function RoutinesBrowseScreen({ navigation }: any) {
 
             {/* Table Days & Cells */}
             {BUBT_DAYS.map((day) => {
-              const isToday = false; // Could highlight current day
+              const dayClassesCount = BUBT_TIME_SLOTS.reduce(
+                (acc, ts) => acc + (gridMatrix[day][ts.index]?.length || 0),
+                0
+              );
+
               return (
                 <View key={day} style={[styles.dayRow, { borderColor: C.border }]}>
                   {/* Left Sticky Day Cell */}
-                  <View style={[styles.dayNameCell, { width: dayColWidth, backgroundColor: C.surface, borderColor: C.border }]}>
+                  <View style={[styles.dayNameCell, { width: dayColWidth, backgroundColor: C.surface2, borderColor: C.border }]}>
                     <Text style={[styles.dayNameText, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
                       {day}
+                    </Text>
+                    <Text style={[styles.dayCountText, { color: dayClassesCount > 0 ? C.brand : C.textMuted }]}>
+                      {dayClassesCount > 0 ? `${dayClassesCount} class` : 'off'}
                     </Text>
                   </View>
 
@@ -518,19 +577,24 @@ export function RoutinesBrowseScreen({ navigation }: any) {
                           {
                             width: colWidth,
                             backgroundColor: isClash
-                              ? '#f8717114'
+                              ? '#f8717118'
                               : isOccupied
-                              ? (first.isRetake ? '#5c6bc014' : C.surface)
+                              ? (first.isRetake ? '#fbbf2414' : C.surface)
                               : C.bg,
                             borderColor: isClash
                               ? '#f87171'
                               : isOccupied
-                              ? (first.isRetake ? SectorColors.routines : C.border)
+                              ? (first.isRetake ? '#fbbf24' : C.border)
                               : C.border,
-                            borderWidth: isClash || (isOccupied && first.isRetake) ? 1.5 : 0.8,
+                            borderLeftWidth: isOccupied ? 3.5 : 0.8,
+                            borderLeftColor: isClash
+                              ? '#f87171'
+                              : isOccupied
+                              ? (first.isRetake ? '#fbbf24' : SectorColors.routines)
+                              : C.border,
                           },
                         ]}
-                        activeOpacity={isOccupied ? 0.7 : 1}
+                        activeOpacity={isOccupied ? 0.75 : 1}
                         onPress={() => isOccupied && handleCellPress(slotsInCell)}
                       >
                         {isClash ? (
@@ -552,8 +616,8 @@ export function RoutinesBrowseScreen({ navigation }: any) {
                         ) : isOccupied ? (
                           <View style={styles.cellContent}>
                             {first.isRetake ? (
-                              <View style={[styles.badgePill, { backgroundColor: SectorColors.routines, alignSelf: 'flex-start' }]}>
-                                <Text style={styles.badgePillText}>RETAKE</Text>
+                              <View style={[styles.badgePill, { backgroundColor: '#fbbf24', alignSelf: 'flex-start' }]}>
+                                <Text style={[styles.badgePillText, { color: '#000000' }]}>RETAKE</Text>
                               </View>
                             ) : null}
                             <Text style={[styles.cellCourseCode, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -562,14 +626,18 @@ export function RoutinesBrowseScreen({ navigation }: any) {
                             <Text style={[styles.cellMeta, { color: C.brand, fontFamily: FontFamily.jakartaSemiBold }]} numberOfLines={1}>
                               {`FC: ${first.teacher_short_code || 'TBA'}`}
                             </Text>
-                            <Text style={[styles.cellMeta, { color: C.textMuted }]} numberOfLines={1}>
+                            <Text style={[styles.cellMeta, { color: C.text2 }]} numberOfLines={1}>
                               {`R: ${first.room}`}
                             </Text>
-                            <Text style={[styles.cellSub, { color: C.text3 }]} numberOfLines={1}>
+                            <Text style={[styles.cellSub, { color: C.textMuted }]} numberOfLines={1}>
                               {`Intake: ${first.intake} - ${first.section}`}
                             </Text>
                           </View>
-                        ) : null}
+                        ) : (
+                          <View style={styles.emptyCellContainer}>
+                            <Text style={[styles.emptyCellDash, { color: C.border }]}>-</Text>
+                          </View>
+                        )}
                       </TouchableOpacity>
                     );
                   })}
@@ -591,7 +659,7 @@ export function RoutinesBrowseScreen({ navigation }: any) {
       >
         {examSlots.length === 0 ? (
           <View style={styles.emptyState}>
-            <Icon name="calendar" size={44} color={C.textMuted} />
+            <Icon name="calendar" size={48} color={C.textMuted} />
             <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
               No Exams Scheduled
             </Text>
@@ -695,18 +763,11 @@ export function RoutinesBrowseScreen({ navigation }: any) {
     );
   }
 
-  // Selected faculty info for modal
-  const activeFaculty = selectedSlot?.teacher_short_code
-    ? facultyMap[selectedSlot.teacher_short_code.toUpperCase().trim()]
-    : null;
-
-  const decodedActiveRoom = selectedSlot ? decodeRoom(selectedSlot.room) : null;
-
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-      {/* 1. Header SubBar */}
+      {/* 1. Universal Top Header */}
       <SubBar
-        title={t.routines2.title || 'Class & Exam Routines'}
+        title="Class & Exam Routines"
         onBack={() => navigation.goBack()}
         rightSlot={canPost ? (
           <TouchableOpacity onPress={() => setPdfUploadModalVisible(true)} hitSlop={8}>
@@ -715,55 +776,155 @@ export function RoutinesBrowseScreen({ navigation }: any) {
         ) : undefined}
       />
 
-      {/* 2. Strict 3 Segmented Tabs */}
-      <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 6 }}>
-        <SegmentedTabs
-          tabs={ROUTINE_TABS}
-          activeTab={tab}
-          onTabChange={setTab}
+      {/* 2. Universal 58dp Primary Navigation Tabs */}
+      <View style={{ paddingHorizontal: Layout.screenPadding, marginTop: 4, marginBottom: 8 }}>
+        <SegmentedTabs<MainTab>
+          tabs={MAIN_TABS}
+          activeTab={mainTab}
+          onTabChange={setMainTab}
+          size="md"
         />
       </View>
 
-      {/* 3. Dedicated Section Context Row */}
-      {tab !== 'pdfs' ? (
-        <View style={[styles.contextRow, { paddingHorizontal: Layout.screenPadding, borderBottomColor: C.border }]}>
-          <TouchableOpacity
-            style={[styles.sectionPillBtn, { backgroundColor: isViewingMySection ? C.surface : '#f59e0b18', borderColor: isViewingMySection ? C.border : '#f59e0b' }]}
-            onPress={openSectionModal}
-            activeOpacity={0.8}
+      {/* 3. The 72-Size Bar System (Universal CampusOne Bar Architecture) */}
+      <View style={{ paddingHorizontal: Layout.screenPadding, marginBottom: 8 }}>
+        {mainTab === 'my_routine' && (
+          // BAR A: 72dp Personalized Routine Bar
+          <View
+            style={[
+              styles.bar72,
+              {
+                backgroundColor: C.surface,
+                borderColor: C.border,
+                borderLeftColor: SectorColors.routines,
+              },
+            ]}
           >
-            <Icon name="map-pin" size={15} color={isViewingMySection ? C.brand : '#f59e0b'} />
-            <Text style={[styles.sectionPillText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-              {`${activeDept} • Intake ${activeIntake}-${activeSec}`}
-            </Text>
-            <Icon name="chevDown" size={14} color={C.textMuted} />
-          </TouchableOpacity>
-
-          {isViewingMySection ? (
+            <View style={[styles.toolIcon, { backgroundColor: SectorColors.routines + '20' }]}>
+              <Icon name="calendar" size={20} color={SectorColors.routines} />
+            </View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={[styles.barLabel, { color: C.text3, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                MY PERSONAL ROUTINE
+              </Text>
+              <Text style={[styles.barValue, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                {`${myDeptCode} • Intake ${myIntake} · Sec ${mySec}`}
+              </Text>
+              <Text style={[styles.barDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                {userRetakeSlots.length > 0
+                  ? `${userRetakeSlots.length} retake subject${userRetakeSlots.length === 1 ? '' : 's'} added`
+                  : 'Your personal enrolled & retake routine'}
+              </Text>
+            </View>
             <TouchableOpacity
-              style={[styles.actionPillBtn, { backgroundColor: C.brand + '18', borderColor: C.brand }]}
+              style={[styles.addRetakeBtn72, { backgroundColor: SectorColors.routines + '18', borderColor: SectorColors.routines }]}
               onPress={() => { setRetakeQuery(''); searchRetakes(''); setRetakeModalVisible(true); }}
               activeOpacity={0.8}
             >
-              <Icon name="plus" size={14} color={C.brand} />
-              <Text style={[styles.actionPillText, { color: C.brand, fontFamily: FontFamily.jakartaSemiBold }]}>
-                {t.routines2.addRetake || 'Add Retake'}
+              <Icon name="plus" size={13} color={SectorColors.routines} />
+              <Text style={[styles.addRetakeBtnText72, { color: SectorColors.routines, fontFamily: FontFamily.jakartaBold }]}>
+                Retake
               </Text>
             </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              style={[styles.actionPillBtn, { backgroundColor: C.brand, borderColor: C.brand }]}
-              onPress={resetToMyRoutine}
-              activeOpacity={0.8}
-            >
-              <Icon name="corner-up-left" size={14} color="#ffffff" />
-              <Text style={[styles.actionPillText, { color: '#ffffff', fontFamily: FontFamily.jakartaBold }]}>
-                {t.routines2.returnToMine || 'My Routine'}
+          </View>
+        )}
+
+        {mainTab === 'other_routines' && (
+          // BAR B: 72dp Other Section Routine Selector Bar (Only chosen section routine appears)
+          <TouchableOpacity
+            style={[
+              styles.bar72,
+              {
+                backgroundColor: C.surface,
+                borderColor: C.border,
+                borderLeftColor: C.brand,
+              },
+            ]}
+            onPress={openOtherPicker}
+            activeOpacity={0.75}
+          >
+            <View style={[styles.toolIcon, { backgroundColor: C.brand + '20' }]}>
+              <Icon name="compass" size={20} color={C.brand} />
+            </View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={[styles.barLabel, { color: C.text3, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                OTHER SECTION ROUTINE
               </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      ) : null}
+              <Text style={[styles.barValue, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                {`${otherDeptCode} • Intake ${otherIntake} · Sec ${otherSec}`}
+              </Text>
+              <Text style={[styles.barDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                Showing only section {otherSec} · Tap to change
+              </Text>
+            </View>
+            <View style={[styles.switchChip72, { backgroundColor: C.brand + '18', borderColor: C.brand }]}>
+              <Text style={[styles.switchChipText72, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+                Change
+              </Text>
+              <Icon name="chevDown" size={13} color={C.brand} />
+            </View>
+          </TouchableOpacity>
+        )}
+
+        {mainTab === 'official_pdfs' && (
+          // BAR C: 72dp Official PDF Circulars Bar
+          <View
+            style={[
+              styles.bar72,
+              {
+                backgroundColor: C.surface,
+                borderColor: C.border,
+                borderLeftColor: '#ec4899',
+              },
+            ]}
+          >
+            <View style={[styles.toolIcon, { backgroundColor: '#ec489920' }]}>
+              <Icon name="file-text" size={20} color="#ec4899" />
+            </View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={[styles.barLabel, { color: C.text3, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                OFFICIAL CIRCULARS
+              </Text>
+              <Text style={[styles.barValue, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                BUBT Routine Circulars
+              </Text>
+              <Text style={[styles.barDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                Official PDF & image notices from administration
+              </Text>
+            </View>
+            {canPost ? (
+              <TouchableOpacity
+                style={[styles.addRetakeBtn72, { backgroundColor: '#ec489918', borderColor: '#ec4899' }]}
+                onPress={() => setPdfUploadModalVisible(true)}
+                activeOpacity={0.8}
+              >
+                <Icon name="plus" size={13} color="#ec4899" />
+                <Text style={[styles.addRetakeBtnText72, { color: '#ec4899', fontFamily: FontFamily.jakartaBold }]}>
+                  Upload
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={[styles.switchChip72, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                <Text style={[styles.switchChipText72, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
+                  {officialPdfs.length} Notice{officialPdfs.length === 1 ? '' : 's'}
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* 4. Sub-Toggle Bar (Class vs Exam Schedule) inside routine tabs */}
+        {mainTab !== 'official_pdfs' && (
+          <View style={{ marginTop: 2 }}>
+            <SegmentedTabs<SubScheduleType>
+              tabs={SUB_TABS}
+              activeTab={subType}
+              onTabChange={setSubType}
+              size="sm"
+            />
+          </View>
+        )}
+      </View>
 
       {/* 4. Main Body */}
       {loading ? (
@@ -772,46 +933,54 @@ export function RoutinesBrowseScreen({ navigation }: any) {
         </View>
       ) : (
         <View style={{ flex: 1 }}>
-          {tab === 'class' && renderClassGrid()}
-          {tab === 'exam' && renderExamGrid()}
-          {tab === 'pdfs' && renderOfficialPdfs()}
+          {mainTab === 'official_pdfs' && renderOfficialPdfs()}
+          {mainTab !== 'official_pdfs' && subType === 'class' && renderClassGrid()}
+          {mainTab !== 'official_pdfs' && subType === 'exam' && renderExamGrid()}
         </View>
       )}
 
-      {/* MODAL 1: Section Selector Bottom Sheet */}
-      <Modal visible={sectionModalVisible} transparent animationType="slide" onRequestClose={() => setSectionModalVisible(false)}>
+      {/* MODAL 1: Choose Other Section Bottom Sheet (58dp Control System) */}
+      <Modal visible={otherPickerVisible} transparent animationType="slide" onRequestClose={() => setOtherPickerVisible(false)}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.modalBackdrop}>
           <View style={[styles.bottomSheet, { backgroundColor: C.surface, borderColor: C.border }]}>
             <View style={styles.sheetHandle} />
             <View style={styles.sheetHeader}>
               <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                {t.routines2.selectSection || 'Select Section'}
+                Choose Other Section Routine
               </Text>
-              <TouchableOpacity onPress={() => setSectionModalVisible(false)} hitSlop={8}>
+              <TouchableOpacity onPress={() => setOtherPickerVisible(false)} hitSlop={8}>
                 <Icon name="x" size={20} color={C.textMuted} />
               </TouchableOpacity>
             </View>
 
             {/* Department Picker */}
-            <Text style={[styles.fieldLabel, { color: C.text3 }]}>{t.routines2.chooseDept || 'DEPARTMENT'}</Text>
+            <Text style={[styles.fieldLabel, { color: C.text3 }]}>DEPARTMENT</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.deptScroll}>
               {DEPARTMENTS.map((d) => (
                 <TouchableOpacity
-                  key={d}
-                  style={[styles.deptChip, { backgroundColor: draftDept === d ? C.brand : C.surface2, borderColor: draftDept === d ? C.brand : C.border }]}
-                  onPress={() => setDraftDept(d)}
+                  key={d.code}
+                  style={[
+                    styles.deptChip58,
+                    {
+                      backgroundColor: draftDept === d.code ? C.brand : C.surface2,
+                      borderColor: draftDept === d.code ? C.brand : C.border,
+                    },
+                  ]}
+                  onPress={() => setDraftDept(d.code)}
                 >
-                  <Text style={[styles.deptChipText, { color: draftDept === d ? '#ffffff' : C.text }]}>{d}</Text>
+                  <Text style={[styles.deptChipText, { color: draftDept === d.code ? '#ffffff' : C.text }]}>
+                    {d.code}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
 
-            {/* Intake & Section Inputs */}
+            {/* Intake & Section Inputs (58dp Universal Height) */}
             <View style={styles.rowInputs}>
               <View style={{ flex: 1, marginRight: 8 }}>
-                <Text style={[styles.fieldLabel, { color: C.text3 }]}>{t.routines2.chooseIntake || 'INTAKE'}</Text>
+                <Text style={[styles.fieldLabel, { color: C.text3 }]}>INTAKE</Text>
                 <TextInput
-                  style={[styles.textInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text }]}
+                  style={[styles.textInput58, { backgroundColor: C.bg, borderColor: C.border, color: C.text }]}
                   value={draftIntake}
                   onChangeText={setDraftIntake}
                   keyboardType="numeric"
@@ -820,9 +989,9 @@ export function RoutinesBrowseScreen({ navigation }: any) {
                 />
               </View>
               <View style={{ flex: 1, marginLeft: 8 }}>
-                <Text style={[styles.fieldLabel, { color: C.text3 }]}>{t.routines2.chooseSection || 'SECTION'}</Text>
+                <Text style={[styles.fieldLabel, { color: C.text3 }]}>SECTION</Text>
                 <TextInput
-                  style={[styles.textInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text }]}
+                  style={[styles.textInput58, { backgroundColor: C.bg, borderColor: C.border, color: C.text }]}
                   value={draftSec}
                   onChangeText={setDraftSec}
                   keyboardType="numeric"
@@ -832,51 +1001,75 @@ export function RoutinesBrowseScreen({ navigation }: any) {
               </View>
             </View>
 
-            {/* Action Buttons */}
-            <TouchableOpacity style={[styles.primaryBtn, { backgroundColor: C.brand }]} onPress={applySectionSelection}>
-              <Text style={styles.primaryBtnText}>{t.routines2.apply || 'View Routine'}</Text>
-            </TouchableOpacity>
+            {/* Quick Section Pills for 1-Tap Switching */}
+            <Text style={[styles.fieldLabel, { color: C.text3, marginTop: 4 }]}>QUICK SECTION</Text>
+            <View style={styles.quickSecRow}>
+              {['1', '2', '3', '4', '5'].map((sec) => (
+                <TouchableOpacity
+                  key={sec}
+                  style={[
+                    styles.quickSecChip,
+                    {
+                      backgroundColor: draftSec === sec ? C.brand : C.surface2,
+                      borderColor: draftSec === sec ? C.brand : C.border,
+                    },
+                  ]}
+                  onPress={() => setDraftSec(sec)}
+                >
+                  <Text
+                    style={[
+                      styles.quickSecChipText,
+                      {
+                        color: draftSec === sec ? '#ffffff' : C.text,
+                        fontFamily: draftSec === sec ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                      },
+                    ]}
+                  >
+                    Sec {sec}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
 
-            {!isViewingMySection ? (
-              <TouchableOpacity style={[styles.secondaryBtn, { borderColor: C.border }]} onPress={resetToMyRoutine}>
-                <Text style={[styles.secondaryBtnText, { color: C.brand }]}>{t.routines2.returnToMine || 'Reset to My Routine'}</Text>
-              </TouchableOpacity>
-            ) : null}
+            {/* Apply 58dp Primary Button */}
+            <TouchableOpacity style={[styles.primaryBtn58, { backgroundColor: C.brand }]} onPress={applyOtherSelection}>
+              <Text style={styles.primaryBtnText}>Show Only This Section Routine</Text>
+            </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
       </Modal>
 
-      {/* MODAL 2: Retake Course Finder & Clash Checker */}
+      {/* MODAL 2: Retake Finder & Clash Checker */}
       <Modal visible={retakeModalVisible} transparent animationType="slide" onRequestClose={() => setRetakeModalVisible(false)}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.modalBackdrop}>
           <View style={[styles.bottomSheet, { backgroundColor: C.surface, borderColor: C.border, maxHeight: '85%' }]}>
             <View style={styles.sheetHandle} />
             <View style={styles.sheetHeader}>
               <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                {t.routines2.searchRetake || 'Find Retake Subject'}
+                Add Retake / Improvement Subject
               </Text>
               <TouchableOpacity onPress={() => setRetakeModalVisible(false)} hitSlop={8}>
                 <Icon name="x" size={20} color={C.textMuted} />
               </TouchableOpacity>
             </View>
 
-            {/* Search Input */}
-            <View style={[styles.searchBox, { backgroundColor: C.bg, borderColor: C.border }]}>
+            {/* 58dp Search Input */}
+            <View style={[styles.searchBox58, { backgroundColor: C.bg, borderColor: C.border }]}>
               <Icon name="search" size={18} color={C.textMuted} />
               <TextInput
                 style={[styles.searchBoxInput, { color: C.text }]}
                 value={retakeQuery}
                 onChangeText={searchRetakes}
-                placeholder={t.routines2.searchCoursePlaceholder || 'e.g. PHY 101, CSE 467...'}
+                placeholder="Search subject code (e.g. PHY 101, CSE 467...)"
                 placeholderTextColor={C.textMuted}
                 autoFocus
               />
             </View>
 
-            {/* Current Active Retakes List */}
+            {/* Active Retakes */}
             {userRetakeSlots.length > 0 ? (
               <View style={styles.activeRetakesBox}>
-                <Text style={[styles.activeRetakeHeader, { color: C.textMuted }]}>CURRENT RETAKE COURSES</Text>
+                <Text style={[styles.activeRetakeHeader, { color: C.textMuted }]}>CURRENT RETAKE COURSES IN MY ROUTINE</Text>
                 {userRetakeSlots.map((rs) => (
                   <View key={rs.id} style={[styles.activeRetakeRow, { borderColor: C.border }]}>
                     <View>
@@ -896,7 +1089,7 @@ export function RoutinesBrowseScreen({ navigation }: any) {
               {retakeSearching ? (
                 <ActivityIndicator size="small" color={C.brand} style={{ marginVertical: 20 }} />
               ) : retakeSearchResults.length === 0 && retakeQuery.length >= 2 ? (
-                <Text style={[styles.emptyHint, { color: C.textMuted }]}>No matching subjects found.</Text>
+                <Text style={[styles.emptyHint, { color: C.textMuted }]}>No matching sections offering this subject found.</Text>
               ) : (
                 retakeSearchResults.map((slot) => {
                   const day = slot.day_of_week as DayKey;
@@ -922,11 +1115,11 @@ export function RoutinesBrowseScreen({ navigation }: any) {
                         <View style={{ marginTop: 6 }}>
                           {isClashing ? (
                             <Text style={[styles.clashWarningText, { color: '#f87171' }]}>
-                              {`🔴 ${t.routines2.hasClash || 'Clashes with'}: ${existingAtSlot[0].course_code}`}
+                              {`🔴 Clashes with: ${existingAtSlot[0].course_code}`}
                             </Text>
                           ) : (
                             <Text style={[styles.safeBadgeText, { color: C.success }]}>
-                              {`🟢 ${t.routines2.noClash || 'Fits Your Schedule'}`}
+                              🟢 Fits Your Schedule (No Clash!)
                             </Text>
                           )}
                         </View>
@@ -954,13 +1147,13 @@ export function RoutinesBrowseScreen({ navigation }: any) {
         </KeyboardAvoidingView>
       </Modal>
 
-      {/* MODAL 3: Faculty Details & Room Decoded Modal / Clash Resolver */}
+      {/* MODAL 3: Faculty Details & Conflict Resolver */}
       <Modal visible={slotDetailModalVisible} transparent animationType="fade" onRequestClose={() => setSlotDetailModalVisible(false)}>
-        <View style={styles.modalBackdrop}>
+        <View style={styles.modalBackdropCenter}>
           <View style={[styles.dialogCard, { backgroundColor: C.surface, borderColor: C.border }]}>
             <View style={styles.sheetHeader}>
               <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                {selectedClashSlots ? (t.routines2.conflictTitle || 'Schedule Conflict') : (t.routines2.teacherInfo || 'Class & Faculty Details')}
+                {selectedClashSlots ? 'Schedule Conflict' : 'Class & Faculty Details'}
               </Text>
               <TouchableOpacity onPress={() => setSlotDetailModalVisible(false)} hitSlop={8}>
                 <Icon name="x" size={20} color={C.textMuted} />
@@ -968,7 +1161,6 @@ export function RoutinesBrowseScreen({ navigation }: any) {
             </View>
 
             {selectedClashSlots ? (
-              // Clash Conflict Resolver View
               <ScrollView style={{ maxHeight: 380 }}>
                 <View style={[styles.clashWarningBanner, { backgroundColor: '#f8717118', borderColor: '#f87171' }]}>
                   <Icon name="alert-triangle" size={18} color="#f87171" />
@@ -998,9 +1190,7 @@ export function RoutinesBrowseScreen({ navigation }: any) {
                 ))}
               </ScrollView>
             ) : selectedSlot ? (
-              // Single Slot Faculty & Room View
               <ScrollView style={{ maxHeight: 420 }}>
-                {/* Course Header */}
                 <View style={styles.dialogCourseHeader}>
                   <Text style={[styles.dialogCourseCode, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
                     {selectedSlot.course_code}
@@ -1040,9 +1230,7 @@ export function RoutinesBrowseScreen({ navigation }: any) {
 
                 {/* Faculty Card */}
                 <View style={[styles.dialogFacultyCard, { backgroundColor: C.bg, borderColor: C.border }]}>
-                  <Text style={[styles.dialogFacultyTitle, { color: C.textMuted }]}>
-                    {t.routines2.teacherInfo || 'FACULTY INFORMATION'}
-                  </Text>
+                  <Text style={[styles.dialogFacultyTitle, { color: C.textMuted }]}>FACULTY INFORMATION</Text>
                   <View style={styles.facultyRow}>
                     <View style={[styles.facultyAvatar, { backgroundColor: C.brand + '20' }]}>
                       {activeFaculty?.photo_url ? (
@@ -1070,24 +1258,19 @@ export function RoutinesBrowseScreen({ navigation }: any) {
 
                   {activeFaculty?.counseling_hours ? (
                     <View style={[styles.counselingBox, { backgroundColor: C.surface, borderColor: C.border }]}>
-                      <Text style={[styles.counselingLabel, { color: C.brand }]}>
-                        {t.routines2.counselingHours || 'Counseling Hours'}
-                      </Text>
-                      <Text style={[styles.counselingVal, { color: C.text }]}>
-                        {activeFaculty.counseling_hours}
-                      </Text>
+                      <Text style={[styles.counselingLabel, { color: C.brand }]}>Counseling Hours</Text>
+                      <Text style={[styles.counselingVal, { color: C.text }]}>{activeFaculty.counseling_hours}</Text>
                     </View>
                   ) : null}
                 </View>
 
-                {/* If retake: Remove Button */}
                 {selectedSlot.isRetake ? (
                   <TouchableOpacity
                     style={[styles.removeRetakeBtn, { backgroundColor: C.danger + '18', marginTop: 12 }]}
                     onPress={() => removeRetakeSlot(selectedSlot.id)}
                   >
                     <Text style={[styles.removeRetakeBtnText, { color: C.danger }]}>
-                      {t.routines2.removeRetake || 'Remove From Personal Routine'}
+                      Remove From Personal Routine
                     </Text>
                   </TouchableOpacity>
                 ) : null}
@@ -1097,14 +1280,14 @@ export function RoutinesBrowseScreen({ navigation }: any) {
         </View>
       </Modal>
 
-      {/* MODAL 4: Upload PDF Routine (Admin / Staff) */}
+      {/* MODAL 4: Upload PDF Routine (Admin/Staff) */}
       <Modal visible={pdfUploadModalVisible} transparent animationType="slide" onRequestClose={() => setPdfUploadModalVisible(false)}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.modalBackdrop}>
           <View style={[styles.bottomSheet, { backgroundColor: C.surface, borderColor: C.border }]}>
             <View style={styles.sheetHandle} />
             <View style={styles.sheetHeader}>
               <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                {t.routines2.addRoutine || 'Post Routine PDF'}
+                Post Official Routine PDF
               </Text>
               <TouchableOpacity onPress={() => setPdfUploadModalVisible(false)} hitSlop={8}>
                 <Icon name="x" size={20} color={C.textMuted} />
@@ -1112,9 +1295,9 @@ export function RoutinesBrowseScreen({ navigation }: any) {
             </View>
 
             <ScrollView style={{ maxHeight: 400 }}>
-              <Text style={[styles.fieldLabel, { color: C.text3 }]}>{t.routines2.routineTitle || 'TITLE'}</Text>
+              <Text style={[styles.fieldLabel, { color: C.text3 }]}>TITLE</Text>
               <TextInput
-                style={[styles.textInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text }]}
+                style={[styles.textInput58, { backgroundColor: C.bg, borderColor: C.border, color: C.text }]}
                 value={fTitle}
                 onChangeText={setFTitle}
                 placeholder="e.g. CSE Fall 2026 Routine"
@@ -1125,7 +1308,7 @@ export function RoutinesBrowseScreen({ navigation }: any) {
                 <View style={{ flex: 1, marginRight: 8 }}>
                   <Text style={[styles.fieldLabel, { color: C.text3 }]}>DEPARTMENT</Text>
                   <TextInput
-                    style={[styles.textInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text }]}
+                    style={[styles.textInput58, { backgroundColor: C.bg, borderColor: C.border, color: C.text }]}
                     value={fDept}
                     onChangeText={setFDept}
                     placeholder="e.g. CSE"
@@ -1135,7 +1318,7 @@ export function RoutinesBrowseScreen({ navigation }: any) {
                 <View style={{ flex: 1, marginLeft: 8 }}>
                   <Text style={[styles.fieldLabel, { color: C.text3 }]}>SEMESTER</Text>
                   <TextInput
-                    style={[styles.textInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text }]}
+                    style={[styles.textInput58, { backgroundColor: C.bg, borderColor: C.border, color: C.text }]}
                     value={fSemester}
                     onChangeText={setFSemester}
                     placeholder="e.g. Fall 2026"
@@ -1144,22 +1327,22 @@ export function RoutinesBrowseScreen({ navigation }: any) {
                 </View>
               </View>
 
-              <TouchableOpacity style={[styles.pickFileBtn, { borderColor: C.border }]} onPress={pickFile}>
+              <TouchableOpacity style={[styles.pickFileBtn58, { borderColor: C.border }]} onPress={pickFile}>
                 <Icon name="upload" size={18} color={C.brand} />
                 <Text style={[styles.pickFileText, { color: C.text }]}>
-                  {pickedFile ? pickedFile.name : (t.routines2.chooseFile || 'Choose PDF File')}
+                  {pickedFile ? pickedFile.name : 'Choose PDF File'}
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.primaryBtn, { backgroundColor: C.brand, marginTop: 16 }]}
+                style={[styles.primaryBtn58, { backgroundColor: C.brand, marginTop: 16 }]}
                 onPress={handlePostPdf}
                 disabled={postingPdf}
               >
                 {postingPdf ? (
                   <ActivityIndicator size="small" color="#ffffff" />
                 ) : (
-                  <Text style={styles.primaryBtnText}>{t.routines2.postRoutine || 'Post Routine'}</Text>
+                  <Text style={styles.primaryBtnText}>Post Routine</Text>
                 )}
               </TouchableOpacity>
             </ScrollView>
@@ -1174,6 +1357,81 @@ const styles = StyleSheet.create({
   safe: {
     flex: 1,
   },
+  // 72-Size Bar (Matches CampusOne Bar System & Explore tool cards)
+  bar72: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 13,
+    height: 72,
+    paddingHorizontal: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderLeftWidth: 4.5,
+    marginBottom: 6,
+  },
+  toolIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  barLabel: {
+    fontSize: 11,
+    lineHeight: 15,
+    letterSpacing: 0.8,
+  },
+  barValue: {
+    fontSize: 14.5,
+    lineHeight: 20,
+    marginTop: 2,
+  },
+  barDesc: {
+    fontSize: 11.5,
+    lineHeight: 16,
+    marginTop: 1,
+  },
+  addRetakeBtn72: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 36,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    gap: 5,
+  },
+  addRetakeBtnText72: {
+    fontSize: 12,
+  },
+  switchChip72: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 36,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    gap: 5,
+  },
+  switchChipText72: {
+    fontSize: 12,
+  },
+  quickSecRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 16,
+  },
+  quickSecChip: {
+    flex: 1,
+    height: 40,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickSecChipText: {
+    fontSize: FontSize.xs,
+  },
+  // Timetable Grid Layout
   gridOuterScroll: {
     flex: 1,
   },
@@ -1181,22 +1439,24 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   gridContainer: {
-    paddingVertical: 10,
+    paddingVertical: 8,
     paddingHorizontal: 8,
   },
   clashBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     marginHorizontal: 12,
-    marginTop: 8,
+    marginTop: 4,
+    marginBottom: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: Radius.md,
     borderWidth: 1,
   },
   clashBannerText: {
-    fontSize: FontSize.sm,
+    fontSize: FontSize.xs,
     marginLeft: 8,
+    flex: 1,
   },
   headerRow: {
     flexDirection: 'row',
@@ -1204,7 +1464,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   dayHeaderCell: {
-    paddingVertical: 8,
+    paddingVertical: 10,
     alignItems: 'center',
     justifyContent: 'center',
     borderRightWidth: 1,
@@ -1215,7 +1475,7 @@ const styles = StyleSheet.create({
   },
   timeHeaderCell: {
     paddingHorizontal: 6,
-    paddingVertical: 8,
+    paddingVertical: 10,
     alignItems: 'center',
     justifyContent: 'center',
     borderRightWidth: 1,
@@ -1232,15 +1492,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRightWidth: 1,
-    paddingVertical: 8,
+    paddingVertical: 10,
   },
   dayNameText: {
     fontSize: FontSize.sm,
+    letterSpacing: -0.3,
+  },
+  dayCountText: {
+    fontSize: 9.5,
+    marginTop: 2,
+    fontFamily: FontFamily.jakartaSemiBold,
   },
   slotCell: {
-    minHeight: 110,
+    minHeight: 114,
     borderRightWidth: 1,
-    padding: 5,
+    padding: 6,
     justifyContent: 'center',
   },
   cellContent: {
@@ -1250,11 +1516,11 @@ const styles = StyleSheet.create({
   badgePill: {
     borderRadius: 4,
     paddingHorizontal: 5,
-    paddingVertical: 1,
+    paddingVertical: 1.5,
     marginBottom: 4,
   },
   badgePillText: {
-    fontSize: 9,
+    fontSize: 8.5,
     fontFamily: FontFamily.jakartaBold,
     color: '#ffffff',
   },
@@ -1264,50 +1530,26 @@ const styles = StyleSheet.create({
   },
   cellMeta: {
     fontSize: FontSize.xs - 1,
-    marginTop: 1,
+    marginTop: 2,
     fontFamily: FontFamily.jakartaMedium,
   },
   cellSub: {
-    fontSize: 10,
+    fontSize: 9.5,
     marginTop: 2,
     fontFamily: FontFamily.jakartaRegular,
+  },
+  emptyCellContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyCellDash: {
+    fontSize: FontSize.lg,
   },
   stackedClass: {
     marginTop: 3,
     paddingTop: 3,
     borderTopWidth: 0.5,
     borderTopColor: '#f8717150',
-  },
-  contextRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-  },
-  sectionPillBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: Radius.full,
-    borderWidth: 1,
-  },
-  sectionPillText: {
-    fontSize: FontSize.sm,
-    marginHorizontal: 6,
-  },
-  actionPillBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: Radius.full,
-    borderWidth: 1,
-  },
-  actionPillText: {
-    fontSize: FontSize.sm,
-    marginLeft: 4,
   },
   loadingBox: {
     flex: 1,
@@ -1330,9 +1572,9 @@ const styles = StyleSheet.create({
     marginTop: 6,
     fontFamily: FontFamily.jakartaRegular,
   },
-  // Exam Grid Cards
+  // Exam Cards
   examListContainer: {
-    paddingVertical: 12,
+    paddingVertical: 8,
   },
   examCard: {
     borderRadius: Radius.lg,
@@ -1414,15 +1656,21 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontFamily: FontFamily.jakartaRegular,
   },
-  // Modals & Bottom Sheets
+  // Modals & 58dp Inputs
   modalBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.65)',
     justifyContent: 'flex-end',
   },
+  modalBackdropCenter: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+  },
   bottomSheet: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     borderWidth: 1,
     paddingHorizontal: Layout.screenPadding,
     paddingTop: 12,
@@ -1434,7 +1682,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     backgroundColor: 'rgba(255,255,255,0.2)',
     alignSelf: 'center',
-    marginBottom: 12,
+    marginBottom: 14,
   },
   sheetHeader: {
     flexDirection: 'row',
@@ -1454,12 +1702,14 @@ const styles = StyleSheet.create({
   deptScroll: {
     marginBottom: 16,
   },
-  deptChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+  deptChip58: {
+    paddingHorizontal: 16,
+    height: 44,
     borderRadius: Radius.full,
     borderWidth: 1,
     marginRight: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   deptChipText: {
     fontSize: FontSize.sm,
@@ -1469,17 +1719,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginBottom: 16,
   },
-  textInput: {
-    height: 48,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    paddingHorizontal: 12,
+  textInput58: {
+    height: Layout.controlHeight,
+    borderRadius: Layout.controlRadius,
+    borderWidth: 1.2,
+    paddingHorizontal: 14,
     fontSize: FontSize.base,
     fontFamily: FontFamily.jakartaRegular,
   },
-  primaryBtn: {
-    height: 48,
-    borderRadius: Radius.md,
+  primaryBtn58: {
+    height: Layout.controlHeight,
+    borderRadius: Layout.controlRadius,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 8,
@@ -1489,26 +1739,14 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.jakartaBold,
     color: '#ffffff',
   },
-  secondaryBtn: {
-    height: 44,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 10,
-  },
-  secondaryBtnText: {
-    fontSize: FontSize.sm,
-    fontFamily: FontFamily.jakartaBold,
-  },
   // Retake Finder
-  searchBox: {
+  searchBox58: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 48,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    paddingHorizontal: 12,
+    height: Layout.controlHeight,
+    borderRadius: Layout.controlRadius,
+    borderWidth: 1.2,
+    paddingHorizontal: 14,
   },
   searchBoxInput: {
     flex: 1,
@@ -1593,16 +1831,12 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.jakartaSemiBold,
     marginLeft: 10,
   },
-  // Dialog Modal
+  // Dialog Card
   dialogCard: {
-    width: '90%',
-    maxHeight: '85%',
     borderRadius: Radius.xl,
     borderWidth: 1,
     padding: 20,
-    alignSelf: 'center',
-    marginBottom: 'auto',
-    marginTop: 'auto',
+    maxHeight: '85%',
   },
   dialogCourseHeader: {
     marginBottom: 12,
@@ -1690,7 +1924,7 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.jakartaRegular,
   },
   removeRetakeBtn: {
-    height: 40,
+    height: 44,
     borderRadius: Radius.md,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1730,13 +1964,13 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xs - 1,
     marginTop: 4,
   },
-  pickFileBtn: {
+  pickFileBtn58: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 48,
-    borderRadius: Radius.md,
-    borderWidth: 1,
+    height: Layout.controlHeight,
+    borderRadius: Layout.controlRadius,
+    borderWidth: 1.2,
     borderStyle: 'dashed',
     marginTop: 12,
     gap: 8,

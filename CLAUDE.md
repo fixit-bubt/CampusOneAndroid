@@ -2200,24 +2200,27 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 
 ## 47. Interactive Personalized Routine 360 & Exam Grid System
 
-### 47.1 Architecture & Paper Parity
+### 47.1 Architecture, Bar Standards & 3-Tab Structure
 - **Visual Timetable Grid:** Formatted as an authentic visual timetable matching the official BUBT departmental paper routine format:
   - 7 Days along the left (`SAT`, `SUN`, `MON`, `TUE`, `WED`, `THR`, `FRI`) with pinned sticky column.
   - 6 Standard BUBT Time Slots along the top (`08:15 AM to 09:45 AM`, `09:45 AM to 11:15 AM`, `11:15 AM to 12:45 PM`, `01:15 PM to 02:45 PM`, `02:45 PM to 04:15 PM`, `04:15 PM to 05:45 PM`).
   - Cells render Course Code, Faculty Code (`FC: <CODE>`), Room number (`R: <ROOM>`), Intake & Section (`Intake: 51 - 2`), and Retake badges.
-- **Strict 3-Tab Maximum Rule:** Screen navigation is standardized to exactly 3 SegmentedTabs:
-  1. `Class Grid`: Interactive weekly class timetable with horizontal/vertical bidirectional scrolling.
-  2. `Exam Grid`: Midterm and Final exam schedule formatted in a visual grid by Date and Shift (`Shift 1` 09:30-11:30 & `Shift 2` 01:30-03:30).
-  3. `Official PDFs`: Master signed university PDF circulars crawled automatically by `bubt-crawler`.
-- **Dedicated Section Context Row:** Moved out of header into its own roomy 48dp row directly below SegmentedTabs (`[ 📍 CSE • Intake 51 - Section 2 ▾ ]` and `[ + Add Retake ]`), providing instant section switching and retake controls without header crowding.
+- **Universal 72-Size Bar System (`bar72` / `childBar72`):**
+  - Standardized to `height: 72`, `borderRadius: 16`, `borderWidth: 1`, `borderLeftWidth: 4.5`, `paddingHorizontal: 14`, 42×42 `toolIcon` (radius 13), 11px uppercase eyebrow label with `letterSpacing: 0.8`, 14.5px jakartaBold value, and 11.5px text3 description.
+- **Distinct Two-Bar Routines Model (Strictly 3 Tabs Max):**
+  1. `My Routine`: 72dp Personalized Routine Bar with calendar icon, left accent in `SectorColors.routines`, displaying active student's department, intake, and section, merged retake count, and a direct `[ + Retake ]` button.
+  2. `Other Routines`: 72dp Other Section Routine Selector Bar with compass icon, left accent in `C.brand`, displaying chosen department, intake, and section, with a `[ Change ▾ ]` pill badge. Tapping opens the 58dp bottom sheet with Quick Section chips (`Sec 1` through `Sec 5`), ensuring **ONLY that selected section's routine appears** (never full intake clutter).
+  3. `Official PDFs`: 72dp Administrative routine circulars bar with official document viewer and admin uploader.
+- **Sub-Schedule Toggle (58dp / size="sm"):** Inside routine tabs, seamlessly switches between `[ Class Schedule ]` and `[ Exam Schedule ]`.
+- **Empty-State Guard:** When a section has no scheduled classes, renders a clean branded empty state card with calendar icon and `[ Choose Another Section ]` action instead of an empty grid of 42 blank cells.
 
-### 47.2 Personalization & Retake Course Merger
-- **Zero-Setup Profile Auto-Load:** Automatically resolves `department`, `intake`, and `section` from `public.profiles`.
-- **Retake & Improvement Merger (`user_custom_routine_slots`):** Senior students taking retake courses from junior intakes (e.g. `PHY 101` from Intake 57 Section 4 while in Intake 51 Section 2) add them via `+ Add Retake`, merging both schedules into one unified weekly timetable.
+### 47.2 Personalization, Normalization & Retake Course Merger
+- **Department Normalization (`normalizeDeptCode`):** Intelligently maps long department names (e.g. `"Department of Computer Science & Engineering"`) to canonical code (`"CSE"`), ensuring queries never return empty due to string mismatches.
+- **Retake & Improvement Merger (`user_custom_routine_slots`):** Senior students taking retake courses from junior intakes (e.g. `PHY 101` from Intake 57 Section 4 while in Intake 51 Section 2) add them via `+ Retake`, merging both schedules into one unified weekly timetable.
 - **Time Overlap & Clash Detection:**
   - Automated detection when regular classes and retake classes overlap on the same Day and Time slot.
   - Clashed cells render with `#f87171` crimson border and `⚠️ CLASH` indicator.
-  - Tapping opens the Conflict Resolver Modal displaying all overlapping courses and suggesting clash-free alternate sections.
+  - Tapping opens the Conflict Resolver Modal displaying all overlapping courses and teacher details.
 
 ### 47.3 Faculty Short-Code Linkage & Room Decoder
 - **Instant Faculty Lookup:** Tapping any `FC: <CODE>` cell resolves against `public.faculty.short_code`, displaying teacher photo, full name, designation, office desk room, official email, phone, and counseling hours for that day.
