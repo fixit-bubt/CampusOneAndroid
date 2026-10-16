@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,18 +6,22 @@ import {
   Modal,
   StyleSheet,
   ActivityIndicator,
-  Platform,
   type TextStyle,
   type ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
-import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
-import { FontFamily, Layout, SectorColors } from '../../theme';
-import { formatPrice } from '../../utils/format';
+import { FontFamily, Layout, SectorColors, pillBg } from '../../theme';
+import { AnimatedIcon } from '../ui/AnimatedIcon';
 import { openUrl } from '../../utils/link';
-import type { Coordinates } from '../../services/locationService';
+import {
+  BUBT_COORDS,
+  findMasterLocationByName,
+  getDistanceMeters,
+  type Coordinates,
+} from '../../services/locationService';
 
 interface RideRouteMapModalProps {
   visible: boolean;
@@ -32,30 +36,33 @@ interface RideRouteMapModalProps {
   direction?: string;
 }
 
-const RIDE_COLOR = SectorColors.ride;
+interface RouteInfo {
+  coordinates: [number, number][];
+  distanceM: number;
+  durationS: number;
+}
 
-function generateRouteMapHtml(
+function generateRideRouteMapHtml(
   originCoords: Coordinates,
+  originLabel: string,
   destCoords: Coordinates,
-  originName: string,
-  destName: string,
-  meetingPoint: string | null | undefined,
+  destLabel: string,
+  initialRoute: RouteInfo | null,
   isDark: boolean
 ): string {
-  const bgColor = isDark ? '#121418' : '#f8fafc';
+  const bgColor = isDark ? '#121212' : '#f8fafc';
   const styleUrl = isDark
     ? 'https://tiles.openfreemap.org/styles/dark'
     : 'https://tiles.openfreemap.org/styles/liberty';
-
-  const oLng = originCoords.longitude;
-  const oLat = originCoords.latitude;
-  const dLng = destCoords.longitude;
-  const dLat = destCoords.latitude;
-
-  const minLng = Math.min(oLng, dLng);
-  const maxLng = Math.max(oLng, dLng);
-  const minLat = Math.min(oLat, dLat);
-  const maxLat = Math.max(oLat, dLat);
+  const startLng = originCoords.longitude;
+  const startLat = originCoords.latitude;
+  const destLng = destCoords.longitude;
+  const destLat = destCoords.latitude;
+  const initialCoordinatesJson = initialRoute ? JSON.stringify(initialRoute.coordinates) : 'null';
+  const initialDistance = initialRoute ? initialRoute.distanceM : 0;
+  const initialDuration = initialRoute ? initialRoute.durationS : 0;
+  const safeOriginLabel = originLabel.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+  const safeDestLabel = destLabel.replace(/'/g, "\\'").replace(/"/g, '&quot;');
 
   return `
 <!DOCTYPE html>
@@ -68,185 +75,399 @@ function generateRouteMapHtml(
   <style>
     * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
     html, body {
-      margin: 0; padding: 0; width: 100%; height: 100%;
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
       background-color: ${bgColor};
       overflow: hidden;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
-    #map { width: 100%; height: 100%; }
-    .maplibregl-ctrl-attrib, .maplibregl-ctrl-logo { display: none !important; }
+    #map {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      height: 100%;
+      background-color: ${bgColor};
+    }
+    .maplibregl-ctrl-attrib, .maplibregl-ctrl-logo, .maplibregl-compact {
+      display: none !important;
+    }
 
-    /* Custom Pulsing Markers */
-    .custom-marker {
+    /* Pickup Marker: Green Navigation Dot with Pulsing Radar Ring */
+    .origin-container {
+      position: relative;
+      width: 34px;
+      height: 34px;
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 32px;
-      height: 32px;
-      border-radius: 16px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-      cursor: pointer;
     }
-    .marker-origin {
+    .origin-pulse {
+      position: absolute;
+      width: 34px;
+      height: 34px;
+      border-radius: 17px;
+      background: rgba(16, 185, 129, 0.35);
+      animation: pulse-ring 2s infinite ease-out;
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.6); opacity: 1; }
+      100% { transform: scale(1.6); opacity: 0; }
+    }
+    .origin-dot {
+      position: relative;
+      width: 16px;
+      height: 16px;
+      border-radius: 8px;
       background: #10b981;
       border: 3px solid #ffffff;
-      color: white;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.45);
+      z-index: 2;
     }
-    .marker-dest {
-      background: #ef4444;
-      border: 3px solid #ffffff;
-      color: white;
-    }
-    .marker-pulse {
+    .origin-tag {
       position: absolute;
+      top: 34px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #0f172a;
+      color: #ffffff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 5px;
+      white-space: nowrap;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+      pointer-events: none;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    /* Destination Marker: Google Maps Style Red Teardrop Pin */
+    .dest-pin-wrap {
+      position: relative;
+      width: 38px;
+      height: 48px;
+      cursor: pointer;
+    }
+    .dest-pin-shadow {
+      position: absolute;
+      bottom: -1px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 22px;
+      height: 6px;
+      border-radius: 11px;
+      background: rgba(0, 0, 0, 0.45);
+    }
+    .dest-pin-svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 38px;
+      height: 48px;
+      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.35));
+    }
+    .dest-tag {
+      position: absolute;
+      top: 50px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: ${isDark ? 'rgba(18, 18, 18, 0.94)' : 'rgba(255, 255, 255, 0.96)'};
+      color: ${isDark ? '#f4f4f5' : '#0f172a'};
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 6px;
+      white-space: nowrap;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+      border: 1px solid ${isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)'};
+      max-width: 180px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      pointer-events: none;
+    }
+
+    /* Floating Trip Summary Bar */
+    .route-bar {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      right: 12px;
+      background: ${isDark ? 'rgba(18, 18, 18, 0.92)' : 'rgba(255, 255, 255, 0.96)'};
+      backdrop-filter: blur(10px);
+      border: 1px solid ${isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)'};
+      border-radius: 14px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.28);
+      z-index: 10;
+    }
+    .route-bar-left {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .route-bar-main {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .route-time {
+      font-size: 15px;
+      font-weight: 800;
+      color: #34d399;
+    }
+    .route-dist {
+      font-size: 13px;
+      font-weight: 600;
+      color: ${isDark ? '#a1a1aa' : '#64748b'};
+    }
+    .route-via {
+      font-size: 11px;
+      font-weight: 500;
+      color: ${isDark ? '#71717a' : '#94a3b8'};
+    }
+
+    /* Floating Google Maps Style Recenter Button */
+    .map-controls {
+      position: absolute;
+      right: 14px;
+      bottom: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 10;
+    }
+    .ctrl-btn {
       width: 44px;
       height: 44px;
       border-radius: 22px;
-      opacity: 0.35;
-      animation: pulse 2s infinite ease-out;
+      background: ${isDark ? '#1e1e1e' : '#ffffff'};
+      border: 1px solid ${isDark ? 'rgba(255, 255, 255, 0.16)' : 'rgba(0, 0, 0, 0.14)'};
+      color: ${isDark ? '#f4f4f5' : '#0f172a'};
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.3);
+      cursor: pointer;
+      outline: none;
     }
-    .pulse-origin { background: #10b981; }
-    .pulse-dest { background: #ef4444; }
-
-    @keyframes pulse {
-      0% { transform: scale(0.6); opacity: 0.8; }
-      100% { transform: scale(1.6); opacity: 0; }
-    }
-
-    .marker-label {
-      position: absolute;
-      top: 36px;
-      background: ${isDark ? 'rgba(20,24,33,0.92)' : 'rgba(255,255,255,0.94)'};
-      color: ${isDark ? '#f8fafc' : '#0f172a'};
-      font-size: 11px;
-      font-weight: 700;
-      padding: 3px 8px;
-      border-radius: 6px;
-      white-space: nowrap;
-      border: 1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'};
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    .ctrl-btn:active {
+      transform: scale(0.92);
     }
   </style>
 </head>
 <body>
   <div id="map"></div>
-  <script>
-    var map = new maplibregl.Map({
-      container: 'map',
-      style: '${styleUrl}',
-      center: [${(oLng + dLng) / 2}, ${(oLat + dLat) / 2}],
-      zoom: 13,
-      minZoom: 9,
-      maxZoom: 19,
-      dragRotate: false,
-      attributionControl: false
-    });
 
-    map.on('load', function() {
-      // 1. Draw Connecting Route Line
-      map.addSource('route', {
-        'type': 'geojson',
-        'data': {
-          'type': 'Feature',
-          'properties': {},
-          'geometry': {
-            'type': 'LineString',
-            'coordinates': [
-              [${oLng}, ${oLat}],
-              [${dLng}, ${dLat}]
-            ]
+  <!-- Floating Trip Summary Bar -->
+  <div id="route-bar" class="route-bar" style="display: none;">
+    <div class="route-bar-left">
+      <div class="route-bar-main">
+        <span id="route-time" class="route-time">-- min</span>
+        <span id="route-dist" class="route-dist">(-- km)</span>
+      </div>
+      <span class="route-via">Driving route from ${safeOriginLabel}</span>
+    </div>
+  </div>
+
+  <!-- Symmetrical, Upright Google Maps Crosshairs Recenter Button -->
+  <div class="map-controls">
+    <button class="ctrl-btn" id="btn-recenter" title="Recenter Route" onclick="recenterRoute()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="8"></circle>
+        <line x1="12" y1="2" x2="12" y2="5"></line>
+        <line x1="12" y1="19" x2="12" y2="22"></line>
+        <line x1="2" y1="12" x2="5" y2="12"></line>
+        <line x1="19" y1="12" x2="22" y2="12"></line>
+        <circle cx="12" cy="12" r="2.5" fill="currentColor"></circle>
+      </svg>
+    </button>
+  </div>
+
+  <script>
+    var startLng = ${startLng};
+    var startLat = ${startLat};
+    var destLng = ${destLng};
+    var destLat = ${destLat};
+    var initialCoords = ${initialCoordinatesJson};
+    var initialDist = ${initialDistance};
+    var initialDur = ${initialDuration};
+    var activeRouteCoords = null;
+    var map = null;
+
+    function recenterRoute() {
+      if (!map || !activeRouteCoords || activeRouteCoords.length === 0) return;
+      var bounds = new maplibregl.LngLatBounds();
+      activeRouteCoords.forEach(function(c) { bounds.extend(c); });
+      map.fitBounds(bounds, {
+        padding: { top: 80, bottom: 45, left: 45, right: 45 },
+        maxZoom: 16.5,
+        duration: 700
+      });
+    }
+
+    if (typeof maplibregl !== 'undefined') {
+      try {
+        map = new maplibregl.Map({
+          container: 'map',
+          style: '${styleUrl}',
+          center: [(startLng + destLng) / 2, (startLat + destLat) / 2],
+          zoom: 13,
+          minZoom: 9,
+          maxZoom: 19,
+          dragRotate: false,
+          touchPitch: false,
+          attributionControl: false
+        });
+
+        // 1. Pickup Marker (Green Dot with Radar Wave)
+        var originEl = document.createElement('div');
+        originEl.className = 'origin-container';
+        originEl.innerHTML = '<div class="origin-pulse"></div><div class="origin-dot"></div><div class="origin-tag">${safeOriginLabel}</div>';
+        new maplibregl.Marker({ element: originEl, anchor: 'center' })
+          .setLngLat([startLng, startLat])
+          .addTo(map);
+
+        // 2. Destination Marker: Google Maps Style Red Teardrop Pin
+        var destEl = document.createElement('div');
+        destEl.className = 'dest-pin-wrap';
+        destEl.innerHTML = '<div class="dest-pin-shadow"></div>' +
+          '<svg class="dest-pin-svg" width="38" height="48" viewBox="0 0 38 48">' +
+          '<path d="M 19 47.5 C 18 45.5, 2 27, 2 19 A 17 17 0 1 1 36 19 C 36 27, 20 45.5, 19 47.5 Z" fill="#ef4444" stroke="#ffffff" stroke-width="2.2" stroke-linejoin="round"/>' +
+          '<circle cx="19" cy="18" r="7.5" fill="#ffffff"/>' +
+          '<circle cx="19" cy="18" r="3.5" fill="#ef4444"/>' +
+          '</svg>' +
+          '<div class="dest-tag">${safeDestLabel}</div>';
+        new maplibregl.Marker({ element: destEl, anchor: 'bottom' })
+          .setLngLat([destLng, destLat])
+          .addTo(map);
+
+        function renderPolylineOnMap(coordinates, distanceM, durationS) {
+          if (!map) return;
+          activeRouteCoords = coordinates;
+
+          if (map.getSource('nav-route')) {
+            map.getSource('nav-route').setData({
+              type: 'Feature',
+              properties: {},
+              geometry: { type: 'LineString', coordinates: coordinates }
+            });
+          } else {
+            map.addSource('nav-route', {
+              type: 'geojson',
+              data: {
+                type: 'Feature',
+                properties: {},
+                geometry: { type: 'LineString', coordinates: coordinates }
+              }
+            });
+
+            // Outer dark casing border for contrast
+            map.addLayer({
+              id: 'nav-route-casing',
+              type: 'line',
+              source: 'nav-route',
+              layout: { 'line-join': 'round', 'line-cap': 'round' },
+              paint: {
+                'line-color': '${isDark ? '#081738' : '#1e3a8a'}',
+                'line-width': 8.5,
+                'line-opacity': 0.8
+              }
+            });
+
+            // Core electric blue navigation route line
+            map.addLayer({
+              id: 'nav-route-line',
+              type: 'line',
+              source: 'nav-route',
+              layout: { 'line-join': 'round', 'line-cap': 'round' },
+              paint: {
+                'line-color': '#275efe',
+                'line-width': 5.5,
+                'line-opacity': 0.98
+              }
+            });
+
+            // Subtle white dashed inner trail (Traffic flow indicator)
+            map.addLayer({
+              id: 'nav-route-dash',
+              type: 'line',
+              source: 'nav-route',
+              layout: { 'line-join': 'round', 'line-cap': 'round' },
+              paint: {
+                'line-color': '#ffffff',
+                'line-width': 1.6,
+                'line-opacity': 0.7,
+                'line-dasharray': [2, 3]
+              }
+            });
+          }
+
+          recenterRoute();
+
+          // Update floating summary bar
+          var bar = document.getElementById('route-bar');
+          var timeEl = document.getElementById('route-time');
+          var distEl = document.getElementById('route-dist');
+          if (bar && timeEl && distEl) {
+            if (distanceM && durationS) {
+              var km = (distanceM / 1000).toFixed(1);
+              var mins = Math.max(1, Math.round(durationS / 60));
+              timeEl.innerText = mins + ' min';
+              distEl.innerText = '(' + km + ' km)';
+            } else {
+              timeEl.innerText = 'Directions';
+              distEl.innerText = 'Connected';
+            }
+            bar.style.display = 'flex';
           }
         }
-      });
 
-      map.addLayer({
-        'id': 'route-line-casing',
-        'type': 'line',
-        'source': 'route',
-        'layout': { 'line-join': 'round', 'line-cap': 'round' },
-        'paint': {
-          'line-color': '${isDark ? '#1e293b' : '#cbd5e1'}',
-          'line-width': 7,
-          'line-opacity': 0.8
-        }
-      });
+        map.on('load', function() {
+          if (initialCoords && initialCoords.length > 0) {
+            renderPolylineOnMap(initialCoords, initialDist, initialDur);
+            return;
+          }
 
-      map.addLayer({
-        'id': 'route-line',
-        'type': 'line',
-        'source': 'route',
-        'layout': { 'line-join': 'round', 'line-cap': 'round' },
-        'paint': {
-          'line-color': '#275efe',
-          'line-width': 4,
-          'line-dasharray': [1.8, 1.4]
-        }
-      });
+          var defaultDirectLine = [
+            [startLng, startLat],
+            [destLng, destLat]
+          ];
 
-      // 2. Add Pickup Marker (Green)
-      var elOrigin = document.createElement('div');
-      elOrigin.style.position = 'relative';
-      elOrigin.style.display = 'flex';
-      elOrigin.style.alignItems = 'center';
-      elOrigin.style.justifyContent = 'center';
+          var osrmUrl = 'https://router.project-osrm.org/route/v1/driving/' + startLng + ',' + startLat + ';' + destLng + ',' + destLat + '?overview=full&geometries=geojson';
 
-      var pulseOrigin = document.createElement('div');
-      pulseOrigin.className = 'marker-pulse pulse-origin';
-      elOrigin.appendChild(pulseOrigin);
+          var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+          var timeoutId = setTimeout(function() {
+            if (controller) controller.abort();
+          }, 3500);
 
-      var dotOrigin = document.createElement('div');
-      dotOrigin.className = 'custom-marker marker-origin';
-      dotOrigin.textContent = '●';
-      elOrigin.appendChild(dotOrigin);
-
-      var lblOrigin = document.createElement('div');
-      lblOrigin.className = 'marker-label';
-      lblOrigin.textContent = 'Pickup: ' + ${JSON.stringify(originName)};
-      elOrigin.appendChild(lblOrigin);
-
-      new maplibregl.Marker({ element: elOrigin })
-        .setLngLat([${oLng}, ${oLat}])
-        .addTo(map);
-
-      // 3. Add Destination Marker (Red)
-      var elDest = document.createElement('div');
-      elDest.style.position = 'relative';
-      elDest.style.display = 'flex';
-      elDest.style.alignItems = 'center';
-      elDest.style.justifyContent = 'center';
-
-      var pulseDest = document.createElement('div');
-      pulseDest.className = 'marker-pulse pulse-dest';
-      elDest.appendChild(pulseDest);
-
-      var dotDest = document.createElement('div');
-      dotDest.className = 'custom-marker marker-dest';
-      dotDest.textContent = '■';
-      elDest.appendChild(dotDest);
-
-      var lblDest = document.createElement('div');
-      lblDest.className = 'marker-label';
-      lblDest.textContent = 'Drop-off: ' + ${JSON.stringify(destName)};
-      elDest.appendChild(lblDest);
-
-      new maplibregl.Marker({ element: elDest })
-        .setLngLat([${dLng}, ${dLat}])
-        .addTo(map);
-
-      // 4. Fit Bounds with generous padding & maxZoom constraint
-      map.fitBounds([
-        [${minLng}, ${minLat}],
-        [${maxLng}, ${maxLat}]
-      ], {
-        padding: { top: 90, bottom: 200, left: 60, right: 60 },
-        maxZoom: 15.5,
-        duration: 800
-      });
-    });
+          fetch(osrmUrl, { signal: controller ? controller.signal : undefined })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+              clearTimeout(timeoutId);
+              if (data && data.routes && data.routes.length > 0) {
+                var r = data.routes[0];
+                renderPolylineOnMap(r.geometry.coordinates, r.distance, r.duration);
+              } else {
+                renderPolylineOnMap(defaultDirectLine, 0, 0);
+              }
+            })
+            .catch(function() {
+              renderPolylineOnMap(defaultDirectLine, 0, 0);
+            });
+        });
+      } catch (e) {}
+    }
   </script>
 </body>
 </html>
-`;
+  `.trim();
 }
 
 export function RideRouteMapModal({
@@ -261,27 +482,112 @@ export function RideRouteMapModal({
   vehicle,
   direction,
 }: RideRouteMapModalProps) {
-  const insets = useSafeAreaInsets();
   const { C, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
+  const webViewRef = useRef<WebView>(null);
 
-  // Fallback coords to BUBT if missing
-  const safeOrigin = originCoords || { latitude: 23.8119, longitude: 90.3572 };
-  const safeDest = destCoords || { latitude: 23.7529, longitude: 90.3752 };
+  const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
+  const [routeLoading, setRouteLoading] = useState(false);
 
-  const htmlContent = useMemo(() => {
-    return generateRouteMapHtml(
-      safeOrigin,
-      safeDest,
+  // Resolve origin coords (check passed prop -> master locations -> BUBT fallback)
+  const resolvedOriginCoords = useMemo<Coordinates>(() => {
+    if (originCoords && Number.isFinite(originCoords.latitude) && Number.isFinite(originCoords.longitude)) {
+      return originCoords;
+    }
+    const loc = findMasterLocationByName(origin);
+    if (loc?.coords) return loc.coords;
+    if (origin?.toLowerCase().includes('bubt')) return BUBT_COORDS;
+    return BUBT_COORDS;
+  }, [originCoords, origin]);
+
+  // Resolve destination coords (check passed prop -> master locations -> Central Dhaka fallback)
+  const resolvedDestCoords = useMemo<Coordinates>(() => {
+    if (destCoords && Number.isFinite(destCoords.latitude) && Number.isFinite(destCoords.longitude)) {
+      return destCoords;
+    }
+    const loc = findMasterLocationByName(destination);
+    if (loc?.coords) return loc.coords;
+    if (destination?.toLowerCase().includes('bubt')) return BUBT_COORDS;
+    return { latitude: 23.7529, longitude: 90.3752 };
+  }, [destCoords, destination]);
+
+  // Fetch real road driving route via OSRM
+  useEffect(() => {
+    if (!visible) {
+      setRouteInfo(null);
+      return;
+    }
+
+    let cancelled = false;
+    setRouteLoading(true);
+
+    const startLng = resolvedOriginCoords.longitude;
+    const startLat = resolvedOriginCoords.latitude;
+    const destLng = resolvedDestCoords.longitude;
+    const destLat = resolvedDestCoords.latitude;
+
+    const url = `https://router.project-osrm.org/route/v1/driving/${startLng},${startLat};${destLng},${destLat}?overview=full&geometries=geojson`;
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 4000);
+
+    fetch(url, { signal: controller.signal })
+      .then(res => res.json())
+      .then(data => {
+        clearTimeout(timer);
+        if (cancelled) return;
+        if (data && data.routes && data.routes.length > 0) {
+          const r = data.routes[0];
+          setRouteInfo({
+            coordinates: r.geometry.coordinates,
+            distanceM: r.distance,
+            durationS: r.duration,
+          });
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setRouteLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [visible, resolvedOriginCoords, resolvedDestCoords]);
+
+  const distanceText = useMemo(() => {
+    if (routeInfo?.distanceM) {
+      const km = (routeInfo.distanceM / 1000).toFixed(1);
+      const mins = Math.max(1, Math.round(routeInfo.durationS / 60));
+      return `~${mins} min (${km} km) driving route`;
+    }
+    const meters = getDistanceMeters(
+      resolvedOriginCoords.latitude,
+      resolvedOriginCoords.longitude,
+      resolvedDestCoords.latitude,
+      resolvedDestCoords.longitude
+    );
+    if (!Number.isFinite(meters) || meters <= 0) return null;
+    const km = (meters / 1000).toFixed(1);
+    return `~${km} km direct distance`;
+  }, [resolvedOriginCoords, resolvedDestCoords, routeInfo]);
+
+  const mapHtml = useMemo(() => {
+    return generateRideRouteMapHtml(
+      resolvedOriginCoords,
       origin,
+      resolvedDestCoords,
       destination,
-      notes,
+      routeInfo,
       isDark
     );
-  }, [safeOrigin, safeDest, origin, destination, notes, isDark]);
+  }, [resolvedOriginCoords, origin, resolvedDestCoords, destination, routeInfo, isDark]);
 
   function handleOpenGoogleMaps() {
-    const originParam = `${safeOrigin.latitude},${safeOrigin.longitude}`;
-    const destParam = `${safeDest.latitude},${safeDest.longitude}`;
+    const originParam = `${resolvedOriginCoords.latitude},${resolvedOriginCoords.longitude}`;
+    const destParam = `${resolvedDestCoords.latitude},${resolvedDestCoords.longitude}`;
     openUrl(`https://www.google.com/maps/dir/?api=1&origin=${originParam}&destination=${destParam}&travelmode=driving`);
   }
 
@@ -291,96 +597,129 @@ export function RideRouteMapModal({
     <Modal
       visible={visible}
       animationType="slide"
-      transparent={false}
+      transparent={true}
       onRequestClose={onClose}
     >
-      <View style={[styles.container, { backgroundColor: C.bg }]}>
-        {/* Floating Top Bar */}
-        <View style={[styles.topBar, { paddingTop: insets.top + 8 }]}>
-          <TouchableOpacity
-            style={[styles.backBtn, { backgroundColor: C.surface, borderColor: C.border }]}
-            onPress={onClose}
-            activeOpacity={0.8}
-          >
-            <Feather name="arrow-left" size={20} color={C.text} />
-          </TouchableOpacity>
-
-          <View style={[styles.headerPill, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <View style={styles.headerDot} />
-            <Text style={[styles.headerTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-              {origin} → {destination}
-            </Text>
-          </View>
-        </View>
-
-        {/* In-App MapLibre Map View */}
-        <View style={styles.mapContainer}>
-          <WebView
-            originWhitelist={['*']}
-            source={{ html: htmlContent }}
-            style={styles.webview}
-            javaScriptEnabled={true}
-            domStorageEnabled={true}
-            showsHorizontalScrollIndicator={false}
-            showsVerticalScrollIndicator={false}
-            renderLoading={() => (
-              <View style={[styles.loadingOverlay, { backgroundColor: C.bg }]}>
-                <ActivityIndicator color={RIDE_COLOR} size="large" />
-                <Text style={[styles.loadingTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                  Loading campus route map…
-                </Text>
+      <View style={styles.backdrop}>
+        <View
+          style={[
+            styles.container,
+            {
+              backgroundColor: C.bg,
+              borderColor: C.border,
+              paddingBottom: Math.max(insets.bottom, 16),
+            },
+          ]}
+        >
+          {/* Top 60dp Header */}
+          <View style={[styles.header, { borderBottomColor: C.border }]}>
+            <View style={styles.headerLeft}>
+              <View style={[styles.iconPill, { backgroundColor: pillBg(SectorColors.ride, isDark), borderColor: SectorColors.ride, borderWidth: 1 }]}>
+                <AnimatedIcon family="feather" name="navigation" size={16} color={isDark ? '#ffffff' : SectorColors.ride} animation="spring" />
               </View>
-            )}
-            startInLoadingState={true}
-          />
-        </View>
-
-        {/* Sleek Bottom Route Details Card */}
-        <View style={[styles.bottomCard, { backgroundColor: C.surface, borderColor: C.border, paddingBottom: Math.max(insets.bottom, 16) }]}>
-          {/* Stops preview */}
-          <View style={styles.stopsTrack}>
-            <View style={styles.stopItem}>
-              <View style={[styles.dot, { backgroundColor: '#10b981' }]} />
               <View style={{ flex: 1 }}>
-                <Text style={[styles.stopType, { color: '#10b981', fontFamily: FontFamily.jakartaBold }]}>PICKUP</Text>
-                <Text style={[styles.stopName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                  {origin}
+                <Text style={[styles.headerTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                  Ride Route & Meeting Spot
+                </Text>
+                <Text style={[styles.headerSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                  {origin} → {destination}
                 </Text>
               </View>
             </View>
 
-            {notes ? (
-              <View style={[styles.meetingBadge, { backgroundColor: isDark ? 'rgba(245, 158, 11, 0.12)' : '#fffbeb', borderColor: isDark ? 'rgba(245, 158, 11, 0.3)' : '#fde68a' }]}>
-                <Feather name="map-pin" size={11} color="#f59e0b" />
-                <Text style={[styles.meetingTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                  Meeting: {notes}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              {routeLoading && (
+                <ActivityIndicator size="small" color={SectorColors.ride} />
+              )}
+              <TouchableOpacity
+                style={[styles.closeBtn, { backgroundColor: C.surface2, borderColor: C.border, borderWidth: 1 }]}
+                onPress={onClose}
+                activeOpacity={0.7}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Feather name="x" size={16} color={C.text} />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Map View */}
+          <View style={[styles.mapWrapper, { borderColor: C.border }]}>
+            <WebView
+              ref={webViewRef}
+              originWhitelist={['*']}
+              source={{ html: mapHtml, baseUrl: 'https://openfreemap.org' }}
+              style={styles.webView}
+              scrollEnabled={false}
+              overScrollMode="never"
+              javaScriptEnabled={true}
+              domStorageEnabled={true}
+            />
+          </View>
+
+          {/* Stops Preview & Details Card */}
+          <View style={[styles.detailsCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <View style={styles.stopsTrack}>
+              {/* Pickup */}
+              <View style={styles.stopRow}>
+                <View style={[styles.stopDot, { backgroundColor: '#10b981' }]} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.stopMicro, { color: '#10b981', fontFamily: FontFamily.jakartaBold }]}>
+                    PICKUP POINT
+                  </Text>
+                  <Text style={[styles.stopTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                    {origin}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Meeting spot callout */}
+              {notes ? (
+                <View style={[styles.meetingBadge, { backgroundColor: isDark ? 'rgba(245, 158, 11, 0.12)' : '#fffbeb', borderColor: isDark ? 'rgba(245, 158, 11, 0.3)' : '#fde68a' }]}>
+                  <Feather name="map-pin" size={11} color="#f59e0b" />
+                  <Text style={[styles.meetingTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                    Meeting: {notes}
+                  </Text>
+                </View>
+              ) : null}
+
+              {/* Destination */}
+              <View style={styles.stopRow}>
+                <View style={[styles.stopDot, { backgroundColor: '#ef4444' }]} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.stopMicro, { color: '#ef4444', fontFamily: FontFamily.jakartaBold }]}>
+                    DROP-OFF DESTINATION
+                  </Text>
+                  <Text style={[styles.stopTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                    {destination}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Real Road Distance & Travel Duration Estimate */}
+            {distanceText ? (
+              <View style={[styles.estimateRow, { borderTopColor: C.border }]}>
+                <AnimatedIcon family="feather" name="navigation" size={13} color={SectorColors.ride} animation="entrance" />
+                <Text style={[styles.estimateTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                  {distanceText}
                 </Text>
               </View>
             ) : null}
-
-            <View style={styles.stopItem}>
-              <View style={[styles.dot, { backgroundColor: '#ef4444' }]} />
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.stopType, { color: '#ef4444', fontFamily: FontFamily.jakartaBold }]}>DESTINATION</Text>
-                <Text style={[styles.stopName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                  {destination}
-                </Text>
-              </View>
-            </View>
           </View>
 
-          {/* Secondary External Navigation Option */}
-          <TouchableOpacity
-            style={[styles.externalNavBtn, { backgroundColor: isDark ? 'rgba(39, 94, 254, 0.12)' : '#eff6ff', borderColor: isDark ? 'rgba(39, 94, 254, 0.3)' : '#bfdbfe' }]}
-            onPress={handleOpenGoogleMaps}
-            activeOpacity={0.8}
-          >
-            <Feather name="navigation" size={16} color={C.brand} />
-            <Text style={[styles.externalNavBtnTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
-              Open Voice Turn-by-Turn in Google Maps
-            </Text>
-            <Feather name="arrow-up-right" size={15} color={C.brand} />
-          </TouchableOpacity>
+          {/* Universal 58dp Primary Navigation Button */}
+          <View style={{ paddingHorizontal: Layout.screenPadding, marginTop: 12 }}>
+            <TouchableOpacity
+              style={[styles.navBtn, { backgroundColor: SectorColors.ride }]}
+              onPress={handleOpenGoogleMaps}
+              activeOpacity={0.85}
+            >
+              <AnimatedIcon family="feather" name="navigation" size={18} color="#fff" animation="spring" />
+              <Text style={[styles.navBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                Start Live Navigation in Google Maps
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </Modal>
@@ -388,106 +727,87 @@ export function RideRouteMapModal({
 }
 
 const styles = StyleSheet.create({
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    justifyContent: 'flex-end',
+  } as ViewStyle,
   container: {
-    flex: 1,
-  },
-  topBar: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 10,
+    height: '84%',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderTopWidth: 1,
+    overflow: 'hidden',
+  } as ViewStyle,
+  header: {
+    height: 60,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    justifyContent: 'space-between',
+    paddingHorizontal: Layout.screenPadding,
+    borderBottomWidth: 1,
+  } as ViewStyle,
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 10,
-  },
-  backBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 1,
+    flex: 1,
+  } as ViewStyle,
+  iconPill: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  headerPill: {
-    flex: 1,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    gap: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  headerDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#275efe',
-  },
+  } as ViewStyle,
   headerTitle: {
-    fontSize: 13.5,
-    flex: 1,
+    fontSize: 15,
   } as TextStyle,
-
-  mapContainer: {
-    flex: 1,
-  },
-  webview: {
-    flex: 1,
-  },
-  loadingOverlay: {
-    ...StyleSheet.absoluteFill,
+  headerSub: {
+    fontSize: 11,
+  } as TextStyle,
+  closeBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
-  },
-  loadingTxt: {
-    fontSize: 13,
-  } as TextStyle,
-
-  bottomCard: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+  } as ViewStyle,
+  mapWrapper: {
+    flex: 1,
+    borderBottomWidth: 1,
+    overflow: 'hidden',
+  } as ViewStyle,
+  webView: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  } as ViewStyle,
+  detailsCard: {
+    marginHorizontal: Layout.screenPadding,
+    marginTop: 12,
+    padding: 14,
+    borderRadius: 16,
     borderWidth: 1,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    gap: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 5,
-  },
+    gap: 10,
+  } as ViewStyle,
   stopsTrack: {
     gap: 8,
-  },
-  stopItem: {
+  } as ViewStyle,
+  stopRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-  },
-  dot: {
+  } as ViewStyle,
+  stopDot: {
     width: 10,
     height: 10,
     borderRadius: 5,
-  },
-  stopType: {
+  } as ViewStyle,
+  stopMicro: {
     fontSize: 9.5,
     letterSpacing: 0.5,
   } as TextStyle,
-  stopName: {
+  stopTitle: {
     fontSize: 13.5,
   } as TextStyle,
   meetingBadge: {
@@ -499,23 +819,31 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     marginLeft: 20,
-  },
+  } as ViewStyle,
   meetingTxt: {
     fontSize: 12,
     flex: 1,
   } as TextStyle,
-
-  externalNavBtn: {
+  estimateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderTopWidth: 1,
+    paddingTop: 8,
+    marginTop: 2,
+  } as ViewStyle,
+  estimateTxt: {
+    fontSize: 12,
+  } as TextStyle,
+  navBtn: {
+    height: 58,
+    borderRadius: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    height: 58,
-    borderRadius: 16,
-    borderWidth: 1,
-    marginTop: 4,
-  },
-  externalNavBtnTxt: {
-    fontSize: 13,
+    gap: 9,
+  } as ViewStyle,
+  navBtnTxt: {
+    fontSize: 15,
   } as TextStyle,
 });

@@ -484,14 +484,14 @@ All location and hospital selectors across the Blood Donation system strictly fo
 - **Decluttered Header:** Removed internal database codes (`RD-xxx`) from user-facing hero badges; consolidated departure time and pricing.
 
 ### 3. In-App Interactive Route Map Modal (`RideRouteMapModal.tsx`)
-- **In-App MapLibre GL Integration:** Tapping "View In-App Route Map" opens a full vector map view directly inside CampusOne rather than immediately launching external browser/Google Maps apps.
-- **Custom Visual Markers:**
-  - Green pulsing marker for Pickup (`●`).
-  - Red pulsing marker for Destination (`■`).
-  - Dashed blue route line connecting origin and destination.
-  - `fitBounds` with `{ maxZoom: 15.5, padding: { top: 90, bottom: 200, left: 60, right: 60 } }` framing the whole commute route.
-- **XSS & Injection Hardening:** Safe DOM label construction using `textContent` and `JSON.stringify` serialization.
-- **Optional Turn-by-Turn Navigation:** Dedicated 58dp action button in the bottom sheet allows drivers to launch external Google Maps for voice directions when driving.
+- **Full Parity with HospitalMapModal:** Upgraded `RideRouteMapModal.tsx` to match the exact same engine and visual design standards as Blood Donation's `HospitalMapModal`:
+  - **Live Road Routing via OSRM:** Fetches turn-by-turn road geometry coordinates, driving distance (meters), and duration (seconds) via `https://router.project-osrm.org/route/v1/driving/...`, replacing straight-line approximations with true street-following navigation.
+  - **Triple-Layer Highway Polyline:** Renders an 8.5px dark casing layer (`#081738` / `#1e3a8a`), 5.5px core electric blue road line (`#275efe`), and a 1.6px white dashed inner trail (`line-dasharray: [2, 3]`) simulating live Google Maps traffic flow.
+  - **Floating Trip Summary Banner:** Frosted glass pill over the top of the map showing estimated driving time (`28 min`), distance (`20.2 km`), and origin/destination metadata.
+  - **Symmetrical Upright Crosshairs Recenter Control:** Bottom-right floating action button with Google Maps target crosshairs icon; invokes `recenterRoute()` with `LngLatBounds()` to smoothly re-frame the journey.
+  - **Authentic Google-Style Markers:** Pickup marker features an active pulsing green radar wave with centered dot and dark tag; destination features a grounded red SVG teardrop pin with coordinate/label tag.
+  - **84% Bottom Sheet Presentation:** Replaced fullscreen modal with standard bottom-sheet sheet (`height: '84%'`, `borderTopLeftRadius: 24`, 60dp header with close `✕` button, and semi-transparent backdrop).
+  - **Bottom Route Details & 58dp Primary Action:** Shows Pickup, Meeting Point, Drop-off, estimated drive time and distance (`~28 min (20.2 km) driving route`), and a universal 58dp button to launch turn-by-turn Google Maps navigation.
 
 ### 4. Universal 58dp & 72dp Bar Standard Alignment
 - Departure Time selector standardized to 72dp Dropdown Card (`height: 72`, `borderRadius: 16`, 44×44 icon box).

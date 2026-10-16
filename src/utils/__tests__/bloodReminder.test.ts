@@ -31,9 +31,9 @@ describe('bloodReminder', () => {
     expect(Notifications.scheduleNotificationAsync).toHaveBeenCalledTimes(1);
     const callArgs = (Notifications.scheduleNotificationAsync as jest.Mock).mock.calls[0][0];
     expect(callArgs.identifier).toBe(BLOOD_RECHARGE_NOTIFICATION_ID);
-    // ~90 days in seconds = 90 * 86400 = 7,776,000
-    expect(callArgs.trigger.seconds).toBeGreaterThan(89 * 86400);
-    expect(callArgs.trigger.seconds).toBeLessThanOrEqual(90 * 86400);
+    // ~90 days in seconds = 90 * 86400 = 7,776,000 (plus up to 24h depending on time of day)
+    expect(callArgs.trigger.seconds).toBeGreaterThan(88 * 86400);
+    expect(callArgs.trigger.seconds).toBeLessThanOrEqual(91 * 86400);
   });
 
   it('schedules a 120-day notification for female donors (WHO guideline)', async () => {
@@ -41,9 +41,9 @@ describe('bloodReminder', () => {
     await scheduleRechargedReminder(today, 'female');
     expect(Notifications.scheduleNotificationAsync).toHaveBeenCalledTimes(1);
     const callArgs = (Notifications.scheduleNotificationAsync as jest.Mock).mock.calls[0][0];
-    // ~120 days in seconds = 120 * 86400 = 10,368,000
-    expect(callArgs.trigger.seconds).toBeGreaterThan(119 * 86400);
-    expect(callArgs.trigger.seconds).toBeLessThanOrEqual(120 * 86400);
+    // ~120 days in seconds = 120 * 86400 = 10,368,000 (plus up to 24h depending on time of day)
+    expect(callArgs.trigger.seconds).toBeGreaterThan(118 * 86400);
+    expect(callArgs.trigger.seconds).toBeLessThanOrEqual(121 * 86400);
   });
 
   it('ignores past dates where cooldown has already elapsed', async () => {
