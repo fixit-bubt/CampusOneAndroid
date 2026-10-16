@@ -80,9 +80,9 @@ export function MarketScreen({ navigation }: any) {
 
   // Load saved listing IDs from AsyncStorage
   const loadSavedIds = useCallback(async () => {
-    const ids = await getSavedListingIds();
+    const ids = await getSavedListingIds(user?.id);
     setSavedIds(new Set(ids));
-  }, []);
+  }, [user?.id]);
 
   const load = useCallback(async () => {
     const cached = await getCache<Listing[]>(CacheKeys.MARKET_LISTINGS);
@@ -134,7 +134,7 @@ export function MarketScreen({ navigation }: any) {
   }
 
   async function handleToggleFavorite(id: string) {
-    const { ids } = await toggleSavedListing(id);
+    const { ids } = await toggleSavedListing(id, user?.id);
     setSavedIds(new Set(ids));
   }
 

@@ -416,6 +416,32 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
   - `BloodScreen.tsx`: Resolves hospital coordinates directly from `resolveHospitalLocation` and passes them to `HospitalMapModal`.
   - Seamlessly leveraged across `RidePostScreen`, `MarketPostScreen`, and `PostItemFormScreen` via `LocationPickerModal`.
 
+### 5.9 Universal Single Direction Map Architecture (`DirectionMapModal.tsx`)
+- **Single Map Mandate Across CampusOne:** All mapping and route direction features in the mobile application are unified into one single high-performance component (`src/components/location/DirectionMapModal.tsx`). Ad-hoc, duplicate map modals for individual features have been permanently eliminated.
+- **Underlying Map Engine:** Powered by MapLibre GL JS v4.7.1 running inside a hardware-accelerated `react-native-webview` with zero-cost OpenFreeMap vector tiles. Automatically adapts to dark and light modes (`https://tiles.openfreemap.org/styles/dark` vs `https://tiles.openfreemap.org/styles/liberty`).
+- **OSRM Road Routing:** Fetches true turn-by-turn road geometry, road distance, and travel duration via OSRM (`router.project-osrm.org`), rendering a dual-layer polyline (8px dark drop casing + 5.5px electric blue `#2563eb` road line).
+- **Google Maps Visual Identity:**
+  - Pulsing blue dot for live GPS user location with continuous radar wave ring.
+  - Teardrop destination pin with coordinate/label tag and sector color accent.
+  - Floating action rail: 🧭 Reset Compass FAB, ⤢ Fit Whole Route Bounds FAB, and 🎯 Recenter Live GPS Location FAB.
+- **Bottom Navigation Sheet:**
+  - Segmented travel mode switcher (🚗 Drive, 🏍️ Bike, 🚶 Walk) with live route re-calculation.
+  - Duration, distance, and arrival clock time (ETA).
+  - Stops track layout for rides (Pickup point -> Meeting spot callout -> Drop-off point with fare & vehicle badges) vs single destination summary box for other features.
+  - Universal 58dp Primary Navigation CTA: Deep-links directly into the native Google Maps app with origin, destination, and travel mode pre-configured for turn-by-turn voice directions.
+- **100% Backward-Compatible Wrapper Architecture:**
+  - `src/components/blood/HospitalMapModal.tsx`: Clean wrapper around `DirectionMapModal` with `SectorColors.blood` styling.
+  - `src/components/rides/RideRouteMapModal.tsx`: Clean wrapper around `DirectionMapModal` with `SectorColors.ride` styling and stops track.
+  - `src/screens/market/MarketDetailScreen.tsx`: Opens `DirectionMapModal` with `SectorColors.market` when tapping the meetup spot.
+  - `src/screens/lostfound/LostFoundDetailScreen.tsx`: Opens `DirectionMapModal` with `SectorColors.lostfound` when tapping item location.
+
+### 5.10 Student Marketplace Architecture & Native Camera Permissions (`MarketPostScreen.tsx`, `MarketDetailScreen.tsx`, `marketService.ts`)
+- **Android Manifest & Native Permissions:** Android requires `<uses-permission android:name="android.permission.CAMERA"/>` and `<uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>` (Android 13+) in `AndroidManifest.xml` alongside `expo-image-picker` in `app.json` for camera/photo operations. Without native manifest declarations, OS-level permission requests fail silently.
+- **Deferred Upload & Instant Preview Pattern:** `MarketPostScreen.tsx` stores the picked image URI locally first, enabling immediate 0ms photo preview and user removal. Network upload to the Supabase `photos` bucket (`uploadPhoto(photoUri, 'marketplace', user.id)`) is deferred until form submission, preventing orphaned storage files and RLS errors.
+- **Universal 72dp Handover Location Standard:** Replaced stacked duplicate inputs with the Universal 72dp Dropdown Card standard (`minHeight: 72`, `dropdownIconBox: 44x44`, sector highlight, clear `X` button) paired with a toggle between "Choose from list" (campus hubs and Dhaka commute zones) and "Type custom".
+- **Real-Time GPS Distance Calculation:** In `MarketDetailScreen.tsx` and `LostFoundDetailScreen.tsx`, the handover location resolves against master Dhaka landmarks (`findMasterLocationByName`) and calculates real-time distance from the customer's phone coordinates (`getCurrentUserCoordinates()`), displaying `X km away · Tap for directions`.
+- **Wishlist Scoping by User ID:** Scoped saved wishlist IDs in `marketService.ts` to `@c1_saved_listings_${userId}` to prevent bookmark state leakage across different user accounts on shared devices.
+
 ---
 
 ## 6. Expo SDK 56 & Android Quirks

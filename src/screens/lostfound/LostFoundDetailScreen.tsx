@@ -26,6 +26,13 @@ import { openUrl, waHref } from '../../utils/link';
 import { rankMatches, type MatchItem } from '../../utils/lostFoundMatch';
 import { uploadProof, deleteFile, getSignedUrl } from '../../utils/storage';
 import { ContactSheet } from '../../components/ui/ContactSheet';
+import { DirectionMapModal } from '../../components/location/DirectionMapModal';
+import {
+  getCurrentUserCoordinates,
+  getDistanceMeters,
+  findMasterLocationByName,
+  type Coordinates,
+} from '../../services/locationService';
 import { BUCKETS } from '../../constants/app';
 import type { LostFoundItem } from '../../types/database';
 
@@ -80,6 +87,28 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
   const [contactSheetOpen, setContactSheetOpen] = useState(false);
   const [fullscreenPhotoVisible, setFullscreenPhotoVisible] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
+  const [mapModalOpen, setMapModalOpen] = useState(false);
+  const [userCoords, setUserCoords] = useState<Coordinates | null>(null);
+  const [distanceText, setDistanceText] = useState<string | null>(null);
+
+  // Obtain user's live coordinates for distance calculation
+  useEffect(() => {
+    getCurrentUserCoordinates().then(loc => {
+      if (loc) setUserCoords(loc);
+    });
+  }, []);
+
+  // Compute live distance to item location
+  useEffect(() => {
+    if (!item?.location || !userCoords) return;
+    const lm = findMasterLocationByName(item.location);
+    if (lm) {
+      const m = getDistanceMeters(userCoords.latitude, userCoords.longitude, lm.coords.latitude, lm.coords.longitude);
+      const km = m / 1000;
+      const txt = km < 1 ? `${Math.round(m)} m away` : `${km < 10 ? km.toFixed(1) : Math.round(km)} km away`;
+      setDistanceText(txt);
+    }
+  }, [item?.location, userCoords]);
 
   const isMine = item?.poster_id === user?.id;
   const myApprovedClaim = claims.find(c => c.claimant_id === user?.id && c.status === 'Approved') ?? null;
@@ -458,15 +487,27 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
 
         {/* Info grid */}
         <View style={[styles.infoGrid, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <View style={[styles.infoCell, { borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: C.border }]}>
-            <Text style={[styles.infoLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.lf.where}</Text>
+          <TouchableOpacity
+            style={[styles.infoCell, { borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: C.border }]}
+            onPress={() => setMapModalOpen(true)}
+            activeOpacity={0.75}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text style={[styles.infoLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.lf.where}</Text>
+              <Feather name="arrow-up-right" size={12} color={SectorColors.lostfound} />
+            </View>
             <View style={styles.infoVal}>
-              <Icon name="pin" size={13} color={C.textMuted} />
-              <Text style={[styles.infoTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>
+              <Icon name="pin" size={13} color={SectorColors.lostfound} />
+              <Text style={[styles.infoTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                 {item.location}
               </Text>
             </View>
-          </View>
+            {distanceText && (
+              <Text style={{ fontSize: 10.5, color: SectorColors.lostfound, fontFamily: FontFamily.jakartaSemiBold, marginTop: 2 }}>
+                {distanceText} · View map
+              </Text>
+            )}
+          </TouchableOpacity>
           <View style={styles.infoCell}>
             <Text style={[styles.infoLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.lf.when}</Text>
             <View style={styles.infoVal}>
@@ -888,6 +929,17 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
           </SafeAreaView>
         </View>
       </Modal>
+
+      {/* In-App Interactive Route & Location Map Modal */}
+      <DirectionMapModal
+        visible={mapModalOpen}
+        onClose={() => setMapModalOpen(false)}
+        destination={item.location}
+        sectorColor={SectorColors.lostfound}
+        iconName="map-pin"
+        title="Item Location & Directions"
+        badgeText={item.type === 'Found' ? 'Found Item Location' : 'Lost Item Spot'}
+      />
     </SafeAreaView>
   );
 }

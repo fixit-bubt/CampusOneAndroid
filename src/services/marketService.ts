@@ -9,20 +9,29 @@ import type { Listing } from '../types/database';
 
 const SAVED_STORAGE_KEY = '@c1_saved_listings';
 
-// ── Saved / Wishlist Items (On-Device Persistence) ─────────────────────────
+function getSavedStorageKey(userId?: string): string {
+  return userId ? `${SAVED_STORAGE_KEY}_${userId}` : SAVED_STORAGE_KEY;
+}
 
-export async function getSavedListingIds(): Promise<string[]> {
+export async function getSavedListingIds(userId?: string): Promise<string[]> {
   try {
-    const raw = await AsyncStorage.getItem(SAVED_STORAGE_KEY);
+    const key = getSavedStorageKey(userId);
+    const raw = await AsyncStorage.getItem(key);
+    if (!raw && userId) {
+      // Fallback check to legacy non-user-scoped key
+      const legacy = await AsyncStorage.getItem(SAVED_STORAGE_KEY);
+      return legacy ? JSON.parse(legacy) : [];
+    }
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
   }
 }
 
-export async function toggleSavedListing(id: string): Promise<{ saved: boolean; ids: string[] }> {
+export async function toggleSavedListing(id: string, userId?: string): Promise<{ saved: boolean; ids: string[] }> {
   try {
-    const current = await getSavedListingIds();
+    const key = getSavedStorageKey(userId);
+    const current = await getSavedListingIds(userId);
     const set = new Set(current);
     const wasSaved = set.has(id);
     if (wasSaved) {
@@ -31,7 +40,7 @@ export async function toggleSavedListing(id: string): Promise<{ saved: boolean; 
       set.add(id);
     }
     const next = Array.from(set);
-    await AsyncStorage.setItem(SAVED_STORAGE_KEY, JSON.stringify(next));
+    await AsyncStorage.setItem(key, JSON.stringify(next));
     return { saved: !wasSaved, ids: next };
   } catch {
     return { saved: false, ids: [] };

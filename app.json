@@ -48,6 +48,13 @@
         {
           "locationAlwaysAndWhenInUsePermission": "Allow CampusOne to access your location to select commute and campus points."
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow CampusOne to access your photos to attach item images and proofs.",
+          "cameraPermission": "Allow CampusOne to access your camera to take photos of items and documents."
+        }
       ]
     ]
   }

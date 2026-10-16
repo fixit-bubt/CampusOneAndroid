@@ -11,10 +11,18 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { ContactSheet } from '../../components/ui/ContactSheet';
+import { DirectionMapModal } from '../../components/location/DirectionMapModal';
+import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
 import { FontFamily, Layout, Accent, SectorColors, LightColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { getCache, CacheKeys } from '../../services/cacheService';
 import { fetchPeople, type Person } from '../../services/peopleService';
+import {
+  getCurrentUserCoordinates,
+  getDistanceMeters,
+  findMasterLocationByName,
+  type Coordinates,
+} from '../../services/locationService';
 import {
   openListingDmThread,
   updateListingStatus,
@@ -59,13 +67,35 @@ export function MarketDetailScreen({ route, navigation }: any) {
   const [contactInfo, setContactInfo] = useState<{ name: string | null; whatsapp: string | null } | null>(null);
   const [contactSheetOpen, setContactSheetOpen] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [mapModalOpen, setMapModalOpen] = useState(false);
+  const [userCoords, setUserCoords] = useState<Coordinates | null>(null);
+  const [distanceText, setDistanceText] = useState<string | null>(null);
+
+  // Obtain user's live coordinates for distance calculation
+  useEffect(() => {
+    getCurrentUserCoordinates().then(loc => {
+      if (loc) setUserCoords(loc);
+    });
+  }, []);
+
+  // Compute live distance to handover meetup spot
+  useEffect(() => {
+    if (!listing?.meetup_spot || !userCoords) return;
+    const lm = findMasterLocationByName(listing.meetup_spot);
+    if (lm) {
+      const m = getDistanceMeters(userCoords.latitude, userCoords.longitude, lm.coords.latitude, lm.coords.longitude);
+      const km = m / 1000;
+      const txt = km < 1 ? `${Math.round(m)} m away` : `${km < 10 ? km.toFixed(1) : Math.round(km)} km away`;
+      setDistanceText(txt);
+    }
+  }, [listing?.meetup_spot, userCoords]);
 
   // Load wishlist bookmark state
   useEffect(() => {
     if (id) {
-      getSavedListingIds().then(ids => setIsSaved(ids.includes(id)));
+      getSavedListingIds(user?.id).then(ids => setIsSaved(ids.includes(id)));
     }
-  }, [id]);
+  }, [id, user?.id]);
 
   const load = useCallback(async () => {
     if (!id) { setFailed(true); return; }
@@ -105,7 +135,7 @@ export function MarketDetailScreen({ route, navigation }: any) {
   // Toggle favorite
   async function handleToggleBookmark() {
     if (!id) return;
-    const { saved } = await toggleSavedListing(id);
+    const { saved } = await toggleSavedListing(id, user?.id);
     setIsSaved(saved);
     toast({
       type: 'info',
@@ -196,7 +226,11 @@ export function MarketDetailScreen({ route, navigation }: any) {
 
   // Delete listing action
   function handleDeleteListing() {
-    if (!id) return;
+    if (!id || !listing) return;
+    if (listing.seller_id !== user?.id && !isAdmin) {
+      toast({ type: 'error', title: t.common.error, message: 'You are not authorized to delete this listing' });
+      return;
+    }
     Alert.alert(t.market2.deleteListingTitle, t.market2.deleteListingBody, [
       { text: t.common.cancel, style: 'cancel' },
       {
@@ -381,19 +415,36 @@ export function MarketDetailScreen({ route, navigation }: any) {
           )}
         </View>
 
-        {/* Meetup Handover Spot */}
+        {/* Interactive Meetup Handover Spot (With Real Distance & Map Directions) */}
         {listing.meetup_spot ? (
-          <View style={[styles.spotCard, { backgroundColor: C.surface2, borderColor: C.border }]}>
-            <Feather name="map-pin" size={15} color={MARKET_COLOR} />
+          <TouchableOpacity
+            style={[styles.spotCard, { backgroundColor: C.surface2, borderColor: C.border }]}
+            onPress={() => setMapModalOpen(true)}
+            activeOpacity={0.8}
+          >
+            <View style={[styles.spotIconWrap, { backgroundColor: isDark ? `${MARKET_COLOR}25` : `${MARKET_COLOR}15` }]}>
+              <AnimatedIcon family="feather" name="map-pin" size={16} color={MARKET_COLOR} animation="entrance" />
+            </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.spotLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                {t.market2.meetupSpot}
+                {t.market2.meetupSpot || 'HANDOVER LOCATION'}
               </Text>
-              <Text style={[styles.spotValue, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>
+              <Text style={[styles.spotValue, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                 {listing.meetup_spot}
               </Text>
+              {distanceText && (
+                <Text style={[styles.spotDistanceTxt, { color: MARKET_COLOR, fontFamily: FontFamily.jakartaSemiBold }]}>
+                  {distanceText} · Tap for directions
+                </Text>
+              )}
             </View>
-          </View>
+            <View style={[styles.mapHintBadge, { backgroundColor: isDark ? `${MARKET_COLOR}25` : `${MARKET_COLOR}15`, borderColor: isDark ? `${MARKET_COLOR}55` : `${MARKET_COLOR}35` }]}>
+              <Text style={[styles.mapHintTxt, { color: MARKET_COLOR, fontFamily: FontFamily.jakartaBold }]}>
+                Map
+              </Text>
+              <AnimatedIcon family="feather" name="arrow-up-right" size={11} color={MARKET_COLOR} animation="spring" />
+            </View>
+          </TouchableOpacity>
         ) : null}
 
         {/* Description */}
@@ -569,6 +620,16 @@ export function MarketDetailScreen({ route, navigation }: any) {
         phone={contactInfo?.whatsapp}
         inAppChatAction={handleMessageSeller}
       />
+
+      {/* Direction & Live Route Map Modal */}
+      <DirectionMapModal
+        visible={mapModalOpen}
+        onClose={() => setMapModalOpen(false)}
+        destination={listing?.meetup_spot || 'Campus Handover'}
+        sectorColor={MARKET_COLOR}
+        iconName="map-pin"
+        title="Meetup Route & Directions"
+      />
     </SafeAreaView>
   );
 }
@@ -640,14 +701,32 @@ const styles = StyleSheet.create({
   spotCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    padding: 12,
-    borderRadius: 14,
+    gap: 12,
+    padding: 13,
+    borderRadius: 16,
     borderWidth: 1,
     marginTop: 14,
   } as ViewStyle,
+  spotIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
   spotLabel: { fontSize: 10, letterSpacing: 0.6 } as any,
-  spotValue: { fontSize: 13.5, marginTop: 1 } as any,
+  spotValue: { fontSize: 14, marginTop: 1 } as any,
+  spotDistanceTxt: { fontSize: 11.5, marginTop: 2 } as any,
+  mapHintBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 10,
+    borderWidth: 1,
+  } as ViewStyle,
+  mapHintTxt: { fontSize: 11.5 } as any,
 
   sectionLabel: { fontSize: 11, letterSpacing: 0.8, marginTop: 18, marginBottom: 8 } as any,
   body: { fontSize: 14.5, lineHeight: 23 } as any,

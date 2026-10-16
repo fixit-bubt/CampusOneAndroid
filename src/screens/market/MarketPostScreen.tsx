@@ -14,10 +14,11 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { LocationPickerModal } from '../../components/location/LocationPickerModal';
+import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
 import { FontFamily, Layout, Accent, SectorColors } from '../../theme';
 import { useToast } from '../../components/ui/Toast';
 import { supabase } from '../../lib/supabase';
-import { uploadFile } from '../../utils/storage';
+import { uploadPhoto, uploadFile } from '../../utils/storage';
 import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 import { ALL_DHAKA_COMMUTE_AREAS } from '../rides/RidePostScreen';
 import type { Listing } from '../../types/database';
@@ -84,7 +85,9 @@ export function MarketPostScreen({ route, navigation }: any) {
   const [desc, setDesc] = useState(listing?.description ?? '');
   const [courseCode, setCourseCode] = useState(listing?.course_code ?? '');
   const [meetupSpot, setMeetupSpot] = useState(listing?.meetup_spot ?? '');
+  const [customMode, setCustomMode] = useState(false);
   const [photoUri, setPhotoUri] = useState<string | null>(listing?.photo_url ?? null);
+  const [isLocalPhoto, setIsLocalPhoto] = useState(false);
 
   // Modals
   const [pickerModalOpen, setPickerModalOpen] = useState(false);
@@ -141,53 +144,54 @@ export function MarketPostScreen({ route, navigation }: any) {
   // Camera capture
   async function handleLaunchCamera() {
     setPickerModalOpen(false);
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      toast({ type: 'info', title: t.market2.permissionRequired, message: 'Please grant camera access to take a photo.' });
-      return;
-    }
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ['images'],
-      allowsEditing: false,
-      quality: 0.8,
-    });
-    if (!result.canceled && result.assets?.[0]) {
-      await processAndUpload(result.assets[0].uri);
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        toast({ type: 'info', title: t.market2.permissionRequired, message: 'Please grant camera access to take a photo.' });
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.85,
+      });
+      if (!result.canceled && result.assets?.[0]?.uri) {
+        setPhotoUri(result.assets[0].uri);
+        setIsLocalPhoto(true);
+      }
+    } catch (e: any) {
+      toast({ type: 'error', title: 'Camera Error', message: e?.message || 'Could not launch camera.' });
     }
   }
 
   // Gallery picker
   async function handleLaunchGallery() {
     setPickerModalOpen(false);
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      toast({ type: 'info', title: t.market2.permissionRequired, message: t.market2.photoPermissionBody });
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: false,
-      quality: 0.8,
-    });
-    if (!result.canceled && result.assets?.[0]) {
-      await processAndUpload(result.assets[0].uri);
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        toast({ type: 'info', title: t.market2.permissionRequired, message: t.market2.photoPermissionBody });
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.85,
+      });
+      if (!result.canceled && result.assets?.[0]?.uri) {
+        setPhotoUri(result.assets[0].uri);
+        setIsLocalPhoto(true);
+      }
+    } catch (e: any) {
+      toast({ type: 'error', title: 'Gallery Error', message: e?.message || 'Could not access photo library.' });
     }
   }
 
-  // Process & upload image
-  async function processAndUpload(uri: string) {
-    if (!user) return;
-    setUploading(true);
-    try {
-      const fileName = `${user.id}_${Date.now()}.jpg`;
-      const res = await uploadFile('photos', uri, `marketplace/${user.id}/${fileName}`, 'image/jpeg', true, { preset: 'standard' });
-      if (!res.success) throw new Error(res.error);
-      setPhotoUri(res.url);
-    } catch {
-      toast({ type: 'error', title: t.market2.uploadFailed, message: t.market2.uploadFailedBody });
-    } finally {
-      setUploading(false);
-    }
+  function handleRemovePhoto() {
+    setPhotoUri(null);
+    setIsLocalPhoto(false);
   }
 
   // Location selection helper
@@ -220,6 +224,21 @@ export function MarketPostScreen({ route, navigation }: any) {
     if (!canSubmit || !user || loading || uploading) return;
     setLoading(true);
     try {
+      let finalPhotoUrl = listing?.photo_url ?? null;
+      if (photoUri && isLocalPhoto) {
+        setUploading(true);
+        const up = await uploadPhoto(photoUri, 'marketplace', user.id);
+        setUploading(false);
+        if (!up.success) {
+          setLoading(false);
+          toast({ type: 'error', title: t.market2.uploadFailed, message: up.error || t.market2.uploadFailedBody });
+          return;
+        }
+        finalPhotoUrl = up.url;
+      } else if (!photoUri) {
+        finalPhotoUrl = null;
+      }
+
       const numericPrice = isFree ? 0 : (parseInt(price.replace(/[^0-9]/g, ''), 10) || 0);
       const finalCategory = cat === 'Other' && customCat.trim() ? customCat.trim() : cat;
 
@@ -230,8 +249,8 @@ export function MarketPostScreen({ route, navigation }: any) {
         condition,
         negotiable:  isFree ? false : negotiable,
         description: desc.trim(),
-        photo_url:   photoUri ?? null,
-        photos:      photoUri ? [photoUri] : [],
+        photo_url:   finalPhotoUrl,
+        photos:      finalPhotoUrl ? [finalPhotoUrl] : [],
         course_code: showCourse ? (courseCode.trim().toUpperCase() || null) : null,
         meetup_spot: meetupSpot.trim() || null,
         seller_id:   user.id,
@@ -320,45 +339,51 @@ export function MarketPostScreen({ route, navigation }: any) {
             </View>
           </TouchableOpacity>
 
-          {/* Custom Category Input if 'Other' selected */}
+          {/* Custom Category Input if 'Other' selected (Universal 58dp Standard) */}
           {cat === 'Other' && (
             <View style={{ marginTop: 8 }}>
               <Text style={[styles.subLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaSemiBold }]}>
                 {t.market2.customCategoryLabel}
               </Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                value={customCat}
-                onChangeText={setCustomCat}
-                placeholder={t.market2.customCategoryPlaceholder}
-                placeholderTextColor={C.textMuted}
-              />
+              <View style={[styles.input58WithIcon, { backgroundColor: C.surface, borderColor: customCat ? MARKET_COLOR : C.border }]}>
+                <Feather name="folder-plus" size={18} color={customCat ? MARKET_COLOR : C.textMuted} />
+                <TextInput
+                  style={[styles.innerInput58, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                  value={customCat}
+                  onChangeText={setCustomCat}
+                  placeholder={t.market2.customCategoryPlaceholder}
+                  placeholderTextColor={C.textMuted}
+                />
+              </View>
             </View>
           )}
 
-          {/* 2. Item Title */}
+          {/* 2. Item Title (Universal 58dp Standard) */}
           <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 14 }]}>
-            {t.market2.itemName}
+            {t.market2.itemName} *
           </Text>
-          <TextInput
-            style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-            value={title}
-            onChangeText={setTitle}
-            placeholder={t.market2.itemNamePlaceholder}
-            placeholderTextColor={C.textMuted}
-          />
+          <View style={[styles.input58WithIcon, { backgroundColor: C.surface, borderColor: title ? MARKET_COLOR : C.border }]}>
+            <Feather name="tag" size={18} color={title ? MARKET_COLOR : C.textMuted} />
+            <TextInput
+              style={[styles.innerInput58, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+              value={title}
+              onChangeText={setTitle}
+              placeholder={t.market2.itemNamePlaceholder}
+              placeholderTextColor={C.textMuted}
+            />
+          </View>
 
           {/* 3. Photo Attachment */}
           <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 14 }]}>
             {t.market2.photoOptional}
           </Text>
-          <View style={[styles.photoBox, { backgroundColor: C.surface, borderColor: C.border }]}>
+          <View style={[styles.photoBox, { backgroundColor: C.surface, borderColor: photoUri ? MARKET_COLOR : C.border }]}>
             {photoUri ? (
               <View style={styles.photoPreviewWrapper}>
                 <Image source={{ uri: photoUri }} style={styles.photoPreview} resizeMode="cover" />
                 <TouchableOpacity
                   style={styles.photoRemoveBtn}
-                  onPress={() => setPhotoUri(null)}
+                  onPress={handleRemovePhoto}
                   hitSlop={8}
                   activeOpacity={0.8}
                 >
@@ -415,20 +440,23 @@ export function MarketPostScreen({ route, navigation }: any) {
 
           </View>
 
-          {/* 6. Price & Negotiable */}
+          {/* 6. Price & Negotiable (Universal 58dp Standard) */}
           {!isFree && (
             <>
               <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 14 }]}>
-                {t.market2.priceLabel}
+                {t.market2.priceLabel} *
               </Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                value={price}
-                onChangeText={v => setPrice(v.replace(/\D/g, ''))}
-                placeholder={t.market2.pricePlaceholder}
-                placeholderTextColor={C.textMuted}
-                keyboardType="numeric"
-              />
+              <View style={[styles.input58WithIcon, { backgroundColor: C.surface, borderColor: price ? MARKET_COLOR : C.border }]}>
+                <Text style={[styles.currencyPrefix, { color: MARKET_COLOR, fontFamily: FontFamily.jakartaExtraBold }]}>৳</Text>
+                <TextInput
+                  style={[styles.innerInput58, { color: C.text, fontFamily: FontFamily.jakartaBold, fontSize: 16 }]}
+                  value={price}
+                  onChangeText={v => setPrice(v.replace(/\D/g, ''))}
+                  placeholder={t.market2.pricePlaceholder}
+                  placeholderTextColor={C.textMuted}
+                  keyboardType="numeric"
+                />
+              </View>
 
               <View style={[styles.switchRow, { backgroundColor: C.surface, borderColor: C.border, marginTop: 10 }]}>
                 <View style={{ flex: 1, paddingRight: 10 }}>
@@ -448,45 +476,113 @@ export function MarketPostScreen({ route, navigation }: any) {
             </>
           )}
 
-          {/* 7. Dedicated Handover Location Picker Bar */}
-          <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 14 }]}>
-            {t.market2.meetupSpot}
-          </Text>
-          <TouchableOpacity
-            style={[styles.pickerBar, { backgroundColor: C.surface, borderColor: C.border }]}
-            onPress={() => setLocationModalOpen(true)}
-            activeOpacity={0.75}
-          >
-            <View style={styles.pickerBarLeft}>
-              <View style={[styles.pickerIconBox, { backgroundColor: isDark ? `${Accent.amber}25` : `${Accent.amber}15` }]}>
-                <Feather name="map-pin" size={16} color={Accent.amber} />
-              </View>
-              <Text
-                style={[
-                  styles.pickerBarTitle,
-                  { color: meetupSpot ? C.text : C.textMuted, fontFamily: FontFamily.jakartaBold },
-                ]}
-                numberOfLines={1}
-              >
-                {meetupSpot || 'Select campus spot or Dhaka area'}
+          {/* 7. Dedicated Handover Location (Blood Donation 72dp Standard) */}
+          <View style={styles.labelRow}>
+            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>
+              {t.market2.meetupSpot || 'HANDOVER LOCATION'}
+            </Text>
+            <TouchableOpacity
+              onPress={() => setCustomMode(!customMode)}
+              style={styles.toggleModeBtn}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Feather name={customMode ? 'list' : 'edit-2'} size={11} color={C.text2} />
+              <Text style={[styles.toggleModeTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                {customMode ? 'Choose from list' : 'Type custom'}
               </Text>
-            </View>
-            <View style={[styles.pickerBtnPill, { backgroundColor: C.surface2 }]}>
-              <Text style={[styles.pickerBtnTxt, { color: Accent.amber, fontFamily: FontFamily.jakartaBold }]}>
-                {t.market2.selectHandoverBtn}
-              </Text>
-              <Icon name="chevD" size={13} color={Accent.amber} />
-            </View>
-          </TouchableOpacity>
+            </TouchableOpacity>
+          </View>
 
-          {/* Optional custom spot details */}
-          <TextInput
-            style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium, marginTop: 8 }]}
-            value={meetupSpot}
-            onChangeText={setMeetupSpot}
-            placeholder={t.market2.meetupSpotPlaceholder}
-            placeholderTextColor={C.textMuted}
-          />
+          {customMode ? (
+            <View style={[styles.input58WithIcon, { backgroundColor: C.surface, borderColor: meetupSpot ? MARKET_COLOR : C.border }]}>
+              <Feather name="edit-3" size={18} color={meetupSpot ? MARKET_COLOR : C.textMuted} />
+              <TextInput
+                style={[styles.innerInput58, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                value={meetupSpot}
+                onChangeText={setMeetupSpot}
+                placeholder="Enter custom handover or meetup spot..."
+                placeholderTextColor={C.textMuted}
+                autoFocus
+              />
+              {meetupSpot.length > 0 && (
+                <TouchableOpacity onPress={() => setMeetupSpot('')} hitSlop={8}>
+                  <Feather name="x" size={16} color={C.textMuted} />
+                </TouchableOpacity>
+              )}
+            </View>
+          ) : (
+            <View
+              style={[
+                styles.dropdownCard,
+                {
+                  backgroundColor: C.surface,
+                  borderColor: meetupSpot ? MARKET_COLOR : C.border,
+                  borderWidth: meetupSpot ? 1.5 : 1,
+                },
+              ]}
+            >
+              <TouchableOpacity
+                style={styles.dropdownMain}
+                onPress={() => setLocationModalOpen(true)}
+                activeOpacity={0.75}
+              >
+                <View
+                  style={[
+                    styles.dropdownIconBox,
+                    {
+                      backgroundColor: meetupSpot ? (isDark ? 'rgba(5, 150, 105, 0.22)' : 'rgba(5, 150, 105, 0.12)') : C.surface2,
+                      borderColor: meetupSpot ? MARKET_COLOR : C.border,
+                      borderWidth: 1,
+                    },
+                  ]}
+                >
+                  <AnimatedIcon
+                    key={`spot-${meetupSpot}`}
+                    family="feather"
+                    name="map-pin"
+                    size={22}
+                    color={meetupSpot ? MARKET_COLOR : C.text2}
+                    animation={meetupSpot ? 'spring' : 'entrance'}
+                  />
+                </View>
+                <View style={styles.dropdownInfo}>
+                  <Text
+                    style={[
+                      styles.dropdownValue,
+                      {
+                        color: meetupSpot ? C.text : C.textMuted,
+                        fontFamily: meetupSpot ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                      },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {meetupSpot || 'Select campus spot or Dhaka area...'}
+                  </Text>
+                  <Text style={[styles.dropdownHint, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+                    {meetupSpot ? 'Tap to change handover spot' : 'BUBT campus hubs, gates & commute points'}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+              <View style={styles.dropdownRight}>
+                {meetupSpot ? (
+                  <TouchableOpacity
+                    onPress={() => setMeetupSpot('')}
+                    style={[styles.clearPill, { backgroundColor: C.surface2, borderColor: C.border, borderWidth: 1 }]}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Feather name="x" size={14} color={C.textMuted} />
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    onPress={() => setLocationModalOpen(true)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Feather name="chevron-down" size={18} color={C.textMuted} />
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+          )}
 
           {/* 8. Description */}
           <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 14 }]}>
@@ -502,20 +598,23 @@ export function MarketPostScreen({ route, navigation }: any) {
             textAlignVertical="top"
           />
 
-          {/* 9. Course Code - Books/Notes only */}
+          {/* 9. Course Code - Books/Notes only (Universal 58dp Standard) */}
           {showCourse && (
             <>
               <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 14 }]}>
                 {t.market2.courseCode}
               </Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                value={courseCode}
-                onChangeText={v => setCourseCode(v.toUpperCase())}
-                placeholder={t.market2.courseCodePlaceholder}
-                placeholderTextColor={C.textMuted}
-                autoCapitalize="characters"
-              />
+              <View style={[styles.input58WithIcon, { backgroundColor: C.surface, borderColor: courseCode ? MARKET_COLOR : C.border }]}>
+                <Feather name="book" size={18} color={courseCode ? MARKET_COLOR : C.textMuted} />
+                <TextInput
+                  style={[styles.innerInput58, { color: C.text, fontFamily: FontFamily.jakartaBold }]}
+                  value={courseCode}
+                  onChangeText={v => setCourseCode(v.toUpperCase())}
+                  placeholder={t.market2.courseCodePlaceholder}
+                  placeholderTextColor={C.textMuted}
+                  autoCapitalize="characters"
+                />
+              </View>
               <Text style={[styles.hint, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
                 {t.market2.courseCodeHint}
               </Text>
@@ -950,6 +1049,95 @@ const styles = StyleSheet.create({
     fontSize: 12,
   } as any,
 
+  // Universal 58dp Inputs
+  input58WithIcon: {
+    height: 58,
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  } as ViewStyle,
+  innerInput58: {
+    flex: 1,
+    height: '100%',
+    fontSize: 14.5,
+    paddingVertical: 0,
+  } as TextStyle,
+  currencyPrefix: {
+    fontSize: 19,
+    width: 20,
+    textAlign: 'center',
+  } as TextStyle,
+
+  // Handover Location 72dp Dropdown (Matches Blood Request Dropdown Standard)
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 18,
+    marginBottom: 6,
+  } as ViewStyle,
+  toggleModeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+  } as ViewStyle,
+  toggleModeTxt: {
+    fontSize: 11,
+  } as TextStyle,
+  dropdownCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: 72,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    borderWidth: 1,
+    gap: 12,
+  } as ViewStyle,
+  dropdownMain: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  } as ViewStyle,
+  dropdownIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  dropdownInfo: {
+    flex: 1,
+    justifyContent: 'center',
+  } as ViewStyle,
+  dropdownValue: {
+    fontSize: 14.5,
+  } as TextStyle,
+  dropdownHint: {
+    fontSize: 11.5,
+    marginTop: 2,
+    lineHeight: 16,
+  } as TextStyle,
+  dropdownRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingLeft: 4,
+  } as ViewStyle,
+  clearPill: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+
   // Text inputs
   input: {
     height: 44,
@@ -960,11 +1148,11 @@ const styles = StyleSheet.create({
   } as TextStyle,
   textarea: {
     height: 90,
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
-    paddingHorizontal: 14,
-    paddingTop: 10,
-    fontSize: 13.5,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    fontSize: 14,
   } as TextStyle,
 
   // Photo

@@ -497,6 +497,62 @@ All location and hospital selectors across the Blood Donation system strictly fo
 - Departure Time selector standardized to 72dp Dropdown Card (`height: 72`, `borderRadius: 16`, 44×44 icon box).
 - Stepper, Fare, Meeting Point, Search, and Action Buttons strictly standardized to the Universal 58dp height standard (`height: 58`, `borderRadius: 16`).
 
+---
 
+## 18. Student Marketplace Design Standards & Handover Location Picker (`MarketScreen.tsx`, `MarketPostScreen.tsx`, `MarketDetailScreen.tsx`)
 
+### 1. Universal 72dp Handover Location Dropdown Card Standard
+- **Elimination of Stacked Duplicate Inputs:** Replaced redundant stacked input fields with the Universal 72dp Dropdown Card standard (`minHeight: 72`, `dropdownIconBox: 44x44`, sector highlight, clear `X` button).
+- **Dual Mode Switcher:** Features a dedicated mode switcher button between:
+  - **"Choose from list":** Opens modal with pre-curated BUBT campus hubs, campus gates, canteen/field spots, and Greater Dhaka commute hubs.
+  - **"Type custom":** Instant free-text entry for specific spots with live clear button.
+- **Visual Design Parity:** Matches Blood Donation's `minHeight: 72dp` dropdown card standard (`padding: 14 dp`, `borderRadius: 16 dp`, `44 × 44 dp` icon box with `borderRadius: 13 dp`, `14.5 px` Title, `11.5 px` Subtitle, neutral `C.surface` foundation and `C.border` subtle outline).
 
+### 2. Universal 58dp Form Controls & Screen Bars
+- **Posting Form Inputs (`MarketPostScreen.tsx`):** Item Title, Price, Custom Category, Custom Spot, and Course Code inputs standardized to Universal 58dp Controls (`height: 58`, `borderRadius: 16`).
+- **Condition Selector:** Standardized 3-tab segmented control (`SegmentedTabs.tsx`: New, Like New, Used) with 58dp height.
+- **Feed Bars (`MarketScreen.tsx`):** Hero Action Button ("Sell an Item"), Dual Category Control Bar, Search Bar, and Filter Trigger strictly aligned to the Universal 58dp Standard (`height: 58`, `borderRadius: 16`).
+
+### 3. Real-Time GPS Proximity & Interactive Direction Map
+- **Live GPS Distance Calculation:** In `MarketDetailScreen.tsx`, the Meetup Handover Spot card automatically detects the customer's live GPS coordinates via `getCurrentUserCoordinates()` and calculates geodesic distance via Haversine formula (`X km away · Tap for directions`).
+- **1-Tap Interactive Map:** Tapping the Meetup Spot card opens the unified `DirectionMapModal.tsx` showing the user's location, the handover spot, OSRM road route, duration, distance, and ETA.
+
+---
+
+## 19. Universal Single Direction Map Architecture (`DirectionMapModal.tsx`)
+
+To maintain zero code bloat and unified design integrity across the entire application, all mapping features are consolidated into **one single universal direction map component** (`src/components/location/DirectionMapModal.tsx`):
+
+### 1. Core Map Engine & Vector Tile Infrastructure
+- **MapLibre GL JS + OpenFreeMap Vector Tiles:** Zero-cost, high-performance vector map engine running in a hardware-accelerated WebView.
+- **Automatic Theme Synchronization:** Synchronizes tile styles with the user's app theme:
+  - Dark Mode: `https://tiles.openfreemap.org/styles/dark` with pitch-black OLED background (`#121212`).
+  - Light Mode: `https://tiles.openfreemap.org/styles/liberty` with neutral slate background (`#f8fafc`).
+- **OSRM Road-Snapping Routing:** Fetches turn-by-turn road geometry coordinates, driving distance, and duration via OSRM (`https://router.project-osrm.org/route/v1/...`) with speed-adjusted duration estimates for driving, bicycling, and walking.
+
+### 2. Google Maps Visual Identity & Floating Controls
+- **Pulsing Blue GPS Dot:** Origin marker features an authentic Google Maps style blue dot (`#275efe`) with an animated pulsing radar wave ring and origin label tag.
+- **Teardrop Destination Pin:** Destination marker features a grounded SVG teardrop pin with coordinate/label tag and sector color accent.
+- **Route Polyline with Drop-Shadow Casing:** Renders an 8px dark casing layer (`#0f172a` at 35% opacity) beneath a 5.5px core electric blue road polyline (`#2563eb` at 95% opacity).
+- **Floating Right-Rail Action Controls:**
+  - 🧭 **Reset Compass / North FAB:** Resets pitch and bearing smoothly to north.
+  - ⤢ **Fit Whole Route Bounds FAB:** Dynamically computes `LngLatBounds()` around both origin and destination with padding.
+  - 🎯 **Recenter Live Location FAB:** Smoothly flies the camera to the user's current GPS position.
+
+### 3. Google Maps Style Bottom Navigation Card
+- **Travel Mode Selector:** 3-mode segmented switcher (🚗 Drive, 🏍️ Bike, 🚶 Walk) with live route re-calculation.
+- **Metrics Display:** Big bold duration (`14 min`), distance (`3.8 km`), and live arrival clock time (`Arrive by ~07:35 AM · from your location`).
+- **Dual Destination Layouts:**
+  - **Point-to-Point Stops Track (Campus Rides):** Pickup point with green dot, meeting spot callout with amber map-pin badge, and drop-off destination with red dot, plus fare pill and vehicle badge.
+  - **Single Destination Box (Marketplace, Blood, Lost & Found):** Destination name, zone/subtitle, and sector icon box.
+- **1-Tap Google Maps Navigation:** Primary CTA button deep-links directly into the native Google Maps app (`https://www.google.com/maps/dir/?api=1&origin=...&destination=...&travelmode=...`) for turn-by-turn voice directions.
+
+### 4. Zero-Bloat Wrapper Architecture & App-Wide Unification
+- **100% Backward Compatibility:**
+  - `src/components/blood/HospitalMapModal.tsx` wraps `DirectionMapModal` with blood styling (`SectorColors.blood`, `hospital-building` icon).
+  - `src/components/rides/RideRouteMapModal.tsx` wraps `DirectionMapModal` with ride styling (`SectorColors.ride`, `navigation` icon, stops track, fare, and vehicle).
+- **Universal Feature Coverage:**
+  - **Marketplace:** Handover meetup spot directions in `MarketDetailScreen.tsx`.
+  - **Blood Donation:** Hospital and clinic directions in `BloodScreen.tsx`.
+  - **Campus Rides:** Route overview and directions in `RideDetailScreen.tsx`.
+  - **Lost & Found:** Item location and handover spot directions in `LostFoundDetailScreen.tsx`.
