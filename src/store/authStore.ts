@@ -93,9 +93,16 @@ function reducer(state: AuthState, action: AuthAction): AuthState {
   }
 }
 
+export interface StudentRegistrationData {
+  studentId?: string;
+  department?: string;
+  intake?: string;
+  section?: string;
+}
+
 interface AuthContextValue extends AuthState {
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ needsVerification: boolean }>;
+  signUp: (email: string, password: string, fullName: string, extra?: StudentRegistrationData) => Promise<{ needsVerification: boolean }>;
   signOut: () => Promise<void>;
   deleteAccount: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -187,21 +194,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  async function signUp(email: string, password: string, fullName: string) {
+  async function signUp(
+    email: string,
+    password: string,
+    fullName: string,
+    extra?: StudentRegistrationData,
+  ) {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName } },
+      options: {
+        data: {
+          full_name: fullName,
+          student_id: extra?.studentId?.trim() || null,
+          department: extra?.department?.trim() || null,
+          intake: extra?.intake?.trim() || null,
+          section: extra?.section?.trim() || null,
+        },
+      },
     });
     if (error) throw error;
-    // The profiles row is created by the handle_new_user DB trigger
-    // (SECURITY DEFINER) from options.data.full_name + email, role='student'.
-    // Don't upsert from the client: profiles has no INSERT policy, so the
-    // upsert fails with 42501 and used to break registration entirely.
-    //
-    // With "Confirm email" ON in the dashboard, signUp returns no session and
-    // the user must enter the emailed code first (VerifyEmail screen). With
-    // auto-confirm the session opens immediately and this stays false.
+
+    // If auto-confirm is enabled, session opens immediately -> persist profile details directly
+    if (data.session?.user?.id && extra) {
+      try {
+        await supabase
+          .from('profiles')
+          .update({
+            student_id: extra.studentId?.trim() || null,
+            department: extra.department?.trim() || null,
+            intake: extra.intake?.trim() || null,
+            section: extra.section?.trim() || null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', data.session.user.id);
+      } catch {}
+    }
     return { needsVerification: !data.session };
   }
 

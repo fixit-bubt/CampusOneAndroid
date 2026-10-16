@@ -1,13 +1,12 @@
 import { useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView,
-  ActivityIndicator, type ViewStyle,
+  type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme } from '../../hooks/useTheme';
-import { useApp } from '../../store/appStore';
 import { useT } from '../../i18n';
 import { Icon } from '../../components/ui/Icon';
 import { LogoMark } from '../../components/ui/Logo';
@@ -18,15 +17,13 @@ import type { AuthStackParams } from '../../types/navigation';
 
 type Props = NativeStackScreenProps<AuthStackParams, 'Landing'>;
 
-// Shared Brand component - CampusOne logo mark (re-exported from Logo).
-// Login/Register import this; keep the signature stable.
+// Shared Brand component - CampusOne logo mark.
 export function Brand({ size = 56 }: { size?: number }) {
   return <LogoMark size={size} />;
 }
 
 export function LandingScreen({ navigation }: Props) {
   const { C, isDark } = useTheme();
-  const { lang, toggleLang, toggleTheme } = useApp();
   const t = useT();
 
   const [busyG, setBusyG] = useState(false);
@@ -46,76 +43,52 @@ export function LandingScreen({ navigation }: Props) {
   }
 
   return (
-    <View style={[styles.root, { backgroundColor: C.brand }]}>
-      {/* Hero - brand gradient, logo + name + tagline */}
+    <View style={[styles.root, { backgroundColor: C.bg }]}>
+      {/* Hero - immersive brand gradient, logo + title + university name */}
       <LinearGradient
-        colors={[C.brand, darken(C.brand)]}
+        colors={[C.brand, isDark ? '#0a1738' : darken(C.brand)]}
         start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+        end={{ x: 0.8, y: 1 }}
         style={styles.hero}
       >
         <SafeAreaView edges={['top']} style={styles.heroSafe}>
-          {/* Top-right: lang toggle + theme btn */}
-          <View style={styles.topbar}>
-            <TouchableOpacity
-              style={[styles.langPill, { borderColor: 'rgba(255,255,255,0.4)', backgroundColor: 'rgba(255,255,255,0.14)' }]}
-              onPress={toggleLang}
-              activeOpacity={0.75}
-            >
-              <Text style={[styles.langItem, {
-                color: C.white,
-                opacity: lang === 'en' ? 1 : 0.6,
-                fontFamily: lang === 'en' ? FontFamily.jakartaBold : FontFamily.jakartaRegular,
-              }]}>EN</Text>
-              <Text style={[styles.langItem, {
-                color: C.white,
-                opacity: lang === 'bn' ? 1 : 0.6,
-                fontFamily: lang === 'bn' ? FontFamily.jakartaBold : FontFamily.jakartaRegular,
-              }]}>বাং</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.iconBtn, { backgroundColor: 'rgba(255,255,255,0.14)', borderColor: 'rgba(255,255,255,0.4)' }]}
-              onPress={toggleTheme}
-              activeOpacity={0.75}
-            >
-              <Icon name={isDark ? 'sun' : 'moon'} size={18} color={C.white} />
-            </TouchableOpacity>
-          </View>
-
-          {/* Centered hero content */}
           <View style={styles.heroContent}>
             <LogoMark size={76} shadow />
             <Text style={[styles.appName, { color: C.white, fontFamily: FontFamily.jakartaExtraBold }]}>
               CampusOne
             </Text>
-            <Text style={[styles.tagline, { color: 'rgba(255,255,255,0.85)', fontFamily: FontFamily.jakartaMedium }]}>
-              {t.landing.tagline}
+            <Text style={[styles.tagline, { color: 'rgba(255,255,255,0.9)', fontFamily: FontFamily.jakartaMedium }]}>
+              Bangladesh University of Business & Technology
             </Text>
           </View>
         </SafeAreaView>
       </LinearGradient>
 
       {/* Card - auth options */}
-      <View style={[styles.card, { backgroundColor: C.bg }]}>
+      <View style={[styles.card, { backgroundColor: C.bg, borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'transparent' }]}>
         <ScrollView
           contentContainerStyle={[styles.cardContent, { paddingHorizontal: Layout.screenPadding }]}
           showsVerticalScrollIndicator={false}
+          bounces={false}
         >
           <Text style={[styles.welcome, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
             {t.landing.welcome}
           </Text>
           <Text style={[styles.subtitle, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-            {t.landing.subtitle}
+            Sign in with your university credentials to continue
           </Text>
 
           {/* Error */}
           {!!err && (
-            <Text style={[styles.errText, { color: C.danger, fontFamily: FontFamily.jakartaMedium }]}>
-              {err}
-            </Text>
+            <View style={[styles.errBox, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.14)' : '#fee2e2', borderColor: C.danger }]}>
+              <Icon name="close" size={16} color={C.danger} />
+              <Text style={[styles.errText, { color: C.danger, fontFamily: FontFamily.jakartaMedium }]}>
+                {err}
+              </Text>
+            </View>
           )}
 
-          {/* Google - primary */}
+          {/* Google - primary 58dp action */}
           <View style={{ marginTop: 22 }}>
             <GoogleButton label={t.landing.continueGoogle} onPress={handleGoogle} busy={busyG} />
           </View>
@@ -123,26 +96,38 @@ export function LandingScreen({ navigation }: Props) {
           {/* Divider */}
           <OrDivider label={t.landing.orLabel} />
 
-          {/* Sign in with email */}
+          {/* Sign in with email - 58dp */}
           <TouchableOpacity
-            style={[styles.btnSecondary, { backgroundColor: C.surface, borderColor: C.border }]}
+            style={[styles.btnAction, { backgroundColor: C.surface, borderColor: C.border }]}
             onPress={() => navigation.navigate('Login')}
-            activeOpacity={0.85}
+            activeOpacity={0.82}
           >
-            <Text style={[styles.btnSecondaryText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-              {t.landing.emailSignIn}
-            </Text>
+            <View style={styles.btnActionLeft}>
+              <View style={[styles.btnIconBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}>
+                <Icon name="mail" size={18} color={C.brand} />
+              </View>
+              <Text style={[styles.btnActionText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                {t.landing.emailSignIn}
+              </Text>
+            </View>
+            <Icon name="chevR" size={18} color={C.textMuted} />
           </TouchableOpacity>
 
-          {/* Create account */}
+          {/* Create account - 58dp */}
           <TouchableOpacity
-            style={[styles.btnSecondary, { backgroundColor: C.surface, borderColor: C.border, marginTop: 10 }]}
+            style={[styles.btnAction, { backgroundColor: C.surface, borderColor: C.border, marginTop: 12 }]}
             onPress={() => navigation.navigate('Register')}
-            activeOpacity={0.85}
+            activeOpacity={0.82}
           >
-            <Text style={[styles.btnSecondaryText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-              {t.landing.getStarted}
-            </Text>
+            <View style={styles.btnActionLeft}>
+              <View style={[styles.btnIconBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}>
+                <Icon name="userPlus" size={18} color={C.brand} />
+              </View>
+              <Text style={[styles.btnActionText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                Create Account
+              </Text>
+            </View>
+            <Icon name="chevR" size={18} color={C.textMuted} />
           </TouchableOpacity>
 
           {/* Footer */}
@@ -174,88 +159,45 @@ const styles = StyleSheet.create({
 
   hero: {
     flex: 0.42,
-    minHeight: 280,
+    minHeight: 260,
   } as ViewStyle,
 
-  heroSafe: { flex: 1 } as ViewStyle,
-
-  topbar: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    gap: 8,
-  } as ViewStyle,
-
-  langPill: {
-    flexDirection: 'row',
-    borderRadius: 20,
-    borderWidth: 1,
-    paddingHorizontal: 4,
-    paddingVertical: 3,
-    gap: 2,
-  } as ViewStyle,
-
-  langItem: {
-    fontSize: 12,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 14,
-  } as any,
-
-  iconBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    borderWidth: 1,
-    alignItems: 'center',
+  heroSafe: {
+    flex: 1,
     justifyContent: 'center',
+    alignItems: 'center',
   } as ViewStyle,
 
   heroContent: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingBottom: 28,
-  } as ViewStyle,
-
-  heroLogo: {
-    width: 76,
-    height: 76,
-    borderRadius: 22,
-    backgroundColor: '#ffffff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 12,
-    elevation: 8,
+    paddingHorizontal: 24,
   } as ViewStyle,
 
   appName: {
     fontSize: 32,
-    letterSpacing: -1,
-    marginTop: 18,
+    letterSpacing: -0.8,
+    marginTop: 16,
+    includeFontPadding: false,
   } as any,
 
   tagline: {
-    fontSize: 14.5,
-    lineHeight: 22,
-    marginTop: 8,
-    maxWidth: 300,
+    fontSize: 14,
+    lineHeight: 20,
+    marginTop: 6,
     textAlign: 'center',
+    includeFontPadding: false,
   } as any,
 
   card: {
     flex: 0.58,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    marginTop: -28,
+    borderTopWidth: 1,
+    marginTop: -26,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -6 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.12,
     shadowRadius: 14,
     elevation: 12,
   } as ViewStyle,
@@ -266,36 +208,69 @@ const styles = StyleSheet.create({
   } as ViewStyle,
 
   welcome: {
-    fontSize: 26,
-    letterSpacing: -0.5,
+    fontSize: 25,
+    letterSpacing: -0.4,
+    includeFontPadding: false,
   } as any,
 
   subtitle: {
     fontSize: 14,
-    marginTop: 4,
+    marginTop: 6,
+    lineHeight: 20,
+    includeFontPadding: false,
   } as any,
+
+  errBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 14,
+  } as ViewStyle,
 
   errText: {
     fontSize: 13,
-    marginTop: 12,
+    flex: 1,
+    includeFontPadding: false,
   } as any,
 
-  btnSecondary: {
-    height: 52,
-    borderRadius: 16,
+  btnAction: {
+    height: Layout.controlHeight, // 58dp
+    borderRadius: Layout.controlRadius, // 16dp
     borderWidth: 1.5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+  } as ViewStyle,
+
+  btnActionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  } as ViewStyle,
+
+  btnIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
 
-  btnSecondaryText: {
-    fontSize: 15,
+  btnActionText: {
+    fontSize: 15.5,
+    includeFontPadding: false,
   } as any,
 
   footer: {
     fontSize: 12,
     lineHeight: 18,
     textAlign: 'center',
-    marginTop: 24,
+    marginTop: 26,
+    includeFontPadding: false,
   } as any,
 });
