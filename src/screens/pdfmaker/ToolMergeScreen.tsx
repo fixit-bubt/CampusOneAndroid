@@ -14,7 +14,7 @@ import { LIMITS, PdfError } from '../../services/pdf/presets';
 import { moveItem, baseName, isHeicFile, isPdfFile, isImageFile } from '../../services/pdf/pdfUtils';
 import { mergeToPdf, type MergeItem } from '../../services/pdf/mergePdf';
 import type { BuiltPdf } from '../../services/pdf/imagesToPdf';
-import { sharePdf } from '../../services/pdf/pdfFiles';
+import { sharePdf, savePdfToDevice } from '../../services/pdf/pdfFiles';
 import { CampusPdfViewerModal } from '../../components/pdf/CampusPdfViewerModal';
 import {
   Notice, NoticeText, ProgressPanel, ResultPanel, FileRow, PrivacyNote, usePdfErrorText,
@@ -152,11 +152,15 @@ export function ToolMergeScreen({ navigation }: any) {
     }
   }
 
+  const outName = `${baseName(items[0]?.item?.name || 'document')}-merged.pdf`;
+
   async function saveToDownloads() {
     if (!result) return;
     try {
-      await sharePdf(result.uri, t.pdfmaker.common.saveDevice);
-      toast({ type: 'success', title: t.pdfmaker.common.savedToDevice });
+      const res = await savePdfToDevice(result.uri, outName);
+      if (res.success) {
+        toast({ type: 'success', title: t.pdfmaker.common.savedToDevice });
+      }
     } catch {
       toast({ type: 'error', title: t.pdfmaker.errors.couldNotCreate, message: t.pdfmaker.errors.unknown });
     }

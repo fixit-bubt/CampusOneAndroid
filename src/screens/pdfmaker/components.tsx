@@ -81,25 +81,53 @@ export function ResultPanel({
           <Notice tone="warn"><NoticeText>{warning}</NoticeText></Notice>
         </View>
       ) : null}
-      <View style={styles.resultBtns}>
+      <View style={styles.resultActionsColumn}>
         {onPreview ? (
-          <TouchableOpacity style={[styles.actionBtn58, { backgroundColor: C.surface2, borderColor: C.border }]} onPress={onPreview} activeOpacity={0.85}>
-            <Feather name="eye" size={16} color={C.brand} />
-            <Text style={[styles.btnText14, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>{t.pdfmaker.common.preview}</Text>
+          <TouchableOpacity
+            style={[styles.actionRowBar58, { backgroundColor: C.surface2, borderColor: C.border }]}
+            onPress={onPreview}
+            activeOpacity={0.82}
+          >
+            <Feather name="eye" size={18} color={C.brand} />
+            <Text style={[styles.actionRowText, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+              {t.pdfmaker.common.preview}
+            </Text>
           </TouchableOpacity>
         ) : null}
-        <TouchableOpacity style={[styles.primaryBtn, { backgroundColor: C.brand }]} onPress={onShare} activeOpacity={0.85}>
-          <Feather name="share-2" size={16} color={C.white} />
-          <Text style={[styles.primaryBtnText, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>{t.pdfmaker.common.share}</Text>
-        </TouchableOpacity>
+
         {onSaveDevice ? (
-          <TouchableOpacity style={[styles.actionBtn58, { backgroundColor: C.surface2, borderColor: C.border }]} onPress={onSaveDevice} activeOpacity={0.85}>
-            <Feather name="download" size={16} color={C.text} />
-            <Text style={[styles.btnText14, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.pdfmaker.common.saveDevice}</Text>
+          <TouchableOpacity
+            style={[styles.actionRowBar58, { backgroundColor: C.surface2, borderColor: C.border }]}
+            onPress={onSaveDevice}
+            activeOpacity={0.82}
+          >
+            <Feather name="download" size={18} color={C.text} />
+            <Text style={[styles.actionRowText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              {t.pdfmaker.common.saveDevice}
+            </Text>
           </TouchableOpacity>
         ) : null}
-        <TouchableOpacity style={[styles.secondaryBtn, { borderColor: C.border }]} onPress={onReset} activeOpacity={0.85}>
-          <Text style={[styles.secondaryBtnText, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>{t.pdfmaker.common.startOver}</Text>
+
+        <TouchableOpacity
+          style={[styles.actionRowBar58, { backgroundColor: C.brand, borderColor: C.brand }]}
+          onPress={onShare}
+          activeOpacity={0.85}
+        >
+          <Feather name="share-2" size={18} color={C.white} />
+          <Text style={[styles.actionRowText, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>
+            {t.pdfmaker.common.share}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.actionRowBar58, { borderColor: C.border }]}
+          onPress={onReset}
+          activeOpacity={0.82}
+        >
+          <Feather name="rotate-ccw" size={17} color={C.text2} />
+          <Text style={[styles.actionRowText, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
+            {t.pdfmaker.common.startOver}
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -288,13 +316,18 @@ const styles = StyleSheet.create({
   meta: { fontSize: 12.5 },
   track: { height: 8, borderRadius: 99, overflow: 'hidden' } as ViewStyle,
   fill: { height: '100%', borderRadius: 99 } as ViewStyle,
-  resultBtns: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 4 } as ViewStyle,
-  actionBtn58: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 58, paddingHorizontal: 18, borderRadius: 16, borderWidth: 1 } as ViewStyle,
-  btnText14: { fontSize: 14 },
-  primaryBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, height: 58, paddingHorizontal: 20, borderRadius: 16 } as ViewStyle,
-  primaryBtnText: { fontSize: 15 },
-  secondaryBtn: { alignItems: 'center', justifyContent: 'center', height: 58, paddingHorizontal: 18, borderRadius: 16, borderWidth: 1 } as ViewStyle,
-  secondaryBtnText: { fontSize: 14.5 },
+  resultActionsColumn: { flexDirection: 'column', gap: 10, marginTop: 12, width: '100%' } as ViewStyle,
+  actionRowBar58: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    width: '100%',
+    height: 58,
+    borderRadius: 16,
+    borderWidth: 1,
+  } as ViewStyle,
+  actionRowText: { fontSize: 15 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 } as ViewStyle,
   thumb: { width: '31%', borderWidth: 1, borderRadius: 14, overflow: 'hidden' } as ViewStyle,
   thumbImgBox: { height: 104, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' } as ViewStyle,

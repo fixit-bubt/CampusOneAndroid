@@ -600,7 +600,10 @@ In `RootNavigator.tsx`, students who have not completed onboarding (`!profile?.s
   - **Zero-Void Page Layouts (`layoutDocumentPage`):** Default `borderless` mode fills standard A4 pages edge-to-edge (0 margin), eliminating the 112pt-148pt letterboxing voids from mobile camera aspect ratios (4:3 and 16:9). Also supports `smart_fit` (12pt uniform micro-margin) and `adaptive` (document page geometry dynamically tracks photo aspect ratio at 150 DPI).
   - **Continuous Batch Camera:** Multi-shot camera capture loop allowing continuous rapid page snaps without returning to menu after each shot.
   - **In-App Inspection Modal (`CampusPdfViewerModal`):** Direct "Preview" action on all 4 tools allowing full-document scrolling and zoom before sharing or saving.
-  - **Save to Device:** Direct download integration via `FileSystem.StorageAccessFramework` writing to Android's public Downloads directory with copy fallback.
+  - **Save to Device (`savePdfToDevice`):** True Android file download via `LegacyFS.StorageAccessFramework` (`requestDirectoryPermissionsAsync`, `createFileAsync`, and `writeAsStringAsync` with base64). Saves directly into the user-selected folder (Downloads) without triggering the Android Share Sheet.
+  - **Stacked 58dp Action Bars (`ResultPanel`):** Full-width, vertically stacked 58dp action bars for each option (`Preview Document`, `Save to Downloads`, `Share PDF`, `Create Another Document`) replacing cramped horizontal wraps.
+  - **58dp Segmented Image Toolbar:** `[+ Add Photos]`, `[Camera]`, and `[Clear]` structured as a cohesive 58dp segmented toolbar matching the Page Layout toggle geometry.
+  - **100% Offline Capability:** Operates completely on-device without internet access. Zero CDN scripts, zero external dependencies.
   - **Academic Stamp:** Optional vector-drawn header (`BUBT CampusOne`) and footer (`Page X of Y`) stamped via `pdf-lib` Helvetica.
   - **Academic Document Naming:** Configurable document title input (58dp) with timestamp-free sanitized filenames.
   - **BUBT Assignment Cover Page Shortcut:** 72dp banner linking directly to `CoverPageFormScreen`.

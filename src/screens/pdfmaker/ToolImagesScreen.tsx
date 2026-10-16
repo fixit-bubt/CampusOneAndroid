@@ -20,7 +20,7 @@ import {
 } from '../../services/pdf/presets';
 import { moveItem, baseName, isHeicFile } from '../../services/pdf/pdfUtils';
 import { buildImagesPdf, type BuiltPdf, type PhotoInput } from '../../services/pdf/imagesToPdf';
-import { sharePdf } from '../../services/pdf/pdfFiles';
+import { sharePdf, savePdfToDevice } from '../../services/pdf/pdfFiles';
 import { CampusPdfViewerModal } from '../../components/pdf/CampusPdfViewerModal';
 import {
   Notice, NoticeText, ProgressPanel, ResultPanel, ThumbGrid, ThumbCard,
@@ -40,7 +40,7 @@ function defaultDocName(): string {
 }
 
 export function ToolImagesScreen({ navigation }: any) {
-  const { C } = useTheme();
+  const { C, isDark } = useTheme();
   const t = useT();
   const toast = useToast();
   const errorText = usePdfErrorText();
@@ -178,8 +178,10 @@ export function ToolImagesScreen({ navigation }: any) {
   async function saveToDownloads() {
     if (!result) return;
     try {
-      await sharePdf(result.uri, t.pdfmaker.common.saveDevice);
-      toast({ type: 'success', title: t.pdfmaker.common.savedToDevice });
+      const res = await savePdfToDevice(result.uri, finalName);
+      if (res.success) {
+        toast({ type: 'success', title: t.pdfmaker.common.savedToDevice });
+      }
     } catch {
       toast({ type: 'error', title: t.pdfmaker.errors.couldNotCreate, message: t.pdfmaker.errors.unknown });
     }
@@ -210,9 +212,16 @@ export function ToolImagesScreen({ navigation }: any) {
               </Text>
             </TouchableOpacity>
 
-            <View style={styles.actionRow}>
-              <SmallBtn icon="camera" label={t.pdfmaker.images.camera} onPress={pickFromCamera} />
-            </View>
+            <TouchableOpacity
+              style={[styles.cameraAction58, { backgroundColor: C.surface, borderColor: C.border }]}
+              onPress={pickFromCamera}
+              activeOpacity={0.8}
+            >
+              <Feather name="camera" size={18} color={C.brand} />
+              <Text style={[styles.cameraActionText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                {t.pdfmaker.images.camera}
+              </Text>
+            </TouchableOpacity>
 
             <TouchableOpacity
               style={[styles.coverCard, { backgroundColor: C.surface, borderColor: C.border }]}
@@ -271,13 +280,49 @@ export function ToolImagesScreen({ navigation }: any) {
               />
             </View>
 
-            <View style={styles.actionRow}>
-              <SmallBtn icon="plus" label={t.pdfmaker.images.addMore} onPress={pickFromLibrary} />
-              <SmallBtn icon="camera" label={t.pdfmaker.images.camera} onPress={pickFromCamera} />
-              <SmallBtn icon="trash-2" label={t.pdfmaker.images.clearAll} onPress={reset} />
-              <Text style={[styles.count, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={[styles.label, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                {t.pdfmaker.images.addPhotos}
+              </Text>
+              <Text style={[styles.countBadge, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
                 {t.pdfmaker.images.count(items.length)}
               </Text>
+            </View>
+
+            <View style={[styles.toolbar58, { backgroundColor: C.surface, borderColor: C.border }]}>
+              <TouchableOpacity
+                style={[styles.toolbarItem, { backgroundColor: C.surface2 }]}
+                onPress={pickFromLibrary}
+                activeOpacity={0.8}
+              >
+                <Feather name="plus" size={16} color={C.brand} />
+                <Text style={[styles.toolbarItemText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  {t.pdfmaker.images.addMore}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.toolbarItem, { backgroundColor: C.surface2 }]}
+                onPress={pickFromCamera}
+                activeOpacity={0.8}
+              >
+                <Feather name="camera" size={16} color={C.brand} />
+                <Text style={[styles.toolbarItemText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  {t.pdfmaker.images.camera}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.toolbarItem,
+                  { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.12)' : 'rgba(239, 68, 68, 0.08)' },
+                ]}
+                onPress={reset}
+                activeOpacity={0.8}
+              >
+                <Feather name="trash-2" size={16} color={C.danger} />
+                <Text style={[styles.toolbarItemText, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
+                  {t.pdfmaker.images.clearAll}
+                </Text>
+              </TouchableOpacity>
             </View>
 
             <Text style={[styles.label, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -395,38 +440,25 @@ export function ToolImagesScreen({ navigation }: any) {
   );
 }
 
-function SmallBtn({
-  icon, label, onPress,
-}: { icon: React.ComponentProps<typeof Feather>['name']; label: string; onPress: () => void }) {
-  const { C } = useTheme();
-  return (
-    <TouchableOpacity
-      style={[styles.smallBtn, { borderColor: C.border, backgroundColor: C.surface }]}
-      onPress={onPress}
-      activeOpacity={0.8}
-    >
-      <Feather name={icon} size={14} color={C.text2} />
-      <Text style={[styles.smallBtnText, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>{label}</Text>
-    </TouchableOpacity>
-  );
-}
-
 const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
   scroll: { paddingTop: 10, gap: 12 } as ViewStyle,
   dropZone: { alignItems: 'center', justifyContent: 'center', gap: 7, borderWidth: 2, borderStyle: 'dashed', borderRadius: 18, paddingVertical: 34, paddingHorizontal: 20 } as ViewStyle,
   dropTitle: { fontSize: 16 },
   dropHint: { fontSize: 12.5, textAlign: 'center', lineHeight: 18 },
+  cameraAction58: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, height: 58, borderRadius: 16, borderWidth: 1 } as ViewStyle,
+  cameraActionText: { fontSize: 14.5 },
   coverCard: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, minHeight: 72, borderRadius: 16, borderWidth: 1 } as ViewStyle,
   coverIcon: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
   coverTitle: { fontSize: 15 },
   coverSub: { fontSize: 12.5, marginTop: 1 },
   nameInputBox: { flexDirection: 'row', alignItems: 'center', gap: 10, height: 58, paddingHorizontal: 16, borderRadius: 16, borderWidth: 1 } as ViewStyle,
   nameInput: { flex: 1, fontSize: 14.5, height: '100%' } as TextStyle,
-  actionRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 } as ViewStyle,
-  smallBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 38, paddingHorizontal: 14, borderRadius: 12, borderWidth: 1 } as ViewStyle,
-  smallBtnText: { fontSize: 13 },
-  count: { fontSize: 13, marginLeft: 'auto' },
+  sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 } as ViewStyle,
+  countBadge: { fontSize: 13 },
+  toolbar58: { flexDirection: 'row', alignItems: 'center', height: 58, padding: 4, borderRadius: 16, borderWidth: 1, gap: 6 } as ViewStyle,
+  toolbarItem: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, height: '100%', borderRadius: 12 } as ViewStyle,
+  toolbarItemText: { fontSize: 13.5 },
   label: { fontSize: 14, marginTop: 2 },
   hint: { fontSize: 12 },
   stampToggleRow: { flexDirection: 'row', alignItems: 'center', gap: 12, height: 58, paddingHorizontal: 16, borderRadius: 16, borderWidth: 1 } as ViewStyle,

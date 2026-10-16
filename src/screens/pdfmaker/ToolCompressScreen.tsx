@@ -21,7 +21,7 @@ import {
 } from '../../services/pdf/presets';
 import { baseName, isPdfFile } from '../../services/pdf/pdfUtils';
 import { compressPdf, type CompressResult } from '../../services/pdf/compressPdf';
-import { sharePdf } from '../../services/pdf/pdfFiles';
+import { sharePdf, savePdfToDevice } from '../../services/pdf/pdfFiles';
 import { useRasterEngine } from '../../services/pdf/rasterEngine';
 import { CampusPdfViewerModal } from '../../components/pdf/CampusPdfViewerModal';
 import {
@@ -165,11 +165,15 @@ export function ToolCompressScreen({ navigation }: any) {
     }
   }
 
+  const outName = `${baseName(doc?.name || 'document')}-compressed.pdf`;
+
   async function saveToDownloads() {
     if (!result) return;
     try {
-      await sharePdf(result.uri, t.pdfmaker.common.saveDevice);
-      toast({ type: 'success', title: t.pdfmaker.common.savedToDevice });
+      const res = await savePdfToDevice(result.uri, outName);
+      if (res.success) {
+        toast({ type: 'success', title: t.pdfmaker.common.savedToDevice });
+      }
     } catch {
       toast({ type: 'error', title: t.pdfmaker.errors.couldNotCreate, message: t.pdfmaker.errors.unknown });
     }

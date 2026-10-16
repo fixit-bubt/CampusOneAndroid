@@ -5,7 +5,9 @@
 // `pdfengine` holds the WebView engine and whatever file it is currently
 // allowed to read. Cache is correct: once shared, the file is the OS's
 // problem, and the system may reclaim the folder at any time.
+import { Platform } from 'react-native';
 import { Directory, File, Paths } from 'expo-file-system';
+import * as LegacyFS from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { PdfError } from './presets';
 
@@ -51,6 +53,59 @@ export async function sharePdf(uri: string, dialogTitle: string): Promise<void> 
     UTI: 'com.adobe.pdf',
     dialogTitle,
   });
+}
+
+export async function savePdfToDevice(
+  sourceUri: string,
+  suggestedName: string,
+): Promise<{ success: boolean; cancelled?: boolean }> {
+  const cleanBaseName = safeFileName(suggestedName).replace(/\.pdf$/i, '');
+  const fileName = `${cleanBaseName}.pdf`;
+
+  if (Platform.OS === 'android') {
+    try {
+      const permissions = await LegacyFS.StorageAccessFramework.requestDirectoryPermissionsAsync();
+      if (!permissions.granted) {
+        return { success: false, cancelled: true };
+      }
+
+      const base64 = await LegacyFS.readAsStringAsync(sourceUri, {
+        encoding: LegacyFS.EncodingType.Base64,
+      });
+
+      const destUri = await LegacyFS.StorageAccessFramework.createFileAsync(
+        permissions.directoryUri,
+        cleanBaseName,
+        'application/pdf',
+      );
+
+      await LegacyFS.writeAsStringAsync(destUri, base64, {
+        encoding: LegacyFS.EncodingType.Base64,
+      });
+
+      return { success: true };
+    } catch (err) {
+      console.warn('StorageAccessFramework failed, falling back:', err);
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(sourceUri, {
+          mimeType: 'application/pdf',
+          dialogTitle: fileName,
+        });
+        return { success: true };
+      }
+      throw err;
+    }
+  } else {
+    // iOS
+    if (await Sharing.isAvailableAsync()) {
+      await Sharing.shareAsync(sourceUri, {
+        mimeType: 'application/pdf',
+        dialogTitle: fileName,
+      });
+      return { success: true };
+    }
+    return { success: false };
+  }
 }
 
 // Files the engine folder owns. Anything else in there is a document being

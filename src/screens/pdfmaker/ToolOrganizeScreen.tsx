@@ -17,7 +17,7 @@ import { LIMITS, THUMB_MAX_DIM, PdfError } from '../../services/pdf/presets';
 import { moveItem, baseName, parseRanges, isPdfFile } from '../../services/pdf/pdfUtils';
 import { organizePdf, type PageOp } from '../../services/pdf/organizePdf';
 import type { BuiltPdf } from '../../services/pdf/imagesToPdf';
-import { sharePdf, saveThumbJpeg, clearThumbDir } from '../../services/pdf/pdfFiles';
+import { sharePdf, savePdfToDevice, saveThumbJpeg, clearThumbDir } from '../../services/pdf/pdfFiles';
 import { base64ToBytes } from '../../services/pdf/pdfUtils';
 import { useRasterEngine } from '../../services/pdf/rasterEngine';
 import { CampusPdfViewerModal } from '../../components/pdf/CampusPdfViewerModal';
@@ -167,11 +167,15 @@ export function ToolOrganizeScreen({ navigation }: any) {
     }
   }
 
+  const outName = `${baseName(file?.name || 'document')}-organized.pdf`;
+
   async function saveToDownloads() {
     if (!result) return;
     try {
-      await sharePdf(result.uri, t.pdfmaker.common.saveDevice);
-      toast({ type: 'success', title: t.pdfmaker.common.savedToDevice });
+      const res = await savePdfToDevice(result.uri, outName);
+      if (res.success) {
+        toast({ type: 'success', title: t.pdfmaker.common.savedToDevice });
+      }
     } catch {
       toast({ type: 'error', title: t.pdfmaker.errors.couldNotCreate, message: t.pdfmaker.errors.unknown });
     }
