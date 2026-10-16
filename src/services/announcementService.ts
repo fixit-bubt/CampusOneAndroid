@@ -40,14 +40,16 @@ export async function fetchAnnouncementsFeed(userId?: string): Promise<{
   error?: string;
 }> {
   try {
+    const fourMonthsAgo = new Date(Date.now() - 120 * 24 * 60 * 60 * 1000).toISOString();
+
     const [aRes, rRes, bRes] = await Promise.all([
       supabase
         .from('announcements')
         .select('*')
         .is('deleted_at', null)
-        .order('pinned', { ascending: false })
+        .gte('created_at', fourMonthsAgo)
         .order('created_at', { ascending: false })
-        .limit(100),
+        .limit(500),
       userId
         ? supabase.from('announcement_reads').select('announcement_id').eq('user_id', userId).limit(500)
         : Promise.resolve({ data: [] }),
@@ -58,9 +60,24 @@ export async function fetchAnnouncementsFeed(userId?: string): Promise<{
 
     if (aRes.error) throw aRes.error;
 
-    const items = (aRes.data ?? []) as Announcement[];
+    let items = (aRes.data ?? []) as Announcement[];
     const readIds = new Set<string>((rRes.data ?? []).map((r: any) => r.announcement_id));
     const savedIds = new Set<string>((bRes.data ?? []).map((b: any) => b.announcement_id));
+
+    // Preserve saved/bookmarked notices permanently even if older than 4 months
+    const existingIds = new Set(items.map((i) => i.id));
+    const missingSavedIds = Array.from(savedIds).filter((id) => !existingIds.has(id));
+    if (missingSavedIds.length > 0) {
+      const { data: olderSaved } = await supabase
+        .from('announcements')
+        .select('*')
+        .in('id', missingSavedIds)
+        .is('deleted_at', null);
+      if (olderSaved && olderSaved.length > 0) {
+        items = [...items, ...(olderSaved as Announcement[])];
+        items.sort((a, b) => b.created_at.localeCompare(a.created_at));
+      }
+    }
 
     // Cache
     setCache(CacheKeys.ANNOUNCEMENTS, items);

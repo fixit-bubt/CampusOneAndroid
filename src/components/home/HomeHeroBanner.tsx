@@ -114,11 +114,13 @@ export function HomeHeroBanner() {
   const fetchLiveSlides = useCallback(async () => {
     try {
       const today = localToday();
+      const fourMonthsAgo = new Date(Date.now() - 120 * 24 * 60 * 60 * 1000).toISOString();
       const [annRes, evRes, clubPostsRes] = await Promise.all([
         supabase
           .from('announcements')
           .select('id, title, department, priority, image_url, attachment_url')
           .is('deleted_at', null)
+          .gte('created_at', fourMonthsAgo)
           .order('created_at', { ascending: false })
           .limit(6),
         supabase

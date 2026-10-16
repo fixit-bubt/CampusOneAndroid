@@ -156,21 +156,22 @@ export function HomeCommunityUpdates() {
 
     try {
       const today = localToday();
+      const fourMonthsAgo = new Date(Date.now() - 120 * 24 * 60 * 60 * 1000).toISOString();
       const [annRes, evRes, clubPostsRes] = await Promise.all([
         supabase
           .from('announcements')
           .select('id, title, department, body, created_at, pinned, image_url, attachment_url, priority')
           .is('deleted_at', null)
-          .order('pinned', { ascending: false })
+          .gte('created_at', fourMonthsAgo)
           .order('created_at', { ascending: false })
           .limit(100),
         supabase
           .from('events')
           .select('id, title, venue, time, date, category, banner_url, description')
           .is('deleted_at', null)
-          .gte('date', today)
-          .order('date', { ascending: true })
-          .limit(20),
+          .gte('date', fourMonthsAgo.slice(0, 10))
+          .order('date', { ascending: false })
+          .limit(30),
         supabase
           .from('club_posts')
           .select('id, title, body, created_at, image_url, club_id, clubs(id, name, cover_url)')

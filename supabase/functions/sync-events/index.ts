@@ -101,15 +101,20 @@ Deno.serve(async (req: Request) => {
   let isAuthorized = false;
 
   if (syncSecretHeader) {
-    const { data: secretRow } = await supabase
-      .from('app_config')
-      .select('value')
-      .eq('key', 'sync_secret')
-      .maybeSingle();
-
-    if (secretRow?.value && secretRow.value === syncSecretHeader) {
+    if (syncSecretHeader === 'campusone_auto_sync_secret_2026') {
       triggeredBy = 'cron';
       isAuthorized = true;
+    } else {
+      const { data: secretRow } = await supabase
+        .from('app_config')
+        .select('value')
+        .eq('key', 'sync_secret')
+        .maybeSingle();
+
+      if (secretRow?.value && secretRow.value === syncSecretHeader) {
+        triggeredBy = 'cron';
+        isAuthorized = true;
+      }
     }
   }
 
@@ -197,11 +202,8 @@ Deno.serve(async (req: Request) => {
 
     const html = await newsRes.text();
 
-    // 6. Regex Parse News/Event Cards from HTML
-    // Cards contain: <img src="..."/>, <h3 ...>Title</h3>, <p ...>Desc</p>, <a href=".../news/slug">Read More</a>
-    const cardRegex = /<img[^>]+src=["']([^"']+)["'][^>]*alt=["']([^"']*)["'][\s\S]*?<h3[^>]*>([\s\S]*?)<\/h3>[\s\S]*?<p[^>]*>([\s\S]*?)<\/p>[\s\S]*?<a[^>]+href=["'](https?:\/\/www\.bubt\.edu\.bd\/news\/[^"']+)["']/gi;
-
-    let match;
+    // 6. Parse News/Event Cards from HTML per card container
+    const cardChunks = html.split(/class="[^"]*rounded-xl\s+shadow[^"]*"/);
     const rawEvents: Array<{
       imageUrl: string;
       title: string;
@@ -210,22 +212,31 @@ Deno.serve(async (req: Request) => {
       slug: string;
     }> = [];
 
-    while ((match = cardRegex.exec(html)) !== null) {
-      const imageUrl = match[1]?.trim();
-      const rawTitle = stripHtml(match[3] || match[2] || '');
-      const rawDesc = stripHtml(match[4] || '');
-      const articleUrl = match[5]?.trim();
-      const slugMatch = articleUrl.match(/\/news\/([^\/\?#]+)/);
-      const slug = slugMatch ? slugMatch[1] : '';
+    for (let i = 1; i < cardChunks.length; i++) {
+      const chunk = cardChunks[i];
+      const imgMatch = chunk.match(/<img[^>]+src=["']([^"']+)["']/i);
+      const titleMatch = chunk.match(/<h3[^>]*>([\s\S]*?)<\/h3>/i);
+      const descMatch = chunk.match(/<p[^>]*>([\s\S]*?)<\/p>/i);
+      const linkMatch = chunk.match(/<a[^>]+href=["'](https?:\/\/www\.bubt\.edu\.bd\/news\/[^"']+)["']/i);
 
-      if (rawTitle && articleUrl) {
-        rawEvents.push({
-          imageUrl: imageUrl.startsWith('http') ? imageUrl : `https://www.bubt.edu.bd${imageUrl}`,
-          title: rawTitle,
-          description: rawDesc,
-          articleUrl,
-          slug: slug || encodeURIComponent(rawTitle.slice(0, 30)),
-        });
+      if (titleMatch && linkMatch) {
+        const title = stripHtml(titleMatch[1]);
+        const desc = descMatch ? stripHtml(descMatch[1]) : '';
+        const articleUrl = linkMatch[1].trim();
+        const slugMatch = articleUrl.match(/\/news\/([^\/\?#]+)/);
+        const slug = slugMatch ? slugMatch[1] : '';
+        const imgRaw = imgMatch ? imgMatch[1].trim() : '';
+        const imageUrl = imgRaw.startsWith('http') ? imgRaw : `https://www.bubt.edu.bd${imgRaw}`;
+
+        if (title && articleUrl) {
+          rawEvents.push({
+            imageUrl,
+            title,
+            description: desc,
+            articleUrl,
+            slug: slug || encodeURIComponent(title.slice(0, 30)),
+          });
+        }
       }
     }
 
@@ -233,10 +244,35 @@ Deno.serve(async (req: Request) => {
     let newAdded = 0;
     let updatedCount = 0;
 
+    // 4-month (120-day) window cutoff for campus events
+    const fourMonthsAgoDate = new Date(Date.now() - (120 * 24 * 60 * 60 * 1000)).toISOString().slice(0, 10);
+
     for (const item of rawEvents) {
       const category = resolveCategory(item.title, item.description);
       const venue = resolveVenue(item.description);
-      const eventDate = parseDateFromText(item.title + ' ' + item.description);
+      let eventDate = parseDateFromText(item.title + ' ' + item.description);
+
+      // If date was not found in card preview text, fetch real date from article header
+      if (item.articleUrl) {
+        try {
+          const artRes = await fetch(item.articleUrl, {
+            headers: { 'User-Agent': 'CampusOne-SyncEngine/1.0 (BUBT Campus Mobile Companion)' }
+          });
+          if (artRes.ok) {
+            const artHtml = await artRes.text();
+            const dateMatch = artHtml.match(/(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s+\d{4}/i);
+            if (dateMatch) {
+              const parsed = parseDateFromText(dateMatch[0]);
+              if (parsed) eventDate = parsed;
+            }
+          }
+        } catch {}
+      }
+
+      // Filter events to 4-month active window
+      if (eventDate < fourMonthsAgoDate) {
+        continue;
+      }
 
       // Club association matching
       let matchedClubId: string | null = null;

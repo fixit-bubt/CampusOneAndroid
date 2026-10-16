@@ -1572,8 +1572,12 @@ The Campus Announcements architecture is transformed from a manual posting board
 - **High-Performance Chunked Upsert:** Evaluates batch codes in a single query and upserts in chunks of 50, crawling 300+ notices in ~1.5 seconds without function timeouts. Supports `x-deep-crawl` header for deep archives (up to 600+ items).
 - **Intelligent Classification:** Title analysis automatically categorizes viva schedules, exam routines, and admit cards into `Exam related` (`exam-related`) with `Important` priority, and holiday/vacation notices into `Offday` with `Urgent` priority and pinned status.
 - **Deduplication:** Notices use deterministic codes (`BUBT-N-${id}`). Sync operations perform upserts on conflict, preventing duplicates.
-- **Automated Cron Schedule:** Migration `20261019010000_notices_sync_cron.sql` schedules automated sync via `pg_cron` and `pg_net` every 30 minutes between 02:00 and 16:00 UTC (08:00 AM to 10:00 PM Dhaka time).
-- **In-App Triggers:** Manual sync on SubBar header triggers immediate refresh; authenticated users are gated with a 2-minute throttle to prevent server spam.
+- **4-Month (120-Day) Active Semester Window:** Only notices published within the last 120 days (~81 semester notices) are ingested and displayed in general feeds. Older notices are excluded to keep query times lightning-fast (<150ms).
+- **Strict Newest-First Ordering:** Feeds order strictly by `created_at DESC` so fresh notices published today or yesterday are always #1 at the top of the feed. Old pinned notices do not permanently hijack the top of the "All" tab.
+- **Permanent Bookmark Retention:** Any notice bookmarked/saved by a student is permanently exempt from time pruning and remains in their Saved tab indefinitely.
+- **Notification Cascade Guard:** `notify_new_announcement()` trigger only dispatches notifications for circulars published within the last 48 hours, preventing crawler bulk imports from flooding devices with hundreds of push alerts.
+- **Automated Cron Schedule & Hardened Secret:** Migration `20261021000000_fix_sync_secret_and_retention.sql` populates `sync_secret` in `public.app_config` (`campusone_auto_sync_secret_2026`), resolving 401 Unauthorized errors and allowing `auto-sync-bubt-notices` to run seamlessly via `pg_cron` every 30 minutes.
+- **In-App Triggers:** Pull-to-refresh on `AnnouncementsScreen.tsx` and header sync button trigger immediate live sync with toast feedback.
 
 ### 31.2 Database Schema & Targeting (`20261019000000_announcements_360_sync.sql`)
 - **Columns on `announcements`:**

@@ -240,9 +240,12 @@ export function AnnouncementsScreen({ navigation }: any) {
 
   async function onRefresh() {
     setRefreshing(true);
-    await triggerNoticeSync(false);
+    const res = await triggerNoticeSync(false);
     await load();
     setRefreshing(false);
+    if (res.success && (res.newAdded ?? 0) > 0) {
+      toast({ type: 'success', title: t.announce2.syncSuccess(res.newAdded!) });
+    }
   }
 
   const handlePressCard = useCallback((id: string) => {

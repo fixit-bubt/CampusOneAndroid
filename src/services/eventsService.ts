@@ -99,10 +99,12 @@ export function getEventLiveStatus(event: Event): EventStatusInfo {
  * Fetch events feed with optional filters.
  */
 export async function fetchEventsList(): Promise<Event[]> {
+  const fourMonthsAgoDate = new Date(Date.now() - 120 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const { data, error } = await supabase
     .from('events')
     .select('*')
     .is('deleted_at', null)
+    .gte('date', fourMonthsAgoDate)
     .order('date', { ascending: true });
 
   if (error) {

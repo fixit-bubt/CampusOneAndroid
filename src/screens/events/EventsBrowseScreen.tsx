@@ -269,6 +269,9 @@ export function EventsBrowseScreen({ navigation }: any) {
 
   async function onRefresh() {
     setRefreshing(true);
+    try {
+      await triggerBubtEventsSync();
+    } catch {}
     await load();
     if (user?.id) {
       const bSet = await fetchUserEventBookmarks(user.id);
