@@ -1614,7 +1614,7 @@ The Campus Announcements architecture is transformed from a manual posting board
 - **Synchronized Scoped Counts:** Tab badge counters are derived dynamically from the active department and category scope, ensuring badge counts and list results are always 100% consistent.
 - **Varsity-Wide Notice Preservation:** Department filtering (such as Economics or CSE) preserves university-wide notices (`ALL`, Controller of Examinations, Registrar) so students never miss general mid-term/final routines or holiday closures.
 - **Institutional Official Link Bar:** Prominent circular card bar on `AnnouncementDetailScreen` with an official BUBT globe squircle, verified green portal badge (`BUBT OFFICIAL PORTAL`), title, and direct external navigation.
-- **In-App PDF Viewer Modal:** Uses `react-native-webview` with `scalesPageToFit={false}`, responsive mobile viewport injection, removal of Google Docs' dark letterbox margins and toolstrip, `#f8fafc` background, and centered document pages.
+- **Executive High-DPI In-App PDF Viewer (`CampusPdfViewerModal.tsx`):** 100% offline-ready, running vendored `pdf.js` (`pdf.min.mjs` + `pdf.worker.min.mjs`) locally over `file://` inside a native `WebView`. High-DPI retina supersampling, dual-line Navy header, floating indigo page pill (`Page X / Y`), and direct silent view with zero loading clutter.
 - **Pinch-to-Zoom Flyer Viewer:** `resolveNoticeImage` supports local banner mappings, remote CDNs, `uploads/`, and BUBT storage paths. Uses explicit window dimensions (`winWidth`, `winHeight * 0.78`) to prevent height collapse inside Android's `ScrollView`.
 - **Home Community Feed Realtime Sync & Cross-Screen Read Synchronization:**
   - `HomeCommunityUpdates.tsx` and `AnnouncementsScreen.tsx` are 100% synchronized via a 3-layer real-time architecture:
@@ -1625,7 +1625,18 @@ The Campus Announcements architecture is transformed from a manual posting board
   - Unified query limit to `500` notices within the 4-month window across both `HomeCommunityUpdates.tsx` and `AnnouncementsScreen.tsx`.
 - **Bilingual Support:** Complete localization parity in `src/i18n/en.ts` and `src/i18n/bn.ts` under the `announce2` namespace.
 
-### 31.4 Performance Hardening, Edge-to-Edge PDF Viewer & Security Architecture
+### 31.4 Executive High-DPI In-App PDF Viewer & Engine Architecture (`CampusPdfViewerModal.tsx`, `viewerHtml.ts`, `pdfViewerService.ts`)
+- **Zero Google Docs Dependency:** Fully replaced the legacy Google Docs embed with a 100% offline-ready, high-performance in-app document engine running vendored `pdf.js` (`pdf.min.mjs` + `pdf.worker.min.mjs`) locally over `file://` inside an Android `WebView`.
+- **Zero Supabase Storage Overhead:** Viewing notices is strictly a read operation from existing public BUBT URLs (`https://www.bubt.edu.bd/storage/notices/...`). Zero bytes are written, saved, or uploaded to Supabase Storage.
+- **Strict Device Storage Capping (`pruneNoticesCache`):** Notice PDFs downloaded for viewing are saved to `Paths.cache/pdf_notices` and automatically pruned via `pruneNoticesCache()` to a strict ceiling of max 5 cached files, preventing device storage bloat.
+- **Direct Memory Base64 Loading (`loadPdfData`):** Bypasses all local Android WebView XHR/CORS/origin restrictions by converting downloaded bytes directly into base64 in JS and injecting into the engine via `window.loadPdfData(base64)`. A robust handshake lock (`webViewReadyRef` and `docPayloadRef`) prevents race conditions.
+- **High-DPI Retina Canvas Supersampling:** Uses `window.devicePixelRatio` (up to 2.5x) to render razor-sharp text and graphics with zero blur, matching and exceeding competitor BUBT Info.
+- **Standard A4 Proportion & Responsive Scale:** A4 cards with `aspect-ratio: 1 / 1.414` fit phone screens edge-to-edge with 10px margins (`width: calc(100% - 4px)`).
+- **Executive Navy Header:** Dual-line header (`#0a192f` Navy) with back chevron, notice title, issuing office subtitle, page selector trigger (`layers`), native system share button (`shareDownloadedPdf`), and reload.
+- **Floating Indigo Page Pill:** Bottom-right capsule pill (`#4f46e5` indigo with vector `book-open` icon and dynamic `Page X / Y`) matching BUBT Info.
+- **Direct Silent View (Zero-Loading Clutter):** Clean, instant document display without annoying skeleton overlays, spinners, or loading text. Page placeholders are clean white A4 cards that the PDF canvas draws directly onto.
+- **Double-Tap to Zoom & Jump-to-Page:** Double tap to zoom 2.2x smoothly on any section, plus a bottom sheet page selector for quick jumping across multi-page circulars.
+- **Shared `SquareLoader.tsx` Component:** Exported in `src/components/ui/` for future feature cards or full-page loaders matching the website's chasing squares diamond animation.
 - **60 FPS Virtualized List & Stable Memoization (`AnnouncementsScreen.tsx`):**
   - Replaced un-virtualized `<ScrollView>` with an optimized `<FlatList>` (`initialNumToRender: 8`, `maxToRenderPerBatch: 10`, `windowSize: 7`, `removeClippedSubviews: Platform.OS === 'android'`).
   - Wrapped `AnnouncementCard` in `React.memo` and stabilized row callbacks (`handleToggleSave`, `deleteAnnouncement`, `handlePressCard`, `renderCard`) via `useCallback` to prevent cascading re-renders during live search filtering and tab changes.
