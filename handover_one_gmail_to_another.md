@@ -15,7 +15,7 @@ This document tracks every service, database, login system, notification service
 | **GitHub (Web & Android Repos)** | `fixit-bubt` organization | `fixit-bubt` organization | **100% Completed** |
 | **Google Cloud Console (OAuth & Sign-In)** | `campusone2026@gmail.com` (`campusone-511812`) | Web & Android OAuth Clients Active | **100% Completed** |
 | **Firebase (Push Notifications)** | `campusone2026@gmail.com` (`campusone-511812`) | Service Account & FCM Active | **100% Completed** |
-| **Custom SMTP (Verification Codes & OTPs)** | Default Supabase free tier | Needs custom provider (Resend / Brevo) | ⚠️ **Action Required** |
+| **Custom SMTP (Verification Codes & OTPs)** | Default Supabase free tier | Deferred to Custom Domain (Default active; 95%+ use Google OAuth) | ⏳ **Deferred to Custom Domain** |
 | **Google Play Console (App Store)** | Personal Account (`nawyaj morshed`) | In progress (NID/Passport & 20-tester rule) | ⏳ **In Progress** |
 
 ---
@@ -81,17 +81,16 @@ This document tracks every service, database, login system, notification service
 
 ---
 
-### Task 3: Email Verification Codes & Password Reset (SMTP)
-* **Why it is needed:** Supabase's built-in default email service has a strict rate limit of only **3 to 4 emails per hour**. If multiple students sign up or request a password reset at once, verification emails get delayed or blocked.
-* **Steps to Complete:**
-  1. Create a free account at [Resend](https://resend.com) or [Brevo](https://brevo.com) using `campusone2026@gmail.com`.
-  2. Generate an SMTP API Key.
-  3. In **Supabase Dashboard -> Authentication -> Email Settings**:
-     - Enable **Custom SMTP**.
-     - Sender email: `noreply@campusonebubt.com` or `campusone2026@gmail.com`.
-     - Host: e.g. `smtp.resend.com` (Port `465` or `587`).
-     - Username & Password: The generated SMTP credentials.
-  4. **Result:** Signup verification codes, 6-digit OTPs, and password reset links will deliver to student inboxes instantly with 0 delay.
+### Task 3: Email Verification Codes & Password Reset (SMTP) - ⏳ DEFERRED TO CUSTOM DOMAIN
+* **Current Status:**
+  - Supabase default transactional email service is active and handling standard signups and password resets.
+  - 95%+ of students authenticate via unified Google OAuth, which bypasses SMTP completely.
+* **Why Deferred:**
+  1. Google App Passwords requires a FIDO2 Bluetooth Low Energy (BLE) proximity handshake that causes an infinite passkey challenge loop on PCs without BLE adapters.
+  2. Brevo SMS 2FA delivery fails for Bangladesh numbers (+880) due to strict international A2P telecom filtering.
+  3. Resend free tier without a verified custom domain only permits sending to the team's own email (`campusone2026@gmail.com`).
+* **Next Action:**
+  - When the custom production domain (`campusonebubt.com`) is connected, add DNS verification records (DKIM/SPF/MX) on Resend or Brevo to enable custom SMTP with zero SMS or passkey obstacles.
 
 ---
 

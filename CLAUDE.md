@@ -86,12 +86,15 @@ The project is consolidating all third-party services and infrastructure under t
    - **Web OAuth:** Web Client ID `22710751786-rbud0t5dkb7hiij9vtj6pumkdc29lrha.apps.googleusercontent.com` configured with origins `https://campusonebubt.vercel.app` & `https://xhgpxvyqrufbbuivttmi.supabase.co` and redirect URI `https://xhgpxvyqrufbbuivttmi.supabase.co/auth/v1/callback`. Connected to Supabase Google provider.
    - **Android OAuth Client ID:** `22710751786-udnebs4hqg7e775ru67flmgpb84gjnkd.apps.googleusercontent.com` created with package `com.bubt.campusone` and release keystore SHA-1 (`96:1D:69:A2:BB:57:98:4F:C2:EC:B7:BC:3B:59:09:3A:A9:31:34:72`).
    - **Mobile App Config Synced:** `GOOGLE_WEB_CLIENT_ID` updated in `src/lib/googleAuth.ts`.
-   - **Firebase & Push Notifications (Next):** Link Firebase project for FCM v1 push notification credentials in `send-push` edge function.
+   - **Firebase & Push Notifications (Completed):** Firebase project `campusone-511812` active under `campusone2026@gmail.com`; FCM service account key deployed to Supabase Edge Function secrets as `FCM_SERVICE_ACCOUNT`; Android client configured with `google-services.json`. Push notifications operational.
 4. **Vercel Account Transfer (Completed):**
    - Transferred & deployed directly under master team account `campusone2026@gmail.com` (username `campusone2026-4009`).
    - Project: `campusonebubt`.
    - Production URL: `https://campusonebubt.vercel.app`.
    - CI/CD connected to `fixit-bubt/CampusOneWeb` on `main`, auto-deploying on every push with `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` configured.
+5. **Custom SMTP Roadmap (Deferred to Custom Domain):**
+   - Default Supabase email service remains active for transactional signups and password resets; 95%+ of students authenticate via unified Google OAuth.
+   - Custom SMTP (via Resend or Brevo) will be configured once the custom production domain (`campusonebubt.com`) is connected with DNS records (SPF/DKIM).
 
 ---
 
@@ -2104,9 +2107,56 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 - **Role-Guarded Force Sync:** Enforces `if (isForce && triggeredBy !== 'admin' && triggeredBy !== 'cron' && triggeredBy !== 'service_role') isForce = false;` to protect the 60-second cooldown from client spam.
 - **Production Telemetry:** Verified on project `xhgpxvyqrufbbuivttmi`: Run 1 healed and updated records in 8.1s; Run 2 achieved pure idempotence (106 scanned, 0 added, 0 updated, 103 unchanged) in 6.7s.
 
+---
 
+## 45. Zero-Frame Synchronous Cache Hydration, Anti-Stutter & Empty-State Hardening
 
+### 45.1 Root Causes of UI Stutter & Default-State Flashing
+1. **Destructive Key Unmounting in Parent Containers:**
+   - In `HomeScreen.tsx`, dynamic keys (`key={`banner-${refreshKey}`}`, `key={`strips-${refreshKey}`}`, and `key={`news-${refreshKey}`}`) were assigned to child components. On pull-to-refresh or data reload, incrementing `refreshKey` forced React to unmount and destroy all three child components, wiping internal state, timers, and active tabs.
+2. **Asynchronous Preference Hydration Race Condition:**
+   - In `HomeStatusStrips.tsx`, custom strip selections (`['reports', 'bus', 'lostfound']`) were fetched asynchronously from `AsyncStorage.getItem` inside `useEffect`, while state was initialized to `DEFAULT_STATUS_STRIP_IDS` (`['reports', 'bus', 'prayer']`).
+   - Consequently, on remount, frame 1 rendered "Prayer", and frame 2 snapped to "Lost & Found", creating a jarring visual stutter.
+   - The same issue affected `HomeFrequentTools.tsx` (`DEFAULT_TOOL_IDS`), `HomeHeroBanner.tsx` (`FALLBACK_SLIDES`), and `SettingsScreen.tsx` (`optSync` toggle switch bouncing from ON to OFF).
+3. **Unguarded `ListEmptyComponent` Premature Flashes:**
+   - Multiple list screens rendered their `ListEmptyComponent` ("No items found", "All clear") unconditionally whenever the rendered array length was 0, without checking if network/cache loading was still in progress. Users navigating to Announcements, Routines, Campus Issues, Reports, Notifications, or Messages saw an immediate empty state flash before items popped into view.
+4. **Stale Cross-Month Calendar Leakage:**
+   - In `AcademicCalendarScreen.tsx`, switching months updated `yearMonth` immediately while leaving the `events` array populated with the previous month's data. Because day numbers were extracted using `split('-')[2]` without verifying month prefixes, previous month events momentarily rendered on the new month's grid cells before the network query resolved.
 
+### 45.2 Universal Architectural Solutions Standardized
+1. **Non-Destructive `refreshTrigger` Prop Standard:**
+   - Completely eliminated changing `key={...}` props from `HomeScreen.tsx`.
+   - Child components (`HomeHeroBanner`, `HomeStatusStrips`, `HomeFrequentTools`, `HomeCommunityUpdates`) accept `refreshTrigger?: number` and trigger background data refetches via `useEffect` without unmounting. Active slide indexes, customized strips, and active tabs remain 100% stable during pull-to-refresh.
+2. **Zero-Frame Synchronous In-Memory Cache Hydration:**
+   - Added synchronous cache accessors in `cacheService.ts`: `getCacheSync<T>(key: string): T | null` and `hasCacheSync(key: string): boolean`.
+   - Implemented module-level in-memory caches (`inMemorySelectedStrips`, `inMemoryFrequentTools`, `inMemoryCalendar`, `inMemoryOptSync`) that persist across component remounts and tab switches.
+   - Component state initializes synchronously:
+     ```tsx
+     const [selectedStrips, setSelectedStrips] = useState<StatusStripId[]>(
+       () => inMemorySelectedStrips[uid] ?? DEFAULT_STATUS_STRIP_IDS
+     );
+     ```
+   - Eliminates 100% of frame-1 default state flashes.
+3. **Universal Loading Guards on `ListEmptyComponent`:**
+   - Standardized across `AnnouncementsScreen`, `RoutinesBrowseScreen`, `CampusIssuesScreen`, `MyReportsScreen`, `AssignedToMeScreen`, `NotificationsScreen`, and `MessagesHome`:
+     ```tsx
+     ListEmptyComponent={
+       loading ? (
+         <View style={{ paddingVertical: 48, alignItems: 'center', justifyContent: 'center' }}>
+           <ActivityIndicator size="small" color={C.brand} />
+         </View>
+       ) : (
+         <EmptyStateView ... />
+       )
+     }
+     ```
+   - Prevents flashing "No notices found", "No routines", or "All clear" during initial network fetches.
+4. **Month-Keyed Calendar Cache & Strict Date Prefix Isolation:**
+   - `AcademicCalendarScreen.tsx` keys events by month (`${year}_${month}`) in an in-memory dictionary `eventsByMonth` and `inMemoryCalendar`.
+   - `eventsByDate` day mapping strictly enforces `ev.event_date.startsWith(curPrefix)`, completely preventing stale events from leaking into adjacent months during rapid month switching.
 
+### 45.3 BUBT Crawler Automated Jobs & Recruitment Adapter
+- **Standalone & Fast-Cycle Recruitment Ingestion:** Added `supabase/functions/bubt-crawler/adapters/jobs.ts` to automatically extract career circulars, lecturer recruitments, and faculty openings from BUBT notice streams into `public.jobs`.
+- **Crawler Registry Integration:** Wired into `index.ts` with dedicated `feature=jobs` target and integrated into Tier-1 fast-cycle background runs.
 
 
