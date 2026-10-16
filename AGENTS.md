@@ -274,8 +274,9 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
   - `MedicalScreen`: Admin modal `modalSaveBtn` (58dp), `modalInput` (58dp)
   - `EventPostScreen`: `submitBtn` (58dp)
   - `ClubPostScreen`: `submitBtn` (58dp)
-  - `AnnouncementsScreen`: `searchBar` (58dp), `dualBarBtn` category & department dropdown triggers (`height: 58, borderRadius: 16`), and modal sheet option items (`pickerBar` `height: 58, borderRadius: 16, 38×38dp` squircle icon box)
-  - `EventsBrowseScreen`: `searchBar` (58dp), category filter dropdown bar (`catDropdownBtn` `height: 58, borderRadius: 16`), and category bottom sheet modal options (`pickerBar` `height: 58, borderRadius: 16, 38×38dp` squircle icon box)
+  - `AnnouncementsScreen`: `searchBar` (58dp), `dualBarBtn` category & department dropdown triggers (`height: 58, borderRadius: 16`), modal sheet option items (`pickerBar` `height: 58, borderRadius: 16, 38×38dp` squircle icon box), 58dp "View More Notices" bar (`viewMoreBtn` `height: 58, borderRadius: 16`), unread notice counter badges syncing with `HomeCommunityUpdates`, and corner refresh button replaced with `<LogoMark size={28} shadow={false} />`
+  - `EventsBrowseScreen`: `searchBar` (58dp), category filter dropdown bar (`catDropdownBtn` `height: 58, borderRadius: 16`), category bottom sheet modal options (`pickerBar` `height: 58, borderRadius: 16, 38×38dp` squircle icon box), and corner refresh button replaced with `<LogoMark size={28} shadow={false} />`
+  - `HomeCommunityUpdates`: Notice unread badge counter, card unread dots, and instant optimistic sync with `AnnouncementsScreen`
   - `DonorRegisterScreen`: `submitBtn` (58dp), `selectorCard` (58dp), `input` (58dp)
   - `BloodRequestDetailScreen`: `fulfillBtn` (58dp)
   - `BloodRequestScreen`: `submitBtn` (58dp), `input` (58dp), `inputWithIcon` (58dp), `dropdownCard` (58dp)

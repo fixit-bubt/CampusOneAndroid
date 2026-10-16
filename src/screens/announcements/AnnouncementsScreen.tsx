@@ -12,6 +12,7 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
+import { LogoMark } from '../../components/ui/Logo';
 import { FontFamily, Layout, Accent, SectorColors, pillBg, Radius } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { getCache, CacheKeys } from '../../services/cacheService';
@@ -22,6 +23,7 @@ import {
   fetchAnnouncementsFeed,
   toggleAnnouncementBookmark,
   triggerNoticeSync,
+  markAnnouncementAsRead,
   ANNOUNCEMENT_CATEGORIES,
   KNOWN_DEPARTMENTS,
 } from '../../services/announcementService';
@@ -195,6 +197,7 @@ export function AnnouncementsScreen({ navigation }: any) {
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [mainTab, setMainTab] = useState<MainTab>('all');
+  const [expanded, setExpanded] = useState(false);
   const [query, setQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [deptFilter, setDeptFilter] = useState('ALL');
@@ -249,8 +252,12 @@ export function AnnouncementsScreen({ navigation }: any) {
   }
 
   const handlePressCard = useCallback((id: string) => {
+    if (user?.id && !readIds.has(id)) {
+      setReadIds(prev => new Set(prev).add(id));
+      markAnnouncementAsRead(id, user.id);
+    }
     navigation.navigate('AnnouncementDetail', { announcementId: id });
-  }, [navigation]);
+  }, [navigation, user?.id, readIds]);
 
   const handleToggleSave = useCallback(async (item: Announcement) => {
     if (!user?.id) {
@@ -413,14 +420,23 @@ export function AnnouncementsScreen({ navigation }: any) {
     return result;
   }, [searchedItems, categoryFilter, deptFilter, studentDept, includeUniversal]);
 
-  // 3. Dynamic Synchronized Tab Counts (Derived from scoped items)
+  // 3. Dynamic Synchronized Tab Counts (Unread notices for active tabs, saved bookmarks for saved)
   const tabCounts = useMemo(() => {
+    const unreadScoped = scopedItems.filter(a => !readIds.has(a.id));
+    const unreadUrgent = unreadScoped.filter(
+      a =>
+        a.priority === 'Urgent' ||
+        a.priority === 'Important' ||
+        a.pinned ||
+        a.category_slug === 'exam-related' ||
+        /exam|routine|viva/i.test(a.title)
+    );
     return {
-      all: scopedItems.length,
-      urgent: scopedItems.filter(a => a.priority === 'Urgent' || a.priority === 'Important' || a.pinned || a.category_slug === 'exam-related' || /exam|routine|viva/i.test(a.title)).length,
+      all: unreadScoped.length,
+      urgent: unreadUrgent.length,
       saved: scopedItems.filter(a => savedIds.has(a.id)).length,
     };
-  }, [scopedItems, savedIds]);
+  }, [scopedItems, readIds, savedIds]);
 
   // 4. Filtered List by Main Tab (All Notices | Urgent & Exams | Saved)
   const filtered = useMemo(() => {
@@ -433,6 +449,17 @@ export function AnnouncementsScreen({ navigation }: any) {
     return scopedItems;
   }, [scopedItems, mainTab, savedIds]);
 
+  // Truncation & Pagination (Top 10 by default with 58dp View More bar)
+  const isSearchOrFilterActive = query.trim().length > 0 || categoryFilter !== 'all' || deptFilter !== 'ALL';
+  const shouldTruncate = !isSearchOrFilterActive && !expanded && filtered.length > 10;
+  const displayedItems = shouldTruncate ? filtered.slice(0, 10) : filtered;
+  const remainingCount = filtered.length - 10;
+
+  const handleTabChange = useCallback((newTab: MainTab) => {
+    setMainTab(newTab);
+    setExpanded(false);
+  }, []);
+
   const activeCategoryLabel = useMemo(() => {
     return ANNOUNCEMENT_CATEGORIES.find(c => c.id === categoryFilter)?.label || t.announce2.allCategories;
   }, [categoryFilter, t.announce2.allCategories]);
@@ -444,9 +471,9 @@ export function AnnouncementsScreen({ navigation }: any) {
 
   const ANNOUNCEMENT_TABS: TabItem<MainTab>[] = useMemo(
     () => [
-      { id: 'all', label: 'All', count: tabCounts.all, color: SectorColors.announce },
-      { id: 'urgent', label: 'Urgent', count: tabCounts.urgent, color: C.danger },
-      { id: 'saved', label: 'Saved', count: tabCounts.saved, color: Accent.gold },
+      { id: 'all', label: 'All', count: tabCounts.all > 0 ? tabCounts.all : undefined, color: SectorColors.announce },
+      { id: 'urgent', label: 'Urgent', count: tabCounts.urgent > 0 ? tabCounts.urgent : undefined, color: C.danger },
+      { id: 'saved', label: 'Saved', count: tabCounts.saved > 0 ? tabCounts.saved : undefined, color: Accent.gold },
     ],
     [tabCounts.all, tabCounts.urgent, tabCounts.saved, C.danger]
   );
@@ -472,20 +499,6 @@ export function AnnouncementsScreen({ navigation }: any) {
         onBack={() => navigation.goBack()}
         rightSlot={
           <View style={styles.topRightActions}>
-            <TouchableOpacity
-              style={styles.headerBtn}
-              onPress={() => handleManualSync(false)}
-              onLongPress={() => handleManualSync(true)}
-              disabled={syncing}
-              activeOpacity={0.75}
-            >
-              {syncing ? (
-                <ActivityIndicator size="small" color={C.brand} />
-              ) : (
-                <Feather name="refresh-cw" size={18} color={C.text} />
-              )}
-            </TouchableOpacity>
-
             {isAdmin && (
               <TouchableOpacity
                 style={styles.headerBtn}
@@ -495,6 +508,7 @@ export function AnnouncementsScreen({ navigation }: any) {
                 <Feather name="plus" size={21} color={C.text} />
               </TouchableOpacity>
             )}
+            <LogoMark size={28} shadow={false} />
           </View>
         }
       />
@@ -504,7 +518,7 @@ export function AnnouncementsScreen({ navigation }: any) {
         <SegmentedTabs
           tabs={ANNOUNCEMENT_TABS}
           activeTab={mainTab}
-          onTabChange={setMainTab}
+          onTabChange={handleTabChange}
         />
       </View>
 
@@ -606,7 +620,7 @@ export function AnnouncementsScreen({ navigation }: any) {
 
       {/* Main Announcements Virtualized List (Locked 60 FPS) */}
       <FlatList
-        data={filtered}
+        data={displayedItems}
         keyExtractor={(item) => item.id}
         renderItem={renderCard}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
@@ -665,7 +679,36 @@ export function AnnouncementsScreen({ navigation }: any) {
             </View>
           </View>
         }
-        ListFooterComponent={<View style={{ height: 28 }} />}
+        ListFooterComponent={
+          shouldTruncate ? (
+            <View style={{ paddingTop: 6, paddingBottom: 28 }}>
+              <TouchableOpacity
+                style={[styles.viewMoreBtn, { backgroundColor: C.surface, borderColor: C.border }]}
+                onPress={() => setExpanded(true)}
+                activeOpacity={0.75}
+              >
+                <View style={styles.viewMoreLeft}>
+                  <View
+                    style={[
+                      styles.viewMoreIconBox,
+                      {
+                        backgroundColor: isDark ? 'rgba(59, 130, 246, 0.20)' : '#e0edff',
+                      },
+                    ]}
+                  >
+                    <Feather name="chevron-down" size={18} color={C.brand} />
+                  </View>
+                  <Text style={[styles.viewMoreTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    View More Notices ({remainingCount} remaining)
+                  </Text>
+                </View>
+                <Feather name="arrow-down" size={16} color={C.brand} />
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={{ height: 28 }} />
+          )
+        }
       />
 
       {/* =========================================================================
@@ -1171,4 +1214,36 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1.8,
   } as ViewStyle,
+
+  // 58dp View More Notices Bar
+  viewMoreBtn: {
+    height: 58,
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+  } as ViewStyle,
+  viewMoreLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  } as ViewStyle,
+  viewMoreIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  viewMoreTxt: {
+    fontSize: 14,
+  } as any,
 });

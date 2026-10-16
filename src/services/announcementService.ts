@@ -134,6 +134,18 @@ export async function toggleAnnouncementBookmark(
   }
 }
 
+export async function markAnnouncementAsRead(announcementId: string, userId: string): Promise<void> {
+  try {
+    await supabase
+      .from('announcement_reads')
+      .upsert({ announcement_id: announcementId, user_id: userId }, { onConflict: 'announcement_id,user_id' });
+    const cachedReads = (await getCache<string[]>(CacheKeys.ANNOUNCEMENT_READS(userId))) || [];
+    if (!cachedReads.includes(announcementId)) {
+      setCache(CacheKeys.ANNOUNCEMENT_READS(userId), [...cachedReads, announcementId]);
+    }
+  } catch {}
+}
+
 export async function triggerNoticeSync(isDeep = false): Promise<{
   success: boolean;
   totalScanned?: number;

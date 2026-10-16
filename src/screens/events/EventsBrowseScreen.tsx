@@ -12,6 +12,7 @@ import { useT } from '../../i18n';
 import { Feather } from '@expo/vector-icons';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
+import { LogoMark } from '../../components/ui/Logo';
 import { SkeletonList, LoadError } from '../../components/ui/LoadState';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
@@ -392,18 +393,6 @@ export function EventsBrowseScreen({ navigation }: any) {
           <View style={styles.topRightSlots}>
             <TouchableOpacity
               style={styles.iconBtn}
-              onPress={handleSyncBubt}
-              hitSlop={10}
-              activeOpacity={0.7}
-            >
-              {syncing ? (
-                <ActivityIndicator size="small" color={C.brand} />
-              ) : (
-                <Feather name="refresh-cw" size={18} color={C.text} />
-              )}
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.iconBtn}
               onPress={() => setView(v => (v === 'list' ? 'calendar' : 'list'))}
               activeOpacity={0.75}
             >
@@ -418,6 +407,7 @@ export function EventsBrowseScreen({ navigation }: any) {
                 <Feather name="plus" size={22} color={C.brand} />
               </TouchableOpacity>
             )}
+            <LogoMark size={28} shadow={false} />
           </View>
         }
       />

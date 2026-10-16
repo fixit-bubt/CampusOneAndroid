@@ -14,17 +14,20 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
+import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { FontFamily, SectorColors, pillBg } from '../../theme';
 import { SegmentedTabs, type TabItem } from '../ui/SegmentedTabs';
 import { supabase } from '../../lib/supabase';
 import { localToday, formatDate } from '../../utils/format';
 import { getCache, setCache, CacheKeys } from '../../services/cacheService';
+import { markAnnouncementAsRead } from '../../services/announcementService';
 
 export type CommunityTab = 'Notices' | 'Clubs' | 'Events';
 
 interface CommunityItem {
   id: string;
+  rawId?: string;
   category: 'Notice' | 'Event' | 'Club Update';
   source: string;
   title: string;
@@ -139,10 +142,12 @@ const DEFAULT_NEWS: CommunityItem[] = [
 export function HomeCommunityUpdates() {
   const navigation = useNavigation<any>();
   const { C, isDark } = useTheme();
+  const { user } = useAuth();
   const t = useT();
 
   const [activeTab, setActiveTab] = useState<CommunityTab>('Notices');
   const [items, setItems] = useState<CommunityItem[]>(DEFAULT_NEWS);
+  const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
 
@@ -152,6 +157,21 @@ export function HomeCommunityUpdates() {
     if (cached && cached.length > 0) {
       setItems(cached);
       setLoading(false);
+    }
+    if (user?.id) {
+      const cachedReads = await getCache<string[]>(CacheKeys.ANNOUNCEMENT_READS(user.id));
+      if (cachedReads) setReadIds(new Set(cachedReads));
+      supabase
+        .from('announcement_reads')
+        .select('announcement_id')
+        .eq('user_id', user.id)
+        .then(({ data }) => {
+          if (data) {
+            const rSet = new Set(data.map((r: any) => r.announcement_id));
+            setReadIds(rSet);
+            setCache(CacheKeys.ANNOUNCEMENT_READS(user.id), Array.from(rSet));
+          }
+        });
     }
 
     try {
@@ -192,6 +212,7 @@ export function HomeCommunityUpdates() {
 
           list.push({
             id: `ann-${a.id}`,
+            rawId: a.id,
             category: 'Notice',
             source: a.department ? `${a.department} Dept` : 'Office of Registrar',
             title: a.title,
@@ -283,14 +304,17 @@ export function HomeCommunityUpdates() {
     };
   }, [loadData, navigation]);
 
-  // Tab counts
+  // Tab counts (Unread notices count for Notices, total for Clubs and Events)
   const counts = useMemo(() => {
+    const unreadNoticesCount = items.filter(
+      (n) => n.category === 'Notice' && (!n.rawId || !readIds.has(n.rawId))
+    ).length;
     return {
-      Notices: items.filter((n) => n.category === 'Notice').length,
+      Notices: unreadNoticesCount,
       Clubs: items.filter((n) => n.category === 'Club Update').length,
       Events: items.filter((n) => n.category === 'Event').length,
     };
-  }, [items]);
+  }, [items, readIds]);
 
   // Filtered list
   const filtered = useMemo(() => {
@@ -301,9 +325,24 @@ export function HomeCommunityUpdates() {
   }, [items, activeTab]);
 
   const tabs: TabItem<CommunityTab>[] = [
-    { id: 'Notices', label: t.communityUpdates?.tabNotices ?? 'Notices', count: counts.Notices, color: SectorColors.announce, showZeroCount: true },
-    { id: 'Clubs', label: t.communityUpdates?.tabClubs ?? 'Clubs', count: counts.Clubs, color: SectorColors.clubs, showZeroCount: true },
-    { id: 'Events', label: t.communityUpdates?.tabEvents ?? 'Events', count: counts.Events, color: SectorColors.events, showZeroCount: true },
+    {
+      id: 'Notices',
+      label: t.communityUpdates?.tabNotices ?? 'Notices',
+      count: counts.Notices > 0 ? counts.Notices : undefined,
+      color: SectorColors.announce,
+    },
+    {
+      id: 'Clubs',
+      label: t.communityUpdates?.tabClubs ?? 'Clubs',
+      count: counts.Clubs > 0 ? counts.Clubs : undefined,
+      color: SectorColors.clubs,
+    },
+    {
+      id: 'Events',
+      label: t.communityUpdates?.tabEvents ?? 'Events',
+      count: counts.Events > 0 ? counts.Events : undefined,
+      color: SectorColors.events,
+    },
   ];
 
   return (
@@ -319,7 +358,9 @@ export function HomeCommunityUpdates() {
         <View style={[styles.liveBadge, { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.15)' : '#eff6ff' }]}>
           <View style={styles.pulseDot} />
           <Text style={[styles.liveText, { color: SectorColors.announce, fontFamily: FontFamily.jakartaBold }]}>
-            {filtered.length > 99 ? '99+' : `${filtered.length} ${t.statusStrips?.metrics?.active ?? 'updates'}`}
+            {activeTab === 'Notices'
+              ? (counts.Notices > 0 ? `${counts.Notices} unread` : 'All caught up')
+              : (filtered.length > 99 ? '99+' : `${filtered.length} ${t.statusStrips?.metrics?.active ?? 'updates'}`)}
           </Text>
         </View>
       </View>
@@ -350,7 +391,13 @@ export function HomeCommunityUpdates() {
             <TouchableOpacity
               key={item.id}
               activeOpacity={0.75}
-              onPress={() => navigation.navigate(item.route, item.params)}
+              onPress={() => {
+                if (item.category === 'Notice' && item.rawId && user?.id) {
+                  setReadIds((prev) => new Set(prev).add(item.rawId!));
+                  markAnnouncementAsRead(item.rawId, user.id);
+                }
+                navigation.navigate(item.route, item.params);
+              }}
               style={[
                 styles.card,
                 {
@@ -415,6 +462,9 @@ export function HomeCommunityUpdates() {
                       {item.category}
                     </Text>
                   </View>
+                  {item.category === 'Notice' && item.rawId && !readIds.has(item.rawId) && (
+                    <View style={styles.unreadDot} />
+                  )}
                   <Text style={[styles.metaDot, { color: C.textMuted }]}>·</Text>
                   <Text
                     style={[
@@ -630,6 +680,15 @@ const styles = StyleSheet.create({
   catBadgeText: {
     fontSize: 9.5,
   },
+
+  unreadDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: SectorColors.announce,
+    marginLeft: 1,
+    marginRight: 1,
+  } as ViewStyle,
 
   metaDot: {
     fontSize: 10,
