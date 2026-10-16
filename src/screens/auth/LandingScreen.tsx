@@ -44,7 +44,7 @@ export function LandingScreen({ navigation }: Props) {
 
   return (
     <View style={[styles.root, { backgroundColor: C.bg }]}>
-      {/* Hero - immersive brand gradient, logo + title + university name */}
+      {/* Hero - compact brand gradient positioned higher up */}
       <LinearGradient
         colors={[C.brand, isDark ? '#0a1738' : darken(C.brand)]}
         start={{ x: 0, y: 0 }}
@@ -53,7 +53,7 @@ export function LandingScreen({ navigation }: Props) {
       >
         <SafeAreaView edges={['top']} style={styles.heroSafe}>
           <View style={styles.heroContent}>
-            <LogoMark size={76} shadow />
+            <LogoMark size={58} shadow />
             <Text style={[styles.appName, { color: C.white, fontFamily: FontFamily.jakartaExtraBold }]}>
               CampusOne
             </Text>
@@ -64,12 +64,13 @@ export function LandingScreen({ navigation }: Props) {
         </SafeAreaView>
       </LinearGradient>
 
-      {/* Card - auth options */}
+      {/* Card - auth options, positioned higher with preserved top curve */}
       <View style={[styles.card, { backgroundColor: C.bg, borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'transparent' }]}>
         <ScrollView
           contentContainerStyle={[styles.cardContent, { paddingHorizontal: Layout.screenPadding }]}
           showsVerticalScrollIndicator={false}
           bounces={false}
+          alwaysBounceVertical={false}
         >
           <Text style={[styles.welcome, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
             {t.landing.welcome}
@@ -89,7 +90,7 @@ export function LandingScreen({ navigation }: Props) {
           )}
 
           {/* Google - primary 58dp action */}
-          <View style={{ marginTop: 22 }}>
+          <View style={{ marginTop: 16 }}>
             <GoogleButton label={t.landing.continueGoogle} onPress={handleGoogle} busy={busyG} />
           </View>
 
@@ -115,7 +116,7 @@ export function LandingScreen({ navigation }: Props) {
 
           {/* Create account - 58dp */}
           <TouchableOpacity
-            style={[styles.btnAction, { backgroundColor: C.surface, borderColor: C.border, marginTop: 12 }]}
+            style={[styles.btnAction, { backgroundColor: C.surface, borderColor: C.border, marginTop: 10 }]}
             onPress={() => navigation.navigate('Register')}
             activeOpacity={0.82}
           >
@@ -158,8 +159,8 @@ const styles = StyleSheet.create({
   root: { flex: 1 } as ViewStyle,
 
   hero: {
-    flex: 0.42,
-    minHeight: 260,
+    flex: 0.28,
+    minHeight: 180,
   } as ViewStyle,
 
   heroSafe: {
@@ -171,30 +172,30 @@ const styles = StyleSheet.create({
   heroContent: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
   } as ViewStyle,
 
   appName: {
-    fontSize: 32,
-    letterSpacing: -0.8,
-    marginTop: 16,
+    fontSize: 27,
+    letterSpacing: -0.6,
+    marginTop: 8,
     includeFontPadding: false,
   } as any,
 
   tagline: {
-    fontSize: 14,
-    lineHeight: 20,
-    marginTop: 6,
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 3,
     textAlign: 'center',
     includeFontPadding: false,
   } as any,
 
   card: {
-    flex: 0.58,
+    flex: 0.72,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     borderTopWidth: 1,
-    marginTop: -26,
+    marginTop: -20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -6 },
     shadowOpacity: 0.12,
@@ -203,20 +204,20 @@ const styles = StyleSheet.create({
   } as ViewStyle,
 
   cardContent: {
-    paddingTop: 30,
-    paddingBottom: 32,
+    paddingTop: 22,
+    paddingBottom: 24,
   } as ViewStyle,
 
   welcome: {
-    fontSize: 25,
+    fontSize: 24,
     letterSpacing: -0.4,
     includeFontPadding: false,
   } as any,
 
   subtitle: {
-    fontSize: 14,
-    marginTop: 6,
-    lineHeight: 20,
+    fontSize: 13.5,
+    marginTop: 4,
+    lineHeight: 19,
     includeFontPadding: false,
   } as any,
 
@@ -228,7 +229,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 12,
     borderWidth: 1,
-    marginTop: 14,
+    marginTop: 12,
   } as ViewStyle,
 
   errText: {
@@ -238,8 +239,8 @@ const styles = StyleSheet.create({
   } as any,
 
   btnAction: {
-    height: Layout.controlHeight, // 58dp
-    borderRadius: Layout.controlRadius, // 16dp
+    height: Layout.controlHeight, // exactly 58dp
+    borderRadius: Layout.controlRadius, // exactly 16dp
     borderWidth: 1.5,
     flexDirection: 'row',
     alignItems: 'center',
@@ -267,10 +268,10 @@ const styles = StyleSheet.create({
   } as any,
 
   footer: {
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 11.5,
+    lineHeight: 17,
     textAlign: 'center',
-    marginTop: 26,
+    marginTop: 18,
     includeFontPadding: false,
   } as any,
 });

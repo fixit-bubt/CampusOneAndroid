@@ -1,6 +1,6 @@
 // Pure helpers for the PDF Maker. No React, no Expo, no I/O, so every rule
 // below is unit-testable.
-import { A4, PAGE_MARGIN, MIN_QUALITY, MIN_LONG_EDGE } from './presets';
+import { A4, PAGE_MARGIN, MIN_QUALITY, MIN_LONG_EDGE, type LayoutMode } from './presets';
 
 export function isPdfFile(name?: string, mime?: string): boolean {
   if ((mime ?? '').toLowerCase() === 'application/pdf') return true;
@@ -107,4 +107,63 @@ export function fitOnPage(imgW: number, imgH: number) {
   const w = imgW * scale;
   const h = imgH * scale;
   return { pageW, pageH, x: (pageW - w) / 2, y: (pageH - h) / 2, w, h };
+}
+
+export interface DocumentPageLayout {
+  pageW: number;
+  pageH: number;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+// Professional document scanner layout engine:
+// - 'borderless': CamScanner standard. Fills the entire A4 sheet with 0 margin, eliminating all void bars.
+// - 'adaptive': Natural aspect ratio at 150 DPI. Exact fit with 0 margin.
+// - 'smart_fit': Uniform crisp 12pt micro-margin without giant letterbox gaps.
+export function layoutDocumentPage(
+  imgW: number,
+  imgH: number,
+  mode: LayoutMode = 'borderless',
+): DocumentPageLayout {
+  const safeW = Math.max(1, imgW);
+  const safeH = Math.max(1, imgH);
+  const landscape = safeW > safeH;
+  const standardPageW = landscape ? A4.h : A4.w;
+  const standardPageH = landscape ? A4.w : A4.h;
+
+  if (mode === 'borderless') {
+    return {
+      pageW: standardPageW,
+      pageH: standardPageH,
+      x: 0,
+      y: 0,
+      w: standardPageW,
+      h: standardPageH,
+    };
+  }
+
+  if (mode === 'adaptive') {
+    // 150 DPI document print points (72pt / 150px)
+    const ptW = Math.max(100, Math.round((safeW / 150) * 72));
+    const ptH = Math.max(100, Math.round((safeH / 150) * 72));
+    return { pageW: ptW, pageH: ptH, x: 0, y: 0, w: ptW, h: ptH };
+  }
+
+  // mode === 'smart_fit': uniform 12pt micro-margin
+  const microMargin = 12;
+  const availW = standardPageW - microMargin * 2;
+  const availH = standardPageH - microMargin * 2;
+  const scale = Math.min(availW / safeW, availH / safeH);
+  const w = Math.round(safeW * scale);
+  const h = Math.round(safeH * scale);
+  return {
+    pageW: standardPageW,
+    pageH: standardPageH,
+    x: Math.round((standardPageW - w) / 2),
+    y: Math.round((standardPageH - h) / 2),
+    w,
+    h,
+  };
 }

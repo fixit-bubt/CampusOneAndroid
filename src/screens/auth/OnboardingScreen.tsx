@@ -15,16 +15,16 @@ import { FontFamily, Layout, Radius, Spacing } from '../../theme';
 
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
-const BUBT_DEFAULT_DEPTS = [
-  'Computer Science & Engineering (CSE)',
-  'Electrical & Electronic Engineering (EEE)',
-  'Business Administration (BBA)',
-  'English',
-  'Law & Justice',
-  'Civil Engineering',
-  'Textile Engineering',
-  'Economics',
-  'Mathematics & Statistics',
+const BUBT_DEPARTMENTS = [
+  { code: 'CSE', name: 'Computer Science & Engineering (CSE)', icon: 'cpu' },
+  { code: 'EEE', name: 'Electrical & Electronic Engineering (EEE)', icon: 'zap' },
+  { code: 'BBA', name: 'Business Administration (BBA)', icon: 'briefcase' },
+  { code: 'ENG', name: 'English', icon: 'book' },
+  { code: 'LAW', name: 'Law & Justice', icon: 'shield' },
+  { code: 'CIVIL', name: 'Civil Engineering', icon: 'tool' },
+  { code: 'TEX', name: 'Textile Engineering', icon: 'layers' },
+  { code: 'ECO', name: 'Economics', icon: 'pie-chart' },
+  { code: 'MATH', name: 'Mathematics & Statistics', icon: 'grid' },
 ];
 
 export function OnboardingScreen() {
@@ -42,20 +42,8 @@ export function OnboardingScreen() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
 
-  const [departments, setDepartments] = useState<string[]>(BUBT_DEFAULT_DEPTS);
   const [deptModal, setDeptModal] = useState(false);
   const [bloodModal, setBloodModal] = useState(false);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const { data } = await supabase.from('departments').select('name').order('name');
-        if (data && data.length > 0) {
-          setDepartments(data.map((d: any) => d.name));
-        }
-      } catch {}
-    })();
-  }, []);
 
   const ok = studentId.trim() && department.trim() && intake.trim() && section.trim();
 
@@ -154,13 +142,23 @@ export function OnboardingScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      <PickerSheet visible={deptModal} title="Select Department" C={C} onClose={() => setDeptModal(false)}
-        data={departments}
-        onPick={(v) => { setDepartment(v); setDeptModal(false); }} />
+      {/* 58dp Department Picker Modal */}
+      <DeptPickerSheet
+        visible={deptModal}
+        C={C}
+        selectedValue={department}
+        onPick={v => { setDepartment(v); setDeptModal(false); }}
+        onClose={() => setDeptModal(false)}
+      />
 
-      <PickerSheet visible={bloodModal} title="Select Blood Group" C={C} onClose={() => setBloodModal(false)}
-        data={BLOOD_GROUPS}
-        onPick={(v) => { setBloodGroup(v); setBloodModal(false); }} />
+      {/* 58dp Blood Group Picker Modal */}
+      <BloodPickerSheet
+        visible={bloodModal}
+        C={C}
+        selectedValue={bloodGroup}
+        onPick={v => { setBloodGroup(v); setBloodModal(false); }}
+        onClose={() => setBloodModal(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -204,22 +202,141 @@ function PickerField({ C, label, required, value, placeholder, onPress }: {
   );
 }
 
-function PickerSheet({ visible, title, C, data, onPick, onClose }: {
-  visible: boolean; title: string; C: any; data: string[]; onPick: (v: string) => void; onClose: () => void;
+function DeptPickerSheet({
+  visible,
+  C,
+  selectedValue,
+  onPick,
+  onClose,
+}: {
+  visible: boolean;
+  C: any;
+  selectedValue: string;
+  onPick: (v: string) => void;
+  onClose: () => void;
 }) {
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={[styles.sheet, { backgroundColor: C.surface }]}>
           <View style={styles.handle}><View style={[styles.handleBar, { backgroundColor: C.border }]} /></View>
-          <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{title}</Text>
-          <FlatList data={data} keyExtractor={(i) => i} style={{ maxHeight: 360 }}
-            renderItem={({ item }) => (
-              <TouchableOpacity style={[styles.listRow, { borderBottomColor: C.border }]} onPress={() => onPick(item)} activeOpacity={0.7}>
-                <Text style={{ color: C.text, fontFamily: FontFamily.jakartaMedium, fontSize: 15 }}>{item}</Text>
-              </TouchableOpacity>
-            )}
-            ListEmptyComponent={<Text style={{ color: C.textMuted, textAlign: 'center', marginTop: 24 }}>None found</Text>}
+          <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Select Department</Text>
+          <FlatList
+            data={BUBT_DEPARTMENTS}
+            keyExtractor={item => item.code}
+            style={{ maxHeight: 420 }}
+            showsVerticalScrollIndicator={false}
+            renderItem={({ item }) => {
+              const isSelected = selectedValue === item.name;
+              return (
+                <TouchableOpacity
+                  style={[
+                    styles.modalItemRow,
+                    {
+                      backgroundColor: isSelected ? 'rgba(39, 94, 254, 0.14)' : C.surface,
+                      borderColor: isSelected ? C.brand : C.border,
+                    },
+                  ]}
+                  onPress={() => onPick(item.name)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.modalItemLeft}>
+                    <View style={[styles.modalItemIconBox, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                      <Icon name={item.icon} size={18} color={isSelected ? C.brand : C.text} />
+                    </View>
+                    <Text
+                      style={[
+                        styles.modalItemText,
+                        {
+                          color: isSelected ? C.brand : C.text,
+                          fontFamily: isSelected ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                        },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {item.name}
+                    </Text>
+                  </View>
+                  {isSelected ? (
+                    <Icon name="check" size={18} color={C.brand} />
+                  ) : (
+                    <Icon name="chevR" size={16} color={C.textMuted} />
+                  )}
+                </TouchableOpacity>
+              );
+            }}
+          />
+          <TouchableOpacity style={[styles.closeBtn, { borderColor: C.border, backgroundColor: C.surface2 }]} onPress={onClose}>
+            <Text style={[styles.closeTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Close</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+function BloodPickerSheet({
+  visible,
+  C,
+  selectedValue,
+  onPick,
+  onClose,
+}: {
+  visible: boolean;
+  C: any;
+  selectedValue: string;
+  onPick: (v: string) => void;
+  onClose: () => void;
+}) {
+  return (
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <View style={styles.overlay}>
+        <View style={[styles.sheet, { backgroundColor: C.surface }]}>
+          <View style={styles.handle}><View style={[styles.handleBar, { backgroundColor: C.border }]} /></View>
+          <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Select Blood Group</Text>
+          <FlatList
+            data={BLOOD_GROUPS}
+            keyExtractor={item => item}
+            style={{ maxHeight: 360 }}
+            showsVerticalScrollIndicator={false}
+            renderItem={({ item }) => {
+              const isSelected = selectedValue === item;
+              return (
+                <TouchableOpacity
+                  style={[
+                    styles.modalItemRow,
+                    {
+                      backgroundColor: isSelected ? 'rgba(39, 94, 254, 0.14)' : C.surface,
+                      borderColor: isSelected ? C.brand : C.border,
+                    },
+                  ]}
+                  onPress={() => onPick(item)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.modalItemLeft}>
+                    <View style={[styles.modalItemIconBox, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                      <Icon name="droplet" size={18} color={isSelected ? C.brand : C.text} />
+                    </View>
+                    <Text
+                      style={[
+                        styles.modalItemText,
+                        {
+                          color: isSelected ? C.brand : C.text,
+                          fontFamily: isSelected ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                        },
+                      ]}
+                    >
+                      {item}
+                    </Text>
+                  </View>
+                  {isSelected ? (
+                    <Icon name="check" size={18} color={C.brand} />
+                  ) : (
+                    <Icon name="chevR" size={16} color={C.textMuted} />
+                  )}
+                </TouchableOpacity>
+              );
+            }}
           />
           <TouchableOpacity style={[styles.closeBtn, { borderColor: C.border, backgroundColor: C.surface2 }]} onPress={onClose}>
             <Text style={[styles.closeTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Close</Text>
@@ -249,7 +366,41 @@ const styles = StyleSheet.create({
   handle: { alignItems: 'center', paddingVertical: Spacing[3] } as ViewStyle,
   handleBar: { width: 36, height: 4, borderRadius: 2 } as ViewStyle,
   sheetTitle: { fontSize: 18, textAlign: 'center', marginBottom: Spacing[3], includeFontPadding: false } as any,
-  listRow: { paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth } as ViewStyle,
+
+  modalItemRow: {
+    height: Layout.controlHeight, // exactly 58dp
+    borderRadius: Layout.controlRadius, // exactly 16dp
+    borderWidth: 1.5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    marginBottom: 10,
+  } as ViewStyle,
+
+  modalItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+    paddingRight: 8,
+  } as ViewStyle,
+
+  modalItemIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+
+  modalItemText: {
+    fontSize: 14,
+    flexShrink: 1,
+    includeFontPadding: false,
+  } as any,
+
   closeBtn: { height: Layout.controlHeight, borderRadius: Layout.controlRadius, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginTop: Spacing[3] } as ViewStyle,
   closeTxt: { fontSize: 15, includeFontPadding: false } as any,
 });

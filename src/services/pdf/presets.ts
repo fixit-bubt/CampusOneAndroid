@@ -8,6 +8,12 @@ export const PAGE_MARGIN = 24;
 export type PresetKey = 'high' | 'balanced' | 'compact';
 export interface ImagePreset { key: PresetKey; maxDim: number; quality: number }
 
+export type LayoutMode = 'borderless' | 'smart_fit' | 'adaptive';
+export const DEFAULT_LAYOUT_MODE: LayoutMode = 'borderless';
+
+export type FilterMode = 'magic' | 'bw' | 'grayscale' | 'original';
+export const DEFAULT_FILTER_MODE: FilterMode = 'magic';
+
 // maxDim caps the LONG edge in pixels. 2480px is A4 width at 300dpi,
 // 1754px is A4 height at 150dpi.
 export const IMAGE_PRESETS: Record<PresetKey, ImagePreset> = {

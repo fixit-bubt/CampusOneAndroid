@@ -4,13 +4,13 @@
 // loses quality. Photos take the same path as the Photos to PDF tool.
 import { PDFDocument } from 'pdf-lib';
 import { PdfError, IMAGE_PRESETS, DEFAULT_PRESET, LIMITS } from './presets';
-import { fitOnPage } from './pdfUtils';
+import { layoutDocumentPage } from './pdfUtils';
 import { readBytes, savePdfBytes } from './pdfFiles';
 import { rasterisePhoto, type BuiltPdf, type BuildOpts } from './imagesToPdf';
 
 export type MergeItem =
   | { kind: 'pdf'; uri: string; name: string }
-  | { kind: 'image'; uri: string; name: string; width: number; height: number };
+  | { kind: 'image'; uri: string; name: string; width: number; height: number; rotate?: 0 | 90 | 180 | 270 };
 
 // pdf-lib throws EncryptedPDFError for password protected files. Never pass
 // ignoreEncryption: it "succeeds" and then writes broken output.
@@ -56,11 +56,11 @@ export async function mergeToPdf(items: MergeItem[], opts: BuildOpts): Promise<B
       copied.forEach((p) => out.addPage(p));
     } else {
       const { base64, width, height } = await rasterisePhoto(
-        { uri: item.uri, width: item.width, height: item.height, rotate: 0 },
+        { uri: item.uri, width: item.width, height: item.height, rotate: item.rotate ?? 0 },
         IMAGE_PRESETS[DEFAULT_PRESET],
       );
       const embedded = await out.embedJpg(base64);
-      const box = fitOnPage(width, height);
+      const box = layoutDocumentPage(width, height, 'borderless');
       const page = out.addPage([box.pageW, box.pageH]);
       page.drawImage(embedded, { x: box.x, y: box.y, width: box.w, height: box.h });
     }

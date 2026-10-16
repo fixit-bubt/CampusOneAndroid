@@ -20,15 +20,15 @@ import type { AuthStackParams } from '../../types/navigation';
 type Props = NativeStackScreenProps<AuthStackParams, 'Register'>;
 
 const BUBT_DEPARTMENTS = [
-  { code: 'CSE', name: 'Computer Science & Engineering (CSE)' },
-  { code: 'EEE', name: 'Electrical & Electronic Engineering (EEE)' },
-  { code: 'BBA', name: 'Business Administration (BBA)' },
-  { code: 'ENG', name: 'English' },
-  { code: 'LAW', name: 'Law & Justice' },
-  { code: 'CIVIL', name: 'Civil Engineering' },
-  { code: 'TEX', name: 'Textile Engineering' },
-  { code: 'ECO', name: 'Economics' },
-  { code: 'MATH', name: 'Mathematics & Statistics' },
+  { code: 'CSE', name: 'Computer Science & Engineering (CSE)', icon: 'cpu' },
+  { code: 'EEE', name: 'Electrical & Electronic Engineering (EEE)', icon: 'zap' },
+  { code: 'BBA', name: 'Business Administration (BBA)', icon: 'briefcase' },
+  { code: 'ENG', name: 'English', icon: 'book' },
+  { code: 'LAW', name: 'Law & Justice', icon: 'shield' },
+  { code: 'CIVIL', name: 'Civil Engineering', icon: 'tool' },
+  { code: 'TEX', name: 'Textile Engineering', icon: 'layers' },
+  { code: 'ECO', name: 'Economics', icon: 'pie-chart' },
+  { code: 'MATH', name: 'Mathematics & Statistics', icon: 'grid' },
 ];
 
 export function RegisterScreen({ navigation }: Props) {
@@ -535,7 +535,9 @@ export function RegisterScreen({ navigation }: Props) {
                     style={[
                       styles.deptItem,
                       {
-                        backgroundColor: isSelected ? (isDark ? 'rgba(39, 94, 254, 0.16)' : '#eef2ff') : 'transparent',
+                        backgroundColor: isSelected
+                          ? (isDark ? 'rgba(39, 94, 254, 0.14)' : '#eef2ff')
+                          : C.surface,
                         borderColor: isSelected ? C.brand : C.border,
                       },
                     ]}
@@ -548,23 +550,18 @@ export function RegisterScreen({ navigation }: Props) {
                     <View style={styles.deptItemLeft}>
                       <View
                         style={[
-                          styles.deptCodeBadge,
+                          styles.deptIconBox,
                           {
-                            backgroundColor: isSelected ? C.brand : C.surface2,
+                            backgroundColor: C.surface2,
+                            borderColor: C.border,
                           },
                         ]}
                       >
-                        <Text
-                          style={[
-                            styles.deptCodeText,
-                            {
-                              color: isSelected ? '#fff' : C.text2,
-                              fontFamily: FontFamily.jakartaBold,
-                            },
-                          ]}
-                        >
-                          {item.code}
-                        </Text>
+                        <Icon
+                          name={item.icon}
+                          size={18}
+                          color={isSelected ? C.brand : C.text}
+                        />
                       </View>
                       <Text
                         style={[
@@ -574,15 +571,21 @@ export function RegisterScreen({ navigation }: Props) {
                             fontFamily: isSelected ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
                           },
                         ]}
+                        numberOfLines={1}
                       >
                         {item.name}
                       </Text>
                     </View>
-                    {isSelected && <Icon name="check" size={18} color={C.brand} />}
+                    {isSelected ? (
+                      <Icon name="check" size={18} color={C.brand} />
+                    ) : (
+                      <Icon name="chevR" size={16} color={C.textMuted} />
+                    )}
                   </TouchableOpacity>
                 );
               }}
-              style={{ maxHeight: 380 }}
+              style={{ maxHeight: 420 }}
+              showsVerticalScrollIndicator={false}
             />
           </View>
         </TouchableOpacity>
@@ -823,14 +826,14 @@ const styles = StyleSheet.create({
   } as ViewStyle,
 
   deptItem: {
+    height: Layout.controlHeight, // exactly 58dp
+    borderRadius: Layout.controlRadius, // exactly 16dp
+    borderWidth: 1.5,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 12,
     paddingHorizontal: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: 8,
+    marginBottom: 10,
   } as ViewStyle,
 
   deptItemLeft: {
@@ -841,16 +844,14 @@ const styles = StyleSheet.create({
     paddingRight: 8,
   } as ViewStyle,
 
-  deptCodeBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+  deptIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   } as ViewStyle,
-
-  deptCodeText: {
-    fontSize: 11,
-    includeFontPadding: false,
-  } as any,
 
   deptNameText: {
     fontSize: 14,

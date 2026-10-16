@@ -2177,4 +2177,24 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 - **Standalone & Fast-Cycle Recruitment Ingestion:** Added `supabase/functions/bubt-crawler/adapters/jobs.ts` to automatically extract career circulars, lecturer recruitments, and faculty openings from BUBT notice streams into `public.jobs`.
 - **Crawler Registry Integration:** Wired into `index.ts` with dedicated `feature=jobs` target and integrated into Tier-1 fast-cycle background runs.
 
+---
+
+## 46. Auth Suite Standard & 58dp Universal Controls
+
+### 46.1 Scope & Architecture
+- **Universal 58dp Control Height:** Every input box, picker row, primary action button, and modal selection tile across `LandingScreen`, `LoginScreen`, `RegisterScreen`, `VerifyEmailScreen`, `ResetPasswordScreen`, and `OnboardingScreen` strictly adheres to `height: Layout.controlHeight` (58dp) and `borderRadius: Layout.controlRadius` (16dp).
+- **Landing Screen Elevated Curve & Layout:**
+  - Hero flex set to 0.28 (~180dp minHeight), moving the curved bottom card (`flex: 0.72`, `marginTop: -20`, `borderTopLeftRadius: 28`, `borderTopRightRadius: 28`) higher up the viewport.
+  - Guarantees 100% immediate visibility of all three 58dp primary buttons (1-tap Google, Email Sign-In, Create Account) and the Terms & Privacy footer on physical devices with zero drag/slide needed.
+- **Monochrome Department Iconography:**
+  - Department selector items in `RegisterScreen` and `OnboardingScreen` render clean monochrome vector icons (`cpu`, `zap`, `briefcase`, `book`, `shield`, `tool`, `layers`, `pie-chart`, `grid`) in neutral `C.surface2` 36×36 boxes with zero rainbow colors.
+  - Each item is structured as a 58dp row with single-line text truncation and selection checkmarks.
+- **Role-Based Public Registration:**
+  - Public registration is strictly for students, capturing Full Name, Student ID, Department (interactive selector), Intake, Section, Student Email (with quick-fill `@std.bubt.edu.bd`), and Password.
+  - Faculty/Staff and Admin accounts are provisioned via Admin in the dashboard; they log in using `LoginScreen`.
+- **Session-Safe Metadata Auto-Sync:**
+  - `authStore.fetchProfile` queries fresh session credentials via `(await supabase.auth.getSession()).data.session?.user` to avoid React closure latency.
+  - Student metadata stored in `user_metadata` automatically populates the `profiles` table upon OTP email confirmation, preventing redundant onboarding prompts.
+
+
 
