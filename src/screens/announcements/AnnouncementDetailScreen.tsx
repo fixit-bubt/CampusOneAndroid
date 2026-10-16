@@ -19,7 +19,7 @@ import { useT } from '../../i18n';
 import { useAuth } from '../../store/authStore';
 import { useToast } from '../../components/ui/Toast';
 import type { Announcement } from '../../types/database';
-import { toggleAnnouncementBookmark } from '../../services/announcementService';
+import { toggleAnnouncementBookmark, markAnnouncementAsRead } from '../../services/announcementService';
 
 const BANNERS_MAP: Record<string, ImageSourcePropType> = {
   'blood-drive.jpg': require('../../../assets/banners/blood-drive.jpg'),
@@ -123,11 +123,8 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
       if (bmRes.data) setIsSaved(true);
 
       // Mark read
-      if (user) {
-        supabase
-          .from('announcement_reads')
-          .upsert({ announcement_id: id, user_id: user.id }, { onConflict: 'announcement_id,user_id' })
-          .then(() => {}, () => {});
+      if (id) {
+        markAnnouncementAsRead(id, user?.id || 'guest');
       }
     })();
 

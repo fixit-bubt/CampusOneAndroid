@@ -8,10 +8,11 @@ import {
   StyleSheet,
   ActivityIndicator,
   Animated,
+  DeviceEventEmitter,
   type ViewStyle,
   type ImageSourcePropType,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
@@ -158,18 +159,24 @@ export function HomeCommunityUpdates() {
       setItems(cached);
       setLoading(false);
     }
+    const uid = user?.id || 'guest';
+    const cachedReads = await getCache<string[]>(CacheKeys.ANNOUNCEMENT_READS(uid));
+    if (cachedReads) setReadIds(new Set(cachedReads));
+
     if (user?.id) {
-      const cachedReads = await getCache<string[]>(CacheKeys.ANNOUNCEMENT_READS(user.id));
-      if (cachedReads) setReadIds(new Set(cachedReads));
       supabase
         .from('announcement_reads')
         .select('announcement_id')
         .eq('user_id', user.id)
+        .limit(500)
         .then(({ data }) => {
           if (data) {
-            const rSet = new Set(data.map((r: any) => r.announcement_id));
-            setReadIds(rSet);
-            setCache(CacheKeys.ANNOUNCEMENT_READS(user.id), Array.from(rSet));
+            const dbIds = data.map((r: any) => r.announcement_id);
+            setReadIds((prev) => {
+              const combined = new Set([...prev, ...dbIds]);
+              setCache(CacheKeys.ANNOUNCEMENT_READS(user.id), Array.from(combined));
+              return combined;
+            });
           }
         });
     }
@@ -184,7 +191,7 @@ export function HomeCommunityUpdates() {
           .is('deleted_at', null)
           .gte('created_at', fourMonthsAgo)
           .order('created_at', { ascending: false })
-          .limit(100),
+          .limit(500),
         supabase
           .from('events')
           .select('id, title, venue, time, date, category, banner_url, description')
@@ -286,28 +293,64 @@ export function HomeCommunityUpdates() {
     }
   }, []);
 
+  // 1. Instant sync of read IDs when screen is focused (returning from announcements or switching tabs)
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      const uid = user?.id || 'guest';
+      getCache<string[]>(CacheKeys.ANNOUNCEMENT_READS(uid)).then((cachedReads) => {
+        if (cachedReads && active) {
+          setReadIds(new Set(cachedReads));
+        }
+      });
+      return () => {
+        active = false;
+      };
+    }, [user?.id])
+  );
+
+  // 2. Real-time in-app broadcast listener (instant 0ms update when notice read anywhere)
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener('announcement_read', ({ id }) => {
+      if (id) {
+        setReadIds((prev) => {
+          if (prev.has(id)) return prev;
+          const next = new Set(prev);
+          next.add(id);
+          return next;
+        });
+      }
+    });
+    return () => {
+      sub.remove();
+    };
+  }, []);
+
+  // 3. Initial load & Supabase Realtime channel
   useEffect(() => {
     loadData();
-    const unsub = navigation.addListener('focus', () => {
-      loadData();
-    });
+
     const channel = supabase
       .channel('home_community_live')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, () => {
         loadData();
       })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'announcement_reads' }, (payload: any) => {
+        if (payload?.new?.announcement_id && (!user?.id || payload.new.user_id === user.id)) {
+          setReadIds((prev) => new Set(prev).add(payload.new.announcement_id));
+        }
+      })
       .subscribe();
 
     return () => {
-      unsub();
       supabase.removeChannel(channel);
     };
-  }, [loadData, navigation]);
+  }, [loadData, user?.id]);
 
   // Tab counts (Unread notices count for Notices, total for Clubs and Events)
   const counts = useMemo(() => {
     const unreadNoticesCount = items.filter(
-      (n) => n.category === 'Notice' && (!n.rawId || !readIds.has(n.rawId))
+      (n) => n.category === 'Notice' && Boolean(n.rawId && !readIds.has(n.rawId))
     ).length;
     return {
       Notices: unreadNoticesCount,
@@ -392,9 +435,9 @@ export function HomeCommunityUpdates() {
               key={item.id}
               activeOpacity={0.75}
               onPress={() => {
-                if (item.category === 'Notice' && item.rawId && user?.id) {
+                if (item.category === 'Notice' && item.rawId) {
                   setReadIds((prev) => new Set(prev).add(item.rawId!));
-                  markAnnouncementAsRead(item.rawId, user.id);
+                  markAnnouncementAsRead(item.rawId, user?.id || 'guest');
                 }
                 navigation.navigate(item.route, item.params);
               }}

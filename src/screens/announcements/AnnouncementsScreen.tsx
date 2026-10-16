@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef, memo } from 'react';
 import {
   View, Text, TouchableOpacity, FlatList, ScrollView, StyleSheet, Platform,
   RefreshControl, Alert, TextInput, Modal, Pressable,
-  ActivityIndicator, Animated, type ViewStyle, type TextStyle,
+  ActivityIndicator, Animated, DeviceEventEmitter, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -238,7 +238,20 @@ export function AnnouncementsScreen({ navigation }: any) {
   useEffect(() => {
     const unsub = navigation.addListener('focus', load);
     load();
-    return unsub;
+    const sub = DeviceEventEmitter.addListener('announcement_read', ({ id }) => {
+      if (id) {
+        setReadIds(prev => {
+          if (prev.has(id)) return prev;
+          const next = new Set(prev);
+          next.add(id);
+          return next;
+        });
+      }
+    });
+    return () => {
+      unsub();
+      sub.remove();
+    };
   }, [load, navigation]);
 
   async function onRefresh() {
@@ -252,9 +265,9 @@ export function AnnouncementsScreen({ navigation }: any) {
   }
 
   const handlePressCard = useCallback((id: string) => {
-    if (user?.id && !readIds.has(id)) {
+    if (!readIds.has(id)) {
       setReadIds(prev => new Set(prev).add(id));
-      markAnnouncementAsRead(id, user.id);
+      markAnnouncementAsRead(id, user?.id || 'guest');
     }
     navigation.navigate('AnnouncementDetail', { announcementId: id });
   }, [navigation, user?.id, readIds]);

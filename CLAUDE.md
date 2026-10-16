@@ -1608,7 +1608,13 @@ The Campus Announcements architecture is transformed from a manual posting board
 - **Institutional Official Link Bar:** Prominent circular card bar on `AnnouncementDetailScreen` with an official BUBT globe squircle, verified green portal badge (`BUBT OFFICIAL PORTAL`), title, and direct external navigation.
 - **In-App PDF Viewer Modal:** Uses `react-native-webview` with `scalesPageToFit={false}`, responsive mobile viewport injection, removal of Google Docs' dark letterbox margins and toolstrip, `#f8fafc` background, and centered document pages.
 - **Pinch-to-Zoom Flyer Viewer:** `resolveNoticeImage` supports local banner mappings, remote CDNs, `uploads/`, and BUBT storage paths. Uses explicit window dimensions (`winWidth`, `winHeight * 0.78`) to prevent height collapse inside Android's `ScrollView`.
-- **Home Community Feed Realtime Sync:** `HomeCommunityUpdates.tsx` orders announcements chronologically by `created_at desc` with increased limit (25) and automated cache refresh, keeping community news live and up-to-date.
+- **Home Community Feed Realtime Sync & Cross-Screen Read Synchronization:**
+  - `HomeCommunityUpdates.tsx` and `AnnouncementsScreen.tsx` are 100% synchronized via a 3-layer real-time architecture:
+    1. **0ms In-App Broadcast:** `markAnnouncementAsRead` immediately emits `DeviceEventEmitter.emit('announcement_read', { id })`, updating in-memory `readIds` across all mounted screens instantly before any network delay.
+    2. **Screen Focus Auto-Sync (`useFocusEffect`):** Pulls latest reads from `CacheKeys.ANNOUNCEMENT_READS(userId || 'guest')` whenever the user returns to Home from Announcements or switches tabs, eliminating stale counts caused by nested tab navigators.
+    3. **Supabase Realtime Sync:** Subscribes to realtime inserts on `announcement_reads` table for cross-device synchronization.
+  - Fixed unread calculation to require `Boolean(n.rawId && !readIds.has(n.rawId))` so fallback mock notices without a database `rawId` never artificially inflate unread badge counts.
+  - Unified query limit to `500` notices within the 4-month window across both `HomeCommunityUpdates.tsx` and `AnnouncementsScreen.tsx`.
 - **Bilingual Support:** Complete localization parity in `src/i18n/en.ts` and `src/i18n/bn.ts` under the `announce2` namespace.
 
 ### 31.4 Performance Hardening, Edge-to-Edge PDF Viewer & Security Architecture

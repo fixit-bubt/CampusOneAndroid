@@ -1,3 +1,4 @@
+import { DeviceEventEmitter } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { getCache, setCache, removeCache, CacheKeys } from './cacheService';
 import type { Announcement } from '../types/database';
@@ -61,7 +62,10 @@ export async function fetchAnnouncementsFeed(userId?: string): Promise<{
     if (aRes.error) throw aRes.error;
 
     let items = (aRes.data ?? []) as Announcement[];
-    const readIds = new Set<string>((rRes.data ?? []).map((r: any) => r.announcement_id));
+    const dbReadIds = (rRes.data ?? []).map((r: any) => r.announcement_id);
+    const cachedReads = (await getCache<string[]>(CacheKeys.ANNOUNCEMENT_READS(userId || 'guest'))) || [];
+    const mergedReadIds = Array.from(new Set([...dbReadIds, ...cachedReads]));
+    const readIds = new Set<string>(mergedReadIds);
     const savedIds = new Set<string>((bRes.data ?? []).map((b: any) => b.announcement_id));
 
     // Preserve saved/bookmarked notices permanently even if older than 4 months
@@ -81,8 +85,8 @@ export async function fetchAnnouncementsFeed(userId?: string): Promise<{
 
     // Cache
     setCache(CacheKeys.ANNOUNCEMENTS, items);
+    setCache(CacheKeys.ANNOUNCEMENT_READS(userId || 'guest'), mergedReadIds);
     if (userId) {
-      setCache(CacheKeys.ANNOUNCEMENT_READS(userId), Array.from(readIds));
       setCache(CacheKeys.ANNOUNCEMENT_BOOKMARKS(userId), Array.from(savedIds));
     }
     // Invalidate home updates so community feed stays fresh
@@ -135,13 +139,23 @@ export async function toggleAnnouncementBookmark(
 }
 
 export async function markAnnouncementAsRead(announcementId: string, userId: string): Promise<void> {
+  if (!announcementId) return;
   try {
-    await supabase
-      .from('announcement_reads')
-      .upsert({ announcement_id: announcementId, user_id: userId }, { onConflict: 'announcement_id,user_id' });
-    const cachedReads = (await getCache<string[]>(CacheKeys.ANNOUNCEMENT_READS(userId))) || [];
+    const uid = userId || 'guest';
+    // 1. Emit instant local broadcast event for 0ms cross-screen sync
+    DeviceEventEmitter.emit('announcement_read', { id: announcementId });
+
+    // 2. Optimistically update local cache
+    const cachedReads = (await getCache<string[]>(CacheKeys.ANNOUNCEMENT_READS(uid))) || [];
     if (!cachedReads.includes(announcementId)) {
-      setCache(CacheKeys.ANNOUNCEMENT_READS(userId), [...cachedReads, announcementId]);
+      await setCache(CacheKeys.ANNOUNCEMENT_READS(uid), [...cachedReads, announcementId]);
+    }
+
+    // 3. Upsert to Supabase if authenticated user
+    if (userId && userId !== 'guest') {
+      await supabase
+        .from('announcement_reads')
+        .upsert({ announcement_id: announcementId, user_id: userId }, { onConflict: 'announcement_id,user_id' });
     }
   } catch {}
 }
