@@ -1696,6 +1696,28 @@ The Campus Announcements architecture is transformed from a manual posting board
 - **In-App Admin Management:** Added `manageMedicalCenter` tile to `AdminDashboardScreen` and an inline admin quick-edit modal on `MedicalScreen` to toggle `is_on_leave`, set leave notes, and update room locations.
 - **`CampusToday` Live Widget:** Displays the currently on-duty doctor or `"BUBT Medical Unit Open · Room 205, Bldg 3"` on the Home feed during operating hours.
 
+### 33.5 58/72dp Layout Standards, Tablet Capsules & Dynamic Animated Iconography
+- **Dual Medicine Tablet Pills (`heroTabletsContainer`, `heroTablet`):**
+  - Replaced the bottom hero stack with two 52dp medicine-capsule-shaped pills (`height: 52`, `borderRadius: 16`, `borderWidth: 1`).
+  - **Schedule Tablet:** Displays official hours (`9:00 AM - 5:00 PM (Sun-Thu)`) with an entrance-animated clock icon.
+  - **Desk Contact Action Tablet:** Interactive phone dialer with bouncing phone-call icon, telephone/extension copy, and a tactile `CALL` / `কল` pill badge.
+- **Distinguished Roster Filter Bar (Services Button Parity):**
+  - Standardized to 72dp dropdown card (`styles.dropdownBar`) matching the Explore `CollapsibleSection` visual pattern.
+  - Incorporates a 1px vertical divider line (`dropdownDivider`: `width: 1`, `height: 30`) and count stat column (`dropdownStatCol`: `statVal` 16.5px bold, `statSub` 9.5px uppercase).
+  - Dynamically displays matching staff count (e.g. `3 STAFF` / `ডাক্তার`) in the active filter's accent color.
+- **Strict Universal 58dp & 72dp Fixed-Height Standards:**
+  - Search inputs (`searchBox`, `medSearchQuery`) adhere to the Universal 58dp Standard (`height: 58`, `borderRadius: 16`).
+  - All interactive row cards (`dropdownBar`, `doctorCard72`, `serviceCard72`, `dispensaryHeaderBar72`, `medRow72`, `hotlineCard`, `bloodBridgeCard`, `hospCard72`, `pickerBar`) strictly adhere to the Universal 72dp Fixed-Height Standard (`height: 72`, `borderRadius: 16`).
+- **Semantic Iconography & Native 120 FPS Animations (`AnimatedIcon`):**
+  - **Doctors:** MBBS Physicians (`stethoscope`, spring entrance), Campus Psychologist (`heart`, continuous pulse loop), Triage Nurses (`needle`, spring), Visiting Consultants (`award`, entrance).
+  - **Roster Filters & Modal:** All (`account-group`, electric blue), Doctors (`stethoscope`, sky blue), Psychologist (`heart`, purple pulse), Today (`clock`, emerald bounce).
+  - **Services & Dispensary:** Core services mapped to `shield`, `activity`, `heart`, and `stethoscope`. Free dispensary accordion header uses `#ef4444` `pill` icon with spring morph on expand. Medicine list items use animated pill badges with staggered delays.
+  - **Hotlines & Hospitals:** National 999 (`alert-triangle` pulse loop), Ambulance (`ambulance` bounce), Desk hotline (`phone-call` spring), Blood bridge (`droplet` pulse loop).
+  - **5 Nearby Mirpur Hospitals:** National Heart Foundation (`heart` red pulse), Delta Medical (`hospital-building` blue), Mirpur General (`activity` green bounce), Kidney Foundation (`droplet` purple float), Dhaka Dental (`tooth-outline` cyan spring).
+- **Hospital GPS Routing & Interactive Maps:**
+  - Standardized authentic coordinates in `dhakaHospitalCoords.ts` (National Heart Foundation at `23.8042, 90.3621`, Delta at `23.8058, 90.3582`, Mirpur General at `23.8021, 90.3664`, Kidney Foundation at `23.8047, 90.3615`, Dhaka Dental at `23.8115, 90.3685`).
+  - Navigation button launches `DirectionMapModal` with live route calculation, distance badge, and external Google Maps fallback.
+
 ---
 
 ## 34. BUBT Campus Shuttle Bus 360 & Transit Architecture
