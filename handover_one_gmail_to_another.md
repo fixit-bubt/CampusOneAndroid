@@ -70,6 +70,10 @@ This document tracks every service, database, login system, notification service
 - **Supabase Secret:** Deployed to project `xhgpxvyqrufbbuivttmi` Edge Function Secrets as `GEMINI_API_KEY`.
 - **Status:** Tested and verified live with `gemini-flash-lite-latest` model powering the in-app campus chatbot.
 
+### 2.8 Decommissioning of Old Personal Project
+- **Old Project:** `campusone-853e6` (project number `331304129737`) under personal Gmail was cleanly shut down on October 16, 2026.
+- **Isolation Guarantee:** All other personal projects (`Tesla`, `Ever Green`, `Default Gemini Project`) and the personal Google Play Console developer account remain 100% active and untouched.
+
 ---
 
 ## 3. Pending Work (What Is Left To Hand Over & Configure)
