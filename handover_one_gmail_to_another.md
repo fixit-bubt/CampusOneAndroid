@@ -15,6 +15,7 @@ This document tracks every service, database, login system, notification service
 | **GitHub (Web & Android Repos)** | `fixit-bubt` organization | `fixit-bubt` organization | **100% Completed** |
 | **Google Cloud Console (OAuth & Sign-In)** | `campusone2026@gmail.com` (`campusone-511812`) | Web & Android OAuth Clients Active | **100% Completed** |
 | **Firebase (Push Notifications)** | `campusone2026@gmail.com` (`campusone-511812`) | Service Account & FCM Active | **100% Completed** |
+| **Google Gemini API (Campus AI Assistant)** | Personal Google account | `campusone2026@gmail.com` (`campusone-511812`) | **100% Completed** |
 | **Custom SMTP (Verification Codes & OTPs)** | Default Supabase free tier | Deferred to Custom Domain (Default active; 95%+ use Google OAuth) | ⏳ **Deferred to Custom Domain** |
 | **Google Play Console (App Store)** | Personal Account (`nawyaj morshed`) | In progress (NID/Passport & 20-tester rule) | ⏳ **In Progress** |
 
@@ -62,6 +63,12 @@ This document tracks every service, database, login system, notification service
 - **Android Config:** `CampusOne/android/app/google-services.json` updated with project `22710751786` and client ID `22710751786-rbud0t5dkb7hiij9vtj6pumkdc29lrha.apps.googleusercontent.com`.
 - **FCM Service Account Key:** Generated and securely deployed to Supabase Edge Function Secrets as `FCM_SERVICE_ACCOUNT`.
 - **Push Pipeline:** Supabase `send-push` Edge Function and database triggers (`trg_push_on_notification`) are fully active for delivering urgent blood requests, ride bookings, and issue tracking directly to student lockscreens.
+
+### 2.7 Google Gemini API (Campus AI Assistant)
+- **Account:** Generated under `campusone2026@gmail.com` in Google AI Studio.
+- **Linked Project:** `campusone` (Project number `22710751786`, ID `campusone-511812`).
+- **Supabase Secret:** Deployed to project `xhgpxvyqrufbbuivttmi` Edge Function Secrets as `GEMINI_API_KEY`.
+- **Status:** Tested and verified live with `gemini-flash-lite-latest` model powering the in-app campus chatbot.
 
 ---
 
