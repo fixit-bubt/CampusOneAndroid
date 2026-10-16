@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
-  RefreshControl, TextInput, Image, ActivityIndicator, type ViewStyle,
+  RefreshControl, TextInput, Image, ActivityIndicator, Modal, Pressable,
+  type ViewStyle, type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -28,6 +29,22 @@ import {
 } from '../../services/eventsService';
 import { useToast } from '../../components/ui/Toast';
 import type { Event } from '../../types/database';
+
+export interface EventCategoryOption {
+  id: string;
+  label: string;
+  icon: React.ComponentProps<typeof Feather>['name'];
+  color?: string;
+}
+
+export const EVENT_CATEGORIES: EventCategoryOption[] = [
+  { id: 'All',      label: 'All Categories', icon: 'layers' },
+  { id: 'Academic', label: 'Academic',       icon: 'book-open', color: SectorColors.reports },
+  { id: 'Cultural', label: 'Cultural',       icon: 'music',     color: SectorColors.events },
+  { id: 'Sports',   label: 'Sports',         icon: 'activity',  color: SectorColors.market },
+  { id: 'Club',     label: 'Club',           icon: 'users',     color: SectorColors.clubs },
+  { id: 'Career',   label: 'Career',         icon: 'briefcase', color: SectorColors.jobs },
+];
 
 const CAT_COLOR: Record<string, string> = {
   Academic: SectorColors.reports,
@@ -193,7 +210,7 @@ function EventCard({
 }
 
 export function EventsBrowseScreen({ navigation }: any) {
-  const { C } = useTheme();
+  const { C, isDark } = useTheme();
   const { user, profile } = useAuth();
   const t = useT();
   const toast = useToast();
@@ -202,6 +219,7 @@ export function EventsBrowseScreen({ navigation }: any) {
   const canPost = profile?.role === 'admin' || isEventOrganizer;
   const [events, setEvents] = useState<Event[]>([]);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const [categoryModalVisible, setCategoryModalVisible] = useState(false);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -361,6 +379,10 @@ export function EventsBrowseScreen({ navigation }: any) {
     { id: 'saved',    label: 'Saved',    count: savedList.length > 0 ? savedList.length : undefined, color: Accent.gold },
   ], [upcomingList.length, pastList.length, savedList.length, C.brand, C.text2]);
 
+  const activeCatObj = EVENT_CATEGORIES.find(c => c.id === category) ?? EVENT_CATEGORIES[0];
+  const isCatActive = category !== 'All';
+  const activeCatColor = activeCatObj.color ?? C.brand;
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar
@@ -430,45 +452,74 @@ export function EventsBrowseScreen({ navigation }: any) {
         />
       </View>
 
-      {/* Category Horizontal Filter */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={{ flexGrow: 0 }}
-        contentContainerStyle={[styles.catChips, { paddingHorizontal: Layout.screenPadding }]}
-      >
-        {['All', 'Academic', 'Cultural', 'Sports', 'Club', 'Career'].map(c => {
-          const on = category === c;
-          const catFg = CAT_COLOR[c] ?? C.text;
-          return (
-            <TouchableOpacity
-              key={c}
+      {/* Category Dropdown Bar (58dp Standard) */}
+      <View style={[styles.catBarRow, { paddingHorizontal: Layout.screenPadding }]}>
+        <TouchableOpacity
+          style={[
+            styles.catDropdownBtn,
+            isCatActive
+              ? {
+                  backgroundColor: isDark ? `${activeCatColor}1e` : `${activeCatColor}12`,
+                  borderColor: activeCatColor,
+                }
+              : {
+                  backgroundColor: C.surface,
+                  borderColor: C.border,
+                },
+          ]}
+          onPress={() => setCategoryModalVisible(true)}
+          activeOpacity={0.75}
+        >
+          <View style={styles.catDropdownLeft}>
+            <View
               style={[
-                styles.catChip,
-                on
-                  ? { backgroundColor: C.surface2, borderColor: catFg }
-                  : { backgroundColor: C.surface, borderColor: C.border },
+                styles.catIconBox,
+                {
+                  backgroundColor: isCatActive
+                    ? (isDark ? `${activeCatColor}33` : `${activeCatColor}22`)
+                    : C.surface2,
+                },
               ]}
-              onPress={() => setCategory(c)}
-              activeOpacity={0.75}
             >
-              {c !== 'All' && (
-                <View style={{ marginRight: 5 }}>
-                  <Icon name={CAT_ICON[c] ?? 'events'} size={12} color={on ? catFg : C.textMuted} />
-                </View>
-              )}
+              <Feather
+                name={activeCatObj.icon}
+                size={18}
+                color={isCatActive ? activeCatColor : C.textMuted}
+              />
+            </View>
+            <View style={styles.catTextWrap}>
               <Text
                 style={[
-                  styles.catChipTxt,
-                  { color: on ? C.text : C.textMuted, fontFamily: FontFamily.jakartaBold },
+                  styles.catTitleTxt,
+                  {
+                    color: isCatActive ? activeCatColor : C.text,
+                    fontFamily: isCatActive ? FontFamily.jakartaBold : FontFamily.jakartaSemiBold,
+                  },
                 ]}
+                numberOfLines={1}
               >
-                {c}
+                {activeCatObj.label}
               </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
+            </View>
+          </View>
+          <View style={styles.catDropdownRight}>
+            {isCatActive && (
+              <TouchableOpacity
+                onPress={() => setCategory('All')}
+                hitSlop={8}
+                style={{ padding: 4, marginRight: 2 }}
+              >
+                <Feather name="x" size={15} color={activeCatColor} />
+              </TouchableOpacity>
+            )}
+            <Feather
+              name="chevron-down"
+              size={18}
+              color={isCatActive ? activeCatColor : C.textMuted}
+            />
+          </View>
+        </TouchableOpacity>
+      </View>
 
       {/* Main Events Feed & Agenda */}
       <ScrollView
@@ -638,6 +689,93 @@ export function EventsBrowseScreen({ navigation }: any) {
         )}
         <View style={{ height: 24 }} />
       </ScrollView>
+
+      {/* Category Selection Bottom Sheet Modal (58dp Distinct Bars) */}
+      <Modal
+        visible={categoryModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setCategoryModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setCategoryModalVisible(false)} />
+          <View style={[styles.modalSheet, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Feather name="layers" size={18} color={C.brand} />
+                <Text style={[styles.modalTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  Event Categories
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setCategoryModalVisible(false)} hitSlop={8}>
+                <Feather name="x" size={18} color={C.textMuted} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={{ maxHeight: 440 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              <View style={styles.modalBarsContainer}>
+                {EVENT_CATEGORIES.map(cat => {
+                  const active = category === cat.id;
+                  const catThemeColor = cat.color ?? C.brand;
+                  return (
+                    <TouchableOpacity
+                      key={cat.id}
+                      style={[
+                        styles.pickerBar,
+                        { backgroundColor: C.surface, borderColor: C.border },
+                        active && {
+                          backgroundColor: isDark ? `${catThemeColor}1f` : `${catThemeColor}14`,
+                          borderColor: catThemeColor,
+                        },
+                      ]}
+                      onPress={() => {
+                        setCategory(cat.id);
+                        setCategoryModalVisible(false);
+                      }}
+                      activeOpacity={0.75}
+                    >
+                      <View style={styles.pickerBarLeft}>
+                        <View
+                          style={[
+                            styles.pickerBarIconBox,
+                            {
+                              backgroundColor: active
+                                ? (isDark ? `${catThemeColor}33` : `${catThemeColor}24`)
+                                : C.surface2,
+                            },
+                          ]}
+                        >
+                          <Feather
+                            name={cat.icon}
+                            size={18}
+                            color={active ? catThemeColor : C.textMuted}
+                          />
+                        </View>
+                        <Text
+                          style={[
+                            styles.pickerBarTitle,
+                            {
+                              color: active ? catThemeColor : C.text,
+                              fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                            },
+                          ]}
+                        >
+                          {cat.label}
+                        </Text>
+                      </View>
+                      {active ? (
+                        <Feather name="check-circle" size={20} color={catThemeColor} />
+                      ) : (
+                        <View style={[styles.radioOutline, { borderColor: C.border }]} />
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -657,16 +795,110 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   searchInput: { flex: 1, fontSize: 14.5, paddingVertical: 0 } as any,
 
-  catChips: { flexDirection: 'row', gap: 6, paddingBottom: 10 } as ViewStyle,
-  catChip: {
+  // Category Dropdown Bar (58dp Standard)
+  catBarRow: {
+    paddingBottom: 10,
+  } as ViewStyle,
+  catDropdownBtn: {
+    height: 58,
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingHorizontal: 14,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
+    justifyContent: 'space-between',
+  } as ViewStyle,
+  catDropdownLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  } as ViewStyle,
+  catIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  catTextWrap: {
+    flex: 1,
+    justifyContent: 'center',
+  } as ViewStyle,
+  catTitleTxt: {
+    fontSize: 14.5,
+  } as any,
+  catDropdownRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  } as ViewStyle,
+
+  // Modal Sheet & Distinct Bars (58dp Standard)
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  } as ViewStyle,
+  modalSheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    paddingTop: 18,
+    paddingHorizontal: Layout.screenPadding,
+    paddingBottom: 28,
+  } as ViewStyle,
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    paddingBottom: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(0,0,0,0.06)',
+  } as ViewStyle,
+  modalTitle: {
+    fontSize: 16,
+  } as any,
+  modalBarsContainer: {
+    gap: 10,
+    paddingBottom: 10,
+  } as ViewStyle,
+
+  // Distinct Rounded Picker Bar (Inside Modal - 58dp Standard)
+  pickerBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    height: 58,
+    borderRadius: 16,
     borderWidth: 1,
   } as ViewStyle,
-  catChipTxt: { fontSize: 11.5 } as any,
+  pickerBarLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  } as ViewStyle,
+  pickerBarIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  pickerBarTitle: {
+    fontSize: 14.5,
+    flex: 1,
+  } as any,
+  radioOutline: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 1.8,
+  } as ViewStyle,
   scroll: { paddingTop: 4, paddingBottom: 24 } as ViewStyle,
   list: { gap: 14 } as ViewStyle,
   card: {

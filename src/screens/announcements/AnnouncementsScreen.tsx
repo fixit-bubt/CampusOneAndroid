@@ -543,7 +543,7 @@ export function AnnouncementsScreen({ navigation }: any) {
           <View style={styles.dualBarLeft}>
             <Feather
               name="layers"
-              size={13}
+              size={16}
               color={categoryFilter !== 'all' ? C.brand : C.textMuted}
             />
             <Text
@@ -561,7 +561,7 @@ export function AnnouncementsScreen({ navigation }: any) {
           </View>
           <Feather
             name="chevron-down"
-            size={14}
+            size={16}
             color={categoryFilter !== 'all' ? C.brand : C.textMuted}
           />
         </TouchableOpacity>
@@ -580,7 +580,7 @@ export function AnnouncementsScreen({ navigation }: any) {
           <View style={styles.dualBarLeft}>
             <Feather
               name="shield"
-              size={13}
+              size={16}
               color={deptFilter !== 'ALL' ? SectorColors.jobs : C.textMuted}
             />
             <Text
@@ -598,7 +598,7 @@ export function AnnouncementsScreen({ navigation }: any) {
           </View>
           <Feather
             name="chevron-down"
-            size={14}
+            size={16}
             color={deptFilter !== 'ALL' ? SectorColors.jobs : C.textMuted}
           />
         </TouchableOpacity>
@@ -726,7 +726,7 @@ export function AnnouncementsScreen({ navigation }: any) {
                         >
                           <Feather
                             name={cat.icon as any}
-                            size={16}
+                            size={18}
                             color={active ? C.brand : C.textMuted}
                           />
                         </View>
@@ -743,7 +743,7 @@ export function AnnouncementsScreen({ navigation }: any) {
                         </Text>
                       </View>
                       {active ? (
-                        <Feather name="check-circle" size={18} color={C.brand} />
+                        <Feather name="check-circle" size={20} color={C.brand} />
                       ) : (
                         <View style={[styles.radioOutline, { borderColor: C.border }]} />
                       )}
@@ -780,7 +780,7 @@ export function AnnouncementsScreen({ navigation }: any) {
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={{ maxHeight: 420 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+            <ScrollView style={{ maxHeight: 440 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
               <View style={styles.modalBarsContainer}>
                 {deptOptions.map(dept => {
                   const active = deptFilter === dept.id;
@@ -814,7 +814,7 @@ export function AnnouncementsScreen({ navigation }: any) {
                         >
                           <Feather
                             name={dept.id === 'ALL' ? 'grid' : dept.id === 'MY_DEPT' ? 'target' : 'shield'}
-                            size={16}
+                            size={18}
                             color={active ? SectorColors.jobs : C.textMuted}
                           />
                         </View>
@@ -831,7 +831,7 @@ export function AnnouncementsScreen({ navigation }: any) {
                         </Text>
                       </View>
                       {active ? (
-                        <Feather name="check-circle" size={18} color={SectorColors.jobs} />
+                        <Feather name="check-circle" size={20} color={SectorColors.jobs} />
                       ) : (
                         <View style={[styles.radioOutline, { borderColor: C.border }]} />
                       )}
@@ -921,34 +921,34 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   } as TextStyle,
 
-  // Dual Dropdown Bars Row
+  // Dual Dropdown Bars Row (58dp Standard)
   dualBarRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
     paddingTop: 2,
-    paddingBottom: 8,
+    paddingBottom: 10,
   } as ViewStyle,
   dualBarBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    height: 40,
-    borderRadius: Radius.md,
+    paddingHorizontal: 14,
+    height: 58,
+    borderRadius: 16,
     borderWidth: 1,
-    gap: 6,
+    gap: 8,
   } as ViewStyle,
   dualBarLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
     flex: 1,
   } as ViewStyle,
   dualBarTxt: {
     flex: 1,
-    fontSize: 12,
+    fontSize: 13.5,
   } as any,
 
   // Scroll and list
@@ -1106,69 +1106,69 @@ const styles = StyleSheet.create({
     fontSize: 12,
   } as any,
 
-  // Modal Sheet & Distinct Bars
+  // Modal Sheet & Distinct Bars (58dp Standard)
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
   } as ViewStyle,
   modalSheet: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     borderWidth: 1,
     borderBottomWidth: 0,
-    paddingTop: 16,
+    paddingTop: 18,
     paddingHorizontal: Layout.screenPadding,
-    paddingBottom: 24,
+    paddingBottom: 28,
   } as ViewStyle,
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 14,
-    paddingBottom: 8,
+    marginBottom: 16,
+    paddingBottom: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: 'rgba(0,0,0,0.06)',
   } as ViewStyle,
   modalTitle: {
-    fontSize: 15,
+    fontSize: 16,
   } as any,
   modalBarsContainer: {
-    gap: 8,
-    paddingBottom: 8,
+    gap: 10,
+    paddingBottom: 10,
   } as ViewStyle,
 
-  // Distinct Rounded Picker Bar (Inside Modal)
+  // Distinct Rounded Picker Bar (Inside Modal - 58dp Standard)
   pickerBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 13,
-    paddingVertical: 12,
-    borderRadius: Radius.lg,
+    paddingHorizontal: 16,
+    height: 58,
+    borderRadius: 16,
     borderWidth: 1,
   } as ViewStyle,
   pickerBarLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 11,
+    gap: 12,
     flex: 1,
   } as ViewStyle,
   pickerBarIconBox: {
-    width: 34,
-    height: 34,
-    borderRadius: Radius.md,
+    width: 38,
+    height: 38,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
   pickerBarTitle: {
-    fontSize: 13,
+    fontSize: 14.5,
     flex: 1,
   } as any,
   radioOutline: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    borderWidth: 1.5,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 1.8,
   } as ViewStyle,
 });

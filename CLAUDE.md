@@ -274,6 +274,8 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
   - `MedicalScreen`: Admin modal `modalSaveBtn` (58dp), `modalInput` (58dp)
   - `EventPostScreen`: `submitBtn` (58dp)
   - `ClubPostScreen`: `submitBtn` (58dp)
+  - `AnnouncementsScreen`: `searchBar` (58dp), `dualBarBtn` category & department dropdown triggers (`height: 58, borderRadius: 16`), and modal sheet option items (`pickerBar` `height: 58, borderRadius: 16, 38×38dp` squircle icon box)
+  - `EventsBrowseScreen`: `searchBar` (58dp), category filter dropdown bar (`catDropdownBtn` `height: 58, borderRadius: 16`), and category bottom sheet modal options (`pickerBar` `height: 58, borderRadius: 16, 38×38dp` squircle icon box)
   - `DonorRegisterScreen`: `submitBtn` (58dp), `selectorCard` (58dp), `input` (58dp)
   - `BloodRequestDetailScreen`: `fulfillBtn` (58dp)
   - `BloodRequestScreen`: `submitBtn` (58dp), `input` (58dp), `inputWithIcon` (58dp), `dropdownCard` (58dp)
