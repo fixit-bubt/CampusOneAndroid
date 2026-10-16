@@ -1921,6 +1921,49 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 - Departure Time selector standardized to 72dp Dropdown Card (`height: 72`, `borderRadius: 16`, 44×44 icon box).
 - Stepper, Fare, Meeting Point, Search, and Action Buttons strictly standardized to the Universal 58dp height standard (`height: 58`, `borderRadius: 16`).
 
+---
+
+## 40. Universal Direction Map Live GPS Bridge & Google Maps Search Preview Architecture
+
+### 40.1 Live GPS Dynamic Bridge (`DirectionMapModal.tsx`)
+- **Resolved Static BUBT Anchor:** Previously, while awaiting phone GPS satellite fix (500ms–2000ms), the MapLibre WebView initialized with BUBT Campus fallback (`23.8119, 90.3572`). Due to Android WebView prop caching, the blue pulsing dot remained on BUBT even after device GPS resolved.
+- **Two-Way JavaScript Bridge Synchronization:**
+  - MapLibre dispatches `MAP_READY` via `window.ReactNativeWebView.postMessage`.
+  - When `getCurrentUserCoordinates()` resolves, React Native immediately injects `window.updateOrigin(lng, lat, label)` directly into the active WebView session.
+  - Dynamically updates `originMarker.setLngLat([lng, lat])`, updates internal `startLng, startLat` closures, re-queries OSRM turn-by-turn road geometry, and calls `fitBothBounds()`.
+  - Floating target crosshairs control (`window.recenterToUser`) flies smoothly to real-time phone coordinates.
+- **Unified App-Wide Coverage:** Single component automatically powers all directional views across the app:
+  - **Marketplace:** Handover meetup spot directions (`MarketDetailScreen.tsx`).
+  - **Blood Donation:** Hospital navigation (`HospitalMapModal.tsx` wrapper).
+  - **Campus Rides:** Driver/passenger route (`RideRouteMapModal.tsx` wrapper).
+  - **Lost & Found:** Item claim/found spot directions (`LostFoundDetailScreen.tsx`).
+
+### 40.2 Google Maps Search Preview Architecture (`LocationPickerModal.tsx`)
+- **Live Search Distance & Real-Time Travel Mode Estimates:**
+  - Eagerly detects user GPS coordinates on modal mount.
+  - Search results display real-time user-relative distance (`📍 Mirpur 10 · 2.1 km away`).
+  - Selected place card (`selectedLocationCard72`) features an inline Google Maps travel time preview:
+    - 📍 Exact distance badge (`3.2 km`)
+    - 🚗 Car / CNG duration (`~9 min`)
+    - 🏍️ Bike duration (`~7 min`)
+    - 🚶 Walking duration (`~38 min`)
+
+### 40.3 Full-Bleed Edge-to-Edge Direction Map & Floating 58dp Frosted Top Bar Standard (`DirectionMapModal.tsx`)
+- **Full-Bleed Presentation:** Upgraded modal to `presentationStyle="fullScreen"` and `statusBarTranslucent`, allowing the MapLibre vector map to flow edge-to-edge behind the Android status bar and navigation bar with zero black box header clipping.
+- **Floating 58dp Frosted Back Button (`styles.frostedCloseBtn`):** `58 × 58 dp`, `borderRadius: 16 dp`, 1px border, backdrop-blur effect with subtle elevation shadow, housing a centered `arrow-left` icon.
+- **Floating 58dp Route Header Capsule (`styles.headerCapsule`):** `height: 58 dp`, `borderRadius: 16 dp`, 1px border, backdrop-blur effect with origin icon pill (`38 × 38 dp`), bold route title, and subtitle, positioned at `top: insets.top + 12 dp` with standard `Layout.screenPadding = 16 dp`.
+- **1-Tap Google Maps Navigation CTA Preserved:** The blue primary CTA button (*"Start Live Directions in Google Maps"*) is 100% preserved in the bottom sheet, launching turn-by-turn navigation in the native Google Maps app.
+
+### 40.4 Live GPS Auto-Center on Modal Launch (`LocationPickerModal.tsx`)
+- **Auto-Center on User Location:** When opened without `initialCoords` (fresh pick), queries `getCurrentUserCoordinates()`, sets `userGpsCoords`, reverse-geocodes the user's real standing location, and flies the camera directly to their GPS coordinates (`16.5` zoom).
+- **Eliminated BUBT Jump Bug:** Fixes the previous issue where a 350ms timer forcibly flew the camera to BUBT Campus even when the user had live GPS. BUBT Campus is now strictly a fallback if GPS is disabled or permissions are denied.
+
+### 40.5 Universal 72dp Handover Location & Category Picker Standard (`MarketPostScreen.tsx`)
+- **Strict 72dp Standardization (`styles.locCard`, `styles.modalItemCard`):** Both Handover location cards and Category picker cards enforce `height: 72`, `borderRadius: 16`, `paddingHorizontal: 14`, `44 × 44 dp` icon box (`borderRadius: 14 dp`), and `18 px` Feather icons.
+- **Interactive Map & GPS Trigger Card (`styles.mapTriggerCard72`):** Standardized to `height: 72`, `borderRadius: 16`, `44 × 44 dp` icon box, matching the 72dp card row standard.
+- **Multi-Line Text Truncation Safety:** Enforces `numberOfLines={1}` across title, subtitle, and Bengali annotations. Completely eliminates uneven card heights where 1-line and 2-line descriptions produced inconsistent card heights ("some are littel and some are big").
+
+
 
 
 

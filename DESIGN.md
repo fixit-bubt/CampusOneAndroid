@@ -501,12 +501,15 @@ All location and hospital selectors across the Blood Donation system strictly fo
 
 ## 18. Student Marketplace Design Standards & Handover Location Picker (`MarketScreen.tsx`, `MarketPostScreen.tsx`, `MarketDetailScreen.tsx`)
 
-### 1. Universal 72dp Handover Location Dropdown Card Standard
+### 1. Universal 72dp Handover Location & Category Picker Standards
 - **Elimination of Stacked Duplicate Inputs:** Replaced redundant stacked input fields with the Universal 72dp Dropdown Card standard (`minHeight: 72`, `dropdownIconBox: 44x44`, sector highlight, clear `X` button).
 - **Dual Mode Switcher:** Features a dedicated mode switcher button between:
   - **"Choose from list":** Opens modal with pre-curated BUBT campus hubs, campus gates, canteen/field spots, and Greater Dhaka commute hubs.
   - **"Type custom":** Instant free-text entry for specific spots with live clear button.
-- **Visual Design Parity:** Matches Blood Donation's `minHeight: 72dp` dropdown card standard (`padding: 14 dp`, `borderRadius: 16 dp`, `44 × 44 dp` icon box with `borderRadius: 13 dp`, `14.5 px` Title, `11.5 px` Subtitle, neutral `C.surface` foundation and `C.border` subtle outline).
+- **Handover Sheet 72dp Standardization (`styles.locCard`):** All location cards in both Campus and Greater Dhaka tabs strictly follow `height: 72`, `borderRadius: 16`, `paddingHorizontal: 14`, `44 × 44 dp` icon box (`borderRadius: 14 dp`), and `18 px` Feather icons.
+- **Interactive Map & GPS Trigger Card (`styles.mapTriggerCard72`):** Fixed `height: 72`, `borderRadius: 16`, `44 × 44 dp` icon box with Feather `map` icon.
+- **Category Picker Modal Standard (`styles.modalItemCard`):** Fixed `height: 72`, `borderRadius: 16`, `paddingHorizontal: 14`, `44 × 44 dp` icon box.
+- **Multi-Line Text Truncation Safety:** Enforced `numberOfLines={1}` across title, subtitle, and Bengali names to prevent uneven card expansion (eliminating the issue where 1-line and 2-line cards created uneven heights).
 
 ### 2. Universal 58dp Form Controls & Screen Bars
 - **Posting Form Inputs (`MarketPostScreen.tsx`):** Item Title, Price, Custom Category, Custom Spot, and Course Code inputs standardized to Universal 58dp Controls (`height: 58`, `borderRadius: 16`).
@@ -523,14 +526,20 @@ All location and hospital selectors across the Blood Donation system strictly fo
 
 To maintain zero code bloat and unified design integrity across the entire application, all mapping features are consolidated into **one single universal direction map component** (`src/components/location/DirectionMapModal.tsx`):
 
-### 1. Core Map Engine & Vector Tile Infrastructure
+### 1. Full-Bleed Edge-to-Edge Screen & Floating 58dp Frosted Glass Top Bar
+- **Edge-to-Edge Presentation:** Modals use `presentationStyle="fullScreen"` with `statusBarTranslucent`, allowing vector map tiles to flow seamlessly across the entire viewport behind the Android status bar and navigation bar with zero clipping or awkward black header cutoffs.
+- **Floating 58dp Frosted Back Button (`styles.frostedCloseBtn`):** `58 × 58 dp`, `borderRadius: 16 dp`, 1px border, backdrop-blur effect with subtle elevation shadow, housing a centered `arrow-left` icon.
+- **Floating 58dp Route Header Capsule (`styles.headerCapsule`):** `height: 58 dp`, `borderRadius: 16 dp`, 1px border, backdrop-blur effect with origin icon pill (`38 × 38 dp`), bold route title, and subtitle, positioned at `top: insets.top + 12 dp` with standard `Layout.screenPadding = 16 dp`.
+- **Location Picker Live GPS Auto-Center (`LocationPickerModal.tsx`):** When opened without `initialCoords` (fresh pick), automatically queries `getCurrentUserCoordinates()`, centers the interactive camera over the user's standing GPS position at `16.5` zoom with reverse-geocoded address, using BUBT Campus strictly as an offline/denied fallback.
+
+### 2. Core Map Engine & Vector Tile Infrastructure
 - **MapLibre GL JS + OpenFreeMap Vector Tiles:** Zero-cost, high-performance vector map engine running in a hardware-accelerated WebView.
 - **Automatic Theme Synchronization:** Synchronizes tile styles with the user's app theme:
   - Dark Mode: `https://tiles.openfreemap.org/styles/dark` with pitch-black OLED background (`#121212`).
   - Light Mode: `https://tiles.openfreemap.org/styles/liberty` with neutral slate background (`#f8fafc`).
 - **OSRM Road-Snapping Routing:** Fetches turn-by-turn road geometry coordinates, driving distance, and duration via OSRM (`https://router.project-osrm.org/route/v1/...`) with speed-adjusted duration estimates for driving, bicycling, and walking.
 
-### 2. Google Maps Visual Identity & Floating Controls
+### 3. Google Maps Visual Identity & Floating Controls
 - **Pulsing Blue GPS Dot:** Origin marker features an authentic Google Maps style blue dot (`#275efe`) with an animated pulsing radar wave ring and origin label tag.
 - **Teardrop Destination Pin:** Destination marker features a grounded SVG teardrop pin with coordinate/label tag and sector color accent.
 - **Route Polyline with Drop-Shadow Casing:** Renders an 8px dark casing layer (`#0f172a` at 35% opacity) beneath a 5.5px core electric blue road polyline (`#2563eb` at 95% opacity).
@@ -539,7 +548,7 @@ To maintain zero code bloat and unified design integrity across the entire appli
   - ⤢ **Fit Whole Route Bounds FAB:** Dynamically computes `LngLatBounds()` around both origin and destination with padding.
   - 🎯 **Recenter Live Location FAB:** Smoothly flies the camera to the user's current GPS position.
 
-### 3. Google Maps Style Bottom Navigation Card
+### 4. Google Maps Style Bottom Navigation Card
 - **Travel Mode Selector:** 3-mode segmented switcher (🚗 Drive, 🏍️ Bike, 🚶 Walk) with live route re-calculation.
 - **Metrics Display:** Big bold duration (`14 min`), distance (`3.8 km`), and live arrival clock time (`Arrive by ~07:35 AM · from your location`).
 - **Dual Destination Layouts:**
@@ -547,7 +556,7 @@ To maintain zero code bloat and unified design integrity across the entire appli
   - **Single Destination Box (Marketplace, Blood, Lost & Found):** Destination name, zone/subtitle, and sector icon box.
 - **1-Tap Google Maps Navigation:** Primary CTA button deep-links directly into the native Google Maps app (`https://www.google.com/maps/dir/?api=1&origin=...&destination=...&travelmode=...`) for turn-by-turn voice directions.
 
-### 4. Zero-Bloat Wrapper Architecture & App-Wide Unification
+### 5. Zero-Bloat Wrapper Architecture & App-Wide Unification
 - **100% Backward Compatibility:**
   - `src/components/blood/HospitalMapModal.tsx` wraps `DirectionMapModal` with blood styling (`SectorColors.blood`, `hospital-building` icon).
   - `src/components/rides/RideRouteMapModal.tsx` wraps `DirectionMapModal` with ride styling (`SectorColors.ride`, `navigation` icon, stops track, fare, and vehicle).
@@ -556,3 +565,4 @@ To maintain zero code bloat and unified design integrity across the entire appli
   - **Blood Donation:** Hospital and clinic directions in `BloodScreen.tsx`.
   - **Campus Rides:** Route overview and directions in `RideDetailScreen.tsx`.
   - **Lost & Found:** Item location and handover spot directions in `LostFoundDetailScreen.tsx`.
+

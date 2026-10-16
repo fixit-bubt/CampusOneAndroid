@@ -715,29 +715,81 @@ export function LocationPickerModal({
     flyToCoordinates(BUBT_COORDS, 17);
   };
 
-  // Sync coords on modal open
+  // Sync coords on modal open - Auto-Center to real user GPS location
   useEffect(() => {
     if (visible) {
       setSearchQuery('');
       setIsSearching(false);
       setMapError(false);
-      const matched = findLandmarkByName(initialPlaceName);
-      const coords = initialCoords || matched?.coords || BUBT_COORDS;
-      setCurrentCoords(coords);
-      setSelectedPlace({
-        name: initialPlaceName || matched?.name || 'BUBT Main Campus',
-        zone: matched?.zone || 'Mirpur & Campus',
-        subText: matched?.desc || 'Permanent Campus · Road 9 & 5, Rupnagar',
-        formattedAddress: initialPlaceName || matched?.name || 'BUBT Main Campus',
-        coords,
-      });
 
-      const timer = setTimeout(() => {
-        selectionLockUntilRef.current = Date.now() + 2500;
-        isProgrammaticMoveRef.current = true;
-        flyToCoordinates(coords, 16);
-      }, 350);
-      return () => clearTimeout(timer);
+      if (initialCoords) {
+        const matched = findLandmarkByName(initialPlaceName);
+        setCurrentCoords(initialCoords);
+        setSelectedPlace({
+          name: initialPlaceName || matched?.name || 'Selected Location',
+          zone: matched?.zone || 'Dhaka',
+          subText: matched?.desc || `${initialCoords.latitude.toFixed(4)}, ${initialCoords.longitude.toFixed(4)}`,
+          formattedAddress: initialPlaceName || matched?.name || 'Selected Location',
+          coords: initialCoords,
+        });
+
+        const timer = setTimeout(() => {
+          selectionLockUntilRef.current = Date.now() + 2500;
+          isProgrammaticMoveRef.current = true;
+          flyToCoordinates(initialCoords, 16.5);
+        }, 350);
+        return () => clearTimeout(timer);
+      } else {
+        // No initialCoords -> Fresh Pick: Auto-Center to user's real GPS position!
+        let active = true;
+        getCurrentUserCoordinates().then(async loc => {
+          if (!active) return;
+          if (loc && isWithinBangladesh(loc)) {
+            setUserGpsCoords(loc);
+            setCurrentCoords(loc);
+            try {
+              const place = await reverseGeocodeCoords(loc);
+              if (active) setSelectedPlace(place);
+            } catch {
+              if (active) {
+                setSelectedPlace({
+                  name: 'Your Location',
+                  zone: 'Dhaka',
+                  subText: `${loc.latitude.toFixed(4)}, ${loc.longitude.toFixed(4)}`,
+                  formattedAddress: 'Your Location',
+                  coords: loc,
+                });
+              }
+            }
+            if (active) {
+              selectionLockUntilRef.current = Date.now() + 2500;
+              isProgrammaticMoveRef.current = true;
+              flyToCoordinates(loc, 16.5);
+            }
+          } else {
+            // Fallback only if GPS unavailable or permissions denied
+            setCurrentCoords(BUBT_COORDS);
+            setSelectedPlace({
+              name: 'BUBT Main Campus',
+              zone: 'Mirpur & Campus',
+              subText: 'Permanent Campus · Road 9 & 5, Rupnagar',
+              formattedAddress: 'BUBT Main Campus',
+              coords: BUBT_COORDS,
+            });
+            const timer = setTimeout(() => {
+              if (active) {
+                selectionLockUntilRef.current = Date.now() + 2500;
+                isProgrammaticMoveRef.current = true;
+                flyToCoordinates(BUBT_COORDS, 16);
+              }
+            }, 350);
+          }
+        });
+
+        return () => {
+          active = false;
+        };
+      }
     } else {
       if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
       if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);

@@ -1947,14 +1947,20 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
     - 🚗 Car / CNG duration (`~9 min`)
     - 🏍️ Bike duration (`~7 min`)
     - 🚶 Walking duration (`~38 min`)
-- **Dual Universal 58dp Action Button Standard (`actionButtonsRow`):**
-  - **"Directions" Button (`directionsButton58`):** Universal 58dp outlined button (`Feather corner-up-right`) opening `DirectionMapModal` route preview directly over the map.
-  - **"Select Spot" Button (`confirmButton58Flex`):** Universal 58dp solid accent button (`Feather check`) confirming and returning the selected coordinates.
-- **App-Wide Parity:** Automatically available across all features using `LocationPickerModal`:
-  - Marketplace item posting (`MarketPostScreen.tsx`).
-  - Campus Rides offering (`RidePostScreen.tsx`).
-  - Lost & Found reporting (`PostItemFormScreen.tsx`).
-  - Commute & Blood area selection modals (`CommuteAreaPickerModal.tsx`, `AreaPickerModal.tsx`).
+### 40.3 Full-Bleed Edge-to-Edge Direction Map & Floating 58dp Frosted Top Bar Standard (`DirectionMapModal.tsx`)
+- **Full-Bleed Presentation:** Upgraded modal to `presentationStyle="fullScreen"` and `statusBarTranslucent`, allowing the MapLibre vector map to flow edge-to-edge behind the Android status bar and navigation bar with zero black box header clipping.
+- **Floating 58dp Frosted Back Button (`styles.frostedCloseBtn`):** `58 × 58 dp`, `borderRadius: 16 dp`, 1px border, backdrop-blur effect with subtle elevation shadow, housing a centered `arrow-left` icon.
+- **Floating 58dp Route Header Capsule (`styles.headerCapsule`):** `height: 58 dp`, `borderRadius: 16 dp`, 1px border, backdrop-blur effect with origin icon pill (`38 × 38 dp`), bold route title, and subtitle, positioned at `top: insets.top + 12 dp` with standard `Layout.screenPadding = 16 dp`.
+- **1-Tap Google Maps Navigation CTA Preserved:** The blue primary CTA button (*"Start Live Directions in Google Maps"*) is 100% preserved in the bottom sheet, launching turn-by-turn navigation in the native Google Maps app.
+
+### 40.4 Live GPS Auto-Center on Modal Launch (`LocationPickerModal.tsx`)
+- **Auto-Center on User Location:** When opened without `initialCoords` (fresh pick), queries `getCurrentUserCoordinates()`, sets `userGpsCoords`, reverse-geocodes the user's real standing location, and flies the camera directly to their GPS coordinates (`16.5` zoom).
+- **Eliminated BUBT Jump Bug:** Fixes the previous issue where a 350ms timer forcibly flew the camera to BUBT Campus even when the user had live GPS. BUBT Campus is now strictly a fallback if GPS is disabled or permissions are denied.
+
+### 40.5 Universal 72dp Handover Location & Category Picker Standard (`MarketPostScreen.tsx`)
+- **Strict 72dp Standardization (`styles.locCard`, `styles.modalItemCard`):** Both Handover location cards and Category picker cards enforce `height: 72`, `borderRadius: 16`, `paddingHorizontal: 14`, `44 × 44 dp` icon box (`borderRadius: 14 dp`), and `18 px` Feather icons.
+- **Interactive Map & GPS Trigger Card (`styles.mapTriggerCard72`):** Standardized to `height: 72`, `borderRadius: 16`, `44 × 44 dp` icon box, matching the 72dp card row standard.
+- **Multi-Line Text Truncation Safety:** Enforces `numberOfLines={1}` across title, subtitle, and Bengali annotations. Completely eliminates uneven card heights where 1-line and 2-line descriptions produced inconsistent card heights ("some are littel and some are big").
 
 
 

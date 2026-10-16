@@ -753,11 +753,11 @@ export function MarketPostScreen({ route, navigation }: any) {
                       <Feather name={c.icon} size={18} color={c.color} />
                     </View>
                     <View style={styles.modalItemInfo}>
-                      <Text style={[styles.modalItemNameTxt, { color: active ? c.color : C.text, fontFamily: FontFamily.jakartaBold }]}>
+                      <Text style={[styles.modalItemNameTxt, { color: active ? c.color : C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                         {label}
                       </Text>
                       {sub.length > 0 && (
-                        <Text style={[styles.modalItemSubTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+                        <Text style={[styles.modalItemSubTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
                           {sub}
                         </Text>
                       )}
@@ -818,10 +818,10 @@ export function MarketPostScreen({ route, navigation }: any) {
               </TouchableOpacity>
             </View>
 
-            {/* 58dp Interactive Map & GPS Trigger */}
+            {/* Universal 72dp Interactive Map & GPS Trigger */}
             <TouchableOpacity
               style={[
-                styles.mapTriggerCard58,
+                styles.mapTriggerCard72,
                 {
                   backgroundColor: isDark ? `${Accent.amber}18` : `${Accent.amber}0f`,
                   borderColor: isDark ? `${Accent.amber}44` : `${Accent.amber}30`,
@@ -837,10 +837,10 @@ export function MarketPostScreen({ route, navigation }: any) {
                 <Feather name="map" size={18} color={Accent.amber} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.mapTriggerTitle, { color: Accent.amber, fontFamily: FontFamily.jakartaBold }]}>
+                <Text style={[styles.mapTriggerTitle, { color: Accent.amber, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                   Pick on Interactive Map or Use GPS
                 </Text>
-                <Text style={[styles.mapTriggerSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                <Text style={[styles.mapTriggerSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
                   Pinpoint exact campus gate, canteen, or Dhaka meetup spot
                 </Text>
               </View>
@@ -916,18 +916,18 @@ export function MarketPostScreen({ route, navigation }: any) {
                       activeOpacity={0.75}
                     >
                       <View style={[styles.locIconBox, { backgroundColor: isDark ? `${Accent.amber}22` : `${Accent.amber}14` }]}>
-                        <Feather name={spot.icon} size={16} color={Accent.amber} />
+                        <Feather name={spot.icon} size={18} color={Accent.amber} />
                       </View>
                       <View style={{ flex: 1 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                          <Text style={[styles.locName, { color: on ? Accent.amber : C.text, fontFamily: FontFamily.jakartaBold }]}>
+                          <Text style={[styles.locName, { color: on ? Accent.amber : C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                             {spot.name}
                           </Text>
-                          <Text style={[styles.locNameBn, { color: C.textMuted }]}>
+                          <Text style={[styles.locNameBn, { color: C.textMuted }]} numberOfLines={1}>
                             ({spot.nameBn})
                           </Text>
                         </View>
-                        <Text style={[styles.locDesc, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+                        <Text style={[styles.locDesc, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
                           {spot.desc}
                         </Text>
                       </View>
@@ -957,18 +957,18 @@ export function MarketPostScreen({ route, navigation }: any) {
                       activeOpacity={0.75}
                     >
                       <View style={[styles.locIconBox, { backgroundColor: isDark ? `${Accent.amber}22` : `${Accent.amber}14` }]}>
-                        <Feather name={area.icon as any} size={16} color={Accent.amber} />
+                        <Feather name={area.icon as any} size={18} color={Accent.amber} />
                       </View>
                       <View style={{ flex: 1 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                          <Text style={[styles.locName, { color: on ? Accent.amber : C.text, fontFamily: FontFamily.jakartaBold }]}>
+                          <Text style={[styles.locName, { color: on ? Accent.amber : C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                             {area.name}
                           </Text>
-                          <Text style={[styles.locNameBn, { color: C.textMuted }]}>
+                          <Text style={[styles.locNameBn, { color: C.textMuted }]} numberOfLines={1}>
                             ({area.nameBn})
                           </Text>
                         </View>
-                        <Text style={[styles.locDesc, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+                        <Text style={[styles.locDesc, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
                           {area.desc}
                         </Text>
                       </View>
@@ -1324,25 +1324,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   } as ViewStyle,
 
-  // Category item card
+  // Category item card (Universal 72dp Standard)
   modalItemCard: {
+    height: 72,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    padding: 12,
-    borderRadius: 14,
+    paddingHorizontal: 14,
+    borderRadius: 16,
     marginBottom: 8,
   } as ViewStyle,
   modalItemIconBox: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
-  modalItemInfo: { flex: 1 } as ViewStyle,
-  modalItemNameTxt: { fontSize: 14 } as any,
-  modalItemSubTxt: { fontSize: 11.5, marginTop: 2 } as any,
+  modalItemInfo: { flex: 1, justifyContent: 'center' } as ViewStyle,
+  modalItemNameTxt: { fontSize: 14, includeFontPadding: false } as any,
+  modalItemSubTxt: { fontSize: 11.5, marginTop: 2, includeFontPadding: false } as any,
   modalCheckCircle: {
     width: 20,
     height: 20,
@@ -1351,10 +1352,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   } as ViewStyle,
 
-  /* 58dp Map & GPS Trigger Card */
-  mapTriggerCard58: {
-    height: Layout.controlHeight,
-    borderRadius: Layout.controlRadius,
+  /* Universal 72dp Map & GPS Trigger Card Standard */
+  mapTriggerCard72: {
+    height: 72,
+    borderRadius: 16,
     borderWidth: 1.2,
     flexDirection: 'row',
     alignItems: 'center',
@@ -1363,19 +1364,19 @@ const styles = StyleSheet.create({
     gap: 12,
   } as ViewStyle,
   mapTriggerIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
   mapTriggerTitle: {
-    fontSize: 13.5,
+    fontSize: 14,
     lineHeight: 18,
     includeFontPadding: false,
   } as TextStyle,
   mapTriggerSub: {
-    fontSize: 11,
+    fontSize: 11.5,
     lineHeight: 15,
     marginTop: 2,
     includeFontPadding: false,
@@ -1445,23 +1446,24 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   customLocPillTxt: { fontSize: 12.5 } as any,
 
-  // Location card
+  // Universal 72dp Location Card Standard
   locCard: {
+    height: 72,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    padding: 11,
-    borderRadius: 13,
-    marginBottom: 7,
+    paddingHorizontal: 14,
+    borderRadius: 16,
+    marginBottom: 8,
   } as ViewStyle,
   locIconBox: {
-    width: 34,
-    height: 34,
-    borderRadius: 9,
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
-  locName: { fontSize: 13.5 } as any,
-  locNameBn: { fontSize: 12 } as any,
-  locDesc: { fontSize: 11.5, marginTop: 2 } as any,
+  locName: { fontSize: 14, includeFontPadding: false } as any,
+  locNameBn: { fontSize: 12, includeFontPadding: false } as any,
+  locDesc: { fontSize: 11.5, marginTop: 2, includeFontPadding: false } as any,
 });
