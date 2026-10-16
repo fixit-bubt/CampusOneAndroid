@@ -304,10 +304,12 @@ export function EventsBrowseScreen({ navigation }: any) {
     setSyncing(true);
     try {
       const res = await triggerBubtEventsSync();
+      const scanned = res?.features?.events?.scanned ?? res?.items_scanned ?? res?.total_scanned ?? 0;
+      const added = res?.features?.events?.added ?? res?.items_added ?? res?.new_added ?? 0;
       toast({
         type: 'success',
         title: 'BUBT Events Synced',
-        message: `Found ${res?.total_scanned ?? 0} notices, added ${res?.new_added ?? 0} new.`,
+        message: `Found ${scanned} events, added ${added} new.`,
       });
       await load();
     } catch (e: any) {

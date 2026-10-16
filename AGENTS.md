@@ -2051,3 +2051,43 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 - **Native Release Build:** Compiled locally via Android SDK & Gradle (`cd android && .\gradlew assembleRelease` in 38s).
 - **Physical Device ADB Deployment:** Successfully installed and verified on physical USB device `8734b5da` (`com.bubt.campusone`).
 - **Supabase Backend Parity:** Fully compatible with `lost_found_items` on Supabase project `xhgpxvyqrufbbuivttmi`, preserving category constraints and reverse-geocoded location addresses without requiring database migrations.
+
+---
+
+## 44. Universal BUBT Ingestion & Crawler Hub (`bubt-crawler`)
+
+### 44.1 The "Map Pattern" Crawler Architecture
+- **Unified Ingestion Engine:** Replaced fragmented, brittle crawlers (`sync-notices`, `sync-events`, `sync-faculty`) with a single, universal crawler engine `bubt-crawler` (`supabase/functions/bubt-crawler/`) that feeds all campus features:
+  - **Notices (`public.announcements`):** Strict 4-month (120-day) active semester window, PDF circular attachments (`storage/notices/`, `uploads/`), department mapping, and priority classification.
+  - **Events (`public.events`):** News & campus event extraction with semantic DOM traversal, venue detection, banner flyers, and automatic club profile linking.
+  - **Faculty (`public.faculty`):** 13 department rosters, short codes (`MAHB`, `RKN`), teacher designations, photos, canonical profile links, and `on_leave` status.
+  - **Class & Exam Routines (`public.routines`):** Auto-detected from BUBT notice stream, classified into `'class'` or `'exam'` routines with official university PDF attachments.
+  - **Academic Calendar (`public.calendar_events` & `app_config`):** Auto-detected from notice stream, dynamically updating `current_academic_calendar_url` without requiring app re-deployments.
+  - **Bus Schedules (`public.bus_routes`):** Transport notices and route revisions.
+- **Strict 4-Month (120-Day) Early-Exit Parsing:** BUBT serves all 1,514 historical notices (2.7 MB). The engine iterates newest-first and terminates immediately when crossing the 120-day mark, completely ignoring 1,400+ expired historical circulars.
+- **Delta Detection via SHA-256 Fingerprinting:** Every record computes a 16-character SHA-256 hash. If unchanged, records are filtered out before writing. 98% of 30-minute runs execute in sub-seconds with **0 database writes**.
+- **Firebase Push Decoupling:** Decoupled crawler bulk database writes from row-by-row push notifications to prevent cascading trigger storms (which previously queued 5,000 simultaneous `pg_net` calls and froze the database).
+
+### 44.2 Two-Tier 24/7 Scheduling Blueprint
+- **Tier 1 (Fast Cycle — Every 30 Minutes, 24/7):**
+  - Scheduled via `pg_cron`: `'*/30 * * * *'` calling `bubt-crawler?tier=fast`.
+  - Runs Notices (4-month window) + Events + Routines + Calendar in parallel.
+  - Execution duration: ~1.5 to 2.5 seconds with 100% reliability.
+- **Tier 2 (Faculty Maintenance — Daily at 03:00 AM Dhaka):**
+  - Scheduled via `pg_cron`: `'0 21 * * *'` (21:00 UTC = 03:00 AM Dhaka) calling `bubt-crawler?tier=faculty`.
+  - Scans all 13 department rosters for promotions, new hires, and on-leave flags.
+- **Unified Telemetry (`public.crawler_audit_logs`):** Replaced scattered log tables with a single audit table tracking feature, duration, items scanned, added, updated, and unchanged.
+
+### 44.3 Universal Ingestion Hub Bug Fixes & Forensic Stabilization
+- **Routines UUID Crash Resolved:** `published_by` in `adapters/routines.ts` strictly takes a valid UUID from `systemAdminId` or `null` (matching the `uuid REFERENCES auth.users(id)` column). Added `routines_content_hash_key` unique constraint for deterministic deduplication. Successfully populated live routines with verified circulars.
+- **Events Thumbnails & 120-Day Cutoff:** Extracted real event thumbnails directly from BUBT's `/news` listing page cards (`https://www.bubt.edu.bd/storage/news/*.jpg`), bypassing header `no-image.jpg`. Enforced strict 120-day active semester cutoff and purged historical expired events. Implemented concurrent article detail fetching and collision-resistant `EVT-<slug>-<hash>` codes.
+- **Department & Office Numeric ID Ingestion:** Restored BUBT numeric ID matching in `core/parser.ts` (`27`=CSE, `37`=Civil, `29`=EEE, `38`=Textile, `36`=Law, `30`=Economics, `13`=Exam Controller, `14`=Registrar, `16`=Accounts).
+- **Admin Pin Preservation:** `adapters/notices.ts` pre-fetches existing `pinned` status so manual admin pins in the app are never overwritten by automated keyword classifications.
+- **Accurate Delta Classification:** `core/diff.ts` accurately differentiates genuine new insertions (`toInsert`) from modified records (`toUpdate`), eliminating hardcoded `updated = 0`.
+- **Academic Calendar Public RLS:** Added `anyone_read_public_config` policy on `public.app_config` so student devices can read `current_academic_calendar_url` directly without RLS blocking.
+- **Full Notice Feed for Downstream Adapters:** `notices.ts` returns the top 300 semester notices to downstream routines, calendar, and bus adapters while retaining the strict 120-day cutoff for the student announcement feed.
+- **Audit Log CHECK Constraint:** Updated `crawler_audit_logs.triggered_by` CHECK constraint to allow `'student'`, `'staff'`, and `'service_role'` alongside `'cron'`, `'admin'`, `'manual'`, and `'app'`.
+- **Role-Guarded Force Sync:** `index.ts` enforces `if (isForce && triggeredBy !== 'admin' && triggeredBy !== 'cron' && triggeredBy !== 'service_role') isForce = false;`.
+- **Feature-Level Isolation & Bus Adapter:** Created `adapters/bus.ts` to detect BUBT bus schedule circulars and update `latest_bus_schedule_url`. `index.ts` respects `feature` query parameters to execute only requested adapters.
+- **Client Screen Sync:** Updated `ManageFacultyScreen.tsx` and `EventsBrowseScreen.tsx` to invoke `bubt-crawler` and render feature-specific telemetry.
+

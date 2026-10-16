@@ -49,12 +49,17 @@ interface FacultyRow {
 
 interface SyncLog {
   id: string;
-  started_at: string;
-  completed_at: string | null;
+  created_at?: string;
+  started_at?: string;
+  completed_at?: string | null;
   status: string;
-  total_scanned: number;
-  new_added: number;
-  promotions_updated: number;
+  items_scanned?: number;
+  total_scanned?: number;
+  items_added?: number;
+  new_added?: number;
+  items_updated?: number;
+  promotions_updated?: number;
+  duration_ms?: number;
 }
 
 const shortDept = (name?: string | null) => (name ?? '').replace(/^Department of\s+/i, '');
@@ -102,12 +107,18 @@ export function ManageFacultyScreen({ navigation }: any) {
         .select('id, name, designation, department_id, email, phone, photo_url, short_code, room_number, building, floor, counseling_hours, blood_group, is_accepting_research, research_interests, on_leave, departments(id, name)')
         .order('name'),
       supabase.from('departments').select('id, name').order('name'),
-      supabase.from('faculty_sync_logs').select('*').order('started_at', { ascending: false }).limit(1),
+      supabase.from('crawler_audit_logs' as any).select('*').eq('feature', 'faculty').order('created_at', { ascending: false }).limit(1),
     ]);
 
     if (facRes.data) setList(facRes.data as any[]);
     if (deptRes.data) setDepartments(deptRes.data as any[]);
-    if (logRes.data && logRes.data[0]) setLastSyncLog(logRes.data[0] as unknown as SyncLog);
+    if (logRes.data && logRes.data[0]) {
+      setLastSyncLog(logRes.data[0] as unknown as SyncLog);
+    } else {
+      // Fallback check to legacy table if no crawler log exists yet
+      const { data: legacyLog } = await supabase.from('faculty_sync_logs').select('*').order('started_at', { ascending: false }).limit(1);
+      if (legacyLog && legacyLog[0]) setLastSyncLog(legacyLog[0] as unknown as SyncLog);
+    }
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -166,13 +177,17 @@ export function ManageFacultyScreen({ navigation }: any) {
     setSyncResult(null);
     setSyncModalVisible(true);
     try {
-      const { data, error } = await supabase.functions.invoke('sync-faculty');
+      const { data, error } = await supabase.functions.invoke('bubt-crawler', {
+        headers: { 'x-force-sync': 'true' },
+        body: { tier: 'faculty', feature: 'faculty' },
+      });
       if (error) {
         toast({ type: 'error', title: 'Sync Failed', message: error.message });
         setSyncResult({ error: error.message });
       } else {
         setSyncResult(data);
-        toast({ type: 'success', title: 'Live Sync Finished', message: `Scanned ${data?.total_scanned || 0} profiles` });
+        const scanned = data?.features?.faculty?.scanned ?? data?.items_scanned ?? data?.total_scanned ?? 0;
+        toast({ type: 'success', title: 'Live Sync Finished', message: `Scanned ${scanned} profiles` });
         await load();
       }
     } catch (err: any) {
@@ -300,7 +315,7 @@ export function ManageFacultyScreen({ navigation }: any) {
               </Text>
               <Text style={[styles.syncSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
                 {lastSyncLog
-                  ? `Last crawl: ${formatRelativeTime(lastSyncLog.started_at)} · Scanned ${lastSyncLog.total_scanned} profiles`
+                  ? `Last crawl: ${formatRelativeTime(lastSyncLog.created_at || lastSyncLog.started_at || new Date().toISOString())} · Scanned ${lastSyncLog.items_scanned ?? lastSyncLog.total_scanned ?? 0} profiles`
                   : 'Automated crawler for all 13 BUBT departments'}
               </Text>
             </View>
@@ -411,10 +426,9 @@ export function ManageFacultyScreen({ navigation }: any) {
                 ? t.manage.crawlingDesc
                 : syncResult?.error
                 ? syncResult.error
-                : `Successfully scanned ${syncResult?.total_scanned || 0} profiles.\n` +
-                  `• ${syncResult?.new_added || 0} new teachers added\n` +
-                  `• ${syncResult?.promotions_updated || 0} rank promotions updated\n` +
-                  `• ${syncResult?.photos_updated || 0} photos refreshed\n` +
+                : `Successfully scanned ${syncResult?.features?.faculty?.scanned ?? syncResult?.items_scanned ?? syncResult?.total_scanned ?? 0} profiles.\n` +
+                  `• ${syncResult?.features?.faculty?.added ?? syncResult?.items_added ?? syncResult?.new_added ?? 0} new teachers added\n` +
+                  `• ${syncResult?.features?.faculty?.updated ?? syncResult?.items_updated ?? syncResult?.promotions_updated ?? 0} profiles updated\n` +
                   `Duration: ${((syncResult?.duration_ms || 0) / 1000).toFixed(1)}s`}
             </Text>
 

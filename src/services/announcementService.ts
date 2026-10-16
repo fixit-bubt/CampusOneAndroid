@@ -160,7 +160,7 @@ export async function markAnnouncementAsRead(announcementId: string, userId: str
   } catch {}
 }
 
-export async function triggerNoticeSync(isDeep = false): Promise<{
+export async function triggerNoticeSync(isDeep = false, force = false): Promise<{
   success: boolean;
   totalScanned?: number;
   newAdded?: number;
@@ -168,18 +168,23 @@ export async function triggerNoticeSync(isDeep = false): Promise<{
   error?: string;
 }> {
   try {
-    const { data, error } = await supabase.functions.invoke('sync-notices', {
-      headers: isDeep ? { 'x-deep-crawl': 'true' } : {},
-      body: { triggered_by: 'app', deep: isDeep },
+    const headers: Record<string, string> = {};
+    if (force) {
+      headers['x-force-sync'] = 'true';
+    }
+    const { data, error } = await supabase.functions.invoke('bubt-crawler', {
+      headers,
+      body: { tier: isDeep ? 'all' : 'fast', feature: isDeep ? 'all' : 'notices', triggered_by: 'app' },
     });
     if (error) throw error;
     await removeCache(CacheKeys.HOME_UPDATES);
     await removeCache(CacheKeys.ANNOUNCEMENTS);
+    const noticesFeature = data?.features?.notices;
     return {
       success: true,
-      totalScanned: data?.total_scanned,
-      newAdded: data?.new_added,
-      updatedCount: data?.updated_count,
+      totalScanned: noticesFeature?.scanned ?? data?.items_scanned ?? data?.total_scanned,
+      newAdded: noticesFeature?.added ?? data?.items_added ?? data?.new_added,
+      updatedCount: noticesFeature?.updated ?? data?.items_updated ?? data?.updated_count,
     };
   } catch (err: any) {
     return { success: false, error: err.message || 'Failed to sync notices' };

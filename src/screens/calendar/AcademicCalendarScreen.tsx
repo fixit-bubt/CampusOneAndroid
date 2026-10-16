@@ -76,6 +76,7 @@ export function AcademicCalendarScreen({ navigation }: any) {
   const [isOffline, setIsOffline] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editEvent, setEditEvent] = useState<CalendarEvent | null>(null);
+  const [calendarPdfUrl, setCalendarPdfUrl] = useState<string>(CALENDAR_PDF_URL);
 
   // Form state
   const [fTitle, setFTitle] = useState('');
@@ -110,6 +111,16 @@ export function AcademicCalendarScreen({ navigation }: any) {
     setIsOffline(false);
     setEvents(data as CalendarEvent[]);
     setCache(calKey, data as CalendarEvent[]);
+
+    // Fetch dynamic calendar PDF url from app_config if available
+    supabase
+      .from('app_config')
+      .select('value')
+      .eq('key', 'current_academic_calendar_url')
+      .maybeSingle()
+      .then(({ data: cfg }) => {
+        if (cfg?.value) setCalendarPdfUrl(cfg.value);
+      });
   }, [year, month]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -237,7 +248,7 @@ export function AcademicCalendarScreen({ navigation }: any) {
           <View style={styles.headerActions}>
             <TouchableOpacity
               style={[styles.pdfBtn, { borderColor: C.border }]}
-              onPress={() => openUrl(CALENDAR_PDF_URL)}
+              onPress={() => openUrl(calendarPdfUrl)}
               accessibilityLabel={t.calendar2.officialPdf}
               activeOpacity={0.7}
             >

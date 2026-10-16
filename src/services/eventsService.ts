@@ -205,9 +205,14 @@ export async function shareEventDetails(event: Event): Promise<void> {
 /**
  * Invokes background BUBT crawler to auto-refresh campus events.
  */
-export async function triggerBubtEventsSync(): Promise<any> {
-  const { data, error } = await supabase.functions.invoke('sync-events', {
-    headers: { 'x-force-sync': 'true' },
+export async function triggerBubtEventsSync(force = false): Promise<any> {
+  const headers: Record<string, string> = {};
+  if (force) {
+    headers['x-force-sync'] = 'true';
+  }
+  const { data, error } = await supabase.functions.invoke('bubt-crawler', {
+    headers,
+    body: { tier: 'fast', feature: 'events' },
   });
   if (error) throw error;
   return data;
