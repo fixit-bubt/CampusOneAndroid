@@ -252,7 +252,8 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
   - `FacultyScreen`: Main 3-tab switcher (`Depts` / `Mentors` / `Saved` with bookmark counts, no icons).
   - `DirectoryScreen`: Main 3-tab switcher (`All` / `Connections` / `Requests` with counts, no icons; legacy spring anim eliminated).
   - `AnnouncementsScreen`: Main 3-tab switcher (`All` / `Urgent` / `Saved` with counts, no icons).
-  - `JobsBrowseScreen`: Primary 58dp SegmentedTabs (3 tabs: `Browse` / `Saved` / `Applied` with animated vector icons and circular counts; redundant 4th status bar eliminated in favor of structured 58dp Dual Bar + 72dp modal sheets).
+  - `AnnouncePostScreen`: Priority selector (3 tabs: `Urgent` / `Important` / `General`).
+  - `JobsBrowseScreen`: Main tabs (3 tabs: `Browse` / `Saved` / `Applied`), Status filter (3 tabs: `Open` / `Closing` / `Expired`).
   - `JobPostScreen`: Work Mode (3 tabs: `On-site` / `Remote` / `Hybrid`), Compensation model (3 tabs: `Paid` / `Conveyance` / `Negotiable`), How to Apply (3 tabs: `Email` / `Link` / `PDF`).
   - `JobsModerateScreen`: Moderation tabs (2 tabs: `Reported` / `Removed`, no icons).
   - `EventsBrowseScreen`: Main 3-tab switcher (`Upcoming` / `Past` / `Saved` with counts; legacy static chips eliminated).
@@ -293,7 +294,7 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
   - `ManageStaffScreen`: Add staff modal `createBtn` (58dp)
   - `SettingsScreen`: Modal action buttons (`primaryBtn`, `outlineBtn`, `cancelBtn` 58dp) and password inputs (`pwField` 58dp)
   - `LocationPickerModal`: `gpsBtn` ("Use My Current Location" 58dp), `confirmBtn` ("Confirm Location" 58dp), and modal map switchers (`mapTriggerCard58` 58dp across `RidePostScreen`, `MarketPostScreen`, and `AreaPickerModal`).
-- **PDF Maker Suite Standardization (58dp):** All 4 PDF Maker tools (`ToolCompressScreen`, `ToolMergeScreen`, `ToolImagesScreen`, `ToolOrganizeScreen`) `cta` buttons are standardized to `height: 58, borderRadius: 16`. In `components.tsx`, the post-generation `ResultPanel` is structured as full-width, vertically stacked 58dp action bars (`actionRowBar58`: Preview Document, Save to Downloads, Share PDF, Create Another Document). In `ToolImagesScreen.tsx`, the photo action toolbar (`toolbar58`) and document name input (`nameInputBox`) are strictly standardized to `height: 58, borderRadius: 16`.
+- **PDF Maker Suite Standardization (58dp):** All 4 PDF Maker tools (`ToolCompressScreen`, `ToolMergeScreen`, `ToolImagesScreen`, `ToolOrganizeScreen`) `cta` buttons are standardized to `height: 58, borderRadius: 16`. In `components.tsx`, `primaryBtn` (Share), `secondaryBtn` (Start Over), and `SegmentToggle` track are standardized to `height: 58, borderRadius: 16`.
 
 ### 5.5 Universal 72dp Content Card & Row Standard (Reference: `DESIGN.md`)
 - **The 58 / 72 Dual System:** Controls, switchers, search bars, and CTAs adhere to the **58dp** standard (`Layout.controlHeight = 58`), while all content cards, list rows, and feed items adhere to the **72dp** standard (`height: 72` or `padding: 14` + `44dp` icon/avatar = `72dp`).
@@ -592,24 +593,11 @@ In `RootNavigator.tsx`, students who have not completed onboarding (`!profile?.s
 - **Streaming:** SSE streaming using `expo/fetch` (standard React Native `fetch` cannot stream response bodies).
 - **Security:** Validates caller's JWT directly in the Edge Function; student-only restriction enforced server-side.
 
-### 10.2 PDF Maker (CamScanner Engine)
-- **Location:** `src/screens/pdfmaker/` (`PdfMakerScreen`, `ToolImagesScreen`, `ToolMergeScreen`, `ToolCompressScreen`, `ToolOrganizeScreen`, `components.tsx`)
-- **Services:** `src/services/pdf/` (`imagesToPdf.ts`, `mergePdf.ts`, `compressPdf.ts`, `organizePdf.ts`, `pdfUtils.ts`, `presets.ts`)
+### 10.2 PDF Maker
+- **Location:** `src/screens/pdfmaker/`
 - **Architecture:** 100% on-device native `pdf-lib` for document generation + hidden offscreen WebView running vendored `pdf.js` (`assets/pdfjs/*.txt`) for rasterizing page thumbnails.
-- **CamScanner Parity Engine:**
-  - **Zero-Void Page Layouts (`layoutDocumentPage`):** Default `borderless` mode fills standard A4 pages edge-to-edge (0 margin), eliminating the 112pt-148pt letterboxing voids from mobile camera aspect ratios (4:3 and 16:9). Also supports `smart_fit` (12pt uniform micro-margin) and `adaptive` (document page geometry dynamically tracks photo aspect ratio at 150 DPI).
-  - **Continuous Batch Camera:** Multi-shot camera capture loop allowing continuous rapid page snaps without returning to menu after each shot.
-  - **In-App Inspection Modal (`CampusPdfViewerModal`):** Direct "Preview" action on all 4 tools allowing full-document scrolling and zoom before sharing or saving.
-  - **Save to Device (`savePdfToDevice`):** True Android file download via `LegacyFS.StorageAccessFramework` (`requestDirectoryPermissionsAsync`, `createFileAsync`, and `writeAsStringAsync` with base64). Saves directly into the user-selected folder (Downloads) without triggering the Android Share Sheet.
-  - **Stacked 58dp Action Bars (`ResultPanel`):** Full-width, vertically stacked 58dp action bars for each option (`Preview Document`, `Save to Downloads`, `Share PDF`, `Create Another Document`) replacing cramped horizontal wraps.
-  - **58dp Segmented Image Toolbar:** `[+ Add Photos]`, `[Camera]`, and `[Clear]` structured as a cohesive 58dp segmented toolbar matching the Page Layout toggle geometry.
-  - **100% Offline Capability:** Operates completely on-device without internet access. Zero CDN scripts, zero external dependencies.
-  - **Academic Stamp:** Optional vector-drawn header (`BUBT CampusOne`) and footer (`Page X of Y`) stamped via `pdf-lib` Helvetica.
-  - **Academic Document Naming:** Configurable document title input (58dp) with timestamp-free sanitized filenames.
-  - **BUBT Assignment Cover Page Shortcut:** 72dp banner linking directly to `CoverPageFormScreen`.
-  - **Human Vector Iconography:** Strict usage of `@expo/vector-icons` (`Feather`). Zero AI-generated icons.
-  - **Ergonomics & Token Standards:** 58dp interactive buttons/inputs/segmented controls, 72dp feature row cards and banners.
-- **Zero Schema Change:** Does not touch Supabase or upload files; entirely client-side on-device execution.
+- **Capabilities:** Photos to PDF, PDF Merge, Organize/Reorder Pages, Compress.
+- **Zero Schema Change:** Does not touch Supabase or upload files.
 
 ### 10.3 Direct FCM Push Notifications
 - **Firebase Project:** `campusone-511812`
@@ -1183,7 +1171,7 @@ The following screens contain segmented control bars slated for this animated pa
 1. **Lost & Found (`LostFoundBrowseScreen.tsx`):** `All` (Sector Amber) · `Lost` (Crimson) · `Found` (Emerald) · `My Posts` (Violet) [Implemented].
 2. **Blood Donation (`BloodScreen.tsx`):** `Requests` (Blood Crimson `#d63d35`) vs `Donors` (Medical Emerald `#16a34a`) [Implemented].
 3. **Home Community Updates (`HomeCommunityUpdates.tsx`):** `All` (Brand Blue `#2563eb`) · `Notices` (Announce Orange `#ea580c`) · `Clubs` (Emerald `#059669`) · `Events` (Violet `#8b5cf6`) [Implemented].
-4. **Student Jobs (`JobsBrowseScreen.tsx`):** `Browse` (Jobs Teal `#0e9c8a`) · `Saved` (Gold `#eab308`) · `Applied` (Purple `#a855f7`) with animated vector icons and dynamic circular counts [Implemented].
+4. **Student Jobs (`JobsBrowseScreen.tsx`):** `Open` (Emerald) · `Closing Soon` (Amber) · `Expired` (Slate) · `Saved` (Rose/Pink) (4 tabs).
 5. **Marketplace (`MarketScreen.tsx`):** `All Listings` (Slate/Brand) vs `My Listings` (Market Amber) (2 tabs).
 6. **Campus Rides (`RidesScreen.tsx`):** `All` (Ride Cyan) · `To Campus` (Emerald) · `From Campus` (Royal Blue) (3 tabs).
 7. **Campus Events (`EventsBrowseScreen.tsx`):** `Upcoming` (Violet) vs `Past` (Muted Slate) (2 tabs).
@@ -1349,15 +1337,13 @@ The Jobs & Internships module (`JobsBrowseScreen.tsx`, `JobDetailScreen.tsx`, `J
    - RLS Enforcement: Applicants can view/insert their own applications; recruiters/posters can view applications and update applicant statuses for their own jobs.
    - Realtime Triggers: Database triggers notify the recruiter upon new application submission (`trg_notify_job_application`) and notify the applicant upon status advancement (`trg_notify_application_status`).
 3. **Browse UI Overhaul & Anti-Clutter Design (`JobsBrowseScreen.tsx`):**
-   - **Triple 58dp Structured Control Bar System:** Eliminated redundant stacked switcher bars to preserve feed view above the fold:
-     1. Primary `SegmentedTabs` (58dp): `Browse` (with `briefcase` icon), `Saved` (with `star` icon), and `Applied` (with `file-text` icon) featuring memoized `translateX` interpolation, synchronous 0ms touch spring physics (`tension: 240, friction: 18, useNativeDriver: true`), elevated `#1e1e1e` indicator contrast with `rgba(255, 255, 255, 0.16)` border, and animated icon rubberband pops.
-     2. Structured 50/50 Dual Bar (58dp): Left button for Job Type (`briefcase` default), Right button for Department (`book-open` default), lighting up with `SectorColors.jobs` (`#0e9c8a`) and spring-popping on selection.
-     3. Search Bar (58dp): Integrated directly above feed with instant clear trigger.
-   - **72dp High Bottom Sheet Option Cards:** Both Job Type and Department bottom sheets render spacious 72dp cards with 44dp icon boxes, titles, subtitles, count badges, and animated checkmarks on active selection.
-   - **Anti-Rainbow Monochrome Zinc Theme:** Replaced multi-color neon palettes with clean monochrome zinc surfaces (`C.surface`, `C.surface2`, `C.border`, `C.text2`) and a single Jobs Teal (`#0e9c8a`) active state.
-   - **Past & Expired Circulars Access:** Accessible directly via the "Past & Expired Archive" 72dp card (with real-time count) and an in-sheet "Include Expired in Active Feed" `LiquidToggle` switch, backed by a 1-tap "View Expired Archive" button on empty search results.
-   - **SubBar App Icon Integration:** Restores the official CampusOne `LogoMark` (28dp) in the top-right header alongside poster/admin actions (`plus` / `shield`).
-   - **Smooth 120 FPS List Rendering:** Static vector icons in list thumbnails eliminate scroll jitter, while interactive touches trigger native RenderThread spring bounce pops.
+   - **Spring-Animated Main Tabs:** Single segmented bar with spring-animated sliding pill indicator (`tension: 68, friction: 10, useNativeDriver: true`) switching between `Browse`, `Saved`, and `My Applications`.
+   - **Spring-Animated Status Switcher:** Sliding indicator across `Open`, `Closing Soon` (≤ 3 days left), and `Expired`.
+   - **Dual Dropdown Filter Row:** Clean horizontal row replacing stacked scrolling bars:
+     - Left: `[ Type ∨ ]` opens a native bottom-sheet modal with job types, post counts, and active checkmarks.
+     - Right: `[ Dept ∨ ]` opens a native bottom-sheet modal with departments, featuring a "Your Dept" highlight badge.
+   - Active filter indicators display accent pills when non-default criteria are active.
+   - FAB button `[ + Post Job ]` elevated with theme shadow and colors.
 4. **Detailed Job View & Poster Controls (`JobDetailScreen.tsx`):**
    - **Dhaka Countdown:** Deterministic deadline calculation using `localToday()` to avoid UTC midnight shifts.
    - **4-Cell Specs Grid:** Compensation, Workplace Mode, Min Semester, and Referral badges.
@@ -1627,7 +1613,7 @@ The Campus Announcements architecture is transformed from a manual posting board
 - **Synchronized Scoped Counts:** Tab badge counters are derived dynamically from the active department and category scope, ensuring badge counts and list results are always 100% consistent.
 - **Varsity-Wide Notice Preservation:** Department filtering (such as Economics or CSE) preserves university-wide notices (`ALL`, Controller of Examinations, Registrar) so students never miss general mid-term/final routines or holiday closures.
 - **Institutional Official Link Bar:** Prominent circular card bar on `AnnouncementDetailScreen` with an official BUBT globe squircle, verified green portal badge (`BUBT OFFICIAL PORTAL`), title, and direct external navigation.
-- **Executive High-DPI In-App PDF Viewer (`CampusPdfViewerModal.tsx`):** 100% offline-ready, running vendored `pdf.js` (`pdf.min.mjs` + `pdf.worker.min.mjs`) locally over `file://` inside a native `WebView`. High-DPI retina supersampling, dual-line Navy header, floating indigo page pill (`Page X / Y`), and direct silent view with zero loading clutter.
+- **In-App PDF Viewer Modal:** Uses `react-native-webview` with `scalesPageToFit={false}`, responsive mobile viewport injection, removal of Google Docs' dark letterbox margins and toolstrip, `#f8fafc` background, and centered document pages.
 - **Pinch-to-Zoom Flyer Viewer:** `resolveNoticeImage` supports local banner mappings, remote CDNs, `uploads/`, and BUBT storage paths. Uses explicit window dimensions (`winWidth`, `winHeight * 0.78`) to prevent height collapse inside Android's `ScrollView`.
 - **Home Community Feed Realtime Sync & Cross-Screen Read Synchronization:**
   - `HomeCommunityUpdates.tsx` and `AnnouncementsScreen.tsx` are 100% synchronized via a 3-layer real-time architecture:
@@ -1638,18 +1624,7 @@ The Campus Announcements architecture is transformed from a manual posting board
   - Unified query limit to `500` notices within the 4-month window across both `HomeCommunityUpdates.tsx` and `AnnouncementsScreen.tsx`.
 - **Bilingual Support:** Complete localization parity in `src/i18n/en.ts` and `src/i18n/bn.ts` under the `announce2` namespace.
 
-### 31.4 Executive High-DPI In-App PDF Viewer & Engine Architecture (`CampusPdfViewerModal.tsx`, `viewerHtml.ts`, `pdfViewerService.ts`)
-- **Zero Google Docs Dependency:** Fully replaced the legacy Google Docs embed with a 100% offline-ready, high-performance in-app document engine running vendored `pdf.js` (`pdf.min.mjs` + `pdf.worker.min.mjs`) locally over `file://` inside an Android `WebView`.
-- **Zero Supabase Storage Overhead:** Viewing notices is strictly a read operation from existing public BUBT URLs (`https://www.bubt.edu.bd/storage/notices/...`). Zero bytes are written, saved, or uploaded to Supabase Storage.
-- **Strict Device Storage Capping (`pruneNoticesCache`):** Notice PDFs downloaded for viewing are saved to `Paths.cache/pdf_notices` and automatically pruned via `pruneNoticesCache()` to a strict ceiling of max 5 cached files, preventing device storage bloat.
-- **Direct Memory Base64 Loading (`loadPdfData`):** Bypasses all local Android WebView XHR/CORS/origin restrictions by converting downloaded bytes directly into base64 in JS and injecting into the engine via `window.loadPdfData(base64)`. A robust handshake lock (`webViewReadyRef` and `docPayloadRef`) prevents race conditions.
-- **High-DPI Retina Canvas Supersampling:** Uses `window.devicePixelRatio` (up to 2.5x) to render razor-sharp text and graphics with zero blur, matching and exceeding competitor BUBT Info.
-- **Standard A4 Proportion & Responsive Scale:** A4 cards with `aspect-ratio: 1 / 1.414` fit phone screens edge-to-edge with 10px margins (`width: calc(100% - 4px)`).
-- **Executive Navy Header:** Dual-line header (`#0a192f` Navy) with back chevron, notice title, issuing office subtitle, page selector trigger (`layers`), native system share button (`shareDownloadedPdf`), and reload.
-- **Floating Indigo Page Pill:** Bottom-right capsule pill (`#4f46e5` indigo with vector `book-open` icon and dynamic `Page X / Y`) matching BUBT Info.
-- **Direct Silent View (Zero-Loading Clutter):** Clean, instant document display without annoying skeleton overlays, spinners, or loading text. Page placeholders are clean white A4 cards that the PDF canvas draws directly onto.
-- **Double-Tap to Zoom & Jump-to-Page:** Double tap to zoom 2.2x smoothly on any section, plus a bottom sheet page selector for quick jumping across multi-page circulars.
-- **Shared `SquareLoader.tsx` Component:** Exported in `src/components/ui/` for future feature cards or full-page loaders matching the website's chasing squares diamond animation.
+### 31.4 Performance Hardening, Edge-to-Edge PDF Viewer & Security Architecture
 - **60 FPS Virtualized List & Stable Memoization (`AnnouncementsScreen.tsx`):**
   - Replaced un-virtualized `<ScrollView>` with an optimized `<FlatList>` (`initialNumToRender: 8`, `maxToRenderPerBatch: 10`, `windowSize: 7`, `removeClippedSubviews: Platform.OS === 'android'`).
   - Wrapped `AnnouncementCard` in `React.memo` and stabilized row callbacks (`handleToggleSave`, `deleteAnnouncement`, `handlePressCard`, `renderCard`) via `useCallback` to prevent cascading re-renders during live search filtering and tab changes.
@@ -2209,5 +2184,32 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
   - `authStore.fetchProfile` queries fresh session credentials via `(await supabase.auth.getSession()).data.session?.user` to avoid React closure latency.
   - Student metadata stored in `user_metadata` automatically populates the `profiles` table upon OTP email confirmation, preventing redundant onboarding prompts.
 
+---
 
+## 47. Interactive Personalized Routine 360 & Exam Grid System
 
+### 47.1 Architecture & Paper Parity
+- **Visual Timetable Grid:** Formatted as an authentic visual timetable matching the official BUBT departmental paper routine format:
+  - 7 Days along the left (`SAT`, `SUN`, `MON`, `TUE`, `WED`, `THR`, `FRI`) with pinned sticky column.
+  - 6 Standard BUBT Time Slots along the top (`08:15 AM to 09:45 AM`, `09:45 AM to 11:15 AM`, `11:15 AM to 12:45 PM`, `01:15 PM to 02:45 PM`, `02:45 PM to 04:15 PM`, `04:15 PM to 05:45 PM`).
+  - Cells render Course Code, Faculty Code (`FC: <CODE>`), Room number (`R: <ROOM>`), Intake & Section (`Intake: 51 - 2`), and Retake badges.
+- **Strict 3-Tab Maximum Rule:** Screen navigation is standardized to exactly 3 SegmentedTabs:
+  1. `Class Grid`: Interactive weekly class timetable with horizontal/vertical bidirectional scrolling.
+  2. `Exam Grid`: Midterm and Final exam schedule formatted in a visual grid by Date and Shift (`Shift 1` 09:30-11:30 & `Shift 2` 01:30-03:30).
+  3. `Official PDFs`: Master signed university PDF circulars crawled automatically by `bubt-crawler`.
+- **Dedicated Section Context Row:** Moved out of header into its own roomy 48dp row directly below SegmentedTabs (`[ 📍 CSE • Intake 51 - Section 2 ▾ ]` and `[ + Add Retake ]`), providing instant section switching and retake controls without header crowding.
+
+### 47.2 Personalization & Retake Course Merger
+- **Zero-Setup Profile Auto-Load:** Automatically resolves `department`, `intake`, and `section` from `public.profiles`.
+- **Retake & Improvement Merger (`user_custom_routine_slots`):** Senior students taking retake courses from junior intakes (e.g. `PHY 101` from Intake 57 Section 4 while in Intake 51 Section 2) add them via `+ Add Retake`, merging both schedules into one unified weekly timetable.
+- **Time Overlap & Clash Detection:**
+  - Automated detection when regular classes and retake classes overlap on the same Day and Time slot.
+  - Clashed cells render with `#f87171` crimson border and `⚠️ CLASH` indicator.
+  - Tapping opens the Conflict Resolver Modal displaying all overlapping courses and suggesting clash-free alternate sections.
+
+### 47.3 Faculty Short-Code Linkage & Room Decoder
+- **Instant Faculty Lookup:** Tapping any `FC: <CODE>` cell resolves against `public.faculty.short_code`, displaying teacher photo, full name, designation, office desk room, official email, phone, and counseling hours for that day.
+- **4-Digit BUBT Room Decoder:** Intelligently decodes BUBT 4-digit room numbers:
+  - 1st digit = Building (`2xxx` -> Building 2: Martyr Sujan Mahmud Building, `3xxx` -> Building 3: Martyr Tahmid Abdullah Building, `5xxx` -> Campus 2).
+  - 2nd digit = Floor level.
+- **Home Screen Dynamic Strip:** `HomeStatusStrips.tsx` dynamically displays student's intake & section with 1-tap navigation to Timetable Grid and Exam Shifts.

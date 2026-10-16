@@ -141,3 +141,7 @@ export type Connection = Omit<Tables<'connections'>, 'status'> & {
 };
 
 export type Notification = Tables<'notifications'>;
+
+export type RoutineSlot = Tables<'routine_slots'>;
+export type ExamSlot = Tables<'exam_slots'>;
+export type UserCustomRoutineSlot = Tables<'user_custom_routine_slots'>;

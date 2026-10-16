@@ -10,32 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
-  }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
@@ -148,6 +123,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "announcement_bookmarks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       announcement_reads: {
@@ -198,6 +180,7 @@ export type Database = {
           category: string | null
           category_slug: string | null
           code: string
+          content_hash: string | null
           created_at: string
           created_by: string
           deleted_at: string | null
@@ -207,6 +190,7 @@ export type Database = {
           external_url: string | null
           id: string
           image_url: string | null
+          in_banner: boolean
           pinned: boolean
           priority: string
           source: string
@@ -220,6 +204,7 @@ export type Database = {
           category?: string | null
           category_slug?: string | null
           code?: string
+          content_hash?: string | null
           created_at?: string
           created_by: string
           deleted_at?: string | null
@@ -229,6 +214,7 @@ export type Database = {
           external_url?: string | null
           id?: string
           image_url?: string | null
+          in_banner?: boolean
           pinned?: boolean
           priority?: string
           source?: string
@@ -242,6 +228,7 @@ export type Database = {
           category?: string | null
           category_slug?: string | null
           code?: string
+          content_hash?: string | null
           created_at?: string
           created_by?: string
           deleted_at?: string | null
@@ -251,6 +238,7 @@ export type Database = {
           external_url?: string | null
           id?: string
           image_url?: string | null
+          in_banner?: boolean
           pinned?: boolean
           priority?: string
           source?: string
@@ -973,6 +961,51 @@ export type Database = {
         }
         Relationships: []
       }
+      crawler_audit_logs: {
+        Row: {
+          created_at: string
+          details: Json | null
+          duration_ms: number | null
+          error_message: string | null
+          feature: string
+          id: string
+          items_added: number
+          items_scanned: number
+          items_unchanged: number
+          items_updated: number
+          status: string
+          triggered_by: string
+        }
+        Insert: {
+          created_at?: string
+          details?: Json | null
+          duration_ms?: number | null
+          error_message?: string | null
+          feature: string
+          id?: string
+          items_added?: number
+          items_scanned?: number
+          items_unchanged?: number
+          items_updated?: number
+          status?: string
+          triggered_by?: string
+        }
+        Update: {
+          created_at?: string
+          details?: Json | null
+          duration_ms?: number | null
+          error_message?: string | null
+          feature?: string
+          id?: string
+          items_added?: number
+          items_scanned?: number
+          items_unchanged?: number
+          items_updated?: number
+          status?: string
+          triggered_by?: string
+        }
+        Relationships: []
+      }
       departments: {
         Row: {
           branch: string
@@ -1132,6 +1165,7 @@ export type Database = {
       }
       donors: {
         Row: {
+          alert_urgency: string
           area: string
           blood_group: string
           created_at: string
@@ -1140,6 +1174,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          alert_urgency?: string
           area: string
           blood_group: string
           created_at?: string
@@ -1148,6 +1183,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          alert_urgency?: string
           area?: string
           blood_group?: string
           created_at?: string
@@ -1201,6 +1237,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_bookmarks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1278,6 +1321,45 @@ export type Database = {
           },
         ]
       }
+      event_sync_logs: {
+        Row: {
+          created_at: string
+          details: Json | null
+          duration_ms: number | null
+          error_message: string | null
+          id: string
+          new_added: number
+          status: string
+          total_scanned: number
+          triggered_by: string
+          updated_count: number
+        }
+        Insert: {
+          created_at?: string
+          details?: Json | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          new_added?: number
+          status?: string
+          total_scanned?: number
+          triggered_by?: string
+          updated_count?: number
+        }
+        Update: {
+          created_at?: string
+          details?: Json | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          new_added?: number
+          status?: string
+          total_scanned?: number
+          triggered_by?: string
+          updated_count?: number
+        }
+        Relationships: []
+      }
       events: {
         Row: {
           banner_url: string | null
@@ -1285,6 +1367,7 @@ export type Database = {
           category: string
           club_id: string | null
           code: string
+          content_hash: string | null
           created_at: string
           created_by: string
           date: string
@@ -1308,6 +1391,7 @@ export type Database = {
           category: string
           club_id?: string | null
           code?: string
+          content_hash?: string | null
           created_at?: string
           created_by: string
           date: string
@@ -1331,6 +1415,7 @@ export type Database = {
           category?: string
           club_id?: string | null
           code?: string
+          content_hash?: string | null
           created_at?: string
           created_by?: string
           date?: string
@@ -1372,14 +1457,76 @@ export type Database = {
           },
         ]
       }
+      exam_slots: {
+        Row: {
+          building: string | null
+          course_code: string
+          course_title: string | null
+          created_at: string | null
+          day_of_week: string
+          department: string
+          exam_date: string
+          id: string
+          intake: string
+          room: string
+          seat_range: string | null
+          section: string
+          semester: string | null
+          shift: string
+          teacher_short_code: string | null
+          time_range: string
+        }
+        Insert: {
+          building?: string | null
+          course_code: string
+          course_title?: string | null
+          created_at?: string | null
+          day_of_week: string
+          department: string
+          exam_date: string
+          id?: string
+          intake: string
+          room: string
+          seat_range?: string | null
+          section: string
+          semester?: string | null
+          shift: string
+          teacher_short_code?: string | null
+          time_range: string
+        }
+        Update: {
+          building?: string | null
+          course_code?: string
+          course_title?: string | null
+          created_at?: string | null
+          day_of_week?: string
+          department?: string
+          exam_date?: string
+          id?: string
+          intake?: string
+          room?: string
+          seat_range?: string | null
+          section?: string
+          semester?: string | null
+          shift?: string
+          teacher_short_code?: string | null
+          time_range?: string
+        }
+        Relationships: []
+      }
       faculty: {
         Row: {
+          blood_group: string | null
+          building: string | null
+          counseling_hours: string | null
           created_at: string
           data_source: string
           department_id: string
           designation: string
           email: string | null
+          floor: string | null
           id: string
+          is_accepting_research: boolean
           is_chairman: boolean
           last_synced_at: string
           linkedin_url: string | null
@@ -1392,25 +1539,25 @@ export type Database = {
           qualifications: Json | null
           research_interests: string[]
           researchgate_url: string | null
+          room_number: string | null
           scholar_url: string | null
+          scopus_url: string | null
+          short_code: string | null
           updated_at: string
           website_url: string | null
-          short_code: string | null
-          room_number: string | null
-          building: string | null
-          floor: string | null
-          counseling_hours: string | null
-          blood_group: string | null
-          scopus_url: string | null
-          is_accepting_research: boolean
         }
         Insert: {
+          blood_group?: string | null
+          building?: string | null
+          counseling_hours?: string | null
           created_at?: string
           data_source?: string
           department_id: string
           designation: string
           email?: string | null
+          floor?: string | null
           id?: string
+          is_accepting_research?: boolean
           is_chairman?: boolean
           last_synced_at?: string
           linkedin_url?: string | null
@@ -1423,25 +1570,25 @@ export type Database = {
           qualifications?: Json | null
           research_interests?: string[]
           researchgate_url?: string | null
+          room_number?: string | null
           scholar_url?: string | null
+          scopus_url?: string | null
+          short_code?: string | null
           updated_at?: string
           website_url?: string | null
-          short_code?: string | null
-          room_number?: string | null
-          building?: string | null
-          floor?: string | null
-          counseling_hours?: string | null
-          blood_group?: string | null
-          scopus_url?: string | null
-          is_accepting_research?: boolean
         }
         Update: {
+          blood_group?: string | null
+          building?: string | null
+          counseling_hours?: string | null
           created_at?: string
           data_source?: string
           department_id?: string
           designation?: string
           email?: string | null
+          floor?: string | null
           id?: string
+          is_accepting_research?: boolean
           is_chairman?: boolean
           last_synced_at?: string
           linkedin_url?: string | null
@@ -1454,17 +1601,12 @@ export type Database = {
           qualifications?: Json | null
           research_interests?: string[]
           researchgate_url?: string | null
+          room_number?: string | null
           scholar_url?: string | null
+          scopus_url?: string | null
+          short_code?: string | null
           updated_at?: string
           website_url?: string | null
-          short_code?: string | null
-          room_number?: string | null
-          building?: string | null
-          floor?: string | null
-          counseling_hours?: string | null
-          blood_group?: string | null
-          scopus_url?: string | null
-          is_accepting_research?: boolean
         }
         Relationships: [
           {
@@ -1521,46 +1663,46 @@ export type Database = {
       }
       faculty_sync_logs: {
         Row: {
+          completed_at: string | null
+          details: Json | null
+          duration_ms: number | null
+          error_message: string | null
           id: string
-          triggered_by: string
+          new_added: number
+          photos_updated: number
+          promotions_updated: number
+          started_at: string
           status: string
           total_scanned: number
-          new_added: number
-          promotions_updated: number
-          photos_updated: number
-          details: Json | null
-          error_message: string | null
-          duration_ms: number | null
-          started_at: string
-          completed_at: string | null
+          triggered_by: string
         }
         Insert: {
+          completed_at?: string | null
+          details?: Json | null
+          duration_ms?: number | null
+          error_message?: string | null
           id?: string
-          triggered_by?: string
+          new_added?: number
+          photos_updated?: number
+          promotions_updated?: number
+          started_at?: string
           status?: string
           total_scanned?: number
-          new_added?: number
-          promotions_updated?: number
-          photos_updated?: number
-          details?: Json | null
-          error_message?: string | null
-          duration_ms?: number | null
-          started_at?: string
-          completed_at?: string | null
+          triggered_by?: string
         }
         Update: {
+          completed_at?: string | null
+          details?: Json | null
+          duration_ms?: number | null
+          error_message?: string | null
           id?: string
-          triggered_by?: string
+          new_added?: number
+          photos_updated?: number
+          promotions_updated?: number
+          started_at?: string
           status?: string
           total_scanned?: number
-          new_added?: number
-          promotions_updated?: number
-          photos_updated?: number
-          details?: Json | null
-          error_message?: string | null
-          duration_ms?: number | null
-          started_at?: string
-          completed_at?: string | null
+          triggered_by?: string
         }
         Relationships: []
       }
@@ -2157,6 +2299,45 @@ export type Database = {
         }
         Relationships: []
       }
+      notice_sync_logs: {
+        Row: {
+          created_at: string
+          details: Json | null
+          duration_ms: number | null
+          error_message: string | null
+          id: string
+          new_added: number
+          status: string
+          total_scanned: number
+          triggered_by: string
+          updated_count: number
+        }
+        Insert: {
+          created_at?: string
+          details?: Json | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          new_added?: number
+          status?: string
+          total_scanned?: number
+          triggered_by?: string
+          updated_count?: number
+        }
+        Update: {
+          created_at?: string
+          details?: Json | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          new_added?: number
+          status?: string
+          total_scanned?: number
+          triggered_by?: string
+          updated_count?: number
+        }
+        Relationships: []
+      }
       notif_prefs: {
         Row: {
           email: boolean
@@ -2697,8 +2878,66 @@ export type Database = {
           },
         ]
       }
+      routine_slots: {
+        Row: {
+          building: string | null
+          course_code: string
+          course_title: string | null
+          created_at: string | null
+          day_of_week: string
+          department: string
+          id: string
+          intake: string
+          is_lab: boolean | null
+          room: string
+          section: string
+          semester: string | null
+          slot_index: number
+          teacher_short_code: string | null
+          time_slot: string
+          updated_at: string | null
+        }
+        Insert: {
+          building?: string | null
+          course_code: string
+          course_title?: string | null
+          created_at?: string | null
+          day_of_week: string
+          department: string
+          id?: string
+          intake: string
+          is_lab?: boolean | null
+          room: string
+          section: string
+          semester?: string | null
+          slot_index: number
+          teacher_short_code?: string | null
+          time_slot: string
+          updated_at?: string | null
+        }
+        Update: {
+          building?: string | null
+          course_code?: string
+          course_title?: string | null
+          created_at?: string | null
+          day_of_week?: string
+          department?: string
+          id?: string
+          intake?: string
+          is_lab?: boolean | null
+          room?: string
+          section?: string
+          semester?: string | null
+          slot_index?: number
+          teacher_short_code?: string | null
+          time_slot?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       routines: {
         Row: {
+          content_hash: string | null
           created_at: string | null
           department: string | null
           file_url: string | null
@@ -2712,6 +2951,7 @@ export type Database = {
           type: string
         }
         Insert: {
+          content_hash?: string | null
           created_at?: string | null
           department?: string | null
           file_url?: string | null
@@ -2725,6 +2965,7 @@ export type Database = {
           type: string
         }
         Update: {
+          content_hash?: string | null
           created_at?: string | null
           department?: string | null
           file_url?: string | null
@@ -3600,6 +3841,35 @@ export type Database = {
           },
         ]
       }
+      user_custom_routine_slots: {
+        Row: {
+          created_at: string | null
+          id: string
+          slot_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          slot_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          slot_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_custom_routine_slots_slot_id_fkey"
+            columns: ["slot_id"]
+            isOneToOne: false
+            referencedRelation: "routine_slots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       public_profiles: {
@@ -3871,6 +4141,10 @@ export type Database = {
       study_can_read_object: { Args: { obj: string }; Returns: boolean }
       study_can_view: { Args: { sec: string }; Returns: boolean }
       study_editor_of_intake: { Args: { ina: string }; Returns: boolean }
+      study_handover_cr_and_leave: {
+        Args: { p_new_cr_id: string; p_section_id: string }
+        Returns: Json
+      }
       study_is_cr: { Args: { sec: string }; Returns: boolean }
       study_is_member: { Args: { sec: string }; Returns: boolean }
       study_member_of_intake: { Args: { ina: string }; Returns: boolean }
@@ -3880,6 +4154,7 @@ export type Database = {
           section_id: string
         }[]
       }
+      toggle_event_bookmark: { Args: { p_event_id: string }; Returns: boolean }
       toggle_report_vote: {
         Args: { p_report_id: string }
         Returns: {
@@ -3887,512 +4162,9 @@ export type Database = {
           voted: boolean
         }[]
       }
-      toggle_event_bookmark: {
-        Args: { p_event_id: string }
-        Returns: boolean
-      }
     }
     Enums: {
       [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
-  storage: {
-    Tables: {
-      buckets: {
-        Row: {
-          allowed_mime_types: string[] | null
-          avif_autodetection: boolean | null
-          created_at: string | null
-          file_size_limit: number | null
-          id: string
-          lifecycle_configuration: Json | null
-          lifecycle_configuration_generation: string | null
-          name: string
-          owner: string | null
-          owner_id: string | null
-          public: boolean | null
-          type: Database["storage"]["Enums"]["buckettype"]
-          updated_at: string | null
-          versioning_status: string
-        }
-        Insert: {
-          allowed_mime_types?: string[] | null
-          avif_autodetection?: boolean | null
-          created_at?: string | null
-          file_size_limit?: number | null
-          id: string
-          lifecycle_configuration?: Json | null
-          lifecycle_configuration_generation?: string | null
-          name: string
-          owner?: string | null
-          owner_id?: string | null
-          public?: boolean | null
-          type?: Database["storage"]["Enums"]["buckettype"]
-          updated_at?: string | null
-          versioning_status?: string
-        }
-        Update: {
-          allowed_mime_types?: string[] | null
-          avif_autodetection?: boolean | null
-          created_at?: string | null
-          file_size_limit?: number | null
-          id?: string
-          lifecycle_configuration?: Json | null
-          lifecycle_configuration_generation?: string | null
-          name?: string
-          owner?: string | null
-          owner_id?: string | null
-          public?: boolean | null
-          type?: Database["storage"]["Enums"]["buckettype"]
-          updated_at?: string | null
-          versioning_status?: string
-        }
-        Relationships: []
-      }
-      buckets_analytics: {
-        Row: {
-          created_at: string
-          deleted_at: string | null
-          format: string
-          id: string
-          name: string
-          type: Database["storage"]["Enums"]["buckettype"]
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          deleted_at?: string | null
-          format?: string
-          id?: string
-          name: string
-          type?: Database["storage"]["Enums"]["buckettype"]
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          deleted_at?: string | null
-          format?: string
-          id?: string
-          name?: string
-          type?: Database["storage"]["Enums"]["buckettype"]
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      buckets_vectors: {
-        Row: {
-          created_at: string
-          id: string
-          type: Database["storage"]["Enums"]["buckettype"]
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          id: string
-          type?: Database["storage"]["Enums"]["buckettype"]
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          type?: Database["storage"]["Enums"]["buckettype"]
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      migrations: {
-        Row: {
-          executed_at: string | null
-          hash: string
-          id: number
-          name: string
-        }
-        Insert: {
-          executed_at?: string | null
-          hash: string
-          id: number
-          name: string
-        }
-        Update: {
-          executed_at?: string | null
-          hash?: string
-          id?: number
-          name?: string
-        }
-        Relationships: []
-      }
-      objects: {
-        Row: {
-          archived_at: string | null
-          bucket_id: string | null
-          created_at: string | null
-          id: string
-          is_delete_marker: boolean
-          is_versioned: boolean
-          last_accessed_at: string | null
-          metadata: Json | null
-          name: string | null
-          owner: string | null
-          owner_id: string | null
-          path_tokens: string[] | null
-          updated_at: string | null
-          user_metadata: Json | null
-          version: string | null
-        }
-        Insert: {
-          archived_at?: string | null
-          bucket_id?: string | null
-          created_at?: string | null
-          id?: string
-          is_delete_marker?: boolean
-          is_versioned?: boolean
-          last_accessed_at?: string | null
-          metadata?: Json | null
-          name?: string | null
-          owner?: string | null
-          owner_id?: string | null
-          path_tokens?: string[] | null
-          updated_at?: string | null
-          user_metadata?: Json | null
-          version?: string | null
-        }
-        Update: {
-          archived_at?: string | null
-          bucket_id?: string | null
-          created_at?: string | null
-          id?: string
-          is_delete_marker?: boolean
-          is_versioned?: boolean
-          last_accessed_at?: string | null
-          metadata?: Json | null
-          name?: string | null
-          owner?: string | null
-          owner_id?: string | null
-          path_tokens?: string[] | null
-          updated_at?: string | null
-          user_metadata?: Json | null
-          version?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "objects_bucketId_fkey"
-            columns: ["bucket_id"]
-            isOneToOne: false
-            referencedRelation: "buckets"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      s3_multipart_uploads: {
-        Row: {
-          bucket_id: string
-          created_at: string
-          id: string
-          in_progress_size: number
-          key: string
-          metadata: Json | null
-          owner_id: string | null
-          upload_signature: string
-          user_metadata: Json | null
-          version: string
-        }
-        Insert: {
-          bucket_id: string
-          created_at?: string
-          id: string
-          in_progress_size?: number
-          key: string
-          metadata?: Json | null
-          owner_id?: string | null
-          upload_signature: string
-          user_metadata?: Json | null
-          version: string
-        }
-        Update: {
-          bucket_id?: string
-          created_at?: string
-          id?: string
-          in_progress_size?: number
-          key?: string
-          metadata?: Json | null
-          owner_id?: string | null
-          upload_signature?: string
-          user_metadata?: Json | null
-          version?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "s3_multipart_uploads_bucket_id_fkey"
-            columns: ["bucket_id"]
-            isOneToOne: false
-            referencedRelation: "buckets"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      s3_multipart_uploads_parts: {
-        Row: {
-          bucket_id: string
-          created_at: string
-          etag: string
-          id: string
-          key: string
-          owner_id: string | null
-          part_number: number
-          size: number
-          upload_id: string
-          version: string
-        }
-        Insert: {
-          bucket_id: string
-          created_at?: string
-          etag: string
-          id?: string
-          key: string
-          owner_id?: string | null
-          part_number: number
-          size?: number
-          upload_id: string
-          version: string
-        }
-        Update: {
-          bucket_id?: string
-          created_at?: string
-          etag?: string
-          id?: string
-          key?: string
-          owner_id?: string | null
-          part_number?: number
-          size?: number
-          upload_id?: string
-          version?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "s3_multipart_uploads_parts_bucket_id_fkey"
-            columns: ["bucket_id"]
-            isOneToOne: false
-            referencedRelation: "buckets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "s3_multipart_uploads_parts_upload_id_fkey"
-            columns: ["upload_id"]
-            isOneToOne: false
-            referencedRelation: "s3_multipart_uploads"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      vector_indexes: {
-        Row: {
-          bucket_id: string
-          created_at: string
-          data_type: string
-          dimension: number
-          distance_metric: string
-          id: string
-          metadata_configuration: Json | null
-          name: string
-          updated_at: string
-        }
-        Insert: {
-          bucket_id: string
-          created_at?: string
-          data_type: string
-          dimension: number
-          distance_metric: string
-          id?: string
-          metadata_configuration?: Json | null
-          name: string
-          updated_at?: string
-        }
-        Update: {
-          bucket_id?: string
-          created_at?: string
-          data_type?: string
-          dimension?: number
-          distance_metric?: string
-          id?: string
-          metadata_configuration?: Json | null
-          name?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "vector_indexes_bucket_id_fkey"
-            columns: ["bucket_id"]
-            isOneToOne: false
-            referencedRelation: "buckets_vectors"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      allow_any_operation: {
-        Args: { expected_operations: string[] }
-        Returns: boolean
-      }
-      allow_only_operation: {
-        Args: { expected_operation: string }
-        Returns: boolean
-      }
-      can_insert_object: {
-        Args: { bucketid: string; metadata: Json; name: string; owner: string }
-        Returns: undefined
-      }
-      extension: { Args: { name: string }; Returns: string }
-      filename: { Args: { name: string }; Returns: string }
-      foldername: { Args: { name: string }; Returns: string[] }
-      get_common_prefix: {
-        Args: { p_delimiter: string; p_key: string; p_prefix: string }
-        Returns: string
-      }
-      get_size_by_bucket: {
-        Args: { delete_markers?: string; noncurrent_versions?: string }
-        Returns: {
-          bucket_id: string
-          size: number
-        }[]
-      }
-      list_multipart_uploads_with_delimiter: {
-        Args: {
-          bucket_id: string
-          delimiter_param: string
-          max_keys?: number
-          next_key_token?: string
-          next_upload_token?: string
-          prefix_param: string
-          raw_prefix_param?: string
-        }
-        Returns: {
-          created_at: string
-          id: string
-          key: string
-        }[]
-      }
-      list_objects_with_delimiter: {
-        Args: {
-          _bucket_id: string
-          delete_markers?: string
-          delimiter_param: string
-          max_keys?: number
-          next_token?: string
-          next_token_archived_at?: string
-          next_token_version?: string
-          noncurrent_versions?: string
-          prefix_param: string
-          sort_order?: string
-          start_after?: string
-        }
-        Returns: {
-          archived_at: string
-          created_at: string
-          id: string
-          is_delete_marker: boolean
-          is_versioned: boolean
-          last_accessed_at: string
-          metadata: Json
-          name: string
-          updated_at: string
-          version: string
-        }[]
-      }
-      operation: { Args: never; Returns: string }
-      search: {
-        Args: {
-          bucketname: string
-          delete_markers?: string
-          levels?: number
-          limits?: number
-          noncurrent_versions?: string
-          offsets?: number
-          prefix: string
-          search?: string
-          sortcolumn?: string
-          sortorder?: string
-        }
-        Returns: {
-          archived_at: string
-          created_at: string
-          id: string
-          is_delete_marker: boolean
-          is_versioned: boolean
-          last_accessed_at: string
-          metadata: Json
-          name: string
-          updated_at: string
-          version: string
-        }[]
-      }
-      search_by_timestamp: {
-        Args: {
-          delete_markers?: string
-          noncurrent_versions?: string
-          p_bucket_id: string
-          p_level: number
-          p_limit: number
-          p_prefix: string
-          p_sort_column: string
-          p_sort_column_after: string
-          p_sort_order: string
-          p_start_after: string
-          p_start_after_version?: string
-        }
-        Returns: {
-          archived_at: string
-          created_at: string
-          id: string
-          is_delete_marker: boolean
-          is_versioned: boolean
-          key: string
-          last_accessed_at: string
-          metadata: Json
-          name: string
-          updated_at: string
-          version: string
-        }[]
-      }
-      search_v2: {
-        Args: {
-          bucket_name: string
-          delete_markers?: string
-          levels?: number
-          limits?: number
-          noncurrent_versions?: string
-          prefix: string
-          sort_column?: string
-          sort_column_after?: string
-          sort_order?: string
-          start_after?: string
-          start_after_archived_at?: string
-          start_after_is_continuation?: boolean
-          start_after_version?: string
-        }
-        Returns: {
-          archived_at: string
-          created_at: string
-          id: string
-          is_delete_marker: boolean
-          is_versioned: boolean
-          key: string
-          last_accessed_at: string
-          metadata: Json
-          name: string
-          updated_at: string
-          version: string
-        }[]
-      }
-    }
-    Enums: {
-      buckettype: "STANDARD" | "ANALYTICS" | "VECTOR"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -4518,15 +4290,7 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {},
-  },
-  storage: {
-    Enums: {
-      buckettype: ["STANDARD", "ANALYTICS", "VECTOR"],
-    },
   },
 } as const

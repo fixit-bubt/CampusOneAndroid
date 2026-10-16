@@ -251,7 +251,7 @@ export function HomeStatusStrips({ refreshTrigger }: { refreshTrigger?: number }
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
   const { C, isDark } = useTheme();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const t = useT();
   const uid = user?.id || 'guest';
 
@@ -1082,7 +1082,10 @@ export function HomeStatusStrips({ refreshTrigger }: { refreshTrigger?: number }
           </View>
         );
 
-      case 'routines':
+      case 'routines': {
+        const rDept = profile?.department?.trim() || 'CSE';
+        const rIntake = profile?.intake?.trim() || '51';
+        const rSec = profile?.section?.trim() || '2';
         return (
           <View key="routines" style={[styles.strip, { backgroundColor: C.surface, borderColor: C.border }]}>
             <StripPill id={id}
@@ -1097,22 +1100,23 @@ export function HomeStatusStrips({ refreshTrigger }: { refreshTrigger?: number }
 
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('RoutinesBrowse')} style={styles.metricCol}>
-                <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>Intake</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Classes</Text>
+                <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>{`${rDept} ${rIntake}`}</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{`Sec ${rSec}`}</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('RoutinesBrowse')} style={styles.metricCol}>
-                <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>Section</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Timing</Text>
+                <Text style={[styles.metricValText, { color: C.brand }]} numberOfLines={1}>Timetable</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Visual Grid</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('RoutinesBrowse')} style={styles.metricCol}>
-                <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>Final</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Exams</Text>
+                <Text style={[styles.metricValText, { color: SectorColors.routines }]} numberOfLines={1}>Exams</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Shifts & Rooms</Text>
               </TouchableOpacity>
             </View>
           </View>
         );
+      }
 
       case 'calendar':
         return (
