@@ -1921,6 +1921,41 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 - Departure Time selector standardized to 72dp Dropdown Card (`height: 72`, `borderRadius: 16`, 44×44 icon box).
 - Stepper, Fare, Meeting Point, Search, and Action Buttons strictly standardized to the Universal 58dp height standard (`height: 58`, `borderRadius: 16`).
 
+---
+
+## 40. Universal Direction Map Live GPS Bridge & Google Maps Search Preview Architecture
+
+### 40.1 Live GPS Dynamic Bridge (`DirectionMapModal.tsx`)
+- **Resolved Static BUBT Anchor:** Previously, while awaiting phone GPS satellite fix (500ms–2000ms), the MapLibre WebView initialized with BUBT Campus fallback (`23.8119, 90.3572`). Due to Android WebView prop caching, the blue pulsing dot remained on BUBT even after device GPS resolved.
+- **Two-Way JavaScript Bridge Synchronization:**
+  - MapLibre dispatches `MAP_READY` via `window.ReactNativeWebView.postMessage`.
+  - When `getCurrentUserCoordinates()` resolves, React Native immediately injects `window.updateOrigin(lng, lat, label)` directly into the active WebView session.
+  - Dynamically updates `originMarker.setLngLat([lng, lat])`, updates internal `startLng, startLat` closures, re-queries OSRM turn-by-turn road geometry, and calls `fitBothBounds()`.
+  - Floating target crosshairs control (`window.recenterToUser`) flies smoothly to real-time phone coordinates.
+- **Unified App-Wide Coverage:** Single component automatically powers all directional views across the app:
+  - **Marketplace:** Handover meetup spot directions (`MarketDetailScreen.tsx`).
+  - **Blood Donation:** Hospital navigation (`HospitalMapModal.tsx` wrapper).
+  - **Campus Rides:** Driver/passenger route (`RideRouteMapModal.tsx` wrapper).
+  - **Lost & Found:** Item claim/found spot directions (`LostFoundDetailScreen.tsx`).
+
+### 40.2 Google Maps Search Preview Architecture (`LocationPickerModal.tsx`)
+- **Live Search Distance & Real-Time Travel Mode Estimates:**
+  - Eagerly detects user GPS coordinates on modal mount.
+  - Search results display real-time user-relative distance (`📍 Mirpur 10 · 2.1 km away`).
+  - Selected place card (`selectedLocationCard72`) features an inline Google Maps travel time preview:
+    - 📍 Exact distance badge (`3.2 km`)
+    - 🚗 Car / CNG duration (`~9 min`)
+    - 🏍️ Bike duration (`~7 min`)
+    - 🚶 Walking duration (`~38 min`)
+- **Dual Universal 58dp Action Button Standard (`actionButtonsRow`):**
+  - **"Directions" Button (`directionsButton58`):** Universal 58dp outlined button (`Feather corner-up-right`) opening `DirectionMapModal` route preview directly over the map.
+  - **"Select Spot" Button (`confirmButton58Flex`):** Universal 58dp solid accent button (`Feather check`) confirming and returning the selected coordinates.
+- **App-Wide Parity:** Automatically available across all features using `LocationPickerModal`:
+  - Marketplace item posting (`MarketPostScreen.tsx`).
+  - Campus Rides offering (`RidePostScreen.tsx`).
+  - Lost & Found reporting (`PostItemFormScreen.tsx`).
+  - Commute & Blood area selection modals (`CommuteAreaPickerModal.tsx`, `AreaPickerModal.tsx`).
+
 
 
 

@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
-import { Feather } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { FontFamily, Layout, SectorColors, pillBg } from '../../theme';
 import { AnimatedIcon } from '../ui/AnimatedIcon';
@@ -56,6 +56,16 @@ interface RouteInfo {
   durationS: number;
 }
 
+function escapeMapLabel(raw: string): string {
+  return raw
+    .replace(/\\/g, '\\\\')
+    .replace(/[\r\n]+/g, ' ')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/'/g, "\\'")
+    .replace(/"/g, '&quot;');
+}
+
 function generateDirectionMapHtml(
   originCoords: Coordinates,
   originLabel: string,
@@ -76,8 +86,8 @@ function generateDirectionMapHtml(
   const initialCoordinatesJson = initialRoute ? JSON.stringify(initialRoute.coordinates) : 'null';
   const initialDistance = initialRoute ? initialRoute.distanceM : 0;
   const initialDuration = initialRoute ? initialRoute.durationS : 0;
-  const safeOriginLabel = originLabel.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-  const safeDestLabel = destLabel.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+  const safeOriginLabel = escapeMapLabel(originLabel);
+  const safeDestLabel = escapeMapLabel(destLabel);
 
   return `
 <!DOCTYPE html>
@@ -211,6 +221,8 @@ function generateDirectionMapHtml(
     var startLat = ${startLat};
     var destLng = ${destLng};
     var destLat = ${destLat};
+    var originMarker = null;
+    var destMarker = null;
 
     try {
       map = new maplibregl.Map({
@@ -226,7 +238,7 @@ function generateDirectionMapHtml(
       var originEl = document.createElement('div');
       originEl.className = 'origin-container';
       originEl.innerHTML = '<div class="origin-pulse"></div><div class="origin-dot"></div><div class="origin-tag">${safeOriginLabel}</div>';
-      new maplibregl.Marker({ element: originEl })
+      originMarker = new maplibregl.Marker({ element: originEl })
         .setLngLat([startLng, startLat])
         .addTo(map);
 
@@ -234,11 +246,12 @@ function generateDirectionMapHtml(
       var destEl = document.createElement('div');
       destEl.className = 'dest-container';
       destEl.innerHTML = '<div class="dest-pin"><div class="dest-pin-inner"></div></div><div class="dest-tag">${safeDestLabel}</div>';
-      new maplibregl.Marker({ element: destEl, anchor: 'bottom' })
+      destMarker = new maplibregl.Marker({ element: destEl, anchor: 'bottom' })
         .setLngLat([destLng, destLat])
         .addTo(map);
 
       function fitBothBounds() {
+        if (!map) return;
         var bounds = new maplibregl.LngLatBounds();
         bounds.extend([startLng, startLat]);
         bounds.extend([destLng, destLat]);
@@ -289,6 +302,9 @@ function generateDirectionMapHtml(
       }
 
       map.on('load', function() {
+        if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+          window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'MAP_READY' }));
+        }
         fitBothBounds();
         var initialCoords = ${initialCoordinatesJson};
         if (initialCoords && initialCoords.length > 0) {
@@ -297,14 +313,27 @@ function generateDirectionMapHtml(
       });
 
       // Exposed Global Methods for Native React Native Bridge
+      window.updateOrigin = function(lng, lat, label) {
+        startLng = Number(lng);
+        startLat = Number(lat);
+        if (originMarker) {
+          originMarker.setLngLat([startLng, startLat]);
+        }
+        if (label) {
+          var tag = originEl.querySelector('.origin-tag');
+          if (tag) tag.textContent = label;
+        }
+        fitBothBounds();
+      };
+
       window.recenterToUser = function() {
         if (!map) return;
-        map.flyTo({ center: [startLng, startLat], zoom: 15.5, duration: 800 });
+        map.flyTo({ center: [startLng, startLat], zoom: 16, duration: 800 });
       };
 
       window.recenterToDest = function() {
         if (!map) return;
-        map.flyTo({ center: [destLng, destLat], zoom: 15.5, duration: 800 });
+        map.flyTo({ center: [destLng, destLat], zoom: 16, duration: 800 });
       };
 
       window.fitRouteBounds = function() {
@@ -355,6 +384,32 @@ export function DirectionMapModal({
 
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
   const [routeLoading, setRouteLoading] = useState(false);
+  const mapReadyRef = useRef(false);
+
+  const handleWebViewMessage = useCallback((event: any) => {
+    try {
+      const data = JSON.parse(event.nativeEvent.data);
+      if (data.type === 'MAP_READY') {
+        mapReadyRef.current = true;
+        if (originCoords) {
+          webViewRef.current?.injectJavaScript(`
+            if (window.updateOrigin) {
+              window.updateOrigin(${originCoords.longitude}, ${originCoords.latitude}, '${originLabel.replace(/'/g, "\\'")}');
+            }
+            true;
+          `);
+        }
+        if (routeInfo?.coordinates) {
+          webViewRef.current?.injectJavaScript(`
+            if (window.updateRoute) {
+              window.updateRoute(${JSON.stringify(routeInfo.coordinates)});
+            }
+            true;
+          `);
+        }
+      }
+    } catch (e) {}
+  }, [originCoords, originLabel, routeInfo]);
 
   // 1. Resolve destination coordinates from DB / master landmarks / hospital registry
   const resolvedDest = useMemo(() => {
@@ -401,6 +456,7 @@ export function DirectionMapModal({
   // 2. Fetch origin coordinates (prop, master landmark, or live phone GPS)
   useEffect(() => {
     if (!visible) {
+      mapReadyRef.current = false;
       if (!propOriginCoords) {
         setOriginCoords(BUBT_COORDS);
         setOriginLabel('BUBT Campus');
@@ -433,6 +489,12 @@ export function DirectionMapModal({
         setOriginCoords(loc);
         setOriginLabel('Your Location');
         setIsLiveUserLocation(true);
+        webViewRef.current?.injectJavaScript(`
+          if (window.updateOrigin) {
+            window.updateOrigin(${loc.longitude}, ${loc.latitude}, 'Your Location');
+          }
+          true;
+        `);
       }
     });
 
@@ -641,6 +703,7 @@ export function DirectionMapModal({
               bounces={false}
               overScrollMode="never"
               startInLoadingState={true}
+              onMessage={handleWebViewMessage}
               renderLoading={() => (
                 <View style={[styles.mapLoader, { backgroundColor: C.surface }]}>
                   <ActivityIndicator size="large" color={sectorColor} />
@@ -715,7 +778,7 @@ export function DirectionMapModal({
                 onPress={() => setTravelMode('bicycling')}
                 activeOpacity={0.75}
               >
-                <Feather name="compass" size={13} color={travelMode === 'bicycling' ? sectorColor : C.textMuted} />
+                <MaterialCommunityIcons name="motorbike" size={15} color={travelMode === 'bicycling' ? sectorColor : C.textMuted} />
                 <Text style={[styles.modeTabTxt, { color: travelMode === 'bicycling' ? sectorColor : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
                   Bike / Ride
                 </Text>
@@ -980,8 +1043,8 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   modeTab: {
     flex: 1,
-    height: 36,
-    borderRadius: 18,
+    height: 44,
+    borderRadius: 22,
     borderWidth: 1,
     borderColor: 'transparent',
     flexDirection: 'row',
@@ -1092,7 +1155,7 @@ const styles = StyleSheet.create({
 
   // 58dp Primary Navigation Action Button
   startNavBtn: {
-    height: 54,
+    height: 58,
     borderRadius: 16,
     flexDirection: 'row',
     alignItems: 'center',

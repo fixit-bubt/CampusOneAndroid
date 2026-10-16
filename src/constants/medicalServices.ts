@@ -73,8 +73,8 @@ export const BUBT_CLINIC_INFO: ClinicInfo = {
   phoneDirect: '+8801741129235',
   email: 'medical@bubt.edu.bd',
   counselingEmail: 'moujuliet@bubt.edu.bd',
-  hoursDays: 'Sunday – Thursday',
-  hoursTime: '9:00 AM – 5:00 PM',
+  hoursDays: 'Sunday - Thursday',
+  hoursTime: '9:00 AM - 5:00 PM',
   closedDays: 'Friday & Saturday',
   eligibility: 'Free for all BUBT students, faculty members, and staff with valid ID card.',
   rules: [

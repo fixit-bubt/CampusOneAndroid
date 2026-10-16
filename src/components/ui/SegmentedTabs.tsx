@@ -43,16 +43,18 @@ export function SegmentedTabs<T extends string = string>({
 }: SegmentedTabsProps<T>) {
   const { C, isDark } = useTheme();
   const [trackWidth, setTrackWidth] = useState(0);
-  const animIndex = useRef(new Animated.Value(0)).current;
 
   const trackPadding = 4;
   const iconSize = 15.5;
 
   const foundIdx = tabs.findIndex((t) => t.id === activeTab);
   const activeIndex = foundIdx >= 0 ? foundIdx : -1;
+  const animIndex = useRef(new Animated.Value(Math.max(0, activeIndex))).current;
+  const prevIndexRef = useRef(activeIndex);
 
   useEffect(() => {
-    if (activeIndex >= 0) {
+    if (activeIndex >= 0 && prevIndexRef.current !== activeIndex) {
+      prevIndexRef.current = activeIndex;
       Animated.spring(animIndex, {
         toValue: activeIndex,
         tension: 190,

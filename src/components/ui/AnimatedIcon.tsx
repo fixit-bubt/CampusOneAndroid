@@ -178,7 +178,7 @@ export function AnimatedIcon({
       rotation.stopAnimation();
       translateY.stopAnimation();
     };
-  }, [animation, loop]);
+  }, [animation, loop, delay, name]);
 
   const handlePressIn = () => {
     Animated.spring(scale, {

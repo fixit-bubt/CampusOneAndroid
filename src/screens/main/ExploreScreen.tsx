@@ -95,7 +95,7 @@ export function ExploreScreen({ navigation }: any) {
     ? SECTORS.filter((s) => STAFF_SECTORS.includes(s.id))
     : isStudent
       ? SECTORS
-      : SECTORS.filter((s) => s.id !== 'lostfound' && s.id !== 'directory');
+      : SECTORS.filter((s) => s.id !== 'directory');
 
   // Pulls the role-filtered sectors in a group's own order (not SECTORS'
   // declaration order) - the group arrays already read in the order each
@@ -119,7 +119,7 @@ export function ExploreScreen({ navigation }: any) {
         onPress={() => navigation.navigate(SECTOR_ROUTE[s.id])}
         activeOpacity={0.7}
       >
-        <SectorIcon sector={s.id} size="md" animation="entrance" delay={index * 35} />
+        <SectorIcon sector={s.id} size="md" dark={isDark} animation="entrance" delay={index * 35} />
         <View style={{ flex: 1 }}>
           <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
             {title}
@@ -328,7 +328,7 @@ export function ExploreScreen({ navigation }: any) {
         {servicesSectors.length > 0 && (
           <CollapsibleSection
             title={t.exploreGroups.services}
-            subtitle={t.exploreGroups.servicesDesc}
+            subtitle={isStaff ? `${t.sectorTitles.medical}, ${t.sectorTitles.bus}` : t.exploreGroups.servicesDesc}
             icon="wrench"
             accentColor={SectorColors.reports}
             count={servicesSectors.length}
@@ -365,12 +365,12 @@ const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
 
   content: {
-    paddingTop: 4,
+    paddingTop: 10,
     paddingBottom: 20,
   } as ViewStyle,
 
   sectionHeader: {
-    paddingTop: 6,
+    paddingTop: 0,
     paddingBottom: 4,
     paddingHorizontal: 2,
     marginBottom: 4,

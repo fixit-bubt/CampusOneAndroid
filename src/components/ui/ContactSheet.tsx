@@ -3,6 +3,7 @@ import {
   View, Text, TouchableOpacity, Modal, StyleSheet,
   type ViewStyle,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { useTheme } from '../../hooks/useTheme';
@@ -37,6 +38,7 @@ export function ContactSheet({
   onClose,
 }: ContactSheetProps) {
   const { C, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
   const toast = useToast();
 
   if (!visible) return null;
@@ -62,7 +64,7 @@ export function ContactSheet({
           activeOpacity={1}
           onPress={onClose}
         />
-        <View style={[styles.sheet, { backgroundColor: C.surface, borderColor: C.border }]}>
+        <View style={[styles.sheet, { backgroundColor: C.surface, borderColor: C.border, paddingBottom: Math.max(insets.bottom + 16, 32) }]}>
           {/* Grab handle */}
           <View style={[styles.handle, { backgroundColor: C.border }]} />
 

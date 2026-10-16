@@ -80,16 +80,16 @@ export function CollapsibleSection({
             name={icon}
             size={20}
             color={activeColor}
-            animation={isOpen ? 'spring' : 'entrance'}
+            animation={isOpen ? 'spring' : 'none'}
           />
         </View>
 
         <View style={styles.titleCol}>
-          <Text style={[styles.title, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+          <Text style={[styles.title, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
             {title}
           </Text>
           {subtitle ? (
-            <Text style={[styles.subtitle, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
+            <Text style={[styles.subtitle, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
               {subtitle}
             </Text>
           ) : null}
@@ -125,12 +125,14 @@ export function CollapsibleSection({
           </>
         ) : null}
 
-        <Icon
-          name={isOpen ? 'chevD' : 'chevR'}
-          size={18}
-          color={isOpen ? activeColor : C.textMuted}
-          animation={isOpen ? 'spring' : 'none'}
-        />
+        <View style={styles.chevBox}>
+          <Icon
+            name={isOpen ? 'chevD' : 'chevR'}
+            size={18}
+            color={isOpen ? activeColor : C.textMuted}
+            animation={isOpen ? 'spring' : 'none'}
+          />
+        </View>
       </TouchableOpacity>
 
       {isOpen && <View style={styles.childContainer}>{children}</View>}
@@ -147,9 +149,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    padding: 14,
+    height: 72,
+    paddingHorizontal: 14,
     borderRadius: 16,
     borderWidth: 1,
+    overflow: 'visible',
   } as ViewStyle,
 
   iconBox: {
@@ -158,6 +162,15 @@ const styles = StyleSheet.create({
     borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'visible',
+  } as ViewStyle,
+
+  chevBox: {
+    width: 22,
+    height: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'visible',
   } as ViewStyle,
 
   titleCol: {

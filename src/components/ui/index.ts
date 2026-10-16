@@ -14,12 +14,5 @@ export {
   LiquidToggle,
   Toggle,
   LiquidSwitch,
-  GooeyFilter,
   TactileSwitch,
-  DefaultToggleDemo,
-  SuccessToggleDemo,
-  WarningToggleDemo,
-  DangerToggleDemo,
 } from './LiquidToggle';
-
-

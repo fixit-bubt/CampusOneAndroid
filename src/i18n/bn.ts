@@ -1731,6 +1731,7 @@ export const bn: Dict = {
     doctor: "ডাক্তার",
     availableNow: "এখন উপস্থিত",
     notAvailableNow: "এখন উপস্থিত নেই",
+    today: "আজ",
     walkInHours: "আজকের সময়সূচীর মধ্যে সরাসরি আসুন",
     hoursRange: (start: string, end: string) => `সময়: ${start} - ${end}`,
     schedule: "সময়সূচী",

@@ -8,7 +8,6 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
-import Svg, { Defs, Filter, FeGaussianBlur, FeColorMatrix, FeComposite } from 'react-native-svg';
 import { useTheme } from '../../hooks/useTheme';
 
 export type ToggleVariant = 'default' | 'success' | 'warning' | 'danger';
@@ -67,11 +66,10 @@ export function LiquidToggle({
   const trackWidth  = isSmall ? 44 : 52;
   const trackHeight = isSmall ? 26 : 32;
   const trackRadius = trackHeight / 2;
-  const thumbSize   = isSmall ? 20 : 24; // Plump, balanced, ergonomic diameter
-  const inset       = isSmall ? 3 : 4;   // Uniform 4dp margin (3dp on sm)
-  const travel      = trackWidth - thumbSize - inset * 2; // Exactly 20dp (18dp on sm)
+  const thumbSize   = isSmall ? 20 : 24;
+  const inset       = isSmall ? 3 : 4;
+  const travel      = trackWidth - thumbSize - inset * 2;
 
-  // Primary animation value (0 = OFF / left, 1 = ON / right)
   const posAnim   = useRef(new Animated.Value(isChecked ? 1 : 0)).current;
   const pressAnim = useRef(new Animated.Value(0)).current;
   const prevVal   = useRef(isChecked);
@@ -80,7 +78,6 @@ export function LiquidToggle({
     if (prevVal.current !== isChecked) {
       prevVal.current = isChecked;
 
-      // Primary fluid glide & stretch: 460ms silky smooth cubic bezier
       Animated.timing(posAnim, {
         toValue: isChecked ? 1 : 0,
         duration: 460,
@@ -115,34 +112,27 @@ export function LiquidToggle({
     triggerChange(!isChecked);
   };
 
-  // Color tokens
   const inactiveColor = trackColor?.false ?? (isDark ? C.surface3 : '#D2D6E9');
   const activeColor   = trackColor?.true ?? (variant ? VARIANT_COLORS[variant] : C.brand);
 
-  // 1. Fluid Horizontal Travel: from 0 (OFF / left) to travel (ON / right)
   const thumbTranslateX = posAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [0, travel],
     extrapolate: 'clamp',
   });
 
-  // 2. Liquid Viscous Elongation (Squash & Stretch along X-axis):
-  // Expands organically during mid-flight (peak at 0.50), then snaps back to 1.0
   const liquidStretchX = posAnim.interpolate({
     inputRange: [0, 0.25, 0.5, 0.75, 1],
     outputRange: [1.0, 1.24, 1.40, 1.24, 1.0],
     extrapolate: 'clamp',
   });
 
-  // 3. Liquid Vertical Compression (Volume conservation along Y-axis):
-  // Compresses organically during mid-flight (dip at 0.50), then recovers to 1.0
   const liquidCompressY = posAnim.interpolate({
     inputRange: [0, 0.25, 0.5, 0.75, 1],
     outputRange: [1.0, 0.90, 0.84, 0.90, 1.0],
     extrapolate: 'clamp',
   });
 
-  // 4. Tactile Press Squish (Touch down anticipation):
   const pressScaleX = pressAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [1.0, 1.08],
@@ -178,7 +168,6 @@ export function LiquidToggle({
           },
         ]}
       >
-        {/* Active track color overlay (Smooth crossfade on native RenderThread) */}
         <Animated.View
           style={[
             StyleSheet.absoluteFill,
@@ -190,7 +179,6 @@ export function LiquidToggle({
           ]}
         />
 
-        {/* Unified Liquid Droplet Thumb (Single cohesive body: ZERO seams, ZERO distortion, pure fluid) */}
         <Animated.View
           pointerEvents="none"
           style={[
@@ -217,85 +205,14 @@ export function LiquidToggle({
   );
 }
 
-/**
- * GooeyFilter: Provided for 1:1 parity with the web component specification.
- * Renders the SVG filter definitions (#goo) using react-native-svg primitives.
- */
-export function GooeyFilter() {
-  return (
-    <Svg width={0} height={0} style={styles.hiddenSvg} pointerEvents="none">
-      <Defs>
-        <Filter id="goo" x="-20%" y="-20%" width="140%" height="140%">
-          <FeGaussianBlur in="SourceGraphic" stdDeviation={2} result="blur" />
-          <FeColorMatrix
-            in="blur"
-            type="matrix"
-            values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7"
-            result="goo"
-          />
-          <FeComposite in="SourceGraphic" in2="goo" operator="atop" />
-        </Filter>
-      </Defs>
-    </Svg>
-  );
-}
-
-// Aliases for parity with user's component and existing codebase
 export const Toggle = LiquidToggle;
 export const LiquidSwitch = LiquidToggle;
 export const TactileSwitch = LiquidToggle;
 
-function ToggleWithState({ variant }: { variant: ToggleVariant }) {
-  const [checked, setChecked] = React.useState(false);
-  return (
-    <Toggle 
-      variant={variant}
-      checked={checked}
-      onCheckedChange={setChecked}
-    />
-  );
-}
-
-export function DefaultToggleDemo() {
-  return (
-    <View style={{ position: 'relative' }}>
-      <GooeyFilter />
-      <ToggleWithState variant="default" />
-    </View>
-  );
-}
-
-export function SuccessToggleDemo() {
-  return (
-    <View style={{ position: 'relative' }}>
-      <GooeyFilter />
-      <ToggleWithState variant="success" />
-    </View>
-  );
-}
-
-export function WarningToggleDemo() {
-  return (
-    <View style={{ position: 'relative' }}>
-      <GooeyFilter />
-      <ToggleWithState variant="warning" />
-    </View>
-  );
-}
-
-export function DangerToggleDemo() {
-  return (
-    <View style={{ position: 'relative' }}>
-      <GooeyFilter />
-      <ToggleWithState variant="danger" />
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   track: {
     position: 'relative',
-    overflow: 'hidden',
+    overflow: 'visible',
   },
   thumb: {
     position: 'absolute',
@@ -304,11 +221,5 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1.5 },
     shadowOpacity: 0.16,
     shadowRadius: 2.5,
-  },
-  hiddenSvg: {
-    position: 'absolute',
-    width: 0,
-    height: 0,
-    opacity: 0,
   },
 });

@@ -15,17 +15,20 @@ import {
 } from 'react-native';
 import { TactileSwitch } from '../../components/ui/TactileSwitch';
 import { useFocusEffect } from '@react-navigation/native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
+import { useApp } from '../../store/appStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
+import { useToast } from '../../components/ui/Toast';
+import { DirectionMapModal } from '../../components/location/DirectionMapModal';
 import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { getCache, setCache, CacheKeys } from '../../services/cacheService';
-import { useT } from '../../i18n';
+import { useT, type Dict } from '../../i18n';
 import {
   nowDhakaMinutes,
   dhakaWeekday,
@@ -63,15 +66,15 @@ function isClinicOpenNow(): boolean {
   const openDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu'];
   if (!openDays.includes(day)) return false;
   const mins = nowDhakaMinutes();
-  return mins >= 9 * 60 && mins <= 17 * 60;
+  return mins >= 9 * 60 && mins < 17 * 60;
 }
 
-function getDoctorDuty(doc: Doctor, C: any): DutyState {
+function getDoctorDuty(doc: Doctor, C: any, t: Dict): DutyState {
   if (doc.is_on_leave) {
     return {
       badge: 'on_leave',
-      label: 'On Leave',
-      sub: doc.leave_note || 'Absent today',
+      label: t.medical2.onLeaveBadge,
+      sub: doc.leave_note || t.medical2.onLeaveToday,
       color: C.danger,
       bg: C.dangerBg,
     };
@@ -79,7 +82,7 @@ function getDoctorDuty(doc: Doctor, C: any): DutyState {
   if (!doc.active) {
     return {
       badge: 'off_duty',
-      label: 'Inactive',
+      label: t.medical2.notAvailableNow,
       color: C.textMuted,
       bg: C.surface2,
     };
@@ -94,12 +97,12 @@ function getDoctorDuty(doc: Doctor, C: any): DutyState {
   const nowMins = nowDhakaMinutes();
 
   if (worksToday) {
-    if (nowMins >= startMins && nowMins <= endMins) {
+    if (nowMins >= startMins && nowMins < endMins) {
       const remaining = endMins - nowMins;
       return {
         badge: 'on_duty',
-        label: 'On Duty',
-        sub: remaining > 0 ? `Ends in ${fmtCountdown(remaining)}` : undefined,
+        label: t.medical2.onDuty,
+        sub: remaining > 0 ? t.medical2.endsIn(fmtCountdown(remaining)) : undefined,
         color: C.success,
         bg: C.successBg,
       };
@@ -108,8 +111,8 @@ function getDoctorDuty(doc: Doctor, C: any): DutyState {
       const until = startMins - nowMins;
       return {
         badge: 'starting_soon',
-        label: `Starts in ${fmtCountdown(until)}`,
-        sub: `Today ${formatTime12(doc.start_time)}`,
+        label: t.medical2.startsIn(fmtCountdown(until)),
+        sub: `${t.medical2.today} ${formatTime12(doc.start_time)}`,
         color: C.warn,
         bg: C.warnBg,
       };
@@ -117,14 +120,14 @@ function getDoctorDuty(doc: Doctor, C: any): DutyState {
     if (nowMins < startMins) {
       return {
         badge: 'off_duty',
-        label: `Today ${formatTime12(doc.start_time)}`,
+        label: `${t.medical2.today} ${formatTime12(doc.start_time)}`,
         color: C.textMuted,
         bg: C.surface2,
       };
     }
     return {
       badge: 'off_duty',
-      label: 'Shift Ended',
+      label: t.medical2.notAvailableNow,
       sub: `${formatTime12(doc.start_time)} - ${formatTime12(doc.end_time)}`,
       color: C.textMuted,
       bg: C.surface2,
@@ -142,7 +145,11 @@ function getDoctorDuty(doc: Doctor, C: any): DutyState {
 
 export function MedicalScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
   const t = useT();
+  const { lang } = useApp();
+  const isBn = lang === 'bn';
+  const toast = useToast();
   const { profile } = useAuth();
   const isAdmin = profile?.role === 'admin';
 
@@ -156,6 +163,7 @@ export function MedicalScreen({ navigation }: any) {
   const [selectedFilter, setSelectedFilter] = useState<FilterType>('all');
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [medSearchQuery, setMedSearchQuery] = useState('');
+  const [mapHospital, setMapHospital] = useState<EmergencyHospital | null>(null);
 
   const [editModalDoc, setEditModalDoc] = useState<Doctor | null>(null);
   const [editIsOnLeave, setEditIsOnLeave] = useState(false);
@@ -206,11 +214,11 @@ export function MedicalScreen({ navigation }: any) {
 
   const tabs: TabItem<MedicalTab>[] = useMemo(
     () => [
-      { id: 'staff', label: t.medical2.tabStaff },
-      { id: 'services', label: t.medical2.tabServices },
-      { id: 'emergency', label: t.medical2.tabEmergency },
+      { id: 'staff', label: t.medical2.tabStaff, icon: 'user-check', accentColor: MED_COLOR },
+      { id: 'services', label: t.medical2.tabServices, icon: 'activity', accentColor: MED_COLOR },
+      { id: 'emergency', label: t.medical2.tabEmergency, icon: 'alert-triangle', accentColor: C.danger },
     ],
-    [t]
+    [t, C.danger]
   );
 
   const filterOptions = useMemo(
@@ -218,29 +226,29 @@ export function MedicalScreen({ navigation }: any) {
       {
         id: 'all' as FilterType,
         label: t.medical2.filterAll,
-        sub: 'All medical officers and counseling specialists',
+        sub: isBn ? 'সব মেডিকেল অফিসার ও কাউন্সেলিং বিশেষজ্ঞ' : 'All medical officers and counseling specialists',
         icon: 'medical',
       },
       {
         id: 'doctors' as FilterType,
         label: t.medical2.filterDoctors,
-        sub: 'General physicians for fever, cold and consultations',
+        sub: isBn ? 'জ্বর, ঠাণ্ডা ও সাধারণ চিকিৎসার এমবিবিএস ডাক্তার' : 'General physicians for fever, cold and consultations',
         icon: 'user-check',
       },
       {
         id: 'psychologist' as FilterType,
         label: t.medical2.filterCounseling,
-        sub: 'Confidential psychological support and counseling',
+        sub: isBn ? 'মানসিক স্বাস্থ্য সহায়তা ও গোপনীয় কাউন্সেলিং' : 'Confidential psychological support and counseling',
         icon: 'heart',
       },
       {
         id: 'today' as FilterType,
         label: t.medical2.filterOnDuty,
-        sub: 'Staff members with active consultation hours today',
+        sub: isBn ? 'আজ যাদের নির্ধারিত ডিউটি ও পরামর্শের সময় রয়েছে' : 'Staff members with active consultation hours today',
         icon: 'clock',
       },
     ],
-    [t]
+    [t, isBn]
   );
 
   const selectedFilterObj = useMemo(
@@ -317,12 +325,18 @@ export function MedicalScreen({ navigation }: any) {
       .eq('id', editModalDoc.id);
 
     setSavingEdit(false);
-    if (!error) {
-      setDoctors((prev) =>
-        prev.map((d) => (d.id === editModalDoc.id ? { ...d, ...updates } : d))
-      );
-      setEditModalDoc(null);
+    if (error) {
+      toast({ type: 'error', title: t.common.error, message: error.message });
+      return;
     }
+
+    const updatedList = doctors.map((d) =>
+      d.id === editModalDoc.id ? { ...d, ...updates } : d
+    );
+    setDoctors(updatedList);
+    setCache(CacheKeys.DOCTORS, updatedList);
+    setEditModalDoc(null);
+    toast({ type: 'success', title: t.medical2.updatedSuccess });
   }
 
   function handleDialPhone(phone: string) {
@@ -330,10 +344,7 @@ export function MedicalScreen({ navigation }: any) {
   }
 
   function handleOpenHospitalMap(hospital: EmergencyHospital) {
-    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-      hospital.mapQuery
-    )}`;
-    openUrl(url);
+    setMapHospital(hospital);
   }
 
   return (
@@ -368,7 +379,7 @@ export function MedicalScreen({ navigation }: any) {
         >
           <View style={styles.heroTopRow}>
             <View style={[styles.heroIconBadge, { backgroundColor: MED_BG }]}>
-              <Icon name="medical" size={24} color={MED_COLOR} />
+              <Icon name="medical" size={24} color={MED_COLOR} animation="entrance" />
             </View>
             <View style={{ flex: 1 }}>
               <Text
@@ -505,7 +516,7 @@ export function MedicalScreen({ navigation }: any) {
                     { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
                   ]}
                 >
-                  ROSTER FILTER
+                  {isBn ? 'তালিকা ফিল্টার' : 'ROSTER FILTER'}
                 </Text>
                 <Text
                   style={[
@@ -538,7 +549,7 @@ export function MedicalScreen({ navigation }: any) {
             ) : (
               <View style={styles.doctorList}>
                 {filteredDoctors.map((doc) => {
-                  const duty = getDoctorDuty(doc, C);
+                  const duty = getDoctorDuty(doc, C, t);
                   const isPsych =
                     doc.role_type === 'psychologist' ||
                     (doc.specialty &&
@@ -759,7 +770,7 @@ export function MedicalScreen({ navigation }: any) {
                           },
                         ]}
                       >
-                        {srv.badge}
+                        {isBn ? srv.badgeBn : srv.badge}
                       </Text>
                     </View>
                   </View>
@@ -769,7 +780,7 @@ export function MedicalScreen({ navigation }: any) {
                       { color: C.text, fontFamily: FontFamily.jakartaBold },
                     ]}
                   >
-                    {srv.title}
+                    {isBn ? srv.titleBn : srv.title}
                   </Text>
                   <Text
                     style={[
@@ -777,7 +788,7 @@ export function MedicalScreen({ navigation }: any) {
                       { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
                     ]}
                   >
-                    {srv.desc}
+                    {isBn ? srv.descBn : srv.desc}
                   </Text>
                 </View>
               ))}
@@ -814,7 +825,7 @@ export function MedicalScreen({ navigation }: any) {
                   styles.searchInput,
                   { color: C.text, fontFamily: FontFamily.jakartaMedium },
                 ]}
-                placeholder="Search medicine or symptom (e.g. Napa, Antacid)..."
+                placeholder={isBn ? 'ওষুধ বা লক্ষণ খুঁজুন (যেমন প্যারাসিটামল, গ্যাস্ট্রিক)...' : 'Search medicine or symptom (e.g. Napa, Antacid)...'}
                 placeholderTextColor={C.textMuted}
                 value={medSearchQuery}
                 onChangeText={setMedSearchQuery}
@@ -840,7 +851,7 @@ export function MedicalScreen({ navigation }: any) {
                       { color: C.text, fontFamily: FontFamily.jakartaBold },
                     ]}
                   >
-                    No medicines matched your search
+                    {isBn ? 'আপনার অনুসন্ধানের সাথে কোনো ওষুধ মেলেনি' : 'No medicines matched your search'}
                   </Text>
                 </View>
               ) : (
@@ -869,7 +880,7 @@ export function MedicalScreen({ navigation }: any) {
                           { color: C.text, fontFamily: FontFamily.jakartaBold },
                         ]}
                       >
-                        {med.name}
+                        {isBn ? med.nameBn : med.name}
                       </Text>
                       <Text
                         style={[
@@ -877,7 +888,7 @@ export function MedicalScreen({ navigation }: any) {
                           { color: MED_COLOR, fontFamily: FontFamily.jakartaMedium },
                         ]}
                       >
-                        {med.category}
+                        {isBn ? med.categoryBn : med.category}
                       </Text>
                       <Text
                         style={[
@@ -885,7 +896,7 @@ export function MedicalScreen({ navigation }: any) {
                           { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
                         ]}
                       >
-                        Indications: {med.useFor}
+                        {isBn ? `ব্যবহার: ${med.useForBn}` : `Indications: ${med.useFor}`}
                       </Text>
                     </View>
                   </View>
@@ -907,7 +918,7 @@ export function MedicalScreen({ navigation }: any) {
             >
               <View style={styles.emergencyBannerTop}>
                 <View style={[styles.emIconRound, { backgroundColor: C.danger }]}>
-                  <Icon name="alert-triangle" size={20} color={C.white} />
+                  <Icon name="alert-triangle" size={20} color={C.white} animation="pulse" />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text
@@ -930,7 +941,7 @@ export function MedicalScreen({ navigation }: any) {
               </View>
             </View>
 
-            {/* Immediate Contacts */}
+            {/* Immediate Contacts (72dp Standard) */}
             <View style={styles.hotlineList}>
               {EMERGENCY_CONTACTS.map((cnt) => (
                 <TouchableOpacity
@@ -961,7 +972,7 @@ export function MedicalScreen({ navigation }: any) {
                       color={cnt.isNational ? C.white : C.info}
                     />
                   </View>
-                  <View style={{ flex: 1 }}>
+                  <View style={{ flex: 1, minWidth: 0 }}>
                     <Text
                       style={[
                         styles.hotlineTitle,
@@ -970,16 +981,18 @@ export function MedicalScreen({ navigation }: any) {
                           fontFamily: FontFamily.jakartaBold,
                         },
                       ]}
+                      numberOfLines={1}
                     >
-                      {cnt.title}
+                      {isBn ? cnt.titleBn : cnt.title}
                     </Text>
                     <Text
                       style={[
                         styles.hotlineSub,
                         { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
                       ]}
+                      numberOfLines={1}
                     >
-                      {cnt.sub}
+                      {isBn ? cnt.subBn : cnt.sub}
                     </Text>
                   </View>
                   <View
@@ -1006,7 +1019,7 @@ export function MedicalScreen({ navigation }: any) {
               ))}
             </View>
 
-            {/* Emergency Blood Request Bridge */}
+            {/* Emergency Blood Request Bridge (72dp Standard) */}
             <TouchableOpacity
               style={[
                 styles.bloodBridgeCard,
@@ -1016,7 +1029,7 @@ export function MedicalScreen({ navigation }: any) {
               activeOpacity={0.75}
             >
               <View style={[styles.bloodBridgeIconTile, { backgroundColor: `${SectorColors.blood}18` }]}>
-                <Icon name="blood" size={19} color={SectorColors.blood} />
+                <Icon name="blood" size={20} color={SectorColors.blood} />
               </View>
               <View style={styles.bloodBridgeBody}>
                 <Text
@@ -1024,16 +1037,18 @@ export function MedicalScreen({ navigation }: any) {
                     styles.bloodBridgeTitle,
                     { color: C.text, fontFamily: FontFamily.jakartaBold },
                   ]}
+                  numberOfLines={1}
                 >
-                  Need Emergency Blood for Patient?
+                  {isBn ? 'রোগীর জন্য জরুরি রক্ত প্রয়োজন?' : 'Need Emergency Blood for Patient?'}
                 </Text>
                 <Text
                   style={[
                     styles.bloodBridgeSub,
                     { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
                   ]}
+                  numberOfLines={1}
                 >
-                  Find active donors or post urgent blood request
+                  {isBn ? 'রক্তদাতা খুঁজুন অথবা জরুরি রক্তের অনুরোধ পোস্ট করুন' : 'Find active donors or post urgent blood request'}
                 </Text>
               </View>
               <Icon name="chevR" size={17} color={C.textMuted} />
@@ -1074,7 +1089,7 @@ export function MedicalScreen({ navigation }: any) {
                           { color: C.text, fontFamily: FontFamily.jakartaBold },
                         ]}
                       >
-                        {hosp.name}
+                        {isBn ? hosp.nameBn : hosp.name}
                       </Text>
                       <Text
                         style={[
@@ -1082,7 +1097,7 @@ export function MedicalScreen({ navigation }: any) {
                           { color: MED_COLOR, fontFamily: FontFamily.jakartaMedium },
                         ]}
                       >
-                        {hosp.type}
+                        {isBn ? hosp.typeBn : hosp.type}
                       </Text>
                       <Text
                         style={[
@@ -1102,7 +1117,7 @@ export function MedicalScreen({ navigation }: any) {
                           { color: C.text2, fontFamily: FontFamily.jakartaBold },
                         ]}
                       >
-                        {hosp.distance}
+                        {isBn ? hosp.distanceBn : hosp.distance}
                       </Text>
                     </View>
                   </View>
@@ -1124,6 +1139,9 @@ export function MedicalScreen({ navigation }: any) {
                           styles.hospActionTxt,
                           { color: MED_COLOR, fontFamily: FontFamily.jakartaBold },
                         ]}
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                        minimumFontScale={0.82}
                       >
                         {t.medical2.callHotline} ({hosp.hotline})
                       </Text>
@@ -1143,6 +1161,7 @@ export function MedicalScreen({ navigation }: any) {
                           styles.hospMapTxt,
                           { color: C.text, fontFamily: FontFamily.jakartaBold },
                         ]}
+                        numberOfLines={1}
                       >
                         {t.medical2.getDirections}
                       </Text>
@@ -1170,7 +1189,16 @@ export function MedicalScreen({ navigation }: any) {
             activeOpacity={1}
             onPress={() => setFilterModalVisible(false)}
           />
-          <View style={[styles.sheetCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+          <View
+            style={[
+              styles.sheetCard,
+              {
+                backgroundColor: C.surface,
+                borderColor: C.border,
+                paddingBottom: Math.max(insets.bottom + 16, 34),
+              },
+            ]}
+          >
             <View style={styles.sheetHandle}>
               <View style={[styles.sheetHandleBar, { backgroundColor: C.border }]} />
             </View>
@@ -1181,7 +1209,7 @@ export function MedicalScreen({ navigation }: any) {
                 { color: C.text, fontFamily: FontFamily.jakartaBold },
               ]}
             >
-              Filter Medical Staff
+              {isBn ? 'মেডিকেল স্টাফ ফিল্টার করুন' : 'Filter Medical Staff'}
             </Text>
 
             <View style={{ gap: 8, marginTop: 10 }}>
@@ -1221,7 +1249,7 @@ export function MedicalScreen({ navigation }: any) {
                     >
                       <Icon
                         name={opt.icon}
-                        size={17}
+                        size={18}
                         color={isSelected ? C.white : MED_COLOR}
                       />
                     </View>
@@ -1234,6 +1262,7 @@ export function MedicalScreen({ navigation }: any) {
                             fontFamily: FontFamily.jakartaBold,
                           },
                         ]}
+                        numberOfLines={1}
                       >
                         {opt.label}
                       </Text>
@@ -1278,7 +1307,16 @@ export function MedicalScreen({ navigation }: any) {
             activeOpacity={1}
             onPress={() => setEditModalDoc(null)}
           />
-          <View style={[styles.sheetCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+          <View
+            style={[
+              styles.sheetCard,
+              {
+                backgroundColor: C.surface,
+                borderColor: C.border,
+                paddingBottom: Math.max(insets.bottom + 16, 34),
+              },
+            ]}
+          >
             <View style={styles.sheetHandle}>
               <View style={[styles.sheetHandleBar, { backgroundColor: C.border }]} />
             </View>
@@ -1311,12 +1349,14 @@ export function MedicalScreen({ navigation }: any) {
                   {editModalDoc.specialty}
                 </Text>
 
-                {/* Leave toggle */}
-                <View
+                {/* Leave toggle (72dp full-row interactive standard) */}
+                <TouchableOpacity
                   style={[
                     styles.toggleRow,
                     { backgroundColor: C.surface2, borderColor: C.border },
                   ]}
+                  onPress={() => setEditIsOnLeave((v) => !v)}
+                  activeOpacity={0.8}
                 >
                   <View style={{ flex: 1 }}>
                     <Text
@@ -1324,6 +1364,7 @@ export function MedicalScreen({ navigation }: any) {
                         styles.toggleLabel,
                         { color: C.text, fontFamily: FontFamily.jakartaBold },
                       ]}
+                      numberOfLines={1}
                     >
                       {t.medical2.markOnLeave}
                     </Text>
@@ -1332,8 +1373,9 @@ export function MedicalScreen({ navigation }: any) {
                         styles.toggleSub,
                         { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
                       ]}
+                      numberOfLines={1}
                     >
-                      Displays an on-leave warning to students
+                      {isBn ? 'শিক্ষার্থীদের কাছে ছুটির সতর্কবার্তা দেখাবে' : 'Displays an on-leave warning to students'}
                     </Text>
                   </View>
                   <TactileSwitch
@@ -1341,8 +1383,7 @@ export function MedicalScreen({ navigation }: any) {
                     onValueChange={setEditIsOnLeave}
                     variant="danger"
                   />
-
-                </View>
+                </TouchableOpacity>
 
                 {/* Leave reason input */}
                 {editIsOnLeave && (
@@ -1381,7 +1422,7 @@ export function MedicalScreen({ navigation }: any) {
                       { color: C.text2, fontFamily: FontFamily.jakartaBold },
                     ]}
                   >
-                    Room / Location
+                    {t.medical2.location}
                   </Text>
                   <TextInput
                     style={[
@@ -1428,6 +1469,20 @@ export function MedicalScreen({ navigation }: any) {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      {/* Interactive Hospital Route & Directions Modal */}
+      {mapHospital && (
+        <DirectionMapModal
+          visible={!!mapHospital}
+          onClose={() => setMapHospital(null)}
+          destination={mapHospital.name}
+          destinationSub={mapHospital.address}
+          title={isBn ? mapHospital.nameBn : mapHospital.name}
+          sectorColor={MED_COLOR}
+          iconName="activity"
+          badgeText={isBn ? mapHospital.distanceBn : mapHospital.distance}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -1454,6 +1509,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'visible',
   } as ViewStyle,
   heroTitle: { fontSize: 16 } as any,
   heroSub: { fontSize: 12, marginTop: 2 } as any,
@@ -1663,6 +1719,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'visible',
   } as ViewStyle,
   emergencyBannerTitle: { fontSize: 14 } as any,
   emergencyBannerSub: { fontSize: 12, marginTop: 3 } as any,
@@ -1671,14 +1728,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    padding: 13,
-    borderRadius: 14,
+    height: 72,
+    paddingHorizontal: 14,
+    borderRadius: 16,
     borderWidth: 1,
   } as ViewStyle,
   hotlineIconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
@@ -1722,17 +1780,18 @@ const styles = StyleSheet.create({
   hospActionsRow: { flexDirection: 'row', gap: 10, marginTop: 11 } as ViewStyle,
   hospActionBtn: {
     flex: 1,
-    height: 48,
-    borderRadius: 12,
+    height: 58,
+    borderRadius: 16,
+    paddingHorizontal: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
   } as ViewStyle,
-  hospActionTxt: { fontSize: 13 } as any,
+  hospActionTxt: { fontSize: 13, flexShrink: 1 } as any,
   hospMapBtn: {
-    height: 48,
-    borderRadius: 12,
+    height: 58,
+    borderRadius: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1742,21 +1801,21 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   hospMapTxt: { fontSize: 13 } as any,
 
-  // Emergency Blood Bridge Card
+  // Emergency Blood Bridge Card (72dp 2-Line Standard)
   bloodBridgeCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    height: 58,
+    height: 72,
     borderRadius: 16,
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     borderWidth: 1,
     marginTop: 12,
   } as ViewStyle,
   bloodBridgeIconTile: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
@@ -1765,14 +1824,14 @@ const styles = StyleSheet.create({
     minWidth: 0,
   } as ViewStyle,
   bloodBridgeTitle: {
-    fontSize: 13.5,
+    fontSize: 14,
   } as any,
   bloodBridgeSub: {
-    fontSize: 11,
-    marginTop: 1.5,
+    fontSize: 11.5,
+    marginTop: 2,
   } as any,
 
-  // Sheet Card & Picker Bars
+  // Sheet Card & Picker Bars (72dp 2-Line Option Bar Standard)
   modalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
@@ -1806,24 +1865,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    height: 58,
-    borderRadius: 14,
+    height: 72,
+    borderRadius: 16,
     paddingHorizontal: 14,
     borderWidth: 1,
   } as ViewStyle,
   pickerIconTile: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
   pickerBarText: {
-    fontSize: 13.5,
+    fontSize: 14,
   } as any,
   pickerBarSub: {
-    fontSize: 11,
-    marginTop: 1.5,
+    fontSize: 11.5,
+    marginTop: 2,
   } as any,
   checkCircle: {
     width: 22,
@@ -1839,15 +1898,17 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
   } as ViewStyle,
 
-  // Admin Modal Controls (58dp Standard)
+  // Admin Modal Controls
   modalContent: {} as ViewStyle,
   modalDocName: { fontSize: 15 } as any,
   modalDocSpec: { fontSize: 12.5, marginTop: 2, marginBottom: 14 } as any,
   toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 14,
-    borderRadius: 14,
+    gap: 12,
+    height: 72,
+    paddingHorizontal: 14,
+    borderRadius: 16,
     borderWidth: 1,
   } as ViewStyle,
   toggleLabel: { fontSize: 13.5 } as any,

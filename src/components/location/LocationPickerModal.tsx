@@ -17,11 +17,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import Svg, { Path, Circle } from 'react-native-svg';
-import { Feather } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useToast } from '../ui/Toast';
 import { AnimatedIcon } from '../ui/AnimatedIcon';
 import { FontFamily, Layout, SectorColors } from '../../theme';
+import { DirectionMapModal } from './DirectionMapModal';
 import {
   BUBT_COORDS,
   getCurrentUserCoordinates,
@@ -30,6 +31,7 @@ import {
   searchPlacesLocal,
   searchPlacesOnline,
   getDistanceMeters,
+  isWithinBangladesh,
   type Coordinates,
   type GeocodedPlace,
 } from '../../services/locationService';
@@ -307,11 +309,54 @@ export function LocationPickerModal({
   const [locatingGps, setLocatingGps] = useState(false);
   const [geocoding, setGeocoding] = useState(false);
   const [mapError, setMapError] = useState(false);
+  const [userGpsCoords, setUserGpsCoords] = useState<Coordinates | null>(null);
+  const [showDirections, setShowDirections] = useState(false);
+
   const isProgrammaticMoveRef = useRef(false);
   const selectionLockUntilRef = useRef<number>(0);
   const currentCoordsRef = useRef<Coordinates>(startCoords);
   const searchAbortRef = useRef<AbortController | null>(null);
   const reverseGeocodeAbortRef = useRef<AbortController | null>(null);
+
+  // Eagerly fetch user GPS on modal open to calculate distance and driving times
+  useEffect(() => {
+    if (!visible) return;
+    let active = true;
+    getCurrentUserCoordinates().then(loc => {
+      if (!active || !loc) return;
+      if (isWithinBangladesh(loc)) {
+        setUserGpsCoords(loc);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [visible]);
+
+  // Google Maps Style Live Distance & Travel Estimates for Selected Place
+  const placeMetrics = useMemo(() => {
+    if (!selectedPlace?.coords) return null;
+    const origin = userGpsCoords || BUBT_COORDS;
+    const meters = getDistanceMeters(
+      origin.latitude,
+      origin.longitude,
+      selectedPlace.coords.latitude,
+      selectedPlace.coords.longitude
+    );
+    if (!Number.isFinite(meters) || meters < 0) return null;
+    const distanceKm = Number((meters / 1000).toFixed(1));
+    const carMins = Math.max(1, Math.round((distanceKm / 22) * 60));
+    const bikeMins = Math.max(1, Math.round((distanceKm / 28) * 60));
+    const walkMins = Math.max(1, Math.round((distanceKm / 4.5) * 60));
+    return {
+      distanceKm,
+      distanceText: distanceKm < 1 ? `${Math.round(meters)} m` : `${distanceKm} km`,
+      carMins,
+      bikeMins,
+      walkMins,
+      isUserLoc: !!userGpsCoords,
+    };
+  }, [selectedPlace, userGpsCoords]);
 
   // Memoize HTML template to prevent unnecessary WebView reloads during typing or panning
   const mapHtml = useMemo(
@@ -426,9 +471,10 @@ export function LocationPickerModal({
     }
 
     const trimmed = text.trim();
+    const referenceOrigin = userGpsCoords || currentCoordsRef.current;
 
     // 1. Instant 0ms synchronous local landmark match
-    const local = searchPlacesLocal(trimmed, currentCoordsRef.current, 8);
+    const local = searchPlacesLocal(trimmed, referenceOrigin, 8);
     setSearchResults(local);
 
     if (trimmed.length < 2) {
@@ -450,7 +496,7 @@ export function LocationPickerModal({
 
     searchDebounceRef.current = setTimeout(async () => {
       try {
-        const combined = await searchPlacesOnline(trimmed, currentCoordsRef.current, controller.signal);
+        const combined = await searchPlacesOnline(trimmed, referenceOrigin, controller.signal);
         if (!controller.signal.aborted) {
           setSearchResults(combined);
         }
@@ -462,7 +508,7 @@ export function LocationPickerModal({
         }
       }
     }, 280);
-  }, []);
+  }, [userGpsCoords]);
 
   // Handle GPS "Use My Current Location"
   const handleUseCurrentLocation = async () => {
@@ -480,6 +526,8 @@ export function LocationPickerModal({
         setLocatingGps(false);
         return;
       }
+
+      setUserGpsCoords(gpsCoords);
 
       selectionLockUntilRef.current = 0; // Clear any search selection lock
       isProgrammaticMoveRef.current = false; // Allow reverse geocoding to resolve address
@@ -1223,6 +1271,36 @@ export function LocationPickerModal({
               >
                 {selectedPlace.subText || `${selectedPlace.coords.latitude.toFixed(4)}, ${selectedPlace.coords.longitude.toFixed(4)}`}
               </Text>
+
+              {/* Google Maps Distance & Travel Time Quick Estimates */}
+              {placeMetrics && (
+                <View style={styles.travelEstimatesRow}>
+                  <View style={[styles.previewDistancePill, { backgroundColor: isDark ? '#1e293b' : '#f1f5f9', borderColor: C.border }]}>
+                    <Feather name="navigation" size={10} color={accentColor} style={{ marginRight: 4 }} />
+                    <Text style={[styles.previewDistanceTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                      {placeMetrics.distanceText}
+                    </Text>
+                  </View>
+                  <View style={styles.estimateModeItem}>
+                    <MaterialCommunityIcons name="car" size={13} color={C.textMuted} />
+                    <Text style={[styles.estimateModeTxt, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
+                      {placeMetrics.carMins}m
+                    </Text>
+                  </View>
+                  <View style={styles.estimateModeItem}>
+                    <MaterialCommunityIcons name="motorbike" size={13} color={C.textMuted} />
+                    <Text style={[styles.estimateModeTxt, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
+                      {placeMetrics.bikeMins}m
+                    </Text>
+                  </View>
+                  <View style={styles.estimateModeItem}>
+                    <Feather name="user" size={11} color={C.textMuted} />
+                    <Text style={[styles.estimateModeTxt, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
+                      {placeMetrics.walkMins}m
+                    </Text>
+                  </View>
+                </View>
+              )}
             </View>
 
             {geocoding && (
@@ -1230,29 +1308,68 @@ export function LocationPickerModal({
             )}
           </View>
 
-          {/* Universal 58dp Primary Action CTA Standard */}
-          <TouchableOpacity
-            style={[
-              styles.confirmButton58,
-              {
-                backgroundColor: accentColor,
-                marginBottom: Math.max(insets.bottom, 14),
-              },
-            ]}
-            onPress={handleConfirmLocation}
-            activeOpacity={0.85}
-          >
-            <Feather name="check" size={20} color="#ffffff" style={{ marginRight: 8 }} />
-            <Text
+          {/* Dual Action Buttons Row (Universal 58dp Height Standard) */}
+          <View style={[styles.actionButtonsRow, { marginBottom: Math.max(insets.bottom, 14) }]}>
+            {/* 1. "How to Go / Directions" Button (Opens DirectionMapModal) */}
+            <TouchableOpacity
               style={[
-                styles.confirmButtonText,
-                { fontFamily: FontFamily.jakartaExtraBold },
+                styles.directionsButton58,
+                {
+                  backgroundColor: isDark ? `${accentColor}22` : `${accentColor}12`,
+                  borderColor: accentColor,
+                },
               ]}
+              onPress={() => setShowDirections(true)}
+              activeOpacity={0.85}
+              accessibilityLabel="View route directions"
             >
-              Confirm Location
-            </Text>
-          </TouchableOpacity>
+              <Feather name="corner-up-right" size={17} color={accentColor} style={{ marginRight: 6 }} />
+              <Text style={[styles.directionsButtonText, { color: accentColor, fontFamily: FontFamily.jakartaBold }]}>
+                Directions
+              </Text>
+            </TouchableOpacity>
+
+            {/* 2. Primary "Confirm Location" Button */}
+            <TouchableOpacity
+              style={[
+                styles.confirmButton58Flex,
+                {
+                  backgroundColor: accentColor,
+                },
+              ]}
+              onPress={handleConfirmLocation}
+              activeOpacity={0.85}
+              accessibilityLabel="Select this spot"
+            >
+              <Feather name="check" size={19} color="#ffffff" style={{ marginRight: 6 }} />
+              <Text
+                style={[
+                  styles.confirmButtonText,
+                  { fontFamily: FontFamily.jakartaExtraBold },
+                ]}
+              >
+                Select Spot
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
+
+        {/* Full-Screen Directions & Route Preview Modal */}
+        {showDirections && (
+          <DirectionMapModal
+            visible={showDirections}
+            onClose={() => setShowDirections(false)}
+            destination={selectedPlace.name}
+            destinationSub={selectedPlace.subText}
+            destinationCoords={selectedPlace.coords}
+            origin="Your Location"
+            originCoords={userGpsCoords}
+            title={title || 'Route & Directions'}
+            sectorColor={accentColor}
+            iconName="corner-up-right"
+            badgeText="Route Preview"
+          />
+        )}
       </View>
     </Modal>
   );
@@ -1539,6 +1656,66 @@ const styles = StyleSheet.create({
   locationSubtitle: {
     fontSize: 11.5,
     marginTop: 2,
+  },
+  travelEstimatesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 5,
+  },
+  previewDistancePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  previewDistanceTxt: {
+    fontSize: 10.5,
+  },
+  estimateModeItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  estimateModeTxt: {
+    fontSize: 11,
+  },
+  actionButtonsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  directionsButton58: {
+    flex: 1,
+    height: Layout.controlHeight, // 58dp
+    borderRadius: Layout.controlRadius, // 16dp
+    borderWidth: 1.5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  directionsButtonText: {
+    fontSize: 14.5,
+  },
+  confirmButton58Flex: {
+    flex: 1.25,
+    height: Layout.controlHeight, // 58dp
+    borderRadius: Layout.controlRadius, // 16dp
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.32,
+    shadowRadius: 8,
+    elevation: 6,
   },
   /* Universal 58dp Primary Action CTA Standard */
   confirmButton58: {

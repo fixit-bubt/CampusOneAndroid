@@ -67,7 +67,7 @@ function getDoctorDuty(doc: Doctor, C: any): DutyState {
   const nowMins = nowDhakaMinutes();
 
   if (worksToday) {
-    if (nowMins >= startMins && nowMins <= endMins) {
+    if (nowMins >= startMins && nowMins < endMins) {
       const remaining = endMins - nowMins;
       return {
         badge: 'on_duty',
@@ -218,7 +218,9 @@ export function DoctorDetailScreen({ route, navigation }: any) {
     (doctor.specialty && doctor.specialty.toLowerCase().includes('psycholog'));
 
   const contactPhone = doctor.phone || BUBT_CLINIC_INFO.phoneDirect;
-  const contactEmail = doctor.email || BUBT_CLINIC_INFO.email;
+  const contactEmail =
+    doctor.email ||
+    (isPsych ? BUBT_CLINIC_INFO.counselingEmail : BUBT_CLINIC_INFO.email);
 
   function handleDial() {
     openUrl(`tel:${contactPhone.replace(/\s+/g, '')}`);
@@ -264,6 +266,7 @@ export function DoctorDetailScreen({ route, navigation }: any) {
               name={isPsych ? 'heart' : 'medical'}
               size={26}
               color={isPsych ? '#a855f7' : MED_COLOR}
+              animation="entrance"
             />
           </View>
           <View style={{ flex: 1 }}>
@@ -324,6 +327,7 @@ export function DoctorDetailScreen({ route, navigation }: any) {
               }
               size={20}
               color={C.white}
+              animation={duty.badge === 'on_duty' ? 'spring' : 'none'}
             />
           </View>
           <View style={{ flex: 1 }}>
@@ -469,7 +473,7 @@ export function DoctorDetailScreen({ route, navigation }: any) {
           <ScheduleRow
             icon="clock"
             label={t.medical2.hours}
-            value={`${formatTime12(doctor.start_time)} – ${formatTime12(
+            value={`${formatTime12(doctor.start_time)} - ${formatTime12(
               doctor.end_time
             )}`}
             C={C}
