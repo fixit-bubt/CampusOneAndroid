@@ -95,6 +95,12 @@ The project is consolidating all third-party services and infrastructure under t
 5. **Custom SMTP Roadmap (Deferred to Custom Domain):**
    - Default Supabase email service remains active for transactional signups and password resets; 95%+ of students authenticate via unified Google OAuth.
    - Custom SMTP (via Resend or Brevo) will be configured once the custom production domain (`campusonebubt.com`) is connected with DNS records (SPF/DKIM).
+6. **Google Gemini API Key Handover (Completed):**
+   - Master Gemini API key generated under `campusone2026@gmail.com` via Google AI Studio, linked to project `campusone` (`22710751786` / `campusone-511812`).
+   - Securely deployed to Supabase Edge Function Secrets on `xhgpxvyqrufbbuivttmi` as `GEMINI_API_KEY`, powering the in-app AI assistant via `gemini-flash-lite-latest`.
+7. **Decommissioning of Old Personal Project (Completed):**
+   - Old legacy project `campusone-853e6` (project number `331304129737`) under personal Gmail was cleanly decommissioned and shut down on October 16, 2026.
+   - Isolation guarantee: Personal Google Cloud projects and personal Google Play Console developer account remain 100% active and untouched.
 
 ---
 
