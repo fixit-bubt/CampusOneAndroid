@@ -599,7 +599,19 @@ In `RootNavigator.tsx`, students who have not completed onboarding (`!profile?.s
 - **Capabilities:** Photos to PDF, PDF Merge, Organize/Reorder Pages, Compress.
 - **Zero Schema Change:** Does not touch Supabase or upload files.
 
-### 10.3 Direct FCM Push Notifications
+### 10.3 BUBT Cover Page Generator
+- **Location:** `src/screens/coverpage/CoverPageFormScreen.tsx`
+- **Standardized 72dp Layout:** All document type selectors, course fields, assignment/lab inputs, student info, and faculty dropdown bars are strictly standardized to 72dp (`height: 72`, `paddingHorizontal: 14`, `borderRadius: 16`, `borderLeftWidth: 4.5, borderLeftColor: SectorColors.coverpage`, 42×42 neutral icon box) matching the signature `childBar` design from `ExploreScreen.tsx`.
+- **72dp Dropdown Sheets:** Bottom sheets for Document Type, Course, Faculty, Program, and Designation render each selectable option as a distinct, comfortable 72dp bar with icons and chevrons.
+- **Zero-Block Instant PDF Generation:** Removed all field-level blocking. If a student leaves fields blank, the engine fills them with clean academic blanks (`____________________`), enabling students to print blank official university cover pages for handwriting.
+- **Integrated View, Download & Share Suite:**
+  - `View Document`: Opens the full-screen interactive in-app PDF viewer via `CampusPdfViewerModal`.
+  - `Save to Device / Download`: Uses `savePdfToDevice` via Android StorageAccessFramework to save into the user's `Downloads` directory.
+  - `Share Cover Page`: Uses `sharePdf` to trigger the Android native share sheet.
+  - `Print Directly`: Uses `Print.printAsync` to send the document to a wireless printer or print service.
+- **BUBT Official Layouts:** Supports Assignment (Double-border, side-by-side Submitted To & By), Lab Report (Dual dates: Experiment & Submission, Experiment No/Name), Project Report (Group members 1-5 with ID), Internship Report (Academic + Company Supervisor), and Lab Index (15-40 customizable table rows).
+
+### 10.4 Direct FCM Push Notifications
 - **Firebase Project:** `campusone-511812`
 - **Mechanism:** Trigger on `notifications` table (`trg_push_on_notification`) → `pg_net` HTTP post → `send-push` Edge Function → Google Service Account OAuth → FCM v1.
 - **Emergency Channel:** Android native channel `emergency_blood` (`AndroidImportance.MAX`, double-pulse vibration `[0, 500, 200, 500]`, heads-up lockscreen banner). FCM messages with `sector === 'blood'` are routed directly to this channel.
