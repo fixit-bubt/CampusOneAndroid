@@ -293,20 +293,43 @@ export function CampusPdfViewerModal({
             </Animated.View>
           )}
 
-          {/* Loading Skeleton */}
+          {/* Elegant Document Skeleton Loading Preview */}
           {loading && !errorMsg && (
-            <View style={[styles.centerOverlay, { backgroundColor: isDark ? '#000000' : '#f8fafc' }]}>
-              <View style={[styles.loaderBox, { backgroundColor: isDark ? '#121212' : '#ffffff', borderColor: C.border }]}>
-                <View style={[styles.loaderIconBox, { backgroundColor: isDark ? '#1e293b' : '#eff6ff' }]}>
-                  <Feather name="file-text" size={32} color={C.brand} />
+            <View style={[styles.centerOverlay, { backgroundColor: isDark ? '#000000' : '#f1f5f9' }]}>
+              <View style={[styles.skeletonSheet, { backgroundColor: isDark ? '#141416' : '#ffffff', borderColor: isDark ? '#262626' : '#e2e8f0' }]}>
+                {/* Simulated Notice Letterhead */}
+                <View style={styles.skelHeader}>
+                  <View style={[styles.skelCircle, { backgroundColor: isDark ? '#262626' : '#e2e8f0' }]} />
+                  <View style={styles.skelHeaderLines}>
+                    <View style={[styles.skelLine, { width: '80%', height: 10, backgroundColor: isDark ? '#262626' : '#e2e8f0' }]} />
+                    <View style={[styles.skelLine, { width: '55%', height: 7, backgroundColor: isDark ? '#222222' : '#edf2f7', marginTop: 6 }]} />
+                  </View>
                 </View>
-                <ActivityIndicator size="small" color={C.brand} style={{ marginTop: 16 }} />
-                <Text style={[styles.loaderTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                  {loadingMessage}
-                </Text>
-                <Text style={[styles.loaderSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                  Rendering razor-sharp notice pages…
-                </Text>
+                <View style={[styles.skelDivider, { backgroundColor: isDark ? '#222222' : '#e2e8f0' }]} />
+
+                {/* Simulated Notice Heading */}
+                <View style={[styles.skelLine, { width: '75%', height: 11, alignSelf: 'center', backgroundColor: isDark ? '#262626' : '#e2e8f0', marginTop: 14 }]} />
+                <View style={[styles.skelLine, { width: '50%', height: 11, alignSelf: 'center', backgroundColor: isDark ? '#262626' : '#e2e8f0', marginTop: 7 }]} />
+
+                {/* Simulated Notice Body Paragraphs */}
+                <View style={{ marginTop: 28, gap: 10 }}>
+                  <View style={[styles.skelLine, { width: '96%', height: 8, backgroundColor: isDark ? '#202022' : '#f1f5f9' }]} />
+                  <View style={[styles.skelLine, { width: '92%', height: 8, backgroundColor: isDark ? '#202022' : '#f1f5f9' }]} />
+                  <View style={[styles.skelLine, { width: '94%', height: 8, backgroundColor: isDark ? '#202022' : '#f1f5f9' }]} />
+                  <View style={[styles.skelLine, { width: '70%', height: 8, backgroundColor: isDark ? '#202022' : '#f1f5f9' }]} />
+                  <View style={{ height: 12 }} />
+                  <View style={[styles.skelLine, { width: '95%', height: 8, backgroundColor: isDark ? '#202022' : '#f1f5f9' }]} />
+                  <View style={[styles.skelLine, { width: '88%', height: 8, backgroundColor: isDark ? '#202022' : '#f1f5f9' }]} />
+                  <View style={[styles.skelLine, { width: '65%', height: 8, backgroundColor: isDark ? '#202022' : '#f1f5f9' }]} />
+                </View>
+
+                {/* Centered Floating Status Pill */}
+                <View style={[styles.skelStatusPill, { backgroundColor: isDark ? 'rgba(30, 41, 59, 0.92)' : 'rgba(241, 245, 249, 0.95)', borderColor: isDark ? '#334155' : '#cbd5e1' }]}>
+                  <ActivityIndicator size="small" color={C.brand} style={{ marginRight: 8 }} />
+                  <Text style={[styles.skelStatusTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>
+                    {loadingMessage}
+                  </Text>
+                </View>
               </View>
             </View>
           )}
@@ -517,30 +540,60 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 24,
   },
-  loaderBox: {
-    width: '85%',
-    maxWidth: 320,
-    alignItems: 'center',
-    padding: 28,
-    borderRadius: 16,
+  skeletonSheet: {
+    width: '92%',
+    maxWidth: 420,
+    height: 520,
+    borderRadius: 8,
     borderWidth: 1,
+    padding: 24,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
+    elevation: 8,
+    position: 'relative',
+    overflow: 'hidden',
   },
-  loaderIconBox: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+  skelHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 12,
   },
-  loaderTitle: {
-    fontSize: 16,
-    marginTop: 14,
-    textAlign: 'center',
+  skelCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
   },
-  loaderSub: {
+  skelHeaderLines: {
+    flex: 1,
+  },
+  skelLine: {
+    borderRadius: 4,
+  },
+  skelDivider: {
+    height: 1,
+    width: '100%',
+    marginTop: 16,
+  },
+  skelStatusPill: {
+    position: 'absolute',
+    bottom: 28,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 24,
+    borderWidth: 1,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  skelStatusTxt: {
     fontSize: 13,
-    marginTop: 6,
-    textAlign: 'center',
   },
   errorCard: {
     width: '90%',

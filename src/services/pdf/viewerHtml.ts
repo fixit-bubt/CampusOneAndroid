@@ -47,28 +47,39 @@ export function buildViewerHtml(isDark: boolean = true): string {
       border-radius: 4px;
       box-shadow: 0 4px 20px ${shadowColor};
       overflow: hidden;
-      max-width: 100%;
+      width: calc(100% - 4px);
+      max-width: 650px;
+      aspect-ratio: 1 / 1.414; /* Standard A4 paper proportion */
       display: flex;
       justify-content: center;
       align-items: center;
-      transition: transform 0.2s ease-out;
+      margin: 0 auto;
+      transition: opacity 0.2s ease-out;
     }
     .page-card canvas {
       display: block;
-      max-width: 100%;
-      height: auto;
+      width: 100% !important;
+      max-width: 100% !important;
+      height: auto !important;
     }
     .page-placeholder {
       width: 100%;
-      height: 480px;
+      height: 100%;
+      aspect-ratio: 1 / 1.414;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      background-color: ${paperBg};
+      background: linear-gradient(90deg, #f8fafc 0%, #edf2f7 50%, #f8fafc 100%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
       color: #94a3b8;
       font-size: 13px;
-      gap: 8px;
+      gap: 10px;
+    }
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
     }
     .spinner {
       width: 24px;
@@ -168,9 +179,7 @@ export function buildViewerHtml(isDark: boolean = true): string {
         totalPages = pdfDoc.numPages;
         if (initLoader) initLoader.style.display = 'none';
 
-        send({ type: 'docOpened', totalPages: totalPages });
-
-        // Create page placeholders
+        // Create page placeholders with full A4 proportion
         for (let i = 1; i <= totalPages; i++) {
           const card = document.createElement('div');
           card.className = 'page-card';
@@ -180,13 +189,13 @@ export function buildViewerHtml(isDark: boolean = true): string {
           const ph = document.createElement('div');
           ph.className = 'page-placeholder';
           ph.id = 'ph-' + i;
-          ph.innerHTML = '<div class="spinner"></div><div>Page ' + i + '</div>';
+          ph.innerHTML = '<div class="spinner"></div><div>Loading Page ' + i + '…</div>';
           card.appendChild(ph);
 
           container.appendChild(card);
         }
 
-        // Render page 1 immediately
+        // Render page 1 first BEFORE telling React Native to reveal the viewer
         await renderPage(1);
 
         // Pre-render page 2 if it exists
@@ -196,6 +205,9 @@ export function buildViewerHtml(isDark: boolean = true): string {
 
         setupIntersectionObservers();
         setupDoubleTapZoom();
+
+        // Signal React Native that Page 1 is fully rendered on screen!
+        send({ type: 'docOpened', totalPages: totalPages });
 
       } catch (err) {
         send({ type: 'error', message: String(err && err.message ? err.message : err) });
@@ -267,6 +279,11 @@ export function buildViewerHtml(isDark: boolean = true): string {
         if (ph && ph.parentNode === card) {
           card.removeChild(ph);
         }
+        // Let the rendered canvas control card height naturally
+        card.style.aspectRatio = 'auto';
+        card.style.height = 'auto';
+        card.style.minHeight = 'auto';
+
         card.appendChild(canvas);
         renderedPages.add(num);
       } catch (err) {
