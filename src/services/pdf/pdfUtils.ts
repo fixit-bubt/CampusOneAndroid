@@ -156,8 +156,8 @@ export function layoutDocumentPage(
   const availW = standardPageW - microMargin * 2;
   const availH = standardPageH - microMargin * 2;
   const scale = Math.min(availW / safeW, availH / safeH);
-  const w = Math.round(safeW * scale);
-  const h = Math.round(safeH * scale);
+  const w = Math.floor(safeW * scale);
+  const h = Math.floor(safeH * scale);
   return {
     pageW: standardPageW,
     pageH: standardPageH,

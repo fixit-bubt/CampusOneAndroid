@@ -59,10 +59,10 @@ export function ProgressPanel({ label, done, total, onCancel }: { label: string;
 }
 
 export function ResultPanel({
-  title, bytesBefore, bytesAfter, pages, warning, onShare, onReset,
+  title, bytesBefore, bytesAfter, pages, warning, onShare, onPreview, onSaveDevice, onReset,
 }: {
   title: string; bytesBefore?: number; bytesAfter: number; pages: number;
-  warning?: string | null; onShare: () => void; onReset: () => void;
+  warning?: string | null; onShare: () => void; onPreview?: () => void; onSaveDevice?: () => void; onReset: () => void;
 }) {
   const { C } = useTheme();
   const t = useT();
@@ -82,10 +82,22 @@ export function ResultPanel({
         </View>
       ) : null}
       <View style={styles.resultBtns}>
+        {onPreview ? (
+          <TouchableOpacity style={[styles.actionBtn58, { backgroundColor: C.surface2, borderColor: C.border }]} onPress={onPreview} activeOpacity={0.85}>
+            <Feather name="eye" size={16} color={C.brand} />
+            <Text style={[styles.btnText14, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>{t.pdfmaker.common.preview}</Text>
+          </TouchableOpacity>
+        ) : null}
         <TouchableOpacity style={[styles.primaryBtn, { backgroundColor: C.brand }]} onPress={onShare} activeOpacity={0.85}>
           <Feather name="share-2" size={16} color={C.white} />
           <Text style={[styles.primaryBtnText, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>{t.pdfmaker.common.share}</Text>
         </TouchableOpacity>
+        {onSaveDevice ? (
+          <TouchableOpacity style={[styles.actionBtn58, { backgroundColor: C.surface2, borderColor: C.border }]} onPress={onSaveDevice} activeOpacity={0.85}>
+            <Feather name="download" size={16} color={C.text} />
+            <Text style={[styles.btnText14, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.pdfmaker.common.saveDevice}</Text>
+          </TouchableOpacity>
+        ) : null}
         <TouchableOpacity style={[styles.secondaryBtn, { borderColor: C.border }]} onPress={onReset} activeOpacity={0.85}>
           <Text style={[styles.secondaryBtnText, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>{t.pdfmaker.common.startOver}</Text>
         </TouchableOpacity>
@@ -109,13 +121,22 @@ export function ThumbCard({
 }) {
   const { C } = useTheme();
   const t = useT();
+  const isQuarterRotated = rotate % 180 !== 0;
   return (
     <View style={[styles.thumb, { backgroundColor: C.surface, borderColor: C.border, opacity: dimmed ? 0.4 : 1 }]}>
       <View style={[styles.thumbImgBox, { backgroundColor: C.surface2 }]}>
         {uri ? (
           <Image
             source={{ uri }}
-            style={[styles.thumbImg, { transform: [{ rotate: `${rotate}deg` }] }]}
+            style={[
+              styles.thumbImg,
+              {
+                transform: [
+                  { rotate: `${rotate}deg` },
+                  ...(isQuarterRotated ? [{ scale: 0.72 }] : []),
+                ],
+              },
+            ]}
             resizeMode="contain"
           />
         ) : (
@@ -267,14 +288,16 @@ const styles = StyleSheet.create({
   meta: { fontSize: 12.5 },
   track: { height: 8, borderRadius: 99, overflow: 'hidden' } as ViewStyle,
   fill: { height: '100%', borderRadius: 99 } as ViewStyle,
-  resultBtns: { flexDirection: 'row', gap: 10, marginTop: 2 } as ViewStyle,
+  resultBtns: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 4 } as ViewStyle,
+  actionBtn58: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 58, paddingHorizontal: 18, borderRadius: 16, borderWidth: 1 } as ViewStyle,
+  btnText14: { fontSize: 14 },
   primaryBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, height: 58, paddingHorizontal: 20, borderRadius: 16 } as ViewStyle,
   primaryBtnText: { fontSize: 15 },
   secondaryBtn: { alignItems: 'center', justifyContent: 'center', height: 58, paddingHorizontal: 18, borderRadius: 16, borderWidth: 1 } as ViewStyle,
   secondaryBtnText: { fontSize: 14.5 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 } as ViewStyle,
   thumb: { width: '31%', borderWidth: 1, borderRadius: 14, overflow: 'hidden' } as ViewStyle,
-  thumbImgBox: { height: 104, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
+  thumbImgBox: { height: 104, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' } as ViewStyle,
   thumbImg: { width: '100%', height: '100%' },
   // Scrims sit on top of an image, so they are literal overlays rather than
   // theme colours.
@@ -285,9 +308,9 @@ const styles = StyleSheet.create({
   thumbCap: { fontSize: 11 },
   thumbBtns: { flexDirection: 'row', marginTop: 2 } as ViewStyle,
   tileBtn: { width: 26, height: 26, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
-  fileRow: { flexDirection: 'row', alignItems: 'center', gap: 11, borderWidth: 1, borderRadius: 14, padding: 11 } as ViewStyle,
-  fileIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
-  fileName: { fontSize: 14 },
+  fileRow: { flexDirection: 'row', alignItems: 'center', gap: 11, borderWidth: 1, borderRadius: 16, padding: 12, minHeight: 72 } as ViewStyle,
+  fileIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
+  fileName: { fontSize: 14.5 },
   segment: { flexDirection: 'row', alignItems: 'center', height: 58, padding: 4, borderRadius: 16, borderWidth: 1, gap: 4 } as ViewStyle,
   segmentItem: { flex: 1, alignItems: 'center', justifyContent: 'center', height: '100%', borderRadius: 12 } as ViewStyle,
   segmentText: { fontSize: 13.5 },

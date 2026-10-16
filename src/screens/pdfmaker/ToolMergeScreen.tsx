@@ -15,6 +15,7 @@ import { moveItem, baseName, isHeicFile, isPdfFile, isImageFile } from '../../se
 import { mergeToPdf, type MergeItem } from '../../services/pdf/mergePdf';
 import type { BuiltPdf } from '../../services/pdf/imagesToPdf';
 import { sharePdf } from '../../services/pdf/pdfFiles';
+import { CampusPdfViewerModal } from '../../components/pdf/CampusPdfViewerModal';
 import {
   Notice, NoticeText, ProgressPanel, ResultPanel, FileRow, PrivacyNote, usePdfErrorText,
 } from './components';
@@ -41,6 +42,7 @@ export function ToolMergeScreen({ navigation }: any) {
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState({ done: 0, total: 0 });
   const [result, setResult] = useState<BuiltPdf | null>(null);
+  const [previewModal, setPreviewModal] = useState(false);
   const cancelRef = useRef(false);
 
   const update = (fn: (prev: Item[]) => Item[]) => { setItems(fn); setResult(null); };
@@ -150,6 +152,16 @@ export function ToolMergeScreen({ navigation }: any) {
     }
   }
 
+  async function saveToDownloads() {
+    if (!result) return;
+    try {
+      await sharePdf(result.uri, t.pdfmaker.common.saveDevice);
+      toast({ type: 'success', title: t.pdfmaker.common.savedToDevice });
+    } catch {
+      toast({ type: 'error', title: t.pdfmaker.errors.couldNotCreate, message: t.pdfmaker.errors.unknown });
+    }
+  }
+
   const totalBytes = items.reduce((n, i) => n + i.size, 0);
 
   return (
@@ -239,7 +251,9 @@ export function ToolMergeScreen({ navigation }: any) {
                 bytesBefore={totalBytes}
                 bytesAfter={result.bytes}
                 pages={result.pages}
+                onPreview={() => setPreviewModal(true)}
                 onShare={share}
+                onSaveDevice={saveToDownloads}
                 onReset={reset}
               />
             ) : !busy ? (
@@ -256,6 +270,15 @@ export function ToolMergeScreen({ navigation }: any) {
         )}
         <View style={{ height: 24 }} />
       </ScrollView>
+
+      <CampusPdfViewerModal
+        visible={previewModal}
+        onClose={() => setPreviewModal(false)}
+        title={items[0]?.item.name ? `${baseName(items[0].item.name)}-merged.pdf` : 'Merged.pdf'}
+        subtitle={t.pdfmaker.merge.ready}
+        fileUrl={result?.uri ?? null}
+        fileName={items[0]?.item.name ? `${baseName(items[0].item.name)}-merged.pdf` : 'Merged.pdf'}
+      />
     </SafeAreaView>
   );
 }

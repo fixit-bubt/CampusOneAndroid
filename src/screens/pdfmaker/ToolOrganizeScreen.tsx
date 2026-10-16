@@ -20,6 +20,7 @@ import type { BuiltPdf } from '../../services/pdf/imagesToPdf';
 import { sharePdf, saveThumbJpeg, clearThumbDir } from '../../services/pdf/pdfFiles';
 import { base64ToBytes } from '../../services/pdf/pdfUtils';
 import { useRasterEngine } from '../../services/pdf/rasterEngine';
+import { CampusPdfViewerModal } from '../../components/pdf/CampusPdfViewerModal';
 import {
   Notice, NoticeText, ProgressPanel, ResultPanel, ThumbGrid, ThumbCard, PrivacyNote, usePdfErrorText,
 } from './components';
@@ -39,6 +40,7 @@ export function ToolOrganizeScreen({ navigation }: any) {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<BuiltPdf | null>(null);
   const [range, setRange] = useState('');
+  const [previewModal, setPreviewModal] = useState(false);
   // A counter rather than a boolean: a single flag gets reset by the next
   // open(), which would let an older thumbnail loop resume and write the
   // previous document's pictures into the new document's tiles.
@@ -165,6 +167,16 @@ export function ToolOrganizeScreen({ navigation }: any) {
     }
   }
 
+  async function saveToDownloads() {
+    if (!result) return;
+    try {
+      await sharePdf(result.uri, t.pdfmaker.common.saveDevice);
+      toast({ type: 'success', title: t.pdfmaker.common.savedToDevice });
+    } catch {
+      toast({ type: 'error', title: t.pdfmaker.errors.couldNotCreate, message: t.pdfmaker.errors.unknown });
+    }
+  }
+
   const keptCount = pages.filter((p) => p.keep).length;
 
   return (
@@ -284,7 +296,9 @@ export function ToolOrganizeScreen({ navigation }: any) {
                 title={t.pdfmaker.organize.ready}
                 bytesAfter={result.bytes}
                 pages={result.pages}
+                onPreview={() => setPreviewModal(true)}
                 onShare={share}
+                onSaveDevice={saveToDownloads}
                 onReset={reset}
               />
             ) : !busy && !loading && pages.length > 0 ? (
@@ -302,6 +316,15 @@ export function ToolOrganizeScreen({ navigation }: any) {
         <View style={{ height: 24 }} />
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <CampusPdfViewerModal
+        visible={previewModal}
+        onClose={() => setPreviewModal(false)}
+        title={file?.name ? `${baseName(file.name)}-organized.pdf` : 'Organized.pdf'}
+        subtitle={t.pdfmaker.organize.ready}
+        fileUrl={result?.uri ?? null}
+        fileName={file?.name ? `${baseName(file.name)}-organized.pdf` : 'Organized.pdf'}
+      />
     </SafeAreaView>
   );
 }

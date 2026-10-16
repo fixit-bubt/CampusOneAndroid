@@ -1,7 +1,11 @@
-// Photos to PDF. The main student workflow: photograph the pages of a
-// handwritten assignment, put them in order, get one A4 PDF.
+// Photos to PDF. Advanced mobile document scanner and assignment compiler:
+// Borderless A4 edge-to-edge layout, multi-shot batch camera, document naming,
+// academic page numbering, and in-app PDF inspection.
 import { useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, type ViewStyle } from 'react-native';
+import {
+  View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
+  Alert, type ViewStyle, type TextStyle,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -10,10 +14,14 @@ import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
 import { SubBar } from '../../components/layout/TopBar';
 import { FontFamily, Layout, SectorColors } from '../../theme';
-import { IMAGE_PRESETS, DEFAULT_PRESET, LIMITS, PdfError, type PresetKey } from '../../services/pdf/presets';
+import {
+  IMAGE_PRESETS, DEFAULT_PRESET, LIMITS, PdfError,
+  type PresetKey, type LayoutMode, DEFAULT_LAYOUT_MODE,
+} from '../../services/pdf/presets';
 import { moveItem, baseName, isHeicFile } from '../../services/pdf/pdfUtils';
 import { buildImagesPdf, type BuiltPdf, type PhotoInput } from '../../services/pdf/imagesToPdf';
 import { sharePdf } from '../../services/pdf/pdfFiles';
+import { CampusPdfViewerModal } from '../../components/pdf/CampusPdfViewerModal';
 import {
   Notice, NoticeText, ProgressPanel, ResultPanel, ThumbGrid, ThumbCard,
   SegmentToggle, PrivacyNote, usePdfErrorText,
@@ -23,6 +31,14 @@ interface Item extends PhotoInput { id: number; name: string }
 
 let seq = 0;
 
+function defaultDocName(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `Assignment_${y}${m}${day}`;
+}
+
 export function ToolImagesScreen({ navigation }: any) {
   const { C } = useTheme();
   const t = useT();
@@ -30,25 +46,28 @@ export function ToolImagesScreen({ navigation }: any) {
   const errorText = usePdfErrorText();
 
   const [items, setItems] = useState<Item[]>([]);
+  const [docTitle, setDocTitle] = useState(defaultDocName);
   const [preset, setPreset] = useState<PresetKey>(DEFAULT_PRESET);
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>(DEFAULT_LAYOUT_MODE);
+  const [stampAcademic, setStampAcademic] = useState(true);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState({ done: 0, total: 0 });
   const [result, setResult] = useState<BuiltPdf | null>(null);
+  const [previewModal, setPreviewModal] = useState(false);
   const cancelRef = useRef(false);
 
-  // Any edit invalidates a built PDF, so it is cleared rather than left to be
-  // shared after the list it came from changed.
   const update = (fn: (prev: Item[]) => Item[]) => { setItems(fn); setResult(null); };
 
   function addAssets(assets: ImagePicker.ImagePickerAsset[]) {
     const accepted: Item[] = [];
     let heic = 0;
     let tooBig = 0;
+    const now = Date.now();
 
-    for (const a of assets) {
-      const name = a.fileName ?? `photo-${Date.now()}.jpg`;
-      if (isHeicFile(name, a.mimeType)) { heic++; continue; }
-      if ((a.fileSize ?? 0) > LIMITS.images.maxBytes) { tooBig++; continue; }
+    assets.forEach((a, index) => {
+      const name = a.fileName ?? `photo-${now}-${index + 1}.jpg`;
+      if (isHeicFile(name, a.mimeType)) { heic++; return; }
+      if ((a.fileSize ?? 0) > LIMITS.images.maxBytes) { tooBig++; return; }
       accepted.push({
         id: ++seq,
         uri: a.uri,
@@ -57,7 +76,7 @@ export function ToolImagesScreen({ navigation }: any) {
         rotate: 0,
         name,
       });
-    }
+    });
 
     if (heic) toast({ type: 'error', title: t.pdfmaker.tools.imagesTitle, message: t.pdfmaker.errors.heic });
     if (tooBig) toast({ type: 'error', title: t.pdfmaker.tools.imagesTitle, message: t.pdfmaker.errors.skippedBig(tooBig) });
@@ -81,8 +100,6 @@ export function ToolImagesScreen({ navigation }: any) {
       toast({ type: 'error', title: t.pdfmaker.tools.imagesTitle, message: t.pdfmaker.images.permission });
       return;
     }
-    // quality 1: the chosen preset does the compressing, and compressing twice
-    // loses detail for nothing.
     const res = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsMultipleSelection: true,
@@ -101,6 +118,19 @@ export function ToolImagesScreen({ navigation }: any) {
     const res = await ImagePicker.launchCameraAsync({ quality: 1 });
     if (res.canceled || !res.assets?.length) return;
     addAssets(res.assets);
+
+    // Continuous Batch Camera loop: prompt to immediately capture next page
+    setTimeout(() => {
+      Alert.alert(
+        t.pdfmaker.images.batchCapture,
+        t.pdfmaker.images.batchPrompt(items.length + res.assets.length),
+        [
+          { text: t.pdfmaker.images.batchDone, style: 'cancel' },
+          { text: t.pdfmaker.images.batchNext, onPress: () => { pickFromCamera(); } },
+        ],
+        { cancelable: true },
+      );
+    }, 400);
   }
 
   const removeAt = (i: number) => update((prev) => prev.filter((_, n) => n !== i));
@@ -115,9 +145,13 @@ export function ToolImagesScreen({ navigation }: any) {
     setResult(null);
     cancelRef.current = false;
     setProgress({ done: 0, total: items.length });
+
+    const cleanTitle = (docTitle.trim() || baseName(items[0].name)).replace(/\.pdf$/i, '');
     try {
       const out = await buildImagesPdf(items, IMAGE_PRESETS[preset], {
-        name: `${baseName(items[0].name)}.pdf`,
+        name: `${cleanTitle}.pdf`,
+        layoutMode,
+        footerText: stampAcademic ? 'BUBT CampusOne' : undefined,
         onProgress: (done, total) => setProgress({ done, total }),
         isCancelled: () => cancelRef.current,
       });
@@ -141,6 +175,18 @@ export function ToolImagesScreen({ navigation }: any) {
     }
   }
 
+  async function saveToDownloads() {
+    if (!result) return;
+    try {
+      await sharePdf(result.uri, t.pdfmaker.common.saveDevice);
+      toast({ type: 'success', title: t.pdfmaker.common.savedToDevice });
+    } catch {
+      toast({ type: 'error', title: t.pdfmaker.errors.couldNotCreate, message: t.pdfmaker.errors.unknown });
+    }
+  }
+
+  const finalName = `${(docTitle.trim() || 'Assignment').replace(/\.pdf$/i, '')}.pdf`;
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar title={t.pdfmaker.tools.imagesTitle} onBack={() => navigation.goBack()} />
@@ -163,13 +209,68 @@ export function ToolImagesScreen({ navigation }: any) {
                 {t.pdfmaker.images.hint}
               </Text>
             </TouchableOpacity>
+
             <View style={styles.actionRow}>
               <SmallBtn icon="camera" label={t.pdfmaker.images.camera} onPress={pickFromCamera} />
             </View>
+
+            <TouchableOpacity
+              style={[styles.coverCard, { backgroundColor: C.surface, borderColor: C.border }]}
+              onPress={() => navigation.navigate('CoverPageForm')}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.coverIcon, { backgroundColor: C.surface2 }]}>
+                <Feather name="file-text" size={20} color={SectorColors.coverpage} />
+              </View>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={[styles.coverTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  {t.pdfmaker.images.attachCover}
+                </Text>
+                <Text style={[styles.coverSub, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
+                  {t.pdfmaker.images.coverAttached}
+                </Text>
+              </View>
+              <Feather name="chevron-right" size={18} color={C.textMuted} />
+            </TouchableOpacity>
+
             <PrivacyNote />
           </>
         ) : (
           <>
+            <TouchableOpacity
+              style={[styles.coverCard, { backgroundColor: C.surface, borderColor: C.border }]}
+              onPress={() => navigation.navigate('CoverPageForm')}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.coverIcon, { backgroundColor: C.surface2 }]}>
+                <Feather name="file-text" size={20} color={SectorColors.coverpage} />
+              </View>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={[styles.coverTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  {t.pdfmaker.images.attachCover}
+                </Text>
+                <Text style={[styles.coverSub, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
+                  {t.pdfmaker.images.coverAttached}
+                </Text>
+              </View>
+              <Feather name="chevron-right" size={18} color={C.textMuted} />
+            </TouchableOpacity>
+
+            <Text style={[styles.label, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              {t.pdfmaker.images.docName}
+            </Text>
+            <View style={[styles.nameInputBox, { backgroundColor: C.surface, borderColor: C.border }]}>
+              <Feather name="type" size={16} color={C.text3} />
+              <TextInput
+                style={[styles.nameInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                value={docTitle}
+                onChangeText={(v) => { setDocTitle(v); setResult(null); }}
+                placeholder={t.pdfmaker.images.docNamePlaceholder}
+                placeholderTextColor={C.textMuted}
+                autoCapitalize="none"
+              />
+            </View>
+
             <View style={styles.actionRow}>
               <SmallBtn icon="plus" label={t.pdfmaker.images.addMore} onPress={pickFromLibrary} />
               <SmallBtn icon="camera" label={t.pdfmaker.images.camera} onPress={pickFromCamera} />
@@ -178,6 +279,22 @@ export function ToolImagesScreen({ navigation }: any) {
                 {t.pdfmaker.images.count(items.length)}
               </Text>
             </View>
+
+            <Text style={[styles.label, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              {t.pdfmaker.images.layout}
+            </Text>
+            <SegmentToggle
+              value={layoutMode}
+              onChange={(v) => { setLayoutMode(v); setResult(null); }}
+              options={[
+                { value: 'borderless' as LayoutMode, label: t.pdfmaker.images.layoutBorderless },
+                { value: 'smart_fit' as LayoutMode, label: t.pdfmaker.images.layoutSmartFit },
+                { value: 'adaptive' as LayoutMode, label: t.pdfmaker.images.layoutAdaptive },
+              ]}
+            />
+            <Text style={[styles.hint, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
+              {t.pdfmaker.images.layoutHint}
+            </Text>
 
             <Text style={[styles.label, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
               {t.pdfmaker.images.quality}
@@ -194,6 +311,19 @@ export function ToolImagesScreen({ navigation }: any) {
             <Text style={[styles.hint, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
               {t.pdfmaker.images.qualityNote}
             </Text>
+
+            <TouchableOpacity
+              style={[styles.stampToggleRow, { backgroundColor: C.surface, borderColor: C.border }]}
+              onPress={() => { setStampAcademic(!stampAcademic); setResult(null); }}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.stampCheck, { borderColor: stampAcademic ? C.brand : C.border, backgroundColor: stampAcademic ? C.brand : 'transparent' }]}>
+                {stampAcademic ? <Feather name="check" size={13} color={C.white} /> : null}
+              </View>
+              <Text style={[styles.stampText, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>
+                {t.pdfmaker.images.academicStamp}
+              </Text>
+            </TouchableOpacity>
 
             <ThumbGrid>
               {items.map((it, i) => (
@@ -227,7 +357,9 @@ export function ToolImagesScreen({ navigation }: any) {
                 title={t.pdfmaker.images.ready}
                 bytesAfter={result.bytes}
                 pages={result.pages}
+                onPreview={() => setPreviewModal(true)}
                 onShare={share}
+                onSaveDevice={saveToDownloads}
                 onReset={reset}
               />
             ) : !busy ? (
@@ -249,6 +381,16 @@ export function ToolImagesScreen({ navigation }: any) {
         )}
         <View style={{ height: 24 }} />
       </ScrollView>
+
+      {/* In-App PDF Preview Inspection Modal */}
+      <CampusPdfViewerModal
+        visible={previewModal}
+        onClose={() => setPreviewModal(false)}
+        title={finalName}
+        subtitle={t.pdfmaker.images.ready}
+        fileUrl={result?.uri ?? null}
+        fileName={finalName}
+      />
     </SafeAreaView>
   );
 }
@@ -275,12 +417,21 @@ const styles = StyleSheet.create({
   dropZone: { alignItems: 'center', justifyContent: 'center', gap: 7, borderWidth: 2, borderStyle: 'dashed', borderRadius: 18, paddingVertical: 34, paddingHorizontal: 20 } as ViewStyle,
   dropTitle: { fontSize: 16 },
   dropHint: { fontSize: 12.5, textAlign: 'center', lineHeight: 18 },
+  coverCard: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, minHeight: 72, borderRadius: 16, borderWidth: 1 } as ViewStyle,
+  coverIcon: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
+  coverTitle: { fontSize: 15 },
+  coverSub: { fontSize: 12.5, marginTop: 1 },
+  nameInputBox: { flexDirection: 'row', alignItems: 'center', gap: 10, height: 58, paddingHorizontal: 16, borderRadius: 16, borderWidth: 1 } as ViewStyle,
+  nameInput: { flex: 1, fontSize: 14.5, height: '100%' } as TextStyle,
   actionRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 } as ViewStyle,
-  smallBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 36, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1 } as ViewStyle,
+  smallBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 38, paddingHorizontal: 14, borderRadius: 12, borderWidth: 1 } as ViewStyle,
   smallBtnText: { fontSize: 13 },
   count: { fontSize: 13, marginLeft: 'auto' },
   label: { fontSize: 14, marginTop: 2 },
   hint: { fontSize: 12 },
+  stampToggleRow: { flexDirection: 'row', alignItems: 'center', gap: 12, height: 58, paddingHorizontal: 16, borderRadius: 16, borderWidth: 1 } as ViewStyle,
+  stampCheck: { width: 22, height: 22, borderRadius: 6, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
+  stampText: { fontSize: 14 },
   cta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, height: 58, borderRadius: 16 } as ViewStyle,
   ctaText: { fontSize: 15 },
 });

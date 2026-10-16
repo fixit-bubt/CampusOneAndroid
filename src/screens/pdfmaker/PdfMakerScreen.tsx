@@ -102,8 +102,8 @@ const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
   scroll: { paddingTop: 10, gap: 11 } as ViewStyle,
   subtitle: { fontSize: 13.5, lineHeight: 19, marginBottom: 2 },
-  card: { flexDirection: 'row', alignItems: 'center', gap: 13, padding: 14, borderRadius: 16, borderWidth: 1 } as ViewStyle,
-  tile: { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
+  card: { flexDirection: 'row', alignItems: 'center', gap: 13, paddingHorizontal: 16, paddingVertical: 12, minHeight: 72, borderRadius: 16, borderWidth: 1 } as ViewStyle,
+  tile: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
   cardTitle: { fontSize: 15 },
   cardDesc: { fontSize: 12.5, marginTop: 1 },
 });

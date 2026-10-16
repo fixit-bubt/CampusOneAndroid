@@ -23,6 +23,7 @@ import { baseName, isPdfFile } from '../../services/pdf/pdfUtils';
 import { compressPdf, type CompressResult } from '../../services/pdf/compressPdf';
 import { sharePdf } from '../../services/pdf/pdfFiles';
 import { useRasterEngine } from '../../services/pdf/rasterEngine';
+import { CampusPdfViewerModal } from '../../components/pdf/CampusPdfViewerModal';
 import {
   Notice, NoticeText, ProgressPanel, ResultPanel, SegmentToggle, PrivacyNote, usePdfErrorText,
 } from './components';
@@ -44,6 +45,7 @@ export function ToolCompressScreen({ navigation }: any) {
   const [result, setResult] = useState<CompressResult | null>(null);
   const [noGain, setNoGain] = useState(false);
   const [acknowledged, setAcknowledged] = useState(false);
+  const [previewModal, setPreviewModal] = useState(false);
   const cancelRef = useRef(false);
 
   useEffect(() => () => { engine.close(); }, [engine]);
@@ -163,6 +165,16 @@ export function ToolCompressScreen({ navigation }: any) {
     }
   }
 
+  async function saveToDownloads() {
+    if (!result) return;
+    try {
+      await sharePdf(result.uri, t.pdfmaker.common.saveDevice);
+      toast({ type: 'success', title: t.pdfmaker.common.savedToDevice });
+    } catch {
+      toast({ type: 'error', title: t.pdfmaker.errors.couldNotCreate, message: t.pdfmaker.errors.unknown });
+    }
+  }
+
   const needsAck = !!doc?.texty && !acknowledged;
 
   return (
@@ -268,7 +280,9 @@ export function ToolCompressScreen({ navigation }: any) {
                 bytesAfter={result.bytes}
                 pages={result.pages}
                 warning={result.missedTarget ? t.pdfmaker.compress.missed(formatFileSize(result.bytes)) : null}
+                onPreview={() => setPreviewModal(true)}
                 onShare={share}
+                onSaveDevice={saveToDownloads}
                 onReset={clear}
               />
             ) : !busy ? (
@@ -290,6 +304,15 @@ export function ToolCompressScreen({ navigation }: any) {
         )}
         <View style={{ height: 24 }} />
       </ScrollView>
+
+      <CampusPdfViewerModal
+        visible={previewModal}
+        onClose={() => setPreviewModal(false)}
+        title={doc?.name ? `${baseName(doc.name)}-compressed.pdf` : 'Compressed.pdf'}
+        subtitle={t.pdfmaker.compress.ready}
+        fileUrl={result?.uri ?? null}
+        fileName={doc?.name ? `${baseName(doc.name)}-compressed.pdf` : 'Compressed.pdf'}
+      />
     </SafeAreaView>
   );
 }

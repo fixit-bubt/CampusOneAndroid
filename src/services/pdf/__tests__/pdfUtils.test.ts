@@ -1,6 +1,6 @@
 import {
   isPdfFile, isImageFile, isHeicFile, parseRanges, moveItem,
-  nextQuality, nextLongEdge, baseName, fitOnPage, base64ToBytes,
+  nextQuality, nextLongEdge, baseName, fitOnPage, layoutDocumentPage, base64ToBytes,
 } from '../pdfUtils';
 import { A4, MIN_QUALITY, MIN_LONG_EDGE } from '../presets';
 
@@ -117,5 +117,37 @@ describe('fitOnPage', () => {
     expect(r.h).toBeLessThanOrEqual(r.pageH - 48);
     expect(r.x).toBeCloseTo((r.pageW - r.w) / 2);
     expect(r.y).toBeCloseTo((r.pageH - r.h) / 2);
+  });
+});
+
+describe('layoutDocumentPage', () => {
+  it('fills 100% of the page edge-to-edge with 0 margin in borderless mode', () => {
+    const r = layoutDocumentPage(1000, 1500, 'borderless');
+    expect(r.pageW).toBeCloseTo(A4.w);
+    expect(r.pageH).toBeCloseTo(A4.h);
+    expect(r.x).toBe(0);
+    expect(r.y).toBe(0);
+    expect(r.w).toBeCloseTo(A4.w);
+    expect(r.h).toBeCloseTo(A4.h);
+  });
+
+  it('adapts to exact image aspect ratio at 150 DPI in adaptive mode', () => {
+    const r = layoutDocumentPage(1500, 3000, 'adaptive');
+    expect(r.x).toBe(0);
+    expect(r.y).toBe(0);
+    expect(r.pageW).toBe(720); // (1500 / 150) * 72
+    expect(r.pageH).toBe(1440); // (3000 / 150) * 72
+    expect(r.w).toBe(720);
+    expect(r.h).toBe(1440);
+  });
+
+  it('applies uniform 12pt micro-margins in smart_fit mode without giant voids', () => {
+    const r = layoutDocumentPage(1000, 1500, 'smart_fit');
+    expect(r.pageW).toBeCloseTo(A4.w);
+    expect(r.pageH).toBeCloseTo(A4.h);
+    expect(r.x).toBeGreaterThanOrEqual(12);
+    expect(r.y).toBeGreaterThanOrEqual(12);
+    expect(r.w).toBeLessThanOrEqual(A4.w - 24);
+    expect(r.h).toBeLessThanOrEqual(A4.h - 24);
   });
 });

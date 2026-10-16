@@ -592,11 +592,21 @@ In `RootNavigator.tsx`, students who have not completed onboarding (`!profile?.s
 - **Streaming:** SSE streaming using `expo/fetch` (standard React Native `fetch` cannot stream response bodies).
 - **Security:** Validates caller's JWT directly in the Edge Function; student-only restriction enforced server-side.
 
-### 10.2 PDF Maker
-- **Location:** `src/screens/pdfmaker/`
+### 10.2 PDF Maker (CamScanner Engine)
+- **Location:** `src/screens/pdfmaker/` (`PdfMakerScreen`, `ToolImagesScreen`, `ToolMergeScreen`, `ToolCompressScreen`, `ToolOrganizeScreen`, `components.tsx`)
+- **Services:** `src/services/pdf/` (`imagesToPdf.ts`, `mergePdf.ts`, `compressPdf.ts`, `organizePdf.ts`, `pdfUtils.ts`, `presets.ts`)
 - **Architecture:** 100% on-device native `pdf-lib` for document generation + hidden offscreen WebView running vendored `pdf.js` (`assets/pdfjs/*.txt`) for rasterizing page thumbnails.
-- **Capabilities:** Photos to PDF, PDF Merge, Organize/Reorder Pages, Compress.
-- **Zero Schema Change:** Does not touch Supabase or upload files.
+- **CamScanner Parity Engine:**
+  - **Zero-Void Page Layouts (`layoutDocumentPage`):** Default `borderless` mode fills standard A4 pages edge-to-edge (0 margin), eliminating the 112pt-148pt letterboxing voids from mobile camera aspect ratios (4:3 and 16:9). Also supports `smart_fit` (12pt uniform micro-margin) and `adaptive` (document page geometry dynamically tracks photo aspect ratio at 150 DPI).
+  - **Continuous Batch Camera:** Multi-shot camera capture loop allowing continuous rapid page snaps without returning to menu after each shot.
+  - **In-App Inspection Modal (`CampusPdfViewerModal`):** Direct "Preview" action on all 4 tools allowing full-document scrolling and zoom before sharing or saving.
+  - **Save to Device:** Direct download integration via `FileSystem.StorageAccessFramework` writing to Android's public Downloads directory with copy fallback.
+  - **Academic Stamp:** Optional vector-drawn header (`BUBT CampusOne`) and footer (`Page X of Y`) stamped via `pdf-lib` Helvetica.
+  - **Academic Document Naming:** Configurable document title input (58dp) with timestamp-free sanitized filenames.
+  - **BUBT Assignment Cover Page Shortcut:** 72dp banner linking directly to `CoverPageFormScreen`.
+  - **Human Vector Iconography:** Strict usage of `@expo/vector-icons` (`Feather`). Zero AI-generated icons.
+  - **Ergonomics & Token Standards:** 58dp interactive buttons/inputs/segmented controls, 72dp feature row cards and banners.
+- **Zero Schema Change:** Does not touch Supabase or upload files; entirely client-side on-device execution.
 
 ### 10.3 Direct FCM Push Notifications
 - **Firebase Project:** `campusone-511812`
