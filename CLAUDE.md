@@ -2048,9 +2048,10 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
   3. **BUBT Campus Presets:** All 9 BUBT Campus Presets (Central Library, Cafeteria, B1 Admin & Academic, B2 Academic Complex, B3/Annex, Campus Mosque, Computer Labs, Exam Hall & Auditorium, Campus Grounds) rendered as strict 72dp cards (`styles.optionCard72`) with 44×44dp icon tiles, bilingual titles, and selection checkmarks.
 - **Unified Location Picker Callback:** When a location is picked on the MapLibre map or reverse-geocoded via GPS, the address updates seamlessly across `loc` and `locInputText`.
 
-
-
-
+### 43.3 Physical Device Verification & Backend Parity
+- **Native Release Build:** Compiled locally via Android SDK & Gradle (`cd android && .\gradlew assembleRelease` in 38s).
+- **Physical Device ADB Deployment:** Successfully installed and verified on physical USB device `8734b5da` (`com.bubt.campusone`).
+- **Supabase Backend Parity:** Fully compatible with `lost_found_items` on Supabase project `xhgpxvyqrufbbuivttmi`, preserving category constraints and reverse-geocoded location addresses without requiring database migrations.
 
 
 
