@@ -12,7 +12,7 @@ import { Icon } from '../../components/ui/Icon';
 import { SkeletonList, LoadError } from '../../components/ui/LoadState';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
-import { FontFamily, Layout, SectorColors, Accent, pillBg } from '../../theme';
+import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { getCache, setCache, CacheKeys } from '../../services/cacheService';
@@ -24,12 +24,8 @@ type TabFilter = 'all' | 'Lost' | 'Found' | 'mine';
 type StatusFilter = 'Open' | 'Resolved' | 'All';
 type CategoryFilter = 'All' | 'Personal' | 'Electronics' | 'Documents' | 'Other';
 
-const CAT_COLOR: Record<string, string> = {
-  Personal: Accent.blue,
-  Electronics: SectorColors.lostfound,
-  Documents: Accent.green,
-  Other: Accent.slate,
-};
+const LF_COLOR = SectorColors.lostfound;
+const LF_BG = `${SectorColors.lostfound}18`;
 
 const CAT_ICON: Record<string, string> = {
   Personal: 'user',
@@ -38,12 +34,12 @@ const CAT_ICON: Record<string, string> = {
   Other: 'inbox',
 };
 
-const CATEGORIES: { id: CategoryFilter; icon: string; fg: string }[] = [
-  { id: 'All', icon: 'grid', fg: Accent.slate },
-  { id: 'Personal', icon: 'user', fg: Accent.blue },
-  { id: 'Electronics', icon: 'smartphone', fg: SectorColors.lostfound },
-  { id: 'Documents', icon: 'layers', fg: Accent.green },
-  { id: 'Other', icon: 'inbox', fg: Accent.slate },
+const CATEGORIES: { id: CategoryFilter; icon: string }[] = [
+  { id: 'All', icon: 'grid' },
+  { id: 'Personal', icon: 'user' },
+  { id: 'Electronics', icon: 'smartphone' },
+  { id: 'Documents', icon: 'layers' },
+  { id: 'Other', icon: 'inbox' },
 ];
 
 function LFCard({
@@ -59,8 +55,6 @@ function LFCard({
   resolvedLabel?: string;
   onPress: () => void;
 }) {
-  const fg = CAT_COLOR[item.category] ?? Accent.slate;
-  const bg = pillBg(fg, isDark);
   const isLost = item.type === 'Lost';
   const isResolved = item.status === 'Resolved';
 
@@ -70,11 +64,11 @@ function LFCard({
       style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}
       activeOpacity={0.75}
     >
-      <View style={[styles.thumb, { backgroundColor: bg }]}>
+      <View style={[styles.thumb, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : C.surface2 }]}>
         {item.photo_url ? (
           <Image source={{ uri: item.photo_url }} style={styles.thumbImg} resizeMode="cover" />
         ) : (
-          <Icon name={CAT_ICON[item.category] ?? 'inbox'} size={24} color={fg} />
+          <Icon name={CAT_ICON[item.category] ?? 'inbox'} size={24} color={LF_COLOR} />
         )}
       </View>
       <View style={styles.cardBody}>
@@ -98,8 +92,8 @@ function LFCard({
               {item.type}
             </Text>
           </View>
-          <View style={[styles.catBadge, { backgroundColor: bg }]}>
-            <Text style={[styles.catBadgeTxt, { color: fg, fontFamily: FontFamily.jakartaBold }]}>
+          <View style={[styles.catBadge, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2 }]}>
+            <Text style={[styles.catBadgeTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
               {item.category}
             </Text>
           </View>
@@ -300,7 +294,7 @@ export function LostFoundBrowseScreen({ navigation }: any) {
   const TABS: TabItem<TabFilter>[] = useMemo(() => [
     { id: 'Lost',  label: t.lf.lost,  icon: 'alert-circle', count: counts.Lost,  color: C.danger },
     { id: 'Found', label: t.lf.found, icon: 'check-circle', count: counts.Found, color: C.success },
-    { id: 'mine',  label: t.lf.mine,  icon: 'user',         count: counts.mine,  color: '#8B5CF6' },
+    { id: 'mine',  label: t.lf.mine,  icon: 'user',         count: counts.mine,  color: LF_COLOR },
   ], [t.lf, counts.Lost, counts.Found, counts.mine, C.danger, C.success]);
 
   const STATUS_OPTIONS: {
@@ -308,28 +302,24 @@ export function LostFoundBrowseScreen({ navigation }: any) {
     label: string;
     hint: string;
     icon: string;
-    fg: string;
   }[] = [
     {
       id: 'Open',
       label: t.lf.statusOpenOnly,
       hint: t.lf.statusOpenHint,
       icon: 'clock',
-      fg: SectorColors.lostfound,
     },
     {
       id: 'Resolved',
       label: t.lf.statusResolvedOnly,
       hint: t.lf.statusResolvedHint,
       icon: 'check-circle',
-      fg: C.success,
     },
     {
       id: 'All',
       label: t.lf.statusAllOnly,
       hint: t.lf.statusAllHint,
       icon: 'layers',
-      fg: Accent.blue,
     },
   ];
 
@@ -546,8 +536,6 @@ export function LostFoundBrowseScreen({ navigation }: any) {
               <View style={styles.catOptionsList}>
                 {STATUS_OPTIONS.map(s => {
                   const selected = draftStatus === s.id;
-                  const fg = s.fg;
-                  const bg = pillBg(fg, isDark);
 
                   return (
                     <TouchableOpacity
@@ -555,29 +543,73 @@ export function LostFoundBrowseScreen({ navigation }: any) {
                       style={[
                         styles.catOptionRow,
                         {
-                          backgroundColor: selected ? bg : C.surface,
-                          borderColor: selected ? fg : C.border,
+                          backgroundColor: selected ? LF_BG : C.surface2,
+                          borderColor: selected ? LF_COLOR : C.border,
                           borderWidth: selected ? 1.5 : 1,
                         },
                       ]}
                       onPress={() => setDraftStatus(s.id)}
                       activeOpacity={0.75}
                     >
-                      <View style={[styles.catOptionIcon, { backgroundColor: selected ? `${fg}28` : bg }]}>
-                        <Feather name={s.icon as any} size={18} color={fg} />
+                      <View
+                        style={[
+                          styles.catOptionIcon,
+                          {
+                            backgroundColor: selected
+                              ? `${LF_COLOR}28`
+                              : isDark
+                              ? 'rgba(255,255,255,0.06)'
+                              : 'rgba(0,0,0,0.05)',
+                          },
+                        ]}
+                      >
+                        <Feather name={s.icon as any} size={18} color={selected ? LF_COLOR : C.text2} />
                       </View>
                       <View style={{ flex: 1, minWidth: 0 }}>
-                        <Text style={[styles.catOptionTitle, { color: selected ? fg : C.text, fontFamily: FontFamily.jakartaBold }]}>
+                        <Text
+                          style={[
+                            styles.catOptionTitle,
+                            {
+                              color: selected ? LF_COLOR : C.text,
+                              fontFamily: FontFamily.jakartaBold,
+                            },
+                          ]}
+                        >
                           {s.label}
                         </Text>
                         {s.hint && (
-                          <Text style={[styles.catOptionHint, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
+                          <Text
+                            style={[
+                              styles.catOptionHint,
+                              { color: C.textMuted, fontFamily: FontFamily.jakartaRegular },
+                            ]}
+                            numberOfLines={1}
+                          >
                             {s.hint}
                           </Text>
                         )}
                       </View>
-                      <View style={[styles.catOptionCount, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : C.surface2 }]}>
-                        <Text style={[styles.catOptionCountTxt, { color: selected ? fg : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                      <View
+                        style={[
+                          styles.catOptionCount,
+                          {
+                            backgroundColor: selected
+                              ? `${LF_COLOR}24`
+                              : isDark
+                              ? 'rgba(255,255,255,0.06)'
+                              : C.surface,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.catOptionCountTxt,
+                            {
+                              color: selected ? LF_COLOR : C.textMuted,
+                              fontFamily: FontFamily.jakartaBold,
+                            },
+                          ]}
+                        >
                           {statusCounts[s.id] ?? 0}
                         </Text>
                       </View>
@@ -593,19 +625,27 @@ export function LostFoundBrowseScreen({ navigation }: any) {
               <View style={styles.catOptionsList}>
                 {CATEGORIES.map(cat => {
                   const selected = draftCategory === cat.id;
-                  const fg = cat.fg;
-                  const bg = pillBg(fg, isDark);
-                  const label = cat.id === 'All' ? t.lf.allCategories
-                    : cat.id === 'Personal' ? t.lf.catPersonal
-                    : cat.id === 'Electronics' ? t.lf.catElectronics
-                    : cat.id === 'Documents' ? t.lf.catDocuments
-                    : t.lf.catOther;
+                  const label =
+                    cat.id === 'All'
+                      ? t.lf.allCategories
+                      : cat.id === 'Personal'
+                      ? t.lf.catPersonal
+                      : cat.id === 'Electronics'
+                      ? t.lf.catElectronics
+                      : cat.id === 'Documents'
+                      ? t.lf.catDocuments
+                      : t.lf.catOther;
 
-                  const hint = cat.id === 'Personal' ? t.lf.catPersonalHint
-                    : cat.id === 'Electronics' ? t.lf.catElectronicsHint
-                    : cat.id === 'Documents' ? t.lf.catDocumentsHint
-                    : cat.id === 'Other' ? t.lf.catOtherHint
-                    : null;
+                  const hint =
+                    cat.id === 'Personal'
+                      ? t.lf.catPersonalHint
+                      : cat.id === 'Electronics'
+                      ? t.lf.catElectronicsHint
+                      : cat.id === 'Documents'
+                      ? t.lf.catDocumentsHint
+                      : cat.id === 'Other'
+                      ? t.lf.catOtherHint
+                      : null;
 
                   return (
                     <TouchableOpacity
@@ -613,29 +653,73 @@ export function LostFoundBrowseScreen({ navigation }: any) {
                       style={[
                         styles.catOptionRow,
                         {
-                          backgroundColor: selected ? bg : C.surface,
-                          borderColor: selected ? fg : C.border,
+                          backgroundColor: selected ? LF_BG : C.surface2,
+                          borderColor: selected ? LF_COLOR : C.border,
                           borderWidth: selected ? 1.5 : 1,
                         },
                       ]}
                       onPress={() => setDraftCategory(cat.id)}
                       activeOpacity={0.75}
                     >
-                      <View style={[styles.catOptionIcon, { backgroundColor: selected ? `${fg}28` : bg }]}>
-                        <Icon name={cat.icon} size={18} color={fg} />
+                      <View
+                        style={[
+                          styles.catOptionIcon,
+                          {
+                            backgroundColor: selected
+                              ? `${LF_COLOR}28`
+                              : isDark
+                              ? 'rgba(255,255,255,0.06)'
+                              : 'rgba(0,0,0,0.05)',
+                          },
+                        ]}
+                      >
+                        <Icon name={cat.icon} size={18} color={selected ? LF_COLOR : C.text2} />
                       </View>
                       <View style={{ flex: 1, minWidth: 0 }}>
-                        <Text style={[styles.catOptionTitle, { color: selected ? fg : C.text, fontFamily: FontFamily.jakartaBold }]}>
+                        <Text
+                          style={[
+                            styles.catOptionTitle,
+                            {
+                              color: selected ? LF_COLOR : C.text,
+                              fontFamily: FontFamily.jakartaBold,
+                            },
+                          ]}
+                        >
                           {label}
                         </Text>
                         {hint && (
-                          <Text style={[styles.catOptionHint, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
+                          <Text
+                            style={[
+                              styles.catOptionHint,
+                              { color: C.textMuted, fontFamily: FontFamily.jakartaRegular },
+                            ]}
+                            numberOfLines={1}
+                          >
                             {hint}
                           </Text>
                         )}
                       </View>
-                      <View style={[styles.catOptionCount, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : C.surface2 }]}>
-                        <Text style={[styles.catOptionCountTxt, { color: selected ? fg : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                      <View
+                        style={[
+                          styles.catOptionCount,
+                          {
+                            backgroundColor: selected
+                              ? `${LF_COLOR}24`
+                              : isDark
+                              ? 'rgba(255,255,255,0.06)'
+                              : C.surface,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.catOptionCountTxt,
+                            {
+                              color: selected ? LF_COLOR : C.textMuted,
+                              fontFamily: FontFamily.jakartaBold,
+                            },
+                          ]}
+                        >
                           {catCounts[cat.id] ?? 0}
                         </Text>
                       </View>
