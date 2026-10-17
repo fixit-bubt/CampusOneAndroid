@@ -133,24 +133,63 @@ export async function prepareDocumentForViewer(
 ): Promise<PreparedDocument> {
   const isRemote = /^https?:\/\//i.test(fileUrlOrPath);
   let localSourceFile: File;
+  let rawBytes: Uint8Array | null = null;
 
   if (isRemote) {
     const cacheKey = hashUrl(fileUrlOrPath);
-    const cleanName = safeFileName(suggestedName || 'notice.pdf');
-    const cachedFile = new File(noticesCacheDir(), `${cacheKey}_${cleanName}`);
+    // Sanitize suggestedName: strip illegal chars, spaces to underscores, guarantee .pdf
+    const baseName = (suggestedName || 'notice')
+      .replace(/\.pdf$/i, '')
+      .replace(/[^a-zA-Z0-9_-]/g, '_')
+      .slice(0, 48);
+    const cleanFileName = `${cacheKey}_${baseName}.pdf`;
+    const cachedFile = new File(noticesCacheDir(), cleanFileName);
 
     if (forceRefresh && cachedFile.exists) {
       try { cachedFile.delete(); } catch { /* ignore */ }
     }
 
     if (!cachedFile.exists || cachedFile.size === 0) {
-      // Download remote PDF to cache
-      const downloaded = await File.downloadFileAsync(fileUrlOrPath, noticesCacheDir(), { idempotent: true });
-      if (downloaded.uri !== cachedFile.uri) {
-        if (cachedFile.exists) cachedFile.delete();
-        await new File(downloaded.uri).copy(cachedFile);
-        try { new File(downloaded.uri).delete(); } catch { /* ignore */ }
+      let downloadOk = false;
+
+      // 1. Primary: Native file download directly to destination file
+      try {
+        if (cachedFile.exists) {
+          try { cachedFile.delete(); } catch { /* ignore */ }
+        }
+        const downloaded = await File.downloadFileAsync(fileUrlOrPath, cachedFile, { idempotent: true });
+        if (downloaded && downloaded.exists && downloaded.size > 0) {
+          downloadOk = true;
+        }
+      } catch (nativeErr: any) {
+        console.warn('Native downloadFileAsync failed, attempting fetch fallback:', nativeErr?.message);
       }
+
+      // 2. Secondary: Standard React Native fetch() stream fallback
+      if (!downloadOk || !cachedFile.exists || cachedFile.size === 0) {
+        try {
+          const res = await fetch(fileUrlOrPath);
+          if (!res.ok) {
+            throw new Error(`Server returned HTTP ${res.status}`);
+          }
+          const buf = await res.arrayBuffer();
+          const bytes = new Uint8Array(buf);
+          if (bytes.length === 0) {
+            throw new Error('Downloaded document content is empty');
+          }
+          if (cachedFile.exists) {
+            try { cachedFile.delete(); } catch { /* ignore */ }
+          }
+          cachedFile.create();
+          cachedFile.write(bytes);
+          rawBytes = bytes;
+          downloadOk = true;
+        } catch (fetchErr: any) {
+          console.error('Fetch fallback error for PDF:', fetchErr);
+          throw new Error(`Could not download PDF: ${fetchErr?.message || 'Network error'}`);
+        }
+      }
+
       pruneNoticesCache();
     }
 
@@ -160,28 +199,43 @@ export async function prepareDocumentForViewer(
     localSourceFile = new File(fileUrlOrPath);
   }
 
-  if (!localSourceFile.exists) {
+  if (!localSourceFile.exists || localSourceFile.size === 0) {
     throw new Error('PDF file could not be found or downloaded.');
   }
 
-  // Copy into engineDir() under the fixed name 'active_viewer_doc.pdf'
-  const targetInEngine = new File(engineDir(), 'active_viewer_doc.pdf');
-  if (targetInEngine.exists) {
-    targetInEngine.delete();
-  }
-  await localSourceFile.copy(targetInEngine);
-
-  // Read bytes into memory for fast base64 passing (avoids any WebView file-access or XHR bugs)
-  let base64Data: string | undefined;
-  try {
-    const rawBytes = await localSourceFile.bytes();
-    // PDFs under 8MB can be safely passed in memory
-    if (rawBytes.length > 0 && rawBytes.length <= 8 * 1024 * 1024) {
-      base64Data = bytesToBase64(rawBytes);
+  // Load raw bytes for memory loading
+  if (!rawBytes) {
+    try {
+      rawBytes = await localSourceFile.bytes();
+    } catch (err) {
+      console.warn('Could not read local file bytes:', err);
     }
-  } catch (err) {
-    // Non-fatal: viewer will fallback to reading file directly via XHR
-    console.warn('Could not read PDF bytes into memory, will use file path:', err);
+  }
+
+  // Prepare active_viewer_doc.pdf in engineDir()
+  const targetInEngine = new File(engineDir(), 'active_viewer_doc.pdf');
+  try {
+    if (targetInEngine.exists) {
+      targetInEngine.delete();
+    }
+    if (rawBytes) {
+      targetInEngine.create();
+      targetInEngine.write(rawBytes);
+    } else {
+      await localSourceFile.copy(targetInEngine);
+    }
+  } catch (copyErr) {
+    console.warn('Could not write active_viewer_doc.pdf in engineDir:', copyErr);
+  }
+
+  // Generate base64 string for zero-CORS in-memory WebView loading
+  let base64Data: string | undefined;
+  if (rawBytes && rawBytes.length > 0 && rawBytes.length <= 16 * 1024 * 1024) {
+    try {
+      base64Data = bytesToBase64(rawBytes);
+    } catch (err) {
+      console.warn('Could not encode bytes to base64:', err);
+    }
   }
 
   return {

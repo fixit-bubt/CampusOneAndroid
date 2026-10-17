@@ -131,6 +131,15 @@ export function buildViewerHtml(isDark: boolean = true): string {
 
     async function initPdfWithBytes(bytes) {
       try {
+        if (pdfDoc) {
+          try { await pdfDoc.destroy(); } catch (e) {}
+          pdfDoc = null;
+        }
+        renderedPages.clear();
+        renderingPages.clear();
+        container.innerHTML = '';
+        window.scrollTo(0, 0);
+
         pdfDoc = await pdfjs.getDocument({
           data: bytes,
           useSystemFonts: true
@@ -297,6 +306,52 @@ export function buildViewerHtml(isDark: boolean = true): string {
       }
     };
 
+    window.findSectionPage = async function(query) {
+      if (!pdfDoc) return -1;
+      const q = (query || '').toLowerCase().trim();
+      if (!q) return -1;
+      const rawTokens = q.split(/[\s,·\-_/]+/).filter(function(t) { return t.length > 0; });
+      const pageTexts = [];
+      for (let i = 1; i <= totalPages; i++) {
+        try {
+          const page = await pdfDoc.getPage(i);
+          const textContent = await page.getTextContent();
+          const str = textContent.items.map(function(it) { return it.str; }).join(' ').toLowerCase();
+          pageTexts.push({ pageNum: i, text: str });
+        } catch (e) {
+          pageTexts.push({ pageNum: i, text: '' });
+        }
+      }
+
+      // Pass 1: Strict match (all tokens present)
+      for (let idx = 0; idx < pageTexts.length; idx++) {
+        const item = pageTexts[idx];
+        const allMatch = rawTokens.every(function(t) { return item.text.indexOf(t) !== -1; });
+        if (allMatch) {
+          window.scrollToPage(item.pageNum);
+          send({ type: 'pageMatched', page: item.pageNum, query: query, totalPages: totalPages });
+          return item.pageNum;
+        }
+      }
+
+      // Pass 2: Look for digits (e.g. intake "51" and section "2")
+      const digits = rawTokens.filter(function(t) { return /^\d+$/.test(t); });
+      if (digits.length >= 2) {
+        for (let idx = 0; idx < pageTexts.length; idx++) {
+          const item = pageTexts[idx];
+          const hasAllDigits = digits.every(function(d) { return item.text.indexOf(d) !== -1; });
+          if (hasAllDigits) {
+            window.scrollToPage(item.pageNum);
+            send({ type: 'pageMatched', page: item.pageNum, query: query, totalPages: totalPages });
+            return item.pageNum;
+          }
+        }
+      }
+
+      send({ type: 'pageMatched', page: -1, query: query, totalPages: totalPages });
+      return -1;
+    };
+
     function setupDoubleTapZoom() {
       let lastTap = 0;
       let isZoomed = false;
@@ -320,6 +375,7 @@ export function buildViewerHtml(isDark: boolean = true): string {
     }
 
     // Tell React Native the viewer shell is ready
+    window.__viewerShellReady = true;
     send({ type: 'viewerReady' });
   </script>
 </body>

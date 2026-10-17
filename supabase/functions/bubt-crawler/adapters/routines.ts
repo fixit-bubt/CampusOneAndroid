@@ -52,6 +52,11 @@ export async function runRoutinesAdapter(
       fileUrl = clean.startsWith('http') ? clean : `${BUBT_UPLOADS_BASE}${clean}`;
     }
 
+    // Only accept viewable PDF or image files (skip docx or null attachments)
+    if (!fileUrl || !/\.(pdf|png|jpe?g|webp)$/i.test(fileUrl)) {
+      continue;
+    }
+
     const fingerprint = await computeFingerprint(`${title}|${type}|${department || ''}|${fileUrl || ''}`);
 
     routineItems.push({

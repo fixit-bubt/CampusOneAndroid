@@ -32,6 +32,8 @@ interface CampusPdfViewerModalProps {
   category?: string;
   fileUrl: string | null;
   fileName?: string;
+  initialSearchQuery?: string;
+  targetPage?: number;
 }
 
 export function CampusPdfViewerModal({
@@ -42,6 +44,8 @@ export function CampusPdfViewerModal({
   category,
   fileUrl,
   fileName,
+  initialSearchQuery,
+  targetPage,
 }: CampusPdfViewerModalProps) {
   const { C, isDark } = useTheme();
   const insets = useSafeAreaInsets();
@@ -66,12 +70,16 @@ export function CampusPdfViewerModal({
   const docPayloadRef = useRef<{ base64?: string; fileUri?: string } | null>(null);
 
   const sendDocumentToWebView = useCallback(() => {
-    if (!webViewReadyRef.current || !docPayloadRef.current) return;
+    if (!docPayloadRef.current) return;
     const payload = docPayloadRef.current;
     if (payload.base64) {
-      webRef.current?.injectJavaScript(`window.loadPdfData(${JSON.stringify(payload.base64)}); true;`);
+      webRef.current?.injectJavaScript(
+        `if (typeof window.loadPdfData === 'function') { window.loadPdfData(${JSON.stringify(payload.base64)}); } true;`
+      );
     } else if (payload.fileUri) {
-      webRef.current?.injectJavaScript(`window.loadPdfDoc(${JSON.stringify(payload.fileUri)}); true;`);
+      webRef.current?.injectJavaScript(
+        `if (typeof window.loadPdfDoc === 'function') { window.loadPdfDoc(${JSON.stringify(payload.fileUri)}); } true;`
+      );
     }
   }, []);
 
@@ -141,6 +149,26 @@ export function CampusPdfViewerModal({
       } else if (data.type === 'docOpened') {
         setTotalPages(data.totalPages || 1);
         setLoading(false);
+        if (initialSearchQuery) {
+          webRef.current?.injectJavaScript(`window.findSectionPage(${JSON.stringify(initialSearchQuery)}); true;`);
+        } else if (targetPage && targetPage > 1) {
+          webRef.current?.injectJavaScript(`window.scrollToPage(${targetPage}); true;`);
+        }
+      } else if (data.type === 'pageMatched') {
+        if (data.page > 0) {
+          setCurrentPage(data.page);
+          toast({
+            type: 'success',
+            title: 'Section Located',
+            message: `Showing page ${data.page} of ${data.totalPages || totalPages} for "${data.query}"`,
+          });
+        } else {
+          toast({
+            type: 'info',
+            title: 'Section Not Found',
+            message: `Could not locate "${data.query}" automatically. Showing full document.`,
+          });
+        }
       } else if (data.type === 'pageChange') {
         if (data.page) setCurrentPage(data.page);
         if (data.total) setTotalPages(data.total);
@@ -151,7 +179,7 @@ export function CampusPdfViewerModal({
     } catch {
       // ignore malformed messages
     }
-  }, [sendDocumentToWebView]);
+  }, [sendDocumentToWebView, initialSearchQuery, targetPage, totalPages, toast]);
 
   // Share handler
   const handleShare = useCallback(async () => {
@@ -278,6 +306,14 @@ export function CampusPdfViewerModal({
                 setSupportMultipleWindows={false}
                 showsVerticalScrollIndicator={false}
                 showsHorizontalScrollIndicator={false}
+                onLoadEnd={() => {
+                  webRef.current?.injectJavaScript(`
+                    if (window.__viewerShellReady && window.ReactNativeWebView) {
+                      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'viewerReady' }));
+                    }
+                    true;
+                  `);
+                }}
                 onMessage={handleMessage}
                 onError={() => {
                   setErrorMsg('Failed to render PDF engine.');
