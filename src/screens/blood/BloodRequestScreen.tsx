@@ -19,6 +19,7 @@ import { useToast } from '../../components/ui/Toast';
 import { removeCache, CacheKeys } from '../../services/cacheService';
 import { AreaPickerModal } from '../../components/blood/AreaPickerModal';
 import { DHAKA_AREAS } from '../../constants/dhakaAreas';
+import type { Coordinates } from '../../services/locationService';
 import type { BloodRequest } from '../../types/database';
 
 const GROUPS: BloodRequest['blood_group'][] = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
@@ -82,6 +83,7 @@ export function BloodRequestScreen({ navigation }: any) {
 
   const [hospital, setHospital] = useState('');
   const [area, setArea] = useState('');
+  const [coords, setCoords] = useState<Coordinates | null>(null);
   const [urgency, setUrgency] = useState<BloodRequest['urgency']>('Today');
   const [isPlatelets, setIsPlatelets] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -113,7 +115,7 @@ export function BloodRequestScreen({ navigation }: any) {
     setAffModalVisible(false);
   }
 
-  function handleSelectLocation(selected: string, subLocation?: string) {
+  function handleSelectLocation(selected: string, subLocation?: string, locCoords?: Coordinates) {
     if (selected === 'All') return;
     setHospital(selected);
     if (subLocation) {
@@ -125,6 +127,9 @@ export function BloodRequestScreen({ navigation }: any) {
       } else {
         setArea(selected);
       }
+    }
+    if (locCoords) {
+      setCoords(locCoords);
     }
   }
 
@@ -158,6 +163,8 @@ export function BloodRequestScreen({ navigation }: any) {
         area:         area.trim() || 'Near campus',
         urgency,
         requester_id: user.id,
+        latitude:     coords?.latitude ?? null,
+        longitude:    coords?.longitude ?? null,
       });
       if (error) throw error;
       await Promise.all([
@@ -469,6 +476,7 @@ export function BloodRequestScreen({ navigation }: any) {
                     onPress={() => {
                       setHospital('');
                       setArea('');
+                      setCoords(null);
                     }}
                     style={[styles.clearPill, { backgroundColor: C.surface2, borderColor: C.border, borderWidth: 1 }]}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}

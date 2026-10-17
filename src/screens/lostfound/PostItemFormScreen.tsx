@@ -22,6 +22,8 @@ import { rankMatches, type MatchItem } from '../../utils/lostFoundMatch';
 import { uploadPhoto, deleteFile } from '../../utils/storage';
 import { BUCKETS } from '../../constants/app';
 import { getCache, setCache, CacheKeys } from '../../services/cacheService';
+import { BUBT_COORDS, type Coordinates } from '../../services/locationService';
+import { findMasterLocationByName } from '../../constants/dhakaMasterLocations';
 import type { LostFoundItem } from '../../types/database';
 import { useT } from '../../i18n';
 
@@ -182,6 +184,7 @@ export function PostItemFormScreen({ route, navigation }: any) {
   const [cat, setCat]   = useState<LostFoundItem['category'] | null>(null);
   const [title, setTitle] = useState('');
   const [loc, setLoc]     = useState('');
+  const [locCoords, setLocCoords] = useState<Coordinates | null>(null);
   const [desc, setDesc]   = useState('');
   const [busy, setBusy]   = useState(false);
   const [err, setErr]     = useState('');
@@ -208,7 +211,7 @@ export function PostItemFormScreen({ route, navigation }: any) {
     (async () => {
       const { data } = await supabase
         .from('lost_found_items')
-        .select('type, category, title, location, description, photo_url')
+        .select('type, category, title, location, description, photo_url, latitude, longitude')
         .eq('id', editId)
         .single();
       if (data) {
@@ -219,6 +222,9 @@ export function PostItemFormScreen({ route, navigation }: any) {
         setDesc(data.description ?? '');
         setExistingPhotoUrl(data.photo_url ?? null);
         setOriginalPhotoUrl(data.photo_url ?? null);
+        if (data.latitude && data.longitude) {
+          setLocCoords({ latitude: data.latitude, longitude: data.longitude });
+        }
       }
     })();
   }, [editId]);
@@ -302,6 +308,8 @@ export function PostItemFormScreen({ route, navigation }: any) {
       uploadedPath = up.path;
     }
 
+    const finalCoords = locCoords || findMasterLocationByName(loc.trim())?.coords || (loc.toLowerCase().includes('bubt') || loc.toLowerCase().includes('building') || loc.toLowerCase().includes('room') ? BUBT_COORDS : null);
+
     if (isEdit) {
       const { data, error } = await supabase
         .from('lost_found_items')
@@ -311,6 +319,8 @@ export function PostItemFormScreen({ route, navigation }: any) {
           category:    cat,
           description: desc.trim() || title.trim(),
           location:    loc.trim() || 'Campus',
+          latitude:    finalCoords?.latitude ?? null,
+          longitude:   finalCoords?.longitude ?? null,
           photo_url:   photoUrl,
         })
         .eq('id', editId)
@@ -350,6 +360,8 @@ export function PostItemFormScreen({ route, navigation }: any) {
           category:    cat,
           description: desc.trim() || title.trim(),
           location:    loc.trim() || 'Campus',
+          latitude:    finalCoords?.latitude ?? null,
+          longitude:   finalCoords?.longitude ?? null,
           item_date:   localToday(),
           status:      'Open',
           poster_id:   user.id,
@@ -1048,6 +1060,7 @@ export function PostItemFormScreen({ route, navigation }: any) {
                       onPress={() => {
                         setLoc(hubName);
                         setLocInputText(hubName);
+                        setLocCoords(BUBT_COORDS);
                         setLocModalVisible(false);
                       }}
                       activeOpacity={0.75}
@@ -1121,6 +1134,7 @@ export function PostItemFormScreen({ route, navigation }: any) {
         onSelectLocation={(place) => {
           setLoc(place.formattedAddress);
           setLocInputText(place.formattedAddress);
+          setLocCoords(place.coords);
           setMapModalVisible(false);
         }}
       />

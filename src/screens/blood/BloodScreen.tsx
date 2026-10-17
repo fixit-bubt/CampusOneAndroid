@@ -869,8 +869,10 @@ export function BloodScreen({ route, navigation }: any) {
                     <TouchableOpacity
                       style={[styles.hospitalTouchRow, { backgroundColor: C.surface2, borderColor: C.border }]}
                       onPress={() => {
-                        const resolved = resolveHospitalLocation(r.hospital, r.area);
-                        setHospitalMapTarget({ hospital: r.hospital, area: r.area, coords: resolved.coords });
+                        const targetCoords = (r.latitude != null && r.longitude != null && Number.isFinite(r.latitude) && Number.isFinite(r.longitude))
+                          ? { latitude: r.latitude, longitude: r.longitude }
+                          : resolveHospitalLocation(r.hospital, r.area).coords;
+                        setHospitalMapTarget({ hospital: r.hospital, area: r.area, coords: targetCoords });
                       }}
                       activeOpacity={0.75}
                     >

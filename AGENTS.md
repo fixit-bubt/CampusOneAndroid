@@ -2379,4 +2379,32 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 - **System Display Scale Protection (`textZoom={100}`):** Configured `<WebView textZoom={100}>` across `AnnouncementDetailScreen.tsx` and `CampusPdfViewerModal.tsx` so Android system-level accessibility font and display magnifications do not expand WebView text and canvas dimensions beyond viewport bounds.
 - **Recursive DOM Alignment Loop:** Injected interval function periodically sweeps rendered `<img, canvas>` elements, enforcing `width: 100%`, `margin: 0 auto 10px auto`, `left: 0px`, and traversing 5 levels of parent nodes to force `left: 0px`, `padding-left: 0px`, `padding-right: 0px`, and `box-sizing: border-box`, ensuring 100% edge-to-edge alignment with zero right-side clipping.
 
+---
+
+## 51. Unified Map, Navigation & Master Location Architecture
+
+### 51.1 Root Cause Diagnosis & Architectural Overhaul
+- **The "Ibn Sina Hijacking" Defect:** In `dhakaHospitalCoords.ts`, hospital entries contained overly broad generic area names in their keyword lists (e.g. `mirpur-10`, `mirpur-2`, `rupnagar`, `shiyalbari`, `commerce college`). Because `resolveHospitalLocation` was called before landmark lookups and used substring matching without word boundaries, every search or post in Mirpur, Rupnagar, or Commerce College road was falsely identified as "Ibn Sina Center (Mirpur-10)" and pinned to Mirpur-10 roundabout coordinates (`23.8071, 90.3686`).
+- **Complete Keyword Sanitization:** Purged all 45 generic area names from all 108 hospitals in `dhakaHospitalCoords.ts` (0 bad keywords remaining). Hospital matching now exclusively matches actual hospital names, health complexes, and diagnostic center aliases.
+- **Bilingual Bengali Ground Truth:** Added comprehensive Bengali area mappings to `DHAKA_AREA_CENTERS` (e.g., `'মগবাজার'`, `'মিরপুর'`, `'মিরপুর-২'`, `'রুপনগর'`, `'উত্তরা'`) and enhanced keyword boundary matching to support Bengali Unicode scripts (`[\u0980-\u09FF]`).
+- **Master Location Catalog (`src/constants/dhakaMasterLocations.ts`):** Centralized ground truth repository containing 513 verified places: 111 hospitals, 34 universities, 55 landmarks, 254 areas, and 65 transit hubs. Lookups prioritize exact name matching, then prefix/boundary matching, before hospital resolution.
+
+### 51.2 Coordinate Persistence Across All Database Entities
+- **Schema Migration (`20261027000000_add_coordinates_to_map_features.sql`):** Added explicit GPS coordinate columns to remote Supabase DB (`xhgpxvyqrufbbuivttmi`):
+  - `blood_requests`: `latitude double precision`, `longitude double precision`
+  - `rides`: `origin_lat double precision`, `origin_lng double precision`, `dest_lat double precision`, `dest_lng double precision`
+  - `listings` (Marketplace): `latitude double precision`, `longitude double precision`
+  - `lost_found_items`: `latitude double precision`, `longitude double precision`
+- **End-to-End Post Flow Persistence:**
+  - `BloodRequestScreen.tsx`: Captures `coords` from `AreaPickerModal` / `LocationPickerModal` and inserts into `blood_requests`.
+  - `RidePostScreen.tsx`: Maintains `fromCoords` and `toCoords`, inserting `origin_lat`, `origin_lng`, `dest_lat`, `dest_lng` into `rides`.
+  - `MarketPostScreen.tsx`: Captures `meetupCoords` from `LocationPickerModal` or master lookup and persists `latitude`, `longitude` into `listings`.
+  - `PostItemFormScreen.tsx`: Captures `locCoords` from map pin or presets and persists `latitude`, `longitude` into `lost_found_items`.
+
+### 51.3 Navigation & Direction Synchronization
+- **Numeric GPS Handoff:** In `DirectionMapModal.tsx`, external Google Maps intents always construct destination URLs using exact numeric coordinates when available (`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destCoords.latitude},${destCoords.longitude}&travelmode=driving`), completely bypassing fuzzy search engine re-interpretation.
+- **Clean Reverse Geocoding (`locationService.ts`):** `reverseGeocodeCoords` snaps to verified master landmarks within 70m. For unlisted coordinates, it formats clean, recognizable street/area descriptions (`road + cityArea`, e.g., "Outer Circular Road, Moghbazar") and filters out noisy private clinic/ATM nodes (e.g. "Shefali Chowdhury").
+- **Detail Screen Integration:** `BloodScreen.tsx`, `RideDetailScreen.tsx`, `MarketDetailScreen.tsx`, and `LostFoundDetailScreen.tsx` read persisted database coordinates first, passing them directly to distance estimators and `DirectionMapModal`.
+
+
 

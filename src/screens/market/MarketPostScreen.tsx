@@ -21,6 +21,8 @@ import { supabase } from '../../lib/supabase';
 import { uploadPhoto, uploadFile } from '../../utils/storage';
 import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 import { ALL_DHAKA_COMMUTE_AREAS } from '../rides/RidePostScreen';
+import { BUBT_COORDS, type Coordinates } from '../../services/locationService';
+import { findMasterLocationByName } from '../../constants/dhakaMasterLocations';
 import type { Listing } from '../../types/database';
 
 const MARKET_COLOR = SectorColors.market;
@@ -85,6 +87,9 @@ export function MarketPostScreen({ route, navigation }: any) {
   const [desc, setDesc] = useState(listing?.description ?? '');
   const [courseCode, setCourseCode] = useState(listing?.course_code ?? '');
   const [meetupSpot, setMeetupSpot] = useState(listing?.meetup_spot ?? '');
+  const [meetupCoords, setMeetupCoords] = useState<Coordinates | null>(
+    (listing?.latitude && listing?.longitude) ? { latitude: listing.latitude, longitude: listing.longitude } : null
+  );
   const [customMode, setCustomMode] = useState(false);
   const [photoUri, setPhotoUri] = useState<string | null>(listing?.photo_url ?? null);
   const [isLocalPhoto, setIsLocalPhoto] = useState(false);
@@ -197,6 +202,12 @@ export function MarketPostScreen({ route, navigation }: any) {
   // Location selection helper
   function handleSelectLocation(name: string) {
     setMeetupSpot(name);
+    const found = findMasterLocationByName(name);
+    if (found) {
+      setMeetupCoords(found.coords);
+    } else if (name.toLowerCase().includes('bubt')) {
+      setMeetupCoords(BUBT_COORDS);
+    }
     setLocationModalOpen(false);
     setSearchLoc('');
   }
@@ -242,6 +253,8 @@ export function MarketPostScreen({ route, navigation }: any) {
       const numericPrice = isFree ? 0 : (parseInt(price.replace(/[^0-9]/g, ''), 10) || 0);
       const finalCategory = cat === 'Other' && customCat.trim() ? customCat.trim() : cat;
 
+      const finalCoords = meetupCoords || (meetupSpot ? findMasterLocationByName(meetupSpot.trim())?.coords : null) || (meetupSpot?.toLowerCase().includes('bubt') ? BUBT_COORDS : null);
+
       const payload: any = {
         title:       title.trim(),
         price:       numericPrice,
@@ -253,6 +266,8 @@ export function MarketPostScreen({ route, navigation }: any) {
         photos:      finalPhotoUrl ? [finalPhotoUrl] : [],
         course_code: showCourse ? (courseCode.trim().toUpperCase() || null) : null,
         meetup_spot: meetupSpot.trim() || null,
+        latitude:    finalCoords?.latitude ?? null,
+        longitude:   finalCoords?.longitude ?? null,
         seller_id:   user.id,
         status:      listing?.status ?? 'Available',
       };
@@ -996,6 +1011,7 @@ export function MarketPostScreen({ route, navigation }: any) {
       initialPlaceName={meetupSpot}
       onSelectLocation={(place) => {
         setMeetupSpot(place.formattedAddress);
+        setMeetupCoords(place.coords);
       }}
     />
     </SafeAreaView>

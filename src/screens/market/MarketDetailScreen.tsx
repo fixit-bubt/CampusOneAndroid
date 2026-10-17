@@ -21,6 +21,7 @@ import {
   getCurrentUserCoordinates,
   getDistanceMeters,
   findMasterLocationByName,
+  BUBT_COORDS,
   type Coordinates,
 } from '../../services/locationService';
 import {
@@ -81,14 +82,16 @@ export function MarketDetailScreen({ route, navigation }: any) {
   // Compute live distance to handover meetup spot
   useEffect(() => {
     if (!listing?.meetup_spot || !userCoords) return;
-    const lm = findMasterLocationByName(listing.meetup_spot);
-    if (lm) {
-      const m = getDistanceMeters(userCoords.latitude, userCoords.longitude, lm.coords.latitude, lm.coords.longitude);
+    const targetCoords: Coordinates | null = (listing.latitude && listing.longitude)
+      ? { latitude: listing.latitude, longitude: listing.longitude }
+      : (findMasterLocationByName(listing.meetup_spot)?.coords || (listing.meetup_spot.toLowerCase().includes('bubt') ? BUBT_COORDS : null));
+    if (targetCoords) {
+      const m = getDistanceMeters(userCoords.latitude, userCoords.longitude, targetCoords.latitude, targetCoords.longitude);
       const km = m / 1000;
       const txt = km < 1 ? `${Math.round(m)} m away` : `${km < 10 ? km.toFixed(1) : Math.round(km)} km away`;
       setDistanceText(txt);
     }
-  }, [listing?.meetup_spot, userCoords]);
+  }, [listing?.meetup_spot, listing?.latitude, listing?.longitude, userCoords]);
 
   // Load wishlist bookmark state
   useEffect(() => {
@@ -626,6 +629,7 @@ export function MarketDetailScreen({ route, navigation }: any) {
         visible={mapModalOpen}
         onClose={() => setMapModalOpen(false)}
         destination={listing?.meetup_spot || 'Campus Handover'}
+        destinationCoords={(listing?.latitude && listing?.longitude) ? { latitude: listing.latitude, longitude: listing.longitude } : null}
         sectorColor={MARKET_COLOR}
         iconName="map-pin"
         title="Meetup Route & Directions"

@@ -400,8 +400,12 @@ export function RideDetailScreen({ route, navigation }: any) {
   const originLoc = ride?.origin ? findMasterLocationByName(ride.origin) : null;
   const destLoc = ride?.destination ? findMasterLocationByName(ride.destination) : null;
 
-  const originCoords = originLoc?.coords || (ride?.origin?.toLowerCase().includes('bubt') ? BUBT_COORDS : null);
-  const destCoords = destLoc?.coords || (ride?.destination?.toLowerCase().includes('bubt') ? BUBT_COORDS : null);
+  const originCoords: Coordinates | null = (ride?.origin_lat && ride?.origin_lng)
+    ? { latitude: ride.origin_lat, longitude: ride.origin_lng }
+    : (originLoc?.coords || (ride?.origin?.toLowerCase().includes('bubt') ? BUBT_COORDS : null));
+  const destCoords: Coordinates | null = (ride?.dest_lat && ride?.dest_lng)
+    ? { latitude: ride.dest_lat, longitude: ride.dest_lng }
+    : (destLoc?.coords || (ride?.destination?.toLowerCase().includes('bubt') ? BUBT_COORDS : null));
 
   let proximityText: string | null = null;
   let proximityEstimate: string | null = null;

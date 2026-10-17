@@ -17,6 +17,8 @@ import { LocationPickerModal } from '../../components/location/LocationPickerMod
 import { FontFamily, Layout, SectorColors, pillBg } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { localToday, nowDhakaMinutes, formatDate, formatTime } from '../../utils/format';
+import { BUBT_COORDS, type Coordinates } from '../../services/locationService';
+import { findMasterLocationByName } from '../../constants/dhakaMasterLocations';
 import type { Ride } from '../../types/database';
 
 const RIDE_COLOR = SectorColors.ride;
@@ -125,6 +127,8 @@ export function RidePostScreen({ route, navigation }: any) {
   const [direction, setDirection] = useState<Ride['direction']>('To Campus');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('BUBT Campus');
+  const [fromCoords, setFromCoords] = useState<Coordinates | null>(null);
+  const [toCoords, setToCoords] = useState<Coordinates | null>(BUBT_COORDS);
   const [dateChoice, setDateChoice] = useState<'today' | 'tomorrow'>(initialSchedule.defaultDate);
   const [time, setTime] = useState(initialSchedule.defaultTime);
   const [seats, setSeats] = useState(1);
@@ -197,10 +201,18 @@ export function RidePostScreen({ route, navigation }: any) {
     setDirection(dir);
     if (dir === 'To Campus') {
       setTo('BUBT Campus');
-      if (from === 'BUBT Campus') setFrom('');
+      setToCoords(BUBT_COORDS);
+      if (from === 'BUBT Campus') {
+        setFrom('');
+        setFromCoords(null);
+      }
     } else {
       setFrom('BUBT Campus');
-      if (to === 'BUBT Campus') setTo('');
+      setFromCoords(BUBT_COORDS);
+      if (to === 'BUBT Campus') {
+        setTo('');
+        setToCoords(null);
+      }
     }
   }
 
@@ -264,6 +276,9 @@ export function RidePostScreen({ route, navigation }: any) {
       ? Math.max(1, Math.min(seats, currentVehicleConfig.maxSeats))
       : Math.max(1, Math.min(seats, 4));
 
+    const finalOriginCoords = fromCoords || findMasterLocationByName(from.trim())?.coords || (from.trim().toLowerCase().includes('bubt') ? BUBT_COORDS : null);
+    const finalDestCoords = toCoords || findMasterLocationByName(to.trim())?.coords || (to.trim().toLowerCase().includes('bubt') ? BUBT_COORDS : null);
+
     setLoading(true);
     try {
       const { error } = await supabase.from('rides').insert({
@@ -272,6 +287,10 @@ export function RidePostScreen({ route, navigation }: any) {
         vehicle:     vehicle,
         origin:      from.trim(),
         destination: to.trim(),
+        origin_lat:  finalOriginCoords?.latitude ?? null,
+        origin_lng:  finalOriginCoords?.longitude ?? null,
+        dest_lat:    finalDestCoords?.latitude ?? null,
+        dest_lng:    finalDestCoords?.longitude ?? null,
         date:        selectedDate,
         time:        timePart,
         seats_total: calculatedSeats,
@@ -765,10 +784,13 @@ export function RidePostScreen({ route, navigation }: any) {
         onClose={() => setHubModalVisible(false)}
         selectedArea={targetField === 'from' ? from : to}
         onSelectArea={(areaName, subLoc, coords) => {
+          const resolvedCoords = coords || findMasterLocationByName(areaName)?.coords || null;
           if (targetField === 'from') {
             setFrom(areaName);
+            setFromCoords(resolvedCoords);
           } else {
             setTo(areaName);
+            setToCoords(resolvedCoords);
           }
           if (coords && !notes && subLoc && subLoc !== areaName) {
             setNotes(subLoc);

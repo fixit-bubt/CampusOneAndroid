@@ -74,6 +74,62 @@ export const DHAKA_ZONE_METAS = [
 
 export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
+    "id": "hosp_delta_medical_college_hospital_7",
+    "name": "Delta Medical College & Hospital",
+    "nameBn": "Delta Medical College & Hospital",
+    "category": "hospital",
+    "zone": "Dhaka City",
+    "zoneBn": "ঢাকা সিটি",
+    "subLocation": "Mirpur-1",
+    "coords": {
+      "latitude": 23.7997,
+      "longitude": 90.3533
+    },
+    "address": "Delta Medical College and Hospital, Mirpur-1, Dhaka",
+    "keywords": [
+      "delta",
+      "delta medical",
+      "ডেল্টা",
+      "ডেল্টা মেডিকেল"
+    ]
+  },
+  {
+    "id": "hosp_mirpur_general_hospital_diagno_8",
+    "name": "Mirpur General Hospital & Diagnostic",
+    "nameBn": "Mirpur General Hospital & Diagnostic",
+    "category": "hospital",
+    "zone": "Dhaka City",
+    "zoneBn": "ঢাকা সিটি",
+    "subLocation": "Mirpur-2",
+    "coords": {
+      "latitude": 23.8072,
+      "longitude": 90.3625
+    },
+    "address": "Mirpur General Hospital, Section-2, Mirpur, Dhaka",
+    "keywords": [
+      "mirpur general",
+      "মিরপুর জেনারেল"
+    ]
+  },
+  {
+    "id": "hosp_kidney_foundation_hospital_ins_9",
+    "name": "Kidney Foundation Hospital & Institute",
+    "nameBn": "Kidney Foundation Hospital & Institute",
+    "category": "hospital",
+    "zone": "Dhaka City",
+    "zoneBn": "ঢাকা সিটি",
+    "subLocation": "Mirpur-2",
+    "coords": {
+      "latitude": 23.8048,
+      "longitude": 90.361
+    },
+    "address": "Kidney Foundation Hospital, Mirpur-2, Dhaka",
+    "keywords": [
+      "kidney foundation",
+      "কিডনি ফাউন্ডেশন"
+    ]
+  },
+  {
     "id": "camp_bubt_main",
     "name": "BUBT Main Campus",
     "nameBn": "বিইউবিটি মেইন ক্যাম্পাস",

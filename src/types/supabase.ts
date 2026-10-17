@@ -347,6 +347,8 @@ export type Database = {
           fulfilled_at: string | null
           hospital: string
           id: string
+          latitude: number | null
+          longitude: number | null
           patient: string
           requester_id: string
           units: number
@@ -361,6 +363,8 @@ export type Database = {
           fulfilled_at?: string | null
           hospital: string
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           patient: string
           requester_id: string
           units: number
@@ -375,6 +379,8 @@ export type Database = {
           fulfilled_at?: string | null
           hospital?: string
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           patient?: string
           requester_id?: string
           units?: number
@@ -2000,6 +2006,8 @@ export type Database = {
           created_at: string
           description: string
           id: string
+          latitude: number | null
+          longitude: number | null
           meetup_spot: string | null
           negotiable: boolean
           photo_url: string | null
@@ -2018,6 +2026,8 @@ export type Database = {
           created_at?: string
           description: string
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           meetup_spot?: string | null
           negotiable?: boolean
           photo_url?: string | null
@@ -2036,6 +2046,8 @@ export type Database = {
           created_at?: string
           description?: string
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           meetup_spot?: string | null
           negotiable?: boolean
           photo_url?: string | null
@@ -2072,7 +2084,9 @@ export type Database = {
           description: string
           id: string
           item_date: string
+          latitude: number | null
           location: string
+          longitude: number | null
           photo_url: string | null
           poster_id: string
           status: string
@@ -2088,7 +2102,9 @@ export type Database = {
           description: string
           id?: string
           item_date: string
+          latitude?: number | null
           location: string
+          longitude?: number | null
           photo_url?: string | null
           poster_id: string
           status?: string
@@ -2104,7 +2120,9 @@ export type Database = {
           description?: string
           id?: string
           item_date?: string
+          latitude?: number | null
           location?: string
+          longitude?: number | null
           photo_url?: string | null
           poster_id?: string
           status?: string
@@ -2768,6 +2786,8 @@ export type Database = {
           code: string
           created_at: string
           date: string
+          dest_lat: number | null
+          dest_lng: number | null
           destination: string
           direction: string
           driver_id: string
@@ -2776,6 +2796,8 @@ export type Database = {
           id: string
           notes: string | null
           origin: string
+          origin_lat: number | null
+          origin_lng: number | null
           post_type: string
           recurring: string[]
           seats_total: number
@@ -2787,6 +2809,8 @@ export type Database = {
           code?: string
           created_at?: string
           date: string
+          dest_lat?: number | null
+          dest_lng?: number | null
           destination: string
           direction: string
           driver_id: string
@@ -2795,6 +2819,8 @@ export type Database = {
           id?: string
           notes?: string | null
           origin: string
+          origin_lat?: number | null
+          origin_lng?: number | null
           post_type?: string
           recurring?: string[]
           seats_total: number
@@ -2806,6 +2832,8 @@ export type Database = {
           code?: string
           created_at?: string
           date?: string
+          dest_lat?: number | null
+          dest_lng?: number | null
           destination?: string
           direction?: string
           driver_id?: string
@@ -2814,6 +2842,8 @@ export type Database = {
           id?: string
           notes?: string | null
           origin?: string
+          origin_lat?: number | null
+          origin_lng?: number | null
           post_type?: string
           recurring?: string[]
           seats_total?: number

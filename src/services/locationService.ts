@@ -454,35 +454,58 @@ export async function reverseGeocodeCoords(
     if (res.ok) {
       const data = await res.json();
       const addr = data.address || {};
-      let placeName =
-        addr.amenity ||
-        addr.building ||
-        addr.village ||
-        addr.hamlet ||
-        addr.town ||
-        addr.suburb ||
-        addr.neighbourhood ||
-        addr.residential ||
-        addr.road ||
-        data.name;
-      let cityArea = addr.suburb || addr.quarter || addr.city_district || addr.village || addr.city || (inBd ? 'Dhaka' : addr.country || '');
 
-      if (!placeName || placeName === 'Dhaka Location') {
-        const nearby = findNearestLandmark(coords, 5000);
-        if (nearby) {
-          placeName = nearby.name;
-          cityArea = nearby.zone;
-        } else {
-          placeName = inBd ? 'Dhaka Location' : 'Custom Map Pin';
-        }
+      // 1. Check if pinned directly on a verified landmark, hospital, or campus spot (within 70m)
+      const exactLandmark = findNearestMasterLocation(coords, 70);
+      if (exactLandmark) {
+        const l = exactLandmark.location;
+        const sub = l.subLocation || l.zone || 'Dhaka';
+        return {
+          name: l.name,
+          zone: sub,
+          subText: `${sub} · ${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`,
+          formattedAddress: l.name,
+          coords,
+          placeType: l.category,
+        };
       }
 
-      const formatted = cityArea && placeName !== cityArea ? `${placeName}, ${cityArea}` : placeName;
+      // 2. Identify City / Suburb / Area cleanly
+      const cityArea =
+        addr.suburb ||
+        addr.quarter ||
+        addr.neighbourhood ||
+        addr.city_district ||
+        addr.residential ||
+        addr.village ||
+        addr.town ||
+        addr.city ||
+        (inBd ? 'Dhaka' : addr.country || '');
+
+      // 3. Resolve a clean, human-readable place name (never raw personal/ATM names)
+      let placeName = '';
+      const roadName = addr.road || addr.street;
+      const publicAmenity = addr.hospital || addr.clinic || addr.university || addr.college || addr.school || addr.station;
+
+      if (publicAmenity) {
+        placeName = publicAmenity;
+      } else if (roadName && cityArea && roadName.toLowerCase() !== cityArea.toLowerCase()) {
+        placeName = `${roadName}, ${cityArea}`;
+      } else if (roadName) {
+        placeName = roadName;
+      } else if (cityArea) {
+        placeName = cityArea;
+      } else {
+        const nearby = findNearestLandmark(coords, 3000);
+        placeName = nearby ? nearby.name : (inBd ? 'Dhaka Location' : 'Custom Map Pin');
+      }
+
+      const formatted = placeName.includes(cityArea) || !cityArea ? placeName : `${placeName}, ${cityArea}`;
 
       return {
-        name: formatted,
+        name: placeName,
         zone: cityArea || (inBd ? 'Dhaka' : 'Global'),
-        subText: cityArea && placeName !== cityArea ? `${cityArea} · ${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}` : `${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`,
+        subText: cityArea ? `${cityArea} · ${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}` : `${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`,
         formattedAddress: formatted,
         coords,
       };

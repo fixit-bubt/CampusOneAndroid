@@ -31,6 +31,7 @@ import {
   getCurrentUserCoordinates,
   getDistanceMeters,
   findMasterLocationByName,
+  BUBT_COORDS,
   type Coordinates,
 } from '../../services/locationService';
 import { BUCKETS } from '../../constants/app';
@@ -102,14 +103,16 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
   // Compute live distance to item location
   useEffect(() => {
     if (!item?.location || !userCoords) return;
-    const lm = findMasterLocationByName(item.location);
-    if (lm) {
-      const m = getDistanceMeters(userCoords.latitude, userCoords.longitude, lm.coords.latitude, lm.coords.longitude);
+    const targetCoords: Coordinates | null = (item.latitude && item.longitude)
+      ? { latitude: item.latitude, longitude: item.longitude }
+      : (findMasterLocationByName(item.location)?.coords || (item.location.toLowerCase().includes('bubt') ? BUBT_COORDS : null));
+    if (targetCoords) {
+      const m = getDistanceMeters(userCoords.latitude, userCoords.longitude, targetCoords.latitude, targetCoords.longitude);
       const km = m / 1000;
       const txt = km < 1 ? `${Math.round(m)} m away` : `${km < 10 ? km.toFixed(1) : Math.round(km)} km away`;
       setDistanceText(txt);
     }
-  }, [item?.location, userCoords]);
+  }, [item?.location, item?.latitude, item?.longitude, userCoords]);
 
   const isMine = item?.poster_id === user?.id;
   const myApprovedClaim = claims.find(c => c.claimant_id === user?.id && c.status === 'Approved') ?? null;
@@ -979,6 +982,7 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
         visible={mapModalOpen}
         onClose={() => setMapModalOpen(false)}
         destination={item.location}
+        destinationCoords={(item.latitude && item.longitude) ? { latitude: item.latitude, longitude: item.longitude } : null}
         sectorColor={SectorColors.lostfound}
         iconName="map-pin"
         title="Item Location & Directions"

@@ -422,13 +422,7 @@ export function DirectionMapModal({
       };
     }
 
-    // Check Hospital Registry first
-    const hosp = resolveHospitalLocation(destination, destinationSub || undefined);
-    if (hosp.isExactMatch) {
-      return hosp;
-    }
-
-    // Check Dhaka Master Landmark Registry
+    // 1. Check Dhaka Master Landmark & Hospital Registry first (519 verified places)
     const landmark = findMasterLocationByName(destination);
     if (landmark) {
       return {
@@ -439,12 +433,18 @@ export function DirectionMapModal({
       };
     }
 
-    // Fallback coords
+    // 2. Check Hospital Registry & Area Disambiguation
+    const hosp = resolveHospitalLocation(destination, destinationSub || undefined);
+    if (hosp.isExactMatch) {
+      return hosp;
+    }
+
+    // 3. Fallback coords
     return {
       coords: hosp.coords || BUBT_COORDS,
       verifiedName: destination,
       subLocation: destinationSub || 'Dhaka',
-      searchQuery: destination,
+      searchQuery: hosp.coords ? `${hosp.coords.latitude},${hosp.coords.longitude}` : destination,
     };
   }, [destination, destinationSub, destinationCoords]);
 
@@ -625,7 +625,9 @@ export function DirectionMapModal({
   // 1-Tap Google Maps Launch
   function handleOpenGoogleMaps() {
     const originParam = encodeURIComponent(origin || (isLiveUserLocation ? `${originCoords.latitude},${originCoords.longitude}` : 'BUBT'));
-    const query = encodeURIComponent(destQuery || destName);
+    const query = destCoords
+      ? `${destCoords.latitude},${destCoords.longitude}`
+      : encodeURIComponent(destQuery || destName);
     const mode = travelMode === 'walking' ? 'walking' : travelMode === 'bicycling' ? 'bicycling' : 'driving';
     const dirUrl = `https://www.google.com/maps/dir/?api=1&origin=${originParam}&destination=${query}&travelmode=${mode}`;
     openUrl(dirUrl);
