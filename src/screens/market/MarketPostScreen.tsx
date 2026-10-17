@@ -23,6 +23,7 @@ import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 import { ALL_DHAKA_COMMUTE_AREAS } from '../rides/RidePostScreen';
 import { BUBT_COORDS, type Coordinates } from '../../services/locationService';
 import { findMasterLocationByName } from '../../constants/dhakaMasterLocations';
+import { resolveHospitalLocation } from '../../constants/dhakaHospitalCoords';
 import type { Listing } from '../../types/database';
 
 const MARKET_COLOR = SectorColors.market;
@@ -253,7 +254,10 @@ export function MarketPostScreen({ route, navigation }: any) {
       const numericPrice = isFree ? 0 : (parseInt(price.replace(/[^0-9]/g, ''), 10) || 0);
       const finalCategory = cat === 'Other' && customCat.trim() ? customCat.trim() : cat;
 
-      const finalCoords = meetupCoords || (meetupSpot ? findMasterLocationByName(meetupSpot.trim())?.coords : null) || (meetupSpot?.toLowerCase().includes('bubt') ? BUBT_COORDS : null);
+      const finalCoords = meetupCoords
+        || (meetupSpot ? findMasterLocationByName(meetupSpot.trim())?.coords : null)
+        || (meetupSpot ? resolveHospitalLocation(meetupSpot.trim()).coords : null)
+        || (meetupSpot?.toLowerCase().includes('bubt') ? BUBT_COORDS : null);
 
       const payload: any = {
         title:       title.trim(),
@@ -1009,6 +1013,7 @@ export function MarketPostScreen({ route, navigation }: any) {
       accentColor={Accent.amber}
       title="Select Meetup Location"
       initialPlaceName={meetupSpot}
+      initialCoords={meetupCoords || undefined}
       onSelectLocation={(place) => {
         setMeetupSpot(place.formattedAddress);
         setMeetupCoords(place.coords);

@@ -30,6 +30,7 @@ import {
   type Coordinates,
 } from '../../services/locationService';
 import { findMasterLocationByName } from '../../constants/dhakaMasterLocations';
+import { resolveHospitalLocation } from '../../constants/dhakaHospitalCoords';
 import { RideRouteMapModal } from '../../components/rides/RideRouteMapModal';
 
 const RIDE_COLOR = SectorColors.ride;
@@ -400,12 +401,12 @@ export function RideDetailScreen({ route, navigation }: any) {
   const originLoc = ride?.origin ? findMasterLocationByName(ride.origin) : null;
   const destLoc = ride?.destination ? findMasterLocationByName(ride.destination) : null;
 
-  const originCoords: Coordinates | null = (ride?.origin_lat && ride?.origin_lng)
+  const originCoords: Coordinates | null = (ride?.origin_lat != null && ride?.origin_lng != null && Number.isFinite(ride.origin_lat) && Number.isFinite(ride.origin_lng))
     ? { latitude: ride.origin_lat, longitude: ride.origin_lng }
-    : (originLoc?.coords || (ride?.origin?.toLowerCase().includes('bubt') ? BUBT_COORDS : null));
-  const destCoords: Coordinates | null = (ride?.dest_lat && ride?.dest_lng)
+    : (originLoc?.coords || resolveHospitalLocation(ride?.origin || '').coords || (ride?.origin?.toLowerCase().includes('bubt') ? BUBT_COORDS : null));
+  const destCoords: Coordinates | null = (ride?.dest_lat != null && ride?.dest_lng != null && Number.isFinite(ride.dest_lat) && Number.isFinite(ride.dest_lng))
     ? { latitude: ride.dest_lat, longitude: ride.dest_lng }
-    : (destLoc?.coords || (ride?.destination?.toLowerCase().includes('bubt') ? BUBT_COORDS : null));
+    : (destLoc?.coords || resolveHospitalLocation(ride?.destination || '').coords || (ride?.destination?.toLowerCase().includes('bubt') ? BUBT_COORDS : null));
 
   let proximityText: string | null = null;
   let proximityEstimate: string | null = null;

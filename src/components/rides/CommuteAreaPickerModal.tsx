@@ -11,6 +11,7 @@ import { AnimatedIcon } from '../ui/AnimatedIcon';
 import { FontFamily, Layout, SectorColors, pillBg } from '../../theme';
 import { LocationPickerModal } from '../location/LocationPickerModal';
 import { findMasterLocationByName, searchMasterLocations } from '../../constants/dhakaMasterLocations';
+import { resolveHospitalLocation } from '../../constants/dhakaHospitalCoords';
 import type { Coordinates } from '../../services/locationService';
 
 const RIDE_COLOR = SectorColors.ride;
@@ -200,7 +201,7 @@ export function CommuteAreaPickerModal({
   const handleSelect = useCallback((areaName: string, subLoc?: string, explicitCoords?: Coordinates) => {
     let resolvedCoords = explicitCoords;
     if (!resolvedCoords && areaName && areaName !== 'All') {
-      const match = findMasterLocationByName(areaName);
+      const match = findMasterLocationByName(areaName) || resolveHospitalLocation(areaName, subLoc);
       if (match?.coords) {
         resolvedCoords = match.coords;
       }
@@ -613,7 +614,7 @@ export function CommuteAreaPickerModal({
           accentColor={activeColor}
           title={title}
           initialPlaceName={selectedArea !== 'All' ? selectedArea : undefined}
-          initialCoords={selectedArea !== 'All' ? findMasterLocationByName(selectedArea)?.coords : undefined}
+          initialCoords={selectedArea !== 'All' ? (findMasterLocationByName(selectedArea)?.coords || resolveHospitalLocation(selectedArea).coords) : undefined}
           onSelectLocation={loc => {
             const locName = loc.name || loc.formattedAddress || 'Selected Location';
             const subLoc = loc.zone || loc.subText;

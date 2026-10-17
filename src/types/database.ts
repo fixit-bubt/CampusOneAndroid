@@ -27,6 +27,8 @@ export type LostFoundItem = Omit<Tables<'lost_found_items'>, 'type' | 'category'
   type: 'Lost' | 'Found';
   category: 'Personal' | 'Electronics' | 'Documents' | 'Other';
   status: 'Open' | 'Resolved';
+  latitude?: number | null;
+  longitude?: number | null;
 };
 
 export type Claim = Omit<Tables<'claims'>, 'kind' | 'status'> & {
@@ -71,12 +73,18 @@ export type Listing = Omit<Tables<'listings'>, 'condition' | 'category' | 'statu
   status: 'Available' | 'Sold';
   meetup_spot?: string | null;
   photos?: string[] | null;
+  latitude?: number | null;
+  longitude?: number | null;
 };
 
 export type Ride = Omit<Tables<'rides'>, 'direction' | 'vehicle' | 'post_type'> & {
   direction: 'To Campus' | 'From Campus';
   vehicle: 'Car' | 'CNG' | 'Bike' | 'Rickshaw';
   post_type: 'offer' | 'request';
+  origin_lat?: number | null;
+  origin_lng?: number | null;
+  dest_lat?: number | null;
+  dest_lng?: number | null;
 };
 
 export type BloodGroup = 'A+' | 'A-' | 'B+' | 'B-' | 'O+' | 'O-' | 'AB+' | 'AB-';
@@ -84,6 +92,8 @@ export type BloodGroup = 'A+' | 'A-' | 'B+' | 'B-' | 'O+' | 'O-' | 'AB+' | 'AB-'
 export type BloodRequest = Omit<Tables<'blood_requests'>, 'blood_group' | 'urgency'> & {
   blood_group: BloodGroup;
   urgency: 'Urgent' | 'Today' | 'This week';
+  latitude?: number | null;
+  longitude?: number | null;
 };
 
 export type BloodAlertUrgency = 'urgent_only' | 'today_plus' | 'all';

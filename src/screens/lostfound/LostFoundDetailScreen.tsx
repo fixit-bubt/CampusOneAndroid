@@ -34,6 +34,7 @@ import {
   BUBT_COORDS,
   type Coordinates,
 } from '../../services/locationService';
+import { resolveHospitalLocation } from '../../constants/dhakaHospitalCoords';
 import { BUCKETS } from '../../constants/app';
 import type { LostFoundItem } from '../../types/database';
 
@@ -103,9 +104,9 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
   // Compute live distance to item location
   useEffect(() => {
     if (!item?.location || !userCoords) return;
-    const targetCoords: Coordinates | null = (item.latitude && item.longitude)
+    const targetCoords: Coordinates | null = (item.latitude != null && item.longitude != null && Number.isFinite(item.latitude) && Number.isFinite(item.longitude))
       ? { latitude: item.latitude, longitude: item.longitude }
-      : (findMasterLocationByName(item.location)?.coords || (item.location.toLowerCase().includes('bubt') ? BUBT_COORDS : null));
+      : (findMasterLocationByName(item.location)?.coords || resolveHospitalLocation(item.location).coords || (item.location.toLowerCase().includes('bubt') ? BUBT_COORDS : null));
     if (targetCoords) {
       const m = getDistanceMeters(userCoords.latitude, userCoords.longitude, targetCoords.latitude, targetCoords.longitude);
       const km = m / 1000;
@@ -982,7 +983,9 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
         visible={mapModalOpen}
         onClose={() => setMapModalOpen(false)}
         destination={item.location}
-        destinationCoords={(item.latitude && item.longitude) ? { latitude: item.latitude, longitude: item.longitude } : null}
+        destinationCoords={(item.latitude != null && item.longitude != null && Number.isFinite(item.latitude) && Number.isFinite(item.longitude))
+          ? { latitude: item.latitude, longitude: item.longitude }
+          : (findMasterLocationByName(item.location)?.coords || resolveHospitalLocation(item.location).coords || null)}
         sectorColor={SectorColors.lostfound}
         iconName="map-pin"
         title="Item Location & Directions"

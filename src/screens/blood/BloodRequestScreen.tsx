@@ -19,6 +19,7 @@ import { useToast } from '../../components/ui/Toast';
 import { removeCache, CacheKeys } from '../../services/cacheService';
 import { AreaPickerModal } from '../../components/blood/AreaPickerModal';
 import { DHAKA_AREAS } from '../../constants/dhakaAreas';
+import { resolveHospitalLocation } from '../../constants/dhakaHospitalCoords';
 import type { Coordinates } from '../../services/locationService';
 import type { BloodRequest } from '../../types/database';
 
@@ -130,6 +131,9 @@ export function BloodRequestScreen({ navigation }: any) {
     }
     if (locCoords) {
       setCoords(locCoords);
+    } else {
+      const resolved = resolveHospitalLocation(selected, subLocation).coords;
+      if (resolved) setCoords(resolved);
     }
   }
 
@@ -154,6 +158,7 @@ export function BloodRequestScreen({ navigation }: any) {
 
       const finalPatient = isPlatelets ? `[Platelets] ${fullPatient}` : fullPatient;
       const parsedUnits = Math.max(1, Math.min(10, parseInt(units, 10) || 1));
+      const finalCoords = coords || resolveHospitalLocation(hospital.trim(), area.trim()).coords;
 
       const { error } = await supabase.from('blood_requests').insert({
         blood_group:  group,
@@ -163,8 +168,8 @@ export function BloodRequestScreen({ navigation }: any) {
         area:         area.trim() || 'Near campus',
         urgency,
         requester_id: user.id,
-        latitude:     coords?.latitude ?? null,
-        longitude:    coords?.longitude ?? null,
+        latitude:     finalCoords?.latitude ?? null,
+        longitude:    finalCoords?.longitude ?? null,
       });
       if (error) throw error;
       await Promise.all([

@@ -24,6 +24,7 @@ import { BUCKETS } from '../../constants/app';
 import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 import { BUBT_COORDS, type Coordinates } from '../../services/locationService';
 import { findMasterLocationByName } from '../../constants/dhakaMasterLocations';
+import { resolveHospitalLocation } from '../../constants/dhakaHospitalCoords';
 import type { LostFoundItem } from '../../types/database';
 import { useT } from '../../i18n';
 
@@ -308,7 +309,10 @@ export function PostItemFormScreen({ route, navigation }: any) {
       uploadedPath = up.path;
     }
 
-    const finalCoords = locCoords || findMasterLocationByName(loc.trim())?.coords || (loc.toLowerCase().includes('bubt') || loc.toLowerCase().includes('building') || loc.toLowerCase().includes('room') ? BUBT_COORDS : null);
+    const finalCoords = locCoords
+      || findMasterLocationByName(loc.trim())?.coords
+      || resolveHospitalLocation(loc.trim()).coords
+      || (loc.toLowerCase().includes('bubt') || loc.toLowerCase().includes('building') || loc.toLowerCase().includes('room') ? BUBT_COORDS : null);
 
     if (isEdit) {
       const { data, error } = await supabase
@@ -1131,6 +1135,7 @@ export function PostItemFormScreen({ route, navigation }: any) {
         accentColor={SectorColors.lostfound}
         title={type === 'Lost' ? (isBn ? 'হারানোর স্থান নির্বাচন করুন' : 'Pick Lost Location') : (isBn ? 'পাওয়ার স্থান নির্বাচন করুন' : 'Pick Found Location')}
         initialPlaceName={loc}
+        initialCoords={locCoords || undefined}
         onSelectLocation={(place) => {
           setLoc(place.formattedAddress);
           setLocInputText(place.formattedAddress);

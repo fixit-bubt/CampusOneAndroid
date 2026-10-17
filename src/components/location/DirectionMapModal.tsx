@@ -480,6 +480,13 @@ export function DirectionMapModal({
         setIsLiveUserLocation(false);
         return;
       }
+      const hosp = resolveHospitalLocation(origin);
+      if (hosp?.coords) {
+        setOriginCoords(hosp.coords);
+        setOriginLabel(hosp.verifiedName);
+        setIsLiveUserLocation(false);
+        return;
+      }
     }
 
     let active = true;
@@ -624,8 +631,10 @@ export function DirectionMapModal({
 
   // 1-Tap Google Maps Launch
   function handleOpenGoogleMaps() {
-    const originParam = encodeURIComponent(origin || (isLiveUserLocation ? `${originCoords.latitude},${originCoords.longitude}` : 'BUBT'));
-    const query = destCoords
+    const originParam = (originCoords && Number.isFinite(originCoords.latitude) && Number.isFinite(originCoords.longitude))
+      ? `${originCoords.latitude},${originCoords.longitude}`
+      : encodeURIComponent(origin || 'BUBT');
+    const query = (destCoords && Number.isFinite(destCoords.latitude) && Number.isFinite(destCoords.longitude))
       ? `${destCoords.latitude},${destCoords.longitude}`
       : encodeURIComponent(destQuery || destName);
     const mode = travelMode === 'walking' ? 'walking' : travelMode === 'bicycling' ? 'bicycling' : 'driving';

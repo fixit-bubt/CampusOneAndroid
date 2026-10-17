@@ -19,6 +19,7 @@ import { supabase } from '../../lib/supabase';
 import { localToday, nowDhakaMinutes, formatDate, formatTime } from '../../utils/format';
 import { BUBT_COORDS, type Coordinates } from '../../services/locationService';
 import { findMasterLocationByName } from '../../constants/dhakaMasterLocations';
+import { resolveHospitalLocation } from '../../constants/dhakaHospitalCoords';
 import type { Ride } from '../../types/database';
 
 const RIDE_COLOR = SectorColors.ride;
@@ -276,8 +277,15 @@ export function RidePostScreen({ route, navigation }: any) {
       ? Math.max(1, Math.min(seats, currentVehicleConfig.maxSeats))
       : Math.max(1, Math.min(seats, 4));
 
-    const finalOriginCoords = fromCoords || findMasterLocationByName(from.trim())?.coords || (from.trim().toLowerCase().includes('bubt') ? BUBT_COORDS : null);
-    const finalDestCoords = toCoords || findMasterLocationByName(to.trim())?.coords || (to.trim().toLowerCase().includes('bubt') ? BUBT_COORDS : null);
+    const finalOriginCoords = fromCoords
+      || findMasterLocationByName(from.trim())?.coords
+      || resolveHospitalLocation(from.trim()).coords
+      || (from.trim().toLowerCase().includes('bubt') ? BUBT_COORDS : null);
+
+    const finalDestCoords = toCoords
+      || findMasterLocationByName(to.trim())?.coords
+      || resolveHospitalLocation(to.trim()).coords
+      || (to.trim().toLowerCase().includes('bubt') ? BUBT_COORDS : null);
 
     setLoading(true);
     try {
@@ -970,11 +978,14 @@ export function RidePostScreen({ route, navigation }: any) {
         accentColor={accentColor}
         title={targetField === 'from' ? (isOffer ? 'Select Pickup Point' : 'Your Current Location') : 'Select Destination'}
         initialPlaceName={targetField === 'from' ? from : to}
+        initialCoords={(targetField === 'from' ? fromCoords : toCoords) || undefined}
         onSelectLocation={(place) => {
           if (targetField === 'from') {
             setFrom(place.formattedAddress);
+            setFromCoords(place.coords);
           } else {
             setTo(place.formattedAddress);
+            setToCoords(place.coords);
           }
           if (!notes && place.zone && place.subText && place.subText !== place.formattedAddress) {
             setNotes(place.subText);
