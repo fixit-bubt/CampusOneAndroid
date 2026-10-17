@@ -108,6 +108,7 @@ export function PageStudioModal({
   const [quad, setQuad] = useState<ScanQuad>(FULL_QUAD);
   const [strokes, setStrokes] = useState<WhiteoutStroke[]>([]);
   const [brushSize, setBrushSize] = useState<number>(0.042);
+  const [brushMode, setBrushMode] = useState<'erase' | 'mosaic'>('erase');
   const [stageBox, setStageBox] = useState({ w: 320, h: 420 });
   const [detecting, setDetecting] = useState(false);
   const [renderingPreview, setRenderingPreview] = useState(false);
@@ -219,7 +220,7 @@ export function PageStudioModal({
     } else if (tab === 'whiteout') {
       const np = toNorm(locationX, locationY);
       currentStrokeRef.current = [np];
-      setStrokes((prev) => [...prev, { points: [np], size: brushSize }]);
+      setStrokes((prev) => [...prev, { points: [np], size: brushSize, mode: brushMode }]);
     }
   };
 
@@ -238,9 +239,9 @@ export function PageStudioModal({
         currentStrokeRef.current = [...pts, np];
         const updatedPoints = currentStrokeRef.current;
         setStrokes((prev) => {
-          if (!prev.length) return [{ points: updatedPoints, size: brushSize }];
+          if (!prev.length) return [{ points: updatedPoints, size: brushSize, mode: brushMode }];
           const copy = prev.slice();
-          copy[copy.length - 1] = { points: updatedPoints, size: brushSize };
+          copy[copy.length - 1] = { points: updatedPoints, size: brushSize, mode: brushMode };
           return copy;
         });
       }
@@ -381,9 +382,11 @@ export function PageStudioModal({
                 }}
                 resizeMode="stretch"
               />
-              {/* Render Whiteout Brush Strokes */}
+              {/* Render Smart Erase & Mosaic Brush Strokes */}
               {strokes.map((st, sIdx) => {
                 const diam = Math.max(8, (st.size || 0.04) * Math.min(imgRectW, imgRectH));
+                const isMosaic = st.mode === 'mosaic';
+                const strokeCol = isMosaic ? 'rgba(91, 133, 247, 0.55)' : '#ffffff';
                 return st.points.map((pt, pIdx) => {
                   const prevPt = pIdx > 0 ? st.points[pIdx - 1] : null;
                   return (
@@ -392,7 +395,7 @@ export function PageStudioModal({
                         <EdgeLine
                           p1={{ x: prevPt.x * imgRectW, y: prevPt.y * imgRectH }}
                           p2={{ x: pt.x * imgRectW, y: pt.y * imgRectH }}
-                          color="#ffffff"
+                          color={strokeCol}
                         />
                       ) : null}
                       <View
@@ -402,8 +405,8 @@ export function PageStudioModal({
                           top: pt.y * imgRectH - diam / 2,
                           width: diam,
                           height: diam,
-                          borderRadius: diam / 2,
-                          backgroundColor: '#ffffff',
+                          borderRadius: isMosaic ? 4 : diam / 2,
+                          backgroundColor: strokeCol,
                         }}
                       />
                     </React.Fragment>
@@ -483,9 +486,48 @@ export function PageStudioModal({
 
           {tab === 'whiteout' ? (
             <>
-              <Text style={[styles.hintText, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
-                {t.pdfmaker.images.studioWhiteoutHint}
-              </Text>
+              <View style={styles.toolRow}>
+                <TouchableOpacity
+                  style={[
+                    styles.toolBtn,
+                    {
+                      backgroundColor: brushMode === 'erase' ? C.brand : C.surface2,
+                      borderColor: brushMode === 'erase' ? C.brand : C.border,
+                    },
+                  ]}
+                  onPress={() => setBrushMode('erase')}
+                >
+                  <Feather name="edit-3" size={14} color={brushMode === 'erase' ? C.white : C.text2} />
+                  <Text
+                    style={[
+                      styles.toolBtnText,
+                      { color: brushMode === 'erase' ? C.white : C.text, fontFamily: FontFamily.jakartaBold },
+                    ]}
+                  >
+                    {t.pdfmaker.images.studioTabWhiteout}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.toolBtn,
+                    {
+                      backgroundColor: brushMode === 'mosaic' ? C.brand : C.surface2,
+                      borderColor: brushMode === 'mosaic' ? C.brand : C.border,
+                    },
+                  ]}
+                  onPress={() => setBrushMode('mosaic')}
+                >
+                  <Feather name="grid" size={14} color={brushMode === 'mosaic' ? C.white : C.text2} />
+                  <Text
+                    style={[
+                      styles.toolBtnText,
+                      { color: brushMode === 'mosaic' ? C.white : C.text, fontFamily: FontFamily.jakartaBold },
+                    ]}
+                  >
+                    Mosaic Blur
+                  </Text>
+                </TouchableOpacity>
+              </View>
               <View style={styles.toolRow}>
                 {[
                   { label: 'S', val: 0.026 },

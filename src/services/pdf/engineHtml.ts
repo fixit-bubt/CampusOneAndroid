@@ -327,6 +327,46 @@ function detectDocumentQuad(srcCanvas) {
     rBot = Math.min(rBot, bestRightCrease);
   }
 
+  // Local Sobel gradient absorption (+-4px) to snap each corner segment onto sharpest edge
+  function absorbX(xVal, y0S, y1S, isLeft) {
+    var bestX = xVal, bestGrad = -1;
+    var minX = Math.max(2, xVal - 4), maxX = Math.min(dw - 3, xVal + 4);
+    for (var cx = minX; cx <= maxX; cx++) {
+      var gSum = 0;
+      for (var cy = y0S; cy < y1S; cy += 3) {
+        var idx = cy * dw + cx;
+        var diff = isLeft ? (L[idx + 1] - L[idx - 1]) : (L[idx - 1] - L[idx + 1]);
+        if (diff > 0) gSum += diff;
+      }
+      if (gSum > bestGrad) { bestGrad = gSum; bestX = cx; }
+    }
+    return bestX;
+  }
+
+  function absorbY(yVal, x0S, x1S, isTop) {
+    var bestY = yVal, bestGrad = -1;
+    var minY = Math.max(2, yVal - 4), maxY = Math.min(dh - 3, yVal + 4);
+    for (var cy = minY; cy <= maxY; cy++) {
+      var gSum = 0;
+      for (var cx = x0S; cx < x1S; cx += 3) {
+        var idx = cy * dw + cx;
+        var diff = isTop ? (L[idx + dw] - L[idx - dw]) : (L[idx - dw] - L[idx + dw]);
+        if (diff > 0) gSum += diff;
+      }
+      if (gSum > bestGrad) { bestGrad = gSum; bestY = cy; }
+    }
+    return bestY;
+  }
+
+  lTop = absorbX(lTop, yStart, yMid, true);
+  lBot = absorbX(lBot, yMid, yEnd, true);
+  rTop = absorbX(rTop, yStart, yMid, false);
+  rBot = absorbX(rBot, yMid, yEnd, false);
+  tLeft = absorbY(tLeft, xStart, xMid, true);
+  tRight = absorbY(tRight, xMid, xEnd, true);
+  bLeft = absorbY(bLeft, xStart, xMid, false);
+  bRight = absorbY(bRight, xMid, xEnd, false);
+
   // Convert fitted edge medians into 4 corner coordinates with micro-inset
   var insetX = 0.004;
   var insetY = 0.004;
@@ -338,6 +378,33 @@ function detectDocumentQuad(srcCanvas) {
   var try_ = Math.min(0.30, Math.max(0, tRight / dh + insetY));
   var bly = Math.max(0.70, Math.min(1, bLeft / dh - insetY));
   var bry = Math.max(0.70, Math.min(1, bRight / dh - insetY));
+
+  // Validate interior quad angles lie within [45 deg (0.7854 rad), 135 deg (2.3562 rad)]
+  var pts = [
+    { x: tlx * dw, y: tly * dh },
+    { x: trx * dw, y: try_ * dh },
+    { x: brx * dw, y: bry * dh },
+    { x: blx * dw, y: bly * dh }
+  ];
+  var validAngles = true;
+  for (var vi = 0; vi < 4; vi++) {
+    var prev = pts[(vi + 3) & 3];
+    var curr = pts[vi];
+    var next = pts[(vi + 1) & 3];
+    var ux = prev.x - curr.x, uy = prev.y - curr.y;
+    var vx = next.x - curr.x, vy = next.y - curr.y;
+    var lenU = Math.hypot(ux, uy), lenV = Math.hypot(vx, vy);
+    if (lenU < 8 || lenV < 8) { validAngles = false; break; }
+    var cosA = (ux * vx + uy * vy) / (lenU * lenV);
+    var ang = Math.acos(Math.max(-1, Math.min(1, cosA)));
+    if (ang < 0.785398 || ang > 2.356194) { validAngles = false; break; }
+  }
+  if (!validAngles) {
+    var avgLx = (tlx + blx) * 0.5, avgRx = (trx + brx) * 0.5;
+    var avgTy = (tly + try_) * 0.5, avgBy = (bly + bry) * 0.5;
+    tlx = blx = avgLx; trx = brx = avgRx;
+    tly = try_ = avgTy; bly = bry = avgBy;
+  }
 
   var wSpan = Math.min(trx - tlx, brx - blx);
   var hSpan = Math.min(bly - tly, bry - try_);
@@ -358,7 +425,7 @@ function detectDocumentQuad(srcCanvas) {
   ];
 }
 
-// Stage 1B: 4-Point Perspective Homography Warp (or fast hardware crop when axis-aligned).
+// Stage 1B: 4-Point Perspective Homography Warp with Foreshortening Aspect Recovery.
 function warpQuadToCanvas(srcCanvas, quad, maxDim) {
   var sw = srcCanvas.width;
   var sh = srcCanvas.height;
@@ -380,8 +447,15 @@ function warpQuadToCanvas(srcCanvas, quad, maxDim) {
   var hLeft = Math.hypot(x3 - x0, y3 - y0);
   var hRight = Math.hypot(x2 - x1, y2 - y1);
 
+  var skew = Math.abs(y0 - y1) + Math.abs(y2 - y3) + Math.abs(x0 - x3) + Math.abs(x1 - x2);
+  var foreshorten = 1.0;
+  if (skew >= 4.5) {
+    var wMax = Math.max(wTop, wBot), wMin = Math.max(1, Math.min(wTop, wBot));
+    foreshorten = Math.min(1.16, Math.sqrt(wMax / wMin));
+  }
+
   var outW = Math.max(32, Math.round((wTop + wBot) * 0.5));
-  var outH = Math.max(32, Math.round((hLeft + hRight) * 0.5));
+  var outH = Math.max(32, Math.round((hLeft + hRight) * 0.5 * foreshorten));
   var cap = maxDim || 3000;
   if (Math.max(outW, outH) > cap) {
     var r = cap / Math.max(outW, outH);
@@ -395,7 +469,6 @@ function warpQuadToCanvas(srcCanvas, quad, maxDim) {
   var dstCtx = dstCanvas.getContext('2d', { alpha: false });
 
   // Fast path if quad is nearly axis-aligned rectangle
-  var skew = Math.abs(y0 - y1) + Math.abs(y2 - y3) + Math.abs(x0 - x3) + Math.abs(x1 - x2);
   if (skew < 4.5) {
     var rx = Math.min(x0, x3);
     var ry = Math.min(y0, y1);
@@ -473,20 +546,40 @@ function warpQuadToCanvas(srcCanvas, quad, maxDim) {
   return dstCanvas;
 }
 
-function paintWhiteoutStrokes(canvas, strokes) {
+// Smart Background-Aware Eraser & Privacy Mosaic Redaction Brush
+function paintWhiteoutStrokes(canvas, strokes, filterMode) {
   if (!strokes || !strokes.length) return;
   var ctx = canvas.getContext('2d', { alpha: false });
   var w = canvas.width;
   var h = canvas.height;
   var shortSide = Math.min(w, h);
+
+  // Determine smart background erase color (matches paper tint in original/grayscale, #ffffff in enhanced modes)
+  var eraseColor = '#ffffff';
+  if (filterMode === 'original' || filterMode === 'grayscale') {
+    var sampleData = ctx.getImageData((w * 0.25) | 0, (h * 0.25) | 0, Math.max(8, (w * 0.5) | 0), Math.max(8, (h * 0.5) | 0)).data;
+    var rArr = [], gArr = [], bArr = [];
+    for (var si = 0; si < sampleData.length; si += 64) {
+      var sr = sampleData[si], sg = sampleData[si + 1], sb = sampleData[si + 2];
+      var slum = (38 * sr + 75 * sg + 15 * sb) >> 7;
+      if (slum > 120) { rArr.push(sr); gArr.push(sg); bArr.push(sb); }
+    }
+    if (rArr.length > 4) {
+      var mr = medianOf(rArr), mg = medianOf(gArr), mb = medianOf(bArr);
+      eraseColor = 'rgb(' + mr + ',' + mg + ',' + mb + ')';
+    }
+  }
+
+  var hasMosaic = false;
   ctx.save();
-  ctx.strokeStyle = '#ffffff';
-  ctx.fillStyle = '#ffffff';
+  ctx.strokeStyle = eraseColor;
+  ctx.fillStyle = eraseColor;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   for (var i = 0; i < strokes.length; i++) {
     var st = strokes[i];
     if (!st || !st.points || !st.points.length) continue;
+    if (st.mode === 'mosaic') { hasMosaic = true; continue; }
     var lw = Math.max(6, (st.size || 0.04) * shortSide);
     ctx.lineWidth = lw;
     var pts = st.points;
@@ -504,11 +597,87 @@ function paintWhiteoutStrokes(canvas, strokes) {
     }
   }
   ctx.restore();
+
+  if (hasMosaic) {
+    var maskCanvas = document.createElement('canvas');
+    maskCanvas.width = w;
+    maskCanvas.height = h;
+    var mctx = maskCanvas.getContext('2d');
+    mctx.strokeStyle = '#ffffff';
+    mctx.fillStyle = '#ffffff';
+    mctx.lineCap = 'round';
+    mctx.lineJoin = 'round';
+    for (var mi = 0; mi < strokes.length; mi++) {
+      var mst = strokes[mi];
+      if (!mst || mst.mode !== 'mosaic' || !mst.points || !mst.points.length) continue;
+      var mlw = Math.max(10, (mst.size || 0.04) * shortSide);
+      mctx.lineWidth = mlw;
+      var mpts = mst.points;
+      if (mpts.length === 1) {
+        mctx.beginPath();
+        mctx.arc(mpts[0].x * w, mpts[0].y * h, mlw * 0.5, 0, Math.PI * 2);
+        mctx.fill();
+      } else {
+        mctx.beginPath();
+        mctx.moveTo(mpts[0].x * w, mpts[0].y * h);
+        for (var mj = 1; mj < mpts.length; mj++) {
+          mctx.lineTo(mpts[mj].x * w, mpts[mj].y * h);
+        }
+        mctx.stroke();
+      }
+    }
+    var maskBytes = mctx.getImageData(0, 0, w, h).data;
+    maskCanvas.width = 0; maskCanvas.height = 0;
+    var fullImg = ctx.getImageData(0, 0, w, h);
+    var fullData = fullImg.data;
+    var block = Math.max(14, Math.round(shortSide * 0.018));
+    for (var by = 0; by < h; by += block) {
+      var bh = Math.min(block, h - by);
+      for (var bx = 0; bx < w; bx += block) {
+        var bw = Math.min(block, w - bx);
+        var centerM = ((by + (bh >> 1)) * w + (bx + (bw >> 1))) << 2;
+        var anyMasked = maskBytes[centerM + 3] > 32;
+        if (!anyMasked) {
+          var cornerM = (by * w + bx) << 2;
+          anyMasked = maskBytes[cornerM + 3] > 32;
+        }
+        if (!anyMasked) continue;
+        var sumR = 0, sumG = 0, sumB = 0, cnt = 0;
+        for (var py = by; py < by + bh; py += 2) {
+          for (var px = bx; px < bx + bw; px += 2) {
+            var pOff = (py * w + px) << 2;
+            sumR += fullData[pOff];
+            sumG += fullData[pOff + 1];
+            sumB += fullData[pOff + 2];
+            cnt++;
+          }
+        }
+        var avgR = cnt ? ((sumR / cnt) | 0) : 180;
+        var avgG = cnt ? ((sumG / cnt) | 0) : 180;
+        var avgB = cnt ? ((sumB / cnt) | 0) : 180;
+        var checker = (((bx / block) | 0) + ((by / block) | 0)) & 1 ? 12 : -12;
+        var cr = Math.max(30, Math.min(235, avgR + checker));
+        var cg = Math.max(30, Math.min(235, avgG + checker));
+        var cb = Math.max(30, Math.min(235, avgB + checker));
+        for (var py2 = by; py2 < by + bh; py2++) {
+          for (var px2 = bx; px2 < bx + bw; px2++) {
+            var mIdx = (py2 * w + px2) << 2;
+            if (maskBytes[mIdx + 3] > 32) {
+              fullData[mIdx] = cr;
+              fullData[mIdx + 1] = cg;
+              fullData[mIdx + 2] = cb;
+            }
+          }
+        }
+      }
+    }
+    ctx.putImageData(fullImg, 0, 0);
+  }
 }
 
-// Stages 2-5: Clean-room implementation of the decompiled 5-stage document scanner pipeline:
-// Stage 2: Illumination division shadow removal (16x downsampled morphological max + box blur)
-// Stage 3: Black/white point clipping & gamma = 5/6 (0.8333333) power LUT
+// Stages 2-5: 5-stage document scanner pipeline:
+// Stage 2: Contrast-weighted morphological illumination envelope (16x grid + 9x9 MaxFilter + BoxBlur)
+// Stage 3: Dynamic histogram percentile auto-levels & gamma = 5/6 (0.8333333) power LUT
 // Stage 4: 1.5x integer luma-preserving chroma boost: C_out = (3*C - L) >> 1
 // Stage 5: Asymmetric 3-zone 15x15 unsharp mask (0.5x paper, 1.0x edge, 2.0x ink core)
 function enhanceDocumentCanvas(canvas, filterMode) {
@@ -534,7 +703,7 @@ function enhanceDocumentCanvas(canvas, filterMode) {
   }
   var baseRb = Math.max(0, medianOf(sampleRB));
 
-  // Outer 5% border cleanup: strip residual warm wood desk or dark frame border pixels
+  // Outer 5% border cleanup: strip residual warm wood desk, dark frame border, or thumb skin intrusion
   var mLeft = (W * 0.05) | 0, mRight = (W * 0.95) | 0;
   var mTop = (H * 0.04) | 0, mBot = (H * 0.96) | 0;
   var edgeLeft = (W * 0.018) | 0, edgeRight = (W * 0.982) | 0;
@@ -552,8 +721,9 @@ function enhanceDocumentCanvas(canvas, filterMode) {
       var br = data[bpIdx], bg = data[bpIdx + 1], bb = data[bpIdx + 2];
       var blum = (38 * br + 75 * bg + 15 * bb) >> 7;
       var isWarmDesk = (br - bb) > (baseRb + 23) && blum < 195;
+      var isThumbSkin = (bx < mLeft || bx > mRight) && br > 95 && bg > 40 && bb > 20 && (br - bg) > 15 && (br - bb) > (baseRb + 18) && blum < 210;
       var isDarkEdge = (inYEdge || bx < edgeLeft || bx > edgeRight) && blum < 105;
-      if (isWarmDesk || isDarkEdge) {
+      if (isWarmDesk || isThumbSkin || isDarkEdge) {
         data[bpIdx] = 248;
         data[bpIdx + 1] = 248;
         data[bpIdx + 2] = 248;
@@ -561,7 +731,7 @@ function enhanceDocumentCanvas(canvas, filterMode) {
     }
   }
 
-  // Stage 2: Build 16x downsampled background illumination map (gw x gh)
+  // Stage 2: Build 16x downsampled contrast-weighted background illumination map (gw x gh)
   var cell = 16;
   var gw = Math.max(8, Math.ceil(W / cell));
   var gh = Math.max(8, Math.ceil(H / cell));
@@ -569,6 +739,9 @@ function enhanceDocumentCanvas(canvas, filterMode) {
   var bgR = new Uint8Array(gridCount);
   var bgG = new Uint8Array(gridCount);
   var bgB = new Uint8Array(gridCount);
+  var minGridR = new Uint8Array(gridCount);
+  var minGridG = new Uint8Array(gridCount);
+  var minGridB = new Uint8Array(gridCount);
 
   for (var gy = 0; gy < gh; gy++) {
     var y0 = gy * cell;
@@ -576,7 +749,9 @@ function enhanceDocumentCanvas(canvas, filterMode) {
     for (var gx = 0; gx < gw; gx++) {
       var x0 = gx * cell;
       var x1 = Math.min(W, x0 + cell);
-      var maxL = 0, mr = 235, mg = 235, mb = 235;
+      var maxL = 0, minL = 255;
+      var mr = 235, mg = 235, mb = 235;
+      var nrMin = 200, ngMin = 200, nbMin = 200;
       for (var py = y0; py < y1; py += 2) {
         var pOff = (py * W + x0) << 2;
         for (var px = x0; px < x1; px += 2) {
@@ -585,6 +760,9 @@ function enhanceDocumentCanvas(canvas, filterMode) {
           if (l0 > maxL) {
             maxL = l0; mr = r0; mg = g0; mb = b0;
           }
+          if (l0 < minL) {
+            minL = l0; nrMin = r0; ngMin = g0; nbMin = b0;
+          }
           pOff += 8;
         }
       }
@@ -592,10 +770,13 @@ function enhanceDocumentCanvas(canvas, filterMode) {
       bgR[gi] = Math.max(80, mr);
       bgG[gi] = Math.max(80, mg);
       bgB[gi] = Math.max(80, mb);
+      minGridR[gi] = Math.max(40, nrMin);
+      minGridG[gi] = Math.max(40, ngMin);
+      minGridB[gi] = Math.max(40, nbMin);
     }
   }
 
-  // Separable MaxFilter (radius 4 on 16x grid = 144x144 dilation) to bridge across thick strokes
+  // Separable MaxFilter (radius 4 on 16x grid = 144x144 dilation) + contrast-weighted envelope blend
   var tmpR = new Uint8Array(gridCount);
   var tmpG = new Uint8Array(gridCount);
   var tmpB = new Uint8Array(gridCount);
@@ -627,9 +808,18 @@ function enhanceDocumentCanvas(canvas, filterMode) {
         if (tmpB[mi2] > mb2) mb2 = tmpB[mi2];
       }
       var mo = my2 * gw + mx2;
-      bgR[mo] = mr2;
-      bgG[mo] = mg2;
-      bgB[mo] = mb2;
+      // Contrast-weighted blend: alpha = (Imax - Imin) / Imax; Ibg = alpha*Imax + (1-alpha)*Imin
+      var minR0 = minGridR[mo], minG0 = minGridG[mo], minB0 = minGridB[mo];
+      var aR = mr2 > 0 ? (mr2 - minR0) / mr2 : 1;
+      var aG = mg2 > 0 ? (mg2 - minG0) / mg2 : 1;
+      var aB = mb2 > 0 ? (mb2 - minB0) / mb2 : 1;
+      // Boost alpha so pen strokes always weight toward Imax while low-contrast paper stays smooth
+      aR = Math.min(1, aR * 1.65);
+      aG = Math.min(1, aG * 1.65);
+      aB = Math.min(1, aB * 1.65);
+      bgR[mo] = Math.round(aR * mr2 + (1 - aR) * minR0);
+      bgG[mo] = Math.round(aG * mg2 + (1 - aG) * minG0);
+      bgB[mo] = Math.round(aB * mb2 + (1 - aB) * minB0);
     }
   }
 
@@ -666,11 +856,56 @@ function enhanceDocumentCanvas(canvas, filterMode) {
     }
   }
 
-  // Stage 3: Build gamma = 5/6 (0.8333333) power LUT
-  var bp = 52, wp = 224, gamma = 0.8333333002196431;
-  if (mode === 'bleed_erase') { bp = 62; wp = 212; }
-  else if (mode === 'whiteboard') { bp = 36; wp = 232; gamma = 0.88; }
-  else if (mode === 'grayscale') { bp = 50; wp = 224; }
+  // Stage 3: Dynamic 256-bin histogram percentile auto-levels + gamma = 5/6 (0.8333333) power LUT
+  var normHist = new Int32Array(256);
+  var histSamples = 0;
+  var hStepY = Math.max(2, (H / 90) | 0);
+  var hStepX = Math.max(2, (W / 90) | 0);
+  for (var hyS = (H * 0.08) | 0; hyS < ((H * 0.92) | 0); hyS += hStepY) {
+    var hGy = Math.min(gh - 1, (hyS / cell) | 0) * gw;
+    var hRow = hyS * W;
+    for (var hxS = (W * 0.08) | 0; hxS < ((W * 0.92) | 0); hxS += hStepX) {
+      var hGi = hGy + Math.min(gw - 1, (hxS / cell) | 0);
+      var hPi = (hRow + hxS) << 2;
+      var nrS = Math.min(255, ((data[hPi] * 255) / bgR[hGi]) | 0);
+      var ngS = Math.min(255, ((data[hPi + 1] * 255) / bgG[hGi]) | 0);
+      var nbS = Math.min(255, ((data[hPi + 2] * 255) / bgB[hGi]) | 0);
+      var nLum = (38 * nrS + 75 * ngS + 15 * nbS) >> 7;
+      normHist[nLum]++;
+      histSamples++;
+    }
+  }
+
+  var peakBin = 240, peakCount = 0;
+  for (var hb = 180; hb <= 255; hb++) {
+    if (normHist[hb] > peakCount) {
+      peakCount = normHist[hb];
+      peakBin = hb;
+    }
+  }
+  // 1/32 of peak paper bin count threshold for dynamic white-point floor
+  var wpThresh = Math.max(2, peakCount >> 5);
+  var dynWp = peakBin;
+  while (dynWp > 195 && normHist[dynWp] >= wpThresh) {
+    dynWp--;
+  }
+  // 0.45% cumulative dark ink threshold for dynamic black-point anchor
+  var bpTarget = Math.max(2, Math.round(histSamples * 0.0045));
+  var cumDark = 0, dynBp = 48;
+  for (var dbBin = 0; dbBin < 120; dbBin++) {
+    cumDark += normHist[dbBin];
+    if (cumDark >= bpTarget) {
+      dynBp = dbBin;
+      break;
+    }
+  }
+
+  var bp = Math.max(44, Math.min(60, dynBp));
+  var wp = Math.max(216, Math.min(230, dynWp));
+  var gamma = 0.8333333002196431;
+  if (mode === 'bleed_erase') { bp = Math.max(56, bp + 8); wp = Math.max(204, wp - 12); }
+  else if (mode === 'whiteboard') { bp = Math.max(32, bp - 12); wp = Math.min(236, wp + 6); gamma = 0.88; }
+  else if (mode === 'grayscale') { bp = Math.max(42, bp - 2); wp = Math.max(218, wp); }
   else if (mode === 'bw') { bp = 45; wp = 226; }
 
   var lut = new Uint8Array(256);
@@ -726,7 +961,7 @@ function enhanceDocumentCanvas(canvas, filterMode) {
       var ng = lut[dg];
       var nb = lut[db];
 
-      if (isBleedErase && nr > 186 && ng > 186 && nb > 186 && Math.abs(nr - nb) < 28) {
+      if (isBleedErase && nr > 184 && ng > 184 && nb > 184 && Math.abs(nr - nb) < 28) {
         nr = 255; ng = 255; nb = 255;
       }
 
@@ -798,7 +1033,7 @@ function enhanceDocumentCanvas(canvas, filterMode) {
       data[qIdx + 1] = bwVal;
       data[qIdx + 2] = bwVal;
     } else {
-      // Decompiled scanet::sharpEnhance 3-zone piecewise curve:
+      // 3-zone piecewise unsharp mask:
       // diff > -10 => 0.5x (suppresses paper grain)
       // diff < -20 => 2.0x (crushes ink cores to deep black/blue)
       // -20 <= diff <= -10 => 1.0x (smooth stroke anti-aliasing)
@@ -913,10 +1148,11 @@ async function handle(msg) {
       }
       var warped = quad ? warpQuadToCanvas(srcP, quad, maxDim) : srcP;
       if (warped !== srcP) { srcP.width = 0; srcP.height = 0; }
+      var activeFilter = msg.filter || 'magic';
       if (msg.whiteoutStrokes && msg.whiteoutStrokes.length) {
-        paintWhiteoutStrokes(warped, msg.whiteoutStrokes);
+        paintWhiteoutStrokes(warped, msg.whiteoutStrokes, activeFilter);
       }
-      enhanceDocumentCanvas(warped, msg.filter || 'magic');
+      enhanceDocumentCanvas(warped, activeFilter);
       var outW = warped.width;
       var outH = warped.height;
       var jpgUrl = warped.toDataURL('image/jpeg', msg.quality || 0.88);

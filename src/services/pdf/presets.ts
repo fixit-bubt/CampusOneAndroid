@@ -39,13 +39,16 @@ export interface ScanPoint {
 // Clockwise normalized [0..1] quad: [topLeft, topRight, bottomRight, bottomLeft]
 export type ScanQuad = [ScanPoint, ScanPoint, ScanPoint, ScanPoint];
 
+export type StudioBrushMode = 'erase' | 'mosaic';
+
 export interface WhiteoutStroke {
   points: ScanPoint[];
   size: number;
+  mode?: StudioBrushMode;
 }
 
 // maxDim caps the LONG edge in pixels.
-// high (3000px @ 0.88) matches CamScanner HD clarity for fine math subscripts;
+// high (3000px @ 0.88) preserves crisp HD clarity for fine math subscripts;
 // balanced (2480px @ 0.84) is 300 DPI A4; compact (1754px @ 0.72) is 150 DPI A4.
 export const IMAGE_PRESETS: Record<PresetKey, ImagePreset> = {
   high:     { key: 'high',     maxDim: 3000, quality: 0.88 },

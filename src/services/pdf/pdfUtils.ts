@@ -125,7 +125,7 @@ export interface LayoutPageOpts {
 }
 
 // Professional document scanner layout engine:
-// - 'borderless': CamScanner standard. When preserveAspect is true, centers the
+// - 'borderless': Full-bleed A4 standard. When preserveAspect is true, centers the
 //   exact image aspect ratio on an A4 sheet without stretching handwriting.
 // - 'adaptive': Natural aspect ratio at 150 DPI. Exact fit with 0 margin.
 // - 'smart_fit': Uniform crisp 12pt micro-margin without giant letterbox gaps.

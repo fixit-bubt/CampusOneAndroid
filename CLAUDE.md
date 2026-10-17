@@ -2417,19 +2417,14 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 ## 52. Clean-Room 5-Stage Pro Document Scanner & PDF Studio Architecture
 
 ### 52.1 Store-Safe Clean-Room Mathematical Pipeline (`src/services/pdf/engineHtml.ts`)
-- **100% Store-Safe Implementation:** Built from first-principles mathematical equations in TypeScript/JavaScript Canvas (`engineHtml.ts`) with zero third-party native `.so` binaries, ensuring full Google Play Store & Apple App Store compliance, 16 KB page-size compatibility on Android 15+, and 100% offline privacy.
-- **Stage 1 — Auto-Crop & 4-Point Perspective Homography (`detectDocumentQuad` + `warpQuadToCanvas`):**
-  - Combines a $7\times 7$ box-smoothed paper luminance/chrominance density mask (`L >= minPaperL && (R - B) <= baseRb + 22 && (R - G) <= 34`) with inward vertical/horizontal luminance gradient coherence (`step + dip > 11.5`) so both wooden desks and adjacent notebook spiral/crease gutters are detected.
-  - Fits 4 corners `[TL, TR, BR, BL]` and performs an 8-parameter closed-form projective homography warp (`warpQuadToCanvas`), followed by outer 5% border non-paper cleanup (`isWarmDesk || isDarkEdge`).
-- **Stage 2 — Illumination Division Shadow Removal (`enhanceDocumentCanvas`):**
-  - Builds a $16\times$ downsampled background illumination grid (`gw × gh`), applies a separable $9\times 9$ morphological `MaxFilter` (radius 4 on $16\times$ grid = $144\times 144$ px dilation to bridge across thick pen strokes) and 2 passes of separable `BoxBlur`, then divides full-resolution pixels by local bilinearly interpolated illumination (`dr = (r * 255) / illR`).
-- **Stage 3 — White/Black Point Clipping & $\gamma = 5/6$ Power LUT:**
-  - Maps normalized pixels through a precomputed 256-entry LUT with $\gamma = 0.8333333002196431$ ($5/6$):
-    - `magic` (**Magic Pro**): `bp = 52`, `wp = 224` (turns shadowed notebook paper into pure `#FFFFFF` while preserving ink).
-    - `bleed_erase` (**Bleed Eraser**): `bp = 62`, `wp = 212` + neutral high-luminance bleed suppression (`nr,ng,nb > 186` -> `255`).
-    - `whiteboard` (**Board / Slide**): `bp = 36`, `wp = 232`, $\gamma = 0.88$.
-    - `grayscale` (**Grayscale**): `bp = 50`, `wp = 224`.
-    - `bw` (**Clear B&W**): local integral-mean Sauvola/Bradley adaptive threshold.
+- **100% Store-Safe Implementation:** Built from first-principles mathematical equations in TypeScript/JavaScript Canvas (`engineHtml.ts`) with zero third-party native `.so` binaries, zero proprietary neural network weights, and zero third-party brand/symbol references, ensuring full Google Play Store & Apple App Store compliance, 16 KB page-size compatibility on Android 15+, and 100% offline privacy.
+- **Stage 1 — Auto-Crop, Sobel Edge Absorption, $45^\circ\text{–}135^\circ$ Angle Validation & Perspective Homography (`detectDocumentQuad` + `warpQuadToCanvas`):**
+  - Combines a $7\times 7$ box-smoothed paper luminance/chrominance density mask (`L >= minPaperL && (R - B) <= baseRb + 22 && (R - G) <= 34`) with inward vertical/horizontal luminance gradient coherence (`step + dip > 11.5`) and local $\pm 4\text{ px}$ Sobel gradient absorption (`absorbX`, `absorbY`) so wooden desks, spiral bindings, and tilted paper edges snap onto the sharpest boundary.
+  - Validates the 4 corners `[TL, TR, BR, BL]` with interior corner angle bounds ($45^\circ\text{–}135^\circ$ / `0.7854–2.3562 rad`) and performs an 8-parameter closed-form projective homography warp (`warpQuadToCanvas`) with perspective foreshortening aspect-ratio recovery (`Math.min(1.16, Math.sqrt(wMax / wMin))`), followed by outer 5% border desk and thumb skin-tone intrusion cleanup (`isWarmDesk || isThumbSkin || isDarkEdge`).
+- **Stage 2 — Contrast-Weighted Morphological Illumination Envelope (`enhanceDocumentCanvas`):**
+  - Builds a $16\times$ downsampled background grid (`gw × gh`) tracking both local maximum $I_{\max}$ and local minimum $I_{\min}$ per RGB channel, applies a separable $9\times 9$ morphological `MaxFilter` ($144\times 144\text{ px}$ dilation) and blends via local contrast weight $\alpha_c = \min(1, 1.65 \cdot \frac{I_{\max,c} - I_{\min,c}}{I_{\max,c}})$, $I_{\text{bg},c} = \alpha_c I_{\max,c} + (1 - \alpha_c) I_{\min,c}$ followed by 2 passes of separable `BoxBlur`, then divides full-resolution pixels by local bilinearly interpolated illumination (`dr = (r * 255) / illR`) with zero halo rings around thick ink strokes.
+- **Stage 3 — Dynamic 256-Bin Histogram Percentile Auto-Levels & $\gamma = 5/6$ Power LUT:**
+  - Samples the illumination-normalized luminance histogram (`normHist[256]`), locates the paper peak bin, and walks inward at $\frac{1}{32}$ peak threshold (`peakCount >> 5`) and $0.45\%$ cumulative dark ink percentile to dynamically tune `bp` and `wp` per photo before mapping through a precomputed 256-entry LUT with $\gamma = 0.8333333002196431$ ($5/6$) across all 6 modes (`magic`, `bleed_erase`, `bw`, `whiteboard`, `grayscale`, `original`).
 - **Stage 4 — $1.5\times$ Integer Luma-Preserving Chroma Boost:**
   - Computes integer luma `lum = (38 * nr + 75 * ng + 15 * nb) >> 7` and boosts chroma `C_out = clamp((3 * C - lum) >> 1, 0, 255)`, making blue/red pen ink and pink margins vibrant while keeping white paper neutral.
 - **Stage 5 — Asymmetric 3-Zone $15\times 15$ Unsharp Mask:**
@@ -2447,7 +2442,7 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 - **Full-Screen Interactive Page Studio Modal (`PageStudioModal.tsx`):**
   - Tap any photo card to open a 3-tab full-screen studio:
     1. `4-Corner Crop`: Drag the 4 perspective handles, trigger `Auto Edge` (`engine.detectQuad`), `Full Frame`, or rotate $90^\circ$.
-    2. `Whiteout Brush`: Swipe over stains, crossed-out math mistakes, or edge thumbs with `S / M / L` brush sizes (`paintWhiteoutStrokes`) plus Undo/Clear.
+    2. `Smart Erase & Privacy Mosaic Brush`: Toggle between `Whiteout` (samples surrounding paper tint in Original/Grayscale mode or `#ffffff` in enhanced modes) and `Mosaic Blur` (pixelates sensitive student IDs, grades, or phone numbers with an $18\times 18\text{ px}$ privacy block filter) with `S / M / L` brush sizes (`paintWhiteoutStrokes`) plus Undo/Clear.
     3. `Live Preview`: Renders the live 5-stage scanner output and lets the student preview/override the page's filter mode.
 - **1-Tap BUBT Cover Page Auto-Prepend & Handwritten Signature Stamp:**
   - `CoverPageFormScreen.tsx` persists the latest generated BUBT Cover Page via `saveLatestCoverPage`. `ToolImagesScreen.tsx` auto-detects it on focus and prepends the lossless vector cover page as Page 1 when toggled.
