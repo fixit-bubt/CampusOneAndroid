@@ -601,15 +601,24 @@ In `RootNavigator.tsx`, students who have not completed onboarding (`!profile?.s
 
 ### 10.3 BUBT Cover Page Generator
 - **Location:** `src/screens/coverpage/CoverPageFormScreen.tsx`
-- **Standardized 72dp Layout:** All document type selectors, course fields, assignment/lab inputs, student info, and faculty dropdown bars are strictly standardized to 72dp (`height: 72`, `paddingHorizontal: 14`, `borderRadius: 16`, `borderLeftWidth: 4.5, borderLeftColor: SectorColors.coverpage`, 42×42 neutral icon box) matching the signature `childBar` design from `ExploreScreen.tsx`.
-- **72dp Dropdown Sheets:** Bottom sheets for Document Type, Course, Faculty, Program, and Designation render each selectable option as a distinct, comfortable 72dp bar with icons and chevrons.
+- **Standardized 72dp Layout:** All document type selectors, course fields, assignment/lab inputs, student info, and faculty dropdown bars are strictly standardized to 72dp (`height: 72`, `paddingHorizontal: 14`, `borderRadius: 16`, `borderWidth: 1`, 42×42 neutral icon box) matching the signature Academics card design from `ExploreScreen.tsx`. Features a clean 1px border with zero side color stripes, a right-side 1px vertical divider (`verticalDivider`), and a stat column (`statVal` and `statSub`).
+- **72dp Dropdown Sheets & Tri-Fold Dismissal:** Bottom sheets for Document Type, Course, Faculty, Program, and Designation render each selectable option as a distinct, comfortable 72dp bar with animated vector icons. Modals dismiss seamlessly via:
+  1. Touching the semi-transparent backdrop overlay.
+  2. Pressing the physical/gesture Android back button (`BackHandler` listener and `onRequestClose`).
+  3. Tapping the top-right circular `X` close button (`closeXBtn`).
+- **Zero Keyboard Blocking:** Modal sheets housing search bars (`sBar` and `sInput`) are wrapped in `KeyboardAvoidingView` with handled tap persistence to prevent keyboard obstruction.
+- **Faculty Short Code Search:** Search query filters teacher names, departments, designations, and official teacher short codes (e.g. `SRM`, `MHR`).
+- **100% Offline-First Architecture:**
+  - **Embedded Base64 Logos:** BUBT crest and bilingual header logos are stored as embedded Base64 data URIs (`BUBT_LOGO_CREST`, `BUBT_LOGO_HEADER`), eliminating external network image fetching.
+  - **Three-Tier Data Hydration:** Instant fallback datasets (`DEFAULT_BUBT_DEPARTMENTS`, `DEFAULT_BUBT_COURSES`) + AsyncStorage cache hydration (`CacheKeys.COVER_COURSES`, `COVER_DEPTS`, `COVER_FACULTY`) + background Supabase sync with graceful offline error handling.
+  - **On-Device PDF Generation:** Document generation executed locally via native Chromium printing pipeline (`Print.printToFileAsync`).
+  - **In-App Local PDF Inspection:** `CampusPdfViewerModal` with `category="Cover Page"` decodes local `file://` URIs and displays "Preparing Cover Page…" without falsely referencing notices.
+  - **Persistence & Export:** Native SAF downloads (`savePdfToDevice`), Android share sheet (`sharePdf`), and local print spooler (`Print.printAsync`).
+- **Single-Page Academic Constraints:**
+  - Group reports are strictly capped at maximum 6 members with friendly UI indicator to guarantee single-page printable geometry.
+  - Experiment Index table clamped between 1 and 20 rows (`Math.min(Math.max(rows, 1), 20)`) to maintain single-page layout.
+  - String sanitizers (`cleanDeptName`, `fmtDesig`, `rawDesig`) eliminate redundant `"Department of"` prefixes and nested parentheses.
 - **Zero-Block Instant PDF Generation:** Removed all field-level blocking. If a student leaves fields blank, the engine fills them with clean academic blanks (`____________________`), enabling students to print blank official university cover pages for handwriting.
-- **Integrated View, Download & Share Suite:**
-  - `View Document`: Opens the full-screen interactive in-app PDF viewer via `CampusPdfViewerModal`.
-  - `Save to Device / Download`: Uses `savePdfToDevice` via Android StorageAccessFramework to save into the user's `Downloads` directory.
-  - `Share Cover Page`: Uses `sharePdf` to trigger the Android native share sheet.
-  - `Print Directly`: Uses `Print.printAsync` to send the document to a wireless printer or print service.
-- **BUBT Official Layouts:** Supports Assignment (Double-border, side-by-side Submitted To & By), Lab Report (Dual dates: Experiment & Submission, Experiment No/Name), Project Report (Group members 1-5 with ID), Internship Report (Academic + Company Supervisor), and Lab Index (15-40 customizable table rows).
 
 ### 10.4 Direct FCM Push Notifications
 - **Firebase Project:** `campusone-511812`

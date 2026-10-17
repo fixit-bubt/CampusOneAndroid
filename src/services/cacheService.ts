@@ -25,6 +25,9 @@ export const CacheKeys = {
   FACULTY_LIST: 'faculty_list',
   FACULTY_BOOKMARKS: (uid: string) => `faculty_bookmarks_${uid}`,
   DOCTORS: 'doctors_list',
+  COVER_COURSES: 'cover_courses',
+  COVER_DEPTS: 'cover_depts',
+  COVER_FACULTY: 'cover_faculty',
 
   // Feeds & Community
   HOME_STATUS: (uid: string) => `home_status_${uid}`,

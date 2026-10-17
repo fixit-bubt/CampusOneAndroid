@@ -94,7 +94,8 @@ export function CampusPdfViewerModal({
       setHtmlUri(env.htmlUri);
 
       // 2. Download and prepare document
-      setLoadingMessage('Downloading official notice…');
+      const isRemote = /^https?:\/\//i.test(fileUrl);
+      setLoadingMessage(isRemote ? 'Downloading official notice…' : (category ? `Preparing ${category}…` : 'Preparing document…'));
       const doc = await prepareDocumentForViewer(fileUrl, fileName, forceRefresh);
       setLocalFileUri(doc.localFileUri);
 

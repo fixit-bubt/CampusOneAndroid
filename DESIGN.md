@@ -686,6 +686,51 @@ Controls and actions adhere strictly to the 58dp / 72dp design system:
   - WebView containers (`engineHtml.ts` and `viewerHtml.ts`) enforce strict Content Security Policies (`default-src 'none'`) operating exclusively over local `file://` origins.
 - **Human Vector Iconography:** Strictly `@expo/vector-icons` (`Feather`). Zero AI-generated clip-art or raw emojis.
 
+---
+
+## 13. Cover Page Generator & Offline Template System (`CoverPageFormScreen.tsx`)
+
+### 1. Architectural Purpose
+Academic cover pages at BUBT require strict university branding (monochrome official crest, bilingual header, standardized department naming, and student/faculty credentials). The Cover Page Generator provides an all-in-one, 100% offline-capable generator covering:
+- **Assignment Cover:** Standard individual course assignment cover with 5 style templates.
+- **Lab Report Cover:** Laboratory experiment report with experiment date, number, and title.
+- **Project / Capstone Report:** Multi-member semester project with group member tables.
+- **Internship Report:** Dual-supervisor format (academic supervisor & organizational company info).
+- **Experiment Index Page:** Full-page printable laboratory index log with customizable rows.
+
+### 2. 72dp Modular Bar Architecture (`Bar72` & `InputBar72`)
+All document configuration selectors and input fields follow the 72dp layout standard matching Explore's Academics card:
+- **Clean Border Standard:** Uniform 1px border (`C.border`) with 16dp radius (`borderRadius: 16`), zero side color stripes, and smooth surface backgrounds (`C.surface`).
+- **Right-Side Stat Column & Divider:** Clickable selection bars feature an icon container on the left, primary title and value in the center, a 1px vertical divider (`verticalDivider`), a bold stat/status indicator (`statVal` and `statSub`), and a chevron indicator (`chevBox`).
+- **58dp Bottom Actions:** Floating action panel with 58dp Primary CTA (`Generate BUBT Cover Page`) paired with 58dp secondary actions (`View / Preview`, `Save to Downloads`, `Share PDF`, and `Direct Print`).
+
+### 3. Bottom Sheet Ergonomics & Gesture Dismissal
+- **Tri-Fold Dismissal:** Modals can be dismissed instantly via:
+  1. Touching the semi-transparent backdrop overlay.
+  2. Pressing the physical/gesture Android back button (handled via `BackHandler` and `onRequestClose`).
+  3. Tapping the top-right circular `X` close button (`closeXBtn`).
+- **Zero Keyboard Blocking:** Modal sheets housing search bars (`sBar` and `sInput`) are wrapped in `KeyboardAvoidingView` with handled tap persistence to prevent keyboard obstruction.
+- **Teacher Short Code Support:** Faculty picker searches across teacher full names, departments, designations, and official teacher short codes (e.g. `SRM`, `MHR`).
+
+### 4. 100% Offline Resilience & Caching Strategy
+- **Embedded Vector Logos:** Official BUBT crest and bilingual header logos are stored as embedded Base64 data URIs (`BUBT_LOGO_CREST`, `BUBT_LOGO_HEADER`), eliminating external network image fetching.
+- **Three-Tier Data Hydration:**
+  1. *Immediate Fallback:* Pre-bundled arrays (`DEFAULT_BUBT_DEPARTMENTS`, `DEFAULT_BUBT_COURSES`) ensure instant zero-latency UI rendering on fresh installs.
+  2. *Local Storage Cache:* `AsyncStorage` caching via `getCache` and `setCache` for `COVER_DEPTS`, `COVER_COURSES`, and `COVER_FACULTY`.
+  3. *Background Network Sync:* Asynchronous Supabase queries fetch latest faculty lists and department mappings without blocking the UI, gracefully failing when the device is disconnected.
+- **On-Device PDF Generation & Inspection:**
+  - PDF compilation executed locally via Android's native Chromium printing pipeline (`Print.printToFileAsync`).
+  - In-app inspection powered by `CampusPdfViewerModal` with local `file://` scheme decoding.
+  - File persistence via `savePdfToDevice` (Android StorageAccessFramework) and `sharePdf` (Android Intent).
+
+### 5. Single-Page Academic Layout Constraints
+- **Group Member Cap:** Group reports are capped at maximum 6 members to ensure all data fits strictly on a single A4 page without spilling into a second page. The UI displays a friendly limit badge once 6 members are reached.
+- **Index Row Clamp:** Experiment index tables are clamped between 1 and 20 rows (`Math.min(Math.max(rows, 1), 20)`) to maintain single-page printable geometry.
+- **String Sanitizers:**
+  - `cleanDeptName()`: Removes redundant `"Department of"` prefixes to prevent duplicate `"Dept. of Department of..."` strings.
+  - `fmtDesig()` / `rawDesig()`: Trims pre-existing parentheses from designations before formatting.
+
+
 
 
 
