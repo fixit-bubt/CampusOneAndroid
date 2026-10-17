@@ -127,7 +127,7 @@ export function AcademicCalendarScreen({ navigation }: any) {
   const [yearMonth, setYearMonth] = useState<[number, number]>([todayYear, todayMonth - 1]);
   const year = yearMonth[0];
   const month = yearMonth[1];
-  const monthKey = `${year}_${month}`;
+  const monthKey = `${selectedSemester.id}_${year}_${month}`;
   const calKey = `${CacheKeys.ACADEMIC_CALENDAR}_${monthKey}`;
 
   // Interactive selected date in calendar (defaults to today)
@@ -162,7 +162,7 @@ export function AcademicCalendarScreen({ navigation }: any) {
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
-    const mKey = `${year}_${month}`;
+    const mKey = `${selectedSemester.id}_${year}_${month}`;
     const cKey = `${CacheKeys.ACADEMIC_CALENDAR}_${mKey}`;
     setLoadingMonths((prev) => ({ ...prev, [mKey]: true }));
 
@@ -1859,6 +1859,7 @@ const styles = StyleSheet.create({
   floatingBarText: {
     color: '#ffffff',
     fontSize: 8.5,
+    includeFontPadding: false,
   },
   dotRow: {
     flexDirection: 'row',
