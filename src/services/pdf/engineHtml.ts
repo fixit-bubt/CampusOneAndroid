@@ -149,10 +149,10 @@ function percentileOf(arr, p) {
   return copy[idx];
 }
 
-// Stage 1A: Detect 4 corners of the notebook page on a downsampled analysis grid.
-// Uses 5x5 morphological closing (Dilation + Erosion) on the chrominance/luminance
-// paper mask so thin handwriting strokes close into solid paper before center-outward
-// ray casting, with slope extrapolation to the 4 corners.
+// Stage 1A: Detect 4 corners of the notebook page using multi-angle Radon edge-gradient line fitting.
+// Computes horizontal and vertical Sobel gradients across outer perimeter bands, searching candidate
+// rotation angles [-6 deg, +6 deg] to identify the physical paper boundary lines and their 4 intersections,
+// cleanly cropping away desks, clamps, spiral bindings, and dark bottom strips without clipping notebook handwriting.
 function detectDocumentQuad(srcCanvas) {
   var sw = srcCanvas.width;
   var sh = srcCanvas.height;
@@ -170,210 +170,158 @@ function detectDocumentQuad(srcCanvas) {
   ac.width = 0; ac.height = 0;
 
   var L = new Uint8Array(dw * dh);
-  var RB = new Int16Array(dw * dh);
-  var RG = new Int16Array(dw * dh);
-  var centerL = [];
-  var centerRB = [];
-
-  var cx0 = Math.floor(dw * 0.25), cx1 = Math.ceil(dw * 0.75);
-  var cy0 = Math.floor(dh * 0.20), cy1 = Math.ceil(dh * 0.80);
-
   for (var y = 0; y < dh; y++) {
-    var rowOff = y * dw;
-    var inCy = y >= cy0 && y <= cy1;
+    var rO = y * dw;
     for (var x = 0; x < dw; x++) {
-      var i = rowOff + x;
-      var p = i << 2;
-      var r = rgba[p], g = rgba[p + 1], b = rgba[p + 2];
-      var lum = (38 * r + 75 * g + 15 * b) >> 7;
-      var rb = r - b;
-      L[i] = lum;
-      RB[i] = rb;
-      RG[i] = r - g;
-      if (inCy && x >= cx0 && x <= cx1 && ((x + y) & 1) === 0) {
-        centerL.push(lum);
-        centerRB.push(rb);
+      var p = (rO + x) << 2;
+      L[rO + x] = (38 * rgba[p] + 75 * rgba[p + 1] + 15 * rgba[p + 2]) >> 7;
+    }
+  }
+
+  // 3x3 Sobel edge gradients: Gx for vertical edges, Gy for horizontal edges
+  var gx = new Float32Array(dw * dh);
+  var gy = new Float32Array(dw * dh);
+  for (var sy = 1; sy < dh - 1; sy++) {
+    var rowM1 = (sy - 1) * dw;
+    var row0  = sy * dw;
+    var rowP1 = (sy + 1) * dw;
+    for (var sx = 1; sx < dw - 1; sx++) {
+      var idx = row0 + sx;
+      var vX = (L[rowM1 + sx + 1] + 2 * L[row0 + sx + 1] + L[rowP1 + sx + 1]) -
+               (L[rowM1 + sx - 1] + 2 * L[row0 + sx - 1] + L[rowP1 + sx - 1]);
+      var vY = (L[rowP1 + sx - 1] + 2 * L[rowP1 + sx] + L[rowP1 + sx + 1]) -
+               (L[rowM1 + sx - 1] + 2 * L[rowM1 + sx] + L[rowM1 + sx + 1]);
+      gx[idx] = Math.abs(vX) * 0.25;
+      gy[idx] = Math.abs(vY) * 0.25;
+    }
+  }
+
+  var angles = [-0.105, -0.087, -0.070, -0.052, -0.035, -0.017, 0, 0.017, 0.035, 0.052, 0.070, 0.087, 0.105];
+
+  // 1. Top line: scan y in [0.005*dh, 0.13*dh] across center x in [0.25*dw, 0.75*dw]
+  var bestTopSc = -1, bestTopM = 0, bestTopC = 0;
+  var x0T = Math.floor(dw * 0.25), x1T = Math.ceil(dw * 0.75);
+  var xcT = (x0T + x1T) * 0.5;
+  var xLenT = Math.max(1, x1T - x0T);
+  for (var ai = 0; ai < angles.length; ai++) {
+    var mT = angles[ai];
+    for (var ymT = Math.max(1, Math.floor(dh * 0.005)); ymT <= Math.floor(dh * 0.13); ymT++) {
+      var sumGy = 0, cntGy = 0;
+      for (var xt = x0T; xt < x1T; xt++) {
+        var yt = Math.round(ymT + mT * (xt - xcT));
+        if (yt >= 0 && yt < dh) {
+          sumGy += gy[yt * dw + xt];
+          cntGy++;
+        }
+      }
+      if (cntGy >= xLenT * 0.8) {
+        var scT = sumGy / cntGy;
+        if (scT > bestTopSc) {
+          bestTopSc = scT;
+          bestTopM = mT;
+          bestTopC = ymT - mT * xcT;
+        }
       }
     }
   }
 
-  centerL.sort(function (a, b) { return a - b; });
-  centerRB.sort(function (a, b) { return a - b; });
-  var baseRb = centerRB.length ? centerRB[centerRB.length >> 1] : 4;
-  var paperL75 = centerL.length ? centerL[Math.floor(centerL.length * 0.75)] : 185;
-  var minPaperL = Math.max(102, Math.min(148, Math.round(paperL75 * 0.62)));
-
-  var rawPaper = new Uint8Array(dw * dh);
-  for (var k = 0; k < dw * dh; k++) {
-    var isWarmWood = RB[k] > baseRb + 20 && L[k] < paperL75 * 0.92;
-    var isDarkVoid = L[k] < minPaperL;
-    var isLoudObject = Math.abs(RG[k]) > 42 && L[k] < paperL75 * 0.88;
-    if (!isWarmWood && !isDarkVoid && !isLoudObject) {
-      rawPaper[k] = 100;
+  // 2. Bottom line: scan y in [0.88*dh, 0.995*dh]
+  var bestBotSc = -1, bestBotM = 0, bestBotC = dh - 1;
+  for (var bi = 0; bi < angles.length; bi++) {
+    var mB = angles[bi];
+    for (var ymB = Math.floor(dh * 0.88); ymB <= Math.min(dh - 1, Math.floor(dh * 0.995)); ymB++) {
+      var sumGyB = 0, cntGyB = 0;
+      for (var xb = x0T; xb < x1T; xb++) {
+        var yb = Math.round(ymB + mB * (xb - xcT));
+        if (yb >= 0 && yb < dh) {
+          sumGyB += gy[yb * dw + xb];
+          cntGyB++;
+        }
+      }
+      if (cntGyB >= xLenT * 0.8) {
+        var scB = sumGyB / cntGyB;
+        if (scB > bestBotSc) {
+          bestBotSc = scB;
+          bestBotM = mB;
+          bestBotC = ymB - mB * xcT;
+        }
+      }
     }
   }
 
-  // 5x5 Morphological Closing (cRad = 2): Dilate then Erode so thin pen strokes inside the page close into 100
-  var cRad = 2;
-  var tmp = new Uint8Array(dw * dh);
-  var dil = new Uint8Array(dw * dh);
-  var closed = new Uint8Array(dw * dh);
-
-  for (var y1 = 0; y1 < dh; y1++) {
-    var rO = y1 * dw;
-    for (var x1 = 0; x1 < dw; x1++) {
-      var mv = 0;
-      for (var dx = -cRad; dx <= cRad; dx++) {
-        var nx = x1 + dx;
-        if (nx >= 0 && nx < dw && rawPaper[rO + nx] > mv) mv = rawPaper[rO + nx];
+  // 3. Left line: scan x in [0.005*dw, 0.12*dw] across center y in [0.25*dh, 0.75*dh]
+  var bestLeftSc = -1, bestLeftM = 0, bestLeftC = 0;
+  var y0S = Math.floor(dh * 0.25), y1S = Math.ceil(dh * 0.75);
+  var ycS = (y0S + y1S) * 0.5;
+  var yLenS = Math.max(1, y1S - y0S);
+  for (var li = 0; li < angles.length; li++) {
+    var mL = angles[li];
+    for (var xmL = Math.max(1, Math.floor(dw * 0.005)); xmL <= Math.floor(dw * 0.12); xmL++) {
+      var sumGxL = 0, cntGxL = 0;
+      for (var yl = y0S; yl < y1S; yl++) {
+        var xl = Math.round(xmL + mL * (yl - ycS));
+        if (xl >= 0 && xl < dw) {
+          sumGxL += gx[yl * dw + xl];
+          cntGxL++;
+        }
       }
-      tmp[rO + x1] = mv;
-    }
-  }
-  for (var x2 = 0; x2 < dw; x2++) {
-    for (var y2 = 0; y2 < dh; y2++) {
-      var mv2 = 0;
-      for (var dy = -cRad; dy <= cRad; dy++) {
-        var ny = y2 + dy;
-        if (ny >= 0 && ny < dh && tmp[ny * dw + x2] > mv2) mv2 = tmp[ny * dw + x2];
+      if (cntGxL >= yLenS * 0.8) {
+        var scL = sumGxL / cntGxL;
+        if (scL > bestLeftSc) {
+          bestLeftSc = scL;
+          bestLeftM = mL;
+          bestLeftC = xmL - mL * ycS;
+        }
       }
-      dil[y2 * dw + x2] = mv2;
-    }
-  }
-  for (var y3 = 0; y3 < dh; y3++) {
-    var rO3 = y3 * dw;
-    for (var x3 = 0; x3 < dw; x3++) {
-      var minV = 100;
-      for (var dx3 = -cRad; dx3 <= cRad; dx3++) {
-        var nx3 = x3 + dx3;
-        if (nx3 >= 0 && nx3 < dw && dil[rO3 + nx3] < minV) minV = dil[rO3 + nx3];
-      }
-      tmp[rO3 + x3] = minV;
-    }
-  }
-  for (var x4 = 0; x4 < dw; x4++) {
-    for (var y4 = 0; y4 < dh; y4++) {
-      var minV2 = 100;
-      for (var dy4 = -cRad; dy4 <= cRad; dy4++) {
-        var ny4 = y4 + dy4;
-        if (ny4 >= 0 && ny4 < dh && tmp[ny4 * dw + x4] < minV2) minV2 = tmp[ny4 * dw + x4];
-      }
-      closed[y4 * dw + x4] = minV2;
     }
   }
 
-  var yStart = Math.floor(dh * 0.14), yEnd = Math.floor(dh * 0.86), yMid = (yStart + yEnd) >> 1;
-  var leftTopArr = [], leftBotArr = [], rightTopArr = [], rightBotArr = [];
-  var leftStart = Math.floor(dw * 0.22);
-  var rightStart = Math.ceil(dw * 0.78);
-
-  for (var sy = yStart; sy <= yEnd; sy += 2) {
-    var rOff = sy * dw;
-    var lx = 0;
-    for (var xl = leftStart; xl >= 0; xl--) {
-      if (closed[rOff + xl] === 0 && closed[rOff + Math.max(0, xl - 2)] === 0) {
-        lx = xl + 1;
-        break;
+  // 4. Right line: scan x in [0.88*dw, 0.995*dw]
+  var bestRightSc = -1, bestRightM = 0, bestRightC = dw - 1;
+  for (var ri = 0; ri < angles.length; ri++) {
+    var mR = angles[ri];
+    for (var xmR = Math.floor(dw * 0.88); xmR <= Math.min(dw - 1, Math.floor(dw * 0.995)); xmR++) {
+      var sumGxR = 0, cntGxR = 0;
+      for (var yr = y0S; yr < y1S; yr++) {
+        var xr = Math.round(xmR + mR * (yr - ycS));
+        if (xr >= 0 && xr < dw) {
+          sumGxR += gx[yr * dw + xr];
+          cntGxR++;
+        }
+      }
+      if (cntGxR >= yLenS * 0.8) {
+        var scR = sumGxR / cntGxR;
+        if (scR > bestRightSc) {
+          bestRightSc = scR;
+          bestRightM = mR;
+          bestRightC = xmR - mR * ycS;
+        }
       }
     }
-    var rx = dw - 1;
-    for (var xr = rightStart; xr < dw; xr++) {
-      if (closed[rOff + xr] === 0 && closed[rOff + Math.min(dw - 1, xr + 2)] === 0) {
-        rx = xr - 1;
-        break;
-      }
-    }
-    if (sy < yMid) { leftTopArr.push(lx); rightTopArr.push(rx); }
-    else { leftBotArr.push(lx); rightBotArr.push(rx); }
   }
 
-  var xStart = Math.floor(dw * 0.14), xEnd = Math.floor(dw * 0.86), xMid = (xStart + xEnd) >> 1;
-  var topLeftArr = [], topRightArr = [], botLeftArr = [], botRightArr = [];
-  var topStart = Math.floor(dh * 0.22);
-  var botStart = Math.ceil(dh * 0.78);
-
-  for (var sx = xStart; sx <= xEnd; sx += 2) {
-    var ty = 0;
-    for (var yt = topStart; yt >= 0; yt--) {
-      if (closed[yt * dw + sx] === 0 && closed[Math.max(0, yt - 2) * dw + sx] === 0) {
-        ty = yt + 1;
-        break;
-      }
-    }
-    var by = dh - 1;
-    for (var yb = botStart; yb < dh; yb++) {
-      if (closed[yb * dw + sx] === 0 && closed[Math.min(dh - 1, yb + 2) * dw + sx] === 0) {
-        by = yb - 1;
-        break;
-      }
-    }
-    if (sx < xMid) { topLeftArr.push(ty); botLeftArr.push(by); }
-    else { topRightArr.push(ty); botRightArr.push(by); }
+  function intersectLines(mY, cY, mX, cX) {
+    var denom = 1.0 - mX * mY;
+    if (Math.abs(denom) < 1e-4) denom = 1.0;
+    var x = (cX + mX * cY) / denom;
+    var y = mY * x + cY;
+    return {
+      x: Math.max(0.005, Math.min(0.995, x / dw)),
+      y: Math.max(0.005, Math.min(0.995, y / dh))
+    };
   }
 
-  var lTopMid = percentileOf(leftTopArr, 0.35), lBotMid = percentileOf(leftBotArr, 0.35);
-  var rTopMid = percentileOf(rightTopArr, 0.65), rBotMid = percentileOf(rightBotArr, 0.65);
-  var tLeftMid = percentileOf(topLeftArr, 0.30), tRightMid = percentileOf(topRightArr, 0.30);
-  var bLeftMid = percentileOf(botLeftArr, 0.65), bRightMid = percentileOf(botRightArr, 0.65);
-
-  // Check outermost 5.5% on left ONLY for deep dark binding shadow gutter (never touches 10-15% notebook margin lines)
-  var gy0 = Math.floor(dh * 0.20), gy1 = Math.floor(dh * 0.80);
-  var gCount = Math.max(1, gy1 - gy0);
-  var maxGutterL = Math.floor(dw * 0.055);
-  var bestGutterL = -1, bestGutterScore = 13.5;
-  for (var gx = Math.max(2, Math.min(lTopMid, lBotMid)); gx < maxGutterL; gx++) {
-    var sumScore = 0;
-    for (var gy = gy0; gy < gy1; gy += 2) {
-      var baseIdx = gy * dw + gx;
-      if (L[baseIdx] < paperL75 * 0.82 && Math.abs(RG[baseIdx]) < 15) {
-        var dip = Math.max(0, L[baseIdx + 4] - L[baseIdx]) + Math.max(0, L[baseIdx + 2] - L[baseIdx - 2]);
-        sumScore += dip;
-      }
-    }
-    var avgScore = (sumScore * 2) / gCount;
-    if (avgScore > bestGutterScore) {
-      bestGutterScore = avgScore;
-      bestGutterL = gx + 1;
-    }
-  }
-  if (bestGutterL > 0) {
-    lTopMid = Math.max(lTopMid, bestGutterL);
-    lBotMid = Math.max(lBotMid, bestGutterL);
-  }
-
-  var dyMid = Math.max(1, (yEnd - yStart) * 0.5);
-  var yTopCenter = (yStart + yMid) * 0.5;
-  var yBotCenter = (yMid + yEnd) * 0.5;
-  var slopeL = (lBotMid - lTopMid) / dyMid;
-  var slopeR = (rBotMid - rTopMid) / dyMid;
-
-  var dxMid = Math.max(1, (xEnd - xStart) * 0.5);
-  var xLeftCenter = (xStart + xMid) * 0.5;
-  var xRightCenter = (xMid + xEnd) * 0.5;
-  var slopeT = (tRightMid - tLeftMid) / dxMid;
-  var slopeB = (bRightMid - bLeftMid) / dxMid;
-
-  var tly = Math.min(0.22, Math.max(0, Math.min(tLeftMid, tLeftMid + slopeT * (lTopMid - xLeftCenter)) / dh));
-  var try_ = Math.min(0.22, Math.max(0, Math.min(tRightMid, tRightMid + slopeT * (rTopMid - xRightCenter)) / dh));
-  var bly = Math.max(0.78, Math.min(1, Math.max(bLeftMid, bLeftMid + slopeB * (lBotMid - xLeftCenter)) / dh));
-  var bry = Math.max(0.78, Math.min(1, Math.max(bRightMid, bRightMid + slopeB * (rBotMid - xRightCenter)) / dh));
-
-  var lAtTop = lTopMid + slopeL * (tly * dh - yTopCenter);
-  var lAtBot = lBotMid + slopeL * (bly * dh - yBotCenter);
-  var rAtTop = rTopMid + slopeR * (try_ * dh - yTopCenter);
-  var rAtBot = rBotMid + slopeR * (bry * dh - yBotCenter);
-
-  var tlx = Math.min(0.22, Math.max(0, Math.min(lTopMid, lAtTop) / dw));
-  var blx = Math.min(0.22, Math.max(0, Math.min(lBotMid, lAtBot) / dw));
-  var trx = Math.max(0.78, Math.min(1, Math.max(rTopMid, rAtTop) / dw));
-  var brx = Math.max(0.78, Math.min(1, Math.max(rBotMid, rAtBot) / dw));
+  var tl = intersectLines(bestTopM, bestTopC, bestLeftM, bestLeftC);
+  var tr = intersectLines(bestTopM, bestTopC, bestRightM, bestRightC);
+  var br = intersectLines(bestBotM, bestBotC, bestRightM, bestRightC);
+  var bl = intersectLines(bestBotM, bestBotC, bestLeftM, bestLeftC);
 
   // Validate interior quad angles lie within [45 deg (0.7854 rad), 135 deg (2.3562 rad)]
   var pts = [
-    { x: tlx * dw, y: tly * dh },
-    { x: trx * dw, y: try_ * dh },
-    { x: brx * dw, y: bry * dh },
-    { x: blx * dw, y: bly * dh }
+    { x: tl.x * dw, y: tl.y * dh },
+    { x: tr.x * dw, y: tr.y * dh },
+    { x: br.x * dw, y: br.y * dh },
+    { x: bl.x * dw, y: bl.y * dh }
   ];
   var validAngles = true;
   for (var vi = 0; vi < 4; vi++) {
@@ -388,16 +336,10 @@ function detectDocumentQuad(srcCanvas) {
     var ang = Math.acos(Math.max(-1, Math.min(1, cosA)));
     if (ang < 0.785398 || ang > 2.356194) { validAngles = false; break; }
   }
-  if (!validAngles) {
-    var avgLx = (tlx + blx) * 0.5, avgRx = (trx + brx) * 0.5;
-    var avgTy = (tly + try_) * 0.5, avgBy = (bly + bry) * 0.5;
-    tlx = blx = avgLx; trx = brx = avgRx;
-    tly = try_ = avgTy; bly = bry = avgBy;
-  }
 
-  var wSpan = Math.min(trx - tlx, brx - blx);
-  var hSpan = Math.min(bly - tly, bry - try_);
-  if (wSpan < 0.42 || hSpan < 0.42) {
+  var wSpan = Math.min(tr.x - tl.x, br.x - bl.x);
+  var hSpan = Math.min(bl.y - tl.y, br.y - tr.y);
+  if (!validAngles || wSpan < 0.45 || hSpan < 0.45) {
     return [
       { x: 0.005, y: 0.005 },
       { x: 0.995, y: 0.005 },
@@ -407,10 +349,10 @@ function detectDocumentQuad(srcCanvas) {
   }
 
   return [
-    { x: Number(tlx.toFixed(4)), y: Number(tly.toFixed(4)) },
-    { x: Number(trx.toFixed(4)), y: Number(try_.toFixed(4)) },
-    { x: Number(brx.toFixed(4)), y: Number(bry.toFixed(4)) },
-    { x: Number(blx.toFixed(4)), y: Number(bly.toFixed(4)) }
+    { x: Number(tl.x.toFixed(4)), y: Number(tl.y.toFixed(4)) },
+    { x: Number(tr.x.toFixed(4)), y: Number(tr.y.toFixed(4)) },
+    { x: Number(br.x.toFixed(4)), y: Number(br.y.toFixed(4)) },
+    { x: Number(bl.x.toFixed(4)), y: Number(bl.y.toFixed(4)) }
   ];
 }
 
@@ -445,9 +387,9 @@ function warpQuadToCanvas(srcCanvas, quad, maxDim) {
 
   var outW = Math.max(32, Math.round((wTop + wBot) * 0.5));
   var outH = Math.max(32, Math.round((hLeft + hRight) * 0.5 * foreshorten));
-  var cap = maxDim || 2600;
+  var cap = maxDim || 3000;
   var curLong = Math.max(outW, outH);
-  var minTarget = Math.min(cap, 2400);
+  var minTarget = Math.min(cap, 3000);
   if (curLong > cap || curLong < minTarget) {
     var target = curLong > cap ? cap : minTarget;
     var r = target / curLong;
@@ -849,19 +791,23 @@ function enhanceDocumentCanvas(canvas, filterMode) {
     }
   }
 
-  // 4. Ink-Darkening Gamma LUT (bp=48, wp=212, gamma=1.42 darkens thin pen strokes into bold rich ink)
-  var bp = 48, wp = 212, gamma = 1.42;
-  if (mode === 'bleed_erase') { bp = 56; wp = 198; gamma = 1.48; }
-  else if (mode === 'whiteboard') { bp = 36; wp = 222; gamma = 1.30; }
-  else if (mode === 'grayscale') { bp = 44; wp = 214; gamma = 1.38; }
-  else if (mode === 'bw') { bp = 50; wp = 216; gamma = 1.50; }
+  // 4. Smooth-Transition S-Curve LUT (darkens ink core while preserving fine anti-aliased pen stroke tapering)
+  var bp = 42, wp = 208;
+  if (mode === 'bleed_erase') { bp = 52; wp = 198; }
+  else if (mode === 'whiteboard') { bp = 34; wp = 220; }
+  else if (mode === 'grayscale') { bp = 40; wp = 210; }
+  else if (mode === 'bw') { bp = 46; wp = 212; }
 
   var lut = new Uint8Array(256);
   var span = Math.max(1, wp - bp);
   for (var li = 0; li < 256; li++) {
     if (li <= bp) lut[li] = 0;
     else if (li >= wp) lut[li] = 255;
-    else lut[li] = Math.min(255, Math.floor(Math.pow((li - bp) / span, gamma) * 255.0));
+    else {
+      var t = (li - bp) / span;
+      var s = t * t * (3.0 - 2.0 * t);
+      lut[li] = Math.min(255, Math.floor((0.35 * s + 0.65 * Math.pow(t, 1.15)) * 255.0));
+    }
   }
 
   var lumaBuf = new Uint8Array(totalPx);
@@ -949,11 +895,11 @@ function enhanceDocumentCanvas(canvas, filterMode) {
     }
   }
 
-  // 5. Smooth continuous 15x15 sliding-window box blur on luminance + unsharp mask
+  // 5. Micro 5x5 sliding-window box blur on luminance + fine ink unsharp mask
   var hBlur = new Uint8Array(totalPx);
-  var blur15 = new Uint8Array(totalPx);
-  var sRad = 7;
-  var winLen = 15;
+  var blur5 = new Uint8Array(totalPx);
+  var sRad = 2;
+  var winLen = 5;
 
   for (var hy = 0; hy < H; hy++) {
     var hOff = hy * W;
@@ -975,7 +921,7 @@ function enhanceDocumentCanvas(canvas, filterMode) {
       sumV += hBlur[Math.min(H - 1, vyInit) * W + vx];
     }
     for (var vy = 0; vy < H; vy++) {
-      blur15[vy * W + vx] = (sumV / winLen) | 0;
+      blur5[vy * W + vx] = (sumV / winLen) | 0;
       var subY = Math.max(0, vy - sRad);
       var addY = Math.min(H - 1, vy + sRad + 1);
       sumV += hBlur[addY * W + vx] - hBlur[subY * W + vx];
@@ -985,7 +931,7 @@ function enhanceDocumentCanvas(canvas, filterMode) {
   var isBw = mode === 'bw';
   for (var p = 0; p < totalPx; p++) {
     var curL = lumaBuf[p];
-    var meanL = blur15[p];
+    var meanL = blur5[p];
     var diff = curL - meanL;
     var qIdx = p << 2;
 
@@ -998,7 +944,7 @@ function enhanceDocumentCanvas(canvas, filterMode) {
       data[qIdx + 1] = bwVal;
       data[qIdx + 2] = bwVal;
     } else {
-      var delta = diff >= -6 ? (diff >> 2) : Math.round(diff * 1.35);
+      var delta = diff >= -4 ? (diff >> 2) : Math.round(diff * 0.55);
       var fr = data[qIdx] + delta;
       var fg = data[qIdx + 1] + delta;
       var fb = data[qIdx + 2] + delta;
