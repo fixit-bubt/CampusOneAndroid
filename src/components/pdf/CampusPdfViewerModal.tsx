@@ -238,8 +238,12 @@ export function CampusPdfViewerModal({
           const style = document.createElement('style');
           style.id = styleId;
           style.innerHTML = \`
+            *, *::before, *::after {
+              box-sizing: border-box !important;
+            }
             html, body {
               width: 100% !important;
+              max-width: 100% !important;
               margin: 0 !important;
               padding: 0 !important;
               background: ${isDark ? '#000000' : '#f8fafc'} !important;
@@ -250,48 +254,93 @@ export function CampusPdfViewerModal({
             div[role="toolbar"],
             .goog-inline-block.ndfHFb-c4YZDc-to915-LgbsSe,
             a[href*="docs.google.com"],
-            .ndfHFb-c4YZDc-V67aGc {
+            .ndfHFb-c4YZDc-V67aGc,
+            .ndfHFb-c4YZDc-cYSp0e-B7I4Od,
+            .ndfHFb-c4YZDc-cYSp0e-DARUcf-hSRGPd {
               display: none !important;
               visibility: hidden !important;
               height: 0 !important;
               opacity: 0 !important;
             }
+            .ndfHFb-c4YZDc,
+            .ndfHFb-c4YZDc-s2gQvd,
+            .ndfHFb-c4YZDc-cYSp0e,
+            .ndfHFb-c4YZDc-cYSp0e-s2gQvd,
+            .ndfHFb-c4YZDc-cYSp0e-Oz6c3e,
+            .ndfHFb-c4YZDc-qwU8Me-b0t70b-haAclf,
+            .ndfHFb-c4YZDc-zTETae,
             .ndfHFb-c4YZDc-bC7sje,
             .ndfHFb-c4YZDc-c3fl2b,
             .ndfHFb-c4YZDc-cYSp0e-tJHJj,
-            .ndfHFb-c4YZDc-s2gQvd,
             .ndfHFb-c4YZDc-bC7sje-tJHJj,
-            .ndfHFb-c4YZDc-AWhBae {
+            .ndfHFb-c4YZDc-AWhBae,
+            div[role="document"] {
               background: ${isDark ? '#000000' : '#f8fafc'} !important;
               background-color: ${isDark ? '#000000' : '#f8fafc'} !important;
               width: 100% !important;
               max-width: 100% !important;
-              min-width: 100% !important;
+              min-width: 0 !important;
               margin: 0 !important;
               padding: 0 !important;
+              left: 0 !important;
+              right: 0 !important;
               box-shadow: none !important;
+              box-sizing: border-box !important;
             }
+            img,
+            canvas,
             .ndfHFb-c4YZDc-s2gQvd img,
             .ndfHFb-c4YZDc-bC7sje img,
             .ndfHFb-c4YZDc-cYSp0e-tJHJj img,
             .ndfHFb-c4YZDc-c3fl2b img,
             .ndfHFb-c4YZDc-AWhBae img,
-            canvas,
-            img {
+            .ndfHFb-c4YZDc-qwU8Me-b0t70b-haAclf img {
               width: 100% !important;
-              min-width: 100% !important;
               max-width: 100% !important;
+              min-width: 0 !important;
               height: auto !important;
-              margin: 0 0 10px 0 !important;
+              margin: 0 auto 10px auto !important;
+              padding: 0 !important;
               display: block !important;
+              box-sizing: border-box !important;
               box-shadow: 0 2px 8px rgba(0,0,0,0.18) !important;
             }
           \`;
           document.head && document.head.appendChild(style);
         }
+
+        try {
+          var media = document.querySelectorAll('img, canvas');
+          for (var i = 0; i < media.length; i++) {
+            var el = media[i];
+            if (el.tagName.toLowerCase() === 'img' || el.tagName.toLowerCase() === 'canvas') {
+              el.style.setProperty('width', '100%', 'important');
+              el.style.setProperty('max-width', '100%', 'important');
+              el.style.setProperty('min-width', '0px', 'important');
+              el.style.setProperty('height', 'auto', 'important');
+              el.style.setProperty('margin', '0 auto 10px auto', 'important');
+              el.style.setProperty('left', '0px', 'important');
+              el.style.setProperty('box-sizing', 'border-box', 'important');
+
+              var p = el.parentElement;
+              for (var depth = 0; depth < 5 && p && p !== document.body; depth++) {
+                p.style.setProperty('left', '0px', 'important');
+                p.style.setProperty('margin-left', '0px', 'important');
+                p.style.setProperty('margin-right', '0px', 'important');
+                p.style.setProperty('padding-left', '0px', 'important');
+                p.style.setProperty('padding-right', '0px', 'important');
+                p.style.setProperty('width', '100%', 'important');
+                p.style.setProperty('max-width', '100%', 'important');
+                p.style.setProperty('min-width', '0px', 'important');
+                p.style.setProperty('box-sizing', 'border-box', 'important');
+                p = p.parentElement;
+              }
+            }
+          }
+        } catch (e) {}
       }
       cleanGview();
-      setInterval(cleanGview, 350);
+      setInterval(cleanGview, 250);
     })();
     true;
   `;
@@ -395,11 +444,12 @@ export function CampusPdfViewerModal({
                 setSupportMultipleWindows={false}
                 showsVerticalScrollIndicator={true}
                 showsHorizontalScrollIndicator={false}
+                textZoom={100}
                 injectedJavaScriptBeforeContentLoaded={`
                   (function() {
                     const meta = document.createElement('meta');
                     meta.name = 'viewport';
-                    meta.content = 'width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes';
+                    meta.content = 'width=device-width, initial-scale=1.0, minimum-scale=0.5, maximum-scale=5.0, user-scalable=yes';
                     document.head && document.head.appendChild(meta);
                   })();
                   true;

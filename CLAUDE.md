@@ -2353,5 +2353,11 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 - **WebView Native Loading Handshake:** Switched to native `startInLoadingState={true}` with `renderLoading={() => <LoadingOverlay />}`, allowing the WebView runtime to dismiss the loading view immediately once initial rendering begins.
 - **Dedicated Notice Modal (`AnnouncementDetailScreen.tsx`):** Restored the dedicated in-app preview modal featuring clean header actions (close, external-link, download) and edge-to-edge Google Docs streaming with custom dark/light theme CSS.
 
+### 50.5 Zero-Offset Sizing & Right-Side Cutoff Elimination
+- **Root Cause of Right-Edge Crop:** Google Docs Viewer's internal rendering layout (`.ndfHFb-c4YZDc-cYSp0e-Oz6c3e`, `.ndfHFb-c4YZDc-qwU8Me-b0t70b-haAclf`, etc.) uses default `box-sizing: content-box` with absolute positioning and inline left offsets (`left: ~20px`). Forcing `width: 100% !important` without resetting `left: 0` and clearing parent padding displaced the document ~20px to the right, pushing the right border of tables, columns, and schedules off-screen.
+- **Universal Box-Sizing & Margin/Padding Reset:** Injected `*, *::before, *::after { box-sizing: border-box !important; }` and reset all viewer container classes (`ndfHFb-c4YZDc`, `s2gQvd`, `cYSp0e`, `Oz6c3e`, `qwU8Me-b0t70b-haAclf`, `zTETae`, `bC7sje`, `c3fl2b`, `div[role="document"]`) to `width: 100% !important; max-width: 100% !important; min-width: 0 !important; margin: 0 !important; padding: 0 !important; left: 0 !important; right: 0 !important;`.
+- **System Display Scale Protection (`textZoom={100}`):** Configured `<WebView textZoom={100}>` across `AnnouncementDetailScreen.tsx` and `CampusPdfViewerModal.tsx` so Android system-level accessibility font and display magnifications do not expand WebView text and canvas dimensions beyond viewport bounds.
+- **Recursive DOM Alignment Loop:** Injected interval function periodically sweeps rendered `<img, canvas>` elements, enforcing `width: 100%`, `margin: 0 auto 10px auto`, `left: 0px`, and traversing 5 levels of parent nodes to force `left: 0px`, `padding-left: 0px`, `padding-right: 0px`, and `box-sizing: border-box`, ensuring 100% edge-to-edge alignment with zero right-side clipping.
+
 
 
