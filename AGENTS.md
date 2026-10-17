@@ -2402,9 +2402,15 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
   - `PostItemFormScreen.tsx`: Captures `locCoords` from map pin or presets and persists `latitude`, `longitude` into `lost_found_items`.
 
 ### 51.3 Navigation & Direction Synchronization
-- **Numeric GPS Handoff:** In `DirectionMapModal.tsx`, external Google Maps intents always construct destination URLs using exact numeric coordinates when available (`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destCoords.latitude},${destCoords.longitude}&travelmode=driving`), completely bypassing fuzzy search engine re-interpretation.
+- **Exact Numeric Origin & Destination Handoff:** In `DirectionMapModal.tsx`, both `origin` and `destination` query parameters passed to external Google Maps intents always construct URLs using exact numeric coordinates when available (`https://www.google.com/maps/dir/?api=1&origin=${originParam}&destination=${query}&travelmode=${mode}`), completely bypassing fuzzy search engine re-interpretation.
 - **Clean Reverse Geocoding (`locationService.ts`):** `reverseGeocodeCoords` snaps to verified master landmarks within 70m. For unlisted coordinates, it formats clean, recognizable street/area descriptions (`road + cityArea`, e.g., "Outer Circular Road, Moghbazar") and filters out noisy private clinic/ATM nodes (e.g. "Shefali Chowdhury").
 - **Detail Screen Integration:** `BloodScreen.tsx`, `RideDetailScreen.tsx`, `MarketDetailScreen.tsx`, and `LostFoundDetailScreen.tsx` read persisted database coordinates first, passing them directly to distance estimators and `DirectionMapModal`.
+
+### 51.4 Full-Review Coordinate Handoff & Edge-to-Edge Parity
+- **Location Picker Re-Center Persistence:** `RidePostScreen.tsx`, `MarketPostScreen.tsx`, and `PostItemFormScreen.tsx` pass `initialCoords` to `<LocationPickerModal>` so re-opening the map modal retains and centers directly on the user's previously placed pin instead of resetting to default.
+- **RidePostScreen Map Selection Bridge:** Fixed a missing state connection in `RidePostScreen.tsx` where picking from `LocationPickerModal` was updating the address string but not calling `setFromCoords(place.coords)` / `setToCoords(place.coords)`. Now fully synchronized.
+- **Comprehensive Fallback Resolution:** All feature post and detail screens (`BloodRequestScreen`, `BloodScreen`, `RidePostScreen`, `RideDetailScreen`, `MarketPostScreen`, `MarketDetailScreen`, `PostItemFormScreen`, `LostFoundDetailScreen`, `CommuteAreaPickerModal`, `AreaPickerModal`) prioritize `coords` -> `findMasterLocationByName` -> `resolveHospitalLocation` -> `BUBT_COORDS`, ensuring 100% accurate resolution even if places are entered as plain text in custom modes.
+- **TypeScript Type System Integration:** Updated `src/types/database.ts` with explicit numeric coordinate properties across `BloodRequest`, `Ride`, `Listing`, and `LostFoundItem` matching the live Supabase database columns.
 
 
 
