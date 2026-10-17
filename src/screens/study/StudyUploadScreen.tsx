@@ -2,11 +2,8 @@
 // Materials -> study_materials, Questions -> study_question_bank (exam tag),
 // Books -> study_books (author, optional external URL instead of a file).
 import { useState, useEffect } from 'react';
-import {
-  View, Text, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView, Platform,
-  StyleSheet, type ViewStyle,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView, Platform, StyleSheet, type ViewStyle } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as DocumentPicker from 'expo-document-picker';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
@@ -22,9 +19,10 @@ import { isImageFile } from '../../utils/imageCompress';
 import { MAX_FILE_SIZE_MB } from '../../constants/app';
 
 const UPLOAD_TYPE_TABS: TabItem<string>[] = [
-  { id: 'materials', label: 'Materials', icon: 'file-text' },
+  { id: 'materials', label: 'Notes',     icon: 'file-text' },
   { id: 'questions', label: 'Questions', icon: 'help-circle' },
   { id: 'books',     label: 'Books',     icon: 'book-open' },
+  { id: 'slides',    label: 'Slides',    icon: 'monitor' },
 ];
 
 const ALLOWED_MIME_TYPES = [
@@ -37,7 +35,7 @@ const ALLOWED_MIME_TYPES = [
 ];
 
 // Must match the DB CHECK constraints exactly.
-const MATERIAL_TYPES = ['Class Note', 'Lecture Slide', 'Assignment', 'Reference', 'Lab Manual'];
+const NOTE_TYPES = ['Class Note', 'Assignment', 'Reference', 'Lab Manual'];
 const BOOK_KINDS = ['Textbook', 'Reference', 'Syllabus'];
 
 // Lowercased file extension, used for the file-type icon + label on the course.
@@ -53,17 +51,19 @@ interface PickedFile {
 }
 
 export function StudyUploadScreen({ route, navigation }: any) {
-  const { courseId, courseCode, courseTitle } = (route.params ?? {}) as {
+  const { courseId, courseCode, courseTitle, initialTab } = (route.params ?? {}) as {
     courseId?: string;
     courseCode?: string;
     courseTitle?: string;
+    initialTab?: 'materials' | 'questions' | 'books' | 'slides';
   };
   const { C } = useTheme();
+  const insets = useSafeAreaInsets();
   const t = useT();
   const { user } = useAuth();
 
   const toast = useToast();
-  const [fileType, setFileType] = useState('materials');
+  const [fileType, setFileType] = useState(initialTab ?? 'materials');
   const [name, setName] = useState('');
   const [materialType, setMaterialType] = useState('Class Note');
   const [bookKind, setBookKind] = useState('Textbook');
@@ -169,9 +169,10 @@ export function StudyUploadScreen({ route, navigation }: any) {
         }));
       } else {
         if (!storagePath) throw new Error(t.study2.couldNotUpload);
+        const resolvedType = fileType === 'slides' ? 'Lecture Slide' : materialType;
         ({ error: insertError } = await supabase.from('study_materials').insert({
           course_id:    courseId,
-          type:         materialType,
+          type:         resolvedType,
           title:        name.trim(),
           storage_path: storagePath,
           file_kind:    pickedFile ? fileKindFrom(pickedFile.name) : null,
@@ -190,10 +191,10 @@ export function StudyUploadScreen({ route, navigation }: any) {
   }
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
+    <View style={[styles.safe, { backgroundColor: C.bg, paddingTop: insets.top }]}>
       <SubBar title={t.study2.upload} onBack={() => navigation.goBack()} />
 
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
@@ -212,7 +213,7 @@ export function StudyUploadScreen({ route, navigation }: any) {
         <SegmentedTabs
           tabs={UPLOAD_TYPE_TABS}
           activeTab={fileType}
-          onTabChange={setFileType}
+          onTabChange={(id) => setFileType(id as any)}
         />
 
         {/* Material type (materials only) - must match DB CHECK */}
@@ -220,7 +221,7 @@ export function StudyUploadScreen({ route, navigation }: any) {
           <>
             <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>TYPE</Text>
             <View style={styles.examRow}>
-              {MATERIAL_TYPES.map(mt => {
+              {NOTE_TYPES.map(mt => {
                 const on = materialType === mt;
                 return (
                   <TouchableOpacity
@@ -346,7 +347,7 @@ export function StudyUploadScreen({ route, navigation }: any) {
         <View style={{ height: 30 }} />
       </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 

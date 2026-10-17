@@ -2237,3 +2237,52 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
   - 1st digit = Building (`2xxx` -> Building 2: Martyr Sujan Mahmud Building, `3xxx` -> Building 3: Martyr Tahmid Abdullah Building, `5xxx` -> Campus 2).
   - 2nd digit = Floor level.
 - **Home Screen Dynamic Strip:** `HomeStatusStrips.tsx` dynamically displays student's intake & section with 1-tap navigation to Timetable Grid and Exam Shifts.
+
+---
+
+## 48. Study Hub & Academic Library 1:1 Web Parity Architecture
+
+### 48.1 Scope & Problem Diagnosis
+- **Context & Discrepancy:** Sibling web app (`CampusOneWeb`) and mobile app share the same Supabase database. In Web, navigating to Semester 1 under Computer Science & Engineering (CSE) shows all senior and current intakes (Intake 53 Current, Intake 52 Completed · Now Sem 2, Intake 51 Completed · Now Sem 3). Mobile was previously falling back to `departments[0]` (Accounting / Civil, max intake 55) because the student membership query omitted `department_id`, leaving `mySection.department_id` empty.
+- **Root-Cause Resolution:**
+  1. Updated `study_section_members` query to select `study_intakes(number, is_public, department_id, departments(id, name, dept_number))`.
+  2. Implemented a 4-tier student department resolver (`resolveStudentDept`) matching Web's `useStudentDept`:
+     - 1st: Approved home section `department_id` or `department` name.
+     - 2nd: User profile department/program string (e.g. `"Bsc In Cse"`) matched against canonical names, `shortDept`, and `deptCode` initials.
+     - 3rd: Explicit fallback to CSE (`dept_number === '27'` or name contains `'computer'`).
+     - 4th: Fallback to first department in list.
+  3. Added cold-start fallback in `openSemester` that queries `departments` table immediately if local cache is still empty.
+
+### 48.2 Semester Archive & Intake Navigation
+- **Dynamic Seniority Calculation:**
+  - `currentSem = Math.max(1, (maxIntake - intake.number) + 1)`
+  - `isCompleted = currentSem > selectedSemester.num`
+  - `isCurrent = currentSem === selectedSemester.num`
+  - `isGraduated = currentSem > 12`
+- **1:1 Web Visual Badging:**
+  - `Current Intake`: Teal capsule badge (`rgba(20, 184, 166, 0.15)` fill / `#2dd4bf` dark text).
+  - `Completed · Now Sem ${currentSem}`: Emerald capsule badge (`rgba(16, 185, 129, 0.15)` fill / `#34d399` dark text).
+  - `Graduated`: Purple capsule badge (`rgba(168, 85, 247, 0.15)` fill / `#c084fc` dark text).
+  - Subtitle: `{years ? years + ' · ' : ''}{sectionsCount} section(s)`.
+  - Iconography: Standardized to vector right arrow (`Feather name="arrow-right"` size 18).
+
+### 48.3 Dual-Origin Section Room Navigation Guard
+- **Problem:** Tapping a section from "Browse Public Sections" after previously opening an intake in the Semester Archive left `selectedIntake` in memory. Pressing Back from the section room incorrectly routed to the old intake rather than back to Browse.
+- **Solution:** Added `sectionOrigin` state (`'intake' | 'browse'`). `openSectionRoom(section, origin)` records the entry point. `handleBack()` checks:
+  ```ts
+  if (sub === 'section') {
+    if (sectionOrigin === 'intake' && selectedIntake) {
+      setSub('intake');
+    } else {
+      setSub('browse');
+    }
+    return true;
+  }
+  ```
+  Guarantees 100% symmetric back navigation whether using on-screen SubBar back buttons or Android hardware back gestures.
+
+### 48.4 Hook Ordering & Storage Signed URL Reliability
+- **React Hook Rules Compliance (`CourseDetailScreen.tsx`):**
+  - Moved `studyTabs` `useMemo` above all early `if (!course) return` guards, preventing runtime `Rendered more hooks than during the previous render` crashes.
+- **Storage Signed URL Expiration:**
+  - Increased `createSignedUrl` in `CourseDetailScreen.tsx` from 60 seconds to 3600 seconds (1 hour), matching `getStudyFileUrl` in the web application to prevent download timeouts on large slide decks or textbooks.

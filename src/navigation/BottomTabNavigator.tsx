@@ -238,6 +238,7 @@ export function BottomTabNavigator() {
 
   return (
     <Tab.Navigator
+      backBehavior="history"
       tabBar={(props) => <CustomBottomTabBar {...props} />}
       detachInactiveScreens={false}
       screenOptions={{

@@ -5,9 +5,9 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
-  ActivityIndicator, Alert, type ViewStyle,
+  ActivityIndicator, Alert, BackHandler, type ViewStyle,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
@@ -25,17 +25,18 @@ import { formatFileSize, formatRelativeTime } from '../../utils/format';
 const STUDY_COLOR = SectorColors.study;
 const STUDY_BG    = `${SectorColors.study}1e`;
 
-type Tab = 'materials' | 'questions' | 'books';
+type Tab = 'materials' | 'questions' | 'books' | 'slides';
 type Sort = 'new' | 'name';
 
 const TAB_LABELS: Record<Tab, string> = {
   materials: 'Notes',
   questions: 'Questions',
   books:     'Books',
+  slides:    'Slides',
 };
 
 const ITEM_TYPE: Record<Tab, 'material' | 'question' | 'book'> = {
-  materials: 'material', questions: 'question', books: 'book',
+  materials: 'material', questions: 'question', books: 'book', slides: 'material',
 };
 
 interface Entry {
@@ -52,6 +53,8 @@ interface Entry {
   size_bytes?: number | null;
   created_at: string;
   table: 'study_materials' | 'study_question_bank' | 'study_books';
+  uploaded_by?: string | null;
+  added_by?: string | null;
 }
 
 // Feather icon for a file, keyed off its extension (file_kind).
@@ -70,16 +73,19 @@ function fileIcon(kind: string | null | undefined, isLink: boolean): keyof typeo
 
 export function CourseDetailScreen({ route, navigation }: any) {
   const { C, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
   const t = useT();
   const toast = useToast();
   const { user, profile } = useAuth();
   const { courseId } = route.params ?? {};
   const [course, setCourse] = useState<any>(null);
   const [materials, setMaterials] = useState<Entry[]>([]);
+  const [slides, setSlides] = useState<Entry[]>([]);
   const [questions, setQuestions] = useState<Entry[]>([]);
   const [books, setBooks] = useState<Entry[]>([]);
   const [saved, setSaved] = useState<Set<string>>(new Set());
   const [isCR, setIsCR] = useState(false);
+  const [canUpload, setCanUpload] = useState(false);
   const [tab, setTab] = useState<Tab>('materials');
   const [loading, setLoading] = useState(true);
   const [openingId, setOpeningId] = useState<string | null>(null);
@@ -111,6 +117,7 @@ export function CourseDetailScreen({ route, navigation }: any) {
     const cached = await getCache<{
       course: any;
       materials: Entry[];
+      slides?: Entry[];
       questions: Entry[];
       books: Entry[];
       saved: string[];
@@ -119,6 +126,7 @@ export function CourseDetailScreen({ route, navigation }: any) {
     if (cached) {
       setCourse(cached.course);
       setMaterials(cached.materials);
+      setSlides(cached.slides ?? []);
       setQuestions(cached.questions);
       setBooks(cached.books);
       setSaved(new Set(cached.saved));
@@ -144,24 +152,32 @@ export function CourseDetailScreen({ route, navigation }: any) {
         if (user) {
           const { data: me } = await supabase
             .from('study_section_members')
-            .select('role')
+            .select('role, status')
             .eq('section_id', courseRes.data.section_id)
             .eq('user_id', user.id)
             .eq('status', 'approved')
             .maybeSingle();
+          const isMember = !!me;
           setIsCR(me?.role === 'cr' || profile?.role === 'admin');
+          setCanUpload(isMember || profile?.role === 'admin');
+        } else {
+          setIsCR(profile?.role === 'admin');
+          setCanUpload(profile?.role === 'admin');
         }
       }
 
-      const mats = ((matRes.data ?? []) as any[]).map(r => ({ ...r, table: 'study_materials' as const }));
+      const allMats = ((matRes.data ?? []) as any[]).map(r => ({ ...r, table: 'study_materials' as const }));
+      const noteEntries = allMats.filter(f => f.type !== 'Lecture Slide' && !['ppt', 'pptx'].includes((f.file_kind ?? '').toLowerCase()));
+      const slideEntries = allMats.filter(f => f.type === 'Lecture Slide' || ['ppt', 'pptx'].includes((f.file_kind ?? '').toLowerCase()));
       const qs   = ((qbRes.data ?? []) as any[]).map(r => ({ ...r, table: 'study_question_bank' as const }));
       const bks  = ((bookRes.data ?? []) as any[]).map(r => ({ ...r, table: 'study_books' as const }));
-      setMaterials(mats);
+      setMaterials(noteEntries);
+      setSlides(slideEntries);
       setQuestions(qs);
       setBooks(bks);
 
       // My bookmarks for these items (RLS already scopes to me).
-      const ids = [...mats, ...qs, ...bks].map(e => e.id);
+      const ids = [...noteEntries, ...slideEntries, ...qs, ...bks].map(e => e.id);
       let savedList: string[] = [];
       if (user && ids.length) {
         const { data: bm } = await supabase.from('study_bookmarks').select('item_id').in('item_id', ids);
@@ -173,7 +189,8 @@ export function CourseDetailScreen({ route, navigation }: any) {
 
       setCache(cacheKey, {
         course: courseRes.data ?? cached?.course,
-        materials: mats,
+        materials: noteEntries,
+        slides: slideEntries,
         questions: qs,
         books: bks,
         saved: savedList,
@@ -210,6 +227,19 @@ export function CourseDetailScreen({ route, navigation }: any) {
     return unsub;
   }, [load, navigation]);
 
+  useEffect(() => {
+    const onBackPress = () => {
+      if (showSearch) {
+        setShowSearch(false);
+        setQuery('');
+        return true;
+      }
+      return false;
+    };
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => sub.remove();
+  }, [showSearch]);
+
   async function openEntry(f: Entry) {
     if (openingId) return;
     if (isOffline && !f.url) {
@@ -221,7 +251,7 @@ export function CourseDetailScreen({ route, navigation }: any) {
     setOpeningId(f.id);
     const { data, error } = await supabase.storage
       .from('study-materials')
-      .createSignedUrl(f.storage_path, 60);
+      .createSignedUrl(f.storage_path, 3600);
     setOpeningId(null);
     if (error || !data?.signedUrl) {
       toast({ type: 'error', title: t.common.error, message: error?.message ?? t.study2.couldNotOpenFile });
@@ -280,9 +310,20 @@ export function CourseDetailScreen({ route, navigation }: any) {
     ]);
   }
 
+  const lists: Record<Tab, Entry[]> = { materials, questions, books, slides };
+  const counts: Record<Tab, number> = {
+    materials: materials.length, questions: questions.length, books: books.length, slides: slides.length,
+  };
+  const studyTabs: TabItem<Tab>[] = useMemo(() => [
+    { id: 'materials', label: TAB_LABELS.materials, count: counts.materials > 0 ? counts.materials : undefined, accentColor: STUDY_COLOR },
+    { id: 'questions', label: TAB_LABELS.questions, count: counts.questions > 0 ? counts.questions : undefined, accentColor: STUDY_COLOR },
+    { id: 'books',     label: TAB_LABELS.books,     count: counts.books > 0 ? counts.books : undefined,         accentColor: STUDY_COLOR },
+    { id: 'slides',    label: TAB_LABELS.slides,    count: counts.slides > 0 ? counts.slides : undefined,       accentColor: STUDY_COLOR },
+  ], [counts.materials, counts.questions, counts.books, counts.slides]);
+
   if (!course) {
     return (
-      <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
+      <View style={[styles.safe, { backgroundColor: C.bg, paddingTop: insets.top }]}>
         <SubBar title={t.study2.course} onBack={() => navigation.goBack()} />
         <View style={styles.center}>
           {loading ? (
@@ -291,19 +332,9 @@ export function CourseDetailScreen({ route, navigation }: any) {
             <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaSemiBold }]}>{t.common.notFound}</Text>
           )}
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
-
-  const lists: Record<Tab, Entry[]> = { materials, questions, books };
-  const counts: Record<Tab, number> = {
-    materials: materials.length, questions: questions.length, books: books.length,
-  };
-  const studyTabs: TabItem<Tab>[] = useMemo(() => [
-    { id: 'materials', label: TAB_LABELS.materials, count: counts.materials > 0 ? counts.materials : undefined, accentColor: STUDY_COLOR },
-    { id: 'questions', label: TAB_LABELS.questions, count: counts.questions > 0 ? counts.questions : undefined, accentColor: STUDY_COLOR },
-    { id: 'books',     label: TAB_LABELS.books,     count: counts.books > 0 ? counts.books : undefined,         accentColor: STUDY_COLOR },
-  ], [counts.materials, counts.questions, counts.books]);
   const tintBg = isDark ? `${STUDY_COLOR}2e` : STUDY_BG;
 
   // Exam options for the questions filter
@@ -321,12 +352,13 @@ export function CourseDetailScreen({ route, navigation }: any) {
 
   const emptyMsg = q
     ? t.study2.noMatches
-    : tab === 'materials' ? t.study2.noMaterials
+    : tab === 'materials' ? 'No notes uploaded yet'
     : tab === 'questions' ? t.study2.noQuestions
-    : t.study2.noBooks;
+    : tab === 'books' ? t.study2.noBooks
+    : 'No lecture slides uploaded yet';
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
+    <View style={[styles.safe, { backgroundColor: C.bg, paddingTop: insets.top }]}>
       <SubBar
         title={course.code}
         onBack={() => navigation.goBack()}
@@ -335,9 +367,20 @@ export function CourseDetailScreen({ route, navigation }: any) {
             <TouchableOpacity style={styles.iconBtn} onPress={toggleSearch} activeOpacity={0.75}>
               <Feather name={showSearch ? 'x' : 'search'} size={20} color={C.text} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('StudyUpload', { courseId, courseCode: course.code, courseTitle: course.name })} activeOpacity={0.75}>
-              <Feather name="plus" size={22} color={C.text} />
-            </TouchableOpacity>
+            {canUpload && (
+              <TouchableOpacity
+                style={styles.iconBtn}
+                onPress={() => navigation.navigate('StudyUpload', {
+                  courseId,
+                  courseCode: course.code,
+                  courseTitle: course.name,
+                  initialTab: tab,
+                })}
+                activeOpacity={0.75}
+              >
+                <Feather name="plus" size={22} color={C.text} />
+              </TouchableOpacity>
+            )}
           </View>
         }
       />
@@ -355,6 +398,14 @@ export function CourseDetailScreen({ route, navigation }: any) {
         keyboardShouldPersistTaps="handled"
       >
         <Text style={[styles.title, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{course.name}</Text>
+        {!canUpload && (
+          <View style={[styles.readOnlyBadge, { backgroundColor: C.surface2, borderColor: C.border }]}>
+            <Feather name="book-open" size={13} color={C.textMuted} />
+            <Text style={[styles.readOnlyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+              Open Department Library · Read-only access
+            </Text>
+          </View>
+        )}
 
         {/* Marketplace cross-link - textbooks/notes on sale for this course */}
         {forSale.length > 0 && (
@@ -435,22 +486,25 @@ export function CourseDetailScreen({ route, navigation }: any) {
         )}
 
         {/* Files list */}
-        <View style={[styles.filesList, { backgroundColor: C.surface, borderColor: C.border }]}>
+        <View style={{ marginTop: 12 }}>
           {tabFiles.length === 0 ? (
-            <View style={styles.empty}>
-              <Feather name="inbox" size={26} color={C.textMuted} />
+            <View style={[styles.emptyCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+              <Feather name="inbox" size={32} color={C.textMuted} />
               <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaSemiBold }]}>{emptyMsg}</Text>
             </View>
-          ) : tabFiles.map((f, i) => {
+          ) : tabFiles.map((f) => {
             const isLink = !!f.url && !f.storage_path;
             const sizeStr = f.size_bytes ? formatFileSize(f.size_bytes) : null;
-            const tagText = tab === 'materials' ? f.type : tab === 'questions' ? f.exam : f.kind;
+            const tagText = tab === 'materials' ? f.type : tab === 'questions' ? f.exam : tab === 'books' ? f.kind : 'Slide';
             return (
-            <View key={f.id}>
-              {i > 0 && <View style={[styles.divider, { backgroundColor: C.border }]} />}
-              <View style={styles.fileRow}>
-                <View style={[styles.fileIcon, { backgroundColor: tintBg }]}>
-                  <Feather name={fileIcon(f.file_kind, isLink)} size={16} color={STUDY_COLOR} />
+              <TouchableOpacity
+                key={f.id}
+                style={[styles.fileCard72, { backgroundColor: C.surface, borderColor: C.border }]}
+                onPress={() => openEntry(f)}
+                activeOpacity={0.75}
+              >
+                <View style={[styles.fileIcon44, { backgroundColor: tintBg }]}>
+                  <Feather name={fileIcon(f.file_kind, isLink)} size={20} color={STUDY_COLOR} />
                 </View>
                 <View style={styles.fileBody}>
                   <Text style={[styles.fileName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -464,7 +518,7 @@ export function CourseDetailScreen({ route, navigation }: any) {
                     ) : null}
                     {tab === 'questions' && f.verified ? (
                       <View style={[styles.tagPill, { backgroundColor: C.successBg }]}>
-                        <Feather name="check" size={9} color={C.success} />
+                        <Feather name="check" size={10} color={C.success} />
                         <Text style={[styles.tagTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>{t.study2.verified}</Text>
                       </View>
                     ) : null}
@@ -474,34 +528,36 @@ export function CourseDetailScreen({ route, navigation }: any) {
                   </View>
                 </View>
 
-                {/* Bookmark */}
-                <TouchableOpacity onPress={() => toggleSaved(f)} hitSlop={6} activeOpacity={0.7} style={{ padding: 4 }}>
-                  <Feather name="bookmark" size={16} color={saved.has(f.id) ? STUDY_COLOR : C.textMuted} />
-                </TouchableOpacity>
+                {/* Bookmark & Actions */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <TouchableOpacity onPress={() => toggleSaved(f)} hitSlop={8} activeOpacity={0.7} style={{ padding: 6 }}>
+                    <Feather name="bookmark" size={18} color={saved.has(f.id) ? STUDY_COLOR : C.textMuted} />
+                  </TouchableOpacity>
 
-                {tab === 'questions' && isCR && (
-                  <TouchableOpacity onPress={() => toggleVerified(f)} hitSlop={6} activeOpacity={0.7} style={{ padding: 4 }}>
-                    <Feather name="check-circle" size={17} color={f.verified ? C.success : C.textMuted} />
+                  {tab === 'questions' && isCR && (
+                    <TouchableOpacity onPress={() => toggleVerified(f)} hitSlop={8} activeOpacity={0.7} style={{ padding: 6 }}>
+                      <Feather name="check-circle" size={18} color={f.verified ? C.success : C.textMuted} />
+                    </TouchableOpacity>
+                  )}
+                  {(isCR || (!!user && (f.uploaded_by === user.id || f.added_by === user.id))) && (
+                    <TouchableOpacity onPress={() => deleteEntry(f)} hitSlop={8} activeOpacity={0.7} style={{ padding: 6 }}>
+                      <Feather name="trash-2" size={17} color={C.danger} />
+                    </TouchableOpacity>
+                  )}
+                  <TouchableOpacity style={styles.downloadBtn} onPress={() => openEntry(f)} activeOpacity={0.75} disabled={openingId === f.id}>
+                    {openingId === f.id
+                      ? <ActivityIndicator size="small" color={C.text2} />
+                      : <Feather name={isLink ? 'external-link' : 'download'} size={18} color={C.text2} />}
                   </TouchableOpacity>
-                )}
-                {isCR && (
-                  <TouchableOpacity onPress={() => deleteEntry(f)} hitSlop={6} activeOpacity={0.7} style={{ padding: 4 }}>
-                    <Feather name="trash-2" size={15} color={C.danger} />
-                  </TouchableOpacity>
-                )}
-                <TouchableOpacity style={styles.downloadBtn} onPress={() => openEntry(f)} activeOpacity={0.75} disabled={openingId === f.id}>
-                  {openingId === f.id
-                    ? <ActivityIndicator size="small" color={C.text2} />
-                    : <Feather name={isLink ? 'external-link' : 'download'} size={18} color={C.text2} />}
-                </TouchableOpacity>
-              </View>
-            </View>
-          );})}
+                </View>
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
         <View style={{ height: 24 }} />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -509,34 +565,78 @@ const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
   scroll: { paddingTop: 12, paddingBottom: 20 } as ViewStyle,
-  title: { fontSize: 19, letterSpacing: -0.4, marginBottom: 2 } as any,
+  title: { fontSize: 20, letterSpacing: -0.4, marginBottom: 2 } as any,
+  readOnlyBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginTop: 4,
+    marginBottom: 8,
+  } as ViewStyle,
+  readOnlyTxt: { fontSize: 11.5 } as any,
 
   forSaleWrap: { marginTop: 12 } as ViewStyle,
-  forSaleTitle: { fontSize: 11, letterSpacing: 0.6, marginBottom: 8 } as any,
-  forSaleCard: { flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 12, paddingVertical: 9, borderRadius: 12, borderWidth: 1, maxWidth: 220 } as ViewStyle,
-  forSaleName: { fontSize: 12.5, flexShrink: 1 } as any,
-  forSalePrice: { fontSize: 12.5 } as any,
+  forSaleTitle: { fontSize: 11, letterSpacing: 0.7, marginBottom: 8 } as any,
+  forSaleCard: {
+    minHeight: 72,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    maxWidth: 260,
+  } as ViewStyle,
+  forSaleThumb: {
+    width: 44,
+    height: 44,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  } as ViewStyle,
+  forSaleName: { fontSize: 13.5, flexShrink: 1 } as any,
+  forSalePrice: { fontSize: 13, marginTop: 2 } as any,
+
   search: { height: 58, borderRadius: 16, borderWidth: 1, paddingHorizontal: 16, fontSize: 14.5, marginTop: 12 } as any,
   tabsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 12 } as ViewStyle,
-  chips: { flexDirection: 'row', gap: 8, flexShrink: 1 } as ViewStyle,
-  chip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1 } as ViewStyle,
-  chipTxt: { fontSize: 12.5 } as any,
-  chipCount: { fontSize: 12 } as any,
   sortBtn: { width: 58, height: 58, borderRadius: 16, borderWidth: 1, alignItems: 'center', justifyContent: 'center', flexShrink: 0 } as ViewStyle,
-  examChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, borderWidth: 1 } as ViewStyle,
-  examTxt: { fontSize: 12 } as any,
-  filesList: { borderRadius: 16, borderWidth: 1, overflow: 'hidden', marginTop: 12 } as ViewStyle,
-  fileRow: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 13, paddingHorizontal: 15 } as ViewStyle,
-  fileIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexShrink: 0 } as ViewStyle,
+  examChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, borderWidth: 1 } as ViewStyle,
+  examTxt: { fontSize: 12.5 } as any,
+
+  emptyCard: { padding: 36, alignItems: 'center', gap: 10, borderRadius: 16, borderWidth: 1 } as ViewStyle,
+  emptyTxt: { fontSize: 13.5, textAlign: 'center' } as any,
+
+  fileCard72: {
+    minHeight: 72,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 14,
+    marginBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  } as ViewStyle,
+  fileIcon44: {
+    width: 44,
+    height: 44,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  } as ViewStyle,
   fileBody: { flex: 1, minWidth: 0 } as ViewStyle,
-  fileName: { fontSize: 14 } as any,
+  fileName: { fontSize: 14.5 } as any,
   fileSize: { fontSize: 11.5, flexShrink: 1 } as any,
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 } as ViewStyle,
-  tagPill: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 999 } as ViewStyle,
-  tagTxt: { fontSize: 10 } as any,
-  downloadBtn: { padding: 6, minWidth: 30, alignItems: 'center' } as ViewStyle,
-  divider: { height: StyleSheet.hairlineWidth } as ViewStyle,
-  empty: { padding: 28, alignItems: 'center', gap: 10 } as ViewStyle,
-  emptyTxt: { fontSize: 13, textAlign: 'center' } as any,
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 } as ViewStyle,
+  tagPill: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 8, paddingVertical: 2.5, borderRadius: 999 } as ViewStyle,
+  tagTxt: { fontSize: 10.5 } as any,
+  downloadBtn: { padding: 6, minWidth: 32, alignItems: 'center' } as ViewStyle,
   iconBtn: { padding: 8 } as ViewStyle,
 });
