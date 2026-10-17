@@ -2348,4 +2348,10 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 - **Normalized Fallback:** `prepareDocumentForViewer()` normalizes input URLs before hashing, downloading, or fetching.
 - **Routines Screen Normalization:** `RoutinesBrowseScreen.tsx` wraps `activeDocument?.file_url` with `normalizePdfUrl` to resolve relative departmental circulars and live web routines.
 
+### 50.4 Native `startInLoadingState` & Dedicated Notice In-App Viewer
+- **The Infinite Loading Bug Fix:** Using manual React `loading` states with `onLoadStart` / `onLoadEnd` on Android WebView triggers infinite loading loops because Google Docs Viewer emits multiple internal subframe navigation events, resetting `loading = true` without firing top-level `onLoadEnd`.
+- **WebView Native Loading Handshake:** Switched to native `startInLoadingState={true}` with `renderLoading={() => <LoadingOverlay />}`, allowing the WebView runtime to dismiss the loading view immediately once initial rendering begins.
+- **Dedicated Notice Modal (`AnnouncementDetailScreen.tsx`):** Restored the dedicated in-app preview modal featuring clean header actions (close, external-link, download) and edge-to-edge Google Docs streaming with custom dark/light theme CSS.
+
+
 

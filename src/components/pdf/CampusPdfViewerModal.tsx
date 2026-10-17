@@ -404,14 +404,17 @@ export function CampusPdfViewerModal({
                   })();
                   true;
                 `}
+                scalesPageToFit={false}
+                startInLoadingState={true}
+                renderLoading={() => (
+                  <View style={[styles.centerOverlay, { backgroundColor: isDark ? '#000000' : '#f8fafc' }]}>
+                    <ActivityIndicator size="large" color={C.brand} />
+                    <Text style={[styles.loadingTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                      Loading official PDF…
+                    </Text>
+                  </View>
+                )}
                 injectedJavaScript={googleDocsInjectedCss}
-                onLoadStart={() => {
-                  setLoading(true);
-                  setErrorMsg(null);
-                }}
-                onLoadEnd={() => {
-                  setLoading(false);
-                }}
                 onError={() => {
                   setErrorMsg('Could not stream document.');
                   setLoading(false);
@@ -453,8 +456,8 @@ export function CampusPdfViewerModal({
             </View>
           )}
 
-          {/* Loading Indicator */}
-          {loading && !errorMsg && (
+          {/* Loading Indicator (Local Engine Only) */}
+          {!isRemote && loading && !errorMsg && (
             <View style={[styles.centerOverlay, { backgroundColor: isDark ? '#000000' : '#f8fafc' }]}>
               <ActivityIndicator size="large" color={C.brand} />
               <Text style={[styles.loadingTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
