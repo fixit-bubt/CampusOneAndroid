@@ -92,7 +92,7 @@ export function ToolImagesScreen({ navigation }: any) {
   const [scanMode, setScanMode] = useState<ScanPageMode>(DEFAULT_SCAN_PAGE_MODE);
   const [targetSize, setTargetSize] = useState<TargetSizeKey>(DEFAULT_TARGET_SIZE);
   const [autoCrop, setAutoCrop] = useState(true);
-  const [stampAcademic, setStampAcademic] = useState(true);
+  const [stampAcademic, setStampAcademic] = useState(false);
   const [latestCover, setLatestCover] = useState<LatestCoverMeta | null>(() => getLatestCoverPage());
   const [prependCover, setPrependCover] = useState<boolean>(() => Boolean(getLatestCoverPage()));
   const [signatureUri, setSignatureUri] = useState<string | null>(null);
@@ -491,6 +491,18 @@ export function ToolImagesScreen({ navigation }: any) {
                   {t.pdfmaker.images.camera}
                 </Text>
               </TouchableOpacity>
+              {items.length > 1 ? (
+                <TouchableOpacity
+                  style={[styles.toolbarItem, { backgroundColor: C.surface2 }]}
+                  onPress={() => update((prev) => prev.slice().reverse())}
+                  activeOpacity={0.8}
+                >
+                  <Feather name="repeat" size={15} color={C.brand} />
+                  <Text style={[styles.toolbarItemText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    {t.pdfmaker.images.reverseOrder}
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
               <TouchableOpacity
                 style={[
                   styles.toolbarItem,

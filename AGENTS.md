@@ -2414,38 +2414,40 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 
 ---
 
-## 52. Clean-Room 5-Stage Pro Document Scanner & PDF Studio Architecture
+## 52. Clean-Room 5-Stage Pro Document Scanner & PDF Studio Architecture (V3)
 
 ### 52.1 Store-Safe Clean-Room Mathematical Pipeline (`src/services/pdf/engineHtml.ts`)
 - **100% Store-Safe Implementation:** Built from first-principles mathematical equations in TypeScript/JavaScript Canvas (`engineHtml.ts`) with zero third-party native `.so` binaries, zero proprietary neural network weights, and zero third-party brand/symbol references, ensuring full Google Play Store & Apple App Store compliance, 16 KB page-size compatibility on Android 15+, and 100% offline privacy.
-- **Stage 1 — Auto-Crop, Sobel Edge Absorption, $45^\circ\text{–}135^\circ$ Angle Validation & Perspective Homography (`detectDocumentQuad` + `warpQuadToCanvas`):**
-  - Combines a $7\times 7$ box-smoothed paper luminance/chrominance density mask (`L >= minPaperL && (R - B) <= baseRb + 22 && (R - G) <= 34`) with inward vertical/horizontal luminance gradient coherence (`step + dip > 11.5`) and local $\pm 4\text{ px}$ Sobel gradient absorption (`absorbX`, `absorbY`) so wooden desks, spiral bindings, and tilted paper edges snap onto the sharpest boundary.
-  - Validates the 4 corners `[TL, TR, BR, BL]` with interior corner angle bounds ($45^\circ\text{–}135^\circ$ / `0.7854–2.3562 rad`) and performs an 8-parameter closed-form projective homography warp (`warpQuadToCanvas`) with perspective foreshortening aspect-ratio recovery (`Math.min(1.16, Math.sqrt(wMax / wMin))`), followed by outer 5% border desk and thumb skin-tone intrusion cleanup (`isWarmDesk || isThumbSkin || isDarkEdge`).
-- **Stage 2 — Contrast-Weighted Morphological Illumination Envelope (`enhanceDocumentCanvas`):**
-  - Builds a $16\times$ downsampled background grid (`gw × gh`) tracking both local maximum $I_{\max}$ and local minimum $I_{\min}$ per RGB channel, applies a separable $9\times 9$ morphological `MaxFilter` ($144\times 144\text{ px}$ dilation) and blends via local contrast weight $\alpha_c = \min(1, 1.65 \cdot \frac{I_{\max,c} - I_{\min,c}}{I_{\max,c}})$, $I_{\text{bg},c} = \alpha_c I_{\max,c} + (1 - \alpha_c) I_{\min,c}$ followed by 2 passes of separable `BoxBlur`, then divides full-resolution pixels by local bilinearly interpolated illumination (`dr = (r * 255) / illR`) with zero halo rings around thick ink strokes.
-- **Stage 3 — Dynamic 256-Bin Histogram Percentile Auto-Levels & $\gamma = 5/6$ Power LUT:**
-  - Samples the illumination-normalized luminance histogram (`normHist[256]`), locates the paper peak bin, and walks inward at $\frac{1}{32}$ peak threshold (`peakCount >> 5`) and $0.45\%$ cumulative dark ink percentile to dynamically tune `bp` and `wp` per photo before mapping through a precomputed 256-entry LUT with $\gamma = 0.8333333002196431$ ($5/6$) across all 6 modes (`magic`, `bleed_erase`, `bw`, `whiteboard`, `grayscale`, `original`).
-- **Stage 4 — $1.5\times$ Integer Luma-Preserving Chroma Boost:**
-  - Computes integer luma `lum = (38 * nr + 75 * ng + 15 * nb) >> 7` and boosts chroma `C_out = clamp((3 * C - lum) >> 1, 0, 255)`, making blue/red pen ink and pink margins vibrant while keeping white paper neutral.
-- **Stage 5 — Asymmetric 3-Zone $15\times 15$ Unsharp Mask:**
-  - Computes a separable $O(1)$ sliding-window $15\times 15$ box blur on luminance (`blur15`) and applies a 3-zone piecewise sharpening delta (`diff = curL - meanL`):
-    - `diff > -10`: `delta = diff >> 1` ($0.5\times$ on paper to suppress paper grain).
-    - `diff < -20`: `delta = diff << 1` ($2.0\times$ inside pen strokes to crush ink cores to deep black/blue).
-    - `-20 <= diff <= -10`: `delta = diff` ($1.0\times$ on stroke transitions).
+- **Stage 1 — Morphological-Closing Auto-Crop, Slope-Extrapolated Corners & HD-Normalized Perspective Homography (`detectDocumentQuad` + `warpQuadToCanvas`):**
+  - Builds a chrominance/luminance paper mask (`!isWarmWood && !isDarkVoid && !isLoudObject`) and applies a separable $5\times 5$ **Morphological Closing (`Dilate` radius 2 then `Erode` radius 2)** (`closed[dw * dh]`) so 1–3px handwriting strokes inside the page close into solid `100` before center-outward ray casting from `[0.22..0.78]`.
+  - Restricts left binding shadow gutter detection strictly to the outermost $5.5\%$ (`dw * 0.055`, `L < paperL75 * 0.82`, `score > 13.5`) so hand-drawn vertical notebook margin lines at $10\%\text{–}15\%$ are never mistaken for spiral bindings, and extrapolates left/right/top/bottom edge slopes (`slopeL, slopeR, slopeT, slopeB`) to the 4 corner coordinates with an outward safety envelope (`Math.min(lTopMid, lAtTop)`, `Math.max(rTopMid, rAtTop)`) so tilted pages never clip edge math (`x_4`, `Class 9`, `15/10/2026`).
+  - Validates interior quad angles within $[45^\circ, 135^\circ]$ and performs an 8-parameter projective homography warp (`warpQuadToCanvas`) with perspective foreshortening recovery (`Math.min(1.14, Math.sqrt(wMax / wMin))`) and automatic bilinear HD resolution normalization (`minTarget = Math.min(cap, 2400)`) so `1200×1600` WhatsApp images upscale to `~1800×2400` before enhancement and sharpening.
+- **Stage 2 — Non-Polluting Outer Border Mask & 95th-Percentile Local Paper Illumination Grid (`enhanceDocumentCanvas`):**
+  - Records outer $5\%$ warm wooden desk, thumb skin-tone, and bottom-right dog-eared dark corner intrusions in `borderMask[totalPx]` **without mutating `data` to `255` before illumination estimation**, preventing `MaxFilter` + `BoxBlur` from smearing artificial `255` spikes inward and creating dark gray/brown shadow halos at page borders.
+  - Samples the **95th-percentile** brightest non-masked pixel per cell (`cell = Math.max(14, Math.round(Math.max(W, H) / 140))`), fills empty border cells inward, and applies a separable $5\times 5$ `MaxFilter` (`mRad = 2`) + 2 passes of `BoxBlur` (`bRad = 2`). During Stage 3 illumination division (`dr = (r * 255) / illR`), `borderMask` pixels are written directly to pure `#FFFFFF` (`255, 255, 255`).
+- **Stage 3 — Ink-Darkening $\gamma = 1.42$ Power LUT & Back-Page Bleed Suppression:**
+  - Uses an ink-darkening power curve $\gamma = 1.42 > 1$ (`bp = 48, wp = 212` in `magic` mode; `bp = 56, wp = 198, gamma = 1.48` in `bleed_erase`) on normalized luminance $(I - \text{bp})/(\text{wp} - \text{bp})$, darkening midtone ballpoint strokes (`x = 0.60 -> 0.48`) into rich, bold ink while snapping low-chroma paper and back-page bleed-through (`nLum >= wp - 6 && chroma <= 14`) to pure `#FFFFFF`.
+- **Stage 4 — Pink/Red Ruled Margin Line Protection & $1.5\times$ Luma-Preserving Chroma Boost:**
+  - Protects pink/red ruled notebook margin lines (`dr >= 210 && (dr - dg) >= 12 && dr >= db && nLum >= 175`) from white-point clipping using a dedicated $1.75\times$ chroma-preserving curve, while applying integer luma-preserving chroma boost `C_out = clamp((3 * C - lum) >> 1, 0, 255)` to colored pen ink.
+- **Stage 5 — Continuous $15\times 15$ Sliding-Window Unsharp Mask:**
+  - Computes a separable $O(1)$ sliding-window $15\times 15$ box blur on luminance (`blur15`) and applies continuous sharpening (`delta = diff >= -6 ? (diff >> 2) : Math.round(diff * 1.35)`) with final near-white paper snap (`fr >= 246 && fg >= 246 && fb >= 246 && diff >= -5 && cSpan <= 12 -> 255`).
 
 ### 52.2 Pro Scanner Features & Interactive Page Studio (`ToolImagesScreen.tsx` & `PageStudioModal.tsx`)
 - **6 Scanner Enhance Modes:** `Magic Pro`, `Bleed Eraser`, `Clear B&W`, `Board / Slide`, `Grayscale`, and `Original`.
 - **3 Scan Page Modes (`ScanPageMode`):**
-  - `single` (**Single Page**): 1 photo per A4 page with aspect-ratio-preserving layout (`preserveAspect: true`) and reserved `24pt` footer band (`footerReservePt: 24`) so footer stamps never collide with handwriting.
+  - `single` (**Single Page**): 1 photo per full A4 page (`DEFAULT_LAYOUT_MODE = 'borderless'`), with `stampAcademic` defaulting to `false` so scans fill the clean A4 sheet without forced footer text unless toggled on.
   - `id_card` (**ID Card 2-in-1**): Pairs Front & Back of BUBT Student ID, NID, or Exam Admit Card centered on a single portrait A4 page via `layoutIdCardPair`.
   - `book_split` (**Book 2-Page Split**): Splits open 2-page notebook spreads down the center crease into two separate portrait A4 pages.
+- **1-Tap Reverse Page Order (`reverseOrder`):**
+  - Toolbar button in `ToolImagesScreen.tsx` flips the entire photo list order in 1 tap when Android/WhatsApp gallery multi-select returns images in reverse chronological order.
 - **Full-Screen Interactive Page Studio Modal (`PageStudioModal.tsx`):**
   - Tap any photo card to open a 3-tab full-screen studio:
     1. `4-Corner Crop`: Drag the 4 perspective handles, trigger `Auto Edge` (`engine.detectQuad`), `Full Frame`, or rotate $90^\circ$.
-    2. `Smart Erase & Privacy Mosaic Brush`: Toggle between `Whiteout` (samples surrounding paper tint in Original/Grayscale mode or `#ffffff` in enhanced modes) and `Mosaic Blur` (pixelates sensitive student IDs, grades, or phone numbers with an $18\times 18\text{ px}$ privacy block filter) with `S / M / L` brush sizes (`paintWhiteoutStrokes`) plus Undo/Clear.
+    2. `Smart Erase & Privacy Mosaic Brush`: Toggle between `Whiteout` and `Mosaic Blur` (`S / M / L` brush sizes, `paintWhiteoutStrokes` applied after enhancement so erased regions remain pure `#FFFFFF`) plus Undo/Clear.
     3. `Live Preview`: Renders the live 5-stage scanner output and lets the student preview/override the page's filter mode.
 - **1-Tap BUBT Cover Page Auto-Prepend & Handwritten Signature Stamp:**
   - `CoverPageFormScreen.tsx` persists the latest generated BUBT Cover Page via `saveLatestCoverPage`. `ToolImagesScreen.tsx` auto-detects it on focus and prepends the lossless vector cover page as Page 1 when toggled.
   - `engine.extractSignature` strips paper background from a photo of a handwritten signature into an auto-cropped transparent PNG and stamps it at the bottom-right of scanned pages.
 - **HD 3000px Presets & Guaranteed Target Size Cap:**
   - Upgraded `IMAGE_PRESETS` (`high: 3000px @ 0.88`, `balanced: 2480px @ 0.84`, `compact: 1754px @ 0.72`, `DEFAULT_PRESET = 'high'`) with optional `< 5 MB` and `< 2 MB` target size enforcement.
+
