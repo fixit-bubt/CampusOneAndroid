@@ -178,143 +178,131 @@ function detectDocumentQuad(srcCanvas) {
     }
   }
 
-  // 3x3 Sobel edge gradients: Gx for vertical edges, Gy for horizontal edges
-  var gx = new Float32Array(dw * dh);
-  var gy = new Float32Array(dw * dh);
-  for (var sy = 1; sy < dh - 1; sy++) {
-    var rowM1 = (sy - 1) * dw;
-    var row0  = sy * dw;
-    var rowP1 = (sy + 1) * dw;
-    for (var sx = 1; sx < dw - 1; sx++) {
-      var idx = row0 + sx;
-      var vX = (L[rowM1 + sx + 1] + 2 * L[row0 + sx + 1] + L[rowP1 + sx + 1]) -
-               (L[rowM1 + sx - 1] + 2 * L[row0 + sx - 1] + L[rowP1 + sx - 1]);
-      var vY = (L[rowP1 + sx - 1] + 2 * L[rowP1 + sx] + L[rowP1 + sx + 1]) -
-               (L[rowM1 + sx - 1] + 2 * L[rowM1 + sx] + L[rowM1 + sx + 1]);
-      gx[idx] = Math.abs(vX) * 0.25;
-      gy[idx] = Math.abs(vY) * 0.25;
+  // 1. Center paper reference luminance (sampled from inner 40% box)
+  var sampleCenterL = [];
+  var cy0 = Math.floor(dh * 0.3), cy1 = Math.ceil(dh * 0.7);
+  var cx0 = Math.floor(dw * 0.3), cx1 = Math.ceil(dw * 0.7);
+  for (var cy = cy0; cy < cy1; cy += 2) {
+    for (var cx = cx0; cx < cx1; cx += 2) {
+      sampleCenterL.push(L[cy * dw + cx]);
     }
   }
+  sampleCenterL.sort(function (a, b) { return a - b; });
+  var centerL = sampleCenterL.length ? sampleCenterL[sampleCenterL.length >> 1] : 180;
+  var darkThresh = centerL * 0.72;
+  var woodThresh = centerL * 0.92;
 
-  var angles = [-0.105, -0.087, -0.070, -0.052, -0.035, -0.017, 0, 0.017, 0.035, 0.052, 0.070, 0.087, 0.105];
+  // 2. Classify background pixels (wood desk, dark shadow, laptop bezels, spiral bindings)
+  var isBg = new Uint8Array(dw * dh);
+  for (var pi = 0; pi < dw * dh; pi++) {
+    var p4 = pi << 2;
+    var pr = rgba[p4], pg = rgba[p4 + 1], pb = rgba[p4 + 2];
+    var plum = L[pi];
+    var isWood = pr > pg + 4 && pr - pb > 20 && plum < woodThresh;
+    var isDark = plum < darkThresh;
+    if (isWood || isDark) isBg[pi] = 1;
+  }
 
-  // 1. Top line: scan y in [0.005*dh, 0.13*dh] across center x in [0.25*dw, 0.75*dw]
-  var bestTopSc = -1, bestTopM = 0, bestTopC = 0;
-  var x0T = Math.floor(dw * 0.25), x1T = Math.ceil(dw * 0.75);
-  var xcT = (x0T + x1T) * 0.5;
-  var xLenT = Math.max(1, x1T - x0T);
-  for (var ai = 0; ai < angles.length; ai++) {
-    var mT = angles[ai];
-    for (var ymT = Math.max(1, Math.floor(dh * 0.005)); ymT <= Math.floor(dh * 0.13); ymT++) {
-      var sumGy = 0, cntGy = 0;
-      for (var xt = x0T; xt < x1T; xt++) {
-        var yt = Math.round(ymT + mT * (xt - xcT));
-        if (yt >= 0 && yt < dh) {
-          sumGy += gy[yt * dw + xt];
-          cntGy++;
-        }
-      }
-      if (cntGy >= xLenT * 0.8) {
-        var scT = sumGy / cntGy;
-        if (scT > bestTopSc) {
-          bestTopSc = scT;
-          bestTopM = mT;
-          bestTopC = ymT - mT * xcT;
-        }
-      }
+  // 3. Scan boundaries from outside inward with frame-edge retention
+  var xMid0 = Math.floor(dw * 0.20), xMid1 = Math.ceil(dw * 0.80);
+  var yMid0 = Math.floor(dh * 0.20), yMid1 = Math.ceil(dh * 0.80);
+
+  // TOP
+  var topOuterCount = 0, topOuterTotal = 0;
+  for (var ty0 = 0; ty0 < Math.min(3, dh); ty0++) {
+    for (var tx0 = xMid0; tx0 < xMid1; tx0++) {
+      if (isBg[ty0 * dw + tx0]) topOuterCount++;
+      topOuterTotal++;
     }
   }
+  var tl_y = 0.005, tr_y = 0.005;
+  if (topOuterCount / Math.max(1, topOuterTotal) >= 0.20) {
+    var maxScanT = Math.floor(dh * 0.16);
+    function scanTop(x0, x1) {
+      for (var y = 0; y < maxScanT; y++) {
+        var bgC = 0, totC = 0;
+        for (var x = x0; x < x1; x++) { if (isBg[y * dw + x]) bgC++; totC++; }
+        if (bgC / Math.max(1, totC) < 0.15) return Math.max(0.005, (y - 1) / dh);
+      }
+      return 0.005;
+    }
+    tl_y = scanTop(Math.floor(dw * 0.15), Math.floor(dw * 0.45));
+    tr_y = scanTop(Math.floor(dw * 0.55), Math.floor(dw * 0.85));
+  }
 
-  // 2. Bottom line: scan y in [0.88*dh, 0.995*dh]
-  var bestBotSc = -1, bestBotM = 0, bestBotC = dh - 1;
-  for (var bi = 0; bi < angles.length; bi++) {
-    var mB = angles[bi];
-    for (var ymB = Math.floor(dh * 0.88); ymB <= Math.min(dh - 1, Math.floor(dh * 0.995)); ymB++) {
-      var sumGyB = 0, cntGyB = 0;
-      for (var xb = x0T; xb < x1T; xb++) {
-        var yb = Math.round(ymB + mB * (xb - xcT));
-        if (yb >= 0 && yb < dh) {
-          sumGyB += gy[yb * dw + xb];
-          cntGyB++;
-        }
-      }
-      if (cntGyB >= xLenT * 0.8) {
-        var scB = sumGyB / cntGyB;
-        if (scB > bestBotSc) {
-          bestBotSc = scB;
-          bestBotM = mB;
-          bestBotC = ymB - mB * xcT;
-        }
-      }
+  // BOTTOM
+  var botOuterCount = 0, botOuterTotal = 0;
+  for (var by0 = dh - 1; by0 >= Math.max(0, dh - 3); by0--) {
+    for (var bx0 = xMid0; bx0 < xMid1; bx0++) {
+      if (isBg[by0 * dw + bx0]) botOuterCount++;
+      botOuterTotal++;
     }
   }
+  var bl_y = 0.995, br_y = 0.995;
+  if (botOuterCount / Math.max(1, botOuterTotal) >= 0.20) {
+    var minScanB = Math.ceil(dh * 0.84);
+    function scanBot(x0, x1) {
+      for (var y = dh - 1; y >= minScanB; y--) {
+        var bgC = 0, totC = 0;
+        for (var x = x0; x < x1; x++) { if (isBg[y * dw + x]) bgC++; totC++; }
+        if (bgC / Math.max(1, totC) < 0.15) return Math.min(0.995, (y + 1) / dh);
+      }
+      return 0.995;
+    }
+    bl_y = scanBot(Math.floor(dw * 0.15), Math.floor(dw * 0.45));
+    br_y = scanBot(Math.floor(dw * 0.55), Math.floor(dw * 0.85));
+  }
 
-  // 3. Left line: scan x in [0.005*dw, 0.12*dw] across center y in [0.25*dh, 0.75*dh]
-  var bestLeftSc = -1, bestLeftM = 0, bestLeftC = 0;
-  var y0S = Math.floor(dh * 0.25), y1S = Math.ceil(dh * 0.75);
-  var ycS = (y0S + y1S) * 0.5;
-  var yLenS = Math.max(1, y1S - y0S);
-  for (var li = 0; li < angles.length; li++) {
-    var mL = angles[li];
-    for (var xmL = Math.max(1, Math.floor(dw * 0.005)); xmL <= Math.floor(dw * 0.12); xmL++) {
-      var sumGxL = 0, cntGxL = 0;
-      for (var yl = y0S; yl < y1S; yl++) {
-        var xl = Math.round(xmL + mL * (yl - ycS));
-        if (xl >= 0 && xl < dw) {
-          sumGxL += gx[yl * dw + xl];
-          cntGxL++;
-        }
-      }
-      if (cntGxL >= yLenS * 0.8) {
-        var scL = sumGxL / cntGxL;
-        if (scL > bestLeftSc) {
-          bestLeftSc = scL;
-          bestLeftM = mL;
-          bestLeftC = xmL - mL * ycS;
-        }
-      }
+  // LEFT
+  var leftOuterCount = 0, leftOuterTotal = 0;
+  for (var lx0 = 0; lx0 < Math.min(3, dw); lx0++) {
+    for (var ly0 = yMid0; ly0 < yMid1; ly0++) {
+      if (isBg[ly0 * dw + lx0]) leftOuterCount++;
+      leftOuterTotal++;
     }
   }
+  var tl_x = 0.005, bl_x = 0.005;
+  if (leftOuterCount / Math.max(1, leftOuterTotal) >= 0.20) {
+    var maxScanL = Math.floor(dw * 0.16);
+    function scanLeft(y0, y1) {
+      for (var x = 0; x < maxScanL; x++) {
+        var bgC = 0, totC = 0;
+        for (var y = y0; y < y1; y++) { if (isBg[y * dw + x]) bgC++; totC++; }
+        if (bgC / Math.max(1, totC) < 0.15) return Math.max(0.005, (x - 1) / dw);
+      }
+      return 0.005;
+    }
+    tl_x = scanLeft(Math.floor(dw * 0.15), Math.floor(dw * 0.45));
+    bl_x = scanLeft(Math.floor(dw * 0.55), Math.floor(dw * 0.85));
+  }
 
-  // 4. Right line: scan x in [0.88*dw, 0.995*dw]
-  var bestRightSc = -1, bestRightM = 0, bestRightC = dw - 1;
-  for (var ri = 0; ri < angles.length; ri++) {
-    var mR = angles[ri];
-    for (var xmR = Math.floor(dw * 0.88); xmR <= Math.min(dw - 1, Math.floor(dw * 0.995)); xmR++) {
-      var sumGxR = 0, cntGxR = 0;
-      for (var yr = y0S; yr < y1S; yr++) {
-        var xr = Math.round(xmR + mR * (yr - ycS));
-        if (xr >= 0 && xr < dw) {
-          sumGxR += gx[yr * dw + xr];
-          cntGxR++;
-        }
-      }
-      if (cntGxR >= yLenS * 0.8) {
-        var scR = sumGxR / cntGxR;
-        if (scR > bestRightSc) {
-          bestRightSc = scR;
-          bestRightM = mR;
-          bestRightC = xmR - mR * ycS;
-        }
-      }
+  // RIGHT
+  var rightOuterCount = 0, rightOuterTotal = 0;
+  for (var rx0 = dw - 1; rx0 >= Math.max(0, dw - 3); rx0--) {
+    for (var ry0 = yMid0; ry0 < yMid1; ry0++) {
+      if (isBg[ry0 * dw + rx0]) rightOuterCount++;
+      rightOuterTotal++;
     }
   }
-
-  function intersectLines(mY, cY, mX, cX) {
-    var denom = 1.0 - mX * mY;
-    if (Math.abs(denom) < 1e-4) denom = 1.0;
-    var x = (cX + mX * cY) / denom;
-    var y = mY * x + cY;
-    return {
-      x: Math.max(0.005, Math.min(0.995, x / dw)),
-      y: Math.max(0.005, Math.min(0.995, y / dh))
-    };
+  var tr_x = 0.995, br_x = 0.995;
+  if (rightOuterCount / Math.max(1, rightOuterTotal) >= 0.20) {
+    var minScanR = Math.ceil(dw * 0.84);
+    function scanRight(y0, y1) {
+      for (var x = dw - 1; x >= minScanR; x--) {
+        var bgC = 0, totC = 0;
+        for (var y = y0; y < y1; y++) { if (isBg[y * dw + x]) bgC++; totC++; }
+        if (bgC / Math.max(1, totC) < 0.15) return Math.min(0.995, (x + 1) / dw);
+      }
+      return 0.995;
+    }
+    tr_x = scanRight(Math.floor(dh * 0.15), Math.floor(dh * 0.45));
+    br_x = scanRight(Math.floor(dw * 0.55), Math.floor(dw * 0.85));
   }
 
-  var tl = intersectLines(bestTopM, bestTopC, bestLeftM, bestLeftC);
-  var tr = intersectLines(bestTopM, bestTopC, bestRightM, bestRightC);
-  var br = intersectLines(bestBotM, bestBotC, bestRightM, bestRightC);
-  var bl = intersectLines(bestBotM, bestBotC, bestLeftM, bestLeftC);
+  var tl = { x: Math.max(0.005, Math.min(0.995, tl_x)), y: Math.max(0.005, Math.min(0.995, tl_y)) };
+  var tr = { x: Math.max(0.005, Math.min(0.995, tr_x)), y: Math.max(0.005, Math.min(0.995, tr_y)) };
+  var br = { x: Math.max(0.005, Math.min(0.995, br_x)), y: Math.max(0.005, Math.min(0.995, br_y)) };
+  var bl = { x: Math.max(0.005, Math.min(0.995, bl_x)), y: Math.max(0.005, Math.min(0.995, bl_y)) };
 
   // Validate interior quad angles lie within [45 deg (0.7854 rad), 135 deg (2.3562 rad)]
   var pts = [
