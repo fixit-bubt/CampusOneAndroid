@@ -33,6 +33,7 @@ import {
 import { supabase } from '../../lib/supabase';
 import { uploadFile } from '../../utils/storage';
 import { isImageFile } from '../../utils/imageCompress';
+import { normalizePdfUrl } from '../../utils/pdfUrl';
 import { MAX_FILE_SIZE_MB } from '../../constants/app';
 import { FontFamily, FontSize, Layout, Radius, SectorColors } from '../../theme';
 
@@ -235,7 +236,8 @@ export function RoutinesBrowseScreen({ navigation }: any) {
     );
   }, [validRoutines, routineType, department]);
 
-  const activeDocUrl = activeDocument?.file_url || activeDocument?.image_url || null;
+  const rawDocUrl = activeDocument?.file_url || activeDocument?.image_url || null;
+  const activeDocUrl = useMemo(() => normalizePdfUrl(rawDocUrl), [rawDocUrl]);
   const isImageDoc = activeDocUrl ? isImageFile(activeDocUrl) : false;
 
   const searchQuery = useMemo(() => {

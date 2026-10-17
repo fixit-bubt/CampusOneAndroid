@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -6,10 +6,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  Animated,
-  Dimensions,
   StatusBar,
-  Linking,
   ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,6 +15,8 @@ import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useToast } from '../ui/Toast';
 import { FontFamily } from '../../theme';
+import { openUrl } from '../../utils/link';
+import { normalizePdfUrl, isRemotePdfUrl, buildGoogleDocsViewerUrl } from '../../utils/pdfUrl';
 import {
   prepareViewerEnvironment,
   prepareDocumentForViewer,
@@ -65,7 +64,17 @@ export function CampusPdfViewerModal({
   const [pageSelectorVisible, setPageSelectorVisible] = useState(false);
   const [sharing, setSharing] = useState(false);
 
-  // Synchronization refs to eliminate any race condition between WebView boot and document download
+  // Normalized URI: maps relative or legacy Vercel links to live reachable endpoints
+  const normalizedUrl = useMemo(() => normalizePdfUrl(fileUrl), [fileUrl]);
+  const isRemote = useMemo(() => isRemotePdfUrl(normalizedUrl), [normalizedUrl]);
+
+  // Google Docs Viewer URL for remote web PDFs
+  const googleDocsViewerUrl = useMemo(() => {
+    if (!normalizedUrl || !isRemote) return null;
+    return buildGoogleDocsViewerUrl(normalizedUrl);
+  }, [normalizedUrl, isRemote]);
+
+  // Synchronization refs for local pdf.js engine
   const webViewReadyRef = useRef(false);
   const docPayloadRef = useRef<{ base64?: string; fileUri?: string } | null>(null);
 
@@ -85,7 +94,7 @@ export function CampusPdfViewerModal({
 
   // Initialize and prepare engine + document
   const initViewer = useCallback(async (forceRefresh = false) => {
-    if (!fileUrl) {
+    if (!normalizedUrl) {
       setErrorMsg('No document URL provided.');
       setLoading(false);
       return;
@@ -94,20 +103,23 @@ export function CampusPdfViewerModal({
     try {
       setLoading(true);
       setErrorMsg(null);
-      setLoadingMessage('Initializing document viewer…');
 
-      // 1. Prepare engine runtime & HTML
+      // Mode A: Remote Web URL (Notices, Routines, Academic Calendar) -> In-App Google Docs Embed
+      if (isRemote) {
+        setLoadingMessage('Streaming document…');
+        // Remote mode renders via direct webview URL; no heavy local cache download needed
+        return;
+      }
+
+      // Mode B: Local File (Cover Page Generator, PDF Maker scans) -> On-Device Local pdf.js Engine
+      setLoadingMessage(category ? `Preparing ${category}…` : 'Preparing document…');
       const env = await prepareViewerEnvironment(isDark);
       setEngineDirUri(env.engineDirUri);
       setHtmlUri(env.htmlUri);
 
-      // 2. Download and prepare document
-      const isRemote = /^https?:\/\//i.test(fileUrl);
-      setLoadingMessage(isRemote ? 'Downloading official notice…' : (category ? `Preparing ${category}…` : 'Preparing document…'));
-      const doc = await prepareDocumentForViewer(fileUrl, fileName, forceRefresh);
+      const doc = await prepareDocumentForViewer(normalizedUrl, fileName, forceRefresh);
       setLocalFileUri(doc.localFileUri);
 
-      // 3. Store payload and trigger load once both are ready
       docPayloadRef.current = {
         base64: doc.base64Data,
         fileUri: doc.engineFileUri,
@@ -115,14 +127,14 @@ export function CampusPdfViewerModal({
       sendDocumentToWebView();
 
     } catch (err: any) {
-      console.error('PDF Viewer init error:', err);
-      setErrorMsg(err.message || 'Could not load official PDF notice.');
+      console.warn('PDF Viewer init error:', err);
+      setErrorMsg(err.message || 'Could not load official PDF document.');
       setLoading(false);
     }
-  }, [fileUrl, fileName, isDark, sendDocumentToWebView]);
+  }, [normalizedUrl, isRemote, fileName, category, isDark, sendDocumentToWebView]);
 
   useEffect(() => {
-    if (visible && fileUrl) {
+    if (visible && normalizedUrl) {
       setCurrentPage(1);
       setTotalPages(1);
       webViewReadyRef.current = false;
@@ -135,9 +147,9 @@ export function CampusPdfViewerModal({
       setLocalFileUri(null);
       setErrorMsg(null);
     }
-  }, [visible, fileUrl, initViewer]);
+  }, [visible, normalizedUrl, initViewer]);
 
-  // Handle messages from the WebView
+  // Handle messages from the local WebView engine
   const handleMessage = useCallback((event: any) => {
     try {
       const data = JSON.parse(event.nativeEvent.data);
@@ -145,7 +157,7 @@ export function CampusPdfViewerModal({
         webViewReadyRef.current = true;
         sendDocumentToWebView();
       } else if (data.type === 'rendering') {
-        setLoadingMessage('Rendering official notice…');
+        setLoadingMessage('Rendering document…');
       } else if (data.type === 'docOpened') {
         setTotalPages(data.totalPages || 1);
         setLoading(false);
@@ -188,17 +200,17 @@ export function CampusPdfViewerModal({
       setSharing(true);
       if (localFileUri) {
         await shareDownloadedPdf(localFileUri, title || 'BUBT Notice');
-      } else if (fileUrl) {
-        await Linking.openURL(fileUrl);
+      } else if (normalizedUrl) {
+        await openUrl(normalizedUrl);
       }
     } catch (err: any) {
       toast({ type: 'error', title: 'Could not share notice', message: err.message });
     } finally {
       setSharing(false);
     }
-  }, [localFileUri, fileUrl, title, sharing, toast]);
+  }, [localFileUri, normalizedUrl, title, sharing, toast]);
 
-  // Jump to specific page
+  // Jump to specific page (local engine only)
   const handleJumpToPage = useCallback((pageNum: number) => {
     webRef.current?.injectJavaScript(`window.scrollToPage(${pageNum}); true;`);
     setCurrentPage(pageNum);
@@ -207,15 +219,82 @@ export function CampusPdfViewerModal({
 
   // Open fallback in browser
   const handleOpenExternal = useCallback(() => {
-    if (fileUrl) {
-      Linking.openURL(fileUrl).catch(() => {
-        toast({ type: 'error', title: 'Cannot open URL in browser' });
+    if (normalizedUrl) {
+      openUrl(normalizedUrl).catch(() => {
+        toast({ type: 'error', title: 'Cannot open document in browser' });
       });
     }
-  }, [fileUrl, toast]);
+  }, [normalizedUrl, toast]);
 
   const navBarBg = isDark ? '#0a192f' : '#1e3a8a';
   const displaySubtitle = subtitle || category || 'BUBT Official Notice';
+
+  // CSS injection to streamline Google Docs Viewer into an in-app reader
+  const googleDocsInjectedCss = `
+    (function() {
+      function cleanGview() {
+        const styleId = 'campusone-gview-cleaner';
+        if (!document.getElementById(styleId)) {
+          const style = document.createElement('style');
+          style.id = styleId;
+          style.innerHTML = \`
+            html, body {
+              width: 100% !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              background: ${isDark ? '#000000' : '#f8fafc'} !important;
+              overflow-x: auto !important;
+            }
+            .ndfHFb-c4YZDc-Wrql6b,
+            .drive-viewer-toolstrip,
+            div[role="toolbar"],
+            .goog-inline-block.ndfHFb-c4YZDc-to915-LgbsSe,
+            a[href*="docs.google.com"],
+            .ndfHFb-c4YZDc-V67aGc {
+              display: none !important;
+              visibility: hidden !important;
+              height: 0 !important;
+              opacity: 0 !important;
+            }
+            .ndfHFb-c4YZDc-bC7sje,
+            .ndfHFb-c4YZDc-c3fl2b,
+            .ndfHFb-c4YZDc-cYSp0e-tJHJj,
+            .ndfHFb-c4YZDc-s2gQvd,
+            .ndfHFb-c4YZDc-bC7sje-tJHJj,
+            .ndfHFb-c4YZDc-AWhBae {
+              background: ${isDark ? '#000000' : '#f8fafc'} !important;
+              background-color: ${isDark ? '#000000' : '#f8fafc'} !important;
+              width: 100% !important;
+              max-width: 100% !important;
+              min-width: 100% !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              box-shadow: none !important;
+            }
+            .ndfHFb-c4YZDc-s2gQvd img,
+            .ndfHFb-c4YZDc-bC7sje img,
+            .ndfHFb-c4YZDc-cYSp0e-tJHJj img,
+            .ndfHFb-c4YZDc-c3fl2b img,
+            .ndfHFb-c4YZDc-AWhBae img,
+            canvas,
+            img {
+              width: 100% !important;
+              min-width: 100% !important;
+              max-width: 100% !important;
+              height: auto !important;
+              margin: 0 0 10px 0 !important;
+              display: block !important;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.18) !important;
+            }
+          \`;
+          document.head && document.head.appendChild(style);
+        }
+      }
+      cleanGview();
+      setInterval(cleanGview, 350);
+    })();
+    true;
+  `;
 
   return (
     <Modal
@@ -245,7 +324,7 @@ export function CampusPdfViewerModal({
             {/* Title & Subtitle */}
             <View style={styles.titleContainer}>
               <Text style={styles.headerTitle} numberOfLines={1}>
-                {title || 'Notice PDF'}
+                {title || 'Official Document'}
               </Text>
               <Text style={styles.headerSubtitle} numberOfLines={1}>
                 {displaySubtitle}
@@ -254,7 +333,7 @@ export function CampusPdfViewerModal({
 
             {/* Right Action Icons */}
             <View style={styles.headerActions}>
-              {totalPages > 1 && (
+              {!isRemote && totalPages > 1 && (
                 <TouchableOpacity
                   onPress={() => setPageSelectorVisible(true)}
                   hitSlop={10}
@@ -275,6 +354,17 @@ export function CampusPdfViewerModal({
                 <Feather name="share-2" size={19} color="#ffffff" />
               </TouchableOpacity>
 
+              {isRemote && (
+                <TouchableOpacity
+                  onPress={handleOpenExternal}
+                  hitSlop={10}
+                  style={styles.actionBtn}
+                  activeOpacity={0.75}
+                >
+                  <Feather name="external-link" size={18} color="#ffffff" />
+                </TouchableOpacity>
+              )}
+
               <TouchableOpacity
                 onPress={() => initViewer(true)}
                 hitSlop={10}
@@ -288,10 +378,50 @@ export function CampusPdfViewerModal({
         </View>
 
         {/* =========================================================================
-            2. BODY: HIGH-DPI NATIVE-LIKE PDF CANVAS
+            2. BODY: HYBRID STREAMING / NATIVE PDF CANVAS
            ========================================================================= */}
         <View style={styles.viewerWrapper}>
-          {htmlUri && (
+          {/* Mode A: Remote Web PDF streaming inside the app via Google Docs Viewer */}
+          {isRemote && googleDocsViewerUrl && !errorMsg && (
+            <View style={StyleSheet.absoluteFill}>
+              <WebView
+                ref={webRef}
+                source={{ uri: googleDocsViewerUrl }}
+                style={[styles.webView, { backgroundColor: isDark ? '#000000' : '#f1f5f9' }]}
+                originWhitelist={['*']}
+                javaScriptEnabled
+                domStorageEnabled
+                mixedContentMode="always"
+                setSupportMultipleWindows={false}
+                showsVerticalScrollIndicator={true}
+                showsHorizontalScrollIndicator={false}
+                injectedJavaScriptBeforeContentLoaded={`
+                  (function() {
+                    const meta = document.createElement('meta');
+                    meta.name = 'viewport';
+                    meta.content = 'width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes';
+                    document.head && document.head.appendChild(meta);
+                  })();
+                  true;
+                `}
+                injectedJavaScript={googleDocsInjectedCss}
+                onLoadStart={() => {
+                  setLoading(true);
+                  setErrorMsg(null);
+                }}
+                onLoadEnd={() => {
+                  setLoading(false);
+                }}
+                onError={() => {
+                  setErrorMsg('Could not stream document.');
+                  setLoading(false);
+                }}
+              />
+            </View>
+          )}
+
+          {/* Mode B: Local File rendering on-device via pdf.js (Cover Page & PDF Maker) */}
+          {!isRemote && htmlUri && !errorMsg && (
             <View style={StyleSheet.absoluteFill}>
               <WebView
                 ref={webRef}
@@ -320,6 +450,16 @@ export function CampusPdfViewerModal({
                   setLoading(false);
                 }}
               />
+            </View>
+          )}
+
+          {/* Loading Indicator */}
+          {loading && !errorMsg && (
+            <View style={[styles.centerOverlay, { backgroundColor: isDark ? '#000000' : '#f8fafc' }]}>
+              <ActivityIndicator size="large" color={C.brand} />
+              <Text style={[styles.loadingTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                {loadingMessage}
+              </Text>
             </View>
           )}
 
@@ -362,10 +502,8 @@ export function CampusPdfViewerModal({
             </View>
           )}
 
-          {/* =========================================================================
-              3. FLOATING PAGE INDICATOR PILL (Bottom-Right, 1:1 like BUBT Info)
-             ========================================================================= */}
-          {!loading && !errorMsg && totalPages >= 1 && (
+          {/* Page Pill for Local Multi-Page Documents */}
+          {!isRemote && !loading && !errorMsg && totalPages >= 1 && (
             <TouchableOpacity
               style={[
                 styles.floatingPagePill,
@@ -382,69 +520,69 @@ export function CampusPdfViewerModal({
           )}
         </View>
 
-        {/* =========================================================================
-            4. QUICK PAGE SELECTOR MODAL / SHEET
-           ========================================================================= */}
-        <Modal
-          visible={pageSelectorVisible}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setPageSelectorVisible(false)}
-        >
-          <TouchableOpacity
-            style={styles.sheetOverlay}
-            activeOpacity={1}
-            onPress={() => setPageSelectorVisible(false)}
+        {/* Quick Page Selector Modal for Local Documents */}
+        {!isRemote && (
+          <Modal
+            visible={pageSelectorVisible}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setPageSelectorVisible(false)}
           >
-            <View style={[styles.sheetContent, { backgroundColor: isDark ? '#18181b' : '#ffffff', paddingBottom: Math.max(insets.bottom, 20) }]}>
-              <View style={styles.sheetHeader}>
-                <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                  Select Page
-                </Text>
-                <TouchableOpacity onPress={() => setPageSelectorVisible(false)} hitSlop={10}>
-                  <Feather name="x" size={20} color={C.textMuted} />
-                </TouchableOpacity>
-              </View>
+            <TouchableOpacity
+              style={styles.sheetOverlay}
+              activeOpacity={1}
+              onPress={() => setPageSelectorVisible(false)}
+            >
+              <View style={[styles.sheetContent, { backgroundColor: isDark ? '#18181b' : '#ffffff', paddingBottom: Math.max(insets.bottom, 20) }]}>
+                <View style={styles.sheetHeader}>
+                  <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    Select Page
+                  </Text>
+                  <TouchableOpacity onPress={() => setPageSelectorVisible(false)} hitSlop={10}>
+                    <Feather name="x" size={20} color={C.textMuted} />
+                  </TouchableOpacity>
+                </View>
 
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pageChipsScroll}>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => {
-                  const isCurrent = num === currentPage;
-                  return (
-                    <TouchableOpacity
-                      key={num}
-                      style={[
-                        styles.pageChip,
-                        {
-                          backgroundColor: isCurrent ? C.brand : (isDark ? '#27272a' : '#f1f5f9'),
-                          borderColor: isCurrent ? C.brand : (isDark ? '#3f3f46' : '#e2e8f0'),
-                        }
-                      ]}
-                      onPress={() => handleJumpToPage(num)}
-                    >
-                      <Feather
-                        name="file-text"
-                        size={14}
-                        color={isCurrent ? '#ffffff' : (isDark ? '#a1a1aa' : '#64748b')}
-                        style={{ marginBottom: 4 }}
-                      />
-                      <Text
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pageChipsScroll}>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => {
+                    const isCurrent = num === currentPage;
+                    return (
+                      <TouchableOpacity
+                        key={num}
                         style={[
-                          styles.pageChipTxt,
+                          styles.pageChip,
                           {
-                            color: isCurrent ? '#ffffff' : (isDark ? '#e4e4e7' : '#334155'),
-                            fontFamily: isCurrent ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                            backgroundColor: isCurrent ? C.brand : (isDark ? '#27272a' : '#f1f5f9'),
+                            borderColor: isCurrent ? C.brand : (isDark ? '#3f3f46' : '#e2e8f0'),
                           }
                         ]}
+                        onPress={() => handleJumpToPage(num)}
                       >
-                        Page {num}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            </View>
-          </TouchableOpacity>
-        </Modal>
+                        <Feather
+                          name="file-text"
+                          size={14}
+                          color={isCurrent ? '#ffffff' : (isDark ? '#a1a1aa' : '#64748b')}
+                          style={{ marginBottom: 4 }}
+                        />
+                        <Text
+                          style={[
+                            styles.pageChipTxt,
+                            {
+                              color: isCurrent ? '#ffffff' : (isDark ? '#e4e4e7' : '#334155'),
+                              fontFamily: isCurrent ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                            }
+                          ]}
+                        >
+                          Page {num}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            </TouchableOpacity>
+          </Modal>
+        )}
 
       </View>
     </Modal>
@@ -500,12 +638,16 @@ const styles = StyleSheet.create({
   webView: {
     flex: 1,
   },
+  loadingTxt: {
+    marginTop: 12,
+    fontSize: 13,
+  },
   floatingPagePill: {
     position: 'absolute',
     right: 18,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#4f46e5', // Sleek modern indigo capsule pill matching BUBT Info
+    backgroundColor: '#4f46e5',
     paddingVertical: 9,
     paddingHorizontal: 18,
     borderRadius: 24,

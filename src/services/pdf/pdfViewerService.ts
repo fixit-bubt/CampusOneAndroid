@@ -7,6 +7,7 @@ import { Directory, File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { engineDir, safeFileName } from './pdfFiles';
 import { buildViewerHtml } from './viewerHtml';
+import { normalizePdfUrl } from '../../utils/pdfUrl';
 
 const MAX_CACHED_NOTICES = 5;
 
@@ -54,8 +55,17 @@ export function pruneNoticesCache(): void {
     const dir = noticesCacheDir();
     const entries = dir.list();
     const files = entries.filter((e) => e instanceof File) as File[];
-    if (files.length > MAX_CACHED_NOTICES) {
-      const excess = files.slice(0, files.length - MAX_CACHED_NOTICES);
+
+    // Remove any 0-byte corrupt files immediately
+    for (const f of files) {
+      if (f.size === 0) {
+        try { f.delete(); } catch { /* ignore */ }
+      }
+    }
+
+    const validFiles = files.filter((f) => f.exists && f.size > 0);
+    if (validFiles.length > MAX_CACHED_NOTICES) {
+      const excess = validFiles.slice(0, validFiles.length - MAX_CACHED_NOTICES);
       for (const f of excess) {
         try { f.delete(); } catch { /* ignore */ }
       }
@@ -131,12 +141,13 @@ export async function prepareDocumentForViewer(
   suggestedName?: string,
   forceRefresh: boolean = false
 ): Promise<PreparedDocument> {
-  const isRemote = /^https?:\/\//i.test(fileUrlOrPath);
+  const normalized = normalizePdfUrl(fileUrlOrPath) || fileUrlOrPath;
+  const isRemote = /^https?:\/\//i.test(normalized);
   let localSourceFile: File;
   let rawBytes: Uint8Array | null = null;
 
   if (isRemote) {
-    const cacheKey = hashUrl(fileUrlOrPath);
+    const cacheKey = hashUrl(normalized);
     // Sanitize suggestedName: strip illegal chars, spaces to underscores, guarantee .pdf
     const baseName = (suggestedName || 'notice')
       .replace(/\.pdf$/i, '')
@@ -157,7 +168,7 @@ export async function prepareDocumentForViewer(
         if (cachedFile.exists) {
           try { cachedFile.delete(); } catch { /* ignore */ }
         }
-        const downloaded = await File.downloadFileAsync(fileUrlOrPath, cachedFile, { idempotent: true });
+        const downloaded = await File.downloadFileAsync(normalized, cachedFile, { idempotent: true });
         if (downloaded && downloaded.exists && downloaded.size > 0) {
           downloadOk = true;
         }
@@ -168,7 +179,7 @@ export async function prepareDocumentForViewer(
       // 2. Secondary: Standard React Native fetch() stream fallback
       if (!downloadOk || !cachedFile.exists || cachedFile.size === 0) {
         try {
-          const res = await fetch(fileUrlOrPath);
+          const res = await fetch(normalized);
           if (!res.ok) {
             throw new Error(`Server returned HTTP ${res.status}`);
           }

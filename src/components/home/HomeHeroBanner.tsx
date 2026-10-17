@@ -56,7 +56,7 @@ export function resolveBannerSource(
 
   // 3. Relative web path from database seed (e.g. /events/... or /announcements/...)
   if (cleaned.startsWith('/')) {
-    return { uri: `https://campus-theta.vercel.app${cleaned}` };
+    return { uri: `https://campusonebubt.vercel.app${cleaned}` };
   }
 
   if (cleaned.startsWith('notices/') || cleaned.startsWith('storage/')) {

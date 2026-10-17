@@ -2318,3 +2318,33 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 - **All 41 Official Summer 2026 Events:** Extracted directly from official BUBT Registrar circular (`bubt-academic-calendar-summer-2026.pdf`) and bundled in `src/constants/academicCalendar.ts` for instant offline zero-latency hydration.
 - **Migration `20261026000000_academic_calendar_grants_and_seed.sql`:** Granted `SELECT` on `public.academic_calendar` to `anon` and `authenticated`, resolving PostgreSQL 42501 permission errors.
 - **PDF Viewer Engine Fix (`viewerHtml.ts`):** Fixed unescaped character class range error `q.split(/[\s,·/_ -]+/)` in pdf.js text search query parser.
+
+---
+
+## 50. Smart Hybrid PDF Viewing Architecture & Universal URL Normalizer
+
+### 50.1 Smart Hybrid Viewing Engine (`CampusPdfViewerModal.tsx`)
+- **Remote Web PDF Streaming (Mode A):**
+  - Used for Notices (`AnnouncementDetailScreen`), Routines (`RoutinesBrowseScreen`), and Academic Calendar (`AcademicCalendarScreen`).
+  - Streams web documents in-app using Google Docs Viewer embed (`https://docs.google.com/gview?embedded=true&url=...`).
+  - Injects clean custom CSS before content load: strips Google Drive toolbars, pop-outs, and footer bars, matching app light/dark theme seamlessly.
+  - Zero device storage consumption, zero base64 memory overhead, zero network timeout crashes on large documents, and zero 0-byte corrupt cache locks.
+  - Quick action toolbar: 1-tap system browser/drive open (`Feather external-link`), native document share (`Feather share-2`), and instant cache reload (`Feather rotate-cw`).
+- **Local Generated Document Rendering (Mode B):**
+  - Used for BUBT Assignment/Lab Report Cover Page Generator (`CoverPageFormScreen`) and PDF Maker tools (`ToolCompressScreen`, `ToolImagesScreen`, `ToolMergeScreen`, `ToolOrganizeScreen`).
+  - Preserves 100% offline, on-device `pdf.js` engine running locally in `engineDir()`, rendering generated `file://...` PDFs without internet connectivity.
+  - Interactive page scrubber pill and modal jump navigation for multi-page generated documents.
+
+### 50.2 Universal PDF URL Normalizer (`src/utils/pdfUrl.ts`)
+- **Relative Path Resolution:** Automatically detects and prefixes official base paths for relative paths stored in the database:
+  - `notices/*` and `storage/*` → `https://www.bubt.edu.bd/storage/*`
+  - `uploads/*` → `https://www.bubt.edu.bd/uploads/*`
+  - Root-relative `/*` or `*.pdf` → `https://campusonebubt.vercel.app/*`
+- **Legacy Domain Migration:** Transparently rewrites decommissioned Vercel staging domains (`fixit-campus-theta.vercel.app`, `campus-theta.vercel.app`) to live production `https://campusonebubt.vercel.app`.
+- **Local Scheme Protection:** Preserves `file://`, `content://`, `/data/`, and `/storage/emulated/` untouched for offline generated cover pages and scanned documents.
+
+### 50.3 Cache Hardening & Routine Streaming (`pdfViewerService.ts` & `RoutinesBrowseScreen.tsx`)
+- **Corrupt File Eviction:** `pruneNoticesCache()` automatically detects and unlinks any 0-byte files left by aborted network streams before cache validation.
+- **Normalized Fallback:** `prepareDocumentForViewer()` normalizes input URLs before hashing, downloading, or fetching.
+- **Routines Screen Normalization:** `RoutinesBrowseScreen.tsx` wraps `activeDocument?.file_url` with `normalizePdfUrl` to resolve relative departmental circulars and live web routines.
+

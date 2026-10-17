@@ -60,7 +60,7 @@ function resolveNewsImage(rawUrl?: string | null): ImageSourcePropType | null {
     return { uri: cleaned };
   }
   if (cleaned.startsWith('/')) {
-    return { uri: `https://campus-theta.vercel.app${cleaned}` };
+    return { uri: `https://campusonebubt.vercel.app${cleaned}` };
   }
   if (cleaned.startsWith('notices/') || cleaned.startsWith('storage/')) {
     const withoutStorage = cleaned.replace(/^storage\//, '').replace(/^\/+/, '');

@@ -11,7 +11,7 @@ export interface AcademicEvent {
 }
 
 export const OFFICIAL_CALENDAR_PDF_URL =
-  'https://fixit-campus-theta.vercel.app/bubt-academic-calendar-summer-2026.pdf';
+  'https://campusonebubt.vercel.app/bubt-academic-calendar-summer-2026.pdf';
 
 export const SEMESTER_NAME = 'Summer 2026';
 export const TOTAL_SEMESTER_WEEKS = 14;
