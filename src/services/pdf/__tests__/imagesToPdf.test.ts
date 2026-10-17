@@ -74,4 +74,38 @@ describe('buildImagesPdf', () => {
     await expect(buildImagesPdf([], IMAGE_PRESETS.balanced, { name: 'x.pdf' }))
       .rejects.toMatchObject({ code: 'unknown' });
   });
+
+  it('uses the hardware scanner engine when provided and supports id_card 2-in-1 pairing', async () => {
+    const scanPhoto = jest.fn(async () => ({ base64: 'U0NBTg==', width: 1200, height: 760 }));
+    const out = await buildImagesPdf(
+      [photo(1), photo(2)],
+      IMAGE_PRESETS.high,
+      {
+        name: 'id.pdf',
+        scanMode: 'id_card',
+        filterMode: 'magic',
+        engine: { scanPhoto } as any,
+      },
+    );
+    expect(scanPhoto).toHaveBeenCalledTimes(2);
+    expect(mockAddPage).toHaveBeenCalledTimes(1);
+    expect(out.pages).toBe(1);
+  });
+
+  it('splits each spread into two pages in book_split mode', async () => {
+    const scanPhoto = jest.fn(async () => ({ base64: 'U0NBTg==', width: 1400, height: 2000 }));
+    const out = await buildImagesPdf(
+      [photo(1)],
+      IMAGE_PRESETS.high,
+      {
+        name: 'book.pdf',
+        scanMode: 'book_split',
+        engine: { scanPhoto } as any,
+      },
+    );
+    expect(scanPhoto).toHaveBeenCalledTimes(2);
+    expect(mockAddPage).toHaveBeenCalledTimes(2);
+    expect(out.pages).toBe(2);
+  });
 });
+

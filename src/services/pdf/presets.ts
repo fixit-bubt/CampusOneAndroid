@@ -11,17 +11,48 @@ export interface ImagePreset { key: PresetKey; maxDim: number; quality: number }
 export type LayoutMode = 'borderless' | 'smart_fit' | 'adaptive';
 export const DEFAULT_LAYOUT_MODE: LayoutMode = 'borderless';
 
-export type FilterMode = 'magic' | 'bw' | 'grayscale' | 'original';
+export type FilterMode =
+  | 'magic'
+  | 'bleed_erase'
+  | 'bw'
+  | 'whiteboard'
+  | 'grayscale'
+  | 'original';
 export const DEFAULT_FILTER_MODE: FilterMode = 'magic';
 
-// maxDim caps the LONG edge in pixels. 2480px is A4 width at 300dpi,
-// 1754px is A4 height at 150dpi.
-export const IMAGE_PRESETS: Record<PresetKey, ImagePreset> = {
-  high:     { key: 'high',     maxDim: 2480, quality: 0.87 },
-  balanced: { key: 'balanced', maxDim: 1754, quality: 0.78 },
-  compact:  { key: 'compact',  maxDim: 1240, quality: 0.62 },
+export type ScanPageMode = 'single' | 'id_card' | 'book_split';
+export const DEFAULT_SCAN_PAGE_MODE: ScanPageMode = 'single';
+
+export type TargetSizeKey = 'none' | '5mb' | '2mb';
+export const DEFAULT_TARGET_SIZE: TargetSizeKey = 'none';
+export const SCAN_SIZE_TARGETS: Record<TargetSizeKey, number> = {
+  none: 0,
+  '5mb': 5 * 1024 * 1024,
+  '2mb': 2 * 1024 * 1024,
 };
-export const DEFAULT_PRESET: PresetKey = 'balanced';
+
+export interface ScanPoint {
+  x: number;
+  y: number;
+}
+
+// Clockwise normalized [0..1] quad: [topLeft, topRight, bottomRight, bottomLeft]
+export type ScanQuad = [ScanPoint, ScanPoint, ScanPoint, ScanPoint];
+
+export interface WhiteoutStroke {
+  points: ScanPoint[];
+  size: number;
+}
+
+// maxDim caps the LONG edge in pixels.
+// high (3000px @ 0.88) matches CamScanner HD clarity for fine math subscripts;
+// balanced (2480px @ 0.84) is 300 DPI A4; compact (1754px @ 0.72) is 150 DPI A4.
+export const IMAGE_PRESETS: Record<PresetKey, ImagePreset> = {
+  high:     { key: 'high',     maxDim: 3000, quality: 0.88 },
+  balanced: { key: 'balanced', maxDim: 2480, quality: 0.84 },
+  compact:  { key: 'compact',  maxDim: 1754, quality: 0.72 },
+};
+export const DEFAULT_PRESET: PresetKey = 'high';
 
 export type CompressTargetKey = '2mb' | '5mb';
 export const COMPRESS_TARGETS: Record<CompressTargetKey, { key: CompressTargetKey; bytes: number; quality: number }> = {

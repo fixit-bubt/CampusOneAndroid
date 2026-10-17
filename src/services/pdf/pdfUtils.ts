@@ -118,22 +118,45 @@ export interface DocumentPageLayout {
   h: number;
 }
 
+export interface LayoutPageOpts {
+  preserveAspect?: boolean;
+  footerReservePt?: number;
+  headerReservePt?: number;
+}
+
 // Professional document scanner layout engine:
-// - 'borderless': CamScanner standard. Fills the entire A4 sheet with 0 margin, eliminating all void bars.
+// - 'borderless': CamScanner standard. When preserveAspect is true, centers the
+//   exact image aspect ratio on an A4 sheet without stretching handwriting.
 // - 'adaptive': Natural aspect ratio at 150 DPI. Exact fit with 0 margin.
 // - 'smart_fit': Uniform crisp 12pt micro-margin without giant letterbox gaps.
 export function layoutDocumentPage(
   imgW: number,
   imgH: number,
   mode: LayoutMode = 'borderless',
+  opts?: LayoutPageOpts,
 ): DocumentPageLayout {
   const safeW = Math.max(1, imgW);
   const safeH = Math.max(1, imgH);
   const landscape = safeW > safeH;
   const standardPageW = landscape ? A4.h : A4.w;
   const standardPageH = landscape ? A4.w : A4.h;
+  const footerReserve = Math.max(0, opts?.footerReservePt ?? 0);
+  const headerReserve = Math.max(0, opts?.headerReservePt ?? 0);
 
-  if (mode === 'borderless') {
+  if (mode === 'adaptive') {
+    const ptW = Math.max(100, Math.round((safeW / 150) * 72));
+    const ptH = Math.max(100, Math.round((safeH / 150) * 72));
+    return {
+      pageW: ptW,
+      pageH: ptH + footerReserve + headerReserve,
+      x: 0,
+      y: footerReserve,
+      w: ptW,
+      h: ptH,
+    };
+  }
+
+  if (mode === 'borderless' && !opts?.preserveAspect && !footerReserve && !headerReserve) {
     return {
       pageW: standardPageW,
       pageH: standardPageH,
@@ -144,17 +167,9 @@ export function layoutDocumentPage(
     };
   }
 
-  if (mode === 'adaptive') {
-    // 150 DPI document print points (72pt / 150px)
-    const ptW = Math.max(100, Math.round((safeW / 150) * 72));
-    const ptH = Math.max(100, Math.round((safeH / 150) * 72));
-    return { pageW: ptW, pageH: ptH, x: 0, y: 0, w: ptW, h: ptH };
-  }
-
-  // mode === 'smart_fit': uniform 12pt micro-margin
-  const microMargin = 12;
-  const availW = standardPageW - microMargin * 2;
-  const availH = standardPageH - microMargin * 2;
+  const microMargin = mode === 'smart_fit' ? 12 : 0;
+  const availW = Math.max(40, standardPageW - microMargin * 2);
+  const availH = Math.max(40, standardPageH - microMargin * 2 - footerReserve - headerReserve);
   const scale = Math.min(availW / safeW, availH / safeH);
   const w = Math.floor(safeW * scale);
   const h = Math.floor(safeH * scale);
@@ -162,8 +177,54 @@ export function layoutDocumentPage(
     pageW: standardPageW,
     pageH: standardPageH,
     x: Math.round((standardPageW - w) / 2),
-    y: Math.round((standardPageH - h) / 2),
+    y: Math.round(footerReserve + microMargin + (availH - h) / 2),
     w,
     h,
   };
 }
+
+// Centers up to two cards (Front & Back of ID / Admit Card) on a single portrait A4 sheet.
+export function layoutIdCardPair(
+  topW: number,
+  topH: number,
+  botW?: number,
+  botH?: number,
+  footerReservePt: number = 0,
+): { pageW: number; pageH: number; top: { x: number; y: number; w: number; h: number }; bottom?: { x: number; y: number; w: number; h: number } } {
+  const pageW = A4.w;
+  const pageH = A4.h;
+  const sideMargin = 42;
+  const gap = 28;
+  const usableW = pageW - sideMargin * 2;
+  const usableH = pageH - 72 - footerReservePt;
+  const slotH = (usableH - gap) / 2;
+
+  const fitSlot = (iw: number, ih: number, centerY: number) => {
+    const sw = Math.max(1, iw);
+    const sh = Math.max(1, ih);
+    const scale = Math.min(usableW / sw, slotH / sh);
+    const w = Math.round(sw * scale);
+    const h = Math.round(sh * scale);
+    return {
+      x: Math.round((pageW - w) / 2),
+      y: Math.round(centerY - h / 2),
+      w,
+      h,
+    };
+  };
+
+  if (!botW || !botH) {
+    const midY = footerReservePt + 36 + usableH * 0.56;
+    return { pageW, pageH, top: fitSlot(topW, topH, midY) };
+  }
+
+  const topCenterY = footerReservePt + 36 + slotH + gap + slotH / 2;
+  const botCenterY = footerReservePt + 36 + slotH / 2;
+  return {
+    pageW,
+    pageH,
+    top: fitSlot(topW, topH, topCenterY),
+    bottom: fitSlot(botW, botH, botCenterY),
+  };
+}
+

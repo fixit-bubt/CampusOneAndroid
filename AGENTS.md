@@ -2412,5 +2412,45 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 - **Comprehensive Fallback Resolution:** All feature post and detail screens (`BloodRequestScreen`, `BloodScreen`, `RidePostScreen`, `RideDetailScreen`, `MarketPostScreen`, `MarketDetailScreen`, `PostItemFormScreen`, `LostFoundDetailScreen`, `CommuteAreaPickerModal`, `AreaPickerModal`) prioritize `coords` -> `findMasterLocationByName` -> `resolveHospitalLocation` -> `BUBT_COORDS`, ensuring 100% accurate resolution even if places are entered as plain text in custom modes.
 - **TypeScript Type System Integration:** Updated `src/types/database.ts` with explicit numeric coordinate properties across `BloodRequest`, `Ride`, `Listing`, and `LostFoundItem` matching the live Supabase database columns.
 
+---
 
+## 52. Clean-Room 5-Stage Pro Document Scanner & PDF Studio Architecture
 
+### 52.1 Store-Safe Clean-Room Mathematical Pipeline (`src/services/pdf/engineHtml.ts`)
+- **100% Store-Safe Implementation:** Built from first-principles mathematical equations in TypeScript/JavaScript Canvas (`engineHtml.ts`) with zero third-party native `.so` binaries, ensuring full Google Play Store & Apple App Store compliance, 16 KB page-size compatibility on Android 15+, and 100% offline privacy.
+- **Stage 1 — Auto-Crop & 4-Point Perspective Homography (`detectDocumentQuad` + `warpQuadToCanvas`):**
+  - Combines a $7\times 7$ box-smoothed paper luminance/chrominance density mask (`L >= minPaperL && (R - B) <= baseRb + 22 && (R - G) <= 34`) with inward vertical/horizontal luminance gradient coherence (`step + dip > 11.5`) so both wooden desks and adjacent notebook spiral/crease gutters are detected.
+  - Fits 4 corners `[TL, TR, BR, BL]` and performs an 8-parameter closed-form projective homography warp (`warpQuadToCanvas`), followed by outer 5% border non-paper cleanup (`isWarmDesk || isDarkEdge`).
+- **Stage 2 — Illumination Division Shadow Removal (`enhanceDocumentCanvas`):**
+  - Builds a $16\times$ downsampled background illumination grid (`gw × gh`), applies a separable $9\times 9$ morphological `MaxFilter` (radius 4 on $16\times$ grid = $144\times 144$ px dilation to bridge across thick pen strokes) and 2 passes of separable `BoxBlur`, then divides full-resolution pixels by local bilinearly interpolated illumination (`dr = (r * 255) / illR`).
+- **Stage 3 — White/Black Point Clipping & $\gamma = 5/6$ Power LUT:**
+  - Maps normalized pixels through a precomputed 256-entry LUT with $\gamma = 0.8333333002196431$ ($5/6$):
+    - `magic` (**Magic Pro**): `bp = 52`, `wp = 224` (turns shadowed notebook paper into pure `#FFFFFF` while preserving ink).
+    - `bleed_erase` (**Bleed Eraser**): `bp = 62`, `wp = 212` + neutral high-luminance bleed suppression (`nr,ng,nb > 186` -> `255`).
+    - `whiteboard` (**Board / Slide**): `bp = 36`, `wp = 232`, $\gamma = 0.88$.
+    - `grayscale` (**Grayscale**): `bp = 50`, `wp = 224`.
+    - `bw` (**Clear B&W**): local integral-mean Sauvola/Bradley adaptive threshold.
+- **Stage 4 — $1.5\times$ Integer Luma-Preserving Chroma Boost:**
+  - Computes integer luma `lum = (38 * nr + 75 * ng + 15 * nb) >> 7` and boosts chroma `C_out = clamp((3 * C - lum) >> 1, 0, 255)`, making blue/red pen ink and pink margins vibrant while keeping white paper neutral.
+- **Stage 5 — Asymmetric 3-Zone $15\times 15$ Unsharp Mask:**
+  - Computes a separable $O(1)$ sliding-window $15\times 15$ box blur on luminance (`blur15`) and applies a 3-zone piecewise sharpening delta (`diff = curL - meanL`):
+    - `diff > -10`: `delta = diff >> 1` ($0.5\times$ on paper to suppress paper grain).
+    - `diff < -20`: `delta = diff << 1` ($2.0\times$ inside pen strokes to crush ink cores to deep black/blue).
+    - `-20 <= diff <= -10`: `delta = diff` ($1.0\times$ on stroke transitions).
+
+### 52.2 Pro Scanner Features & Interactive Page Studio (`ToolImagesScreen.tsx` & `PageStudioModal.tsx`)
+- **6 Scanner Enhance Modes:** `Magic Pro`, `Bleed Eraser`, `Clear B&W`, `Board / Slide`, `Grayscale`, and `Original`.
+- **3 Scan Page Modes (`ScanPageMode`):**
+  - `single` (**Single Page**): 1 photo per A4 page with aspect-ratio-preserving layout (`preserveAspect: true`) and reserved `24pt` footer band (`footerReservePt: 24`) so footer stamps never collide with handwriting.
+  - `id_card` (**ID Card 2-in-1**): Pairs Front & Back of BUBT Student ID, NID, or Exam Admit Card centered on a single portrait A4 page via `layoutIdCardPair`.
+  - `book_split` (**Book 2-Page Split**): Splits open 2-page notebook spreads down the center crease into two separate portrait A4 pages.
+- **Full-Screen Interactive Page Studio Modal (`PageStudioModal.tsx`):**
+  - Tap any photo card to open a 3-tab full-screen studio:
+    1. `4-Corner Crop`: Drag the 4 perspective handles, trigger `Auto Edge` (`engine.detectQuad`), `Full Frame`, or rotate $90^\circ$.
+    2. `Whiteout Brush`: Swipe over stains, crossed-out math mistakes, or edge thumbs with `S / M / L` brush sizes (`paintWhiteoutStrokes`) plus Undo/Clear.
+    3. `Live Preview`: Renders the live 5-stage scanner output and lets the student preview/override the page's filter mode.
+- **1-Tap BUBT Cover Page Auto-Prepend & Handwritten Signature Stamp:**
+  - `CoverPageFormScreen.tsx` persists the latest generated BUBT Cover Page via `saveLatestCoverPage`. `ToolImagesScreen.tsx` auto-detects it on focus and prepends the lossless vector cover page as Page 1 when toggled.
+  - `engine.extractSignature` strips paper background from a photo of a handwritten signature into an auto-cropped transparent PNG and stamps it at the bottom-right of scanned pages.
+- **HD 3000px Presets & Guaranteed Target Size Cap:**
+  - Upgraded `IMAGE_PRESETS` (`high: 3000px @ 0.88`, `balanced: 2480px @ 0.84`, `compact: 1754px @ 0.72`, `DEFAULT_PRESET = 'high'`) with optional `< 5 MB` and `< 2 MB` target size enforcement.

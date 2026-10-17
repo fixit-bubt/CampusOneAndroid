@@ -15,6 +15,7 @@ import { moveItem, baseName, isHeicFile, isPdfFile, isImageFile } from '../../se
 import { mergeToPdf, type MergeItem } from '../../services/pdf/mergePdf';
 import type { BuiltPdf } from '../../services/pdf/imagesToPdf';
 import { sharePdf, savePdfToDevice } from '../../services/pdf/pdfFiles';
+import { useRasterEngine } from '../../services/pdf/rasterEngine';
 import { CampusPdfViewerModal } from '../../components/pdf/CampusPdfViewerModal';
 import {
   Notice, NoticeText, ProgressPanel, ResultPanel, FileRow, PrivacyNote, usePdfErrorText,
@@ -37,6 +38,7 @@ export function ToolMergeScreen({ navigation }: any) {
   const t = useT();
   const toast = useToast();
   const errorText = usePdfErrorText();
+  const { engine, host } = useRasterEngine();
 
   const [items, setItems] = useState<Item[]>([]);
   const [busy, setBusy] = useState(false);
@@ -125,6 +127,7 @@ export function ToolMergeScreen({ navigation }: any) {
     try {
       const out = await mergeToPdf(items.map((i) => i.item), {
         name: `${baseName(items[0].item.name)}-merged.pdf`,
+        engine,
         onProgress: (done, total) => setProgress({ done, total }),
         isCancelled: () => cancelRef.current,
       });
@@ -170,6 +173,7 @@ export function ToolMergeScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
+      {host}
       <SubBar title={t.pdfmaker.tools.mergeTitle} onBack={() => navigation.goBack()} />
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}

@@ -10,8 +10,8 @@ import { View, StyleSheet } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { Asset } from 'expo-asset';
 import { File } from 'expo-file-system';
-import { PdfError } from './presets';
-import { engineDir, copyIntoEngineDir, clearEngineDir } from './pdfFiles';
+import { PdfError, type FilterMode, type ScanQuad, type WhiteoutStroke } from './presets';
+import { engineDir, copyIntoEngineDir, copyScanImageIntoEngineDir, clearEngineDir } from './pdfFiles';
 import { buildEngineHtml } from './engineHtml';
 import { reduceEngineMessage, type EngineMessage, type PendingJob } from './engineProtocol';
 
@@ -22,10 +22,25 @@ const BOOT_TIMEOUT_MS = 20_000;
 const JOB_TIMEOUT_MS = 90_000;
 const MAX_ENGINE_RESTARTS = 2;
 
+export interface ScanPhotoJob {
+  uri: string;
+  rotate?: 0 | 90 | 180 | 270;
+  maxDim: number;
+  quality: number;
+  filter?: FilterMode;
+  autoCrop?: boolean;
+  quad?: ScanQuad | null;
+  whiteoutStrokes?: WhiteoutStroke[];
+  splitHalf?: 'left' | 'right' | null;
+}
+
 export interface EngineHandle {
   open(uri: string): Promise<{ pages: number; textChars: number }>;
   thumb(page: number, maxDim: number): Promise<string>;
   render(page: number, longEdge: number, quality: number): Promise<{ base64: string; wPt: number; hPt: number }>;
+  scanPhoto?(job: ScanPhotoJob): Promise<{ base64: string; width: number; height: number; quad?: ScanQuad }>;
+  detectQuad?(uri: string, rotate?: 0 | 90 | 180 | 270): Promise<{ quad: ScanQuad }>;
+  extractSignature?(uri: string): Promise<{ base64: string; width: number; height: number }>;
   close(): void;
 }
 
@@ -166,6 +181,29 @@ export function useRasterEngine() {
     thumb: (page: number, maxDim: number) => run<string>({ op: 'thumb', page, maxDim }),
     render: (page: number, longEdge: number, quality: number) =>
       run<{ base64: string; wPt: number; hPt: number }>({ op: 'render', page, longEdge, quality }),
+    async scanPhoto(job: ScanPhotoJob) {
+      const path = await copyScanImageIntoEngineDir(job.uri);
+      return run<{ base64: string; width: number; height: number; quad?: ScanQuad }>({
+        op: 'scanPhoto',
+        path,
+        rotate: job.rotate ?? 0,
+        maxDim: job.maxDim,
+        quality: job.quality,
+        filter: job.filter ?? 'magic',
+        autoCrop: job.autoCrop ?? true,
+        quad: job.quad ?? null,
+        whiteoutStrokes: job.whiteoutStrokes ?? [],
+        splitHalf: job.splitHalf ?? null,
+      });
+    },
+    async detectQuad(uri: string, rotate: 0 | 90 | 180 | 270 = 0) {
+      const path = await copyScanImageIntoEngineDir(uri);
+      return run<{ quad: ScanQuad }>({ op: 'detectQuad', path, rotate });
+    },
+    async extractSignature(uri: string) {
+      const path = await copyScanImageIntoEngineDir(uri);
+      return run<{ base64: string; width: number; height: number }>({ op: 'extractSignature', path });
+    },
     close: () => {
       // Rejecting first matters: a loop parked on thumb() would otherwise be
       // woken by pdf.js failing against the destroyed document and report that

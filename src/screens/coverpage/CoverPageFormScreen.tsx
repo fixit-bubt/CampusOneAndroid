@@ -18,7 +18,7 @@ import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
 import { supabase } from '../../lib/supabase';
 import { localToday } from '../../utils/format';
 import { FontFamily, FontSize, Layout, Radius, Spacing, SectorColors, Accent, pillBg } from '../../theme';
-import { sharePdf, savePdfToDevice } from '../../services/pdf/pdfFiles';
+import { sharePdf, savePdfToDevice, saveLatestCoverPage } from '../../services/pdf/pdfFiles';
 import { CampusPdfViewerModal } from '../../components/pdf/CampusPdfViewerModal';
 import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 import { BUBT_LOGO_CREST, BUBT_LOGO_HEADER } from './logos';
@@ -632,6 +632,10 @@ export function CoverPageFormScreen({ navigation }: any) {
       });
 
       const { uri } = await Print.printToFileAsync({ html, base64: false });
+      const coverLabel = courseCode.trim()
+        ? `${docTypeLabel(docType)} · ${courseCode.trim()}`
+        : docTypeLabel(docType);
+      await saveLatestCoverPage(uri, coverLabel).catch(() => {});
       setLastPdfUri(uri);
       setLastHtml(html);
       toast({

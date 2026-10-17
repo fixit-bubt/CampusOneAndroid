@@ -55,12 +55,27 @@ export async function mergeToPdf(items: MergeItem[], opts: BuildOpts): Promise<B
       }
       copied.forEach((p) => out.addPage(p));
     } else {
-      const { base64, width, height } = await rasterisePhoto(
-        { uri: item.uri, width: item.width, height: item.height, rotate: item.rotate ?? 0 },
-        IMAGE_PRESETS[DEFAULT_PRESET],
-      );
-      const embedded = await out.embedJpg(base64);
-      const box = layoutDocumentPage(width, height, 'borderless');
+      const photoInput = { uri: item.uri, width: item.width, height: item.height, rotate: item.rotate ?? 0 };
+      const preset = IMAGE_PRESETS[DEFAULT_PRESET];
+      let scanned: { base64: string; width: number; height: number };
+      if (opts.engine?.scanPhoto) {
+        try {
+          scanned = await opts.engine.scanPhoto({
+            uri: photoInput.uri,
+            rotate: photoInput.rotate,
+            maxDim: preset.maxDim,
+            quality: preset.quality,
+            filter: opts.filterMode ?? 'magic',
+            autoCrop: opts.autoCrop ?? true,
+          });
+        } catch {
+          scanned = await rasterisePhoto(photoInput, preset);
+        }
+      } else {
+        scanned = await rasterisePhoto(photoInput, preset);
+      }
+      const embedded = await out.embedJpg(scanned.base64);
+      const box = layoutDocumentPage(scanned.width, scanned.height, 'borderless', { preserveAspect: true });
       const page = out.addPage([box.pageW, box.pageH]);
       page.drawImage(embedded, { x: box.x, y: box.y, width: box.w, height: box.h });
     }
@@ -72,3 +87,4 @@ export async function mergeToPdf(items: MergeItem[], opts: BuildOpts): Promise<B
   const saved = await savePdfBytes(bytes, opts.name);
   return { uri: saved.uri, bytes: saved.bytes, pages: out.getPageCount() };
 }
+

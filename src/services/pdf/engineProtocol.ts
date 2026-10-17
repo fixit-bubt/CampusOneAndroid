@@ -1,6 +1,6 @@
 // The engine's request/response bookkeeping, kept apart from the WebView that
 // carries it. This half is pure, so it can be tested without a device.
-import { PdfError, type PdfErrorCode } from './presets';
+import { PdfError, type PdfErrorCode, type ScanQuad } from './presets';
 
 export interface PendingJob { resolve: (v: any) => void; reject: (e: any) => void }
 
@@ -10,6 +10,9 @@ export type EngineMessage =
   | { id: number; type: 'opened'; pages: number; textChars: number }
   | { id: number; type: 'thumb'; page: number; base64: string }
   | { id: number; type: 'page'; page: number; base64: string; wPt: number; hPt: number }
+  | { id: number; type: 'scanned'; base64: string; width: number; height: number; quad?: ScanQuad }
+  | { id: number; type: 'quad'; quad: ScanQuad }
+  | { id: number; type: 'signature'; base64: string; width: number; height: number }
   | { id: number; type: 'error'; code: string; detail?: string };
 
 export function reduceEngineMessage(pending: Map<number, PendingJob>, msg: EngineMessage): void {
@@ -27,5 +30,9 @@ export function reduceEngineMessage(pending: Map<number, PendingJob>, msg: Engin
   if (msg.type === 'error') job.reject(new PdfError(msg.code as PdfErrorCode, msg.detail));
   else if (msg.type === 'opened') job.resolve({ pages: msg.pages, textChars: msg.textChars });
   else if (msg.type === 'thumb') job.resolve(msg.base64);
+  else if (msg.type === 'scanned') job.resolve({ base64: msg.base64, width: msg.width, height: msg.height, quad: msg.quad });
+  else if (msg.type === 'quad') job.resolve({ quad: msg.quad });
+  else if (msg.type === 'signature') job.resolve({ base64: msg.base64, width: msg.width, height: msg.height });
   else job.resolve({ base64: msg.base64, wPt: msg.wPt, hPt: msg.hPt });
 }
+

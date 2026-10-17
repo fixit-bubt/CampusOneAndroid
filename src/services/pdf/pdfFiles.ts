@@ -112,6 +112,9 @@ export async function savePdfToDevice(
 // worked on, and is disposable.
 export const ENGINE_RUNTIME = ['engine.html', 'viewer.html', 'pdf.min.mjs', 'pdf.worker.min.mjs'];
 const ENGINE_SOURCE = 'source.pdf';
+const ENGINE_SCAN_IMAGE = 'scan_source.jpg';
+const LATEST_COVER_PDF = 'bubt_cover_page.pdf';
+const LATEST_COVER_META = 'bubt_cover_meta.json';
 
 // The WebView is only granted read access to engineDir(), so anything it must
 // open is copied in first.
@@ -127,6 +130,70 @@ export async function copyIntoEngineDir(uri: string): Promise<string> {
   if (dest.exists) dest.delete();
   await new File(uri).copy(dest);
   return dest.uri;
+}
+
+export async function copyScanImageIntoEngineDir(uri: string): Promise<string> {
+  const dest = new File(engineDir(), ENGINE_SCAN_IMAGE);
+  if (dest.exists) dest.delete();
+  await new File(uri).copy(dest);
+  return dest.uri;
+}
+
+export interface LatestCoverMeta {
+  uri: string;
+  label: string;
+  updatedAt: number;
+}
+
+export async function saveLatestCoverPage(sourceUri: string, label: string): Promise<LatestCoverMeta> {
+  const dir = pdfCacheDir();
+  const pdfDest = new File(dir, LATEST_COVER_PDF);
+  if (pdfDest.exists) pdfDest.delete();
+  await new File(sourceUri).copy(pdfDest);
+
+  const meta: LatestCoverMeta = {
+    uri: pdfDest.uri,
+    label: label.trim() || 'BUBT Cover Page',
+    updatedAt: Date.now(),
+  };
+  const metaFile = new File(dir, LATEST_COVER_META);
+  if (metaFile.exists) metaFile.delete();
+  metaFile.create();
+  metaFile.write(JSON.stringify(meta));
+  return meta;
+}
+
+export function getLatestCoverPage(): LatestCoverMeta | null {
+  try {
+    const dir = pdfCacheDir();
+    const pdfDest = new File(dir, LATEST_COVER_PDF);
+    const metaFile = new File(dir, LATEST_COVER_META);
+    if (!pdfDest.exists) return null;
+    if (metaFile.exists) {
+      const raw = metaFile.textSync?.() ?? '';
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed.label === 'string') {
+          return { uri: pdfDest.uri, label: parsed.label, updatedAt: parsed.updatedAt ?? 0 };
+        }
+      }
+    }
+    return { uri: pdfDest.uri, label: 'BUBT Cover Page', updatedAt: 0 };
+  } catch {
+    return null;
+  }
+}
+
+export function clearLatestCoverPage(): void {
+  try {
+    const dir = pdfCacheDir();
+    const pdfDest = new File(dir, LATEST_COVER_PDF);
+    const metaFile = new File(dir, LATEST_COVER_META);
+    if (pdfDest.exists) pdfDest.delete();
+    if (metaFile.exists) metaFile.delete();
+  } catch {
+    // Non-fatal cleanup
+  }
 }
 
 // Drop any document the engine was allowed to read, leaving its own runtime in
@@ -170,3 +237,4 @@ export function clearThumbDir(): void {
 export async function readBytes(uri: string): Promise<Uint8Array> {
   return await new File(uri).bytes();
 }
+

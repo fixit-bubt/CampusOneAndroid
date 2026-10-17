@@ -139,20 +139,25 @@ export function ThumbGrid({ children }: { children: React.ReactNode }) {
 }
 
 export function ThumbCard({
-  uri, caption, index, total, rotate = 0, dimmed, keep,
-  onFirst, onPrev, onNext, onRotate, onRemove, onToggle,
+  uri, caption, index, total, rotate = 0, dimmed, keep, badgeLabel,
+  onFirst, onPrev, onNext, onRotate, onRemove, onToggle, onEdit,
 }: {
   uri?: string; caption: string; index: number; total: number; rotate?: number;
-  dimmed?: boolean; keep?: boolean;
+  dimmed?: boolean; keep?: boolean; badgeLabel?: string | null;
   onFirst?: () => void; onPrev?: () => void; onNext?: () => void;
-  onRotate?: () => void; onRemove?: () => void; onToggle?: () => void;
+  onRotate?: () => void; onRemove?: () => void; onToggle?: () => void; onEdit?: () => void;
 }) {
   const { C } = useTheme();
   const t = useT();
   const isQuarterRotated = rotate % 180 !== 0;
   return (
     <View style={[styles.thumb, { backgroundColor: C.surface, borderColor: C.border, opacity: dimmed ? 0.4 : 1 }]}>
-      <View style={[styles.thumbImgBox, { backgroundColor: C.surface2 }]}>
+      <TouchableOpacity
+        style={[styles.thumbImgBox, { backgroundColor: C.surface2 }]}
+        onPress={onEdit}
+        disabled={!onEdit}
+        activeOpacity={0.85}
+      >
         {uri ? (
           <Image
             source={{ uri }}
@@ -171,6 +176,12 @@ export function ThumbCard({
           <Feather name="file-text" size={22} color={C.textMuted} />
         )}
         <View style={styles.badge}><Text style={styles.badgeText}>{index + 1}</Text></View>
+        {badgeLabel ? (
+          <View style={[styles.studioBadge, { backgroundColor: C.brand }]}>
+            <Feather name="sliders" size={9} color={C.white} />
+            <Text style={styles.studioBadgeText} numberOfLines={1}>{badgeLabel}</Text>
+          </View>
+        ) : null}
         {onRemove ? (
           <TouchableOpacity style={styles.corner} onPress={onRemove} accessibilityLabel={t.pdfmaker.common.remove}>
             <Feather name="x" size={13} color={C.white} />
@@ -185,7 +196,7 @@ export function ThumbCard({
             <Feather name={keep ? 'x' : 'rotate-ccw'} size={13} color={C.white} />
           </TouchableOpacity>
         ) : null}
-      </View>
+      </TouchableOpacity>
       <View style={[styles.thumbFoot, { borderTopColor: C.border }]}>
         <Text numberOfLines={1} style={[styles.thumbCap, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>{caption}</Text>
         <View style={styles.thumbBtns}>
@@ -336,6 +347,8 @@ const styles = StyleSheet.create({
   // theme colours.
   badge: { position: 'absolute', left: 5, top: 5, backgroundColor: 'rgba(0,0,0,0.62)', borderRadius: 99, paddingHorizontal: 7, paddingVertical: 1 } as ViewStyle,
   badgeText: { color: '#ffffff', fontSize: 10.5, fontWeight: '700' },
+  studioBadge: { position: 'absolute', left: 5, bottom: 5, flexDirection: 'row', alignItems: 'center', gap: 3, borderRadius: 99, paddingHorizontal: 6, paddingVertical: 2 } as ViewStyle,
+  studioBadgeText: { color: '#ffffff', fontSize: 9.5, fontWeight: '700' },
   corner: { position: 'absolute', right: 5, top: 5, width: 24, height: 24, borderRadius: 99, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.62)' } as ViewStyle,
   thumbFoot: { borderTopWidth: 1, paddingHorizontal: 6, paddingVertical: 5 } as ViewStyle,
   thumbCap: { fontSize: 11 },

@@ -1,6 +1,6 @@
 import {
   isPdfFile, isImageFile, isHeicFile, parseRanges, moveItem,
-  nextQuality, nextLongEdge, baseName, fitOnPage, layoutDocumentPage, base64ToBytes,
+  nextQuality, nextLongEdge, baseName, fitOnPage, layoutDocumentPage, layoutIdCardPair, base64ToBytes,
 } from '../pdfUtils';
 import { A4, MIN_QUALITY, MIN_LONG_EDGE } from '../presets';
 
@@ -131,6 +131,14 @@ describe('layoutDocumentPage', () => {
     expect(r.h).toBeCloseTo(A4.h);
   });
 
+  it('preserves exact aspect ratio and reserves footer space when requested', () => {
+    const r = layoutDocumentPage(1800, 2400, 'borderless', { preserveAspect: true, footerReservePt: 24 });
+    expect(r.pageW).toBeCloseTo(A4.w);
+    expect(r.pageH).toBeCloseTo(A4.h);
+    expect(r.y).toBeGreaterThanOrEqual(24);
+    expect(r.w / r.h).toBeCloseTo(1800 / 2400, 2);
+  });
+
   it('adapts to exact image aspect ratio at 150 DPI in adaptive mode', () => {
     const r = layoutDocumentPage(1500, 3000, 'adaptive');
     expect(r.x).toBe(0);
@@ -151,3 +159,14 @@ describe('layoutDocumentPage', () => {
     expect(r.h).toBeLessThanOrEqual(A4.h - 24);
   });
 });
+
+describe('layoutIdCardPair', () => {
+  it('places front and back cards without overlapping on an A4 page', () => {
+    const pair = layoutIdCardPair(1000, 630, 1000, 630, 24);
+    expect(pair.pageW).toBeCloseTo(A4.w);
+    expect(pair.pageH).toBeCloseTo(A4.h);
+    expect(pair.bottom).toBeDefined();
+    expect(pair.top.y).toBeGreaterThan(pair.bottom!.y + pair.bottom!.h);
+  });
+});
+
