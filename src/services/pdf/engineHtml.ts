@@ -277,15 +277,18 @@ function detectDocumentQuad(srcCanvas) {
     else { topRightArr.push(ty); botRightArr.push(by); }
   }
 
+  botLeftArr.sort(function (a, b) { return a - b; });
+  botRightArr.sort(function (a, b) { return a - b; });
   var lTop = medianOf(leftTopArr), lBot = medianOf(leftBotArr);
   var rTop = medianOf(rightTopArr), rBot = medianOf(rightBotArr);
   var tLeft = medianOf(topLeftArr), tRight = medianOf(topRightArr);
-  var bLeft = medianOf(botLeftArr), bRight = medianOf(botRightArr);
+  var bLeft = botLeftArr[Math.floor(botLeftArr.length * 0.80)] || (dh - 1);
+  var bRight = botRightArr[Math.floor(botRightArr.length * 0.80)] || (dh - 1);
 
-  // Check for vertical spiral/crease gutter line in outer 12% on left/right
+  // Check for vertical spiral/crease gutter line in outer 14.8% on left/right
   var gy0 = Math.floor(dh * 0.18), gy1 = Math.floor(dh * 0.82);
   var gCount = Math.max(1, gy1 - gy0);
-  var maxCreaseL = Math.floor(dw * 0.125);
+  var maxCreaseL = Math.floor(dw * 0.148);
   var bestLeftCrease = -1, bestLeftScore = 11.5;
   for (var gx = Math.max(2, Math.min(lTop, lBot)); gx < maxCreaseL; gx++) {
     var sumScore = 0;
@@ -298,7 +301,7 @@ function detectDocumentQuad(srcCanvas) {
     var avgScore = (sumScore * 2) / gCount;
     if (avgScore > bestLeftScore) {
       bestLeftScore = avgScore;
-      bestLeftCrease = gx + 2;
+      bestLeftCrease = gx + 4;
     }
   }
   if (bestLeftCrease > 0) {
@@ -703,14 +706,11 @@ function enhanceDocumentCanvas(canvas, filterMode) {
   }
   var baseRb = Math.max(0, medianOf(sampleRB));
 
-  // Outer 5% border cleanup: strip residual warm wood desk, dark frame border, or thumb skin intrusion
+  // Outer 5% border cleanup: strip residual warm wood desk or thumb skin intrusion
   var mLeft = (W * 0.05) | 0, mRight = (W * 0.95) | 0;
   var mTop = (H * 0.04) | 0, mBot = (H * 0.96) | 0;
-  var edgeLeft = (W * 0.018) | 0, edgeRight = (W * 0.982) | 0;
-  var edgeTop = (H * 0.015) | 0, edgeBot = (H * 0.985) | 0;
   for (var by = 0; by < H; by++) {
     var inYMargin = by < mTop || by > mBot;
-    var inYEdge = by < edgeTop || by > edgeBot;
     var rOff = by * W;
     for (var bx = 0; bx < W; bx++) {
       if (!inYMargin && bx >= mLeft && bx <= mRight) {
@@ -720,13 +720,12 @@ function enhanceDocumentCanvas(canvas, filterMode) {
       var bpIdx = (rOff + bx) << 2;
       var br = data[bpIdx], bg = data[bpIdx + 1], bb = data[bpIdx + 2];
       var blum = (38 * br + 75 * bg + 15 * bb) >> 7;
-      var isWarmDesk = (br - bb) > (baseRb + 23) && blum < 195;
-      var isThumbSkin = (bx < mLeft || bx > mRight) && br > 95 && bg > 40 && bb > 20 && (br - bg) > 15 && (br - bb) > (baseRb + 18) && blum < 210;
-      var isDarkEdge = (inYEdge || bx < edgeLeft || bx > edgeRight) && blum < 105;
-      if (isWarmDesk || isThumbSkin || isDarkEdge) {
-        data[bpIdx] = 248;
-        data[bpIdx + 1] = 248;
-        data[bpIdx + 2] = 248;
+      var isWarmDesk = (br - bb) > (baseRb + 20) && blum < 205;
+      var isThumbSkin = (bx < mLeft || bx > mRight) && br > 95 && bg > 40 && bb > 20 && (br - bg) > 15 && (br - bb) > (baseRb + 16) && blum < 215;
+      if (isWarmDesk || isThumbSkin) {
+        data[bpIdx] = 255;
+        data[bpIdx + 1] = 255;
+        data[bpIdx + 2] = 255;
       }
     }
   }
