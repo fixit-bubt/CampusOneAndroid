@@ -2286,3 +2286,35 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
   - Moved `studyTabs` `useMemo` above all early `if (!course) return` guards, preventing runtime `Rendered more hooks than during the previous render` crashes.
 - **Storage Signed URL Expiration:**
   - Increased `createSignedUrl` in `CourseDetailScreen.tsx` from 60 seconds to 3600 seconds (1 hour), matching `getStudyFileUrl` in the web application to prevent download timeouts on large slide decks or textbooks.
+
+---
+
+## 49. Academic Calendar 2-Tab Redesign, Next Milestone Engine & Multi-Day Span Ribbons
+
+### 49.1 58dp Dual-Tab Control Standard (`SegmentedTabs`)
+- **Structure:** Upgraded `AcademicCalendarScreen.tsx` with top 58dp `SegmentedTabs`:
+  - `tabCalendar` ("Calendar"): Interactive month grid, countdown hero milestone card, category chips (`All`, `Exams`, `Holidays`, `Academic`, `Fees & Admin`), and selected day inspector.
+  - `tabPdf` ("Official PDF"): Embedded high-resolution circular view of the official registrar document (`bubt-academic-calendar-summer-2026.pdf`), verified institutional seal, full-screen reader modal (`CampusPdfViewerModal`), and direct download/share actions.
+
+### 49.2 Dynamic Next Milestone Engine & 14-Week Progress
+- **Milestone Countdown:** Scans all semester events starting from `todayStr`, automatically calculating:
+  - Ongoing events: `Ongoing today · <Title>`
+  - Upcoming events: `<N> days left · <Title>` with category color-coded icon badges.
+- **14-Week Term Tracker:** Standard BUBT semester progression:
+  - Pre-Midterm Phase (Weeks 1 to 7)
+  - Midterm Examination Phase (Weeks 7 to 8)
+  - Post-Midterm Phase (Weeks 9 to 13)
+  - Final Examination Phase (Weeks 14+)
+  - Animated progress bar showing percentage completion.
+
+### 49.3 Continuous Multi-Day Span Ribbons & Interactive Date Selection
+- **Multi-Day Range Highlighting:** Instead of isolated dots on start dates, multi-day exam weeks and vacations span across days as continuous soft tinted ribbons (`TYPE_COLOR + '18'`) with rounded start/end pill caps (`borderTopLeftRadius: 10`, `borderTopRightRadius: 10`).
+- **Interactive Day Inspector:** Tapping any date triggers a tactile spring bounce and updates the Day Inspector card below:
+  - Event details with category pill and date range badge.
+  - **1-Tap Add to Google Calendar:** Generates native Google Calendar URL template (`calendar.google.com/calendar/render?action=TEMPLATE&text=...&dates=...&location=BUBT`) opening Google Calendar natively.
+  - **Cross-Link to Section Routines:** Direct navigation jump to `RoutinesBrowseScreen`.
+
+### 49.4 Official Registrar Data Pre-Seeding & Database Permissions
+- **All 41 Official Summer 2026 Events:** Extracted directly from official BUBT Registrar circular (`bubt-academic-calendar-summer-2026.pdf`) and bundled in `src/constants/academicCalendar.ts` for instant offline zero-latency hydration.
+- **Migration `20261026000000_academic_calendar_grants_and_seed.sql`:** Granted `SELECT` on `public.academic_calendar` to `anon` and `authenticated`, resolving PostgreSQL 42501 permission errors.
+- **PDF Viewer Engine Fix (`viewerHtml.ts`):** Fixed unescaped character class range error `q.split(/[\s,·/_ -]+/)` in pdf.js text search query parser.

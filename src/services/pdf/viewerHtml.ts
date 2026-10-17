@@ -310,7 +310,7 @@ export function buildViewerHtml(isDark: boolean = true): string {
       if (!pdfDoc) return -1;
       const q = (query || '').toLowerCase().trim();
       if (!q) return -1;
-      const rawTokens = q.split(/[\s,·\-_/]+/).filter(function(t) { return t.length > 0; });
+      const rawTokens = q.split(/[\s,·/_ -]+/).filter(function(t) { return t.length > 0; });
       const pageTexts = [];
       for (let i = 1; i <= totalPages; i++) {
         try {
