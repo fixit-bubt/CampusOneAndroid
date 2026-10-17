@@ -730,6 +730,31 @@ All document configuration selectors and input fields follow the 72dp layout sta
   - `cleanDeptName()`: Removes redundant `"Department of"` prefixes to prevent duplicate `"Dept. of Department of..."` strings.
   - `fmtDesig()` / `rawDesig()`: Trims pre-existing parentheses from designations before formatting.
 
+---
+
+## 14. Universal In-App PDF Viewer & Anti-Skin-Flash Layout Architecture (`CampusPdfViewerModal.tsx` & `AnnouncementDetailScreen.tsx`)
+
+### 1. Executive Top App Bar & Shell
+- **Dual-Line Header Layout:** Standardized navigation bar (`navBarBg: #0a192f` dark / `#1e3a8a` light) matching CampusOne Executive Navy:
+  - Left: 26px Feather `chevron-left` back button with 12dp hit-slop.
+  - Center: Primary document title (`fontSize: 14.5px`, Plus Jakarta Sans Bold) with single-line truncation, paired with dynamic subtitle (`fontSize: 11.5px`, Plus Jakarta Sans Medium).
+  - Right: Horizontal action capsule with 19px Feather `share-2`, 18px Feather `external-link` (for remote streaming), and 18px Feather `rotate-cw` reload triggers.
+- **Translucent Edge-to-Edge:** Seamless integration with `useSafeAreaInsets()`, padding top clamped to `Math.max(insets.top, 16)`.
+
+### 2. Anti-Skin-Flash Architecture (Eliminating the Google Drive Skin)
+- **The Problem:** React Native WebView's built-in `renderLoading` unmounts on HTTP `onLoadEnd` (when the initial 7KB HTML stub loads), exposing Google Drive's default web UI, toolstrip, zoom controls, and loading animation for 1-2 seconds before Google's 1.93MB client bundle renders the document.
+- **The Solution:** A dedicated `pdfLoading` state keeps CampusOne's native branded loading screen permanently mounted (`zIndex: 10`) over the WebView (`opacity: pdfLoading ? 0 : 1`).
+- **Render Detection:** Injected JavaScript continuously inspects the DOM for rendered page images/canvases (`img.complete && img.naturalWidth > 0 || canvas.width > 0`). When rendered, it dispatches `window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'pdfRendered' }))`.
+- **Smooth Reveal:** React Native receives `pdfRendered` and seamlessly dissolves the loading screen, revealing the formatted document with zero visual flicker or intermediate skin exposure.
+- **Safety Timeout:** 6.5s fallback timer guarantees that the loading overlay unblocks even under high packet loss or network degradation.
+
+### 3. Mobile Responsive Sizing & Centered Margins
+- **Parent Chain Width Traversal:** Recursively forces `width: 100% !important; max-width: 100% !important; min-width: 0px !important;` up 5 levels of parent wrappers, overriding Google Docs Viewer's default hardcoded 800px fixed widths that previously caused right-side clipping.
+- **Clean Centered Margins:** Outer container formatted with `padding: 0 10px !important; box-sizing: border-box !important; margin: 0 auto !important; max-width: 100vw !important;`.
+- **Document Card Styling:** Rendered images/canvases styled with `margin: 8px auto 16px auto !important; border-radius: 4px !important; box-shadow: 0 2px 10px rgba(0,0,0,0.12) !important;`.
+- **Zero Top Gap:** Resets Google's `top: 80px` / `top: 128px` offset reserved for the hidden toolstrip, aligning pages directly below the executive top app bar.
+- **WebView Asset Caching:** Enabled `cacheEnabled={true}` and `cacheMode="LOAD_DEFAULT"` to cache Google's static 1.93MB script bundles on disk.
+
 
 
 
