@@ -1,10 +1,9 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
   Pressable,
   Animated,
-  Easing,
   StyleSheet,
   useWindowDimensions,
 } from 'react-native';
@@ -44,7 +43,13 @@ const TAB_ICON: Record<keyof BottomTabParams, FeatherName> = {
 
 // 1-piece seamless SVG backdrop with midnight navy gradient,
 // rounded outer corner shoulders, and a clean flat top line across all tabs.
-function BottomNavBackdrop({ width, height }: { width: number; height: number }) {
+const BottomNavBackdrop = React.memo(function BottomNavBackdrop({
+  width,
+  height,
+}: {
+  width: number;
+  height: number;
+}) {
   const w = width;
   const h = height;
   const r = 20;
@@ -71,28 +76,34 @@ function BottomNavBackdrop({ width, height }: { width: number; height: number })
       />
     </Svg>
   );
-}
+});
 
-// Clean Tab Item with zero bounce
-function StandardTabButton({
+// Clean Tab Item with zero bounce, memoized to eliminate redundant renders
+const StandardTabButton = React.memo(function StandardTabButton({
+  index,
   label,
   iconName,
   isFocused,
   badge,
   onPress,
 }: {
+  index: number;
   label: string;
   iconName: FeatherName;
   isFocused: boolean;
   badge?: number;
-  onPress: () => void;
+  onPress: (index: number) => void;
 }) {
   const activeColor = '#60a5fa'; // electric blue from website
-  const inactiveColor = 'rgba(148, 163, 184, 0.50)'; // soft muted slate for high contrast
+  const inactiveColor = 'rgba(148, 163, 184, 0.55)'; // soft muted slate for high contrast
+
+  const handlePress = useCallback(() => {
+    onPress(index);
+  }, [onPress, index]);
 
   return (
     <Pressable
-      onPress={onPress}
+      onPress={handlePress}
       style={styles.tabBtn}
       hitSlop={4}
     >
@@ -115,7 +126,8 @@ function StandardTabButton({
             styles.tabLabel,
             {
               color: isFocused ? activeColor : inactiveColor,
-              fontFamily: isFocused ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+              // Fixed font family prevents Android requestLayout/measure passes on tab changes
+              fontFamily: FontFamily.jakartaSemiBold,
             },
           ]}
           numberOfLines={1}
@@ -125,7 +137,7 @@ function StandardTabButton({
       </View>
     </Pressable>
   );
-}
+});
 
 function CustomBottomTabBar(props: BottomTabBarProps) {
   const { state, navigation } = props;
@@ -134,13 +146,13 @@ function CustomBottomTabBar(props: BottomTabBarProps) {
   const { totalUnread } = useMessages();
   const t = useT();
 
-  const TAB_LABEL: Record<string, string> = {
+  const TAB_LABEL: Record<string, string> = useMemo(() => ({
     Home:     t.tabs.home,
     StudyHub: t.tabs.studyHub ?? 'Study Hub',
     Messages: t.tabs.messages ?? t.messages?.title ?? 'Messages',
     Explore:  t.tabs.explore,
     Settings: t.tabs.settings,
-  };
+  }), [t]);
 
   const barHeight = 62 + Math.max(insets.bottom, 10);
   const bottomPadding = Math.max(insets.bottom - 4, 6);
@@ -156,21 +168,44 @@ function CustomBottomTabBar(props: BottomTabBarProps) {
   const pillTop = Math.max(Math.round((barHeight - bottomPadding - pillHeight) / 2), 4);
 
   const translateX = useRef(new Animated.Value(state.index * tabWidth)).current;
-  const isFirstRender = useRef(true);
 
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      translateX.setValue(state.index * tabWidth);
-      return;
-    }
-    Animated.timing(translateX, {
-      toValue: state.index * tabWidth,
-      duration: 320,
-      easing: Easing.bezier(0.25, 1, 0.5, 1),
+  // Immediate 120 FPS native spring animation with ZERO bounce (overshootClamping: true)
+  const animateToIndex = useCallback((targetIndex: number) => {
+    Animated.spring(translateX, {
+      toValue: targetIndex * tabWidth,
+      damping: 24,
+      stiffness: 220,
+      mass: 0.8,
+      overshootClamping: true, // strictly zero bounce!
       useNativeDriver: true,
     }).start();
-  }, [state.index, tabWidth, translateX]);
+  }, [tabWidth, translateX]);
+
+  // Keep in sync with external state changes (e.g. Android hardware Back button)
+  useEffect(() => {
+    animateToIndex(state.index);
+  }, [state.index, animateToIndex]);
+
+  // Handle tab press: trigger slide on Frame 1, THEN navigate
+  const handleTabPress = useCallback((targetIndex: number) => {
+    const route = state.routes[targetIndex];
+    if (!route) return;
+
+    // 1. Instantly trigger slide on native thread (0ms latency!)
+    animateToIndex(targetIndex);
+
+    // 2. Emit navigation event
+    const event = navigation.emit({
+      type: 'tabPress',
+      target: route.key,
+      canPreventDefault: true,
+    });
+
+    // 3. Navigate if not already focused and not cancelled
+    if (state.index !== targetIndex && !event.defaultPrevented) {
+      navigation.navigate(route.name);
+    }
+  }, [state.routes, state.index, animateToIndex, navigation]);
 
   return (
     <View style={[styles.tabBarWrapper, { height: barHeight }]}>
@@ -178,9 +213,10 @@ function CustomBottomTabBar(props: BottomTabBarProps) {
       <BottomNavBackdrop width={width} height={barHeight} />
 
       <View style={[styles.itemsRow, { height: barHeight, paddingBottom: bottomPadding }]}>
-        {/* Full-tab sliding blue indicator */}
+        {/* Full-tab sliding blue indicator with Android GPU hardware layer acceleration */}
         <Animated.View
           pointerEvents="none"
+          renderToHardwareTextureAndroid={true}
           style={[
             styles.slidingIndicator,
             {
@@ -198,25 +234,15 @@ function CustomBottomTabBar(props: BottomTabBarProps) {
           const key = route.name as keyof BottomTabParams;
           const isMessages = route.name === 'Messages';
 
-          const onPress = () => {
-            const event = navigation.emit({
-              type: 'tabPress',
-              target: route.key,
-              canPreventDefault: true,
-            });
-            if (!isFocused && !event.defaultPrevented) {
-              navigation.navigate(route.name);
-            }
-          };
-
           return (
             <StandardTabButton
               key={route.key}
+              index={index}
               label={TAB_LABEL[key] ?? route.name}
               iconName={TAB_ICON[key] ?? 'circle'}
               isFocused={isFocused}
               badge={isMessages ? totalUnread : undefined}
-              onPress={onPress}
+              onPress={handleTabPress}
             />
           );
         })}
@@ -224,6 +250,8 @@ function CustomBottomTabBar(props: BottomTabBarProps) {
     </View>
   );
 }
+
+const renderTabBar = (props: BottomTabBarProps) => <CustomBottomTabBar {...props} />;
 
 export function BottomTabNavigator() {
   const { profile } = useAuth();
@@ -239,7 +267,7 @@ export function BottomTabNavigator() {
   return (
     <Tab.Navigator
       backBehavior="history"
-      tabBar={(props) => <CustomBottomTabBar {...props} />}
+      tabBar={renderTabBar}
       detachInactiveScreens={false}
       screenOptions={{
         headerShown: false,
