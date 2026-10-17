@@ -79,11 +79,23 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
   const [notFound, setNotFound] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [pdfModalVisible, setPdfModalVisible] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(true);
   const [imageModalVisible, setImageModalVisible] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [imgLoading, setImgLoading] = useState(false);
   const [imgError, setImgError] = useState(false);
   const [zoomLoading, setZoomLoading] = useState(false);
+
+  // PDF modal loading state & safety timeout
+  useEffect(() => {
+    if (pdfModalVisible) {
+      setPdfLoading(true);
+      const timer = setTimeout(() => {
+        setPdfLoading(false);
+      }, 6500);
+      return () => clearTimeout(timer);
+    }
+  }, [pdfModalVisible]);
 
   useEffect(() => {
     let active = true;
@@ -523,153 +535,229 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
             </View>
           </View>
 
-          {pdfModalVisible && googleDocsPdfViewer && (
-            <WebView
-              source={{ uri: googleDocsPdfViewer }}
-              style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#f8fafc' }}
-              scalesPageToFit={false}
-              textZoom={100}
-              javaScriptEnabled={true}
-              domStorageEnabled={true}
-              originWhitelist={['*']}
-              mixedContentMode="always"
-              setSupportMultipleWindows={false}
-              showsHorizontalScrollIndicator={false}
-              showsVerticalScrollIndicator={true}
-              injectedJavaScriptBeforeContentLoaded={`
-                (function() {
-                  const meta = document.createElement('meta');
-                  meta.name = 'viewport';
-                  meta.content = 'width=device-width, initial-scale=1.0, minimum-scale=0.5, maximum-scale=5.0, user-scalable=yes';
-                  document.head && document.head.appendChild(meta);
-                })();
-                true;
-              `}
-              injectedJavaScript={`
-                (function() {
-                  function cleanViewer() {
-                    const styleId = 'campusone-pdf-styles';
-                    if (!document.getElementById(styleId)) {
-                      const style = document.createElement('style');
-                      style.id = styleId;
-                      style.innerHTML = \`
-                        *, *::before, *::after {
-                          box-sizing: border-box !important;
-                        }
-                        html, body {
-                          width: 100% !important;
-                          max-width: 100% !important;
-                          margin: 0 !important;
-                          padding: 0 !important;
-                          background: ${isDark ? '#000000' : '#f8fafc'} !important;
-                          overflow-x: auto !important;
-                        }
-                        .ndfHFb-c4YZDc-Wrql6b,
-                        .drive-viewer-toolstrip,
-                        div[role="toolbar"],
-                        .goog-inline-block.ndfHFb-c4YZDc-to915-LgbsSe,
-                        a[href*="docs.google.com"],
-                        .ndfHFb-c4YZDc-V67aGc,
-                        .ndfHFb-c4YZDc-cYSp0e-B7I4Od,
-                        .ndfHFb-c4YZDc-cYSp0e-DARUcf-hSRGPd {
-                          display: none !important;
-                          visibility: hidden !important;
-                          height: 0 !important;
-                          opacity: 0 !important;
-                        }
-                        .ndfHFb-c4YZDc,
-                        .ndfHFb-c4YZDc-s2gQvd,
-                        .ndfHFb-c4YZDc-cYSp0e,
-                        .ndfHFb-c4YZDc-cYSp0e-s2gQvd,
-                        .ndfHFb-c4YZDc-cYSp0e-Oz6c3e,
-                        .ndfHFb-c4YZDc-qwU8Me-b0t70b-haAclf,
-                        .ndfHFb-c4YZDc-zTETae,
-                        .ndfHFb-c4YZDc-bC7sje,
-                        .ndfHFb-c4YZDc-c3fl2b,
-                        .ndfHFb-c4YZDc-cYSp0e-tJHJj,
-                        .ndfHFb-c4YZDc-bC7sje-tJHJj,
-                        .ndfHFb-c4YZDc-AWhBae,
-                        div[role="document"] {
-                          background: ${isDark ? '#000000' : '#f8fafc'} !important;
-                          background-color: ${isDark ? '#000000' : '#f8fafc'} !important;
-                          width: 100% !important;
-                          max-width: 100% !important;
-                          min-width: 0 !important;
-                          margin: 0 !important;
-                          padding: 0 !important;
-                          left: 0 !important;
-                          right: 0 !important;
-                          box-shadow: none !important;
-                          box-sizing: border-box !important;
-                        }
-                        img,
-                        canvas,
-                        .ndfHFb-c4YZDc-s2gQvd img,
-                        .ndfHFb-c4YZDc-bC7sje img,
-                        .ndfHFb-c4YZDc-cYSp0e-tJHJj img,
-                        .ndfHFb-c4YZDc-c3fl2b img,
-                        .ndfHFb-c4YZDc-AWhBae img,
-                        .ndfHFb-c4YZDc-qwU8Me-b0t70b-haAclf img {
-                          width: 100% !important;
-                          max-width: 100% !important;
-                          min-width: 0 !important;
-                          height: auto !important;
-                          margin: 0 auto 10px auto !important;
-                          padding: 0 !important;
-                          display: block !important;
-                          box-sizing: border-box !important;
-                          box-shadow: 0 2px 8px rgba(0,0,0,0.18) !important;
-                        }
-                      \`;
-                      document.head && document.head.appendChild(style);
+          <View style={{ flex: 1, position: 'relative' }}>
+            {pdfModalVisible && googleDocsPdfViewer && (
+              <WebView
+                source={{ uri: googleDocsPdfViewer }}
+                style={{
+                  flex: 1,
+                  backgroundColor: isDark ? '#000000' : '#f8fafc',
+                  opacity: pdfLoading ? 0 : 1,
+                }}
+                scalesPageToFit={false}
+                textZoom={100}
+                cacheEnabled={true}
+                cacheMode="LOAD_DEFAULT"
+                javaScriptEnabled={true}
+                domStorageEnabled={true}
+                originWhitelist={['*']}
+                mixedContentMode="always"
+                setSupportMultipleWindows={false}
+                showsHorizontalScrollIndicator={false}
+                showsVerticalScrollIndicator={true}
+                onMessage={(event) => {
+                  try {
+                    const data = JSON.parse(event.nativeEvent.data);
+                    if (data.type === 'pdfRendered') {
+                      setPdfLoading(false);
                     }
+                  } catch {}
+                }}
+                injectedJavaScriptBeforeContentLoaded={`
+                  (function() {
+                    // 1. Responsive mobile viewport
+                    const meta = document.createElement('meta');
+                    meta.name = 'viewport';
+                    meta.content = 'width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes';
+                    (document.head || document.documentElement).appendChild(meta);
 
-                    try {
-                      var media = document.querySelectorAll('img, canvas');
-                      for (var i = 0; i < media.length; i++) {
-                        var el = media[i];
-                        if (el.tagName.toLowerCase() === 'img' || el.tagName.toLowerCase() === 'canvas') {
-                          el.style.setProperty('width', '100%', 'important');
-                          el.style.setProperty('max-width', '100%', 'important');
-                          el.style.setProperty('min-width', '0px', 'important');
-                          el.style.setProperty('height', 'auto', 'important');
-                          el.style.setProperty('margin', '0 auto 10px auto', 'important');
-                          el.style.setProperty('left', '0px', 'important');
-                          el.style.setProperty('box-sizing', 'border-box', 'important');
+                    // 2. Critical anti-flash & layout CSS: Injected before first DOM paint to completely prevent Google toolbar/skin flicker
+                    const style = document.createElement('style');
+                    style.id = 'campusone-pdf-critical-css';
+                    style.innerHTML = \`
+                      *, *::before, *::after {
+                        box-sizing: border-box !important;
+                      }
+                      html, body {
+                        width: 100% !important;
+                        max-width: 100vw !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        background: ${isDark ? '#000000' : '#f8fafc'} !important;
+                        background-color: ${isDark ? '#000000' : '#f8fafc'} !important;
+                        overflow-x: hidden !important;
+                      }
+                      /* Eliminate Google Drive toolbar, buttons, pop-outs, and loading skins */
+                      .ndfHFb-c4YZDc-Wrql6b,
+                      .drive-viewer-toolstrip,
+                      div[role="toolbar"],
+                      .goog-inline-block,
+                      a[href*="docs.google.com"],
+                      .ndfHFb-c4YZDc-V67aGc,
+                      .ndfHFb-c4YZDc-cYSp0e-B7I4Od,
+                      .ndfHFb-c4YZDc-cYSp0e-DARUcf-hSRGPd,
+                      .ndfHFb-c4YZDc-EglORb-ge6pde,
+                      .ndfHFb-aZ2wEe,
+                      .ndfHFb-vyDMJf-aZ2wEe,
+                      .ndfHFb-c4YZDc-GSQQnc-LgbsSe,
+                      .ndfHFb-c4YZDc-to915-LgbsSe,
+                      .ndfHFb-c4YZDc-AHmuwe-wcotoc-zTETae {
+                        display: none !important;
+                        visibility: hidden !important;
+                        height: 0 !important;
+                        opacity: 0 !important;
+                        pointer-events: none !important;
+                      }
+                      /* Zero out top offset reserved for Google toolbar */
+                      .ndfHFb-c4YZDc-oKVyEf-s2gQvd,
+                      .ndfHFb-c4YZDc-HiaYvf-s2gQvd {
+                        top: 0 !important;
+                        padding-top: 0 !important;
+                      }
+                      .ndfHFb-c4YZDc-TJEFFc .ndfHFb-c4YZDc-cYSp0e-Oz6c3e {
+                        margin-top: 0 !important;
+                        margin-bottom: 20px !important;
+                      }
+                      /* All Google Docs layout containers: zero out offsets */
+                      .ndfHFb-c4YZDc,
+                      .ndfHFb-c4YZDc-s2gQvd,
+                      .ndfHFb-c4YZDc-cYSp0e,
+                      .ndfHFb-c4YZDc-cYSp0e-s2gQvd,
+                      .ndfHFb-c4YZDc-zTETae,
+                      .ndfHFb-c4YZDc-bC7sje,
+                      .ndfHFb-c4YZDc-c3fl2b,
+                      .ndfHFb-c4YZDc-cYSp0e-tJHJj,
+                      .ndfHFb-c4YZDc-bC7sje-tJHJj,
+                      .ndfHFb-c4YZDc-AWhBae,
+                      div[role="document"] {
+                        background: ${isDark ? '#000000' : '#f8fafc'} !important;
+                        background-color: ${isDark ? '#000000' : '#f8fafc'} !important;
+                        width: 100% !important;
+                        max-width: 100% !important;
+                        min-width: 0 !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        left: 0 !important;
+                        right: 0 !important;
+                        box-shadow: none !important;
+                        box-sizing: border-box !important;
+                      }
+                      /* Centered page list wrapper with safe side gutters */
+                      .ndfHFb-c4YZDc-cYSp0e-Oz6c3e,
+                      .ndfHFb-c4YZDc-qwU8Me-b0t70b-haAclf {
+                        width: 100% !important;
+                        max-width: 100vw !important;
+                        margin: 0 auto !important;
+                        padding: 0 10px !important;
+                        left: 0 !important;
+                        right: 0 !important;
+                        box-sizing: border-box !important;
+                      }
+                      /* Page images & canvases: centered, natural aspect ratio, elegant card styling */
+                      img,
+                      canvas,
+                      .ndfHFb-c4YZDc-s2gQvd img,
+                      .ndfHFb-c4YZDc-bC7sje img,
+                      .ndfHFb-c4YZDc-cYSp0e-tJHJj img,
+                      .ndfHFb-c4YZDc-c3fl2b img,
+                      .ndfHFb-c4YZDc-AWhBae img,
+                      .ndfHFb-c4YZDc-qwU8Me-b0t70b-haAclf img {
+                        width: 100% !important;
+                        max-width: 100% !important;
+                        min-width: 0 !important;
+                        height: auto !important;
+                        margin: 8px auto 16px auto !important;
+                        padding: 0 !important;
+                        display: block !important;
+                        box-sizing: border-box !important;
+                        border-radius: 4px !important;
+                        box-shadow: 0 2px 10px rgba(0,0,0,0.12) !important;
+                      }
+                    \`;
+                    (document.head || document.documentElement).appendChild(style);
+                  })();
+                  true;
+                `}
+                injectedJavaScript={`
+                  (function() {
+                    var notified = false;
+                    function fitViewer() {
+                      try {
+                        var outer = document.querySelector('.ndfHFb-c4YZDc-cYSp0e-Oz6c3e, .ndfHFb-c4YZDc-qwU8Me-b0t70b-haAclf');
+                        if (outer) {
+                          outer.style.setProperty('padding-left', '10px', 'important');
+                          outer.style.setProperty('padding-right', '10px', 'important');
+                          outer.style.setProperty('margin-left', 'auto', 'important');
+                          outer.style.setProperty('margin-right', 'auto', 'important');
+                          outer.style.setProperty('left', '0px', 'important');
+                          outer.style.setProperty('width', '100%', 'important');
+                          outer.style.setProperty('max-width', '100vw', 'important');
+                          outer.style.setProperty('box-sizing', 'border-box', 'important');
+                        }
 
-                          var p = el.parentElement;
-                          for (var depth = 0; depth < 5 && p && p !== document.body; depth++) {
-                            p.style.setProperty('left', '0px', 'important');
-                            p.style.setProperty('margin-left', '0px', 'important');
-                            p.style.setProperty('margin-right', '0px', 'important');
-                            p.style.setProperty('padding-left', '0px', 'important');
-                            p.style.setProperty('padding-right', '0px', 'important');
-                            p.style.setProperty('width', '100%', 'important');
-                            p.style.setProperty('max-width', '100%', 'important');
-                            p.style.setProperty('min-width', '0px', 'important');
-                            p.style.setProperty('box-sizing', 'border-box', 'important');
-                            p = p.parentElement;
+                        var media = document.querySelectorAll('img, canvas');
+                        var hasContent = false;
+                        for (var i = 0; i < media.length; i++) {
+                          var el = media[i];
+                          if (el.tagName.toLowerCase() === 'img' || el.tagName.toLowerCase() === 'canvas') {
+                            if ((el.tagName.toLowerCase() === 'img' && el.complete && el.naturalWidth > 0) ||
+                                (el.tagName.toLowerCase() === 'canvas' && el.width > 0)) {
+                              hasContent = true;
+                            }
+
+                            el.style.setProperty('width', '100%', 'important');
+                            el.style.setProperty('max-width', '100%', 'important');
+                            el.style.setProperty('min-width', '0px', 'important');
+                            el.style.setProperty('height', 'auto', 'important');
+                            el.style.setProperty('margin', '8px auto 16px auto', 'important');
+                            el.style.setProperty('display', 'block', 'important');
+                            el.style.setProperty('box-sizing', 'border-box', 'important');
+
+                            var p = el.parentElement;
+                            for (var depth = 0; depth < 5 && p && p !== document.body; depth++) {
+                              p.style.setProperty('width', '100%', 'important');
+                              p.style.setProperty('max-width', '100%', 'important');
+                              p.style.setProperty('min-width', '0px', 'important');
+                              p.style.setProperty('left', '0px', 'important');
+                              p.style.setProperty('right', '0px', 'important');
+                              p.style.setProperty('margin-left', 'auto', 'important');
+                              p.style.setProperty('margin-right', 'auto', 'important');
+                              p.style.setProperty('padding-left', '0px', 'important');
+                              p.style.setProperty('padding-right', '0px', 'important');
+                              p.style.setProperty('box-sizing', 'border-box', 'important');
+                              p = p.parentElement;
+                            }
                           }
                         }
-                      }
-                    } catch (e) {}
-                  }
-                  cleanViewer();
-                  setInterval(cleanViewer, 250);
-                })();
-                true;
-              `}
-              startInLoadingState={true}
-              renderLoading={() => (
-                <View style={[styles.pdfLoading, { backgroundColor: isDark ? '#000000' : '#f8fafc' }]}>
-                  <ActivityIndicator size="large" color={C.brand} />
-                  <Text style={[styles.pdfLoadingTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                    Loading official PDF…
-                  </Text>
-                </View>
-              )}
-            />
-          )}
+
+                        if (hasContent && !notified) {
+                          notified = true;
+                          if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+                            window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'pdfRendered' }));
+                          }
+                        }
+                      } catch (e) {}
+                    }
+                    fitViewer();
+                    setInterval(fitViewer, 200);
+                  })();
+                  true;
+                `}
+              />
+            )}
+
+            {pdfLoading && (
+              <View style={[StyleSheet.absoluteFill, styles.pdfLoading, { backgroundColor: isDark ? '#000000' : '#f8fafc', zIndex: 10 }]}>
+                <ActivityIndicator size="large" color={C.brand} />
+                <Text style={[styles.pdfLoadingTxt, { color: C.text, fontFamily: FontFamily.jakartaBold, marginTop: 12 }]}>
+                  Loading official PDF…
+                </Text>
+                <Text style={{ color: C.textMuted, fontSize: 12, marginTop: 4, fontFamily: FontFamily.jakartaRegular }}>
+                  Preparing university document…
+                </Text>
+              </View>
+            )}
+          </View>
         </SafeAreaView>
       </Modal>
 
