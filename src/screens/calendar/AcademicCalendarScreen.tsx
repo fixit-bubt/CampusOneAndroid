@@ -11,7 +11,6 @@ import {
   Modal,
   Platform,
   KeyboardAvoidingView,
-  ActivityIndicator,
   Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -33,9 +32,13 @@ import { localToday } from '../../utils/format';
 import { FontFamily, FontSize, Layout, Radius, Spacing, SectorColors, Accent } from '../../theme';
 import {
   OFFICIAL_SUMMER_2026_EVENTS,
+  OFFICIAL_FALL_2026_EVENTS,
   OFFICIAL_CALENDAR_PDF_URL,
   SEMESTER_NAME,
   TOTAL_SEMESTER_WEEKS,
+  SEMESTER_CONFIGS,
+  getActiveSemester,
+  type SemesterConfig,
   type AcademicEvent,
 } from '../../constants/academicCalendar';
 
@@ -113,6 +116,13 @@ export function AcademicCalendarScreen({ navigation }: any) {
     return todayStr.split('-').map(Number);
   }, [todayStr]);
 
+  // Active Semester State (auto-selects active semester e.g. Fall 2026 based on today's date)
+  const [selectedSemester, setSelectedSemester] = useState<SemesterConfig>(() => getActiveSemester(todayStr));
+  const [semesterModalVisible, setSemesterModalVisible] = useState(false);
+
+  // View Mode: 'grid' vs 'timeline'
+  const [viewMode, setViewMode] = useState<'grid' | 'timeline'>('grid');
+
   // Calendar View month state (default to current today)
   const [yearMonth, setYearMonth] = useState<[number, number]>([todayYear, todayMonth - 1]);
   const year = yearMonth[0];
@@ -129,7 +139,6 @@ export function AcademicCalendarScreen({ navigation }: any) {
 
   // Events state
   const [eventsByMonth, setEventsByMonth] = useState<Record<string, AcademicEvent[]>>({});
-  const [allSemesterEvents, setAllSemesterEvents] = useState<AcademicEvent[]>(OFFICIAL_SUMMER_2026_EVENTS);
   const [loadingMonths, setLoadingMonths] = useState<Record<string, boolean>>({});
 
   const events = eventsByMonth[monthKey] ?? inMemoryCalendar[monthKey] ?? getCacheSync<AcademicEvent[]>(calKey) ?? [];
@@ -139,7 +148,7 @@ export function AcademicCalendarScreen({ navigation }: any) {
   const [isOffline, setIsOffline] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editEvent, setEditEvent] = useState<AcademicEvent | null>(null);
-  const [calendarPdfUrl, setCalendarPdfUrl] = useState<string>(OFFICIAL_CALENDAR_PDF_URL);
+  const [calendarPdfUrl, setCalendarPdfUrl] = useState<string>(selectedSemester.pdfUrl);
 
   // In-App PDF Fullscreen Modal State
   const [pdfModalVisible, setPdfModalVisible] = useState(false);
@@ -174,8 +183,8 @@ export function AcademicCalendarScreen({ navigation }: any) {
         .order('event_date', { ascending: true });
 
       if (error || !data || data.length === 0) {
-        // Fallback to official verified BUBT dataset for this month
-        const fallbackForMonth = OFFICIAL_SUMMER_2026_EVENTS.filter((ev) => {
+        // Fallback to verified dataset of active semester for this month
+        const fallbackForMonth = selectedSemester.events.filter((ev) => {
           const s = ev.event_date;
           const e = ev.end_date || ev.event_date;
           return (s >= monthStart && s <= monthEnd) || (e >= monthStart && s < monthStart);
@@ -215,7 +224,7 @@ export function AcademicCalendarScreen({ navigation }: any) {
           setCache(CacheKeys.CALENDAR_PDF_URL, cfg.value);
         }
       });
-  }, [year, month]);
+  }, [year, month, selectedSemester]);
 
   useFocusEffect(
     useCallback(() => {
@@ -242,37 +251,66 @@ export function AcademicCalendarScreen({ navigation }: any) {
     setSelectedDate(todayStr);
   }
 
+  function jumpToMonth(targetYear: number, targetMonthIdx: number) {
+    setYearMonth([targetYear, targetMonthIdx]);
+  }
+
+  function handleSelectSemester(sem: SemesterConfig) {
+    setSelectedSemester(sem);
+    setCalendarPdfUrl(sem.pdfUrl);
+    setSemesterModalVisible(false);
+
+    // If today is within this semester, land on today's month; otherwise land on start month
+    const [sY, sM] = sem.startDate.split('-').map(Number);
+    if (todayStr >= sem.startDate && todayStr <= sem.endDate) {
+      setYearMonth([todayYear, todayMonth - 1]);
+    } else {
+      setYearMonth([sY, sM - 1]);
+    }
+  }
+
   const isCurrentMonthView = year === todayYear && month === todayMonth - 1;
 
   // Semester Progress and Week Calculation
   const semesterProgress = useMemo(() => {
-    const semStart = new Date('2026-05-06T00:00:00');
+    const semStart = new Date(selectedSemester.startDate + 'T00:00:00');
+    const semEnd = new Date(selectedSemester.endDate + 'T00:00:00');
     const today = new Date(todayStr + 'T00:00:00');
-    const diffDays = Math.floor((today.getTime() - semStart.getTime()) / (1000 * 60 * 60 * 24));
-    const currentWeek = Math.min(TOTAL_SEMESTER_WEEKS, Math.max(1, Math.floor(diffDays / 7) + 1));
-    const progressPercent = Math.min(100, Math.max(0, Math.round((currentWeek / TOTAL_SEMESTER_WEEKS) * 100)));
+    const totalDays = Math.max(1, Math.floor((semEnd.getTime() - semStart.getTime()) / (1000 * 60 * 60 * 24)));
+    const elapsedDays = Math.floor((today.getTime() - semStart.getTime()) / (1000 * 60 * 60 * 24));
+    const currentWeek = Math.min(selectedSemester.totalWeeks, Math.max(1, Math.floor(elapsedDays / 7) + 1));
+    const progressPercent = Math.min(100, Math.max(0, Math.round((Math.max(0, elapsedDays) / totalDays) * 100)));
 
-    let phaseName = 'Pre-Midterm Phase';
-    if (currentWeek >= 7 && currentWeek <= 8) phaseName = 'Midterm Examination Phase';
-    else if (currentWeek >= 9 && currentWeek <= 13) phaseName = 'Post-Midterm Phase';
-    else if (currentWeek >= 14) phaseName = 'Final Examination Phase';
+    let phaseName = t.calendar2.phasePreMidterm;
+    let phaseKey: 'pre' | 'mid' | 'post' | 'final' = 'pre';
+    if (todayStr >= selectedSemester.midtermStart && todayStr <= selectedSemester.midtermEnd) {
+      phaseName = t.calendar2.phaseMidterms;
+      phaseKey = 'mid';
+    } else if (todayStr > selectedSemester.midtermEnd && todayStr < selectedSemester.finalStart) {
+      phaseName = t.calendar2.phasePostMidterm;
+      phaseKey = 'post';
+    } else if (todayStr >= selectedSemester.finalStart) {
+      phaseName = t.calendar2.phaseFinals;
+      phaseKey = 'final';
+    }
 
     return {
       currentWeek,
       progressPercent,
       phaseName,
+      phaseKey,
+      totalWeeks: selectedSemester.totalWeeks,
     };
-  }, [todayStr]);
+  }, [selectedSemester, todayStr, t]);
 
-  // Next Milestone Hero Calculation
-  const nextMilestone = useMemo(() => {
-    const upcoming = allSemesterEvents
-      .filter((ev) => (ev.end_date || ev.event_date) >= todayStr)
+  // Exam Radar Card Calculation (Upcoming Midterms / Finals)
+  const nextExam = useMemo(() => {
+    const list = selectedSemester.events
+      .filter((ev) => ev.event_type === 'exam' && (ev.end_date || ev.event_date) >= todayStr)
       .sort((a, b) => a.event_date.localeCompare(b.event_date));
 
-    if (upcoming.length === 0) return null;
-    const target = upcoming[0];
-
+    if (list.length === 0) return null;
+    const target = list[0];
     const isOngoing = target.event_date <= todayStr && (target.end_date || target.event_date) >= todayStr;
     const targetDate = new Date(target.event_date + 'T00:00:00');
     const todayDate = new Date(todayStr + 'T00:00:00');
@@ -283,7 +321,35 @@ export function AcademicCalendarScreen({ navigation }: any) {
       isOngoing,
       diffDays,
     };
-  }, [allSemesterEvents, todayStr]);
+  }, [selectedSemester, todayStr]);
+
+  // Holiday & Off-Day Radar Card Calculation (Upcoming vacations / off days)
+  const nextHoliday = useMemo(() => {
+    const list = selectedSemester.events
+      .filter((ev) => ev.event_type === 'holiday' && (ev.end_date || ev.event_date) >= todayStr)
+      .sort((a, b) => a.event_date.localeCompare(b.event_date));
+
+    if (list.length === 0) return null;
+    const target = list[0];
+    const isOngoing = target.event_date <= todayStr && (target.end_date || target.event_date) >= todayStr;
+    const targetDate = new Date(target.event_date + 'T00:00:00');
+    const todayDate = new Date(todayStr + 'T00:00:00');
+    const diffDays = Math.ceil((targetDate.getTime() - todayDate.getTime()) / (1000 * 60 * 60 * 24));
+
+    let durationDays = 1;
+    if (target.end_date) {
+      const s = new Date(target.event_date + 'T00:00:00');
+      const e = new Date(target.end_date + 'T00:00:00');
+      durationDays = Math.max(1, Math.round((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+    }
+
+    return {
+      event: target,
+      isOngoing,
+      diffDays,
+      durationDays,
+    };
+  }, [selectedSemester, todayStr]);
 
   const daysInMonth = getDaysInMonth(year, month);
   const firstDay = getFirstDayOfMonth(year, month);
@@ -296,7 +362,7 @@ export function AcademicCalendarScreen({ navigation }: any) {
     const curPrefix = `${year}-${String(month + 1).padStart(2, '0')}`;
     for (let d = 1; d <= daysInMonth; d++) {
       const dateKey = `${curPrefix}-${String(d).padStart(2, '0')}`;
-      const matched = (events.length > 0 ? events : OFFICIAL_SUMMER_2026_EVENTS).filter((ev) => {
+      const matched = (events.length > 0 ? events : selectedSemester.events).filter((ev) => {
         const s = ev.event_date;
         const e = ev.end_date || ev.event_date;
         return dateKey >= s && dateKey <= e;
@@ -318,7 +384,7 @@ export function AcademicCalendarScreen({ navigation }: any) {
       wks.push(wk);
     }
     return { weeks: wks, eventsCoveringDate: coveringMap };
-  }, [events, daysInMonth, firstDay, year, month]);
+  }, [events, selectedSemester, daysInMonth, firstDay, year, month]);
 
   // Selected Day Events
   const selectedDayEvents = useMemo(() => {
@@ -327,9 +393,9 @@ export function AcademicCalendarScreen({ navigation }: any) {
     return list.filter((e) => e.event_type === activeFilter);
   }, [eventsCoveringDate, selectedDate, activeFilter]);
 
-  // Month Events Filtered
+  // Month Events Filtered for Agenda
   const filteredMonthEvents = useMemo(() => {
-    let list = events.length > 0 ? events : OFFICIAL_SUMMER_2026_EVENTS.filter((e) => {
+    let list = events.length > 0 ? events : selectedSemester.events.filter((e) => {
       const pad = String(month + 1).padStart(2, '0');
       const prefix = `${year}-${pad}`;
       return e.event_date.startsWith(prefix) || (e.end_date && e.end_date.startsWith(prefix));
@@ -345,7 +411,16 @@ export function AcademicCalendarScreen({ navigation }: any) {
       );
     }
     return list;
-  }, [events, activeFilter, searchQuery, year, month]);
+  }, [events, selectedSemester, activeFilter, searchQuery, year, month]);
+
+  // All Semester Events Filtered for Timeline Mode
+  const filteredTimelineEvents = useMemo(() => {
+    let list = selectedSemester.events;
+    if (activeFilter !== 'all') {
+      list = list.filter((e) => e.event_type === activeFilter);
+    }
+    return list.slice().sort((a, b) => a.event_date.localeCompare(b.event_date));
+  }, [selectedSemester, activeFilter]);
 
   const typeLabel = (ty: string) => {
     const map: Record<string, string> = {
@@ -431,7 +506,7 @@ export function AcademicCalendarScreen({ navigation }: any) {
     try {
       await Share.share({
         title: 'BUBT Academic Calendar',
-        message: `Official BUBT Academic Calendar (${SEMESTER_NAME}): ${calendarPdfUrl}`,
+        message: `Official BUBT Academic Calendar (${selectedSemester.name}): ${calendarPdfUrl}`,
         url: calendarPdfUrl,
       });
     } catch {
@@ -441,12 +516,23 @@ export function AcademicCalendarScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-      {/* 1. Header SubBar */}
+      {/* 1. Header SubBar with Semester Switcher */}
       <SubBar
         title={t.calendar2.title}
         onBack={() => navigation.goBack()}
         rightSlot={
           <View style={styles.headerActions}>
+            <TouchableOpacity
+              style={[styles.semesterPillBtn, { backgroundColor: C.surface, borderColor: C.border }]}
+              onPress={() => setSemesterModalVisible(true)}
+              activeOpacity={0.75}
+            >
+              <Text style={[styles.semesterPillTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                {selectedSemester.shortName}
+              </Text>
+              <Feather name="chevron-down" size={13} color={C.text3} />
+            </TouchableOpacity>
+
             <TouchableOpacity
               style={[styles.pdfCapsuleBtn, { borderColor: C.border }]}
               onPress={() => setPdfModalVisible(true)}
@@ -458,6 +544,7 @@ export function AcademicCalendarScreen({ navigation }: any) {
                 {t.calendar2.pdf}
               </Text>
             </TouchableOpacity>
+
             {isAdmin && (
               <TouchableOpacity onPress={openAdd} hitSlop={8}>
                 <Icon name="plus" size={22} color={C.brand} />
@@ -467,7 +554,7 @@ export function AcademicCalendarScreen({ navigation }: any) {
         }
       />
 
-      {/* 2. Universal 58 dp Top Segmented Switcher */}
+      {/* 2. Top Segmented Switcher (Calendar vs PDF) */}
       <View style={{ paddingHorizontal: Layout.screenPadding, marginBottom: Spacing[3] }}>
         <SegmentedTabs
           tabs={tabs}
@@ -477,7 +564,7 @@ export function AcademicCalendarScreen({ navigation }: any) {
       </View>
 
       {/* ========================================================================= */}
-      {/* TAB 1: INTERACTIVE CALENDAR & MILESTONES                                  */}
+      {/* TAB 1: INTERACTIVE CALENDAR & RADAR BARS                                  */}
       {/* ========================================================================= */}
       {activeTab === 'calendar' ? (
         <ScrollView
@@ -485,362 +572,635 @@ export function AcademicCalendarScreen({ navigation }: any) {
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
         >
-          <View style={{ paddingHorizontal: Layout.screenPadding }}>
-            <OfflineBanner visible={isOffline} onRetry={load} />
+          {isOffline && <OfflineBanner onRetry={load} />}
 
-            {/* 3. Next Milestone Countdown Hero Card */}
-            {nextMilestone && (
-              <View style={[styles.heroCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-                <View style={styles.heroTopRow}>
-                  <View style={[styles.heroIconBox, { backgroundColor: TYPE_COLOR[nextMilestone.event.event_type] + '20' }]}>
-                    <Feather
-                      name={
-                        nextMilestone.event.event_type === 'exam'
-                          ? 'award'
-                          : nextMilestone.event.event_type === 'holiday'
-                          ? 'sun'
-                          : 'calendar'
-                      }
-                      size={18}
-                      color={TYPE_COLOR[nextMilestone.event.event_type]}
-                    />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.heroLabel, { color: C.text3, fontFamily: FontFamily.jakartaBold }]}>
-                      {t.calendar2.nextMilestone}
-                    </Text>
-                    <Text style={[styles.heroTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                      {nextMilestone.event.title}
-                    </Text>
-                  </View>
+          <View style={{ paddingHorizontal: Layout.screenPadding }}>
+            {/* 3. Master Semester Roadmap Ribbon (Visual Progress Bar) */}
+            <View style={[styles.roadmapCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+              <View style={styles.roadmapHeaderRow}>
+                <View style={styles.roadmapHeaderLeft}>
+                  <Text style={[styles.roadmapLabel, { color: C.text3, fontFamily: FontFamily.jakartaBold }]}>
+                    {t.calendar2.semesterRoadmap}
+                  </Text>
+                  <Text style={[styles.roadmapSemesterTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    {selectedSemester.name}
+                  </Text>
+                </View>
+
+                <View style={[styles.weekPill, { backgroundColor: C.surface2, borderColor: C.border2 }]}>
+                  <Text style={[styles.weekPillText, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+                    {t.calendar2.week} {semesterProgress.currentWeek} {t.calendar2.of} {selectedSemester.totalWeeks}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Visual Gantt Bar with Segmented Color Blocks */}
+              <View style={styles.ganttTrackContainer}>
+                <View style={[styles.ganttTrack, { backgroundColor: C.surface2 }]}>
+                  {/* Phase 1: Pre-Midterm Classes (Weeks 1-7) */}
+                  <View style={[styles.ganttSegment, { flex: 50, backgroundColor: Accent.blue + '30', borderRightWidth: 1, borderColor: C.border }]} />
+                  {/* Phase 2: Midterm Exams (Weeks 8) */}
+                  <View style={[styles.ganttSegment, { flex: 12, backgroundColor: Accent.amber + '40', borderRightWidth: 1, borderColor: C.border }]} />
+                  {/* Phase 3: Post-Midterm Classes (Weeks 9-13) */}
+                  <View style={[styles.ganttSegment, { flex: 31, backgroundColor: Accent.blue + '30', borderRightWidth: 1, borderColor: C.border }]} />
+                  {/* Phase 4: Final Exams (Week 14) */}
+                  <View style={[styles.ganttSegment, { flex: 11, backgroundColor: Accent.red + '40' }]} />
+
+                  {/* Dynamic Progress Fill Line */}
                   <View
                     style={[
-                      styles.heroBadge,
+                      styles.ganttActiveFill,
                       {
-                        backgroundColor: nextMilestone.isOngoing
-                          ? C.success + '20'
-                          : TYPE_COLOR[nextMilestone.event.event_type] + '20',
-                        borderColor: nextMilestone.isOngoing
-                          ? C.success
-                          : TYPE_COLOR[nextMilestone.event.event_type],
+                        width: `${semesterProgress.progressPercent}%`,
+                        backgroundColor: C.brand,
                       },
                     ]}
-                  >
-                    <Text
-                      style={[
-                        styles.heroBadgeText,
-                        {
-                          color: nextMilestone.isOngoing
-                            ? C.success
-                            : TYPE_COLOR[nextMilestone.event.event_type],
-                          fontFamily: FontFamily.jakartaBold,
-                        },
-                      ]}
-                    >
-                      {nextMilestone.isOngoing
-                        ? t.calendar2.ongoing
-                        : `${nextMilestone.diffDays} ${nextMilestone.diffDays === 1 ? t.calendar2.dayLeft : t.calendar2.daysLeft}`}
-                    </Text>
-                  </View>
+                  />
                 </View>
 
-                {/* Progress bar */}
-                <View style={styles.progressContainer}>
-                  <View style={[styles.progressTrack, { backgroundColor: C.surface2 }]}>
-                    <View
-                      style={[
-                        styles.progressFill,
-                        {
-                          width: `${semesterProgress.progressPercent}%`,
-                          backgroundColor: SectorColors.calendar,
-                        },
-                      ]}
-                    />
-                  </View>
-                  <View style={styles.progressLabelRow}>
-                    <Text style={[styles.progressText, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
-                      {SEMESTER_NAME} · {t.calendar2.week} {semesterProgress.currentWeek} {t.calendar2.of} {TOTAL_SEMESTER_WEEKS}
-                    </Text>
-                    <Text style={[styles.phaseText, { color: C.text3, fontFamily: FontFamily.jakartaSemiBold }]}>
-                      {semesterProgress.phaseName}
+                {/* You Are Here Pin */}
+                <View style={[styles.pinWrapper, { left: `${Math.min(92, Math.max(4, semesterProgress.progressPercent))}%` }]}>
+                  <View style={[styles.pinPill, { backgroundColor: C.brand }]}>
+                    <Text style={[styles.pinText, { fontFamily: FontFamily.jakartaBold }]}>
+                      {semesterProgress.progressPercent}%
                     </Text>
                   </View>
+                  <View style={[styles.pinArrow, { borderTopColor: C.brand }]} />
                 </View>
               </View>
-            )}
 
-            {/* 4. Horizontal Category Filter Chips */}
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.filterRow}
-            >
-              {[
-                { id: 'all', label: t.calendar2.filterAll },
-                { id: 'exam', label: t.calendar2.filterExams },
-                { id: 'holiday', label: t.calendar2.filterHolidays },
-                { id: 'semester', label: t.calendar2.filterSemester },
-                { id: 'general', label: t.calendar2.filterFees },
-              ].map((chip) => {
-                const isSelected = activeFilter === chip.id;
-                const chipColor = chip.id === 'all' ? C.brand : TYPE_COLOR[chip.id] || C.brand;
-                return (
-                  <TouchableOpacity
-                    key={chip.id}
-                    style={[
-                      styles.filterChip,
-                      {
-                        backgroundColor: isSelected ? chipColor + '20' : C.surface,
-                        borderColor: isSelected ? chipColor : C.border,
-                      },
-                    ]}
-                    onPress={() => setActiveFilter(chip.id as FilterType)}
-                    activeOpacity={0.7}
-                  >
-                    <Text
-                      style={[
-                        styles.filterChipText,
-                        {
-                          color: isSelected ? chipColor : C.text2,
-                          fontFamily: isSelected ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                        },
-                      ]}
-                    >
-                      {chip.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-
-            {/* 5. Month Navigation & Today Snap Row */}
-            <View style={styles.monthNavRow}>
-              <View style={styles.monthSelector}>
-                <TouchableOpacity onPress={prevMonth} hitSlop={12} style={styles.navArrow}>
-                  <Icon name="chevL" size={22} color={C.text} />
-                </TouchableOpacity>
-                <Text style={[styles.monthLabel, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                  {MONTHS[month]} {year}
-                </Text>
-                <TouchableOpacity onPress={nextMonth} hitSlop={12} style={styles.navArrow}>
-                  <Icon name="chevR" size={22} color={C.text} />
-                </TouchableOpacity>
-              </View>
-
-              {!isCurrentMonthView && (
-                <TouchableOpacity
-                  style={[styles.todaySnapBtn, { backgroundColor: C.surface, borderColor: C.border }]}
-                  onPress={jumpToToday}
-                  activeOpacity={0.75}
-                >
-                  <Feather name="corner-up-left" size={13} color={C.brand} />
-                  <Text style={[styles.todaySnapTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
-                    {t.calendar2.today}
+              {/* Phase Key Labels */}
+              <View style={styles.phasesRow}>
+                <View style={styles.phaseLegendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: Accent.blue }]} />
+                  <Text style={[styles.phaseLegendText, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
+                    Classes
                   </Text>
-                </TouchableOpacity>
+                </View>
+                <View style={styles.phaseLegendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: Accent.amber }]} />
+                  <Text style={[styles.phaseLegendText, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
+                    Midterms
+                  </Text>
+                </View>
+                <View style={styles.phaseLegendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: Accent.red }]} />
+                  <Text style={[styles.phaseLegendText, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
+                    Finals
+                  </Text>
+                </View>
+                <Text style={[styles.phaseCurrentNote, { color: C.text3, fontFamily: FontFamily.jakartaSemiBold }]}>
+                  {semesterProgress.phaseName}
+                </Text>
+              </View>
+            </View>
+
+            {/* 4. Two Visual Radar Cards: Upcoming Exam & Next Off-Day */}
+            <View style={styles.radarsContainer}>
+              {/* Radar A: Upcoming Examination */}
+              {nextExam && (
+                <View style={[styles.radarCard, { backgroundColor: C.surface, borderColor: Accent.amber + '40' }]}>
+                  <View style={styles.radarTopRow}>
+                    <View style={[styles.radarIconBox, { backgroundColor: Accent.amber + '18' }]}>
+                      <Feather name="edit-3" size={16} color={Accent.amber} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.radarCategoryLabel, { color: Accent.amber, fontFamily: FontFamily.jakartaBold }]}>
+                        {t.calendar2.nextExam}
+                      </Text>
+                    </View>
+                    <View style={[styles.radarBadge, { backgroundColor: Accent.amber + '20', borderColor: Accent.amber }]}>
+                      <Text style={[styles.radarBadgeText, { color: Accent.amber, fontFamily: FontFamily.jakartaBold }]}>
+                        {nextExam.isOngoing
+                          ? t.calendar2.ongoing
+                          : `${nextExam.diffDays === 1 ? t.calendar2.startsTomorrow : `${t.calendar2.startsIn} ${nextExam.diffDays}d`}`}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <Text style={[styles.radarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                    {nextExam.event.title}
+                  </Text>
+
+                  <Text style={[styles.radarDateSpan, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
+                    {formatDate(nextExam.event.event_date)}
+                    {nextExam.event.end_date ? ` - ${formatDate(nextExam.event.end_date)}` : ''}
+                  </Text>
+
+                  {/* Readiness Progress Strip */}
+                  <View style={styles.readinessContainer}>
+                    <View style={[styles.readinessTrack, { backgroundColor: C.surface2 }]}>
+                      <View
+                        style={[
+                          styles.readinessFill,
+                          {
+                            width: `${Math.min(100, Math.round((semesterProgress.currentWeek / 8) * 100))}%`,
+                            backgroundColor: Accent.amber,
+                          },
+                        ]}
+                      />
+                    </View>
+                    <Text style={[styles.readinessText, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
+                      {semesterProgress.currentWeek} of 8 preparation weeks completed
+                    </Text>
+                  </View>
+                </View>
+              )}
+
+              {/* Radar B: Next Off-Day / Vacation */}
+              {nextHoliday && (
+                <View style={[styles.radarCard, { backgroundColor: C.surface, borderColor: Accent.green + '40' }]}>
+                  <View style={styles.radarTopRow}>
+                    <View style={[styles.radarIconBox, { backgroundColor: Accent.green + '18' }]}>
+                      <Feather name="sun" size={16} color={Accent.green} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.radarCategoryLabel, { color: Accent.green, fontFamily: FontFamily.jakartaBold }]}>
+                        {t.calendar2.nextOffDay}
+                      </Text>
+                    </View>
+                    <View style={[styles.radarBadge, { backgroundColor: Accent.green + '20', borderColor: Accent.green }]}>
+                      <Text style={[styles.radarBadgeText, { color: Accent.green, fontFamily: FontFamily.jakartaBold }]}>
+                        {nextHoliday.durationDays} {nextHoliday.durationDays === 1 ? t.calendar2.dayOff : t.calendar2.daysOff}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <Text style={[styles.radarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                    {nextHoliday.event.title}
+                  </Text>
+
+                  <View style={styles.holidayMetaRow}>
+                    <Text style={[styles.radarDateSpan, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
+                      {formatDate(nextHoliday.event.event_date)}
+                      {nextHoliday.event.end_date ? ` - ${formatDate(nextHoliday.event.end_date)}` : ''}
+                    </Text>
+                    <Text style={[styles.holidayCountText, { color: Accent.green, fontFamily: FontFamily.jakartaBold }]}>
+                      {nextHoliday.isOngoing
+                        ? t.calendar2.ongoing
+                        : nextHoliday.diffDays === 1
+                        ? t.calendar2.startsTomorrow
+                        : `${t.calendar2.startsIn} ${nextHoliday.diffDays}d`}
+                    </Text>
+                  </View>
+                </View>
               )}
             </View>
 
-            {/* 6. Interactive Calendar Grid with Multi-Day Span Ribbons */}
-            <View style={[styles.calendarCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-              <View style={styles.dayHeader}>
-                {DAYS.map((d) => (
-                  <Text key={d} style={[styles.dayLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaSemiBold }]}>
-                    {d}
-                  </Text>
-                ))}
-              </View>
-
-              {weeks.map((wk, wi) => (
-                <View key={wi} style={styles.weekRow}>
-                  {wk.map((day, di) => {
-                    if (!day) return <View key={di} style={styles.dayCell} />;
-
-                    const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                    const isToday = dateKey === todayStr;
-                    const isSelected = dateKey === selectedDate;
-                    const coveringEvents = eventsCoveringDate.get(dateKey) ?? [];
-                    const topEvent = coveringEvents[0];
-
-                    return (
-                      <TouchableOpacity
-                        key={di}
+            {/* 5. View Mode Switcher + Category Filters Bar */}
+            <View style={styles.controlsRow}>
+              {/* Category Filter Chips */}
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.filterRow}
+                style={{ flex: 1 }}
+              >
+                {[
+                  { id: 'all', label: t.calendar2.filterAll },
+                  { id: 'exam', label: t.calendar2.filterExams },
+                  { id: 'holiday', label: t.calendar2.filterHolidays },
+                  { id: 'semester', label: t.calendar2.filterSemester },
+                  { id: 'general', label: t.calendar2.filterFees },
+                ].map((chip) => {
+                  const isSelected = activeFilter === chip.id;
+                  const chipColor = chip.id === 'all' ? C.brand : TYPE_COLOR[chip.id] || C.brand;
+                  return (
+                    <TouchableOpacity
+                      key={chip.id}
+                      style={[
+                        styles.filterChip,
+                        {
+                          backgroundColor: isSelected ? chipColor + '20' : C.surface,
+                          borderColor: isSelected ? chipColor : C.border,
+                        },
+                      ]}
+                      onPress={() => setActiveFilter(chip.id as FilterType)}
+                      activeOpacity={0.7}
+                    >
+                      <Text
                         style={[
-                          styles.dayCell,
-                          topEvent && {
-                            backgroundColor: TYPE_COLOR[topEvent.event_type] + '18',
+                          styles.filterChipText,
+                          {
+                            color: isSelected ? chipColor : C.text2,
+                            fontFamily: isSelected ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
                           },
-                          // Round caps for start and end of multi-day ranges
-                          topEvent?.event_date === dateKey && { borderTopLeftRadius: 10, borderBottomLeftRadius: 10 },
-                          topEvent?.end_date === dateKey && { borderTopRightRadius: 10, borderBottomRightRadius: 10 },
                         ]}
-                        onPress={() => setSelectedDate(dateKey)}
-                        activeOpacity={0.7}
                       >
-                        <View
-                          style={[
-                            styles.dayCircle,
-                            isToday && { backgroundColor: SectorColors.calendar },
-                            isSelected && !isToday && { borderWidth: 2, borderColor: C.brand },
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.dayNum,
-                              {
-                                color: isToday ? '#ffffff' : isSelected ? C.brand : C.text,
-                                fontFamily: isToday || isSelected ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                              },
-                            ]}
-                          >
-                            {day}
-                          </Text>
-                        </View>
+                        {chip.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
 
-                        {/* Event Dot Indicators */}
-                        {coveringEvents.length > 0 && (
-                          <View style={styles.dotRow}>
-                            {coveringEvents.slice(0, 3).map((e, idx) => (
-                              <View
-                                key={idx}
-                                style={[styles.dot, { backgroundColor: TYPE_COLOR[e.event_type] ?? C.brand }]}
-                              />
-                            ))}
-                          </View>
-                        )}
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              ))}
+              {/* View Mode Toggle: Grid vs Timeline */}
+              <View style={[styles.viewToggleContainer, { backgroundColor: C.surface, borderColor: C.border }]}>
+                <TouchableOpacity
+                  style={[
+                    styles.viewToggleBtn,
+                    viewMode === 'grid' && { backgroundColor: C.brand },
+                  ]}
+                  onPress={() => setViewMode('grid')}
+                  activeOpacity={0.75}
+                >
+                  <Feather name="grid" size={14} color={viewMode === 'grid' ? '#ffffff' : C.text3} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.viewToggleBtn,
+                    viewMode === 'timeline' && { backgroundColor: C.brand },
+                  ]}
+                  onPress={() => setViewMode('timeline')}
+                  activeOpacity={0.75}
+                >
+                  <Feather name="list" size={14} color={viewMode === 'timeline' ? '#ffffff' : C.text3} />
+                </TouchableOpacity>
+              </View>
             </View>
 
-            {/* 7. Selected Day Inspector & Direct Actions */}
-            <View style={[styles.inspectorCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-              <View style={styles.inspectorHeader}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Feather name="calendar" size={15} color={C.brand} />
-                  <Text style={[styles.inspectorDateText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                    {formatDateFull(selectedDate)}
-                  </Text>
-                </View>
-                {selectedDate === todayStr && (
-                  <View style={[styles.todayTag, { backgroundColor: SectorColors.calendar + '20' }]}>
-                    <Text style={[styles.todayTagText, { color: SectorColors.calendar, fontFamily: FontFamily.jakartaBold }]}>
-                      {t.calendar2.today}
+            {/* =================================================================== */}
+            {/* VIEW A: CALENDAR GRID MODE                                          */}
+            {/* =================================================================== */}
+            {viewMode === 'grid' ? (
+              <>
+                {/* Month Navigation & Today Snap Row */}
+                <View style={styles.monthNavRow}>
+                  <View style={styles.monthSelector}>
+                    <TouchableOpacity onPress={prevMonth} hitSlop={12} style={styles.navArrow}>
+                      <Icon name="chevL" size={22} color={C.text} />
+                    </TouchableOpacity>
+                    <Text style={[styles.monthLabel, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                      {MONTHS[month]} {year}
                     </Text>
+                    <TouchableOpacity onPress={nextMonth} hitSlop={12} style={styles.navArrow}>
+                      <Icon name="chevR" size={22} color={C.text} />
+                    </TouchableOpacity>
+                  </View>
+
+                  {!isCurrentMonthView && (
+                    <TouchableOpacity
+                      style={[styles.todaySnapBtn, { backgroundColor: C.surface, borderColor: C.border }]}
+                      onPress={jumpToToday}
+                      activeOpacity={0.75}
+                    >
+                      <Feather name="corner-up-left" size={13} color={C.brand} />
+                      <Text style={[styles.todaySnapTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+                        {t.calendar2.today}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                {/* Zero-Events Helper Banner if current month is outside active semester schedule */}
+                {filteredMonthEvents.length === 0 && (
+                  <View style={[styles.zeroEventsBanner, { backgroundColor: C.surface, borderColor: C.border }]}>
+                    <Feather name="info" size={15} color={C.brand} />
+                    <Text style={[styles.zeroEventsText, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
+                      No events in {MONTHS[month]} {year} for {selectedSemester.name}.
+                    </Text>
+                    <TouchableOpacity
+                      style={[styles.zeroJumpBtn, { backgroundColor: C.brand + '20' }]}
+                      onPress={() => {
+                        const [sY, sM] = selectedSemester.startDate.split('-').map(Number);
+                        jumpToMonth(sY, sM - 1);
+                      }}
+                      activeOpacity={0.75}
+                    >
+                      <Text style={[styles.zeroJumpText, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+                        View Term
+                      </Text>
+                    </TouchableOpacity>
                   </View>
                 )}
-              </View>
 
-              {selectedDayEvents.length === 0 ? (
-                <View style={styles.noEventsDay}>
-                  <Text style={[styles.noEventsDayText, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                    No academic events scheduled on this day.
+                {/* 7-Column Calendar Grid with Floating Multi-Day Event Bars */}
+                <View style={[styles.calendarCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+                  <View style={styles.dayHeader}>
+                    {DAYS.map((d, di) => {
+                      const isWeekend = di === 5 || di === 6; // Fri & Sat at BUBT
+                      return (
+                        <Text
+                          key={d}
+                          style={[
+                            styles.dayLabel,
+                            {
+                              color: isWeekend ? Accent.red + '90' : C.textMuted,
+                              fontFamily: FontFamily.jakartaSemiBold,
+                            },
+                          ]}
+                        >
+                          {d}
+                        </Text>
+                      );
+                    })}
+                  </View>
+
+                  {weeks.map((wk, wi) => (
+                    <View key={wi} style={styles.weekRow}>
+                      {wk.map((day, di) => {
+                        if (!day) return <View key={di} style={styles.dayCell} />;
+
+                        const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                        const isToday = dateKey === todayStr;
+                        const isSelected = dateKey === selectedDate;
+                        const isWeekend = di === 5 || di === 6;
+                        const coveringEvents = eventsCoveringDate.get(dateKey) ?? [];
+                        const topEvent = coveringEvents[0];
+                        const isMultiDay = topEvent && topEvent.end_date && topEvent.end_date !== topEvent.event_date;
+                        const isBarStart = topEvent && (topEvent.event_date === dateKey || di === 0);
+                        const isBarEnd = topEvent && (topEvent.end_date === dateKey || di === 6);
+
+                        return (
+                          <TouchableOpacity
+                            key={di}
+                            style={[
+                              styles.dayCell,
+                              isWeekend && { backgroundColor: C.surface2 + '40' },
+                              isSelected && { borderColor: C.brand, borderWidth: 1.5, borderRadius: Radius.sm },
+                            ]}
+                            onPress={() => setSelectedDate(dateKey)}
+                            activeOpacity={0.7}
+                          >
+                            {/* Day Number Pill */}
+                            <View
+                              style={[
+                                styles.dayCircle,
+                                isToday && { backgroundColor: C.brand },
+                              ]}
+                            >
+                              <Text
+                                style={[
+                                  styles.dayNum,
+                                  {
+                                    color: isToday ? '#ffffff' : isWeekend ? Accent.red : C.text,
+                                    fontFamily: isToday || isSelected ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                                  },
+                                ]}
+                              >
+                                {day}
+                              </Text>
+                            </View>
+
+                            {/* Floating Multi-Day Capsule Bar or Dot */}
+                            {topEvent ? (
+                              isMultiDay ? (
+                                <View
+                                  style={[
+                                    styles.floatingBar,
+                                    {
+                                      backgroundColor: TYPE_COLOR[topEvent.event_type] || C.brand,
+                                      borderTopLeftRadius: isBarStart ? 6 : 0,
+                                      borderBottomLeftRadius: isBarStart ? 6 : 0,
+                                      borderTopRightRadius: isBarEnd ? 6 : 0,
+                                      borderBottomRightRadius: isBarEnd ? 6 : 0,
+                                    },
+                                  ]}
+                                >
+                                  {isBarStart && (
+                                    <Text style={[styles.floatingBarText, { fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                                      {topEvent.title}
+                                    </Text>
+                                  )}
+                                </View>
+                              ) : (
+                                <View style={styles.dotRow}>
+                                  <View
+                                    style={[
+                                      styles.dot,
+                                      { backgroundColor: TYPE_COLOR[topEvent.event_type] || C.brand },
+                                    ]}
+                                  />
+                                </View>
+                              )
+                            ) : (
+                              <View style={styles.emptyDotPlaceholder} />
+                            )}
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  ))}
+                </View>
+
+                {/* Day Inspector Card (Displays Selected Date Details) */}
+                <View style={[styles.inspectorCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+                  <View style={styles.inspectorHeader}>
+                    <Text style={[styles.inspectorDateText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                      {formatDateFull(selectedDate)}
+                    </Text>
+                    {selectedDate === todayStr && (
+                      <View style={[styles.todayTag, { backgroundColor: C.brand + '20' }]}>
+                        <Text style={[styles.todayTagText, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+                          {t.calendar2.today}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+
+                  {selectedDayEvents.length === 0 ? (
+                    <View style={styles.noEventsDay}>
+                      <Text style={[styles.noEventsDayTitle, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>
+                        {t.calendar2.regularDay}
+                      </Text>
+                      <Text style={[styles.noEventsDayText, { color: C.text3, fontFamily: FontFamily.jakartaRegular }]}>
+                        {t.calendar2.noSpecialEvents}
+                      </Text>
+                    </View>
+                  ) : (
+                    selectedDayEvents.map((ev) => (
+                      <View key={ev.id} style={[styles.dayEventItem, { borderColor: C.border2, backgroundColor: C.surface2 }]}>
+                        <View style={styles.dayEventTopRow}>
+                          <Text style={[styles.dayEventTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                            {ev.title}
+                          </Text>
+                          <Pill label={typeLabel(ev.event_type)} customColor={TYPE_COLOR[ev.event_type]} />
+                        </View>
+
+                        <Text style={[styles.dayEventDate, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
+                          {formatDate(ev.event_date)}
+                          {ev.end_date ? ` - ${formatDate(ev.end_date)}` : ''}
+                        </Text>
+
+                        {ev.description ? (
+                          <Text style={[styles.dayEventDesc, { color: C.text3, fontFamily: FontFamily.jakartaRegular }]}>
+                            {ev.description}
+                          </Text>
+                        ) : null}
+
+                        {/* Action Bar: Google Calendar + Section Routine */}
+                        <View style={styles.dayEventActions}>
+                          <TouchableOpacity
+                            style={[styles.gCalBtn, { backgroundColor: C.brand }]}
+                            onPress={() => {
+                              const url = makeGoogleCalendarUrl(ev.title, ev.event_date, ev.end_date, ev.description);
+                              openUrl(url);
+                            }}
+                            activeOpacity={0.8}
+                          >
+                            <Feather name="calendar" size={13} color="#ffffff" />
+                            <Text style={[styles.gCalBtnText, { fontFamily: FontFamily.jakartaBold }]}>
+                              {t.calendar2.addToGoogleCalendar}
+                            </Text>
+                          </TouchableOpacity>
+
+                          {ev.event_type === 'exam' && (
+                            <TouchableOpacity
+                              style={[styles.routineLinkBtn, { borderColor: C.border }]}
+                              onPress={() => navigation.navigate('RoutinesBrowse')}
+                              activeOpacity={0.7}
+                            >
+                              <Feather name="list" size={13} color={C.text2} />
+                              <Text style={[styles.routineLinkText, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>
+                                {t.calendar2.viewRoutines}
+                              </Text>
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      </View>
+                    ))
+                  )}
+                </View>
+
+                {/* Month Agenda List */}
+                <View style={styles.monthListHeader}>
+                  <Text style={[styles.sectionHeading, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    {MONTHS[month]} Schedule
+                  </Text>
+                  <Text style={[styles.eventCountText, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                    {filteredMonthEvents.length} events
                   </Text>
                 </View>
-              ) : (
-                selectedDayEvents.map((ev) => (
-                  <View key={ev.id} style={[styles.dayEventItem, { borderColor: C.border2, backgroundColor: C.surface2 }]}>
-                    <View style={styles.dayEventTopRow}>
-                      <Text style={[styles.dayEventTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                        {ev.title}
-                      </Text>
-                      <Pill label={typeLabel(ev.event_type)} customColor={TYPE_COLOR[ev.event_type]} />
-                    </View>
 
-                    <Text style={[styles.dayEventDate, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
-                      {formatDate(ev.event_date)}
-                      {ev.end_date ? ` - ${formatDate(ev.end_date)}` : ''}
+                {filteredMonthEvents.length === 0 ? (
+                  <View style={[styles.emptyBox, { borderColor: C.border }]}>
+                    <Feather name="calendar" size={28} color={C.textMuted} />
+                    <Text style={[styles.emptyBoxText, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                      {t.calendar2.noEventsForFilter}
                     </Text>
-
-                    {ev.description ? (
-                      <Text style={[styles.dayEventDesc, { color: C.text3, fontFamily: FontFamily.jakartaRegular }]}>
-                        {ev.description}
-                      </Text>
-                    ) : null}
-
-                    {/* Action Bar: Google Calendar + Section Routine */}
-                    <View style={styles.dayEventActions}>
-                      <TouchableOpacity
-                        style={[styles.gCalBtn, { backgroundColor: C.brand }]}
-                        onPress={() => {
-                          const url = makeGoogleCalendarUrl(ev.title, ev.event_date, ev.end_date, ev.description);
-                          openUrl(url);
-                        }}
-                        activeOpacity={0.8}
-                      >
-                        <Feather name="calendar" size={13} color="#ffffff" />
-                        <Text style={[styles.gCalBtnText, { fontFamily: FontFamily.jakartaBold }]}>
-                          {t.calendar2.addToGoogleCalendar}
-                        </Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity
-                        style={[styles.routineLinkBtn, { borderColor: C.border }]}
-                        onPress={() => navigation.navigate('RoutinesBrowse')}
-                        activeOpacity={0.7}
-                      >
-                        <Feather name="list" size={13} color={C.text2} />
-                        <Text style={[styles.routineLinkText, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>
-                          {t.calendar2.viewRoutines}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
                   </View>
-                ))
-              )}
-            </View>
-
-            {/* 8. Full Month Agenda List */}
-            <View style={styles.monthListHeader}>
-              <Text style={[styles.sectionHeading, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                {MONTHS[month]} Schedule
-              </Text>
-              <Text style={[styles.eventCountText, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                {filteredMonthEvents.length} events
-              </Text>
-            </View>
-
-            {filteredMonthEvents.length === 0 ? (
-              <View style={[styles.emptyBox, { borderColor: C.border }]}>
-                <Feather name="calendar" size={28} color={C.textMuted} />
-                <Text style={[styles.emptyBoxText, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                  {t.calendar2.noEventsForFilter}
-                </Text>
-              </View>
+                ) : (
+                  filteredMonthEvents.map((ev) => (
+                    <TouchableOpacity
+                      key={ev.id}
+                      style={[styles.eventCard, { backgroundColor: C.surface, borderColor: C.border }]}
+                      onPress={() => {
+                        setSelectedDate(ev.event_date);
+                        if (isAdmin) openEdit(ev);
+                      }}
+                      onLongPress={() => (isAdmin ? handleDelete(ev) : undefined)}
+                      activeOpacity={0.75}
+                    >
+                      <View style={[styles.eventStripe, { backgroundColor: TYPE_COLOR[ev.event_type] }]} />
+                      <View style={styles.eventContent}>
+                        <View style={styles.eventTopRow}>
+                          <Text style={[styles.eventTitle, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]} numberOfLines={1}>
+                            {ev.title}
+                          </Text>
+                          <Pill label={typeLabel(ev.event_type)} customColor={TYPE_COLOR[ev.event_type]} />
+                        </View>
+                        <Text style={[styles.eventDate, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
+                          {formatDate(ev.event_date)}
+                          {ev.end_date ? ` - ${formatDate(ev.end_date)}` : ''}
+                        </Text>
+                        {ev.description ? (
+                          <Text style={[styles.eventDesc, { color: C.text3, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={2}>
+                            {ev.description}
+                          </Text>
+                        ) : null}
+                      </View>
+                    </TouchableOpacity>
+                  ))
+                )}
+              </>
             ) : (
-              filteredMonthEvents.map((ev) => (
-                <TouchableOpacity
-                  key={ev.id}
-                  style={[styles.eventCard, { backgroundColor: C.surface, borderColor: C.border }]}
-                  onPress={() => {
-                    setSelectedDate(ev.event_date);
-                    if (isAdmin) openEdit(ev);
-                  }}
-                  onLongPress={() => (isAdmin ? handleDelete(ev) : undefined)}
-                  activeOpacity={0.75}
-                >
-                  <View style={[styles.eventStripe, { backgroundColor: TYPE_COLOR[ev.event_type] }]} />
-                  <View style={styles.eventContent}>
-                    <View style={styles.eventTopRow}>
-                      <Text style={[styles.eventTitle, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]} numberOfLines={1}>
-                        {ev.title}
-                      </Text>
-                      <Pill label={typeLabel(ev.event_type)} customColor={TYPE_COLOR[ev.event_type]} />
+              /* =================================================================== */
+              /* VIEW B: TIMELINE ROADMAP MODE                                       */
+              /* =================================================================== */
+              <View style={styles.timelineContainer}>
+                {filteredTimelineEvents.map((ev) => {
+                  const isPast = (ev.end_date || ev.event_date) < todayStr;
+                  const isOngoing = ev.event_date <= todayStr && (ev.end_date || ev.event_date) >= todayStr;
+                  const targetDate = new Date(ev.event_date + 'T00:00:00');
+                  const todayDate = new Date(todayStr + 'T00:00:00');
+                  const diffDays = Math.ceil((targetDate.getTime() - todayDate.getTime()) / (1000 * 60 * 60 * 24));
+
+                  return (
+                    <View
+                      key={ev.id}
+                      style={[
+                        styles.timelineCard,
+                        {
+                          backgroundColor: C.surface,
+                          borderColor: isOngoing ? C.brand : C.border,
+                          opacity: isPast ? 0.75 : 1,
+                        },
+                      ]}
+                    >
+                      <View style={[styles.timelineStripe, { backgroundColor: TYPE_COLOR[ev.event_type] }]} />
+
+                      <View style={styles.timelineContent}>
+                        <View style={styles.timelineHeaderRow}>
+                          <View style={[styles.timelineDateBadge, { backgroundColor: C.surface2 }]}>
+                            <Text style={[styles.timelineDateText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                              {formatDate(ev.event_date)}
+                              {ev.end_date ? ` - ${formatDate(ev.end_date)}` : ''}
+                            </Text>
+                          </View>
+
+                          {isOngoing ? (
+                            <View style={[styles.statusBadge, { backgroundColor: C.success + '20', borderColor: C.success }]}>
+                              <Text style={[styles.statusBadgeText, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
+                                {t.calendar2.ongoing}
+                              </Text>
+                            </View>
+                          ) : isPast ? (
+                            <View style={[styles.statusBadge, { backgroundColor: C.surface2, borderColor: C.border2 }]}>
+                              <Text style={[styles.statusBadgeText, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
+                                {t.calendar2.completed}
+                              </Text>
+                            </View>
+                          ) : (
+                            <View style={[styles.statusBadge, { backgroundColor: C.brand + '20', borderColor: C.brand }]}>
+                              <Text style={[styles.statusBadgeText, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+                                {diffDays === 1 ? t.calendar2.startsTomorrow : `${t.calendar2.startsIn} ${diffDays}d`}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+
+                        <Text style={[styles.timelineTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                          {ev.title}
+                        </Text>
+
+                        {ev.description ? (
+                          <Text style={[styles.timelineDesc, { color: C.text2, fontFamily: FontFamily.jakartaRegular }]}>
+                            {ev.description}
+                          </Text>
+                        ) : null}
+
+                        <View style={styles.timelineActions}>
+                          <Pill label={typeLabel(ev.event_type)} customColor={TYPE_COLOR[ev.event_type]} />
+
+                          <TouchableOpacity
+                            style={[styles.timelineGCalBtn, { borderColor: C.border }]}
+                            onPress={() => {
+                              const url = makeGoogleCalendarUrl(ev.title, ev.event_date, ev.end_date, ev.description);
+                              openUrl(url);
+                            }}
+                            activeOpacity={0.75}
+                          >
+                            <Feather name="calendar" size={12} color={C.text2} />
+                            <Text style={[styles.timelineGCalText, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>
+                              Google Cal
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
                     </View>
-                    <Text style={[styles.eventDate, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
-                      {formatDate(ev.event_date)}
-                      {ev.end_date ? ` - ${formatDate(ev.end_date)}` : ''}
-                    </Text>
-                    {ev.description ? (
-                      <Text style={[styles.eventDesc, { color: C.text3, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={2}>
-                        {ev.description}
-                      </Text>
-                    ) : null}
-                  </View>
-                </TouchableOpacity>
-              ))
+                  );
+                })}
+              </View>
             )}
           </View>
         </ScrollView>
@@ -873,7 +1233,7 @@ export function AcademicCalendarScreen({ navigation }: any) {
               </View>
 
               <Text style={[styles.docMetaNote, { color: C.text2, fontFamily: FontFamily.jakartaRegular }]}>
-                Complete 2-page institutional document for {SEMESTER_NAME}. Contains all official term dates, installment schedules, waiver periods, and exam dates signed by the Registrar.
+                Complete 2-page institutional document for {selectedSemester.name}. Contains all official term dates, installment schedules, waiver periods, and exam dates signed by the Registrar.
               </Text>
 
               {/* Action Buttons Row */}
@@ -907,7 +1267,7 @@ export function AcademicCalendarScreen({ navigation }: any) {
               <View style={styles.summaryHeader}>
                 <Feather name="bookmark" size={16} color={C.brand} />
                 <Text style={[styles.summaryTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                  Registrar Key Deadlines Summary
+                  Registrar Key Deadlines Summary ({selectedSemester.name})
                 </Text>
               </View>
 
@@ -916,7 +1276,7 @@ export function AcademicCalendarScreen({ navigation }: any) {
                   1st Installment Fee
                 </Text>
                 <Text style={[styles.summaryItemVal, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                  06 May - 22 May 2026
+                  {selectedSemester.id === 'fall-2026' ? '05 Sep - 24 Sep 2026' : '06 May - 22 May 2026'}
                 </Text>
               </View>
 
@@ -925,7 +1285,7 @@ export function AcademicCalendarScreen({ navigation }: any) {
                   Course Add/Drop Deadline
                 </Text>
                 <Text style={[styles.summaryItemVal, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                  21 May 2026
+                  {selectedSemester.id === 'fall-2026' ? '24 September 2026' : '21 May 2026'}
                 </Text>
               </View>
 
@@ -934,7 +1294,7 @@ export function AcademicCalendarScreen({ navigation }: any) {
                   Midterm Examination
                 </Text>
                 <Text style={[styles.summaryItemVal, { color: Accent.amber, fontFamily: FontFamily.jakartaBold }]}>
-                  25 June - 03 July 2026
+                  {selectedSemester.id === 'fall-2026' ? '05 Nov - 14 Nov 2026' : '25 June - 03 July 2026'}
                 </Text>
               </View>
 
@@ -943,7 +1303,7 @@ export function AcademicCalendarScreen({ navigation }: any) {
                   Final Examination
                 </Text>
                 <Text style={[styles.summaryItemVal, { color: Accent.amber, fontFamily: FontFamily.jakartaBold }]}>
-                  22 Aug - 30 Aug 2026
+                  {selectedSemester.id === 'fall-2026' ? '07 Jan - 16 Jan 2027' : '22 Aug - 30 Aug 2026'}
                 </Text>
               </View>
 
@@ -952,7 +1312,7 @@ export function AcademicCalendarScreen({ navigation }: any) {
                   Final Results Publication
                 </Text>
                 <Text style={[styles.summaryItemVal, { color: Accent.blue, fontFamily: FontFamily.jakartaBold }]}>
-                  03 September 2026
+                  {selectedSemester.id === 'fall-2026' ? '21 January 2027' : '03 September 2026'}
                 </Text>
               </View>
             </View>
@@ -978,18 +1338,77 @@ export function AcademicCalendarScreen({ navigation }: any) {
         </ScrollView>
       )}
 
-      {/* 9. Native In-App PDF Viewer Modal */}
+      {/* 6. Semester Switcher Modal */}
+      <Modal visible={semesterModalVisible} animationType="fade" transparent>
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setSemesterModalVisible(false)}
+        >
+          <View style={[styles.pickerSheet, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <View style={styles.pickerHeader}>
+              <Text style={[styles.pickerTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                Select Academic Semester
+              </Text>
+              <TouchableOpacity onPress={() => setSemesterModalVisible(false)} hitSlop={10}>
+                <Feather name="x" size={20} color={C.text3} />
+              </TouchableOpacity>
+            </View>
+
+            {SEMESTER_CONFIGS.map((sem) => {
+              const isSelected = selectedSemester.id === sem.id;
+              const isCurrent = todayStr >= sem.startDate && todayStr <= sem.endDate;
+              return (
+                <TouchableOpacity
+                  key={sem.id}
+                  style={[
+                    styles.semesterChoiceItem,
+                    {
+                      backgroundColor: isSelected ? C.brand + '18' : C.surface2,
+                      borderColor: isSelected ? C.brand : C.border,
+                    },
+                  ]}
+                  onPress={() => handleSelectSemester(sem)}
+                  activeOpacity={0.8}
+                >
+                  <View style={{ flex: 1 }}>
+                    <View style={styles.semesterChoiceTop}>
+                      <Text style={[styles.semesterChoiceName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                        {sem.name}
+                      </Text>
+                      {isCurrent && (
+                        <View style={[styles.activeTermPill, { backgroundColor: C.success + '20' }]}>
+                          <Text style={[styles.activeTermText, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
+                            Active
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={[styles.semesterChoiceDates, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
+                      {sem.startDate} to {sem.endDate} · {sem.events.length} Events
+                    </Text>
+                  </View>
+
+                  {isSelected && <Feather name="check-circle" size={18} color={C.brand} />}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* 7. Native In-App PDF Viewer Modal */}
       <CampusPdfViewerModal
         visible={pdfModalVisible}
         onClose={() => setPdfModalVisible(false)}
         title={t.calendar2.title}
-        subtitle={`${SEMESTER_NAME} Registrar Circular`}
+        subtitle={`${selectedSemester.name} Registrar Circular`}
         category="Academic Calendar"
         fileUrl={calendarPdfUrl}
         fileName="bubt-academic-calendar-summer-2026.pdf"
       />
 
-      {/* 10. Admin Add/Edit Modal */}
+      {/* 8. Admin Add/Edit Modal */}
       <Modal visible={modalVisible} animationType="slide" transparent>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.modalOverlay}>
           <View style={[styles.modalSheet, { backgroundColor: C.surface }]}>
@@ -998,16 +1417,11 @@ export function AcademicCalendarScreen({ navigation }: any) {
                 {editEvent ? t.calendar2.editEvent : t.calendar2.addEvent}
               </Text>
               <TouchableOpacity onPress={() => setModalVisible(false)} hitSlop={8}>
-                <Icon name="x" size={22} color={C.text2} />
+                <Feather name="x" size={20} color={C.text3} />
               </TouchableOpacity>
             </View>
 
-            <ScrollView
-              showsVerticalScrollIndicator={false}
-              keyboardDismissMode="on-drag"
-              keyboardShouldPersistTaps="handled"
-              contentContainerStyle={{ paddingBottom: 24 }}
-            >
+            <ScrollView contentContainerStyle={styles.modalBody}>
               <Text style={[styles.fieldLabel, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
                 {t.calendar2.eventTitle}
               </Text>
@@ -1022,15 +1436,15 @@ export function AcademicCalendarScreen({ navigation }: any) {
               <Text style={[styles.fieldLabel, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
                 {t.calendar2.eventType}
               </Text>
-              <View style={styles.typeRow}>
-                {EVENT_TYPES.filter((ty) => ty !== 'all').map((ty) => (
+              <View style={styles.typeSelector}>
+                {(['general', 'holiday', 'exam', 'semester'] as const).map((ty) => (
                   <TouchableOpacity
                     key={ty}
                     style={[
                       styles.typeChip,
                       {
+                        backgroundColor: fType === ty ? TYPE_COLOR[ty] + '20' : C.surface2,
                         borderColor: fType === ty ? TYPE_COLOR[ty] : C.border,
-                        backgroundColor: fType === ty ? TYPE_COLOR[ty] + '18' : C.surface2,
                       },
                     ]}
                     onPress={() => setFType(ty)}
@@ -1040,7 +1454,7 @@ export function AcademicCalendarScreen({ navigation }: any) {
                         styles.typeChipText,
                         {
                           color: fType === ty ? TYPE_COLOR[ty] : C.text2,
-                          fontFamily: FontFamily.jakartaMedium,
+                          fontFamily: fType === ty ? FontFamily.jakartaBold : FontFamily.jakartaRegular,
                         },
                       ]}
                     >
@@ -1112,94 +1526,235 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { paddingBottom: 32 },
   pdfTabScroll: { paddingBottom: 40 },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  pdfCapsuleBtn: {
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+
+  semesterPillBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
+    gap: 4,
+    paddingHorizontal: 9,
     height: 32,
     borderRadius: 9,
     borderWidth: 1,
   },
-  pdfCapsuleTxt: { fontSize: 12.5 },
+  semesterPillTxt: { fontSize: 12 },
 
-  // Hero Milestone Card
-  heroCard: {
+  pdfCapsuleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 9,
+    height: 32,
+    borderRadius: 9,
+    borderWidth: 1,
+  },
+  pdfCapsuleTxt: { fontSize: 12 },
+
+  // Master Semester Roadmap Ribbon
+  roadmapCard: {
     borderRadius: Radius.lg,
     borderWidth: 1,
     padding: Spacing[4],
     marginBottom: Spacing[3],
   },
-  heroTopRow: {
+  roadmapHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    justifyContent: 'space-between',
+    marginBottom: Spacing[3],
   },
-  heroIconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+  roadmapHeaderLeft: {
+    gap: 2,
   },
-  heroLabel: {
-    fontSize: 10.5,
+  roadmapLabel: {
+    fontSize: 10,
     letterSpacing: 0.5,
-    marginBottom: 2,
   },
-  heroTitle: {
+  roadmapSemesterTitle: {
     fontSize: FontSize.md,
   },
-  heroBadge: {
+  weekPill: {
     paddingHorizontal: 9,
-    paddingVertical: 4.5,
+    paddingVertical: 4,
     borderRadius: Radius.full,
     borderWidth: 1,
   },
-  heroBadgeText: {
+  weekPillText: {
     fontSize: 11,
   },
-  progressContainer: {
-    marginTop: Spacing[3],
+  ganttTrackContainer: {
+    position: 'relative',
+    marginVertical: Spacing[2],
   },
-  progressTrack: {
+  ganttTrack: {
+    height: 10,
+    borderRadius: 5,
+    flexDirection: 'row',
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  ganttSegment: {
+    height: '100%',
+  },
+  ganttActiveFill: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    bottom: 0,
+    borderRadius: 5,
+    opacity: 0.45,
+  },
+  pinWrapper: {
+    position: 'absolute',
+    top: -24,
+    alignItems: 'center',
+    transform: [{ translateX: -16 }],
+  },
+  pinPill: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  pinText: {
+    color: '#ffffff',
+    fontSize: 9.5,
+  },
+  pinArrow: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 4,
+    borderRightWidth: 4,
+    borderTopWidth: 4,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+  },
+  phasesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: Spacing[2],
+  },
+  phaseLegendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  legendDot: {
+    width: 6,
     height: 6,
     borderRadius: 3,
-    overflow: 'hidden',
   },
-  progressFill: {
-    height: '100%',
-    borderRadius: 3,
+  phaseLegendText: {
+    fontSize: 11,
   },
-  progressLabelRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 6,
-  },
-  progressText: {
-    fontSize: 11.5,
-  },
-  phaseText: {
+  phaseCurrentNote: {
+    marginLeft: 'auto',
     fontSize: 11,
   },
 
-  // Category Filter Row
-  filterRow: {
+  // 2 Radar Cards
+  radarsContainer: {
+    gap: Spacing[3],
+    marginBottom: Spacing[3],
+  },
+  radarCard: {
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    padding: Spacing[3] + 2,
+  },
+  radarTopRow: {
     flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6,
+  },
+  radarIconBox: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radarCategoryLabel: {
+    fontSize: 10.5,
+    letterSpacing: 0.5,
+  },
+  radarBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3.5,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+  },
+  radarBadgeText: {
+    fontSize: 10.5,
+  },
+  radarTitle: {
+    fontSize: FontSize.base,
+    marginBottom: 3,
+  },
+  radarDateSpan: {
+    fontSize: FontSize.xs,
+  },
+  holidayMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 2,
+  },
+  holidayCountText: {
+    fontSize: 11.5,
+  },
+  readinessContainer: {
+    marginTop: Spacing[2],
+    gap: 4,
+  },
+  readinessTrack: {
+    height: 5,
+    borderRadius: 2.5,
+    overflow: 'hidden',
+  },
+  readinessFill: {
+    height: '100%',
+    borderRadius: 2.5,
+  },
+  readinessText: {
+    fontSize: 10.5,
+  },
+
+  // Controls & Filters Row
+  controlsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
     marginBottom: Spacing[3],
   },
+  filterRow: {
+    flexDirection: 'row',
+    gap: 7,
+  },
   filterChip: {
-    paddingHorizontal: 14,
-    height: 36,
-    borderRadius: 18,
+    paddingHorizontal: 12,
+    height: 32,
+    borderRadius: 16,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   filterChipText: {
-    fontSize: 12.5,
+    fontSize: 12,
+  },
+  viewToggleContainer: {
+    flexDirection: 'row',
+    borderWidth: 1,
+    borderRadius: Radius.full,
+    padding: 2,
+  },
+  viewToggleBtn: {
+    width: 32,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   // Month navigation row
@@ -1207,109 +1762,152 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: Spacing[2],
+    paddingVertical: Spacing[1],
     marginBottom: Spacing[2],
   },
   monthSelector: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
   },
   navArrow: {
     padding: 4,
   },
   monthLabel: {
-    fontSize: FontSize.lg,
+    fontSize: FontSize.md,
   },
   todaySnapBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    paddingHorizontal: 10,
-    height: 32,
-    borderRadius: 16,
+    paddingHorizontal: 9,
+    height: 30,
+    borderRadius: 15,
     borderWidth: 1,
   },
   todaySnapTxt: {
-    fontSize: 12,
+    fontSize: 11.5,
+  },
+
+  // Zero-Events Helper Banner
+  zeroEventsBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: Spacing[3],
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    marginBottom: Spacing[2],
+  },
+  zeroEventsText: {
+    flex: 1,
+    fontSize: 11.5,
+  },
+  zeroJumpBtn: {
+    paddingHorizontal: 9,
+    paddingVertical: 4.5,
+    borderRadius: 6,
+  },
+  zeroJumpText: {
+    fontSize: 11,
   },
 
   // Calendar Grid
   calendarCard: {
     borderRadius: Radius.lg,
     borderWidth: 1,
-    padding: Spacing[3],
+    padding: Spacing[2],
     marginBottom: Spacing[3],
   },
   dayHeader: {
     flexDirection: 'row',
-    marginBottom: Spacing[2],
+    marginBottom: Spacing[1],
   },
   dayLabel: {
     flex: 1,
     textAlign: 'center',
-    fontSize: FontSize.xs,
+    fontSize: 11,
   },
   weekRow: {
     flexDirection: 'row',
+    minHeight: 52,
   },
   dayCell: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 5,
-    minHeight: 46,
+    paddingVertical: 3,
+    minHeight: 52,
+    justifyContent: 'space-between',
   },
   dayCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
   },
   dayNum: {
-    fontSize: FontSize.sm,
+    fontSize: 12.5,
+  },
+  floatingBar: {
+    width: '100%',
+    height: 14,
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+    marginTop: 2,
+  },
+  floatingBarText: {
+    color: '#ffffff',
+    fontSize: 8.5,
   },
   dotRow: {
     flexDirection: 'row',
-    gap: 2,
-    marginTop: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 14,
   },
   dot: {
-    width: 4.5,
-    height: 4.5,
+    width: 5,
+    height: 5,
     borderRadius: 2.5,
+  },
+  emptyDotPlaceholder: {
+    height: 14,
   },
 
   // Inspector Card
   inspectorCard: {
     borderRadius: Radius.lg,
     borderWidth: 1,
-    padding: Spacing[4],
-    marginBottom: Spacing[4],
+    padding: Spacing[3] + 2,
+    marginBottom: Spacing[3],
   },
   inspectorHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: Spacing[3],
+    marginBottom: Spacing[2],
   },
   inspectorDateText: {
-    fontSize: FontSize.base,
+    fontSize: FontSize.sm + 1,
   },
   todayTag: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
+    borderRadius: 6,
   },
   todayTagText: {
-    fontSize: 11,
+    fontSize: 10.5,
   },
   noEventsDay: {
-    paddingVertical: Spacing[2],
+    paddingVertical: Spacing[1],
+  },
+  noEventsDayTitle: {
+    fontSize: FontSize.sm,
+    marginBottom: 2,
   },
   noEventsDayText: {
-    fontSize: FontSize.sm,
+    fontSize: FontSize.xs,
   },
   dayEventItem: {
     borderRadius: Radius.md,
@@ -1324,7 +1922,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   dayEventTitle: {
-    fontSize: FontSize.base,
+    fontSize: FontSize.sm + 1,
     flex: 1,
     marginRight: 8,
   },
@@ -1333,8 +1931,8 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   dayEventDesc: {
-    fontSize: FontSize.sm,
-    marginBottom: Spacing[3],
+    fontSize: FontSize.xs,
+    marginBottom: Spacing[2],
   },
   dayEventActions: {
     flexDirection: 'row',
@@ -1346,25 +1944,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 12,
-    height: 34,
+    paddingHorizontal: 11,
+    height: 32,
     borderRadius: 8,
   },
   gCalBtnText: {
     color: '#ffffff',
-    fontSize: 11.5,
+    fontSize: 11,
   },
   routineLinkBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
     paddingHorizontal: 10,
-    height: 34,
+    height: 32,
     borderRadius: 8,
     borderWidth: 1,
   },
   routineLinkText: {
-    fontSize: 11.5,
+    fontSize: 11,
   },
 
   // Month Agenda List
@@ -1375,7 +1973,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing[2],
   },
   sectionHeading: {
-    fontSize: FontSize.base,
+    fontSize: FontSize.sm + 1,
   },
   eventCountText: {
     fontSize: FontSize.xs,
@@ -1383,14 +1981,14 @@ const styles = StyleSheet.create({
   emptyBox: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 32,
+    paddingVertical: 24,
     borderRadius: Radius.md,
     borderWidth: 1,
     borderStyle: 'dashed',
-    gap: 8,
+    gap: 6,
   },
   emptyBoxText: {
-    fontSize: FontSize.sm,
+    fontSize: FontSize.xs,
   },
   eventCard: {
     flexDirection: 'row',
@@ -1413,20 +2011,87 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   eventTitle: {
-    fontSize: FontSize.md,
+    fontSize: FontSize.sm,
     flex: 1,
     marginRight: 8,
   },
   eventDate: {
-    fontSize: FontSize.sm,
-    marginBottom: 2,
+    fontSize: FontSize.xs,
+    marginBottom: 3,
   },
   eventDesc: {
-    fontSize: FontSize.sm,
-    marginTop: 4,
+    fontSize: FontSize.xs,
   },
 
-  // TAB 2: PDF Tab Styles
+  // Timeline Roadmap Mode
+  timelineContainer: {
+    gap: Spacing[2],
+    marginBottom: Spacing[3],
+  },
+  timelineCard: {
+    flexDirection: 'row',
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  timelineStripe: {
+    width: 4,
+  },
+  timelineContent: {
+    flex: 1,
+    padding: Spacing[3],
+  },
+  timelineHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  timelineDateBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  timelineDateText: {
+    fontSize: 11,
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2.5,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+  },
+  statusBadgeText: {
+    fontSize: 10,
+  },
+  timelineTitle: {
+    fontSize: FontSize.sm + 1,
+    marginBottom: 4,
+  },
+  timelineDesc: {
+    fontSize: FontSize.xs,
+    marginBottom: 8,
+  },
+  timelineActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 4,
+  },
+  timelineGCalBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    height: 26,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  timelineGCalText: {
+    fontSize: 10.5,
+  },
+
+  // PDF Tab Styles
   provenanceCard: {
     borderRadius: Radius.lg,
     borderWidth: 1,
@@ -1437,38 +2102,37 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    marginBottom: Spacing[3],
+    marginBottom: Spacing[2],
   },
   docIconBox: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   provenanceTitle: {
-    fontSize: FontSize.lg,
+    fontSize: FontSize.base,
   },
   provenanceSub: {
     fontSize: FontSize.xs,
-    marginTop: 2,
   },
   verifiedPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
     paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingVertical: 3,
+    borderRadius: Radius.full,
     borderWidth: 1,
   },
   verifiedTxt: {
     fontSize: 10.5,
   },
   docMetaNote: {
-    fontSize: FontSize.sm,
-    lineHeight: 20,
-    marginBottom: Spacing[4],
+    fontSize: FontSize.xs,
+    lineHeight: 18,
+    marginBottom: Spacing[3],
   },
   pdfBtnRow: {
     flexDirection: 'row',
@@ -1480,28 +2144,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 7,
-    height: 48,
-    borderRadius: 14,
+    gap: 8,
+    height: 40,
+    borderRadius: Radius.md,
   },
   primaryReaderBtnText: {
     color: '#ffffff',
-    fontSize: FontSize.sm,
+    fontSize: 13,
   },
   secondaryPdfBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     gap: 6,
-    height: 48,
-    paddingHorizontal: 16,
-    borderRadius: 14,
+    paddingHorizontal: 14,
+    height: 40,
+    borderRadius: Radius.md,
     borderWidth: 1,
   },
   secondaryPdfBtnText: {
-    fontSize: FontSize.sm,
+    fontSize: 12.5,
   },
-
   summaryCard: {
     borderRadius: Radius.lg,
     borderWidth: 1,
@@ -1513,54 +2175,149 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     marginBottom: Spacing[3],
-    paddingBottom: Spacing[2],
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.06)',
   },
   summaryTitle: {
-    fontSize: FontSize.base,
+    fontSize: FontSize.sm + 1,
   },
   summaryItem: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
+    justifyContent: 'space-between',
+    paddingVertical: 7,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(150, 150, 150, 0.2)',
   },
   summaryItemLabel: {
-    fontSize: FontSize.sm,
+    fontSize: FontSize.xs,
   },
   summaryItemVal: {
-    fontSize: FontSize.sm,
+    fontSize: FontSize.xs,
   },
-
   tapDocumentBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    padding: Spacing[4],
-    borderRadius: Radius.lg,
+    padding: Spacing[3] + 2,
+    borderRadius: Radius.md,
     borderWidth: 1,
-    marginBottom: Spacing[4],
   },
   bannerTitle: {
-    fontSize: FontSize.base,
+    fontSize: FontSize.sm,
   },
   bannerSub: {
-    fontSize: FontSize.xs,
-    marginTop: 2,
+    fontSize: 11,
   },
 
-  // Modal Sheet
-  modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
-  modalSheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: Layout.screenPadding, maxHeight: '85%' },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing[4] },
-  modalTitle: { fontSize: FontSize['2xl'] },
-  fieldLabel: { fontSize: FontSize.xs, letterSpacing: 0.5, marginBottom: Spacing[1], marginTop: Spacing[3] },
-  input: { height: Layout.inputHeight, borderRadius: Radius.sm, borderWidth: 1, paddingHorizontal: Spacing[3], fontSize: FontSize.base },
-  multiline: { height: 90, paddingTop: Spacing[2], textAlignVertical: 'top' },
-  typeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing[2] },
-  typeChip: { paddingHorizontal: Spacing[3], paddingVertical: Spacing[2], borderRadius: Radius.full, borderWidth: 1 },
-  typeChipText: { fontSize: FontSize.sm },
-  saveBtn: { height: Layout.inputHeight, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center', marginTop: Spacing[5] },
-  saveBtnText: { color: '#fff', fontSize: FontSize.base },
+  // Semester Choice Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    justifyContent: 'center',
+    paddingHorizontal: Layout.screenPadding,
+  },
+  pickerSheet: {
+    borderRadius: Radius.xl,
+    borderWidth: 1,
+    padding: Spacing[4],
+    gap: 10,
+  },
+  pickerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  pickerTitle: {
+    fontSize: FontSize.base,
+  },
+  semesterChoiceItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing[3],
+    borderRadius: Radius.md,
+    borderWidth: 1,
+  },
+  semesterChoiceTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 2,
+  },
+  semesterChoiceName: {
+    fontSize: FontSize.base,
+  },
+  activeTermPill: {
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  activeTermText: {
+    fontSize: 10,
+  },
+  semesterChoiceDates: {
+    fontSize: FontSize.xs,
+  },
+
+  // Admin Modal
+  modalSheet: {
+    borderRadius: Radius.xl,
+    padding: Spacing[4],
+    maxHeight: '85%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing[3],
+  },
+  modalTitle: {
+    fontSize: FontSize.base,
+  },
+  modalBody: {
+    paddingBottom: Spacing[4],
+  },
+  fieldLabel: {
+    fontSize: 11,
+    letterSpacing: 0.5,
+    marginBottom: 4,
+    marginTop: Spacing[2],
+  },
+  input: {
+    height: 42,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    paddingHorizontal: Spacing[3],
+    fontSize: FontSize.sm,
+  },
+  multiline: {
+    height: 72,
+    paddingTop: Spacing[2],
+  },
+  typeSelector: {
+    flexDirection: 'row',
+    gap: 6,
+    marginVertical: 4,
+  },
+  typeChip: {
+    flex: 1,
+    height: 34,
+    borderRadius: Radius.sm,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  typeChipText: {
+    fontSize: 11,
+  },
+  saveBtn: {
+    height: 44,
+    borderRadius: Radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: Spacing[4],
+  },
+  saveBtnText: {
+    color: '#ffffff',
+    fontSize: FontSize.sm,
+  },
 });

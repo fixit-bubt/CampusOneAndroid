@@ -2303,35 +2303,41 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 
 ---
 
-## 49. Academic Calendar 2-Tab Redesign, Next Milestone Engine & Multi-Day Span Ribbons
+## 49. Academic Calendar Radar Upgrade, Semester Roadmap Ribbon & Dual-Mode Visuals
 
-### 49.1 58dp Dual-Tab Control Standard (`SegmentedTabs`)
-- **Structure:** Upgraded `AcademicCalendarScreen.tsx` with top 58dp `SegmentedTabs`:
-  - `tabCalendar` ("Calendar"): Interactive month grid, countdown hero milestone card, category chips (`All`, `Exams`, `Holidays`, `Academic`, `Fees & Admin`), and selected day inspector.
-  - `tabPdf` ("Official PDF"): Embedded high-resolution circular view of the official registrar document (`bubt-academic-calendar-summer-2026.pdf`), verified institutional seal, full-screen reader modal (`CampusPdfViewerModal`), and direct download/share actions.
+### 49.1 Multi-Semester Engine & Automatic Active Term Resolution (`academicCalendar.ts`)
+- **Semester Config Architecture (`SemesterConfig`):** Bundles structured terms with start/end boundaries, examination windows, and circular URLs:
+  - **Fall 2026 (Active):** 05 Sep 2026 to 31 Jan 2027 (Midterms: 05 Nov - 14 Nov 2026; Finals: 07 Jan - 16 Jan 2027; 26 official events including Durga Puja, Victory Day, and tuition installments).
+  - **Summer 2026 (Archived):** 06 May 2026 to 17 Sep 2026 (41 official events transcribed from Registrar circular).
+- **Auto-Detection (`getActiveSemester`):** Intelligently resolves the active term based on device date (`todayStr >= '2026-09-01'` selects Fall 2026), eliminating blank off-month screens when students open the app.
+- **Top Header Semester Picker:** 1-tap pill modal allows seamless switching between active and past semesters with instant cache hydration.
 
-### 49.2 Dynamic Next Milestone Engine & 14-Week Progress
-- **Milestone Countdown:** Scans all semester events starting from `todayStr`, automatically calculating:
-  - Ongoing events: `Ongoing today · <Title>`
-  - Upcoming events: `<N> days left · <Title>` with category color-coded icon badges.
-- **14-Week Term Tracker:** Standard BUBT semester progression:
-  - Pre-Midterm Phase (Weeks 1 to 7)
-  - Midterm Examination Phase (Weeks 7 to 8)
-  - Post-Midterm Phase (Weeks 9 to 13)
-  - Final Examination Phase (Weeks 14+)
-  - Animated progress bar showing percentage completion.
+### 49.2 Master Semester Roadmap Ribbon (Visual Gantt Bar)
+- **4-Segment Term Progress Bar:** Visually splits the 14-week term into distinct colored blocks:
+  - Pre-Midterm Classes (Weeks 1-7, Blue Accent)
+  - Midterm Examination Phase (Weeks 8, Amber Accent)
+  - Post-Midterm Classes (Weeks 9-13, Blue Accent)
+  - Final Examination Phase (Week 14, Red Accent)
+- **Interactive "You Are Here" Pointer:** Floating pin indicating current term percentage completion and week count (`Week X of 14 · X% Done`).
 
-### 49.3 Continuous Multi-Day Span Ribbons & Interactive Date Selection
-- **Multi-Day Range Highlighting:** Instead of isolated dots on start dates, multi-day exam weeks and vacations span across days as continuous soft tinted ribbons (`TYPE_COLOR + '18'`) with rounded start/end pill caps (`borderTopLeftRadius: 10`, `borderTopRightRadius: 10`).
-- **Interactive Day Inspector:** Tapping any date triggers a tactile spring bounce and updates the Day Inspector card below:
-  - Event details with category pill and date range badge.
-  - **1-Tap Add to Google Calendar:** Generates native Google Calendar URL template (`calendar.google.com/calendar/render?action=TEMPLATE&text=...&dates=...&location=BUBT`) opening Google Calendar natively.
-  - **Cross-Link to Section Routines:** Direct navigation jump to `RoutinesBrowseScreen`.
+### 49.3 Dual Visual Radar Cards (Instant At-A-Glance Answers)
+- **Upcoming Exam Radar (Amber Accent):**
+  - Scans for next upcoming examination block (Midterms or Finals).
+  - Displays countdown (`Starts in X days`, `Starts Tomorrow`, or `Ongoing`).
+  - Readiness progress bar shows preparation weeks completed towards the exam.
+- **Next Off-Day & Holiday Radar (Emerald/Green Accent):**
+  - Scans for upcoming vacations, government holidays, and university preparatory leaves.
+  - Duration pill (`N Days Off`) and countdown badge (`Starts in X days` / `Starts Tomorrow`).
 
-### 49.4 Official Registrar Data Pre-Seeding & Database Permissions
-- **All 41 Official Summer 2026 Events:** Extracted directly from official BUBT Registrar circular (`bubt-academic-calendar-summer-2026.pdf`) and bundled in `src/constants/academicCalendar.ts` for instant offline zero-latency hydration.
-- **Migration `20261026000000_academic_calendar_grants_and_seed.sql`:** Granted `SELECT` on `public.academic_calendar` to `anon` and `authenticated`, resolving PostgreSQL 42501 permission errors.
-- **PDF Viewer Engine Fix (`viewerHtml.ts`):** Fixed unescaped character class range error `q.split(/[\s,·/_ -]+/)` in pdf.js text search query parser.
+### 49.4 Floating Multi-Day Event Bars & Weekend Shading (Grid Mode)
+- **Floating Capsule Bars:** Continuous horizontal capsule bars span across days in the monthly grid with rounded start/end caps and flat connectors, displaying event titles directly inside the bar.
+- **Weekend Shading:** Friday and Saturday columns feature soft off-day styling so university off-days stand out naturally.
+- **Zero-Empty Helper Banner:** Displays a smart helper with 1-tap jump to the active semester schedule if an off-term month is selected.
+
+### 49.5 Chronological Timeline Mode & 58dp Dual-Tab Control
+- **Dual View Modes (`grid` vs `timeline`):** Segmented pill toggle switches between the 7-day monthly calendar and a vertical chronological roadmap feed with status badges (`Completed`, `Ongoing Today`, `Starts Tomorrow`, `In X days`).
+- **58dp Dual-Tab Control (`SegmentedTabs`):** Full feature parity between `tabCalendar` (Interactive Radar) and `tabPdf` (Official Registrar Circular streaming via `CampusPdfViewerModal` with provenance verification and key deadlines summary).
+- **1-Tap Google Calendar Sync & Routines Jump:** Direct `openUrl` integration with Google Calendar TEMPLATE URLs and cross-linking to `RoutinesBrowseScreen`.
 
 ---
 
