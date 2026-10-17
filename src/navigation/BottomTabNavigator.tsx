@@ -1,9 +1,10 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   View,
   Text,
   Pressable,
   Animated,
+  Easing,
   StyleSheet,
   useWindowDimensions,
 } from 'react-native';
@@ -18,7 +19,6 @@ import { useAuth } from '../store/authStore';
 import { useTheme } from '../hooks/useTheme';
 import { useMessages } from '../store/messagesStore';
 import { useT } from '../i18n';
-import { AnimatedIcon } from '../components/ui/AnimatedIcon';
 import { FontFamily } from '../theme';
 import type { BottomTabParams } from '../types/navigation';
 
@@ -47,12 +47,9 @@ const TAB_ICON: Record<keyof BottomTabParams, FeatherName> = {
 function BottomNavBackdrop({ width, height }: { width: number; height: number }) {
   const w = width;
   const h = height;
-  const r = 20; // rounded outer shoulder radius stays!
+  const r = 20;
 
-  // Left rounded shoulder -> clean flat top line across the entire middle -> right rounded shoulder -> bottom
   const bgPath = `M 0,${r} A ${r} ${r} 0 0 1 ${r},0 L ${w - r},0 A ${r} ${r} 0 0 1 ${w},${r} L ${w},${h} L 0,${h} Z`;
-
-  // Continuous top rim highlight stroke (clean crisp glass edge)
   const rimPath = `M 0,${r} A ${r} ${r} 0 0 1 ${r},0 L ${w - r},0 A ${r} ${r} 0 0 1 ${w},${r}`;
 
   return (
@@ -64,10 +61,7 @@ function BottomNavBackdrop({ width, height }: { width: number; height: number })
         </SvgLinearGradient>
       </Defs>
 
-      {/* Entire navbar background */}
       <Path d={bgPath} fill="url(#navBgGrad)" />
-
-      {/* Clean crisp top border line */}
       <Path
         d={rimPath}
         stroke="rgba(255, 255, 255, 0.16)"
@@ -79,7 +73,7 @@ function BottomNavBackdrop({ width, height }: { width: number; height: number })
   );
 }
 
-// Standard Tab Item with active electric blue highlight & 120 FPS tap bounce
+// Clean Tab Item with zero bounce
 function StandardTabButton({
   label,
   iconName,
@@ -93,58 +87,21 @@ function StandardTabButton({
   badge?: number;
   onPress: () => void;
 }) {
-  const scale = useRef(new Animated.Value(1)).current;
-
-  const handlePressIn = () => {
-    Animated.spring(scale, {
-      toValue: 0.88,
-      tension: 400,
-      friction: 12,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const handlePress = () => {
-    Animated.sequence([
-      Animated.spring(scale, {
-        toValue: 1.15,
-        tension: 320,
-        friction: 7,
-        useNativeDriver: true,
-      }),
-      Animated.spring(scale, {
-        toValue: 1.0,
-        tension: 240,
-        friction: 9,
-        useNativeDriver: true,
-      }),
-    ]).start();
-    onPress();
-  };
-
   const activeColor = '#60a5fa'; // electric blue from website
   const inactiveColor = 'rgba(148, 163, 184, 0.50)'; // soft muted slate for high contrast
 
   return (
     <Pressable
-      onPress={handlePress}
-      onPressIn={handlePressIn}
+      onPress={onPress}
       style={styles.tabBtn}
       hitSlop={4}
     >
-      <Animated.View style={[styles.tabContent, { transform: [{ scale }] }]}>
-        <View
-          style={[
-            styles.iconWrap,
-            isFocused && styles.iconWrapActive,
-          ]}
-        >
-          <AnimatedIcon
-            key={`${iconName}-${isFocused}`}
+      <View style={styles.tabContent}>
+        <View style={styles.iconWrap}>
+          <Feather
             name={iconName}
             size={20}
             color={isFocused ? activeColor : inactiveColor}
-            animation={isFocused ? 'entrance' : 'none'}
           />
           {badge !== undefined && badge > 0 && (
             <View style={styles.tabBadge}>
@@ -165,7 +122,7 @@ function StandardTabButton({
         >
           {label}
         </Text>
-      </Animated.View>
+      </View>
     </Pressable>
   );
 }
@@ -186,13 +143,56 @@ function CustomBottomTabBar(props: BottomTabBarProps) {
   };
 
   const barHeight = 62 + Math.max(insets.bottom, 10);
+  const bottomPadding = Math.max(insets.bottom - 4, 6);
+
+  const numTabs = Math.max(state.routes.length, 1);
+  const rowPaddingH = 8;
+  const rowWidth = width - rowPaddingH * 2;
+  const tabWidth = rowWidth / numTabs;
+
+  const pillMarginH = 3;
+  const pillWidth = Math.max(tabWidth - pillMarginH * 2, 20);
+  const pillHeight = 50;
+  const pillTop = Math.max(Math.round((barHeight - bottomPadding - pillHeight) / 2), 4);
+
+  const translateX = useRef(new Animated.Value(state.index * tabWidth)).current;
+  const isFirstRender = useRef(true);
+
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      translateX.setValue(state.index * tabWidth);
+      return;
+    }
+    Animated.timing(translateX, {
+      toValue: state.index * tabWidth,
+      duration: 320,
+      easing: Easing.bezier(0.25, 1, 0.5, 1),
+      useNativeDriver: true,
+    }).start();
+  }, [state.index, tabWidth, translateX]);
 
   return (
     <View style={[styles.tabBarWrapper, { height: barHeight }]}>
       {/* 1-piece SVG canvas with rounded shoulders, flat top, and midnight navy gradient */}
       <BottomNavBackdrop width={width} height={barHeight} />
 
-      <View style={[styles.itemsRow, { height: barHeight, paddingBottom: Math.max(insets.bottom - 4, 6) }]}>
+      <View style={[styles.itemsRow, { height: barHeight, paddingBottom: bottomPadding }]}>
+        {/* Full-tab sliding blue indicator */}
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.slidingIndicator,
+            {
+              width: pillWidth,
+              height: pillHeight,
+              top: pillTop,
+              left: rowPaddingH + pillMarginH,
+              transform: [{ translateX }],
+            },
+          ]}
+        />
+
         {state.routes.map((route, index) => {
           const isFocused = state.index === index;
           const key = route.name as keyof BottomTabParams;
@@ -271,28 +271,29 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     paddingHorizontal: 8,
   },
+  slidingIndicator: {
+    position: 'absolute',
+    backgroundColor: 'rgba(96, 165, 250, 0.18)',
+    borderColor: 'rgba(96, 165, 250, 0.35)',
+    borderWidth: 1,
+    borderRadius: 14,
+  },
   tabBtn: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 4,
+    zIndex: 1,
   },
   tabContent: {
     alignItems: 'center',
     justifyContent: 'center',
   },
   iconWrap: {
-    width: 48,
-    height: 28,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'transparent',
+    width: 28,
+    height: 24,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  iconWrapActive: {
-    backgroundColor: 'rgba(96, 165, 250, 0.20)',
-    borderColor: 'rgba(96, 165, 250, 0.35)',
   },
   tabLabel: {
     fontSize: 10.5,
@@ -301,8 +302,8 @@ const styles = StyleSheet.create({
   },
   tabBadge: {
     position: 'absolute',
-    top: -2,
-    right: 2,
+    top: -3,
+    right: -4,
     minWidth: 14,
     height: 14,
     borderRadius: 7,

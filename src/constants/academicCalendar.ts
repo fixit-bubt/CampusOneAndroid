@@ -347,3 +347,267 @@ export const OFFICIAL_SUMMER_2026_EVENTS: AcademicEvent[] = [
     event_type: 'exam',
   },
 ];
+
+export const OFFICIAL_FALL_2026_EVENTS: AcademicEvent[] = [
+  {
+    id: 'bubt-fall26-01',
+    title: 'Orientation & commencement of classes',
+    description: 'Orientation and commencement of regular classes for Fall 2026.',
+    event_date: '2026-09-05',
+    end_date: null,
+    event_type: 'semester',
+  },
+  {
+    id: 'bubt-fall26-02',
+    title: '1st Installment Fees Payment',
+    description: 'Confirmation of registration by depositing at least Tk. 6,000 (without late fee).',
+    event_date: '2026-09-05',
+    end_date: '2026-09-24',
+    event_type: 'general',
+  },
+  {
+    id: 'bubt-fall26-03',
+    title: 'Tuition Fees Waiver Application',
+    description: 'Submission of application for tuition fees waiver to the university office.',
+    event_date: '2026-09-10',
+    end_date: '2026-09-20',
+    event_type: 'general',
+  },
+  {
+    id: 'bubt-fall26-04',
+    title: 'Course Add/Drop Deadline',
+    description: 'Deadline of course(s) add/drop and semester withdrawal.',
+    event_date: '2026-09-24',
+    end_date: null,
+    event_type: 'semester',
+  },
+  {
+    id: 'bubt-fall26-05',
+    title: 'Durga Puja & Bijoya Dashami Holidays',
+    description: 'University closed in observance of Durga Puja and Bijoya Dashami.',
+    event_date: '2026-10-18',
+    end_date: '2026-10-22',
+    event_type: 'holiday',
+  },
+  {
+    id: 'bubt-fall26-06',
+    title: 'Fateha-e-Yajdaham Holiday',
+    description: 'University closed in observance of Holy Fateha-e-Yajdaham.',
+    event_date: '2026-10-24',
+    end_date: null,
+    event_type: 'holiday',
+  },
+  {
+    id: 'bubt-fall26-07',
+    title: '2nd Installment Fees Payment',
+    description: 'Payment of tuition fees: 2nd installment (at least 50% of total dues).',
+    event_date: '2026-10-15',
+    end_date: '2026-11-04',
+    event_type: 'general',
+  },
+  {
+    id: 'bubt-fall26-08',
+    title: 'Midterm Attendance Report Deadline',
+    description: 'Deadline of submission of student attendance report before Midterm Examination.',
+    event_date: '2026-11-02',
+    end_date: null,
+    event_type: 'general',
+  },
+  {
+    id: 'bubt-fall26-09',
+    title: 'Last Day of Classes Before Midterms',
+    description: 'Final lecture sessions prior to the central midterm examination window.',
+    event_date: '2026-11-03',
+    end_date: null,
+    event_type: 'semester',
+  },
+  {
+    id: 'bubt-fall26-10',
+    title: 'Preparatory Leave for Midterms',
+    description: 'Official study leave for students prior to commencement of midterm exams.',
+    event_date: '2026-11-04',
+    end_date: null,
+    event_type: 'exam',
+  },
+  {
+    id: 'bubt-fall26-11',
+    title: 'Midterm Examination',
+    description: 'Central university midterm examination across all departments and programs.',
+    event_date: '2026-11-05',
+    end_date: '2026-11-14',
+    event_type: 'exam',
+  },
+  {
+    id: 'bubt-fall26-12',
+    title: 'Classes Resume After Midterms',
+    description: 'Resumption of regular theory and lab classes after midterm examinations.',
+    event_date: '2026-11-15',
+    end_date: null,
+    event_type: 'semester',
+  },
+  {
+    id: 'bubt-fall26-13',
+    title: 'Supplementary Midterm Exam Application',
+    description: 'Submission of application for supplementary midterm examination (fee Tk. 1000/course).',
+    event_date: '2026-11-20',
+    end_date: null,
+    event_type: 'exam',
+  },
+  {
+    id: 'bubt-fall26-14',
+    title: 'Supplementary Midterm Examination',
+    description: 'Special examinations for students approved for supplementary midterm assessment.',
+    event_date: '2026-11-28',
+    end_date: '2026-12-02',
+    event_type: 'exam',
+  },
+  {
+    id: 'bubt-fall26-15',
+    title: 'Midterm Results Submission Deadline',
+    description: 'Deadline of submission of midterm examination marks and grades by faculty.',
+    event_date: '2026-12-08',
+    end_date: null,
+    event_type: 'exam',
+  },
+  {
+    id: 'bubt-fall26-16',
+    title: 'Victory Day Holiday',
+    description: 'University closed in observance of National Victory Day.',
+    event_date: '2026-12-16',
+    end_date: null,
+    event_type: 'holiday',
+  },
+  {
+    id: 'bubt-fall26-17',
+    title: 'Pre-Registration for Spring 2027',
+    description: 'Online pre-registration window for courses in the upcoming Spring 2027 term.',
+    event_date: '2026-12-18',
+    end_date: '2026-12-24',
+    event_type: 'semester',
+  },
+  {
+    id: 'bubt-fall26-18',
+    title: 'Christmas Day Holiday',
+    description: 'University closed in observance of Holy Christmas Day.',
+    event_date: '2026-12-25',
+    end_date: null,
+    event_type: 'holiday',
+  },
+  {
+    id: 'bubt-fall26-19',
+    title: 'Final Installment Fees Payment',
+    description: 'Payment of tuition fees: final installment without late fee.',
+    event_date: '2026-12-20',
+    end_date: '2027-01-05',
+    event_type: 'general',
+  },
+  {
+    id: 'bubt-fall26-20',
+    title: 'Final Attendance Report Deadline',
+    description: 'Deadline of submission of student attendance report before Final Examination.',
+    event_date: '2027-01-04',
+    end_date: null,
+    event_type: 'general',
+  },
+  {
+    id: 'bubt-fall26-21',
+    title: 'Last Day of Classes Before Finals',
+    description: 'Final lecture and laboratory sessions of Fall 2026 semester.',
+    event_date: '2027-01-05',
+    end_date: null,
+    event_type: 'semester',
+  },
+  {
+    id: 'bubt-fall26-22',
+    title: 'Preparatory Leave for Finals',
+    description: 'Official preparatory study leave for final examinations.',
+    event_date: '2027-01-06',
+    end_date: null,
+    event_type: 'exam',
+  },
+  {
+    id: 'bubt-fall26-23',
+    title: 'Final Examination',
+    description: 'Central university final examination for all undergraduate and graduate programs.',
+    event_date: '2027-01-07',
+    end_date: '2027-01-16',
+    event_type: 'exam',
+  },
+  {
+    id: 'bubt-fall26-24',
+    title: 'Final Grade Submission Deadline',
+    description: 'Deadline of submission of final semester grades by course teachers.',
+    event_date: '2027-01-20',
+    end_date: null,
+    event_type: 'exam',
+  },
+  {
+    id: 'bubt-fall26-25',
+    title: 'Final Results Publication',
+    description: 'Official university publication of Fall 2026 final semester results and GPA.',
+    event_date: '2027-01-21',
+    end_date: null,
+    event_type: 'semester',
+  },
+  {
+    id: 'bubt-fall26-26',
+    title: 'Winter & Inter-Semester Break',
+    description: 'University winter vacation and inter-semester transition period.',
+    event_date: '2027-01-22',
+    end_date: '2027-01-31',
+    event_type: 'holiday',
+  },
+];
+
+export interface SemesterConfig {
+  id: string;
+  name: string;
+  shortName: string;
+  startDate: string;
+  endDate: string;
+  totalWeeks: number;
+  midtermStart: string;
+  midtermEnd: string;
+  finalStart: string;
+  finalEnd: string;
+  pdfUrl: string;
+  events: AcademicEvent[];
+}
+
+export const SEMESTER_CONFIGS: SemesterConfig[] = [
+  {
+    id: 'fall-2026',
+    name: 'Fall 2026',
+    shortName: 'Fall 26',
+    startDate: '2026-09-05',
+    endDate: '2027-01-31',
+    totalWeeks: 14,
+    midtermStart: '2026-11-05',
+    midtermEnd: '2026-11-14',
+    finalStart: '2027-01-07',
+    finalEnd: '2027-01-16',
+    pdfUrl: 'https://campusonebubt.vercel.app/bubt-academic-calendar-summer-2026.pdf',
+    events: OFFICIAL_FALL_2026_EVENTS,
+  },
+  {
+    id: 'summer-2026',
+    name: 'Summer 2026',
+    shortName: 'Summer 26',
+    startDate: '2026-05-06',
+    endDate: '2026-09-17',
+    totalWeeks: 14,
+    midtermStart: '2026-06-25',
+    midtermEnd: '2026-07-03',
+    finalStart: '2026-08-22',
+    finalEnd: '2026-08-30',
+    pdfUrl: 'https://campusonebubt.vercel.app/bubt-academic-calendar-summer-2026.pdf',
+    events: OFFICIAL_SUMMER_2026_EVENTS,
+  },
+];
+
+export function getActiveSemester(todayStr: string): SemesterConfig {
+  if (todayStr >= '2026-09-01') {
+    return SEMESTER_CONFIGS[0]; // Fall 2026
+  }
+  return SEMESTER_CONFIGS[1]; // Summer 2026
+}
