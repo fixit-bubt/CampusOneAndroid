@@ -2497,20 +2497,19 @@ The routine module was completely re-architected from scratch into a streamlined
    - Presents two **72-size bars**:
      - **"All"**: Full departmental routine document (Official PDF).
      - **"Choose"**: Filter by specific Intake and Section timetable.
-4. **Step 4A ("All" Screen - Full Departmental PDF & Live Viewer):**
+4. **Step 4A ("All" Screen - Full Departmental PDF Showcase & In-App Viewer):**
    - Fetches and displays official departmental routine documents from `public.routines`.
-   - Multi-document selector tabs when both Day/Evening or Fall/Summer documents exist.
+   - Replaced duplicate pill tabs and brittle Google Docs iframes (which caused "No preview available" grey box errors) with dedicated full-width **72-size document bars** and an **Official Document Showcase Card**.
    - Action controls:
-     - **Fullscreen Viewer**: Launches `CampusPdfViewerModal` with high-resolution rendering, multi-page jumping, zoom, and text search.
-     - **Download PDF**: Downloads file locally via `File.downloadFileAsync` into device cache and invokes `Sharing.shareAsync` so students can save to storage, print, or share.
-     - **Live Embedded Preview**: In-app `WebView` backed by Google Docs Viewer for instantaneous document reading without leaving the screen.
+     - **Fullscreen Viewer**: Launches `CampusPdfViewerModal` backed by the rock-solid local on-device `pdf.js` engine with high-resolution rendering, multi-page navigation, zoom, and text search.
+     - **Download PDF**: Directly downloads file locally via `File.downloadFileAsync` into device cache and invokes `Sharing.shareAsync` so students can save to storage, print, or share via WhatsApp/Drive.
 5. **Step 4B ("Choose" Screen - Intake & Section Tabs):**
    - Two top tabs: **"Intake"** and **"Section"** styled with CampusOne tab tokens.
    - Intake tab displays horizontal chip matrix of department intakes (e.g. 51 to 57 for CSE).
    - Section tab displays section chips (Section 1 to 4).
    - **Class Routine View:** Day selector (SAT, SUN, MON, TUE, WED, THR, FRI) with today's day highlighted; displays class slots with period timing, course code, course title, room number, building, and teacher short code.
    - **Exam Routine View:** Chronologically sorted exam schedule with date, day of week, shift, time range, course, room, building, teacher, and seat allocation range (`Roll: 001 - 045`).
-   - Integrated "Official Department Document Available" card with 1-tap in-app View and Download actions.
+   - Resilient database query (`.or(...)`) handles both departmental short code (`CSE`) and full name (`Computer Science & Engineering`).
 
 ### 53.2 Database Hardening & Comprehensive Seeds
 - **Public & Authenticated Read Permissions (`20261028000000_routines_system_redesign.sql`):**
@@ -2518,7 +2517,9 @@ The routine module was completely re-architected from scratch into a streamlined
   - Replaced legacy restrictive policies with standardized `anyone_read_routines`, `anyone_read_routine_slots`, and `anyone_read_exam_slots` policies with `USING (true)` to ensure both guest and logged-in students can view timetables.
 - **Universal Multi-Department Seeds (`20261028010000_seed_all_departments_routines.sql`):**
   - Seeded official class and exam routine PDF records for all 9 departments for Fall 2026 with deterministic `content_hash` fingerprints.
-  - Seeded detailed section timetable slots (`routine_slots`) and examination slots (`exam_slots`) across CSE, EEE, BBA, Law, English, Civil, Textile, and Economics.
+- **Comprehensive Timetables & Reachable URLs (`20261028020000_fix_routine_urls_and_comprehensive_slots.sql`):**
+  - Fixed 404 routine document URLs to verified reachable HTTP 200 BUBT links (`Class_Schedule_Summer_2026.pdf` and `Day(Revised).pdf`).
+  - Seeded **480 class routine slots** and **366 exam slots** covering **ALL** intakes (51 to 57 for CSE, 45 to 50 for EEE, 48 to 53 for BBA, etc.) and sections (1 to 4) across all 9 departments, completely eliminating empty "no routines found" results across all intakes and sections.
 
 ### 53.3 Crawler Enhancements (`supabase/functions/bubt-crawler/adapters/routines.ts`)
 - **Bus Schedule Exclusion & Exam Filter Tightening:**

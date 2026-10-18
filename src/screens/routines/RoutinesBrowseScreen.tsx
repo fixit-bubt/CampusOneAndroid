@@ -9,11 +9,8 @@ import {
   BackHandler,
   TextInput,
   Share,
-  Dimensions,
-  Platform,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { WebView } from 'react-native-webview';
 import { Feather } from '@expo/vector-icons';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
@@ -24,7 +21,7 @@ import { SubBar } from '../../components/layout/TopBar';
 import { useToast } from '../../components/ui/Toast';
 import { CampusPdfViewerModal } from '../../components/pdf/CampusPdfViewerModal';
 import { supabase } from '../../lib/supabase';
-import { normalizePdfUrl, buildGoogleDocsViewerUrl } from '../../utils/pdfUrl';
+import { normalizePdfUrl } from '../../utils/pdfUrl';
 import { openUrl } from '../../utils/link';
 import { FontFamily, Layout, Radius, SectorColors, pillBg, Accent } from '../../theme';
 
@@ -235,7 +232,7 @@ export function RoutinesBrowseScreen({ route, navigation }: any) {
   const [pdfModalVisible, setPdfModalVisible] = useState(false);
   const [activeModalUrl, setActiveModalUrl] = useState<string | null>(null);
   const [activeModalTitle, setActiveModalTitle] = useState('BUBT Routine');
-  const [downloading, setDownloading] = useState(false);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   // Initialize from user profile if available
   useEffect(() => {
@@ -283,13 +280,16 @@ export function RoutinesBrowseScreen({ route, navigation }: any) {
     if (step !== 'choose') return;
     try {
       setLoadingSlots(true);
+      const intakeClean = selectedIntake.trim();
+      const sectionClean = selectedSection.trim();
+
       if (activeType === 'class') {
         const { data, error } = await supabase
           .from('routine_slots')
           .select('*')
-          .ilike('department', `%${selectedDept.code}%`)
-          .eq('intake', selectedIntake)
-          .eq('section', selectedSection)
+          .or(`department.eq.${selectedDept.code},department.ilike.%${selectedDept.code}%,department.ilike.%${selectedDept.name}%`)
+          .eq('intake', intakeClean)
+          .eq('section', sectionClean)
           .order('slot_index', { ascending: true });
 
         if (!error && data) {
@@ -301,9 +301,9 @@ export function RoutinesBrowseScreen({ route, navigation }: any) {
         const { data, error } = await supabase
           .from('exam_slots')
           .select('*')
-          .ilike('department', `%${selectedDept.code}%`)
-          .eq('intake', selectedIntake)
-          .eq('section', selectedSection)
+          .or(`department.eq.${selectedDept.code},department.ilike.%${selectedDept.code}%,department.ilike.%${selectedDept.name}%`)
+          .eq('intake', intakeClean)
+          .eq('section', sectionClean)
           .order('exam_date', { ascending: true });
 
         if (!error && data) {
@@ -317,7 +317,7 @@ export function RoutinesBrowseScreen({ route, navigation }: any) {
     } finally {
       setLoadingSlots(false);
     }
-  }, [step, activeType, selectedDept.code, selectedIntake, selectedSection]);
+  }, [step, activeType, selectedDept.code, selectedDept.name, selectedIntake, selectedSection]);
 
   useEffect(() => {
     loadSlotsData();
@@ -360,16 +360,33 @@ export function RoutinesBrowseScreen({ route, navigation }: any) {
 
   // Department matching routine PDFs for Step 4A
   const departmentPdfs = useMemo(() => {
-    return allRoutines.filter(r => {
+    const matched = allRoutines.filter(r => {
       const isType = r.type === activeType;
       const isDept = matchesDepartment(r.department, selectedDept.code);
       return isType && isDept && (r.file_url || r.image_url);
+    });
+
+    // Sort to prioritize current active semester (Fall 2026) and Master routines at top
+    return matched.sort((a, b) => {
+      const aIsMaster = (a.title || '').toLowerCase().includes('master');
+      const bIsMaster = (b.title || '').toLowerCase().includes('master');
+      if (aIsMaster && !bIsMaster) return -1;
+      if (!aIsMaster && bIsMaster) return 1;
+
+      const aIsFall = (a.semester || '').toLowerCase().includes('fall');
+      const bIsFall = (b.semester || '').toLowerCase().includes('fall');
+      if (aIsFall && !bIsFall) return -1;
+      if (!aIsFall && bIsFall) return 1;
+
+      return 0;
     });
   }, [allRoutines, activeType, selectedDept.code]);
 
   // Active PDF for viewer in Step 4A
   const activePdf = useMemo(() => {
-    if (selectedPdfDoc) return selectedPdfDoc;
+    if (selectedPdfDoc && departmentPdfs.some(d => d.id === selectedPdfDoc.id)) {
+      return selectedPdfDoc;
+    }
     return departmentPdfs[0] || null;
   }, [selectedPdfDoc, departmentPdfs]);
 
@@ -388,7 +405,7 @@ export function RoutinesBrowseScreen({ route, navigation }: any) {
   const handleDownloadPdf = async (doc: OfficialRoutineRow) => {
     const rawUrl = doc.file_url || doc.image_url;
     if (!rawUrl) return;
-    setDownloading(true);
+    setDownloadingId(doc.id);
     toast({ type: 'info', title: 'Downloading routine PDF…' });
     try {
       const targetUrl = normalizePdfUrl(rawUrl) || rawUrl;
@@ -406,7 +423,7 @@ export function RoutinesBrowseScreen({ route, navigation }: any) {
     } catch (err: any) {
       toast({ type: 'error', title: 'Download failed', message: err?.message || 'Could not download routine' });
     } finally {
-      setDownloading(false);
+      setDownloadingId(null);
     }
   };
 
@@ -578,7 +595,6 @@ export function RoutinesBrowseScreen({ route, navigation }: any) {
               activeOpacity={0.78}
               onPress={() => {
                 setSelectedDept(dept);
-                // set defaults for intake and section if current not in this dept
                 if (!dept.intakes.includes(selectedIntake)) {
                   setSelectedIntake(dept.intakes[0] || '1');
                 }
@@ -664,7 +680,7 @@ export function RoutinesBrowseScreen({ route, navigation }: any) {
                 All
               </Text>
               <Text style={[styles.barSubtitle, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
-                Full departmental routine document (Official PDF)
+                Full departmental routine documents & circulars (Official PDF)
               </Text>
             </View>
             <View style={[styles.actionTag, { backgroundColor: isDark ? 'rgba(91, 133, 247, 0.15)' : '#e0edff' }]}>
@@ -710,121 +726,98 @@ export function RoutinesBrowseScreen({ route, navigation }: any) {
         </ScrollView>
       )}
 
-      {/* ──────────────── STEP 4A: ALL (FULL DEPARTMENT PDF & IN-APP VIEWER & DOWNLOADS) ──────────────── */}
+      {/* ──────────────── STEP 4A: ALL (FULL DEPARTMENT PDF SHOWCASE & DOWNLOADS) ──────────────── */}
       {step === 'all' && (
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {departmentPdfs.length > 1 && (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.docTabsRow}>
-              {departmentPdfs.map((doc, idx) => {
-                const isActive = activePdf?.id === doc.id;
-                return (
-                  <TouchableOpacity
-                    key={doc.id || idx}
-                    activeOpacity={0.8}
-                    onPress={() => setSelectedPdfDoc(doc)}
-                    style={[
-                      styles.docTabPill,
-                      {
-                        backgroundColor: isActive ? C.brand : C.surface,
-                        borderColor: isActive ? C.brand : C.border,
-                      },
-                    ]}
-                  >
-                    <Feather name="file-text" size={14} color={isActive ? '#ffffff' : C.textMuted} />
-                    <Text
-                      style={[
-                        styles.docTabPillText,
-                        {
-                          color: isActive ? '#ffffff' : C.text,
-                          fontFamily: isActive ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                        },
-                      ]}
-                      numberOfLines={1}
-                    >
-                      {doc.semester || doc.title.slice(0, 24)}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          )}
-
           {activePdf ? (
-            <View style={[styles.pdfCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-              {/* Header Info */}
-              <View style={styles.pdfCardHeader}>
-                <View style={[styles.pdfBadgeBox, { backgroundColor: pillBg(SectorColors.routines, isDark) }]}>
-                  <Feather name="file-text" size={24} color={SectorColors.routines} />
-                </View>
-                <View style={{ flex: 1, marginLeft: 12 }}>
-                  <Text style={[styles.pdfCardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                    {activePdf.title}
+            <View style={[styles.masterHeroDocCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+              {/* Header Badge */}
+              <View style={styles.docHeaderBadgeRow}>
+                <View style={[styles.verifiedTag, { backgroundColor: isDark ? 'rgba(52, 211, 153, 0.15)' : '#e6f7ef' }]}>
+                  <Feather name="shield" size={13} color={C.success} style={{ marginRight: 4 }} />
+                  <Text style={[styles.verifiedTagText, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
+                    OFFICIAL BUBT PUBLICATION
                   </Text>
-                  <Text style={[styles.pdfCardMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                    {activePdf.semester || 'Current Semester'} · {selectedDept.name}
+                </View>
+                <View style={[styles.semesterTag, { backgroundColor: isDark ? 'rgba(91, 133, 247, 0.15)' : '#e0edff' }]}>
+                  <Text style={[styles.semesterTagText, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+                    {activePdf.semester || 'Fall 2026'}
                   </Text>
                 </View>
               </View>
 
-              {/* Action Buttons Row */}
-              <View style={styles.pdfActionsRow}>
+              {/* Document Identity */}
+              <View style={styles.docIdentityRow}>
+                <View style={[styles.largePdfIconBox, { backgroundColor: pillBg(SectorColors.routines, isDark), borderColor: SectorColors.routines + '44' }]}>
+                  <Feather name="file-text" size={32} color={SectorColors.routines} />
+                </View>
+                <View style={{ flex: 1, marginLeft: 14 }}>
+                  <Text style={[styles.masterDocTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+                    {activePdf.title}
+                  </Text>
+                  <Text style={[styles.masterDocSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                    {selectedDept.name} ({selectedDept.code})
+                  </Text>
+                  <Text style={[styles.masterDocMeta, { color: C.text3, fontFamily: FontFamily.jakartaRegular }]}>
+                    Official controller schedule · Vector PDF format
+                  </Text>
+                </View>
+              </View>
+
+              {/* Primary Action Buttons */}
+              <View style={styles.primaryActionsStack}>
                 <TouchableOpacity
                   activeOpacity={0.8}
                   onPress={() => handleOpenPdf(activePdf)}
-                  style={[styles.primaryActionBtn, { backgroundColor: C.brand }]}
+                  style={[styles.fullscreenViewBtn, { backgroundColor: C.brand }]}
                 >
-                  <Feather name="maximize-2" size={16} color="#ffffff" style={{ marginRight: 6 }} />
-                  <Text style={[styles.primaryActionBtnText, { fontFamily: FontFamily.jakartaBold }]}>
-                    Fullscreen View
+                  <Feather name="maximize-2" size={18} color="#ffffff" style={{ marginRight: 8 }} />
+                  <Text style={[styles.fullscreenViewBtnText, { fontFamily: FontFamily.jakartaBold }]}>
+                    Open In-App PDF Viewer
                   </Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  onPress={() => handleDownloadPdf(activePdf)}
-                  disabled={downloading}
-                  style={[styles.secondaryActionBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
-                >
-                  {downloading ? (
-                    <ActivityIndicator size="small" color={C.brand} />
-                  ) : (
-                    <>
-                      <Feather name="download" size={16} color={C.text} style={{ marginRight: 6 }} />
-                      <Text style={[styles.secondaryActionBtnText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                        Download
-                      </Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-              </View>
-
-              {/* Embedded PDF Live Preview */}
-              <View style={[styles.embeddedViewerWrapper, { borderColor: C.border }]}>
-                {normalizePdfUrl(activePdf.file_url || activePdf.image_url) ? (
-                  <WebView
-                    source={{
-                      uri: buildGoogleDocsViewerUrl(normalizePdfUrl(activePdf.file_url || activePdf.image_url)!) ||
-                        normalizePdfUrl(activePdf.file_url || activePdf.image_url)!,
-                    }}
-                    style={styles.embeddedWebView}
-                    nestedScrollEnabled
-                    javaScriptEnabled
-                    domStorageEnabled
-                    startInLoadingState
-                    renderLoading={() => (
-                      <View style={styles.webLoadingOverlay}>
-                        <ActivityIndicator color={C.brand} size="large" />
-                        <Text style={[styles.webLoadingText, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                          Rendering official routine PDF…
+                <View style={styles.secondaryActionsRow}>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => handleDownloadPdf(activePdf)}
+                    disabled={downloadingId === activePdf.id}
+                    style={[styles.downloadActionBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+                  >
+                    {downloadingId === activePdf.id ? (
+                      <ActivityIndicator size="small" color={C.brand} />
+                    ) : (
+                      <>
+                        <Feather name="download" size={16} color={C.text} style={{ marginRight: 6 }} />
+                        <Text style={[styles.downloadActionBtnText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                          Download PDF
                         </Text>
-                      </View>
+                      </>
                     )}
-                  />
-                ) : (
-                  <View style={styles.webLoadingOverlay}>
-                    <Text style={{ color: C.textMuted }}>Document link unavailable</Text>
-                  </View>
-                )}
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => handleShareDoc(activePdf)}
+                    style={[styles.shareActionBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+                  >
+                    <Feather name="share-2" size={16} color={C.text} style={{ marginRight: 6 }} />
+                    <Text style={[styles.shareActionBtnText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                      Share
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      const url = normalizePdfUrl(activePdf.file_url || activePdf.image_url);
+                      if (url) openUrl(url);
+                    }}
+                    style={[styles.externalActionBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+                  >
+                    <Feather name="external-link" size={16} color={C.textMuted} />
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
           ) : (
@@ -843,10 +836,74 @@ export function RoutinesBrowseScreen({ route, navigation }: any) {
                     No Routine Document Found
                   </Text>
                   <Text style={[styles.emptyCardText, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                    No full PDF published yet for {selectedDept.name} in this semester category.
+                    No full PDF published yet for {selectedDept.name} in this category.
                   </Text>
                 </>
               )}
+            </View>
+          )}
+
+          {/* List of All Available Documents for this Department */}
+          {departmentPdfs.length > 0 && (
+            <View style={{ marginTop: 8 }}>
+              <Text style={[styles.sectionSectionHeader, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                ALL AVAILABLE ROUTINE DOCUMENTS ({departmentPdfs.length})
+              </Text>
+
+              {departmentPdfs.map((doc) => {
+                const isSelected = activePdf?.id === doc.id;
+                return (
+                  <TouchableOpacity
+                    key={doc.id}
+                    activeOpacity={0.78}
+                    onPress={() => setSelectedPdfDoc(doc)}
+                    style={[
+                      styles.bar72,
+                      {
+                        backgroundColor: isSelected ? (isDark ? 'rgba(91, 133, 247, 0.12)' : '#f0f5ff') : C.surface,
+                        borderColor: isSelected ? C.brand : C.border,
+                      },
+                    ]}
+                  >
+                    <View style={[styles.barIconBox, { backgroundColor: pillBg(SectorColors.routines, isDark), borderColor: SectorColors.routines + '33' }]}>
+                      <Feather name="file-text" size={20} color={SectorColors.routines} />
+                    </View>
+                    <View style={styles.barTextCol}>
+                      <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                        {doc.title}
+                      </Text>
+                      <Text style={[styles.barSubtitle, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
+                        {doc.semester || 'Official Schedule'} · {selectedDept.code}
+                      </Text>
+                    </View>
+                    <View style={styles.docRowActions}>
+                      <TouchableOpacity
+                        activeOpacity={0.8}
+                        onPress={() => handleOpenPdf(doc)}
+                        style={[styles.smallRowActionBtn, { backgroundColor: C.brand }]}
+                      >
+                        <Feather name="eye" size={13} color="#ffffff" style={{ marginRight: 4 }} />
+                        <Text style={[styles.smallRowActionBtnText, { color: '#ffffff', fontFamily: FontFamily.jakartaBold }]}>
+                          View
+                        </Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        activeOpacity={0.8}
+                        onPress={() => handleDownloadPdf(doc)}
+                        disabled={downloadingId === doc.id}
+                        style={[styles.smallRowActionBtn, { backgroundColor: C.surface2, borderColor: C.border, borderWidth: 1 }]}
+                      >
+                        {downloadingId === doc.id ? (
+                          <ActivityIndicator size="small" color={C.brand} />
+                        ) : (
+                          <Feather name="download" size={13} color={C.text} />
+                        )}
+                      </TouchableOpacity>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           )}
         </ScrollView>
@@ -1072,7 +1129,7 @@ export function RoutinesBrowseScreen({ route, navigation }: any) {
                     <View key={slot.id} style={[styles.slotCard, { backgroundColor: C.surface, borderColor: C.border }]}>
                       {/* Top Time Strip */}
                       <View style={styles.slotTimeRow}>
-                        <View style={styles.timeTag}>
+                        <View style={[styles.timeTag, { backgroundColor: isDark ? 'rgba(91, 133, 247, 0.15)' : '#e0edff' }]}>
                           <Feather name="clock" size={14} color={C.brand} style={{ marginRight: 5 }} />
                           <Text style={[styles.timeTagText, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
                             {slot.time_slot}
@@ -1118,10 +1175,10 @@ export function RoutinesBrowseScreen({ route, navigation }: any) {
                 <View style={[styles.emptyCard, { backgroundColor: C.surface, borderColor: C.border }]}>
                   <Feather name="calendar" size={32} color={C.textMuted} style={{ marginBottom: 12 }} />
                   <Text style={[styles.emptyCardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                    No Class Slots Found
+                    No Specific Custom Slots Found
                   </Text>
                   <Text style={[styles.emptyCardText, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                    No visual routine slots seeded yet for Intake {selectedIntake} Section {selectedSection}.
+                    The routine for Intake {selectedIntake} Section {selectedSection} is published inside the Department Master PDF.
                   </Text>
                   {departmentPdfs.length > 0 && (
                     <TouchableOpacity
@@ -1131,7 +1188,7 @@ export function RoutinesBrowseScreen({ route, navigation }: any) {
                     >
                       <Feather name="file-text" size={15} color="#ffffff" style={{ marginRight: 6 }} />
                       <Text style={[styles.primaryActionBtnText, { fontFamily: FontFamily.jakartaBold }]}>
-                        View Department Master PDF
+                        Open Department Master PDF
                       </Text>
                     </TouchableOpacity>
                   )}
@@ -1204,7 +1261,7 @@ export function RoutinesBrowseScreen({ route, navigation }: any) {
                     No Exam Schedule Slots
                   </Text>
                   <Text style={[styles.emptyCardText, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                    No exam entries registered for Intake {selectedIntake} Section {selectedSection}.
+                    The exam schedule for Intake {selectedIntake} Section {selectedSection} is published inside the Department Master PDF.
                   </Text>
                   {departmentPdfs.length > 0 && (
                     <TouchableOpacity
@@ -1214,7 +1271,7 @@ export function RoutinesBrowseScreen({ route, navigation }: any) {
                     >
                       <Feather name="file-text" size={15} color="#ffffff" style={{ marginRight: 6 }} />
                       <Text style={[styles.primaryActionBtnText, { fontFamily: FontFamily.jakartaBold }]}>
-                        View Master Exam Routine PDF
+                        Open Master Exam Routine PDF
                       </Text>
                     </TouchableOpacity>
                   )}
@@ -1249,12 +1306,19 @@ export function RoutinesBrowseScreen({ route, navigation }: any) {
                 <TouchableOpacity
                   activeOpacity={0.8}
                   onPress={() => handleDownloadPdf(departmentPdfs[0])}
+                  disabled={downloadingId === departmentPdfs[0].id}
                   style={[styles.secondaryActionBtn, { backgroundColor: C.surface2, borderColor: C.border, paddingHorizontal: 12, height: 38 }]}
                 >
-                  <Feather name="download" size={14} color={C.text} style={{ marginRight: 4 }} />
-                  <Text style={[styles.secondaryActionBtnText, { fontSize: 13, color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                    Download
-                  </Text>
+                  {downloadingId === departmentPdfs[0].id ? (
+                    <ActivityIndicator size="small" color={C.brand} />
+                  ) : (
+                    <>
+                      <Feather name="download" size={14} color={C.text} style={{ marginRight: 4 }} />
+                      <Text style={[styles.secondaryActionBtnText, { fontSize: 13, color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                        Download
+                      </Text>
+                    </>
+                  )}
                 </TouchableOpacity>
               </View>
             </View>
@@ -1327,14 +1391,16 @@ const styles = StyleSheet.create({
   barTextCol: {
     flex: 1,
     justifyContent: 'center',
+    minWidth: 0,
+    paddingRight: 8,
   },
   barTitle: {
-    fontSize: 16,
+    fontSize: 15.5,
     letterSpacing: -0.2,
-    lineHeight: 22,
+    lineHeight: 21,
   },
   barSubtitle: {
-    fontSize: 12.5,
+    fontSize: 12,
     lineHeight: 16,
     marginTop: 2,
   },
@@ -1429,95 +1495,130 @@ const styles = StyleSheet.create({
     marginLeft: 2,
   },
 
-  /* ─── STEP 4A: ALL ─── */
-  docTabsRow: {
-    gap: 8,
+  /* ─── STEP 4A: ALL (MASTER PDF SHOWCASE) ─── */
+  masterHeroDocCard: {
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    padding: 18,
+    marginBottom: 20,
+  },
+  docHeaderBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 14,
   },
-  docTabPill: {
+  verifiedTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  verifiedTagText: {
+    fontSize: 10,
+    letterSpacing: 0.4,
+  },
+  semesterTag: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  semesterTagText: {
+    fontSize: 11,
+    letterSpacing: 0.2,
+  },
+  docIdentityRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 18,
+  },
+  largePdfIconBox: {
+    width: 54,
+    height: 54,
+    borderRadius: 16,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  masterDocTitle: {
+    fontSize: 17,
+    letterSpacing: -0.2,
+    lineHeight: 23,
+  },
+  masterDocSub: {
+    fontSize: 13,
+    marginTop: 3,
+  },
+  masterDocMeta: {
+    fontSize: 11.5,
+    marginTop: 4,
+  },
+  primaryActionsStack: {
+    gap: 10,
+  },
+  fullscreenViewBtn: {
+    height: 48,
+    borderRadius: Radius.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fullscreenViewBtnText: {
+    color: '#ffffff',
+    fontSize: 15,
+  },
+  secondaryActionsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  downloadActionBtn: {
+    flex: 1,
+    height: 44,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  downloadActionBtnText: {
+    fontSize: 13.5,
+  },
+  shareActionBtn: {
+    flex: 1,
+    height: 44,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  shareActionBtnText: {
+    fontSize: 13.5,
+  },
+  externalActionBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  docRowActions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: Radius.md,
-    borderWidth: 1,
   },
-  docTabPillText: {
-    fontSize: 12.5,
-  },
-  pdfCard: {
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    padding: 16,
-    marginBottom: 20,
-  },
-  pdfCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 14,
-  },
-  pdfBadgeBox: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pdfCardTitle: {
-    fontSize: 16,
-    lineHeight: 22,
-  },
-  pdfCardMeta: {
-    fontSize: 12.5,
-    marginTop: 2,
-  },
-  pdfActionsRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 16,
-  },
-  primaryActionBtn: {
-    flex: 1,
-    height: 42,
-    borderRadius: Radius.md,
+  smallRowActionBtn: {
+    height: 34,
+    paddingHorizontal: 10,
+    borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  primaryActionBtnText: {
-    color: '#ffffff',
-    fontSize: 14,
-  },
-  secondaryActionBtn: {
-    height: 42,
-    paddingHorizontal: 16,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  secondaryActionBtnText: {
-    fontSize: 14,
-  },
-  embeddedViewerWrapper: {
-    height: 400,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    overflow: 'hidden',
-  },
-  embeddedWebView: {
-    flex: 1,
-  },
-  webLoadingOverlay: {
-    ...StyleSheet.absoluteFill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-  },
-  webLoadingText: {
-    fontSize: 13,
+  smallRowActionBtnText: {
+    fontSize: 12,
   },
 
   /* ─── STEP 4B: CHOOSE ─── */
@@ -1685,6 +1786,30 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 4,
     lineHeight: 18,
+  },
+  primaryActionBtn: {
+    height: 42,
+    paddingHorizontal: 16,
+    borderRadius: Radius.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  primaryActionBtnText: {
+    color: '#ffffff',
+    fontSize: 14,
+  },
+  secondaryActionBtn: {
+    height: 42,
+    paddingHorizontal: 16,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  secondaryActionBtnText: {
+    fontSize: 14,
   },
   sectionPdfCard: {
     flexDirection: 'row',
