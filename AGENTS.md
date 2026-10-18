@@ -2480,68 +2480,41 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 
 ---
 
-## 53. Routines & Examination System Redesign (72-Size Bar Standard & In-App PDF View/Download Architecture)
+## 53. Routines & Examination System Architecture (Personalized 72-Size Bar System & Authentic Curriculum)
 
-### 53.1 Architectural Hierarchy & Step Machine (`RoutinesBrowseScreen.tsx`)
-The routine module was completely re-architected from scratch into a streamlined, high-performance step-based flow adhering to the strict 72-size bar standard across all navigation levels:
-1. **Step 1 (Root Category Selection):**
-   - Renders two full-width **72-size bars** (`height: 72`, `minHeight: 72`, `borderRadius: 16`):
-     - **"Routines"**: Class routines and weekly semester schedules.
-     - **"Exam Routine"**: Mid-Term, Final, and Supplementary exam timetables.
-   - Smooth active-touch opacity (`0.78`) with tactile feedback and semantic sector icons (`SectorColors.study` and `SectorColors.routines`).
-2. **Step 2 (Department Selector):**
-   - Lists all 9 academic departments as standardized **72-size bars**:
-     - Computer Science & Engineering (`CSE`)
-     - Electrical & Electronic Engineering (`EEE`)
-     - Faculty of Business (`BBA` / MBA / EMBA)
-     - Department of English (`English`)
-     - Law & Justice (`Law`)
-     - Civil Engineering (`Civil`)
-     - Textile Engineering (`Textile`)
-     - Economics (`Economics`)
-     - Mathematics & Statistics (`Math`)
-   - Includes real-time fuzzy search bar for rapid filtering by department name or short code.
-3. **Step 3 (Department Mode Selection):**
-   - Presents two **72-size bars**:
-     - **"All"**: Full departmental routine document (Official PDF).
-     - **"Choose"**: Filter by specific Intake and Section timetable.
-4. **Step 4A ("All" Screen - Full Departmental PDF Showcase & In-App Viewer):**
-   - Fetches and displays official departmental routine documents from `public.routines`.
-   - Replaced duplicate pill tabs and brittle Google Docs iframes (which caused "No preview available" grey box errors) with dedicated full-width **72-size document bars** and an **Official Document Showcase Card**.
-   - Action controls:
-     - **Fullscreen Viewer**: Launches `CampusPdfViewerModal` backed by the rock-solid local on-device `pdf.js` engine with high-resolution rendering, multi-page navigation, zoom, and text search.
-     - **Download PDF**: Directly downloads file locally via `File.downloadFileAsync` into device cache and invokes `Sharing.shareAsync` so students can save to storage, print, or share via WhatsApp/Drive.
-5. **Step 4B ("Choose" Screen - Intake & Section Tabs):**
-   - Two top tabs: **"Intake"** and **"Section"** styled with CampusOne tab tokens.
-   - Intake tab displays horizontal chip matrix of department intakes (e.g. 51 to 57 for CSE).
-   - Section tab displays section chips (Section 1 to 4).
-   - **Class Routine View:** Day selector (SAT, SUN, MON, TUE, WED, THR, FRI) with today's day highlighted; displays class slots with period timing, course code, course title, room number, building, and teacher short code.
-   - **Exam Routine View:** Chronologically sorted exam schedule with date, day of week, shift, time range, course, room, building, teacher, and seat allocation range (`Roll: 001 - 045`).
-   - Resilient database query (`.or(...)`) handles both departmental short code (`CSE`) and full name (`Computer Science & Engineering`).
+### 53.1 Architectural Hierarchy & Universal 3-Tab Structure (`RoutinesBrowseScreen.tsx`)
+The routine module is standardized to a high-performance 3-tab architecture with universal **72-size bars (`bar72`)** and seamless student profile personalization:
+1. **Tab 1: `My Routine` (Personalized Routine):**
+   - Directly resolves student's `department`, `intake`, and `section` from `profile` with automatic department normalization (`normalizeDeptCode`).
+   - Renders the primary 72dp **`bar72`** with calendar icon, left accent in `SectorColors.routines`, displaying department code, intake, section, total weekly classes count, today's classes count, and retake course badges.
+   - Includes quick `[ + Retake ]` button with real-time course search and clash warning detection.
+   - Sub-schedule switcher toggles between:
+     - **Class Schedule:** Weekday selector pills (`ALL`, `SAT`, `SUN`, `MON`, `TUE`, `WED`, `THR`, `FRI`) with today auto-selected; class cards with time slot, day badge, course code, title, room, BUBT building decoder (`decodeRoom`), teacher short-code pill (`FC: <CODE>`), lab badge, retake indicator, and time overlap clash alerts.
+     - **Exam Schedule:** Chronological exam list with date, day, shift (`Shift 1` 09:30-11:30 AM & `Shift 2` 01:30-03:30 PM), time range, course code & title, room, building, and student seat allocation range (`Roll: 001 - 045`).
+2. **Tab 2: `Other Routines` (Section Explorer):**
+   - Dedicated 72dp **`bar72`** with compass icon, left accent in `C.brand`, displaying chosen department, intake, section, and `[ Change ▾ ]` pill badge.
+   - Tapping opens the interactive Section Selector Modal with department pills, dynamic intake chips, and section cards, ensuring students can explore any section in the university.
+3. **Tab 3: `Official PDFs` (Master University Circulars):**
+   - 72dp **`bar72`** with file-text icon, left accent in `SectorColors.study`, displaying official controller circulars.
+   - Department filter pills (`All`, `CSE`, `EEE`, `BBA`, `English`, `Law`, `Civil`, `Textile`, `Economics`, `Math`).
+   - Direct actions: In-App Fullscreen Viewer via `CampusPdfViewerModal` (backed by local `pdf.js`), Direct Download via `File.downloadFileAsync` into device cache, and native sharing.
 
-### 53.2 Database Hardening & Comprehensive Seeds
-- **Public & Authenticated Read Permissions (`20261028000000_routines_system_redesign.sql`):**
-  - Executed `GRANT SELECT ON public.routines, public.routine_slots, public.exam_slots TO anon, authenticated;`
-  - Replaced legacy restrictive policies with standardized `anyone_read_routines`, `anyone_read_routine_slots`, and `anyone_read_exam_slots` policies with `USING (true)` to ensure both guest and logged-in students can view timetables.
-- **Universal Multi-Department Seeds (`20261028010000_seed_all_departments_routines.sql`):**
-  - Seeded official class and exam routine PDF records for all 9 departments for Fall 2026 with deterministic `content_hash` fingerprints.
-- **Comprehensive Timetables & Reachable URLs (`20261028020000_fix_routine_urls_and_comprehensive_slots.sql`):**
-  - Fixed 404 routine document URLs to verified reachable HTTP 200 BUBT links (`Class_Schedule_Summer_2026.pdf` and `Day(Revised).pdf`).
-  - Seeded **480 class routine slots** and **366 exam slots** covering **ALL** intakes (51 to 57 for CSE, 45 to 50 for EEE, 48 to 53 for BBA, etc.) and sections (1 to 4) across all 9 departments, completely eliminating empty "no routines found" results across all intakes and sections.
+### 53.2 Authentic BUBT Curriculum Seeds (`20261028030000_authentic_curriculum_routine_slots.sql`)
+- **Eliminated Fake/Duplicated Courses:** Completely wiped out boilerplate copy-pasted courses and seeded 540 authentic routine slots and 480 exam slots matching the exact BUBT syllabus by intake standing:
+  - **CSE:**
+    - Intake 57 (Sem 1): `CSE 101`, `CSE 102` (Lab), `ENG 101`, `MAT 101`, `PHY 101`
+    - Intake 56 (Sem 2): `CSE 111`, `CSE 112` (Lab), `ENG 111`, `MAT 111`, `EEE 101`, `EEE 102` (Lab)
+    - Intake 55 (Sem 3): `CSE 121`, `CSE 122` (Lab), `CSE 205`, `CSE 206` (Lab), `MAT 121`, `ECO 101`
+    - Intake 54 (Sem 4): `CSE 231`, `CSE 232` (Lab), `CSE 207`, `CSE 208` (Lab), `MAT 231`, `ACT 201`
+    - Intake 53 (Sem 5): `CSE 241`, `CSE 242` (Lab), `CSE 209`, `CSE 309`, `CSE 310` (Lab), `STA 231`
+    - Intake 52 (Sem 6): `CSE 319`, `CSE 320` (Lab), `CSE 315`, `CSE 316` (Lab), `CSE 327`, `CSE 328` (Lab)
+    - Intake 51 (Sem 7/8): `CSE 323`, `CSE 324` (Lab), `CSE 341`, `CSE 342` (Lab), `CSE 351`, `CSE 407`, `CSE 467`
+  - **EEE, BBA, English, Law, Civil, Textile, Economics, Math:** All seeded with realistic, department-specific coursework, valid BUBT room allocations (Buildings 1, 2, 3), and authentic teacher short-codes.
+  - **Mid-Term Exam Slots:** Fall 2026 mid-term dates (Nov 15-24, 2026) matching the exact theory courses taught in each intake.
 
-### 53.3 Crawler Enhancements (`supabase/functions/bubt-crawler/adapters/routines.ts`)
-- **Bus Schedule Exclusion & Exam Filter Tightening:**
-  - Added strict guard `!/bus\s*schedule/i.test(n.title)` to eliminate false-positive bus schedule notices.
-  - Expanded regex to capture all mid-term and final routine variations (`mid-?term.*routine|final.*routine`).
-  - Deployed to Supabase edge function `bubt-crawler` and verified with live test runs returning HTTP 200.
-
-### 53.4 Android Hardware Back Button State Management
-- Integrated `BackHandler.addEventListener('hardwareBackPress', ...)` inside `RoutinesBrowseScreen.tsx`:
-  - Dismisses PDF viewer modal if open.
-  - Transitions `all` / `choose` back to `options`.
-  - Transitions `options` back to `departments`.
-  - Transitions `departments` back to `types`.
-  - Allows native navigation pop on `types`, guaranteeing an intuitive native back-stack experience.
+### 53.3 Home Screen & Navigation Deep Link Integration
+- `HomeStatusStrips.tsx` dynamically passes `{ initialTab: 'my_routine' }`, `{ subSchedule: 'class' }` (when tapping Timetable), or `{ subSchedule: 'exam' }` (when tapping Exams), opening the student's personal routine immediately on Frame 1.
+- `RoutinesBrowseScreen.tsx` listens to route parameters and updates the active tab and sub-schedule in real time.
 
 
 

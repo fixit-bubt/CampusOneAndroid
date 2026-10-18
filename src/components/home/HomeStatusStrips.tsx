@@ -1092,24 +1092,24 @@ export function HomeStatusStrips({ refreshTrigger }: { refreshTrigger?: number }
               icon="clock"
               color={SectorColors.routines}
               title="Routine"
-              onPress={() => navigation.navigate('RoutinesBrowse')}
+              onPress={() => navigation.navigate('RoutinesBrowse', { initialTab: 'my_routine' })}
               borderRightColor={C.border}
               textColor={C.text}
               chevronColor={C.textMuted}
             />
 
             <View style={styles.metricsRow}>
-              <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('RoutinesBrowse')} style={styles.metricCol}>
+              <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('RoutinesBrowse', { initialTab: 'my_routine' })} style={styles.metricCol}>
                 <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>{`${rDept} ${rIntake}`}</Text>
                 <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{`Sec ${rSec}`}</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
-              <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('RoutinesBrowse')} style={styles.metricCol}>
+              <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('RoutinesBrowse', { initialTab: 'my_routine', subSchedule: 'class' })} style={styles.metricCol}>
                 <Text style={[styles.metricValText, { color: C.brand }]} numberOfLines={1}>Timetable</Text>
                 <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Visual Grid</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
-              <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('RoutinesBrowse')} style={styles.metricCol}>
+              <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('RoutinesBrowse', { initialTab: 'my_routine', subSchedule: 'exam' })} style={styles.metricCol}>
                 <Text style={[styles.metricValText, { color: SectorColors.routines }]} numberOfLines={1}>Exams</Text>
                 <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Shifts & Rooms</Text>
               </TouchableOpacity>

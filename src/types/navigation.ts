@@ -116,7 +116,7 @@ export type AppStackParams = {
   AcademicCalendar: undefined;
 
   // Routines
-  RoutinesBrowse: undefined;
+  RoutinesBrowse?: { initialTab?: 'my_routine' | 'other_routines' | 'official_pdfs'; subSchedule?: 'class' | 'exam' } | undefined;
 
   // Cover Page Generator
   CoverPageForm: undefined;
