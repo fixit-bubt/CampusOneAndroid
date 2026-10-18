@@ -2455,11 +2455,19 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
   - Upgraded `IMAGE_PRESETS` (`high: 3000px @ 0.88`, `balanced: 2480px @ 0.84`, `compact: 1754px @ 0.72`, `DEFAULT_PRESET = 'high'`) with optional `< 5 MB` and `< 2 MB` target size enforcement.
 
 ### 52.3 CamScanner-Parity Numbered In-App Media Picker & Page Sequence System (`MediaPickerModal.tsx`)
-- **Numbered Tap Badges (`1`, `2`, `3`…):** Built a custom in-app media picker modal (`MediaPickerModal.tsx`) powered by `expo-media-library/legacy`. As students tap notebook photos, each thumbnail displays a dynamic electric-blue badge with its exact 1-based page sequence number. Deselecting any photo automatically slides remaining numbers down to maintain an unbroken sequence.
-- **Chronological Capture-Time Sorting (`Oldest First` / `Page 1 First`):** Provides a 1-tap sort toggle between `Page 1 First (Oldest)` and `Newest First` using `sortBy: [['creationTime', sortAscending]]`. This arranges photos in the natural physical order they were photographed, placing Page 1 at the top-left of the grid.
+- **CamScanner Reverse-Engineered Architecture:** Rebuilt `MediaPickerModal.tsx` following deep APK reverse-engineering of CamScanner's `CustomGalleryActivity` and `GalleryPreviewActivity`.
+- **Newest First by Default:** Defaults `sortOrder` to `'newest'` (`creationTime DESC`), ensuring freshly snapped homework, assignment pages, and notes immediately appear at the top-left of the grid instead of being buried beneath thousands of older images.
+- **Dual-Touch Grid Interaction:**
+  - **Top-Left Corner Checkbox:** 38x38dp hit area with rounded-square outline (`borderRadius: 6`). Tapping toggles selection directly in the grid, showing an emerald green (`#10b981`) badge with white sequence numbers (`1`, `2`, `3`...).
+  - **Tile Body:** Tapping the photo body opens the **Fullscreen Swipeable Preview** modal at that exact photo index.
+- **Fullscreen Swipeable Preview (`GalleryPreviewActivity` Parity):**
+  - High-resolution, full-screen horizontal pager (`FlatList` with `pagingEnabled` and `getItemLayout`) allowing students to inspect handwriting, equations, and page numbers.
+  - **Top Header Bar:** Back button (`←`), position counter (`X / Total`), and top-right emerald `Import (N)` pill button.
+  - **Bottom Selected Strip / Thumbnail Tray:** Horizontal carousel of selected pages with emerald sequence badges and red `✕` buttons to delete any mistapped page. Tapping a thumbnail scrolls the preview pager directly to that image.
+  - **Bottom Action Bar:** High-contrast `[✓] Select` toggle with emerald checkmark, allowing direct selection while inspecting.
+- **CamScanner Signature Emerald Green Theme:** Standardized active badges, tile selection borders, and CTA buttons on `#10b981`.
 - **Album / Folder Filtering:** Dedicated dropdown switcher supporting `All Photos`, `Camera`, `Screenshots`, and custom device folders with live asset counts.
 - **Natural Numeric Sort Safety Net:** Even if photos are imported via the external system picker or WhatsApp, `ToolImagesScreen` applies natural numeric sequence sorting (`localeCompare(..., { numeric: true })`) to preserve correct notebook progression.
-- **Prominent `Page X` Cards & 1-Tap Sort Action:** Grid items display high-contrast `Page ${index + 1}` rounded labels and the section header provides a 1-tap `Sort (1→N)` button alongside manual reorder buttons.
 - **Academic Footer Margin Separation:** Enforced a 28pt footer reservation with 6pt bottom padding in `layoutDocumentPage` and `drawAcademicOverlays`, guaranteeing that optional footer stamps never overlap bottom mathematical formulas or handwriting.
 
 ### 52.4 PDF Maker Deep Audit & Hardening Fixes

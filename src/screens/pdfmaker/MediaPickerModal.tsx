@@ -1,16 +1,17 @@
-import React, { useEffect, useState, useRef, useMemo } from 'react';
+import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
   Modal,
   TouchableOpacity,
   FlatList,
+  ScrollView,
   Image,
   StyleSheet,
   ActivityIndicator,
   Dimensions,
   Platform,
-  type ViewStyle,
+  StatusBar,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -30,6 +31,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GRID_GAP = 2.5;
 const NUM_COLUMNS = 3;
 const TILE_SIZE = Math.floor((SCREEN_WIDTH - GRID_GAP * (NUM_COLUMNS - 1)) / NUM_COLUMNS);
+const CAM_GREEN = '#10b981';
 
 export function MediaPickerModal({
   visible,
@@ -48,19 +50,21 @@ export function MediaPickerModal({
   const [hasNextPage, setHasNextPage] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
 
-  // Selected asset list in the exact order clicked
+  // Selected asset list in the exact numbered order tapped
   const [selected, setSelected] = useState<MediaLibrary.Asset[]>([]);
 
-  // Sorting: 'newest' (creationTime DESC) or 'oldest' (creationTime ASC, page 1 first)
-  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('oldest');
+  // Sorting: 'newest' (creationTime DESC) or 'oldest' (creationTime ASC)
+  // CamScanner reverse-engineered parity: default to 'newest' so recent photos appear at top
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
 
   // Album selection
   const [albums, setAlbums] = useState<MediaLibrary.Album[]>([]);
   const [selectedAlbum, setSelectedAlbum] = useState<MediaLibrary.Album | null>(null);
   const [showAlbumPicker, setShowAlbumPicker] = useState(false);
 
-  // Lightbox preview
-  const [previewAsset, setPreviewAsset] = useState<MediaLibrary.Asset | null>(null);
+  // Fullscreen swipeable preview (CamScanner GalleryPreviewActivity parity)
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+  const previewListRef = useRef<FlatList>(null);
 
   // Map of asset.id -> selected 1-based index
   const selectedIndexMap = useMemo(() => {
@@ -74,6 +78,7 @@ export function MediaPickerModal({
   useEffect(() => {
     if (!visible) {
       setSelected([]);
+      setPreviewIndex(null);
       return;
     }
     checkAndLoad();
@@ -101,6 +106,8 @@ export function MediaPickerModal({
       }
 
       // Fetch assets with explicit chronological sort order
+      // sortOrder === 'oldest' -> ascending: true
+      // sortOrder === 'newest' -> ascending: false (default CamScanner behavior)
       const res = await MediaLibrary.getAssetsAsync({
         first: 90,
         mediaType: 'photo',
@@ -111,8 +118,7 @@ export function MediaPickerModal({
       setAssets(res.assets);
       setEndCursor(res.endCursor);
       setHasNextPage(res.hasNextPage);
-    } catch (err) {
-      // Permission denied or query error
+    } catch {
       setHasPermission(false);
     } finally {
       setLoading(false);
@@ -144,65 +150,75 @@ export function MediaPickerModal({
     }
   }
 
-  const toggleSelect = (item: MediaLibrary.Asset) => {
-    const existingIdx = selected.findIndex((s) => s.id === item.id);
-    if (existingIdx >= 0) {
-      // Unselect: remove and adjust remaining numbers automatically
-      setSelected((prev) => prev.filter((_, idx) => idx !== existingIdx));
-    } else {
+  const toggleSelect = useCallback((item: MediaLibrary.Asset) => {
+    setSelected((prev) => {
+      const existingIdx = prev.findIndex((s) => s.id === item.id);
+      if (existingIdx >= 0) {
+        // Unselect: remove and adjust remaining numbers automatically
+        return prev.filter((_, idx) => idx !== existingIdx);
+      }
       // Select: append to end with next sequence number
-      if (selected.length >= maxFiles) return;
-      setSelected((prev) => prev.concat(item));
-    }
-  };
+      if (prev.length >= maxFiles) return prev;
+      return prev.concat(item);
+    });
+  }, [maxFiles]);
 
   const handleConfirm = () => {
     if (!selected.length) return;
     const toImport = [...selected];
     setSelected([]);
+    setPreviewIndex(null);
     onConfirm(toImport);
     onClose();
   };
 
-  const renderItem = ({ item }: { item: MediaLibrary.Asset }) => {
+  const renderItem = ({ item, index }: { item: MediaLibrary.Asset; index: number }) => {
     const orderNumber = selectedIndexMap.get(item.id);
     const isSelected = orderNumber !== undefined;
 
     return (
-      <TouchableOpacity
+      <View
         style={[
           styles.tile,
           { width: TILE_SIZE, height: TILE_SIZE, backgroundColor: C.surface2 },
-          isSelected && { borderColor: C.brand, borderWidth: 2.5 },
+          isSelected && { borderColor: CAM_GREEN, borderWidth: 2.5 },
         ]}
-        onPress={() => toggleSelect(item)}
-        onLongPress={() => setPreviewAsset(item)}
-        activeOpacity={0.82}
       >
-        <Image
-          source={{ uri: item.uri }}
-          style={styles.tileImage}
-          resizeMode="cover"
-        />
-
-        {isSelected ? (
-          <View style={styles.selectedDimOverlay} />
-        ) : null}
-
-        {/* CamScanner-Style Top-Right Numbered Badge */}
-        <View
-          style={[
-            styles.badgeBox,
-            isSelected
-              ? { backgroundColor: C.brand, borderColor: C.white }
-              : { backgroundColor: 'rgba(0,0,0,0.42)', borderColor: 'rgba(255,255,255,0.7)' },
-          ]}
+        {/* Photo Body: Tapping opens CamScanner Fullscreen Swipeable Preview */}
+        <TouchableOpacity
+          style={StyleSheet.absoluteFill}
+          onPress={() => setPreviewIndex(index)}
+          activeOpacity={0.88}
         >
-          {isSelected ? (
-            <Text style={styles.badgeNumberText}>{orderNumber}</Text>
-          ) : null}
-        </View>
-      </TouchableOpacity>
+          <Image
+            source={{ uri: item.uri }}
+            style={styles.tileImage}
+            resizeMode="cover"
+          />
+          {isSelected ? <View style={styles.selectedDimOverlay} /> : null}
+        </TouchableOpacity>
+
+        {/* CamScanner-Style Top-Left Numbered Square Checkbox */}
+        <TouchableOpacity
+          style={styles.badgeHitArea}
+          onPress={() => toggleSelect(item)}
+          hitSlop={{ top: 8, left: 8, right: 8, bottom: 8 }}
+          activeOpacity={0.75}
+        >
+          <View
+            style={[
+              styles.badgeBox,
+              isSelected
+                ? { backgroundColor: CAM_GREEN, borderColor: '#ffffff' }
+                : { backgroundColor: 'rgba(0, 0, 0, 0.40)', borderColor: 'rgba(255, 255, 255, 0.78)' },
+            ]}
+          >
+            {isSelected ? (
+              <Text style={styles.badgeNumberText}>{orderNumber}</Text>
+            ) : null}
+          </View>
+        </TouchableOpacity>
+      </View>
     );
   };
 
@@ -223,13 +239,13 @@ export function MediaPickerModal({
             <Text numberOfLines={1} style={[styles.albumTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
               {selectedAlbum?.title || 'Select Photo'}
             </Text>
-            <Feather name="chevron-down" size={16} color={C.brand} />
+            <Feather name="chevron-down" size={16} color={CAM_GREEN} />
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[
               styles.importBtn,
-              { backgroundColor: selected.length > 0 ? C.brand : C.surface3 },
+              { backgroundColor: selected.length > 0 ? CAM_GREEN : (isDark ? '#262626' : '#e4e4e7') },
             ]}
             disabled={selected.length === 0}
             onPress={handleConfirm}
@@ -238,7 +254,7 @@ export function MediaPickerModal({
             <Text
               style={[
                 styles.importBtnText,
-                { color: selected.length > 0 ? C.white : C.textMuted, fontFamily: FontFamily.jakartaBold },
+                { color: selected.length > 0 ? '#ffffff' : C.textMuted, fontFamily: FontFamily.jakartaBold },
               ]}
             >
               {`Import (${selected.length})`}
@@ -253,9 +269,9 @@ export function MediaPickerModal({
             onPress={() => setSortOrder((prev) => (prev === 'oldest' ? 'newest' : 'oldest'))}
             activeOpacity={0.8}
           >
-            <Feather name={sortOrder === 'oldest' ? 'arrow-down' : 'arrow-up'} size={13} color={C.brand} />
+            <Feather name={sortOrder === 'newest' ? 'arrow-down' : 'arrow-up'} size={13} color={CAM_GREEN} />
             <Text style={[styles.sortText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-              {sortOrder === 'oldest' ? 'Page 1 First (Oldest)' : 'Newest First'}
+              {sortOrder === 'newest' ? 'Newest First' : 'Page 1 First (Oldest)'}
             </Text>
           </TouchableOpacity>
 
@@ -268,7 +284,7 @@ export function MediaPickerModal({
               </TouchableOpacity>
             ) : (
               <Text style={[styles.hintText, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
-                Tap in page order
+                Tap checkbox or inspect photo
               </Text>
             )}
           </View>
@@ -278,7 +294,7 @@ export function MediaPickerModal({
         {hasPermission === false ? (
           <View style={styles.centerBox}>
             <View style={[styles.permIconCircle, { backgroundColor: C.surface2 }]}>
-              <Feather name="image" size={32} color={C.brand} />
+              <Feather name="image" size={32} color={CAM_GREEN} />
             </View>
             <Text style={[styles.permTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
               Photo Access Needed
@@ -287,11 +303,11 @@ export function MediaPickerModal({
               Grant photo permissions to select and arrange your notebook pages in exact numbered order.
             </Text>
             <TouchableOpacity
-              style={[styles.permBtn, { backgroundColor: C.brand }]}
+              style={[styles.permBtn, { backgroundColor: CAM_GREEN }]}
               onPress={checkAndLoad}
               activeOpacity={0.85}
             >
-              <Text style={[styles.permBtnText, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>
+              <Text style={[styles.permBtnText, { color: '#ffffff', fontFamily: FontFamily.jakartaBold }]}>
                 Grant Permission
               </Text>
             </TouchableOpacity>
@@ -314,7 +330,7 @@ export function MediaPickerModal({
           </View>
         ) : loading ? (
           <View style={styles.centerBox}>
-            <ActivityIndicator size="large" color={C.brand} />
+            <ActivityIndicator size="large" color={CAM_GREEN} />
             <Text style={[styles.loadingText, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
               Loading gallery photos…
             </Text>
@@ -336,10 +352,10 @@ export function MediaPickerModal({
             ListFooterComponent={
               loadingMore ? (
                 <View style={styles.footerLoader}>
-                  <ActivityIndicator size="small" color={C.brand} />
+                  <ActivityIndicator size="small" color={CAM_GREEN} />
                 </View>
               ) : (
-                <View style={{ height: insets.bottom + 16 }} />
+                <View style={{ height: insets.bottom + (selected.length > 0 ? 84 : 20) }} />
               )
             }
             ListEmptyComponent={
@@ -369,17 +385,17 @@ export function MediaPickerModal({
               <Text style={[styles.bottomCountText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                 {`${selected.length} Page${selected.length > 1 ? 's' : ''} Selected`}
               </Text>
-              <Text style={[styles.bottomSeqText, { color: C.brand, fontFamily: FontFamily.jakartaMedium }]}>
-                Ready to compile in exact order
+              <Text style={[styles.bottomSeqText, { color: CAM_GREEN, fontFamily: FontFamily.jakartaMedium }]}>
+                Numbered in exact sequence
               </Text>
             </View>
             <TouchableOpacity
-              style={[styles.bottomImportBtn, { backgroundColor: C.brand }]}
+              style={[styles.bottomImportBtn, { backgroundColor: CAM_GREEN }]}
               onPress={handleConfirm}
               activeOpacity={0.85}
             >
-              <Feather name="check" size={16} color={C.white} />
-              <Text style={[styles.bottomImportBtnText, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>
+              <Feather name="check" size={16} color="#ffffff" />
+              <Text style={[styles.bottomImportBtnText, { color: '#ffffff', fontFamily: FontFamily.jakartaBold }]}>
                 Import Now
               </Text>
             </TouchableOpacity>
@@ -410,7 +426,7 @@ export function MediaPickerModal({
                   setShowAlbumPicker(false);
                 }}
               >
-                <Feather name="image" size={18} color={selectedAlbum === null ? C.brand : C.text2} />
+                <Feather name="image" size={18} color={selectedAlbum === null ? CAM_GREEN : C.text2} />
                 <Text style={[styles.albumRowText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                   All Photos
                 </Text>
@@ -431,13 +447,13 @@ export function MediaPickerModal({
                       setShowAlbumPicker(false);
                     }}
                   >
-                    <Feather name="folder" size={18} color={active ? C.brand : C.text2} />
+                    <Feather name="folder" size={18} color={active ? CAM_GREEN : C.text2} />
                     <View style={{ flex: 1, minWidth: 0 }}>
                       <Text numberOfLines={1} style={[styles.albumRowText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                         {alb.title}
                       </Text>
                       <Text style={[styles.albumRowCount, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
-                        {`${alb.assetCount} photos`}
+                        {`${alb.assetCount ?? 0} photos`}
                       </Text>
                     </View>
                   </TouchableOpacity>
@@ -447,14 +463,172 @@ export function MediaPickerModal({
           </TouchableOpacity>
         </Modal>
 
-        {/* Long-press Lightbox Full Preview Modal */}
-        <Modal visible={previewAsset !== null} transparent animationType="fade" onRequestClose={() => setPreviewAsset(null)}>
-          <View style={styles.lightboxRoot}>
-            <TouchableOpacity style={styles.lightboxCloseBtn} onPress={() => setPreviewAsset(null)}>
-              <Feather name="x" size={24} color="#ffffff" />
-            </TouchableOpacity>
-            {previewAsset ? (
-              <Image source={{ uri: previewAsset.uri }} style={styles.lightboxImg} resizeMode="contain" />
+        {/* CamScanner Fullscreen Swipeable Preview Modal (GalleryPreviewActivity parity) */}
+        <Modal
+          visible={previewIndex !== null}
+          animationType="fade"
+          onRequestClose={() => setPreviewIndex(null)}
+          statusBarTranslucent
+        >
+          <View style={styles.previewRoot}>
+            <StatusBar barStyle="light-content" backgroundColor="#000000" />
+
+            {/* Preview Top Bar */}
+            <View style={[styles.previewTopBar, { paddingTop: insets.top, height: 56 + insets.top }]}>
+              <TouchableOpacity
+                style={styles.previewBackBtn}
+                onPress={() => setPreviewIndex(null)}
+                activeOpacity={0.7}
+              >
+                <Feather name="arrow-left" size={24} color="#ffffff" />
+              </TouchableOpacity>
+
+              <Text style={styles.previewCounter}>
+                {`${(previewIndex ?? 0) + 1} / ${assets.length}`}
+              </Text>
+
+              <TouchableOpacity
+                style={[
+                  styles.previewImportBtn,
+                  { backgroundColor: selected.length > 0 ? CAM_GREEN : '#262626' },
+                ]}
+                disabled={selected.length === 0}
+                onPress={handleConfirm}
+                activeOpacity={0.85}
+              >
+                <Text
+                  style={[
+                    styles.previewImportBtnText,
+                    { color: selected.length > 0 ? '#ffffff' : '#71717a', fontFamily: FontFamily.jakartaBold },
+                  ]}
+                >
+                  {`Import (${selected.length})`}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Fullscreen Horizontal Swipeable Pager */}
+            <FlatList
+              ref={previewListRef}
+              style={{ flex: 1 }}
+              data={assets}
+              keyExtractor={(item) => item.id}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              initialScrollIndex={previewIndex ?? 0}
+              getItemLayout={(_, index) => ({
+                length: SCREEN_WIDTH,
+                offset: SCREEN_WIDTH * index,
+                index,
+              })}
+              onScrollToIndexFailed={(info) => {
+                setTimeout(() => {
+                  previewListRef.current?.scrollToIndex({ index: info.index, animated: false });
+                }, 50);
+              }}
+              onMomentumScrollEnd={(e) => {
+                const newIdx = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
+                if (newIdx >= 0 && newIdx < assets.length) {
+                  setPreviewIndex(newIdx);
+                }
+              }}
+              renderItem={({ item }) => (
+                <View style={styles.previewSlide}>
+                  <Image source={{ uri: item.uri }} style={styles.previewImage} resizeMode="contain" />
+                </View>
+              )}
+              windowSize={3}
+              maxToRenderPerBatch={3}
+              initialNumToRender={2}
+              removeClippedSubviews={Platform.OS === 'android'}
+            />
+
+            {/* Bottom Selected Pages Strip / Thumbnail Tray */}
+            {selected.length > 0 ? (
+              <View style={styles.selectedStrip}>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.selectedStripContent}
+                >
+                  {selected.map((item, idx) => {
+                    const isCurrent = previewIndex !== null && assets[previewIndex]?.id === item.id;
+                    return (
+                      <TouchableOpacity
+                        key={item.id}
+                        style={[
+                          styles.selectedStripThumbCard,
+                          isCurrent && { borderColor: CAM_GREEN, borderWidth: 2 },
+                        ]}
+                        onPress={() => {
+                          const targetIdx = assets.findIndex((a) => a.id === item.id);
+                          if (targetIdx >= 0) {
+                            setPreviewIndex(targetIdx);
+                            previewListRef.current?.scrollToIndex({ index: targetIdx, animated: true });
+                          }
+                        }}
+                        activeOpacity={0.8}
+                      >
+                        <Image source={{ uri: item.uri }} style={styles.selectedStripImage} />
+                        <View style={styles.selectedStripSeqBadge}>
+                          <Text style={styles.selectedStripSeqText}>{idx + 1}</Text>
+                        </View>
+                        <TouchableOpacity
+                          style={styles.selectedStripRemoveBtn}
+                          onPress={() => toggleSelect(item)}
+                          hitSlop={{ top: 6, left: 6, right: 6, bottom: 6 }}
+                        >
+                          <Feather name="x" size={11} color="#ffffff" />
+                        </TouchableOpacity>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            ) : null}
+
+            {/* Bottom Action Bar: [✓] Select Toggle Button */}
+            {previewIndex !== null && assets[previewIndex] ? (
+              (() => {
+                const currentAsset = assets[previewIndex];
+                const orderNum = selectedIndexMap.get(currentAsset.id);
+                const isCurrentSelected = orderNum !== undefined;
+                return (
+                  <View style={[styles.previewBottomBar, { paddingBottom: insets.bottom, height: 56 + insets.bottom }]}>
+                    <View style={{ flex: 1 }} />
+                    <TouchableOpacity
+                      style={styles.previewSelectBtn}
+                      onPress={() => toggleSelect(currentAsset)}
+                      activeOpacity={0.7}
+                    >
+                      <View
+                        style={[
+                          styles.previewCheckboxBox,
+                          isCurrentSelected
+                            ? { backgroundColor: CAM_GREEN, borderColor: '#ffffff' }
+                            : { backgroundColor: 'transparent', borderColor: 'rgba(255, 255, 255, 0.7)' },
+                        ]}
+                      >
+                        {isCurrentSelected ? (
+                          <Feather name="check" size={13} color="#ffffff" />
+                        ) : null}
+                      </View>
+                      <Text
+                        style={[
+                          styles.previewSelectText,
+                          {
+                            color: isCurrentSelected ? CAM_GREEN : 'rgba(255, 255, 255, 0.85)',
+                            fontFamily: FontFamily.jakartaBold,
+                          },
+                        ]}
+                      >
+                        {isCurrentSelected ? `Select (${orderNum})` : 'Select'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                );
+              })()
             ) : null}
           </View>
         </Modal>
@@ -544,12 +718,19 @@ const styles = StyleSheet.create({
   },
   selectedDimOverlay: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(91, 133, 247, 0.22)',
+    backgroundColor: 'rgba(16, 185, 129, 0.20)',
+  },
+  badgeHitArea: {
+    position: 'absolute',
+    top: 3,
+    left: 3,
+    width: 38,
+    height: 38,
+    alignItems: 'flex-start',
+    justifyContent: 'flex-start',
+    zIndex: 10,
   },
   badgeBox: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
     width: 24,
     height: 24,
     borderRadius: 6,
@@ -688,26 +869,124 @@ const styles = StyleSheet.create({
   albumRowCount: {
     fontSize: 12,
   },
-  lightboxRoot: {
+
+  // CamScanner Preview Styles
+  previewRoot: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.92)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: '#000000',
   },
-  lightboxCloseBtn: {
-    position: 'absolute',
-    top: 48,
-    right: 20,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+  previewTopBar: {
+    height: 56,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
     zIndex: 10,
   },
-  lightboxImg: {
-    width: SCREEN_WIDTH * 0.95,
-    height: '80%',
+  previewBackBtn: {
+    width: 40,
+    height: 40,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+  },
+  previewCounter: {
+    color: '#ffffff',
+    fontSize: 16.5,
+    fontFamily: FontFamily.jakartaBold,
+  },
+  previewImportBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: Radius.full,
+  },
+  previewImportBtnText: {
+    fontSize: 13.5,
+  },
+  previewSlide: {
+    width: SCREEN_WIDTH,
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  previewImage: {
+    width: SCREEN_WIDTH,
+    height: '100%',
+  },
+  selectedStrip: {
+    height: 76,
+    backgroundColor: 'rgba(12, 12, 12, 0.95)',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.12)',
+    justifyContent: 'center',
+  },
+  selectedStripContent: {
+    paddingHorizontal: 14,
+    alignItems: 'center',
+    gap: 10,
+  },
+  selectedStripThumbCard: {
+    width: 48,
+    height: 58,
+    borderRadius: 8,
+    overflow: 'hidden',
+    position: 'relative',
+    backgroundColor: '#1f1f1f',
+  },
+  selectedStripImage: {
+    width: '100%',
+    height: '100%',
+  },
+  selectedStripSeqBadge: {
+    position: 'absolute',
+    bottom: 2,
+    left: 2,
+    backgroundColor: CAM_GREEN,
+    borderRadius: 4,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+  },
+  selectedStripSeqText: {
+    color: '#ffffff',
+    fontSize: 9.5,
+    fontWeight: '800',
+  },
+  selectedStripRemoveBtn: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#ef4444',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  previewBottomBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingHorizontal: 16,
+    backgroundColor: '#0a0a0a',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.12)',
+  },
+  previewSelectBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  previewCheckboxBox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 1.8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  previewSelectText: {
+    fontSize: 15,
   },
 });
