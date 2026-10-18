@@ -60,6 +60,8 @@ import {
   usePdfErrorText,
 } from './components';
 import { PageStudioModal, type PageStudioResult } from './PageStudioModal';
+import { MediaPickerModal } from './MediaPickerModal';
+import * as MediaLibrary from 'expo-media-library/legacy';
 
 interface Item extends PhotoInput {
   id: number;
@@ -97,6 +99,7 @@ export function ToolImagesScreen({ navigation }: any) {
   const [prependCover, setPrependCover] = useState<boolean>(() => Boolean(getLatestCoverPage()));
   const [signatureUri, setSignatureUri] = useState<string | null>(null);
   const [studioIndex, setStudioIndex] = useState<number | null>(null);
+  const [mediaPickerVisible, setMediaPickerVisible] = useState(false);
 
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState({ done: 0, total: 0 });
@@ -166,7 +169,43 @@ export function ToolImagesScreen({ navigation }: any) {
     update((prev) => prev.concat(added));
   }
 
-  async function pickFromLibrary() {
+  function addMediaAssets(assets: MediaLibrary.Asset[]) {
+    const accepted: Item[] = [];
+    let tooBig = 0;
+    const now = Date.now();
+
+    assets.forEach((a, index) => {
+      const name = a.filename || `photo-${now}-${index + 1}.jpg`;
+      accepted.push({
+        id: ++seq,
+        uri: a.uri,
+        width: a.width ?? 0,
+        height: a.height ?? 0,
+        rotate: 0,
+        name,
+      });
+    });
+
+    const room = LIMITS.images.maxFiles - items.length;
+    if (room <= 0) {
+      toast({ type: 'error', title: t.pdfmaker.tools.imagesTitle, message: t.pdfmaker.errors.tooManyFiles(LIMITS.images.maxFiles) });
+      return;
+    }
+    const added = accepted.slice(0, room);
+    if (!added.length) return;
+    update((prev) => prev.concat(added));
+    toast({
+      type: 'success',
+      title: t.pdfmaker.tools.imagesTitle,
+      message: `${added.length} page${added.length > 1 ? 's' : ''} added in exact selection sequence.`,
+    });
+  }
+
+  function pickFromLibrary() {
+    setMediaPickerVisible(true);
+  }
+
+  async function pickFromSystemLibrary() {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (perm.status !== 'granted') {
       toast({ type: 'error', title: t.pdfmaker.tools.imagesTitle, message: t.pdfmaker.images.permission });
@@ -178,7 +217,17 @@ export function ToolImagesScreen({ navigation }: any) {
       quality: 1,
     });
     if (res.canceled || !res.assets?.length) return;
-    addAssets(res.assets);
+
+    // Automatically sort multi-selected assets by filename / natural sequence
+    const sorted = res.assets.length > 1
+      ? res.assets.slice().sort((a, b) => {
+          const na = a.fileName || '';
+          const nb = b.fileName || '';
+          return na.localeCompare(nb, undefined, { numeric: true, sensitivity: 'base' });
+        })
+      : res.assets;
+
+    addAssets(sorted);
   }
 
   async function pickFromCamera() {
@@ -465,9 +514,30 @@ export function ToolImagesScreen({ navigation }: any) {
               <Text style={[styles.label, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                 {t.pdfmaker.images.addPhotos}
               </Text>
-              <Text style={[styles.countBadge, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
-                {t.pdfmaker.images.count(items.length)}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                {items.length > 1 ? (
+                  <TouchableOpacity
+                    onPress={() => {
+                      update((prev) =>
+                        prev.slice().sort((a, b) =>
+                          a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }),
+                        ),
+                      );
+                      toast({ type: 'success', title: 'Pages Arranged', message: 'Sorted by page number/filename' });
+                    }}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+                    activeOpacity={0.7}
+                  >
+                    <Feather name="bar-chart-2" size={13} color={C.brand} />
+                    <Text style={{ color: C.brand, fontSize: 12.5, fontFamily: FontFamily.jakartaBold }}>
+                      Sort (1→N)
+                    </Text>
+                  </TouchableOpacity>
+                ) : null}
+                <Text style={[styles.countBadge, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+                  {t.pdfmaker.images.count(items.length)}
+                </Text>
+              </View>
             </View>
 
             <View style={[styles.toolbar58, { backgroundColor: C.surface, borderColor: C.border }]}>
@@ -832,6 +902,15 @@ export function ToolImagesScreen({ navigation }: any) {
         subtitle={t.pdfmaker.images.ready}
         fileUrl={result?.uri ?? null}
         fileName={finalName}
+      />
+
+      {/* CamScanner-Style In-App Numbered Photo Picker */}
+      <MediaPickerModal
+        visible={mediaPickerVisible}
+        onClose={() => setMediaPickerVisible(false)}
+        onConfirm={addMediaAssets}
+        onFallbackSystemPicker={pickFromSystemLibrary}
+        maxFiles={LIMITS.images.maxFiles - items.length}
       />
     </SafeAreaView>
   );

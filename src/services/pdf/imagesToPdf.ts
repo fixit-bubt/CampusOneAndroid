@@ -244,7 +244,7 @@ export async function buildImagesPdf(
     }
 
     const layout = opts.layoutMode ?? 'borderless';
-    const footerReservePt = font && opts.footerText ? 24 : 0;
+    const footerReservePt = font && opts.footerText ? 28 : 0;
     const headerReservePt = font && opts.headerText ? 22 : 0;
 
     if (scanMode === 'id_card') {

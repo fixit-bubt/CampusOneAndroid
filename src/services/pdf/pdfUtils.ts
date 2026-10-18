@@ -168,8 +168,10 @@ export function layoutDocumentPage(
   }
 
   const microMargin = mode === 'smart_fit' ? 12 : 0;
+  const bottomPad = footerReserve > 0 ? 6 : 0;
+  const topPad = headerReserve > 0 ? 4 : 0;
   const availW = Math.max(40, standardPageW - microMargin * 2);
-  const availH = Math.max(40, standardPageH - microMargin * 2 - footerReserve - headerReserve);
+  const availH = Math.max(40, standardPageH - microMargin * 2 - footerReserve - headerReserve - bottomPad - topPad);
   const scale = Math.min(availW / safeW, availH / safeH);
   const w = Math.floor(safeW * scale);
   const h = Math.floor(safeH * scale);
@@ -177,7 +179,7 @@ export function layoutDocumentPage(
     pageW: standardPageW,
     pageH: standardPageH,
     x: Math.round((standardPageW - w) / 2),
-    y: Math.round(footerReserve + microMargin + (availH - h) / 2),
+    y: Math.round(footerReserve + bottomPad + microMargin + (availH - h) / 2),
     w,
     h,
   };

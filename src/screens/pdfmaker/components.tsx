@@ -175,7 +175,7 @@ export function ThumbCard({
         ) : (
           <Feather name="file-text" size={22} color={C.textMuted} />
         )}
-        <View style={styles.badge}><Text style={styles.badgeText}>{index + 1}</Text></View>
+        <View style={styles.badge}><Text style={styles.badgeText}>{`Page ${index + 1}`}</Text></View>
         {badgeLabel ? (
           <View style={[styles.studioBadge, { backgroundColor: C.brand }]}>
             <Feather name="sliders" size={9} color={C.white} />
@@ -345,8 +345,8 @@ const styles = StyleSheet.create({
   thumbImg: { width: '100%', height: '100%' },
   // Scrims sit on top of an image, so they are literal overlays rather than
   // theme colours.
-  badge: { position: 'absolute', left: 5, top: 5, backgroundColor: 'rgba(0,0,0,0.62)', borderRadius: 99, paddingHorizontal: 7, paddingVertical: 1 } as ViewStyle,
-  badgeText: { color: '#ffffff', fontSize: 10.5, fontWeight: '700' },
+  badge: { position: 'absolute', left: 5, top: 5, backgroundColor: 'rgba(0,0,0,0.74)', borderRadius: 7, borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)', paddingHorizontal: 6, paddingVertical: 2 } as ViewStyle,
+  badgeText: { color: '#ffffff', fontSize: 10, fontWeight: '700' },
   studioBadge: { position: 'absolute', left: 5, bottom: 5, flexDirection: 'row', alignItems: 'center', gap: 3, borderRadius: 99, paddingHorizontal: 6, paddingVertical: 2 } as ViewStyle,
   studioBadgeText: { color: '#ffffff', fontSize: 9.5, fontWeight: '700' },
   corner: { position: 'absolute', right: 5, top: 5, width: 24, height: 24, borderRadius: 99, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.62)' } as ViewStyle,
