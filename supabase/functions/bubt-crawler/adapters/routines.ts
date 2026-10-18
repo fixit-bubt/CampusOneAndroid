@@ -16,7 +16,8 @@ export async function runRoutinesAdapter(
 
   // Filter notices for routines and schedules
   const routineCandidates = rawNotices.filter((n: any) =>
-    n && n.title && /exam.*routine|class.*routine|class.*schedule|viva.*schedule|examination.*routine/i.test(n.title)
+    n && n.title && !/bus\s*schedule/i.test(n.title) &&
+    /exam.*routine|class.*routine|class.*schedule|viva.*schedule|examination.*routine|mid-?term.*routine|final.*routine/i.test(n.title)
   );
 
   if (routineCandidates.length === 0) {

@@ -2462,4 +2462,68 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 - **Prominent `Page X` Cards & 1-Tap Sort Action:** Grid items display high-contrast `Page ${index + 1}` rounded labels and the section header provides a 1-tap `Sort (1→N)` button alongside manual reorder buttons.
 - **Academic Footer Margin Separation:** Enforced a 28pt footer reservation with 6pt bottom padding in `layoutDocumentPage` and `drawAcademicOverlays`, guaranteeing that optional footer stamps never overlap bottom mathematical formulas or handwriting.
 
+---
+
+## 53. Routines & Examination System Redesign (72-Size Bar Standard & In-App PDF View/Download Architecture)
+
+### 53.1 Architectural Hierarchy & Step Machine (`RoutinesBrowseScreen.tsx`)
+The routine module was completely re-architected from scratch into a streamlined, high-performance step-based flow adhering to the strict 72-size bar standard across all navigation levels:
+1. **Step 1 (Root Category Selection):**
+   - Renders two full-width **72-size bars** (`height: 72`, `minHeight: 72`, `borderRadius: 16`):
+     - **"Routines"**: Class routines and weekly semester schedules.
+     - **"Exam Routine"**: Mid-Term, Final, and Supplementary exam timetables.
+   - Smooth active-touch opacity (`0.78`) with tactile feedback and semantic sector icons (`SectorColors.study` and `SectorColors.routines`).
+2. **Step 2 (Department Selector):**
+   - Lists all 9 academic departments as standardized **72-size bars**:
+     - Computer Science & Engineering (`CSE`)
+     - Electrical & Electronic Engineering (`EEE`)
+     - Faculty of Business (`BBA` / MBA / EMBA)
+     - Department of English (`English`)
+     - Law & Justice (`Law`)
+     - Civil Engineering (`Civil`)
+     - Textile Engineering (`Textile`)
+     - Economics (`Economics`)
+     - Mathematics & Statistics (`Math`)
+   - Includes real-time fuzzy search bar for rapid filtering by department name or short code.
+3. **Step 3 (Department Mode Selection):**
+   - Presents two **72-size bars**:
+     - **"All"**: Full departmental routine document (Official PDF).
+     - **"Choose"**: Filter by specific Intake and Section timetable.
+4. **Step 4A ("All" Screen - Full Departmental PDF & Live Viewer):**
+   - Fetches and displays official departmental routine documents from `public.routines`.
+   - Multi-document selector tabs when both Day/Evening or Fall/Summer documents exist.
+   - Action controls:
+     - **Fullscreen Viewer**: Launches `CampusPdfViewerModal` with high-resolution rendering, multi-page jumping, zoom, and text search.
+     - **Download PDF**: Downloads file locally via `File.downloadFileAsync` into device cache and invokes `Sharing.shareAsync` so students can save to storage, print, or share.
+     - **Live Embedded Preview**: In-app `WebView` backed by Google Docs Viewer for instantaneous document reading without leaving the screen.
+5. **Step 4B ("Choose" Screen - Intake & Section Tabs):**
+   - Two top tabs: **"Intake"** and **"Section"** styled with CampusOne tab tokens.
+   - Intake tab displays horizontal chip matrix of department intakes (e.g. 51 to 57 for CSE).
+   - Section tab displays section chips (Section 1 to 4).
+   - **Class Routine View:** Day selector (SAT, SUN, MON, TUE, WED, THR, FRI) with today's day highlighted; displays class slots with period timing, course code, course title, room number, building, and teacher short code.
+   - **Exam Routine View:** Chronologically sorted exam schedule with date, day of week, shift, time range, course, room, building, teacher, and seat allocation range (`Roll: 001 - 045`).
+   - Integrated "Official Department Document Available" card with 1-tap in-app View and Download actions.
+
+### 53.2 Database Hardening & Comprehensive Seeds
+- **Public & Authenticated Read Permissions (`20261028000000_routines_system_redesign.sql`):**
+  - Executed `GRANT SELECT ON public.routines, public.routine_slots, public.exam_slots TO anon, authenticated;`
+  - Replaced legacy restrictive policies with standardized `anyone_read_routines`, `anyone_read_routine_slots`, and `anyone_read_exam_slots` policies with `USING (true)` to ensure both guest and logged-in students can view timetables.
+- **Universal Multi-Department Seeds (`20261028010000_seed_all_departments_routines.sql`):**
+  - Seeded official class and exam routine PDF records for all 9 departments for Fall 2026 with deterministic `content_hash` fingerprints.
+  - Seeded detailed section timetable slots (`routine_slots`) and examination slots (`exam_slots`) across CSE, EEE, BBA, Law, English, Civil, Textile, and Economics.
+
+### 53.3 Crawler Enhancements (`supabase/functions/bubt-crawler/adapters/routines.ts`)
+- **Bus Schedule Exclusion & Exam Filter Tightening:**
+  - Added strict guard `!/bus\s*schedule/i.test(n.title)` to eliminate false-positive bus schedule notices.
+  - Expanded regex to capture all mid-term and final routine variations (`mid-?term.*routine|final.*routine`).
+  - Deployed to Supabase edge function `bubt-crawler` and verified with live test runs returning HTTP 200.
+
+### 53.4 Android Hardware Back Button State Management
+- Integrated `BackHandler.addEventListener('hardwareBackPress', ...)` inside `RoutinesBrowseScreen.tsx`:
+  - Dismisses PDF viewer modal if open.
+  - Transitions `all` / `choose` back to `options`.
+  - Transitions `options` back to `departments`.
+  - Transitions `departments` back to `types`.
+  - Allows native navigation pop on `types`, guaranteeing an intuitive native back-stack experience.
+
 

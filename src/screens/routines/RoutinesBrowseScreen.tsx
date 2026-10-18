@@ -1,75 +1,128 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
-  TextInput,
-  Modal,
   StyleSheet,
   ActivityIndicator,
-  Alert,
+  ScrollView,
+  BackHandler,
+  TextInput,
+  Share,
   Dimensions,
   Platform,
-  KeyboardAvoidingView,
-  ScrollView,
-  Image,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
 import { WebView } from 'react-native-webview';
-import * as DocumentPicker from 'expo-document-picker';
 import { Feather } from '@expo/vector-icons';
+import { File, Paths } from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
-import { Icon } from '../../components/ui/Icon';
 import { useToast } from '../../components/ui/Toast';
 import { CampusPdfViewerModal } from '../../components/pdf/CampusPdfViewerModal';
-import {
-  prepareViewerEnvironment,
-  prepareDocumentForViewer,
-  shareDownloadedPdf,
-} from '../../services/pdf/pdfViewerService';
 import { supabase } from '../../lib/supabase';
-import { uploadFile } from '../../utils/storage';
-import { isImageFile } from '../../utils/imageCompress';
-import { normalizePdfUrl } from '../../utils/pdfUrl';
-import { MAX_FILE_SIZE_MB } from '../../constants/app';
-import { FontFamily, FontSize, Layout, Radius, SectorColors } from '../../theme';
+import { normalizePdfUrl, buildGoogleDocsViewerUrl } from '../../utils/pdfUrl';
+import { openUrl } from '../../utils/link';
+import { FontFamily, Layout, Radius, SectorColors, pillBg, Accent } from '../../theme';
 
-const DEPARTMENTS = [
-  { code: 'CSE', name: 'Computer Science & Engineering' },
-  { code: 'EEE', name: 'Electrical & Electronic Engineering' },
-  { code: 'BBA', name: 'Business Administration' },
-  { code: 'English', name: 'English' },
-  { code: 'Law', name: 'Law & Justice' },
-  { code: 'Civil', name: 'Civil Engineering' },
-  { code: 'Textile', name: 'Textile Engineering' },
-  { code: 'Economics', name: 'Economics' },
+export interface DepartmentItem {
+  code: string;
+  name: string;
+  shortName: string;
+  icon: keyof typeof Feather.glyphMap;
+  accentColor: string;
+  intakes: string[];
+  sections: string[];
+}
+
+export const DEPARTMENTS: DepartmentItem[] = [
+  {
+    code: 'CSE',
+    name: 'Computer Science & Engineering',
+    shortName: 'CSE / Data Science',
+    icon: 'cpu',
+    accentColor: '#2563eb',
+    intakes: ['51', '52', '53', '54', '55', '56', '57'],
+    sections: ['1', '2', '3', '4'],
+  },
+  {
+    code: 'EEE',
+    name: 'Electrical & Electronic Engineering',
+    shortName: 'EEE (Day & Evening)',
+    icon: 'zap',
+    accentColor: '#0284c7',
+    intakes: ['45', '46', '47', '48', '49', '50'],
+    sections: ['1', '2', '3'],
+  },
+  {
+    code: 'BBA',
+    name: 'Faculty of Business',
+    shortName: 'BBA / MBA / EMBA',
+    icon: 'briefcase',
+    accentColor: '#b45309',
+    intakes: ['48', '49', '50', '51', '52', '53'],
+    sections: ['1', '2', '3'],
+  },
+  {
+    code: 'English',
+    name: 'Department of English',
+    shortName: 'BA (Hons) in English',
+    icon: 'book',
+    accentColor: '#059669',
+    intakes: ['42', '43', '44', '45', '46'],
+    sections: ['1', '2'],
+  },
+  {
+    code: 'Law',
+    name: 'Law & Justice',
+    shortName: 'LLB / LLM Programs',
+    icon: 'shield',
+    accentColor: '#7c3aed',
+    intakes: ['48', '49', '50', '51', '56'],
+    sections: ['1', '2'],
+  },
+  {
+    code: 'Civil',
+    name: 'Civil Engineering',
+    shortName: 'CE (Day & Evening)',
+    icon: 'tool',
+    accentColor: '#ea580c',
+    intakes: ['35', '36', '37', '38', '39'],
+    sections: ['1', '2'],
+  },
+  {
+    code: 'Textile',
+    name: 'Textile Engineering',
+    shortName: 'TE (Day & Evening)',
+    icon: 'layers',
+    accentColor: '#db2777',
+    intakes: ['38', '39', '40', '41', '42'],
+    sections: ['1', '2'],
+  },
+  {
+    code: 'Economics',
+    name: 'Economics',
+    shortName: 'B.Sc. in Economics',
+    icon: 'trending-up',
+    accentColor: '#0d9488',
+    intakes: ['20', '21', '22', '23', '24'],
+    sections: ['1', '2'],
+  },
+  {
+    code: 'Math',
+    name: 'Mathematics & Statistics',
+    shortName: 'Dept. of Math & Stats',
+    icon: 'grid',
+    accentColor: '#6366f1',
+    intakes: ['15', '16', '17', '18'],
+    sections: ['1', '2'],
+  },
 ];
 
-const SEMESTERS = ['Fall 2026', 'Summer 2026', 'Spring 2026'];
-
-export function isValidDocUrl(url: string | null | undefined): boolean {
-  if (!url || typeof url !== 'string') return false;
-  const clean = url.trim();
-  return /^https?:\/\/.+/i.test(clean);
-}
-
-export function normalizeDeptCode(dept: string): string {
-  const d = (dept || '').toLowerCase();
-  if (d.includes('computer') || d.includes('cse')) return 'CSE';
-  if (d.includes('electrical') || d.includes('eee')) return 'EEE';
-  if (d.includes('business') || d.includes('bba')) return 'BBA';
-  if (d.includes('law')) return 'Law';
-  if (d.includes('english')) return 'English';
-  if (d.includes('civil')) return 'Civil';
-  if (d.includes('textile')) return 'Textile';
-  if (d.includes('economics')) return 'Economics';
-  return dept.trim() || 'CSE';
-}
-
-interface OfficialRoutine {
+export interface OfficialRoutineRow {
   id: string;
   type: 'class' | 'exam';
   title: string;
@@ -82,992 +135,1142 @@ interface OfficialRoutine {
   created_at: string;
 }
 
-export function RoutinesBrowseScreen({ navigation }: any) {
+export interface RoutineSlot {
+  id: string;
+  department: string;
+  intake: string;
+  section: string;
+  semester: string;
+  day_of_week: 'SAT' | 'SUN' | 'MON' | 'TUE' | 'WED' | 'THR' | 'FRI';
+  time_slot: string;
+  slot_index: number;
+  course_code: string;
+  course_title: string;
+  teacher_short_code: string;
+  room: string;
+  building: string;
+  is_lab?: boolean;
+}
+
+export interface ExamSlot {
+  id: string;
+  department: string;
+  intake: string;
+  section: string;
+  semester: string;
+  exam_date: string;
+  day_of_week: string;
+  shift: string;
+  time_range: string;
+  course_code: string;
+  course_title: string;
+  teacher_short_code: string;
+  room: string;
+  building: string;
+  seat_range?: string;
+}
+
+export function matchesDepartment(routineDept: string | null | undefined, targetCode: string): boolean {
+  if (!routineDept) return false;
+  const d = routineDept.toLowerCase().trim();
+  switch (targetCode) {
+    case 'CSE':
+      return d.includes('cse') || d.includes('computer') || d.includes('dse');
+    case 'EEE':
+      return d.includes('eee') || d.includes('electrical');
+    case 'BBA':
+      return d.includes('bba') || d.includes('mba') || d.includes('business') || d.includes('faculty of business');
+    case 'English':
+      return d.includes('english') || d.includes('eng');
+    case 'Law':
+      return d.includes('law') || d.includes('justice') || d.includes('llb') || d.includes('llm') || d.includes('ll. b') || d.includes('ll.m');
+    case 'Civil':
+      return d.includes('civil') || d.includes('ce');
+    case 'Textile':
+      return d.includes('textile') || d.includes('te');
+    case 'Economics':
+      return d.includes('economics') || d.includes('econ') || d.includes('ede');
+    case 'Math':
+      return d.includes('math') || d.includes('statistics');
+    default:
+      return d.includes(targetCode.toLowerCase());
+  }
+}
+
+const WEEKDAYS: ('ALL' | 'SAT' | 'SUN' | 'MON' | 'TUE' | 'WED' | 'THR' | 'FRI')[] = [
+  'ALL', 'SAT', 'SUN', 'MON', 'TUE', 'WED', 'THR', 'FRI'
+];
+
+type RoutineStep = 'types' | 'departments' | 'options' | 'all' | 'choose';
+
+export function RoutinesBrowseScreen({ route, navigation }: any) {
   const { C, isDark } = useTheme();
-  const { user, profile } = useAuth();
+  const { profile } = useAuth();
   const insets = useSafeAreaInsets();
   const toast = useToast();
-  const canPost = profile?.role === 'admin' || profile?.role === 'staff';
 
-  // 1. Core Selection State
-  const [department, setDepartment] = useState(() => normalizeDeptCode(profile?.department || 'CSE'));
-  const [intake, setIntake] = useState(() => profile?.intake?.trim() || '51');
-  const [section, setSection] = useState(() => profile?.section?.trim() || '1');
-  const [routineType, setRoutineType] = useState<'class' | 'exam'>('class');
-  const [semester, setSemester] = useState('Fall 2026');
+  // Primary Navigation Step
+  const [step, setStep] = useState<RoutineStep>('types');
+  const [activeType, setActiveType] = useState<'class' | 'exam'>('class');
+  const [selectedDept, setSelectedDept] = useState<DepartmentItem>(DEPARTMENTS[0]);
+  const [deptSearch, setDeptSearch] = useState('');
 
-  // 2. Data State
-  const [routinesList, setRoutinesList] = useState<OfficialRoutine[]>([]);
-  const [loadingData, setLoadingData] = useState(true);
+  // Choose sub-selection
+  const [chooseTab, setChooseTab] = useState<'intake' | 'section'>('intake');
+  const [selectedIntake, setSelectedIntake] = useState<string>('51');
+  const [selectedSection, setSelectedSection] = useState<string>('1');
+  const [selectedDay, setSelectedDay] = useState<string>('ALL');
 
-  // 3. Sheet Viewer State
-  const webRef = useRef<WebView>(null);
-  const webViewReadyRef = useRef(false);
-  const docPayloadRef = useRef<{ base64?: string; fileUri?: string } | null>(null);
+  // Datasets
+  const [allRoutines, setAllRoutines] = useState<OfficialRoutineRow[]>([]);
+  const [loadingRoutines, setLoadingRoutines] = useState(false);
+  const [selectedPdfDoc, setSelectedPdfDoc] = useState<OfficialRoutineRow | null>(null);
 
-  const [htmlUri, setHtmlUri] = useState<string | null>(null);
-  const [localFileUri, setLocalFileUri] = useState<string | null>(null);
-  const [viewerLoading, setViewerLoading] = useState(false);
-  const [viewerError, setViewerError] = useState<string | null>(null);
-  const [viewerMessage, setViewerMessage] = useState('Locating section routine…');
-  const [matchedPage, setMatchedPage] = useState<number | null>(null);
-  const [totalPages, setTotalPages] = useState<number>(1);
-  const [sharing, setSharing] = useState(false);
+  // Section Timetable Slots
+  const [classSlots, setClassSlots] = useState<RoutineSlot[]>([]);
+  const [examSlots, setExamSlots] = useState<ExamSlot[]>([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
 
-  // 4. Modals
-  const [deptPickerVisible, setDeptPickerVisible] = useState(false);
-  const [intakeSecPickerVisible, setIntakeSecPickerVisible] = useState(false);
-  const [typePickerVisible, setTypePickerVisible] = useState(false);
-  const [fullscreenModalVisible, setFullscreenModalVisible] = useState(false);
-  const [uploadModalVisible, setUploadModalVisible] = useState(false);
-  const [allCircularsModalVisible, setAllCircularsModalVisible] = useState(false);
-  const [selectedCircularDoc, setSelectedCircularDoc] = useState<OfficialRoutine | null>(null);
+  // PDF Viewer & Downloads
+  const [pdfModalVisible, setPdfModalVisible] = useState(false);
+  const [activeModalUrl, setActiveModalUrl] = useState<string | null>(null);
+  const [activeModalTitle, setActiveModalTitle] = useState('BUBT Routine');
+  const [downloading, setDownloading] = useState(false);
 
-  // Temp draft state for Intake & Section Popup
-  const [draftIntake, setDraftIntake] = useState(intake);
-  const [draftSection, setDraftSection] = useState(section);
+  // Initialize from user profile if available
+  useEffect(() => {
+    if (profile?.department) {
+      const match = DEPARTMENTS.find(d => matchesDepartment(profile.department, d.code));
+      if (match) {
+        setSelectedDept(match);
+      }
+    }
+    if (profile?.intake?.trim()) {
+      setSelectedIntake(profile.intake.trim());
+    }
+    if (profile?.section?.trim()) {
+      setSelectedSection(profile.section.trim());
+    }
+  }, [profile]);
 
-  // Upload Form State
-  const [fTitle, setFTitle] = useState('');
-  const [fDept, setFDept] = useState('');
-  const [fSemester, setFSemester] = useState('');
-  const [fIntake, setFIntake] = useState('');
-  const [fSection, setFSection] = useState('');
-  const [fType, setFType] = useState<'class' | 'exam'>('class');
-  const [pickedFile, setPickedFile] = useState<{ uri: string; name: string; mimeType: string } | null>(null);
-  const [postingPdf, setPostingPdf] = useState(false);
-
-  // Reset custom circular override when user changes primary filters
-  const handleDepartmentChange = useCallback((dept: string) => {
-    setDepartment(dept);
-    setSelectedCircularDoc(null);
-    setViewerError(null);
-  }, []);
-
-  const handleSemesterChange = useCallback((sem: string) => {
-    setSemester(sem);
-    setSelectedCircularDoc(null);
-    setViewerError(null);
-  }, []);
-
-  const handleTypeChange = useCallback((type: 'class' | 'exam') => {
-    setRoutineType(type);
-    setSelectedCircularDoc(null);
-    setViewerError(null);
-  }, []);
-
-  // Load all routines from Supabase
-  const loadRoutines = useCallback(async () => {
+  // Load all routines from database
+  const loadRoutinesData = useCallback(async () => {
     try {
-      setLoadingData(true);
+      setLoadingRoutines(true);
       const { data, error } = await supabase
         .from('routines')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setRoutinesList((data as OfficialRoutine[]) || []);
-    } catch (err: any) {
-      console.warn('loadRoutines error:', err?.message);
-    } finally {
-      setLoadingData(false);
-    }
-  }, []);
-
-  useFocusEffect(
-    useCallback(() => {
-      loadRoutines();
-    }, [loadRoutines])
-  );
-
-  // Filter only routines with valid HTTP/HTTPS URLs
-  const validRoutines = useMemo(() => {
-    return routinesList.filter(
-      (r) => isValidDocUrl(r.file_url) || isValidDocUrl(r.image_url)
-    );
-  }, [routinesList]);
-
-  // Find the best matching routine document for current selections
-  const activeDocument = useMemo(() => {
-    if (selectedCircularDoc) {
-      return selectedCircularDoc;
-    }
-    if (validRoutines.length === 0) return null;
-
-    const typeRoutines = validRoutines.filter((r) => r.type === routineType);
-
-    // 1. Strict match: exact section routine (Type + Department + Semester + Intake + Section)
-    const exactSection = typeRoutines.find((r) => {
-      const matchDept = r.department ? normalizeDeptCode(r.department) === department : false;
-      const matchSem = r.semester ? r.semester.toLowerCase().includes(semester.toLowerCase()) : false;
-      return matchDept && matchSem && r.intake === intake && r.section === section;
-    });
-    if (exactSection) return exactSection;
-
-    // 2. Departmental master PDF for this exact semester
-    const deptSemester = typeRoutines.find((r) => {
-      const matchDept = r.department ? normalizeDeptCode(r.department) === department : false;
-      const matchSem = r.semester ? r.semester.toLowerCase().includes(semester.toLowerCase()) : false;
-      return matchDept && matchSem;
-    });
-    if (deptSemester) return deptSemester;
-
-    // 3. University-Wide master PDF for this exact semester (applies to all departments)
-    const univSemester = typeRoutines.find((r) => {
-      const isUnivWide = !r.department || r.department.toLowerCase().includes('university');
-      const matchSem = r.semester ? r.semester.toLowerCase().includes(semester.toLowerCase()) : false;
-      return isUnivWide && matchSem;
-    });
-    if (univSemester) return univSemester;
-
-    // Strict constraint: Never silently fall back across departments or semesters!
-    return null;
-  }, [selectedCircularDoc, validRoutines, routineType, department, semester, intake, section]);
-
-  // Find latest available routine for this department or university-wide (for quick switch prompt)
-  const latestAvailableRoutine = useMemo(() => {
-    if (validRoutines.length === 0) return null;
-    const typeRoutines = validRoutines.filter((r) => r.type === routineType);
-    return (
-      typeRoutines.find((r) => {
-        const matchDept = !r.department || normalizeDeptCode(r.department) === department;
-        return matchDept;
-      }) || null
-    );
-  }, [validRoutines, routineType, department]);
-
-  const rawDocUrl = activeDocument?.file_url || activeDocument?.image_url || null;
-  const activeDocUrl = useMemo(() => normalizePdfUrl(rawDocUrl), [rawDocUrl]);
-  const isImageDoc = activeDocUrl ? isImageFile(activeDocUrl) : false;
-
-  const searchQuery = useMemo(() => {
-    return `Intake ${intake} Section ${section}`;
-  }, [intake, section]);
-
-  // Synchronize document loading to the embedded WebView
-  const sendDocumentToWebView = useCallback(() => {
-    if (!docPayloadRef.current) return;
-    const payload = docPayloadRef.current;
-    if (payload.base64) {
-      webRef.current?.injectJavaScript(
-        `if (typeof window.loadPdfData === 'function') { window.loadPdfData(${JSON.stringify(payload.base64)}); } true;`
-      );
-    } else if (payload.fileUri) {
-      webRef.current?.injectJavaScript(
-        `if (typeof window.loadPdfDoc === 'function') { window.loadPdfDoc(${JSON.stringify(payload.fileUri)}); } true;`
-      );
-    }
-  }, []);
-
-  // Initialize and load the PDF document on-device
-  const initSheetViewer = useCallback(async () => {
-    setViewerError(null);
-    if (!activeDocUrl || isImageDoc) {
-      setViewerLoading(false);
-      return;
-    }
-
-    try {
-      setViewerLoading(true);
-      setViewerMessage(`Locating ${department} Intake ${intake}-${section}…`);
-      setMatchedPage(null);
-
-      // 1. Prepare engine HTML
-      const env = await prepareViewerEnvironment(isDark);
-      setHtmlUri(env.htmlUri);
-
-      // 2. Download and prepare document file
-      const doc = await prepareDocumentForViewer(activeDocUrl, `${department}_${routineType}_${semester}`);
-      setLocalFileUri(doc.localFileUri);
-
-      docPayloadRef.current = {
-        base64: doc.base64Data,
-        fileUri: doc.engineFileUri,
-      };
-
-      if (webViewReadyRef.current) {
-        sendDocumentToWebView();
+      if (error) {
+        console.warn('Error loading routines:', error.message);
+      } else if (data) {
+        setAllRoutines(data as OfficialRoutineRow[]);
       }
     } catch (err: any) {
-      console.warn('initSheetViewer error:', err?.message);
-      setViewerError(err?.message || 'Could not load PDF document.');
-      setViewerLoading(false);
+      console.warn('loadRoutinesData exception:', err?.message);
+    } finally {
+      setLoadingRoutines(false);
     }
-  }, [activeDocUrl, isImageDoc, department, routineType, semester, intake, section, isDark, sendDocumentToWebView]);
+  }, []);
 
   useEffect(() => {
-    docPayloadRef.current = null;
-    initSheetViewer();
-  }, [initSheetViewer]);
+    loadRoutinesData();
+  }, [loadRoutinesData]);
 
-  // Handle messages from the embedded WebView
-  const handleWebViewMessage = useCallback(
-    (event: any) => {
-      try {
-        const data = JSON.parse(event.nativeEvent.data);
-        if (data.type === 'viewerReady') {
-          webViewReadyRef.current = true;
-          sendDocumentToWebView();
-        } else if (data.type === 'docOpened') {
-          setTotalPages(data.totalPages || 1);
-          setViewerLoading(false);
-          // Auto-trigger Section Search across pages
-          webRef.current?.injectJavaScript(
-            `if (typeof window.findSectionPage === 'function') { window.findSectionPage(${JSON.stringify(searchQuery)}); } true;`
-          );
-        } else if (data.type === 'pageMatched') {
-          if (data.page > 0) {
-            setMatchedPage(data.page);
-            toast({
-              type: 'success',
-              title: 'Section Located',
-              message: `Page ${data.page} of ${data.totalPages || totalPages} · Intake ${intake}-${section}`,
-            });
-          } else {
-            setMatchedPage(1);
-          }
-        } else if (data.type === 'pageChange') {
-          if (data.page) setMatchedPage(data.page);
-        } else if (data.type === 'error') {
-          console.warn('WebView viewer error:', data.message);
-          setViewerLoading(false);
-          setViewerError(data.message || 'Error rendering PDF document');
-        }
-      } catch (err: any) {
-        console.warn('handleWebViewMessage parse error:', err);
-      }
-    },
-    [sendDocumentToWebView, searchQuery, totalPages, intake, section, toast]
-  );
-
-  // Share handler
-  const handleShare = useCallback(async () => {
-    if (sharing || !activeDocUrl) return;
+  // Load section routine slots & exam slots when in choose mode
+  const loadSlotsData = useCallback(async () => {
+    if (step !== 'choose') return;
     try {
-      setSharing(true);
-      if (localFileUri) {
-        await shareDownloadedPdf(localFileUri, `${department}_Intake_${intake}_Sec_${section}`);
+      setLoadingSlots(true);
+      if (activeType === 'class') {
+        const { data, error } = await supabase
+          .from('routine_slots')
+          .select('*')
+          .ilike('department', `%${selectedDept.code}%`)
+          .eq('intake', selectedIntake)
+          .eq('section', selectedSection)
+          .order('slot_index', { ascending: true });
+
+        if (!error && data) {
+          setClassSlots(data as RoutineSlot[]);
+        } else {
+          setClassSlots([]);
+        }
       } else {
-        await shareDownloadedPdf(activeDocUrl, `${department}_Intake_${intake}_Sec_${section}`);
+        const { data, error } = await supabase
+          .from('exam_slots')
+          .select('*')
+          .ilike('department', `%${selectedDept.code}%`)
+          .eq('intake', selectedIntake)
+          .eq('section', selectedSection)
+          .order('exam_date', { ascending: true });
+
+        if (!error && data) {
+          setExamSlots(data as ExamSlot[]);
+        } else {
+          setExamSlots([]);
+        }
       }
     } catch (err: any) {
-      toast({ type: 'error', title: 'Could not share routine', message: err.message });
+      console.warn('loadSlotsData exception:', err?.message);
     } finally {
-      setSharing(false);
+      setLoadingSlots(false);
     }
-  }, [sharing, activeDocUrl, localFileUri, department, intake, section, toast]);
+  }, [step, activeType, selectedDept.code, selectedIntake, selectedSection]);
 
-  // Intake & Section Popup handlers
-  function openIntakeSecPopup() {
-    setDraftIntake(intake);
-    setDraftSection(section);
-    setIntakeSecPickerVisible(true);
-  }
+  useEffect(() => {
+    loadSlotsData();
+  }, [loadSlotsData]);
 
-  function applyIntakeSec() {
-    setIntake(draftIntake.trim() || '51');
-    setSection(draftSection.trim() || '1');
-    setSelectedCircularDoc(null);
-    setIntakeSecPickerVisible(false);
-  }
+  // Android hardware back handler
+  useEffect(() => {
+    const onBackPress = () => {
+      if (pdfModalVisible) {
+        setPdfModalVisible(false);
+        return true;
+      }
+      if (step === 'all' || step === 'choose') {
+        setStep('options');
+        return true;
+      }
+      if (step === 'options') {
+        setStep('departments');
+        return true;
+      }
+      if (step === 'departments') {
+        setStep('types');
+        return true;
+      }
+      return false;
+    };
 
-  // Upload PDF Handler (Admin/Staff)
-  async function pickFile() {
-    const result = await DocumentPicker.getDocumentAsync({
-      type: ['application/pdf', 'image/*'],
-      copyToCacheDirectory: true,
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => sub.remove();
+  }, [step, pdfModalVisible]);
+
+  // Filtered department list for Step 2
+  const filteredDepartments = useMemo(() => {
+    if (!deptSearch.trim()) return DEPARTMENTS;
+    const q = deptSearch.toLowerCase().trim();
+    return DEPARTMENTS.filter(
+      d => d.name.toLowerCase().includes(q) || d.code.toLowerCase().includes(q) || d.shortName.toLowerCase().includes(q)
+    );
+  }, [deptSearch]);
+
+  // Department matching routine PDFs for Step 4A
+  const departmentPdfs = useMemo(() => {
+    return allRoutines.filter(r => {
+      const isType = r.type === activeType;
+      const isDept = matchesDepartment(r.department, selectedDept.code);
+      return isType && isDept && (r.file_url || r.image_url);
     });
-    if (result.canceled || !result.assets?.[0]) return;
-    const asset = result.assets[0];
-    const isImg = isImageFile(asset.name ?? '', asset.mimeType);
-    const size = asset.size ?? 0;
-    if (!isImg && size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-      toast({ type: 'error', title: 'File too large', message: `Exceeds ${MAX_FILE_SIZE_MB}MB limit.` });
+  }, [allRoutines, activeType, selectedDept.code]);
+
+  // Active PDF for viewer in Step 4A
+  const activePdf = useMemo(() => {
+    if (selectedPdfDoc) return selectedPdfDoc;
+    return departmentPdfs[0] || null;
+  }, [selectedPdfDoc, departmentPdfs]);
+
+  // Actions
+  const handleOpenPdf = (doc: OfficialRoutineRow) => {
+    const url = normalizePdfUrl(doc.file_url || doc.image_url);
+    if (!url) {
+      toast({ type: 'error', title: 'File unavailable', message: 'No downloadable document attached.' });
       return;
     }
-    setPickedFile({ uri: asset.uri, name: asset.name ?? 'file', mimeType: asset.mimeType ?? 'application/octet-stream' });
-  }
+    setActiveModalUrl(url);
+    setActiveModalTitle(doc.title || `${selectedDept.code} Routine`);
+    setPdfModalVisible(true);
+  };
 
-  async function handlePostPdf() {
-    if (!fTitle.trim() || !user) return;
-    setPostingPdf(true);
+  const handleDownloadPdf = async (doc: OfficialRoutineRow) => {
+    const rawUrl = doc.file_url || doc.image_url;
+    if (!rawUrl) return;
+    setDownloading(true);
+    toast({ type: 'info', title: 'Downloading routine PDF…' });
     try {
-      let fileUrl: string | null = null;
-      let imageUrl: string | null = null;
-
-      if (pickedFile) {
-        const isImg = isImageFile(pickedFile.name, pickedFile.mimeType);
-        const ext = isImg ? 'jpg' : (pickedFile.name.split('.').pop() ?? 'bin');
-        const safeName = fTitle.trim().replace(/[^a-zA-Z0-9_-]/g, '_');
-        const storagePath = `routines/${user.id}/${Date.now()}_${safeName}.${ext}`;
-        const up = await uploadFile(
-          'photos',
-          pickedFile.uri,
-          storagePath,
-          isImg ? 'image/jpeg' : pickedFile.mimeType,
-          true,
-          isImg ? { preset: 'document' } : undefined
-        );
-        if (!up.success) throw new Error(up.error);
-        if (isImg) imageUrl = up.url;
-        else fileUrl = up.url;
+      const targetUrl = normalizePdfUrl(rawUrl) || rawUrl;
+      const downloaded = await File.downloadFileAsync(targetUrl, Paths.cache, { idempotent: true });
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(downloaded.uri, {
+          mimeType: 'application/pdf',
+          dialogTitle: `Save ${doc.title}`,
+          UTI: 'com.adobe.pdf',
+        });
+        toast({ type: 'success', title: 'Routine PDF downloaded' });
+      } else {
+        toast({ type: 'success', title: 'Downloaded to device cache' });
       }
-
-      const { error } = await supabase.from('routines').insert({
-        type: fType,
-        title: fTitle.trim(),
-        department: fDept.trim() || null,
-        semester: fSemester.trim() || null,
-        intake: fIntake.trim() || null,
-        section: fSection.trim() || null,
-        file_url: fileUrl,
-        image_url: imageUrl,
-        published_by: user.id,
-      });
-
-      if (error) throw error;
-      setUploadModalVisible(false);
-      loadRoutines();
-      toast({ type: 'success', title: 'Routine Uploaded', message: 'Official circular posted successfully.' });
     } catch (err: any) {
-      Alert.alert('Upload Error', err?.message || 'Could not post routine.');
+      toast({ type: 'error', title: 'Download failed', message: err?.message || 'Could not download routine' });
     } finally {
-      setPostingPdf(false);
+      setDownloading(false);
     }
-  }
+  };
+
+  const handleShareDoc = async (doc: OfficialRoutineRow) => {
+    const targetUrl = normalizePdfUrl(doc.file_url || doc.image_url) || 'https://www.bubt.edu.bd/notice';
+    try {
+      await Share.share({
+        title: doc.title,
+        message: `${doc.title}\n\nBUBT ${selectedDept.name} (${selectedDept.code})\n${targetUrl}`,
+      });
+    } catch {}
+  };
+
+  // SubBar Title and onBack resolution
+  const { barTitle, onBarBack } = useMemo(() => {
+    switch (step) {
+      case 'types':
+        return { barTitle: 'Routines & Schedules', onBarBack: () => navigation.goBack() };
+      case 'departments':
+        return {
+          barTitle: activeType === 'class' ? 'Class Routines' : 'Exam Routines',
+          onBarBack: () => setStep('types'),
+        };
+      case 'options':
+        return {
+          barTitle: `${selectedDept.code} · ${activeType === 'class' ? 'Routine' : 'Exam'}`,
+          onBarBack: () => setStep('departments'),
+        };
+      case 'all':
+        return {
+          barTitle: `${selectedDept.code} Master PDF`,
+          onBarBack: () => setStep('options'),
+        };
+      case 'choose':
+        return {
+          barTitle: `${selectedDept.code} · Intake ${selectedIntake}-${selectedSection}`,
+          onBarBack: () => setStep('options'),
+        };
+    }
+  }, [step, activeType, selectedDept.code, selectedIntake, selectedSection, navigation]);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-      {/* 1. Header SubBar */}
       <SubBar
-        title="Class & Exam Routines"
-        onBack={() => navigation.goBack()}
+        title={barTitle}
+        onBack={onBarBack}
         rightSlot={
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <TouchableOpacity
-              onPress={() => {
-                loadRoutines();
-                toast({ type: 'info', title: 'Refreshing', message: 'Checking campus servers for new routines…' });
-              }}
-              hitSlop={8}
-              disabled={loadingData}
-            >
-              <Feather name="rotate-cw" size={18} color={loadingData ? C.textMuted : C.text} />
+          step === 'all' && activePdf ? (
+            <TouchableOpacity onPress={() => handleShareDoc(activePdf)} hitSlop={8} style={styles.headerBtn}>
+              <Feather name="share-2" size={19} color={C.text} />
             </TouchableOpacity>
-            {canPost && (
-              <TouchableOpacity onPress={() => setUploadModalVisible(true)} hitSlop={8}>
-                <Icon name="plus" size={22} color={C.brand} />
-              </TouchableOpacity>
-            )}
-          </View>
+          ) : undefined
         }
       />
 
-      {/* 2. Top Control Row: 3 Primary Buttons */}
-      <View style={[styles.controlRow, { paddingHorizontal: Layout.screenPadding }]}>
-        {/* Button 1: Department */}
-        <TouchableOpacity
-          style={[styles.topSelectorBtn, { backgroundColor: C.surface, borderColor: C.border }]}
-          onPress={() => setDeptPickerVisible(true)}
-          activeOpacity={0.75}
-        >
-          <View style={[styles.btnIconBox, { backgroundColor: C.brand + '18' }]}>
-            <Feather name="book-open" size={14} color={C.brand} />
+      {/* ──────────────── STEP 1: ROUTINE TYPES (TWO 72-SIZE BARS) ──────────────── */}
+      {step === 'types' && (
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <View style={styles.heroBlock}>
+            <Text style={[styles.heroHeading, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+              Academic Timetables
+            </Text>
+            <Text style={[styles.heroSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+              Select routine category to browse full departmental schedules or filter by your section.
+            </Text>
           </View>
-          <Text style={[styles.topSelectorBtnText, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-            {department}
-          </Text>
-          <Feather name="chevron-down" size={13} color={C.textMuted} />
-        </TouchableOpacity>
 
-        {/* Button 2: Intake & Section */}
-        <TouchableOpacity
-          style={[styles.topSelectorBtn, { backgroundColor: C.surface, borderColor: C.border }]}
-          onPress={openIntakeSecPopup}
-          activeOpacity={0.75}
-        >
-          <View style={[styles.btnIconBox, { backgroundColor: SectorColors.routines + '18' }]}>
-            <Feather name="users" size={14} color={SectorColors.routines} />
-          </View>
-          <Text style={[styles.topSelectorBtnText, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-            {`Intake ${intake} · Sec ${section}`}
-          </Text>
-          <Feather name="chevron-down" size={13} color={C.textMuted} />
-        </TouchableOpacity>
-
-        {/* Button 3: Routine Type */}
-        <TouchableOpacity
-          style={[styles.topSelectorBtn, { backgroundColor: C.surface, borderColor: C.border }]}
-          onPress={() => setTypePickerVisible(true)}
-          activeOpacity={0.75}
-        >
-          <View style={[styles.btnIconBox, { backgroundColor: (routineType === 'class' ? SectorColors.routines : '#ec4899') + '18' }]}>
-            <Feather
-              name={routineType === 'class' ? 'calendar' : 'file-text'}
-              size={14}
-              color={routineType === 'class' ? SectorColors.routines : '#ec4899'}
-            />
-          </View>
-          <Text style={[styles.topSelectorBtnText, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-            {routineType === 'class' ? 'Class' : 'Exam'}
-          </Text>
-          <Feather name="chevron-down" size={13} color={C.textMuted} />
-        </TouchableOpacity>
-      </View>
-
-      {/* 3. Semester Selector Bar */}
-      <View style={styles.semesterBarWrapper}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.semesterBarScroll}>
-          {SEMESTERS.map((sem) => {
-            const isSelected = semester === sem;
-            return (
-              <TouchableOpacity
-                key={sem}
-                style={[
-                  styles.semesterChip,
-                  {
-                    backgroundColor: isSelected ? C.brand : C.surface,
-                    borderColor: isSelected ? C.brand : C.border,
-                  },
-                ]}
-                onPress={() => handleSemesterChange(sem)}
-                activeOpacity={0.75}
-              >
-                <Text
-                  style={[
-                    styles.semesterChipText,
-                    {
-                      color: isSelected ? '#ffffff' : C.text,
-                      fontFamily: isSelected ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                    },
-                  ]}
-                >
-                  {sem}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      </View>
-
-      {/* 4. Sheet Info Strip */}
-      <View style={[styles.sheetStatusStrip, { backgroundColor: C.surface, borderColor: C.border }]}>
-        <View style={styles.sheetStatusLeft}>
-          <View
+          {/* Bar 1: Routines (72-size bar) */}
+          <TouchableOpacity
+            activeOpacity={0.78}
+            onPress={() => {
+              setActiveType('class');
+              setStep('departments');
+            }}
             style={[
-              styles.statusDot,
-              { backgroundColor: matchedPage ? C.success : (activeDocUrl ? C.brand : C.textMuted) },
+              styles.bar72,
+              {
+                backgroundColor: C.surface,
+                borderColor: C.border,
+              },
             ]}
-          />
-          <Text style={[styles.sheetStatusTitle, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]} numberOfLines={1}>
-            {activeDocument
-              ? (matchedPage
-                  ? `Page ${matchedPage} of ${totalPages} · Intake ${intake}-${section}`
-                  : (activeDocument.title || `${department} Routine`))
-              : `No ${routineType === 'class' ? 'Class' : 'Exam'} Sheet Published`}
-          </Text>
-        </View>
-
-        <View style={styles.sheetStatusRight}>
-          <TouchableOpacity
-            style={[styles.stripActionBtn, { backgroundColor: C.surface2 }]}
-            onPress={() => setAllCircularsModalVisible(true)}
-            hitSlop={8}
           >
-            <Feather name="list" size={14} color={C.text} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.stripActionBtn, { backgroundColor: C.surface2, opacity: activeDocUrl ? 1 : 0.4 }]}
-            onPress={handleShare}
-            hitSlop={8}
-            disabled={sharing || !activeDocUrl}
-          >
-            <Feather name="share-2" size={14} color={C.text} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.stripActionBtn, { backgroundColor: C.surface2, opacity: activeDocUrl ? 1 : 0.4 }]}
-            onPress={() => setFullscreenModalVisible(true)}
-            hitSlop={8}
-            disabled={!activeDocUrl}
-          >
-            <Feather name="maximize-2" size={14} color={C.text} />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* 5. The Real Routine Sheet Canvas (Option A) */}
-      <View style={styles.canvasContainer}>
-        {!activeDocUrl ? (
-          <View style={styles.emptyCanvas}>
-            <View style={[styles.emptyIconCircle, { backgroundColor: SectorColors.routines + '18' }]}>
-              <Feather name={routineType === 'class' ? 'calendar' : 'file-text'} size={38} color={SectorColors.routines} />
+            <View style={[styles.barIconBox, { backgroundColor: pillBg(SectorColors.study, isDark), borderColor: SectorColors.study + '33' }]}>
+              <Feather name="calendar" size={22} color={SectorColors.study} />
             </View>
-            <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-              No Routine Sheet Published
-            </Text>
-            <Text style={[styles.emptySub, { color: C.textMuted }]}>
-              {`BUBT has not published an official ${routineType === 'class' ? 'Class' : 'Exam'} routine for ${department} in ${semester} on the notice board yet.`}
-            </Text>
-
-            {latestAvailableRoutine && latestAvailableRoutine.semester && latestAvailableRoutine.semester !== semester && (
-              <TouchableOpacity
-                style={[styles.switchSemBtn, { backgroundColor: C.brand + '15', borderColor: C.brand }]}
-                onPress={() => {
-                  setSelectedCircularDoc(null);
-                  if (latestAvailableRoutine.semester) {
-                    setSemester(latestAvailableRoutine.semester);
-                  }
-                }}
-                activeOpacity={0.8}
-              >
-                <Feather name="arrow-right-circle" size={16} color={C.brand} />
-                <Text style={[styles.switchSemBtnText, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
-                  {`View ${latestAvailableRoutine.semester} Routine (Latest)`}
-                </Text>
-              </TouchableOpacity>
-            )}
-
-            {validRoutines.length > 0 && (
-              <TouchableOpacity
-                style={[styles.browseAllBtn, { backgroundColor: C.surface, borderColor: C.border }]}
-                onPress={() => setAllCircularsModalVisible(true)}
-                activeOpacity={0.8}
-              >
-                <Feather name="list" size={15} color={C.text} />
-                <Text style={[styles.browseAllBtnText, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>
-                  {`Browse All Official Circulars (${validRoutines.length})`}
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        ) : isImageDoc ? (
-          <ScrollView
-            maximumZoomScale={4.0}
-            minimumZoomScale={1.0}
-            showsHorizontalScrollIndicator={false}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.imageScrollContainer}
-          >
-            <Image source={{ uri: activeDocUrl }} style={styles.routineImage} resizeMode="contain" />
-          </ScrollView>
-        ) : (
-          <View style={StyleSheet.absoluteFill}>
-            {htmlUri && (
-              <WebView
-                ref={webRef}
-                source={{ uri: htmlUri }}
-                style={[styles.webView, { backgroundColor: isDark ? '#000000' : '#f1f5f9' }]}
-                originWhitelist={['file://*']}
-                allowFileAccess={true}
-                allowFileAccessFromFileURLs={true}
-                allowUniversalAccessFromFileURLs={true}
-                setSupportMultipleWindows={false}
-                javaScriptEnabled={true}
-                domStorageEnabled={true}
-                onLoadEnd={() => {
-                  webRef.current?.injectJavaScript(`
-                    if (window.__viewerShellReady && window.ReactNativeWebView) {
-                      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'viewerReady' }));
-                    }
-                    true;
-                  `);
-                }}
-                onMessage={handleWebViewMessage}
-                onError={(e) => {
-                  console.warn('WebView error:', e.nativeEvent);
-                  setViewerLoading(false);
-                  setViewerError('Could not load PDF display engine.');
-                }}
-                showsVerticalScrollIndicator={false}
-                showsHorizontalScrollIndicator={false}
-              />
-            )}
-
-            {/* Error Overlay */}
-            {viewerError && (
-              <View style={[styles.emptyCanvas, StyleSheet.absoluteFill, { backgroundColor: C.bg }]}>
-                <View style={[styles.emptyIconCircle, { backgroundColor: (C.danger || '#ef4444') + '18' }]}>
-                  <Feather name="alert-triangle" size={36} color={C.danger || '#ef4444'} />
-                </View>
-                <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                  Could Not Load Document
-                </Text>
-                <Text style={[styles.emptySub, { color: C.textMuted }]}>
-                  {viewerError}
-                </Text>
-                <TouchableOpacity
-                  style={[styles.switchSemBtn, { backgroundColor: C.brand, borderColor: C.brand, marginTop: 14 }]}
-                  onPress={() => initSheetViewer()}
-                  activeOpacity={0.8}
-                >
-                  <Feather name="rotate-cw" size={15} color="#fff" />
-                  <Text style={[styles.switchSemBtnText, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
-                    Retry Loading
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {/* Loading Overlay */}
-            {(loadingData || viewerLoading) && (
-              <View style={[styles.loadingBox, StyleSheet.absoluteFill, { backgroundColor: C.bg }]}>
-                <ActivityIndicator size="large" color={C.brand} />
-                <Text style={[styles.loadingText, { color: C.textMuted }]}>{viewerMessage}</Text>
-              </View>
-            )}
-          </View>
-        )}
-      </View>
-
-      {/* MODAL 1: Department Selector Bottom Sheet */}
-      <Modal visible={deptPickerVisible} transparent animationType="slide" onRequestClose={() => setDeptPickerVisible(false)}>
-        <View style={styles.modalBackdrop}>
-          <View style={[styles.bottomSheet, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <View style={styles.sheetHandle} />
-            <View style={styles.sheetHeader}>
-              <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                Select Department
+            <View style={styles.barTextCol}>
+              <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                Routines
               </Text>
-              <TouchableOpacity onPress={() => setDeptPickerVisible(false)} hitSlop={8}>
-                <Feather name="x" size={20} color={C.textMuted} />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={{ maxHeight: 380 }}>
-              {DEPARTMENTS.map((d) => {
-                const isSelected = department === d.code;
-                return (
-                  <TouchableOpacity
-                    key={d.code}
-                    style={[
-                      styles.deptRowItem,
-                      {
-                        backgroundColor: isSelected ? C.brand + '15' : 'transparent',
-                        borderColor: isSelected ? C.brand : C.border,
-                      },
-                    ]}
-                    onPress={() => {
-                      handleDepartmentChange(d.code);
-                      setDeptPickerVisible(false);
-                    }}
-                  >
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.deptCodeText, { color: isSelected ? C.brand : C.text, fontFamily: FontFamily.jakartaBold }]}>
-                        {d.code}
-                      </Text>
-                      <Text style={[styles.deptNameText, { color: C.textMuted }]}>{d.name}</Text>
-                    </View>
-                    {isSelected && <Feather name="check" size={18} color={C.brand} />}
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-
-      {/* MODAL 2: Intake & Section Popup Bar */}
-      <Modal visible={intakeSecPickerVisible} transparent animationType="slide" onRequestClose={() => setIntakeSecPickerVisible(false)}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.modalBackdrop}>
-          <View style={[styles.bottomSheet, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <View style={styles.sheetHandle} />
-            <View style={styles.sheetHeader}>
-              <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                Select Intake & Section
+              <Text style={[styles.barSubtitle, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
+                Weekly semester class schedules and room allocations
               </Text>
-              <TouchableOpacity onPress={() => setIntakeSecPickerVisible(false)} hitSlop={8}>
-                <Feather name="x" size={20} color={C.textMuted} />
-              </TouchableOpacity>
             </View>
+            <Feather name="chevron-right" size={20} color={C.textMuted} />
+          </TouchableOpacity>
 
-            {/* Intake Number Input */}
-            <Text style={[styles.fieldLabel, { color: C.text3 }]}>INTAKE NUMBER</Text>
+          {/* Bar 2: Exam Routine (72-size bar) */}
+          <TouchableOpacity
+            activeOpacity={0.78}
+            onPress={() => {
+              setActiveType('exam');
+              setStep('departments');
+            }}
+            style={[
+              styles.bar72,
+              {
+                backgroundColor: C.surface,
+                borderColor: C.border,
+              },
+            ]}
+          >
+            <View style={[styles.barIconBox, { backgroundColor: pillBg(SectorColors.routines, isDark), borderColor: SectorColors.routines + '33' }]}>
+              <Feather name="file-text" size={22} color={SectorColors.routines} />
+            </View>
+            <View style={styles.barTextCol}>
+              <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                Exam Routine
+              </Text>
+              <Text style={[styles.barSubtitle, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
+                Mid-Term, Final, and Supplementary exam timetables
+              </Text>
+            </View>
+            <Feather name="chevron-right" size={20} color={C.textMuted} />
+          </TouchableOpacity>
+
+          {/* Info Card */}
+          <View style={[styles.infoBanner, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <Feather name="info" size={16} color={C.brand} style={{ marginTop: 2 }} />
+            <Text style={[styles.infoText, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+              All schedules are synchronized with the official BUBT Office of the Controller of Examinations and departmental notices.
+            </Text>
+          </View>
+        </ScrollView>
+      )}
+
+      {/* ──────────────── STEP 2: DEPARTMENTS (ALL 72-SIZE BARS) ──────────────── */}
+      {step === 'departments' && (
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {/* Breadcrumb & Search */}
+          <View style={styles.metaRow}>
+            <Text style={[styles.breadcrumbText, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+              {activeType === 'class' ? 'Class Routines' : 'Exam Routines'}
+            </Text>
+            <Text style={[styles.breadcrumbSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+              · Select Department
+            </Text>
+          </View>
+
+          <View style={[styles.searchBox, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <Feather name="search" size={17} color={C.textMuted} />
             <TextInput
-              style={[styles.textInput58, { backgroundColor: C.bg, borderColor: C.border, color: C.text }]}
-              value={draftIntake}
-              onChangeText={setDraftIntake}
-              keyboardType="numeric"
-              placeholder="e.g. 51"
+              style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+              placeholder="Search department by name or code…"
               placeholderTextColor={C.textMuted}
+              value={deptSearch}
+              onChangeText={setDeptSearch}
             />
+            {deptSearch ? (
+              <TouchableOpacity onPress={() => setDeptSearch('')} hitSlop={6}>
+                <Feather name="x" size={16} color={C.textMuted} />
+              </TouchableOpacity>
+            ) : null}
+          </View>
 
-            {/* Quick Section Pills */}
-            <Text style={[styles.fieldLabel, { color: C.text3, marginTop: 16 }]}>SECTION</Text>
-            <View style={styles.quickSecRow}>
-              {['1', '2', '3', '4', '5'].map((sec) => {
-                const isSelected = draftSection === sec;
+          {/* Department 72-size bars */}
+          {filteredDepartments.map((dept) => (
+            <TouchableOpacity
+              key={dept.code}
+              activeOpacity={0.78}
+              onPress={() => {
+                setSelectedDept(dept);
+                // set defaults for intake and section if current not in this dept
+                if (!dept.intakes.includes(selectedIntake)) {
+                  setSelectedIntake(dept.intakes[0] || '1');
+                }
+                if (!dept.sections.includes(selectedSection)) {
+                  setSelectedSection(dept.sections[0] || '1');
+                }
+                setStep('options');
+              }}
+              style={[
+                styles.bar72,
+                {
+                  backgroundColor: C.surface,
+                  borderColor: C.border,
+                },
+              ]}
+            >
+              <View style={[styles.barIconBox, { backgroundColor: pillBg(dept.accentColor, isDark), borderColor: dept.accentColor + '33' }]}>
+                <Feather name={dept.icon} size={22} color={dept.accentColor} />
+              </View>
+              <View style={styles.barTextCol}>
+                <View style={styles.titleWithBadge}>
+                  <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                    {dept.name}
+                  </Text>
+                  <View style={[styles.codeBadge, { backgroundColor: pillBg(dept.accentColor, isDark) }]}>
+                    <Text style={[styles.codeBadgeText, { color: dept.accentColor, fontFamily: FontFamily.jakartaBold }]}>
+                      {dept.code}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={[styles.barSubtitle, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
+                  {dept.shortName} · {activeType === 'class' ? 'Class routines' : 'Exam schedules'}
+                </Text>
+              </View>
+              <Feather name="chevron-right" size={20} color={C.textMuted} />
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )}
+
+      {/* ──────────────── STEP 3: DEPARTMENT OPTIONS (ALL vs CHOOSE - TWO 72-SIZE BARS) ──────────────── */}
+      {step === 'options' && (
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {/* Active Department Banner */}
+          <View style={[styles.deptHeroCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <View style={[styles.barIconBox, { backgroundColor: pillBg(selectedDept.accentColor, isDark), borderColor: selectedDept.accentColor + '33' }]}>
+              <Feather name={selectedDept.icon} size={24} color={selectedDept.accentColor} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.deptHeroTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+                {selectedDept.name}
+              </Text>
+              <Text style={[styles.deptHeroSubtitle, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                {selectedDept.code} · {activeType === 'class' ? 'Class Routines' : 'Exam Schedules'}
+              </Text>
+            </View>
+          </View>
+
+          <Text style={[styles.sectionSectionHeader, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+            HOW WOULD YOU LIKE TO VIEW THE ROUTINE?
+          </Text>
+
+          {/* Bar 1: All (72-size bar) */}
+          <TouchableOpacity
+            activeOpacity={0.78}
+            onPress={() => {
+              setSelectedPdfDoc(null);
+              setStep('all');
+            }}
+            style={[
+              styles.bar72,
+              {
+                backgroundColor: C.surface,
+                borderColor: C.border,
+              },
+            ]}
+          >
+            <View style={[styles.barIconBox, { backgroundColor: pillBg(SectorColors.routines, isDark), borderColor: SectorColors.routines + '33' }]}>
+              <Feather name="file-text" size={22} color={SectorColors.routines} />
+            </View>
+            <View style={styles.barTextCol}>
+              <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                All
+              </Text>
+              <Text style={[styles.barSubtitle, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
+                Full departmental routine document (Official PDF)
+              </Text>
+            </View>
+            <View style={[styles.actionTag, { backgroundColor: isDark ? 'rgba(91, 133, 247, 0.15)' : '#e0edff' }]}>
+              <Text style={[styles.actionTagText, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+                PDF
+              </Text>
+            </View>
+            <Feather name="chevron-right" size={20} color={C.textMuted} style={{ marginLeft: 6 }} />
+          </TouchableOpacity>
+
+          {/* Bar 2: Choose (72-size bar) */}
+          <TouchableOpacity
+            activeOpacity={0.78}
+            onPress={() => {
+              setStep('choose');
+            }}
+            style={[
+              styles.bar72,
+              {
+                backgroundColor: C.surface,
+                borderColor: C.border,
+              },
+            ]}
+          >
+            <View style={[styles.barIconBox, { backgroundColor: pillBg(C.brand, isDark), borderColor: C.brand + '33' }]}>
+              <Feather name="sliders" size={22} color={C.brand} />
+            </View>
+            <View style={styles.barTextCol}>
+              <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                Choose
+              </Text>
+              <Text style={[styles.barSubtitle, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
+                Filter by specific Intake & Section timetable
+              </Text>
+            </View>
+            <View style={[styles.actionTag, { backgroundColor: isDark ? 'rgba(52, 211, 153, 0.15)' : '#e6f7ef' }]}>
+              <Text style={[styles.actionTagText, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
+                FILTER
+              </Text>
+            </View>
+            <Feather name="chevron-right" size={20} color={C.textMuted} style={{ marginLeft: 6 }} />
+          </TouchableOpacity>
+        </ScrollView>
+      )}
+
+      {/* ──────────────── STEP 4A: ALL (FULL DEPARTMENT PDF & IN-APP VIEWER & DOWNLOADS) ──────────────── */}
+      {step === 'all' && (
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {departmentPdfs.length > 1 && (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.docTabsRow}>
+              {departmentPdfs.map((doc, idx) => {
+                const isActive = activePdf?.id === doc.id;
                 return (
                   <TouchableOpacity
-                    key={sec}
+                    key={doc.id || idx}
+                    activeOpacity={0.8}
+                    onPress={() => setSelectedPdfDoc(doc)}
                     style={[
-                      styles.quickSecChip,
+                      styles.docTabPill,
                       {
-                        backgroundColor: isSelected ? C.brand : C.surface2,
-                        borderColor: isSelected ? C.brand : C.border,
+                        backgroundColor: isActive ? C.brand : C.surface,
+                        borderColor: isActive ? C.brand : C.border,
                       },
                     ]}
-                    onPress={() => setDraftSection(sec)}
                   >
+                    <Feather name="file-text" size={14} color={isActive ? '#ffffff' : C.textMuted} />
                     <Text
                       style={[
-                        styles.quickSecChipText,
+                        styles.docTabPillText,
                         {
-                          color: isSelected ? '#ffffff' : C.text,
-                          fontFamily: isSelected ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                          color: isActive ? '#ffffff' : C.text,
+                          fontFamily: isActive ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
                         },
                       ]}
+                      numberOfLines={1}
                     >
-                      Sec {sec}
+                      {doc.semester || doc.title.slice(0, 24)}
                     </Text>
                   </TouchableOpacity>
                 );
               })}
-            </View>
-
-            {/* Apply Button */}
-            <TouchableOpacity style={[styles.primaryBtn58, { backgroundColor: C.brand }]} onPress={applyIntakeSec}>
-              <Text style={styles.primaryBtnText}>Apply & Find Section Sheet</Text>
-            </TouchableOpacity>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-
-      {/* MODAL 3: Routine Type Picker (Class vs Exam) */}
-      <Modal visible={typePickerVisible} transparent animationType="fade" onRequestClose={() => setTypePickerVisible(false)}>
-        <View style={styles.modalBackdropCenter}>
-          <View style={[styles.dialogCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaBold, marginBottom: 14 }]}>
-              Select Schedule Type
-            </Text>
-
-            <TouchableOpacity
-              style={[
-                styles.typeOptionCard,
-                {
-                  backgroundColor: routineType === 'class' ? SectorColors.routines + '15' : C.bg,
-                  borderColor: routineType === 'class' ? SectorColors.routines : C.border,
-                },
-              ]}
-              onPress={() => {
-                handleTypeChange('class');
-                setTypePickerVisible(false);
-              }}
-            >
-              <View style={[styles.typeIconBox, { backgroundColor: SectorColors.routines + '20' }]}>
-                <Feather name="calendar" size={20} color={SectorColors.routines} />
-              </View>
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={[styles.typeTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                  Class Routine
-                </Text>
-                <Text style={[styles.typeDesc, { color: C.textMuted }]}>
-                  Official weekly class timetable & room assignments
-                </Text>
-              </View>
-              {routineType === 'class' && <Feather name="check-circle" size={20} color={SectorColors.routines} />}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.typeOptionCard,
-                {
-                  backgroundColor: routineType === 'exam' ? '#ec489915' : C.bg,
-                  borderColor: routineType === 'exam' ? '#ec4899' : C.border,
-                  marginTop: 10,
-                },
-              ]}
-              onPress={() => {
-                handleTypeChange('exam');
-                setTypePickerVisible(false);
-              }}
-            >
-              <View style={[styles.typeIconBox, { backgroundColor: '#ec489920' }]}>
-                <Feather name="file-text" size={20} color="#ec4899" />
-              </View>
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={[styles.typeTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                  Exam Routine
-                </Text>
-                <Text style={[styles.typeDesc, { color: C.textMuted }]}>
-                  Midterm & Final exam schedules with roll seat plan
-                </Text>
-              </View>
-              {routineType === 'exam' && <Feather name="check-circle" size={20} color="#ec4899" />}
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      {/* MODAL 4: Fullscreen In-App Viewer Modal */}
-      <CampusPdfViewerModal
-        visible={fullscreenModalVisible}
-        onClose={() => setFullscreenModalVisible(false)}
-        title={activeDocument?.title || `${department} Routine`}
-        subtitle={`Intake ${intake} · Section ${section}`}
-        category={routineType === 'class' ? 'Class Routine' : 'Exam Routine'}
-        fileUrl={activeDocUrl}
-        initialSearchQuery={searchQuery}
-      />
-
-      {/* MODAL 5: Upload Routine PDF (Admin/Staff) */}
-      <Modal visible={uploadModalVisible} transparent animationType="slide" onRequestClose={() => setUploadModalVisible(false)}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.modalBackdrop}>
-          <View style={[styles.bottomSheet, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <View style={styles.sheetHandle} />
-            <View style={styles.sheetHeader}>
-              <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                Post Official Routine
-              </Text>
-              <TouchableOpacity onPress={() => setUploadModalVisible(false)} hitSlop={8}>
-                <Feather name="x" size={20} color={C.textMuted} />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={{ maxHeight: 420 }}>
-              <Text style={[styles.fieldLabel, { color: C.text3 }]}>TITLE</Text>
-              <TextInput
-                style={[styles.textInput58, { backgroundColor: C.bg, borderColor: C.border, color: C.text }]}
-                value={fTitle}
-                onChangeText={setFTitle}
-                placeholder="e.g. CSE Fall 2026 Routine"
-                placeholderTextColor={C.textMuted}
-              />
-
-              <View style={styles.rowInputs}>
-                <View style={{ flex: 1, marginRight: 8 }}>
-                  <Text style={[styles.fieldLabel, { color: C.text3 }]}>DEPARTMENT</Text>
-                  <TextInput
-                    style={[styles.textInput58, { backgroundColor: C.bg, borderColor: C.border, color: C.text }]}
-                    value={fDept}
-                    onChangeText={setFDept}
-                    placeholder="e.g. CSE"
-                    placeholderTextColor={C.textMuted}
-                  />
-                </View>
-                <View style={{ flex: 1, marginLeft: 8 }}>
-                  <Text style={[styles.fieldLabel, { color: C.text3 }]}>SEMESTER</Text>
-                  <TextInput
-                    style={[styles.textInput58, { backgroundColor: C.bg, borderColor: C.border, color: C.text }]}
-                    value={fSemester}
-                    onChangeText={setFSemester}
-                    placeholder="e.g. Fall 2026"
-                    placeholderTextColor={C.textMuted}
-                  />
-                </View>
-              </View>
-
-              <TouchableOpacity style={[styles.pickFileBtn58, { borderColor: C.border }]} onPress={pickFile}>
-                <Feather name="upload" size={18} color={C.brand} />
-                <Text style={[styles.pickFileText, { color: C.text }]}>
-                  {pickedFile ? pickedFile.name : 'Choose PDF File'}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.primaryBtn58, { backgroundColor: C.brand, marginTop: 16 }]}
-                onPress={handlePostPdf}
-                disabled={postingPdf}
-              >
-                {postingPdf ? (
-                  <ActivityIndicator size="small" color="#ffffff" />
-                ) : (
-                  <Text style={styles.primaryBtnText}>Post Routine Document</Text>
-                )}
-              </TouchableOpacity>
             </ScrollView>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
+          )}
 
-      {/* MODAL 6: All Official Circulars List */}
-      <Modal
-        visible={allCircularsModalVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setAllCircularsModalVisible(false)}
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={[styles.bottomSheet, { backgroundColor: C.surface, borderColor: C.border, maxHeight: '82%' }]}>
-            <View style={styles.sheetHandle} />
-            <View style={styles.sheetHeader}>
-              <View>
-                <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                  Official BUBT Circulars
-                </Text>
-                <Text style={[styles.deptNameText, { color: C.textMuted }]}>
-                  {`${validRoutines.length} active schedule documents from BUBT server`}
-                </Text>
+          {activePdf ? (
+            <View style={[styles.pdfCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+              {/* Header Info */}
+              <View style={styles.pdfCardHeader}>
+                <View style={[styles.pdfBadgeBox, { backgroundColor: pillBg(SectorColors.routines, isDark) }]}>
+                  <Feather name="file-text" size={24} color={SectorColors.routines} />
+                </View>
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text style={[styles.pdfCardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    {activePdf.title}
+                  </Text>
+                  <Text style={[styles.pdfCardMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+                    {activePdf.semester || 'Current Semester'} · {selectedDept.name}
+                  </Text>
+                </View>
               </View>
-              <TouchableOpacity onPress={() => setAllCircularsModalVisible(false)} hitSlop={8}>
-                <Feather name="x" size={20} color={C.textMuted} />
-              </TouchableOpacity>
-            </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
-              {validRoutines.map((item) => {
-                const isItemActive = activeDocument?.id === item.id;
-                const isExamItem = item.type === 'exam';
-                return (
-                  <TouchableOpacity
-                    key={item.id}
-                    style={[
-                      styles.circularCard,
-                      {
-                        backgroundColor: isItemActive ? C.brand + '15' : C.bg,
-                        borderColor: isItemActive ? C.brand : C.border,
-                      },
-                    ]}
-                    onPress={() => {
-                      setSelectedCircularDoc(item);
-                      if (item.department) setDepartment(normalizeDeptCode(item.department));
-                      if (item.semester) setSemester(item.semester);
-                      setRoutineType(item.type);
-                      setAllCircularsModalVisible(false);
-                      toast({
-                        type: 'info',
-                        title: 'Document Selected',
-                        message: `Opened "${item.title}"`,
-                      });
-                    }}
-                    activeOpacity={0.75}
-                  >
-                    <View style={[styles.circularIconBox, { backgroundColor: (isExamItem ? '#ec4899' : SectorColors.routines) + '18' }]}>
-                      <Feather
-                        name={isExamItem ? 'file-text' : 'calendar'}
-                        size={18}
-                        color={isExamItem ? '#ec4899' : SectorColors.routines}
-                      />
-                    </View>
-                    <View style={{ flex: 1, marginLeft: 12 }}>
-                      <Text
-                        style={[styles.circularTitleText, { color: isItemActive ? C.brand : C.text, fontFamily: FontFamily.jakartaBold }]}
-                        numberOfLines={2}
-                      >
-                        {item.title}
+              {/* Action Buttons Row */}
+              <View style={styles.pdfActionsRow}>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => handleOpenPdf(activePdf)}
+                  style={[styles.primaryActionBtn, { backgroundColor: C.brand }]}
+                >
+                  <Feather name="maximize-2" size={16} color="#ffffff" style={{ marginRight: 6 }} />
+                  <Text style={[styles.primaryActionBtnText, { fontFamily: FontFamily.jakartaBold }]}>
+                    Fullscreen View
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => handleDownloadPdf(activePdf)}
+                  disabled={downloading}
+                  style={[styles.secondaryActionBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+                >
+                  {downloading ? (
+                    <ActivityIndicator size="small" color={C.brand} />
+                  ) : (
+                    <>
+                      <Feather name="download" size={16} color={C.text} style={{ marginRight: 6 }} />
+                      <Text style={[styles.secondaryActionBtnText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                        Download
                       </Text>
-                      <View style={styles.circularMetaRow}>
-                        <View style={[styles.miniBadge, { backgroundColor: C.surface2 }]}>
-                          <Text style={[styles.miniBadgeText, { color: C.textMuted }]}>
-                            {item.semester || 'All Semesters'}
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+
+              {/* Embedded PDF Live Preview */}
+              <View style={[styles.embeddedViewerWrapper, { borderColor: C.border }]}>
+                {normalizePdfUrl(activePdf.file_url || activePdf.image_url) ? (
+                  <WebView
+                    source={{
+                      uri: buildGoogleDocsViewerUrl(normalizePdfUrl(activePdf.file_url || activePdf.image_url)!) ||
+                        normalizePdfUrl(activePdf.file_url || activePdf.image_url)!,
+                    }}
+                    style={styles.embeddedWebView}
+                    nestedScrollEnabled
+                    javaScriptEnabled
+                    domStorageEnabled
+                    startInLoadingState
+                    renderLoading={() => (
+                      <View style={styles.webLoadingOverlay}>
+                        <ActivityIndicator color={C.brand} size="large" />
+                        <Text style={[styles.webLoadingText, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                          Rendering official routine PDF…
+                        </Text>
+                      </View>
+                    )}
+                  />
+                ) : (
+                  <View style={styles.webLoadingOverlay}>
+                    <Text style={{ color: C.textMuted }}>Document link unavailable</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          ) : (
+            <View style={[styles.emptyCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+              {loadingRoutines ? (
+                <>
+                  <ActivityIndicator color={C.brand} size="large" />
+                  <Text style={[styles.emptyCardText, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                    Loading official departmental routine…
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Feather name="alert-circle" size={32} color={C.warn} style={{ marginBottom: 12 }} />
+                  <Text style={[styles.emptyCardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    No Routine Document Found
+                  </Text>
+                  <Text style={[styles.emptyCardText, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+                    No full PDF published yet for {selectedDept.name} in this semester category.
+                  </Text>
+                </>
+              )}
+            </View>
+          )}
+        </ScrollView>
+      )}
+
+      {/* ──────────────── STEP 4B: CHOOSE (INTAKE & SECTION TABS & TIMETABLE) ──────────────── */}
+      {step === 'choose' && (
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {/* Two Tabs at the Top: Intake & Section */}
+          <View style={[styles.tabBarContainer, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => setChooseTab('intake')}
+              style={[
+                styles.topTabBtn,
+                chooseTab === 'intake' && [styles.topTabBtnActive, { backgroundColor: isDark ? 'rgba(91, 133, 247, 0.2)' : '#e0edff', borderColor: C.brand }],
+              ]}
+            >
+              <Feather
+                name="users"
+                size={16}
+                color={chooseTab === 'intake' ? C.brand : C.textMuted}
+                style={{ marginRight: 6 }}
+              />
+              <Text
+                style={[
+                  styles.topTabBtnText,
+                  {
+                    color: chooseTab === 'intake' ? C.brand : C.textMuted,
+                    fontFamily: chooseTab === 'intake' ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                  },
+                ]}
+              >
+                Intake ({selectedIntake})
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => setChooseTab('section')}
+              style={[
+                styles.topTabBtn,
+                chooseTab === 'section' && [styles.topTabBtnActive, { backgroundColor: isDark ? 'rgba(91, 133, 247, 0.2)' : '#e0edff', borderColor: C.brand }],
+              ]}
+            >
+              <Feather
+                name="grid"
+                size={16}
+                color={chooseTab === 'section' ? C.brand : C.textMuted}
+                style={{ marginRight: 6 }}
+              />
+              <Text
+                style={[
+                  styles.topTabBtnText,
+                  {
+                    color: chooseTab === 'section' ? C.brand : C.textMuted,
+                    fontFamily: chooseTab === 'section' ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                  },
+                ]}
+              >
+                Section ({selectedSection})
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Tab 1 Content: Intake Chips */}
+          {chooseTab === 'intake' && (
+            <View style={[styles.pickerBox, { backgroundColor: C.surface, borderColor: C.border }]}>
+              <Text style={[styles.pickerBoxHeader, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                Select Intake for {selectedDept.code}
+              </Text>
+              <View style={styles.chipsWrap}>
+                {selectedDept.intakes.map((intk) => {
+                  const isSel = selectedIntake === intk;
+                  return (
+                    <TouchableOpacity
+                      key={intk}
+                      activeOpacity={0.78}
+                      onPress={() => {
+                        setSelectedIntake(intk);
+                        setChooseTab('section');
+                      }}
+                      style={[
+                        styles.selectChip,
+                        {
+                          backgroundColor: isSel ? C.brand : C.surface2,
+                          borderColor: isSel ? C.brand : C.border,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.selectChipText,
+                          {
+                            color: isSel ? '#ffffff' : C.text,
+                            fontFamily: isSel ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                          },
+                        ]}
+                      >
+                        Intake {intk}
+                      </Text>
+                      {isSel && <Feather name="check" size={14} color="#ffffff" style={{ marginLeft: 4 }} />}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+
+          {/* Tab 2 Content: Section Chips */}
+          {chooseTab === 'section' && (
+            <View style={[styles.pickerBox, { backgroundColor: C.surface, borderColor: C.border }]}>
+              <Text style={[styles.pickerBoxHeader, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                Select Section for Intake {selectedIntake}
+              </Text>
+              <View style={styles.chipsWrap}>
+                {selectedDept.sections.map((sec) => {
+                  const isSel = selectedSection === sec;
+                  return (
+                    <TouchableOpacity
+                      key={sec}
+                      activeOpacity={0.78}
+                      onPress={() => setSelectedSection(sec)}
+                      style={[
+                        styles.selectChip,
+                        {
+                          backgroundColor: isSel ? C.brand : C.surface2,
+                          borderColor: isSel ? C.brand : C.border,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.selectChipText,
+                          {
+                            color: isSel ? '#ffffff' : C.text,
+                            fontFamily: isSel ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                          },
+                        ]}
+                      >
+                        Section {sec}
+                      </Text>
+                      {isSel && <Feather name="check" size={14} color="#ffffff" style={{ marginLeft: 4 }} />}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+
+          {/* Active Selection Summary Banner */}
+          <View style={[styles.summaryBanner, { backgroundColor: pillBg(selectedDept.accentColor, isDark), borderColor: selectedDept.accentColor + '44' }]}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.summaryBannerTitle, { color: selectedDept.accentColor, fontFamily: FontFamily.jakartaBold }]}>
+                {selectedDept.code} · Intake {selectedIntake} · Section {selectedSection}
+              </Text>
+              <Text style={[styles.summaryBannerSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+                {activeType === 'class' ? 'Weekly Class Timetable' : 'Examination Schedule'} · Fall 2026
+              </Text>
+            </View>
+            {departmentPdfs.length > 0 && (
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => handleOpenPdf(departmentPdfs[0])}
+                style={[styles.smallPdfBtn, { backgroundColor: C.surface, borderColor: C.border }]}
+              >
+                <Feather name="file-text" size={14} color={C.brand} style={{ marginRight: 4 }} />
+                <Text style={[styles.smallPdfBtnText, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+                  Master PDF
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* ─── CLASS ROUTINE TIMETABLE ─── */}
+          {activeType === 'class' && (
+            <>
+              {/* Day filter pills */}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.daysRow}>
+                {WEEKDAYS.map((day) => {
+                  const isSel = selectedDay === day;
+                  return (
+                    <TouchableOpacity
+                      key={day}
+                      activeOpacity={0.8}
+                      onPress={() => setSelectedDay(day)}
+                      style={[
+                        styles.dayPill,
+                        {
+                          backgroundColor: isSel ? C.brand : C.surface,
+                          borderColor: isSel ? C.brand : C.border,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.dayPillText,
+                          {
+                            color: isSel ? '#ffffff' : C.text,
+                            fontFamily: isSel ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                          },
+                        ]}
+                      >
+                        {day}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+
+              {/* Class Slots */}
+              {loadingSlots ? (
+                <View style={[styles.emptyCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+                  <ActivityIndicator color={C.brand} size="large" />
+                  <Text style={[styles.emptyCardText, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                    Loading timetable slots…
+                  </Text>
+                </View>
+              ) : classSlots.length > 0 ? (
+                classSlots
+                  .filter(slot => selectedDay === 'ALL' || slot.day_of_week === selectedDay)
+                  .map((slot) => (
+                    <View key={slot.id} style={[styles.slotCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+                      {/* Top Time Strip */}
+                      <View style={styles.slotTimeRow}>
+                        <View style={styles.timeTag}>
+                          <Feather name="clock" size={14} color={C.brand} style={{ marginRight: 5 }} />
+                          <Text style={[styles.timeTagText, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+                            {slot.time_slot}
                           </Text>
                         </View>
-                        <View style={[styles.miniBadge, { backgroundColor: C.surface2, marginLeft: 6 }]}>
-                          <Text style={[styles.miniBadgeText, { color: C.textMuted }]}>
-                            {item.department ? normalizeDeptCode(item.department) : 'Univ-Wide'}
+                        <View style={[styles.dayBadge, { backgroundColor: C.surface2 }]}>
+                          <Text style={[styles.dayBadgeText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                            {slot.day_of_week}
                           </Text>
                         </View>
                       </View>
+
+                      {/* Course Details */}
+                      <Text style={[styles.slotCourseCode, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+                        {slot.course_code}
+                      </Text>
+                      {slot.course_title && (
+                        <Text style={[styles.slotCourseTitle, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>
+                          {slot.course_title}
+                        </Text>
+                      )}
+
+                      {/* Location & Teacher Meta */}
+                      <View style={styles.slotMetaRow}>
+                        <View style={styles.metaItem}>
+                          <Feather name="map-pin" size={13} color={C.textMuted} style={{ marginRight: 4 }} />
+                          <Text style={[styles.metaItemText, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+                            Room {slot.room} · {slot.building || 'Main Campus'}
+                          </Text>
+                        </View>
+                        {slot.teacher_short_code && (
+                          <View style={[styles.teacherPill, { backgroundColor: pillBg(Accent.blue, isDark) }]}>
+                            <Feather name="user" size={12} color={Accent.blue} style={{ marginRight: 4 }} />
+                            <Text style={[styles.teacherPillText, { color: Accent.blue, fontFamily: FontFamily.jakartaBold }]}>
+                              {slot.teacher_short_code}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
                     </View>
-                    <Feather name="chevron-right" size={16} color={isItemActive ? C.brand : C.textMuted} />
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
+                  ))
+              ) : (
+                <View style={[styles.emptyCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+                  <Feather name="calendar" size={32} color={C.textMuted} style={{ marginBottom: 12 }} />
+                  <Text style={[styles.emptyCardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    No Class Slots Found
+                  </Text>
+                  <Text style={[styles.emptyCardText, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+                    No visual routine slots seeded yet for Intake {selectedIntake} Section {selectedSection}.
+                  </Text>
+                  {departmentPdfs.length > 0 && (
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      onPress={() => setStep('all')}
+                      style={[styles.primaryActionBtn, { backgroundColor: C.brand, marginTop: 14 }]}
+                    >
+                      <Feather name="file-text" size={15} color="#ffffff" style={{ marginRight: 6 }} />
+                      <Text style={[styles.primaryActionBtnText, { fontFamily: FontFamily.jakartaBold }]}>
+                        View Department Master PDF
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+            </>
+          )}
+
+          {/* ─── EXAM ROUTINE TIMETABLE ─── */}
+          {activeType === 'exam' && (
+            <>
+              {loadingSlots ? (
+                <View style={[styles.emptyCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+                  <ActivityIndicator color={C.brand} size="large" />
+                  <Text style={[styles.emptyCardText, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                    Loading exam schedules…
+                  </Text>
+                </View>
+              ) : examSlots.length > 0 ? (
+                examSlots.map((slot) => (
+                  <View key={slot.id} style={[styles.slotCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+                    {/* Date and Shift */}
+                    <View style={styles.slotTimeRow}>
+                      <View style={[styles.timeTag, { backgroundColor: pillBg(SectorColors.routines, isDark) }]}>
+                        <Feather name="calendar" size={14} color={SectorColors.routines} style={{ marginRight: 5 }} />
+                        <Text style={[styles.timeTagText, { color: SectorColors.routines, fontFamily: FontFamily.jakartaBold }]}>
+                          {slot.exam_date} ({slot.day_of_week})
+                        </Text>
+                      </View>
+                      <View style={[styles.dayBadge, { backgroundColor: C.surface2 }]}>
+                        <Text style={[styles.dayBadgeText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                          {slot.shift} · {slot.time_range}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Course */}
+                    <Text style={[styles.slotCourseCode, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+                      {slot.course_code}
+                    </Text>
+                    {slot.course_title && (
+                      <Text style={[styles.slotCourseTitle, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>
+                        {slot.course_title}
+                      </Text>
+                    )}
+
+                    {/* Meta */}
+                    <View style={styles.slotMetaRow}>
+                      <View style={styles.metaItem}>
+                        <Feather name="map-pin" size={13} color={C.textMuted} style={{ marginRight: 4 }} />
+                        <Text style={[styles.metaItemText, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+                          Room {slot.room} · {slot.building || 'Campus'}
+                        </Text>
+                      </View>
+                      {slot.seat_range && (
+                        <View style={[styles.teacherPill, { backgroundColor: pillBg(C.warn, isDark) }]}>
+                          <Feather name="check-square" size={12} color={C.warn} style={{ marginRight: 4 }} />
+                          <Text style={[styles.teacherPillText, { color: C.warn, fontFamily: FontFamily.jakartaBold }]}>
+                            {slot.seat_range}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                ))
+              ) : (
+                <View style={[styles.emptyCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+                  <Feather name="alert-triangle" size={32} color={C.warn} style={{ marginBottom: 12 }} />
+                  <Text style={[styles.emptyCardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    No Exam Schedule Slots
+                  </Text>
+                  <Text style={[styles.emptyCardText, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+                    No exam entries registered for Intake {selectedIntake} Section {selectedSection}.
+                  </Text>
+                  {departmentPdfs.length > 0 && (
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      onPress={() => setStep('all')}
+                      style={[styles.primaryActionBtn, { backgroundColor: C.brand, marginTop: 14 }]}
+                    >
+                      <Feather name="file-text" size={15} color="#ffffff" style={{ marginRight: 6 }} />
+                      <Text style={[styles.primaryActionBtnText, { fontFamily: FontFamily.jakartaBold }]}>
+                        View Master Exam Routine PDF
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+            </>
+          )}
+
+          {/* In-app PDF view and download bar for section */}
+          {departmentPdfs.length > 0 && (
+            <View style={[styles.sectionPdfCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.sectionPdfTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  Official Department Document Available
+                </Text>
+                <Text style={[styles.sectionPdfSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+                  {departmentPdfs[0].title}
+                </Text>
+              </View>
+              <View style={styles.sectionPdfBtnRow}>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => handleOpenPdf(departmentPdfs[0])}
+                  style={[styles.primaryActionBtn, { backgroundColor: C.brand, paddingHorizontal: 12, height: 38 }]}
+                >
+                  <Feather name="eye" size={14} color="#ffffff" style={{ marginRight: 4 }} />
+                  <Text style={[styles.primaryActionBtnText, { fontSize: 13, fontFamily: FontFamily.jakartaBold }]}>
+                    View
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => handleDownloadPdf(departmentPdfs[0])}
+                  style={[styles.secondaryActionBtn, { backgroundColor: C.surface2, borderColor: C.border, paddingHorizontal: 12, height: 38 }]}
+                >
+                  <Feather name="download" size={14} color={C.text} style={{ marginRight: 4 }} />
+                  <Text style={[styles.secondaryActionBtnText, { fontSize: 13, color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    Download
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+        </ScrollView>
+      )}
+
+      {/* Universal Campus PDF Viewer Modal */}
+      <CampusPdfViewerModal
+        visible={pdfModalVisible}
+        onClose={() => setPdfModalVisible(false)}
+        title={activeModalTitle}
+        subtitle={`${selectedDept.name} · BUBT`}
+        fileUrl={activeModalUrl}
+        fileName={`${activeModalTitle.replace(/\s+/g, '_')}.pdf`}
+      />
     </SafeAreaView>
   );
 }
@@ -1076,337 +1279,431 @@ const styles = StyleSheet.create({
   safe: {
     flex: 1,
   },
-  // Top Control Row
-  controlRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 4,
-    marginBottom: 8,
-  },
-  topSelectorBtn: {
-    flex: 1,
-    height: 44,
-    borderRadius: 12,
-    borderWidth: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    gap: 6,
-  },
-  btnIconBox: {
-    width: 26,
-    height: 26,
-    borderRadius: 7,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  topSelectorBtnText: {
-    flex: 1,
-    fontSize: 12,
-  },
-  // Semester Bar
-  semesterBarWrapper: {
-    paddingBottom: 8,
-  },
-  semesterBarScroll: {
-    paddingHorizontal: Layout.screenPadding,
-    gap: 8,
-  },
-  semesterChip: {
-    height: 34,
-    paddingHorizontal: 14,
-    borderRadius: Radius.full,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  semesterChipText: {
-    fontSize: 12,
-  },
-  // Sheet Status Strip
-  sheetStatusStrip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Layout.screenPadding,
-    paddingVertical: 8,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-  },
-  sheetStatusLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    flex: 1,
-  },
-  statusDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
-  },
-  sheetStatusTitle: {
-    fontSize: 12,
-  },
-  sheetStatusRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  stripActionBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  // Main Canvas
-  canvasContainer: {
-    flex: 1,
-  },
-  webView: {
-    flex: 1,
-    backgroundColor: 'transparent',
-  },
-  imageScrollContainer: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 10,
-  },
-  routineImage: {
-    width: Dimensions.get('window').width - 20,
-    height: Dimensions.get('window').height * 0.65,
-  },
-  loadingBox: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loadingText: {
-    fontSize: FontSize.xs,
-    marginTop: 10,
-    fontFamily: FontFamily.jakartaMedium,
-  },
-  emptyCanvas: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 32,
-  },
-  emptyIconCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  emptyTitle: {
-    fontSize: FontSize.lg,
-  },
-  emptySub: {
-    fontSize: FontSize.sm,
-    textAlign: 'center',
-    marginTop: 6,
-    lineHeight: 20,
-  },
-  // Bottom Sheets & Modals
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.65)',
-    justifyContent: 'flex-end',
-  },
-  modalBackdropCenter: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.65)',
-    justifyContent: 'center',
-    paddingHorizontal: 16,
-  },
-  bottomSheet: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    borderWidth: 1,
-    paddingHorizontal: Layout.screenPadding,
-    paddingTop: 12,
-    paddingBottom: 32,
-  },
-  sheetHandle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignSelf: 'center',
-    marginBottom: 14,
-  },
-  sheetHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  sheetTitle: {
-    fontSize: FontSize.lg,
-  },
-  fieldLabel: {
-    fontSize: FontSize.xs,
-    fontFamily: FontFamily.jakartaBold,
-    marginBottom: 8,
-    letterSpacing: 0.5,
-  },
-  textInput58: {
-    height: Layout.controlHeight,
-    borderRadius: Layout.controlRadius,
-    borderWidth: 1.2,
-    paddingHorizontal: 14,
-    fontSize: FontSize.base,
-    fontFamily: FontFamily.jakartaRegular,
-  },
-  primaryBtn58: {
-    height: Layout.controlHeight,
-    borderRadius: Layout.controlRadius,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 20,
-  },
-  primaryBtnText: {
-    fontSize: FontSize.base,
-    fontFamily: FontFamily.jakartaBold,
-    color: '#ffffff',
-  },
-  quickSecRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  quickSecChip: {
-    flex: 1,
-    height: 44,
-    borderRadius: 12,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  quickSecChipText: {
-    fontSize: FontSize.sm,
-  },
-  deptRowItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: 8,
-  },
-  deptCodeText: {
-    fontSize: FontSize.base,
-  },
-  deptNameText: {
-    fontSize: FontSize.xs,
-    marginTop: 2,
-  },
-  dialogCard: {
-    borderRadius: Radius.xl,
-    borderWidth: 1,
-    padding: 20,
-  },
-  typeOptionCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 14,
-    borderRadius: Radius.lg,
-    borderWidth: 1.5,
-  },
-  typeIconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  typeTitle: {
-    fontSize: FontSize.base,
-  },
-  typeDesc: {
-    fontSize: FontSize.xs,
-    marginTop: 2,
-  },
-  rowInputs: {
-    flexDirection: 'row',
-    marginTop: 12,
-  },
-  pickFileBtn58: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: Layout.controlHeight,
-    borderRadius: Layout.controlRadius,
-    borderWidth: 1.2,
-    borderStyle: 'dashed',
-    marginTop: 14,
-    gap: 8,
-  },
-  pickFileText: {
-    fontSize: FontSize.sm,
-    fontFamily: FontFamily.jakartaMedium,
-  },
-  switchSemBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: Radius.lg,
-    borderWidth: 1.2,
-    marginTop: 18,
-  },
-  switchSemBtnText: {
-    fontSize: FontSize.sm,
-  },
-  browseAllBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    marginTop: 10,
-  },
-  browseAllBtnText: {
-    fontSize: FontSize.sm,
-  },
-  circularCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: 8,
-  },
-  circularIconBox: {
-    width: 38,
-    height: 38,
+  headerBtn: {
+    width: 36,
+    height: 36,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  circularTitleText: {
-    fontSize: FontSize.sm,
-    lineHeight: 18,
+  scrollContent: {
+    paddingHorizontal: Layout.screenPadding,
+    paddingTop: 16,
+    paddingBottom: 40,
   },
-  circularMetaRow: {
+  heroBlock: {
+    marginBottom: 20,
+  },
+  heroHeading: {
+    fontSize: 22,
+    letterSpacing: -0.3,
+    marginBottom: 6,
+  },
+  heroSub: {
+    fontSize: 13.5,
+    lineHeight: 19,
+  },
+
+  /* ─── 72-SIZE BAR STANDARD ─── */
+  bar72: {
+    height: 72,
+    minHeight: 72,
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 6,
+    paddingHorizontal: 16,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    marginBottom: 12,
   },
-  miniBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+  barIconBox: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+  },
+  barTextCol: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  barTitle: {
+    fontSize: 16,
+    letterSpacing: -0.2,
+    lineHeight: 22,
+  },
+  barSubtitle: {
+    fontSize: 12.5,
+    lineHeight: 16,
+    marginTop: 2,
+  },
+  titleWithBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  codeBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
     borderRadius: 6,
   },
-  miniBadgeText: {
+  codeBadgeText: {
+    fontSize: 10.5,
+    letterSpacing: 0.2,
+  },
+  actionTag: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  actionTagText: {
     fontSize: 10,
-    fontFamily: FontFamily.jakartaMedium,
+    letterSpacing: 0.5,
+  },
+
+  /* ─── META & SEARCH ─── */
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  breadcrumbText: {
+    fontSize: 13.5,
+  },
+  breadcrumbSub: {
+    fontSize: 13.5,
+    marginLeft: 4,
+  },
+  searchBox: {
+    height: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    marginBottom: 14,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    paddingVertical: 0,
+  },
+  infoBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    padding: 14,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    marginTop: 10,
+  },
+  infoText: {
+    flex: 1,
+    fontSize: 12.5,
+    lineHeight: 18,
+  },
+
+  /* ─── STEP 3: OPTIONS ─── */
+  deptHeroCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    marginBottom: 20,
+  },
+  deptHeroTitle: {
+    fontSize: 18,
+    letterSpacing: -0.2,
+  },
+  deptHeroSubtitle: {
+    fontSize: 13,
+    marginTop: 2,
+  },
+  sectionSectionHeader: {
+    fontSize: 11.5,
+    letterSpacing: 0.8,
+    marginBottom: 10,
+    marginLeft: 2,
+  },
+
+  /* ─── STEP 4A: ALL ─── */
+  docTabsRow: {
+    gap: 8,
+    marginBottom: 14,
+  },
+  docTabPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+  },
+  docTabPillText: {
+    fontSize: 12.5,
+  },
+  pdfCard: {
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    padding: 16,
+    marginBottom: 20,
+  },
+  pdfCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  pdfBadgeBox: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pdfCardTitle: {
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  pdfCardMeta: {
+    fontSize: 12.5,
+    marginTop: 2,
+  },
+  pdfActionsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 16,
+  },
+  primaryActionBtn: {
+    flex: 1,
+    height: 42,
+    borderRadius: Radius.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  primaryActionBtnText: {
+    color: '#ffffff',
+    fontSize: 14,
+  },
+  secondaryActionBtn: {
+    height: 42,
+    paddingHorizontal: 16,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  secondaryActionBtnText: {
+    fontSize: 14,
+  },
+  embeddedViewerWrapper: {
+    height: 400,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  embeddedWebView: {
+    flex: 1,
+  },
+  webLoadingOverlay: {
+    ...StyleSheet.absoluteFill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  webLoadingText: {
+    fontSize: 13,
+  },
+
+  /* ─── STEP 4B: CHOOSE ─── */
+  tabBarContainer: {
+    height: 48,
+    flexDirection: 'row',
+    padding: 4,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    marginBottom: 14,
+    gap: 6,
+  },
+  topTabBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+  },
+  topTabBtnActive: {
+    borderWidth: 1,
+  },
+  topTabBtnText: {
+    fontSize: 13.5,
+  },
+  pickerBox: {
+    padding: 16,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    marginBottom: 14,
+  },
+  pickerBoxHeader: {
+    fontSize: 14,
+    marginBottom: 12,
+  },
+  chipsWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  selectChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+  },
+  selectChipText: {
+    fontSize: 13,
+  },
+  summaryBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    marginBottom: 14,
+  },
+  summaryBannerTitle: {
+    fontSize: 13.5,
+  },
+  summaryBannerSub: {
+    fontSize: 11.5,
+    marginTop: 2,
+  },
+  smallPdfBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  smallPdfBtnText: {
+    fontSize: 11.5,
+  },
+  daysRow: {
+    gap: 6,
+    marginBottom: 14,
+  },
+  dayPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+  },
+  dayPillText: {
+    fontSize: 12,
+  },
+  slotCard: {
+    padding: 14,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    marginBottom: 10,
+  },
+  slotTimeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  timeTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  timeTagText: {
+    fontSize: 11.5,
+  },
+  dayBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  dayBadgeText: {
+    fontSize: 11,
+  },
+  slotCourseCode: {
+    fontSize: 16.5,
+    letterSpacing: -0.2,
+  },
+  slotCourseTitle: {
+    fontSize: 13.5,
+    marginTop: 2,
+    marginBottom: 8,
+  },
+  slotMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  metaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  metaItemText: {
+    fontSize: 12,
+  },
+  teacherPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  teacherPillText: {
+    fontSize: 11,
+  },
+  emptyCard: {
+    padding: 24,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyCardTitle: {
+    fontSize: 16,
+  },
+  emptyCardText: {
+    fontSize: 13,
+    textAlign: 'center',
+    marginTop: 4,
+    lineHeight: 18,
+  },
+  sectionPdfCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    marginTop: 10,
+    gap: 10,
+  },
+  sectionPdfTitle: {
+    fontSize: 13,
+  },
+  sectionPdfSub: {
+    fontSize: 11.5,
+    marginTop: 2,
+  },
+  sectionPdfBtnRow: {
+    flexDirection: 'row',
+    gap: 6,
   },
 });
