@@ -171,11 +171,15 @@ export function ToolImagesScreen({ navigation }: any) {
 
   function addMediaAssets(assets: MediaLibrary.Asset[]) {
     const accepted: Item[] = [];
-    let tooBig = 0;
+    let heic = 0;
     const now = Date.now();
 
     assets.forEach((a, index) => {
       const name = a.filename || `photo-${now}-${index + 1}.jpg`;
+      if (isHeicFile(name, undefined)) {
+        heic++;
+        return;
+      }
       accepted.push({
         id: ++seq,
         uri: a.uri,
@@ -185,6 +189,10 @@ export function ToolImagesScreen({ navigation }: any) {
         name,
       });
     });
+
+    if (heic) {
+      toast({ type: 'error', title: t.pdfmaker.tools.imagesTitle, message: t.pdfmaker.errors.heic });
+    }
 
     const room = LIMITS.images.maxFiles - items.length;
     if (room <= 0) {

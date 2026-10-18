@@ -2462,6 +2462,14 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 - **Prominent `Page X` Cards & 1-Tap Sort Action:** Grid items display high-contrast `Page ${index + 1}` rounded labels and the section header provides a 1-tap `Sort (1→N)` button alongside manual reorder buttons.
 - **Academic Footer Margin Separation:** Enforced a 28pt footer reservation with 6pt bottom padding in `layoutDocumentPage` and `drawAcademicOverlays`, guaranteeing that optional footer stamps never overlap bottom mathematical formulas or handwriting.
 
+### 52.4 PDF Maker Deep Audit & Hardening Fixes
+- **Document Boundary Dimension Fix (`engineHtml.ts`):** In `detectDocumentQuad`, vertical boundary scans (`scanLeft` and `scanRight`) previously passed width (`dw * 0.55`) instead of height (`dh * 0.55`). For portrait notebook scans, this improperly clipped the bottom third of the vertical edge detection range. Corrected to pass `dh` for all vertical coordinate evaluations.
+- **Media Picker Selection State Isolation (`MediaPickerModal.tsx`):** Cleaned up state lifecycle so `selected` array is explicitly reset to `[]` whenever the modal closes or confirms, preventing stale cross-session selection accumulation and accidental duplicate page additions.
+- **Asset Pagination Deduplication (`MediaPickerModal.tsx`):** Hardened infinite scrolling `loadMore` by deduplicating assets against a `Set` of existing asset IDs, eliminating React key collisions on rapid scroll.
+- **Virtual Album Visibility (`MediaPickerModal.tsx`):** Adjusted album filtering condition to `a.assetCount === undefined || a.assetCount > 0`, ensuring virtual or dynamic device albums on newer Android versions are not prematurely filtered out.
+- **HEIC Format Guard (`ToolImagesScreen.tsx`):** Integrated `isHeicFile` checks in `addMediaAssets` with localized error toast feedback, preventing corrupt or unsupported Apple HEIC images from stalling the canvas processing pipeline.
+- **List Reorder Bounds Guard (`pdfUtils.ts`):** Hardened `moveItem` with explicit boundary validation (`from < 0 || from >= list.length || to < 0 || to >= list.length`) and guarded against undefined item splices, ensuring stability during rapid page reordering.
+
 ---
 
 ## 53. Routines & Examination System Redesign (72-Size Bar Standard & In-App PDF View/Download Architecture)

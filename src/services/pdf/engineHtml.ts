@@ -272,8 +272,8 @@ function detectDocumentQuad(srcCanvas) {
       }
       return 0.005;
     }
-    tl_x = scanLeft(Math.floor(dw * 0.15), Math.floor(dw * 0.45));
-    bl_x = scanLeft(Math.floor(dw * 0.55), Math.floor(dw * 0.85));
+    tl_x = scanLeft(Math.floor(dh * 0.15), Math.floor(dh * 0.45));
+    bl_x = scanLeft(Math.floor(dh * 0.55), Math.floor(dh * 0.85));
   }
 
   // RIGHT
@@ -296,7 +296,7 @@ function detectDocumentQuad(srcCanvas) {
       return 0.995;
     }
     tr_x = scanRight(Math.floor(dh * 0.15), Math.floor(dh * 0.45));
-    br_x = scanRight(Math.floor(dw * 0.55), Math.floor(dw * 0.85));
+    br_x = scanRight(Math.floor(dh * 0.55), Math.floor(dh * 0.85));
   }
 
   var tl = { x: Math.max(0.005, Math.min(0.995, tl_x)), y: Math.max(0.005, Math.min(0.995, tl_y)) };

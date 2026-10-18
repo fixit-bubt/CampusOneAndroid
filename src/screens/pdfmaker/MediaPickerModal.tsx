@@ -72,7 +72,10 @@ export function MediaPickerModal({
   }, [selected]);
 
   useEffect(() => {
-    if (!visible) return;
+    if (!visible) {
+      setSelected([]);
+      return;
+    }
     checkAndLoad();
   }, [visible, sortOrder, selectedAlbum]);
 
@@ -91,7 +94,7 @@ export function MediaPickerModal({
       if (albums.length === 0) {
         try {
           const allAlbums = await MediaLibrary.getAlbumsAsync({ includeSmartAlbums: true });
-          setAlbums(allAlbums.filter((a) => a.assetCount > 0));
+          setAlbums(allAlbums.filter((a) => a.assetCount === undefined || a.assetCount > 0));
         } catch {
           // Non-fatal
         }
@@ -127,7 +130,11 @@ export function MediaPickerModal({
         sortBy: [['creationTime', sortOrder === 'oldest']],
         album: selectedAlbum?.id,
       });
-      setAssets((prev) => prev.concat(res.assets));
+      setAssets((prev) => {
+        const existingIds = new Set(prev.map((a) => a.id));
+        const newAssets = res.assets.filter((a) => !existingIds.has(a.id));
+        return prev.concat(newAssets);
+      });
       setEndCursor(res.endCursor);
       setHasNextPage(res.hasNextPage);
     } catch {
@@ -151,7 +158,9 @@ export function MediaPickerModal({
 
   const handleConfirm = () => {
     if (!selected.length) return;
-    onConfirm(selected);
+    const toImport = [...selected];
+    setSelected([]);
+    onConfirm(toImport);
     onClose();
   };
 

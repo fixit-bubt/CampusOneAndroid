@@ -67,10 +67,12 @@ export function parseRanges(text: string, max: number): Set<number> | null {
 }
 
 export function moveItem<T>(list: T[], from: number, to: number): T[] {
-  if (to < 0 || to >= list.length || from === to) return list;
+  if (from < 0 || from >= list.length || to < 0 || to >= list.length || from === to) return list;
   const next = list.slice();
   const [item] = next.splice(from, 1);
-  next.splice(to, 0, item);
+  if (item !== undefined) {
+    next.splice(to, 0, item);
+  }
   return next;
 }
 
