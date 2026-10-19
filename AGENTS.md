@@ -2455,8 +2455,16 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
   - Upgraded `IMAGE_PRESETS` (`high: 3000px @ 0.88`, `balanced: 2480px @ 0.84`, `compact: 1754px @ 0.72`, `DEFAULT_PRESET = 'high'`) with optional `< 5 MB` and `< 2 MB` target size enforcement.
 
 ### 52.3 CamScanner-Parity Numbered In-App Media Picker & Page Sequence System (`MediaPickerModal.tsx`)
-- **CamScanner Reverse-Engineered Architecture:** Rebuilt `MediaPickerModal.tsx` following deep APK reverse-engineering of CamScanner's `CustomGalleryActivity` and `GalleryPreviewActivity`.
-- **Newest First by Default:** Defaults `sortOrder` to `'newest'` (`creationTime DESC`), ensuring freshly snapped homework, assignment pages, and notes immediately appear at the top-left of the grid instead of being buried beneath thousands of older images.
+- **CamScanner Reverse-Engineered Architecture:** Rebuilt `MediaPickerModal.tsx` following deep reverse-engineering of CamScanner's `CustomGalleryActivity` and `GalleryPreviewActivity`.
+- **Session-Clustered Natural Alphanumeric Sort:** Solves the root cause of scrambled pages. When photos share identical timestamps (e.g. WhatsApp media imports all timestamped to the exact same second) or were taken during a continuous study session (<= 5 min window), raw MediaStore `ORDER BY datetaken DESC` produces arbitrary SQLite ROWID ordering. The reverse-engineered engine groups photos into session clusters:
+  - **Between Sessions:** Ordered chronologically (newest session first by default).
+  - **Within Each Session:** Ordered sequentially using natural alphanumeric filename sorting (`WA0001` -> `WA0002` -> `WA0003`... `Scan_1` -> `Scan_2`, `IMG_0001` -> `IMG_0002`), ensuring math assignment and notebook pages are presented from Page 1 to Page N from left to right.
+  - **Instant 0ms In-Memory Re-sort:** Toggling between `Newest` and `Page 1 First` re-sorts loaded assets instantly without disk I/O.
+- **Uninterrupted Full-Screen Grid Layout:** Eliminated obstructive sub-headers directly beneath the top bar so the 3-column photo grid begins immediately below the header (`✕ | Select Photo ▾ | Import (N)`), achieving 1:1 visual fidelity with CamScanner.
+- **Persistent CamScanner Bottom Bar:**
+  - **Bottom Left:** `Preview` button (grayed out when 0, active with counter `Preview (N)` when pages are selected) that opens the fullscreen swipeable preview pager starting at the first selected page.
+  - **Bottom Center:** Sleek, low-profile sort toggle pill (`[↓ Newest]` / `[↑ Page 1 First]`).
+  - **Bottom Right:** `Clear` action when items are selected.
 - **Dual-Touch Grid Interaction:**
   - **Top-Left Corner Checkbox:** 38x38dp hit area with rounded-square outline (`borderRadius: 6`). Tapping toggles selection directly in the grid, showing an emerald green (`#10b981`) badge with white sequence numbers (`1`, `2`, `3`...).
   - **Tile Body:** Tapping the photo body opens the **Fullscreen Swipeable Preview** modal at that exact photo index.

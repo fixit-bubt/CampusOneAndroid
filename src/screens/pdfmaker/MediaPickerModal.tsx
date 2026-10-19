@@ -33,6 +33,86 @@ const NUM_COLUMNS = 3;
 const TILE_SIZE = Math.floor((SCREEN_WIDTH - GRID_GAP * (NUM_COLUMNS - 1)) / NUM_COLUMNS);
 const CAM_GREEN = '#10b981';
 
+/**
+ * Reverse-Engineered CamScanner Gallery Sort Algorithm:
+ * 1. Clusters assets into session groups based on temporal proximity (<= 5 min window or identical timestamp).
+ * 2. Between session groups: ordered chronologically (newest session first by default, or oldest session first).
+ * 3. Within each session group: ordered ascending by natural alphanumeric filename sequence
+ *    (e.g., WA0001 -> WA0002 -> WA0003, Scan_1 -> Scan_2, IMG_0001 -> IMG_0002).
+ *    This guarantees math assignment / notebook pages are displayed in 100% natural reading sequence (1 -> N)
+ *    rather than scrambled by arbitrary database rowid order.
+ * 4. Tiebreak: asset ID ascending.
+ */
+function sortAssetsCamScannerParity(
+  assets: MediaLibrary.Asset[],
+  order: 'newest' | 'oldest' = 'newest'
+): MediaLibrary.Asset[] {
+  if (!assets || assets.length <= 1) return assets || [];
+
+  const naturalCompare = (aStr: string, bStr: string): number => {
+    return (aStr || '').localeCompare(bStr || '', undefined, { numeric: true, sensitivity: 'base' });
+  };
+
+  // 1. Initial chronological sort descending to prepare for session clustering
+  const items = [...assets].sort((a, b) => {
+    const tA = a.creationTime || a.modificationTime || 0;
+    const tB = b.creationTime || b.modificationTime || 0;
+    if (tB !== tA) return tB - tA;
+    const fn = naturalCompare(a.filename || '', b.filename || '');
+    if (fn !== 0) return fn;
+    return naturalCompare(a.id || '', b.id || '');
+  });
+
+  // 2. Cluster into session groups (photos taken/received within 5 minutes of each other)
+  const SESSION_THRESHOLD_MS = 5 * 60 * 1000;
+  let currentGroupId = 0;
+  const itemMeta = new Map<string, { groupId: number; sessionTime: number }>();
+
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    const itemTime = item.creationTime || item.modificationTime || 0;
+
+    if (i === 0) {
+      itemMeta.set(item.id, { groupId: currentGroupId, sessionTime: itemTime });
+    } else {
+      const prevItem = items[i - 1];
+      const prevTime = prevItem.creationTime || prevItem.modificationTime || 0;
+      let sessionTime = itemMeta.get(prevItem.id)?.sessionTime ?? itemTime;
+      if (Math.abs(prevTime - itemTime) > SESSION_THRESHOLD_MS) {
+        currentGroupId++;
+        sessionTime = itemTime;
+      }
+      itemMeta.set(item.id, {
+        groupId: currentGroupId,
+        sessionTime,
+      });
+    }
+  }
+
+  // 3. Final sort:
+  // - Between session groups: sorted by sessionTime (newest first or oldest first)
+  // - Within each session group: sorted ascending by natural filename (Page 1 -> Page 2 -> Page 3...)
+  return [...assets].sort((a, b) => {
+    const metaA = itemMeta.get(a.id);
+    const metaB = itemMeta.get(b.id);
+    const gA = metaA ? metaA.groupId : 0;
+    const gB = metaB ? metaB.groupId : 0;
+
+    if (gA !== gB) {
+      const sA = metaA ? metaA.sessionTime : 0;
+      const sB = metaB ? metaB.sessionTime : 0;
+      return order === 'newest' ? sB - sA : sA - sB;
+    }
+
+    // Same session group: arrange in natural reading sequence (WA0001 < WA0002 < WA0003...)
+    const fnCompare = naturalCompare(a.filename || '', b.filename || '');
+    if (fnCompare !== 0) return fnCompare;
+
+    // Tiebreaker: ID ascending
+    return naturalCompare(a.id || '', b.id || '');
+  });
+}
+
 export function MediaPickerModal({
   visible,
   onClose,
@@ -84,6 +164,12 @@ export function MediaPickerModal({
     checkAndLoad();
   }, [visible, sortOrder, selectedAlbum]);
 
+  const handleToggleSortOrder = useCallback(() => {
+    const nextOrder = sortOrder === 'newest' ? 'oldest' : 'newest';
+    setSortOrder(nextOrder);
+    setAssets((prev) => sortAssetsCamScannerParity(prev, nextOrder));
+  }, [sortOrder]);
+
   async function checkAndLoad() {
     setLoading(true);
     try {
@@ -106,16 +192,14 @@ export function MediaPickerModal({
       }
 
       // Fetch assets with explicit chronological sort order
-      // sortOrder === 'oldest' -> ascending: true
-      // sortOrder === 'newest' -> ascending: false (default CamScanner behavior)
       const res = await MediaLibrary.getAssetsAsync({
-        first: 90,
+        first: 120,
         mediaType: 'photo',
         sortBy: [['creationTime', sortOrder === 'oldest']],
         album: selectedAlbum?.id,
       });
 
-      setAssets(res.assets);
+      setAssets(sortAssetsCamScannerParity(res.assets, sortOrder));
       setEndCursor(res.endCursor);
       setHasNextPage(res.hasNextPage);
     } catch {
@@ -130,7 +214,7 @@ export function MediaPickerModal({
     setLoadingMore(true);
     try {
       const res = await MediaLibrary.getAssetsAsync({
-        first: 60,
+        first: 80,
         after: endCursor,
         mediaType: 'photo',
         sortBy: [['creationTime', sortOrder === 'oldest']],
@@ -139,7 +223,7 @@ export function MediaPickerModal({
       setAssets((prev) => {
         const existingIds = new Set(prev.map((a) => a.id));
         const newAssets = res.assets.filter((a) => !existingIds.has(a.id));
-        return prev.concat(newAssets);
+        return sortAssetsCamScannerParity(prev.concat(newAssets), sortOrder);
       });
       setEndCursor(res.endCursor);
       setHasNextPage(res.hasNextPage);
@@ -262,34 +346,6 @@ export function MediaPickerModal({
           </TouchableOpacity>
         </View>
 
-        {/* Sub-Header Toolbar: Chronological Sort & Status */}
-        <View style={[styles.subBar, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-          <TouchableOpacity
-            style={[styles.sortPill, { backgroundColor: C.surface2, borderColor: C.border }]}
-            onPress={() => setSortOrder((prev) => (prev === 'oldest' ? 'newest' : 'oldest'))}
-            activeOpacity={0.8}
-          >
-            <Feather name={sortOrder === 'newest' ? 'arrow-down' : 'arrow-up'} size={13} color={CAM_GREEN} />
-            <Text style={[styles.sortText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-              {sortOrder === 'newest' ? 'Newest First' : 'Page 1 First (Oldest)'}
-            </Text>
-          </TouchableOpacity>
-
-          <View style={{ flex: 1, alignItems: 'flex-end' }}>
-            {selected.length > 0 ? (
-              <TouchableOpacity onPress={() => setSelected([])} activeOpacity={0.7}>
-                <Text style={[styles.clearText, { color: C.warn, fontFamily: FontFamily.jakartaBold }]}>
-                  Clear All
-                </Text>
-              </TouchableOpacity>
-            ) : (
-              <Text style={[styles.hintText, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
-                Tap checkbox or inspect photo
-              </Text>
-            )}
-          </View>
-        </View>
-
         {/* Permission Denied State */}
         {hasPermission === false ? (
           <View style={styles.centerBox}>
@@ -355,7 +411,7 @@ export function MediaPickerModal({
                   <ActivityIndicator size="small" color={CAM_GREEN} />
                 </View>
               ) : (
-                <View style={{ height: insets.bottom + (selected.length > 0 ? 84 : 20) }} />
+                <View style={{ height: insets.bottom + 68 }} />
               )
             }
             ListEmptyComponent={
@@ -369,38 +425,67 @@ export function MediaPickerModal({
           />
         )}
 
-        {/* Bottom Floating Confirm Bar when items selected */}
-        {selected.length > 0 ? (
-          <View
-            style={[
-              styles.floatingBottomBar,
-              {
-                backgroundColor: isDark ? 'rgba(18, 18, 18, 0.96)' : 'rgba(255, 255, 255, 0.96)',
-                borderTopColor: C.border,
-                paddingBottom: insets.bottom > 0 ? insets.bottom : 12,
-              },
-            ]}
+        {/* CamScanner-Parity Persistent Bottom Action Bar */}
+        <View
+          style={[
+            styles.bottomBar,
+            {
+              backgroundColor: isDark ? '#121212' : '#ffffff',
+              borderTopColor: C.border,
+              paddingBottom: Math.max(insets.bottom, 10),
+            },
+          ]}
+        >
+          {/* Left: Preview Action */}
+          <TouchableOpacity
+            style={styles.bottomBarPreviewBtn}
+            disabled={selected.length === 0}
+            onPress={() => {
+              if (selected.length > 0) {
+                const firstIdx = assets.findIndex((a) => a.id === selected[0].id);
+                setPreviewIndex(firstIdx >= 0 ? firstIdx : 0);
+              }
+            }}
+            activeOpacity={0.7}
           >
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={[styles.bottomCountText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                {`${selected.length} Page${selected.length > 1 ? 's' : ''} Selected`}
-              </Text>
-              <Text style={[styles.bottomSeqText, { color: CAM_GREEN, fontFamily: FontFamily.jakartaMedium }]}>
-                Numbered in exact sequence
-              </Text>
-            </View>
-            <TouchableOpacity
-              style={[styles.bottomImportBtn, { backgroundColor: CAM_GREEN }]}
-              onPress={handleConfirm}
-              activeOpacity={0.85}
+            <Text
+              style={[
+                styles.bottomBarPreviewText,
+                {
+                  color: selected.length > 0 ? C.text : C.textMuted,
+                  fontFamily: FontFamily.jakartaBold,
+                },
+              ]}
             >
-              <Feather name="check" size={16} color="#ffffff" />
-              <Text style={[styles.bottomImportBtnText, { color: '#ffffff', fontFamily: FontFamily.jakartaBold }]}>
-                Import Now
-              </Text>
-            </TouchableOpacity>
+              {`Preview${selected.length > 0 ? ` (${selected.length})` : ''}`}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Center: Sleek Sort Toggle Pill */}
+          <TouchableOpacity
+            style={[styles.bottomSortPill, { backgroundColor: C.surface2, borderColor: C.border }]}
+            onPress={handleToggleSortOrder}
+            activeOpacity={0.8}
+          >
+            <Feather name={sortOrder === 'newest' ? 'arrow-down' : 'arrow-up'} size={12} color={CAM_GREEN} />
+            <Text style={[styles.bottomSortText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              {sortOrder === 'newest' ? 'Newest' : 'Page 1 First'}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Right: Clear All when selected */}
+          <View style={styles.bottomBarRight}>
+            {selected.length > 0 ? (
+              <TouchableOpacity onPress={() => setSelected([])} activeOpacity={0.7} style={styles.clearBtn}>
+                <Text style={[styles.clearText, { color: C.warn, fontFamily: FontFamily.jakartaBold }]}>
+                  Clear
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={{ width: 44 }} />
+            )}
           </View>
-        ) : null}
+        </View>
 
         {/* Album Selector Modal */}
         <Modal visible={showAlbumPicker} transparent animationType="fade" onRequestClose={() => setShowAlbumPicker(false)}>
@@ -676,31 +761,45 @@ const styles = StyleSheet.create({
   importBtnText: {
     fontSize: 13.5,
   },
-  subBar: {
-    height: 46,
+  bottomBar: {
+    height: 52,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 14,
-    borderBottomWidth: 1,
+    paddingHorizontal: 16,
+    borderTopWidth: 1,
   },
-  sortPill: {
+  bottomBarPreviewBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    minWidth: 80,
+    alignItems: 'flex-start',
+  },
+  bottomBarPreviewText: {
+    fontSize: 14.5,
+  },
+  bottomSortPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 8,
     borderWidth: 1,
   },
-  sortText: {
-    fontSize: 12,
+  bottomSortText: {
+    fontSize: 12.5,
   },
-  hintText: {
-    fontSize: 12,
+  bottomBarRight: {
+    minWidth: 80,
+    alignItems: 'flex-end',
+  },
+  clearBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 6,
   },
   clearText: {
-    fontSize: 12.5,
+    fontSize: 13.5,
   },
   columnWrapper: {
     gap: GRID_GAP,
@@ -797,40 +896,6 @@ const styles = StyleSheet.create({
   footerLoader: {
     paddingVertical: 16,
     alignItems: 'center',
-  },
-  floatingBottomBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  bottomCountText: {
-    fontSize: 14.5,
-  },
-  bottomSeqText: {
-    fontSize: 12,
-  },
-  bottomImportBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 14,
-  },
-  bottomImportBtnText: {
-    fontSize: 14,
   },
   albumModalBackdrop: {
     flex: 1,
