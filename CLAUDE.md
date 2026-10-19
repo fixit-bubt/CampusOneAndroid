@@ -264,7 +264,7 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
   - `DoctorDetailScreen`: `actionBtn` (Call Desk 58dp, Send Email 58dp), `counselingActionBtn` (58dp), and offline cache fallback via `CacheKeys.DOCTORS`.
   - `CourseDetailScreen`: Material tabs (3 tabs: `Notes` / `Questions` / `Books` with counts, no icons).
   - `StudyUploadScreen`: Upload category switcher (3 tabs: `Materials` / `Questions` / `Books`).
-  - `RoutinesBrowseScreen`: Main routine tabs (2 tabs: `Class` / `Exam` with counts, no icons), Modal type switcher (2 tabs).
+  - `RoutinesBrowseScreen`: Step-based wizard navigation with 72-size bars (`bar72`), top sub-navigation tabs (`Intake` / `Section`), and horizontal weekday filter pills (`ALL`, `SAT`, `SUN`, `MON`, `TUE`, `WED`, `THR`, `FRI`).
   - `NotificationsScreen`: Filter switcher (2 tabs: `All` / `Unread` with unread count, no icons).
   - `HomeCommunityUpdates`: Update categories (3 tabs: `Notices` / `Clubs` / `Events` with counts, no icons).
   - `PrayerScreen`: Timetable view switcher (2 tabs: `Today` / `Month`).
@@ -1210,7 +1210,7 @@ The following screens contain segmented control bars slated for this animated pa
 5. **Marketplace (`MarketScreen.tsx`):** `All Listings` (Slate/Brand) vs `My Listings` (Market Amber) (2 tabs).
 6. **Campus Rides (`RidesScreen.tsx`):** `All` (Ride Cyan) · `To Campus` (Emerald) · `From Campus` (Royal Blue) (3 tabs).
 7. **Campus Events (`EventsBrowseScreen.tsx`):** `Upcoming` (Violet) vs `Past` (Muted Slate) (2 tabs).
-8. **Class & Exam Routines (`RoutinesBrowseScreen.tsx`):** `Class Routines` (Indigo) vs `Exam Routines` (Orange) (2 tabs).
+8. **Class & Exam Routines (`RoutinesBrowseScreen.tsx`):** 4-step wizard navigation with 72-size bars (`bar72`): Category (`Routines` / `Exam Routine`) -> Department Selector (9 departments) -> Mode (`All` Master PDF vs `Choose` Section Timetable) -> Step 4A Master PDF Showcase / Step 4B Intake & Section Timetable with Day Groupings.
 9. **Study Hub Course Details (`CourseDetailScreen.tsx`):** `Materials` (Amber) · `Questions` (Blue) · `Books` (Emerald) · `Saved` (Violet) (4 tabs).
 10. **Campus Issues & Reports (`CampusIssuesScreen.tsx`, `MyReportsScreen.tsx`, `AssignedToMeScreen.tsx`, `AllReportsScreen.tsx`):** Status switchers (`All` · `Open` · `In Progress` · `Resolved`).
 11. **Notifications (`NotificationsScreen.tsx`):** `All` (Slate) vs `Unread` (Crimson) (2 tabs).
