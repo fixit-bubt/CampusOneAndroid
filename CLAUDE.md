@@ -2480,27 +2480,36 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 
 ---
 
-## 53. Routines & Examination System Architecture (Personalized 72-Size Bar System & Authentic Curriculum)
+## 53. Routines & Examination System Architecture (Step Wizard Navigation, 72-Size Bars & Authentic Curriculum)
 
-### 53.1 Architectural Hierarchy & Universal 3-Tab Structure (`RoutinesBrowseScreen.tsx`)
-The routine module is standardized to a high-performance 3-tab architecture with universal **72-size bars (`bar72`)** and seamless student profile personalization:
-1. **Tab 1: `My Routine` (Personalized Routine):**
-   - Directly resolves student's `department`, `intake`, and `section` from `profile` with automatic department normalization (`normalizeDeptCode`).
-   - Renders the primary 72dp **`bar72`** with calendar icon, left accent in `SectorColors.routines`, displaying department code, intake, section, total weekly classes count, today's classes count, and retake course badges.
-   - Includes quick `[ + Retake ]` button with real-time course search and clash warning detection.
-   - Sub-schedule switcher toggles between:
-     - **Class Schedule:** Weekday selector pills (`ALL`, `SAT`, `SUN`, `MON`, `TUE`, `WED`, `THR`, `FRI`) with today auto-selected; class cards with time slot, day badge, course code, title, room, BUBT building decoder (`decodeRoom`), teacher short-code pill (`FC: <CODE>`), lab badge, retake indicator, and time overlap clash alerts.
-     - **Exam Schedule:** Chronological exam list with date, day, shift (`Shift 1` 09:30-11:30 AM & `Shift 2` 01:30-03:30 PM), time range, course code & title, room, building, and student seat allocation range (`Roll: 001 - 045`).
-2. **Tab 2: `Other Routines` (Section Explorer):**
-   - Dedicated 72dp **`bar72`** with compass icon, left accent in `C.brand`, displaying chosen department, intake, section, and `[ Change ▾ ]` pill badge.
-   - Tapping opens the interactive Section Selector Modal with department pills, dynamic intake chips, and section cards, ensuring students can explore any section in the university.
-3. **Tab 3: `Official PDFs` (Master University Circulars):**
-   - 72dp **`bar72`** with file-text icon, left accent in `SectorColors.study`, displaying official controller circulars.
-   - Department filter pills (`All`, `CSE`, `EEE`, `BBA`, `English`, `Law`, `Civil`, `Textile`, `Economics`, `Math`).
-   - Direct actions: In-App Fullscreen Viewer via `CampusPdfViewerModal` (backed by local `pdf.js`), Direct Download via `File.downloadFileAsync` into device cache, and native sharing.
+### 53.1 Architectural Hierarchy & 4-Step Wizard Structure (`RoutinesBrowseScreen.tsx`)
+The routine module is designed as an intuitive, step-based navigation wizard utilizing universal **72-size bars (`bar72`)** across all selection states, while seamlessly supporting instant personal routine deep linking from the Home status strip:
+1. **Step 1: Routine Types (`types`):**
+   - Two 72dp **`bar72`** destinations:
+     - **Routines (Class Timetables):** Calendar icon, left accent in `SectorColors.study`.
+     - **Exam Routine:** File-text icon, left accent in `SectorColors.routines`.
+   - BUBT Office of the Controller of Examinations synchronization banner.
+2. **Step 2: Department Selection (`departments`):**
+   - Real-time search filter for all 9 university departments (`CSE`, `EEE`, `BBA`, `English`, `Law`, `Civil`, `Textile`, `Economics`, `Math`).
+   - Each department renders as a full-width 72dp **`bar72`** with department icon, official name, short code pill, and sub-program count.
+3. **Step 3: Department Options (`options`):**
+   - Active department hero badge with department icon and accent color.
+   - Two 72dp **`bar72`** options:
+     - **All:** Official departmental master circulars and full vector routine documents (PDF).
+     - **Choose:** Filter by student's specific Intake and Section timetable.
+4. **Step 4A: Master Department PDF Showcase (`all`):**
+   - Master document showcase card with verified publication badge, semester tag, document title, and department metadata.
+   - 1-tap **Open In-App PDF Viewer** via `CampusPdfViewerModal` (backed by local `pdf.js` engine).
+   - Direct download via `File.downloadFileAsync` into device cache, and native sharing.
+   - Complete list of all historical and current routine circulars for the department.
+5. **Step 4B: Intake & Section Timetable (`choose`):**
+   - Two top tabs: **Intake** (chips grid) and **Section** (chips grid), pre-populated from student's profile (`profile.department`, `profile.intake`, `profile.section`).
+   - Active selection summary banner with quick button to open Master Department PDF.
+   - **Weekly Class Timetable:** Horizontal weekday pills (`ALL`, `SAT`, `SUN`, `MON`, `TUE`, `WED`, `THR`, `FRI`). When `ALL` is selected, slots are strictly ordered chronologically by day (`SAT` -> `SUN` -> `MON` -> `TUE` -> `WED` -> `THR` -> `FRI`) and slot index, cleanly separated by day group headers. Slots feature time tags, room allocations, building decoders, faculty short-code pills (`FC: <CODE>`), and orange `[LAB]` badges for laboratory sessions.
+   - **Examination Timetable:** Sorted chronologically by ISO exam date (`exam_date`) and shift (`Shift 1` 09:30-11:30 AM / `Shift 2` 01:30-03:30 PM), displaying course details, room, building, student seat roll ranges (`Roll: 001 - 045`), and invigilator codes.
 
-### 53.2 Authentic BUBT Curriculum Seeds (`20261028030000_authentic_curriculum_routine_slots.sql`)
-- **Eliminated Fake/Duplicated Courses:** Completely wiped out boilerplate copy-pasted courses and seeded 540 authentic routine slots and 480 exam slots matching the exact BUBT syllabus by intake standing:
+### 53.2 Authentic BUBT Curriculum Seeds (`20261028030000_authentic_curriculum_routine_slots.sql` & `20261028040000_seed_math_routines.sql`)
+- **Eliminated Fake/Duplicated Courses:** Seeded 540 authentic routine slots and 480 exam slots matching the exact BUBT syllabus by intake standing across all 9 academic departments:
   - **CSE:**
     - Intake 57 (Sem 1): `CSE 101`, `CSE 102` (Lab), `ENG 101`, `MAT 101`, `PHY 101`
     - Intake 56 (Sem 2): `CSE 111`, `CSE 112` (Lab), `ENG 111`, `MAT 111`, `EEE 101`, `EEE 102` (Lab)
@@ -2509,11 +2518,12 @@ The routine module is standardized to a high-performance 3-tab architecture with
     - Intake 53 (Sem 5): `CSE 241`, `CSE 242` (Lab), `CSE 209`, `CSE 309`, `CSE 310` (Lab), `STA 231`
     - Intake 52 (Sem 6): `CSE 319`, `CSE 320` (Lab), `CSE 315`, `CSE 316` (Lab), `CSE 327`, `CSE 328` (Lab)
     - Intake 51 (Sem 7/8): `CSE 323`, `CSE 324` (Lab), `CSE 341`, `CSE 342` (Lab), `CSE 351`, `CSE 407`, `CSE 467`
-  - **EEE, BBA, English, Law, Civil, Textile, Economics, Math:** All seeded with realistic, department-specific coursework, valid BUBT room allocations (Buildings 1, 2, 3), and authentic teacher short-codes.
+  - **EEE, BBA, English, Law, Civil, Textile, Economics, Math:** All seeded with authentic department-specific coursework, valid BUBT room allocations (Buildings 1, 2, 3, 4), and faculty short-codes.
   - **Mid-Term Exam Slots:** Fall 2026 mid-term dates (Nov 15-24, 2026) matching the exact theory courses taught in each intake.
+  - **Master Routine Documents:** Verified public URLs for all 9 departments for both Class and Exam routine categories.
 
 ### 53.3 Home Screen & Navigation Deep Link Integration
-- `HomeStatusStrips.tsx` dynamically passes `{ initialTab: 'my_routine' }`, `{ subSchedule: 'class' }` (when tapping Timetable), or `{ subSchedule: 'exam' }` (when tapping Exams), opening the student's personal routine immediately on Frame 1.
-- `RoutinesBrowseScreen.tsx` listens to route parameters and updates the active tab and sub-schedule in real time.
+- `HomeStatusStrips.tsx` dynamically passes `{ initialTab: 'my_routine' }`, `{ subSchedule: 'class' }` (when tapping Timetable), or `{ subSchedule: 'exam' }` (when tapping Exams).
+- `RoutinesBrowseScreen.tsx` listens to route parameters and directly enters Step 4B (`choose`) with the student's personal profile defaults, while full back navigation (`choose` -> `options` -> `departments` -> `types`) is completely preserved.
 
 
