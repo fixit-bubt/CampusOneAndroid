@@ -416,10 +416,15 @@ function LeaveSheet({
   const [busy, setBusy] = useState(false);
   const needsHandover = isSoleCR && candidates.length > 0;
 
+  const handleClose = () => {
+    setSelectedUser('');
+    onClose();
+  };
+
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
       <View style={sheetStyles.overlay}>
-        <TouchableOpacity style={{ flex: 1 }} onPress={onClose} />
+        <TouchableOpacity style={{ flex: 1 }} onPress={handleClose} />
         <View style={[sheetStyles.sheet, { backgroundColor: C.surface, maxHeight: '82%' }]}>
           <View style={[sheetStyles.handle, { backgroundColor: C.border }]} />
           <Text style={[sheetStyles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
@@ -506,6 +511,17 @@ function LeaveSheet({
               </>
             )}
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[sheetStyles.cancelBtn, { borderColor: C.border }]}
+            onPress={handleClose}
+            disabled={busy}
+            activeOpacity={0.75}
+          >
+            <Text style={[sheetStyles.cancelTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+              Cancel
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
     </Modal>
@@ -524,7 +540,7 @@ function CreateSheet({ visible, C, depts, onClose, onSubmit }: { visible: boolea
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <KeyboardAvoidingView style={sheetStyles.overlay} behavior="padding">
+      <KeyboardAvoidingView style={sheetStyles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <TouchableOpacity style={{ flex: 1 }} onPress={() => { reset(); onClose(); }} />
         <View style={[sheetStyles.sheet, { backgroundColor: C.surface }]}>
           <View style={[sheetStyles.handle, { backgroundColor: C.border }]} />
@@ -597,7 +613,7 @@ function RejectSheet({ visible, C, onClose, onReject }: { visible: boolean; C: a
   const [note, setNote] = useState('');
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <KeyboardAvoidingView style={sheetStyles.overlay} behavior="padding">
+      <KeyboardAvoidingView style={sheetStyles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <TouchableOpacity style={{ flex: 1 }} onPress={onClose} />
         <View style={[sheetStyles.sheet, { backgroundColor: C.surface }]}>
           <View style={[sheetStyles.handle, { backgroundColor: C.border }]} />
@@ -662,6 +678,8 @@ const sheetStyles = StyleSheet.create({
   textarea: { minHeight: 80, borderRadius: 12, borderWidth: 1, padding: 13, fontSize: 14, textAlignVertical: 'top' } as any,
   submitBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, height: 58, borderRadius: 16, marginTop: 20 } as ViewStyle,
   submitTxt: { fontSize: 15 } as any,
+  cancelBtn: { alignItems: 'center', justifyContent: 'center', height: 48, borderRadius: 14, borderWidth: 1, marginTop: 10 } as ViewStyle,
+  cancelTxt: { fontSize: 14 } as any,
   hintTxt: { fontSize: 13.5, lineHeight: 20 } as any,
 });
 
@@ -727,6 +745,7 @@ export function StudyHubScreen({ navigation }: any) {
   const [sectionCourses, setSectionCourses] = useState<Course[]>([]);
   const [drillLoading, setDrillLoading] = useState(false);
   const toastRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function flash(msg: string) {
     setToastMsg(msg);
@@ -734,7 +753,10 @@ export function StudyHubScreen({ navigation }: any) {
     toastRef.current = setTimeout(() => setToastMsg(''), 1800);
   }
 
-  useEffect(() => () => { if (toastRef.current) clearTimeout(toastRef.current); }, []);
+  useEffect(() => () => {
+    if (toastRef.current) clearTimeout(toastRef.current);
+    if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+  }, []);
 
   function one<T>(v: T | T[] | null | undefined): T | null {
     if (!v) return null;
@@ -856,11 +878,11 @@ export function StudyHubScreen({ navigation }: any) {
       setAdminReqs(data.map((r: any) => {
         const prof = people[r.requester_id];
         const dept = one<any>(r.departments);
-        const name = prof?.full_name ?? 'Unknown';
+        const name = (prof?.full_name ?? 'Unknown').trim();
         return {
           id: r.id,
           full_name: name,
-          initials: name.split(' ').slice(0, 2).map((w: string) => w[0]).join(''),
+          initials: name.split(/\s+/).slice(0, 2).map((w: string) => w[0] || '').join(''),
           department: dept?.name ?? '',
           intake: r.intake_number,
           section_label: String(r.section_number),
@@ -902,12 +924,12 @@ export function StudyHubScreen({ navigation }: any) {
     if (data) {
       const people = await fetchPeople((data as any[]).map(r => r.user_id));
       setJoinReqs(data.map((r: any) => {
-        const name = people[r.user_id]?.full_name ?? 'Unknown';
+        const name = (people[r.user_id]?.full_name ?? 'Unknown').trim();
         return {
           id: r.id,
           user_id: r.user_id,
           full_name: name,
-          initials: name.split(' ').slice(0, 2).map((w: string) => w[0]).join(''),
+          initials: name.split(/\s+/).slice(0, 2).map((w: string) => w[0] || '').join(''),
           created_at: r.created_at,
         };
       }));
@@ -1151,6 +1173,7 @@ export function StudyHubScreen({ navigation }: any) {
     if (setCrFor) { setSetCrFor(null); return true; }
 
     if (sub === 'section') {
+      setSelectedSection(null);
       if (sectionOrigin === 'intake' && selectedIntake) {
         setSub('intake');
       } else {
@@ -1159,6 +1182,7 @@ export function StudyHubScreen({ navigation }: any) {
       return true;
     }
     if (sub === 'intake') {
+      setSelectedIntake(null);
       if (selectedSemester) {
         setSub('semester');
       } else {
@@ -1429,10 +1453,11 @@ export function StudyHubScreen({ navigation }: any) {
   }
 
   async function copyCode() {
-    if (!mySection) return;
-    await Clipboard.setStringAsync(mySection.join_code ?? '');
+    if (!mySection?.join_code) return;
+    await Clipboard.setStringAsync(mySection.join_code);
     setCopied(true);
-    setTimeout(() => setCopied(false), 1400);
+    if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    copyTimerRef.current = setTimeout(() => setCopied(false), 1400);
     flash('Copied!');
   }
 
@@ -1451,6 +1476,8 @@ export function StudyHubScreen({ navigation }: any) {
         toast({ type: 'error', title: 'Could not join', message: error?.message ?? res?.error ?? 'Invalid join code.' });
         return;
       }
+      const cacheKey = `study_my_section_${user.id}`;
+      await setCache(cacheKey, null);
       setCodeInput('');
       flash('Joined section!');
       load();
@@ -1468,7 +1495,14 @@ export function StudyHubScreen({ navigation }: any) {
     const { error } = await supabase
       .from('study_section_members')
       .insert({ section_id: sectionId, user_id: user.id, role: 'member', status: 'pending' });
-    if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }
+    if (error) {
+      if (error.code === '23505') {
+        toast({ type: 'info', title: 'Already Requested', message: 'You have already requested to join this section.' });
+      } else {
+        toast({ type: 'error', title: 'Error', message: error.message });
+      }
+      return;
+    }
     flash('Join request sent to CR');
   }
 
@@ -1481,6 +1515,17 @@ export function StudyHubScreen({ navigation }: any) {
     if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }
     setJoinReqs(j => j.filter(x => x.id !== id));
     flash('Member approved');
+  }
+
+  async function rejectJoin(id: string) {
+    if (!user) return;
+    const { error } = await supabase
+      .from('study_section_members')
+      .delete()
+      .eq('id', id);
+    if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }
+    setJoinReqs(j => j.filter(x => x.id !== id));
+    flash('Join request rejected');
   }
 
   async function toggleVisibility() {
@@ -1501,7 +1546,14 @@ export function StudyHubScreen({ navigation }: any) {
       section_number: parseInt(section, 10),
       reason: reason || null,
     });
-    if (error) { toast({ type: 'error', title: 'Error', message: error.message }); return; }
+    if (error) {
+      if (error.code === '23505') {
+        toast({ type: 'info', title: 'Pending Request', message: 'You already have a pending section request under review.' });
+      } else {
+        toast({ type: 'error', title: 'Error', message: error.message });
+      }
+      return;
+    }
     setCreateOpen(false);
     setPersona('pendingcreate');
     flash('Request submitted');
@@ -1573,6 +1625,7 @@ export function StudyHubScreen({ navigation }: any) {
 
   async function handleLeaveSection() {
     if (!mySection || !user) return;
+    const cacheKey = `study_my_section_${user.id}`;
     const { error } = await supabase
       .from('study_section_members')
       .delete()
@@ -1582,13 +1635,18 @@ export function StudyHubScreen({ navigation }: any) {
       toast({ type: 'error', title: 'Error', message: error.message });
       return;
     }
+    await setCache(cacheKey, null);
+    setMySection(null);
+    setPersona('notjoined');
+    setCourses([]);
     setLeaveOpen(false);
     flash('Left section');
     load();
   }
 
   async function handleHandoverAndLeave(newCrUserId: string) {
-    if (!mySection) return;
+    if (!mySection || !user) return;
+    const cacheKey = `study_my_section_${user.id}`;
     const { data, error } = await supabase.rpc('study_handover_cr_and_leave', {
       p_section_id: mySection.id,
       p_new_cr_id: newCrUserId,
@@ -1598,6 +1656,10 @@ export function StudyHubScreen({ navigation }: any) {
       toast({ type: 'error', title: 'Error', message: error?.message ?? res?.error ?? 'Could not transfer CR role.' });
       return;
     }
+    await setCache(cacheKey, null);
+    setMySection(null);
+    setPersona('notjoined');
+    setCourses([]);
     setLeaveOpen(false);
     flash('CR role transferred. You left the section.');
     load();
@@ -1635,7 +1697,12 @@ export function StudyHubScreen({ navigation }: any) {
   const filteredCourses = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return courses;
-    return courses.filter(c => (c.code || '').toLowerCase().includes(q) || (c.name || '').toLowerCase().includes(q));
+    const cleanQ = q.replace(/[\s-_]/g, '');
+    return courses.filter(c => {
+      const codeClean = (c.code || '').toLowerCase().replace(/[\s-_]/g, '');
+      const nameLower = (c.name || '').toLowerCase();
+      return codeClean.includes(cleanQ) || nameLower.includes(q);
+    });
   }, [courses, searchQuery]);
 
   const filteredBrowseSections = useMemo(() => {
@@ -1860,7 +1927,7 @@ export function StudyHubScreen({ navigation }: any) {
         {homeTab === 'courses' ? (
           <View>
             {/* Action Row */}
-            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
               {canAddCourse && (
                 <TouchableOpacity
                   style={[s.ctrlBtn58, { backgroundColor: C.brand, flex: 1 }]}
@@ -1874,7 +1941,16 @@ export function StudyHubScreen({ navigation }: any) {
                 </TouchableOpacity>
               )}
               <TouchableOpacity
-                style={[s.ctrlBtn58, { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1, flex: 1 }]}
+                style={[
+                  s.ctrlBtn58,
+                  {
+                    backgroundColor: C.surface,
+                    borderColor: C.border,
+                    borderWidth: 1,
+                    flex: canAddCourse ? 1 : undefined,
+                    width: canAddCourse ? undefined : '100%',
+                  },
+                ]}
                 onPress={openMyIntakeSections}
                 activeOpacity={0.75}
               >
@@ -1883,14 +1959,27 @@ export function StudyHubScreen({ navigation }: any) {
                   Other Sections
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[s.ctrlBtn58, { backgroundColor: C.dangerBg, borderColor: C.danger + '30', borderWidth: 1, paddingHorizontal: 16 }]}
-                onPress={() => setLeaveOpen(true)}
-                activeOpacity={0.75}
-              >
-                <Feather name="log-out" size={16} color={C.danger} />
-              </TouchableOpacity>
             </View>
+
+            {/* 58dp Leave Section Bar below Other Sections */}
+            <TouchableOpacity
+              style={[
+                s.leaveBar58,
+                {
+                  backgroundColor: isDark ? 'rgba(239, 68, 68, 0.08)' : '#fef2f2',
+                  borderColor: isDark ? 'rgba(239, 68, 68, 0.25)' : '#fecaca',
+                  borderWidth: 1,
+                  marginBottom: 12,
+                },
+              ]}
+              onPress={() => setLeaveOpen(true)}
+              activeOpacity={0.75}
+            >
+              <Feather name="log-out" size={16} color={C.danger} />
+              <Text style={[s.leaveBarTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
+                Leave Section
+              </Text>
+            </TouchableOpacity>
 
             {/* Search Bar if courses > 2 */}
             {courses.length > 2 && (
@@ -2081,16 +2170,28 @@ export function StudyHubScreen({ navigation }: any) {
                         {timeAgo(j.created_at)}
                       </Text>
                     </View>
-                    <TouchableOpacity
-                      style={[s.actionBtnSm, { backgroundColor: C.successBg }]}
-                      onPress={() => approveJoin(j.id)}
-                      activeOpacity={0.75}
-                    >
-                      <Feather name="check" size={13} color={C.success} />
-                      <Text style={[s.actionTxtSm, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
-                        Approve
-                      </Text>
-                    </TouchableOpacity>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <TouchableOpacity
+                        style={[s.actionBtnSm, { backgroundColor: C.successBg }]}
+                        onPress={() => approveJoin(j.id)}
+                        activeOpacity={0.75}
+                      >
+                        <Feather name="check" size={13} color={C.success} />
+                        <Text style={[s.actionTxtSm, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
+                          Approve
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[s.actionBtnSm, { backgroundColor: C.dangerBg }]}
+                        onPress={() => rejectJoin(j.id)}
+                        activeOpacity={0.75}
+                      >
+                        <Feather name="x" size={13} color={C.danger} />
+                        <Text style={[s.actionTxtSm, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
+                          Reject
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 ))}
               </>
@@ -2290,6 +2391,30 @@ export function StudyHubScreen({ navigation }: any) {
                 </TouchableOpacity>
               )}
             </View>
+
+            {/* Danger Zone: Leave Section */}
+            <Text style={[s.sectionLabel, { color: C.danger, fontFamily: FontFamily.jakartaExtraBold, marginTop: 22 }]}>
+              DANGER ZONE
+            </Text>
+            <TouchableOpacity
+              style={[
+                s.leaveBar58,
+                {
+                  backgroundColor: isDark ? 'rgba(239, 68, 68, 0.08)' : '#fef2f2',
+                  borderColor: isDark ? 'rgba(239, 68, 68, 0.25)' : '#fecaca',
+                  borderWidth: 1,
+                  marginTop: 4,
+                  marginBottom: 12,
+                },
+              ]}
+              onPress={() => setLeaveOpen(true)}
+              activeOpacity={0.75}
+            >
+              <Feather name="log-out" size={16} color={C.danger} />
+              <Text style={[s.leaveBarTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
+                Leave Section
+              </Text>
+            </TouchableOpacity>
           </View>
         )}
       </View>
@@ -2711,18 +2836,19 @@ export function StudyHubScreen({ navigation }: any) {
     : sub === 'section' ? (selectedSection ? `Sec ${selectedSection.number} · Intake ${selectedSection.intake_number}` : 'Section Room')
     : t.study2.studyHub;
 
-  const isRootTab = !isAdmin && sub === 'home';
+  const isRootTab = sub === 'home';
 
   return (
     <View style={[s.safe, { backgroundColor: C.bg, paddingTop: insets.top }]}>
       {isRootTab ? (
-        <TopBar title={t.study2.studyHub} />
+        <TopBar title={barTitle} />
       ) : (
         <SubBar title={barTitle} onBack={handleBack} />
       )}
       <OfflineBanner
         visible={isOffline}
         message="Showing cached study hub courses and materials."
+        style={{ marginHorizontal: Layout.screenPadding }}
       />
 
       <ScrollView
@@ -2796,7 +2922,7 @@ export function StudyHubScreen({ navigation }: any) {
 
       {/* Admin: add intake */}
       <Modal visible={addIntakeOpen} animationType="slide" transparent onRequestClose={() => setAddIntakeOpen(false)}>
-        <KeyboardAvoidingView style={sheetStyles.overlay} behavior="padding">
+        <KeyboardAvoidingView style={sheetStyles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <TouchableOpacity style={{ flex: 1 }} onPress={() => setAddIntakeOpen(false)} />
           <View style={[sheetStyles.sheet, { backgroundColor: C.surface }]}>
             <View style={[sheetStyles.handle, { backgroundColor: C.border }]} />
@@ -2821,7 +2947,7 @@ export function StudyHubScreen({ navigation }: any) {
 
       {/* Admin: add section */}
       <Modal visible={!!addSectionFor} animationType="slide" transparent onRequestClose={() => setAddSectionFor(null)}>
-        <KeyboardAvoidingView style={sheetStyles.overlay} behavior="padding">
+        <KeyboardAvoidingView style={sheetStyles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <TouchableOpacity style={{ flex: 1 }} onPress={() => setAddSectionFor(null)} />
           <View style={[sheetStyles.sheet, { backgroundColor: C.surface }]}>
             <View style={[sheetStyles.handle, { backgroundColor: C.border }]} />
@@ -2841,7 +2967,7 @@ export function StudyHubScreen({ navigation }: any) {
 
       {/* Admin: assign CR */}
       <Modal visible={!!setCrFor} animationType="slide" transparent onRequestClose={() => setSetCrFor(null)}>
-        <KeyboardAvoidingView style={sheetStyles.overlay} behavior="padding">
+        <KeyboardAvoidingView style={sheetStyles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <TouchableOpacity style={{ flex: 1 }} onPress={() => setSetCrFor(null)} />
           <View style={[sheetStyles.sheet, { backgroundColor: C.surface, maxHeight: '70%' }]}>
             <View style={[sheetStyles.handle, { backgroundColor: C.border }]} />
@@ -2909,6 +3035,20 @@ const s = StyleSheet.create({
     paddingHorizontal: 18,
   } as ViewStyle,
   ctrlBtnTxt: {
+    fontSize: 14.5,
+  } as any,
+
+  leaveBar58: {
+    height: 58,
+    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingHorizontal: 18,
+    width: '100%',
+  } as ViewStyle,
+  leaveBarTxt: {
     fontSize: 14.5,
   } as any,
 

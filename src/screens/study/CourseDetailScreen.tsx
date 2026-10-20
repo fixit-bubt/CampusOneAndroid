@@ -8,6 +8,7 @@ import {
   ActivityIndicator, Alert, BackHandler, type ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
@@ -157,9 +158,9 @@ export function CourseDetailScreen({ route, navigation }: any) {
             .eq('user_id', user.id)
             .eq('status', 'approved')
             .maybeSingle();
-          const isMember = !!me;
+          const canEdit = me?.role === 'cr' || me?.role === 'editor' || profile?.role === 'admin';
           setIsCR(me?.role === 'cr' || profile?.role === 'admin');
-          setCanUpload(isMember || profile?.role === 'admin');
+          setCanUpload(canEdit);
         } else {
           setIsCR(profile?.role === 'admin');
           setCanUpload(profile?.role === 'admin');
@@ -227,18 +228,20 @@ export function CourseDetailScreen({ route, navigation }: any) {
     return unsub;
   }, [load, navigation]);
 
-  useEffect(() => {
-    const onBackPress = () => {
-      if (showSearch) {
-        setShowSearch(false);
-        setQuery('');
-        return true;
-      }
-      return false;
-    };
-    const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
-    return () => sub.remove();
-  }, [showSearch]);
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        if (showSearch) {
+          setShowSearch(false);
+          setQuery('');
+          return true;
+        }
+        return false;
+      };
+      const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      return () => sub.remove();
+    }, [showSearch])
+  );
 
   async function openEntry(f: Entry) {
     if (openingId) return;
@@ -302,6 +305,9 @@ export function CourseDetailScreen({ route, navigation }: any) {
       {
         text: t.common.delete, style: 'destructive',
         onPress: async () => {
+          if (f.storage_path) {
+            await supabase.storage.from('study-materials').remove([f.storage_path]);
+          }
           const { error } = await supabase.from(f.table).delete().eq('id', f.id);
           if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
           load();

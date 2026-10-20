@@ -77,15 +77,19 @@ export function StudyUploadScreen({ route, navigation }: any) {
 
   // Questions need the course's section; books are intake-scoped too.
   useEffect(() => {
+    let active = true;
     (async () => {
       if (!courseId) return;
       const { data: c } = await supabase.from('study_courses').select('section_id').eq('id', courseId).single();
+      if (!active) return;
       if (c?.section_id) {
         setSectionId(c.section_id);
         const { data: s } = await supabase.from('study_sections').select('intake_id').eq('id', c.section_id).single();
+        if (!active) return;
         if (s?.intake_id) setIntakeId(s.intake_id);
       }
     })();
+    return () => { active = false; };
   }, [courseId]);
 
   // Questions need the resolved section_id, books need the resolved intake_id
