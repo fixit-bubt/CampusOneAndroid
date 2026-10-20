@@ -19,7 +19,7 @@ export interface NoticeItem {
   code: string;
   title: string;
   body: string;
-  department: string | null;
+  department: string;
   department_code: string | null;
   priority: 'Urgent' | 'Important' | 'General';
   pinned: boolean;

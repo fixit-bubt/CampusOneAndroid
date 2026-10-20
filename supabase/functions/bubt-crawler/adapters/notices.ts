@@ -118,7 +118,7 @@ export async function runNoticesAdapter(
       code,
       title: n.title.trim(),
       body,
-      department: department || null,
+      department: department || 'University-Wide',
       department_code: deptCode || null,
       priority,
       pinned,

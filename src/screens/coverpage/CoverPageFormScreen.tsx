@@ -445,24 +445,30 @@ export function CoverPageFormScreen({ navigation }: any) {
       // 2. Fresh Network Sync (safely catches when device is offline)
       try {
         const [fR, dR, cR] = await Promise.all([
-          supabase.from('faculty').select('id, name, designation, department_id, photo_url, short_code').eq('on_leave', false).order('name'),
+          supabase.from('faculty').select('id, name, designation, department_id, photo_url, short_code').eq('on_leave', false).order('name').limit(1000),
           supabase.from('departments').select('id, name').order('name'),
-          supabase.from('courses').select('code, name').order('code'),
+          supabase.from('courses').select('code, name').order('code').limit(1000),
         ]);
         if (!isMounted) return;
 
+        let dm = new Map<string, string>();
         if (dR.data && dR.data.length > 0) {
           const depts = dR.data as { id: string; name: string }[];
           setDepartments(depts);
           setCache(CacheKeys.COVER_DEPTS, depts);
-
-          const dm = new Map(depts.map(d => [d.id, d.name]));
-          if (fR.data && fR.data.length > 0) {
-            const fac = (fR.data as FacultyRow[]).map(f => ({ ...f, dept_name: dm.get(f.department_id) ?? '' }));
-            setFacultyList(fac);
-            setCache(CacheKeys.COVER_FACULTY, fac);
-          }
+          dm = new Map(depts.map(d => [d.id, d.name]));
         }
+
+        if (dm.size === 0) {
+          DEFAULT_BUBT_DEPARTMENTS.forEach(d => dm.set(d.id, d.name));
+        }
+
+        if (fR.data && fR.data.length > 0) {
+          const fac = (fR.data as FacultyRow[]).map(f => ({ ...f, dept_name: dm.get(f.department_id) ?? '' }));
+          setFacultyList(fac);
+          setCache(CacheKeys.COVER_FACULTY, fac);
+        }
+
         if (cR.data && cR.data.length > 0) {
           const courses = cR.data as { code: string; name: string }[];
           setCourseList(courses);
@@ -579,24 +585,64 @@ export function CoverPageFormScreen({ navigation }: any) {
     const rawQ = facultySearch.trim().toLowerCase();
     if (!rawQ) return facultyList;
     const cleanQ = rawQ.replace(/[^a-z0-9]/g, '');
+    const words = rawQ.split(/[\s.]+/).filter(Boolean);
+
     return facultyList.filter(f => {
-      const nameMatch = f.name.toLowerCase().includes(rawQ);
-      const deptMatch = (f.dept_name ?? '').toLowerCase().includes(rawQ);
-      const desigMatch = (f.designation ?? '').toLowerCase().includes(rawQ);
+      const lowerName = (f.name || '').toLowerCase();
+      const cleanName = lowerName.replace(/[^a-z0-9]/g, '');
+      const lowerCode = (f.short_code || '').toLowerCase();
+      const cleanCode = lowerCode.replace(/[^a-z0-9]/g, '');
+      const dept = (f.dept_name || '').toLowerCase();
+      const cleanDept = dept.replace(/[^a-z0-9]/g, '');
+      const desig = (f.designation || '').toLowerCase();
+
+      // 1. Direct name match (exact substring OR punctuation-stripped e.g. "Md.As" -> "mdashikkhan")
+      const nameMatch = lowerName.includes(rawQ) || (cleanQ.length > 0 && cleanName.includes(cleanQ));
+
+      // 2. Multi-word token match (e.g. "Md As" or "Ashik Khan" or "Md Ashik" matching "Md. Ashik Khan")
+      const allWordsMatch = words.length > 1 && words.every(w => {
+        const cw = w.replace(/[^a-z0-9]/g, '');
+        return lowerName.includes(w) || cleanName.includes(cw) || lowerCode.includes(cw);
+      });
+
+      // 3. Short routine code match (e.g. MDAK, MDAR, SR)
       const codeMatch = Boolean(
-        f.short_code && (
-          f.short_code.toLowerCase().includes(rawQ) ||
-          (cleanQ.length > 0 && f.short_code.toLowerCase().replace(/[^a-z0-9]/g, '').includes(cleanQ))
-        )
+        cleanCode &&
+        cleanQ.length > 0 &&
+        (lowerCode.includes(rawQ) || cleanCode.includes(cleanQ) || cleanQ.includes(cleanCode))
       );
-      return nameMatch || deptMatch || desigMatch || codeMatch;
+
+      // 4. Department match (e.g. "CSE", "EEE", "Computer Science")
+      const deptMatch = dept.includes(rawQ) || (cleanQ.length > 0 && cleanDept.includes(cleanQ));
+
+      // 5. Designation match (e.g. "Professor", "Lecturer")
+      const desigMatch = desig.includes(rawQ);
+
+      return nameMatch || allWordsMatch || codeMatch || deptMatch || desigMatch;
     });
   }, [facultySearch, facultyList]);
 
   const filteredCourses = useMemo(() => {
     const rawQ = courseSearch.trim().toLowerCase();
     if (!rawQ) return courseList;
-    return courseList.filter(c => c.code.toLowerCase().includes(rawQ) || c.name.toLowerCase().includes(rawQ));
+    const cleanQ = rawQ.replace(/[^a-z0-9]/g, '');
+    const words = rawQ.split(/[\s.]+/).filter(Boolean);
+
+    return courseList.filter(c => {
+      const lowerCode = (c.code || '').toLowerCase();
+      const cleanCode = lowerCode.replace(/[^a-z0-9]/g, '');
+      const lowerName = (c.name || '').toLowerCase();
+      const cleanName = lowerName.replace(/[^a-z0-9]/g, '');
+
+      const codeMatch = lowerCode.includes(rawQ) || (cleanQ.length > 0 && cleanCode.includes(cleanQ));
+      const nameMatch = lowerName.includes(rawQ) || (cleanQ.length > 0 && cleanName.includes(cleanQ));
+      const allWordsMatch = words.length > 1 && words.every(w => {
+        const cw = w.replace(/[^a-z0-9]/g, '');
+        return lowerCode.includes(w) || cleanCode.includes(cw) || lowerName.includes(w) || cleanName.includes(cw);
+      });
+
+      return codeMatch || nameMatch || allWordsMatch;
+    });
   }, [courseSearch, courseList]);
 
   async function handleGenerate() {
