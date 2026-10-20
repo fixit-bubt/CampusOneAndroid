@@ -15,7 +15,7 @@ import { FontFamily, Layout, Accent, SectorColors } from '../../theme';
 import { useT } from '../../i18n';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
-import { getMyNotifications } from '../../services/notificationsService';
+import { getUnreadNotificationCount } from '../../services/notificationsService';
 import { CampusToday } from '../../components/CampusToday';
 
 const ISSUE_MAP: Record<string, { icon: string; fg: string }> = {
@@ -189,8 +189,8 @@ export function AdminDashboardScreen({ navigation }: any) {
     if (staff) setStaffList(staff as StaffMember[]);
     const { count } = await supabase.from('reports').select('id', { count: 'exact', head: true }).in('status', ['Resolved', 'Closed']).is('deleted_at', null);
     setResolvedCount(count ?? 0);
-    const nRes = await getMyNotifications(20);
-    if (nRes.ok) setUnread(nRes.data.filter(n => !n.read).length);
+    const nRes = await getUnreadNotificationCount(profile?.id);
+    if (nRes.ok) setUnread(nRes.data);
   }, [profile]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));

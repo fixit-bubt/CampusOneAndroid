@@ -30,6 +30,20 @@ export async function getMyNotifications(
   return { ok: true, data: data as Notification[] };
 }
 
+export async function getUnreadNotificationCount(
+  userId?: string,
+): Promise<ServiceResult<number>> {
+  const uid = userId ?? (await supabase.auth.getUser()).data.user?.id;
+  if (!uid) return { ok: true, data: 0 };
+  const { count, error } = await supabase
+    .from('notifications')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', uid)
+    .eq('read', false);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, data: count ?? 0 };
+}
+
 export async function markAllRead(userId: string): Promise<ServiceResult<null>> {
   const { error } = await supabase
     .from('notifications')

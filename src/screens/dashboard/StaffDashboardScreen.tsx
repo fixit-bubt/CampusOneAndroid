@@ -15,7 +15,7 @@ import { useT } from '../../i18n';
 import { supabase } from '../../lib/supabase';
 import { fetchPeople } from '../../services/peopleService';
 import { useAuth } from '../../store/authStore';
-import { getMyNotifications } from '../../services/notificationsService';
+import { getUnreadNotificationCount } from '../../services/notificationsService';
 import { declineReport } from '../../services/reportsService';
 import { CampusToday } from '../../components/CampusToday';
 
@@ -183,8 +183,8 @@ export function StaffDashboardScreen({ navigation }: any) {
         location: [r.building, r.room].filter(Boolean).join(' · '),
       })));
     }
-    const nRes = await getMyNotifications(20);
-    if (nRes.ok) setUnread(nRes.data.filter(n => !n.read).length);
+    const nRes = await getUnreadNotificationCount(user?.id);
+    if (nRes.ok) setUnread(nRes.data);
   }, [user?.id, profile]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));

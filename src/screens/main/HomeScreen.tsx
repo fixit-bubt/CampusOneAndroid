@@ -17,7 +17,7 @@ import { HomeStatusStrips } from '../../components/home/HomeStatusStrips';
 import { HomeFrequentTools } from '../../components/home/HomeFrequentTools';
 import { HomeCommunityUpdates } from '../../components/home/HomeCommunityUpdates';
 import { Layout } from '../../theme';
-import { getMyNotifications } from '../../services/notificationsService';
+import { getUnreadNotificationCount } from '../../services/notificationsService';
 
 export function HomeScreen({ navigation }: any) {
   const { C } = useTheme();
@@ -30,9 +30,9 @@ export function HomeScreen({ navigation }: any) {
 
   const load = useCallback(async () => {
     if (!user || (profile && profile.role !== 'student')) return;
-    const nRes = await getMyNotifications(20);
+    const nRes = await getUnreadNotificationCount(user.id);
     if (nRes.ok) {
-      setUnread(nRes.data.filter((n) => !n.read).length);
+      setUnread(nRes.data);
     }
   }, [user, profile]);
 

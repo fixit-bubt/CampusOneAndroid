@@ -180,13 +180,23 @@ export function NotificationsScreen({ navigation }: any) {
     }
     const res = await markAllRead(user.id);
     if (!res.ok) { toast({ type: 'error', title: t.common.error, message: res.error }); return; }
-    setNotifs(n => n.map(x => ({ ...x, read: true })));
+    setNotifs(n => {
+      const updated = n.map(x => ({ ...x, read: true }));
+      setCache(cacheKey, updated);
+      return updated;
+    });
   }
 
   async function handleOpen(n: Notification) {
     if (!n.read && !isOffline) {
       const res = await markRead(n.id);
-      if (res.ok) setNotifs(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x));
+      if (res.ok) {
+        setNotifs(prev => {
+          const updated = prev.map(x => x.id === n.id ? { ...x, read: true } : x);
+          setCache(cacheKey, updated);
+          return updated;
+        });
+      }
     }
     navigation.navigate('NotifDetail', { notification: n });
   }

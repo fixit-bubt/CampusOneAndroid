@@ -665,11 +665,15 @@ In `RootNavigator.tsx`, students who have not completed onboarding (`!profile?.s
   - String sanitizers (`cleanDeptName`, `fmtDesig`, `rawDesig`) eliminate redundant `"Department of"` prefixes and nested parentheses.
 - **Zero-Block Instant PDF Generation:** Removed all field-level blocking. If a student leaves fields blank, the engine fills them with clean academic blanks (`____________________`), enabling students to print blank official university cover pages for handwriting.
 
-### 10.4 Direct FCM Push Notifications
+### 10.4 Direct FCM Push Notifications & 360 Pipeline
 - **Firebase Project:** `campusone-511812`
-- **Mechanism:** Trigger on `notifications` table (`trg_push_on_notification`) → `pg_net` HTTP post → `send-push` Edge Function → Google Service Account OAuth → FCM v1.
+- **Mechanism:** Trigger on `notifications` table (`trg_push_on_notification`) -> `pg_net` HTTP post -> `send-push` Edge Function -> Google Service Account OAuth -> FCM v1.
 - **Emergency Channel:** Android native channel `emergency_blood` (`AndroidImportance.MAX`, double-pulse vibration `[0, 500, 200, 500]`, heads-up lockscreen banner). FCM messages with `sector === 'blood'` are routed directly to this channel.
-- **Device Registration:** Handled via `register_push_token` RPC in `src/lib/push.ts`.
+- **Device Registration:** Handled via `register_push_token` RPC in `src/lib/push.ts` with device token rotation listener in `RootNavigator.tsx`.
+- **Centralized Preference Enforcement:** `push_on_notification()` centrally checks `public.notif_prefs` before dispatching `net.http_post` (`_paused` or `sector = new.sector AND (enabled = false OR push = false)`), guaranteeing user mute settings are respected across all sectors without leaking pushes.
+- **Universal Notice Routing:** `notify_new_announcement()` classifies all central university administrative bodies (`Office of the Registrar`, `Controller of Examinations`, `Office of the Vice Chancellor`, `Proctor Office`, `Library`, `Medical Center`, `Accounts Office`, `Career Guidance & Placement Office`) as universal circulars, and safely falls back to notifying students with unassigned/null departments.
+- **Deduplicated Triggers:** Single authoritative trigger `trg_notify_connection_event` handles connection requests and acceptances without duplicate inserts or double pushes.
+- **Exact Unread Count Service:** `getUnreadNotificationCount()` in `notificationsService.ts` replaces the 20-item capped array filter with an exact database count (`count: 'exact', head: true`).
 ### 10.5 Universal In-App PDF Viewer & Anti-Skin-Flash Architecture
 - **Locations:** `src/screens/announcements/AnnouncementDetailScreen.tsx` & `src/components/pdf/CampusPdfViewerModal.tsx`
 - **Zero-Download In-App Streaming:** Remote university notices, exam routines, and academic circulars stream directly inside the app using embedded Google Docs Viewer (`docs.google.com/gview?embedded=true&url=...`) without saving files to device storage or navigating away from the app.
