@@ -22,6 +22,7 @@ import {
   FACULTY_ACCENT, BRANCH_ICON, shortDept, sortFaculty, interestsOf,
   TeacherBar, type FacultyMember, type Department,
 } from './facultyShared';
+import { DepartmentAuthoritiesDropdown } from './DepartmentAuthoritiesDropdown';
 
 export function FacultyDeptScreen({ route, navigation }: any) {
   const { C, isDark } = useTheme();
@@ -170,6 +171,17 @@ export function FacultyDeptScreen({ route, navigation }: any) {
               ) : null}
             </View>
           </View>
+        )}
+
+        {/* Department Authorities & Decision Makers (Universal 72dp Card Standard Dropdown) */}
+        {dept && (
+          <DepartmentAuthoritiesDropdown
+            deptNumber={dept.dept_number}
+            deptName={dept.name}
+            deptChairmanName={dept.chairman}
+            roster={roster}
+            navigation={navigation}
+          />
         )}
 
         {/* Search */}
