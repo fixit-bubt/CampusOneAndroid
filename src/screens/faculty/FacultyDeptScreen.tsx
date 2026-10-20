@@ -1,7 +1,7 @@
 // Faculty - one department's roster.
 // Header: branch icon tile, dept name, branch · count, chair line.
 // Search appears when the roster is bigger than 6. Chairman sorts first.
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
   RefreshControl, type ViewStyle, type TextStyle,
@@ -35,6 +35,12 @@ export function FacultyDeptScreen({ route, navigation }: any) {
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [query, setQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const INITIAL_LIMIT = 24;
+  const [visibleLimit, setVisibleLimit] = useState(INITIAL_LIMIT);
+
+  useEffect(() => {
+    setVisibleLimit(INITIAL_LIMIT);
+  }, [query]);
 
   const load = useCallback(async () => {
     const [deptRes, facRes, savedRes] = await Promise.all([
@@ -140,6 +146,10 @@ export function FacultyDeptScreen({ route, navigation }: any) {
       })
     : roster;
 
+  const displayedList = useMemo(() => {
+    return list.slice(0, visibleLimit);
+  }, [list, visibleLimit]);
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar title={shortDept(dept?.name) || t.faculty2.departmentFallback} onBack={() => navigation.goBack()} />
@@ -212,7 +222,7 @@ export function FacultyDeptScreen({ route, navigation }: any) {
           </View>
         ) : (
           <View style={styles.list}>
-            {list.map(f => (
+            {displayedList.map(f => (
               <TeacherBar
                 key={f.id}
                 f={f}
@@ -224,6 +234,19 @@ export function FacultyDeptScreen({ route, navigation }: any) {
                 goldColor={Accent.gold}
               />
             ))}
+
+            {list.length > visibleLimit && (
+              <TouchableOpacity
+                style={[styles.loadMoreBar, { backgroundColor: C.surface, borderColor: C.border }]}
+                onPress={() => setVisibleLimit(prev => prev + 30)}
+                activeOpacity={0.75}
+              >
+                <Text style={[styles.loadMoreTxt, { color: FACULTY_ACCENT, fontFamily: FontFamily.jakartaBold }]}>
+                  Show more ({list.length - visibleLimit} remaining)
+                </Text>
+                <Feather name="chevron-down" size={16} color={FACULTY_ACCENT} />
+              </TouchableOpacity>
+            )}
           </View>
         )}
 
@@ -258,4 +281,17 @@ const styles = StyleSheet.create({
   list: { gap: 10 } as ViewStyle,
   empty: { alignItems: 'center', paddingTop: 50, gap: 8 } as ViewStyle,
   emptyTxt: { fontSize: 13.5 } as TextStyle,
+  loadMoreBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    minHeight: 48,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginTop: 4,
+  } as ViewStyle,
+  loadMoreTxt: {
+    fontSize: 13,
+  } as TextStyle,
 });

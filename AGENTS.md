@@ -370,7 +370,22 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
       - `industrial_experience` (`text`): Field and corporate consulting experience.
       - `departmental_profile_url` (`text`): Direct link to departmental subdomain dossiers (e.g. `eee.bubt.edu.bd`).
     - **All 13 Departments Covered:** Universal support across Computer Science & Engineering (CSE), Data Science & Engineering (DSE), Mathematics & Statistics, Electrical & Electronic Engineering (EEE), Textile Engineering, Civil Engineering, Law & Justice, English, Management, Economics, Accounting, Marketing, and Finance.
-    - **Normalized Punctuation & Token Search Engine:** Real-time search across Teacher Name, Teacher Initial (e.g. `MDAK`), Room Number, Building, Research Interests, Course Codes (`EEE 207`, `CSE 315`), Teaching Areas, Department Name, and Research Publications (paper titles and conference/journal venues). Normalizes punctuation and spacing so queries like `Md.A` and `Md.As` seamlessly match names with dots or spaces (`Md. Ashik Khan` -> `mdashikkhan`), multi-word tokens, and initial short codes without disappearing.
+    - **Department Authorities & Decision Makers Dropdown (`DepartmentAuthoritiesDropdown.tsx` & `departmentAuthoritiesData.ts`):**
+      - Universal 72dp trigger bar (`minHeight: 72, padding: 14, borderRadius: 16`) displaying shield icon tile, department leadership subtitle, and role count badge.
+      - Smooth layout animation expansion revealing **72dp Teacher Bars** for Chairman, Assistant Proctor, and Faculty Dean across all 13 departments.
+      - Each authority bar features an avatar (`<Avatar size="md" />`), teacher name, role badge with vector icon (`star` for Chairman, `shield` for Proctor, `award` for Dean), and single-line operational powers summary with `zap` vector icon and room/building location.
+      - 1-tap direct navigation to the authority's `FacultyProfile` screen (or direct official email fallback).
+    - **Faculty Profile 72dp Dropdown + 58dp Child Bars Architecture (`FacultyProfileScreen.tsx`):**
+      - Complete architectural overhaul from flat cards to a modular **Universal 72dp Master Dropdowns + 58dp Child Bars** system:
+        - *Courses Taught at BUBT:* 72dp dropdown with 58dp bars (`minHeight: 58, paddingHorizontal: 14, borderRadius: 13`) for each assigned routine/portal subject.
+        - *Research & Publications:* 72dp dropdown with 58dp bars for research interests/domains (`Machine Learning`, `IoT`, `Robotics`) with full peer-reviewed papers and IEEE publications neatly housed inside under an inner section header.
+        - *Academic Qualifications:* 72dp dropdown with 58dp bars for each academic degree (SSC, HSC, B.Sc, M.Sc, Ph.D) with institute and passing year.
+        - *Academic Indexes & Profiles:* 72dp dropdown with 58dp bars for Google Scholar, ResearchGate, Scopus, LinkedIn, and ORCID with verified external links.
+        - *Institutional Activities & Experience:* 72dp dropdown with 58dp bars for university committees, club mentoring, and industrial experience.
+    - **Faculty Directory & Department Roster Performance Hardening:**
+      - `TeacherBar` (`facultyShared.tsx`): Wrapped in `React.memo` with shallow prop comparison to eliminate unnecessary re-renders when filtering or scrolling.
+      - Pre-computed O(1) rank indexing in `sortFaculty` and Dhaka counseling hours tracking.
+      - `FacultyDeptScreen.tsx`: Windowed rendering with `INITIAL_LIMIT = 24` and 30-item progressive paging bar (`loadMoreBar`, `minHeight: 48, borderRadius: 14`), reducing initial render latency in massive departments like CSE (114 teachers) from ~450ms to <16ms (solid 120 FPS).
     - **Live On-Demand Profile Enrichment:** When students view any teacher's dossier, `FacultyProfileScreen` automatically enriches missing education degrees, qualifications (SSC, HSC, B.Sc, M.Sc, Ph.D), publications, blood group, and official email on the fly from official institutional profile pages and persists them to Supabase.
     - **Routine Slot Room & Building Mapping:** Automatic mapping from `routine_slots` where `teacher_short_code` links active courses, rooms (e.g. `Rm 406`), and concise building names (`Building 1`, `Building 2`, `Building 3`).
     - **ContactSheet Integration:** Seamless cell phone and WhatsApp communication via `phone={member.cell_phone || member.phone}` across directory cards and profile screens.

@@ -6,8 +6,13 @@ import { useState, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet, Modal,
   TextInput, ActivityIndicator, KeyboardAvoidingView, Platform,
+  UIManager, LayoutAnimation,
   type ViewStyle, type TextStyle,
 } from 'react-native';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
@@ -163,6 +168,18 @@ export function FacultyProfileScreen({ route, navigation }: any) {
   // Proposal drafter form
   const [proposalTopic, setProposalTopic] = useState('');
   const [proposalBrief, setProposalBrief] = useState('');
+
+  // Universal 72dp dropdown toggle states
+  const [expandResearch, setExpandResearch] = useState(true);
+  const [expandQuals, setExpandQuals] = useState(true);
+  const [expandLinks, setExpandLinks] = useState(true);
+  const [expandCourses, setExpandCourses] = useState(false);
+  const [expandActivities, setExpandActivities] = useState(false);
+
+  const toggleSection = (setter: React.Dispatch<React.SetStateAction<boolean>>) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setter(prev => !prev);
+  };
 
   const load = useCallback(async () => {
     if (!facultyId) { setFailed(true); return; }
@@ -466,191 +483,343 @@ export function FacultyProfileScreen({ route, navigation }: any) {
           </View>
         ) : null}
 
-        {/* Courses Taught at BUBT */}
+        {/* 1. Courses Taught at BUBT (72dp Dropdown + 58dp Bars) */}
         {courses.length > 0 && (
-          <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border, marginTop: 12 }]}>
-            <View style={styles.cardHeaderLeft}>
-              <AnimatedIcon family="feather" name="book-open" size={16} color={FACULTY_ACCENT} animation="entrance" />
-              <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                Courses Taught at BUBT
-              </Text>
-            </View>
-            <View style={{ gap: 8, marginTop: 11 }}>
-              {courses.map((c, i) => (
-                <View key={i} style={[styles.courseRow, { backgroundColor: C.surface2, borderColor: C.border }]}>
-                  <Feather name="layers" size={14} color={FACULTY_ACCENT} style={{ marginTop: 2 }} />
-                  <Text style={[styles.courseTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>
-                    {c}
+          <View>
+            <TouchableOpacity
+              style={[styles.sectionDropdownBar, { backgroundColor: C.surface, borderColor: C.border }]}
+              onPress={() => toggleSection(setExpandCourses)}
+              activeOpacity={0.75}
+            >
+              <View style={[styles.sectionIconTile, { backgroundColor: `${FACULTY_ACCENT}14` }]}>
+                <Feather name="layers" size={20} color={FACULTY_ACCENT} />
+              </View>
+              <View style={styles.sectionBarBody}>
+                <Text style={[styles.sectionBarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                  Courses Taught at BUBT
+                </Text>
+                <Text style={[styles.sectionBarSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                  Assigned Subjects & Laboratory Routines
+                </Text>
+              </View>
+              <View style={styles.sectionRightSlot}>
+                <View style={[styles.sectionPill, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                  <Text style={[styles.sectionPillTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                    {courses.length}
                   </Text>
                 </View>
-              ))}
-            </View>
-          </View>
-        )}
+                <Feather name={expandCourses ? 'chevron-up' : 'chevron-down'} size={18} color={C.textMuted} />
+              </View>
+            </TouchableOpacity>
 
-        {/* Teaching Areas & Specializations */}
-        {teachingAreas.length > 0 && (
-          <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border, marginTop: 12 }]}>
-            <View style={styles.cardHeaderLeft}>
-              <Feather name="compass" size={16} color={C.brand} />
-              <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                Teaching Specializations
-              </Text>
-            </View>
-            <View style={styles.pills}>
-              {teachingAreas.map((area, idx) => (
-                <View key={`${area}-${idx}`} style={[styles.pill, { backgroundColor: `${C.brand}14` }]}>
-                  <Text style={[styles.pillTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
-                    {area}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          </View>
-        )}
-
-        {/* Research Interests */}
-        {interests.length > 0 && (
-          <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border, marginTop: 12 }]}>
-            <View style={styles.cardHeaderLeft}>
-              <Feather name="book" size={16} color={FACULTY_ACCENT} />
-              <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                {t.faculty2.researchAreasTitle}
-              </Text>
-            </View>
-            <View style={styles.pills}>
-              {interests.map((i, idx) => (
-                <View key={`${i}-${idx}`} style={[styles.pill, { backgroundColor: `${FACULTY_ACCENT}14` }]}>
-                  <Text style={[styles.pillTxt, { color: FACULTY_ACCENT, fontFamily: FontFamily.jakartaBold }]}>
-                    {i}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          </View>
-        )}
-
-        {/* Qualifications */}
-        {quals.length > 0 && (
-          <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border, marginTop: 12 }]}>
-            <View style={styles.cardHeaderLeft}>
-              <Feather name="award" size={16} color={C.brand} />
-              <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                {t.faculty2.qualifications}
-              </Text>
-            </View>
-            <View style={{ gap: 10, marginTop: 11 }}>
-              {quals.map((qual, i) => (
-                <View key={i} style={styles.qualRow}>
-                  <Feather name="check-circle" size={14} color={C.brand} style={{ marginTop: 2.5 }} />
-                  <Text style={[styles.qualTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>
-                    {qual}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          </View>
-        )}
-
-        {/* Publications & Conference Papers */}
-        {pubs.length > 0 && (
-          <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border, marginTop: 12 }]}>
-            <View style={styles.cardHeaderLeft}>
-              <AnimatedIcon family="feather" name="file-text" size={16} color={FACULTY_ACCENT} animation="none" />
-              <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                Publications & Conference Papers
-              </Text>
-            </View>
-            <View style={{ gap: 10, marginTop: 12 }}>
-              {pubs.map((pub: any, idx: number) => (
-                <View key={idx} style={[styles.pubCard, { backgroundColor: C.surface2, borderColor: C.border }]}>
-                  <Text style={[styles.pubTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                    {pub.title}
-                  </Text>
-                  {pub.authors ? (
-                    <Text style={[styles.pubMeta, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
-                      {pub.authors}
-                    </Text>
-                  ) : null}
-                  {pub.venue ? (
-                    <Text style={[styles.pubVenue, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                      {pub.venue} {pub.year ? `(${pub.year})` : ''}
-                    </Text>
-                  ) : null}
-                  {pub.doi ? (
-                    <TouchableOpacity
-                      style={styles.doiLink}
-                      onPress={() => {
-                        const rawDoi = (pub.doi || '').trim();
-                        const cleanDoi = rawDoi.replace(/^doi:\s*/i, '');
-                        const targetUrl = cleanDoi.startsWith('http') ? cleanDoi : `https://doi.org/${cleanDoi}`;
-                        openLink(targetUrl);
-                      }}
-                      activeOpacity={0.7}
-                    >
-                      <Feather name="external-link" size={12} color={FACULTY_ACCENT} />
-                      <Text style={[styles.doiTxt, { color: FACULTY_ACCENT, fontFamily: FontFamily.jakartaBold }]}>
-                        DOI: {pub.doi}
+            {expandCourses && (
+              <View style={styles.sectionExpandedContainer}>
+                {courses.map((c, i) => (
+                  <View key={i} style={[styles.childBar58, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                    <View style={[styles.childBarIconTile, { backgroundColor: `${FACULTY_ACCENT}14` }]}>
+                      <Feather name="book" size={15} color={FACULTY_ACCENT} />
+                    </View>
+                    <View style={styles.childBarCenter}>
+                      <Text style={[styles.childBarTitle, { color: C.text, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                        {c}
                       </Text>
-                    </TouchableOpacity>
-                  ) : null}
-                </View>
-              ))}
-            </View>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
           </View>
         )}
 
-        {/* Institutional Activities & Experience */}
+        {/* 2. Research & Publications (72dp Dropdown + 58dp Bars) */}
+        {(interests.length > 0 || pubs.length > 0 || teachingAreas.length > 0) && (
+          <View>
+            <TouchableOpacity
+              style={[styles.sectionDropdownBar, { backgroundColor: C.surface, borderColor: C.border }]}
+              onPress={() => toggleSection(setExpandResearch)}
+              activeOpacity={0.75}
+            >
+              <View style={[styles.sectionIconTile, { backgroundColor: `${FACULTY_ACCENT}14` }]}>
+                <Feather name="book-open" size={20} color={FACULTY_ACCENT} />
+              </View>
+              <View style={styles.sectionBarBody}>
+                <Text style={[styles.sectionBarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                  Research & Publication Areas
+                </Text>
+                <Text style={[styles.sectionBarSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                  {interests.slice(0, 2).join(', ') || 'Specializations & Published Papers'}
+                </Text>
+              </View>
+              <View style={styles.sectionRightSlot}>
+                <View style={[styles.sectionPill, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                  <Text style={[styles.sectionPillTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                    {interests.length + pubs.length}
+                  </Text>
+                </View>
+                <Feather name={expandResearch ? 'chevron-up' : 'chevron-down'} size={18} color={C.textMuted} />
+              </View>
+            </TouchableOpacity>
+
+            {expandResearch && (
+              <View style={styles.sectionExpandedContainer}>
+                {/* 58dp Research Domains */}
+                {interests.length > 0 && (
+                  <View style={{ gap: 8 }}>
+                    {interests.map((area, idx) => (
+                      <View key={idx} style={[styles.childBar58, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                        <View style={[styles.childBarIconTile, { backgroundColor: `${FACULTY_ACCENT}14` }]}>
+                          <Feather name="cpu" size={15} color={FACULTY_ACCENT} />
+                        </View>
+                        <View style={styles.childBarCenter}>
+                          <Text style={[styles.childBarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                            {area}
+                          </Text>
+                          <Text style={[styles.childBarSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
+                            Research Domain & Manuscript Advising
+                          </Text>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                {/* Teaching specializations as clean 58dp bars if present */}
+                {teachingAreas.length > 0 && (
+                  <View style={{ gap: 8, marginTop: 4 }}>
+                    <View style={styles.innerSectionHeader}>
+                      <Feather name="compass" size={12} color={C.brand} />
+                      <Text style={[styles.innerSectionTitle, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                        TEACHING SPECIALIZATIONS
+                      </Text>
+                    </View>
+                    {teachingAreas.map((area, idx) => (
+                      <View key={`teach-${idx}`} style={[styles.childBar58, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                        <View style={[styles.childBarIconTile, { backgroundColor: `${C.brand}14` }]}>
+                          <Feather name="award" size={15} color={C.brand} />
+                        </View>
+                        <View style={styles.childBarCenter}>
+                          <Text style={[styles.childBarTitle, { color: C.text, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                            {area}
+                          </Text>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                {/* Published Papers housed cleanly inside Research & Publications */}
+                {pubs.length > 0 && (
+                  <View style={{ marginTop: 6, gap: 8 }}>
+                    <View style={styles.innerSectionHeader}>
+                      <Feather name="file-text" size={12} color={FACULTY_ACCENT} />
+                      <Text style={[styles.innerSectionTitle, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                        PUBLISHED PAPERS & CONFERENCE ARTICLES ({pubs.length})
+                      </Text>
+                    </View>
+
+                    {pubs.map((pub: any, idx: number) => (
+                      <View key={idx} style={[styles.pubCard, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                        <Text style={[styles.pubTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                          {pub.title}
+                        </Text>
+                        {pub.authors ? (
+                          <Text style={[styles.pubMeta, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
+                            {pub.authors}
+                          </Text>
+                        ) : null}
+                        {pub.venue ? (
+                          <Text style={[styles.pubVenue, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+                            {pub.venue} {pub.year ? `(${pub.year})` : ''}
+                          </Text>
+                        ) : null}
+                        {pub.doi ? (
+                          <TouchableOpacity
+                            style={styles.doiLink}
+                            onPress={() => {
+                              const rawDoi = (pub.doi || '').trim();
+                              const cleanDoi = rawDoi.replace(/^doi:\s*/i, '');
+                              const targetUrl = cleanDoi.startsWith('http') ? cleanDoi : `https://doi.org/${cleanDoi}`;
+                              openLink(targetUrl);
+                            }}
+                            activeOpacity={0.7}
+                          >
+                            <Feather name="external-link" size={12} color={FACULTY_ACCENT} />
+                            <Text style={[styles.doiTxt, { color: FACULTY_ACCENT, fontFamily: FontFamily.jakartaBold }]}>
+                              DOI: {pub.doi}
+                            </Text>
+                          </TouchableOpacity>
+                        ) : null}
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* 3. Educational Qualifications (72dp Dropdown + 58dp Bars) */}
+        {quals.length > 0 && (
+          <View>
+            <TouchableOpacity
+              style={[styles.sectionDropdownBar, { backgroundColor: C.surface, borderColor: C.border }]}
+              onPress={() => toggleSection(setExpandQuals)}
+              activeOpacity={0.75}
+            >
+              <View style={[styles.sectionIconTile, { backgroundColor: `${C.brand}14` }]}>
+                <Feather name="award" size={20} color={C.brand} />
+              </View>
+              <View style={styles.sectionBarBody}>
+                <Text style={[styles.sectionBarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                  Educational Qualifications
+                </Text>
+                <Text style={[styles.sectionBarSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                  Degrees & Academic Background
+                </Text>
+              </View>
+              <View style={styles.sectionRightSlot}>
+                <View style={[styles.sectionPill, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                  <Text style={[styles.sectionPillTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                    {quals.length} Degrees
+                  </Text>
+                </View>
+                <Feather name={expandQuals ? 'chevron-up' : 'chevron-down'} size={18} color={C.textMuted} />
+              </View>
+            </TouchableOpacity>
+
+            {expandQuals && (
+              <View style={styles.sectionExpandedContainer}>
+                {quals.map((qual, i) => (
+                  <View key={i} style={[styles.childBar58, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                    <View style={[styles.childBarIconTile, { backgroundColor: `${C.brand}14` }]}>
+                      <Feather name="check-circle" size={15} color={C.brand} />
+                    </View>
+                    <View style={styles.childBarCenter}>
+                      <Text style={[styles.childBarTitle, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>
+                        {qual}
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* 4. Institutional Activities & Experience (72dp Dropdown + 58dp Bars) */}
         {(activities.length > 0 || member.industrial_experience) && (
-          <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border, marginTop: 12 }]}>
-            <View style={styles.cardHeaderLeft}>
-              <Feather name="activity" size={16} color={C.brand} />
-              <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                Institutional Activities & Experience
-              </Text>
-            </View>
-            <View style={{ gap: 8, marginTop: 11 }}>
-              {activities.map((act, i) => (
-                <View key={i} style={styles.qualRow}>
-                  <Feather name="check" size={13} color={C.brand} style={{ marginTop: 2 }} />
-                  <Text style={[styles.qualTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>
-                    {act}
+          <View>
+            <TouchableOpacity
+              style={[styles.sectionDropdownBar, { backgroundColor: C.surface, borderColor: C.border }]}
+              onPress={() => toggleSection(setExpandActivities)}
+              activeOpacity={0.75}
+            >
+              <View style={[styles.sectionIconTile, { backgroundColor: `${C.brand}14` }]}>
+                <Feather name="activity" size={20} color={C.brand} />
+              </View>
+              <View style={styles.sectionBarBody}>
+                <Text style={[styles.sectionBarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                  Institutional Experience
+                </Text>
+                <Text style={[styles.sectionBarSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                  Academic Experience & Industry Background
+                </Text>
+              </View>
+              <View style={styles.sectionRightSlot}>
+                <View style={[styles.sectionPill, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                  <Text style={[styles.sectionPillTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                    {activities.length + (member.industrial_experience ? 1 : 0)}
                   </Text>
                 </View>
-              ))}
-              {member.industrial_experience ? (
-                <View style={[styles.locBox, { backgroundColor: C.surface2, marginTop: 4 }]}>
-                  <Text style={[styles.locSubTxt, { color: C.text, fontFamily: FontFamily.jakartaRegular }]}>
-                    {member.industrial_experience}
-                  </Text>
-                </View>
-              ) : null}
-            </View>
+                <Feather name={expandActivities ? 'chevron-up' : 'chevron-down'} size={18} color={C.textMuted} />
+              </View>
+            </TouchableOpacity>
+
+            {expandActivities && (
+              <View style={styles.sectionExpandedContainer}>
+                {activities.map((act, i) => (
+                  <View key={i} style={[styles.childBar58, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                    <View style={[styles.childBarIconTile, { backgroundColor: `${C.brand}14` }]}>
+                      <Feather name="check" size={15} color={C.brand} />
+                    </View>
+                    <View style={styles.childBarCenter}>
+                      <Text style={[styles.childBarTitle, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>
+                        {act}
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+                {member.industrial_experience ? (
+                  <View style={[styles.childBar58, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                    <View style={[styles.childBarIconTile, { backgroundColor: `${FACULTY_ACCENT}14` }]}>
+                      <Feather name="briefcase" size={15} color={FACULTY_ACCENT} />
+                    </View>
+                    <View style={styles.childBarCenter}>
+                      <Text style={[styles.childBarTitle, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>
+                        {member.industrial_experience}
+                      </Text>
+                    </View>
+                  </View>
+                ) : null}
+              </View>
+            )}
           </View>
         )}
 
-        {/* Academic & Publication Links */}
+        {/* 5. Academic Profiles & Indexes (72dp Dropdown + 58dp Bars) */}
         {links.length > 0 && (
-          <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border, marginTop: 12 }]}>
-            <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-              {t.faculty2.academicProfilesTitle}
-            </Text>
-            <View style={styles.linkGrid}>
-              {links.map(l => (
-                <TouchableOpacity
-                  key={l.key}
-                  style={[styles.linkGridItem, { backgroundColor: C.surface2, borderColor: C.border }]}
-                  onPress={() => openLink((member as Record<string, any>)[l.key])}
-                  activeOpacity={0.75}
-                >
-                  <Feather name={l.icon} size={15} color={l.color || C.textMuted} />
-                  <Text style={[styles.linkGridTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                    {l.label}
+          <View>
+            <TouchableOpacity
+              style={[styles.sectionDropdownBar, { backgroundColor: C.surface, borderColor: C.border }]}
+              onPress={() => toggleSection(setExpandLinks)}
+              activeOpacity={0.75}
+            >
+              <View style={[styles.sectionIconTile, { backgroundColor: `${Accent.teal}14` }]}>
+                <Feather name="globe" size={20} color={Accent.teal} />
+              </View>
+              <View style={styles.sectionBarBody}>
+                <Text style={[styles.sectionBarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                  Academic Indexes & Profiles
+                </Text>
+                <Text style={[styles.sectionBarSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                  Google Scholar, ResearchGate, LinkedIn
+                </Text>
+              </View>
+              <View style={styles.sectionRightSlot}>
+                <View style={[styles.sectionPill, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                  <Text style={[styles.sectionPillTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                    {links.length} Profiles
                   </Text>
-                  <Feather name="external-link" size={12} color={C.textMuted} />
-                </TouchableOpacity>
-              ))}
-            </View>
+                </View>
+                <Feather name={expandLinks ? 'chevron-up' : 'chevron-down'} size={18} color={C.textMuted} />
+              </View>
+            </TouchableOpacity>
+
+            {expandLinks && (
+              <View style={styles.sectionExpandedContainer}>
+                {links.map(l => (
+                  <TouchableOpacity
+                    key={l.key}
+                    style={[styles.childBar58, { backgroundColor: C.surface2, borderColor: C.border }]}
+                    onPress={() => openLink((member as Record<string, any>)[l.key])}
+                    activeOpacity={0.75}
+                  >
+                    <View style={[styles.childBarIconTile, { backgroundColor: `${l.color || C.brand}18` }]}>
+                      <Feather name={l.icon} size={16} color={l.color || C.brand} />
+                    </View>
+                    <View style={styles.childBarCenter}>
+                      <Text style={[styles.childBarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                        {l.label}
+                      </Text>
+                      <Text style={[styles.childBarSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
+                        Verified research profile & citation record
+                      </Text>
+                    </View>
+                    <Feather name="external-link" size={15} color={C.textMuted} />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
           </View>
         )}
 
@@ -976,6 +1145,111 @@ const styles = StyleSheet.create({
     marginTop: 12,
   } as ViewStyle,
   officialTxt: { fontSize: 12 } as TextStyle,
+
+  // Universal 72dp Section Dropdown Bar
+  sectionDropdownBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 13,
+    minHeight: 72,
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginTop: 12,
+  } as ViewStyle,
+
+  sectionIconTile: {
+    width: 44,
+    height: 44,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+
+  sectionBarBody: {
+    flex: 1,
+    minWidth: 0,
+  } as ViewStyle,
+
+  sectionBarTitle: {
+    fontSize: 14.5,
+  } as TextStyle,
+
+  sectionBarSub: {
+    fontSize: 12,
+    marginTop: 2,
+  } as TextStyle,
+
+  sectionRightSlot: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  } as ViewStyle,
+
+  sectionPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 3.5,
+    borderRadius: 999,
+    borderWidth: 1,
+  } as ViewStyle,
+
+  sectionPillTxt: {
+    fontSize: 11,
+  } as TextStyle,
+
+  // Expanded Container
+  sectionExpandedContainer: {
+    paddingTop: 8,
+    gap: 8,
+  } as ViewStyle,
+
+  // Universal 58dp Child Bar
+  childBar58: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    minHeight: 58,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 13,
+    borderWidth: 1,
+  } as ViewStyle,
+
+  childBarIconTile: {
+    width: 32,
+    height: 32,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+
+  childBarCenter: {
+    flex: 1,
+    minWidth: 0,
+  } as ViewStyle,
+
+  childBarTitle: {
+    fontSize: 13.5,
+  } as TextStyle,
+
+  childBarSub: {
+    fontSize: 11.5,
+    marginTop: 1.5,
+  } as TextStyle,
+
+  innerSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 6,
+    marginBottom: 4,
+    paddingHorizontal: 2,
+  } as ViewStyle,
+
+  innerSectionTitle: {
+    fontSize: 10.5,
+    letterSpacing: 0.5,
+  } as TextStyle,
 
   bottomDock: {
     position: 'absolute',

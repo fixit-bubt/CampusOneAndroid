@@ -1,7 +1,7 @@
 // Department Authorities Dropdown Component.
-// Universal 72dp Content Card Standard trigger that expands into an actionable
-// breakdown of the department's Chairman, Assistant Proctor, and Faculty Dean,
-// showing students exactly who holds what authority and what they can approve.
+// Universal 72dp Content Card Standard trigger that expands into clean 72dp teacher bars,
+// matching the exact look and feel of the directory roster. Tapping any bar navigates
+// directly to that authority's full teacher profile.
 
 import React, { useState } from 'react';
 import {
@@ -20,7 +20,6 @@ import {
   type DepartmentAuthority,
 } from './departmentAuthoritiesData';
 
-// Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
@@ -153,7 +152,7 @@ export function DepartmentAuthoritiesDropdown({
         </View>
       </TouchableOpacity>
 
-      {/* Expanded Accordion Body */}
+      {/* Expanded Accordion Body - Clean 72dp Bars */}
       {expanded && (
         <View style={styles.expandedBody}>
           <View style={styles.sectionHeader}>
@@ -164,7 +163,7 @@ export function DepartmentAuthoritiesDropdown({
                 { color: C.textMuted, fontFamily: FontFamily.jakartaBold },
               ]}
             >
-              KEY DECISION MAKERS FOR THIS DEPARTMENT
+              DEPARTMENT DECISION MAKERS (TAP TO VIEW PROFILE)
             </Text>
           </View>
 
@@ -179,169 +178,93 @@ export function DepartmentAuthoritiesDropdown({
             ].filter(Boolean).join(' · ');
 
             return (
-              <View
+              <TouchableOpacity
                 key={`${auth.roleType}-${idx}`}
                 style={[
-                  styles.authCard,
+                  styles.authorityBar,
                   {
                     backgroundColor: C.surface2,
                     borderColor: C.border,
                   },
                 ]}
+                onPress={() => {
+                  if (auth.facultyId) {
+                    navigation.navigate('FacultyProfile', { facultyId: auth.facultyId });
+                  } else if (auth.email) {
+                    openUrl(`mailto:${auth.email}`);
+                  }
+                }}
+                activeOpacity={0.75}
               >
-                {/* Top Info Row */}
-                <View style={styles.cardTopRow}>
-                  <Avatar uri={auth.photoUrl} name={auth.name} size="sm" />
+                <Avatar uri={auth.photoUrl} name={auth.name} size="md" />
 
-                  <View style={styles.cardInfoCol}>
+                <View style={styles.authorityInfoCol}>
+                  <View style={styles.nameRow}>
                     <Text
-                      style={[styles.cardName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}
+                      style={[styles.authorityName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}
                       numberOfLines={1}
                     >
                       {auth.name}
                     </Text>
+
+                    <View
+                      style={[
+                        styles.roleBadge,
+                        {
+                          backgroundColor: badge.bg,
+                          borderColor: badge.border,
+                        },
+                      ]}
+                    >
+                      <Feather name={badge.icon} size={10} color={badge.text} />
+                      <Text
+                        style={[
+                          styles.roleBadgeText,
+                          { color: badge.text, fontFamily: FontFamily.jakartaBold },
+                        ]}
+                      >
+                        {auth.badgeLabel}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <Text
+                    style={[
+                      styles.authorityDesig,
+                      { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {auth.designation}
+                  </Text>
+
+                  <View style={styles.metaRow}>
+                    <Feather name="zap" size={10} color={FACULTY_ACCENT} style={{ marginRight: 3.5 }} />
                     <Text
                       style={[
-                        styles.cardDesig,
-                        { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
+                        styles.powersSummary,
+                        { color: FACULTY_ACCENT, fontFamily: FontFamily.jakartaMedium },
                       ]}
                       numberOfLines={1}
                     >
-                      {auth.designation}
+                      {auth.powers[0] || 'Department Leadership'}
                     </Text>
-
                     {location.length > 0 && (
-                      <View style={styles.locationRow}>
-                        <Feather name="map-pin" size={10} color={C.textMuted} />
-                        <Text
-                          style={[
-                            styles.locationText,
-                            { color: C.text2, fontFamily: FontFamily.jakartaRegular },
-                          ]}
-                          numberOfLines={1}
-                        >
-                          {location}
-                        </Text>
-                      </View>
+                      <Text
+                        style={[
+                          styles.locationTxt,
+                          { color: C.textMuted, fontFamily: FontFamily.jakartaRegular },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        · {location}
+                      </Text>
                     )}
                   </View>
-
-                  {/* Role Badge */}
-                  <View
-                    style={[
-                      styles.roleBadge,
-                      {
-                        backgroundColor: badge.bg,
-                        borderColor: badge.border,
-                      },
-                    ]}
-                  >
-                    <Feather name={badge.icon} size={10} color={badge.text} />
-                    <Text
-                      style={[
-                        styles.roleBadgeText,
-                        { color: badge.text, fontFamily: FontFamily.jakartaBold },
-                      ]}
-                    >
-                      {auth.badgeLabel}
-                    </Text>
-                  </View>
                 </View>
 
-                {/* Powers / What they handle box */}
-                <View style={[styles.powersBox, { backgroundColor: C.surface, borderColor: C.border }]}>
-                  <View style={styles.powersTitleRow}>
-                    <Feather name="zap" size={11} color={FACULTY_ACCENT} />
-                    <Text
-                      style={[
-                        styles.powersTitle,
-                        { color: C.textMuted, fontFamily: FontFamily.jakartaBold },
-                      ]}
-                    >
-                      Authorised to approve:
-                    </Text>
-                  </View>
-
-                  {auth.powers.map((p, pIdx) => (
-                    <View key={pIdx} style={styles.powerItemRow}>
-                      <Text style={[styles.powerBullet, { color: FACULTY_ACCENT }]}>•</Text>
-                      <Text
-                        style={[
-                          styles.powerItemText,
-                          { color: C.text, fontFamily: FontFamily.jakartaRegular },
-                        ]}
-                      >
-                        {p}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-
-                {/* Action Buttons */}
-                <View style={styles.cardActionsRow}>
-                  {auth.email && (
-                    <TouchableOpacity
-                      style={[styles.actionBtn, { backgroundColor: C.surface, borderColor: C.border }]}
-                      onPress={() => openUrl(`mailto:${auth.email}`)}
-                      activeOpacity={0.7}
-                    >
-                      <Feather name="mail" size={12} color={C.text} />
-                      <Text
-                        style={[
-                          styles.actionBtnTxt,
-                          { color: C.text, fontFamily: FontFamily.jakartaMedium },
-                        ]}
-                      >
-                        Email
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-
-                  {auth.phone && (
-                    <TouchableOpacity
-                      style={[styles.actionBtn, { backgroundColor: C.surface, borderColor: C.border }]}
-                      onPress={() => openUrl(`tel:${auth.phone}`)}
-                      activeOpacity={0.7}
-                    >
-                      <Feather name="phone" size={12} color={C.text} />
-                      <Text
-                        style={[
-                          styles.actionBtnTxt,
-                          { color: C.text, fontFamily: FontFamily.jakartaMedium },
-                        ]}
-                      >
-                        Call
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-
-                  {auth.facultyId && (
-                    <TouchableOpacity
-                      style={[
-                        styles.actionBtn,
-                        {
-                          backgroundColor: `${FACULTY_ACCENT}12`,
-                          borderColor: `${FACULTY_ACCENT}28`,
-                        },
-                      ]}
-                      onPress={() =>
-                        navigation.navigate('FacultyProfile', { facultyId: auth.facultyId })
-                      }
-                      activeOpacity={0.7}
-                    >
-                      <Feather name="user" size={12} color={FACULTY_ACCENT} />
-                      <Text
-                        style={[
-                          styles.actionBtnTxt,
-                          { color: FACULTY_ACCENT, fontFamily: FontFamily.jakartaBold },
-                        ]}
-                      >
-                        View Profile
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </View>
+                <Feather name="chevron-right" size={17} color={C.textMuted} />
+              </TouchableOpacity>
             );
           })}
         </View>
@@ -408,132 +331,84 @@ const styles = StyleSheet.create({
 
   // Expanded Accordion Content
   expandedBody: {
-    padding: 14,
-    paddingTop: 12,
+    padding: 12,
+    paddingTop: 10,
   } as ViewStyle,
 
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 10,
+    marginBottom: 8,
     paddingHorizontal: 2,
   } as ViewStyle,
 
   sectionHeaderText: {
-    fontSize: 11,
+    fontSize: 10.5,
     letterSpacing: 0.5,
   } as TextStyle,
 
-  authCard: {
-    borderRadius: 14,
-    borderWidth: 1,
-    padding: 12,
-    marginBottom: 10,
-  } as ViewStyle,
-
-  cardTopRow: {
+  // Universal 72dp Teacher Bar for Authorities
+  authorityBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 11,
+    minHeight: 72,
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginBottom: 8,
   } as ViewStyle,
 
-  cardInfoCol: {
+  authorityInfoCol: {
     flex: 1,
     minWidth: 0,
   } as ViewStyle,
 
-  cardName: {
-    fontSize: 13.5,
-  } as TextStyle,
-
-  cardDesig: {
-    fontSize: 11.5,
-    marginTop: 1,
-  } as TextStyle,
-
-  locationRow: {
+  nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    justifyContent: 'space-between',
+    gap: 6,
+  } as ViewStyle,
+
+  authorityName: {
+    fontSize: 14,
+    flex: 1,
+  } as TextStyle,
+
+  authorityDesig: {
+    fontSize: 11.5,
+    marginTop: 2,
+  } as TextStyle,
+
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: 3,
   } as ViewStyle,
 
-  locationText: {
+  powersSummary: {
     fontSize: 11,
+    flexShrink: 1,
+  } as TextStyle,
+
+  locationTxt: {
+    fontSize: 11,
+    flexShrink: 0,
   } as TextStyle,
 
   roleBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 3.5,
+    gap: 3.5,
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
     borderRadius: Radius.sm,
     borderWidth: 1,
-    alignSelf: 'flex-start',
   } as ViewStyle,
 
   roleBadgeText: {
-    fontSize: 10.5,
-  } as TextStyle,
-
-  // Powers box
-  powersBox: {
-    borderRadius: 10,
-    borderWidth: 1,
-    padding: 9,
-    marginTop: 9,
-  } as ViewStyle,
-
-  powersTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    marginBottom: 5,
-  } as ViewStyle,
-
-  powersTitle: {
-    fontSize: 11,
-  } as TextStyle,
-
-  powerItemRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 6,
-    marginTop: 2,
-  } as ViewStyle,
-
-  powerBullet: {
-    fontSize: 13,
-    lineHeight: 16,
-  } as TextStyle,
-
-  powerItemText: {
-    fontSize: 12,
-    lineHeight: 16.5,
-    flex: 1,
-  } as TextStyle,
-
-  // Action buttons
-  cardActionsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 10,
-  } as ViewStyle,
-
-  actionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 11,
-    paddingVertical: 6,
-    borderRadius: Radius.sm,
-    borderWidth: 1,
-  } as ViewStyle,
-
-  actionBtnTxt: {
-    fontSize: 11.5,
+    fontSize: 10,
   } as TextStyle,
 });

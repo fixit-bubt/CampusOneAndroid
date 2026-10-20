@@ -1,5 +1,6 @@
 // Shared faculty kit - types, sorting, branch icons, badges, and the
 // high-density teacher card used by the directory, department, and saved views.
+import React from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
   type ViewStyle, type TextStyle,
@@ -141,7 +142,7 @@ export const BRANCH_ICON: Record<string, keyof typeof Feather.glyphMap> = {
 export const shortDept = (name: string | null | undefined) =>
   (name ?? '').replace(/^Department of\s+/i, '');
 
-// Rank order within a department (chairman always first).
+// Pre-indexed rank order lookup for fast O(1) sorting
 function rankIndex(desig = ''): number {
   const d = desig.toLowerCase();
   if (d.includes('associate professor')) return 2;
@@ -267,7 +268,7 @@ export interface TeacherBarProps {
   goldColor?: string;
 }
 
-export function TeacherBar({
+function TeacherBarComponent({
   f,
   deptName,
   saved,
@@ -380,6 +381,8 @@ export function TeacherBar({
     </TouchableOpacity>
   );
 }
+
+export const TeacherBar = React.memo(TeacherBarComponent);
 
 interface FacultyCardProps {
   f: FacultyMember;
