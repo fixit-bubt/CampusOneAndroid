@@ -354,10 +354,10 @@ function warpQuadToCanvas(srcCanvas, quad, maxDim) {
   // Inward safety margin on sides and bottom: strips desk slivers, spiral edges & boundary shadows without clipping top headers
   var cx = (rawQ[0].x + rawQ[1].x + rawQ[2].x + rawQ[3].x) * 0.25;
   var cy = (rawQ[0].y + rawQ[1].y + rawQ[2].y + rawQ[3].y) * 0.25;
-  var inset = 0;
+  var inset = 0.003;
   var q = [
-    { x: rawQ[0].x + (cx - rawQ[0].x) * inset, y: rawQ[0].y },
-    { x: rawQ[1].x + (cx - rawQ[1].x) * inset, y: rawQ[1].y },
+    { x: rawQ[0].x + (cx - rawQ[0].x) * inset, y: rawQ[0].y + (cy - rawQ[0].y) * inset },
+    { x: rawQ[1].x + (cx - rawQ[1].x) * inset, y: rawQ[1].y + (cy - rawQ[1].y) * inset },
     { x: rawQ[2].x + (cx - rawQ[2].x) * inset, y: rawQ[2].y + (cy - rawQ[2].y) * inset },
     { x: rawQ[3].x + (cx - rawQ[3].x) * inset, y: rawQ[3].y + (cy - rawQ[3].y) * inset }
   ];
@@ -635,8 +635,8 @@ function enhanceDocumentCanvas(canvas, filterMode) {
   var mLeft = Math.max(4, (W * 0.012) | 0), mRight = W - mLeft;
   var mTop = Math.max(4, (H * 0.010) | 0), mBot = H - mTop;
 
-  var cW = Math.max(16, (W * 0.040) | 0);
-  var cH = Math.max(16, (H * 0.035) | 0);
+  var cW = Math.max(16, (W * 0.045) | 0);
+  var cH = Math.max(16, (H * 0.040) | 0);
   var cRight = W - cW;
   var cBot = H - cH;
 
@@ -671,9 +671,13 @@ function enhanceDocumentCanvas(canvas, filterMode) {
       var isWarmDesk = (br - bb) > (baseRb + 16) && blum < paperL75 * 0.94;
       var isThumbSkin = br > 85 && bg > 35 && bb > 15 && (br - bg) > 10 && (br - bb) > (baseRb + 12) && blum < 220;
 
-      // Only mask genuine wood desk void or fingers in extreme perimeter; never handwriting ink
-      var isCornerArtifact = isCornerZone && (isWarmDesk || isThumbSkin || blum < 35);
-      var isPerimeterArtifact = isPerimeterZone && (isWarmDesk || isThumbSkin || blum < 35);
+      // In the 4 outer corner triangles: clear dog-ear folds, desk corner slivers and non-paper shadow voids
+      var dx = bx < cW ? (cW - bx) / cW : (bx - cRight) / cW;
+      var dy = by < cH ? (cH - by) / cH : (by - cBot) / cH;
+      var isCornerTri = isCornerZone && (dx + dy >= 0.25);
+
+      var isCornerArtifact = isCornerTri && (isWarmDesk || isThumbSkin || blum < 210);
+      var isPerimeterArtifact = isPerimeterZone && (isWarmDesk || isThumbSkin || blum < 160);
 
       if (isCornerArtifact || isPerimeterArtifact) {
         borderMask[pIdx0] = 1;
