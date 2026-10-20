@@ -2486,6 +2486,7 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
   - **Between Sessions:** Ordered chronologically (newest session first by default).
   - **Within Each Session:** Ordered sequentially using natural alphanumeric filename sorting (`WA0001` -> `WA0002` -> `WA0003`... `Scan_1` -> `Scan_2`, `IMG_0001` -> `IMG_0002`), ensuring math assignment and notebook pages are presented from Page 1 to Page N from left to right.
   - **Instant 0ms In-Memory Re-sort:** Toggling between `Newest` and `Page 1 First` re-sorts loaded assets instantly without disk I/O.
+- **Standard Box-Shaped Action Buttons:** Standardized `albumDropdownBtn` ("Select Photo"), `importBtn` ("Import (N)"), and `previewImportBtn` to rounded-box button geometry (`height: 38`, `borderRadius: Radius.md` [14], `paddingHorizontal: 14..16`) matching the system-wide button scale (`Button.tsx`, `PageStudioModal.tsx`), replacing circular/pill capsules.
 - **Uninterrupted Full-Screen Grid Layout:** Eliminated obstructive sub-headers directly beneath the top bar so the 3-column photo grid begins immediately below the header (`✕ | Select Photo ▾ | Import (N)`), achieving 1:1 visual fidelity with CamScanner.
 - **Persistent CamScanner Bottom Bar:**
   - **Bottom Left:** `Preview` button (grayed out when 0, active with counter `Preview (N)` when pages are selected) that opens the fullscreen swipeable preview pager starting at the first selected page.
