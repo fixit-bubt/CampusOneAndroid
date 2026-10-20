@@ -324,48 +324,83 @@ export function MediaPickerModal({
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <View style={[styles.root, { backgroundColor: C.bg, paddingTop: insets.top }]}>
-        {/* Top Header matching CamScanner layout */}
-        <View style={[styles.header, { borderBottomColor: C.border }]}>
-          <TouchableOpacity
-            style={[styles.closeBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
-            onPress={onClose}
-            activeOpacity={0.75}
-          >
-            <Feather name="x" size={20} color={C.text} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.albumDropdownBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
-            onPress={() => setShowAlbumPicker(true)}
-            activeOpacity={0.8}
-          >
-            <Text numberOfLines={1} style={[styles.albumTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-              {selectedAlbum?.title || 'Select Photo'}
-            </Text>
-            <Feather name="chevron-down" size={16} color={C.brand} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
+        {/* Top Header with 58dp Segmented Bar (3 equal tabs: Cancel, Select Photo, Import) */}
+        <View style={[styles.headerContainer, { borderBottomColor: C.border, backgroundColor: C.bg }]}>
+          <View
             style={[
-              styles.importBtn,
+              styles.segmentedBar,
               {
-                backgroundColor: selected.length > 0 ? C.brand : (isDark ? C.surface2 : '#e4e4e7'),
-                borderColor: selected.length > 0 ? C.brand : C.border,
+                backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : C.surface2,
+                borderColor: isDark ? 'rgba(255, 255, 255, 0.07)' : C.border,
               },
             ]}
-            disabled={selected.length === 0}
-            onPress={handleConfirm}
-            activeOpacity={0.85}
           >
-            <Text
-              style={[
-                styles.importBtnText,
-                { color: selected.length > 0 ? '#ffffff' : C.textMuted, fontFamily: FontFamily.jakartaBold },
-              ]}
+            {/* Tab 1: Cancel */}
+            <TouchableOpacity
+              style={[styles.segmentTab, { borderRadius: 12 }]}
+              onPress={onClose}
+              activeOpacity={0.7}
             >
-              {`Import (${selected.length})`}
-            </Text>
-          </TouchableOpacity>
+              <Feather name="x" size={16} color={C.text} style={{ marginRight: 6 }} />
+              <Text style={[styles.segmentLabel, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                Cancel
+              </Text>
+            </TouchableOpacity>
+
+            <View style={[styles.segmentDivider, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : C.border }]} />
+
+            {/* Tab 2: Select Photo / Album */}
+            <TouchableOpacity
+              style={[styles.segmentTab, { borderRadius: 12 }]}
+              onPress={() => setShowAlbumPicker(true)}
+              activeOpacity={0.7}
+            >
+              <Text
+                numberOfLines={1}
+                style={[
+                  styles.segmentLabel,
+                  { color: C.text, fontFamily: FontFamily.jakartaBold, maxWidth: '78%' },
+                ]}
+              >
+                {selectedAlbum?.title || 'Select Photo'}
+              </Text>
+              <Feather name="chevron-down" size={14} color={C.brand} style={{ marginLeft: 4 }} />
+            </TouchableOpacity>
+
+            <View style={[styles.segmentDivider, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : C.border }]} />
+
+            {/* Tab 3: Import */}
+            <TouchableOpacity
+              style={[
+                styles.segmentTab,
+                {
+                  borderRadius: 12,
+                  backgroundColor: selected.length > 0 ? C.brand : 'transparent',
+                },
+              ]}
+              disabled={selected.length === 0}
+              onPress={handleConfirm}
+              activeOpacity={0.8}
+            >
+              <Feather
+                name="check"
+                size={14}
+                color={selected.length > 0 ? '#ffffff' : C.textMuted}
+                style={{ marginRight: 5 }}
+              />
+              <Text
+                style={[
+                  styles.segmentLabel,
+                  {
+                    color: selected.length > 0 ? '#ffffff' : C.textMuted,
+                    fontFamily: FontFamily.jakartaBold,
+                  },
+                ]}
+              >
+                {selected.length > 0 ? `Import (${selected.length})` : 'Import'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Permission Denied State */}
@@ -580,43 +615,72 @@ export function MediaPickerModal({
           <View style={styles.previewRoot}>
             <StatusBar barStyle="light-content" backgroundColor="#000000" />
 
-            {/* Preview Top Bar */}
-            <View style={[styles.previewTopBar, { paddingTop: insets.top, height: 60 + insets.top }]}>
-              <TouchableOpacity
-                style={[styles.previewBackBtn, { backgroundColor: 'rgba(255, 255, 255, 0.12)', borderColor: 'rgba(255, 255, 255, 0.18)' }]}
-                onPress={() => setPreviewIndex(null)}
-                activeOpacity={0.75}
-              >
-                <Feather name="arrow-left" size={20} color="#ffffff" />
-              </TouchableOpacity>
-
-              <View style={[styles.previewCounterBox, { backgroundColor: 'rgba(255, 255, 255, 0.12)', borderColor: 'rgba(255, 255, 255, 0.18)' }]}>
-                <Text style={styles.previewCounter}>
-                  {`${(previewIndex ?? 0) + 1} / ${previewList.length}`}
-                </Text>
-              </View>
-
-              <TouchableOpacity
+            {/* Preview Top Bar with 58dp Segmented Bar */}
+            <View style={[styles.previewTopBar, { paddingTop: insets.top }]}>
+              <View
                 style={[
-                  styles.previewImportBtn,
+                  styles.segmentedBar,
                   {
-                    backgroundColor: selected.length > 0 ? C.brand : 'rgba(255, 255, 255, 0.12)',
-                    borderColor: selected.length > 0 ? C.brand : 'rgba(255, 255, 255, 0.18)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.10)',
+                    borderColor: 'rgba(255, 255, 255, 0.16)',
                   },
                 ]}
-                disabled={selected.length === 0}
-                onPress={handleConfirm}
-                activeOpacity={0.85}
               >
-                <Text
-                  style={[
-                    styles.previewImportBtnText,
-                    { color: selected.length > 0 ? '#ffffff' : '#71717a', fontFamily: FontFamily.jakartaBold },
-                  ]}
+                {/* Tab 1: Back */}
+                <TouchableOpacity
+                  style={[styles.segmentTab, { borderRadius: 12 }]}
+                  onPress={() => setPreviewIndex(null)}
+                  activeOpacity={0.7}
                 >
-                  {`Import (${selected.length})`}
-                </Text>
-              </TouchableOpacity>
+                  <Feather name="arrow-left" size={16} color="#ffffff" style={{ marginRight: 6 }} />
+                  <Text style={[styles.segmentLabel, { color: '#ffffff', fontFamily: FontFamily.jakartaBold }]}>
+                    Back
+                  </Text>
+                </TouchableOpacity>
+
+                <View style={[styles.segmentDivider, { backgroundColor: 'rgba(255, 255, 255, 0.14)' }]} />
+
+                {/* Tab 2: Counter */}
+                <View style={styles.segmentTab}>
+                  <Text style={[styles.segmentLabel, { color: '#ffffff', fontFamily: FontFamily.jakartaBold }]}>
+                    {`${(previewIndex ?? 0) + 1} / ${previewList.length}`}
+                  </Text>
+                </View>
+
+                <View style={[styles.segmentDivider, { backgroundColor: 'rgba(255, 255, 255, 0.14)' }]} />
+
+                {/* Tab 3: Import */}
+                <TouchableOpacity
+                  style={[
+                    styles.segmentTab,
+                    {
+                      borderRadius: 12,
+                      backgroundColor: selected.length > 0 ? C.brand : 'transparent',
+                    },
+                  ]}
+                  disabled={selected.length === 0}
+                  onPress={handleConfirm}
+                  activeOpacity={0.8}
+                >
+                  <Feather
+                    name="check"
+                    size={14}
+                    color={selected.length > 0 ? '#ffffff' : '#71717a'}
+                    style={{ marginRight: 5 }}
+                  />
+                  <Text
+                    style={[
+                      styles.segmentLabel,
+                      {
+                        color: selected.length > 0 ? '#ffffff' : '#71717a',
+                        fontFamily: FontFamily.jakartaBold,
+                      },
+                    ]}
+                  >
+                    {selected.length > 0 ? `Import (${selected.length})` : 'Import'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
             {/* Fullscreen Horizontal Swipeable Pager */}
@@ -761,45 +825,33 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
   },
-  header: {
-    height: 60,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  headerContainer: {
     paddingHorizontal: 12,
+    paddingVertical: 8,
     borderBottomWidth: 1,
   },
-  closeBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: Radius.md,
+  segmentedBar: {
+    height: 58,
+    borderRadius: 16,
+    padding: 4,
     borderWidth: 1,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    width: '100%',
   },
-  albumDropdownBtn: {
+  segmentTab: {
+    flex: 1,
+    height: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    height: 40,
-    paddingHorizontal: 14,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    maxWidth: SCREEN_WIDTH * 0.50,
+    paddingHorizontal: 6,
   },
-  albumTitle: {
-    fontSize: 14,
+  segmentDivider: {
+    width: 1,
+    height: 24,
   },
-  importBtn: {
-    height: 40,
-    paddingHorizontal: 16,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  importBtnText: {
+  segmentLabel: {
     fontSize: 13.5,
   },
   bottomBar: {
@@ -982,45 +1034,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#000000',
   },
   previewTopBar: {
-    height: 60,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
+    paddingBottom: 8,
     backgroundColor: 'rgba(0, 0, 0, 0.85)',
     zIndex: 10,
-  },
-  previewBackBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  previewCounterBox: {
-    height: 40,
-    paddingHorizontal: 14,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  previewCounter: {
-    color: '#ffffff',
-    fontSize: 14.5,
-    fontFamily: FontFamily.jakartaBold,
-  },
-  previewImportBtn: {
-    height: 40,
-    paddingHorizontal: 16,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  previewImportBtnText: {
-    fontSize: 13.5,
   },
   previewSlide: {
     width: SCREEN_WIDTH,
