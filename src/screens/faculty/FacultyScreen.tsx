@@ -113,7 +113,7 @@ export function FacultyScreen({ navigation }: any) {
     const [deptRes, facRes, savedRes] = await Promise.all([
       supabase.from('departments').select('id, name, branch, dept_number, chairman').limit(50),
       supabase.from('faculty')
-        .select('id, department_id, name, designation, email, phone, short_code, room_number, building, floor, counseling_hours, blood_group, scopus_url, is_accepting_research, research_interests, on_leave, is_chairman, photo_url')
+        .select('id, department_id, name, designation, email, phone, cell_phone, personal_email, short_code, room_number, building, floor, counseling_hours, blood_group, scopus_url, is_accepting_research, research_interests, teaching_areas, courses_taught, qualifications, publications, on_leave, is_chairman, photo_url')
         .order('name')
         .limit(1000),
       supabase.from('faculty_bookmarks').select('faculty_id').eq('user_id', user?.id ?? '').limit(1000),
@@ -232,11 +232,26 @@ export function FacultyScreen({ navigation }: any) {
         const desigMatch = f.designation.toLowerCase().includes(q);
         const roomMatch = Boolean(f.room_number && f.room_number.toLowerCase().includes(q));
         const interestMatch = interestsOf(f).some(i => i.toLowerCase().includes(q));
+        const courseMatch = Boolean(
+          f.courses_taught &&
+          f.courses_taught.some(c => typeof c === 'string' && (c.toLowerCase().includes(q) || (cleanQ.length > 0 && c.toLowerCase().replace(/[^a-z0-9]/g, '').includes(cleanQ))))
+        );
+        const teachingAreaMatch = Boolean(
+          f.teaching_areas &&
+          f.teaching_areas.some(ta => typeof ta === 'string' && ta.toLowerCase().includes(q))
+        );
+        const pubMatch = Boolean(
+          f.publications &&
+          f.publications.some(p =>
+            (p?.title && p.title.toLowerCase().includes(q)) ||
+            (p?.venue && p.venue.toLowerCase().includes(q))
+          )
+        );
         const deptMatch = Boolean(
           deptById[f.department_id]?.name &&
           deptById[f.department_id]?.name.toLowerCase().includes(q)
         );
-        return nameMatch || codeMatch || desigMatch || roomMatch || interestMatch || deptMatch;
+        return nameMatch || codeMatch || desigMatch || roomMatch || interestMatch || courseMatch || teachingAreaMatch || pubMatch || deptMatch;
       });
     }
 
@@ -1012,7 +1027,7 @@ export function FacultyScreen({ navigation }: any) {
           title={contactTeacher.designation}
           roleSubtitle={deptById[contactTeacher.department_id]?.name}
           avatarUri={contactTeacher.photo_url}
-          phone={contactTeacher.phone}
+          phone={contactTeacher.cell_phone || contactTeacher.phone}
           email={contactTeacher.email}
           whatsAppMessage={`Hello ${contactTeacher.name}, I am a student of BUBT contacting you regarding academic consultation.`}
           onClose={() => setContactTeacher(null)}

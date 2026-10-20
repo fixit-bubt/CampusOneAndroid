@@ -178,6 +178,10 @@ export function FacultyProfileScreen({ route, navigation }: any) {
 
   const interests = Array.isArray(member.research_interests) ? member.research_interests.filter(Boolean) : [];
   const quals = Array.isArray(member.qualifications) ? member.qualifications.filter(Boolean) : [];
+  const courses = Array.isArray(member.courses_taught) ? member.courses_taught.filter(Boolean) : [];
+  const teachingAreas = Array.isArray(member.teaching_areas) ? member.teaching_areas.filter(Boolean) : [];
+  const pubs = Array.isArray(member.publications) ? member.publications.filter(Boolean) : [];
+  const activities = Array.isArray(member.academic_activities) ? member.academic_activities.filter(Boolean) : [];
   const links = LINK_META.filter(l => (member as Record<string, any>)[l.key]);
   const dept = member.departments;
   const status = getCounselingStatus(member.counseling_hours, member.on_leave);
@@ -346,7 +350,50 @@ export function FacultyProfileScreen({ route, navigation }: any) {
           </View>
         ) : null}
 
-        {/* Research & Publications */}
+        {/* Courses Taught at BUBT */}
+        {courses.length > 0 && (
+          <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border, marginTop: 12 }]}>
+            <View style={styles.cardHeaderLeft}>
+              <AnimatedIcon family="feather" name="book-open" size={16} color={FACULTY_ACCENT} animation="entrance" />
+              <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                Courses Taught at BUBT
+              </Text>
+            </View>
+            <View style={{ gap: 8, marginTop: 11 }}>
+              {courses.map((c, i) => (
+                <View key={i} style={[styles.courseRow, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                  <Feather name="layers" size={14} color={FACULTY_ACCENT} style={{ marginTop: 2 }} />
+                  <Text style={[styles.courseTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>
+                    {c}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* Teaching Areas & Specializations */}
+        {teachingAreas.length > 0 && (
+          <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border, marginTop: 12 }]}>
+            <View style={styles.cardHeaderLeft}>
+              <Feather name="compass" size={16} color={C.brand} />
+              <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                Teaching Specializations
+              </Text>
+            </View>
+            <View style={styles.pills}>
+              {teachingAreas.map((area, idx) => (
+                <View key={`${area}-${idx}`} style={[styles.pill, { backgroundColor: `${C.brand}14` }]}>
+                  <Text style={[styles.pillTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+                    {area}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* Research Interests */}
         {interests.length > 0 && (
           <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border, marginTop: 12 }]}>
             <View style={styles.cardHeaderLeft}>
@@ -389,6 +436,83 @@ export function FacultyProfileScreen({ route, navigation }: any) {
           </View>
         )}
 
+        {/* Publications & Conference Papers */}
+        {pubs.length > 0 && (
+          <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border, marginTop: 12 }]}>
+            <View style={styles.cardHeaderLeft}>
+              <AnimatedIcon family="feather" name="file-text" size={16} color={FACULTY_ACCENT} animation="none" />
+              <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                Publications & Conference Papers
+              </Text>
+            </View>
+            <View style={{ gap: 10, marginTop: 12 }}>
+              {pubs.map((pub: any, idx: number) => (
+                <View key={idx} style={[styles.pubCard, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                  <Text style={[styles.pubTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    {pub.title}
+                  </Text>
+                  {pub.authors ? (
+                    <Text style={[styles.pubMeta, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
+                      {pub.authors}
+                    </Text>
+                  ) : null}
+                  {pub.venue ? (
+                    <Text style={[styles.pubVenue, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+                      {pub.venue} {pub.year ? `(${pub.year})` : ''}
+                    </Text>
+                  ) : null}
+                  {pub.doi ? (
+                    <TouchableOpacity
+                      style={styles.doiLink}
+                      onPress={() => {
+                        const rawDoi = (pub.doi || '').trim();
+                        const cleanDoi = rawDoi.replace(/^doi:\s*/i, '');
+                        const targetUrl = cleanDoi.startsWith('http') ? cleanDoi : `https://doi.org/${cleanDoi}`;
+                        openLink(targetUrl);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Feather name="external-link" size={12} color={FACULTY_ACCENT} />
+                      <Text style={[styles.doiTxt, { color: FACULTY_ACCENT, fontFamily: FontFamily.jakartaBold }]}>
+                        DOI: {pub.doi}
+                      </Text>
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* Institutional Activities & Experience */}
+        {(activities.length > 0 || member.industrial_experience) && (
+          <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border, marginTop: 12 }]}>
+            <View style={styles.cardHeaderLeft}>
+              <Feather name="activity" size={16} color={C.brand} />
+              <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                Institutional Activities & Experience
+              </Text>
+            </View>
+            <View style={{ gap: 8, marginTop: 11 }}>
+              {activities.map((act, i) => (
+                <View key={i} style={styles.qualRow}>
+                  <Feather name="check" size={13} color={C.brand} style={{ marginTop: 2 }} />
+                  <Text style={[styles.qualTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>
+                    {act}
+                  </Text>
+                </View>
+              ))}
+              {member.industrial_experience ? (
+                <View style={[styles.locBox, { backgroundColor: C.surface2, marginTop: 4 }]}>
+                  <Text style={[styles.locSubTxt, { color: C.text, fontFamily: FontFamily.jakartaRegular }]}>
+                    {member.industrial_experience}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+          </View>
+        )}
+
         {/* Academic & Publication Links */}
         {links.length > 0 && (
           <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border, marginTop: 12 }]}>
@@ -414,10 +538,25 @@ export function FacultyProfileScreen({ route, navigation }: any) {
           </View>
         )}
 
+        {/* Departmental WordPress Profile (e.g. eee.bubt.edu.bd) */}
+        {member.departmental_profile_url ? (
+          <TouchableOpacity
+            style={[styles.officialLink, { borderColor: `${FACULTY_ACCENT}50`, backgroundColor: `${FACULTY_ACCENT}10` }]}
+            onPress={() => openLink(member.departmental_profile_url!)}
+            activeOpacity={0.75}
+          >
+            <Feather name="external-link" size={13} color={FACULTY_ACCENT} />
+            <Text style={[styles.officialTxt, { color: FACULTY_ACCENT, fontFamily: FontFamily.jakartaBold }]}>
+              View department profile on {member.departmental_profile_url.replace(/^https?:\/\//, '').split('/')[0]}
+            </Text>
+          </TouchableOpacity>
+        ) : null}
+
         {/* Official bubt.edu.bd profile */}
         {(() => {
           const effectiveProfileUrl = resolveFacultyProfileUrl(member) || member.profile_url;
           if (!effectiveProfileUrl) return null;
+          if (member.departmental_profile_url && member.departmental_profile_url === effectiveProfileUrl) return null;
           return (
             <TouchableOpacity
               style={[styles.officialLink, { borderColor: C.border, backgroundColor: C.surface2 }]}
@@ -467,7 +606,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
         title={member.designation}
         roleSubtitle={dept?.name}
         avatarUri={member.photo_url}
-        phone={member.phone}
+        phone={member.cell_phone || member.phone}
         email={member.email}
         whatsAppMessage={`Hello ${member.name}, I am a student of BUBT contacting you regarding academic consultation.`}
         onClose={() => setShowContact(false)}
@@ -645,6 +784,48 @@ const styles = StyleSheet.create({
   pills: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 10 } as ViewStyle,
   pill: { paddingHorizontal: 11, paddingVertical: 5, borderRadius: 999 } as ViewStyle,
   pillTxt: { fontSize: 12 } as TextStyle,
+
+  courseRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    padding: 11,
+    borderRadius: 11,
+    borderWidth: 1,
+  } as ViewStyle,
+  courseTxt: {
+    fontSize: 13,
+    lineHeight: 18,
+    flex: 1,
+  } as TextStyle,
+  pubCard: {
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 4,
+  } as ViewStyle,
+  pubTitle: {
+    fontSize: 13.5,
+    lineHeight: 19,
+  } as TextStyle,
+  pubMeta: {
+    fontSize: 12,
+    lineHeight: 16,
+  } as TextStyle,
+  pubVenue: {
+    fontSize: 11.5,
+    lineHeight: 16,
+    fontStyle: 'italic',
+  } as TextStyle,
+  doiLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 4,
+  } as ViewStyle,
+  doiTxt: {
+    fontSize: 11.5,
+  } as TextStyle,
 
   qualRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 9 } as ViewStyle,
   qualTxt: { flex: 1, fontSize: 13, lineHeight: 19 } as TextStyle,

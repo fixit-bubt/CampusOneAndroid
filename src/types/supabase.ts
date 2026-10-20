@@ -1522,16 +1522,21 @@ export type Database = {
       }
       faculty: {
         Row: {
+          academic_activities: string[] | null
           blood_group: string | null
           building: string | null
+          cell_phone: string | null
           counseling_hours: string | null
+          courses_taught: string[] | null
           created_at: string
           data_source: string
           department_id: string
+          departmental_profile_url: string | null
           designation: string
           email: string | null
           floor: string | null
           id: string
+          industrial_experience: string | null
           is_accepting_research: boolean
           is_chairman: boolean
           last_synced_at: string
@@ -1539,9 +1544,11 @@ export type Database = {
           name: string
           on_leave: boolean
           orcid_url: string | null
+          personal_email: string | null
           phone: string | null
           photo_url: string | null
           profile_url: string | null
+          publications: Json | null
           qualifications: Json | null
           research_interests: string[]
           researchgate_url: string | null
@@ -1549,20 +1556,26 @@ export type Database = {
           scholar_url: string | null
           scopus_url: string | null
           short_code: string | null
+          teaching_areas: string[] | null
           updated_at: string
           website_url: string | null
         }
         Insert: {
+          academic_activities?: string[] | null
           blood_group?: string | null
           building?: string | null
+          cell_phone?: string | null
           counseling_hours?: string | null
+          courses_taught?: string[] | null
           created_at?: string
           data_source?: string
           department_id: string
+          departmental_profile_url?: string | null
           designation: string
           email?: string | null
           floor?: string | null
           id?: string
+          industrial_experience?: string | null
           is_accepting_research?: boolean
           is_chairman?: boolean
           last_synced_at?: string
@@ -1570,9 +1583,11 @@ export type Database = {
           name: string
           on_leave?: boolean
           orcid_url?: string | null
+          personal_email?: string | null
           phone?: string | null
           photo_url?: string | null
           profile_url?: string | null
+          publications?: Json | null
           qualifications?: Json | null
           research_interests?: string[]
           researchgate_url?: string | null
@@ -1580,20 +1595,26 @@ export type Database = {
           scholar_url?: string | null
           scopus_url?: string | null
           short_code?: string | null
+          teaching_areas?: string[] | null
           updated_at?: string
           website_url?: string | null
         }
         Update: {
+          academic_activities?: string[] | null
           blood_group?: string | null
           building?: string | null
+          cell_phone?: string | null
           counseling_hours?: string | null
+          courses_taught?: string[] | null
           created_at?: string
           data_source?: string
           department_id?: string
+          departmental_profile_url?: string | null
           designation?: string
           email?: string | null
           floor?: string | null
           id?: string
+          industrial_experience?: string | null
           is_accepting_research?: boolean
           is_chairman?: boolean
           last_synced_at?: string
@@ -1601,9 +1622,11 @@ export type Database = {
           name?: string
           on_leave?: boolean
           orcid_url?: string | null
+          personal_email?: string | null
           phone?: string | null
           photo_url?: string | null
           profile_url?: string | null
+          publications?: Json | null
           qualifications?: Json | null
           research_interests?: string[]
           researchgate_url?: string | null
@@ -1611,6 +1634,7 @@ export type Database = {
           scholar_url?: string | null
           scopus_url?: string | null
           short_code?: string | null
+          teaching_areas?: string[] | null
           updated_at?: string
           website_url?: string | null
         }

@@ -349,16 +349,30 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
   - Incoming request: 72dp Request Card (*"Incoming Connection Request"*, spring user-check icon) paired with dual 58dp symmetrical `Accept` and `Decline` action buttons.
   - Disconnect connection converted to clean destructive outline action button (`height: 50, borderRadius: 14`).
 - **Contact Sheet (`ContactSheet.tsx`):** Standardized primary action buttons to universal 58dp (`height: 58, borderRadius: 16`), added top-right close button (`32 × 32 dp`), and resolved clashing greens.
-- **Faculty Directory & Mentors Module (`FacultyScreen.tsx`, `FacultyDeptScreen.tsx`, `FacultyProfileScreen.tsx`, `facultyShared.tsx`, `ManageFacultyScreen.tsx`):**
+- **Faculty Directory & Deep Dossier System (`FacultyScreen.tsx`, `FacultyDeptScreen.tsx`, `FacultyProfileScreen.tsx`, `facultyShared.tsx`, `ManageFacultyScreen.tsx`):**
   - **Universal 58dp Control Standard:** Segmented tabs switcher (`SegmentedTabs`), search bars, department/domain picker dropdown bars (`dropdownBar`), modal sheet close buttons (`sheetCloseBtn`), bottom dock CTAs (`proposalBtn`, `contactBtn`), admin sync trigger (`syncActionBtn`), and form save buttons (`saveBtn`, `closeReportBtn`) all standardized to `height: 58, borderRadius: 16`.
   - **Universal 72dp Content Card Standard:**
-    - `TeacherBar` (`facultyShared.tsx`): standardized to `minHeight: 72, padding: 14, borderRadius: 16, marginBottom: 10, gap: 13`, featuring `44 × 44 dp` avatar (`<Avatar size="md" />`), 14.5px Title, 12px Subtitle, and tactile spring animated star bookmark icon.
+    - `TeacherBar` (`facultyShared.tsx`): standardized to `minHeight: 72, padding: 14, borderRadius: 16, marginBottom: 10, gap: 13`, featuring `44 × 44 dp` avatar (`<Avatar size="md" />`), 14.5px Title, 12px Subtitle, courses badge, and tactile spring animated star bookmark icon.
     - `categoryBar` (`FacultyScreen.tsx`): standardized to `minHeight: 72, padding: 14, borderRadius: 16, marginBottom: 10, gap: 13` with `44 × 44 dp` tile and `<AnimatedIcon animation="entrance" />`.
     - `deptBar` (`FacultyScreen.tsx`): standardized to `minHeight: 72, padding: 14, borderRadius: 16, marginBottom: 10, gap: 13` with `44 × 44 dp` tile and `<AnimatedIcon animation="entrance" />`.
     - `pickerBar` (modal lists in `FacultyScreen.tsx`): standardized to `minHeight: 72, padding: 14, borderRadius: 16, marginBottom: 10, gap: 13` with `44 × 44 dp` tile and `<AnimatedIcon animation="entrance" />`.
     - `FacultyDeptScreen.tsx`: Dept header tile standardized to `width: 44, height: 44, borderRadius: 13` with `<AnimatedIcon animation="entrance" />`; empty state with pulsing search icon.
     - `ManageFacultyScreen.tsx`: Admin teacher rows standardized to `minHeight: 72, padding: 14, gap: 13` with `44 × 44 dp` avatar (`<Avatar size="md" />`); sync icon wrap standardized to `44 × 44 dp` with pulsing/spring `refresh-cw` animation; sync report modal features entrance animated status badges.
     - `FacultyProfileScreen.tsx`: SubBar star bookmark button features tactile spring pop (`animation="spring"`); campus office location card uses vertical bouncing pin (`animation="bounce"`); counseling hours card uses pulsing clock (`animation="pulse"`); bottom dock buttons feature smooth entrance animations (`animation="entrance"`).
+  - **Faculty Deep Dossier Schema & Multi-Department Parity:**
+    - Database migration `20261028050000_faculty_deep_dossier.sql` expands `public.faculty` with rich academic dossier fields:
+      - `courses_taught` (`text[]`): Routine slot mapping + departmental portal courses taught at BUBT (e.g. `EEE 207 – Electrical Circuits II`).
+      - `teaching_areas` (`text[]`): Teaching specializations and subject domains (e.g. `Circuits`, `Power Systems`, `Algorithms`).
+      - `publications` (`jsonb`): High-precision bibliography indexing peer-reviewed journal and IEEE conference papers with `{ title, venue, year, doi, url, authors }`.
+      - `cell_phone` (`text`): Direct contact numbers extracted from official departmental directories.
+      - `personal_email` (`text`): Direct academic & professional contact email.
+      - `academic_activities` (`text[]`): Committee roles, club mentoring, and administrative responsibilities.
+      - `industrial_experience` (`text`): Field and corporate consulting experience.
+      - `departmental_profile_url` (`text`): Direct link to departmental subdomain dossiers (e.g. `eee.bubt.edu.bd`).
+    - **All 13 Departments Covered:** Universal support across Computer Science & Engineering (CSE), Data Science & Engineering (DSE), Mathematics & Statistics, Electrical & Electronic Engineering (EEE), Textile Engineering, Civil Engineering, Law & Justice, English, Management, Economics, Accounting, Marketing, and Finance.
+    - **Multi-Vector Search Engine:** Real-time search across Teacher Name, Teacher Initial (e.g. `MDAK`), Room Number, Research Interests, Course Codes (`EEE 207`, `CSE 315`), Teaching Areas, and Research Publications (paper titles and conference/journal venues).
+    - **ContactSheet Integration:** Seamless cell phone and WhatsApp communication via `phone={member.cell_phone || member.phone}` across directory cards and profile screens.
+    - **Research Proposal Drafter:** In-app collaborative email composer with pre-filled student department, intake, section, and methodology summary.
 - **Settings & Preferences Module (`SettingsScreen.tsx`):**
   - **Universal 58dp Control Standard:** All bottom sheet modal action buttons (`primaryBtn`, `outlineBtn`, `cancelBtn`) and modal password input fields (`pwField`) standardized to `height: 58, borderRadius: 16, paddingHorizontal: 14, fontSize: 14.5`.
   - **Universal 72dp Content Card Standard:**

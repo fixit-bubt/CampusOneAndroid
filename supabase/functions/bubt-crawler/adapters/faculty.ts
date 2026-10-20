@@ -1,5 +1,5 @@
 import { fetchWithRetry } from '../core/http.ts';
-import type { AdapterResult, FacultyItem } from '../types.ts';
+import type { AdapterResult } from '../types.ts';
 
 const BUBT_BASE = 'https://www.bubt.edu.bd';
 
@@ -30,14 +30,28 @@ const DEPARTMENT_SLUGS = [
 ];
 
 export async function runFacultyAdapter(supabase: any): Promise<AdapterResult> {
-  // 1. Fetch departments and existing faculty in parallel
-  const [deptsRes, facultyRes] = await Promise.all([
+  // 1. Fetch departments, existing faculty, and routine slots
+  const [deptsRes, facultyRes, routineSlotsRes] = await Promise.all([
     supabase.from('departments').select('id, name, dept_number'),
-    supabase.from('faculty').select('id, department_id, name, designation, photo_url, profile_url, short_code, on_leave, is_chairman'),
+    supabase.from('faculty').select('*'),
+    supabase.from('routine_slots').select('course_code, course_title, teacher_code, room').limit(2000),
   ]);
 
   const dbDepts = deptsRes.data ?? [];
   const existingFaculty = facultyRes.data ?? [];
+  const routineSlots = routineSlotsRes.data ?? [];
+
+  // Build course mapping keyed by uppercase teacher initial
+  const coursesByTeacherCode = new Map<string, Set<string>>();
+  for (const s of routineSlots) {
+    const code = s.teacher_code?.trim().toUpperCase();
+    if (!code) continue;
+    if (!coursesByTeacherCode.has(code)) {
+      coursesByTeacherCode.set(code, new Set<string>());
+    }
+    const label = s.course_title ? `${s.course_code} – ${s.course_title}` : s.course_code;
+    if (label) coursesByTeacherCode.get(code)!.add(label);
+  }
 
   const deptMap = new Map<string, string>();
   dbDepts.forEach((d: any) => {
@@ -119,6 +133,11 @@ export async function runFacultyAdapter(supabase: any): Promise<AdapterResult> {
           || (shortCode ? byShortCode.get(shortCode) : null)
           || byNormOnly.get(normalizeFacultyName(name));
 
+        // Derive active courses taught from routine slots if matching short code exists
+        const mappedCourses = shortCode && coursesByTeacherCode.has(shortCode)
+          ? Array.from(coursesByTeacherCode.get(shortCode)!)
+          : [];
+
         if (existing) {
           if (seenUpdatedIds.has(existing.id)) continue;
           seenUpdatedIds.add(existing.id);
@@ -134,8 +153,9 @@ export async function runFacultyAdapter(supabase: any): Promise<AdapterResult> {
           const desigChanged = Boolean(rawDesig && existing.designation !== rawDesig);
           const leaveChanged = onLeave !== existing.on_leave;
           const chairmanChanged = isChairman !== existing.is_chairman;
+          const coursesNeedUpdate = mappedCourses.length > 0 && (!existing.courses_taught || existing.courses_taught.length === 0);
 
-          if (needsShortCode || needsProfileUrl || photoChanged || desigChanged || leaveChanged || chairmanChanged) {
+          if (needsShortCode || needsProfileUrl || photoChanged || desigChanged || leaveChanged || chairmanChanged || coursesNeedUpdate) {
             rowsToUpdate.push({
               id: existing.id,
               department_id: deptId,
@@ -146,6 +166,7 @@ export async function runFacultyAdapter(supabase: any): Promise<AdapterResult> {
               profile_url: canonicalProfileUrl || existing.profile_url || null,
               on_leave: onLeave,
               is_chairman: isChairman,
+              courses_taught: coursesNeedUpdate ? mappedCourses : (existing.courses_taught || []),
               last_synced_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
             });
@@ -163,6 +184,9 @@ export async function runFacultyAdapter(supabase: any): Promise<AdapterResult> {
             profile_url: canonicalProfileUrl,
             on_leave: onLeave,
             is_chairman: isChairman,
+            courses_taught: mappedCourses,
+            teaching_areas: [],
+            publications: [],
             research_interests: [],
             qualifications: [],
             data_source: 'main_site',
@@ -198,7 +222,7 @@ export async function runFacultyAdapter(supabase: any): Promise<AdapterResult> {
     unchanged: unchangedCount,
     details: {
       departments_scanned: DEPARTMENT_SLUGS.length,
+      routine_mapped_teachers: coursesByTeacherCode.size,
     },
   };
 }
-

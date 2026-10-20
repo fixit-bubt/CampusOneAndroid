@@ -67,6 +67,15 @@ export const FACULTY_CATEGORIES: FacultyCategory[] = [
   },
 ];
 
+export interface FacultyPublication {
+  title: string;
+  venue?: string;
+  year?: string | number;
+  doi?: string;
+  url?: string;
+  authors?: string;
+}
+
 export interface FacultyMember {
   id: string;
   department_id: string;
@@ -74,6 +83,8 @@ export interface FacultyMember {
   designation: string;
   email: string | null;
   phone?: string | null;
+  cell_phone?: string | null;
+  personal_email?: string | null;
   photo_url: string | null;
   short_code?: string | null;
   room_number?: string | null;
@@ -82,10 +93,21 @@ export interface FacultyMember {
   counseling_hours?: string | null;
   blood_group?: string | null;
   scopus_url?: string | null;
+  scholar_url?: string | null;
+  researchgate_url?: string | null;
+  linkedin_url?: string | null;
+  orcid_url?: string | null;
+  website_url?: string | null;
   is_accepting_research?: boolean;
   research_interests: string[] | null;
+  teaching_areas?: string[] | null;
+  courses_taught?: string[] | null;
   qualifications?: string[] | null;
+  publications?: FacultyPublication[] | null;
+  academic_activities?: string[] | null;
+  industrial_experience?: string | null;
   profile_url?: string | null;
+  departmental_profile_url?: string | null;
   on_leave: boolean;
   is_chairman: boolean;
 }
@@ -323,6 +345,15 @@ export function TeacherBar({
               </Text>
             </View>
           )}
+
+          {f.courses_taught && f.courses_taught.length > 0 && f.courses_taught[0] ? (
+            <View style={[styles.miniBadge, { backgroundColor: `${FACULTY_ACCENT}14` }]}>
+              <Feather name="book" size={9} color={FACULTY_ACCENT} />
+              <Text style={[styles.miniBadgeTxt, { color: FACULTY_ACCENT, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                {f.courses_taught[0].split(/\s*[-–—:]\s*/)[0].trim()}
+              </Text>
+            </View>
+          ) : null}
         </View>
       </View>
 
@@ -471,6 +502,26 @@ export function FacultyCard({
             <View style={[styles.pill, { backgroundColor: C.surface2 }]}>
               <Text style={[styles.pillTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
                 +{interests.length - 3}
+              </Text>
+            </View>
+          )}
+        </View>
+      )}
+
+      {f.courses_taught && f.courses_taught.length > 0 && (
+        <View style={styles.pills}>
+          {f.courses_taught.filter(Boolean).slice(0, 2).map((c, idx) => (
+            <View key={`${c}-${idx}`} style={[styles.pill, { backgroundColor: C.surface2, flexDirection: 'row', alignItems: 'center', gap: 5 }]}>
+              <Feather name="book" size={10} color={FACULTY_ACCENT} />
+              <Text style={[styles.pillTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                {c.split(/\s*[-–—:]\s*/)[0].trim()}
+              </Text>
+            </View>
+          ))}
+          {f.courses_taught.filter(Boolean).length > 2 && (
+            <View style={[styles.pill, { backgroundColor: C.surface2 }]}>
+              <Text style={[styles.pillTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                +{f.courses_taught.filter(Boolean).length - 2} courses
               </Text>
             </View>
           )}

@@ -118,7 +118,25 @@ export type PrayerTime = Omit<Tables<'prayer_times'>, 'key'> & {
   key: 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha' | 'jummah';
 };
 
-export type Faculty = Tables<'faculty'>;
+export type FacultyPublication = {
+  title: string;
+  venue?: string;
+  year?: string | number;
+  doi?: string;
+  url?: string;
+  authors?: string;
+};
+
+export type Faculty = Tables<'faculty'> & {
+  courses_taught?: string[] | null;
+  teaching_areas?: string[] | null;
+  publications?: FacultyPublication[] | null;
+  cell_phone?: string | null;
+  personal_email?: string | null;
+  academic_activities?: string[] | null;
+  industrial_experience?: string | null;
+  departmental_profile_url?: string | null;
+};
 
 export type Department = Tables<'departments'>;
 
