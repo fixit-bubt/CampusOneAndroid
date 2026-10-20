@@ -169,10 +169,10 @@ export function FacultyProfileScreen({ route, navigation }: any) {
   const [proposalTopic, setProposalTopic] = useState('');
   const [proposalBrief, setProposalBrief] = useState('');
 
-  // Universal 72dp dropdown toggle states
-  const [expandResearch, setExpandResearch] = useState(true);
-  const [expandQuals, setExpandQuals] = useState(true);
-  const [expandLinks, setExpandLinks] = useState(true);
+  // Universal 72dp dropdown toggle states (collapsed by default for clean, uncluttered profile overview)
+  const [expandResearch, setExpandResearch] = useState(false);
+  const [expandQuals, setExpandQuals] = useState(false);
+  const [expandLinks, setExpandLinks] = useState(false);
   const [expandCourses, setExpandCourses] = useState(false);
   const [expandActivities, setExpandActivities] = useState(false);
 
