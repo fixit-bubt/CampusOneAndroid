@@ -326,8 +326,12 @@ export function MediaPickerModal({
       <View style={[styles.root, { backgroundColor: C.bg, paddingTop: insets.top }]}>
         {/* Top Header matching CamScanner layout */}
         <View style={[styles.header, { borderBottomColor: C.border }]}>
-          <TouchableOpacity style={styles.closeBtn} onPress={onClose} activeOpacity={0.7}>
-            <Feather name="x" size={22} color={C.text} />
+          <TouchableOpacity
+            style={[styles.closeBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+            onPress={onClose}
+            activeOpacity={0.75}
+          >
+            <Feather name="x" size={20} color={C.text} />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -344,7 +348,10 @@ export function MediaPickerModal({
           <TouchableOpacity
             style={[
               styles.importBtn,
-              { backgroundColor: selected.length > 0 ? C.brand : (isDark ? C.surface2 : '#e4e4e7') },
+              {
+                backgroundColor: selected.length > 0 ? C.brand : (isDark ? C.surface2 : '#e4e4e7'),
+                borderColor: selected.length > 0 ? C.brand : C.border,
+              },
             ]}
             disabled={selected.length === 0}
             onPress={handleConfirm}
@@ -574,23 +581,28 @@ export function MediaPickerModal({
             <StatusBar barStyle="light-content" backgroundColor="#000000" />
 
             {/* Preview Top Bar */}
-            <View style={[styles.previewTopBar, { paddingTop: insets.top, height: 56 + insets.top }]}>
+            <View style={[styles.previewTopBar, { paddingTop: insets.top, height: 60 + insets.top }]}>
               <TouchableOpacity
-                style={styles.previewBackBtn}
+                style={[styles.previewBackBtn, { backgroundColor: 'rgba(255, 255, 255, 0.12)', borderColor: 'rgba(255, 255, 255, 0.18)' }]}
                 onPress={() => setPreviewIndex(null)}
-                activeOpacity={0.7}
+                activeOpacity={0.75}
               >
-                <Feather name="arrow-left" size={24} color="#ffffff" />
+                <Feather name="arrow-left" size={20} color="#ffffff" />
               </TouchableOpacity>
 
-              <Text style={styles.previewCounter}>
-                {`${(previewIndex ?? 0) + 1} / ${previewList.length}`}
-              </Text>
+              <View style={[styles.previewCounterBox, { backgroundColor: 'rgba(255, 255, 255, 0.12)', borderColor: 'rgba(255, 255, 255, 0.18)' }]}>
+                <Text style={styles.previewCounter}>
+                  {`${(previewIndex ?? 0) + 1} / ${previewList.length}`}
+                </Text>
+              </View>
 
               <TouchableOpacity
                 style={[
                   styles.previewImportBtn,
-                  { backgroundColor: selected.length > 0 ? C.brand : (isDark ? C.surface2 : '#262626') },
+                  {
+                    backgroundColor: selected.length > 0 ? C.brand : 'rgba(255, 255, 255, 0.12)',
+                    borderColor: selected.length > 0 ? C.brand : 'rgba(255, 255, 255, 0.18)',
+                  },
                 ]}
                 disabled={selected.length === 0}
                 onPress={handleConfirm}
@@ -750,7 +762,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    height: 56,
+    height: 60,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -758,9 +770,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   closeBtn: {
-    width: 38,
-    height: 38,
+    width: 40,
+    height: 40,
     borderRadius: Radius.md,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -769,19 +782,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    height: 38,
+    height: 40,
     paddingHorizontal: 14,
     borderRadius: Radius.md,
     borderWidth: 1,
-    maxWidth: SCREEN_WIDTH * 0.52,
+    maxWidth: SCREEN_WIDTH * 0.50,
   },
   albumTitle: {
     fontSize: 14,
   },
   importBtn: {
-    height: 38,
+    height: 40,
     paddingHorizontal: 16,
     borderRadius: Radius.md,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -968,7 +982,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#000000',
   },
   previewTopBar: {
-    height: 56,
+    height: 60,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -977,21 +991,31 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   previewBackBtn: {
-    width: 38,
-    height: 38,
+    width: 40,
+    height: 40,
     borderRadius: Radius.md,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  previewCounterBox: {
+    height: 40,
+    paddingHorizontal: 14,
+    borderRadius: Radius.md,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   previewCounter: {
     color: '#ffffff',
-    fontSize: 16.5,
+    fontSize: 14.5,
     fontFamily: FontFamily.jakartaBold,
   },
   previewImportBtn: {
-    height: 38,
+    height: 40,
     paddingHorizontal: 16,
     borderRadius: Radius.md,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
