@@ -598,14 +598,17 @@ In `RootNavigator.tsx`, students who have not completed onboarding (`!profile?.s
 - **Architecture:** 100% on-device native `pdf-lib` for document generation + hidden offscreen WebView running vendored `pdf.js` (`assets/pdfjs/*.txt`) for rasterizing page thumbnails.
 - **Capabilities:** Photos to PDF, PDF Merge, Organize/Reorder Pages, Compress.
 - **Zero Schema Change:** Does not touch Supabase or upload files.
-- **Edge & Corner Artifact Suppression (CamScanner Parity):**
-  - **Inward Safety Margin (0.8% Inset):** `warpQuadToCanvas` pulls quadrilateral corners 0.8% towards their centroid before homography warping, eliminating exterior table slivers, spiral binder shadows, and outer desk marks.
-  - **Universal 4-Corner Zone Protection:** All 4 corners (top-left, top-right, bottom-left, bottom-right up to 7.5% width and 6.5% height) are scanned for non-paper intrusions (table shadows, desk grain, finger/thumb skin) and neutralized to `#FFFFFF`.
-  - **Outer Perimeter Mask (2.4% Margin):** Outer edge margin bands suppress non-paper edge noise (`blum < 135` or warm desk) to pure paper white, preventing dark edge slivers from snapping to pitch-black lines under the ink LUT.
-- **Progressive In-App PDF Viewer (Zero Blank Pages):**
-  - **Eager Background Render Queue:** In `viewerHtml.ts`, Page 1 renders eagerly to reveal the document instantly, followed by a continuous background queue using `requestIdleCallback` / `setTimeout` that pre-renders remaining pages (Pages 2..N) progressively.
+- **CamScanner-Grade Edge, Corner & Ink Engine (V4):**
+  - **Header & Date Protection:** `detectDocumentQuad` pins top boundary scanning to max 1.5% (`0.015`), preventing notebook headers, dates ("14/09/2026"), and class labels from being cut off.
+  - **Inward Safety Margin (0.8% Inset):** `warpQuadToCanvas` pulls quadrilateral side and bottom corners towards their centroid before homography warping while pinning top corner heights to preserve top margins.
+  - **Universal 4-Corner Zone Protection:** All 4 corners (top-left, top-right, bottom-left, bottom-right up to 8.5% width and 7.5% height) are scanned for non-paper intrusions (table shadows, desk grain, finger/thumb skin) and neutralized to `#FFFFFF`.
+  - **10% Side Margin Intrusion Suppression:** Outer 10% lateral margin bands ($x < W \times 0.10$ and $x > W \times 0.90$) strip all finger/thumb intrusions, table void, and clamp artifacts to pure paper white while strictly protecting genuine ruled vertical red/pink margin lines.
+  - **Steep Contrast Ink LUT ($bp = 76, wp = 192$, power $2.3$):** Drives midtone ballpoint and gel pen strokes directly into deep solid pitch black ($\le 6$) while locking paper to `#FFFFFF`, eliminating pale or washed-out handwriting.
+- **Progressive In-App PDF Viewer (Single-Load Lock):**
+  - **Concurrency & Duplicate Load Lock:** `CampusPdfViewerModal` implements a single-send hash lock (`sentPayloadRef`), and `viewerHtml.ts` tracks a monotonic `loadId` generation counter. Multiple rapid-fire load triggers (`initViewer`, `viewerReady`, `onLoadEnd`) are coalesced into a single authoritative load, eliminating ghost duplicate placeholder cards and phantom white pages.
+  - **Eager Background Render Queue:** Page 1 renders eagerly to reveal the document instantly, followed by a continuous background queue using `requestIdleCallback` / `setTimeout` that pre-renders remaining pages (Pages 2..N) progressively.
   - **Dual Scroll Fallback:** In addition to `IntersectionObserver`, a passive window `scroll` listener checks viewport bounds, ensuring visible placeholder cards immediately rasterize even when `IntersectionObserver` is starved on Android WebViews.
-  - **Loading Shimmer Indicator:** `.page-placeholder` cards display a centered geometric spinner animation while rasterizing, eliminating confusing blank white boxes.
+  - **Loading Shimmer Indicator:** `.page-placeholder` cards display a centered geometric spinner animation while rasterizing.
 
 ### 10.3 BUBT Cover Page Generator
 - **Location:** `src/screens/coverpage/CoverPageFormScreen.tsx`

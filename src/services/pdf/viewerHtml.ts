@@ -144,7 +144,9 @@ export function buildViewerHtml(isDark: boolean = true): string {
       });
     }
 
+    let currentLoadId = 0;
     async function initPdfWithBytes(bytes) {
+      const loadId = ++currentLoadId;
       try {
         if (pdfDoc) {
           try { await pdfDoc.destroy(); } catch (e) {}
@@ -155,13 +157,24 @@ export function buildViewerHtml(isDark: boolean = true): string {
         container.innerHTML = '';
         window.scrollTo(0, 0);
 
-        pdfDoc = await pdfjs.getDocument({
+        const loadingTask = pdfjs.getDocument({
           data: bytes,
           useSystemFonts: true
-        }).promise;
+        });
+        const doc = await loadingTask.promise;
+        if (loadId !== currentLoadId) {
+          try { doc.destroy(); } catch (e) {}
+          return;
+        }
+        pdfDoc = doc;
 
         totalPages = pdfDoc.numPages;
         send({ type: 'rendering', total: totalPages });
+
+        // Guaranteed single cleanup of container before creating exact page count cards
+        container.innerHTML = '';
+        renderedPages.clear();
+        renderingPages.clear();
 
         // Create page placeholders with full A4 proportion
         for (let i = 1; i <= totalPages; i++) {
@@ -190,10 +203,10 @@ export function buildViewerHtml(isDark: boolean = true): string {
         // Progressive background rendering queue for all remaining pages
         let bgPage = 2;
         function pumpBgRenderQueue() {
-          if (!pdfDoc || bgPage > totalPages) return;
+          if (!pdfDoc || loadId !== currentLoadId || bgPage > totalPages) return;
           const p = bgPage++;
           renderPage(p).finally(() => {
-            if (bgPage <= totalPages) {
+            if (loadId === currentLoadId && bgPage <= totalPages) {
               if (typeof requestIdleCallback === 'function') {
                 requestIdleCallback(pumpBgRenderQueue, { timeout: 150 });
               } else {

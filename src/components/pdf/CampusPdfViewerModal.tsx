@@ -77,10 +77,15 @@ export function CampusPdfViewerModal({
   // Synchronization refs for local pdf.js engine
   const webViewReadyRef = useRef(false);
   const docPayloadRef = useRef<{ base64?: string; fileUri?: string } | null>(null);
+  const sentPayloadRef = useRef<string | null>(null);
 
   const sendDocumentToWebView = useCallback(() => {
-    if (!docPayloadRef.current) return;
+    if (!webViewReadyRef.current || !docPayloadRef.current) return;
     const payload = docPayloadRef.current;
+    const payloadKey = payload.base64 ? payload.base64.slice(0, 48) : payload.fileUri;
+    if (sentPayloadRef.current === payloadKey) return;
+    sentPayloadRef.current = payloadKey ?? null;
+
     if (payload.base64) {
       webRef.current?.injectJavaScript(
         `if (typeof window.loadPdfData === 'function') { window.loadPdfData(${JSON.stringify(payload.base64)}); } true;`
@@ -139,6 +144,7 @@ export function CampusPdfViewerModal({
       setTotalPages(1);
       webViewReadyRef.current = false;
       docPayloadRef.current = null;
+      sentPayloadRef.current = null;
       initViewer();
 
       let remoteSafetyTimer: any;
@@ -153,6 +159,7 @@ export function CampusPdfViewerModal({
     } else {
       webViewReadyRef.current = false;
       docPayloadRef.current = null;
+      sentPayloadRef.current = null;
       setHtmlUri(null);
       setLocalFileUri(null);
       setErrorMsg(null);

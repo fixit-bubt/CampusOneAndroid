@@ -211,23 +211,23 @@ function detectDocumentQuad(srcCanvas) {
   var yMid0 = Math.floor(dh * 0.20), yMid1 = Math.ceil(dh * 0.80);
   var maxScanFraction = 0.07;
 
-  // TOP
+  // TOP: Keep top scanning capped to 0.015 so notebook headers, dates, and "Class" labels are never clipped
   var topOuterCount = 0, topOuterTotal = (xMid1 - xMid0) * Math.min(3, dh);
   for (var ty0 = 0; ty0 < Math.min(3, dh); ty0++) {
     for (var tx0 = xMid0; tx0 < xMid1; tx0++) {
       if (isBg[ty0 * dw + tx0]) topOuterCount++;
     }
   }
-  var tl_y = 0.005, tr_y = 0.005;
-  if (topOuterCount / Math.max(1, topOuterTotal) >= 0.50) {
-    var maxScanT = Math.floor(dh * maxScanFraction);
+  var tl_y = 0.002, tr_y = 0.002;
+  if (topOuterCount / Math.max(1, topOuterTotal) >= 0.65) {
+    var maxScanT = Math.floor(dh * 0.015);
     function scanTop(x0, x1) {
       for (var y = 0; y < maxScanT; y++) {
         var pC = 0, totC = x1 - x0;
         for (var x = x0; x < x1; x++) { if (isPaper[y * dw + x]) pC++; }
-        if (pC / totC >= 0.40) return Math.max(0.005, y / dh);
+        if (pC / totC >= 0.40) return Math.max(0.002, y / dh);
       }
-      return 0.005;
+      return 0.002;
     }
     tl_y = scanTop(Math.floor(dw * 0.15), Math.floor(dw * 0.45));
     tr_y = scanTop(Math.floor(dw * 0.55), Math.floor(dw * 0.85));
@@ -352,13 +352,13 @@ function warpQuadToCanvas(srcCanvas, quad, maxDim) {
     { x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 0, y: 1 }
   ];
 
-  // Inward safety margin (0.8% inset): strips desk slivers, spiral edges & boundary shadows
+  // Inward safety margin on sides and bottom: strips desk slivers, spiral edges & boundary shadows without clipping top headers
   var cx = (rawQ[0].x + rawQ[1].x + rawQ[2].x + rawQ[3].x) * 0.25;
   var cy = (rawQ[0].y + rawQ[1].y + rawQ[2].y + rawQ[3].y) * 0.25;
   var inset = 0.008;
   var q = [
-    { x: rawQ[0].x + (cx - rawQ[0].x) * inset, y: rawQ[0].y + (cy - rawQ[0].y) * inset },
-    { x: rawQ[1].x + (cx - rawQ[1].x) * inset, y: rawQ[1].y + (cy - rawQ[1].y) * inset },
+    { x: rawQ[0].x + (cx - rawQ[0].x) * inset, y: rawQ[0].y },
+    { x: rawQ[1].x + (cx - rawQ[1].x) * inset, y: rawQ[1].y },
     { x: rawQ[2].x + (cx - rawQ[2].x) * inset, y: rawQ[2].y + (cy - rawQ[2].y) * inset },
     { x: rawQ[3].x + (cx - rawQ[3].x) * inset, y: rawQ[3].y + (cy - rawQ[3].y) * inset }
   ];
@@ -637,11 +637,15 @@ function enhanceDocumentCanvas(canvas, filterMode) {
   var mLeft = Math.max(6, (W * 0.024) | 0), mRight = W - mLeft;
   var mTop = Math.max(6, (H * 0.020) | 0), mBot = H - mTop;
 
-  // Extended 4-corner detection zones (~7.5% of width, ~6.5% of height)
-  var cW = Math.max(20, (W * 0.075) | 0);
-  var cH = Math.max(20, (H * 0.065) | 0);
+  // Extended 4-corner detection zones (~8.5% of width, ~7.5% of height)
+  var cW = Math.max(24, (W * 0.085) | 0);
+  var cH = Math.max(24, (H * 0.075) | 0);
   var cRight = W - cW;
   var cBot = H - cH;
+
+  // Extended side margin intrusion zones (outer 10% on left and right for thumbs, fingers, desk, clamps)
+  var sW = Math.max(40, (W * 0.10) | 0);
+  var sRight = W - sW;
 
   for (var by = 0; by < H; by++) {
     var inYMargin = by < mTop || by > mBot;
@@ -649,14 +653,15 @@ function enhanceDocumentCanvas(canvas, filterMode) {
     var rOff = by * W;
 
     for (var bx = 0; bx < W; bx++) {
+      var inSideMargin = bx < sW || bx > sRight;
       var inXMargin = bx < mLeft || bx > mRight;
       var inCornerX = bx < cW || bx > cRight;
       var isCornerZone = inCornerY && inCornerX;
       var isPerimeterZone = inYMargin || inXMargin;
 
       // Skip non-margin interior pixels quickly to keep processing instantaneous
-      if (!isCornerZone && !isPerimeterZone) {
-        var nextX = inCornerY ? cRight : mRight;
+      if (!isCornerZone && !isPerimeterZone && !inSideMargin) {
+        var nextX = Math.min(sRight, inCornerY ? cRight : mRight);
         if (bx < nextX) {
           bx = nextX - 1;
         }
@@ -668,15 +673,21 @@ function enhanceDocumentCanvas(canvas, filterMode) {
       var br = data[bpIdx], bg = data[bpIdx + 1], bb = data[bpIdx + 2];
       var blum = (38 * br + 75 * bg + 15 * bb) >> 7;
 
+      // Protect genuine red/pink margin lines from being masked
+      var isRedMargin = br >= 180 && (br - bg) >= 22 && (br >= bb + 20) && blum >= 140;
+      if (isRedMargin) continue;
+
       var isWarmDesk = (br - bb) > (baseRb + 16) && blum < paperL75 * 0.94;
-      var isThumbSkin = br > 90 && bg > 35 && bb > 15 && (br - bg) > 12 && (br - bb) > (baseRb + 14) && blum < 215;
+      var isThumbSkin = br > 85 && bg > 35 && bb > 15 && (br - bg) > 10 && (br - bb) > (baseRb + 12) && blum < 220;
 
       // In the 4 corners: table shadows, fingers, dog-ears, binder rings
-      var isCornerArtifact = isCornerZone && (blum < paperL75 * 0.76 || isWarmDesk || isThumbSkin || blum < 130);
-      // In perimeter edges: desk slivers, spiral edges, margin shadows
-      var isPerimeterArtifact = isPerimeterZone && (blum < 135 || isWarmDesk || isThumbSkin);
+      var isCornerArtifact = isCornerZone && (blum < paperL75 * 0.80 || isWarmDesk || isThumbSkin || blum < 140);
+      // In outer perimeter edges: desk slivers, spiral edges, margin shadows
+      var isPerimeterArtifact = isPerimeterZone && (blum < 145 || isWarmDesk || isThumbSkin);
+      // In outer 10% side margins: thumbs, fingers, desk void, table edge
+      var isSideIntrusion = inSideMargin && (isThumbSkin || isWarmDesk || blum < 185);
 
-      if (isCornerArtifact || isPerimeterArtifact) {
+      if (isCornerArtifact || isPerimeterArtifact || isSideIntrusion) {
         borderMask[pIdx0] = 1;
       }
     }
@@ -808,22 +819,23 @@ function enhanceDocumentCanvas(canvas, filterMode) {
     }
   }
 
-  // 4. Smooth-Transition S-Curve LUT (darkens ink core while preserving fine anti-aliased pen stroke tapering)
-  var bp = 48, wp = 202;
-  if (mode === 'bleed_erase') { bp = 56; wp = 196; }
-  else if (mode === 'whiteboard') { bp = 36; wp = 212; }
-  else if (mode === 'grayscale') { bp = 48; wp = 204; }
-  else if (mode === 'bw') { bp = 50; wp = 204; }
+  // 4. CamScanner-Grade Steep Contrast LUT (snaps ballpoint ink core to deep jet-black <= 6 while locking paper to #FFFFFF)
+  var bp = 76, wp = 192;
+  if (mode === 'bleed_erase') { bp = 74; wp = 190; }
+  else if (mode === 'whiteboard') { bp = 60; wp = 205; }
+  else if (mode === 'grayscale') { bp = 70; wp = 194; }
+  else if (mode === 'bw') { bp = 80; wp = 190; }
 
   var lut = new Uint8Array(256);
   var span = Math.max(1, wp - bp);
   for (var li = 0; li < 256; li++) {
-    if (li <= bp) lut[li] = 0;
-    else if (li >= wp) lut[li] = 255;
-    else {
+    if (li <= bp) {
+      lut[li] = 0;
+    } else if (li >= wp) {
+      lut[li] = 255;
+    } else {
       var t = (li - bp) / span;
-      var s = t * t * (3.0 - 2.0 * t);
-      lut[li] = Math.min(255, Math.floor((0.15 * s + 0.85 * Math.pow(t, 1.7)) * 255.0));
+      lut[li] = Math.min(255, Math.floor(Math.pow(t, 2.3) * 255.0));
     }
   }
 
