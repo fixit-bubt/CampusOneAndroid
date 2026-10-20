@@ -100,28 +100,31 @@ export async function runFacultyAdapter(supabase: any): Promise<AdapterResult> {
       const cardChunks = deptHtml.split(/class="faculty-card\b/);
       for (let i = 1; i < cardChunks.length; i++) {
         const chunk = cardChunks[i];
-        const linkMatch = chunk.match(/href="([^"]*\/faculty\/profile\/([^"]+))"/i);
-        if (!linkMatch) continue;
-
-        totalScanned++;
-        const rawCode = linkMatch[2]?.trim().replace(/\/+$/, '') || '';
-        const shortCode = rawCode ? rawCode.toUpperCase() : null;
-        const canonicalProfileUrl = shortCode
-          ? `${BUBT_BASE}/department/${d.slug}/faculty/profile/${shortCode}`
-          : linkMatch[1]?.trim() || null;
-
         const imgMatch = chunk.match(/<img[^>]+src="([^">]+)"/i);
         const altMatch = chunk.match(/<img[^>]+alt="([^">]+)"/i);
         const nameMatch = chunk.match(/<h3[^>]*class="[^"]*faculty-name[^"]*"[^>]*>([\s\S]*?)<\/h3>/i);
         const name = (nameMatch ? nameMatch[1] : altMatch ? altMatch[1] : '').replace(/<[^>]+>/g, '').trim();
         if (!name) continue;
 
-        const photoUrl = imgMatch ? imgMatch[1].trim() : null;
-
         const desigMatch = chunk.match(/<p[^>]*class="[^"]*(?:bg-indigo|faculty-designation)[^"]*"[^>]*>([\s\S]*?)<\/p>/i);
         let rawDesig = desigMatch ? desigMatch[1].replace(/<[^>]+>/g, '').trim() : 'Lecturer';
         if (rawDesig.includes(' - ')) rawDesig = rawDesig.split(' - ')[0].trim();
         if (rawDesig.includes(' — ')) rawDesig = rawDesig.split(' — ')[0].trim();
+
+        // Skip non-academic administrative/lab staff on faculty rosters
+        if (/lab assistant|office assistant|support service|technical assistant|assistant officer/i.test(rawDesig)) {
+          continue;
+        }
+
+        totalScanned++;
+        const linkMatch = chunk.match(/href="([^"]*\/faculty\/profile\/([^"]+))"/i);
+        const rawCode = linkMatch ? linkMatch[2]?.trim().replace(/\/+$/, '') : '';
+        const shortCode = rawCode ? rawCode.toUpperCase() : null;
+        const canonicalProfileUrl = shortCode
+          ? `${BUBT_BASE}/department/${d.slug}/faculty/profile/${shortCode}`
+          : (linkMatch ? linkMatch[1]?.trim() : null);
+
+        const photoUrl = imgMatch ? imgMatch[1].trim() : null;
 
         const onLeave = /on leave|study leave|lien/i.test(chunk);
         const isChairman = /chairman|head of/i.test(chunk) || /chairman/i.test(rawDesig);
