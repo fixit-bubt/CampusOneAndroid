@@ -222,3 +222,4 @@ $$;
 
 revoke execute on function public.push_on_notification() from public, anon;
 grant execute on function public.push_on_notification() to postgres;
+
