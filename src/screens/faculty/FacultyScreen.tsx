@@ -276,10 +276,13 @@ export function FacultyScreen({ navigation }: any) {
         // 9. Publication titles and venues
         const pubMatch = Boolean(
           f.publications &&
-          f.publications.some(p =>
-            (p?.title && p.title.toLowerCase().includes(q)) ||
-            (p?.venue && p.venue.toLowerCase().includes(q))
-          )
+          f.publications.some((p: any) => {
+            if (typeof p === 'string') return p.toLowerCase().includes(q);
+            return (
+              (p?.title && typeof p.title === 'string' && p.title.toLowerCase().includes(q)) ||
+              (p?.venue && typeof p.venue === 'string' && p.venue.toLowerCase().includes(q))
+            );
+          })
         );
 
         // 10. Department name match

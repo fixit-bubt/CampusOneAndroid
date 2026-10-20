@@ -82,69 +82,74 @@ export function FacultyDeptScreen({ route, navigation }: any) {
   const q = query.trim().toLowerCase();
   const cleanQ = q.replace(/[^a-z0-9]/g, '');
   const words = q.split(/[\s.]+/).filter(Boolean);
-  const list = q
-    ? roster.filter(f => {
-        const lowerName = (f.name || '').toLowerCase();
-        const cleanName = lowerName.replace(/[^a-z0-9]/g, '');
-        const lowerCode = (f.short_code || '').toLowerCase();
-        const cleanCode = lowerCode.replace(/[^a-z0-9]/g, '');
 
-        // 1. Direct name match (exact substring OR punctuation-stripped e.g. "Md.As" -> "mdashikkhan")
-        const nameMatch = lowerName.includes(q) || (cleanQ.length > 0 && cleanName.includes(cleanQ));
+  const list = useMemo(() => {
+    if (!q) return roster;
+    return roster.filter(f => {
+      const lowerName = (f.name || '').toLowerCase();
+      const cleanName = lowerName.replace(/[^a-z0-9]/g, '');
+      const lowerCode = (f.short_code || '').toLowerCase();
+      const cleanCode = lowerCode.replace(/[^a-z0-9]/g, '');
 
-        // 2. Multi-word token match (e.g. "Md As" or "Ashik Khan")
-        const allWordsMatch = words.length > 1 && words.every(w => {
-          const cw = w.replace(/[^a-z0-9]/g, '');
-          return lowerName.includes(w) || cleanName.includes(cw) || lowerCode.includes(cw);
-        });
+      // 1. Direct name match (exact substring OR punctuation-stripped e.g. "Md.As" -> "mdashikkhan")
+      const nameMatch = lowerName.includes(q) || (cleanQ.length > 0 && cleanName.includes(cleanQ));
 
-        // 3. Short routine code match (e.g. MDAK, MDAR, SR)
-        const codeMatch = Boolean(
-          cleanCode &&
-          cleanQ.length > 0 &&
-          (lowerCode.includes(q) || cleanCode.includes(cleanQ) || cleanQ.includes(cleanCode))
-        );
+      // 2. Multi-word token match (e.g. "Md As" or "Ashik Khan")
+      const allWordsMatch = words.length > 1 && words.every(w => {
+        const cw = w.replace(/[^a-z0-9]/g, '');
+        return lowerName.includes(w) || cleanName.includes(cw) || lowerCode.includes(cw);
+      });
 
-        // 4. Designation match
-        const desigMatch = (f.designation || '').toLowerCase().includes(q);
+      // 3. Short routine code match (e.g. MDAK, MDAR, SR)
+      const codeMatch = Boolean(
+        cleanCode &&
+        cleanQ.length > 0 &&
+        (lowerCode.includes(q) || cleanCode.includes(cleanQ) || cleanQ.includes(cleanCode))
+      );
 
-        // 5. Room / Building match
-        const roomMatch = Boolean(
-          (f.room_number && f.room_number.toLowerCase().includes(cleanQ || q)) ||
-          (f.building && f.building.toLowerCase().includes(q))
-        );
+      // 4. Designation match
+      const desigMatch = (f.designation || '').toLowerCase().includes(q);
 
-        // 6. Research interests
-        const interestMatch = interestsOf(f).some(i => i.toLowerCase().includes(q));
+      // 5. Room / Building match
+      const roomMatch = Boolean(
+        (f.room_number && f.room_number.toLowerCase().includes(cleanQ || q)) ||
+        (f.building && f.building.toLowerCase().includes(q))
+      );
 
-        // 7. Course code & title match
-        const courseMatch = Boolean(
-          f.courses_taught &&
-          f.courses_taught.some(c => {
-            if (typeof c !== 'string') return false;
-            const lc = c.toLowerCase();
-            return lc.includes(q) || (cleanQ.length > 0 && lc.replace(/[^a-z0-9]/g, '').includes(cleanQ));
-          })
-        );
+      // 6. Research interests
+      const interestMatch = interestsOf(f).some(i => i.toLowerCase().includes(q));
 
-        // 8. Teaching areas
-        const teachingAreaMatch = Boolean(
-          f.teaching_areas &&
-          f.teaching_areas.some(ta => typeof ta === 'string' && ta.toLowerCase().includes(q))
-        );
+      // 7. Course code & title match
+      const courseMatch = Boolean(
+        f.courses_taught &&
+        f.courses_taught.some(c => {
+          if (typeof c !== 'string') return false;
+          const lc = c.toLowerCase();
+          return lc.includes(q) || (cleanQ.length > 0 && lc.replace(/[^a-z0-9]/g, '').includes(cleanQ));
+        })
+      );
 
-        // 9. Publication titles and venues
-        const pubMatch = Boolean(
-          f.publications &&
-          f.publications.some(p =>
-            (p?.title && p.title.toLowerCase().includes(q)) ||
-            (p?.venue && p.venue.toLowerCase().includes(q))
-          )
-        );
+      // 8. Teaching areas
+      const teachingAreaMatch = Boolean(
+        f.teaching_areas &&
+        f.teaching_areas.some(ta => typeof ta === 'string' && ta.toLowerCase().includes(q))
+      );
 
-        return nameMatch || allWordsMatch || codeMatch || desigMatch || roomMatch || interestMatch || courseMatch || teachingAreaMatch || pubMatch;
-      })
-    : roster;
+      // 9. Publication titles and venues
+      const pubMatch = Boolean(
+        f.publications &&
+        f.publications.some((p: any) => {
+          if (typeof p === 'string') return p.toLowerCase().includes(q);
+          return (
+            (p?.title && typeof p.title === 'string' && p.title.toLowerCase().includes(q)) ||
+            (p?.venue && typeof p.venue === 'string' && p.venue.toLowerCase().includes(q))
+          );
+        })
+      );
+
+      return nameMatch || allWordsMatch || codeMatch || desigMatch || roomMatch || interestMatch || courseMatch || teachingAreaMatch || pubMatch;
+    });
+  }, [roster, q, cleanQ, words]);
 
   const displayedList = useMemo(() => {
     return list.slice(0, visibleLimit);

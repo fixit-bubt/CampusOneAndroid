@@ -192,6 +192,8 @@ export function DepartmentAuthoritiesDropdown({
                     navigation.navigate('FacultyProfile', { facultyId: auth.facultyId });
                   } else if (auth.email) {
                     openUrl(`mailto:${auth.email}`);
+                  } else if (auth.phone) {
+                    openUrl(`tel:${auth.phone}`);
                   }
                 }}
                 activeOpacity={0.75}

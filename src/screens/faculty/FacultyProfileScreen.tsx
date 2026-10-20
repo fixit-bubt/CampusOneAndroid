@@ -257,6 +257,33 @@ export function FacultyProfileScreen({ route, navigation }: any) {
     openUrl(target).then(ok => { if (!ok) toast({ type: 'error', title: t.common.error }); });
   };
 
+  const handleOpenPaper = (pub: any) => {
+    const p = typeof pub === 'string' ? { title: pub } : pub;
+    if (p.doi) {
+      const rawDoi = (p.doi || '').trim();
+      const cleanDoi = rawDoi.replace(/^doi:\s*/i, '');
+      const targetUrl = cleanDoi.startsWith('http') ? cleanDoi : `https://doi.org/${cleanDoi}`;
+      openLink(targetUrl);
+      return;
+    }
+    if (p.url) {
+      openLink(p.url);
+      return;
+    }
+    const cleanTitle = (p.title || '').trim();
+    const authorName = (member?.name || '').trim();
+    const query = cleanTitle ? `${cleanTitle} ${authorName}` : authorName;
+    if (query) {
+      openLink(`https://scholar.google.com/scholar?q=${encodeURIComponent(query)}`);
+    }
+  };
+
+  const handleOpenDomain = (area: string) => {
+    const authorName = (member?.name || '').trim();
+    const query = `${authorName} ${area}`.trim();
+    openLink(`https://scholar.google.com/scholar?q=${encodeURIComponent(query)}`);
+  };
+
   async function copyLocation(text: string) {
     await Clipboard.setStringAsync(text);
     toast({ type: 'success', title: t.faculty2.copied });
@@ -566,7 +593,12 @@ export function FacultyProfileScreen({ route, navigation }: any) {
                 {interests.length > 0 && (
                   <View style={{ gap: 8 }}>
                     {interests.map((area, idx) => (
-                      <View key={idx} style={[styles.childBar58, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                      <TouchableOpacity
+                        key={idx}
+                        style={[styles.childBar58, { backgroundColor: C.surface2, borderColor: C.border }]}
+                        onPress={() => handleOpenDomain(area)}
+                        activeOpacity={0.75}
+                      >
                         <View style={[styles.childBarIconTile, { backgroundColor: `${FACULTY_ACCENT}14` }]}>
                           <Feather name="cpu" size={15} color={FACULTY_ACCENT} />
                         </View>
@@ -575,10 +607,11 @@ export function FacultyProfileScreen({ route, navigation }: any) {
                             {area}
                           </Text>
                           <Text style={[styles.childBarSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
-                            Research Domain & Manuscript Advising
+                            Research Domain · Tap to explore publications
                           </Text>
                         </View>
-                      </View>
+                        <Feather name="external-link" size={14} color={C.textMuted} />
+                      </TouchableOpacity>
                     ))}
                   </View>
                 )}
@@ -617,40 +650,67 @@ export function FacultyProfileScreen({ route, navigation }: any) {
                       </Text>
                     </View>
 
-                    {pubs.map((pub: any, idx: number) => (
-                      <View key={idx} style={[styles.pubCard, { backgroundColor: C.surface2, borderColor: C.border }]}>
-                        <Text style={[styles.pubTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                          {pub.title}
-                        </Text>
-                        {pub.authors ? (
-                          <Text style={[styles.pubMeta, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
-                            {pub.authors}
-                          </Text>
-                        ) : null}
-                        {pub.venue ? (
-                          <Text style={[styles.pubVenue, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                            {pub.venue} {pub.year ? `(${pub.year})` : ''}
-                          </Text>
-                        ) : null}
-                        {pub.doi ? (
-                          <TouchableOpacity
-                            style={styles.doiLink}
-                            onPress={() => {
-                              const rawDoi = (pub.doi || '').trim();
-                              const cleanDoi = rawDoi.replace(/^doi:\s*/i, '');
-                              const targetUrl = cleanDoi.startsWith('http') ? cleanDoi : `https://doi.org/${cleanDoi}`;
-                              openLink(targetUrl);
-                            }}
-                            activeOpacity={0.7}
-                          >
-                            <Feather name="external-link" size={12} color={FACULTY_ACCENT} />
-                            <Text style={[styles.doiTxt, { color: FACULTY_ACCENT, fontFamily: FontFamily.jakartaBold }]}>
-                              DOI: {pub.doi}
+                    {pubs.map((pub: any, idx: number) => {
+                      const p = typeof pub === 'string' ? { title: pub } : pub;
+                      const rawDoi = (p.doi || '').trim();
+                      const cleanDoi = rawDoi.replace(/^doi:\s*/i, '');
+
+                      return (
+                        <TouchableOpacity
+                          key={idx}
+                          style={[styles.pubCard, { backgroundColor: C.surface2, borderColor: C.border }]}
+                          onPress={() => handleOpenPaper(p)}
+                          activeOpacity={0.75}
+                        >
+                          <View style={styles.pubTopRow}>
+                            <View style={[styles.pubIconTile, { backgroundColor: `${FACULTY_ACCENT}14` }]}>
+                              <Feather name="file-text" size={14} color={FACULTY_ACCENT} />
+                            </View>
+                            <Text style={[styles.pubTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={2}>
+                              {p.title}
                             </Text>
-                          </TouchableOpacity>
-                        ) : null}
-                      </View>
-                    ))}
+                            <Feather name="external-link" size={14} color={C.textMuted} style={{ marginTop: 2 }} />
+                          </View>
+
+                          {p.authors ? (
+                            <Text style={[styles.pubMeta, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={2}>
+                              {p.authors}
+                            </Text>
+                          ) : null}
+
+                          {p.venue ? (
+                            <Text style={[styles.pubVenue, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={2}>
+                              {p.venue} {p.year ? `(${p.year})` : ''}
+                            </Text>
+                          ) : null}
+
+                          <View style={styles.pubFootRow}>
+                            {cleanDoi ? (
+                              <View style={[styles.pubBadge, { backgroundColor: `${FACULTY_ACCENT}14` }]}>
+                                <Feather name="globe" size={11} color={FACULTY_ACCENT} />
+                                <Text style={[styles.pubBadgeTxt, { color: FACULTY_ACCENT, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                                  DOI: {cleanDoi}
+                                </Text>
+                              </View>
+                            ) : p.url ? (
+                              <View style={[styles.pubBadge, { backgroundColor: `${FACULTY_ACCENT}14` }]}>
+                                <Feather name="link" size={11} color={FACULTY_ACCENT} />
+                                <Text style={[styles.pubBadgeTxt, { color: FACULTY_ACCENT, fontFamily: FontFamily.jakartaBold }]}>
+                                  Official Publisher Link
+                                </Text>
+                              </View>
+                            ) : (
+                              <View style={[styles.pubBadge, { backgroundColor: `${C.brand}14` }]}>
+                                <Feather name="search" size={11} color={C.brand} />
+                                <Text style={[styles.pubBadgeTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+                                  Read Full Paper on Google Scholar
+                                </Text>
+                              </View>
+                            )}
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })}
                   </View>
                 )}
               </View>
@@ -1084,32 +1144,56 @@ const styles = StyleSheet.create({
     flex: 1,
   } as TextStyle,
   pubCard: {
-    padding: 12,
-    borderRadius: 12,
+    padding: 13,
+    borderRadius: 14,
     borderWidth: 1,
-    gap: 4,
+    gap: 6,
+  } as ViewStyle,
+  pubTopRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  } as ViewStyle,
+  pubIconTile: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
   } as ViewStyle,
   pubTitle: {
+    flex: 1,
     fontSize: 13.5,
     lineHeight: 19,
   } as TextStyle,
   pubMeta: {
     fontSize: 12,
     lineHeight: 16,
+    paddingLeft: 38,
   } as TextStyle,
   pubVenue: {
     fontSize: 11.5,
     lineHeight: 16,
     fontStyle: 'italic',
+    paddingLeft: 38,
   } as TextStyle,
-  doiLink: {
+  pubFootRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    marginTop: 4,
+    marginTop: 2,
+    paddingLeft: 38,
   } as ViewStyle,
-  doiTxt: {
-    fontSize: 11.5,
+  pubBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4.5,
+    paddingHorizontal: 8,
+    paddingVertical: 3.5,
+    borderRadius: 6,
+  } as ViewStyle,
+  pubBadgeTxt: {
+    fontSize: 11,
   } as TextStyle,
 
   qualRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 9 } as ViewStyle,

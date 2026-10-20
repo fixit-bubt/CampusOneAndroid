@@ -377,8 +377,10 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
       - 1-tap direct navigation to the authority's `FacultyProfile` screen (or direct official email fallback).
     - **Faculty Profile 72dp Dropdown + 58dp Child Bars Architecture (`FacultyProfileScreen.tsx`):**
       - Complete architectural overhaul from flat cards to a modular **Universal 72dp Master Dropdowns + 58dp Child Bars** system:
+        - Collapsed by default (`false`) to ensure a clean, uncluttered profile overview upon entry.
         - *Courses Taught at BUBT:* 72dp dropdown with 58dp bars (`minHeight: 58, paddingHorizontal: 14, borderRadius: 13`) for each assigned routine/portal subject.
-        - *Research & Publications:* 72dp dropdown with 58dp bars for research interests/domains (`Machine Learning`, `IoT`, `Robotics`) with full peer-reviewed papers and IEEE publications neatly housed inside under an inner section header.
+        - *Research & Publications:* 72dp dropdown with 58dp touchable bars for research domains (`Machine Learning`, `IoT`, `Robotics`) that link directly to author publications on Google Scholar. Full peer-reviewed papers and IEEE publications are housed inside with 100% clickable cards.
+        - *Direct Paper Redirection:* Tapping any published paper card automatically opens the official publisher link via Digital Object Identifier (`https://doi.org/${cleanDoi}` on IEEE Xplore, ScienceDirect, ACM, Springer), direct URL, or automated fallback search on Google Scholar (`scholar.google.com`) for downloading full-text PDFs.
         - *Academic Qualifications:* 72dp dropdown with 58dp bars for each academic degree (SSC, HSC, B.Sc, M.Sc, Ph.D) with institute and passing year.
         - *Academic Indexes & Profiles:* 72dp dropdown with 58dp bars for Google Scholar, ResearchGate, Scopus, LinkedIn, and ORCID with verified external links.
         - *Institutional Activities & Experience:* 72dp dropdown with 58dp bars for university committees, club mentoring, and industrial experience.
@@ -386,6 +388,7 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
       - `TeacherBar` (`facultyShared.tsx`): Wrapped in `React.memo` with shallow prop comparison to eliminate unnecessary re-renders when filtering or scrolling.
       - Pre-computed O(1) rank indexing in `sortFaculty` and Dhaka counseling hours tracking.
       - `FacultyDeptScreen.tsx`: Windowed rendering with `INITIAL_LIMIT = 24` and 30-item progressive paging bar (`loadMoreBar`, `minHeight: 48, borderRadius: 14`), reducing initial render latency in massive departments like CSE (114 teachers) from ~450ms to <16ms (solid 120 FPS).
+      - Memoized roster search filter (`useMemo`) in `FacultyDeptScreen` and defensive publication type validation across both `FacultyScreen` and `FacultyDeptScreen` preventing runtime exceptions on string or object publication variants.
     - **Live On-Demand Profile Enrichment:** When students view any teacher's dossier, `FacultyProfileScreen` automatically enriches missing education degrees, qualifications (SSC, HSC, B.Sc, M.Sc, Ph.D), publications, blood group, and official email on the fly from official institutional profile pages and persists them to Supabase.
     - **Routine Slot Room & Building Mapping:** Automatic mapping from `routine_slots` where `teacher_short_code` links active courses, rooms (e.g. `Rm 406`), and concise building names (`Building 1`, `Building 2`, `Building 3`).
     - **ContactSheet Integration:** Seamless cell phone and WhatsApp communication via `phone={member.cell_phone || member.phone}` across directory cards and profile screens.

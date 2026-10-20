@@ -353,7 +353,7 @@ function TeacherBarComponent({
             </View>
           )}
 
-          {f.courses_taught && f.courses_taught.length > 0 && f.courses_taught[0] ? (
+          {f.courses_taught && f.courses_taught.length > 0 && typeof f.courses_taught[0] === 'string' && f.courses_taught[0] ? (
             <View style={[styles.miniBadge, { backgroundColor: `${FACULTY_ACCENT}14` }]}>
               <Feather name="book" size={9} color={FACULTY_ACCENT} />
               <Text style={[styles.miniBadgeTxt, { color: FACULTY_ACCENT, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
