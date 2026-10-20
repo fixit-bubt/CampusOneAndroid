@@ -632,30 +632,29 @@ function enhanceDocumentCanvas(canvas, filterMode) {
 
   // 2. Mark outer non-paper intrusion in borderMask WITHOUT mutating data before illumination estimation
   var borderMask = new Uint8Array(totalPx);
-  var mLeft = Math.max(4, (W * 0.012) | 0), mRight = W - mLeft;
-  var mTop = Math.max(4, (H * 0.010) | 0), mBot = H - mTop;
+  var mLeft = Math.max(4, (W * 0.015) | 0), mRight = W - Math.max(4, (W * 0.010) | 0);
+  var mTop = Math.max(4, (H * 0.008) | 0), mBot = H - Math.max(4, (H * 0.008) | 0);
 
-  var cW = Math.max(16, (W * 0.045) | 0);
-  var cH = Math.max(16, (H * 0.040) | 0);
-  var cRight = W - cW;
-  var cBot = H - cH;
+  var cW_bl = Math.max(32, (W * 0.14) | 0);
+  var cH_bl = Math.max(32, (H * 0.14) | 0);
+  var cBot_bl = H - cH_bl;
+
+  var cW_std = Math.max(16, (W * 0.045) | 0);
+  var cH_std = Math.max(16, (H * 0.040) | 0);
+  var cRight_std = W - cW_std;
+  var cBot_std = H - cH_std;
 
   for (var by = 0; by < H; by++) {
-    var inYMargin = by < mTop || by > mBot;
-    var inCornerY = by < cH || by > cBot;
+    var inTop = by < mTop;
+    var inBot = by > mBot;
+    var inCornerY_bl = by > cBot_bl;
+    var inCornerY_std = by < cH_std || by > cBot_std;
     var rOff = by * W;
+    var checkAllX = inTop || inBot || inCornerY_bl || inCornerY_std;
 
     for (var bx = 0; bx < W; bx++) {
-      var inXMargin = bx < mLeft || bx > mRight;
-      var inCornerX = bx < cW || bx > cRight;
-      var isCornerZone = inCornerY && inCornerX;
-      var isPerimeterZone = inYMargin || inXMargin;
-
-      if (!isCornerZone && !isPerimeterZone) {
-        var nextX = inCornerY ? cRight : mRight;
-        if (bx < nextX) {
-          bx = nextX - 1;
-        }
+      if (!checkAllX && bx >= mLeft && bx <= mRight) {
+        bx = mRight;
         continue;
       }
 
@@ -671,16 +670,68 @@ function enhanceDocumentCanvas(canvas, filterMode) {
       var isWarmDesk = (br - bb) > (baseRb + 16) && blum < paperL75 * 0.94;
       var isThumbSkin = br > 85 && bg > 35 && bb > 15 && (br - bg) > 10 && (br - bb) > (baseRb + 12) && blum < 220;
 
-      // In the 4 outer corner triangles: clear dog-ear folds, desk corner slivers and non-paper shadow voids
-      var dx = bx < cW ? (cW - bx) / cW : (bx - cRight) / cW;
-      var dy = by < cH ? (cH - by) / cH : (by - cBot) / cH;
-      var isCornerTri = isCornerZone && (dx + dy >= 0.25);
+      // Top perimeter: strictly desk, thumb or deep void. Never mask handwriting ink in headers
+      if (inTop) {
+        if (isWarmDesk || isThumbSkin || blum < 25) {
+          borderMask[pIdx0] = 1;
+        }
+        continue;
+      }
 
-      var isCornerArtifact = isCornerTri && (isWarmDesk || isThumbSkin || blum < 210);
-      var isPerimeterArtifact = isPerimeterZone && (isWarmDesk || isThumbSkin || blum < 160);
+      // Right perimeter: strictly desk, thumb or deep void. Protect right margin formulas
+      if (bx > mRight) {
+        if (isWarmDesk || isThumbSkin || blum < 25) {
+          borderMask[pIdx0] = 1;
+        }
+        continue;
+      }
 
-      if (isCornerArtifact || isPerimeterArtifact) {
-        borderMask[pIdx0] = 1;
+      // Bottom-left corner triangle: void / desk / shadow cleanup
+      if (inCornerY_bl && bx < cW_bl) {
+        var dx_bl = (cW_bl - bx) / cW_bl;
+        var dy_bl = (by - cBot_bl) / cH_bl;
+        if ((dx_bl + dy_bl) >= 0.15) {
+          if (isWarmDesk || isThumbSkin || blum < 205) {
+            borderMask[pIdx0] = 1;
+            continue;
+          }
+        }
+      }
+
+      // Standard corners (TL, TR, BR)
+      if (inCornerY_std) {
+        if (bx < cW_std && by < cH_std) {
+          var dxTL = (cW_std - bx) / cW_std;
+          var dyTL = (cH_std - by) / cH_std;
+          if ((dxTL + dyTL) >= 0.25 && (isWarmDesk || isThumbSkin || blum < 25)) {
+            borderMask[pIdx0] = 1;
+            continue;
+          }
+        } else if (bx > cRight_std) {
+          var dxR = (bx - cRight_std) / cW_std;
+          var dyR = by < cH_std ? (cH_std - by) / cH_std : (by - cBot_std) / cH_std;
+          var threshR = by < cH_std ? 25 : 180;
+          if ((dxR + dyR) >= 0.25 && (isWarmDesk || isThumbSkin || blum < threshR)) {
+            borderMask[pIdx0] = 1;
+            continue;
+          }
+        }
+      }
+
+      // Outer left gutter: desk / shadow sliver
+      if (bx < mLeft) {
+        if (isWarmDesk || isThumbSkin || blum < 175) {
+          borderMask[pIdx0] = 1;
+        }
+        continue;
+      }
+
+      // Bottom perimeter
+      if (inBot) {
+        if (isWarmDesk || isThumbSkin || blum < 140) {
+          borderMask[pIdx0] = 1;
+        }
+        continue;
       }
     }
   }
