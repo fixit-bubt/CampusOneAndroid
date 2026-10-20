@@ -34,23 +34,32 @@ export async function runFacultyAdapter(supabase: any): Promise<AdapterResult> {
   const [deptsRes, facultyRes, routineSlotsRes] = await Promise.all([
     supabase.from('departments').select('id, name, dept_number'),
     supabase.from('faculty').select('*'),
-    supabase.from('routine_slots').select('course_code, course_title, teacher_code, room').limit(2000),
+    supabase.from('routine_slots').select('course_code, course_title, teacher_short_code, room, building').limit(5000),
   ]);
 
   const dbDepts = deptsRes.data ?? [];
   const existingFaculty = facultyRes.data ?? [];
   const routineSlots = routineSlotsRes.data ?? [];
 
-  // Build course mapping keyed by uppercase teacher initial
+  // Build course, room, and building mappings keyed by uppercase teacher initial
   const coursesByTeacherCode = new Map<string, Set<string>>();
+  const roomByTeacherCode = new Map<string, string>();
+  const buildingByTeacherCode = new Map<string, string>();
+
   for (const s of routineSlots) {
-    const code = s.teacher_code?.trim().toUpperCase();
+    const code = s.teacher_short_code?.trim().toUpperCase();
     if (!code) continue;
     if (!coursesByTeacherCode.has(code)) {
       coursesByTeacherCode.set(code, new Set<string>());
     }
     const label = s.course_title ? `${s.course_code} – ${s.course_title}` : s.course_code;
     if (label) coursesByTeacherCode.get(code)!.add(label);
+    if (s.room && !roomByTeacherCode.has(code)) {
+      roomByTeacherCode.set(code, s.room.trim());
+    }
+    if (s.building && !buildingByTeacherCode.has(code)) {
+      buildingByTeacherCode.set(code, s.building.trim());
+    }
   }
 
   const deptMap = new Map<string, string>();
@@ -82,7 +91,7 @@ export async function runFacultyAdapter(supabase: any): Promise<AdapterResult> {
   const rowsToUpdate: any[] = [];
   const seenUpdatedIds = new Set<string>();
 
-  // 2. Iterate departments
+  // 2. Iterate departments on main site
   for (const d of DEPARTMENT_SLUGS) {
     try {
       const deptUrl = `${BUBT_BASE}/department/${d.slug}/faculty`;
@@ -125,7 +134,6 @@ export async function runFacultyAdapter(supabase: any): Promise<AdapterResult> {
           : (linkMatch ? linkMatch[1]?.trim() : null);
 
         const photoUrl = imgMatch ? imgMatch[1].trim() : null;
-
         const onLeave = /on leave|study leave|lien/i.test(chunk);
         const isChairman = /chairman|head of/i.test(chunk) || /chairman/i.test(rawDesig);
 
@@ -136,10 +144,16 @@ export async function runFacultyAdapter(supabase: any): Promise<AdapterResult> {
           || (shortCode ? byShortCode.get(shortCode) : null)
           || byNormOnly.get(normalizeFacultyName(name));
 
-        // Derive active courses taught from routine slots if matching short code exists
+        // Derive active courses taught, room, and building from routine slots
         const mappedCourses = shortCode && coursesByTeacherCode.has(shortCode)
           ? Array.from(coursesByTeacherCode.get(shortCode)!)
           : [];
+        const mappedRoom = shortCode && roomByTeacherCode.has(shortCode)
+          ? roomByTeacherCode.get(shortCode)
+          : null;
+        const mappedBuilding = shortCode && buildingByTeacherCode.has(shortCode)
+          ? buildingByTeacherCode.get(shortCode)
+          : null;
 
         if (existing) {
           if (seenUpdatedIds.has(existing.id)) continue;
@@ -157,8 +171,14 @@ export async function runFacultyAdapter(supabase: any): Promise<AdapterResult> {
           const leaveChanged = onLeave !== existing.on_leave;
           const chairmanChanged = isChairman !== existing.is_chairman;
           const coursesNeedUpdate = mappedCourses.length > 0 && (!existing.courses_taught || existing.courses_taught.length === 0);
+          const roomNeedsUpdate = Boolean(mappedRoom && (!existing.room_number || existing.room_number !== mappedRoom));
+          const buildingNeedsUpdate = Boolean(mappedBuilding && (!existing.building || existing.building !== mappedBuilding));
 
-          if (needsShortCode || needsProfileUrl || photoChanged || desigChanged || leaveChanged || chairmanChanged || coursesNeedUpdate) {
+          if (
+            needsShortCode || needsProfileUrl || photoChanged || desigChanged ||
+            leaveChanged || chairmanChanged || coursesNeedUpdate || roomNeedsUpdate ||
+            buildingNeedsUpdate
+          ) {
             rowsToUpdate.push({
               id: existing.id,
               department_id: deptId,
@@ -169,7 +189,9 @@ export async function runFacultyAdapter(supabase: any): Promise<AdapterResult> {
               profile_url: canonicalProfileUrl || existing.profile_url || null,
               on_leave: onLeave,
               is_chairman: isChairman,
-              courses_taught: coursesNeedUpdate ? mappedCourses : (existing.courses_taught || []),
+              courses_taught: mappedCourses.length > 0 ? mappedCourses : (existing.courses_taught || []),
+              room_number: mappedRoom || existing.room_number || null,
+              building: mappedBuilding || existing.building || null,
               last_synced_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
             });
@@ -188,6 +210,8 @@ export async function runFacultyAdapter(supabase: any): Promise<AdapterResult> {
             on_leave: onLeave,
             is_chairman: isChairman,
             courses_taught: mappedCourses,
+            room_number: mappedRoom || null,
+            building: mappedBuilding || null,
             teaching_areas: [],
             publications: [],
             research_interests: [],
@@ -226,6 +250,7 @@ export async function runFacultyAdapter(supabase: any): Promise<AdapterResult> {
     details: {
       departments_scanned: DEPARTMENT_SLUGS.length,
       routine_mapped_teachers: coursesByTeacherCode.size,
+      routine_rooms_mapped: roomByTeacherCode.size,
     },
   };
 }

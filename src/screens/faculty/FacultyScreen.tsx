@@ -222,24 +222,58 @@ export function FacultyScreen({ navigation }: any) {
 
     if (q) {
       const cleanQ = q.replace(/[^a-z0-9]/g, '');
+      const words = q.split(/[\s.]+/).filter(Boolean);
       list = list.filter(f => {
-        const nameMatch = f.name.toLowerCase().includes(q);
+        const lowerName = (f.name || '').toLowerCase();
+        const cleanName = lowerName.replace(/[^a-z0-9]/g, '');
+        const lowerCode = (f.short_code || '').toLowerCase();
+        const cleanCode = lowerCode.replace(/[^a-z0-9]/g, '');
+
+        // 1. Direct name match (exact substring OR punctuation-stripped e.g. "Md.As" -> "mdashikkhan")
+        const nameMatch = lowerName.includes(q) || (cleanQ.length > 0 && cleanName.includes(cleanQ));
+
+        // 2. Multi-word token match (e.g. "Md As" or "Ashik Khan" or "Ashik EEE")
+        const allWordsMatch = words.length > 1 && words.every(w => {
+          const cw = w.replace(/[^a-z0-9]/g, '');
+          return lowerName.includes(w) || cleanName.includes(cw) || lowerCode.includes(cw);
+        });
+
+        // 3. Short routine code match (e.g. MDAK, MDAR, SR)
         const codeMatch = Boolean(
-          f.short_code &&
-          (f.short_code.toLowerCase().includes(q) ||
-            (cleanQ.length > 0 && f.short_code.toLowerCase().replace(/[^a-z0-9]/g, '').includes(cleanQ)))
+          cleanCode &&
+          cleanQ.length > 0 &&
+          (lowerCode.includes(q) || cleanCode.includes(cleanQ) || cleanQ.includes(cleanCode))
         );
-        const desigMatch = f.designation.toLowerCase().includes(q);
-        const roomMatch = Boolean(f.room_number && f.room_number.toLowerCase().includes(q));
+
+        // 4. Designation match
+        const desigMatch = (f.designation || '').toLowerCase().includes(q);
+
+        // 5. Room / Building match
+        const roomMatch = Boolean(
+          (f.room_number && f.room_number.toLowerCase().includes(cleanQ || q)) ||
+          (f.building && f.building.toLowerCase().includes(q))
+        );
+
+        // 6. Research interests
         const interestMatch = interestsOf(f).some(i => i.toLowerCase().includes(q));
+
+        // 7. Course code & title match (e.g. EEE 207 or EEE207)
         const courseMatch = Boolean(
           f.courses_taught &&
-          f.courses_taught.some(c => typeof c === 'string' && (c.toLowerCase().includes(q) || (cleanQ.length > 0 && c.toLowerCase().replace(/[^a-z0-9]/g, '').includes(cleanQ))))
+          f.courses_taught.some(c => {
+            if (typeof c !== 'string') return false;
+            const lc = c.toLowerCase();
+            return lc.includes(q) || (cleanQ.length > 0 && lc.replace(/[^a-z0-9]/g, '').includes(cleanQ));
+          })
         );
+
+        // 8. Teaching areas
         const teachingAreaMatch = Boolean(
           f.teaching_areas &&
           f.teaching_areas.some(ta => typeof ta === 'string' && ta.toLowerCase().includes(q))
         );
+
+        // 9. Publication titles and venues
         const pubMatch = Boolean(
           f.publications &&
           f.publications.some(p =>
@@ -247,11 +281,14 @@ export function FacultyScreen({ navigation }: any) {
             (p?.venue && p.venue.toLowerCase().includes(q))
           )
         );
+
+        // 10. Department name match
         const deptMatch = Boolean(
           deptById[f.department_id]?.name &&
           deptById[f.department_id]?.name.toLowerCase().includes(q)
         );
-        return nameMatch || codeMatch || desigMatch || roomMatch || interestMatch || courseMatch || teachingAreaMatch || pubMatch || deptMatch;
+
+        return nameMatch || allWordsMatch || codeMatch || desigMatch || roomMatch || interestMatch || courseMatch || teachingAreaMatch || pubMatch || deptMatch;
       });
     }
 

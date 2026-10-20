@@ -278,7 +278,13 @@ export function TeacherBar({
 }: TeacherBarProps) {
   const t = useT();
   const status = getCounselingStatus(f.counseling_hours, f.on_leave);
-  const location = [f.building, f.room_number ? `Rm ${f.room_number}` : null].filter(Boolean).join(' · ');
+  const cleanBuilding = f.building
+    ? f.building.replace(/:\s*Martyr.*$/i, '').replace(/\(Main Building\)/i, '').replace(/-/g, ' ').trim()
+    : null;
+  const location = [
+    cleanBuilding,
+    f.room_number ? (f.room_number.toLowerCase().startsWith('rm') ? f.room_number : `Rm ${f.room_number}`) : null,
+  ].filter(Boolean).join(' · ');
 
   return (
     <TouchableOpacity
@@ -401,9 +407,14 @@ export function FacultyCard({
   const t = useT();
   const interests = interestsOf(f);
   const status = getCounselingStatus(f.counseling_hours, f.on_leave);
-  const location = [f.building, f.room_number ? `Room ${f.room_number}` : null, f.floor ? `(${f.floor})` : null]
-    .filter(Boolean)
-    .join(' · ');
+  const cleanBuilding = f.building
+    ? f.building.replace(/:\s*Martyr.*$/i, '').replace(/\(Main Building\)/i, '').replace(/-/g, ' ').trim()
+    : null;
+  const location = [
+    cleanBuilding,
+    f.room_number ? (f.room_number.toLowerCase().startsWith('rm') ? f.room_number : `Room ${f.room_number}`) : null,
+    f.floor ? `(${f.floor})` : null,
+  ].filter(Boolean).join(' · ');
 
   return (
     <TouchableOpacity

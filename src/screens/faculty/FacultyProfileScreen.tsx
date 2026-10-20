@@ -75,6 +75,78 @@ function resolveFacultyProfileUrl(member: FacultyFull | null): string | null {
   return null;
 }
 
+function parseDeepProfileHtml(html: string) {
+  const emailMatch = html.match(/Email:<\/strong>\s*([^<]+)/i)
+    || html.match(/mailto:([^"'>\s]+)/i);
+  let email: string | null = emailMatch ? emailMatch[1].trim() : null;
+  if (email && !email.includes('@')) email = null;
+
+  const bloodMatch = html.match(/Blood Group:<\/strong>\s*([^<]+)/i);
+  const bloodGroup = bloodMatch ? bloodMatch[1].trim() : null;
+
+  const quals: string[] = [];
+  const eduCardRegex = /<div class="p-5 bg-gray-50 rounded transition-shadow hover:shadow-xl">([\s\S]*?)<\/div>/gi;
+  let eduMatch;
+  while ((eduMatch = eduCardRegex.exec(html)) !== null) {
+    const card = eduMatch[1];
+    const degreeMatch = card.match(/<h4[^>]*class="font-bold"[^>]*>([\s\S]*?)<\/h4>/i);
+    const majorMatch = card.match(/<strong>Major:<\/strong>\s*([^<]+)/i);
+    const instMatch = card.match(/<strong>Institute:<\/strong>\s*([^<]+)/i);
+    const passMatch = card.match(/<strong>Passing Year:<\/strong>\s*([^<]+)/i);
+
+    const degree = degreeMatch ? degreeMatch[1].replace(/<[^>]+>/g, '').trim() : '';
+    const major = majorMatch ? majorMatch[1].trim() : '';
+    const inst = instMatch ? instMatch[1].trim() : '';
+    const pass = passMatch ? passMatch[1].trim() : '';
+
+    if (degree) {
+      let label = degree;
+      if (major) label += ` in ${major}`;
+      if (inst) label += ` – ${inst}`;
+      if (pass) label += ` (${pass})`;
+      quals.push(label);
+    }
+  }
+
+  if (quals.length === 0) {
+    const rawDegs = html.match(/<h4[^>]*class="font-bold"[^>]*>([\s\S]*?)<\/h4>/gi) || [];
+    for (const d of rawDegs) {
+      const clean = d.replace(/<[^>]+>/g, '').trim();
+      if (clean && !clean.includes('Search') && !clean.includes('Quick Links') && !clean.includes('Popular')) {
+        quals.push(clean);
+      }
+    }
+  }
+
+  const pubs: { title: string; venue?: string; year?: string }[] = [];
+  const pubCardRegex = /<div class="p-4 rounded bg-gray-50 transition-shadow shadow-sm hover:shadow-lg">([\s\S]*?)<\/div>/gi;
+  let pubMatch;
+  while ((pubMatch = pubCardRegex.exec(html)) !== null) {
+    const cardText = pubMatch[1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    if (cardText.length > 10) {
+      const titleMatch = cardText.match(/"([^"]+)"/);
+      const title = titleMatch ? titleMatch[1].trim() : cardText.substring(0, 120);
+      const yearMatch = cardText.match(/\((\d{4}[^\)]*)\)/);
+      const year = yearMatch ? yearMatch[1].substring(0, 4) : '';
+      const venueMatch = cardText.match(/In:\s*([^,\(]+)/i);
+      const venue = venueMatch ? venueMatch[1].trim() : '';
+      pubs.push({ title, venue, year });
+    }
+  }
+
+  const activities: string[] = [];
+  const expMatch = html.match(/Academic Experience[\s\S]*?<\/div>/i);
+  if (expMatch) {
+    const rawExps = expMatch[0].match(/<p[^>]*>([\s\S]*?)<\/p>/gi) || [];
+    for (const e of rawExps) {
+      const clean = e.replace(/<[^>]+>/g, '').trim();
+      if (clean && clean.length > 5) activities.push(clean);
+    }
+  }
+
+  return { email, bloodGroup, quals, pubs, activities };
+}
+
 export function FacultyProfileScreen({ route, navigation }: any) {
   const { C, isDark } = useTheme();
   const t = useT();
@@ -99,8 +171,49 @@ export function FacultyProfileScreen({ route, navigation }: any) {
       supabase.from('faculty_bookmarks').select('faculty_id').eq('faculty_id', facultyId).eq('user_id', user?.id ?? '').maybeSingle(),
     ]);
     if (memberRes.error || !memberRes.data) { setFailed(true); return; }
-    setMember(memberRes.data as FacultyFull);
+    const m = memberRes.data as FacultyFull;
+    setMember(m);
     setSaved(!!saveRes.data);
+
+    // Live background profile enrichment from official BUBT roster
+    const hasQuals = Array.isArray(m.qualifications) && m.qualifications.length > 0;
+    const hasPubs = Array.isArray(m.publications) && m.publications.length > 0;
+    const pUrl = resolveFacultyProfileUrl(m);
+
+    if ((!hasQuals || !hasPubs || !m.email || !m.blood_group) && pUrl) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4500);
+      fetch(pUrl, { signal: controller.signal })
+        .then(r => r.text())
+        .then(html => {
+          clearTimeout(timeoutId);
+          const parsed = parseDeepProfileHtml(html);
+          if (parsed.quals.length > 0 || parsed.pubs.length > 0 || parsed.email || parsed.bloodGroup) {
+            setMember(prev => {
+              if (!prev || prev.id !== m.id) return prev;
+              return {
+                ...prev,
+                email: prev.email || parsed.email,
+                blood_group: prev.blood_group || parsed.bloodGroup,
+                qualifications: (prev.qualifications && prev.qualifications.length > 0) ? prev.qualifications : parsed.quals,
+                publications: (prev.publications && prev.publications.length > 0) ? prev.publications : parsed.pubs,
+                academic_activities: (prev.academic_activities && prev.academic_activities.length > 0) ? prev.academic_activities : parsed.activities,
+              };
+            });
+
+            // Persist back to Supabase in the background
+            supabase.from('faculty').update({
+              email: m.email || parsed.email,
+              blood_group: m.blood_group || parsed.bloodGroup,
+              qualifications: (parsed.quals.length > 0 ? parsed.quals : (m.qualifications || [])) as any,
+              publications: (parsed.pubs.length > 0 ? parsed.pubs : (m.publications || [])) as any,
+              academic_activities: parsed.activities.length > 0 ? parsed.activities : (m.academic_activities || []),
+              last_synced_at: new Date().toISOString(),
+            }).eq('id', m.id).then(() => {});
+          }
+        })
+        .catch(() => clearTimeout(timeoutId));
+    }
   }, [facultyId, user?.id]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -186,9 +299,12 @@ export function FacultyProfileScreen({ route, navigation }: any) {
   const dept = member.departments;
   const status = getCounselingStatus(member.counseling_hours, member.on_leave);
 
+  const cleanBuilding = member.building
+    ? member.building.replace(/:\s*Martyr.*$/i, '').replace(/\(Main Building\)/i, '').replace(/-/g, ' ').trim()
+    : null;
   const locationString = [
-    member.building,
-    member.room_number ? `Room ${member.room_number}` : null,
+    cleanBuilding,
+    member.room_number ? (member.room_number.toLowerCase().startsWith('rm') ? member.room_number : `Room ${member.room_number}`) : null,
     member.floor ? member.floor : null,
   ].filter(Boolean).join(' · ');
 
@@ -279,7 +395,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
 
             <View style={[styles.locBox, { backgroundColor: C.surface2 }]}>
               <Text style={[styles.locMainTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                {member.building ? member.building : 'Main Campus'}
+                {cleanBuilding ? cleanBuilding : 'Main Campus'}
                 {member.room_number ? ` · Room ${member.room_number}` : ''}
               </Text>
               {member.floor ? (
