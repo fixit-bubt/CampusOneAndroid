@@ -49,7 +49,7 @@ export interface BuildOpts {
   engine?: EngineHandle | null;
   headerText?: string;
   footerText?: string;
-  onProgress?: (done: number, total: number) => void;
+  onProgress?: (done: number, total: number, pass?: number) => void;
   isCancelled?: () => boolean;
 }
 
@@ -207,7 +207,7 @@ export async function buildImagesPdf(
     }
   }
 
-  const buildPass = async (passPreset: ImagePreset, reportProgress: boolean): Promise<{ bytes: Uint8Array; pages: number }> => {
+  const buildPass = async (passPreset: ImagePreset, reportProgress: boolean, passNumber = 1): Promise<{ bytes: Uint8Array; pages: number }> => {
     const pdf = await PDFDocument.create();
 
     // Optional Page 1: Lossless vector BUBT Cover Page auto-prepend
@@ -252,7 +252,7 @@ export async function buildImagesPdf(
       let logicalIdx = 0;
       for (let i = 0; i < photos.length; i += 2) {
         if (opts.isCancelled?.()) throw new PdfError('cancelled');
-        if (reportProgress) opts.onProgress?.(i, photos.length);
+        if (reportProgress) opts.onProgress?.(i, photos.length, passNumber);
         logicalIdx++;
 
         const topSlice = await scanOrRasterisePhoto(photos[i], passPreset, {
@@ -264,7 +264,7 @@ export async function buildImagesPdf(
         let botSlice: ScannedSlice | null = null;
         if (i + 1 < photos.length) {
           if (opts.isCancelled?.()) throw new PdfError('cancelled');
-          if (reportProgress) opts.onProgress?.(i + 1, photos.length);
+          if (reportProgress) opts.onProgress?.(i + 1, photos.length, passNumber);
           botSlice = await scanOrRasterisePhoto(photos[i + 1], passPreset, {
             engine: opts.engine,
             filterMode: opts.filterMode,
@@ -309,7 +309,7 @@ export async function buildImagesPdf(
           footerReservePt,
         );
       }
-      if (reportProgress) opts.onProgress?.(photos.length, photos.length);
+      if (reportProgress) opts.onProgress?.(photos.length, photos.length, passNumber);
       if (opts.isCancelled?.()) throw new PdfError('cancelled');
       const outBytes = await pdf.save();
       return { bytes: outBytes, pages: prependedCount + totalCardPages };
@@ -320,7 +320,7 @@ export async function buildImagesPdf(
 
     for (let i = 0; i < photos.length; i++) {
       if (opts.isCancelled?.()) throw new PdfError('cancelled');
-      if (reportProgress) opts.onProgress?.(i, photos.length);
+      if (reportProgress) opts.onProgress?.(i, photos.length, passNumber);
 
       const halves: ('left' | 'right' | null)[] = scanMode === 'book_split' ? ['left', 'right'] : [null];
       for (const half of halves) {
@@ -352,14 +352,14 @@ export async function buildImagesPdf(
         );
       }
     }
-    if (reportProgress) opts.onProgress?.(photos.length, photos.length);
+    if (reportProgress) opts.onProgress?.(photos.length, photos.length, passNumber);
 
     if (opts.isCancelled?.()) throw new PdfError('cancelled');
     const outBytes = await pdf.save();
     return { bytes: outBytes, pages: prependedCount + logicalPageNum };
   };
 
-  let built = await buildPass(activePreset, true);
+  let built = await buildPass(activePreset, true, 1);
 
   // If a strict target size (e.g. < 2 MB) was requested and the first pass
   // exceeded it, run one adaptive step-down pass to guarantee compliance.
@@ -370,7 +370,8 @@ export async function buildImagesPdf(
       : activePreset.maxDim;
     built = await buildPass(
       { key: activePreset.key, maxDim: steppedDim, quality: steppedQuality },
-      false,
+      true,
+      2,
     );
   }
 

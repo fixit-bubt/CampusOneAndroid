@@ -51,6 +51,15 @@ export async function compressPdf(engine: EngineHandle, args: CompressArgs): Pro
     if (out.size <= args.target.bytes) break;
     if (pass === MAX_COMPRESS_PASSES) break;
 
+    // Early exit guard:
+    // If Pass 1 produces an output that is significantly larger than the source
+    // (e.g. a vector text PDF that inflated 1.35x+ upon rasterization), subsequent
+    // passes will not beat the vector original without unreadable artifacting.
+    // Exit immediately to avoid wasting minutes of CPU and battery.
+    if (pass === 1 && out.size >= args.sourceBytes * 1.35) {
+      throw new PdfError('already-optimized');
+    }
+
     // Walk quality down toward the target first. Resolution only drops once
     // quality has bottomed out: losing pixels hurts legibility more than JPEG
     // artefacts do.

@@ -183,7 +183,12 @@ export function ThumbCard({
           </View>
         ) : null}
         {onRemove ? (
-          <TouchableOpacity style={styles.corner} onPress={onRemove} accessibilityLabel={t.pdfmaker.common.remove}>
+          <TouchableOpacity
+            style={styles.corner}
+            onPress={onRemove}
+            accessibilityLabel={t.pdfmaker.common.remove}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
             <Feather name="x" size={13} color={C.white} />
           </TouchableOpacity>
         ) : null}
@@ -192,6 +197,7 @@ export function ThumbCard({
             style={[styles.corner, keep ? null : { backgroundColor: C.danger }]}
             onPress={onToggle}
             accessibilityLabel={keep ? t.pdfmaker.common.remove : t.pdfmaker.common.keep}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Feather name={keep ? 'x' : 'rotate-ccw'} size={13} color={C.white} />
           </TouchableOpacity>
@@ -222,6 +228,7 @@ function TileBtn({
       disabled={disabled}
       accessibilityLabel={label}
       activeOpacity={0.7}
+      hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
     >
       <Feather name={icon} size={15} color={C.text3} />
     </TouchableOpacity>

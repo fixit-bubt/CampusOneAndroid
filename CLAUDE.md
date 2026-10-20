@@ -2481,12 +2481,12 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 - **Academic Footer Margin Separation:** Enforced a 28pt footer reservation with 6pt bottom padding in `layoutDocumentPage` and `drawAcademicOverlays`, guaranteeing that optional footer stamps never overlap bottom mathematical formulas or handwriting.
 
 ### 52.4 PDF Maker Deep Audit & Hardening Fixes
-- **Document Boundary Dimension Fix (`engineHtml.ts`):** In `detectDocumentQuad`, vertical boundary scans (`scanLeft` and `scanRight`) previously passed width (`dw * 0.55`) instead of height (`dh * 0.55`). For portrait notebook scans, this improperly clipped the bottom third of the vertical edge detection range. Corrected to pass `dh` for all vertical coordinate evaluations.
-- **Media Picker Selection State Isolation (`MediaPickerModal.tsx`):** Cleaned up state lifecycle so `selected` array is explicitly reset to `[]` whenever the modal closes or confirms, preventing stale cross-session selection accumulation and accidental duplicate page additions.
-- **Asset Pagination Deduplication (`MediaPickerModal.tsx`):** Hardened infinite scrolling `loadMore` by deduplicating assets against a `Set` of existing asset IDs, eliminating React key collisions on rapid scroll.
-- **Virtual Album Visibility (`MediaPickerModal.tsx`):** Adjusted album filtering condition to `a.assetCount === undefined || a.assetCount > 0`, ensuring virtual or dynamic device albums on newer Android versions are not prematurely filtered out.
-- **HEIC Format Guard (`ToolImagesScreen.tsx`):** Integrated `isHeicFile` checks in `addMediaAssets` with localized error toast feedback, preventing corrupt or unsupported Apple HEIC images from stalling the canvas processing pipeline.
-- **List Reorder Bounds Guard (`pdfUtils.ts`):** Hardened `moveItem` with explicit boundary validation (`from < 0 || from >= list.length || to < 0 || to >= list.length`) and guarded against undefined item splices, ensuring stability during rapid page reordering.
+- **SAF Chunked Stream Copy & OOM Elimination (`pdfFiles.ts`):** Replaced monolithic full-file base64 buffer reads in `savePdfToDevice` with 512 KB chunked streaming for Android Storage Access Framework (SAF), eliminating out-of-memory heap exhaustion on 20+ MB multi-page compilations.
+- **Cross-Album Selection & Preview Synchronization (`MediaPickerModal.tsx`):** Added dual preview modes (`all` vs `selected`) that dynamically decouple folder-level paging from multi-album selection queues, guaranteeing that tapping "Preview" and bottom thumbnail strip items accurately navigates to selected photos across any number of photo albums.
+- **Corner Drag Tracking & Floating Magnifier Loupe (`PageStudioModal.tsx`):** Eliminated touch snapping jumps with drag-offset delta tracking, and added a 2.4x floating circular crosshair Magnifier Loupe positioned above the user's thumb to allow pixel-perfect perspective alignment on notebook and desk edges.
+- **Text-Heavy PDF Early Abort (`compressPdf.ts`):** Integrated an early-exit threshold (`out.size >= sourceBytes * 1.35`) on Pass 1 of the raster compressor, preventing unnecessary 3-pass CPU and battery drain when compressing vector text documents.
+- **Multi-Pass Progress Transparency (`imagesToPdf.ts` & `ToolImagesScreen.tsx`):** Added pass metadata tracking so adaptive file-size down-stepping passes report progress transparently instead of locking at 100%.
+- **Design Tokens & Hit-Slop Ergonomics (`MediaPickerModal.tsx` & `components.tsx`):** Replaced hardcoded CamScanner emerald colors with dynamic `C.brand` tokens and added 10-12dp hitSlop to thumbnail controls, meeting the 44-48dp mobile touch standard.
 
 ---
 

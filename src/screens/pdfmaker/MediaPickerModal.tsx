@@ -31,7 +31,6 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GRID_GAP = 2.5;
 const NUM_COLUMNS = 3;
 const TILE_SIZE = Math.floor((SCREEN_WIDTH - GRID_GAP * (NUM_COLUMNS - 1)) / NUM_COLUMNS);
-const CAM_GREEN = '#10b981';
 
 /**
  * Reverse-Engineered CamScanner Gallery Sort Algorithm:
@@ -144,6 +143,7 @@ export function MediaPickerModal({
 
   // Fullscreen swipeable preview (CamScanner GalleryPreviewActivity parity)
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+  const [previewMode, setPreviewMode] = useState<'all' | 'selected'>('all');
   const previewListRef = useRef<FlatList>(null);
 
   // Map of asset.id -> selected 1-based index
@@ -154,6 +154,8 @@ export function MediaPickerModal({
     });
     return map;
   }, [selected]);
+
+  const previewList = previewMode === 'selected' ? selected : assets;
 
   useEffect(() => {
     if (!visible) {
@@ -265,13 +267,16 @@ export function MediaPickerModal({
         style={[
           styles.tile,
           { width: TILE_SIZE, height: TILE_SIZE, backgroundColor: C.surface2 },
-          isSelected && { borderColor: CAM_GREEN, borderWidth: 2.5 },
+          isSelected && { borderColor: C.brand, borderWidth: 2.5 },
         ]}
       >
         {/* Photo Body: Tapping opens CamScanner Fullscreen Swipeable Preview */}
         <TouchableOpacity
           style={StyleSheet.absoluteFill}
-          onPress={() => setPreviewIndex(index)}
+          onPress={() => {
+            setPreviewMode('all');
+            setPreviewIndex(index);
+          }}
           activeOpacity={0.88}
         >
           <Image
@@ -293,7 +298,7 @@ export function MediaPickerModal({
             style={[
               styles.badgeBox,
               isSelected
-                ? { backgroundColor: CAM_GREEN, borderColor: '#ffffff' }
+                ? { backgroundColor: C.brand, borderColor: '#ffffff' }
                 : { backgroundColor: 'rgba(0, 0, 0, 0.40)', borderColor: 'rgba(255, 255, 255, 0.78)' },
             ]}
           >
@@ -323,13 +328,13 @@ export function MediaPickerModal({
             <Text numberOfLines={1} style={[styles.albumTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
               {selectedAlbum?.title || 'Select Photo'}
             </Text>
-            <Feather name="chevron-down" size={16} color={CAM_GREEN} />
+            <Feather name="chevron-down" size={16} color={C.brand} />
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[
               styles.importBtn,
-              { backgroundColor: selected.length > 0 ? CAM_GREEN : (isDark ? '#262626' : '#e4e4e7') },
+              { backgroundColor: selected.length > 0 ? C.brand : (isDark ? C.surface2 : '#e4e4e7') },
             ]}
             disabled={selected.length === 0}
             onPress={handleConfirm}
@@ -350,7 +355,7 @@ export function MediaPickerModal({
         {hasPermission === false ? (
           <View style={styles.centerBox}>
             <View style={[styles.permIconCircle, { backgroundColor: C.surface2 }]}>
-              <Feather name="image" size={32} color={CAM_GREEN} />
+              <Feather name="image" size={32} color={C.brand} />
             </View>
             <Text style={[styles.permTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
               Photo Access Needed
@@ -359,7 +364,7 @@ export function MediaPickerModal({
               Grant photo permissions to select and arrange your notebook pages in exact numbered order.
             </Text>
             <TouchableOpacity
-              style={[styles.permBtn, { backgroundColor: CAM_GREEN }]}
+              style={[styles.permBtn, { backgroundColor: C.brand }]}
               onPress={checkAndLoad}
               activeOpacity={0.85}
             >
@@ -386,7 +391,7 @@ export function MediaPickerModal({
           </View>
         ) : loading ? (
           <View style={styles.centerBox}>
-            <ActivityIndicator size="large" color={CAM_GREEN} />
+            <ActivityIndicator size="large" color={C.brand} />
             <Text style={[styles.loadingText, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
               Loading gallery photos…
             </Text>
@@ -408,7 +413,7 @@ export function MediaPickerModal({
             ListFooterComponent={
               loadingMore ? (
                 <View style={styles.footerLoader}>
-                  <ActivityIndicator size="small" color={CAM_GREEN} />
+                  <ActivityIndicator size="small" color={C.brand} />
                 </View>
               ) : (
                 <View style={{ height: insets.bottom + 68 }} />
@@ -430,7 +435,7 @@ export function MediaPickerModal({
           style={[
             styles.bottomBar,
             {
-              backgroundColor: isDark ? '#121212' : '#ffffff',
+              backgroundColor: isDark ? C.surface : '#ffffff',
               borderTopColor: C.border,
               paddingBottom: Math.max(insets.bottom, 10),
             },
@@ -442,8 +447,8 @@ export function MediaPickerModal({
             disabled={selected.length === 0}
             onPress={() => {
               if (selected.length > 0) {
-                const firstIdx = assets.findIndex((a) => a.id === selected[0].id);
-                setPreviewIndex(firstIdx >= 0 ? firstIdx : 0);
+                setPreviewMode('selected');
+                setPreviewIndex(0);
               }
             }}
             activeOpacity={0.7}
@@ -467,7 +472,7 @@ export function MediaPickerModal({
             onPress={handleToggleSortOrder}
             activeOpacity={0.8}
           >
-            <Feather name={sortOrder === 'newest' ? 'arrow-down' : 'arrow-up'} size={12} color={CAM_GREEN} />
+            <Feather name={sortOrder === 'newest' ? 'arrow-down' : 'arrow-up'} size={12} color={C.brand} />
             <Text style={[styles.bottomSortText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
               {sortOrder === 'newest' ? 'Newest' : 'Page 1 First'}
             </Text>
@@ -511,7 +516,7 @@ export function MediaPickerModal({
                   setShowAlbumPicker(false);
                 }}
               >
-                <Feather name="image" size={18} color={selectedAlbum === null ? CAM_GREEN : C.text2} />
+                <Feather name="image" size={18} color={selectedAlbum === null ? C.brand : C.text2} />
                 <Text style={[styles.albumRowText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                   All Photos
                 </Text>
@@ -532,7 +537,7 @@ export function MediaPickerModal({
                       setShowAlbumPicker(false);
                     }}
                   >
-                    <Feather name="folder" size={18} color={active ? CAM_GREEN : C.text2} />
+                    <Feather name="folder" size={18} color={active ? C.brand : C.text2} />
                     <View style={{ flex: 1, minWidth: 0 }}>
                       <Text numberOfLines={1} style={[styles.albumRowText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                         {alb.title}
@@ -569,13 +574,13 @@ export function MediaPickerModal({
               </TouchableOpacity>
 
               <Text style={styles.previewCounter}>
-                {`${(previewIndex ?? 0) + 1} / ${assets.length}`}
+                {`${(previewIndex ?? 0) + 1} / ${previewList.length}`}
               </Text>
 
               <TouchableOpacity
                 style={[
                   styles.previewImportBtn,
-                  { backgroundColor: selected.length > 0 ? CAM_GREEN : '#262626' },
+                  { backgroundColor: selected.length > 0 ? C.brand : (isDark ? C.surface2 : '#262626') },
                 ]}
                 disabled={selected.length === 0}
                 onPress={handleConfirm}
@@ -596,7 +601,7 @@ export function MediaPickerModal({
             <FlatList
               ref={previewListRef}
               style={{ flex: 1 }}
-              data={assets}
+              data={previewList}
               keyExtractor={(item) => item.id}
               horizontal
               pagingEnabled
@@ -614,7 +619,7 @@ export function MediaPickerModal({
               }}
               onMomentumScrollEnd={(e) => {
                 const newIdx = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
-                if (newIdx >= 0 && newIdx < assets.length) {
+                if (newIdx >= 0 && newIdx < previewList.length) {
                   setPreviewIndex(newIdx);
                 }
               }}
@@ -638,19 +643,27 @@ export function MediaPickerModal({
                   contentContainerStyle={styles.selectedStripContent}
                 >
                   {selected.map((item, idx) => {
-                    const isCurrent = previewIndex !== null && assets[previewIndex]?.id === item.id;
+                    const isCurrent = previewIndex !== null && previewList[previewIndex]?.id === item.id;
                     return (
                       <TouchableOpacity
                         key={item.id}
                         style={[
                           styles.selectedStripThumbCard,
-                          isCurrent && { borderColor: CAM_GREEN, borderWidth: 2 },
+                          isCurrent && { borderColor: C.brand, borderWidth: 2 },
                         ]}
                         onPress={() => {
-                          const targetIdx = assets.findIndex((a) => a.id === item.id);
-                          if (targetIdx >= 0) {
-                            setPreviewIndex(targetIdx);
-                            previewListRef.current?.scrollToIndex({ index: targetIdx, animated: true });
+                          if (previewMode === 'selected') {
+                            setPreviewIndex(idx);
+                            previewListRef.current?.scrollToIndex({ index: idx, animated: true });
+                          } else {
+                            const targetIdx = assets.findIndex((a) => a.id === item.id);
+                            if (targetIdx >= 0) {
+                              setPreviewIndex(targetIdx);
+                              previewListRef.current?.scrollToIndex({ index: targetIdx, animated: true });
+                            } else {
+                              setPreviewMode('selected');
+                              setPreviewIndex(idx);
+                            }
                           }
                         }}
                         activeOpacity={0.8}
@@ -674,9 +687,9 @@ export function MediaPickerModal({
             ) : null}
 
             {/* Bottom Action Bar: [✓] Select Toggle Button */}
-            {previewIndex !== null && assets[previewIndex] ? (
+            {previewIndex !== null && previewList[previewIndex] ? (
               (() => {
-                const currentAsset = assets[previewIndex];
+                const currentAsset = previewList[previewIndex];
                 const orderNum = selectedIndexMap.get(currentAsset.id);
                 const isCurrentSelected = orderNum !== undefined;
                 return (
@@ -691,7 +704,7 @@ export function MediaPickerModal({
                         style={[
                           styles.previewCheckboxBox,
                           isCurrentSelected
-                            ? { backgroundColor: CAM_GREEN, borderColor: '#ffffff' }
+                            ? { backgroundColor: C.brand, borderColor: '#ffffff' }
                             : { backgroundColor: 'transparent', borderColor: 'rgba(255, 255, 255, 0.7)' },
                         ]}
                       >
@@ -703,7 +716,7 @@ export function MediaPickerModal({
                         style={[
                           styles.previewSelectText,
                           {
-                            color: isCurrentSelected ? CAM_GREEN : 'rgba(255, 255, 255, 0.85)',
+                            color: isCurrentSelected ? C.brand : 'rgba(255, 255, 255, 0.85)',
                             fontFamily: FontFamily.jakartaBold,
                           },
                         ]}
@@ -1006,7 +1019,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 2,
     left: 2,
-    backgroundColor: CAM_GREEN,
+    backgroundColor: '#5b85f7',
     borderRadius: 4,
     paddingHorizontal: 4,
     paddingVertical: 1,

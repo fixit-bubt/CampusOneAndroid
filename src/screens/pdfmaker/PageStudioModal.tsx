@@ -113,8 +113,10 @@ export function PageStudioModal({
   const [detecting, setDetecting] = useState(false);
   const [renderingPreview, setRenderingPreview] = useState(false);
   const [previewUri, setPreviewUri] = useState<string | null>(null);
+  const [activeCorner, setActiveCorner] = useState<number>(-1);
 
   const activeCornerRef = useRef<number>(-1);
+  const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const currentStrokeRef = useRef<ScanPoint[]>([]);
 
   useEffect(() => {
@@ -212,10 +214,16 @@ export function PageStudioModal({
           bestIdx = idx;
         }
       });
-      activeCornerRef.current = bestDist <= 76 ? bestIdx : -1;
-      if (activeCornerRef.current >= 0) {
-        const np = toNorm(locationX, locationY);
-        setQuad((prev) => prev.map((p, i) => (i === activeCornerRef.current ? np : p)) as ScanQuad);
+      if (bestDist <= 76) {
+        activeCornerRef.current = bestIdx;
+        setActiveCorner(bestIdx);
+        dragOffsetRef.current = {
+          x: screenCorners[bestIdx].x - locationX,
+          y: screenCorners[bestIdx].y - locationY,
+        };
+      } else {
+        activeCornerRef.current = -1;
+        setActiveCorner(-1);
       }
     } else if (tab === 'whiteout') {
       const np = toNorm(locationX, locationY);
@@ -229,7 +237,9 @@ export function PageStudioModal({
     if (tab === 'crop') {
       const idx = activeCornerRef.current;
       if (idx < 0) return;
-      const np = toNorm(locationX, locationY);
+      const targetScreenX = locationX + dragOffsetRef.current.x;
+      const targetScreenY = locationY + dragOffsetRef.current.y;
+      const np = toNorm(targetScreenX, targetScreenY);
       setQuad((prev) => prev.map((p, i) => (i === idx ? np : p)) as ScanQuad);
     } else if (tab === 'whiteout') {
       const np = toNorm(locationX, locationY);
@@ -250,6 +260,7 @@ export function PageStudioModal({
 
   const handleStageTouchEnd = () => {
     activeCornerRef.current = -1;
+    setActiveCorner(-1);
     currentStrokeRef.current = [];
   };
 
@@ -441,6 +452,103 @@ export function PageStudioModal({
               ))}
             </View>
           ) : null}
+
+          {/* Floating Magnifier Loupe when dragging a corner handle */}
+          {tab === 'crop' && activeCorner >= 0 && activeCorner < 4 ? (() => {
+            const sc = screenCorners[activeCorner];
+            const np = quad[activeCorner];
+            const LOUPE_SIZE = 108;
+            const LOUPE_RADIUS = LOUPE_SIZE / 2;
+            const ZOOM = 2.4;
+            const loupeX = Math.max(12, Math.min(stageBox.w - LOUPE_SIZE - 12, sc.x - LOUPE_RADIUS));
+            const loupeY = sc.y < stageBox.h * 0.38
+              ? Math.min(stageBox.h - LOUPE_SIZE - 12, sc.y + 54)
+              : Math.max(12, sc.y - LOUPE_SIZE - 54);
+            const zoomedW = imgRectW * ZOOM;
+            const zoomedH = imgRectH * ZOOM;
+            const innerLeft = LOUPE_RADIUS - np.x * zoomedW;
+            const innerTop = LOUPE_RADIUS - np.y * zoomedH;
+
+            return (
+              <View
+                pointerEvents="none"
+                style={{
+                  position: 'absolute',
+                  left: loupeX,
+                  top: loupeY,
+                  width: LOUPE_SIZE,
+                  height: LOUPE_SIZE,
+                  borderRadius: LOUPE_RADIUS,
+                  borderWidth: 2.5,
+                  borderColor: C.brand,
+                  backgroundColor: '#ffffff',
+                  overflow: 'hidden',
+                  elevation: 16,
+                  shadowColor: '#000000',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.35,
+                  shadowRadius: 8,
+                }}
+              >
+                <View
+                  style={{
+                    position: 'absolute',
+                    left: innerLeft,
+                    top: innerTop,
+                    width: zoomedW,
+                    height: zoomedH,
+                  }}
+                >
+                  <Image
+                    source={{ uri: target.uri }}
+                    style={{
+                      width: isQuarter ? zoomedH : zoomedW,
+                      height: isQuarter ? zoomedW : zoomedH,
+                      position: 'absolute',
+                      left: isQuarter ? (zoomedW - zoomedH) / 2 : 0,
+                      top: isQuarter ? (zoomedH - zoomedW) / 2 : 0,
+                      transform: [{ rotate: `${rotate}deg` }],
+                    }}
+                    resizeMode="stretch"
+                  />
+                </View>
+                {/* Crosshairs */}
+                <View
+                  style={{
+                    position: 'absolute',
+                    left: LOUPE_RADIUS - 12,
+                    top: LOUPE_RADIUS - 1,
+                    width: 24,
+                    height: 2,
+                    backgroundColor: C.brand,
+                  }}
+                />
+                <View
+                  style={{
+                    position: 'absolute',
+                    left: LOUPE_RADIUS - 1,
+                    top: LOUPE_RADIUS - 12,
+                    width: 2,
+                    height: 24,
+                    backgroundColor: C.brand,
+                  }}
+                />
+                <View
+                  style={{
+                    position: 'absolute',
+                    left: LOUPE_RADIUS - 3,
+                    top: LOUPE_RADIUS - 3,
+                    width: 6,
+                    height: 6,
+                    borderRadius: 3,
+                    backgroundColor: '#ffffff',
+                    borderWidth: 1.5,
+                    borderColor: C.brand,
+                  }}
+                />
+              </View>
+            );
+          })() : null}
 
           {(detecting || renderingPreview) ? (
             <View style={styles.loadingOverlay}>

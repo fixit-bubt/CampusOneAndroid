@@ -102,7 +102,7 @@ export function ToolImagesScreen({ navigation }: any) {
   const [mediaPickerVisible, setMediaPickerVisible] = useState(false);
 
   const [busy, setBusy] = useState(false);
-  const [progress, setProgress] = useState({ done: 0, total: 0 });
+  const [progress, setProgress] = useState({ done: 0, total: 0, pass: 1 });
   const [result, setResult] = useState<BuiltPdf | null>(null);
   const [previewModal, setPreviewModal] = useState(false);
   const cancelRef = useRef(false);
@@ -325,7 +325,7 @@ export function ToolImagesScreen({ navigation }: any) {
     setBusy(true);
     setResult(null);
     cancelRef.current = false;
-    setProgress({ done: 0, total: items.length });
+    setProgress({ done: 0, total: items.length, pass: 1 });
 
     const cleanTitle = (docTitle.trim() || baseName(items[0].name)).replace(/\.pdf$/i, '');
     try {
@@ -340,7 +340,7 @@ export function ToolImagesScreen({ navigation }: any) {
         signatureUri,
         engine,
         footerText: stampAcademic ? 'BUBT CampusOne' : undefined,
-        onProgress: (done, total) => setProgress({ done, total }),
+        onProgress: (done, total, pass) => setProgress({ done, total, pass: pass ?? 1 }),
         isCancelled: () => cancelRef.current,
       });
       setResult(out);
@@ -837,7 +837,7 @@ export function ToolImagesScreen({ navigation }: any) {
 
             {busy ? (
               <ProgressPanel
-                label={t.pdfmaker.images.building}
+                label={progress.pass === 2 ? 'Optimizing file size...' : t.pdfmaker.images.building}
                 done={progress.done}
                 total={progress.total}
                 onCancel={() => {

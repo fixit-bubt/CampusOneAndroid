@@ -69,19 +69,46 @@ export async function savePdfToDevice(
         return { success: false, cancelled: true };
       }
 
-      const base64 = await LegacyFS.readAsStringAsync(sourceUri, {
-        encoding: LegacyFS.EncodingType.Base64,
-      });
-
       const destUri = await LegacyFS.StorageAccessFramework.createFileAsync(
         permissions.directoryUri,
         cleanBaseName,
         'application/pdf',
       );
 
-      await LegacyFS.writeAsStringAsync(destUri, base64, {
-        encoding: LegacyFS.EncodingType.Base64,
-      });
+      // Stream in 512 KB chunks so 20+ MB PDFs never allocate massive monolithic
+      // base64 strings in Hermes heap on low-RAM Android devices.
+      const CHUNK_SIZE = 512 * 1024;
+      let totalSize = 0;
+      try {
+        const info = await LegacyFS.getInfoAsync(sourceUri);
+        if (info.exists && typeof info.size === 'number') totalSize = info.size;
+      } catch {
+        totalSize = 0;
+      }
+
+      if (totalSize > CHUNK_SIZE) {
+        let offset = 0;
+        while (offset < totalSize) {
+          const readLen = Math.min(CHUNK_SIZE, totalSize - offset);
+          const chunk = await LegacyFS.readAsStringAsync(sourceUri, {
+            encoding: LegacyFS.EncodingType.Base64,
+            position: offset,
+            length: readLen,
+          });
+          await LegacyFS.writeAsStringAsync(destUri, chunk, {
+            encoding: LegacyFS.EncodingType.Base64,
+            append: offset > 0,
+          });
+          offset += readLen;
+        }
+      } else {
+        const base64 = await LegacyFS.readAsStringAsync(sourceUri, {
+          encoding: LegacyFS.EncodingType.Base64,
+        });
+        await LegacyFS.writeAsStringAsync(destUri, base64, {
+          encoding: LegacyFS.EncodingType.Base64,
+        });
+      }
 
       return { success: true };
     } catch (err) {
