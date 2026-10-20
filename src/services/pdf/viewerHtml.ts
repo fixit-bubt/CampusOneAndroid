@@ -67,6 +67,21 @@ export function buildViewerHtml(isDark: boolean = true): string {
       height: 100%;
       aspect-ratio: 1 / 1.414;
       background-color: ${paperBg};
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .page-placeholder::after {
+      content: '';
+      width: 28px;
+      height: 28px;
+      border: 3px solid rgba(91, 133, 247, 0.2);
+      border-top-color: #5b85f7;
+      border-radius: 50%;
+      animation: phSpin 0.75s linear infinite;
+    }
+    @keyframes phSpin {
+      to { transform: rotate(360deg); }
     }
   </style>
 </head>
@@ -166,16 +181,30 @@ export function buildViewerHtml(isDark: boolean = true): string {
         // Render page 1 first BEFORE telling React Native to reveal the viewer
         await renderPage(1);
 
-        // Pre-render page 2 if it exists
-        if (totalPages > 1) {
-          renderPage(2);
-        }
-
         setupIntersectionObservers();
         setupDoubleTapZoom();
 
         // Signal React Native that Page 1 is fully rendered on screen!
         send({ type: 'docOpened', totalPages: totalPages });
+
+        // Progressive background rendering queue for all remaining pages
+        let bgPage = 2;
+        function pumpBgRenderQueue() {
+          if (!pdfDoc || bgPage > totalPages) return;
+          const p = bgPage++;
+          renderPage(p).finally(() => {
+            if (bgPage <= totalPages) {
+              if (typeof requestIdleCallback === 'function') {
+                requestIdleCallback(pumpBgRenderQueue, { timeout: 150 });
+              } else {
+                setTimeout(pumpBgRenderQueue, 40);
+              }
+            }
+          });
+        }
+        if (totalPages > 1) {
+          pumpBgRenderQueue();
+        }
 
       } catch (err) {
         send({ type: 'error', message: String(err && err.message ? err.message : err) });
@@ -296,6 +325,26 @@ export function buildViewerHtml(isDark: boolean = true): string {
           visibleObserver.observe(card);
         }
       }
+
+      // Fallback scroll listener: guarantees visible pages render even if IntersectionObserver is starved on Android WebView
+      function checkViewportPages() {
+        if (!pdfDoc) return;
+        const vTop = window.scrollY || window.pageYOffset || 0;
+        const vBot = vTop + (window.innerHeight || document.documentElement.clientHeight || 800);
+        for (let i = 1; i <= totalPages; i++) {
+          if (!renderedPages.has(i) && !renderingPages.has(i)) {
+            const card = document.getElementById('page-' + i);
+            if (card) {
+              const top = card.offsetTop;
+              const bottom = top + card.offsetHeight;
+              if (bottom >= vTop - 500 && top <= vBot + 500) {
+                renderPage(i);
+              }
+            }
+          }
+        }
+      }
+      window.addEventListener('scroll', checkViewportPages, { passive: true });
     }
 
     window.scrollToPage = function(num) {

@@ -348,8 +348,19 @@ function detectDocumentQuad(srcCanvas) {
 function warpQuadToCanvas(srcCanvas, quad, maxDim) {
   var sw = srcCanvas.width;
   var sh = srcCanvas.height;
-  var q = quad && quad.length === 4 ? quad : [
+  var rawQ = quad && quad.length === 4 ? quad : [
     { x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 0, y: 1 }
+  ];
+
+  // Inward safety margin (0.8% inset): strips desk slivers, spiral edges & boundary shadows
+  var cx = (rawQ[0].x + rawQ[1].x + rawQ[2].x + rawQ[3].x) * 0.25;
+  var cy = (rawQ[0].y + rawQ[1].y + rawQ[2].y + rawQ[3].y) * 0.25;
+  var inset = 0.008;
+  var q = [
+    { x: rawQ[0].x + (cx - rawQ[0].x) * inset, y: rawQ[0].y + (cy - rawQ[0].y) * inset },
+    { x: rawQ[1].x + (cx - rawQ[1].x) * inset, y: rawQ[1].y + (cy - rawQ[1].y) * inset },
+    { x: rawQ[2].x + (cx - rawQ[2].x) * inset, y: rawQ[2].y + (cy - rawQ[2].y) * inset },
+    { x: rawQ[3].x + (cx - rawQ[3].x) * inset, y: rawQ[3].y + (cy - rawQ[3].y) * inset }
   ];
 
   var x0 = Math.max(0, Math.min(sw - 1, q[0].x * sw));
@@ -621,34 +632,51 @@ function enhanceDocumentCanvas(canvas, filterMode) {
   var paperL75 = sampleL.length ? sampleL[Math.floor(sampleL.length * 0.75)] : 180;
 
   // 2. Mark outer non-paper intrusion in borderMask WITHOUT mutating data before illumination estimation
-  var brCornerIdx = (((H * 0.98) | 0) * W + ((W * 0.98) | 0)) << 2;
-  var brCornerLum = (38 * data[brCornerIdx] + 75 * data[brCornerIdx + 1] + 15 * data[brCornerIdx + 2]) >> 7;
-  var hasDogEarBR = brCornerLum < paperL75 * 0.60;
-
   var borderMask = new Uint8Array(totalPx);
-  var mLeft = Math.max(4, (W * 0.015) | 0), mRight = W - mLeft;
-  var mTop = Math.max(4, (H * 0.015) | 0), mBot = H - mTop;
+  // Outer perimeter margin bands (~2.4% on width, ~2.0% on height)
+  var mLeft = Math.max(6, (W * 0.024) | 0), mRight = W - mLeft;
+  var mTop = Math.max(6, (H * 0.020) | 0), mBot = H - mTop;
+
+  // Extended 4-corner detection zones (~7.5% of width, ~6.5% of height)
+  var cW = Math.max(20, (W * 0.075) | 0);
+  var cH = Math.max(20, (H * 0.065) | 0);
+  var cRight = W - cW;
+  var cBot = H - cH;
 
   for (var by = 0; by < H; by++) {
     var inYMargin = by < mTop || by > mBot;
-    var inDogEarY = hasDogEarBR && by > (H * 0.91);
+    var inCornerY = by < cH || by > cBot;
     var rOff = by * W;
+
     for (var bx = 0; bx < W; bx++) {
       var inXMargin = bx < mLeft || bx > mRight;
-      var inDogEarX = hasDogEarBR && bx > (W * 0.85);
-      if (!inYMargin && !inXMargin && !(inDogEarY && inDogEarX)) {
-        bx = Math.max(bx, Math.min((W * 0.85) | 0, mRight) - 1);
+      var inCornerX = bx < cW || bx > cRight;
+      var isCornerZone = inCornerY && inCornerX;
+      var isPerimeterZone = inYMargin || inXMargin;
+
+      // Skip non-margin interior pixels quickly to keep processing instantaneous
+      if (!isCornerZone && !isPerimeterZone) {
+        var nextX = inCornerY ? cRight : mRight;
+        if (bx < nextX) {
+          bx = nextX - 1;
+        }
         continue;
       }
+
       var pIdx0 = rOff + bx;
       var bpIdx = pIdx0 << 2;
       var br = data[bpIdx], bg = data[bpIdx + 1], bb = data[bpIdx + 2];
       var blum = (38 * br + 75 * bg + 15 * bb) >> 7;
-      var isWarmDesk = (br - bb) > (baseRb + 18) && blum < paperL75 * 0.92;
-      var isThumbSkin = br > 95 && bg > 40 && bb > 20 && (br - bg) > 15 && (br - bb) > (baseRb + 16) && blum < 210;
-      var isDogEar = inDogEarY && inDogEarX && blum < paperL75 * 0.65;
-      var isPerimeterArtifact = (inYMargin || inXMargin) && blum < 90;
-      if (isWarmDesk || isThumbSkin || isDogEar || isPerimeterArtifact) {
+
+      var isWarmDesk = (br - bb) > (baseRb + 16) && blum < paperL75 * 0.94;
+      var isThumbSkin = br > 90 && bg > 35 && bb > 15 && (br - bg) > 12 && (br - bb) > (baseRb + 14) && blum < 215;
+
+      // In the 4 corners: table shadows, fingers, dog-ears, binder rings
+      var isCornerArtifact = isCornerZone && (blum < paperL75 * 0.76 || isWarmDesk || isThumbSkin || blum < 130);
+      // In perimeter edges: desk slivers, spiral edges, margin shadows
+      var isPerimeterArtifact = isPerimeterZone && (blum < 135 || isWarmDesk || isThumbSkin);
+
+      if (isCornerArtifact || isPerimeterArtifact) {
         borderMask[pIdx0] = 1;
       }
     }

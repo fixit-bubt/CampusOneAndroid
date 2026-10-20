@@ -598,6 +598,14 @@ In `RootNavigator.tsx`, students who have not completed onboarding (`!profile?.s
 - **Architecture:** 100% on-device native `pdf-lib` for document generation + hidden offscreen WebView running vendored `pdf.js` (`assets/pdfjs/*.txt`) for rasterizing page thumbnails.
 - **Capabilities:** Photos to PDF, PDF Merge, Organize/Reorder Pages, Compress.
 - **Zero Schema Change:** Does not touch Supabase or upload files.
+- **Edge & Corner Artifact Suppression (CamScanner Parity):**
+  - **Inward Safety Margin (0.8% Inset):** `warpQuadToCanvas` pulls quadrilateral corners 0.8% towards their centroid before homography warping, eliminating exterior table slivers, spiral binder shadows, and outer desk marks.
+  - **Universal 4-Corner Zone Protection:** All 4 corners (top-left, top-right, bottom-left, bottom-right up to 7.5% width and 6.5% height) are scanned for non-paper intrusions (table shadows, desk grain, finger/thumb skin) and neutralized to `#FFFFFF`.
+  - **Outer Perimeter Mask (2.4% Margin):** Outer edge margin bands suppress non-paper edge noise (`blum < 135` or warm desk) to pure paper white, preventing dark edge slivers from snapping to pitch-black lines under the ink LUT.
+- **Progressive In-App PDF Viewer (Zero Blank Pages):**
+  - **Eager Background Render Queue:** In `viewerHtml.ts`, Page 1 renders eagerly to reveal the document instantly, followed by a continuous background queue using `requestIdleCallback` / `setTimeout` that pre-renders remaining pages (Pages 2..N) progressively.
+  - **Dual Scroll Fallback:** In addition to `IntersectionObserver`, a passive window `scroll` listener checks viewport bounds, ensuring visible placeholder cards immediately rasterize even when `IntersectionObserver` is starved on Android WebViews.
+  - **Loading Shimmer Indicator:** `.page-placeholder` cards display a centered geometric spinner animation while rasterizing, eliminating confusing blank white boxes.
 
 ### 10.3 BUBT Cover Page Generator
 - **Location:** `src/screens/coverpage/CoverPageFormScreen.tsx`

@@ -544,6 +544,8 @@ export function ToolImagesScreen({ navigation }: any) {
                 ) : null}
                 <Text style={[styles.countBadge, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
                   {t.pdfmaker.images.count(items.length)}
+                  {scanMode === 'book_split' ? ` (${items.length * 2} pgs)` : ''}
+                  {prependCover && latestCover ? ' + Cover' : ''}
                 </Text>
               </View>
             </View>
