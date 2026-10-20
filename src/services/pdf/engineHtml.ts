@@ -647,7 +647,7 @@ function enhanceDocumentCanvas(canvas, filterMode) {
       var isWarmDesk = (br - bb) > (baseRb + 18) && blum < paperL75 * 0.92;
       var isThumbSkin = br > 95 && bg > 40 && bb > 20 && (br - bg) > 15 && (br - bb) > (baseRb + 16) && blum < 210;
       var isDogEar = inDogEarY && inDogEarX && blum < paperL75 * 0.65;
-      var isPerimeterArtifact = (inYMargin || inXMargin) && blum > 110;
+      var isPerimeterArtifact = (inYMargin || inXMargin) && blum < 90;
       if (isWarmDesk || isThumbSkin || isDogEar || isPerimeterArtifact) {
         borderMask[pIdx0] = 1;
       }
@@ -781,11 +781,11 @@ function enhanceDocumentCanvas(canvas, filterMode) {
   }
 
   // 4. Smooth-Transition S-Curve LUT (darkens ink core while preserving fine anti-aliased pen stroke tapering)
-  var bp = 42, wp = 200;
-  if (mode === 'bleed_erase') { bp = 52; wp = 196; }
-  else if (mode === 'whiteboard') { bp = 34; wp = 212; }
-  else if (mode === 'grayscale') { bp = 40; wp = 204; }
-  else if (mode === 'bw') { bp = 46; wp = 206; }
+  var bp = 48, wp = 202;
+  if (mode === 'bleed_erase') { bp = 56; wp = 196; }
+  else if (mode === 'whiteboard') { bp = 36; wp = 212; }
+  else if (mode === 'grayscale') { bp = 48; wp = 204; }
+  else if (mode === 'bw') { bp = 50; wp = 204; }
 
   var lut = new Uint8Array(256);
   var span = Math.max(1, wp - bp);
@@ -795,7 +795,7 @@ function enhanceDocumentCanvas(canvas, filterMode) {
     else {
       var t = (li - bp) / span;
       var s = t * t * (3.0 - 2.0 * t);
-      lut[li] = Math.min(255, Math.floor((0.35 * s + 0.65 * Math.pow(t, 1.15)) * 255.0));
+      lut[li] = Math.min(255, Math.floor((0.15 * s + 0.85 * Math.pow(t, 1.7)) * 255.0));
     }
   }
 
@@ -851,8 +851,9 @@ function enhanceDocumentCanvas(canvas, filterMode) {
       var nr, ng, nb, lum;
       // Protect genuine pink/red ruled margin lines from white-point clipping
       var isRedMargin = isColor && mode !== 'bleed_erase' && dr >= 200 && rgDiff >= 28 && (dr >= db + 24) && nLum >= 165 && nLum <= 248;
-      var isPaper = (nLum >= wp - 8) || (nLum >= 170 && chroma <= 22);
-      var isColoredInk = isColor && (chroma >= 25 && nLum < 225);
+      var isPurePaper = nLum >= wp - 4;
+      var isNeutralPaperTransition = !isPurePaper && !isRedMargin && nLum >= 160 && chroma <= 22;
+      var isColoredInk = isColor && !isPurePaper && !isNeutralPaperTransition && !isRedMargin && chroma >= 25 && nLum < 225;
 
       if (isRedMargin) {
         var wpCol = 248;
@@ -861,8 +862,11 @@ function enhanceDocumentCanvas(canvas, filterMode) {
         ng = Math.min(255, Math.max(0, Math.round(mappedL + (dg - nLum) * 1.4)));
         nb = Math.min(255, Math.max(0, Math.round(mappedL + (db - nLum) * 1.4)));
         lum = (38 * nr + 75 * ng + 15 * nb) >> 7;
-      } else if (isPaper) {
+      } else if (isPurePaper) {
         nr = 255; ng = 255; nb = 255; lum = 255;
+      } else if (isNeutralPaperTransition) {
+        var neutVal = lut[nLum];
+        nr = neutVal; ng = neutVal; nb = neutVal; lum = neutVal;
       } else {
         nr = lut[dr];
         ng = lut[dg];
@@ -875,8 +879,6 @@ function enhanceDocumentCanvas(canvas, filterMode) {
           if (nr < 0) nr = 0; else if (nr > 255) nr = 255;
           if (ng < 0) ng = 0; else if (ng > 255) ng = 255;
           if (nb < 0) nb = 0; else if (nb > 255) nb = 255;
-        } else if (nLum > 145) {
-          nr = lum; ng = lum; nb = lum;
         }
       }
 
@@ -936,7 +938,7 @@ function enhanceDocumentCanvas(canvas, filterMode) {
       data[qIdx + 1] = bwVal;
       data[qIdx + 2] = bwVal;
     } else {
-      var delta = diff >= -4 ? (diff >> 2) : Math.round(diff * 0.55);
+      var delta = diff >= -4 ? (diff >> 2) : Math.round(diff * 0.70);
       var fr = data[qIdx] + delta;
       var fg = data[qIdx + 1] + delta;
       var fb = data[qIdx + 2] + delta;

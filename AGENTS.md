@@ -2425,16 +2425,16 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
   - **Line Intersection & Angle Validation:** Connects the 4 corner coordinates (tl, tr, br, bl), validates internal angles in [45 deg, 135 deg] and span >= 0.45.
   - **3000px HD Perspective Homography:** 8-parameter projective homography warp (`warpQuadToCanvas`) with perspective foreshortening recovery (`Math.min(1.14, Math.sqrt(wMax / wMin))`) and automatic bilinear HD resolution normalization to 3000px (`minTarget = Math.min(cap, 3000)`), achieving razor-sharp 1:1 CamScanner resolution parity.
 - **Stage 2 - Tightened Perimeter Border Mask & 95th-Percentile Local Paper Illumination Grid (`enhanceDocumentCanvas`):**
-  - Tightens border artifact masking to the outer 1.5% perimeter (`blum > 110`) plus desk/finger intrusions, preventing illumination over-compensation from encroaching on margin notes.
+  - Tightens border artifact masking to the outer 1.5% perimeter (`blum < 90`) plus desk/finger intrusions, ensuring light paper and edge handwriting are never erroneously masked out.
   - Samples the **95th-percentile** brightest non-masked pixel per cell (`cell = Math.max(14, Math.round(Math.max(W, H) / 140))`), fills empty border cells inward, and applies a separable 5x5 `MaxFilter` (`mRad = 2`) + 2 passes of `BoxBlur` (`bRad = 2`). During Stage 3 illumination division (`dr = (r * 255) / illR`), `borderMask` pixels are written directly to pure `#FFFFFF` (`255, 255, 255`).
-- **Stage 3 - Anti-Aliased Hermite S-Curve LUT, Pure White Paper Snap & Anti-Yellow Desaturation:**
-  - Uses a smooth Hermite S-curve blend: $0.35 * smoothstep(t) + 0.65 * t^1.15$ where $t = clamp((L - bp) / (wp - bp), 0, 1)$ (`bp = 42, wp = 200` in `magic` mode, `wp = 196` in `bleed_erase`). Darkens the ink core to rich black while preserving delicate sub-pixel anti-aliasing tapering at stroke edges.
-  - **Pure Paper Snap & Zero-Yellow Guarantee:** Paper pixels satisfying `(nLum >= wp - 8) || (nLum >= 170 && chroma <= 22)` are snapped directly to `#FFFFFF` (`255, 255, 255`). Non-ink paper transitions are desaturated to neutral `lum`, completely eliminating ambient yellow and cream lighting blotches.
+- **Stage 3 - Anti-Aliased Bold Ink Transfer Function (Gamma 1.7), Pure Paper Snap & Neutral Transition:**
+  - Uses an ink-darkening power blend: $0.15 * smoothstep(t) + 0.85 * t^1.7$ where $t = clamp((L - bp) / (wp - bp), 0, 1)$ (`bp = 48, wp = 202` in `magic` mode, `bp = 56, wp = 196` in `bleed_erase`). Darkens the ink core to rich black and midtone strokes to deep legible values, completely eliminating ink fading and washed-out ballpoint strokes.
+  - **Pure Paper Snap & Neutral Transition:** Paper pixels satisfying `nLum >= wp - 4` snap directly to pure white `#FFFFFF` (`255, 255, 255`). Ambient paper transitions (`nLum >= 160 && chroma <= 22`) are mapped to neutral `lut[nLum]`, eliminating warm/yellow lighting cast without erasing delicate handwriting edges.
 - **Stage 4 - Constrained Pink/Red Margin Line Protection & Targeted Ink Chroma Boost:**
-  - Tightened pink/red ruled notebook margin line detection (`dr >= 200 && rgDiff >= 28 && (dr >= db + 24) && nLum >= 165 && nLum <= 248`) to prevent warm ambient paper from triggering the margin boost.
+  - Tightened pink/red ruled notebook margin line detection (`dr >= 200 && rgDiff >= 28 && (dr >= db + 24) && nLum >= 165 && nLum <= 248`) to protect genuine red margins from white-point clipping.
   - Integer chroma boost `(3 * C - lum) >> 1` is applied strictly to verified colored pen ink (`isColoredInk = isColor && (chroma >= 25 && nLum < 225)`), leaving paper fields untouched. Fixed green channel clamping (`ng = 255`).
-- **Stage 5 - Micro 5x5 Sliding-Window Box Blur & Fine Ink Edge Sharpening:**
-  - Computes a tight O(1) separable 5x5 box blur on luminance (`sRad = 2, winLen = 5`) and applies micro-contrast edge sharpening (`delta = diff >= -4 ? (diff >> 2) : Math.round(diff * 0.55)`).
+- **Stage 5 - Micro 5x5 Sliding-Window Box Blur & Enhanced Ink Edge Sharpening:**
+  - Computes a tight O(1) separable 5x5 box blur on luminance (`sRad = 2, winLen = 5`) and applies micro-contrast edge sharpening (`delta = diff >= -4 ? (diff >> 2) : Math.round(diff * 0.70)`), producing razor-sharp stroke definition along ballpoint pen boundaries.
   - Broadened final white-point snap in sharpening pass (`(fr >= 240 && fg >= 240 && fb >= 240 && diff >= -5 && cSpan <= 24) || (fr >= 250 && fg >= 250 && fb >= 250)`), ensuring unsharp halos never re-tint the clean white paper background.
 
 ### 52.2 Pro Scanner Features & Interactive Page Studio (`ToolImagesScreen.tsx` & `PageStudioModal.tsx`)
