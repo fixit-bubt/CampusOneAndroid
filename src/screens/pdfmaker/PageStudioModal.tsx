@@ -483,6 +483,7 @@ export function PageStudioModal({
                   borderColor: C.brand,
                   backgroundColor: '#ffffff',
                   overflow: 'hidden',
+                  zIndex: 999,
                   elevation: 16,
                   shadowColor: '#000000',
                   shadowOffset: { width: 0, height: 4 },

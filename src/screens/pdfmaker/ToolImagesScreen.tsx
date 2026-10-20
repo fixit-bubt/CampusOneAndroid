@@ -837,7 +837,7 @@ export function ToolImagesScreen({ navigation }: any) {
 
             {busy ? (
               <ProgressPanel
-                label={progress.pass === 2 ? 'Optimizing file size...' : t.pdfmaker.images.building}
+                label={progress.pass === 2 ? t.pdfmaker.images.optimizing : t.pdfmaker.images.building}
                 done={progress.done}
                 total={progress.total}
                 onCancel={() => {

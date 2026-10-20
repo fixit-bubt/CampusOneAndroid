@@ -166,6 +166,16 @@ export function MediaPickerModal({
     checkAndLoad();
   }, [visible, sortOrder, selectedAlbum]);
 
+  useEffect(() => {
+    if (previewIndex !== null && previewMode === 'selected') {
+      if (selected.length === 0) {
+        setPreviewIndex(null);
+      } else if (previewIndex >= selected.length) {
+        setPreviewIndex(selected.length - 1);
+      }
+    }
+  }, [previewIndex, previewMode, selected.length]);
+
   const handleToggleSortOrder = useCallback(() => {
     const nextOrder = sortOrder === 'newest' ? 'oldest' : 'newest';
     setSortOrder(nextOrder);
