@@ -221,12 +221,15 @@ function detectDocumentQuad(srcCanvas) {
   if (topOuterCount / Math.max(1, topOuterTotal) >= 0.35) {
     var maxScanT = Math.floor(dh * 0.35);
     function scanTop(x0, x1) {
-      for (var y = 0; y < maxScanT; y++) {
-        var pC = 0, totC = x1 - x0;
-        for (var x = x0; x < x1; x++) { if (isPaper[y * dw + x]) pC++; }
-        if (pC / totC >= 0.40) return Math.max(0.002, y / dh);
+      var onsets = [];
+      for (var x = x0; x < x1; x++) {
+        for (var y = 0; y < maxScanT; y++) {
+          if (isPaper[y * dw + x]) { onsets.push(y); break; }
+        }
       }
-      return 0.002;
+      if (!onsets.length) return 0.002;
+      onsets.sort(function (a, b) { return a - b; });
+      return Math.max(0.002, onsets[Math.floor(onsets.length * 0.10)] / dh);
     }
     tl_y = scanTop(Math.floor(dw * 0.15), Math.floor(dw * 0.45));
     tr_y = scanTop(Math.floor(dw * 0.55), Math.floor(dw * 0.85));
@@ -243,12 +246,15 @@ function detectDocumentQuad(srcCanvas) {
   if (botOuterCount / Math.max(1, botOuterTotal) >= 0.35) {
     var minScanB = Math.floor(dh * 0.65);
     function scanBot(x0, x1) {
-      for (var y = dh - 1; y >= minScanB; y--) {
-        var pC = 0, totC = x1 - x0;
-        for (var x = x0; x < x1; x++) { if (isPaper[y * dw + x]) pC++; }
-        if (pC / totC >= 0.40) return Math.min(0.995, (y + 1) / dh);
+      var onsets = [];
+      for (var x = x0; x < x1; x++) {
+        for (var y = dh - 1; y >= minScanB; y--) {
+          if (isPaper[y * dw + x]) { onsets.push(y + 1); break; }
+        }
       }
-      return 0.995;
+      if (!onsets.length) return 0.995;
+      onsets.sort(function (a, b) { return a - b; });
+      return Math.min(0.995, onsets[Math.floor(onsets.length * 0.90)] / dh);
     }
     bl_y = scanBot(Math.floor(dw * 0.15), Math.floor(dw * 0.45));
     br_y = scanBot(Math.floor(dw * 0.55), Math.floor(dw * 0.85));
@@ -265,12 +271,15 @@ function detectDocumentQuad(srcCanvas) {
   if (leftOuterCount / Math.max(1, leftOuterTotal) >= 0.35) {
     var maxScanL = Math.floor(dw * 0.20);
     function scanLeft(y0, y1) {
-      for (var x = 0; x < maxScanL; x++) {
-        var pC = 0, totC = y1 - y0;
-        for (var y = y0; y < y1; y++) { if (isPaper[y * dw + x]) pC++; }
-        if (pC / totC >= 0.40) return Math.max(0.002, x / dw);
+      var onsets = [];
+      for (var y = y0; y < y1; y++) {
+        for (var x = 0; x < maxScanL; x++) {
+          if (isPaper[y * dw + x]) { onsets.push(x); break; }
+        }
       }
-      return 0.002;
+      if (!onsets.length) return 0.002;
+      onsets.sort(function (a, b) { return a - b; });
+      return Math.max(0.002, onsets[Math.floor(onsets.length * 0.10)] / dw);
     }
     tl_x = scanLeft(Math.floor(dh * 0.15), Math.floor(dh * 0.45));
     bl_x = scanLeft(Math.floor(dh * 0.55), Math.floor(dh * 0.85));
@@ -287,12 +296,15 @@ function detectDocumentQuad(srcCanvas) {
   if (rightOuterCount / Math.max(1, rightOuterTotal) >= 0.35) {
     var minScanR = Math.floor(dw * 0.80);
     function scanRight(y0, y1) {
-      for (var x = dw - 1; x >= minScanR; x--) {
-        var pC = 0, totC = y1 - y0;
-        for (var y = y0; y < y1; y++) { if (isPaper[y * dw + x]) pC++; }
-        if (pC / totC >= 0.40) return Math.min(0.998, (x + 1) / dw);
+      var onsets = [];
+      for (var y = y0; y < y1; y++) {
+        for (var x = dw - 1; x >= minScanR; x--) {
+          if (isPaper[y * dw + x]) { onsets.push(x + 1); break; }
+        }
       }
-      return 0.998;
+      if (!onsets.length) return 0.998;
+      onsets.sort(function (a, b) { return a - b; });
+      return Math.min(0.998, onsets[Math.floor(onsets.length * 0.90)] / dw);
     }
     tr_x = scanRight(Math.floor(dh * 0.15), Math.floor(dh * 0.45));
     br_x = scanRight(Math.floor(dh * 0.55), Math.floor(dh * 0.85));
@@ -354,10 +366,10 @@ function warpQuadToCanvas(srcCanvas, quad, maxDim) {
   // Inward safety margin on sides and bottom: strips desk slivers, spiral edges & boundary shadows without clipping top headers
   var cx = (rawQ[0].x + rawQ[1].x + rawQ[2].x + rawQ[3].x) * 0.25;
   var cy = (rawQ[0].y + rawQ[1].y + rawQ[2].y + rawQ[3].y) * 0.25;
-  var inset = 0.003;
+  var inset = 0.002;
   var q = [
-    { x: rawQ[0].x + (cx - rawQ[0].x) * inset, y: rawQ[0].y + (cy - rawQ[0].y) * inset },
-    { x: rawQ[1].x + (cx - rawQ[1].x) * inset, y: rawQ[1].y + (cy - rawQ[1].y) * inset },
+    { x: rawQ[0].x + (cx - rawQ[0].x) * inset, y: rawQ[0].y },
+    { x: rawQ[1].x + (cx - rawQ[1].x) * inset, y: rawQ[1].y },
     { x: rawQ[2].x + (cx - rawQ[2].x) * inset, y: rawQ[2].y + (cy - rawQ[2].y) * inset },
     { x: rawQ[3].x + (cx - rawQ[3].x) * inset, y: rawQ[3].y + (cy - rawQ[3].y) * inset }
   ];
@@ -632,12 +644,8 @@ function enhanceDocumentCanvas(canvas, filterMode) {
 
   // 2. Mark outer non-paper intrusion in borderMask WITHOUT mutating data before illumination estimation
   var borderMask = new Uint8Array(totalPx);
-  var mLeft = Math.max(4, (W * 0.015) | 0), mRight = W - Math.max(4, (W * 0.010) | 0);
-  var mTop = Math.max(4, (H * 0.008) | 0), mBot = H - Math.max(4, (H * 0.008) | 0);
-
-  var cW_bl = Math.max(32, (W * 0.14) | 0);
-  var cH_bl = Math.max(32, (H * 0.14) | 0);
-  var cBot_bl = H - cH_bl;
+  var mLeft = Math.max(4, (W * 0.012) | 0), mRight = W - Math.max(4, (W * 0.008) | 0);
+  var mTop = Math.max(4, (H * 0.006) | 0), mBot = H - Math.max(4, (H * 0.008) | 0);
 
   var cW_std = Math.max(16, (W * 0.045) | 0);
   var cH_std = Math.max(16, (H * 0.040) | 0);
@@ -647,10 +655,9 @@ function enhanceDocumentCanvas(canvas, filterMode) {
   for (var by = 0; by < H; by++) {
     var inTop = by < mTop;
     var inBot = by > mBot;
-    var inCornerY_bl = by > cBot_bl;
     var inCornerY_std = by < cH_std || by > cBot_std;
     var rOff = by * W;
-    var checkAllX = inTop || inBot || inCornerY_bl || inCornerY_std;
+    var checkAllX = inTop || inBot || inCornerY_std;
 
     for (var bx = 0; bx < W; bx++) {
       if (!checkAllX && bx >= mLeft && bx <= mRight) {
@@ -667,71 +674,52 @@ function enhanceDocumentCanvas(canvas, filterMode) {
       var isRedMargin = br >= 180 && (br - bg) >= 22 && (br >= bb + 20) && blum >= 140;
       if (isRedMargin) continue;
 
-      var isWarmDesk = (br - bb) > (baseRb + 16) && blum < paperL75 * 0.94;
-      var isThumbSkin = br > 85 && bg > 35 && bb > 15 && (br - bg) > 10 && (br - bb) > (baseRb + 12) && blum < 220;
+      var isWarmDesk = (br - bb) > 20 && (br > bg + 4) && blum < paperL75 * 0.94;
+      var isThumbSkin = br > 85 && bg > 35 && bb > 15 && (br - bg) > 10 && blum < 220;
 
-      // Top perimeter: strictly desk, thumb or deep void. Never mask handwriting ink in headers
-      if (inTop) {
-        if (isWarmDesk || isThumbSkin || blum < 25) {
-          borderMask[pIdx0] = 1;
-        }
+      // Outer perimeter: strictly desk, thumb or deep void
+      if (inTop && (isWarmDesk || isThumbSkin || blum < 35)) {
+        borderMask[pIdx0] = 1;
+        continue;
+      }
+      if (bx > mRight && (isWarmDesk || isThumbSkin || blum < 35)) {
+        borderMask[pIdx0] = 1;
+        continue;
+      }
+      if (bx < mLeft && (isWarmDesk || isThumbSkin || blum < 120)) {
+        borderMask[pIdx0] = 1;
+        continue;
+      }
+      if (inBot && (isWarmDesk || isThumbSkin || blum < 120)) {
+        borderMask[pIdx0] = 1;
         continue;
       }
 
-      // Right perimeter: strictly desk, thumb or deep void. Protect right margin formulas
-      if (bx > mRight) {
-        if (isWarmDesk || isThumbSkin || blum < 25) {
-          borderMask[pIdx0] = 1;
-        }
-        continue;
-      }
-
-      // Bottom-left corner triangle: void / desk / shadow cleanup
-      if (inCornerY_bl && bx < cW_bl) {
-        var dx_bl = (cW_bl - bx) / cW_bl;
-        var dy_bl = (by - cBot_bl) / cH_bl;
-        if ((dx_bl + dy_bl) >= 0.15) {
-          if (isWarmDesk || isThumbSkin || blum < 205) {
-            borderMask[pIdx0] = 1;
-            continue;
-          }
-        }
-      }
-
-      // Standard corners (TL, TR, BR)
+      // Standard 4.5% corner triangles (TL, TR, BL, BR)
       if (inCornerY_std) {
         if (bx < cW_std && by < cH_std) {
           var dxTL = (cW_std - bx) / cW_std;
           var dyTL = (cH_std - by) / cH_std;
-          if ((dxTL + dyTL) >= 0.25 && (isWarmDesk || isThumbSkin || blum < 25)) {
+          if ((dxTL + dyTL) >= 0.25 && (isWarmDesk || isThumbSkin || blum < 45)) {
+            borderMask[pIdx0] = 1;
+            continue;
+          }
+        } else if (bx < cW_std && by > cBot_std) {
+          var dxBL = (cW_std - bx) / cW_std;
+          var dyBL = (by - cBot_std) / cH_std;
+          if ((dxBL + dyBL) >= 0.25 && (isWarmDesk || isThumbSkin || blum < 85)) {
             borderMask[pIdx0] = 1;
             continue;
           }
         } else if (bx > cRight_std) {
           var dxR = (bx - cRight_std) / cW_std;
           var dyR = by < cH_std ? (cH_std - by) / cH_std : (by - cBot_std) / cH_std;
-          var threshR = by < cH_std ? 25 : 180;
+          var threshR = by < cH_std ? 45 : 85;
           if ((dxR + dyR) >= 0.25 && (isWarmDesk || isThumbSkin || blum < threshR)) {
             borderMask[pIdx0] = 1;
             continue;
           }
         }
-      }
-
-      // Outer left gutter: desk / shadow sliver
-      if (bx < mLeft) {
-        if (isWarmDesk || isThumbSkin || blum < 175) {
-          borderMask[pIdx0] = 1;
-        }
-        continue;
-      }
-
-      // Bottom perimeter
-      if (inBot) {
-        if (isWarmDesk || isThumbSkin || blum < 140) {
-          borderMask[pIdx0] = 1;
-        }
-        continue;
       }
     }
   }
@@ -768,9 +756,9 @@ function enhanceDocumentCanvas(canvas, filterMode) {
       if (cellSamples.length > 0) {
         cellSamples.sort(function (a, b) { return (a >>> 24) - (b >>> 24); });
         var pick = cellSamples[Math.min(cellSamples.length - 1, Math.floor(cellSamples.length * 0.95))];
-        bgR[gi] = Math.max(75, (pick >>> 16) & 0xff);
-        bgG[gi] = Math.max(75, (pick >>> 8) & 0xff);
-        bgB[gi] = Math.max(75, pick & 0xff);
+        bgR[gi] = Math.max(60, (pick >>> 16) & 0xff);
+        bgG[gi] = Math.max(60, (pick >>> 8) & 0xff);
+        bgB[gi] = Math.max(60, pick & 0xff);
       } else {
         bgR[gi] = 0; bgG[gi] = 0; bgB[gi] = 0;
       }
@@ -863,7 +851,7 @@ function enhanceDocumentCanvas(canvas, filterMode) {
   }
 
   // 4. CamScanner-Grade Steep Contrast LUT (snaps ballpoint ink core to deep jet-black <= 6 while locking paper to #FFFFFF)
-  var bp = 70, wp = 210;
+  var bp = 65, wp = 205;
   if (mode === 'bleed_erase') { bp = 68; wp = 205; }
   else if (mode === 'whiteboard') { bp = 60; wp = 212; }
   else if (mode === 'grayscale') { bp = 68; wp = 210; }
@@ -878,7 +866,7 @@ function enhanceDocumentCanvas(canvas, filterMode) {
       lut[li] = 255;
     } else {
       var t = (li - bp) / span;
-      lut[li] = Math.min(255, Math.floor(Math.pow(t, 1.75) * 255.0));
+      lut[li] = Math.min(255, Math.floor(Math.pow(t, 1.65) * 255.0));
     }
   }
 
