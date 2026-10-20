@@ -2559,6 +2559,21 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
 
 ### 53.3 Home Screen & Navigation Deep Link Integration
 - `HomeStatusStrips.tsx` dynamically passes `{ initialTab: 'my_routine' }`, `{ subSchedule: 'class' }` (when tapping Timetable), or `{ subSchedule: 'exam' }` (when tapping Exams).
-- `RoutinesBrowseScreen.tsx` listens to route parameters and directly enters Step 4B (`choose`) with the student's personal profile defaults, while full back navigation (`choose` -> `options` -> `departments` -> `types`) is completely preserved.
-
-
+- `RoutinesBrowseScreen.tsx` listens to route parameters and directly enters Step 4B (`choose`) with the student's personal profile defaults, while full back navigation (`choose` -> `options` -> `departments` -> `types`) is completely preserved.### 54. BUBT Crawler Schema Parity & Cover Page Generator Faculty Linking Resolution
+- **Crawler Database Parity (`bubt-crawler` Edge Function):**
+  - Audited all 7 crawler adapters (`faculty`, `notices`, `events`, `routines`, `calendar`, `bus`, `jobs`) against the 74 Supabase database tables (`types/supabase.ts`).
+  - Fixed `notices.ts`: Guaranteed `department` defaults to `'University-Wide'` rather than `null`, strictly satisfying Postgres `announcements.department` NOT NULL constraint.
+  - Redeployed `bubt-crawler` Edge Function to Supabase project `xhgpxvyqrufbbuivttmi`. Verified live test: scans 440 teachers across 13 departments in 16.4s with 435 unchanged records and zero resource limits.
+- **Supabase Permissions Root-Cause Discovery & Fix:**
+  - Discovered that legacy column-level permissions on `public.faculty` denied the `anon` role from reading newly added columns (`short_code`, `email`, `phone`, `room_number`, `building`, `floor`, etc.).
+  - `public.courses` also lacked `SELECT` permissions for `anon`.
+  - Executed database permission grant:
+    ```sql
+    GRANT SELECT ON public.faculty TO anon, authenticated;
+    GRANT SELECT ON public.courses TO anon, authenticated;
+    GRANT SELECT ON public.departments TO anon, authenticated;
+    ```
+- **Cover Page Generator Faculty Linking (`CoverPageFormScreen.tsx`):**
+  - Upgraded `filteredFaculty` and `filteredCourses` with normalized punctuation-insensitive and multi-word token search (`cleanName.includes(cleanQ)`, `allWordsMatch`, and clean short code comparison). Resolved the disappearing search result bug when typing dots or initials (e.g. `Md. A` -> `Md. As`).
+  - Decoupled faculty list loading from department sync with `.limit(1000)` and robust fallback mappings.
+  - Verified selection autofill for Teacher Name, Designation, Department, and Cover Page PDF compilation.
