@@ -212,8 +212,8 @@ export function ToolCompressScreen({ navigation }: any) {
         ) : (
           <>
             <View style={[styles.fileCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-              <View style={[styles.fileIcon, { backgroundColor: C.surface2 }]}>
-                <Feather name="file-text" size={17} color={C.text2} />
+              <View style={styles.fileIcon}>
+                <Feather name="file-text" size={24} color={C.text} />
               </View>
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text numberOfLines={1} style={[styles.fileName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>

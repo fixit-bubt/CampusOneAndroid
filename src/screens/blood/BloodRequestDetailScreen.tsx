@@ -378,8 +378,8 @@ export function BloodRequestDetailScreen({ route, navigation }: any) {
                 ]}
               >
                 <View style={styles.locationLine}>
-                  <View style={[styles.locIconSquare, { backgroundColor: isDark ? 'rgba(214, 61, 53, 0.15)' : 'rgba(214, 61, 53, 0.10)' }]}>
-                    <MaterialCommunityIcons name="hospital-building" size={14} color={isDark ? '#ffffff' : SectorColors.blood} />
+                  <View style={styles.locIconSquare}>
+                    <MaterialCommunityIcons name="hospital-building" size={28} color={C.text} />
                   </View>
                   <Text style={[styles.hospitalTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={2}>
                     {req.hospital}
@@ -387,8 +387,8 @@ export function BloodRequestDetailScreen({ route, navigation }: any) {
                 </View>
 
                 <View style={[styles.locationLine, { marginTop: 6 }]}>
-                  <View style={[styles.locIconSquare, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : C.surface }]}>
-                    <Icon name="pin" size={11} color={C.textMuted} />
+                  <View style={styles.locIconSquare}>
+                    <Icon name="pin" size={24} color={C.textMuted} />
                   </View>
                   <Text style={[styles.areaTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
                     {req.area ? `${req.area}, Dhaka` : 'Dhaka, Bangladesh'}

@@ -170,7 +170,7 @@ const AreaSectionBar = memo(function AreaSectionBar({
             family="feather"
             name="map-pin"
             size={28}
-            color={activeColor}
+            color={C.text}
             animation={isOpen ? 'spring' : 'entrance'}
           />
         </View>
@@ -286,7 +286,7 @@ const AreaSectionBar = memo(function AreaSectionBar({
             {isSelected ? (
               <AnimatedIcon family="feather" name="check-circle" size={18} color={activeColor} animation="spring" />
             ) : (
-              <Feather name="chevron-right" size={16} color={activeColor} />
+              <Feather name="chevron-right" size={16} color={C.textMuted} />
             )}
           </TouchableOpacity>
 
@@ -318,7 +318,7 @@ const AreaSectionBar = memo(function AreaSectionBar({
                     family="mci"
                     name="hospital-building"
                     size={28}
-                    color={isDark ? '#ffffff' : activeColor}
+                    color={C.text}
                     animation="entrance"
                     delay={idx * 25}
                   />
@@ -346,7 +346,7 @@ const AreaSectionBar = memo(function AreaSectionBar({
                 {isHospSelected ? (
                   <AnimatedIcon family="feather" name="check-circle" size={18} color={activeColor} animation="spring" />
                 ) : (
-                  <Feather name="chevron-right" size={16} color={activeColor} />
+                  <Feather name="chevron-right" size={16} color={C.textMuted} />
                 )}
               </TouchableOpacity>
             );
@@ -429,7 +429,7 @@ const SearchResultRow = memo(function SearchResultRow({
       {isSelected ? (
         <AnimatedIcon family="feather" name="check-circle" size={18} color={activeColor} animation="spring" />
       ) : (
-        <Feather name="chevron-right" size={16} color={activeColor} />
+        <Feather name="chevron-right" size={16} color={C.textMuted} />
       )}
     </TouchableOpacity>
   );
@@ -558,7 +558,7 @@ export function AreaPickerModal({
                   Pinpoint exact location or auto-detect with device GPS
                 </Text>
               </View>
-              <Feather name="chevron-right" size={16} color={SectorColors.blood} />
+              <Feather name="chevron-right" size={16} color={C.textMuted} />
             </TouchableOpacity>
 
             {/* Search Box (Standard 58dp) */}
@@ -567,7 +567,7 @@ export function AreaPickerModal({
                 onPress={() => searchInputRef.current?.focus()}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <AnimatedIcon family="feather" name="search" size={18} color={SectorColors.blood} animation="entrance" />
+                <AnimatedIcon family="feather" name="search" size={18} color={C.textMuted} animation="entrance" />
               </TouchableOpacity>
               <TextInput
                 ref={searchInputRef}

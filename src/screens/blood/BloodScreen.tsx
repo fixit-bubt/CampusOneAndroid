@@ -775,7 +775,7 @@ export function BloodScreen({ route, navigation }: any) {
             {/* Request list */}
             {filteredRequests.length === 0 ? (
               <View style={[styles.emptyWrap, { backgroundColor: C.surface, borderColor: C.border }]}>
-                <AnimatedIcon family="feather" name="droplet" size={32} color={SectorColors.blood} animation="entrance" />
+                <AnimatedIcon family="feather" name="droplet" size={36} color={C.textMuted} animation="entrance" />
                 <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
                   {t.common.noResults}
                 </Text>
@@ -1074,8 +1074,8 @@ export function BloodScreen({ route, navigation }: any) {
                 activeOpacity={0.8}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-                  <View style={[styles.miniBloodBadge, { backgroundColor: BLOOD_BG }]}>
-                    <AnimatedIcon family="feather" name="droplet" size={20} color={BLOOD_COLOR} animation="entrance" />
+                  <View style={styles.miniBloodBadge}>
+                    <AnimatedIcon family="feather" name="droplet" size={32} color={C.text} animation="entrance" />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.registerPromptTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -1157,7 +1157,7 @@ export function BloodScreen({ route, navigation }: any) {
             {/* Donor list */}
             {filteredDonors.length === 0 ? (
               <View style={[styles.emptyWrap, { backgroundColor: C.surface, borderColor: C.border }]}>
-                <AnimatedIcon family="feather" name="droplet" size={32} color={SectorColors.blood} animation="entrance" />
+                <AnimatedIcon family="feather" name="droplet" size={36} color={C.textMuted} animation="entrance" />
                 <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
                   {t.common.noResults}
                 </Text>

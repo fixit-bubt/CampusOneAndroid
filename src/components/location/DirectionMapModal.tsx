@@ -687,21 +687,12 @@ export function DirectionMapModal({
           </TouchableOpacity>
 
           <View style={[styles.headerCapsule, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <View
-              style={[
-                styles.headerIconPill,
-                {
-                  backgroundColor: isDark ? `${sectorColor}25` : `${sectorColor}15`,
-                  borderColor: sectorColor,
-                  borderWidth: 1,
-                },
-              ]}
-            >
+            <View style={styles.headerIconPill}>
               <AnimatedIcon
                 family="feather"
                 name={iconName}
-                size={16}
-                color={sectorColor}
+                size={32}
+                color={C.text}
                 animation="spring"
               />
             </View>
@@ -768,7 +759,7 @@ export function DirectionMapModal({
               onPress={() => setTravelMode('driving')}
               activeOpacity={0.75}
             >
-              <Feather name="navigation" size={13} color={travelMode === 'driving' ? sectorColor : C.textMuted} />
+              <Feather name="navigation" size={16} color={travelMode === 'driving' ? C.text : C.textMuted} />
               <Text style={[styles.modeTabTxt, { color: travelMode === 'driving' ? sectorColor : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
                 Drive
               </Text>
@@ -782,7 +773,7 @@ export function DirectionMapModal({
               onPress={() => setTravelMode('bicycling')}
               activeOpacity={0.75}
             >
-              <MaterialCommunityIcons name="motorbike" size={15} color={travelMode === 'bicycling' ? sectorColor : C.textMuted} />
+              <MaterialCommunityIcons name="motorbike" size={18} color={travelMode === 'bicycling' ? C.text : C.textMuted} />
               <Text style={[styles.modeTabTxt, { color: travelMode === 'bicycling' ? sectorColor : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
                 Bike / Ride
               </Text>
@@ -796,7 +787,7 @@ export function DirectionMapModal({
               onPress={() => setTravelMode('walking')}
               activeOpacity={0.75}
             >
-              <Feather name="user" size={13} color={travelMode === 'walking' ? sectorColor : C.textMuted} />
+              <Feather name="user" size={16} color={travelMode === 'walking' ? C.text : C.textMuted} />
               <Text style={[styles.modeTabTxt, { color: travelMode === 'walking' ? sectorColor : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
                 Walk
               </Text>
@@ -862,8 +853,8 @@ export function DirectionMapModal({
               </View>
 
               {notes ? (
-                <View style={[styles.meetingBadge, { backgroundColor: isDark ? 'rgba(245, 158, 11, 0.12)' : '#fffbeb', borderColor: isDark ? 'rgba(245, 158, 11, 0.3)' : '#fde68a' }]}>
-                  <Feather name="map-pin" size={11} color="#f59e0b" />
+                <View style={[styles.meetingBadge, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                  <Feather name="map-pin" size={14} color={C.text} />
                   <Text style={[styles.meetingTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
                     Meeting: {notes}
                   </Text>
@@ -884,8 +875,8 @@ export function DirectionMapModal({
             </View>
           ) : (
             <View style={[styles.destSummaryBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : C.surface2, borderColor: C.border }]}>
-              <View style={[styles.destIconWrap, { backgroundColor: isDark ? `${sectorColor}25` : `${sectorColor}15` }]}>
-                <Feather name={iconName} size={14} color={sectorColor} />
+              <View style={styles.destIconWrap}>
+                <Feather name={iconName} size={28} color={C.text} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.destTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>

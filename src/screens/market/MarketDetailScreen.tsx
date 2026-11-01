@@ -426,8 +426,8 @@ export function MarketDetailScreen({ route, navigation }: any) {
             onPress={() => setMapModalOpen(true)}
             activeOpacity={0.8}
           >
-            <View style={[styles.spotIconWrap, { backgroundColor: isDark ? `${MARKET_COLOR}25` : `${MARKET_COLOR}15` }]}>
-              <AnimatedIcon family="feather" name="map-pin" size={16} color={MARKET_COLOR} animation="entrance" />
+            <View style={styles.spotIconWrap}>
+              <AnimatedIcon family="feather" name="map-pin" size={32} color={C.text} animation="entrance" />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.spotLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
@@ -442,11 +442,11 @@ export function MarketDetailScreen({ route, navigation }: any) {
                 </Text>
               )}
             </View>
-            <View style={[styles.mapHintBadge, { backgroundColor: isDark ? `${MARKET_COLOR}25` : `${MARKET_COLOR}15`, borderColor: isDark ? `${MARKET_COLOR}55` : `${MARKET_COLOR}35` }]}>
-              <Text style={[styles.mapHintTxt, { color: MARKET_COLOR, fontFamily: FontFamily.jakartaBold }]}>
+            <View style={[styles.mapHintBadge, { backgroundColor: C.surface2, borderColor: C.border }]}>
+              <Text style={[styles.mapHintTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                 Map
               </Text>
-              <AnimatedIcon family="feather" name="arrow-up-right" size={11} color={MARKET_COLOR} animation="spring" />
+              <AnimatedIcon family="feather" name="arrow-up-right" size={13} color={C.text} animation="spring" />
             </View>
           </TouchableOpacity>
         ) : null}

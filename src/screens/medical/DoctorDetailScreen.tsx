@@ -413,11 +413,11 @@ export function DoctorDetailScreen({ route, navigation }: any) {
         {/* Quick Contact Action Buttons */}
         <View style={styles.actionRow}>
           <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: MED_BG }]}
+            style={[styles.actionBtn, { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1 }]}
             onPress={handleDial}
             activeOpacity={0.75}
           >
-            <Icon name="phone" size={17} color={MED_COLOR} />
+            <Icon name="phone" size={18} color={C.text} />
             <Text
               style={[
                 styles.actionBtnTxt,

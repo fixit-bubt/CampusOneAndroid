@@ -607,7 +607,7 @@ export function EventsBrowseScreen({ navigation }: any) {
           <View style={[styles.modalSheet, { backgroundColor: C.surface, borderColor: C.border }]}>
             <View style={styles.modalHeader}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Feather name="layers" size={18} color={C.brand} />
+                <Feather name="layers" size={24} color={C.text} />
                 <Text style={[styles.modalTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                   Event Categories
                 </Text>

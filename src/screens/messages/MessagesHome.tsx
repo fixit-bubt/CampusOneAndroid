@@ -113,8 +113,8 @@ export function MessagesHome({ navigation }: any) {
         activeOpacity={0.7}
       >
         {r.isGroup ? (
-          <View style={[styles.groupIcon, { backgroundColor: C.surface2 }]}>
-            <Feather name={r.kind === 'club' ? 'users' : 'book-open'} size={19} color={C.brand} />
+          <View style={styles.groupIcon}>
+            <Feather name={r.kind === 'club' ? 'users' : 'book-open'} size={32} color={C.text} />
           </View>
         ) : (
           <Avatar uri={r.avatarUri} name={r.avatarName} size="md" />

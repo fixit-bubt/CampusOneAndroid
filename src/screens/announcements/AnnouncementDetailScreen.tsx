@@ -413,8 +413,8 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
         {/* Attachment Card (PDF) */}
         {item.attachment_url && (
           <View style={[styles.attachCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <View style={[styles.attachIcon, { backgroundColor: C.dangerBg }]}>
-              <Feather name="file-text" size={20} color={C.danger} />
+            <View style={styles.attachIcon}>
+              <Feather name="file-text" size={28} color={C.text} />
             </View>
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text
@@ -471,8 +471,8 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
             onPress={() => openUrl(item.external_url!)}
             activeOpacity={0.82}
           >
-            <View style={[styles.officialLinkIconSquircle, { backgroundColor: isDark ? 'rgba(37, 99, 235, 0.18)' : '#eff6ff' }]}>
-              <Feather name="globe" size={20} color="#2563eb" />
+            <View style={styles.officialLinkIconSquircle}>
+              <Feather name="globe" size={28} color={C.text} />
             </View>
             <View style={styles.officialLinkBody}>
               <View style={styles.officialLinkBadgeRow}>

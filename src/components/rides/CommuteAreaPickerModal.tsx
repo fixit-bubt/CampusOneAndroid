@@ -340,7 +340,7 @@ export function CommuteAreaPickerModal({
                   Pinpoint exact location or auto-detect with device GPS
                 </Text>
               </View>
-              <Feather name="chevron-right" size={16} color={activeColor} />
+              <Feather name="chevron-right" size={16} color={C.textMuted} />
             </TouchableOpacity>
 
             {/* Search Box (Standard 58dp, 100% Blood Parity) */}
@@ -349,7 +349,7 @@ export function CommuteAreaPickerModal({
                 onPress={() => searchInputRef.current?.focus()}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <AnimatedIcon family="feather" name="search" size={18} color={activeColor} animation="entrance" />
+                <AnimatedIcon family="feather" name="search" size={18} color={C.textMuted} animation="entrance" />
               </TouchableOpacity>
               <TextInput
                 ref={searchInputRef}
@@ -406,7 +406,7 @@ export function CommuteAreaPickerModal({
                           Custom Dhaka landmark or meeting point
                         </Text>
                       </View>
-                      <Feather name="arrow-right" size={16} color={activeColor} />
+                      <Feather name="arrow-right" size={16} color={C.textMuted} />
                     </TouchableOpacity>
                   ) : null
                 }
@@ -441,7 +441,7 @@ export function CommuteAreaPickerModal({
                       {isSelected ? (
                         <AnimatedIcon family="feather" name="check-circle" size={18} color={activeColor} animation="spring" />
                       ) : (
-                        <Feather name="chevron-right" size={16} color={activeColor} />
+                        <Feather name="chevron-right" size={16} color={C.textMuted} />
                       )}
                     </TouchableOpacity>
                   );
@@ -553,7 +553,7 @@ export function CommuteAreaPickerModal({
                             {isSelected ? (
                               <AnimatedIcon family="feather" name="check-circle" size={18} color={activeColor} animation="spring" />
                             ) : (
-                              <Feather name="chevron-right" size={16} color={activeColor} />
+                              <Feather name="chevron-right" size={16} color={C.textMuted} />
                             )}
                           </TouchableOpacity>
 
@@ -590,7 +590,7 @@ export function CommuteAreaPickerModal({
                                 {isHubSelected ? (
                                   <AnimatedIcon family="feather" name="check-circle" size={18} color={activeColor} animation="spring" />
                                 ) : (
-                                  <Feather name="chevron-right" size={16} color={activeColor} />
+                                  <Feather name="chevron-right" size={16} color={C.textMuted} />
                                 )}
                               </TouchableOpacity>
                             );

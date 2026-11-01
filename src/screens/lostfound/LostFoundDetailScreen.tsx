@@ -482,7 +482,7 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
               resizeMode="cover"
             />
           ) : (
-            <Icon name={CAT_ICON[item.category] ?? 'inbox'} size={48} color={fg} />
+            <Icon name={CAT_ICON[item.category] ?? 'inbox'} size={48} color={C.text} />
           )}
           <View style={[styles.typeOverlay, isLost ? { backgroundColor: C.dangerBg } : { backgroundColor: C.successBg }]}>
             <View style={[styles.typeDot, { backgroundColor: isLost ? C.danger : C.success }]} />
@@ -530,7 +530,7 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
               <Feather name="arrow-up-right" size={12} color={SectorColors.lostfound} />
             </View>
             <View style={styles.infoVal}>
-              <Icon name="pin" size={13} color={SectorColors.lostfound} />
+              <Icon name="pin" size={15} color={C.text} />
               <Text style={[styles.infoTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                 {item.location}
               </Text>
@@ -681,7 +681,7 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
                     activeOpacity={0.75}
                   >
                     <View style={[styles.matchThumb, { backgroundColor: `${mfg}1e` }]}>
-                      <Icon name={CAT_ICON[m.category] ?? 'inbox'} size={20} color={mfg} />
+                      <Icon name={CAT_ICON[m.category] ?? 'inbox'} size={28} color={C.text} />
                     </View>
                     <View style={{ flex: 1, minWidth: 0 }}>
                       <Text style={[styles.matchTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>

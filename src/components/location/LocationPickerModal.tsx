@@ -1007,7 +1007,7 @@ export function LocationPickerModal({
               {locatingGps ? (
                 <ActivityIndicator size="small" color={accentColor} />
               ) : (
-                <AnimatedIcon name="navigation" size={20} color={accentColor} animation="pulse" loop />
+                <AnimatedIcon name="navigation" size={24} color={C.text} animation="pulse" loop />
               )}
             </TouchableOpacity>
 
@@ -1018,7 +1018,7 @@ export function LocationPickerModal({
               activeOpacity={0.8}
               accessibilityLabel="Center to BUBT Campus"
             >
-              <Feather name="compass" size={20} color={accentColor} />
+              <Feather name="compass" size={24} color={C.text} />
             </TouchableOpacity>
 
             {/* Zoom In */}
@@ -1076,8 +1076,8 @@ export function LocationPickerModal({
                         onPress={() => handleSelectSearchPlace(item)}
                         activeOpacity={0.7}
                       >
-                        <View style={[styles.searchResultIconBox, { backgroundColor: isDark ? '#1f2430' : '#f1f5f9' }]}>
-                          <Feather name="clock" size={14} color={C.textMuted} />
+                        <View style={styles.searchResultIconBox}>
+                          <Feather name="clock" size={24} color={C.textMuted} />
                         </View>
                         <View style={{ flex: 1, marginRight: 8 }}>
                           <Text style={[styles.searchResultTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -1150,8 +1150,8 @@ export function LocationPickerModal({
                     onPress={() => handleSelectSearchPlace(item)}
                     activeOpacity={0.7}
                   >
-                    <View style={[styles.searchResultIconBox, { backgroundColor: `${accentColor}18` }]}>
-                      <Feather name={item.placeType === 'transit' ? 'navigation' : item.placeType === 'university' ? 'book' : 'map-pin'} size={14} color={accentColor} />
+                    <View style={styles.searchResultIconBox}>
+                      <Feather name={item.placeType === 'transit' ? 'navigation' : item.placeType === 'university' ? 'book' : 'map-pin'} size={24} color={C.text} />
                     </View>
                     <View style={{ flex: 1, marginRight: 8 }}>
                       <Text style={[styles.searchResultTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -1186,8 +1186,8 @@ export function LocationPickerModal({
                       onPress={() => handleSelectSearchPlace(item)}
                       activeOpacity={0.7}
                     >
-                      <View style={[styles.searchResultIconBox, { backgroundColor: `${accentColor}18` }]}>
-                        <Feather name={iconName} size={15} color={accentColor} />
+                      <View style={styles.searchResultIconBox}>
+                        <Feather name={iconName} size={24} color={C.text} />
                       </View>
                       <View style={{ flex: 1, marginRight: 8 }}>
                         <Text style={[styles.searchResultTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -1288,8 +1288,8 @@ export function LocationPickerModal({
               },
             ]}
           >
-            <View style={[styles.locationIconBox44, { backgroundColor: `${accentColor}18` }]}>
-              <AnimatedIcon name="map-pin" size={22} color={accentColor} animation="spring" />
+            <View style={styles.locationIconBox44}>
+              <AnimatedIcon name="map-pin" size={32} color={C.text} animation="spring" />
             </View>
 
             <View style={styles.locationTextColumn}>
@@ -1328,7 +1328,7 @@ export function LocationPickerModal({
               {placeMetrics && (
                 <View style={styles.travelEstimatesRow}>
                   <View style={[styles.previewDistancePill, { backgroundColor: isDark ? '#1e293b' : '#f1f5f9', borderColor: C.border }]}>
-                    <Feather name="navigation" size={10} color={accentColor} style={{ marginRight: 4 }} />
+                    <Feather name="navigation" size={12} color={C.text} style={{ marginRight: 4 }} />
                     <Text style={[styles.previewDistanceTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                       {placeMetrics.distanceText}
                     </Text>
@@ -1375,7 +1375,7 @@ export function LocationPickerModal({
               activeOpacity={0.85}
               accessibilityLabel="View route directions"
             >
-              <Feather name="corner-up-right" size={17} color={accentColor} style={{ marginRight: 6 }} />
+              <Feather name="corner-up-right" size={18} color={C.text} style={{ marginRight: 6 }} />
               <Text style={[styles.directionsButtonText, { color: accentColor, fontFamily: FontFamily.jakartaBold }]}>
                 Directions
               </Text>

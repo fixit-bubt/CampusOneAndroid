@@ -416,7 +416,7 @@ export function RidePostScreen({ route, navigation }: any) {
 
           {customFromMode ? (
             <View style={[styles.customInputWrap, { backgroundColor: C.surface, borderColor: from ? accentColor : C.border }]}>
-              <Feather name="navigation" size={17} color={accentColor} />
+              <Feather name="navigation" size={18} color={C.text} />
               <TextInput
                 style={[styles.customInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                 value={from}
@@ -517,7 +517,7 @@ export function RidePostScreen({ route, navigation }: any) {
 
           {customToMode ? (
             <View style={[styles.customInputWrap, { backgroundColor: C.surface, borderColor: to ? accentColor : C.border }]}>
-              <Feather name="map-pin" size={17} color={accentColor} />
+              <Feather name="map-pin" size={18} color={C.text} />
               <TextInput
                 style={[styles.customInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                 value={to}
@@ -701,7 +701,7 @@ export function RidePostScreen({ route, navigation }: any) {
                 {isOffer ? (t.rides2.fareTk ?? 'FARE (৳) PER SEAT') : 'BUDGET (৳)'}
               </Text>
               <View style={[styles.fareInputWrap, { backgroundColor: C.surface, borderColor: fare ? accentColor : C.border }]}>
-                <View style={[styles.currencyPrefixBox, { backgroundColor: pillBg(accentColor, isDark) }]}>
+                <View style={styles.currencyPrefixBox}>
                   <Text style={[styles.currencyPrefixTxt, { color: accentColor, fontFamily: FontFamily.jakartaBold }]}>৳</Text>
                 </View>
                 <TextInput
@@ -724,7 +724,7 @@ export function RidePostScreen({ route, navigation }: any) {
             {isOffer ? (t.rides2.meetingSpot ?? 'MEETING POINT / LANDMARK') : 'NOTES / MEETING POINT'}
           </Text>
           <View style={[styles.customInputWrap, { backgroundColor: C.surface, borderColor: notes ? accentColor : C.border }]}>
-            <Feather name="map-pin" size={17} color={accentColor} />
+            <Feather name="map-pin" size={18} color={C.text} />
             <TextInput
               style={[styles.customInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
               value={notes}
@@ -818,12 +818,9 @@ export function RidePostScreen({ route, navigation }: any) {
               <View style={styles.modalHeader}>
                 <View style={styles.modalHeaderLeft}>
                   <View
-                    style={[
-                      styles.modalHeaderIcon,
-                      { backgroundColor: isDark ? `${accentColor}24` : `${accentColor}15` },
-                    ]}
+                    style={styles.modalHeaderIcon}
                   >
-                    <Feather name="clock" size={18} color={accentColor} />
+                    <Feather name="clock" size={24} color={C.text} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.modalTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>

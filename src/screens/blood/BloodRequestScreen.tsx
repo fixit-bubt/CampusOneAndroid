@@ -282,7 +282,7 @@ export function BloodRequestScreen({ navigation }: any) {
             PATIENT FULL NAME *
           </Text>
           <View style={[styles.inputWithIcon, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <AnimatedIcon family="feather" name="user" size={18} color={patientName ? SectorColors.blood : C.textMuted} animation="entrance" />
+            <AnimatedIcon family="feather" name="user" size={18} color={patientName ? C.text : C.textMuted} animation="entrance" />
             <TextInput
               style={[styles.innerInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
               value={patientName}
@@ -510,13 +510,13 @@ export function BloodRequestScreen({ navigation }: any) {
             activeOpacity={0.8}
           >
             <View style={styles.plateletLeft}>
-              <View style={[styles.plateletIcon, { backgroundColor: isPlatelets ? C.warn : (isDark ? 'rgba(234, 179, 8, 0.15)' : 'rgba(234, 179, 8, 0.10)') }]}>
+              <View style={styles.plateletIcon}>
                 <AnimatedIcon
                   key={`platelet-${isPlatelets}`}
                   family="feather"
                   name="zap"
-                  size={22}
-                  color={isPlatelets ? '#fff' : C.warn}
+                  size={28}
+                  color={C.text}
                   animation={isPlatelets ? 'spring' : 'wobble'}
                   loop={false}
                 />
@@ -605,8 +605,8 @@ export function BloodRequestScreen({ navigation }: any) {
                     onPress={() => handleSelectReason(r)}
                     activeOpacity={0.7}
                   >
-                    <View style={[styles.sheetOptionIcon, { backgroundColor: pillBg(reasonColor, isDark), borderColor: isSelected ? reasonColor : C.border, borderWidth: 1 }]}>
-                      <AnimatedIcon family="feather" name={r.icon as any} size={18} color={reasonColor} animation="entrance" />
+                    <View style={styles.sheetOptionIcon}>
+                      <AnimatedIcon family="feather" name={r.icon as any} size={32} color={C.text} animation="entrance" />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.sheetOptionTitle, { color: isSelected ? reasonColor : C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -668,8 +668,8 @@ export function BloodRequestScreen({ navigation }: any) {
                     onPress={() => handleSelectAffiliation(a)}
                     activeOpacity={0.7}
                   >
-                    <View style={[styles.sheetOptionIcon, { backgroundColor: pillBg(affColor, isDark), borderColor: isSelected ? affColor : C.border, borderWidth: 1 }]}>
-                      <AnimatedIcon family="feather" name={a.icon as any} size={18} color={affColor} animation="entrance" />
+                    <View style={styles.sheetOptionIcon}>
+                      <AnimatedIcon family="feather" name={a.icon as any} size={32} color={C.text} animation="entrance" />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.sheetOptionTitle, { color: isSelected ? affColor : C.text, fontFamily: FontFamily.jakartaBold }]}>

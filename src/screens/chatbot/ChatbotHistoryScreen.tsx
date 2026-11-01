@@ -94,8 +94,8 @@ export function ChatbotHistoryScreen({ navigation }: any) {
             onPress={() => navigation.replace('Chatbot', { conversationId: c.id })}
             activeOpacity={0.7}
           >
-            <View style={[styles.rowIcon, { backgroundColor: C.surface2 }]}>
-              <Feather name="message-circle" size={18} color={C.brand} />
+            <View style={styles.rowIcon}>
+              <Feather name="message-circle" size={32} color={C.text} />
             </View>
             <View style={styles.rowBody}>
               <Text style={[styles.rowTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>

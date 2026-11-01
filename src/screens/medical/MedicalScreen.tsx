@@ -655,7 +655,7 @@ export function MedicalScreen({ navigation }: any) {
                   { backgroundColor: `${MED_COLOR}25` },
                 ]}
               >
-                <AnimatedIcon family="feather" name="phone-call" size={14} color={MED_COLOR} animation="bounce" />
+                <AnimatedIcon family="feather" name="phone-call" size={16} color={C.text} animation="bounce" />
               </View>
               <View style={styles.heroTabletBody}>
                 <Text
@@ -741,12 +741,12 @@ export function MedicalScreen({ navigation }: any) {
               onPress={() => setFilterModalVisible(true)}
               activeOpacity={0.75}
             >
-              <View style={[styles.dropdownIconTile, { backgroundColor: selectedFilterObj.bg ?? MED_BG }]}>
+              <View style={styles.dropdownIconTile}>
                 <AnimatedIcon
                   family={selectedFilterObj.iconFamily ?? 'mci'}
                   name={selectedFilterObj.icon}
-                  size={20}
-                  color={selectedFilterObj.color ?? MED_COLOR}
+                  size={28}
+                  color={C.text}
                   animation="spring"
                 />
               </View>
@@ -938,8 +938,8 @@ export function MedicalScreen({ navigation }: any) {
               ]}
             >
               <View style={styles.policyRow}>
-                <View style={[styles.policyIconBadge, { backgroundColor: C.infoBg }]}>
-                  <Icon name="shield" size={16} color={C.info} />
+                <View style={styles.policyIconBadge}>
+                  <Icon name="shield" size={24} color={C.text} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text
@@ -1218,8 +1218,8 @@ export function MedicalScreen({ navigation }: any) {
               ]}
             >
               <View style={styles.emergencyBannerTop}>
-                <View style={[styles.emIconRound, { backgroundColor: C.danger }]}>
-                  <AnimatedIcon family="feather" name="alert-triangle" size={20} color={C.white} animation="pulse" loop />
+                <View style={styles.emIconRound}>
+                  <AnimatedIcon family="feather" name="alert-triangle" size={28} color={C.text} animation="pulse" loop />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text
@@ -1341,7 +1341,7 @@ export function MedicalScreen({ navigation }: any) {
               activeOpacity={0.75}
             >
               <View style={styles.bloodBridgeIconTile}>
-                <AnimatedIcon family="feather" name="droplet" size={20} color={SectorColors.blood} animation="pulse" loop />
+                <AnimatedIcon family="feather" name="droplet" size={24} color={C.text} animation="pulse" loop />
               </View>
               <View style={styles.bloodBridgeBody}>
                 <Text
@@ -1431,13 +1431,13 @@ export function MedicalScreen({ navigation }: any) {
                       <TouchableOpacity
                         style={[
                           styles.hospCallMiniBtn,
-                          { backgroundColor: hospCfg.bg },
+                          { backgroundColor: C.surface2, borderColor: C.border },
                         ]}
                         onPress={() => handleDialPhone(hosp.hotline)}
                         activeOpacity={0.75}
                         hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                       >
-                        <Icon name="phone" size={15} color={hospCfg.color} />
+                        <Icon name="phone" size={16} color={C.text} />
                       </TouchableOpacity>
 
                       <TouchableOpacity

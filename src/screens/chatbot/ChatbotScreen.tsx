@@ -281,8 +281,8 @@ export function ChatbotScreen({ navigation, route }: any) {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <View style={[styles.botIconWrap, { backgroundColor: `${C.brand}18` }]}>
-              <Feather name="cpu" size={32} color={C.brand} />
+            <View style={styles.botIconWrap}>
+              <Feather name="cpu" size={40} color={C.text} />
             </View>
             <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
               {t.chatbot.title}
@@ -299,8 +299,8 @@ export function ChatbotScreen({ navigation, route }: any) {
                   onPress={() => setText(s.text)}
                   activeOpacity={0.75}
                 >
-                  <View style={[styles.suggestionIcon, { backgroundColor: C.surface2 }]}>
-                    <Feather name={s.icon as any} size={15} color={C.brand} />
+                  <View style={styles.suggestionIcon}>
+                    <Feather name={s.icon as any} size={24} color={C.text} />
                   </View>
                   <Text style={[styles.suggestionTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>
                     {s.text}

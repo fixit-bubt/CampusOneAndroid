@@ -246,8 +246,8 @@ export function FileRow({
   const t = useT();
   return (
     <View style={[styles.fileRow, { backgroundColor: C.surface, borderColor: C.border }]}>
-      <View style={[styles.fileIcon, { backgroundColor: C.surface2 }]}>
-        <Feather name={kind === 'pdf' ? 'file-text' : 'image'} size={17} color={C.text2} />
+      <View style={styles.fileIcon}>
+        <Feather name={kind === 'pdf' ? 'file-text' : 'image'} size={28} color={C.text} />
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text numberOfLines={1} style={[styles.fileName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{name}</Text>

@@ -804,7 +804,7 @@ export function DirectoryScreen({ route, navigation }: any) {
                     { backgroundColor: isDark ? 'rgba(37, 99, 235, 0.2)' : 'rgba(37, 99, 235, 0.1)' },
                   ]}
                 >
-                  <Feather name="grid" size={17} color={SectorColors.directory} />
+                  <Feather name="grid" size={24} color={C.text} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.modalTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>

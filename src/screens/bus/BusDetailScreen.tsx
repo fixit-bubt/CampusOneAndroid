@@ -288,8 +288,8 @@ export function BusDetailScreen({ route, navigation }: any) {
         {(busRoute.helper_name || busRoute.helper_phone) && (
           <View style={[styles.helperCard, { backgroundColor: C.surface, borderColor: C.border }]}>
             <View style={styles.helperHeader}>
-              <View style={[styles.helperAvatar, { backgroundColor: `${SectorColors.bus}1e` }]}>
-                <Feather name="user-check" size={20} color={SectorColors.bus} />
+              <View style={styles.helperAvatar}>
+                <Feather name="user-check" size={32} color={C.text} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.helperRole, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>

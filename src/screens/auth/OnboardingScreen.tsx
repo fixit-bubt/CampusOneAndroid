@@ -241,8 +241,8 @@ function DeptPickerSheet({
                   activeOpacity={0.7}
                 >
                   <View style={styles.modalItemLeft}>
-                    <View style={[styles.modalItemIconBox, { backgroundColor: C.surface2, borderColor: C.border }]}>
-                      <Icon name={item.icon} size={18} color={isSelected ? C.brand : C.text} />
+                    <View style={styles.modalItemIconBox}>
+                      <Icon name={item.icon} size={28} color={C.text} />
                     </View>
                     <Text
                       style={[
@@ -314,8 +314,8 @@ function BloodPickerSheet({
                   activeOpacity={0.7}
                 >
                   <View style={styles.modalItemLeft}>
-                    <View style={[styles.modalItemIconBox, { backgroundColor: C.surface2, borderColor: C.border }]}>
-                      <Icon name="droplet" size={18} color={isSelected ? C.brand : C.text} />
+                    <View style={styles.modalItemIconBox}>
+                      <Icon name="droplet" size={28} color={C.text} />
                     </View>
                     <Text
                       style={[

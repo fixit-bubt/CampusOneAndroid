@@ -306,8 +306,8 @@ export function ManageFacultyScreen({ navigation }: any) {
         {/* Live Website Automated Sync Card */}
         <View style={[styles.syncCard, { backgroundColor: C.surface, borderColor: C.border }]}>
           <View style={styles.syncCardTop}>
-            <View style={[styles.syncIconWrap, { backgroundColor: `${SectorColors.faculty}14` }]}>
-              <AnimatedIcon family="feather" name="refresh-cw" size={20} color={SectorColors.faculty} animation={syncing ? 'pulse' : 'spring'} loop={syncing} />
+            <View style={styles.syncIconWrap}>
+              <AnimatedIcon family="feather" name="refresh-cw" size={32} color={C.text} animation={syncing ? 'pulse' : 'spring'} loop={syncing} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.syncTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -407,7 +407,7 @@ export function ManageFacultyScreen({ navigation }: any) {
       <Modal visible={syncModalVisible} transparent animationType="fade" onRequestClose={() => setSyncModalVisible(false)}>
         <View style={styles.syncOverlay}>
           <View style={[styles.syncReportCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <View style={[styles.syncIconBig, { backgroundColor: `${SectorColors.faculty}15` }]}>
+            <View style={styles.syncIconBig}>
               {syncing ? (
                 <ActivityIndicator color={SectorColors.faculty} size="large" />
               ) : syncResult?.error ? (

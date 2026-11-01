@@ -583,9 +583,9 @@ export function RideDetailScreen({ route, navigation }: any) {
 
                 {/* Live GPS Proximity directly under Pickup (Zero-Cutoff Ergonomics) */}
                 {proximityText ? (
-                  <View style={[styles.proximityBeacon, { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.15)' : '#ecfdf5', borderColor: isDark ? 'rgba(16, 185, 129, 0.3)' : '#a7f3d0' }]}>
-                    <AnimatedIcon family="feather" name="map-pin" size={11} color="#10b981" animation="pulse" />
-                    <Text style={[styles.proximityTxt, { color: '#10b981', fontFamily: FontFamily.jakartaBold }]}>
+                  <View style={[styles.proximityBeacon, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                    <AnimatedIcon family="feather" name="map-pin" size={14} color={C.text} animation="pulse" />
+                    <Text style={[styles.proximityTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                       {proximityText} {proximityEstimate ? `· ${proximityEstimate}` : ''}
                     </Text>
                   </View>
@@ -596,8 +596,8 @@ export function RideDetailScreen({ route, navigation }: any) {
             {/* 📍 Meeting Spot / Notes (along the spine) */}
             {ride.notes ? (
               <View style={styles.meetingSpotRow}>
-                <View style={[styles.meetingSpotNode, { backgroundColor: isDark ? '#78350f' : '#fef3c7', borderColor: isDark ? '#f59e0b' : '#fbbf24' }]}>
-                  <Feather name="map-pin" size={10} color="#f59e0b" />
+                <View style={[styles.meetingSpotNode, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                  <Feather name="map-pin" size={14} color={C.text} />
                 </View>
                 <View style={[styles.meetingSpotBubble, { backgroundColor: isDark ? 'rgba(245, 158, 11, 0.08)' : '#fffdf5', borderColor: isDark ? 'rgba(245, 158, 11, 0.25)' : '#fde68a' }]}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
@@ -647,11 +647,11 @@ export function RideDetailScreen({ route, navigation }: any) {
               onPress={() => setShowRouteMap(true)}
               activeOpacity={0.8}
             >
-              <Feather name="map" size={17} color={C.brand} />
+              <Feather name="map" size={20} color={C.text} />
               <Text style={[styles.routeNavBtnTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
                 View In-App Route Map
               </Text>
-              <Feather name="maximize-2" size={14} color={C.brand} />
+              <Feather name="maximize-2" size={16} color={C.text} />
             </TouchableOpacity>
           </View>
         </View>

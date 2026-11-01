@@ -618,8 +618,8 @@ export function MarketScreen({ navigation }: any) {
           <View style={styles.emptyContainer}>
             {tab === 'saved' ? (
               <>
-                <View style={[styles.emptyIconCircle, { backgroundColor: `${MARKET_COLOR}18` }]}>
-                  <Feather name="heart" size={32} color={MARKET_COLOR} />
+                <View style={styles.emptyIconCircle}>
+                  <Feather name="heart" size={36} color={C.textMuted} />
                 </View>
                 <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                   {t.market2.savedEmptyTitle}
@@ -630,8 +630,8 @@ export function MarketScreen({ navigation }: any) {
               </>
             ) : tab === 'mine' ? (
               <>
-                <View style={[styles.emptyIconCircle, { backgroundColor: `${MARKET_COLOR}18` }]}>
-                  <Feather name="tag" size={32} color={MARKET_COLOR} />
+                <View style={styles.emptyIconCircle}>
+                  <Feather name="tag" size={36} color={C.textMuted} />
                 </View>
                 <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                   {t.market2.noListingsYet}
@@ -648,8 +648,8 @@ export function MarketScreen({ navigation }: any) {
               </>
             ) : (
               <>
-                <View style={[styles.emptyIconCircle, { backgroundColor: `${MARKET_COLOR}18` }]}>
-                  <Icon name="market" size={32} color={MARKET_COLOR} />
+                <View style={styles.emptyIconCircle}>
+                  <Icon name="market" size={36} color={C.textMuted} />
                 </View>
                 <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                   {t.market2.noItemsAvailable}

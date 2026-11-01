@@ -441,8 +441,8 @@ export function ToolImagesScreen({ navigation }: any) {
         onPress={() => navigation.navigate('CoverPageForm')}
         activeOpacity={0.8}
       >
-        <View style={[styles.coverIcon, { backgroundColor: C.surface2 }]}>
-          <Feather name="file-text" size={20} color={SectorColors.coverpage} />
+        <View style={styles.coverIcon}>
+          <Feather name="file-text" size={32} color={C.text} />
         </View>
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={[styles.coverTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>

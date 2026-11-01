@@ -365,7 +365,7 @@ export function MarketPostScreen({ route, navigation }: any) {
                 {t.market2.customCategoryLabel}
               </Text>
               <View style={[styles.input58WithIcon, { backgroundColor: C.surface, borderColor: customCat ? MARKET_COLOR : C.border }]}>
-                <Feather name="folder-plus" size={18} color={customCat ? MARKET_COLOR : C.textMuted} />
+                <Feather name="folder-plus" size={18} color={customCat ? C.text : C.textMuted} />
                 <TextInput
                   style={[styles.innerInput58, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                   value={customCat}
@@ -382,7 +382,7 @@ export function MarketPostScreen({ route, navigation }: any) {
             {t.market2.itemName} *
           </Text>
           <View style={[styles.input58WithIcon, { backgroundColor: C.surface, borderColor: title ? MARKET_COLOR : C.border }]}>
-            <Feather name="tag" size={18} color={title ? MARKET_COLOR : C.textMuted} />
+            <Feather name="tag" size={18} color={title ? C.text : C.textMuted} />
             <TextInput
               style={[styles.innerInput58, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
               value={title}
@@ -419,7 +419,7 @@ export function MarketPostScreen({ route, navigation }: any) {
                 {uploading ? (
                   <ActivityIndicator size="small" color={MARKET_COLOR} />
                 ) : (
-                  <Feather name="camera" size={24} color={MARKET_COLOR} />
+                  <Feather name="camera" size={24} color={C.text} />
                 )}
                 <Text style={[styles.photoPlaceholderTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
                   {uploading ? t.market2.uploading : t.market2.tapToAddPhoto}
@@ -512,7 +512,7 @@ export function MarketPostScreen({ route, navigation }: any) {
 
           {customMode ? (
             <View style={[styles.input58WithIcon, { backgroundColor: C.surface, borderColor: meetupSpot ? MARKET_COLOR : C.border }]}>
-              <Feather name="edit-3" size={18} color={meetupSpot ? MARKET_COLOR : C.textMuted} />
+              <Feather name="edit-3" size={18} color={meetupSpot ? C.text : C.textMuted} />
               <TextInput
                 style={[styles.innerInput58, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                 value={meetupSpot}
@@ -615,7 +615,7 @@ export function MarketPostScreen({ route, navigation }: any) {
                 {t.market2.courseCode}
               </Text>
               <View style={[styles.input58WithIcon, { backgroundColor: C.surface, borderColor: courseCode ? MARKET_COLOR : C.border }]}>
-                <Feather name="book" size={18} color={courseCode ? MARKET_COLOR : C.textMuted} />
+                <Feather name="book" size={18} color={courseCode ? C.text : C.textMuted} />
                 <TextInput
                   style={[styles.innerInput58, { color: C.text, fontFamily: FontFamily.jakartaBold }]}
                   value={courseCode}
@@ -719,8 +719,8 @@ export function MarketPostScreen({ route, navigation }: any) {
             <View style={[styles.modalHandle, { backgroundColor: C.border }]} />
             <View style={styles.modalHeader}>
               <View style={styles.modalHeaderLeft}>
-                <View style={[styles.modalHeaderIcon, { backgroundColor: isDark ? `${MARKET_COLOR}25` : `${MARKET_COLOR}15` }]}>
-                  <Feather name="grid" size={17} color={MARKET_COLOR} />
+                <View style={styles.modalHeaderIcon}>
+                  <Feather name="grid" size={24} color={C.text} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.modalTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -811,8 +811,8 @@ export function MarketPostScreen({ route, navigation }: any) {
             {/* Header */}
             <View style={styles.modalHeader}>
               <View style={styles.modalHeaderLeft}>
-                <View style={[styles.modalHeaderIcon, { backgroundColor: isDark ? `${Accent.amber}25` : `${Accent.amber}15` }]}>
-                  <Feather name="map-pin" size={17} color={Accent.amber} />
+                <View style={styles.modalHeaderIcon}>
+                  <Feather name="map-pin" size={24} color={C.text} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.modalTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -843,8 +843,8 @@ export function MarketPostScreen({ route, navigation }: any) {
               }}
               activeOpacity={0.8}
             >
-              <View style={[styles.mapTriggerIconWrap, { backgroundColor: `${Accent.amber}24` }]}>
-                <Feather name="map" size={18} color={Accent.amber} />
+              <View style={styles.mapTriggerIconWrap}>
+                <Feather name="map" size={32} color={C.text} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.mapTriggerTitle, { color: Accent.amber, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
