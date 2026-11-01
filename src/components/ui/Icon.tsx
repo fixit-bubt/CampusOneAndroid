@@ -1,6 +1,7 @@
 import React from 'react';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import type { StyleProp, ViewStyle } from 'react-native';
+import { useTheme } from '../../hooks/useTheme';
 import { AnimatedIcon, type AnimationType } from './AnimatedIcon';
 
 // Maps design icon names -> MaterialCommunityIcons where Feather has no accurate equivalent
@@ -104,6 +105,9 @@ interface IconProps {
 }
 
 export function Icon({ name, size = 21, color, stroke, animation = 'none', delay, style }: IconProps) {
+  const { C } = useTheme();
+  const iconColor = color ?? C.text;
+
   const mciName = MCI_ICON_MAP[name];
   if (mciName) {
     if (animation !== 'none') {
@@ -112,14 +116,14 @@ export function Icon({ name, size = 21, color, stroke, animation = 'none', delay
           family="mci"
           name={mciName}
           size={size}
-          color={color}
+          color={iconColor}
           animation={animation}
           delay={delay}
           style={style}
         />
       );
     }
-    return <MaterialCommunityIcons name={mciName} size={size} color={color} style={style} />;
+    return <MaterialCommunityIcons name={mciName} size={size} color={iconColor} style={style} />;
   }
 
   const featherName = ICON_MAP[name] ?? (name as any);
@@ -129,12 +133,12 @@ export function Icon({ name, size = 21, color, stroke, animation = 'none', delay
         family="feather"
         name={featherName}
         size={size}
-        color={color}
+        color={iconColor}
         animation={animation}
         delay={delay}
         style={style}
       />
     );
   }
-  return <Feather name={featherName} size={size} color={color} style={style} />;
+  return <Feather name={featherName} size={size} color={iconColor} style={style} />;
 }

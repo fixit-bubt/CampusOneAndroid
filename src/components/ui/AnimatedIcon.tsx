@@ -6,6 +6,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { Feather, MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../../hooks/useTheme';
 
 export type IconFamily = 'feather' | 'mci' | 'ionicons';
 
@@ -34,6 +35,8 @@ export function AnimatedIcon({
   onPress,
   style,
 }: AnimatedIconProps) {
+  const { C } = useTheme();
+  const iconColor = color ?? C.text;
   const scale = useRef(new Animated.Value(animation === 'entrance' ? 0.85 : 1)).current;
   const rotation = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(0)).current;
@@ -228,7 +231,7 @@ export function AnimatedIcon({
         <MaterialCommunityIcons
           name={name as any}
           size={size}
-          color={color}
+          color={iconColor}
         />
       );
     }
@@ -237,7 +240,7 @@ export function AnimatedIcon({
         <Ionicons
           name={name as any}
           size={size}
-          color={color}
+          color={iconColor}
         />
       );
     }
@@ -245,7 +248,7 @@ export function AnimatedIcon({
       <Feather
         name={name as any}
         size={size}
-        color={color}
+        color={iconColor}
       />
     );
   };

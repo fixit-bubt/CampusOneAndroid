@@ -30,7 +30,7 @@ function timeAgo(iso: string): string {
 }
 
 export function NotifDetailScreen({ route, navigation }: any) {
-  const { C } = useTheme();
+  const { C, isDark } = useTheme();
   const { user } = useAuth();
   const t = useT();
   const toast = useToast();
@@ -65,7 +65,7 @@ export function NotifDetailScreen({ route, navigation }: any) {
       >
         {/* Header */}
         <View style={styles.header}>
-          <SectorIcon sector={n.sector} size="lg" />
+          <SectorIcon sector={n.sector} size="lg" dark={isDark} />
           <View style={{ flex: 1 }}>
             <Text style={[styles.time, { color: C.textMuted, fontFamily: FontFamily.jakartaSemiBold }]}>
               {timeAgo(n.created_at) === 'Just now' ? t.notif.justNow : t.notif.timeAgo(timeAgo(n.created_at))}
@@ -84,7 +84,7 @@ export function NotifDetailScreen({ route, navigation }: any) {
           onPress={openRelated}
           activeOpacity={0.75}
         >
-          <SectorIcon sector={n.sector} size="sm" />
+          <SectorIcon sector={n.sector} size="sm" dark={isDark} />
           <View style={{ flex: 1 }}>
             <Text style={[styles.relatedTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{sectorLabel}</Text>
             <Text style={[styles.relatedSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{t.notif.viewDetails}</Text>

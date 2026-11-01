@@ -4,6 +4,7 @@ import {
   TouchableWithoutFeedback,
   type ViewStyle,
 } from 'react-native';
+import { useTheme } from '../../hooks/useTheme';
 import { SectorColors } from '../../theme';
 import type { SectorKey } from '../../theme';
 import { AnimatedIcon, type IconFamily, type AnimationType } from './AnimatedIcon';
@@ -54,36 +55,21 @@ export interface SectorIconProps {
   style?: ViewStyle;
 }
 
-function lightenHex(hex: string): string {
-  const n = parseInt(hex.slice(1), 16);
-  let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
-  r = Math.round(r + (255 - r) * 0.32);
-  g = Math.round(g + (255 - g) * 0.32);
-  b = Math.round(b + (255 - b) * 0.32);
-  return `rgb(${r},${g},${b})`;
-}
-
-function hexWithAlpha(hex: string, alpha: number): string {
-  const n = parseInt(hex.slice(1), 16);
-  const r = (n >> 16) & 255;
-  const g = (n >> 8) & 255;
-  const b = n & 255;
-  return `rgba(${r},${g},${b},${alpha})`;
-}
-
 export function SectorIcon({
   sector,
   size = 'md',
-  dark = false,
+  dark,
   color,
   animation = 'none',
   delay,
   onPress,
   style,
 }: SectorIconProps) {
+  const { isDark } = useTheme();
   const scale = useRef(new Animated.Value(1)).current;
 
-  const defaultMonochrome = dark ? '#f4f4f5' : '#18181b';
+  const isDarkMode = dark !== undefined ? dark : isDark;
+  const defaultMonochrome = isDarkMode ? '#f4f4f5' : '#18181b';
   const fg = color ?? defaultMonochrome;
 
   const dim = SIZE_MAP[size];

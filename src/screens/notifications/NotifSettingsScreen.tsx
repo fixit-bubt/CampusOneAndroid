@@ -361,7 +361,7 @@ export function NotifSettingsScreen({ navigation }: any) {
                   onPress={() => setExpanded(isOpen ? null : s.id)}
                   activeOpacity={0.75}
                 >
-                  <SectorIcon sector={s.id} size="md" />
+                  <SectorIcon sector={s.id} size="md" dark={isDark} />
                   <Text style={[styles.sectorTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                     {s.label}
                   </Text>

@@ -139,7 +139,7 @@ export function FeatureScreen({ route, navigation }: any) {
         {/* Hero card */}
         <View style={[styles.heroCard, { backgroundColor: C.surface2 }]}>
           <View style={styles.heroTop}>
-            <SectorIcon sector={sector} size="lg" />
+            <SectorIcon sector={sector} size="lg" dark={isDark} />
             <View style={{ flex: 1 }}>
               <Text style={[styles.heroTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
                 {info.label}
