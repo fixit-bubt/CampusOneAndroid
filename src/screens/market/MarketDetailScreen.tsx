@@ -427,7 +427,7 @@ export function MarketDetailScreen({ route, navigation }: any) {
             activeOpacity={0.8}
           >
             <View style={styles.spotIconWrap}>
-              <AnimatedIcon family="feather" name="map-pin" size={32} color={C.text} animation="entrance" />
+              <AnimatedIcon family="feather" name="map-pin" size={32} color={C.text} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.spotLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
@@ -446,7 +446,7 @@ export function MarketDetailScreen({ route, navigation }: any) {
               <Text style={[styles.mapHintTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                 Map
               </Text>
-              <AnimatedIcon family="feather" name="arrow-up-right" size={13} color={C.text} animation="spring" />
+              <AnimatedIcon family="feather" name="arrow-up-right" size={13} color={C.text} />
             </View>
           </TouchableOpacity>
         ) : null}

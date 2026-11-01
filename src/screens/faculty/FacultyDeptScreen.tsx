@@ -170,7 +170,7 @@ export function FacultyDeptScreen({ route, navigation }: any) {
         {dept && (
           <View style={styles.header}>
             <View style={[styles.tile, { backgroundColor: `${FACULTY_ACCENT}14` }]}>
-              <AnimatedIcon family="feather" name={BRANCH_ICON[dept.branch] ?? 'book-open'} size={20} color={FACULTY_ACCENT} animation="entrance" />
+              <AnimatedIcon family="feather" name={BRANCH_ICON[dept.branch] ?? 'book-open'} size={20} color={FACULTY_ACCENT} />
             </View>
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={[styles.deptName, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
@@ -220,7 +220,7 @@ export function FacultyDeptScreen({ route, navigation }: any) {
 
         {list.length === 0 ? (
           <View style={styles.empty}>
-            <AnimatedIcon family="feather" name="search" size={28} color={C.textMuted} animation="pulse" loop />
+            <AnimatedIcon family="feather" name="search" size={28} color={C.textMuted} />
             <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
               {t.faculty2.noTeachersFound}
             </Text>

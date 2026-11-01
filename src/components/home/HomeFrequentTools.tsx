@@ -189,7 +189,7 @@ export function HomeFrequentTools({ refreshTrigger }: HomeFrequentToolsProps = {
             ]}
           >
             <View style={styles.iconBox}>
-              <AnimatedIcon name={tool.icon} size={28} color={C.text} animation="entrance" />
+              <AnimatedIcon name={tool.icon} size={28} color={C.text} />
             </View>
             <Text
               style={[
@@ -326,7 +326,7 @@ export function HomeFrequentTools({ refreshTrigger }: HomeFrequentToolsProps = {
                       ]}
                     >
                       <View style={styles.pickerIconBox}>
-                        <AnimatedIcon name={item.icon} size={28} color={C.text} animation="entrance" />
+                        <AnimatedIcon name={item.icon} size={28} color={C.text} />
                       </View>
 
                       <View style={{ flex: 1 }}>

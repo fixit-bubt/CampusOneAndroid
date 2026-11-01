@@ -118,7 +118,7 @@ export function ExploreScreen({ navigation }: any) {
         onPress={() => navigation.navigate(SECTOR_ROUTE[s.id])}
         activeOpacity={0.7}
       >
-        <SectorIcon sector={s.id} size="md" dark={isDark} animation="entrance" delay={index * 35} />
+        <SectorIcon sector={s.id} size="md" dark={isDark} />
         <View style={{ flex: 1 }}>
           <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
             {title}
@@ -168,7 +168,7 @@ export function ExploreScreen({ navigation }: any) {
             activeOpacity={0.75}
           >
             <View style={styles.toolIcon}>
-              <AnimatedIcon family="feather" name="message-circle" size={32} color={C.text} animation="entrance" />
+              <AnimatedIcon family="feather" name="message-circle" size={32} color={C.text} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.cellTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -190,7 +190,7 @@ export function ExploreScreen({ navigation }: any) {
             activeOpacity={0.75}
           >
             <View style={styles.toolIcon}>
-              <AnimatedIcon family="feather" name="alert-triangle" size={32} color={C.text} animation="wobble" loop={false} />
+              <AnimatedIcon family="feather" name="alert-triangle" size={32} color={C.text} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.cellTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -237,7 +237,7 @@ export function ExploreScreen({ navigation }: any) {
               activeOpacity={0.7}
             >
               <View style={styles.toolIcon}>
-                <AnimatedIcon family="feather" name="external-link" size={32} color={C.text} animation="entrance" delay={academicsSectors.length * 35} />
+                <AnimatedIcon family="feather" name="external-link" size={32} color={C.text} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -263,7 +263,7 @@ export function ExploreScreen({ navigation }: any) {
               activeOpacity={0.7}
             >
               <View style={styles.toolIcon}>
-                <AnimatedIcon family="feather" name="percent" size={32} color={C.text} animation="entrance" delay={(academicsSectors.length + 1) * 35} />
+                <AnimatedIcon family="feather" name="percent" size={32} color={C.text} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -290,7 +290,7 @@ export function ExploreScreen({ navigation }: any) {
                 activeOpacity={0.7}
               >
                 <View style={styles.toolIcon}>
-                  <AnimatedIcon family="mci" name="file-pdf-box" size={32} color={C.text} animation="entrance" delay={(academicsSectors.length + 2) * 35} />
+                  <AnimatedIcon family="mci" name="file-pdf-box" size={32} color={C.text} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>

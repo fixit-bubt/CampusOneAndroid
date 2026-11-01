@@ -693,7 +693,6 @@ export function DirectionMapModal({
                 name={iconName}
                 size={32}
                 color={C.text}
-                animation="spring"
               />
             </View>
             <View style={{ flex: 1, marginRight: 4 }}>

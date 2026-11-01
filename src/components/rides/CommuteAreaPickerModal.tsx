@@ -297,7 +297,7 @@ export function CommuteAreaPickerModal({
             <View style={styles.header}>
               <View style={styles.headerLeft}>
                 <View style={styles.headerIcon}>
-                  <AnimatedIcon family="feather" name="map-pin" size={24} color={C.text} animation="entrance" />
+                  <AnimatedIcon family="feather" name="map-pin" size={24} color={C.text} />
                 </View>
                 <View>
                   <Text style={[styles.headerTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -330,7 +330,7 @@ export function CommuteAreaPickerModal({
               activeOpacity={0.8}
             >
               <View style={styles.mapTriggerIconWrap}>
-                <AnimatedIcon family="feather" name="map" size={32} color={C.text} animation="entrance" />
+                <AnimatedIcon family="feather" name="map" size={32} color={C.text} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.mapTriggerTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -349,7 +349,7 @@ export function CommuteAreaPickerModal({
                 onPress={() => searchInputRef.current?.focus()}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <AnimatedIcon family="feather" name="search" size={18} color={C.textMuted} animation="entrance" />
+                <AnimatedIcon family="feather" name="search" size={18} color={C.textMuted} />
               </TouchableOpacity>
               <TextInput
                 ref={searchInputRef}
@@ -396,7 +396,7 @@ export function CommuteAreaPickerModal({
                       activeOpacity={0.75}
                     >
                       <View style={styles.childIconBox}>
-              <AnimatedIcon family="feather" name="plus" size={32} color={C.text} animation="entrance" />
+                        <AnimatedIcon family="feather" name="plus" size={32} color={C.text} />
                       </View>
                       <View style={styles.childInfoStack}>
                         <Text style={[styles.childHospitalName, { color: activeColor, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -428,7 +428,7 @@ export function CommuteAreaPickerModal({
                       activeOpacity={0.72}
                     >
                       <View style={styles.childIconBox}>
-              <AnimatedIcon family="feather" name={item.icon} size={32} color={C.text} animation="entrance" />
+                        <AnimatedIcon family="feather" name={item.icon} size={32} color={C.text} />
                       </View>
                       <View style={styles.childInfoStack}>
                         <Text style={[styles.childHospitalName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -439,7 +439,7 @@ export function CommuteAreaPickerModal({
                         </Text>
                       </View>
                       {isSelected ? (
-                        <AnimatedIcon family="feather" name="check-circle" size={18} color={activeColor} animation="spring" />
+                        <AnimatedIcon family="feather" name="check-circle" size={18} color={activeColor} />
                       ) : (
                         <Feather name="chevron-right" size={16} color={C.textMuted} />
                       )}
@@ -485,7 +485,7 @@ export function CommuteAreaPickerModal({
                         activeOpacity={0.75}
                       >
                         <View style={styles.itemIconBox}>
-          <AnimatedIcon family="feather" name="map-pin" size={32} color={C.text} animation={isOpen ? 'spring' : 'entrance'} />
+                          <AnimatedIcon family="feather" name="map-pin" size={32} color={C.text} />
                         </View>
                         <View style={styles.itemInfoStack}>
                           <Text style={[styles.areaName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -516,7 +516,6 @@ export function CommuteAreaPickerModal({
                             name={isOpen ? 'chevron-down' : 'chevron-right'}
                             size={18}
                             color={isOpen ? activeColor : C.textMuted}
-                            animation={isOpen ? 'spring' : 'none'}
                           />
                         </View>
                       </TouchableOpacity>
@@ -540,7 +539,7 @@ export function CommuteAreaPickerModal({
                             activeOpacity={0.72}
                           >
                             <View style={styles.childIconBox}>
-              <AnimatedIcon family="feather" name="map" size={32} color={C.text} animation="entrance" />
+                              <AnimatedIcon family="feather" name="map" size={32} color={C.text} />
                             </View>
                             <View style={styles.childInfoStack}>
                               <Text style={[styles.childHospitalName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -551,7 +550,7 @@ export function CommuteAreaPickerModal({
                               </Text>
                             </View>
                             {isSelected ? (
-                              <AnimatedIcon family="feather" name="check-circle" size={18} color={activeColor} animation="spring" />
+                              <AnimatedIcon family="feather" name="check-circle" size={18} color={activeColor} />
                             ) : (
                               <Feather name="chevron-right" size={16} color={C.textMuted} />
                             )}
@@ -577,7 +576,7 @@ export function CommuteAreaPickerModal({
                                 activeOpacity={0.72}
                               >
                                 <View style={styles.childIconBox}>
-              <AnimatedIcon family="feather" name={hub.icon} size={32} color={C.text} animation="entrance" />
+                                  <AnimatedIcon family="feather" name={hub.icon} size={32} color={C.text} />
                                 </View>
                                 <View style={styles.childInfoStack}>
                                   <Text style={[styles.childHospitalName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -588,7 +587,7 @@ export function CommuteAreaPickerModal({
                                   </Text>
                                 </View>
                                 {isHubSelected ? (
-                                  <AnimatedIcon family="feather" name="check-circle" size={18} color={activeColor} animation="spring" />
+                                  <AnimatedIcon family="feather" name="check-circle" size={18} color={activeColor} />
                                 ) : (
                                   <Feather name="chevron-right" size={16} color={C.textMuted} />
                                 )}

@@ -1,11 +1,10 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import {
-  Animated,
-  TouchableWithoutFeedback,
+  View,
+  Pressable,
   type ViewStyle,
 } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
-import { SectorColors } from '../../theme';
 import type { SectorKey } from '../../theme';
 import { AnimatedIcon, type IconFamily, type AnimationType } from './AnimatedIcon';
 
@@ -15,25 +14,25 @@ interface SectorIconConfig {
 }
 
 const SECTOR_ICON: Record<SectorKey, SectorIconConfig> = {
-  reports:   { name: 'tool',         family: 'feather' },
-  lostfound: { name: 'search',       family: 'feather' },
-  clubs:     { name: 'users',        family: 'feather' },
-  events:    { name: 'calendar',     family: 'feather' },
-  jobs:      { name: 'briefcase',    family: 'feather' },
-  announce:  { name: 'volume-2',     family: 'feather' },
-  study:     { name: 'book-open',    family: 'feather' },
-  bus:       { name: 'bus-side',     family: 'mci'     },
-  medical:   { name: 'heart',        family: 'feather' },
-  market:    { name: 'shopping-bag', family: 'feather' },
-  ride:      { name: 'navigation',   family: 'feather' },
-  blood:     { name: 'droplet',      family: 'feather' },
-  directory: { name: 'users',        family: 'feather' },
-  prayer:    { name: 'moon',         family: 'feather' },
-  faculty:   { name: 'user-check',   family: 'feather' },
-  calendar:  { name: 'calendar',     family: 'feather' },
-  routines:  { name: 'clipboard',    family: 'feather' },
-  coverpage: { name: 'file-text',    family: 'feather' },
-  pdfmaker:  { name: 'file-pdf-box', family: 'mci'     },
+  reports:   { name: 'tool',           family: 'feather' },
+  lostfound: { name: 'search',         family: 'feather' },
+  clubs:     { name: 'users',          family: 'feather' },
+  events:    { name: 'calendar',       family: 'feather' },
+  jobs:      { name: 'briefcase',      family: 'feather' },
+  announce:  { name: 'volume-2',       family: 'feather' },
+  study:     { name: 'book-open',      family: 'feather' },
+  bus:       { name: 'bus-side',       family: 'mci'     },
+  medical:   { name: 'heart',          family: 'feather' },
+  market:    { name: 'shopping-bag',   family: 'feather' },
+  ride:      { name: 'navigation',     family: 'feather' },
+  blood:     { name: 'droplet',        family: 'feather' },
+  directory: { name: 'users',          family: 'feather' },
+  prayer:    { name: 'moon',           family: 'feather' },
+  faculty:   { name: 'user-check',     family: 'feather' },
+  calendar:  { name: 'calendar',       family: 'feather' },
+  routines:  { name: 'clipboard',      family: 'feather' },
+  coverpage: { name: 'file-text',      family: 'feather' },
+  pdfmaker:  { name: 'file-pdf-box',   family: 'mci'     },
   messages:  { name: 'message-circle', family: 'feather' },
 };
 
@@ -60,13 +59,10 @@ export function SectorIcon({
   size = 'md',
   dark,
   color,
-  animation = 'none',
-  delay,
   onPress,
   style,
 }: SectorIconProps) {
   const { isDark } = useTheme();
-  const scale = useRef(new Animated.Value(1)).current;
 
   const isDarkMode = dark !== undefined ? dark : isDark;
   const defaultMonochrome = isDarkMode ? '#f4f4f5' : '#18181b';
@@ -77,26 +73,8 @@ export function SectorIcon({
   const radius = RADIUS_MAP[size];
   const iconConfig = SECTOR_ICON[sector] ?? { name: 'help-circle', family: 'feather' };
 
-  const handlePressIn = () => {
-    Animated.spring(scale, {
-      toValue: 0.90,
-      tension: 300,
-      friction: 12,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const handlePressOut = () => {
-    Animated.spring(scale, {
-      toValue: 1,
-      tension: 260,
-      friction: 10,
-      useNativeDriver: true,
-    }).start();
-  };
-
   const content = (
-    <Animated.View
+    <View
       style={[
         {
           width: dim,
@@ -106,7 +84,6 @@ export function SectorIcon({
           alignItems: 'center',
           justifyContent: 'center',
           overflow: 'visible',
-          transform: [{ scale }],
         },
         style,
       ]}
@@ -116,21 +93,15 @@ export function SectorIcon({
         name={iconConfig.name}
         size={iconSize}
         color={fg}
-        animation={animation}
-        delay={delay}
       />
-    </Animated.View>
+    </View>
   );
 
   if (onPress) {
     return (
-      <TouchableWithoutFeedback
-        onPress={onPress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-      >
+      <Pressable onPress={onPress}>
         {content}
-      </TouchableWithoutFeedback>
+      </Pressable>
     );
   }
 

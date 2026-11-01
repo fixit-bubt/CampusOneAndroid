@@ -547,12 +547,10 @@ export function MarketPostScreen({ route, navigation }: any) {
                   style={styles.dropdownIconBox}
                 >
                   <AnimatedIcon
-                    key={`spot-${meetupSpot}`}
                     family="feather"
                     name="map-pin"
                     size={22}
                     color={meetupSpot ? MARKET_COLOR : C.text2}
-                    animation={meetupSpot ? 'spring' : 'entrance'}
                   />
                 </View>
                 <View style={styles.dropdownInfo}>

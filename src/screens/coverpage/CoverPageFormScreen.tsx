@@ -1093,7 +1093,7 @@ export function CoverPageFormScreen({ navigation }: any) {
                   activeOpacity={0.8}
                 >
                   <View style={styles.toolIcon}>
-                    <AnimatedIcon family="feather" name="plus" size={32} color={C.text} animation="entrance" />
+                    <AnimatedIcon family="feather" name="plus" size={32} color={C.text} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -1218,7 +1218,7 @@ export function CoverPageFormScreen({ navigation }: any) {
                 activeOpacity={0.75}
               >
                 <View style={styles.toolIcon}>
-                  <AnimatedIcon family="feather" name="eye" size={32} color={C.text} animation="entrance" delay={0} />
+                  <AnimatedIcon family="feather" name="eye" size={32} color={C.text} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -1238,7 +1238,7 @@ export function CoverPageFormScreen({ navigation }: any) {
                 activeOpacity={0.75}
               >
                 <View style={styles.toolIcon}>
-                  <AnimatedIcon family="feather" name="download" size={32} color={C.text} animation="entrance" delay={40} />
+                  <AnimatedIcon family="feather" name="download" size={32} color={C.text} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -1258,7 +1258,7 @@ export function CoverPageFormScreen({ navigation }: any) {
                 activeOpacity={0.75}
               >
                 <View style={styles.toolIcon}>
-                  <AnimatedIcon family="feather" name="share-2" size={32} color={C.text} animation="entrance" delay={80} />
+                  <AnimatedIcon family="feather" name="share-2" size={32} color={C.text} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -1278,7 +1278,7 @@ export function CoverPageFormScreen({ navigation }: any) {
                 activeOpacity={0.75}
               >
                 <View style={styles.toolIcon}>
-                  <AnimatedIcon family="feather" name="printer" size={32} color={C.text} animation="entrance" delay={120} />
+                  <AnimatedIcon family="feather" name="printer" size={32} color={C.text} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -1324,8 +1324,6 @@ export function CoverPageFormScreen({ navigation }: any) {
                     name={docTypeIcon(item)}
                     size={28}
                     color={C.text}
-                    animation="entrance"
-                    delay={index * 35}
                   />
                 </View>
                 <View style={{ flex: 1, minWidth: 0 }}>
@@ -1387,8 +1385,6 @@ export function CoverPageFormScreen({ navigation }: any) {
                   name="book-open"
                   size={28}
                   color={C.text}
-                  animation="entrance"
-                  delay={Math.min(index, 8) * 35}
                 />
               </View>
               <View style={{ flex: 1, minWidth: 0 }}>
@@ -1490,8 +1486,6 @@ export function CoverPageFormScreen({ navigation }: any) {
                   name={getDeptIcon(item.name)}
                   size={28}
                   color={C.text}
-                  animation="entrance"
-                  delay={Math.min(index, 8) * 35}
                 />
               </View>
               <View style={{ flex: 1, minWidth: 0 }}>
@@ -1530,8 +1524,6 @@ export function CoverPageFormScreen({ navigation }: any) {
                   name="bookmark"
                   size={28}
                   color={C.text}
-                  animation="entrance"
-                  delay={Math.min(index, 8) * 35}
                 />
               </View>
               <View style={{ flex: 1, minWidth: 0 }}>

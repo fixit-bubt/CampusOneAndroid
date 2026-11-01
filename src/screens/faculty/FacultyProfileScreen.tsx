@@ -359,7 +359,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
         onBack={() => navigation.goBack()}
         rightSlot={
           <TouchableOpacity style={styles.iconBtn} onPress={toggleSave} activeOpacity={0.75}>
-            <AnimatedIcon family="feather" name="star" size={21} color={saved ? Accent.gold : C.text2} animation={saved ? 'spring' : 'none'} />
+            <AnimatedIcon family="feather" name="star" size={21} color={saved ? Accent.gold : C.text2} />
           </TouchableOpacity>
         }
       />
@@ -422,7 +422,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
           <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border, marginTop: 12 }]}>
             <View style={styles.cardHeaderRow}>
               <View style={styles.cardHeaderLeft}>
-                <AnimatedIcon family="feather" name="map-pin" size={16} color={FACULTY_ACCENT} animation="bounce" />
+                <AnimatedIcon family="feather" name="map-pin" size={16} color={FACULTY_ACCENT} />
                 <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                   {t.faculty2.campusOfficeLocation}
                 </Text>
@@ -456,7 +456,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
           <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border, marginTop: 12 }]}>
             <View style={styles.cardHeaderRow}>
               <View style={styles.cardHeaderLeft}>
-                <AnimatedIcon family="feather" name="clock" size={16} color={C.brand} animation="pulse" />
+                <AnimatedIcon family="feather" name="clock" size={16} color={C.brand} />
                 <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                   {t.faculty2.counselingHoursTitle}
                 </Text>
@@ -926,7 +926,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
           onPress={() => setShowProposalModal(true)}
           activeOpacity={0.8}
         >
-          <AnimatedIcon family="feather" name="edit-3" size={16} color={FACULTY_ACCENT} animation="entrance" />
+          <AnimatedIcon family="feather" name="edit-3" size={16} color={FACULTY_ACCENT} />
           <Text style={[styles.proposalBtnTxt, { color: FACULTY_ACCENT, fontFamily: FontFamily.jakartaBold }]}>
             {t.faculty2.draftPaperProposal}
           </Text>
@@ -937,7 +937,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
           onPress={() => setShowContact(true)}
           activeOpacity={0.85}
         >
-          <AnimatedIcon family="feather" name="phone-call" size={16} color="#fff" animation="entrance" />
+          <AnimatedIcon family="feather" name="phone-call" size={16} color="#fff" />
           <Text style={[styles.contactBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
             {t.faculty2.contact}
           </Text>

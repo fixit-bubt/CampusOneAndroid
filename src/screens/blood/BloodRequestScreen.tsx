@@ -238,7 +238,6 @@ export function BloodRequestScreen({ navigation }: any) {
                   name="droplet"
                   size={32}
                   color={C.text}
-                  animation="spring"
                 />
               </View>
               <View style={{ justifyContent: 'center' }}>
@@ -282,7 +281,7 @@ export function BloodRequestScreen({ navigation }: any) {
             PATIENT FULL NAME *
           </Text>
           <View style={[styles.inputWithIcon, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <AnimatedIcon family="feather" name="user" size={18} color={patientName ? C.text : C.textMuted} animation="entrance" />
+            <AnimatedIcon family="feather" name="user" size={18} color={patientName ? C.text : C.textMuted} />
             <TextInput
               style={[styles.innerInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
               value={patientName}
@@ -318,7 +317,6 @@ export function BloodRequestScreen({ navigation }: any) {
                   name={currentReasonObj?.icon ? (currentReasonObj.icon as any) : 'activity'}
                   size={28}
                   color={C.text}
-                  animation={medicalReason ? 'spring' : 'entrance'}
                 />
               </View>
               <View style={styles.dropdownInfo}>
@@ -382,7 +380,6 @@ export function BloodRequestScreen({ navigation }: any) {
                 name={currentAffObj?.icon ? (currentAffObj.icon as any) : 'users'}
                 size={28}
                 color={C.text}
-                animation={affiliation ? 'spring' : 'entrance'}
               />
             </View>
             <View style={styles.dropdownInfo}>
@@ -454,7 +451,6 @@ export function BloodRequestScreen({ navigation }: any) {
                     name={hospital ? 'hospital-building' : 'map-marker-radius'}
                     size={28}
                     color={C.text}
-                    animation={hospital ? 'spring' : 'entrance'}
                   />
                 </View>
                 <View style={styles.dropdownInfo}>
@@ -517,8 +513,6 @@ export function BloodRequestScreen({ navigation }: any) {
                   name="zap"
                   size={28}
                   color={C.text}
-                  animation={isPlatelets ? 'spring' : 'wobble'}
-                  loop={false}
                 />
               </View>
               <View style={{ flex: 1 }}>
@@ -551,7 +545,6 @@ export function BloodRequestScreen({ navigation }: any) {
               name="droplet"
               size={18}
               color={canSubmit ? '#fff' : C.textMuted}
-              animation={canSubmit ? 'spring' : 'entrance'}
             />
             <Text style={[styles.submitText, { color: canSubmit ? '#fff' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
               {t.blood2.postRequest}
@@ -606,7 +599,7 @@ export function BloodRequestScreen({ navigation }: any) {
                     activeOpacity={0.7}
                   >
                     <View style={styles.sheetOptionIcon}>
-                      <AnimatedIcon family="feather" name={r.icon as any} size={32} color={C.text} animation="entrance" />
+                      <AnimatedIcon family="feather" name={r.icon as any} size={32} color={C.text} />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.sheetOptionTitle, { color: isSelected ? reasonColor : C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -616,7 +609,7 @@ export function BloodRequestScreen({ navigation }: any) {
                         {r.labelBn}
                       </Text>
                     </View>
-                    {isSelected && <AnimatedIcon family="feather" name="check" size={16} color={reasonColor} animation="spring" />}
+                    {isSelected && <AnimatedIcon family="feather" name="check" size={16} color={reasonColor} />}
                   </TouchableOpacity>
                 );
               })}
@@ -669,7 +662,7 @@ export function BloodRequestScreen({ navigation }: any) {
                     activeOpacity={0.7}
                   >
                     <View style={styles.sheetOptionIcon}>
-                      <AnimatedIcon family="feather" name={a.icon as any} size={32} color={C.text} animation="entrance" />
+                      <AnimatedIcon family="feather" name={a.icon as any} size={32} color={C.text} />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.sheetOptionTitle, { color: isSelected ? affColor : C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -679,7 +672,7 @@ export function BloodRequestScreen({ navigation }: any) {
                         {a.labelBn}
                       </Text>
                     </View>
-                    {isSelected && <AnimatedIcon family="feather" name="check" size={16} color={affColor} animation="spring" />}
+                    {isSelected && <AnimatedIcon family="feather" name="check" size={16} color={affColor} />}
                   </TouchableOpacity>
                 );
               })}

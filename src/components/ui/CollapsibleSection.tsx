@@ -71,7 +71,6 @@ export function CollapsibleSection({
             name={icon}
             size={32}
             color={C.text}
-            animation={isOpen ? 'spring' : 'none'}
           />
         </View>
 
@@ -121,7 +120,6 @@ export function CollapsibleSection({
             name={isOpen ? 'chevD' : 'chevR'}
             size={18}
             color={isOpen ? C.text : C.textMuted}
-            animation={isOpen ? 'spring' : 'none'}
           />
         </View>
       </TouchableOpacity>

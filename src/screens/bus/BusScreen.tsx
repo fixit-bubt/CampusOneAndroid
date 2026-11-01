@@ -350,7 +350,7 @@ export function BusScreen({ navigation }: any) {
           >
             <View style={styles.heroTop}>
               <View style={[styles.heroBadge, { backgroundColor: BUS_BG }]}>
-                <AnimatedIcon key={direction} family="feather" name="clock" size={13} color={BUS_COLOR} animation="spring" />
+                <AnimatedIcon key={direction} family="feather" name="clock" size={13} color={BUS_COLOR} />
                 <Text style={[styles.heroBadgeTxt, { color: BUS_COLOR, fontFamily: FontFamily.jakartaBold }]}>
                   {direction === 'to'
                     ? (isBn ? 'ক্যাম্পাসে যাওয়ার পরবর্তী বাস' : 'Next shuttle to campus')

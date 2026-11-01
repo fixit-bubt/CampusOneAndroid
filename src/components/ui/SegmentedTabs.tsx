@@ -165,7 +165,6 @@ export function SegmentedTabs<T extends string = string>({
                 name={tab.iconConfig.name}
                 size={iconSize}
                 color={isActive ? color : C.textMuted}
-                animation={isActive ? 'spring' : 'none'}
               />
             ) : tab.icon ? (
               <AnimatedIcon
@@ -173,7 +172,6 @@ export function SegmentedTabs<T extends string = string>({
                 name={tab.icon}
                 size={iconSize}
                 color={isActive ? color : C.textMuted}
-                animation={isActive ? 'spring' : 'none'}
               />
             ) : null}
             <Text

@@ -228,7 +228,7 @@ export function DonorRegisterScreen({ navigation }: any) {
               name="map-pin"
               size={20}
               color={area ? SectorColors.blood : C.text2}
-              animation="entrance"
+
             />
           </View>
           <View style={{ flex: 1, minWidth: 0 }}>
@@ -340,7 +340,7 @@ export function DonorRegisterScreen({ navigation }: any) {
             name="droplet"
             size={18}
             color={canSubmit ? '#fff' : C.textMuted}
-            animation={canSubmit ? 'spring' : 'none'}
+
           />
           <Text style={[styles.submitText, { color: canSubmit ? '#fff' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
             {isRegistered ? t.blood2.updateDonorBtn : t.blood2.registerAsDonorBtnFull}
@@ -680,7 +680,7 @@ function UrgencyCard({
             name={opt.icon}
             size={20}
             color={isSelected ? SectorColors.blood : opt.fg}
-            animation={isSelected ? 'spring' : 'none'}
+
           />
         </View>
 

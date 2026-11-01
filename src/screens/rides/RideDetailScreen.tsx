@@ -584,7 +584,7 @@ export function RideDetailScreen({ route, navigation }: any) {
                 {/* Live GPS Proximity directly under Pickup (Zero-Cutoff Ergonomics) */}
                 {proximityText ? (
                   <View style={[styles.proximityBeacon, { backgroundColor: C.surface2, borderColor: C.border }]}>
-                    <AnimatedIcon family="feather" name="map-pin" size={14} color={C.text} animation="pulse" />
+                    <AnimatedIcon family="feather" name="map-pin" size={14} color={C.text} />
                     <Text style={[styles.proximityTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                       {proximityText} {proximityEstimate ? `· ${proximityEstimate}` : ''}
                     </Text>

@@ -307,7 +307,7 @@ export function ManageFacultyScreen({ navigation }: any) {
         <View style={[styles.syncCard, { backgroundColor: C.surface, borderColor: C.border }]}>
           <View style={styles.syncCardTop}>
             <View style={styles.syncIconWrap}>
-              <AnimatedIcon family="feather" name="refresh-cw" size={32} color={C.text} animation={syncing ? 'pulse' : 'spring'} loop={syncing} />
+              <AnimatedIcon family="feather" name="refresh-cw" size={32} color={C.text} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.syncTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -411,9 +411,9 @@ export function ManageFacultyScreen({ navigation }: any) {
               {syncing ? (
                 <ActivityIndicator color={SectorColors.faculty} size="large" />
               ) : syncResult?.error ? (
-                <AnimatedIcon family="feather" name="alert-triangle" size={28} color={C.danger} animation="wobble" />
+                <AnimatedIcon family="feather" name="alert-triangle" size={28} color={C.danger} />
               ) : (
-                <AnimatedIcon family="feather" name="check-circle" size={28} color={C.success} animation="spring" />
+                <AnimatedIcon family="feather" name="check-circle" size={28} color={C.success} />
               )}
             </View>
 

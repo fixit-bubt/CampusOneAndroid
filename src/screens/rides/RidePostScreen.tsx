@@ -372,7 +372,6 @@ export function RidePostScreen({ route, navigation }: any) {
                     name={v.iconName}
                     size={26}
                     color={on ? accentColor : (isDark ? C.text2 : C.text)}
-                    animation={on ? 'spring' : 'none'}
                     style={{ marginBottom: 5 }}
                   />
                   <Text style={[styles.vehicleLabel, { color: on ? accentColor : C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -451,12 +450,10 @@ export function RidePostScreen({ route, navigation }: any) {
                   style={styles.dropdownIconBox}
                 >
                   <AnimatedIcon
-                    key={`from-${from}`}
                     family="feather"
                     name="navigation"
                     size={20}
                     color={from ? (isDark ? '#ffffff' : accentColor) : C.text2}
-                    animation={from ? 'spring' : 'entrance'}
                   />
                 </View>
                 <View style={styles.dropdownInfo}>
@@ -552,12 +549,10 @@ export function RidePostScreen({ route, navigation }: any) {
                   style={styles.dropdownIconBox}
                 >
                   <AnimatedIcon
-                    key={`to-${to}`}
                     family="feather"
                     name="map-pin"
                     size={20}
                     color={to ? (isDark ? '#ffffff' : accentColor) : C.text2}
-                    animation={to ? 'spring' : 'entrance'}
                   />
                 </View>
                 <View style={styles.dropdownInfo}>
@@ -635,7 +630,6 @@ export function RidePostScreen({ route, navigation }: any) {
                   name="clock"
                   size={20}
                   color={isDark ? '#ffffff' : accentColor}
-                  animation="spring"
                 />
               </View>
               <View style={styles.dropdownInfo}>

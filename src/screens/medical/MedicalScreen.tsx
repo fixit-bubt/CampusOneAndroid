@@ -22,7 +22,7 @@ import { useAuth } from '../../store/authStore';
 import { useApp } from '../../store/appStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
-import { AnimatedIcon, type IconFamily, type AnimationType } from '../../components/ui/AnimatedIcon';
+import { AnimatedIcon, type IconFamily } from '../../components/ui/AnimatedIcon';
 import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { useToast } from '../../components/ui/Toast';
@@ -81,8 +81,6 @@ function getDoctorIconConfig(doc: Doctor, _isDark?: boolean) {
       name: 'heart',
       color: MED_COLOR,
       bg: MED_BG,
-      animation: 'pulse' as AnimationType,
-      loop: true,
     };
   }
 
@@ -92,8 +90,6 @@ function getDoctorIconConfig(doc: Doctor, _isDark?: boolean) {
       name: 'needle',
       color: MED_COLOR,
       bg: MED_BG,
-      animation: 'spring' as AnimationType,
-      loop: false,
     };
   }
 
@@ -103,8 +99,6 @@ function getDoctorIconConfig(doc: Doctor, _isDark?: boolean) {
       name: 'award',
       color: MED_COLOR,
       bg: MED_BG,
-      animation: 'entrance' as AnimationType,
-      loop: false,
     };
   }
 
@@ -113,8 +107,6 @@ function getDoctorIconConfig(doc: Doctor, _isDark?: boolean) {
     name: 'stethoscope',
     color: MED_COLOR,
     bg: MED_BG,
-    animation: 'entrance' as AnimationType,
-    loop: false,
   };
 }
 
@@ -126,8 +118,6 @@ function getServiceIconConfig(srvId: string, _isDark?: boolean) {
         name: 'heart',
         color: MED_COLOR,
         bg: MED_BG,
-        animation: 'pulse' as AnimationType,
-        loop: true,
       };
     case 'vitals_monitoring':
       return {
@@ -135,8 +125,6 @@ function getServiceIconConfig(srvId: string, _isDark?: boolean) {
         name: 'activity',
         color: MED_COLOR,
         bg: MED_BG,
-        animation: 'bounce' as AnimationType,
-        loop: false,
       };
     case 'first_aid':
       return {
@@ -144,8 +132,6 @@ function getServiceIconConfig(srvId: string, _isDark?: boolean) {
         name: 'shield',
         color: MED_COLOR,
         bg: MED_BG,
-        animation: 'spring' as AnimationType,
-        loop: false,
       };
     case 'doctor_consultation':
     default:
@@ -154,8 +140,6 @@ function getServiceIconConfig(srvId: string, _isDark?: boolean) {
         name: 'stethoscope',
         color: MED_COLOR,
         bg: MED_BG,
-        animation: 'entrance' as AnimationType,
-        loop: false,
       };
   }
 }
@@ -168,8 +152,6 @@ function getHospitalIconConfig(hospId: string) {
         name: 'heart',
         color: MED_COLOR,
         bg: MED_BG,
-        animation: 'pulse' as AnimationType,
-        loop: true,
       };
     case 'delta':
       return {
@@ -177,8 +159,6 @@ function getHospitalIconConfig(hospId: string) {
         name: 'hospital-building',
         color: MED_COLOR,
         bg: MED_BG,
-        animation: 'entrance' as AnimationType,
-        loop: false,
       };
     case 'mirpur_gen':
       return {
@@ -186,8 +166,6 @@ function getHospitalIconConfig(hospId: string) {
         name: 'activity',
         color: MED_COLOR,
         bg: MED_BG,
-        animation: 'bounce' as AnimationType,
-        loop: false,
       };
     case 'kidney_fdn':
       return {
@@ -195,8 +173,6 @@ function getHospitalIconConfig(hospId: string) {
         name: 'droplet',
         color: MED_COLOR,
         bg: MED_BG,
-        animation: 'float' as AnimationType,
-        loop: false,
       };
     case 'dhaka_dental':
       return {
@@ -204,8 +180,6 @@ function getHospitalIconConfig(hospId: string) {
         name: 'tooth-outline',
         color: MED_COLOR,
         bg: MED_BG,
-        animation: 'spring' as AnimationType,
-        loop: false,
       };
     default:
       return {
@@ -213,8 +187,6 @@ function getHospitalIconConfig(hospId: string) {
         name: 'activity',
         color: MED_COLOR,
         bg: MED_BG,
-        animation: 'entrance' as AnimationType,
-        loop: false,
       };
   }
 }
@@ -551,7 +523,7 @@ export function MedicalScreen({ navigation }: any) {
         >
           <View style={styles.heroTopRow}>
             <View style={styles.heroIconBadge}>
-              <Icon name="medical" size={32} color={C.text} animation="entrance" />
+              <Icon name="medical" size={32} color={C.text} />
             </View>
             <View style={{ flex: 1 }}>
               <Text
@@ -614,7 +586,7 @@ export function MedicalScreen({ navigation }: any) {
                   { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)' },
                 ]}
               >
-                <AnimatedIcon family="feather" name="clock" size={14} color={C.text2} animation="entrance" />
+                <AnimatedIcon family="feather" name="clock" size={14} color={C.text2} />
               </View>
               <View style={styles.heroTabletBody}>
                 <Text
@@ -655,7 +627,7 @@ export function MedicalScreen({ navigation }: any) {
                   { backgroundColor: `${MED_COLOR}25` },
                 ]}
               >
-                <AnimatedIcon family="feather" name="phone-call" size={16} color={C.text} animation="bounce" />
+                <AnimatedIcon family="feather" name="phone-call" size={16} color={C.text} />
               </View>
               <View style={styles.heroTabletBody}>
                 <Text
@@ -747,7 +719,6 @@ export function MedicalScreen({ navigation }: any) {
                   name={selectedFilterObj.icon}
                   size={28}
                   color={C.text}
-                  animation="spring"
                 />
               </View>
               <View style={styles.dropdownBody}>
@@ -848,8 +819,6 @@ export function MedicalScreen({ navigation }: any) {
                           name={iconCfg.name}
                           size={20}
                           color={iconCfg.color}
-                          animation={iconCfg.animation}
-                          loop={iconCfg.loop}
                         />
                       </View>
 
@@ -996,8 +965,6 @@ export function MedicalScreen({ navigation }: any) {
                         name={srvCfg.name}
                         size={20}
                         color={srvCfg.color}
-                        animation={srvCfg.animation}
-                        loop={srvCfg.loop}
                       />
                     </View>
                     <View style={styles.srvBody72}>
@@ -1061,7 +1028,6 @@ export function MedicalScreen({ navigation }: any) {
                   name="pill"
                   size={20}
                   color={MED_COLOR}
-                  animation={dispensaryOpen ? 'spring' : 'none'}
                 />
               </View>
               <View style={styles.srvBody72}>
@@ -1159,8 +1125,6 @@ export function MedicalScreen({ navigation }: any) {
                             name="pill"
                             size={18}
                             color={MED_COLOR}
-                            animation="spring"
-                            delay={Math.min(idx * 30, 300)}
                           />
                         </View>
                         <View style={styles.medBody72}>
@@ -1219,7 +1183,7 @@ export function MedicalScreen({ navigation }: any) {
             >
               <View style={styles.emergencyBannerTop}>
                 <View style={styles.emIconRound}>
-                  <AnimatedIcon family="feather" name="alert-triangle" size={28} color={C.text} animation="pulse" loop />
+                  <AnimatedIcon family="feather" name="alert-triangle" size={28} color={C.text} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text
@@ -1246,10 +1210,8 @@ export function MedicalScreen({ navigation }: any) {
             <View style={styles.hotlineList}>
               {EMERGENCY_CONTACTS.map((cnt) => {
                 const isAmbulance = cnt.id === 'ambulance';
-                const is999 = cnt.id === 'national_999';
                 const iconFamily: IconFamily = isAmbulance ? 'mci' : 'feather';
                 const iconName = isAmbulance ? 'ambulance' : cnt.icon;
-                const animType: AnimationType = is999 ? 'pulse' : isAmbulance ? 'bounce' : 'spring';
 
                 return (
                   <TouchableOpacity
@@ -1279,8 +1241,6 @@ export function MedicalScreen({ navigation }: any) {
                         name={iconName}
                         size={28}
                         color={cnt.isNational ? C.white : C.info}
-                        animation={animType}
-                        loop={is999}
                       />
                     </View>
                     <View style={{ flex: 1, minWidth: 0 }}>
@@ -1341,7 +1301,7 @@ export function MedicalScreen({ navigation }: any) {
               activeOpacity={0.75}
             >
               <View style={styles.bloodBridgeIconTile}>
-                <AnimatedIcon family="feather" name="droplet" size={24} color={C.text} animation="pulse" loop />
+                <AnimatedIcon family="feather" name="droplet" size={24} color={C.text} />
               </View>
               <View style={styles.bloodBridgeBody}>
                 <Text
@@ -1401,8 +1361,6 @@ export function MedicalScreen({ navigation }: any) {
                         name={hospCfg.name}
                         size={20}
                         color={hospCfg.color}
-                        animation={hospCfg.animation}
-                        loop={hospCfg.loop}
                       />
                     </View>
 
@@ -1537,7 +1495,6 @@ export function MedicalScreen({ navigation }: any) {
                         name={opt.icon}
                         size={18}
                         color={isSelected ? C.white : optColor}
-                        animation={isSelected ? 'spring' : 'none'}
                       />
                     </View>
                     <View style={{ flex: 1, minWidth: 0 }}>

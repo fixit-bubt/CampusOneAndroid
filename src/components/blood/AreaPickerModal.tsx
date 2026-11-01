@@ -171,7 +171,6 @@ const AreaSectionBar = memo(function AreaSectionBar({
             name="map-pin"
             size={28}
             color={C.text}
-            animation={isOpen ? 'spring' : 'entrance'}
           />
         </View>
 
@@ -235,7 +234,6 @@ const AreaSectionBar = memo(function AreaSectionBar({
             name={isOpen ? 'chevron-down' : 'chevron-right'}
             size={18}
             color={isOpen ? activeColor : C.textMuted}
-            animation={isOpen ? 'spring' : 'none'}
           />
         </View>
       </TouchableOpacity>
@@ -261,7 +259,7 @@ const AreaSectionBar = memo(function AreaSectionBar({
             <View
               style={styles.childIconBox}
             >
-              <AnimatedIcon family="feather" name="map" size={32} color={C.text} animation="entrance" />
+              <AnimatedIcon family="feather" name="map" size={32} color={C.text} />
             </View>
             <View style={styles.childInfoStack}>
               <Text
@@ -284,7 +282,7 @@ const AreaSectionBar = memo(function AreaSectionBar({
               </Text>
             </View>
             {isSelected ? (
-              <AnimatedIcon family="feather" name="check-circle" size={18} color={activeColor} animation="spring" />
+              <AnimatedIcon family="feather" name="check-circle" size={18} color={activeColor} />
             ) : (
               <Feather name="chevron-right" size={16} color={C.textMuted} />
             )}
@@ -319,8 +317,6 @@ const AreaSectionBar = memo(function AreaSectionBar({
                     name="hospital-building"
                     size={28}
                     color={C.text}
-                    animation="entrance"
-                    delay={idx * 25}
                   />
                 </View>
                 <View style={styles.childInfoStack}>
@@ -344,7 +340,7 @@ const AreaSectionBar = memo(function AreaSectionBar({
                   </Text>
                 </View>
                 {isHospSelected ? (
-                  <AnimatedIcon family="feather" name="check-circle" size={18} color={activeColor} animation="spring" />
+                  <AnimatedIcon family="feather" name="check-circle" size={18} color={activeColor} />
                 ) : (
                   <Feather name="chevron-right" size={16} color={C.textMuted} />
                 )}
@@ -396,9 +392,9 @@ const SearchResultRow = memo(function SearchResultRow({
         style={styles.childIconBox}
       >
         {isHospital ? (
-          <AnimatedIcon family="mci" name="hospital-building" size={32} color={C.text} animation="entrance" />
+          <AnimatedIcon family="mci" name="hospital-building" size={32} color={C.text} />
         ) : (
-          <AnimatedIcon family="feather" name="map-pin" size={32} color={C.text} animation="entrance" />
+          <AnimatedIcon family="feather" name="map-pin" size={32} color={C.text} />
         )}
       </View>
 
@@ -427,7 +423,7 @@ const SearchResultRow = memo(function SearchResultRow({
       </View>
 
       {isSelected ? (
-        <AnimatedIcon family="feather" name="check-circle" size={18} color={activeColor} animation="spring" />
+        <AnimatedIcon family="feather" name="check-circle" size={18} color={activeColor} />
       ) : (
         <Feather name="chevron-right" size={16} color={C.textMuted} />
       )}
@@ -515,7 +511,7 @@ export function AreaPickerModal({
             <View style={styles.header}>
               <View style={styles.headerLeft}>
                 <View style={styles.headerIcon}>
-                  <AnimatedIcon family="feather" name="map-pin" size={24} color={C.text} animation="entrance" />
+                  <AnimatedIcon family="feather" name="map-pin" size={24} color={C.text} />
                 </View>
                 <View>
                   <Text style={[styles.headerTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -548,7 +544,7 @@ export function AreaPickerModal({
               activeOpacity={0.8}
             >
               <View style={styles.mapTriggerIconWrap}>
-                <AnimatedIcon family="feather" name="map" size={32} color={C.text} animation="entrance" />
+                <AnimatedIcon family="feather" name="map" size={32} color={C.text} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.mapTriggerTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -567,7 +563,7 @@ export function AreaPickerModal({
                 onPress={() => searchInputRef.current?.focus()}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <AnimatedIcon family="feather" name="search" size={18} color={C.textMuted} animation="entrance" />
+                <AnimatedIcon family="feather" name="search" size={18} color={C.textMuted} />
               </TouchableOpacity>
               <TextInput
                 ref={searchInputRef}
@@ -611,7 +607,7 @@ export function AreaPickerModal({
                 showsVerticalScrollIndicator={false}
                 ListEmptyComponent={
                   <View style={styles.emptyContainer}>
-                    <AnimatedIcon family="feather" name="map-pin" size={32} color={C.text} animation="entrance" />
+                    <AnimatedIcon family="feather" name="map-pin" size={32} color={C.text} />
                     <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                       No locations found
                     </Text>

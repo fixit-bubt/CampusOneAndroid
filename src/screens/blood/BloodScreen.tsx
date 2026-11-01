@@ -562,7 +562,7 @@ export function BloodScreen({ route, navigation }: any) {
         </TouchableOpacity>
       </View>
 
-      {/* Unified Segmented Tab Switcher with Native Spring Animation & Colors */}
+      {/* Unified Segmented Tab Switcher with Colors */}
       <View style={{ paddingHorizontal: Layout.screenPadding, marginBottom: 8 }}>
         <SegmentedTabs<Tab>
           tabs={BLOOD_TABS}
@@ -642,7 +642,6 @@ export function BloodScreen({ route, navigation }: any) {
                     ? (isHospitalFilter && isDark ? '#ffffff' : SectorColors.blood)
                     : C.text
                 }
-                animation="entrance"
               />
             </View>
 
@@ -775,7 +774,7 @@ export function BloodScreen({ route, navigation }: any) {
             {/* Request list */}
             {filteredRequests.length === 0 ? (
               <View style={[styles.emptyWrap, { backgroundColor: C.surface, borderColor: C.border }]}>
-                <AnimatedIcon family="feather" name="droplet" size={36} color={C.textMuted} animation="entrance" />
+                <AnimatedIcon family="feather" name="droplet" size={36} color={C.textMuted} />
                 <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
                   {t.common.noResults}
                 </Text>
@@ -877,7 +876,7 @@ export function BloodScreen({ route, navigation }: any) {
                       activeOpacity={0.75}
                     >
                       <View style={styles.hospitalRowLeft}>
-                        <AnimatedIcon family="feather" name="map-pin" size={13} color={SectorColors.blood} animation="entrance" />
+                        <AnimatedIcon family="feather" name="map-pin" size={13} color={SectorColors.blood} />
                         <Text style={styles.hospitalTxt} numberOfLines={1}>
                           <Text style={{ fontFamily: FontFamily.jakartaBold, color: C.text }}>{r.hospital}</Text>
                           {r.area ? (
@@ -889,7 +888,7 @@ export function BloodScreen({ route, navigation }: any) {
                         <Text style={[styles.mapHintTxt, { color: SectorColors.blood, fontFamily: FontFamily.jakartaBold }]}>
                           Map
                         </Text>
-                        <AnimatedIcon family="feather" name="arrow-up-right" size={11} color={SectorColors.blood} animation="spring" />
+                        <AnimatedIcon family="feather" name="arrow-up-right" size={11} color={SectorColors.blood} />
                       </View>
                     </TouchableOpacity>
 
@@ -968,7 +967,7 @@ export function BloodScreen({ route, navigation }: any) {
                         onPress={() => navigation.navigate('BloodRequestDetail', { requestId: r.id })}
                         activeOpacity={0.8}
                       >
-                        <AnimatedIcon family="feather" name="users" size={16} color={C.text} animation="entrance" />
+                        <AnimatedIcon family="feather" name="users" size={16} color={C.text} />
                         <Text style={[styles.cardActionBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                           {t.blood2.manageResponses} {pledgeCount > 0 ? `(${pledgeCount})` : ''}
                         </Text>
@@ -980,7 +979,7 @@ export function BloodScreen({ route, navigation }: any) {
                         activeOpacity={0.85}
                         disabled={busyId === r.id}
                       >
-                        <AnimatedIcon family="feather" name="phone-call" size={16} color="#fff" animation="entrance" />
+                        <AnimatedIcon family="feather" name="phone-call" size={16} color="#fff" />
                         <Text style={[styles.cardActionBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
                           {busyId === r.id ? 'Connecting…' : 'Call / WhatsApp Requester'}
                         </Text>
@@ -991,7 +990,7 @@ export function BloodScreen({ route, navigation }: any) {
                         onPress={() => handleHelpPress(r)}
                         activeOpacity={0.85}
                       >
-                        <AnimatedIcon family="feather" name="droplet" size={16} color="#fff" animation="entrance" />
+                        <AnimatedIcon family="feather" name="droplet" size={16} color="#fff" />
                         <Text style={[styles.cardActionBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
                           {unitsLeft > 0 && meta.unitCount > 1 && pledgeCount > 0
                             ? `I Can Help (${unitsLeft} More Needed)`
@@ -1075,7 +1074,7 @@ export function BloodScreen({ route, navigation }: any) {
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
                   <View style={styles.miniBloodBadge}>
-                    <AnimatedIcon family="feather" name="droplet" size={32} color={C.text} animation="entrance" />
+                    <AnimatedIcon family="feather" name="droplet" size={32} color={C.text} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.registerPromptTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -1157,7 +1156,7 @@ export function BloodScreen({ route, navigation }: any) {
             {/* Donor list */}
             {filteredDonors.length === 0 ? (
               <View style={[styles.emptyWrap, { backgroundColor: C.surface, borderColor: C.border }]}>
-                <AnimatedIcon family="feather" name="droplet" size={36} color={C.textMuted} animation="entrance" />
+                <AnimatedIcon family="feather" name="droplet" size={36} color={C.textMuted} />
                 <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
                   {t.common.noResults}
                 </Text>
@@ -1239,7 +1238,6 @@ export function BloodScreen({ route, navigation }: any) {
                             name="phone"
                             size={12}
                             color={eligible ? BLOOD_COLOR : C.textMuted}
-                            animation="entrance"
                           />
                           <Text style={[styles.contactTxt, { color: eligible ? BLOOD_COLOR : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
                             {busyId === d.user_id ? '…' : t.blood2.contact}

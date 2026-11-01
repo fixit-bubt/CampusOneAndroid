@@ -266,7 +266,6 @@ export function DoctorDetailScreen({ route, navigation }: any) {
               name={isPsych ? 'heart' : 'medical'}
               size={26}
               color={isPsych ? '#a855f7' : MED_COLOR}
-              animation="entrance"
             />
           </View>
           <View style={{ flex: 1 }}>
@@ -327,7 +326,6 @@ export function DoctorDetailScreen({ route, navigation }: any) {
               }
               size={20}
               color={C.white}
-              animation={duty.badge === 'on_duty' ? 'spring' : 'none'}
             />
           </View>
           <View style={{ flex: 1 }}>

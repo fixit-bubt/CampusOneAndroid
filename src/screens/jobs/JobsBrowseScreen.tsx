@@ -499,7 +499,6 @@ export function JobsBrowseScreen({ navigation }: any) {
               name={typeFilter === 'all' ? 'briefcase' : currentTypeConfig.icon}
               size={16}
               color={typeFilter !== 'all' ? (isDark ? '#fff' : SectorColors.jobs) : C.text2}
-              animation={typeFilter !== 'all' ? 'spring' : 'none'}
             />
             <Text
               style={[
@@ -544,7 +543,6 @@ export function JobsBrowseScreen({ navigation }: any) {
               name={deptFilter === 'ALL' ? 'book-open' : currentDeptConfig.icon}
               size={16}
               color={deptFilter !== 'ALL' ? (isDark ? '#fff' : SectorColors.jobs) : C.text2}
-              animation={deptFilter !== 'ALL' ? 'spring' : 'none'}
             />
             <Text
               style={[
@@ -851,7 +849,6 @@ export function JobsBrowseScreen({ navigation }: any) {
                       name="star"
                       size={20}
                       color={isSaved ? Accent.gold : C.textMuted}
-                      animation={isSaved ? 'spring' : 'none'}
                     />
                   </TouchableOpacity>
                 </View>
@@ -946,7 +943,6 @@ export function JobsBrowseScreen({ navigation }: any) {
                         name={opt.icon}
                         size={32}
                         color={C.text}
-                        animation={selected ? 'spring' : 'none'}
                       />
                     </View>
                     <View style={styles.card72Info}>
@@ -1119,7 +1115,6 @@ export function JobsBrowseScreen({ navigation }: any) {
                         name={dept.icon}
                         size={32}
                         color={C.text}
-                        animation={selected ? 'spring' : 'none'}
                       />
                     </View>
                     <View style={styles.card72Info}>

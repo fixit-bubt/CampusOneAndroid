@@ -119,7 +119,6 @@ export function DepartmentAuthoritiesDropdown({
             name="shield"
             size={22}
             color={FACULTY_ACCENT}
-            animation="entrance"
           />
         </View>
 

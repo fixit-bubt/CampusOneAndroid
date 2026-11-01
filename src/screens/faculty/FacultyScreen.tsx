@@ -401,7 +401,7 @@ export function FacultyScreen({ navigation }: any) {
                       activeOpacity={0.75}
                     >
                       <View style={styles.categoryIconTile}>
-                        <AnimatedIcon name={cat.icon} size={32} color={C.text} animation="entrance" />
+                        <AnimatedIcon name={cat.icon} size={32} color={C.text} />
                       </View>
                       <View style={{ flex: 1, minWidth: 0 }}>
                         <Text style={[styles.categoryTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -443,7 +443,7 @@ export function FacultyScreen({ navigation }: any) {
                         activeOpacity={0.75}
                       >
                         <View style={[styles.deptBarTile, { backgroundColor: `${FACULTY_ACCENT}12` }]}>
-                          <AnimatedIcon name={BRANCH_ICON[d.branch] ?? 'book-open'} size={20} color={FACULTY_ACCENT} animation="entrance" />
+                          <AnimatedIcon name={BRANCH_ICON[d.branch] ?? 'book-open'} size={20} color={FACULTY_ACCENT} />
                         </View>
                         <View style={{ flex: 1, minWidth: 0 }}>
                           <Text style={[styles.deptBarName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -488,7 +488,7 @@ export function FacultyScreen({ navigation }: any) {
               activeOpacity={0.75}
             >
               <View style={styles.dropdownIconTile}>
-                <AnimatedIcon name="layers" size={28} color={C.text} animation="spring" />
+                <AnimatedIcon name="layers" size={28} color={C.text} />
               </View>
               <View style={styles.dropdownBody}>
                 <Text style={[styles.dropdownLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
@@ -510,7 +510,7 @@ export function FacultyScreen({ navigation }: any) {
               activeOpacity={0.75}
             >
               <View style={styles.dropdownIconTile}>
-                <AnimatedIcon name="award" size={28} color={C.text} animation="spring" />
+                <AnimatedIcon name="award" size={28} color={C.text} />
               </View>
               <View style={styles.dropdownBody}>
                 <Text style={[styles.dropdownLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
@@ -590,7 +590,7 @@ export function FacultyScreen({ navigation }: any) {
               activeOpacity={0.75}
             >
               <View style={styles.dropdownIconTile}>
-                <AnimatedIcon name="layers" size={28} color={C.text} animation="spring" />
+                <AnimatedIcon name="layers" size={28} color={C.text} />
               </View>
               <View style={styles.dropdownBody}>
                 <Text style={[styles.dropdownLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
@@ -779,7 +779,6 @@ export function FacultyScreen({ navigation }: any) {
                     name="layers"
                     size={18}
                     color={selectedDeptId === 'All' ? '#fff' : FACULTY_ACCENT}
-                    animation="entrance"
                   />
                 </View>
                 <View style={{ flex: 1, minWidth: 0 }}>
@@ -845,7 +844,6 @@ export function FacultyScreen({ navigation }: any) {
                         name={BRANCH_ICON[d.branch] ?? 'book-open'}
                         size={18}
                         color={active ? '#fff' : FACULTY_ACCENT}
-                        animation="entrance"
                       />
                     </View>
                     <View style={{ flex: 1, minWidth: 0 }}>
@@ -953,7 +951,6 @@ export function FacultyScreen({ navigation }: any) {
                     name="award"
                     size={18}
                     color={!interest ? '#fff' : FACULTY_ACCENT}
-                    animation="entrance"
                   />
                 </View>
                 <View style={{ flex: 1, minWidth: 0 }}>
@@ -1015,7 +1012,6 @@ export function FacultyScreen({ navigation }: any) {
                         name="bookmark"
                         size={18}
                         color={active ? '#fff' : FACULTY_ACCENT}
-                        animation="entrance"
                       />
                     </View>
                     <View style={{ flex: 1, minWidth: 0 }}>

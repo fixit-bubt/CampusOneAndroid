@@ -462,14 +462,14 @@ export function DirectoryScreen({ route, navigation }: any) {
                 onPress={() => navigation.navigate('MessageThread', { kind: 'dm', id: s.id, title: s.full_name })}
                 activeOpacity={0.8}
               >
-                <AnimatedIcon family="feather" name="message-circle" size={14} color="#fff" animation="spring" />
+                <AnimatedIcon family="feather" name="message-circle" size={14} color="#fff" />
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.smallIconBtn, { backgroundColor: C.surface2, borderColor: C.border, borderWidth: 1 }]}
                 onPress={() => setContactStudent(s)}
                 activeOpacity={0.8}
               >
-                <AnimatedIcon family="feather" name="phone" size={14} color={C.text} animation="spring" />
+                <AnimatedIcon family="feather" name="phone" size={14} color={C.text} />
               </TouchableOpacity>
             </View>
           ) : s.connState === 'connected' ? (
@@ -509,7 +509,7 @@ export function DirectoryScreen({ route, navigation }: any) {
               disabled={isBusy}
               activeOpacity={0.85}
             >
-              <AnimatedIcon family="feather" name="user-plus" size={14} color="#fff" animation="none" />
+              <AnimatedIcon family="feather" name="user-plus" size={14} color="#fff" />
               <Text style={[styles.connectTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
                 {t.directory2.connect}
               </Text>
@@ -684,7 +684,6 @@ export function DirectoryScreen({ route, navigation }: any) {
                       name={currentDept.icon}
                       size={14}
                       color={selectedDept !== 'All' ? (isDark ? '#fff' : currentDept.color) : C.text2}
-                      animation={selectedDept !== 'All' ? 'spring' : 'none'}
                     />
                     <Text
                       style={[
@@ -733,7 +732,7 @@ export function DirectoryScreen({ route, navigation }: any) {
               </View>
             ) : (
               <View style={styles.emptyContainer}>
-                <AnimatedIcon family="feather" name="users" size={36} color={C.textMuted} animation="float" />
+                <AnimatedIcon family="feather" name="users" size={36} color={C.textMuted} />
                 <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                   {tab === 'connections'
                     ? t.directory2.noConnections
@@ -856,7 +855,7 @@ export function DirectoryScreen({ route, navigation }: any) {
                     activeOpacity={0.75}
                   >
                     <View style={styles.deptIconBox}>
-                      <AnimatedIcon family="feather" name={d.icon} size={32} color={C.text} animation="entrance" />
+                      <AnimatedIcon family="feather" name={d.icon} size={32} color={C.text} />
                     </View>
 
                     <View style={styles.deptInfo}>

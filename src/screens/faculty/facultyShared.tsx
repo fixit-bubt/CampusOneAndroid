@@ -371,7 +371,6 @@ function TeacherBarComponent({
               name="star"
               size={17}
               color={saved ? goldColor : C.textMuted}
-              animation={saved ? 'spring' : 'none'}
             />
           </TouchableOpacity>
         ) : (

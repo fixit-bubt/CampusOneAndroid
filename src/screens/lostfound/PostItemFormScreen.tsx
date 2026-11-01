@@ -444,7 +444,6 @@ export function PostItemFormScreen({ route, navigation }: any) {
                 name={selectedCatObj ? selectedCatObj.icon : 'inbox'}
                 size={20}
                 color={cat ? LF_COLOR : C.text2}
-                animation="spring"
               />
             </View>
             <View style={styles.dropdownInfo}>
@@ -556,7 +555,6 @@ export function PostItemFormScreen({ route, navigation }: any) {
                   name="map-pin"
                   size={20}
                   color={loc ? LF_COLOR : C.text2}
-                  animation={loc ? 'spring' : 'entrance'}
                 />
               </View>
               <View style={styles.dropdownInfo}>
@@ -836,7 +834,6 @@ export function PostItemFormScreen({ route, navigation }: any) {
                         name={item.icon}
                         size={20}
                         color={isSelected ? LF_COLOR : C.text2}
-                        animation={isSelected ? 'spring' : 'none'}
                       />
                     </View>
                     <View style={styles.dropdownInfo}>
@@ -1014,7 +1011,6 @@ export function PostItemFormScreen({ route, navigation }: any) {
                     name="map"
                     size={20}
                     color={LF_COLOR}
-                    animation="pulse"
                   />
                 </View>
                 <View style={styles.dropdownInfo}>
@@ -1084,7 +1080,6 @@ export function PostItemFormScreen({ route, navigation }: any) {
                           name={hub.icon}
                           size={20}
                           color={isSelected ? LF_COLOR : C.text2}
-                          animation={isSelected ? 'spring' : 'none'}
                         />
                       </View>
                       <View style={styles.dropdownInfo}>

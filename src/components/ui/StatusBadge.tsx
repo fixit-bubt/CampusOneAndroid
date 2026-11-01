@@ -252,16 +252,6 @@ export function StatusBadge({
         name={meta.icon}
         size={isSmall ? 12 : 14}
         color={meta.fg}
-        animation={
-          pulse || (variant === 'urgency' && meta.label === 'Urgent')
-            ? 'wobble'
-            : variant === 'platelet'
-            ? 'wobble'
-            : variant === 'shortlisted'
-            ? 'bounce'
-            : 'entrance'
-        }
-        loop={false}
         style={{ marginRight: 5 }}
       />
       <Text

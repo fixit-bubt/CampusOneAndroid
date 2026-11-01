@@ -471,7 +471,6 @@ export function EventsBrowseScreen({ navigation }: any) {
               name={activeCatObj.icon}
               size={32}
               color={C.text}
-              animation="spring"
             />
           </View>
 
@@ -647,8 +646,6 @@ export function EventsBrowseScreen({ navigation }: any) {
                           name={cat.icon}
                           size={32}
                           color={C.text}
-                          animation={active ? 'spring' : 'entrance'}
-                          delay={idx * 30}
                         />
                       </View>
                       <View style={styles.pickerBarTextWrap}>

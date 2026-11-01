@@ -1007,7 +1007,7 @@ export function LocationPickerModal({
               {locatingGps ? (
                 <ActivityIndicator size="small" color={accentColor} />
               ) : (
-                <AnimatedIcon name="navigation" size={24} color={C.text} animation="pulse" loop />
+                <AnimatedIcon name="navigation" size={24} color={C.text} />
               )}
             </TouchableOpacity>
 
@@ -1289,7 +1289,7 @@ export function LocationPickerModal({
             ]}
           >
             <View style={styles.locationIconBox44}>
-              <AnimatedIcon name="map-pin" size={32} color={C.text} animation="spring" />
+              <AnimatedIcon name="map-pin" size={32} color={C.text} />
             </View>
 
             <View style={styles.locationTextColumn}>

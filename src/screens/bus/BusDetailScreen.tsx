@@ -150,7 +150,7 @@ export function BusDetailScreen({ route, navigation }: any) {
           style={styles.nextCard}
         >
           <View style={styles.nextIcon}>
-            <AnimatedIcon key={direction} family="feather" name="clock" size={24} color="#fff" animation="spring" />
+            <AnimatedIcon key={direction} family="feather" name="clock" size={24} color="#fff" />
           </View>
           <View style={{ flex: 1 }}>
             <View style={styles.heroRow}>

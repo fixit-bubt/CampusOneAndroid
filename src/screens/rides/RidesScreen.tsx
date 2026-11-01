@@ -290,7 +290,7 @@ export function RidesScreen({ navigation }: any) {
           </View>
         ) : filteredRides.length === 0 ? (
           <View style={styles.empty}>
-            <AnimatedIcon family="feather" name="navigation" size={36} color={C.textMuted} animation="entrance" />
+            <AnimatedIcon family="feather" name="navigation" size={36} color={C.textMuted} />
             <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
               {tab === 'mine' ? (t.rides2.noMyRidesTitle ?? 'No rides found') : (t.rides2.noRidesTitle ?? 'No rides available')}
             </Text>

@@ -13,7 +13,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
 import { useAuth } from '../../store/authStore';
 import { Avatar } from '../../components/ui/Avatar';
-import { AnimatedIcon, type IconFamily, type AnimationType } from '../../components/ui/AnimatedIcon';
+import { AnimatedIcon, type IconFamily } from '../../components/ui/AnimatedIcon';
 import { TopBar } from '../../components/layout/TopBar';
 import { PasswordInput } from '../../components/ui/PasswordInput';
 import { FontFamily, Layout } from '../../theme';
@@ -40,7 +40,6 @@ interface SettingCardProps {
   icon: string;
   iconFamily?: IconFamily;
   iconColor?: string;
-  animation?: AnimationType;
   label: string;
   sub?: string;
   right?: React.ReactNode;
@@ -48,7 +47,7 @@ interface SettingCardProps {
   C: any;
 }
 
-function SettingCard({ icon, iconFamily = 'feather', iconColor, animation = 'entrance', label, sub, right, onPress, C }: SettingCardProps) {
+function SettingCard({ icon, iconFamily = 'feather', iconColor, label, sub, right, onPress, C }: SettingCardProps) {
   const Wrapper: any = onPress ? TouchableOpacity : View;
   return (
     <Wrapper
@@ -57,7 +56,7 @@ function SettingCard({ icon, iconFamily = 'feather', iconColor, animation = 'ent
       activeOpacity={onPress ? 0.7 : 1}
     >
       <View style={styles.cardIconWrap}>
-        <AnimatedIcon name={icon} family={iconFamily} size={32} color={iconColor === C.danger ? C.danger : C.text} animation={animation} />
+        <AnimatedIcon name={icon} family={iconFamily} size={32} color={iconColor === C.danger ? C.danger : C.text} />
       </View>
       <View style={styles.cardBody}>
         <Text style={[styles.cardLabel, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]} numberOfLines={1}>
@@ -246,7 +245,6 @@ export function SettingsScreen({ navigation }: any) {
           <SettingCard
             icon="sliders"
             iconColor={C.text}
-            animation="wobble"
             label={t.mainx.adminDashboardTitle}
             C={C}
             onPress={() => navigation.navigate('AdminDashboard')}
@@ -257,7 +255,6 @@ export function SettingsScreen({ navigation }: any) {
           <SettingCard
             icon="tool"
             iconColor={C.text}
-            animation="wobble"
             label={t.mainx.staffWorkspaceTitle}
             C={C}
             onPress={() => navigation.navigate('StaffDashboard')}
@@ -272,7 +269,6 @@ export function SettingsScreen({ navigation }: any) {
         <SettingCard
           icon="bell"
           iconColor={C.text}
-          animation={notifDisabled ? 'wobble' : 'entrance'}
           label={t.mainx.notificationsTitle}
           sub={notifDisabled ? t.mainx.notificationsDisabledSub : undefined}
           right={
@@ -381,7 +377,6 @@ export function SettingsScreen({ navigation }: any) {
         <SettingCard
           icon="info"
           iconColor={C.text}
-          animation="float"
           label={t.mainx.aboutApp}
           C={C}
           onPress={() => setAboutOpen(true)}
@@ -419,7 +414,6 @@ export function SettingsScreen({ navigation }: any) {
         <SettingCard
           icon="trash-2"
           iconColor={C.danger}
-          animation="wobble"
           label={t.mainx.deleteAccount}
           C={C}
           onPress={() => setDelOpen(true)}
@@ -434,7 +428,7 @@ export function SettingsScreen({ navigation }: any) {
         <View style={[styles.sheetContent, { backgroundColor: C.surface }]}>
           <View style={styles.sheetHeaderRow}>
             <View style={styles.sheetIconWrap}>
-              <AnimatedIcon name="hard-drive" family="feather" size={28} color="#0284c7" animation="entrance" />
+              <AnimatedIcon name="hard-drive" family="feather" size={28} color="#0284c7" />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
@@ -512,7 +506,7 @@ export function SettingsScreen({ navigation }: any) {
         <TouchableOpacity style={styles.sheetOverlay} activeOpacity={1} onPress={() => setAboutOpen(false)} />
         <View style={[styles.sheetContent, { backgroundColor: C.surface }]}>
           <View style={styles.aboutIconWrap}>
-            <AnimatedIcon name="award" family="feather" size={36} color={C.brand} animation="float" loop />
+            <AnimatedIcon name="award" family="feather" size={36} color={C.brand} />
           </View>
           <Text style={[styles.aboutTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
             CampusOne
@@ -602,7 +596,7 @@ export function SettingsScreen({ navigation }: any) {
         <TouchableOpacity style={styles.sheetOverlay} activeOpacity={1} onPress={() => !delBusy && setDelOpen(false)} />
         <View style={[styles.sheetContent, { backgroundColor: C.surface }]}>
           <View style={styles.delIconWrap}>
-            <AnimatedIcon name="trash-2" family="feather" size={32} color={C.danger} animation="wobble" />
+            <AnimatedIcon name="trash-2" family="feather" size={32} color={C.danger} />
           </View>
           <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold, marginTop: 12, textAlign: 'center' }]}>
             {t.mainx.deleteAccountTitle}
