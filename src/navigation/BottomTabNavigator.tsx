@@ -111,7 +111,7 @@ const StandardTabButton = React.memo(function StandardTabButton({
         <View style={styles.iconWrap}>
           <Feather
             name={iconName}
-            size={20}
+            size={22}
             color={isFocused ? activeColor : inactiveColor}
           />
           {badge !== undefined && badge > 0 && (
@@ -154,7 +154,7 @@ function CustomBottomTabBar(props: BottomTabBarProps) {
     Settings: t.tabs.settings,
   }), [t]);
 
-  const barHeight = 62 + Math.max(insets.bottom, 10);
+  const barHeight = 66 + Math.max(insets.bottom, 10);
   const bottomPadding = Math.max(insets.bottom - 4, 6);
 
   const numTabs = Math.max(state.routes.length, 1);
@@ -164,7 +164,7 @@ function CustomBottomTabBar(props: BottomTabBarProps) {
 
   const pillMarginH = 3;
   const pillWidth = Math.max(tabWidth - pillMarginH * 2, 20);
-  const pillHeight = 50;
+  const pillHeight = 54;
   const pillTop = Math.max(Math.round((barHeight - bottomPadding - pillHeight) / 2), 4);
 
   const translateX = useRef(new Animated.Value(state.index * tabWidth)).current;
@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(96, 165, 250, 0.18)',
     borderColor: 'rgba(96, 165, 250, 0.35)',
     borderWidth: 1,
-    borderRadius: 14,
+    borderRadius: 15,
   },
   tabBtn: {
     flex: 1,
@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
   },
   iconWrap: {
     width: 28,
-    height: 24,
+    height: 26,
     alignItems: 'center',
     justifyContent: 'center',
   },
