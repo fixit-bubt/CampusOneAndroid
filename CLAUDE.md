@@ -2622,7 +2622,7 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - 100% elimination of emojis across both UI components and internal source code comments (0 emojis across entire `src/`).
   - Elimination of em-dashes in user-facing UI copy (e.g. `StudyHubScreen.tsx`), standardizing on middle-dots (`·`) and hyphens (`-`).
 - **Performance Optimization & Battery Life:**
-  - **Dead Asset Elimination:** Deleted unreferenced banner images from `assets/banners/` (`convocation-2026.jpg`, `hackathon-2026.jpg`, `blood-drive.jpg`, `exam-routine.jpg`), reducing release APK binary size by ~3.6 MB.
+  - **Bundled Varsity Banners Offline Engine:** Preserved bundled varsity assets (`convocation-2026.jpg`, `hackathon-2026.jpg`, `blood-drive.jpg`, `exam-routine.jpg`) in `assets/banners/` for instant 0ms offline hero rendering without network latency or blank image cards.
   - **Infinite WebView Polling Capped:** In `CampusPdfViewerModal.tsx` and `AnnouncementDetailScreen.tsx`, replaced endless `setInterval(fitViewer, 200)` with auto-cancelling timers (clearing upon render or max 30 iterations / 6 seconds), preventing continuous DOM querying, background battery drain, and CPU consumption.
   - **Home Status Strips Query Throttling (`HomeStatusStrips.tsx`):** Replaced unconditional 15 parallel network queries on Home tab mount with selective querying gated strictly to the user's active `selectedStrips` array with `.limit(50)` on all table lookups.
 - **The 4 UI States Rule Compliance:**

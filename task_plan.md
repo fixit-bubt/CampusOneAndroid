@@ -1,35 +1,64 @@
-# task_plan.md — Permanent Sync, Crawler, Faculty Short-Codes & Deep QA System
+# Unified 60dp Top Bar & Comprehensive Bangla/English Parity Audit
 
-## Core Objectives
-Implement permanent, robust solutions for notice synchronization, automated faculty directory crawling with initial/short codes, modern official BUBT profile URLs, missing faculty onboarding (e.g. Shaila Shaznin `SSN`), frontend search and fallback resilience, deployment to Supabase & GitHub, followed by an exhaustive multi-agent faculty module audit, bug fixes, verification, build, and memory synchronization.
+## Phase 1: Unified 60dp Top Bar Architecture & Implementation
+- [x] Standardize `TopBar.tsx`:
+  - Standardize `TopBar` height to exactly `60dp` (`height: 60`, surface background, border bottom `hairlineWidth`).
+  - Standardize `SubBar` height to exactly `60dp` (upgraded from 54dp so screen height never jumps).
+  - Main Tab mode: `[LogoMark]` on the left (32dp), Page Title beside it (`fontFamily: FontFamily.jakartaExtraBold`, `fontSize: 18`), subtitle or badges if present, right action button on the right.
+  - Sub-screen mode (`SubBar`): `[ ← ]` back button on the left, Page Title centered, and `[LogoMark]` on the right (or right action slot) for perfect bilateral symmetry.
+- [x] Audit & Standardize all 5 Root Tabs:
+  - `HomeScreen`: Uses `TopBar` (brand logo + title + subtitle + bell).
+  - `ExploreScreen`: Replaced raw text header with unified `TopBar` (`title={t.tabs.explore}`, subtitle={t.exploreGroups.exploreSubtitle}).
+  - `MessagesHome`: Replaced raw text header with unified `TopBar` (`title={t.messages.title}`, subtitle={t.messages.subtitle}, right directory action).
+  - `SettingsScreen`: Replaced raw text header with unified `TopBar` (`title={t.tabs.settings}`, subtitle={t.mainx.settingsSubtitle}).
+  - `StudyHubScreen`: Replaced back button header with root `TopBar` on root tab, and `SubBar` when inside sub-views.
+- [x] Audit & Standardize child screens to use `SubBar` (height 60dp, left `[←]`, right `[LogoMark]`).
 
-## Phases
-- [x] **Phase 1: Fix `sync-notices` Edge Function** `complete`
-  - Stripped `id` from `rowsToUpsert` so all rows have uniform keys (preventing PostgREST 400 `PGRST102` error).
-  - Normalized all optional fields with explicit `null` defaults.
-  - Implemented chunk-level batch upsert with row-by-row fallback.
-  - Live verified: Notice 1634 (`BUBT-N-1634`) successfully inserted into `public.announcements`. 41 new notices added, 259 updated.
-- [x] **Phase 2: Fix `sync-faculty` Edge Function** `complete`
-  - Replaced N+1 sequential query waterfall (>800 DB calls) with pre-loaded in-memory set diffing.
-  - Crawled all 13 active BUBT department rosters completely in 16.8 seconds.
-  - Extracted routine short codes (`SSN`, `SR`, `MAHB`, etc.) from profile link slugs.
-  - Standardized active, modern BUBT profile URLs (`https://www.bubt.edu.bd/department/${slug}/faculty/profile/${shortCode}`).
-  - Successfully onboarded new faculty member **Shaila Shaznin** (`SSN`, CSE).
-  - Populated 403 out of 476 faculty members with routine short codes in `public.faculty`.
-  - Cleaned all legacy `cse.bubt.edu.bd` records in database (0 dead links remaining).
-- [x] **Phase 3: Deploy & Execute Edge Functions** `complete`
-  - Deployed `sync-notices` and `sync-faculty` to Supabase project `xhgpxvyqrufbbuivttmi`.
-  - Executed and verified live database updates for both.
-- [x] **Phase 4: Frontend Safeguard in `FacultyProfileScreen.tsx`** `complete`
-  - Added dynamic URL normalization in `resolveFacultyProfileUrl(member)` to rewrite legacy URLs to modern canonical BUBT URLs on the fly.
-- [x] **Phase 5: First Verification, Build & GitHub Push** `complete`
-  - Verified `tsc --noEmit` and Expo bundle export.
-  - Committed with user-only author (no AI trailers) and pushed to GitHub `origin main`.
-- [x] **Phase 6: Multi-Agent Deep Audit of Faculty Module (50 Lenses)** `complete`
-  - **Search & Short-Code Matching:** Enhanced search across `FacultyScreen.tsx`, `FacultyDeptScreen.tsx`, and `ManageFacultyScreen.tsx` with stripped `cleanQ` matching so initials with punctuation or spaces (`S.S.N.`, `s s n`) match `short_code`.
-  - **58dp Control Standard:** Standardized `dropdownBar`, `sheetCloseBtn` in `FacultyScreen.tsx`, `proposalBtn`, `contactBtn`, `sendProposalBtn` in `FacultyProfileScreen.tsx`, and `saveBtn`, `closeReportBtn` in `ManageFacultyScreen.tsx` to `Layout.controlHeight = 58` and `Layout.controlRadius = 16`.
-  - **Modal Keyboard Ergonomics:** Replaced `Platform.OS === 'ios' ? 'padding' : undefined` with unconditional `behavior="padding"` on modal sheets in `FacultyScreen.tsx`.
-- [x] **Phase 7: Final Verification, Build, Push & Final Memory Update** `complete`
-  - Full TypeScript check: `npx.cmd tsc --noEmit` -> 0 errors.
-  - Full bundle packaging: `npx.cmd expo export --no-bytecode` -> Exported `dist` successfully for Android & iOS.
-  - Memory synchronized: `AGENTS.md` and `CLAUDE.md` updated in both workspace root and project root.
+## Phase 2: Bangla Layout & "Screen Dropdown" Investigation
+- [x] Audit font sizes, line heights, and container heights across Home and main screens:
+  - Inspected `HomeScreen`, `HomeStatusStrips`, `HomeFrequentTools`, `HomeHeroBanner`, `HomeCommunityUpdates`, `SettingsScreen`, `ExploreScreen`.
+  - Identified root cause of Bangla dropdown: `SettingCard` had `minHeight: 72` and wrapped long Bangla strings to 2 lines; `HomeCommunityUpdates` cards lacked fixed heights and `cardBody` had `numberOfLines={2}`; `ExploreScreen` lacked fixed heights on `featuredCard` and `childBar`.
+  - Enforced `height: 72` fixed heights and single-line clamping `numberOfLines={1}` across all cards.
+  - Guaranteed font sizes between English and Bangla maintain identical 1:1 vertical balance.
+
+## Phase 3: Comprehensive English/Bangla i18n Audit & Translation
+- [x] Compared `en.ts` and `bn.ts` dictionaries key-by-key for missing or untranslated strings.
+- [x] Added localized strings for:
+  - `sectorTitles` & `sectorDescs` (20 sectors in English and Bengali)
+  - `frequentTools` (header, customize, modal titles, 19 tool names)
+  - `statusStrips` (header, customize, titles, all metrics labels)
+  - `communityUpdates` (header, live badge, tab labels, view-all CTAs)
+  - `exploreGroups.exploreSubtitle`, `messages.subtitle`, `mainx.language`, `mainx.settingsSubtitle`, `study2.studyHubSubtitle`, `chatbot.exploreDesc`.
+- [x] Hooked components to use `t.*` keys dynamically.
+
+## Phase 4: Review & Verification Gate
+- [x] Reviewed all modified files for regressions, styling mistakes, or unintended changes.
+- [x] Type check with `npx tsc --noEmit` — 0 TypeScript errors.
+- [x] Built release APK locally with Android SDK & Gradle: `cd android; .\gradlew assembleRelease` — BUILD SUCCESSFUL in 37s.
+- [x] Installed onto connected phone (`8734b5da`) via ADB:
+  - Force-stop: `adb shell am force-stop com.bubt.campusone`
+  - Install: `adb install -r android/app/build/outputs/apk/release/app-release.apk`
+  - Launch: `adb shell am start -n com.bubt.campusone/.MainActivity`
+
+## Phase 5: Documentation & Git Remote Push
+- [x] Updated `DESIGN.md` with Section 11 (60dp Top Bar standard) and Section 12 (Bilingual Parity & Zero-Dropdown Layout Constraints).
+- [x] Updated project memory (`AGENTS.md` and `CLAUDE.md`) synchronously per rules.
+- [x] Committed with clean human commit message (NO AI tells/footprints) and pushed to `origin/main`.
+
+## Phase 6: BUBT Crawler Parity & Cover Page Generator Faculty Linking
+- [x] Audited all 7 crawler adapters against 74 database tables; fixed `department` null fallback in `notices.ts`.
+- [x] Executed database permissions grant for `faculty`, `courses`, and `departments` in Supabase.
+- [x] Deployed updated `bubt-crawler` Edge Function to Supabase and verified live execution.
+- [x] Upgraded `CoverPageFormScreen.tsx` with normalized multi-word and punctuation-tolerant search for teachers and courses.
+- [x] Decoupled faculty list loading from department sync with `.limit(1000)` and robust fallbacks.
+- [x] Compiled release APK locally with native Gradle and installed via ADB to physical device `8734b5da`.
+- [x] Synchronized `AGENTS.md` and `CLAUDE.md` and pushed commits to GitHub `origin/main`.
+
+## Phase 7: Triple-Axis Audit, Zero-Slop, Performance Optimization & Native Deployment
+- [x] Full codebase audit across 236 source files (`/zero-slop`, `/performance-optimization`, `/code-review-and-quality`).
+- [x] Zero-slop UI standard: 100% elimination of emojis in UI & code comments, replaced em-dashes with middle-dots/hyphens.
+- [x] Performance & battery optimization: Capped infinite `setInterval` in `CampusPdfViewerModal` and `AnnouncementDetailScreen` to 30 iterations (6s max); throttled Home status strips parallel queries to active strips with `.limit(50)`.
+- [x] The 4 UI states rule compliance: Added cold mount loading & explicit retry error cards in `FacultyScreen`, `MessagesHome`, `AssignedToMeScreen`, and Admin/Staff dashboards.
+- [x] Deep linking: Configured `campusone://` scheme and `https://campusonebubt.vercel.app` routes in `RootNavigator`.
+- [x] Native Gradle compilation & ADB installation onto connected phone (`8734b5da`).
+- [x] Synchronized `AGENTS.md` and `CLAUDE.md` across both locations.
