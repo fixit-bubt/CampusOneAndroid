@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
-  RefreshControl, Alert, type ViewStyle,
+  RefreshControl, Alert, ActivityIndicator, type ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
@@ -161,30 +161,35 @@ export function StaffDashboardScreen({ navigation }: any) {
   const { user, profile } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
   const [unread, setUnread] = useState(0);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     if (!user?.id || (profile && profile.role !== 'staff' && profile.role !== 'admin')) return;
-    const { data } = await supabase
-      .from('reports')
-      .select('*')
-      .eq('assigned_staff_id', user?.id ?? '')
-      .is('deleted_at', null)
-      .order('status')
-      .limit(30);
-    if (data) {
-      // Reporter names via the roster RPC: profiles RLS covers self and admins,
-      // so staff embedding it would see no names at all.
-      const people = await fetchPeople((data as any[]).map(r => r.reporter_id));
-      setReports(data.map((r: any) => ({
-        ...r,
-        reporter_name: people[r.reporter_id]?.full_name,
-        title: r.description?.split('\n')[0] ?? '',
-        location: [r.building, r.room].filter(Boolean).join(' · '),
-      })));
+    try {
+      const { data } = await supabase
+        .from('reports')
+        .select('*')
+        .eq('assigned_staff_id', user?.id ?? '')
+        .is('deleted_at', null)
+        .order('status')
+        .limit(30);
+      if (data) {
+        // Reporter names via the roster RPC: profiles RLS covers self and admins,
+        // so staff embedding it would see no names at all.
+        const people = await fetchPeople((data as any[]).map(r => r.reporter_id));
+        setReports(data.map((r: any) => ({
+          ...r,
+          reporter_name: people[r.reporter_id]?.full_name,
+          title: r.description?.split('\n')[0] ?? '',
+          location: [r.building, r.room].filter(Boolean).join(' · '),
+        })));
+      }
+      const nRes = await getUnreadNotificationCount(user?.id);
+      if (nRes.ok) setUnread(nRes.data);
+    } finally {
+      setLoading(false);
     }
-    const nRes = await getUnreadNotificationCount(user?.id);
-    if (nRes.ok) setUnread(nRes.data);
   }, [user?.id, profile]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -270,7 +275,11 @@ export function StaffDashboardScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
 
-        {sorted.length === 0 ? (
+        {loading && reports.length === 0 ? (
+          <View style={{ paddingVertical: 28, alignItems: 'center', justifyContent: 'center' }}>
+            <ActivityIndicator size="small" color={C.brand} />
+          </View>
+        ) : sorted.length === 0 ? (
           <View style={styles.empty}>
             <Icon name="check" size={30} color={C.textMuted} />
             <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.dash.allClear}</Text>

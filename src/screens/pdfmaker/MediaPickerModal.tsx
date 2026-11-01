@@ -772,7 +772,7 @@ export function MediaPickerModal({
               </View>
             ) : null}
 
-            {/* Bottom Action Bar: [✓] Select Toggle Button */}
+            {/* Bottom Action Bar: Select Toggle Button */}
             {previewIndex !== null && previewList[previewIndex] ? (
               (() => {
                 const currentAsset = previewList[previewIndex];

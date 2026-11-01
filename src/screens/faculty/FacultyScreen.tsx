@@ -5,7 +5,7 @@ import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
   RefreshControl, Animated, Modal, KeyboardAvoidingView, Platform,
-  BackHandler,
+  BackHandler, ActivityIndicator,
   type ViewStyle, type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
@@ -57,6 +57,7 @@ export function FacultyScreen({ navigation }: any) {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [faculty, setFaculty] = useState<FacultyMember[]>([]);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
 
@@ -108,6 +109,9 @@ export function FacultyScreen({ navigation }: any) {
       const cachedBookmarks = await getCache<string[]>(CacheKeys.FACULTY_BOOKMARKS(user.id));
       if (cachedBookmarks) setSavedIds(new Set(cachedBookmarks));
     }
+    if ((cachedDepts && cachedDepts.length > 0) || (cachedFac && cachedFac.length > 0)) {
+      setLoading(false);
+    }
 
     // 2. Fetch fresh
     const [deptRes, facRes, savedRes] = await Promise.all([
@@ -123,6 +127,7 @@ export function FacultyScreen({ navigation }: any) {
       if ((cachedDepts && cachedDepts.length > 0) || (cachedFac && cachedFac.length > 0)) {
         setIsOffline(true);
       }
+      setLoading(false);
       return;
     }
 
@@ -140,6 +145,7 @@ export function FacultyScreen({ navigation }: any) {
       setSavedIds(new Set(ids));
       if (user?.id) setCache(CacheKeys.FACULTY_BOOKMARKS(user.id), ids);
     }
+    setLoading(false);
   }, [user?.id]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -382,6 +388,16 @@ export function FacultyScreen({ navigation }: any) {
           )}
         </View>
 
+        {/* Loading Skeleton/State on Cold Start */}
+        {loading && departments.length === 0 ? (
+          <View style={{ paddingVertical: 48, alignItems: 'center', justifyContent: 'center' }}>
+            <ActivityIndicator size="large" color={C.brand} />
+            <Text style={{ marginTop: 12, color: C.textMuted, fontFamily: FontFamily.jakartaMedium, fontSize: 13 }}>
+              Loading faculty directory…
+            </Text>
+          </View>
+        ) : (
+          <>
         {/* =========================================================================
             TAB 1: DEPARTMENTS HIERARCHY (Faculty Categories -> Departments -> Teachers)
            ========================================================================= */}
@@ -710,6 +726,8 @@ export function FacultyScreen({ navigation }: any) {
               </View>
             )}
           </View>
+        )}
+          </>
         )}
 
         <View style={{ height: 28 }} />

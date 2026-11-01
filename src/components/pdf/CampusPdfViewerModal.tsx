@@ -303,14 +303,28 @@ export function CampusPdfViewerModal({
 
           if (hasContent && !notified) {
             notified = true;
+            renderedCount++;
             if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
               window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'pdfRendered' }));
+            }
+            if (renderedCount >= 3 && fitTimer) {
+              clearInterval(fitTimer);
+              fitTimer = null;
             }
           }
         } catch (e) {}
       }
       fitViewer();
-      setInterval(fitViewer, 200);
+      var renderedCount = 0;
+      var pollCount = 0;
+      var fitTimer = setInterval(function() {
+        pollCount++;
+        fitViewer();
+        if (pollCount > 30 && fitTimer) {
+          clearInterval(fitTimer);
+          fitTimer = null;
+        }
+      }, 200);
     })();
     true;
   `;

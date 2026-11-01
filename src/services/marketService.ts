@@ -1,4 +1,4 @@
-// CampusOne — Marketplace Service
+// CampusOne · Marketplace Service
 // Manages local wishlist / bookmarks, in-app messaging context grants,
 // and synchronized cache mutations for listings.
 

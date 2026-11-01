@@ -59,25 +59,33 @@ export function AssignedToMeScreen({ navigation }: any) {
   const t = useT();
   const [reports, setReports] = useState<AssignedReport[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<StatusFilter>('All');
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     if (!user) return;
+    setError(false);
     try {
-      const { data } = await supabase
+      const { data, error: err } = await supabase
         .from('reports')
         .select('*')
         .eq('assigned_staff_id', user.id)
         .is('deleted_at', null)
         .order('created_at', { ascending: false });
+      if (err) {
+        setError(true);
+        return;
+      }
       if (data) {
         // profiles RLS is self/admin only, so staff resolve reporter names through
         // the roster RPC instead of an embed.
         const people = await fetchPeople((data as any[]).map(r => r.reporter_id));
         setReports(data.map((r: any) => ({ ...r, reporter_name: people[r.reporter_id]?.full_name })));
       }
+    } catch {
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -170,6 +178,23 @@ export function AssignedToMeScreen({ navigation }: any) {
           loading ? (
             <View style={{ paddingVertical: 40, alignItems: 'center', justifyContent: 'center' }}>
               <ActivityIndicator size="small" color={C.brand} />
+            </View>
+          ) : error && reports.length === 0 ? (
+            <View style={styles.empty}>
+              <Feather name="alert-circle" size={28} color={C.danger} />
+              <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold, marginTop: 8 }]}>
+                {t.common.error}
+              </Text>
+              <Text style={[styles.emptyBody, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                Failed to load assigned reports. Please check your connection.
+              </Text>
+              <TouchableOpacity
+                style={{ backgroundColor: C.brand, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12, marginTop: 14 }}
+                onPress={load}
+                activeOpacity={0.85}
+              >
+                <Text style={{ color: C.white, fontFamily: FontFamily.jakartaBold, fontSize: 13 }}>{t.common.retry}</Text>
+              </TouchableOpacity>
             </View>
           ) : (
             <View style={styles.empty}>

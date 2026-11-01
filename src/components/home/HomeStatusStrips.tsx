@@ -350,6 +350,8 @@ export function HomeStatusStrips({ refreshTrigger }: { refreshTrigger?: number }
       const todayISO = localToday();
       const staleCutoff = new Date(Date.now() - 21 * 86400000).toISOString();
 
+      const needed = new Set(selectedStrips);
+
       const [
         repRes,
         busRes,
@@ -367,21 +369,21 @@ export function HomeStatusStrips({ refreshTrigger }: { refreshTrigger?: number }
         docRes,
         facRes,
       ] = await Promise.all([
-        getMyReports(user.id),
-        supabase.from('bus_routes').select('id, name, to_departures, from_departures').eq('active', true),
-        supabase.from('saved_bus_routes').select('route_id').eq('user_id', user.id),
-        supabase.from('prayer_times').select('en, azan, key').order('sort'),
-        supabase.from('blood_requests').select('id, urgency').is('fulfilled_at', null).gte('created_at', staleCutoff),
-        supabase.from('donors').select('*', { count: 'exact', head: true }),
-        supabase.from('rides').select('id, post_type, seats_total, seats_available').gte('date', todayISO),
-        supabase.from('listings').select('id, status').eq('status', 'Available'),
-        supabase.from('lost_found_items').select('id, type, status').eq('status', 'Open'),
-        supabase.from('jobs').select('id, job_type, deadline').gte('deadline', todayISO),
-        supabase.from('study_materials').select('id', { count: 'exact', head: true }),
-        supabase.from('events').select('id, date').gte('date', todayISO),
-        supabase.from('clubs').select('id', { count: 'exact', head: true }),
-        supabase.from('doctors').select('id, is_on_leave').eq('active', true),
-        supabase.from('faculty').select('id', { count: 'exact', head: true }),
+        needed.has('reports') ? getMyReports(user.id) : Promise.resolve({ ok: false, data: [] as Report[] }),
+        needed.has('bus') ? supabase.from('bus_routes').select('id, name, to_departures, from_departures').eq('active', true).limit(50) : Promise.resolve({ data: null, error: null }),
+        needed.has('bus') ? supabase.from('saved_bus_routes').select('route_id').eq('user_id', user.id).limit(50) : Promise.resolve({ data: null, error: null }),
+        needed.has('prayer') ? supabase.from('prayer_times').select('en, azan, key').order('sort').limit(20) : Promise.resolve({ data: null, error: null }),
+        needed.has('blood') ? supabase.from('blood_requests').select('id, urgency').is('fulfilled_at', null).gte('created_at', staleCutoff).limit(50) : Promise.resolve({ data: null, error: null }),
+        needed.has('blood') ? supabase.from('donors').select('*', { count: 'exact', head: true }) : Promise.resolve({ count: null, error: null }),
+        needed.has('rides') ? supabase.from('rides').select('id, post_type, seats_total, seats_available').gte('date', todayISO).limit(50) : Promise.resolve({ data: null, error: null }),
+        needed.has('market') ? supabase.from('listings').select('id, status').eq('status', 'Available').limit(50) : Promise.resolve({ data: null, error: null }),
+        needed.has('lostfound') ? supabase.from('lost_found_items').select('id, type, status').eq('status', 'Open').limit(50) : Promise.resolve({ data: null, error: null }),
+        needed.has('jobs') ? supabase.from('jobs').select('id, job_type, deadline').gte('deadline', todayISO).limit(50) : Promise.resolve({ data: null, error: null }),
+        needed.has('study') ? supabase.from('study_materials').select('id', { count: 'exact', head: true }) : Promise.resolve({ count: null, error: null }),
+        needed.has('events') ? supabase.from('events').select('id, date').gte('date', todayISO).limit(50) : Promise.resolve({ data: null, error: null }),
+        needed.has('clubs') ? supabase.from('clubs').select('id', { count: 'exact', head: true }) : Promise.resolve({ count: null, error: null }),
+        needed.has('medical') ? supabase.from('doctors').select('id, is_on_leave').eq('active', true).limit(50) : Promise.resolve({ data: null, error: null }),
+        needed.has('faculty') ? supabase.from('faculty').select('id', { count: 'exact', head: true }) : Promise.resolve({ count: null, error: null }),
       ]);
 
       const nextReports = repRes.ok ? repRes.data : (cached?.reports ?? []);
@@ -410,7 +412,7 @@ export function HomeStatusStrips({ refreshTrigger }: { refreshTrigger?: number }
       }
 
       // Rides stats
-      let nextRides = { offers: 0, requests: 0, seats: 0 };
+      let nextRides = cached?.rideStats ?? { offers: 0, requests: 0, seats: 0 };
       if (ridesRes.data) {
         const offers = ridesRes.data.filter((r: any) => r.post_type === 'offer').length;
         const requests = ridesRes.data.filter((r: any) => r.post_type === 'request').length;
@@ -419,7 +421,7 @@ export function HomeStatusStrips({ refreshTrigger }: { refreshTrigger?: number }
       }
 
       // Market stats
-      let nextMarket = { total: 0, active: 0, saved: 0 };
+      let nextMarket = cached?.marketStats ?? { total: 0, active: 0, saved: 0 };
       if (marketRes.data) {
         nextMarket = {
           total: marketRes.data.length,
@@ -429,7 +431,7 @@ export function HomeStatusStrips({ refreshTrigger }: { refreshTrigger?: number }
       }
 
       // Lost & Found stats
-      let nextLost = { lost: 0, found: 0, claims: 0 };
+      let nextLost = cached?.lostStats ?? { lost: 0, found: 0, claims: 0 };
       if (lostRes.data) {
         const lost = lostRes.data.filter((i: any) => i.type === 'Lost').length;
         const found = lostRes.data.filter((i: any) => i.type === 'Found').length;
@@ -437,7 +439,7 @@ export function HomeStatusStrips({ refreshTrigger }: { refreshTrigger?: number }
       }
 
       // Jobs stats
-      let nextJobs = { open: 0, interns: 0, applied: 0 };
+      let nextJobs = cached?.jobStats ?? { open: 0, interns: 0, applied: 0 };
       if (jobsRes.data) {
         const open = jobsRes.data.length;
         const interns = jobsRes.data.filter((j: any) => j.job_type === 'internship').length;
@@ -445,28 +447,32 @@ export function HomeStatusStrips({ refreshTrigger }: { refreshTrigger?: number }
       }
 
       // Study Hub stats
-      const nextStudy = {
-        notes: studyRes.count ?? 24,
-        files: Math.round((studyRes.count ?? 24) * 0.7),
-        saved: 4,
-      };
+      const nextStudy = studyRes.count !== null && studyRes.count !== undefined
+        ? {
+            notes: studyRes.count,
+            files: Math.round(studyRes.count * 0.7),
+            saved: 4,
+          }
+        : (cached?.studyStats ?? { notes: 24, files: 17, saved: 4 });
 
       // Events stats
-      let nextEvents = { upcoming: 0, thisWeek: 0, going: 0 };
+      let nextEvents = cached?.eventStats ?? { upcoming: 0, thisWeek: 0, going: 0 };
       if (eventsRes.data) {
         const upcoming = eventsRes.data.length;
         nextEvents = { upcoming, thisWeek: Math.min(upcoming, 3), going: 1 };
       }
 
       // Clubs stats
-      const nextClubs = {
-        total: clubsRes.count ?? 12,
-        joined: 2,
-        posts: 8,
-      };
+      const nextClubs = clubsRes.count !== null && clubsRes.count !== undefined
+        ? {
+            total: clubsRes.count,
+            joined: 2,
+            posts: 8,
+          }
+        : (cached?.clubStats ?? { total: 12, joined: 2, posts: 8 });
 
       // Medical stats
-      let nextDoc = { onDuty: 0, total: 0 };
+      let nextDoc = cached?.doctorStats ?? { onDuty: 0, total: 0 };
       if (docRes.data) {
         const total = docRes.data.length;
         const onDuty = docRes.data.filter((d: any) => !d.is_on_leave).length;
@@ -474,25 +480,29 @@ export function HomeStatusStrips({ refreshTrigger }: { refreshTrigger?: number }
       }
 
       // Faculty stats
-      const nextFac = {
-        total: facRes.count ?? 42,
-        mentors: 14,
-      };
+      const nextFac = facRes.count !== null && facRes.count !== undefined
+        ? {
+            total: facRes.count,
+            mentors: 14,
+          }
+        : (cached?.facultyStats ?? { total: 42, mentors: 14 });
 
-      setReports(nextReports);
-      setBusRoutes(nextBusRoutes);
-      setSavedBusRoutes(nextSavedBus);
-      setPrayerList(nextPrayer);
-      setBloodStats(nextBlood);
-      setRideStats(nextRides);
-      setMarketStats(nextMarket);
-      setLostStats(nextLost);
-      setJobStats(nextJobs);
-      setStudyStats(nextStudy);
-      setEventStats(nextEvents);
-      setClubStats(nextClubs);
-      setDoctorStats(nextDoc);
-      setFacultyStats(nextFac);
+      if (needed.has('reports')) setReports(nextReports);
+      if (needed.has('bus')) {
+        setBusRoutes(nextBusRoutes);
+        setSavedBusRoutes(nextSavedBus);
+      }
+      if (needed.has('prayer')) setPrayerList(nextPrayer);
+      if (needed.has('blood')) setBloodStats(nextBlood);
+      if (needed.has('rides')) setRideStats(nextRides);
+      if (needed.has('market')) setMarketStats(nextMarket);
+      if (needed.has('lostfound')) setLostStats(nextLost);
+      if (needed.has('jobs')) setJobStats(nextJobs);
+      if (needed.has('study')) setStudyStats(nextStudy);
+      if (needed.has('events')) setEventStats(nextEvents);
+      if (needed.has('clubs')) setClubStats(nextClubs);
+      if (needed.has('medical')) setDoctorStats(nextDoc);
+      if (needed.has('faculty')) setFacultyStats(nextFac);
 
       setCache(CacheKeys.HOME_STATUS(user.id), {
         reports: nextReports,
@@ -513,7 +523,7 @@ export function HomeStatusStrips({ refreshTrigger }: { refreshTrigger?: number }
     } catch {
       // quiet fallback
     }
-  }, [user]);
+  }, [user, selectedStrips]);
 
   useFocusEffect(
     useCallback(() => {

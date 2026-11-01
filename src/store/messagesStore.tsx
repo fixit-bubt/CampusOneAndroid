@@ -30,6 +30,7 @@ interface MessagesValue {
   myClubs: ClubChat[];
   mySections: SectionChat[];
   loading: boolean;
+  error: boolean;
   unreadByConv: Record<string, number>;
   totalUnread: number;
   isBlocked: (id: string) => boolean;
@@ -65,6 +66,7 @@ export function MessagesProvider({ children }: { children: React.ReactNode }) {
   const [myClubs, setMyClubs] = useState<ClubChat[]>([]);
   const [mySections, setMySections] = useState<SectionChat[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
 
   // ---- initial / full load ------------------------------------------------
   const reload = useCallback(async () => {
@@ -95,6 +97,7 @@ export function MessagesProvider({ children }: { children: React.ReactNode }) {
 
     // 2. Network sync
     setLoading(true);
+    setError(false);
     try {
       const [mRes, rRes, bRes, pRes, clubRes, secRes] = await Promise.all([
         fetchMessages(),
@@ -146,6 +149,7 @@ export function MessagesProvider({ children }: { children: React.ReactNode }) {
         mySections: nextSecs,
       });
     } catch {
+      setError(true);
       // offline: kept cached conversations
     } finally {
       setLoading(false);
@@ -359,7 +363,7 @@ export function MessagesProvider({ children }: { children: React.ReactNode }) {
   }, [myId]);
 
   const value: MessagesValue = {
-    messages, blocked, dmPartners, myClubs, mySections, loading,
+    messages, blocked, dmPartners, myClubs, mySections, loading, error,
     unreadByConv, totalUnread, isBlocked, threadMessages,
     send, edit, remove, block, unblock, markRead,
     loadConversation, fetchOlderMessages, search, reload,

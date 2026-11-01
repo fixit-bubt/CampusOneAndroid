@@ -2688,7 +2688,7 @@ export function StudyHubScreen({ navigation }: any) {
                 Intake {selectedIntake.number} Sections
               </Text>
               <Text style={[cardStyles.sub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                {deptName}{selectedSemester ? ` · ${selectedSemester.label}` : ''} — browse section study rooms
+                {deptName}{selectedSemester ? ` · ${selectedSemester.label}` : ''} · browse section study rooms
               </Text>
             </View>
           </View>

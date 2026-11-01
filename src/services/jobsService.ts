@@ -1,4 +1,4 @@
-// CampusOne — Jobs & Internships Service
+// CampusOne · Jobs & Internships Service
 // Centralized data access, Dhaka timezone-aware status calculation,
 // caching, and moderation RPCs.
 

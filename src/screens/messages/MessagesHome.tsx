@@ -45,7 +45,7 @@ export function MessagesHome({ navigation }: any) {
   const t = useT();
   const { user } = useAuth();
   const myId = user?.id ?? null;
-  const { messages, dmPartners, myClubs, mySections, unreadByConv, loading, reload } = useMessages();
+  const { messages, dmPartners, myClubs, mySections, unreadByConv, loading, error, reload } = useMessages();
   const [profileMap, setProfileMap] = useState<Record<string, { full_name: string; avatar_url: string | null }>>({});
 
   // Refresh the roster on focus so a just-accepted connection shows up.
@@ -178,6 +178,15 @@ export function MessagesHome({ navigation }: any) {
           loading ? (
             <View style={{ paddingVertical: 48, alignItems: 'center', justifyContent: 'center' }}>
               <ActivityIndicator size="small" color={C.brand} />
+            </View>
+          ) : error && rows.length === 0 ? (
+            <View style={styles.empty}>
+              <Feather name="alert-circle" size={30} color={C.danger} />
+              <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold, marginTop: 8 }]}>{t.common.error}</Text>
+              <Text style={[styles.emptyBody, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>Could not load conversations. Please check your connection.</Text>
+              <TouchableOpacity style={[styles.emptyBtn, { backgroundColor: C.brand, marginTop: 14 }]} onPress={() => reload()} activeOpacity={0.85}>
+                <Text style={[styles.emptyBtnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>{t.common.retry}</Text>
+              </TouchableOpacity>
             </View>
           ) : (
             <View style={styles.empty}>

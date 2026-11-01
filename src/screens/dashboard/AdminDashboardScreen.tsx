@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
-  RefreshControl, Modal, type ViewStyle,
+  RefreshControl, Modal, ActivityIndicator, type ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
@@ -165,32 +165,37 @@ export function AdminDashboardScreen({ navigation }: any) {
   const [assignTarget, setAssignTarget] = useState<Report | null>(null);
   const [resolvedCount, setResolvedCount] = useState(0);
   const [unread, setUnread] = useState(0);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     if (profile && profile.role !== 'admin') return;
-    const { data } = await supabase
-      .from('reports')
-      .select('*, profiles!reporter_id(full_name), assignee:profiles!assigned_staff_id(full_name)')
-      .in('status', ['Open', 'In Progress'])
-      .is('deleted_at', null)
-      .order('created_at', { ascending: false })
-      .limit(40);
-    if (data) {
-      setReports(data.map((r: any) => ({
-        ...r,
-        reporter_name: r.profiles?.full_name,
-        assignee_name: r.assignee?.full_name,
-        title: r.description?.split('\n')[0] ?? '',
-        location: [r.building, r.room].filter(Boolean).join(' · '),
-      })));
+    try {
+      const { data } = await supabase
+        .from('reports')
+        .select('*, profiles!reporter_id(full_name), assignee:profiles!assigned_staff_id(full_name)')
+        .in('status', ['Open', 'In Progress'])
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false })
+        .limit(40);
+      if (data) {
+        setReports(data.map((r: any) => ({
+          ...r,
+          reporter_name: r.profiles?.full_name,
+          assignee_name: r.assignee?.full_name,
+          title: r.description?.split('\n')[0] ?? '',
+          location: [r.building, r.room].filter(Boolean).join(' · '),
+        })));
+      }
+      const { data: staff } = await supabase.from('profiles').select('id, full_name, department, expertise').eq('role', 'staff').limit(50);
+      if (staff) setStaffList(staff as StaffMember[]);
+      const { count } = await supabase.from('reports').select('id', { count: 'exact', head: true }).in('status', ['Resolved', 'Closed']).is('deleted_at', null);
+      setResolvedCount(count ?? 0);
+      const nRes = await getUnreadNotificationCount(profile?.id);
+      if (nRes.ok) setUnread(nRes.data);
+    } finally {
+      setLoading(false);
     }
-    const { data: staff } = await supabase.from('profiles').select('id, full_name, department, expertise').eq('role', 'staff');
-    if (staff) setStaffList(staff as StaffMember[]);
-    const { count } = await supabase.from('reports').select('id', { count: 'exact', head: true }).in('status', ['Resolved', 'Closed']).is('deleted_at', null);
-    setResolvedCount(count ?? 0);
-    const nRes = await getUnreadNotificationCount(profile?.id);
-    if (nRes.ok) setUnread(nRes.data);
   }, [profile]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -266,7 +271,11 @@ export function AdminDashboardScreen({ navigation }: any) {
 
         {/* Needs assignment */}
         <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>{t.dash.needsAssignment}</Text>
-        {sorted.filter(r => !r.assigned_staff_id).length === 0 ? (
+        {loading && reports.length === 0 ? (
+          <View style={{ paddingVertical: 24, alignItems: 'center', justifyContent: 'center' }}>
+            <ActivityIndicator size="small" color={C.brand} />
+          </View>
+        ) : sorted.filter(r => !r.assigned_staff_id).length === 0 ? (
           <View style={[styles.allClear, { backgroundColor: C.surface, borderColor: C.border }]}>
             <Icon name="check" size={20} color={C.success} />
             <Text style={[styles.allClearTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>{t.dash.allReportsAssigned}</Text>

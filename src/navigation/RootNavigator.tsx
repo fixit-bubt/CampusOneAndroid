@@ -13,6 +13,32 @@ import { resolveNotifTarget } from '../utils/notifTarget';
 
 const navigationRef = createNavigationContainerRef();
 
+const linking = {
+  prefixes: ['campusone://', 'https://campusonebubt.vercel.app'],
+  config: {
+    screens: {
+      ReportDetail: 'reports/:reportId',
+      LostFoundDetail: 'lostfound/:itemId',
+      EventDetail: 'events/:eventId',
+      AnnouncementDetail: 'announcements/:announcementId',
+      JobDetail: 'jobs/:jobId',
+      MarketDetail: 'market/:listingId',
+      RideDetail: 'rides/:rideId',
+      BloodRequestDetail: 'blood/:requestId',
+      ClubDetail: 'clubs/:clubId',
+      FacultyProfile: 'faculty/:facultyId',
+      DoctorDetail: 'medical/:doctorId',
+      BusDetail: 'bus/:routeId',
+      CourseDetail: 'study/:courseId',
+      StudentProfile: 'directory/:userId',
+      Notifications: 'notifications',
+      Chatbot: 'chatbot',
+      AcademicCalendar: 'calendar',
+      RoutinesBrowse: 'routines',
+    },
+  },
+};
+
 export function RootNavigator() {
   const { session, user, profile, loading, profileLoaded, profileError, refreshProfile } = useAuth();
   const { C, isDark } = useTheme();
@@ -100,7 +126,7 @@ export function RootNavigator() {
   }
 
   return (
-    <NavigationContainer ref={navigationRef} theme={navTheme}>
+    <NavigationContainer ref={navigationRef} theme={navTheme} linking={linking}>
       {session ? <AppNavigator /> : <AuthNavigator />}
     </NavigationContainer>
   );

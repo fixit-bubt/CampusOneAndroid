@@ -556,7 +556,7 @@ export function RideDetailScreen({ route, navigation }: any) {
             {/* Continuous vertical connecting line */}
             <View style={[styles.spineTrackLine, { backgroundColor: isDark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.1)' }]} />
 
-            {/* 🟢 Pickup Point */}
+            {/* Pickup Point */}
             <View style={styles.spineStopRow}>
               <View style={[styles.pickupBeaconOuter, { borderColor: isDark ? '#064e3b' : '#a7f3d0', backgroundColor: isDark ? 'rgba(16, 185, 129, 0.2)' : '#d1fae5' }]}>
                 <View style={[styles.pickupBeaconInner, { backgroundColor: '#10b981' }]} />
@@ -593,7 +593,7 @@ export function RideDetailScreen({ route, navigation }: any) {
               </View>
             </View>
 
-            {/* 📍 Meeting Spot / Notes (along the spine) */}
+            {/* Meeting Spot / Notes (along the spine) */}
             {ride.notes ? (
               <View style={styles.meetingSpotRow}>
                 <View style={[styles.meetingSpotNode, { backgroundColor: C.surface2, borderColor: C.border }]}>
@@ -612,7 +612,7 @@ export function RideDetailScreen({ route, navigation }: any) {
               </View>
             ) : null}
 
-            {/* 🔴 Drop-off / Destination */}
+            {/* Drop-off / Destination */}
             <View style={styles.spineStopRow}>
               <View style={[styles.dropoffBeaconOuter, { borderColor: isDark ? '#7f1d1d' : '#fecaca', backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : '#fee2e2' }]}>
                 <View style={[styles.dropoffBeaconInner, { backgroundColor: '#ef4444' }]} />
