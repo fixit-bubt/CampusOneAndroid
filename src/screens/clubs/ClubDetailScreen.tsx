@@ -253,8 +253,8 @@ export function ClubDetailScreen({ route, navigation }: any) {
       >
         {/* Club header card */}
         <View style={[styles.headerCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <View style={[styles.thumb, { backgroundColor: tintBg }]}>
-            <Icon name="clubs" size={24} color={cat.fg} />
+          <View style={styles.thumb}>
+            <Icon name="clubs" size={32} color={C.text} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[styles.clubName, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{club.name}</Text>

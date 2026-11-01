@@ -562,8 +562,8 @@ export function RoutinesBrowseScreen({ route, navigation }: any) {
               },
             ]}
           >
-            <View style={[styles.barIconBox, { backgroundColor: pillBg(SectorColors.study, isDark), borderColor: SectorColors.study + '33' }]}>
-              <Feather name="calendar" size={22} color={SectorColors.study} />
+            <View style={styles.barIconBox}>
+              <Feather name="calendar" size={32} color={C.text} />
             </View>
             <View style={styles.barTextCol}>
               <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -591,8 +591,8 @@ export function RoutinesBrowseScreen({ route, navigation }: any) {
               },
             ]}
           >
-            <View style={[styles.barIconBox, { backgroundColor: pillBg(SectorColors.routines, isDark), borderColor: SectorColors.routines + '33' }]}>
-              <Feather name="file-text" size={22} color={SectorColors.routines} />
+            <View style={styles.barIconBox}>
+              <Feather name="file-text" size={32} color={C.text} />
             </View>
             <View style={styles.barTextCol}>
               <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -667,8 +667,8 @@ export function RoutinesBrowseScreen({ route, navigation }: any) {
                 },
               ]}
             >
-              <View style={[styles.barIconBox, { backgroundColor: pillBg(dept.accentColor, isDark), borderColor: dept.accentColor + '33' }]}>
-                <Feather name={dept.icon} size={22} color={dept.accentColor} />
+              <View style={styles.barIconBox}>
+                <Feather name={dept.icon} size={32} color={C.text} />
               </View>
               <View style={styles.barTextCol}>
                 <View style={styles.titleWithBadge}>
@@ -696,8 +696,8 @@ export function RoutinesBrowseScreen({ route, navigation }: any) {
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {/* Active Department Banner */}
           <View style={[styles.deptHeroCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <View style={[styles.barIconBox, { backgroundColor: pillBg(selectedDept.accentColor, isDark), borderColor: selectedDept.accentColor + '33' }]}>
-              <Feather name={selectedDept.icon} size={24} color={selectedDept.accentColor} />
+            <View style={styles.barIconBox}>
+              <Feather name={selectedDept.icon} size={32} color={C.text} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.deptHeroTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
@@ -728,8 +728,8 @@ export function RoutinesBrowseScreen({ route, navigation }: any) {
               },
             ]}
           >
-            <View style={[styles.barIconBox, { backgroundColor: pillBg(SectorColors.routines, isDark), borderColor: SectorColors.routines + '33' }]}>
-              <Feather name="file-text" size={22} color={SectorColors.routines} />
+            <View style={styles.barIconBox}>
+              <Feather name="file-text" size={32} color={C.text} />
             </View>
             <View style={styles.barTextCol}>
               <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -761,8 +761,8 @@ export function RoutinesBrowseScreen({ route, navigation }: any) {
               },
             ]}
           >
-            <View style={[styles.barIconBox, { backgroundColor: pillBg(C.brand, isDark), borderColor: C.brand + '33' }]}>
-              <Feather name="sliders" size={22} color={C.brand} />
+            <View style={styles.barIconBox}>
+              <Feather name="sliders" size={32} color={C.text} />
             </View>
             <View style={styles.barTextCol}>
               <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -804,8 +804,8 @@ export function RoutinesBrowseScreen({ route, navigation }: any) {
 
               {/* Document Identity */}
               <View style={styles.docIdentityRow}>
-                <View style={[styles.largePdfIconBox, { backgroundColor: pillBg(SectorColors.routines, isDark), borderColor: SectorColors.routines + '44' }]}>
-                  <Feather name="file-text" size={32} color={SectorColors.routines} />
+                <View style={styles.largePdfIconBox}>
+                  <Feather name="file-text" size={32} color={C.text} />
                 </View>
                 <View style={{ flex: 1, marginLeft: 14 }}>
                   <Text style={[styles.masterDocTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
@@ -921,8 +921,8 @@ export function RoutinesBrowseScreen({ route, navigation }: any) {
                       },
                     ]}
                   >
-                    <View style={[styles.barIconBox, { backgroundColor: pillBg(SectorColors.routines, isDark), borderColor: SectorColors.routines + '33' }]}>
-                      <Feather name="file-text" size={20} color={SectorColors.routines} />
+                    <View style={styles.barIconBox}>
+                      <Feather name="file-text" size={32} color={C.text} />
                     </View>
                     <View style={styles.barTextCol}>
                       <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -1484,8 +1484,6 @@ const styles = StyleSheet.create({
   barIconBox: {
     width: 46,
     height: 46,
-    borderRadius: 14,
-    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,

@@ -256,8 +256,8 @@ function AccompCard({ a, editMode, onDelete, C, isDark }: { a: AccomplishmentIte
   const iconBg = hexAlpha(catInfo.fg, isDark ? 0.18 : 0.12);
   return (
     <View style={accompStyles.row}>
-      <View style={[accompStyles.catIcon, { backgroundColor: iconBg }]}>
-        <Icon name={catInfo.icon as any} size={18} color={catInfo.fg} />
+      <View style={accompStyles.catIcon}>
+        <Icon name={catInfo.icon as any} size={28} color={C.text} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={[accompStyles.itemTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={2}>{a.title}</Text>

@@ -231,13 +231,13 @@ export function BloodRequestScreen({ navigation }: any) {
           </Text>
           <View style={[styles.unitsBar, { backgroundColor: C.surface, borderColor: C.border }]}>
             <View style={styles.unitsLeft}>
-              <View style={[styles.unitsIconBox, { backgroundColor: `${SectorColors.blood}16` }]}>
+              <View style={styles.unitsIconBox}>
                 <AnimatedIcon
                   key={`units-droplet-${units}`}
                   family="feather"
                   name="droplet"
-                  size={20}
-                  color={SectorColors.blood}
+                  size={32}
+                  color={C.text}
                   animation="spring"
                 />
               </View>
@@ -311,13 +311,13 @@ export function BloodRequestScreen({ navigation }: any) {
               onPress={() => setReasonModalVisible(true)}
               activeOpacity={0.75}
             >
-              <View style={[styles.dropdownIconBox, { backgroundColor: currentReasonObj?.color ? pillBg(currentReasonObj.color, isDark) : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2), borderColor: currentReasonObj?.color ? currentReasonObj.color : C.border, borderWidth: 1 }]}>
+              <View style={styles.dropdownIconBox}>
                 <AnimatedIcon
                   key={`reason-${medicalReason}`}
                   family="feather"
                   name={currentReasonObj?.icon ? (currentReasonObj.icon as any) : 'activity'}
-                  size={22}
-                  color={currentReasonObj?.color || C.text}
+                  size={28}
+                  color={C.text}
                   animation={medicalReason ? 'spring' : 'entrance'}
                 />
               </View>
@@ -375,13 +375,13 @@ export function BloodRequestScreen({ navigation }: any) {
             onPress={() => setAffModalVisible(true)}
             activeOpacity={0.75}
           >
-            <View style={[styles.dropdownIconBox, { backgroundColor: currentAffObj?.color ? pillBg(currentAffObj.color, isDark) : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2), borderColor: currentAffObj?.color ? currentAffObj.color : C.border, borderWidth: 1 }]}>
+            <View style={styles.dropdownIconBox}>
               <AnimatedIcon
                 key={`aff-${affiliation}`}
                 family="feather"
                 name={currentAffObj?.icon ? (currentAffObj.icon as any) : 'users'}
-                size={22}
-                color={currentAffObj?.color || C.text}
+                size={28}
+                color={C.text}
                 animation={affiliation ? 'spring' : 'entrance'}
               />
             </View>
@@ -447,13 +447,13 @@ export function BloodRequestScreen({ navigation }: any) {
                 onPress={() => setPickerVisible(true)}
                 activeOpacity={0.75}
               >
-                <View style={[styles.dropdownIconBox, { backgroundColor: hospital ? pillBg(SectorColors.blood, isDark) : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2), borderColor: hospital ? SectorColors.blood : C.border, borderWidth: 1 }]}>
+                <View style={styles.dropdownIconBox}>
                   <AnimatedIcon
                     key={`hosp-${hospital || area}`}
                     family="mci"
                     name={hospital ? 'hospital-building' : 'map-marker-radius'}
-                    size={22}
-                    color={hospital ? (isDark ? '#ffffff' : SectorColors.blood) : C.text2}
+                    size={28}
+                    color={C.text}
                     animation={hospital ? 'spring' : 'entrance'}
                   />
                 </View>

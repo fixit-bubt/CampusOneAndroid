@@ -448,14 +448,7 @@ export function RidePostScreen({ route, navigation }: any) {
                 activeOpacity={0.75}
               >
                 <View
-                  style={[
-                    styles.dropdownIconBox,
-                    {
-                      backgroundColor: from ? pillBg(accentColor, isDark) : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2),
-                      borderColor: from ? accentColor : C.border,
-                      borderWidth: 1,
-                    },
-                  ]}
+                  style={styles.dropdownIconBox}
                 >
                   <AnimatedIcon
                     key={`from-${from}`}
@@ -556,14 +549,7 @@ export function RidePostScreen({ route, navigation }: any) {
                 activeOpacity={0.75}
               >
                 <View
-                  style={[
-                    styles.dropdownIconBox,
-                    {
-                      backgroundColor: to ? pillBg(accentColor, isDark) : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2),
-                      borderColor: to ? accentColor : C.border,
-                      borderWidth: 1,
-                    },
-                  ]}
+                  style={styles.dropdownIconBox}
                 >
                   <AnimatedIcon
                     key={`to-${to}`}
@@ -642,14 +628,7 @@ export function RidePostScreen({ route, navigation }: any) {
           >
             <View style={styles.dropdownMain}>
               <View
-                style={[
-                  styles.dropdownIconBox,
-                  {
-                    backgroundColor: pillBg(accentColor, isDark),
-                    borderColor: accentColor,
-                    borderWidth: 1,
-                  },
-                ]}
+                style={styles.dropdownIconBox}
               >
                 <AnimatedIcon
                   family="feather"
@@ -927,12 +906,9 @@ export function RidePostScreen({ route, navigation }: any) {
                           activeOpacity={0.75}
                         >
                           <View
-                            style={[
-                              styles.modalCardIconBox,
-                              { backgroundColor: isDark ? `${accentColor}24` : `${accentColor}15` },
-                            ]}
+                            style={styles.modalCardIconBox}
                           >
-                            <Feather name={period.icon} size={18} color={accentColor} />
+                            <Feather name={period.icon} size={32} color={C.text} />
                           </View>
 
                           <View style={styles.modalCardInfo}>

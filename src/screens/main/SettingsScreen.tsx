@@ -56,8 +56,8 @@ function SettingCard({ icon, iconFamily = 'feather', iconColor, animation = 'ent
       onPress={onPress}
       activeOpacity={onPress ? 0.7 : 1}
     >
-      <View style={[styles.cardIconWrap, { backgroundColor: (iconColor ?? C.brand) + '18' }]}>
-        <AnimatedIcon name={icon} family={iconFamily} size={20} color={iconColor ?? C.brand} animation={animation} />
+      <View style={styles.cardIconWrap}>
+        <AnimatedIcon name={icon} family={iconFamily} size={32} color={iconColor === C.danger ? C.danger : C.text} animation={animation} />
       </View>
       <View style={styles.cardBody}>
         <Text style={[styles.cardLabel, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]} numberOfLines={1}>
@@ -238,14 +238,14 @@ export function SettingsScreen({ navigation }: any) {
               </Text>
             </View>
           </View>
-          <Feather name="chevron-right" size={20} color={C.textMuted} />
+          <Feather name="chevron-right" size={18} color={C.textMuted} />
         </TouchableOpacity>
 
         {/* Role Workspace Quick Access (Staff / Admin) */}
         {role === 'admin' && (
           <SettingCard
             icon="sliders"
-            iconColor={roleHex}
+            iconColor={C.text}
             animation="wobble"
             label={t.mainx.adminDashboardTitle}
             C={C}
@@ -256,7 +256,7 @@ export function SettingsScreen({ navigation }: any) {
         {role === 'staff' && (
           <SettingCard
             icon="tool"
-            iconColor={roleHex}
+            iconColor={C.text}
             animation="wobble"
             label={t.mainx.staffWorkspaceTitle}
             C={C}
@@ -271,7 +271,7 @@ export function SettingsScreen({ navigation }: any) {
 
         <SettingCard
           icon="bell"
-          iconColor={notifDisabled ? '#f59e0b' : C.brand}
+          iconColor={C.text}
           animation={notifDisabled ? 'wobble' : 'entrance'}
           label={t.mainx.notificationsTitle}
           sub={notifDisabled ? t.mainx.notificationsDisabledSub : undefined}
@@ -289,7 +289,7 @@ export function SettingsScreen({ navigation }: any) {
 
         <SettingCard
           icon="refresh-cw"
-          iconColor="#8b5cf6"
+          iconColor={C.text}
           label={t.mainx.optSync}
           C={C}
           onPress={() => handleToggleOptSync(!optSync)}
@@ -304,7 +304,7 @@ export function SettingsScreen({ navigation }: any) {
 
         <SettingCard
           icon="hard-drive"
-          iconColor="#0284c7"
+          iconColor={C.text}
           label={t.mainx.dataAndCache}
           C={C}
           onPress={() => setDataCacheOpen(true)}
@@ -312,7 +312,7 @@ export function SettingsScreen({ navigation }: any) {
 
         <SettingCard
           icon="moon"
-          iconColor="#6366f1"
+          iconColor={C.text}
           label={t.mainx.darkModeTitle}
           C={C}
           onPress={toggleTheme}
@@ -327,7 +327,7 @@ export function SettingsScreen({ navigation }: any) {
 
         <SettingCard
           icon="globe"
-          iconColor="#10b981"
+          iconColor={C.text}
           label={t.mainx.language ?? 'Language'}
           C={C}
           onPress={toggleLang}
@@ -335,7 +335,6 @@ export function SettingsScreen({ navigation }: any) {
             <View pointerEvents="none">
               <TactileSwitch
                 value={lang === 'bn'}
-                variant="success"
               />
 
             </View>
@@ -344,7 +343,7 @@ export function SettingsScreen({ navigation }: any) {
 
         <SettingCard
           icon="download-cloud"
-          iconColor="#f59e0b"
+          iconColor={C.text}
           label={t.mainx.checkForUpdates}
           C={C}
           onPress={handleCheckUpdates}
@@ -357,7 +356,7 @@ export function SettingsScreen({ navigation }: any) {
 
         <SettingCard
           icon="share-2"
-          iconColor="#3b82f6"
+          iconColor={C.text}
           label={t.mainx.shareAppTitle}
           C={C}
           onPress={() => Share.share({ message: t.mainx.shareAppMessage })}
@@ -365,7 +364,7 @@ export function SettingsScreen({ navigation }: any) {
 
         <SettingCard
           icon="shield"
-          iconColor={C.brand}
+          iconColor={C.text}
           label={t.mainx.privacyPolicy}
           C={C}
           onPress={() => navigation.navigate('PrivacyPolicy')}
@@ -373,7 +372,7 @@ export function SettingsScreen({ navigation }: any) {
 
         <SettingCard
           icon="file-text"
-          iconColor={C.brand}
+          iconColor={C.text}
           label={t.mainx.termsOfService}
           C={C}
           onPress={() => navigation.navigate('TermsOfService')}
@@ -381,7 +380,7 @@ export function SettingsScreen({ navigation }: any) {
 
         <SettingCard
           icon="info"
-          iconColor="#8b5cf6"
+          iconColor={C.text}
           animation="float"
           label={t.mainx.aboutApp}
           C={C}
@@ -390,7 +389,7 @@ export function SettingsScreen({ navigation }: any) {
 
         <SettingCard
           icon="mail"
-          iconColor={C.brand}
+          iconColor={C.text}
           label={t.mainx.contactSupport}
           C={C}
           onPress={() => Linking.openURL('mailto:campusone.bubt@gmail.com?subject=CampusOne%20Support')}
@@ -403,7 +402,7 @@ export function SettingsScreen({ navigation }: any) {
 
         <SettingCard
           icon="key"
-          iconColor={C.text2}
+          iconColor={C.text}
           label={t.mainx.changePassword}
           C={C}
           onPress={() => setPwOpen(true)}
@@ -411,7 +410,7 @@ export function SettingsScreen({ navigation }: any) {
 
         <SettingCard
           icon="log-out"
-          iconColor={C.text2}
+          iconColor={C.text}
           label={t.mainx.signOut}
           C={C}
           onPress={signOut}
@@ -434,8 +433,8 @@ export function SettingsScreen({ navigation }: any) {
         <TouchableOpacity style={styles.sheetOverlay} activeOpacity={1} onPress={() => setDataCacheOpen(false)} />
         <View style={[styles.sheetContent, { backgroundColor: C.surface }]}>
           <View style={styles.sheetHeaderRow}>
-            <View style={[styles.sheetIconWrap, { backgroundColor: '#0284c718' }]}>
-              <AnimatedIcon name="hard-drive" family="feather" size={22} color="#0284c7" animation="entrance" />
+            <View style={styles.sheetIconWrap}>
+              <AnimatedIcon name="hard-drive" family="feather" size={28} color="#0284c7" animation="entrance" />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
@@ -512,8 +511,8 @@ export function SettingsScreen({ navigation }: any) {
       <Modal visible={aboutOpen} transparent animationType="slide" onRequestClose={() => setAboutOpen(false)}>
         <TouchableOpacity style={styles.sheetOverlay} activeOpacity={1} onPress={() => setAboutOpen(false)} />
         <View style={[styles.sheetContent, { backgroundColor: C.surface }]}>
-          <View style={[styles.aboutIconWrap, { backgroundColor: C.brand + '18' }]}>
-            <AnimatedIcon name="award" family="feather" size={28} color={C.brand} animation="float" loop />
+          <View style={styles.aboutIconWrap}>
+            <AnimatedIcon name="award" family="feather" size={36} color={C.brand} animation="float" loop />
           </View>
           <Text style={[styles.aboutTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
             CampusOne
@@ -602,8 +601,8 @@ export function SettingsScreen({ navigation }: any) {
       <Modal visible={delOpen} transparent animationType="slide" onRequestClose={() => !delBusy && setDelOpen(false)}>
         <TouchableOpacity style={styles.sheetOverlay} activeOpacity={1} onPress={() => !delBusy && setDelOpen(false)} />
         <View style={[styles.sheetContent, { backgroundColor: C.surface }]}>
-          <View style={[styles.delIconWrap, { backgroundColor: C.danger + '18' }]}>
-            <AnimatedIcon name="trash-2" family="feather" size={24} color={C.danger} animation="wobble" />
+          <View style={styles.delIconWrap}>
+            <AnimatedIcon name="trash-2" family="feather" size={32} color={C.danger} animation="wobble" />
           </View>
           <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold, marginTop: 12, textAlign: 'center' }]}>
             {t.mainx.deleteAccountTitle}

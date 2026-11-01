@@ -262,8 +262,8 @@ export function ReportFormScreen({ route, navigation }: any) {
                   onPress={() => setCat(c.id)}
                   activeOpacity={0.75}
                 >
-                  <View style={[styles.catIcon, { backgroundColor: bg }]}>
-                    <Icon name={c.icon} size={16} color={fg} />
+                  <View style={styles.catIcon}>
+                    <Icon name={c.icon} size={28} color={C.text} />
                   </View>
                   <Text style={[styles.catLabel, { color: on ? fg : C.text2, fontFamily: FontFamily.jakartaBold }]}>
                     {c.en}

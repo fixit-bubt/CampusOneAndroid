@@ -296,8 +296,8 @@ export function CommuteAreaPickerModal({
             {/* Header: Standardized Blood Donation / Explore Pattern */}
             <View style={styles.header}>
               <View style={styles.headerLeft}>
-                <View style={[styles.headerIcon, { backgroundColor: pillBg(activeColor, isDark) }]}>
-                  <AnimatedIcon family="feather" name="map-pin" size={17} color={activeColor} animation="entrance" />
+                <View style={styles.headerIcon}>
+                  <AnimatedIcon family="feather" name="map-pin" size={24} color={C.text} animation="entrance" />
                 </View>
                 <View>
                   <Text style={[styles.headerTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -329,8 +329,8 @@ export function CommuteAreaPickerModal({
               onPress={() => setMapPickerOpen(true)}
               activeOpacity={0.8}
             >
-              <View style={[styles.mapTriggerIconWrap, { backgroundColor: pillBg(activeColor, isDark) }]}>
-                <AnimatedIcon family="feather" name="map" size={18} color={activeColor} animation="entrance" />
+              <View style={styles.mapTriggerIconWrap}>
+                <AnimatedIcon family="feather" name="map" size={32} color={C.text} animation="entrance" />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.mapTriggerTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -395,8 +395,8 @@ export function CommuteAreaPickerModal({
                       onPress={() => handleSelect(search.trim())}
                       activeOpacity={0.75}
                     >
-                      <View style={[styles.childIconBox, { backgroundColor: pillBg(activeColor, isDark) }]}>
-                        <AnimatedIcon family="feather" name="plus" size={18} color={activeColor} animation="entrance" />
+                      <View style={styles.childIconBox}>
+              <AnimatedIcon family="feather" name="plus" size={32} color={C.text} animation="entrance" />
                       </View>
                       <View style={styles.childInfoStack}>
                         <Text style={[styles.childHospitalName, { color: activeColor, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -427,8 +427,8 @@ export function CommuteAreaPickerModal({
                       onPress={() => handleSelect(item.name, item.zone, item.coords)}
                       activeOpacity={0.72}
                     >
-                      <View style={[styles.childIconBox, { backgroundColor: pillBg(activeColor, isDark) }]}>
-                        <AnimatedIcon family="feather" name={item.icon} size={18} color={activeColor} animation="entrance" />
+                      <View style={styles.childIconBox}>
+              <AnimatedIcon family="feather" name={item.icon} size={32} color={C.text} animation="entrance" />
                       </View>
                       <View style={styles.childInfoStack}>
                         <Text style={[styles.childHospitalName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -484,8 +484,8 @@ export function CommuteAreaPickerModal({
                         onPress={() => toggleZone(zoneMeta.id)}
                         activeOpacity={0.75}
                       >
-                        <View style={[styles.itemIconBox, { backgroundColor: pillBg(activeColor, isDark) }]}>
-                          <AnimatedIcon family="feather" name="map-pin" size={20} color={activeColor} animation={isOpen ? 'spring' : 'entrance'} />
+                        <View style={styles.itemIconBox}>
+          <AnimatedIcon family="feather" name="map-pin" size={32} color={C.text} animation={isOpen ? 'spring' : 'entrance'} />
                         </View>
                         <View style={styles.itemInfoStack}>
                           <Text style={[styles.areaName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -539,8 +539,8 @@ export function CommuteAreaPickerModal({
                             onPress={() => handleSelect(zoneMeta.name, zoneMeta.name)}
                             activeOpacity={0.72}
                           >
-                            <View style={[styles.childIconBox, { backgroundColor: pillBg(activeColor, isDark) }]}>
-                              <AnimatedIcon family="feather" name="map" size={18} color={activeColor} animation="entrance" />
+                            <View style={styles.childIconBox}>
+              <AnimatedIcon family="feather" name="map" size={32} color={C.text} animation="entrance" />
                             </View>
                             <View style={styles.childInfoStack}>
                               <Text style={[styles.childHospitalName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -576,8 +576,8 @@ export function CommuteAreaPickerModal({
                                 onPress={() => handleSelect(hub.name, zoneMeta.name, findMasterLocationByName(hub.name)?.coords)}
                                 activeOpacity={0.72}
                               >
-                                <View style={[styles.childIconBox, { backgroundColor: pillBg(activeColor, isDark) }]}>
-                                  <AnimatedIcon family="feather" name={hub.icon} size={18} color={activeColor} animation="entrance" />
+                                <View style={styles.childIconBox}>
+              <AnimatedIcon family="feather" name={hub.icon} size={32} color={C.text} animation="entrance" />
                                 </View>
                                 <View style={styles.childInfoStack}>
                                   <Text style={[styles.childHospitalName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>

@@ -36,8 +36,8 @@ const SECTOR_ICON: Record<SectorKey, SectorIconConfig> = {
   messages:  { name: 'message-circle', family: 'feather' },
 };
 
-const SIZE_MAP = { sm: 32, md: 42, lg: 58 } as const;
-const ICON_SIZE_MAP = { sm: 17, md: 22, lg: 30 } as const;
+const SIZE_MAP = { sm: 32, md: 44, lg: 58 } as const;
+const ICON_SIZE_MAP = { sm: 24, md: 32, lg: 40 } as const;
 const RADIUS_MAP = { sm: 10, md: 13, lg: 18 } as const;
 
 type SecSize = 'sm' | 'md' | 'lg';
@@ -46,6 +46,7 @@ export interface SectorIconProps {
   sector: SectorKey;
   size?: SecSize;
   dark?: boolean;
+  color?: string;
   interactive?: boolean;
   animation?: AnimationType;
   delay?: number;
@@ -74,6 +75,7 @@ export function SectorIcon({
   sector,
   size = 'md',
   dark = false,
+  color,
   animation = 'none',
   delay,
   onPress,
@@ -81,9 +83,8 @@ export function SectorIcon({
 }: SectorIconProps) {
   const scale = useRef(new Animated.Value(1)).current;
 
-  const baseFg = SectorColors[sector] ?? '#3b82f6';
-  const fg = dark ? lightenHex(baseFg) : baseFg;
-  const bg = hexWithAlpha(baseFg, dark ? 0.18 : 0.12);
+  const defaultMonochrome = dark ? '#f4f4f5' : '#18181b';
+  const fg = color ?? defaultMonochrome;
 
   const dim = SIZE_MAP[size];
   const iconSize = ICON_SIZE_MAP[size];
@@ -115,7 +116,7 @@ export function SectorIcon({
           width: dim,
           height: dim,
           borderRadius: radius,
-          backgroundColor: bg,
+          backgroundColor: 'transparent',
           alignItems: 'center',
           justifyContent: 'center',
           overflow: 'visible',

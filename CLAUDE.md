@@ -183,7 +183,10 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
 - **Strict Human Sourcing:** When adding icons for new features, modules, settings, or dashboard cards, always source from verified, human-crafted icon collections (21st.dev icon families: Lucide, Tabler, Heroicons, Phosphor, Hugeicons, or native `@expo/vector-icons` Feather/MaterialCommunityIcons/Ionicons).
 - **Geometric Harmony:** Maintain consistent 2px stroke weight (`stroke: 2`), standard 24dp viewbox, and subtle round caps/joins.
 - **Zero AI-Looking Icons:** Never use AI-generated visual badges or clip-art styles. Icons must look razor-sharp, purposeful, and production-standard.
-- **Color Binding:** Always pair icons with their designated `SectorColors.<sector>` accent token rather than arbitrary colors.
+- **Universal 32dp Monochrome Icon Standard (Anti-Clutter System):**
+  - **Zero Outer Boxes:** Outer colored squircle boxes (`backgroundColor` and colored borders) behind icons are strictly removed across the entire app. Icons float cleanly within their transparent layout slots (`styles.iconBox`, `cardStyles.icon44`, `styles.thumb`, `styles.catIcon`, `card72IconBox`, `deptIconBox`, `barIconBox`).
+  - **Universal 32dp Icon Metric:** All feature sector icons, tool cards, navigation destination rows, dashboard cards, modal item pickers, and list items are scaled up to **32dp** (`size={32}` for primary list/card rows, `size={28}` for compact tool grids, and `size={24}` for dense input triggers). Centered within 44dp transparent slots, icons align harmoniously with 2-line title/subtitle text blocks (~40dp).
+  - **High-Contrast Monochrome Palette:** All navigation and sector icons render in crisp monochrome (`C.text` / White `#f4f4f5` in OLED Dark Mode, Deep Slate `#18181b` in Light Mode) or Zinc (`C.textMuted` / `C.text2` for secondary metadata). Arbitrary rainbow accent colors behind or on navigation icons are eliminated to match top-tier design systems (Linear, Raycast, iOS Settings, Nothing OS).
 - **Universal AnimatedIcon (`src/components/ui/AnimatedIcon.tsx`):**
   - High performance, 120 FPS native animated component powered by React Native's `Animated` library (`useNativeDriver: true`) running directly on Android's RenderThread.
   - Supports animations: `spring` (tactile rubberband bounce pop from 1.0 to 1.22 to 1.0 on mount/tab focus), `pulse` (continuous rhythmic heartbeat scale from 1.0 to 1.22 for urgent alerts/AI orb), `float` (continuous smooth vertical hovering translateY from 0 to -4 to 0), `bounce` (periodic spring jump translateY from 0 to -6 to 0), `entrance` (zoom-in from 0.85 to 1.18 to 1.0 with zero default delay), `wobble` (rotational shake from -14deg to +14deg with optional loop), and `none`.
@@ -221,12 +224,7 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
 - **Universal Liquid Gooey Toggle Switch Standard (`LiquidToggle.tsx` / `TactileSwitch.tsx`):**
   - **Fluid Viscous Morphing Physics:** Single cohesive fluid droplet thumb with native volume-preserving squash-and-stretch (`scaleX: 1.0 -> 1.40 -> 1.0`, `scaleY: 1.0 -> 0.84 -> 1.0`, `translateX: 0 -> travel`) driven by a 460ms silky fluid cubic-bezier curve (`Easing.bezier(0.32, 0.0, 0.18, 1.0)`). Pure, continuous fluid gel capsule motion with zero seams, zero overlapping boxes, and zero extraneous artifacts.
   - **100% Native-Driver Performance (120 FPS):** All transforms and crossfades execute exclusively on the Android RenderThread (`useNativeDriver: true`), ensuring buttery-smooth interaction with zero JS-thread frame drops.
-  - **Color Variants & Semantic Mapping:**
-    - `default`: Electric Brand Blue (`#275EFE` / `C.brand`)
-    - `success`: Emerald (`#10B981` / `C.success`) - used for Language, Free Donation mode, etc.
-    - `warning`: Amber (`#F59E0B` / `C.warn`)
-    - `danger`: Red (`#EF4444` / `C.danger`) - used for Doctor On-Leave, Master Pause, Faculty On-Leave.
-    - Custom: `trackColor?: { false?: string; true?: string }` support across modules.
+  - **Universal Electric Brand Blue Unification:** All toggle switches across settings, dark mode, language switcher, notification categories, pause toggles, faculty status, and marketplace are strictly unified to **Electric Brand Blue (`#275EFE` / `C.brand`)**. Disparate toggle color variants (`success` green, `danger` red, `warning` amber, custom sector hexes) have been removed from all switches. `LiquidToggle` defaults its active track color to `trackColor?.true ?? C.brand` (`VARIANT_COLORS` all resolve to `#275EFE`), guaranteeing unified visual consistency matching iOS/Android standard toggles.
   - **Proportions & Ergonomics:** Standard 52×32dp (radius 16, thumb 24, travel 20, uniform 4dp margins) and compact `sm` 44×26dp (radius 13, thumb 20, travel 18, uniform 3dp margins) with minimum 48dp touch hit-slop.
   - **Full Backwards Compatibility:** `TactileSwitch` re-exports `LiquidToggle`, supporting both `checked` / `value` and `onCheckedChange` / `onValueChange` across all screens.
 

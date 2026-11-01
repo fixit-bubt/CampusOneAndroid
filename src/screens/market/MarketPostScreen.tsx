@@ -343,8 +343,8 @@ export function MarketPostScreen({ route, navigation }: any) {
             activeOpacity={0.75}
           >
             <View style={styles.pickerBarLeft}>
-              <View style={[styles.pickerIconBox, { backgroundColor: isDark ? `${currentCategoryMeta.color}25` : `${currentCategoryMeta.color}15` }]}>
-                <Feather name={currentCategoryMeta.icon} size={16} color={currentCategoryMeta.color} />
+              <View style={styles.pickerIconBox}>
+                <Feather name={currentCategoryMeta.icon} size={24} color={C.text} />
               </View>
               <Text style={[styles.pickerBarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                 {cat === 'Other' && customCat.trim() ? customCat : currentCategoryLabel}
@@ -454,7 +454,6 @@ export function MarketPostScreen({ route, navigation }: any) {
             <TactileSwitch
               value={isFree}
               onValueChange={handleToggleFree}
-              variant="success"
             />
 
           </View>
@@ -489,7 +488,6 @@ export function MarketPostScreen({ route, navigation }: any) {
                 <TactileSwitch
                   value={negotiable}
                   onValueChange={setNegotiable}
-                  trackColor={{ true: MARKET_COLOR }}
                 />
               </View>
             </>
@@ -546,14 +544,7 @@ export function MarketPostScreen({ route, navigation }: any) {
                 activeOpacity={0.75}
               >
                 <View
-                  style={[
-                    styles.dropdownIconBox,
-                    {
-                      backgroundColor: meetupSpot ? (isDark ? 'rgba(5, 150, 105, 0.22)' : 'rgba(5, 150, 105, 0.12)') : C.surface2,
-                      borderColor: meetupSpot ? MARKET_COLOR : C.border,
-                      borderWidth: 1,
-                    },
-                  ]}
+                  style={styles.dropdownIconBox}
                 >
                   <AnimatedIcon
                     key={`spot-${meetupSpot}`}
@@ -687,16 +678,16 @@ export function MarketPostScreen({ route, navigation }: any) {
               {t.market2.chooseSource}
             </Text>
             <TouchableOpacity style={styles.photoModalOption} onPress={handleLaunchCamera} activeOpacity={0.75}>
-              <View style={[styles.photoModalIconBox, { backgroundColor: isDark ? `${MARKET_COLOR}25` : `${MARKET_COLOR}15` }]}>
-                <Feather name="camera" size={18} color={MARKET_COLOR} />
+              <View style={styles.photoModalIconBox}>
+                <Feather name="camera" size={24} color={C.text} />
               </View>
               <Text style={[styles.photoModalOptionTxt, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>
                 {t.market2.takePhoto}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.photoModalOption} onPress={handleLaunchGallery} activeOpacity={0.75}>
-              <View style={[styles.photoModalIconBox, { backgroundColor: isDark ? `${Accent.blue}25` : `${Accent.blue}15` }]}>
-                <Feather name="image" size={18} color={Accent.blue} />
+              <View style={styles.photoModalIconBox}>
+                <Feather name="image" size={24} color={C.text} />
               </View>
               <Text style={[styles.photoModalOptionTxt, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>
                 {t.market2.chooseGallery}
@@ -768,8 +759,8 @@ export function MarketPostScreen({ route, navigation }: any) {
                     }}
                     activeOpacity={0.75}
                   >
-                    <View style={[styles.modalItemIconBox, { backgroundColor: isDark ? `${c.color}24` : `${c.color}15` }]}>
-                      <Feather name={c.icon} size={18} color={c.color} />
+                    <View style={styles.modalItemIconBox}>
+                      <Feather name={c.icon} size={32} color={C.text} />
                     </View>
                     <View style={styles.modalItemInfo}>
                       <Text style={[styles.modalItemNameTxt, { color: active ? c.color : C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -934,8 +925,8 @@ export function MarketPostScreen({ route, navigation }: any) {
                       onPress={() => handleSelectLocation(spot.name)}
                       activeOpacity={0.75}
                     >
-                      <View style={[styles.locIconBox, { backgroundColor: isDark ? `${Accent.amber}22` : `${Accent.amber}14` }]}>
-                        <Feather name={spot.icon} size={18} color={Accent.amber} />
+                      <View style={styles.locIconBox}>
+                        <Feather name={spot.icon} size={24} color={C.text} />
                       </View>
                       <View style={{ flex: 1 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -975,8 +966,8 @@ export function MarketPostScreen({ route, navigation }: any) {
                       onPress={() => handleSelectLocation(area.name)}
                       activeOpacity={0.75}
                     >
-                      <View style={[styles.locIconBox, { backgroundColor: isDark ? `${Accent.amber}22` : `${Accent.amber}14` }]}>
-                        <Feather name={area.icon as any} size={18} color={Accent.amber} />
+                      <View style={styles.locIconBox}>
+                        <Feather name={area.icon as any} size={24} color={C.text} />
                       </View>
                       <View style={{ flex: 1 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>

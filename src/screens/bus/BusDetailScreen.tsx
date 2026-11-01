@@ -375,8 +375,8 @@ export function BusDetailScreen({ route, navigation }: any) {
             onPress={() => navigation.navigate('Rides')}
             activeOpacity={0.75}
           >
-            <View style={[styles.synergyIcon, { backgroundColor: `${SectorColors.ride}1e` }]}>
-              <Icon name="ride" size={20} color={SectorColors.ride} />
+            <View style={styles.synergyIcon}>
+              <Icon name="ride" size={32} color={C.text} />
             </View>
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={[styles.synergyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -394,8 +394,8 @@ export function BusDetailScreen({ route, navigation }: any) {
             onPress={() => navigation.navigate('LostFoundBrowse')}
             activeOpacity={0.75}
           >
-            <View style={[styles.synergyIcon, { backgroundColor: `${SectorColors.lostfound}1e` }]}>
-              <Icon name="lostfound" size={20} color={SectorColors.lostfound} />
+            <View style={styles.synergyIcon}>
+              <Icon name="lostfound" size={32} color={C.text} />
             </View>
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={[styles.synergyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>

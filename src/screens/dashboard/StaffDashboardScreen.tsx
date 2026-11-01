@@ -80,8 +80,8 @@ function StatCard({ icon, fg, num, label, C }: any) {
   const bg = `${fg}1a`;
   return (
     <View style={[styles.statCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-      <View style={[styles.statIcon, { backgroundColor: bg }]}>
-        <Icon name={icon} size={20} color={fg} />
+      <View style={styles.statIcon}>
+        <Icon name={icon} size={32} color={C.text} />
       </View>
       <Text style={[styles.statNum, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{num}</Text>
       <Text style={[styles.statLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{label}</Text>
@@ -97,8 +97,8 @@ function ReportCard({ r, C, onAdvance, onDecline, onPress }: { r: Report; C: any
   return (
     <View style={[styles.reportCard, { backgroundColor: C.surface, borderColor: C.border }]}>
       <TouchableOpacity style={styles.reportTop} onPress={onPress} activeOpacity={0.75}>
-        <View style={[styles.issueIcon, { backgroundColor: issueBg }]}>
-          <Icon name={issueConf.icon} size={20} color={issueConf.fg} />
+        <View style={styles.issueIcon}>
+          <Icon name={issueConf.icon} size={32} color={C.text} />
         </View>
         <View style={styles.reportBody}>
           <Text style={[styles.reportTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>

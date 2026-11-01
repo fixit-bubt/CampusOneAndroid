@@ -130,8 +130,8 @@ export function JobsModerateScreen({ navigation }: any) {
                   onPress={() => navigation.navigate('JobDetail', { jobId: j.id })}
                   activeOpacity={0.75}
                 >
-                  <View style={[styles.thumb, { backgroundColor: `${JOBS_COLOR}1a` }]}>
-                    <Icon name="jobs" size={19} color={JOBS_COLOR} />
+                  <View style={styles.thumb}>
+                    <Icon name="jobs" size={32} color={C.text} />
                   </View>
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={[styles.title, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>

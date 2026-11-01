@@ -252,10 +252,10 @@ export function NotifSettingsScreen({ navigation }: any) {
             return (
               <View style={[styles.settingCard, { backgroundColor: C.surface, borderColor: copy.bad ? C.danger : C.border }]}>
                 <View style={styles.settingRow}>
-                  <View style={[styles.settingIcon, { backgroundColor: toneBg }]}>
+                  <View style={styles.settingIcon}>
                     {copy.bad
-                      ? <Icon name="bellOff" size={22} color={tone} />
-                      : <Feather name="smartphone" size={21} color={tone} />}
+                      ? <Icon name="bellOff" size={32} color={C.text} />
+                      : <Feather name="smartphone" size={32} color={C.text} />}
                   </View>
                   <View style={styles.settingBody}>
                     <Text style={[styles.settingTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{copy.title}</Text>
@@ -286,10 +286,8 @@ export function NotifSettingsScreen({ navigation }: any) {
           activeOpacity={0.7}
         >
           <View style={styles.settingRow}>
-            <View style={[styles.settingIcon, {
-              backgroundColor: paused ? C.dangerBg : C.surface2,
-            }]}>
-              <Icon name={paused ? 'bellOff' : 'bell'} size={22} color={paused ? C.danger : C.brand} />
+            <View style={styles.settingIcon}>
+              <Icon name={paused ? 'bellOff' : 'bell'} size={32} color={C.text} />
             </View>
             <View style={styles.settingBody}>
               <Text style={[styles.settingTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>{t.notif.pauseAll}</Text>
@@ -297,7 +295,6 @@ export function NotifSettingsScreen({ navigation }: any) {
             <View pointerEvents="none">
               <TactileSwitch
                 value={paused}
-                variant="danger"
               />
 
             </View>
@@ -312,8 +309,8 @@ export function NotifSettingsScreen({ navigation }: any) {
           activeOpacity={0.7}
         >
           <View style={[styles.settingRow, { opacity: paused ? 0.4 : 1 }]}>
-            <View style={[styles.settingIcon, { backgroundColor: `${Accent.purple}${isDark ? '2e' : '12'}` }]}>
-              <Icon name="clock" size={22} color={Accent.purple} />
+            <View style={styles.settingIcon}>
+              <Icon name="clock" size={32} color={C.text} />
             </View>
             <View style={styles.settingBody}>
               <Text style={[styles.settingTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>{t.notif.quietHours}</Text>
@@ -364,7 +361,7 @@ export function NotifSettingsScreen({ navigation }: any) {
                   onPress={() => setExpanded(isOpen ? null : s.id)}
                   activeOpacity={0.75}
                 >
-                  <SectorIcon sector={s.id} size="sm" />
+                  <SectorIcon sector={s.id} size="md" />
                   <Text style={[styles.sectorTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                     {s.label}
                   </Text>
@@ -373,7 +370,6 @@ export function NotifSettingsScreen({ navigation }: any) {
                   value={p.enabled}
                   onValueChange={val => savePref(s.id, { enabled: val })}
                   disabled={paused}
-                  trackColor={{ true: SectorColors[s.id] ?? C.brand }}
                 />
               </View>
 

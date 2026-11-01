@@ -193,8 +193,8 @@ export function AssignedToMeScreen({ navigation }: any) {
               onPress={() => navigation.navigate('ReportDetail', { reportId: r.id })}
               activeOpacity={0.75}
             >
-              <View style={[styles.catIcon, { backgroundColor: `${cat.fg}1e` }]}>
-                <Icon name={cat.icon} size={19} color={cat.fg} />
+              <View style={styles.catIcon}>
+                <Icon name={cat.icon} size={32} color={C.text} />
               </View>
               <View style={styles.cardBody}>
                 <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>

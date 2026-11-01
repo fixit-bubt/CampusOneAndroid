@@ -38,9 +38,9 @@ export interface LiquidToggleProps {
 
 export const VARIANT_COLORS: Record<ToggleVariant, string> = {
   default: '#275EFE',
-  success: '#10B981',
-  warning: '#F59E0B',
-  danger: '#EF4444',
+  success: '#275EFE',
+  warning: '#275EFE',
+  danger: '#275EFE',
 };
 
 export function LiquidToggle({
@@ -113,7 +113,7 @@ export function LiquidToggle({
   };
 
   const inactiveColor = trackColor?.false ?? (isDark ? C.surface3 : '#D2D6E9');
-  const activeColor   = trackColor?.true ?? (variant ? VARIANT_COLORS[variant] : C.brand);
+  const activeColor   = trackColor?.true ?? C.brand;
 
   const thumbTranslateX = posAnim.interpolate({
     inputRange: [0, 1],

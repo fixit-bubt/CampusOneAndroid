@@ -550,8 +550,8 @@ export function MedicalScreen({ navigation }: any) {
           ]}
         >
           <View style={styles.heroTopRow}>
-            <View style={[styles.heroIconBadge, { backgroundColor: MED_BG }]}>
-              <Icon name="medical" size={24} color={MED_COLOR} animation="entrance" />
+            <View style={styles.heroIconBadge}>
+              <Icon name="medical" size={32} color={C.text} animation="entrance" />
             </View>
             <View style={{ flex: 1 }}>
               <Text
@@ -1055,7 +1055,7 @@ export function MedicalScreen({ navigation }: any) {
               onPress={() => setDispensaryOpen((prev) => !prev)}
               activeOpacity={0.75}
             >
-              <View style={[styles.srvIconBox44, { backgroundColor: MED_BG }]}>
+              <View style={styles.srvIconBox44}>
                 <AnimatedIcon
                   family="mci"
                   name="pill"
@@ -1277,7 +1277,7 @@ export function MedicalScreen({ navigation }: any) {
                       <AnimatedIcon
                         family={iconFamily}
                         name={iconName}
-                        size={20}
+                        size={28}
                         color={cnt.isNational ? C.white : C.info}
                         animation={animType}
                         loop={is999}
@@ -1340,7 +1340,7 @@ export function MedicalScreen({ navigation }: any) {
               onPress={() => navigation.navigate('Blood')}
               activeOpacity={0.75}
             >
-              <View style={[styles.bloodBridgeIconTile, { backgroundColor: `${SectorColors.blood}18` }]}>
+              <View style={styles.bloodBridgeIconTile}>
                 <AnimatedIcon family="feather" name="droplet" size={20} color={SectorColors.blood} animation="pulse" loop />
               </View>
               <View style={styles.bloodBridgeBody}>
@@ -1395,7 +1395,7 @@ export function MedicalScreen({ navigation }: any) {
                       { backgroundColor: C.surface, borderColor: C.border },
                     ]}
                   >
-                    <View style={[styles.hospIconBox44, { backgroundColor: hospCfg.bg }]}>
+                    <View style={styles.hospIconBox44}>
                       <AnimatedIcon
                         family={hospCfg.family}
                         name={hospCfg.name}
@@ -1668,7 +1668,6 @@ export function MedicalScreen({ navigation }: any) {
                   <TactileSwitch
                     value={editIsOnLeave}
                     onValueChange={setEditIsOnLeave}
-                    variant="danger"
                   />
                 </TouchableOpacity>
 

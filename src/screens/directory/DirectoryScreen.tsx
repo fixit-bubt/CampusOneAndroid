@@ -855,8 +855,8 @@ export function DirectoryScreen({ route, navigation }: any) {
                     }}
                     activeOpacity={0.75}
                   >
-                    <View style={[styles.deptIconBox, { backgroundColor: iconBg }]}>
-                      <AnimatedIcon family="feather" name={d.icon} size={20} color={fg} animation="entrance" />
+                    <View style={styles.deptIconBox}>
+                      <AnimatedIcon family="feather" name={d.icon} size={32} color={C.text} animation="entrance" />
                     </View>
 
                     <View style={styles.deptInfo}>

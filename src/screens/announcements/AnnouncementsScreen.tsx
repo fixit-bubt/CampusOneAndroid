@@ -80,8 +80,8 @@ const AnnouncementCard = memo(function AnnouncementCard({
       style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}
       activeOpacity={0.75}
     >
-      <View style={[styles.thumb, { backgroundColor: bg }]}>
-        <Icon name="announce" size={22} color={fg} />
+      <View style={styles.thumb}>
+        <Icon name="announce" size={32} color={C.text} />
         {unread && <View style={[styles.unreadDot, { backgroundColor: C.brand, borderColor: C.surface }]} />}
       </View>
 

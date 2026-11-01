@@ -507,8 +507,8 @@ export function LostFoundBrowseScreen({ navigation }: any) {
             {/* Sheet Header */}
             <View style={styles.sheetHeader}>
               <View style={styles.sheetHeaderLeft}>
-                <View style={[styles.sheetHeaderIcon, { backgroundColor: `${SectorColors.lostfound}1e` }]}>
-                  <Feather name="sliders" size={16} color={SectorColors.lostfound} />
+                <View style={styles.sheetHeaderIcon}>
+                  <Feather name="sliders" size={24} color={C.text} />
                 </View>
                 <View>
                   <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>

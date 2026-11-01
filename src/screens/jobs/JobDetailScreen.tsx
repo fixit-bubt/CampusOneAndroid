@@ -376,8 +376,8 @@ export function JobDetailScreen({ route, navigation }: any) {
       >
         {/* Header Hero Card */}
         <View style={styles.header}>
-          <View style={[styles.thumb, { backgroundColor: JOB_BG }]}>
-            <Icon name="jobs" size={26} color={JOB_COLOR} />
+          <View style={styles.thumb}>
+            <Icon name="jobs" size={32} color={C.text} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[styles.role, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>

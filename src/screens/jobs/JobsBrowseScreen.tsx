@@ -637,8 +637,8 @@ export function JobsBrowseScreen({ navigation }: any) {
                       onPress={() => navigation.navigate('JobDetail', { jobId: app.job_id })}
                       activeOpacity={0.75}
                     >
-                      <View style={[styles.thumb, { backgroundColor: JOB_BG }]}>
-                        <Icon name="jobs" size={22} color={JOB_COLOR} />
+                      <View style={styles.thumb}>
+                        <Icon name="jobs" size={32} color={C.text} />
                       </View>
                       <View style={styles.cardBody}>
                         <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -767,8 +767,8 @@ export function JobsBrowseScreen({ navigation }: any) {
                     onPress={() => navigation.navigate('JobDetail', { jobId: j.id })}
                     activeOpacity={0.75}
                   >
-                    <View style={[styles.thumb, { backgroundColor: isDark ? 'rgba(14, 156, 138, 0.16)' : '#e0f4f0' }]}>
-                      <Feather name={typeConfig.icon} size={20} color={isDark ? '#5eead4' : SectorColors.jobs} />
+                    <View style={styles.thumb}>
+                      <Feather name={typeConfig.icon} size={32} color={C.text} />
                     </View>
                     <View style={styles.cardBody}>
                       <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -940,21 +940,12 @@ export function JobsBrowseScreen({ navigation }: any) {
                     }}
                     activeOpacity={0.75}
                   >
-                    <View
-                      style={[
-                        styles.card72IconBox,
-                        {
-                          backgroundColor: selected
-                            ? (isDark ? 'rgba(14, 156, 138, 0.28)' : 'rgba(14, 156, 138, 0.18)')
-                            : C.surface2,
-                        },
-                      ]}
-                    >
+                    <View style={styles.card72IconBox}>
                       <AnimatedIcon
                         family="feather"
                         name={opt.icon}
-                        size={20}
-                        color={selected ? (isDark ? '#5eead4' : SectorColors.jobs) : C.text2}
+                        size={32}
+                        color={C.text}
                         animation={selected ? 'spring' : 'none'}
                       />
                     </View>
@@ -1122,21 +1113,12 @@ export function JobsBrowseScreen({ navigation }: any) {
                     }}
                     activeOpacity={0.75}
                   >
-                    <View
-                      style={[
-                        styles.card72IconBox,
-                        {
-                          backgroundColor: selected
-                            ? (isDark ? 'rgba(14, 156, 138, 0.28)' : 'rgba(14, 156, 138, 0.18)')
-                            : C.surface2,
-                        },
-                      ]}
-                    >
+                    <View style={styles.card72IconBox}>
                       <AnimatedIcon
                         family="feather"
                         name={dept.icon}
-                        size={20}
-                        color={selected ? (isDark ? '#5eead4' : SectorColors.jobs) : C.text2}
+                        size={32}
+                        color={C.text}
                         animation={selected ? 'spring' : 'none'}
                       />
                     </View>

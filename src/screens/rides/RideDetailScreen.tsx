@@ -481,8 +481,8 @@ export function RideDetailScreen({ route, navigation }: any) {
       >
         {/* Header Hero */}
         <View style={styles.header}>
-          <View style={[styles.thumb, { backgroundColor: isPassengerRequest ? (isDark ? 'rgba(139, 92, 246, 0.2)' : '#f3effe') : RIDE_BG }]}>
-            <Icon name="ride" size={26} color={isPassengerRequest ? (isDark ? '#c4b5fd' : '#7c3aed') : RIDE_COLOR} />
+          <View style={styles.thumb}>
+            <Icon name="ride" size={32} color={C.text} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[styles.route, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]} numberOfLines={2}>
@@ -542,7 +542,7 @@ export function RideDetailScreen({ route, navigation }: any) {
         <View style={[styles.uberRouteCard, { backgroundColor: C.surface, borderColor: C.border }]}>
           <View style={styles.uberCardHeader}>
             <View style={styles.uberCardHeaderLeft}>
-              <View style={[styles.microIconBox, { backgroundColor: RIDE_BG }]}>
+              <View style={styles.microIconBox}>
                 <Feather name="navigation" size={12} color={RIDE_COLOR} />
               </View>
               <Text style={[styles.uberCardTitle, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>

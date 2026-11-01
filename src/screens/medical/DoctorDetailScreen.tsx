@@ -127,8 +127,8 @@ function ScheduleRow({
 }) {
   return (
     <View style={[styles.schedRow, { borderColor: C.border }]}>
-      <View style={[styles.schedIcon, { backgroundColor: MED_BG }]}>
-        <Icon name={icon} size={16} color={MED_COLOR} />
+      <View style={styles.schedIcon}>
+        <Icon name={icon} size={28} color={C.text} />
       </View>
       <View style={styles.schedBody}>
         <Text

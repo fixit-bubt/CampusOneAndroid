@@ -661,8 +661,8 @@ export function AcademicCalendarScreen({ navigation }: any) {
               {nextExam && (
                 <View style={[styles.radarCard, { backgroundColor: C.surface, borderColor: Accent.amber + '40' }]}>
                   <View style={styles.radarTopRow}>
-                    <View style={[styles.radarIconBox, { backgroundColor: Accent.amber + '18' }]}>
-                      <Feather name="edit-3" size={16} color={Accent.amber} />
+                    <View style={styles.radarIconBox}>
+                      <Feather name="edit-3" size={24} color={C.text} />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.radarCategoryLabel, { color: Accent.amber, fontFamily: FontFamily.jakartaBold }]}>
@@ -711,8 +711,8 @@ export function AcademicCalendarScreen({ navigation }: any) {
               {nextHoliday && (
                 <View style={[styles.radarCard, { backgroundColor: C.surface, borderColor: Accent.green + '40' }]}>
                   <View style={styles.radarTopRow}>
-                    <View style={[styles.radarIconBox, { backgroundColor: Accent.green + '18' }]}>
-                      <Feather name="sun" size={16} color={Accent.green} />
+                    <View style={styles.radarIconBox}>
+                      <Feather name="sun" size={24} color={C.text} />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.radarCategoryLabel, { color: Accent.green, fontFamily: FontFamily.jakartaBold }]}>
@@ -1213,8 +1213,8 @@ export function AcademicCalendarScreen({ navigation }: any) {
             {/* Provenance Card */}
             <View style={[styles.provenanceCard, { backgroundColor: C.surface, borderColor: C.border }]}>
               <View style={styles.provenanceTopRow}>
-                <View style={[styles.docIconBox, { backgroundColor: C.brand + '20' }]}>
-                  <Feather name="file-text" size={24} color={C.brand} />
+                <View style={styles.docIconBox}>
+                  <Feather name="file-text" size={32} color={C.text} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.provenanceTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>

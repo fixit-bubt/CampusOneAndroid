@@ -834,8 +834,8 @@ export function FacultyProfileScreen({ route, navigation }: any) {
               onPress={() => toggleSection(setExpandLinks)}
               activeOpacity={0.75}
             >
-              <View style={[styles.sectionIconTile, { backgroundColor: `${Accent.teal}14` }]}>
-                <Feather name="globe" size={20} color={Accent.teal} />
+              <View style={styles.sectionIconTile}>
+                <Feather name="globe" size={28} color={C.text} />
               </View>
               <View style={styles.sectionBarBody}>
                 <Text style={[styles.sectionBarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -864,8 +864,8 @@ export function FacultyProfileScreen({ route, navigation }: any) {
                     onPress={() => openLink((member as Record<string, any>)[l.key])}
                     activeOpacity={0.75}
                   >
-                    <View style={[styles.childBarIconTile, { backgroundColor: `${l.color || C.brand}18` }]}>
-                      <Feather name={l.icon} size={16} color={l.color || C.brand} />
+                    <View style={styles.childBarIconTile}>
+                      <Feather name={l.icon} size={24} color={C.text} />
                     </View>
                     <View style={styles.childBarCenter}>
                       <Text style={[styles.childBarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>

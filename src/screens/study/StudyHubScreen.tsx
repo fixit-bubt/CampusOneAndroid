@@ -241,8 +241,8 @@ function CourseCard({ course, onPress, C }: { course: Course; onPress: () => voi
       onPress={onPress}
       activeOpacity={0.75}
     >
-      <View style={[cardStyles.icon44, { backgroundColor: STUDY_COLOR + '1e' }]}>
-        <Feather name="book-open" size={20} color={STUDY_COLOR} />
+      <View style={cardStyles.icon44}>
+        <Feather name="book-open" size={32} color={C.text} />
       </View>
       <View style={cardStyles.body}>
         <Text style={[cardStyles.title, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -1776,8 +1776,8 @@ export function StudyHubScreen({ navigation }: any) {
           onPress={() => { setSub('browse'); loadPublicSections(); }}
           activeOpacity={0.75}
         >
-          <View style={[cardStyles.icon44, { backgroundColor: STUDY_COLOR + '1e' }]}>
-            <Icon name="study" size={20} color={STUDY_COLOR} />
+          <View style={cardStyles.icon44}>
+            <Icon name="study" size={32} color={C.text} />
           </View>
           <View style={cardStyles.body}>
             <Text style={[cardStyles.title, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -1795,8 +1795,8 @@ export function StudyHubScreen({ navigation }: any) {
           onPress={() => setCreateOpen(true)}
           activeOpacity={0.75}
         >
-          <View style={[cardStyles.icon44, { backgroundColor: C.brand + '1e' }]}>
-            <Feather name="plus-circle" size={20} color={C.brand} />
+          <View style={cardStyles.icon44}>
+            <Feather name="plus-circle" size={32} color={C.text} />
           </View>
           <View style={cardStyles.body}>
             <Text style={[cardStyles.title, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -1836,8 +1836,8 @@ export function StudyHubScreen({ navigation }: any) {
       <View>
         {/* Hero Section Card (72 dp) */}
         <View style={[cardStyles.card72, { backgroundColor: C.surface, borderColor: C.border, marginBottom: 12 }]}>
-          <View style={[cardStyles.icon44, { backgroundColor: STUDY_COLOR + '1e' }]}>
-            <Icon name="study" size={22} color={STUDY_COLOR} />
+          <View style={cardStyles.icon44}>
+            <Icon name="study" size={32} color={C.text} />
           </View>
           <View style={cardStyles.body}>
             <Text style={[cardStyles.title, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]} numberOfLines={1}>
@@ -1895,8 +1895,8 @@ export function StudyHubScreen({ navigation }: any) {
                 key={p.id}
                 style={[cardStyles.card72, { backgroundColor: C.surface, borderColor: C.border }]}
               >
-                <View style={[cardStyles.icon44, { backgroundColor: STUDY_COLOR + '1e' }]}>
-                  <Feather name="bookmark" size={18} color={STUDY_COLOR} />
+                <View style={cardStyles.icon44}>
+                  <Feather name="bookmark" size={32} color={C.text} />
                 </View>
                 <View style={cardStyles.body}>
                   <Text style={[cardStyles.title, { color: C.text, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={2}>
@@ -2109,8 +2109,8 @@ export function StudyHubScreen({ navigation }: any) {
               }, 'browse')}
               activeOpacity={0.75}
             >
-              <View style={[cardStyles.icon44, { backgroundColor: STUDY_COLOR + '1e' }]}>
-                <Icon name="study" size={20} color={STUDY_COLOR} />
+              <View style={cardStyles.icon44}>
+                <Icon name="study" size={32} color={C.text} />
               </View>
               <View style={cardStyles.body}>
                 <Text style={[cardStyles.title, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -2314,10 +2314,10 @@ export function StudyHubScreen({ navigation }: any) {
               {t.study2.sectionVisibility}
             </Text>
             <View style={[cardStyles.card72, { backgroundColor: C.surface, borderColor: C.border }]}>
-              <View style={[cardStyles.icon44, { backgroundColor: mySection.is_public ? C.successBg : C.surface2 }]}>
+              <View style={cardStyles.icon44}>
                 <Feather
                   name={mySection.is_public ? 'globe' : 'shield'}
-                  size={20}
+                  size={32}
                   color={mySection.is_public ? C.success : C.textMuted}
                 />
               </View>
@@ -2523,8 +2523,8 @@ export function StudyHubScreen({ navigation }: any) {
                     }}
                     activeOpacity={0.75}
                   >
-                    <View style={[cardStyles.icon44, { backgroundColor: STUDY_COLOR + '20' }]}>
-                      <Icon name="study" size={18} color={STUDY_COLOR} />
+                    <View style={cardStyles.icon44}>
+                      <Icon name="study" size={32} color={C.text} />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={[cardStyles.title, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Intake {ik.number}</Text>
@@ -2629,8 +2629,8 @@ export function StudyHubScreen({ navigation }: any) {
                 onPress={() => openSectionsForIntake(item)}
                 activeOpacity={0.75}
               >
-                <View style={[cardStyles.icon44, { backgroundColor: STUDY_COLOR + '18' }]}>
-                  <Feather name="users" size={20} color={STUDY_COLOR} />
+                <View style={cardStyles.icon44}>
+                  <Feather name="users" size={32} color={C.text} />
                 </View>
                 <View style={cardStyles.body}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
@@ -2680,8 +2680,8 @@ export function StudyHubScreen({ navigation }: any) {
       <View>
         {selectedIntake && (
           <View style={[cardStyles.card72, { backgroundColor: C.surface, borderColor: C.border, marginBottom: 14 }]}>
-            <View style={[cardStyles.icon44, { backgroundColor: STUDY_COLOR + '18' }]}>
-              <Feather name="users" size={20} color={STUDY_COLOR} />
+            <View style={cardStyles.icon44}>
+              <Feather name="users" size={32} color={C.text} />
             </View>
             <View style={cardStyles.body}>
               <Text style={[cardStyles.title, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -2728,8 +2728,8 @@ export function StudyHubScreen({ navigation }: any) {
                 onPress={() => openSectionRoom(sec, 'intake')}
                 activeOpacity={0.75}
               >
-                <View style={[cardStyles.icon44, { backgroundColor: STUDY_COLOR + '18' }]}>
-                  <Icon name="study" size={20} color={STUDY_COLOR} />
+                <View style={cardStyles.icon44}>
+                  <Icon name="study" size={32} color={C.text} />
                 </View>
                 <View style={cardStyles.body}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
@@ -2776,8 +2776,8 @@ export function StudyHubScreen({ navigation }: any) {
       <View>
         {selectedSection && (
           <View style={[cardStyles.card72, { backgroundColor: C.surface, borderColor: C.border, marginBottom: 14 }]}>
-            <View style={[cardStyles.icon44, { backgroundColor: STUDY_COLOR + '1e' }]}>
-              <Icon name="study" size={22} color={STUDY_COLOR} />
+            <View style={cardStyles.icon44}>
+              <Icon name="study" size={32} color={C.text} />
             </View>
             <View style={cardStyles.body}>
               <Text style={[cardStyles.title, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>

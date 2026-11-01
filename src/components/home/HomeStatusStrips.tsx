@@ -1410,15 +1410,8 @@ export function HomeStatusStrips({ refreshTrigger }: { refreshTrigger?: number }
                       },
                     ]}
                   >
-                    <View
-                      style={[
-                        styles.pickerIconBox,
-                        {
-                          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : C.border,
-                        },
-                      ]}
-                    >
-                      <AnimatedIcon name={item.icon} size={18} color={item.color} animation="entrance" />
+                    <View style={styles.pickerIconBox}>
+                      <AnimatedIcon name={item.icon} size={32} color={C.text} animation="entrance" />
                     </View>
 
                     <View style={{ flex: 1 }}>

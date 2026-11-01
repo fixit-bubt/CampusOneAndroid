@@ -188,16 +188,8 @@ export function HomeFrequentTools({ refreshTrigger }: HomeFrequentToolsProps = {
               },
             ]}
           >
-            <View
-              style={[
-                styles.iconBox,
-                {
-                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2,
-                  borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : C.border,
-                },
-              ]}
-            >
-              <AnimatedIcon name={tool.icon} size={18} color={tool.color} animation="entrance" />
+            <View style={styles.iconBox}>
+              <AnimatedIcon name={tool.icon} size={28} color={C.text} animation="entrance" />
             </View>
             <Text
               style={[
@@ -333,15 +325,8 @@ export function HomeFrequentTools({ refreshTrigger }: HomeFrequentToolsProps = {
                         },
                       ]}
                     >
-                      <View
-                        style={[
-                          styles.pickerIconBox,
-                          {
-                            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : C.border,
-                          },
-                        ]}
-                      >
-                        <AnimatedIcon name={item.icon} size={18} color={item.color} animation="entrance" />
+                      <View style={styles.pickerIconBox}>
+                        <AnimatedIcon name={item.icon} size={28} color={C.text} animation="entrance" />
                       </View>
 
                       <View style={{ flex: 1 }}>
@@ -515,8 +500,6 @@ const styles = StyleSheet.create({
   iconBox: {
     width: 34,
     height: 34,
-    borderRadius: 10,
-    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,

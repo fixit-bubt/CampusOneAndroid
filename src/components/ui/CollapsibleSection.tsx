@@ -66,20 +66,11 @@ export function CollapsibleSection({
         ]}
         activeOpacity={0.75}
       >
-        <View
-          style={[
-            styles.iconBox,
-            {
-              backgroundColor: accentColor
-                ? pillBg(accentColor, isDark)
-                : C.surface2,
-            },
-          ]}
-        >
+        <View style={styles.iconBox}>
           <Icon
             name={icon}
-            size={20}
-            color={activeColor}
+            size={32}
+            color={C.text}
             animation={isOpen ? 'spring' : 'none'}
           />
         </View>
@@ -129,7 +120,7 @@ export function CollapsibleSection({
           <Icon
             name={isOpen ? 'chevD' : 'chevR'}
             size={18}
-            color={isOpen ? activeColor : C.textMuted}
+            color={isOpen ? C.text : C.textMuted}
             animation={isOpen ? 'spring' : 'none'}
           />
         </View>

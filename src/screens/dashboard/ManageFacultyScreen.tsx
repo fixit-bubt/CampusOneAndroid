@@ -543,12 +543,12 @@ export function ManageFacultyScreen({ navigation }: any) {
 
               <View style={styles.toggleRow}>
                 <Text style={[styles.toggleLbl, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>Accepting Paper Mentorship</Text>
-                <TactileSwitch value={isAcceptingResearch} onValueChange={setIsAcceptingResearch} trackColor={{ true: SectorColors.faculty }} />
+                <TactileSwitch value={isAcceptingResearch} onValueChange={setIsAcceptingResearch} />
               </View>
 
               <View style={styles.toggleRow}>
                 <Text style={[styles.toggleLbl, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>{t.manage.onLeave}</Text>
-                <TactileSwitch value={onLeave} onValueChange={setOnLeave} variant="danger" />
+                <TactileSwitch value={onLeave} onValueChange={setOnLeave} />
 
               </View>
 

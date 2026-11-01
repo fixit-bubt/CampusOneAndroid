@@ -400,8 +400,8 @@ export function FacultyScreen({ navigation }: any) {
                       onPress={() => setSelectedCategory(cat)}
                       activeOpacity={0.75}
                     >
-                      <View style={[styles.categoryIconTile, { backgroundColor: `${FACULTY_ACCENT}12` }]}>
-                        <AnimatedIcon name={cat.icon} size={22} color={FACULTY_ACCENT} animation="entrance" />
+                      <View style={styles.categoryIconTile}>
+                        <AnimatedIcon name={cat.icon} size={32} color={C.text} animation="entrance" />
                       </View>
                       <View style={{ flex: 1, minWidth: 0 }}>
                         <Text style={[styles.categoryTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -487,8 +487,8 @@ export function FacultyScreen({ navigation }: any) {
               onPress={() => setDeptPickerVisible(true)}
               activeOpacity={0.75}
             >
-              <View style={[styles.dropdownIconTile, { backgroundColor: `${FACULTY_ACCENT}14` }]}>
-                <AnimatedIcon name="layers" size={18} color={FACULTY_ACCENT} animation="spring" />
+              <View style={styles.dropdownIconTile}>
+                <AnimatedIcon name="layers" size={28} color={C.text} animation="spring" />
               </View>
               <View style={styles.dropdownBody}>
                 <Text style={[styles.dropdownLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
@@ -509,8 +509,8 @@ export function FacultyScreen({ navigation }: any) {
               onPress={() => setDomainPickerVisible(true)}
               activeOpacity={0.75}
             >
-              <View style={[styles.dropdownIconTile, { backgroundColor: `${FACULTY_ACCENT}14` }]}>
-                <AnimatedIcon name="award" size={18} color={FACULTY_ACCENT} animation="spring" />
+              <View style={styles.dropdownIconTile}>
+                <AnimatedIcon name="award" size={28} color={C.text} animation="spring" />
               </View>
               <View style={styles.dropdownBody}>
                 <Text style={[styles.dropdownLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
@@ -589,8 +589,8 @@ export function FacultyScreen({ navigation }: any) {
               onPress={() => setDeptPickerVisible(true)}
               activeOpacity={0.75}
             >
-              <View style={[styles.dropdownIconTile, { backgroundColor: `${Accent.gold}18` }]}>
-                <AnimatedIcon name="layers" size={18} color={Accent.gold} animation="spring" />
+              <View style={styles.dropdownIconTile}>
+                <AnimatedIcon name="layers" size={28} color={C.text} animation="spring" />
               </View>
               <View style={styles.dropdownBody}>
                 <Text style={[styles.dropdownLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>

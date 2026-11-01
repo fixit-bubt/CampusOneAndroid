@@ -427,8 +427,8 @@ export function BusScreen({ navigation }: any) {
                   onPress={() => navigation.navigate('BusDetail', { id: r.id, initialDirection: direction })}
                   activeOpacity={0.75}
                 >
-                  <View style={[styles.thumb, { backgroundColor: BUS_BG }]}>
-                    <Icon name="bus" size={22} color={BUS_COLOR} />
+                  <View style={styles.thumb}>
+                    <Icon name="bus" size={32} color={C.text} />
                   </View>
                   <View style={styles.cardBody}>
                     <View style={styles.cardTitleRow}>
@@ -485,8 +485,8 @@ export function BusScreen({ navigation }: any) {
         {/* Campus Transit & Helpline Footer */}
         <View style={[styles.transitFooter, { backgroundColor: C.surface, borderColor: C.border }]}>
           <View style={styles.transitRow}>
-            <View style={[styles.transitIconBox, { backgroundColor: `${C.brand}1e` }]}>
-              <Feather name="navigation" size={18} color={C.brand} />
+            <View style={styles.transitIconBox}>
+              <Feather name="navigation" size={24} color={C.text} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.transitTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -503,8 +503,8 @@ export function BusScreen({ navigation }: any) {
           <View style={[styles.transitDivider, { backgroundColor: C.border }]} />
 
           <View style={styles.transitRow}>
-            <View style={[styles.transitIconBox, { backgroundColor: `${C.success}1e` }]}>
-              <Feather name="phone-call" size={18} color={C.success} />
+            <View style={styles.transitIconBox}>
+              <Feather name="phone-call" size={24} color={C.text} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.transitTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>

@@ -133,8 +133,8 @@ export function ClubsScreen({ navigation }: any) {
                   onPress={() => navigation.navigate('ClubDetail', { id: c.id })}
                   activeOpacity={0.75}
                 >
-                  <View style={[styles.thumb, { backgroundColor: tintBg }]}>
-                    <Icon name="clubs" size={22} color={cat.fg} />
+                  <View style={styles.thumb}>
+                    <Icon name="clubs" size={32} color={C.text} />
                   </View>
                   <View style={styles.cardBody}>
                     <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>

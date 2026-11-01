@@ -509,8 +509,8 @@ export function CourseDetailScreen({ route, navigation }: any) {
                 onPress={() => openEntry(f)}
                 activeOpacity={0.75}
               >
-                <View style={[styles.fileIcon44, { backgroundColor: tintBg }]}>
-                  <Feather name={fileIcon(f.file_kind, isLink)} size={20} color={STUDY_COLOR} />
+                <View style={styles.fileIcon44}>
+                  <Feather name={fileIcon(f.file_kind, isLink)} size={32} color={C.text} />
                 </View>
                 <View style={styles.fileBody}>
                   <Text style={[styles.fileName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>

@@ -776,8 +776,8 @@ export function MarketScreen({ navigation }: any) {
                     }}
                     activeOpacity={0.75}
                   >
-                    <View style={[styles.modalItemIconBox, { backgroundColor: iconBg }]}>
-                      <Feather name={c.icon} size={18} color={fg} />
+                    <View style={styles.modalItemIconBox}>
+                      <Feather name={c.icon} size={32} color={C.text} />
                     </View>
 
                     <View style={styles.modalItemInfo}>
@@ -928,7 +928,6 @@ export function MarketScreen({ navigation }: any) {
                 <TactileSwitch
                   value={hideSold}
                   onValueChange={setHideSold}
-                  trackColor={{ true: MARKET_COLOR }}
                 />
               </View>
 

@@ -212,9 +212,9 @@ export function ReportDetailScreen({ route, navigation }: any) {
       >
         {/* Header: icon + title + status */}
         <View style={styles.header}>
-          <View style={[styles.catIcon, { backgroundColor: cat.fg + '1e' }]}>
-            <Icon name={cat.icon} size={26} color={cat.fg} />
-          </View>
+          <View style={styles.catIcon}>
+                  <Icon name={cat.icon} size={32} color={C.text} />
+                </View>
           <View style={styles.headerBody}>
             <Text style={[styles.title, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]} numberOfLines={3}>
               {report.description.split('\n')[0]}
@@ -313,9 +313,9 @@ export function ReportDetailScreen({ route, navigation }: any) {
           CATEGORY
         </Text>
         <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14 }]}>
-          <View style={[styles.catIcon, { backgroundColor: cat.fg + '1e', width: 36, height: 36, borderRadius: 10 }]}>
-            <Icon name={cat.icon} size={20} color={cat.fg} />
-          </View>
+          <View style={styles.catIcon}>
+                  <Icon name={cat.icon} size={32} color={C.text} />
+                </View>
           <Text style={[{ color: C.text, fontFamily: FontFamily.jakartaBold, fontSize: 14.5 }]}>
             {report.category}
           </Text>

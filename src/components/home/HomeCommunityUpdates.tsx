@@ -484,14 +484,9 @@ export function HomeCommunityUpdates({ refreshTrigger }: HomeCommunityUpdatesPro
                   />
                 ) : (
                   <View
-                    style={[
-                      styles.thumbFallback,
-                      {
-                        backgroundColor: `${item.sectorColor}18`,
-                      },
-                    ]}
+                    style={styles.thumbFallback}
                   >
-                    <Feather name={item.icon} size={20} color={item.sectorColor} />
+                    <Feather name={item.icon} size={32} color={C.text} />
                   </View>
                 )}
               </View>

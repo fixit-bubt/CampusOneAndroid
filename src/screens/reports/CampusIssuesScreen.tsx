@@ -200,8 +200,8 @@ export function CampusIssuesScreen({ navigation }: any) {
           return (
             <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
               <View style={styles.cardTop}>
-                <View style={[styles.catIcon, { backgroundColor: `${cat.fg}1e` }]}>
-                  <Icon name={cat.icon} size={19} color={cat.fg} />
+                <View style={styles.catIcon}>
+                  <Icon name={cat.icon} size={32} color={C.text} />
                 </View>
                 <View style={styles.cardBody}>
                   <Text style={[styles.cardCat, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>

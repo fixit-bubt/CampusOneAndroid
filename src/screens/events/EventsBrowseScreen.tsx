@@ -149,8 +149,8 @@ function EventCard({
       ) : (
         <View style={[styles.fallbackBanner, { backgroundColor: bg }]}>
           <View style={styles.fallbackLeft}>
-            <View style={[styles.catIconCircle, { backgroundColor: `${fg}25` }]}>
-              <Icon name={CAT_ICON[e.category] ?? 'events'} size={20} color={fg} />
+            <View style={styles.catIconCircle}>
+              <Icon name={CAT_ICON[e.category] ?? 'events'} size={24} color={C.text} />
             </View>
             <Text style={[styles.fallbackCatText, { color: fg, fontFamily: FontFamily.jakartaBold }]}>
               {e.category}
@@ -465,21 +465,12 @@ export function EventsBrowseScreen({ navigation }: any) {
           onPress={() => setCategoryModalVisible(true)}
           activeOpacity={0.75}
         >
-          <View
-            style={[
-              styles.catIconBox,
-              {
-                backgroundColor: isCatActive
-                  ? pillBg(activeCatColor, isDark)
-                  : C.surface2,
-              },
-            ]}
-          >
+          <View style={styles.catIconBox}>
             <AnimatedIcon
               family="feather"
               name={activeCatObj.icon}
-              size={20}
-              color={isCatActive ? activeCatColor : C.textMuted}
+              size={32}
+              color={C.text}
               animation="spring"
             />
           </View>
@@ -650,21 +641,12 @@ export function EventsBrowseScreen({ navigation }: any) {
                       }}
                       activeOpacity={0.75}
                     >
-                      <View
-                        style={[
-                          styles.pickerBarIconBox,
-                          {
-                            backgroundColor: active
-                              ? pillBg(catThemeColor, isDark)
-                              : C.surface2,
-                          },
-                        ]}
-                      >
+                      <View style={styles.pickerBarIconBox}>
                         <AnimatedIcon
                           family="feather"
                           name={cat.icon}
-                          size={20}
-                          color={active ? catThemeColor : C.textMuted}
+                          size={32}
+                          color={C.text}
                           animation={active ? 'spring' : 'entrance'}
                           delay={idx * 30}
                         />

@@ -1052,7 +1052,7 @@ export function CoverPageFormScreen({ navigation }: any) {
               </View>
               {members.map((m, i) => (
                 <View key={m.key ?? `m-${i}`} style={[styles.bar72, { backgroundColor: C.surface, borderColor: C.border, marginBottom: 8 }]}>
-                  <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
+                  <View style={styles.toolIcon}>
                     <Text style={{ fontFamily: FontFamily.jakartaBold, fontSize: 13, color: C.text }}>{i + 1}</Text>
                   </View>
                   <View style={{ flex: 1.3, marginRight: 8 }}>
@@ -1092,8 +1092,8 @@ export function CoverPageFormScreen({ navigation }: any) {
                   onPress={addMember}
                   activeOpacity={0.8}
                 >
-                  <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
-                    <AnimatedIcon family="feather" name="plus" size={18} color={C.text} animation="entrance" />
+                  <View style={styles.toolIcon}>
+                    <AnimatedIcon family="feather" name="plus" size={32} color={C.text} animation="entrance" />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -1107,7 +1107,7 @@ export function CoverPageFormScreen({ navigation }: any) {
                 </TouchableOpacity>
               ) : (
                 <View style={[styles.childBar72, { backgroundColor: C.surface, borderColor: C.border, opacity: 0.75 }]}>
-                  <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
+                  <View style={styles.toolIcon}>
                     <Feather name="info" size={17} color={C.textMuted} />
                   </View>
                   <View style={{ flex: 1 }}>
@@ -1217,8 +1217,8 @@ export function CoverPageFormScreen({ navigation }: any) {
                 onPress={() => setViewerVisible(true)}
                 activeOpacity={0.75}
               >
-                <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
-                  <AnimatedIcon family="feather" name="eye" size={20} color={C.text} animation="entrance" delay={0} />
+                <View style={styles.toolIcon}>
+                  <AnimatedIcon family="feather" name="eye" size={32} color={C.text} animation="entrance" delay={0} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -1237,8 +1237,8 @@ export function CoverPageFormScreen({ navigation }: any) {
                 onPress={handleSaveDevice}
                 activeOpacity={0.75}
               >
-                <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
-                  <AnimatedIcon family="feather" name="download" size={20} color={C.text} animation="entrance" delay={40} />
+                <View style={styles.toolIcon}>
+                  <AnimatedIcon family="feather" name="download" size={32} color={C.text} animation="entrance" delay={40} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -1257,8 +1257,8 @@ export function CoverPageFormScreen({ navigation }: any) {
                 onPress={handleShare}
                 activeOpacity={0.75}
               >
-                <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
-                  <AnimatedIcon family="feather" name="share-2" size={20} color={C.text} animation="entrance" delay={80} />
+                <View style={styles.toolIcon}>
+                  <AnimatedIcon family="feather" name="share-2" size={32} color={C.text} animation="entrance" delay={80} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -1277,8 +1277,8 @@ export function CoverPageFormScreen({ navigation }: any) {
                 onPress={handlePrintDirect}
                 activeOpacity={0.75}
               >
-                <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
-                  <AnimatedIcon family="feather" name="printer" size={20} color={C.text} animation="entrance" delay={120} />
+                <View style={styles.toolIcon}>
+                  <AnimatedIcon family="feather" name="printer" size={32} color={C.text} animation="entrance" delay={120} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -1318,11 +1318,11 @@ export function CoverPageFormScreen({ navigation }: any) {
                 onPress={() => { setDocType(item); setDocTypeModal(false); }}
                 activeOpacity={0.75}
               >
-                <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
+                <View style={styles.toolIcon}>
                   <AnimatedIcon
                     family="feather"
                     name={docTypeIcon(item)}
-                    size={20}
+                    size={28}
                     color={C.text}
                     animation="entrance"
                     delay={index * 35}
@@ -1381,11 +1381,11 @@ export function CoverPageFormScreen({ navigation }: any) {
               onPress={() => selectCourse(item)}
               activeOpacity={0.7}
             >
-              <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
+              <View style={styles.toolIcon}>
                 <AnimatedIcon
                   family="feather"
                   name="book-open"
-                  size={18}
+                  size={28}
                   color={C.text}
                   animation="entrance"
                   delay={Math.min(index, 8) * 35}
@@ -1484,11 +1484,11 @@ export function CoverPageFormScreen({ navigation }: any) {
               onPress={() => selectProgram(item)}
               activeOpacity={0.7}
             >
-              <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
+              <View style={styles.toolIcon}>
                 <AnimatedIcon
                   family="feather"
                   name={getDeptIcon(item.name)}
-                  size={18}
+                  size={28}
                   color={C.text}
                   animation="entrance"
                   delay={Math.min(index, 8) * 35}
@@ -1524,11 +1524,11 @@ export function CoverPageFormScreen({ navigation }: any) {
               onPress={() => { setTeacherDesig(item); setDesigModal(false); }}
               activeOpacity={0.7}
             >
-              <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
+              <View style={styles.toolIcon}>
                 <AnimatedIcon
                   family="feather"
                   name="bookmark"
-                  size={18}
+                  size={28}
                   color={C.text}
                   animation="entrance"
                   delay={Math.min(index, 8) * 35}
@@ -1585,7 +1585,7 @@ function Bar72({
       onPress={onPress}
       activeOpacity={0.75}
     >
-      <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
+      <View style={styles.toolIcon}>
         <Feather name={icon} size={20} color={C.text2} />
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
@@ -1643,7 +1643,7 @@ function InputBar72({
         },
       ]}
     >
-      <View style={[styles.toolIcon, { backgroundColor: C.surface2 }]}>
+      <View style={styles.toolIcon}>
         <Feather name={icon} size={20} color={C.text2} />
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>

@@ -506,8 +506,8 @@ export function PostItemFormScreen({ route, navigation }: any) {
                     onPress={() => navigation.navigate('LostFoundDetail', { itemId: m.id })}
                     activeOpacity={0.75}
                   >
-                    <View style={[styles.matchIcon, { backgroundColor: LF_BG }]}>
-                      <Icon name={mc.icon} size={15} color={LF_COLOR} />
+                    <View style={styles.matchIcon}>
+                      <Icon name={mc.icon} size={24} color={C.text} />
                     </View>
                     <View style={{ flex: 1, minWidth: 0 }}>
                       <Text style={[styles.matchName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>{m.title}</Text>
@@ -780,8 +780,8 @@ export function PostItemFormScreen({ route, navigation }: any) {
 
             <View style={styles.sheetHeader}>
               <View style={styles.sheetHeaderLeft}>
-                <View style={[styles.sheetHeaderIcon, { backgroundColor: LF_BG }]}>
-                  <Feather name="grid" size={18} color={LF_COLOR} />
+                <View style={styles.sheetHeaderIcon}>
+                  <Feather name="grid" size={24} color={C.text} />
                 </View>
                 <View>
                   <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -909,8 +909,8 @@ export function PostItemFormScreen({ route, navigation }: any) {
 
             <View style={styles.sheetHeader}>
               <View style={styles.sheetHeaderLeft}>
-                <View style={[styles.sheetHeaderIcon, { backgroundColor: LF_BG }]}>
-                  <Feather name="map-pin" size={18} color={LF_COLOR} />
+                <View style={styles.sheetHeaderIcon}>
+                  <Feather name="map-pin" size={24} color={C.text} />
                 </View>
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>

@@ -19,8 +19,8 @@ function PolicySection({ icon, title, children, C }: PolicySectionProps) {
   return (
     <View style={[styles.sectionCard, { backgroundColor: C.surface, borderColor: C.border }]}>
       <View style={styles.sectionHeader}>
-        <View style={[styles.iconWrap, { backgroundColor: C.brand + '15' }]}>
-          <Feather name={icon} size={16} color={C.brand} />
+        <View style={styles.iconWrap}>
+          <Feather name={icon} size={28} color={C.text} />
         </View>
         <Text style={[styles.sectionTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
           {title}

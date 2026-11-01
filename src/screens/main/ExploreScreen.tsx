@@ -113,7 +113,6 @@ export function ExploreScreen({ navigation }: any) {
           {
             backgroundColor: C.surface,
             borderColor: C.border,
-            borderLeftColor: accentColor,
           },
         ]}
         onPress={() => navigation.navigate(SECTOR_ROUTE[s.id])}
@@ -128,7 +127,7 @@ export function ExploreScreen({ navigation }: any) {
             {desc}
           </Text>
         </View>
-        <Feather name="chevron-right" size={17} color={accentColor} />
+        <Feather name="chevron-right" size={18} color={C.textMuted} />
       </TouchableOpacity>
     );
   }
@@ -168,8 +167,8 @@ export function ExploreScreen({ navigation }: any) {
             onPress={() => navigation.navigate('Chatbot')}
             activeOpacity={0.75}
           >
-            <View style={[styles.toolIcon, { backgroundColor: pillBg(C.brand, isDark) }]}>
-              <AnimatedIcon family="feather" name="message-circle" size={20} color={C.brand} animation="entrance" />
+            <View style={styles.toolIcon}>
+              <AnimatedIcon family="feather" name="message-circle" size={32} color={C.text} animation="entrance" />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.cellTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -179,7 +178,7 @@ export function ExploreScreen({ navigation }: any) {
                 {t.chatbot?.exploreDesc ?? 'Ask questions, get help with campus life'}
               </Text>
             </View>
-            <Feather name="chevron-right" size={16} color={C.textMuted} />
+            <Feather name="chevron-right" size={18} color={C.textMuted} />
           </TouchableOpacity>
         )}
 
@@ -190,8 +189,8 @@ export function ExploreScreen({ navigation }: any) {
             onPress={() => navigation.navigate('CampusIssues')}
             activeOpacity={0.75}
           >
-            <View style={[styles.toolIcon, { backgroundColor: pillBg(C.danger, isDark) }]}>
-              <AnimatedIcon family="feather" name="alert-triangle" size={20} color={C.danger} animation="wobble" loop={false} />
+            <View style={styles.toolIcon}>
+              <AnimatedIcon family="feather" name="alert-triangle" size={32} color={C.text} animation="wobble" loop={false} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.cellTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -201,7 +200,7 @@ export function ExploreScreen({ navigation }: any) {
                 {t.campusIssues.exploreDesc}
               </Text>
             </View>
-            <Feather name="chevron-right" size={16} color={C.textMuted} />
+            <Feather name="chevron-right" size={18} color={C.textMuted} />
           </TouchableOpacity>
         )}
 
@@ -232,14 +231,13 @@ export function ExploreScreen({ navigation }: any) {
                 {
                   backgroundColor: C.surface,
                   borderColor: C.border,
-                  borderLeftColor: SectorColors.study,
                 },
               ]}
               onPress={() => navigation.navigate('Annex')}
               activeOpacity={0.7}
             >
-              <View style={[styles.toolIcon, { backgroundColor: pillBg(SectorColors.announce, isDark) }]}>
-                <AnimatedIcon family="feather" name="external-link" size={20} color={SectorColors.announce} animation="entrance" delay={academicsSectors.length * 35} />
+              <View style={styles.toolIcon}>
+                <AnimatedIcon family="feather" name="external-link" size={32} color={C.text} animation="entrance" delay={academicsSectors.length * 35} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -249,7 +247,7 @@ export function ExploreScreen({ navigation }: any) {
                   {t.tabs.annexDesc}
                 </Text>
               </View>
-              <Feather name="chevron-right" size={17} color={SectorColors.study} />
+              <Feather name="chevron-right" size={18} color={C.textMuted} />
             </TouchableOpacity>
 
             {/* Tool: CGPA calculator - separate child bar */}
@@ -259,14 +257,13 @@ export function ExploreScreen({ navigation }: any) {
                 {
                   backgroundColor: C.surface,
                   borderColor: C.border,
-                  borderLeftColor: SectorColors.study,
                 },
               ]}
               onPress={() => navigation.navigate('Cgpa')}
               activeOpacity={0.7}
             >
-              <View style={[styles.toolIcon, { backgroundColor: pillBg(SectorColors.study, isDark) }]}>
-                <AnimatedIcon family="feather" name="percent" size={20} color={SectorColors.study} animation="entrance" delay={(academicsSectors.length + 1) * 35} />
+              <View style={styles.toolIcon}>
+                <AnimatedIcon family="feather" name="percent" size={32} color={C.text} animation="entrance" delay={(academicsSectors.length + 1) * 35} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -276,7 +273,7 @@ export function ExploreScreen({ navigation }: any) {
                   {t.cgpa.subtitle}
                 </Text>
               </View>
-              <Feather name="chevron-right" size={17} color={SectorColors.study} />
+              <Feather name="chevron-right" size={18} color={C.textMuted} />
             </TouchableOpacity>
 
             {/* PDF Maker - student-only separate child bar */}
@@ -287,14 +284,13 @@ export function ExploreScreen({ navigation }: any) {
                   {
                     backgroundColor: C.surface,
                     borderColor: C.border,
-                    borderLeftColor: SectorColors.study,
                   },
                 ]}
                 onPress={() => navigation.navigate('PdfMaker')}
                 activeOpacity={0.7}
               >
-                <View style={[styles.toolIcon, { backgroundColor: pillBg(SectorColors.pdfmaker, isDark) }]}>
-                  <AnimatedIcon family="mci" name="file-pdf-box" size={22} color={SectorColors.pdfmaker} animation="entrance" delay={(academicsSectors.length + 2) * 35} />
+                <View style={styles.toolIcon}>
+                  <AnimatedIcon family="mci" name="file-pdf-box" size={32} color={C.text} animation="entrance" delay={(academicsSectors.length + 2) * 35} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -304,7 +300,7 @@ export function ExploreScreen({ navigation }: any) {
                     {t.pdfmaker.exploreDesc}
                   </Text>
                 </View>
-                <Feather name="chevron-right" size={17} color={SectorColors.study} />
+                <Feather name="chevron-right" size={18} color={C.textMuted} />
               </TouchableOpacity>
             )}
           </CollapsibleSection>
@@ -408,7 +404,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 16,
     borderWidth: 1,
-    borderLeftWidth: 4.5,
+    borderLeftWidth: 1,
     marginBottom: 8,
   } as ViewStyle,
 
