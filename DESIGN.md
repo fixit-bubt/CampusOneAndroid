@@ -755,6 +755,44 @@ All document configuration selectors and input fields follow the 72dp layout sta
 - **Zero Top Gap:** Resets Google's `top: 80px` / `top: 128px` offset reserved for the hidden toolstrip, aligning pages directly below the executive top app bar.
 - **WebView Asset Caching:** Enabled `cacheEnabled={true}` and `cacheMode="LOAD_DEFAULT"` to cache Google's static 1.93MB script bundles on disk.
 
+---
+
+## 21. Universal Sub-Bar Left Accent Stripe System (`borderLeftWidth: 4.5`)
+
+Every expandable accordion dropdown, collapsible section, and parent-child hierarchy across the entire application strictly enforces the **4.5dp Left Accent Stripe Standard** (`borderLeftWidth: 4.5`, `borderLeftColor: <sectorColor>`).
+
+### 1. The Core UX Purpose
+- When a user taps a parent main bar (e.g. *Mirpur & Campus* in Blood Donation, *Academics* in Explore, or *Free Dispensary Medicines* in Medical), the child sub-bars appear underneath.
+- Without a left accent indicator, sub-bars visually blend together with main bars and cause cognitive fatigue.
+- The 4.5dp left accent stripe at the start of every sub-bar acts as an instantaneous visual anchor, clearly signalling: *"This is a sub-item belonging inside the active parent category, not another top-level main bar."*
+
+### 2. Standard Specifications & Sector Palette Mapping
+- **Geometry:** `height: 72` (or `minHeight: 58`), `paddingHorizontal: 14`, `borderRadius: 16`, `borderWidth: 1`, `borderLeftWidth: 4.5`, `marginBottom: 8`.
+- **Explore Categories (`ExploreScreen.tsx`):**
+  - Academics child bars (Study Hub, Faculty, Routines, Calendar, Annex, CGPA): `borderLeftColor: SectorColors.study` (or specific sector color).
+  - Campus Life child bars (Events, Clubs, Prayer): `borderLeftColor: SectorColors[s.id] ?? SectorColors.events`.
+  - Services child bars (Reports, Bus, Medical): `borderLeftColor: SectorColors[s.id] ?? SectorColors.reports`.
+  - Community child bars (Marketplace, Blood, Rides, Jobs): `borderLeftColor: SectorColors[s.id] ?? SectorColors.market`.
+  - PDF Maker: `borderLeftColor: SectorColors.pdfmaker ?? SectorColors.study`.
+- **Blood Donation (`AreaPickerModal.tsx`):**
+  - Child hospital cards and area items: `borderLeftColor: SectorColors.blood`.
+- **Rides Commute Hubs (`CommuteAreaPickerModal.tsx`):**
+  - Child hub cards and search results: `borderLeftColor: SectorColors.ride`.
+- **Admin Dashboard (`AdminDashboardScreen.tsx`):**
+  - Manage rows inside `CollapsibleSection`: `borderLeftColor: tile.fg` (All Reports Blue, Staff Green, Users Purple, Announcements Orange, Faculty Teal, Study Hub Blue, Clubs Amber, Medical Red).
+- **Medical Center (`MedicalScreen.tsx`):**
+  - Free dispensary medicine rows (`medRow72`): `borderLeftColor: SectorColors.medical`.
+- **Department Authorities (`DepartmentAuthoritiesDropdown.tsx`):**
+  - Decision-maker authority bars (`authorityBar`): `borderLeftColor: SectorColors.faculty`.
+- **Faculty Profile (`FacultyProfileScreen.tsx`):**
+  - Teaching Courses & Research Domains: `borderLeftColor: SectorColors.faculty`.
+  - Degrees, Specializations & Institutional Activities: `borderLeftColor: C.brand`.
+- **Study Hub (`StudyHubScreen.tsx`):**
+  - Intake section sub-bars (`catSecRow`): `borderLeftColor: SectorColors.study`.
+- **Cover Page Generator (`CoverPageFormScreen.tsx`):**
+  - Ready to View & Export action sub-bars (`childBar72`): `borderLeftColor: SectorColors.study`.
+
+
 
 
 

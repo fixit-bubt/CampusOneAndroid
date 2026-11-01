@@ -184,6 +184,8 @@ export function DepartmentAuthoritiesDropdown({
                   {
                     backgroundColor: C.surface2,
                     borderColor: C.border,
+                    borderLeftColor: FACULTY_ACCENT,
+                    borderLeftWidth: 4.5,
                   },
                 ]}
                 onPress={() => {
@@ -353,11 +355,13 @@ const styles = StyleSheet.create({
   authorityBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 11,
+    gap: 12,
     minHeight: 72,
-    padding: 12,
-    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 16,
     borderWidth: 1,
+    borderLeftWidth: 4.5,
     marginBottom: 8,
   } as ViewStyle,
 

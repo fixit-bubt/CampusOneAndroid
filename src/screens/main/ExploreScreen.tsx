@@ -105,6 +105,7 @@ export function ExploreScreen({ navigation }: any) {
   function renderSectorRow(s: { id: SectorKey; en: string; dEn: string }, accentColor: string, index: number = 0) {
     const title = t.sectorTitles?.[s.id] ?? s.en;
     const desc = t.sectorDescs?.[s.id] ?? s.dEn;
+    const itemColor = SectorColors[s.id] ?? accentColor;
     return (
       <TouchableOpacity
         key={s.id}
@@ -113,6 +114,7 @@ export function ExploreScreen({ navigation }: any) {
           {
             backgroundColor: C.surface,
             borderColor: C.border,
+            borderLeftColor: itemColor,
           },
         ]}
         onPress={() => navigation.navigate(SECTOR_ROUTE[s.id])}
@@ -231,6 +233,7 @@ export function ExploreScreen({ navigation }: any) {
                 {
                   backgroundColor: C.surface,
                   borderColor: C.border,
+                  borderLeftColor: SectorColors.study,
                 },
               ]}
               onPress={() => navigation.navigate('Annex')}
@@ -257,6 +260,7 @@ export function ExploreScreen({ navigation }: any) {
                 {
                   backgroundColor: C.surface,
                   borderColor: C.border,
+                  borderLeftColor: SectorColors.study,
                 },
               ]}
               onPress={() => navigation.navigate('Cgpa')}
@@ -284,6 +288,7 @@ export function ExploreScreen({ navigation }: any) {
                   {
                     backgroundColor: C.surface,
                     borderColor: C.border,
+                    borderLeftColor: SectorColors.pdfmaker ?? SectorColors.study,
                   },
                 ]}
                 onPress={() => navigation.navigate('PdfMaker')}
@@ -404,7 +409,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 16,
     borderWidth: 1,
-    borderLeftWidth: 1,
+    borderLeftWidth: 4.5,
     marginBottom: 8,
   } as ViewStyle,
 

@@ -119,7 +119,7 @@ export function CollapsibleSection({
           <Icon
             name={isOpen ? 'chevD' : 'chevR'}
             size={18}
-            color={isOpen ? C.text : C.textMuted}
+            color={isOpen ? activeColor : C.textMuted}
           />
         </View>
       </TouchableOpacity>

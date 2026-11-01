@@ -542,7 +542,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
             {expandCourses && (
               <View style={styles.sectionExpandedContainer}>
                 {courses.map((c, i) => (
-                  <View key={i} style={[styles.childBar58, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                  <View key={i} style={[styles.childBar58, { backgroundColor: C.surface2, borderColor: C.border, borderLeftColor: FACULTY_ACCENT, borderLeftWidth: 4.5 }]}>
                     <View style={[styles.childBarIconTile, { backgroundColor: `${FACULTY_ACCENT}14` }]}>
                       <Feather name="book" size={15} color={FACULTY_ACCENT} />
                     </View>
@@ -595,7 +595,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
                     {interests.map((area, idx) => (
                       <TouchableOpacity
                         key={idx}
-                        style={[styles.childBar58, { backgroundColor: C.surface2, borderColor: C.border }]}
+                        style={[styles.childBar58, { backgroundColor: C.surface2, borderColor: C.border, borderLeftColor: FACULTY_ACCENT, borderLeftWidth: 4.5 }]}
                         onPress={() => handleOpenDomain(area)}
                         activeOpacity={0.75}
                       >
@@ -626,7 +626,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
                       </Text>
                     </View>
                     {teachingAreas.map((area, idx) => (
-                      <View key={`teach-${idx}`} style={[styles.childBar58, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                      <View key={`teach-${idx}`} style={[styles.childBar58, { backgroundColor: C.surface2, borderColor: C.border, borderLeftColor: C.brand, borderLeftWidth: 4.5 }]}>
                         <View style={[styles.childBarIconTile, { backgroundColor: `${C.brand}14` }]}>
                           <Feather name="award" size={15} color={C.brand} />
                         </View>
@@ -750,7 +750,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
             {expandQuals && (
               <View style={styles.sectionExpandedContainer}>
                 {quals.map((qual, i) => (
-                  <View key={i} style={[styles.childBar58, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                  <View key={i} style={[styles.childBar58, { backgroundColor: C.surface2, borderColor: C.border, borderLeftColor: C.brand, borderLeftWidth: 4.5 }]}>
                     <View style={[styles.childBarIconTile, { backgroundColor: `${C.brand}14` }]}>
                       <Feather name="check-circle" size={15} color={C.brand} />
                     </View>
@@ -798,7 +798,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
             {expandActivities && (
               <View style={styles.sectionExpandedContainer}>
                 {activities.map((act, i) => (
-                  <View key={i} style={[styles.childBar58, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                  <View key={i} style={[styles.childBar58, { backgroundColor: C.surface2, borderColor: C.border, borderLeftColor: C.brand, borderLeftWidth: 4.5 }]}>
                     <View style={[styles.childBarIconTile, { backgroundColor: `${C.brand}14` }]}>
                       <Feather name="check" size={15} color={C.brand} />
                     </View>
@@ -810,7 +810,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
                   </View>
                 ))}
                 {member.industrial_experience ? (
-                  <View style={[styles.childBar58, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                  <View style={[styles.childBar58, { backgroundColor: C.surface2, borderColor: C.border, borderLeftColor: FACULTY_ACCENT, borderLeftWidth: 4.5 }]}>
                     <View style={[styles.childBarIconTile, { backgroundColor: `${FACULTY_ACCENT}14` }]}>
                       <Feather name="briefcase" size={15} color={FACULTY_ACCENT} />
                     </View>
@@ -860,7 +860,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
                 {links.map(l => (
                   <TouchableOpacity
                     key={l.key}
-                    style={[styles.childBar58, { backgroundColor: C.surface2, borderColor: C.border }]}
+                    style={[styles.childBar58, { backgroundColor: C.surface2, borderColor: C.border, borderLeftColor: C.brand, borderLeftWidth: 4.5 }]}
                     onPress={() => openLink((member as Record<string, any>)[l.key])}
                     activeOpacity={0.75}
                   >
@@ -1295,8 +1295,9 @@ const styles = StyleSheet.create({
     minHeight: 58,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: 13,
+    borderRadius: 14,
     borderWidth: 1,
+    borderLeftWidth: 4.5,
   } as ViewStyle,
 
   childBarIconTile: {

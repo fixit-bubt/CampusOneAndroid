@@ -1213,7 +1213,15 @@ export function CoverPageFormScreen({ navigation }: any) {
 
               {/* View Document Bar */}
               <TouchableOpacity
-                style={[styles.childBar72, { backgroundColor: C.surface, borderColor: C.border }]}
+                style={[
+                  styles.childBar72,
+                  {
+                    backgroundColor: C.surface,
+                    borderColor: C.border,
+                    borderLeftColor: SectorColors.study,
+                    borderLeftWidth: 4.5,
+                  },
+                ]}
                 onPress={() => setViewerVisible(true)}
                 activeOpacity={0.75}
               >
@@ -1233,7 +1241,15 @@ export function CoverPageFormScreen({ navigation }: any) {
 
               {/* Download Bar */}
               <TouchableOpacity
-                style={[styles.childBar72, { backgroundColor: C.surface, borderColor: C.border }]}
+                style={[
+                  styles.childBar72,
+                  {
+                    backgroundColor: C.surface,
+                    borderColor: C.border,
+                    borderLeftColor: SectorColors.study,
+                    borderLeftWidth: 4.5,
+                  },
+                ]}
                 onPress={handleSaveDevice}
                 activeOpacity={0.75}
               >
@@ -1253,7 +1269,15 @@ export function CoverPageFormScreen({ navigation }: any) {
 
               {/* Share Bar */}
               <TouchableOpacity
-                style={[styles.childBar72, { backgroundColor: C.surface, borderColor: C.border }]}
+                style={[
+                  styles.childBar72,
+                  {
+                    backgroundColor: C.surface,
+                    borderColor: C.border,
+                    borderLeftColor: SectorColors.study,
+                    borderLeftWidth: 4.5,
+                  },
+                ]}
                 onPress={handleShare}
                 activeOpacity={0.75}
               >
@@ -1273,7 +1297,15 @@ export function CoverPageFormScreen({ navigation }: any) {
 
               {/* Direct Print Bar */}
               <TouchableOpacity
-                style={[styles.childBar72, { backgroundColor: C.surface, borderColor: C.border }]}
+                style={[
+                  styles.childBar72,
+                  {
+                    backgroundColor: C.surface,
+                    borderColor: C.border,
+                    borderLeftColor: SectorColors.study,
+                    borderLeftWidth: 4.5,
+                  },
+                ]}
                 onPress={handlePrintDirect}
                 activeOpacity={0.75}
               >
@@ -1737,6 +1769,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 16,
     borderWidth: 1,
+    borderLeftWidth: 4.5,
     marginBottom: 8,
   } as ViewStyle,
 

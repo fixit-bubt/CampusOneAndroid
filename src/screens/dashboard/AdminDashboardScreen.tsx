@@ -280,14 +280,21 @@ export function AdminDashboardScreen({ navigation }: any) {
         )}
 
         {/* Manage rows */}
-        <CollapsibleSection title={t.dash.manage} icon="layers" defaultOpen={true}>
+        <CollapsibleSection title={t.dash.manage} icon="layers" accentColor={Accent.blue} defaultOpen={true}>
           <View style={styles.manageList}>
             {MANAGE_TILES.map((tile, i) => {
-              const tileBg = isDark ? `${tile.fg}2e` : `${tile.fg}14`;
               return (
                 <TouchableOpacity
                   key={i}
-                  style={[styles.manageRow, { backgroundColor: C.surface, borderColor: C.border }]}
+                  style={[
+                    styles.manageRow,
+                    {
+                      backgroundColor: C.surface,
+                      borderColor: C.border,
+                      borderLeftColor: tile.fg,
+                      borderLeftWidth: 4.5,
+                    },
+                  ]}
                   onPress={() => navigation.navigate(tile.route)}
                   activeOpacity={0.75}
                 >
@@ -399,10 +406,12 @@ const styles = StyleSheet.create({
   manageRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    padding: 13,
-    borderRadius: 14,
+    gap: 13,
+    height: 72,
+    paddingHorizontal: 14,
+    borderRadius: 16,
     borderWidth: 1,
+    borderLeftWidth: 4.5,
   } as ViewStyle,
   manageIcon: {
     width: 38,

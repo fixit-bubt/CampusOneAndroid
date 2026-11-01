@@ -2598,3 +2598,19 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Upgraded `filteredFaculty` and `filteredCourses` with normalized punctuation-insensitive and multi-word token search (`cleanName.includes(cleanQ)`, `allWordsMatch`, and clean short code comparison). Resolved the disappearing search result bug when typing dots or initials (e.g. `Md. A` -> `Md. As`).
   - Decoupled faculty list loading from department sync with `.limit(1000)` and robust fallback mappings.
   - Verified selection autofill for Teacher Name, Designation, Department, and Cover Page PDF compilation.
+
+
+---
+
+### 55. Universal Sub-Bar Left Accent Stripe System (`borderLeftWidth: 4.5`)
+- **Visual Hierarchy & Anti-Confusion Standard:** Whenever a parent/main bar expands or contains child sub-items, all child sub-bars must feature a prominent 4.5dp left accent stripe (`borderLeftWidth: 4.5`, `borderLeftColor: <sectorColor>`).
+- **Core Problem Solved:** Eliminates visual confusion where child items look like separate top-level bars. Users immediately recognize sub-bars as belonging inside the expanded category.
+- **Audited & Restored Components:**
+  - `ExploreScreen.tsx`: All child bars (`styles.childBar`) inside Academics, Campus Life, Services, and Community categories now render with `borderLeftWidth: 4.5` and their respective sector color (`SectorColors[s.id]`). Annex, CGPA, and PDF Maker tools also feature authentic study/pdfmaker left accent stripes.
+  - `CollapsibleSection.tsx`: Active chevron smoothly inherits the active sector color (`isOpen ? activeColor : C.textMuted`).
+  - `AdminDashboardScreen.tsx`: All 8 management sub-bars (`manageRow`) under the Manage section feature `borderLeftWidth: 4.5` and their individual feature color (`tile.fg`).
+  - `MedicalScreen.tsx`: Free dispensary medicine sub-bars (`medRow72`) feature `borderLeftWidth: 4.5` and `SectorColors.medical`. The main accordion header highlights with a 1.5dp medical border and tinted chevron when open.
+  - `DepartmentAuthoritiesDropdown.tsx`: Authority child bars (`authorityBar`) feature `borderLeftWidth: 4.5` and `SectorColors.faculty`.
+  - `FacultyProfileScreen.tsx`: Expandable sub-bars (`childBar58`) for Courses, Research, Degrees, and Experience feature `borderLeftWidth: 4.5` and their matching feature accent colors.
+  - `StudyHubScreen.tsx`: Expanded intake section rows (`catSecRow`) feature `borderLeftWidth: 4.5` and `SectorColors.study`.
+  - `CoverPageFormScreen.tsx`: Action bars under the export section feature `borderLeftWidth: 4.5` and `SectorColors.study`.

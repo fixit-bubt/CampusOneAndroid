@@ -1017,7 +1017,13 @@ export function MedicalScreen({ navigation }: any) {
             <TouchableOpacity
               style={[
                 styles.dispensaryHeaderBar72,
-                { backgroundColor: C.surface, borderColor: C.border },
+                {
+                  backgroundColor: C.surface,
+                  borderColor: dispensaryOpen
+                    ? (isDark ? `${MED_COLOR}85` : `${MED_COLOR}65`)
+                    : C.border,
+                  borderWidth: dispensaryOpen ? 1.5 : 1,
+                },
               ]}
               onPress={() => setDispensaryOpen((prev) => !prev)}
               activeOpacity={0.75}
@@ -1055,7 +1061,7 @@ export function MedicalScreen({ navigation }: any) {
               <Icon
                 name={dispensaryOpen ? 'chevU' : 'chevD'}
                 size={18}
-                color={C.textMuted}
+                color={dispensaryOpen ? MED_COLOR : C.textMuted}
               />
             </TouchableOpacity>
 
@@ -1116,7 +1122,12 @@ export function MedicalScreen({ navigation }: any) {
                         key={med.id}
                         style={[
                           styles.medRow72,
-                          { backgroundColor: C.surface, borderColor: C.border },
+                          {
+                            backgroundColor: C.surface,
+                            borderColor: C.border,
+                            borderLeftColor: MED_COLOR,
+                            borderLeftWidth: 4.5,
+                          },
                         ]}
                       >
                         <View style={[styles.medIndexBadge44, { backgroundColor: MED_BG }]}>
@@ -1998,6 +2009,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 16,
     borderWidth: 1,
+    borderLeftWidth: 4.5,
   } as ViewStyle,
   medIndexBadge44: {
     width: 44,
