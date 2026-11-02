@@ -2905,3 +2905,20 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`).
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
   - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.
+
+---
+
+### 67. Anti-Clutter & Subtitle Filler Removal Across Staff & Settings Screens (`NotifSettingsScreen.tsx`, `SettingsScreen.tsx`) (/zero-slop, /code-review-and-quality, /performance-optimization)
+- **Elimination of Explanatory Sub-text & Instructional Filler:**
+  - In `NotifSettingsScreen.tsx`:
+    - Removed `pageSubtitle` (`t.notif.prefsSubtitle`: *"Manage your notification preferences. Turn off what you don't need."*).
+    - Removed `catsSub` (`t.notif.onCount(onCount)`: *"4 on · tap to expand channels"*), leaving a clean, bold uppercase `CATEGORIES` section header vertically aligned with the action toggle.
+  - In `SettingsScreen.tsx` (Data & Cache modal):
+    - Removed explanatory modal paragraph (`t.mainx.dataAndCacheSub`: *"Cache stores temporary images and data locally for instant loading."*).
+    - Removed action subtext (`t.mainx.clearCacheSub`: *"Frees up local storage without signing you out"*).
+    - Vertically centered `sheetTitle` and `cacheInfoLabel` (`justifyContent: 'center'`) to maintain clean geometry matching the anti-clutter standard.
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
+  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore.
+  - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
+  - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.
