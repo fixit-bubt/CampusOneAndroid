@@ -7,7 +7,6 @@ import {
   TextInput,
   ScrollView,
   Modal,
-  Share,
   StyleSheet,
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -596,22 +595,6 @@ export function ProfileScreen({ navigation }: any) {
     }
   }
 
-  const handleShareProfile = useCallback(() => {
-    const meta = [
-      profile?.full_name ?? 'Campus Member',
-      profile?.student_id ? `ID: ${profile.student_id}` : null,
-      profile?.department ? `Dept: ${profile.department}` : null,
-      profile?.program ? `Program: ${profile.program}` : null,
-      profile?.intake ? `Intake: ${profile.intake}` : null,
-      profile?.section ? `Sec: ${profile.section}` : null,
-      profile?.blood_group ? `Blood: ${profile.blood_group}` : null,
-      'BUBT · CampusOne',
-    ]
-      .filter(Boolean)
-      .join(' · ');
-
-    Share.share({ message: meta });
-  }, [profile]);
 
   const roleHex = C[ROLE_TOKEN[role as keyof typeof ROLE_TOKEN] ?? 'roleStudent'];
   const roleBg  = hexAlpha(roleHex, isDark ? 0.2 : 0.12);
@@ -740,17 +723,6 @@ export function ProfileScreen({ navigation }: any) {
                   <Feather name="edit-3" size={15} color="#ffffff" />
                   <Text style={[styles.primaryActionTxt, { color: '#ffffff', fontFamily: FontFamily.jakartaBold }]}>
                     Edit Profile
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.secondaryActionBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
-                  onPress={handleShareProfile}
-                  activeOpacity={0.8}
-                >
-                  <Feather name="share-2" size={15} color={C.text} />
-                  <Text style={[styles.secondaryActionTxt, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>
-                    Share
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -1049,19 +1021,6 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   primaryActionTxt: {
     fontSize: 14,
-  } as TextStyle,
-  secondaryActionBtn: {
-    height: 48,
-    paddingHorizontal: 18,
-    borderRadius: 14,
-    borderWidth: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-  } as ViewStyle,
-  secondaryActionTxt: {
-    fontSize: 13.5,
   } as TextStyle,
 
   sectionLabel: {

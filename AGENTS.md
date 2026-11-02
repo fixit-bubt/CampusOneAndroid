@@ -287,7 +287,7 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
   - `BloodRequestDetailScreen`: `fulfillBtn` (58dp)
   - `BloodRequestScreen`: `submitBtn` (58dp), `input` (58dp), `inputWithIcon` (58dp), `dropdownCard` (58dp)
   - `FeatureScreen`: `ctaBtn` (58dp)
-  - `ProfileScreen`: Modal `submitBtn` (58dp)
+  - `ProfileScreen` & `EditProfileModal`: Full-width "Edit Profile" action button (redundant "Share" button removed); `EditProfileModal` transformed into a true full-screen page with edge-to-edge safe area top bar (`presentationStyle="fullScreen"`), 58dp animated `SegmentedTabs` for Academic / Contact / Privacy tabs, universal 58dp input bars (`inputBar`, `inputBar58`, `height: 58, borderRadius: 16`), 58dp dropdown selection bars for Department, Program, and Blood Donation eligibility with 58dp option rows (`modalRow58`), and 58dp bottom action buttons (`primaryBtn`, `cancelBtn`).
   - `NotifDetailScreen`: `actionBtn` (58dp), `secondaryBtn` (58dp)
   - `StudyHubScreen`: CR & section request sheets `submitBtn` (58dp)
   - `ManageStaffScreen`: Add staff modal `createBtn` (58dp)
