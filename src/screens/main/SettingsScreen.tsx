@@ -331,27 +331,6 @@ export function SettingsScreen({ navigation }: any) {
           </View>
         </TouchableOpacity>
 
-        {/* Role Workspace Quick Access (Staff / Admin) */}
-        {role === 'admin' && (
-          <SettingCard
-            icon="sliders"
-            iconColor={C.text}
-            label={t.mainx.adminDashboardTitle}
-            C={C}
-            onPress={() => navigation.navigate('AdminDashboard')}
-          />
-        )}
-
-        {role === 'staff' && (
-          <SettingCard
-            icon="tool"
-            iconColor={C.text}
-            label={t.mainx.staffWorkspaceTitle}
-            C={C}
-            onPress={() => navigation.navigate('StaffDashboard')}
-          />
-        )}
-
         {/* Section: APP SETTINGS */}
         <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
           {t.mainx.appSettingsSection}

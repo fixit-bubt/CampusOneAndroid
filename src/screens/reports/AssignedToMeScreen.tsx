@@ -24,22 +24,22 @@ const STATUSES = ['All', 'Open', 'In Progress', 'Resolved'] as const;
 type StatusFilter = (typeof STATUSES)[number];
 
 const CATEGORY_ICON: Record<string, { icon: string; fg: string }> = {
-  'Electrical':        { icon: 'bolt',     fg: Accent.gold },
-  'Plumbing':          { icon: 'droplets', fg: Accent.sky },
-  'Cleanliness':       { icon: 'sparkles', fg: Accent.teal },
-  'IT / Network':      { icon: 'wifi',     fg: Accent.purple },
-  'Furniture':         { icon: 'box',      fg: Accent.amber },
-  'Safety / Security': { icon: 'shield',   fg: Accent.red },
-  'Other':             { icon: 'sliders',  fg: Accent.slate },
+  'Electrical': { icon: 'bolt', fg: Accent.gold },
+  'Plumbing': { icon: 'droplets', fg: Accent.sky },
+  'Cleanliness': { icon: 'sparkles', fg: Accent.teal },
+  'IT / Network': { icon: 'wifi', fg: Accent.purple },
+  'Furniture': { icon: 'box', fg: Accent.amber },
+  'Safety / Security': { icon: 'shield', fg: Accent.red },
+  'Other': { icon: 'sliders', fg: Accent.slate },
 };
 
 function statusTone(C: any, status: string): { fg: string; bg: string } {
   switch (status) {
-    case 'In Progress': return { fg: C.info,      bg: C.infoBg };
-    case 'Resolved':    return { fg: C.success,   bg: C.successBg };
-    case 'Closed':      return { fg: C.textMuted, bg: C.surface2 };
-    case 'Rejected':    return { fg: C.danger,    bg: C.dangerBg };
-    default:            return { fg: C.warn,      bg: C.warnBg };
+    case 'In Progress': return { fg: C.info, bg: C.infoBg };
+    case 'Resolved': return { fg: C.success, bg: C.successBg };
+    case 'Closed': return { fg: C.textMuted, bg: C.surface2 };
+    case 'Rejected': return { fg: C.danger, bg: C.dangerBg };
+    default: return { fg: C.warn, bg: C.warnBg };
   }
 }
 
