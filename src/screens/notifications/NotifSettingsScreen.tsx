@@ -280,10 +280,7 @@ export function NotifSettingsScreen({ navigation }: any) {
           })()
         ) : null}
 
-        {/* Subtitle helper copy */}
-        <Text style={[styles.pageSubtitle, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-          {t.notif.prefsSubtitle}
-        </Text>
+
 
         {/* Master pause */}
         <TouchableOpacity
@@ -332,12 +329,9 @@ export function NotifSettingsScreen({ navigation }: any) {
 
         {/* Categories header */}
         <View style={styles.catsHeader}>
-          <View>
-            <Text style={[styles.catsTitle, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>{t.notif.categories}</Text>
-            <Text style={[styles.catsSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-              {t.notif.onCount(onCount)}
-            </Text>
-          </View>
+          <Text style={[styles.catsTitle, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
+            {t.notif.categories}
+          </Text>
           <TouchableOpacity onPress={() => toggleAll(!allOn)} style={{ padding: 4 }} activeOpacity={0.75}>
             <Text style={[styles.toggleAll, { color: C.brand, fontFamily: FontFamily.jakartaBold, opacity: paused ? 0.4 : 1 }]}>
               {allOn ? t.notif.turnAllOff : t.notif.turnAllOn}
@@ -535,7 +529,7 @@ const styles = StyleSheet.create({
   settingSub: { fontSize: 12, marginTop: 2 } as any,
   catsHeader: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     justifyContent: 'space-between',
     marginTop: 16,
     marginBottom: 10,

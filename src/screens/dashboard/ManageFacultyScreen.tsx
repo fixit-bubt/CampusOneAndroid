@@ -68,25 +68,37 @@ interface SyncLog {
   duration_ms?: number;
 }
 
-// BUBT Campus Buildings catalog
-const CAMPUS_BUILDINGS = [
-  { id: 'Building 1', label: 'Building 1', sub: 'Academic & Registrar Complex' },
-  { id: 'Building 2', label: 'Building 2', sub: 'Engineering & Applied Sciences Complex' },
-  { id: 'Building 3', label: 'Building 3', sub: 'Faculty of Business & Law Complex' },
-  { id: 'Building 4', label: 'Building 4', sub: 'Central Library, BBA & Admission Annex' },
-  { id: 'Other',      label: 'Other / Annex', sub: 'Off-Campus & Administrative Units' },
+// BUBT Academic Designations
+const FACULTY_DESIGNATIONS = [
+  'Professor',
+  'Associate Professor',
+  'Assistant Professor',
+  'Senior Lecturer',
+  'Lecturer',
+  'Teaching Assistant',
+  'Demonstrator',
+  'Adjunct / Visiting Faculty',
 ];
 
-// Standard blood groups with donor descriptions
+// BUBT Campus Buildings
+const CAMPUS_BUILDINGS = [
+  'Building 1',
+  'Building 2',
+  'Building 3',
+  'Building 4',
+  'Other / Annex',
+];
+
+// Standard Blood Groups
 const BLOOD_GROUPS = [
-  { id: 'A+',  label: 'A+',  sub: 'A Positive' },
-  { id: 'A-',  label: 'A-',  sub: 'A Negative' },
-  { id: 'B+',  label: 'B+',  sub: 'B Positive' },
-  { id: 'B-',  label: 'B-',  sub: 'B Negative' },
-  { id: 'O+',  label: 'O+',  sub: 'O Positive (Universal Donor)' },
-  { id: 'O-',  label: 'O-',  sub: 'O Negative (Rare Universal Donor)' },
-  { id: 'AB+', label: 'AB+', sub: 'AB Positive (Universal Recipient)' },
-  { id: 'AB-', label: 'AB-', sub: 'AB Negative' },
+  'A+',
+  'A-',
+  'B+',
+  'B-',
+  'O+',
+  'O-',
+  'AB+',
+  'AB-',
 ];
 
 // Memoized teacher card for 120 FPS virtualized FlatList rendering
@@ -169,6 +181,7 @@ export function ManageFacultyScreen({ navigation }: any) {
   const [selectedDeptId, setSelectedDeptId] = useState<string>('All');
   const [deptPickerVisible, setDeptPickerVisible] = useState(false);
   const [formDeptPickerVisible, setFormDeptPickerVisible] = useState(false);
+  const [designationPickerVisible, setDesignationPickerVisible] = useState(false);
   const [bloodPickerVisible, setBloodPickerVisible] = useState(false);
   const [buildingPickerVisible, setBuildingPickerVisible] = useState(false);
   const [query, setQuery] = useState('');
@@ -190,7 +203,7 @@ export function ManageFacultyScreen({ navigation }: any) {
   const [departmentId, setDepartmentId] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [designation, setDesignation] = useState('');
+  const [designation, setDesignation] = useState('Lecturer');
   const [shortCode, setShortCode] = useState('');
   const [building, setBuilding] = useState('Building 2');
   const [roomNumber, setRoomNumber] = useState('');
@@ -282,6 +295,10 @@ export function ManageFacultyScreen({ navigation }: any) {
         setSyncModalVisible(false);
         return true;
       }
+      if (designationPickerVisible) {
+        setDesignationPickerVisible(false);
+        return true;
+      }
       if (bloodPickerVisible) {
         setBloodPickerVisible(false);
         return true;
@@ -315,7 +332,7 @@ export function ManageFacultyScreen({ navigation }: any) {
 
     const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
     return () => sub.remove();
-  }, [syncModalVisible, bloodPickerVisible, buildingPickerVisible, formDeptPickerVisible, target, deptPickerVisible, query, selectedDeptId]);
+  }, [syncModalVisible, designationPickerVisible, bloodPickerVisible, buildingPickerVisible, formDeptPickerVisible, target, deptPickerVisible, query, selectedDeptId]);
 
   function openEdit(f: FacultyRow) {
     setIsNewTeacher(false);
@@ -324,7 +341,7 @@ export function ManageFacultyScreen({ navigation }: any) {
     setDepartmentId(f.department_id);
     setEmail(f.email ?? '');
     setPhone(f.phone ?? '');
-    setDesignation(f.designation ?? '');
+    setDesignation(f.designation ?? 'Lecturer');
     setShortCode(f.short_code ?? '');
     setBuilding(f.building ?? 'Building 2');
     setRoomNumber(f.room_number ?? '');
@@ -539,13 +556,13 @@ export function ManageFacultyScreen({ navigation }: any) {
             <View style={styles.syncIconWrap}>
               <AnimatedIcon name="refresh-cw" size={32} color={C.text} />
             </View>
-            <View style={{ flex: 1 }}>
+            <View style={{ flex: 1, justifyContent: 'center' }}>
               <Text style={[styles.syncTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                 {t.manage.bubtLiveSyncTitle}
               </Text>
               <Text style={[styles.syncSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
                 {lastSyncLog
-                  ? `Last crawl: ${formatRelativeTime(lastSyncLog.created_at || lastSyncLog.started_at || new Date().toISOString())} · Scanned ${lastSyncLog.items_scanned ?? lastSyncLog.total_scanned ?? 0} profiles`
+                  ? `Last crawl: ${formatRelativeTime(lastSyncLog.created_at || lastSyncLog.started_at || new Date().toISOString())}`
                   : 'Automated crawler for all 13 BUBT departments'}
               </Text>
             </View>
@@ -591,10 +608,7 @@ export function ManageFacultyScreen({ navigation }: any) {
           <View style={styles.dropdownIconTile}>
             <AnimatedIcon name="layers" size={32} color={C.text} />
           </View>
-          <View style={styles.dropdownBody}>
-            <Text style={[styles.dropdownLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-              {t.faculty2.selectDepartment}
-            </Text>
+          <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
             <Text style={[styles.dropdownValue, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
               {selectedDeptId === 'All'
                 ? t.faculty2.allDepartments
@@ -767,9 +781,6 @@ export function ManageFacultyScreen({ navigation }: any) {
                   >
                     {t.faculty2.allDepartments}
                   </Text>
-                  <Text style={[styles.pickerBarSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                    All 13 departments · {list.length} teachers
-                  </Text>
                 </View>
                 {selectedDeptId === 'All' ? (
                   <View style={[styles.checkCircle, { backgroundColor: SectorColors.faculty }]}>
@@ -781,7 +792,6 @@ export function ManageFacultyScreen({ navigation }: any) {
               </TouchableOpacity>
 
               {departments.map((d) => {
-                const count = countByDept[d.id] || 0;
                 const active = selectedDeptId === d.id;
                 return (
                   <TouchableOpacity
@@ -808,7 +818,7 @@ export function ManageFacultyScreen({ navigation }: any) {
                         color={C.text}
                       />
                     </View>
-                    <View style={{ flex: 1, minWidth: 0 }}>
+                    <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
                       <Text
                         style={[
                           styles.pickerBarText,
@@ -820,9 +830,6 @@ export function ManageFacultyScreen({ navigation }: any) {
                         numberOfLines={1}
                       >
                         {shortDept(d.name)}
-                      </Text>
-                      <Text style={[styles.pickerBarSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                        {d.branch} · {count} teachers
                       </Text>
                     </View>
                     {active ? (
@@ -907,7 +914,7 @@ export function ManageFacultyScreen({ navigation }: any) {
                         color={C.text}
                       />
                     </View>
-                    <View style={{ flex: 1, minWidth: 0 }}>
+                    <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
                       <Text
                         style={[
                           styles.pickerBarText,
@@ -919,9 +926,6 @@ export function ManageFacultyScreen({ navigation }: any) {
                         numberOfLines={1}
                       >
                         {shortDept(d.name)}
-                      </Text>
-                      <Text style={[styles.pickerBarSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                        {d.branch}
                       </Text>
                     </View>
                     {active ? (
@@ -939,6 +943,98 @@ export function ManageFacultyScreen({ navigation }: any) {
             <TouchableOpacity
               style={[styles.sheetCloseBtn, { borderColor: C.border }]}
               onPress={() => setFormDeptPickerVisible(false)}
+            >
+              <Text style={[styles.sheetCloseTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                Close
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Designation Picker Modal */}
+      <Modal
+        visible={designationPickerVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setDesignationPickerVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.modalOverlay}
+        >
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setDesignationPickerVisible(false)}
+          />
+          <View style={[styles.sheetCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <View style={styles.sheetHandle}>
+              <View style={[styles.sheetHandleBar, { backgroundColor: C.border }]} />
+            </View>
+
+            <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              Select Designation
+            </Text>
+
+            <ScrollView
+              style={{ maxHeight: 420 }}
+              contentContainerStyle={{ paddingBottom: 10 }}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              {FACULTY_DESIGNATIONS.map((d) => {
+                const active = designation === d;
+                return (
+                  <TouchableOpacity
+                    key={d}
+                    style={[
+                      styles.pickerBar,
+                      {
+                        backgroundColor: active
+                          ? (isDark ? 'rgba(79, 70, 229, 0.16)' : 'rgba(79, 70, 229, 0.08)')
+                          : C.surface2,
+                        borderColor: active ? SectorColors.faculty : C.border,
+                      },
+                    ]}
+                    onPress={() => {
+                      setDesignation(d);
+                      setDesignationPickerVisible(false);
+                    }}
+                    activeOpacity={0.75}
+                  >
+                    <View style={styles.pickerIconTile}>
+                      <AnimatedIcon name="award" size={32} color={C.text} />
+                    </View>
+                    <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
+                      <Text
+                        style={[
+                          styles.pickerBarText,
+                          {
+                            color: active ? SectorColors.faculty : C.text,
+                            fontFamily: FontFamily.jakartaBold,
+                          },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {d}
+                      </Text>
+                    </View>
+                    {active ? (
+                      <View style={[styles.checkCircle, { backgroundColor: SectorColors.faculty }]}>
+                        <Feather name="check" size={13} color="#fff" />
+                      </View>
+                    ) : (
+                      <View style={[styles.emptyCircle, { borderColor: C.border }]} />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            <TouchableOpacity
+              style={[styles.sheetCloseBtn, { borderColor: C.border }]}
+              onPress={() => setDesignationPickerVisible(false)}
             >
               <Text style={[styles.sheetCloseTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                 Close
@@ -980,46 +1076,43 @@ export function ManageFacultyScreen({ navigation }: any) {
               keyboardShouldPersistTaps="handled"
             >
               {BLOOD_GROUPS.map((bg) => {
-                const active = bloodGroup === bg.id;
+                const active = bloodGroup === bg;
                 return (
                   <TouchableOpacity
-                    key={bg.id}
+                    key={bg}
                     style={[
                       styles.pickerBar,
                       {
                         backgroundColor: active
-                          ? (isDark ? 'rgba(239, 68, 68, 0.16)' : 'rgba(239, 68, 68, 0.08)')
+                          ? (isDark ? 'rgba(79, 70, 229, 0.16)' : 'rgba(79, 70, 229, 0.08)')
                           : C.surface2,
-                        borderColor: active ? C.danger : C.border,
+                        borderColor: active ? SectorColors.faculty : C.border,
                       },
                     ]}
                     onPress={() => {
-                      setBloodGroup(bg.id);
+                      setBloodGroup(bg);
                       setBloodPickerVisible(false);
                     }}
                     activeOpacity={0.75}
                   >
                     <View style={styles.pickerIconTile}>
-                      <AnimatedIcon name="droplet" size={32} color={C.danger} />
+                      <AnimatedIcon name="droplet" size={32} color={C.text} />
                     </View>
-                    <View style={{ flex: 1, minWidth: 0 }}>
+                    <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
                       <Text
                         style={[
                           styles.pickerBarText,
                           {
-                            color: active ? C.danger : C.text,
+                            color: active ? SectorColors.faculty : C.text,
                             fontFamily: FontFamily.jakartaBold,
                           },
                         ]}
                       >
-                        {bg.label}
-                      </Text>
-                      <Text style={[styles.pickerBarSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                        {bg.sub}
+                        {bg}
                       </Text>
                     </View>
                     {active ? (
-                      <View style={[styles.checkCircle, { backgroundColor: C.danger }]}>
+                      <View style={[styles.checkCircle, { backgroundColor: SectorColors.faculty }]}>
                         <Feather name="check" size={13} color="#fff" />
                       </View>
                     ) : (
@@ -1074,10 +1167,10 @@ export function ManageFacultyScreen({ navigation }: any) {
               keyboardShouldPersistTaps="handled"
             >
               {CAMPUS_BUILDINGS.map((b) => {
-                const active = building === b.id;
+                const active = building === b;
                 return (
                   <TouchableOpacity
-                    key={b.id}
+                    key={b}
                     style={[
                       styles.pickerBar,
                       {
@@ -1088,7 +1181,7 @@ export function ManageFacultyScreen({ navigation }: any) {
                       },
                     ]}
                     onPress={() => {
-                      setBuilding(b.id);
+                      setBuilding(b);
                       setBuildingPickerVisible(false);
                     }}
                     activeOpacity={0.75}
@@ -1096,7 +1189,7 @@ export function ManageFacultyScreen({ navigation }: any) {
                     <View style={styles.pickerIconTile}>
                       <AnimatedIcon name="home" size={32} color={C.text} />
                     </View>
-                    <View style={{ flex: 1, minWidth: 0 }}>
+                    <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
                       <Text
                         style={[
                           styles.pickerBarText,
@@ -1106,10 +1199,7 @@ export function ManageFacultyScreen({ navigation }: any) {
                           },
                         ]}
                       >
-                        {b.label}
-                      </Text>
-                      <Text style={[styles.pickerBarSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                        {b.sub}
+                        {b}
                       </Text>
                     </View>
                     {active ? (
@@ -1247,6 +1337,24 @@ export function ManageFacultyScreen({ navigation }: any) {
                 placeholderTextColor={C.textMuted}
               />
 
+              {/* Designation Dropdown (58dp) */}
+              <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>DESIGNATION</Text>
+              <TouchableOpacity
+                style={[styles.formDropdownBar, { backgroundColor: C.surface, borderColor: C.border }]}
+                onPress={() => setDesignationPickerVisible(true)}
+                activeOpacity={0.75}
+              >
+                <View style={styles.formDropdownIconTile}>
+                  <AnimatedIcon name="award" size={22} color={C.text} />
+                </View>
+                <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
+                  <Text style={[styles.formDropdownValue, { color: designation ? C.text : C.textMuted, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                    {designation || 'Select Designation'}
+                  </Text>
+                </View>
+                <Feather name="chevron-down" size={18} color={C.textMuted} />
+              </TouchableOpacity>
+
               {/* Routine Initial (58dp) & Blood Group Dropdown (58dp) */}
               <View style={{ flexDirection: 'row', gap: 10 }}>
                 <View style={{ flex: 1 }}>
@@ -1269,7 +1377,7 @@ export function ManageFacultyScreen({ navigation }: any) {
                     activeOpacity={0.75}
                   >
                     <View style={styles.formDropdownIconTile}>
-                      <AnimatedIcon name="droplet" size={20} color={C.danger} />
+                      <AnimatedIcon name="droplet" size={20} color={C.text} />
                     </View>
                     <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
                       <Text style={[styles.formDropdownValue, { color: bloodGroup ? C.text : C.textMuted, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -1280,16 +1388,6 @@ export function ManageFacultyScreen({ navigation }: any) {
                   </TouchableOpacity>
                 </View>
               </View>
-
-              {/* Designation (58dp) */}
-              <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>DESIGNATION</Text>
-              <TextInput
-                style={[styles.field, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                value={designation}
-                onChangeText={setDesignation}
-                placeholder="Assistant Professor / Lecturer"
-                placeholderTextColor={C.textMuted}
-              />
 
               {/* Campus Building Dropdown (58dp) */}
               <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>CAMPUS BUILDING</Text>
@@ -1335,7 +1433,7 @@ export function ManageFacultyScreen({ navigation }: any) {
               </View>
 
               {/* Counseling Hours (58dp) */}
-              <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>COUNSELING HOURS (CH/TuH)</Text>
+              <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>COUNSELING HOURS</Text>
               <TextInput
                 style={[styles.field, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                 value={counselingHours}
@@ -1441,7 +1539,7 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   syncCardTop: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: 12,
     marginBottom: 12,
   } as ViewStyle,
@@ -1494,18 +1592,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
-  dropdownBody: {
-    flex: 1,
-    minWidth: 0,
-  } as ViewStyle,
-  dropdownLabel: {
-    fontSize: 11,
-    letterSpacing: 0.3,
-    textTransform: 'uppercase',
-  } as TextStyle,
   dropdownValue: {
-    fontSize: 13.5,
-    marginTop: 2,
+    fontSize: 14,
   } as TextStyle,
 
   // 58dp Search Bar
@@ -1650,7 +1738,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   } as TextStyle,
 
-  // Universal 72dp Picker Bars
+  // Universal 72dp Picker Bars (Clean Titles, Vertically Centered)
   pickerBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1668,11 +1756,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   } as ViewStyle,
   pickerBarText: {
-    fontSize: 14,
-  } as TextStyle,
-  pickerBarSub: {
-    fontSize: 11.5,
-    marginTop: 2,
+    fontSize: 14.5,
   } as TextStyle,
   checkCircle: {
     width: 22,

@@ -502,24 +502,18 @@ export function SettingsScreen({ navigation }: any) {
             <View style={styles.sheetIconWrap}>
               <AnimatedIcon name="hard-drive" family="feather" size={32} color={C.text} />
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+            <View style={{ flex: 1, justifyContent: 'center' }}>
+              <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]} numberOfLines={1}>
                 {t.mainx.dataAndCache}
-              </Text>
-              <Text style={[styles.sheetSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                {t.mainx.dataAndCacheSub}
               </Text>
             </View>
           </View>
 
           <View style={[styles.cacheInfoBox, { backgroundColor: C.bg, borderColor: C.border }]}>
             <View style={styles.cacheInfoRow}>
-              <View style={{ flex: 1 }}>
+              <View style={{ flex: 1, justifyContent: 'center' }}>
                 <Text style={[styles.cacheInfoLabel, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                   {t.mainx.cacheSize}
-                </Text>
-                <Text style={[styles.cacheInfoDesc, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                  {t.mainx.clearCacheSub}
                 </Text>
               </View>
               <View style={[styles.sizeBadge, { backgroundColor: C.surface2 }]}>
