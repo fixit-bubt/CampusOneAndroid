@@ -16,7 +16,7 @@ import type { SectorKey } from '../../theme';
 
 // Maps sector id → app navigator route name
 const SECTOR_ROUTE: Record<SectorKey, string> = {
-  reports:   'ReportForm',
+  reports:   'MyReports',
   lostfound: 'LostFoundBrowse',
   clubs:     'Clubs',
   events:    'EventsBrowse',
@@ -63,7 +63,7 @@ const SECTORS: { id: SectorKey; en: string; dEn: string }[] = [
 // Sectors a staff (maintenance) account sees in Explore - mirrors the web staff
 // nav. Everything else (Study Hub, Clubs, Jobs, Events, Faculty, Calendar,
 // Routines, Cover Page, Reports-create) stays student/admin-only.
-const STAFF_SECTORS: SectorKey[] = ['bus', 'prayer', 'announce', 'medical', 'market', 'ride', 'blood'];
+const STAFF_SECTORS: SectorKey[] = ['reports', 'bus', 'prayer', 'announce', 'medical', 'market', 'ride', 'blood'];
 
 // Groups sectors into labeled, collapsible sections instead of one long flat
 // list - mirrors the web app's sidebar grouping (Academics / Campus Life /
@@ -71,7 +71,7 @@ const STAFF_SECTORS: SectorKey[] = ['bus', 'prayer', 'announce', 'medical', 'mar
 // the current role (e.g. Academics for staff) simply isn't rendered.
 const GROUP_ACADEMICS: SectorKey[] = ['study', 'routines', 'calendar', 'faculty', 'coverpage'];
 const GROUP_CAMPUS_LIFE: SectorKey[] = ['clubs', 'events', 'announce', 'prayer', 'jobs'];
-const GROUP_SERVICES: SectorKey[] = ['medical', 'bus', 'lostfound'];
+const GROUP_SERVICES: SectorKey[] = ['reports', 'medical', 'bus', 'lostfound'];
 const GROUP_COMMUNITY: SectorKey[] = ['market', 'ride', 'blood', 'directory'];
 
 export function ExploreScreen({ navigation }: any) {

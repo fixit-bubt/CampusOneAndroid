@@ -468,6 +468,7 @@ export const bn: Dict = {
     deleteTitle: 'রিপোর্ট মুছবেন',
     deleteBody: 'রিপোর্টটি স্থায়ীভাবে মুছে যাবে। চালিয়ে যাবেন?',
     view: 'দেখুন',
+    filterStatus: 'স্ট্যাটাস ফিল্টার',
     resultCount: (n: number) => `${n} টি রিপোর্ট`,
   },
 

@@ -1,0 +1,190 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="d1_bg" x1="15%" y1="0%" x2="85%" y2="100%">
+      <stop offset="0%" stop-color="#1f65ff"/>
+      <stop offset="40%" stop-color="#1450f0"/>
+      <stop offset="100%" stop-color="#04269e"/>
+    </linearGradient>
+
+    <!-- Ambient Glow -->
+    <radialGradient id="d1_glow" cx="40%" cy="30%" r="75%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.25"/>
+      <stop offset="60%" stop-color="#2d68ff" stop-opacity="0.04"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Curved Ambient Shadow at bottom -->
+    <linearGradient id="d1_arc" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#031657" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#010a2e" stop-opacity="0.75"/>
+    </linearGradient>
+
+    <!-- Mortarboard Diamond Top Face -->
+    <linearGradient id="d1_capTop" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="70%" stop-color="#f2f6ff"/>
+      <stop offset="100%" stop-color="#dce8fd"/>
+    </linearGradient>
+
+    <!-- Mortarboard Rim Left Edge -->
+    <linearGradient id="d1_capRimL" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#d7e5fd"/>
+      <stop offset="100%" stop-color="#abc8f8"/>
+    </linearGradient>
+
+    <!-- Mortarboard Rim Right Edge -->
+    <linearGradient id="d1_capRimR" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c1d8fb"/>
+      <stop offset="100%" stop-color="#8bb4f5"/>
+    </linearGradient>
+
+    <!-- C Front Face Gradient -->
+    <linearGradient id="d1_cFront" x1="30%" y1="0%" x2="70%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="45%" stop-color="#ffffff"/>
+      <stop offset="85%" stop-color="#eaf1fd"/>
+      <stop offset="100%" stop-color="#d6e4fc"/>
+    </linearGradient>
+
+    <!-- C 3D Underbelly / Bottom Extrusion -->
+    <linearGradient id="d1_cExtrusion" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#b6d1fa"/>
+      <stop offset="50%" stop-color="#8cb6f6"/>
+      <stop offset="100%" stop-color="#598ff0"/>
+    </linearGradient>
+
+    <!-- 1 Front Face -->
+    <linearGradient id="d1_oneFront" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="60%" stop-color="#f8faff"/>
+      <stop offset="100%" stop-color="#e2edfd"/>
+    </linearGradient>
+
+    <!-- 1 3D Bottom Shelf -->
+    <linearGradient id="d1_oneExtrusion" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a6c8f8"/>
+      <stop offset="100%" stop-color="#6ea1f3"/>
+    </linearGradient>
+
+    <!-- 1 Inner Shadow Cutout -->
+    <linearGradient id="d1_oneBevel" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#cfdff8"/>
+      <stop offset="100%" stop-color="#93b9f4"/>
+    </linearGradient>
+
+    <!-- Tassel Gradient -->
+    <linearGradient id="d1_tassel" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="60%" stop-color="#e5effe"/>
+      <stop offset="100%" stop-color="#bdd6fa"/>
+    </linearGradient>
+
+    <!-- Rim Highlight -->
+    <linearGradient id="d1_rim" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.4"/>
+      <stop offset="50%" stop-color="#ffffff" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Master Shadow Filter -->
+    <filter id="d1_shadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="18" stdDeviation="16" flood-color="#02103f" flood-opacity="0.45"/>
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#02103f" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <!-- Squircle Canvas -->
+  <rect width="512" height="512" rx="116" fill="url(#d1_bg)"/>
+  <rect width="512" height="512" rx="116" fill="url(#d1_glow)"/>
+  <path d="M 0,380 C 120,340 380,390 512,465 L 512,512 L 0,512 Z" fill="url(#d1_arc)" opacity="0.5"/>
+  <rect x="2" y="2" width="508" height="508" rx="114" fill="none" stroke="url(#d1_rim)" stroke-width="2"/>
+
+  <!-- Main Emblem -->
+  <g filter="url(#d1_shadow)">
+    <!-- 3D Extrusion of C (Underbelly floor) -->
+    <!-- Extrudes downward-rightward from the bottom of C -->
+    <path d="M 166,396 
+             C 198,426 248,446 292,436 
+             L 292,420 
+             C 256,430 214,412 186,386 
+             L 166,396 Z" 
+          fill="url(#d1_cExtrusion)"/>
+    
+    <!-- 3D Extrusion of "1" Bottom -->
+    <polygon points="310,422 368,396 368,410 310,436" fill="url(#d1_oneExtrusion)"/>
+
+    <!-- Main "C" Body (Front Facet) -->
+    <path d="M 216,146
+             C 142,164 76,224 76,302
+             C 76,370 128,424 212,436
+             L 292,420
+             L 292,364
+             C 278,366 256,366 238,363
+             C 174,354 146,324 146,296
+             C 146,252 182,216 238,206
+             L 278,198
+             L 254,146
+             Z" 
+          fill="url(#d1_cFront)"/>
+
+    <!-- C Lower Facet Ambient Lighting Split (The iconic 3D fold on the C) -->
+    <path d="M 76,302
+             C 76,370 128,424 212,436
+             L 292,420
+             L 292,364
+             C 278,366 256,366 238,363
+             C 202,357 176,342 160,320
+             L 90,270
+             C 80,280 76,290 76,302 Z"
+          fill="#d4e3fc" opacity="0.38"/>
+
+    <!-- Number "1" (Standing tall inside "C") -->
+    <!-- 1 Right Side Extrusion / Bevel Facet -->
+    <polygon points="368,162 384,170 384,386 368,396" fill="url(#d1_oneBevel)"/>
+
+    <!-- 1 Front Face -->
+    <!-- Top triangular beak hooks from left down into opening, stem drops straight to baseline -->
+    <path d="M 266,242
+             L 266,282
+             L 310,248
+             L 310,422
+             L 368,396
+             L 368,162
+             L 316,162
+             L 266,242
+             Z"
+          fill="url(#d1_oneFront)"/>
+
+    <!-- Mortarboard Cap (Graduation Diamond Plane) -->
+    <!-- Cap Thickness / Under-Rim -->
+    <polygon points="184,130 356,194 356,206 184,142" fill="url(#d1_capRimL)"/>
+    <polygon points="356,194 444,150 444,162 356,206" fill="url(#d1_capRimR)"/>
+
+    <!-- Cap Top Diamond Plane (True Isometric Rhombus) -->
+    <polygon points="184,130 272,86 444,150 356,194" fill="url(#d1_capTop)"/>
+
+    <!-- Cap Button -->
+    <ellipse cx="314" cy="140" rx="9" ry="6" fill="#f8faff" stroke="#bad4fb" stroke-width="1.5"/>
+
+    <!-- Tassel Cord Draping gracefully -->
+    <path d="M 314,140
+             C 365,142 410,154 424,174
+             C 428,182 426,198 426,226"
+          fill="none" stroke="#e1edfe" stroke-width="5" stroke-linecap="round"/>
+
+    <!-- Tassel Ferrule Ring -->
+    <rect x="419" y="224" width="14" height="6" rx="2.5" fill="#bad3f8"/>
+
+    <!-- Tassel Bell -->
+    <path d="M 420,230
+             C 416,242 414,262 419,270
+             C 422,275 430,275 433,270
+             C 438,262 436,242 432,230
+             Z"
+          fill="url(#d1_tassel)"/>
+    <line x1="426" y1="233" x2="426" y2="269" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="423" y1="235" x2="421" y2="265" stroke="#a3c4f7" stroke-width="1" stroke-linecap="round"/>
+    <line x1="429" y1="235" x2="431" y2="265" stroke="#a3c4f7" stroke-width="1" stroke-linecap="round"/>
+  </g>
+</svg>

@@ -467,6 +467,7 @@ export const en = {
     deleteTitle: 'Delete report',
     deleteBody: 'This removes the report permanently. Continue?',
     view: 'View',
+    filterStatus: 'Filter by Status',
     resultCount: (n: number) => `${n} report${n === 1 ? '' : 's'}`,
   },
 

@@ -1,0 +1,165 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 360" width="100%" height="100%">
+  <!-- Icon Mark on left -->
+  <g transform="translate(40, 20) scale(0.625)">
+    
+  <linearGradient id="bg_grad" x1="15%" y1="0%" x2="85%" y2="100%">
+    <stop offset="0%" stop-color="#2366ff"/>
+    <stop offset="40%" stop-color="#1450f0"/>
+    <stop offset="100%" stop-color="#04269e"/>
+  </linearGradient>
+  <radialGradient id="bg_glow" cx="40%" cy="30%" r="75%">
+    <stop offset="0%" stop-color="#ffffff" stop-opacity="0.25"/>
+    <stop offset="60%" stop-color="#2d68ff" stop-opacity="0.04"/>
+    <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+  </radialGradient>
+  <linearGradient id="bg_arc" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#031657" stop-opacity="0.3"/>
+    <stop offset="100%" stop-color="#010a2e" stop-opacity="0.75"/>
+  </linearGradient>
+  <rect width="512" height="512" rx="116" fill="url(#bg_grad)"/>
+  <rect width="512" height="512" rx="116" fill="url(#bg_glow)"/>
+  <path d="M 0,380 C 120,340 380,390 512,465 L 512,512 L 0,512 Z" fill="url(#bg_arc)" opacity="0.45"/>
+  <rect x="2" y="2" width="508" height="508" rx="114" fill="none" stroke="#ffffff" stroke-opacity="0.35" stroke-width="2"/>
+
+    
+    <defs>
+      <!-- Gradients -->
+      <linearGradient id="c_grad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#ffffff"/>
+        <stop offset="50%" stop-color="#ffffff"/>
+        <stop offset="85%" stop-color="#eaf2fe"/>
+        <stop offset="100%" stop-color="#d4e4fc"/>
+      </linearGradient>
+
+      <linearGradient id="c_extrusion" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#a8c8f8"/>
+        <stop offset="50%" stop-color="#7faef4"/>
+        <stop offset="100%" stop-color="#558ef0"/>
+      </linearGradient>
+
+      <linearGradient id="one_grad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#ffffff"/>
+        <stop offset="70%" stop-color="#f8faff"/>
+        <stop offset="100%" stop-color="#e2edfd"/>
+      </linearGradient>
+
+      <linearGradient id="one_bevel" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#cfdff8"/>
+        <stop offset="100%" stop-color="#93b9f4"/>
+      </linearGradient>
+
+      <linearGradient id="cap_top_grad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#ffffff"/>
+        <stop offset="65%" stop-color="#f2f6ff"/>
+        <stop offset="100%" stop-color="#dbe8fd"/>
+      </linearGradient>
+
+      <linearGradient id="tassel_grad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#ffffff"/>
+        <stop offset="60%" stop-color="#e5effe"/>
+        <stop offset="100%" stop-color="#bdd6fa"/>
+      </linearGradient>
+
+      <linearGradient id="gold_grad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#fef08a"/>
+        <stop offset="50%" stop-color="#facc15"/>
+        <stop offset="100%" stop-color="#ca8a04"/>
+      </linearGradient>
+
+      <!-- Drop Shadow -->
+      <filter id="emblem_shadow" x="-15%" y="-15%" width="130%" height="130%">
+        <feDropShadow dx="0" dy="16" stdDeviation="16" flood-color="#020e36" flood-opacity="0.45"/>
+        <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#020e36" flood-opacity="0.25"/>
+      </filter>
+    </defs>
+    
+    <g filter="url(#emblem_shadow)">
+      <!-- 3D Extrusion facets (for isometric / 3D variations) -->
+      <!-- 3D Floor Extrusions -->
+      
+      <path d="M 166,400 C 198,430 248,446 286,438 L 286,424 C 254,432 214,416 186,392 Z" fill="url(#c_extrusion)"/>
+      <polygon points="306,424 374,402 374,416 306,438" fill="url(#c_extrusion)"/>
+      <polygon points="374,162 388,170 388,406 374,416" fill="url(#one_bevel)"/>
+      
+
+      <!-- Main 'C' Body -->
+      <path d="M 216,146
+               C 138,166 74,232 74,310
+               C 74,386 134,436 218,438
+               L 286,438
+               L 286,370
+               L 226,370
+               C 174,370 144,338 144,308
+               C 144,262 182,220 238,208
+               L 280,200
+               L 252,146
+               Z"
+            fill="url(#c_grad)"/>
+
+      <!-- C Subtle Ambient Split Light -->
+      
+      <path d="M 74,310
+               C 74,386 134,436 218,438
+               L 286,438
+               L 286,370
+               L 226,370
+               C 192,370 168,354 154,332
+               L 88,278
+               C 78,288 74,298 74,310 Z"
+            fill="#d4e3fc" opacity="0.35"/>
+      
+
+      <!-- Main '1' Numeral -->
+      <path d="M 264,244
+               L 264,290
+               L 310,250
+               L 310,438
+               L 374,438
+               L 374,162
+               L 318,162
+               L 264,244
+               Z"
+            fill="url(#one_grad)"/>
+
+      <!-- Graduation Mortarboard Cap -->
+      <!-- Rim Underbelly -->
+      <polygon points="182,128 356,192 356,204 182,140" fill="#d7e5fd"/>
+      <polygon points="356,192 444,148 444,160 356,204" fill="#8bb4f5"/>
+
+      <!-- Diamond Face (Mathematically Parallel Rhombus) -->
+      <polygon points="182,128 270,84 444,148 356,192" fill="url(#cap_top_grad)"/>
+
+      <!-- Cap Center Button -->
+      <ellipse cx="313" cy="138" rx="8" ry="5.5" fill="#ffffff" stroke="#c0d7fd" stroke-width="1.5"/>
+
+      <!-- Tassel Cord -->
+      <path d="M 313,138
+               C 368,142 414,154 424,176
+               C 428,184 426,202 426,230"
+            fill="none" stroke="url(#tassel_grad)" stroke-width="5" stroke-linecap="round"/>
+
+      <!-- Tassel Ring -->
+      <rect x="419" y="226" width="14" height="6" rx="2.5" fill="#bad3f8"/>
+
+      <!-- Tassel Brush -->
+      <path d="M 420,232
+               C 416,244 414,264 418,272
+               C 421,277 431,277 434,272
+               C 438,264 436,244 432,232
+               Z"
+            fill="url(#tassel_grad)"/>
+      <line x1="426" y1="235" x2="426" y2="271" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="423" y1="237" x2="422" y2="267" stroke="#bad3f8" stroke-width="1" stroke-linecap="round"/>
+      <line x1="429" y1="237" x2="430" y2="267" stroke="#bad3f8" stroke-width="1" stroke-linecap="round"/>
+    </g>
+    
+  </g>
+
+  <!-- Typography: CampusOne -->
+  <g transform="translate(410, 230)">
+    <!-- "Campus" in Deep Navy / White depending on theme -->
+    <text x="0" y="0" font-family="'Plus Jakarta Sans', system-ui, -apple-system, sans-serif" font-size="140" font-weight="800" letter-spacing="-2" fill="#0f172a">Campus</text>
+    <!-- "One" in Electric Brand Blue -->
+    <text x="548" y="0" font-family="'Plus Jakarta Sans', system-ui, -apple-system, sans-serif" font-size="140" font-weight="800" letter-spacing="-2" fill="#2563eb">One</text>
+  </g>
+</svg>

@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Rich Royal Academic Blue -->
+    <linearGradient id="d4_bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e40af"/>
+      <stop offset="100%" stop-color="#172554"/>
+    </linearGradient>
+
+    <!-- Gold Tassel Accent Gradient -->
+    <linearGradient id="d4_gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="50%" stop-color="#facc15"/>
+      <stop offset="100%" stop-color="#ca8a04"/>
+    </linearGradient>
+
+    <filter id="d4_shadow" x="-10%" y="-10%" width="125%" height="125%">
+      <feDropShadow dx="0" dy="14" stdDeviation="14" flood-color="#020617" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+
+  <!-- Squircle Canvas -->
+  <rect width="512" height="512" rx="116" fill="url(#d4_bg)"/>
+  <rect x="3" y="3" width="506" height="506" rx="113" fill="none" stroke="#ffffff" stroke-opacity="0.2" stroke-width="2"/>
+
+  <g filter="url(#d4_shadow)">
+    <!-- Academic Shield / Ring "C" in pure pristine white -->
+    <path d="M 220,150
+             C 136,170 76,236 76,314
+             C 76,396 140,442 228,442
+             L 296,442
+             L 296,376
+             L 230,376
+             C 178,376 148,344 148,314
+             C 148,268 184,226 242,214
+             L 288,204
+             L 258,150
+             Z"
+          fill="#ffffff"/>
+
+    <!-- "1" Column in pristine white -->
+    <path d="M 264,244
+             L 264,292
+             L 316,252
+             L 316,442
+             L 384,442
+             L 384,160
+             L 326,160
+             L 264,244
+             Z"
+          fill="#ffffff"/>
+
+    <!-- Mortarboard Cap Diamond in Pristine White with Subtle Shadow -->
+    <polygon points="182,126 356,192 356,204 182,138" fill="#cbd5e1"/>
+    <polygon points="356,192 444,148 444,160 356,204" fill="#94a3b8"/>
+    <polygon points="182,126 270,82 444,148 356,192" fill="#ffffff"/>
+
+    <!-- Button & Gold Academic Tassel (representing academic honor & excellence) -->
+    <circle cx="313" cy="137" r="8" fill="url(#d4_gold)"/>
+    <path d="M 313,137 C 368,142 414,154 424,176 C 428,184 426,202 426,230"
+          fill="none" stroke="url(#d4_gold)" stroke-width="5" stroke-linecap="round"/>
+    <rect x="419" y="226" width="14" height="6" rx="3" fill="#ca8a04"/>
+    <path d="M 420,232
+             C 416,244 414,264 418,272
+             C 421,277 431,277 434,272
+             C 438,264 436,244 432,232
+             Z"
+          fill="url(#d4_gold)"/>
+  </g>
+</svg>

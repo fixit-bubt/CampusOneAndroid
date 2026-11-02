@@ -2641,3 +2641,25 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
 - **Verification Evidence:**
   - TypeScript Compilation: 0 errors across 236 source files (`tsc --noEmit`).
   - Unit Tests: 18/18 test suites passed, 138/138 tests green (`npm test`).
+
+---
+
+### 57. Campus Issues & Maintenance Reports Modernization (/zero-slop, /code-review-and-quality, /performance-optimization)
+- **Explore Screen Option Bar Restoration (`ExploreScreen.tsx`):**
+  - Restored `reports` ("Issue Reports") 72dp child option bar under `GROUP_SERVICES` alongside Medical, Bus, and Lost & Found with `SectorColors.reports` (`#ef4444`) and 4.5dp left accent stripe.
+  - Added `reports` to `STAFF_SECTORS` and mapped `SECTOR_ROUTE.reports = 'MyReports'` so tapping the option bar navigates directly to the user's report management hub.
+- **Campus Issues Board Revamp (`CampusIssuesScreen.tsx`):**
+  - Modern OLED Dark UI with strict edge-to-edge `useSafeAreaInsets()`.
+  - Replaced cramped top-right button with a prominent full-width 58dp Electric Blue action bar: `[ + Report an Issue ]`.
+  - Replaced 6 horizontal scrolling tablet pills and bulky search bar with a full-width 58dp Dropdown Button (`[ Status: All Statuses (N) ▾ ]`) that opens a bottom-sheet modal with 58dp selection rows.
+  - Cards feature a 4.5dp category color-coded left accent stripe, 32dp monochrome static category icons in transparent layout slots (no squircle backgrounds), and clear status badges.
+  - "Me Too" voting system with optimistic local feedback, active electric blue fill, and in-flight operation lock to prevent double-voting.
+  - Clean 4 UI states: `SkeletonList` placeholder loading, `LoadError` retry banner, informative empty state with action CTA, and populated feed.
+- **My Reports Management Revamp (`MyReportsScreen.tsx`):**
+  - Matched 1:1 design standard with 58dp Dual Tab Switcher (`Campus Board` vs `My Reports`), 58dp full-width report button, and 58dp status filter dropdown.
+  - Cards feature 4.5dp category stripes, 32dp monochrome static icons, `LiquidToggle` switch for instant Campus Board public visibility toggling, and 58dp `View Details >` navigation.
+- **Report Submission Overhaul (`ReportFormScreen.tsx`):**
+  - Eliminated chaotic 20+ scattered chips. Replaced with structured 72dp selection bars (`catBar72`, `bldgBar72`, `floorBar72`, `spaceBar72`) with 4.5dp colored left accent stripes.
+  - Integrated 4 bottom-sheet modals with 58dp item rows for Category, Building, Floor, and Space Type selection.
+  - Standardized form controls: 58dp title input, 58dp room number / gender toggle, 72dp photo upload bar, `LiquidToggle` for board visibility, and 58dp submit button.
+
