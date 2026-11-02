@@ -844,7 +844,7 @@ The mobile and web applications are actively pitched and presented to BUBT admin
   - **Visual Media Pipeline & Fallback Resolution:** Resolves bundled varsity banner assets (`hackathon-2026.jpg`, `convocation-2026.jpg`, `exam-routine.jpg`, `blood-drive.jpg`) or remote URLs, equipped with native `onError` fallback to styled sector icon boxes.
   - **Robust PostgREST Relations & Fallback Merge:** Normalizes array/object `cp.clubs` relation join and guarantees at least 4 feed items via fallback merge if database entries are sparse.
   - **Detail Routing:** 1-tap navigation directly to `AnnouncementDetail`, `EventDetail`, or `ClubDetail`.
-- **Role Scoping:** `CampusToday` is retained exclusively for `StaffDashboardScreen` and `AdminDashboardScreen` where it continues to serve as an at-a-glance operational status widget. Lost & Found remains 100% accessible in the `Explore` tab.
+- **Role Scoping:** `CampusToday` is retained on `AdminDashboardScreen` for triage overview. On `StaffDashboardScreen`, `CampusToday` (transit/prayer/clinic mini-grid) and blood banners are completely removed to keep Staff Home 100% focused on maintenance workorders and task progression; campus life services remain directly accessible via the `Explore` tab. Lost & Found remains 100% accessible in the `Explore` tab.
 
 ### 13.11 Student Directory Architecture & Peer Discovery (`DirectoryScreen.tsx` & `StudentProfileScreen.tsx`)
 - **Segmented Discovery Track Switcher:** Full-width segmented track (`C.surface2`, `borderRadius: 14`, `padding: 3`) with native spring sliding indicator physics (`Animated.spring`, `tension: 68`, `friction: 10`, `useNativeDriver: true`) matching `LostFoundBrowseScreen.tsx`. Features three dedicated discovery scopes:
@@ -1032,10 +1032,13 @@ Whenever the user instructs to "update memorys", the agent MUST synchronously up
 
 ### 18.1 Staff Workflow & Dispatch Mechanics
 - **Staff Home Routing:** Role `'staff'` lands directly on `StaffDashboardScreen.tsx` with live workload counters (`Assigned`, `In Progress`, `Resolved`).
+- **Staff Hero Identity Card:** Displays the staff member's avatar, verified name, department & trade badge (e.g. `Electrical & Mechanical`), and live active workorder pill badge.
+- **58dp Segmented Filter Tabs:** High-ergonomics 3-tab switcher (`All`, `Active`, `Done`) providing immediate 1-tap filtering across assigned workorders.
 - **Issue Lifecycle Actions:**
   - `Start Work`: Optimistically updates issue status from `Open` to `In Progress`.
   - `Mark Resolved`: Optimistically updates status to `Resolved`.
   - `Decline`: Prompts confirmation and executes `decline_report(reportId)` RPC, atomically removing `assigned_staff_id` and reverting status to `Open` for admin re-dispatch.
+- **Zero-Bloat Staff Workspace:** General campus transit, prayer times, medical clinic info, and blood requests are stripped from Staff Home (eliminating 2-column mini grid slop) and housed strictly in the `Explore` tab, with a clean full-width shortcut banner at the bottom of the dashboard.
 - **Cross-RLS Reporter Resolution:** Staff queries use `fetchPeople` via `directory_profiles()` to retrieve student reporter names without hitting `profiles` RLS blockades.
 - **Maintenance-Focused Explore:** Staff accounts are filtered to maintenance-relevant sectors (`bus`, `prayer`, `announce`, `medical`, `market`, `ride`, `blood`). Academic tools, student directories, anonymous boards, and chatbot are excluded.
 

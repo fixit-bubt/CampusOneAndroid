@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
@@ -9,6 +9,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { TopBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
+import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { useToast } from '../../components/ui/Toast';
 import { FontFamily, Layout, Accent } from '../../theme';
 import { useT } from '../../i18n';
@@ -17,7 +18,6 @@ import { fetchPeople } from '../../services/peopleService';
 import { useAuth } from '../../store/authStore';
 import { getUnreadNotificationCount } from '../../services/notificationsService';
 import { declineReport } from '../../services/reportsService';
-import { CampusToday } from '../../components/CampusToday';
 
 const ISSUE_MAP: Record<string, { icon: string; fg: string }> = {
   electrical: { icon: 'bolt',     fg: Accent.gold },
@@ -29,8 +29,6 @@ const ISSUE_MAP: Record<string, { icon: string; fg: string }> = {
   other:      { icon: 'sliders',  fg: Accent.slate },
 };
 
-// DB categories include multi-word values ("IT / Network", "Safety / Security")
-// that don't lowercase straight to an ISSUE_MAP key.
 function issueKey(cat?: string): string {
   const c = (cat ?? '').toLowerCase();
   if (c.includes('it') || c.includes('network')) return 'it_network';
@@ -42,7 +40,6 @@ function issueKey(cat?: string): string {
   return 'other';
 }
 
-// Status colors, light + dark aware via C.
 function statusTone(C: any, status: string): { fg: string; bg: string } {
   switch (status) {
     case 'In Progress': return { fg: C.info,      bg: C.infoBg };
@@ -76,8 +73,9 @@ interface Report {
   location?: string;
 }
 
-function StatCard({ icon, fg, num, label, C }: any) {
-  const bg = `${fg}1a`;
+type FilterTab = 'all' | 'active' | 'resolved';
+
+function StatCard({ icon, num, label, C }: { icon: string; num: number; label: string; C: any }) {
   return (
     <View style={[styles.statCard, { backgroundColor: C.surface, borderColor: C.border }]}>
       <View style={styles.statIcon}>
@@ -89,11 +87,23 @@ function StatCard({ icon, fg, num, label, C }: any) {
   );
 }
 
-function ReportCard({ r, C, onAdvance, onDecline, onPress }: { r: Report; C: any; onAdvance: (id: string, status: string) => void; onDecline: (id: string) => void; onPress: () => void }) {
+function ReportCard({
+  r,
+  C,
+  onAdvance,
+  onDecline,
+  onPress,
+}: {
+  r: Report;
+  C: any;
+  onAdvance: (id: string, status: string) => void;
+  onDecline: (id: string) => void;
+  onPress: () => void;
+}) {
   const t = useT();
   const issueConf = ISSUE_MAP[issueKey(r.category)] ?? ISSUE_MAP.other;
   const statusConf = statusTone(C, r.status);
-  const issueBg = `${issueConf.fg}1e`;
+
   return (
     <View style={[styles.reportCard, { backgroundColor: C.surface, borderColor: C.border }]}>
       <TouchableOpacity style={styles.reportTop} onPress={onPress} activeOpacity={0.75}>
@@ -106,47 +116,78 @@ function ReportCard({ r, C, onAdvance, onDecline, onPress }: { r: Report; C: any
           </Text>
           <View style={styles.reportLoc}>
             <Icon name="pin" size={13} color={C.textMuted} />
-            <Text style={[styles.reportLocTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{r.location}</Text>
+            <Text style={[styles.reportLocTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+              {r.location || 'BUBT Campus'}
+            </Text>
           </View>
         </View>
         <View style={[styles.statusPill, { backgroundColor: statusConf.bg }]}>
           <View style={[styles.statusDot, { backgroundColor: statusConf.fg }]} />
-          <Text style={[styles.statusTxt, { color: statusConf.fg, fontFamily: FontFamily.jakartaBold }]}>{t.status[r.status]}</Text>
+          <Text style={[styles.statusTxt, { color: statusConf.fg, fontFamily: FontFamily.jakartaBold }]}>
+            {t.status[r.status] ?? r.status}
+          </Text>
         </View>
       </TouchableOpacity>
 
       <View style={styles.reportMeta}>
-        {r.reporter_name && (
+        {r.reporter_name ? (
           <View style={styles.byRow}>
             <Avatar name={r.reporter_name} size="xs" />
-            <Text style={[styles.byName, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{r.reporter_name}</Text>
+            <Text style={[styles.byName, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+              {r.reporter_name}
+            </Text>
           </View>
-        )}
-        <Text style={[styles.reportTime, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{timeAgo(r.created_at)}</Text>
+        ) : null}
+        <Text style={[styles.reportTime, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+          {timeAgo(r.created_at)}
+        </Text>
       </View>
 
       {r.status === 'Open' && (
-        <TouchableOpacity style={[styles.actionBtn, { backgroundColor: C.infoBg }]} onPress={() => onAdvance(r.id, 'In Progress')} activeOpacity={0.75}>
-          <Icon name="pulse" size={15} color={C.info} />
-          <Text style={[styles.actionTxt, { color: C.info, fontFamily: FontFamily.jakartaBold }]}>{t.dash.startWork}</Text>
+        <TouchableOpacity
+          style={[styles.actionBtn, { backgroundColor: C.brand }]}
+          onPress={() => onAdvance(r.id, 'In Progress')}
+          activeOpacity={0.8}
+        >
+          <Icon name="pulse" size={16} color="#ffffff" />
+          <Text style={[styles.actionTxt, { color: '#ffffff', fontFamily: FontFamily.jakartaBold }]}>
+            {t.dash.startWork}
+          </Text>
         </TouchableOpacity>
       )}
+
       {r.status === 'In Progress' && (
-        <TouchableOpacity style={[styles.actionBtn, { backgroundColor: C.successBg }]} onPress={() => onAdvance(r.id, 'Resolved')} activeOpacity={0.75}>
-          <Icon name="check" size={15} color={C.success} />
-          <Text style={[styles.actionTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>{t.dash.markResolved}</Text>
+        <TouchableOpacity
+          style={[styles.actionBtn, { backgroundColor: C.success }]}
+          onPress={() => onAdvance(r.id, 'Resolved')}
+          activeOpacity={0.8}
+        >
+          <Icon name="check" size={16} color="#ffffff" />
+          <Text style={[styles.actionTxt, { color: '#ffffff', fontFamily: FontFamily.jakartaBold }]}>
+            {t.dash.markResolved}
+          </Text>
         </TouchableOpacity>
       )}
+
       {r.status === 'Resolved' && (
-        <View style={[styles.actionBtn, { backgroundColor: C.successBg, opacity: 0.7 }]}>
-          <Icon name="check" size={15} color={C.success} />
-          <Text style={[styles.actionTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>{t.common.done}</Text>
+        <View style={[styles.actionBtn, { backgroundColor: C.successBg, borderWidth: 1, borderColor: C.success + '40' }]}>
+          <Icon name="check" size={16} color={C.success} />
+          <Text style={[styles.actionTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
+            {t.common.done}
+          </Text>
         </View>
       )}
+
       {(r.status === 'Open' || r.status === 'In Progress') && (
-        <TouchableOpacity style={[styles.declineBtn, { borderColor: C.border }]} onPress={() => onDecline(r.id)} activeOpacity={0.75}>
+        <TouchableOpacity
+          style={[styles.declineBtn, { borderColor: C.border }]}
+          onPress={() => onDecline(r.id)}
+          activeOpacity={0.75}
+        >
           <Icon name="x" size={14} color={C.textMuted} />
-          <Text style={[styles.declineTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.dash.decline}</Text>
+          <Text style={[styles.declineTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+            {t.dash.decline}
+          </Text>
         </TouchableOpacity>
       )}
     </View>
@@ -160,6 +201,7 @@ export function StaffDashboardScreen({ navigation }: any) {
   const toast = useToast();
   const { user, profile } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
+  const [filterTab, setFilterTab] = useState<FilterTab>('all');
   const [unread, setUnread] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -170,13 +212,11 @@ export function StaffDashboardScreen({ navigation }: any) {
       const { data } = await supabase
         .from('reports')
         .select('*')
-        .eq('assigned_staff_id', user?.id ?? '')
+        .eq('assigned_staff_id', user.id)
         .is('deleted_at', null)
-        .order('status')
-        .limit(30);
+        .order('created_at', { ascending: false })
+        .limit(40);
       if (data) {
-        // Reporter names via the roster RPC: profiles RLS covers self and admins,
-        // so staff embedding it would see no names at all.
         const people = await fetchPeople((data as any[]).map(r => r.reporter_id));
         setReports(data.map((r: any) => ({
           ...r,
@@ -185,7 +225,7 @@ export function StaffDashboardScreen({ navigation }: any) {
           location: [r.building, r.room].filter(Boolean).join(' · '),
         })));
       }
-      const nRes = await getUnreadNotificationCount(user?.id);
+      const nRes = await getUnreadNotificationCount(user.id);
       if (nRes.ok) setUnread(nRes.data);
     } finally {
       setLoading(false);
@@ -205,7 +245,6 @@ export function StaffDashboardScreen({ navigation }: any) {
     setReports(prev => prev.map(r => r.id === reportId ? { ...r, status: newStatus } : r));
     const { error } = await supabase.from('reports').update({ status: newStatus }).eq('id', reportId);
     if (error) {
-      // revert the optimistic change on failure
       setReports(prev => prev.map(r => r.id === reportId ? { ...r, status: prevStatus ?? r.status } : r));
       toast({ type: 'error', title: t.common.error, message: error.message });
     }
@@ -219,20 +258,27 @@ export function StaffDashboardScreen({ navigation }: any) {
         onPress: async () => {
           const res = await declineReport(reportId);
           if (!res.ok) { Alert.alert(t.common.error, res.error); return; }
-          // No longer assigned to me, so drop it from the list.
           setReports(prev => prev.filter(r => r.id !== reportId));
         },
       },
     ]);
   }
 
-  const active = reports.filter(r => r.status === 'In Progress');
-  const resolved = reports.filter(r => r.status === 'Resolved');
+  const activeReports = useMemo(() => reports.filter(r => r.status === 'In Progress' || r.status === 'Open'), [reports]);
+  const inProgressReports = useMemo(() => reports.filter(r => r.status === 'In Progress'), [reports]);
+  const resolvedReports = useMemo(() => reports.filter(r => r.status === 'Resolved' || r.status === 'Closed'), [reports]);
 
-  const sorted = [...reports].sort((a, b) => {
-    const order = (r: Report) => r.status === 'In Progress' ? 0 : r.status === 'Open' ? 1 : 2;
-    return order(a) - order(b);
-  });
+  const displayedReports = useMemo(() => {
+    if (filterTab === 'active') return activeReports;
+    if (filterTab === 'resolved') return resolvedReports;
+    return reports;
+  }, [reports, filterTab, activeReports, resolvedReports]);
+
+  const filterTabs: TabItem<FilterTab>[] = useMemo(() => [
+    { id: 'all', label: 'All', count: reports.length },
+    { id: 'active', label: 'Active', count: activeReports.length },
+    { id: 'resolved', label: 'Done', count: resolvedReports.length },
+  ], [reports.length, activeReports.length, resolvedReports.length]);
 
   if (profile && profile.role !== 'staff' && profile.role !== 'admin') {
     return (
@@ -254,48 +300,119 @@ export function StaffDashboardScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
-        <Text style={[styles.pageTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-          {t.dash.staffTitle}
-        </Text>
-        <Text style={[styles.intro, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-          {t.dash.staffIntro}
-        </Text>
-
-        {/* Stat row */}
-        <View style={styles.statRow}>
-          <StatCard icon="inbox"  fg={C.info} num={reports.length} label={t.dash.statAssigned}   C={C} />
-          <StatCard icon="pulse"  fg={C.warn} num={active.length}  label={t.dash.statInProgress} C={C} />
-          <StatCard icon="check"  fg={C.success} num={resolved.length} label={t.dash.statResolved}  C={C} />
+        {/* Staff Hero Identity Card */}
+        <View style={[styles.heroCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+          <View style={styles.heroRow}>
+            <Avatar name={profile?.full_name || 'Staff'} uri={profile?.avatar_url} size="lg" />
+            <View style={styles.heroCol}>
+              <View style={styles.badgeRow}>
+                <View style={[styles.tradePill, { backgroundColor: C.brand + '18' }]}>
+                  <Icon name="wrench" size={12} color={C.brand} />
+                  <Text style={[styles.tradePillTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                    {profile?.expertise || profile?.department || 'Facilities & Maintenance'}
+                  </Text>
+                </View>
+                {activeReports.length > 0 && (
+                  <View style={[styles.activePill, { backgroundColor: C.warnBg }]}>
+                    <View style={[styles.activeDot, { backgroundColor: C.warn }]} />
+                    <Text style={[styles.activePillTxt, { color: C.warn, fontFamily: FontFamily.jakartaBold }]}>
+                      {activeReports.length} {t.dash.statOpen.toLowerCase()}
+                    </Text>
+                  </View>
+                )}
+              </View>
+              <Text style={[styles.heroName, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]} numberOfLines={1}>
+                {profile?.full_name || 'Campus Maintenance Staff'}
+              </Text>
+              <Text style={[styles.heroSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                {profile?.department ? `${profile.department} · Campus Maintenance` : 'BUBT Physical Plant & Maintenance'}
+              </Text>
+            </View>
+          </View>
         </View>
 
+        {/* 3 Stat Counters */}
+        <View style={styles.statRow}>
+          <StatCard icon="inbox" num={reports.length} label={t.dash.statAssigned} C={C} />
+          <StatCard icon="pulse" num={inProgressReports.length} label={t.dash.statInProgress} C={C} />
+          <StatCard icon="check" num={resolvedReports.length} label={t.dash.statResolved} C={C} />
+        </View>
+
+        {/* 58dp Segmented Filter Tabs */}
+        <View style={styles.tabWrap}>
+          <SegmentedTabs<FilterTab>
+            tabs={filterTabs}
+            activeTab={filterTab}
+            onTabChange={setFilterTab}
+            size="md"
+          />
+        </View>
+
+        {/* Section Header */}
         <View style={styles.sectionRow}>
-          <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold, marginTop: 0, marginBottom: 0 }]}>{t.dash.assignedToMe}</Text>
+          <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
+            {t.dash.assignedToMe}
+          </Text>
           <TouchableOpacity onPress={() => navigation.navigate('AssignedToMe')} activeOpacity={0.8}>
-            <Text style={[styles.seeAll, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>{t.common.seeAll}</Text>
+            <Text style={[styles.seeAll, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+              {t.common.seeAll}
+            </Text>
           </TouchableOpacity>
         </View>
 
+        {/* Workorders List */}
         {loading && reports.length === 0 ? (
-          <View style={{ paddingVertical: 28, alignItems: 'center', justifyContent: 'center' }}>
+          <View style={{ paddingVertical: 36, alignItems: 'center', justifyContent: 'center' }}>
             <ActivityIndicator size="small" color={C.brand} />
           </View>
-        ) : sorted.length === 0 ? (
-          <View style={styles.empty}>
-            <Icon name="check" size={30} color={C.textMuted} />
-            <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.dash.allClear}</Text>
-            <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{t.dash.noReportsAssigned}</Text>
+        ) : displayedReports.length === 0 ? (
+          <View style={[styles.emptyCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <Icon name="check" size={32} color={C.textMuted} />
+            <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              {t.dash.allClear}
+            </Text>
+            <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+              {filterTab === 'resolved' ? 'No resolved tickets in this view.' : t.dash.noReportsAssigned}
+            </Text>
           </View>
         ) : (
           <View style={styles.list}>
-            {sorted.map(r => (
-              <ReportCard key={r.id} r={r} C={C} onAdvance={advanceStatus} onDecline={declineAssigned} onPress={() => navigation.navigate('ReportDetail', { reportId: r.id })} />
+            {displayedReports.map(r => (
+              <ReportCard
+                key={r.id}
+                r={r}
+                C={C}
+                onAdvance={advanceStatus}
+                onDecline={declineAssigned}
+                onPress={() => navigation.navigate('ReportDetail', { reportId: r.id })}
+              />
             ))}
           </View>
         )}
 
-        <CampusToday navigation={navigation} hide={['events', 'jobs']} />
+        {/* 1-Tap Bridge to Explore for Campus Life Services */}
+        <TouchableOpacity
+          style={[styles.exploreBanner, { backgroundColor: C.surface, borderColor: C.border }]}
+          onPress={() => navigation.navigate('Explore')}
+          activeOpacity={0.8}
+        >
+          <View style={styles.exploreBannerLeft}>
+            <View style={styles.exploreIconBox}>
+              <Icon name="compass" size={26} color={C.brand} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.exploreBannerTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                Explore Campus Services
+              </Text>
+              <Text style={[styles.exploreBannerSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                Bus schedule, prayer times, medical center & blood donation
+              </Text>
+            </View>
+          </View>
+          <Icon name="chevR" size={18} color={C.textMuted} />
+        </TouchableOpacity>
 
-        <View style={{ height: 12 }} />
+        <View style={{ height: 24 }} />
       </ScrollView>
     </View>
   );
@@ -303,39 +420,264 @@ export function StaffDashboardScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
-  scroll: { paddingTop: 10, paddingBottom: 20 } as ViewStyle,
-  pageTitle: { fontSize: 19, letterSpacing: 0, lineHeight: 26, includeFontPadding: false } as any,
-  intro: { fontSize: 13.5, marginTop: 2, marginBottom: 12 } as any,
-  statRow: { flexDirection: 'row', gap: 10 } as ViewStyle,
-  statCard: { flex: 1, alignItems: 'center', padding: 12, borderRadius: 14, borderWidth: 1, gap: 4 } as ViewStyle,
-  statIcon: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
-  statNum: { fontSize: 20 } as any,
-  statLabel: { fontSize: 11, textAlign: 'center' } as any,
-  sectionLabel: { fontSize: 11, letterSpacing: 0.8, marginTop: 18, marginBottom: 10 } as any,
-  sectionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 18, marginBottom: 10 } as ViewStyle,
-  seeAll: { fontSize: 12.5 } as any,
-  list: { gap: 11 } as ViewStyle,
-  reportCard: { padding: 14, borderRadius: 16, borderWidth: 1 } as ViewStyle,
-  reportTop: { flexDirection: 'row', alignItems: 'center', gap: 12 } as ViewStyle,
-  issueIcon: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', flexShrink: 0 } as ViewStyle,
-  reportBody: { flex: 1 } as ViewStyle,
-  reportTitle: { fontSize: 14 } as any,
-  reportLoc: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 } as ViewStyle,
-  reportLocTxt: { fontSize: 12 } as any,
-  statusPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 20, flexShrink: 0 } as ViewStyle,
-  statusDot: { width: 6, height: 6, borderRadius: 3 } as ViewStyle,
-  statusTxt: { fontSize: 11 } as any,
-  reportMeta: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 } as ViewStyle,
-  byRow: { flexDirection: 'row', alignItems: 'center', gap: 5 } as ViewStyle,
-  byName: { fontSize: 12 } as any,
-  urgentPill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 7, paddingVertical: 3, borderRadius: 20 } as ViewStyle,
-  urgentTxt: { fontSize: 11 } as any,
-  reportTime: { fontSize: 11, marginLeft: 'auto' } as any,
-  actionBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, height: 38, borderRadius: 11, marginTop: 11 } as ViewStyle,
-  actionTxt: { fontSize: 13 } as any,
-  declineBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, height: 34, borderRadius: 10, borderWidth: 1, marginTop: 8 } as ViewStyle,
-  declineTxt: { fontSize: 12.5 } as any,
-  empty: { alignItems: 'center', paddingTop: 40, gap: 8 } as ViewStyle,
-  emptyTitle: { fontSize: 16 } as any,
-  emptySub: { fontSize: 13 } as any,
+  scroll: { paddingTop: 10, paddingBottom: 24 } as ViewStyle,
+
+  // Hero Card
+  heroCard: {
+    padding: 16,
+    borderRadius: 18,
+    borderWidth: 1,
+    marginBottom: 14,
+  } as ViewStyle,
+  heroRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  } as ViewStyle,
+  heroCol: {
+    flex: 1,
+  } as ViewStyle,
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+    flexWrap: 'wrap',
+  } as ViewStyle,
+  tradePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  } as ViewStyle,
+  tradePillTxt: {
+    fontSize: 11,
+    letterSpacing: 0.2,
+  } as any,
+  activePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 8,
+  } as ViewStyle,
+  activeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  } as ViewStyle,
+  activePillTxt: {
+    fontSize: 10.5,
+  } as any,
+  heroName: {
+    fontSize: 18,
+    lineHeight: 24,
+  } as any,
+  heroSub: {
+    fontSize: 12,
+    marginTop: 2,
+  } as any,
+
+  // Stat Counters
+  statRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 14,
+  } as ViewStyle,
+  statCard: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 8,
+    borderRadius: 16,
+    borderWidth: 1,
+    gap: 4,
+  } as ViewStyle,
+  statIcon: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  statNum: {
+    fontSize: 22,
+    lineHeight: 28,
+  } as any,
+  statLabel: {
+    fontSize: 11,
+    textAlign: 'center',
+  } as any,
+
+  // Filter Tabs
+  tabWrap: {
+    marginBottom: 12,
+  } as ViewStyle,
+
+  // Section Header
+  sectionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 6,
+    marginBottom: 12,
+  } as ViewStyle,
+  sectionLabel: {
+    fontSize: 11,
+    letterSpacing: 0.8,
+  } as any,
+  seeAll: {
+    fontSize: 13,
+  } as any,
+
+  // Workorder Cards
+  list: {
+    gap: 12,
+  } as ViewStyle,
+  reportCard: {
+    padding: 16,
+    borderRadius: 18,
+    borderWidth: 1,
+  } as ViewStyle,
+  reportTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  } as ViewStyle,
+  issueIcon: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  } as ViewStyle,
+  reportBody: {
+    flex: 1,
+  } as ViewStyle,
+  reportTitle: {
+    fontSize: 15,
+  } as any,
+  reportLoc: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 3,
+  } as ViewStyle,
+  reportLocTxt: {
+    fontSize: 12.5,
+  } as any,
+  statusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 20,
+    flexShrink: 0,
+  } as ViewStyle,
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  } as ViewStyle,
+  statusTxt: {
+    fontSize: 11,
+  } as any,
+  reportMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(150, 150, 150, 0.1)',
+  } as ViewStyle,
+  byRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  } as ViewStyle,
+  byName: {
+    fontSize: 12,
+  } as any,
+  reportTime: {
+    fontSize: 11.5,
+    marginLeft: 'auto',
+  } as any,
+  actionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    height: 44,
+    borderRadius: 13,
+    marginTop: 12,
+  } as ViewStyle,
+  actionTxt: {
+    fontSize: 13.5,
+  } as any,
+  declineBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    height: 38,
+    borderRadius: 11,
+    borderWidth: 1,
+    marginTop: 8,
+  } as ViewStyle,
+  declineTxt: {
+    fontSize: 12.5,
+  } as any,
+
+  // Empty state
+  emptyCard: {
+    padding: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  } as ViewStyle,
+  emptyTitle: {
+    fontSize: 16,
+  } as any,
+  emptySub: {
+    fontSize: 13,
+    textAlign: 'center',
+  } as any,
+
+  // Explore Bridge Banner
+  exploreBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginTop: 20,
+  } as ViewStyle,
+  exploreBannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+    marginRight: 8,
+  } as ViewStyle,
+  exploreIconBox: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  } as ViewStyle,
+  exploreBannerTitle: {
+    fontSize: 14,
+  } as any,
+  exploreBannerSub: {
+    fontSize: 11.5,
+    marginTop: 2,
+  } as any,
 });
