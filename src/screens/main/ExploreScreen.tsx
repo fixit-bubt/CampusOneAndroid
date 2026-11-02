@@ -60,10 +60,9 @@ const SECTORS: { id: SectorKey; en: string; dEn: string }[] = [
   { id: 'coverpage', en: 'Cover Page',         dEn: 'Generate assignment covers' },
 ];
 
-// Sectors a staff (maintenance) account sees in Explore - mirrors the web staff
-// nav. Everything else (Study Hub, Clubs, Jobs, Events, Faculty, Calendar,
-// Routines, Cover Page, Reports-create) stays student/admin-only.
-const STAFF_SECTORS: SectorKey[] = ['reports', 'bus', 'prayer', 'announce', 'medical', 'market', 'ride', 'blood'];
+// Sectors a staff (maintenance) account sees in Explore as flat, open 72dp bars (no dropdown accordions).
+const STAFF_EXPLORE_SECTORS: SectorKey[] = ['announce', 'prayer', 'medical', 'bus', 'blood'];
+const STAFF_SECTORS: SectorKey[] = STAFF_EXPLORE_SECTORS;
 
 // Groups sectors into labeled, collapsible sections instead of one long flat
 // list - mirrors the web app's sidebar grouping (Academics / Campus Life /
@@ -138,6 +137,33 @@ export function ExploreScreen({ navigation }: any) {
   const academicsCount = academicsSectors.length + 2 + (isStudent ? 1 : 0);
   const [openSection, setOpenSection] = useState<string | null>(null);
   const toggleSection = (id: string) => setOpenSection((prev) => (prev === id ? null : id));
+
+  // Staff Explore: flat, direct 72dp bars for university facilities (no dropdown accordions).
+  if (isStaff) {
+    return (
+      <View style={[styles.safe, { backgroundColor: C.bg, paddingTop: insets.top }]}>
+        <TopBar title={t.tabs.explore} />
+        <ScrollView
+          contentContainerStyle={[styles.content, { paddingHorizontal: Layout.screenPadding }]}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={[styles.sectionHeader, { marginTop: 0 }]}>
+            <Text style={[styles.sectionEyebrow, { color: C.text3, fontFamily: FontFamily.jakartaBold }]}>
+              {t.exploreGroups.directory}
+            </Text>
+          </View>
+
+          {STAFF_EXPLORE_SECTORS.map((secId, idx) => {
+            const s = SECTORS.find((item) => item.id === secId);
+            if (!s) return null;
+            return renderSectorRow(s, SectorColors[secId] || C.brand, idx);
+          })}
+
+          <View style={{ height: 20 }} />
+        </ScrollView>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.safe, { backgroundColor: C.bg, paddingTop: insets.top }]}>

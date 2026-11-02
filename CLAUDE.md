@@ -1038,9 +1038,8 @@ Whenever the user instructs to "update memorys", the agent MUST synchronously up
   - `Start Work`: Optimistically updates issue status from `Open` to `In Progress`.
   - `Mark Resolved`: Optimistically updates status to `Resolved`.
   - `Decline`: Prompts confirmation and executes `decline_report(reportId)` RPC, atomically removing `assigned_staff_id` and reverting status to `Open` for admin re-dispatch.
-- **Zero-Bloat Staff Workspace:** General campus transit, prayer times, medical clinic info, and blood requests are stripped from Staff Home (eliminating 2-column mini grid slop) and housed strictly in the `Explore` tab, with a clean full-width shortcut banner at the bottom of the dashboard.
-- **Cross-RLS Reporter Resolution:** Staff queries use `fetchPeople` via `directory_profiles()` to retrieve student reporter names without hitting `profiles` RLS blockades.
-- **Maintenance-Focused Explore:** Staff accounts are filtered to maintenance-relevant sectors (`bus`, `prayer`, `announce`, `medical`, `market`, `ride`, `blood`). Academic tools, student directories, anonymous boards, and chatbot are excluded.
+- **Zero-Bloat Staff Workspace:** General campus transit, prayer times, medical clinic info, and blood requests are stripped from Staff Home (eliminating 2-column mini grid slop and bottom shortcut clutter) to keep Home 100% focused on active maintenance tickets.
+- **Flat 72dp Explore Screen for Staff:** On `ExploreScreen.tsx`, staff accounts bypass all collapsible accordion dropdown folders (`CAMPUS LIFE`, `SERVICES`, `COMMUNITY`). Instead, the 5 vital campus life services (`Announcements`, `Prayer Times`, `Medical Center`, `Bus Schedule`, `Blood Donation`) are presented as direct, open, full-width 72dp bars with 32dp monochrome vector icons. Issue reporting (`reports`) is strictly excluded from Staff Explore since staff resolve issues rather than filing complaints.
 
 ### 18.2 Administrator Operations & Security Rules
 - **Admin Home Routing:** Role `'admin'` lands on `AdminDashboardScreen.tsx` with high-level triage counters (`Open`, `In Progress`, `Resolved`).

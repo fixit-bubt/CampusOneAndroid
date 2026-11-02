@@ -390,29 +390,7 @@ export function StaffDashboardScreen({ navigation }: any) {
           </View>
         )}
 
-        {/* 1-Tap Bridge to Explore for Campus Life Services */}
-        <TouchableOpacity
-          style={[styles.exploreBanner, { backgroundColor: C.surface, borderColor: C.border }]}
-          onPress={() => navigation.navigate('Explore')}
-          activeOpacity={0.8}
-        >
-          <View style={styles.exploreBannerLeft}>
-            <View style={styles.exploreIconBox}>
-              <Icon name="compass" size={26} color={C.brand} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.exploreBannerTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                Explore Campus Services
-              </Text>
-              <Text style={[styles.exploreBannerSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                Bus schedule, prayer times, medical center & blood donation
-              </Text>
-            </View>
-          </View>
-          <Icon name="chevR" size={18} color={C.textMuted} />
-        </TouchableOpacity>
-
-        <View style={{ height: 24 }} />
+        <View style={{ height: 16 }} />
       </ScrollView>
     </View>
   );
@@ -647,37 +625,5 @@ const styles = StyleSheet.create({
   emptySub: {
     fontSize: 13,
     textAlign: 'center',
-  } as any,
-
-  // Explore Bridge Banner
-  exploreBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 14,
-    borderRadius: 16,
-    borderWidth: 1,
-    marginTop: 20,
-  } as ViewStyle,
-  exploreBannerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flex: 1,
-    marginRight: 8,
-  } as ViewStyle,
-  exploreIconBox: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  } as ViewStyle,
-  exploreBannerTitle: {
-    fontSize: 14,
-  } as any,
-  exploreBannerSub: {
-    fontSize: 11.5,
-    marginTop: 2,
   } as any,
 });
