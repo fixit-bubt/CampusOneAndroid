@@ -5,7 +5,6 @@ import {
   RefreshControl, Alert, ActivityIndicator, type ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { TopBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
@@ -457,7 +456,7 @@ export function StaffDashboardScreen({ navigation }: any) {
             </View>
           ) : error && reports.length === 0 ? (
             <View style={[styles.emptyCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-              <Feather name="alert-circle" size={32} color={C.danger} />
+              <Icon name="alert" size={32} color={C.danger} />
               <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold, marginTop: 4 }]}>
                 {t.common.error}
               </Text>

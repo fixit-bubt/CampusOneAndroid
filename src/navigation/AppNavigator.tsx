@@ -45,10 +45,8 @@ import { NotificationsScreen }     from '../screens/main/NotificationsScreen';
 import { NotifDetailScreen }       from '../screens/notifications/NotifDetailScreen';
 import { NotifSettingsScreen }     from '../screens/notifications/NotifSettingsScreen';
 import { MessageThread }           from '../screens/messages/MessageThread';
-import { StaffDashboardScreen }    from '../screens/dashboard/StaffDashboardScreen';
 import { AdminDashboardScreen }    from '../screens/dashboard/AdminDashboardScreen';
 import { ManageUsersScreen }       from '../screens/dashboard/ManageUsersScreen';
-import { ManageStaffScreen }       from '../screens/dashboard/ManageStaffScreen';
 import { ManageFacultyScreen }     from '../screens/dashboard/ManageFacultyScreen';
 import { AllReportsScreen }        from '../screens/dashboard/AllReportsScreen';
 import { ReportDetailScreen }      from '../screens/reports/ReportDetailScreen';
@@ -194,10 +192,8 @@ export function AppNavigator() {
       <Stack.Screen name="MessageThread"  component={MessageThread} />
 
       {/* Dashboards (reached from Admin Dashboard tiles / Home tab) */}
-      <Stack.Screen name="StaffDashboard" component={StaffDashboardScreen} />
       <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
       <Stack.Screen name="ManageUsers"    component={ManageUsersScreen} />
-      <Stack.Screen name="ManageStaff"    component={ManageStaffScreen} />
       <Stack.Screen name="ManageFaculty"  component={ManageFacultyScreen} />
       <Stack.Screen name="AllReports"     component={AllReportsScreen} />
 

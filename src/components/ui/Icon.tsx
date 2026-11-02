@@ -92,6 +92,7 @@ export const ICON_MAP: Record<string, React.ComponentProps<typeof Feather>['name
   prayer:    'moon',
   clipboard: 'clipboard',
   fileText:  'file-text',
+  alert:     'alert-circle',
 };
 
 interface IconProps {

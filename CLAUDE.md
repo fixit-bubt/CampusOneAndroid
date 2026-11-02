@@ -2945,3 +2945,28 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore.
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
   - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.
+
+---
+
+### 69. Staff Portal & Workorder Deep Audit, Dead Code Elimination, Cache Unification & Push Notification Trigger (`StaffDashboardScreen.tsx`, `AssignedToMeScreen.tsx`, `AppNavigator.tsx`, `navigation.ts`, `cacheService.ts`, `Icon.tsx`, `20261103000000_notify_staff_assignment.sql`) (/code-review-and-quality, /performance-optimization, /zero-slop)
+- **Dead Code & Orphaned File Cleanup:**
+  - Deleted unlinked orphaned screen `ManageStaffScreen.tsx` (366 lines), resolving duplicate and uncalled admin staff management code.
+  - Removed 25 obsolete AI-generated logo proposal image/svg assets in `assets/logo-proposals/` (~3 MB dead space), removing unreferenced legacy assets.
+  - Removed duplicate `<Stack.Screen name="StaffDashboard" />` and `<Stack.Screen name="ManageStaff" />` from `AppNavigator.tsx` (StaffDashboard is already mounted as the root Home tab for staff accounts in `BottomTabNavigator.tsx`).
+  - Purged dead types `StaffStackParams` and unused `AdminStackParams` from `src/types/navigation.ts`.
+- **Cache Unification Across Staff Screens (`cacheService.ts`):**
+  - Unified `CacheKeys.STAFF_REPORTS` and `CacheKeys.ASSIGNED_REPORTS` to point to the shared key `staff_assigned_reports_${uid}`.
+  - Advancing status or declining tickets in `StaffDashboardScreen` now immediately updates the cache shared with `AssignedToMeScreen`, preventing state desynchronization and stale ticket listings.
+- **Universal Monochrome Icon Standard (`Icon.tsx`, `StaffDashboardScreen.tsx`, `AssignedToMeScreen.tsx`):**
+  - Added `alert: 'alert-circle'` to canonical `ICON_MAP` in `src/components/ui/Icon.tsx`.
+  - Stripped direct `@expo/vector-icons` `Feather` imports from `StaffDashboardScreen.tsx` and `AssignedToMeScreen.tsx`, replacing raw icon stickers with theme-aware `<Icon name="alert" />`, `<Icon name="close" />`, and `<Icon name="clipboard" />`.
+- **Backend Assignment Push Notification Trigger (`20261103000000_notify_staff_assignment.sql`):**
+  - Added `notify_report_assignment()` trigger on `public.reports` (`trg_notify_report_assignment`).
+  - Whenever an admin assigns or reassigns a workorder (`assigned_staff_id` changes), an in-app notification row is automatically inserted for the assigned staff member.
+  - Automatically triggers the existing `push_on_notification` pipeline to dispatch an FCM v1 push notification directly to the staff member's Android notification bar and status drawer with sound/vibration.
+  - Tapping the notification deep-links directly into `ReportDetailScreen` for the assigned workorder.
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
+  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore in 44s.
+  - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
+  - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.

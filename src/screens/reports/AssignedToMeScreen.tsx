@@ -8,7 +8,6 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
@@ -223,7 +222,7 @@ export function AssignedToMeScreen({ navigation }: any) {
           />
           {query.length > 0 && (
             <TouchableOpacity onPress={() => setQuery('')} hitSlop={8}>
-              <Feather name="x" size={16} color={C.textMuted} />
+              <Icon name="close" size={16} color={C.textMuted} />
             </TouchableOpacity>
           )}
         </View>
@@ -278,7 +277,7 @@ export function AssignedToMeScreen({ navigation }: any) {
             </View>
           ) : error && reports.length === 0 ? (
             <View style={styles.empty}>
-              <Feather name="alert-circle" size={28} color={C.danger} />
+              <Icon name="alert" size={28} color={C.danger} />
               <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold, marginTop: 8 }]}>
                 {t.common.error}
               </Text>
@@ -295,7 +294,7 @@ export function AssignedToMeScreen({ navigation }: any) {
             </View>
           ) : (
             <View style={styles.empty}>
-              <Feather name="clipboard" size={28} color={C.textMuted} />
+              <Icon name="clipboard" size={28} color={C.textMuted} />
               <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                 {t.reports.noReportsTitle}
               </Text>

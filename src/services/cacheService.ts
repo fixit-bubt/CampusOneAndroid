@@ -53,8 +53,8 @@ export const CacheKeys = {
   STUDY_COURSES: 'study_courses',
   DIRECTORY: (uid: string) => `student_dir_${uid}`,
   NOTIFICATIONS: (uid: string) => `notifications_${uid}`,
-  STAFF_REPORTS: (uid: string) => `staff_reports_${uid}`,
-  ASSIGNED_REPORTS: (uid: string) => `assigned_reports_${uid}`,
+  STAFF_REPORTS: (uid: string) => `staff_assigned_reports_${uid}`,
+  ASSIGNED_REPORTS: (uid: string) => `staff_assigned_reports_${uid}`,
 } as const;
 
 export function getCacheSync<T>(key: string): T | null {

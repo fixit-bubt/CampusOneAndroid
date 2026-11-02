@@ -142,10 +142,8 @@ export type AppStackParams = {
   ChatbotHistory: undefined;
 
   // Dashboards
-  StaffDashboard: undefined;
   AdminDashboard: undefined;
   ManageUsers:    undefined;
-  ManageStaff:    undefined;
   ManageFaculty:  undefined;
   AllReports:     undefined;
 
@@ -208,6 +206,5 @@ export type AdminStackParams = {
 };
 
 export type StaffStackParams = {
-  StaffDashboard: undefined;
   StaffAssigned: undefined;
 };
