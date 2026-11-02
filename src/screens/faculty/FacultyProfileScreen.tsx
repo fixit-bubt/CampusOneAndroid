@@ -542,7 +542,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
             {expandCourses && (
               <View style={styles.sectionExpandedContainer}>
                 {courses.map((c, i) => (
-                  <View key={i} style={[styles.childBar58, { backgroundColor: C.surface2, borderColor: C.border, borderLeftColor: FACULTY_ACCENT, borderLeftWidth: 4.5 }]}>
+                  <View key={i} style={[styles.childBar58, { backgroundColor: C.surface2, borderColor: C.border, borderLeftColor: C.brand, borderLeftWidth: 4.5 }]}>
                     <View style={styles.childBarIconTile}>
                       <Feather name="book" size={24} color={C.text} />
                     </View>
@@ -595,7 +595,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
                     {interests.map((area, idx) => (
                       <TouchableOpacity
                         key={idx}
-                        style={[styles.childBar58, { backgroundColor: C.surface2, borderColor: C.border, borderLeftColor: FACULTY_ACCENT, borderLeftWidth: 4.5 }]}
+                        style={[styles.childBar58, { backgroundColor: C.surface2, borderColor: C.border, borderLeftColor: C.brand, borderLeftWidth: 4.5 }]}
                         onPress={() => handleOpenDomain(area)}
                         activeOpacity={0.75}
                       >
@@ -810,7 +810,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
                   </View>
                 ))}
                 {member.industrial_experience ? (
-                  <View style={[styles.childBar58, { backgroundColor: C.surface2, borderColor: C.border, borderLeftColor: FACULTY_ACCENT, borderLeftWidth: 4.5 }]}>
+                  <View style={[styles.childBar58, { backgroundColor: C.surface2, borderColor: C.border, borderLeftColor: C.brand, borderLeftWidth: 4.5 }]}>
                     <View style={styles.childBarIconTile}>
                       <Feather name="briefcase" size={24} color={C.text} />
                     </View>

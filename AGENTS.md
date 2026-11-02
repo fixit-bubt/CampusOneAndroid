@@ -1015,10 +1015,10 @@ Whenever the user instructs to "update memorys", the agent MUST synchronously up
   - Category headers feature a 2-line title and subtitle layout (e.g. `ACADEMICS` / `Notes, routines, annex & tools`), completely eliminating empty voids.
   - On the right, a dedicated Campus Pulse-style metric block is rendered with a hairline vertical divider (`width: 1, height: 30`), a bold prominent counter on top (`statVal`: 16.5px `jakartaExtraBold` in the sector's accent color), and a clean uppercase mini-label underneath (`statSub`: 9.5px `jakartaBold` `TOOLS`), paired with the navigation chevron.
   - When expanded, the header card highlights with a 1.5px sector-colored border and opens smoothly with an active colored chevron.
-- **Full-Width Child Bars with Sector Logos & Category Colored Left Spine (`styles.childBar`):**
+- **Full-Width Child Bars with Sector Logos & Unified Brand Blue Left Spine (`styles.childBar`):**
   - Child rows are rendered as full-width separate cards (`Layout.screenPadding` aligned, `marginLeft: 0`), ensuring consistent vertical grid rhythm and generous touch targets without indentation cramping.
   - Each child displays its authentic, high-recognition vector logo/icon (`SectorIcon` size="md" or dedicated 42x42dp icon box) for rapid visual scanning.
-  - **Spatial Identity & Anchor ("Know Where We Are"):** Every child card features a bold 4.5dp colored left accent strip (`borderLeftWidth: 4.5`, `borderLeftColor: accentColor`) and matching tinted right chevron (`>`) in the parent category's sector color (Academics Cyan, Campus Life Pink, Services Blue, Community Green). This immediately ties all children to their parent section and anchors the user's location when scrolling through open categories.
+  - **Spatial Identity & Anchor ("Know Where We Are"):** Every child card features a clean 4.5dp left accent strip (`borderLeftWidth: 4.5`, `borderLeftColor: C.brand`) strictly unified in the Electric Brand Blue token (`C.brand` / `#5b85f7` in OLED Dark Mode). This eliminates distracting rainbow clutter across dropdowns while instantly anchoring the user's location when scrolling through open categories.
 - **Tactile Pop & Cascade Entrance Animations:**
   - Category headers use dynamic `AnimatedIcon` with rubberband pop physics (`animation={isOpen ? 'spring' : 'entrance'}`). Tapping to toggle triggers an immediate, tactile spring pop on the RenderThread (`useNativeDriver: true`).
   - Child tool rows render `SectorIcon` with `animation="entrance"` and a 35ms staggered cascade delay (`delay={idx * 35}`), causing child icons to ripple smoothly into view as the category unfolds.
@@ -2014,9 +2014,9 @@ The Explore screen organizes campus features into 4 top-level directory categori
 - **Active Card Highlighting:** When expanded, the header card gains a `1.5 dp` border in `accentColor` and points its chevron downward (`chevD`).
 - **Backward Compatibility:** `AdminDashboardScreen.tsx` continues to use `CollapsibleSection` seamlessly without `subtitle` or `count`, gracefully skipping the vertical divider and stat column.
 
-### 38.2 Full-Width Child Bars with Category Colored Left Spine (`styles.childBar`)
+### 38.2 Full-Width Child Bars with Unified Brand Blue Left Spine (`styles.childBar`)
 - **Grid Alignment:** Full width matching parent cards (`marginLeft: 0`), aligned with `Layout.screenPadding = 16 dp`.
-- **Category Colored Left Spine:** A bold `4.5 dp` left border (`borderLeftWidth: 4.5`, `borderLeftColor: accentColor`) and matching tinted right chevron (`>`). When users scroll through an open category, the left colored spine acts as an instant location anchor ("Know Where We Are").
+- **Unified Brand Blue Left Spine:** A clean `4.5 dp` left border (`borderLeftWidth: 4.5`, `borderLeftColor: C.brand`). All sub-bars and child dropdown rows strictly use the unified Electric Brand Blue (`#5b85f7` in OLED Dark Mode / `C.brand`), replacing rainbow multi-colors with a cohesive, professional visual hierarchy. When users scroll through an open category, the left spine acts as an instant location anchor ("Know Where We Are").
 - **Vector Logos:** Each child displays its authentic 42×42dp vector logo (`SectorIcon` size="md" or `toolIcon`).
 
 ### 38.3 120 FPS Native RenderThread Physics

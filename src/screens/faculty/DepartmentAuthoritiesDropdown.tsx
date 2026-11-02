@@ -149,7 +149,7 @@ export function DepartmentAuthoritiesDropdown({
       {expanded && (
         <View style={styles.expandedBody}>
           <View style={styles.sectionHeader}>
-            <Feather name="info" size={12} color={FACULTY_ACCENT} />
+            <Feather name="info" size={12} color={C.brand} />
             <Text
               style={[
                 styles.sectionHeaderText,
@@ -178,7 +178,7 @@ export function DepartmentAuthoritiesDropdown({
                   {
                     backgroundColor: C.surface2,
                     borderColor: C.border,
-                    borderLeftColor: FACULTY_ACCENT,
+                    borderLeftColor: C.brand,
                     borderLeftWidth: 4.5,
                   },
                 ]}

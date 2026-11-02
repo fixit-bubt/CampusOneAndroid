@@ -2672,7 +2672,7 @@ export function StudyHubScreen({ navigation }: any) {
                   {open && (
                     <View style={{ marginTop: 12, gap: 8 }}>
                       {secs.map(sec => (
-                        <View key={sec.id} style={[s.catSecRow, { backgroundColor: C.bg, borderColor: C.border, borderLeftColor: SectorColors.study, borderLeftWidth: 4.5 }]}>
+                        <View key={sec.id} style={[s.catSecRow, { backgroundColor: C.bg, borderColor: C.border, borderLeftColor: C.brand, borderLeftWidth: 4.5 }]}>
                           <View style={{ flex: 1 }}>
                             <Text style={[cardStyles.title, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>Sec {sec.number}</Text>
                             <Text style={[cardStyles.sub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>

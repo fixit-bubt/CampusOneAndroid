@@ -48,7 +48,7 @@ export function CollapsibleSection({
   const activeColor = accentColor ?? C.brand;
   const displayCount = count !== undefined ? String(count) : badge;
 
-  const activeBorderColor = isOpen && accentColor
+  const activeBorderColor = isOpen
     ? (isDark ? `${activeColor}85` : `${activeColor}65`)
     : C.border;
 
@@ -61,7 +61,7 @@ export function CollapsibleSection({
           {
             backgroundColor: C.surface,
             borderColor: activeBorderColor,
-            borderWidth: isOpen && accentColor ? 1.5 : 1,
+            borderWidth: isOpen ? 1.5 : 1,
           },
         ]}
         activeOpacity={0.75}

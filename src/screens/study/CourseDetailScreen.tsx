@@ -575,7 +575,7 @@ export function CourseDetailScreen({ route, navigation }: any) {
               styles.dropdownTrigger58,
               {
                 backgroundColor: C.surface,
-                borderColor: dropdownOpen ? STUDY_COLOR : C.border,
+                borderColor: dropdownOpen ? C.brand : C.border,
               },
             ]}
             onPress={() => setDropdownOpen(v => !v)}
@@ -647,7 +647,7 @@ export function CourseDetailScreen({ route, navigation }: any) {
                         </View>
                       )}
                     </View>
-                    {isSelected && <Feather name="check" size={18} color={STUDY_COLOR} />}
+                    {isSelected && <Feather name="check" size={18} color={C.brand} />}
                   </TouchableOpacity>
                 );
               })}

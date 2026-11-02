@@ -1212,7 +1212,7 @@ export function CoverPageFormScreen({ navigation }: any) {
                   {
                     backgroundColor: C.surface,
                     borderColor: C.border,
-                    borderLeftColor: SectorColors.study,
+                    borderLeftColor: C.brand,
                     borderLeftWidth: 4.5,
                   },
                 ]}
@@ -1237,7 +1237,7 @@ export function CoverPageFormScreen({ navigation }: any) {
                   {
                     backgroundColor: C.surface,
                     borderColor: C.border,
-                    borderLeftColor: SectorColors.study,
+                    borderLeftColor: C.brand,
                     borderLeftWidth: 4.5,
                   },
                 ]}
@@ -1262,7 +1262,7 @@ export function CoverPageFormScreen({ navigation }: any) {
                   {
                     backgroundColor: C.surface,
                     borderColor: C.border,
-                    borderLeftColor: SectorColors.study,
+                    borderLeftColor: C.brand,
                     borderLeftWidth: 4.5,
                   },
                 ]}
@@ -1287,7 +1287,7 @@ export function CoverPageFormScreen({ navigation }: any) {
                   {
                     backgroundColor: C.surface,
                     borderColor: C.border,
-                    borderLeftColor: SectorColors.study,
+                    borderLeftColor: C.brand,
                     borderLeftWidth: 4.5,
                   },
                 ]}

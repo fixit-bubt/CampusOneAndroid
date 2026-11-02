@@ -287,7 +287,7 @@ export function ReportFormScreen({ route, navigation }: any) {
               {
                 backgroundColor: C.surface,
                 borderColor: C.border,
-                borderLeftColor: selectedCat ? selectedCat.fg : C.border,
+                borderLeftColor: selectedCat ? C.brand : C.border,
               },
             ]}
             onPress={() => setCatModalOpen(true)}
@@ -297,7 +297,7 @@ export function ReportFormScreen({ route, navigation }: any) {
               <Icon
                 name={selectedCat ? selectedCat.icon : 'tool'}
                 size={32}
-                color={selectedCat ? selectedCat.fg : C.textMuted}
+                color={selectedCat ? C.brand : C.textMuted}
               />
             </View>
             <View style={styles.bar72Body}>
@@ -566,7 +566,7 @@ export function ReportFormScreen({ route, navigation }: any) {
                       backgroundColor: active ? (C.brand + '15') : C.surface2,
                       borderColor: active ? C.brand : C.border,
                       borderLeftWidth: 4.5,
-                      borderLeftColor: c.fg,
+                      borderLeftColor: C.brand,
                     },
                   ]}
                   onPress={() => {
