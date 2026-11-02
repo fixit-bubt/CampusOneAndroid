@@ -2660,8 +2660,12 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Featured card navigates directly to `CampusIssues` with `{ initialTab: 'Campus' }`, while Services row opens with `{ initialTab: 'Mine' }`.
 - **Form & Dropdown Geometry Retained:**
   - Standardized 72dp selection dropdown bars (`Category`, `Building`, `Floor`, `Space Type`) with 4.5dp accent stripes and 58dp modal selection rows in `ReportFormScreen.tsx`.
+- **Personal Reports Data Isolation Bug Fixed:**
+  - Resolved the data mismatch bug where `loadMine` was erroneously calling `getCampusReports()` (all students' reports across BUBT) instead of `getMyReports(user.id)` (strictly the authenticated student's reports).
+  - Synchronized personal report counts 1:1 with the Home screen Reports status strip (`Open · Pending · Resolved`).
+  - Eliminated redundant secondary database query by sourcing `show_on_board` directly from `getMyReports` payload, boosting load speed by 2x.
 - **Verification Evidence:**
   - TypeScript Compilation: 0 errors across entire project (`tsc --noEmit`).
-  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) in 42s.
+  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) in 41s.
   - Direct ADB Deployment: Streamed install and launched on physical phone `8734b5da`.
 

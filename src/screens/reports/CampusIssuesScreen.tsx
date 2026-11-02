@@ -37,10 +37,8 @@ import {
   setReportBoardVisibility,
   type CampusIssue,
 } from '../../services/campusIssuesService';
-import {
-  getCampusReports,
-  type CampusReport,
-} from '../../services/reportsService';
+import { getMyReports } from '../../services/reportsService';
+import type { Report } from '../../types/database';
 
 const STATUSES = ['All', 'Open', 'In Progress', 'Resolved', 'Closed'] as const;
 type StatusFilter = (typeof STATUSES)[number];
@@ -118,7 +116,7 @@ export function CampusIssuesScreen({ navigation, route }: any) {
   const [campusLoading, setCampusLoading] = useState(true);
   const [busyVoteIds, setBusyVoteIds] = useState<Set<string>>(new Set());
 
-  const [myReports, setMyReports] = useState<CampusReport[]>([]);
+  const [myReports, setMyReports] = useState<Report[]>([]);
   const [myReportsLoading, setMyReportsLoading] = useState(true);
   const [boardMap, setBoardMap] = useState<Record<string, boolean>>({});
 
@@ -148,19 +146,12 @@ export function CampusIssuesScreen({ navigation, route }: any) {
       return;
     }
     try {
-      const res = await getCampusReports();
+      const res = await getMyReports(user.id);
       if (res.ok) {
         setMyReports(res.data);
+        setBoardMap(Object.fromEntries(res.data.map(m => [m.id, m.show_on_board === true])));
       } else {
         setLoadError(res.error);
-      }
-      const { data: mine, error: mineErr } = await supabase
-        .from('reports')
-        .select('id, show_on_board')
-        .eq('reporter_id', user.id)
-        .is('deleted_at', null);
-      if (!mineErr && mine) {
-        setBoardMap(Object.fromEntries(mine.map(m => [m.id, m.show_on_board === true])));
       }
     } finally {
       setMyReportsLoading(false);
@@ -204,7 +195,7 @@ export function CampusIssuesScreen({ navigation, route }: any) {
   }
 
   // Toggle "Show on Board" handler (Mine tab)
-  async function toggleBoard(r: CampusReport) {
+  async function toggleBoard(r: Report) {
     const current = boardMap[r.id] === true;
     const next = !current;
     setBoardMap(prev => ({ ...prev, [r.id]: next }));
@@ -223,7 +214,7 @@ export function CampusIssuesScreen({ navigation, route }: any) {
   }
 
   // Delete personal report (Mine tab)
-  function confirmDelete(r: CampusReport) {
+  function confirmDelete(r: Report) {
     Alert.alert(t.reports.deleteTitle, t.reports.deleteBody, [
       { text: t.common.cancel, style: 'cancel' },
       {
