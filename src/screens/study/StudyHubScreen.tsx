@@ -735,6 +735,11 @@ export function StudyHubScreen({ navigation }: any) {
   const [codeInput, setCodeInput] = useState('');
   const [joining, setJoining] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
+  // Section semester progression state
+  const [activeSemester, setActiveSemester] = useState<number>(1);
+  const [archivedSemesters, setArchivedSemesters] = useState<{ semester: number; courses: Course[] }[]>([]);
+  const [viewingArchivedSem, setViewingArchivedSem] = useState<number | null>(null);
+  const [advanceModalOpen, setAdvanceModalOpen] = useState(false);
   // Library exploration state (1:1 Web Parity with StudyHubDept, StudyHubSemester, StudyHubIntake, StudyHubSection)
   const [selectedSemester, setSelectedSemester] = useState<{ num: number; label: string; phase: string } | null>(null);
   const [selectedIntake, setSelectedIntake] = useState<{ id: string; number: number; department_id?: string; department_name?: string; years?: string | null } | null>(null);

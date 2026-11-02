@@ -21,6 +21,7 @@ import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
 import { getCache, setCache } from '../../services/cacheService';
 import { openInApp } from '../../utils/link';
+import { fetchPeople } from '../../services/peopleService';
 import { formatFileSize, formatRelativeTime } from '../../utils/format';
 
 const STUDY_COLOR = SectorColors.study;
@@ -49,6 +50,7 @@ const ITEM_TYPE: Record<Tab, 'material' | 'question' | 'book'> = {
 
 interface Entry {
   id: string;
+  course_id?: string | null;
   title: string;
   storage_path: string | null;
   url?: string | null;
@@ -63,6 +65,8 @@ interface Entry {
   table: 'study_materials' | 'study_question_bank' | 'study_books';
   uploaded_by?: string | null;
   added_by?: string | null;
+  batch_label?: string | null;
+  uploader_name?: string | null;
 }
 
 // Feather icon for a file, keyed off its extension (file_kind).
@@ -113,6 +117,8 @@ export function CourseDetailScreen({ route, navigation }: any) {
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<Sort>('new');
   const [examFilter, setExamFilter] = useState<string>('All');
+  const [batchFilter, setBatchFilter] = useState<string>('All');
+  const [batchOptions, setBatchOptions] = useState<string[]>([]);
 
   const toggleSearch = () => {
     if (dropdownOpen) setDropdownOpen(false);
@@ -150,12 +156,7 @@ export function CourseDetailScreen({ route, navigation }: any) {
     }
 
     try {
-      const [courseRes, matRes, qbRes, bookRes] = await Promise.all([
-        supabase.from('study_courses').select('*').eq('id', courseId).maybeSingle(),
-        supabase.from('study_materials').select('*').eq('course_id', courseId).order('created_at', { ascending: false }),
-        supabase.from('study_question_bank').select('*').eq('course_id', courseId).order('created_at', { ascending: false }),
-        supabase.from('study_books').select('*').eq('course_id', courseId).order('created_at', { ascending: false }),
-      ]);
+      const courseRes = await supabase.from('study_courses').select('*').eq('id', courseId).maybeSingle();
 
       if (!courseRes.data && !cached) {
         setLoading(false);
@@ -163,30 +164,100 @@ export function CourseDetailScreen({ route, navigation }: any) {
       }
 
       setIsOffline(false);
+      let siblingCourseIds = [courseId];
+      const batchLabels: Record<string, string> = {};
+
       if (courseRes.data) {
-        setCourse(courseRes.data);
+        const currentCourse = courseRes.data;
+        setCourse(currentCourse);
+        const code = currentCourse.code;
+
+        // Query sibling courses across batches with the same code (e.g. CSE 101)
+        if (code) {
+          const rawCode = code.trim();
+          const { data: siblings } = await supabase
+            .from('study_courses')
+            .select('id, section_id, study_sections(number, intake_id, study_intakes(number))')
+            .ilike('code', rawCode);
+
+          if (siblings && siblings.length > 0) {
+            siblingCourseIds = Array.from(new Set([courseId, ...siblings.map(s => s.id)]));
+            siblings.forEach((s: any) => {
+              const iNum = s.study_sections?.study_intakes?.number;
+              const secNum = s.study_sections?.number;
+              if (iNum) {
+                batchLabels[s.id] = `Intake ${iNum}${secNum ? ` · Sec ${secNum}` : ''}`;
+              }
+            });
+          }
+        }
+
         if (user) {
-          const { data: me } = await supabase
+          const { data: myMemberships } = await supabase
             .from('study_section_members')
-            .select('role, status')
-            .eq('section_id', courseRes.data.section_id)
+            .select('section_id, role, status')
             .eq('user_id', user.id)
-            .eq('status', 'approved')
-            .maybeSingle();
-          const canEdit = me?.role === 'cr' || me?.role === 'editor' || profile?.role === 'admin';
-          setIsCR(me?.role === 'cr' || profile?.role === 'admin');
-          setCanUpload(canEdit);
+            .eq('status', 'approved');
+
+          const isDirectCR = (myMemberships ?? []).some(m => m.section_id === currentCourse.section_id && (m.role === 'cr' || profile?.role === 'admin'));
+          setIsCR(isDirectCR || profile?.role === 'admin');
+          setCanUpload((myMemberships ?? []).length > 0 || profile?.role === 'admin');
         } else {
           setIsCR(profile?.role === 'admin');
           setCanUpload(profile?.role === 'admin');
         }
       }
 
-      const allMats = ((matRes.data ?? []) as any[]).map(r => ({ ...r, table: 'study_materials' as const }));
+      const [matRes, qbRes, bookRes] = await Promise.all([
+        supabase.from('study_materials').select('*').in('course_id', siblingCourseIds).order('created_at', { ascending: false }),
+        supabase.from('study_question_bank').select('*').in('course_id', siblingCourseIds).order('created_at', { ascending: false }),
+        supabase.from('study_books').select('*').in('course_id', siblingCourseIds).order('created_at', { ascending: false }),
+      ]);
+
+      const rawMats = (matRes.data ?? []) as any[];
+      const rawQbs = (qbRes.data ?? []) as any[];
+      const rawBks = (bookRes.data ?? []) as any[];
+
+      // Fetch uploader names for attribution
+      const uploaderIds = Array.from(new Set([...rawMats, ...rawQbs, ...rawBks].map(r => r.uploaded_by || r.added_by).filter(Boolean)));
+      let peopleMap: Record<string, { full_name?: string }> = {};
+      if (uploaderIds.length > 0) {
+        try {
+          peopleMap = await fetchPeople(uploaderIds);
+        } catch {
+          // fallback
+        }
+      }
+
+      const allMats = rawMats.map(r => ({
+        ...r,
+        table: 'study_materials' as const,
+        batch_label: batchLabels[r.course_id] || null,
+        uploader_name: peopleMap[r.uploaded_by]?.full_name || null,
+      }));
       const noteEntries = allMats.filter(f => f.type !== 'Lecture Slide' && !['ppt', 'pptx'].includes((f.file_kind ?? '').toLowerCase()));
       const slideEntries = allMats.filter(f => f.type === 'Lecture Slide' || ['ppt', 'pptx'].includes((f.file_kind ?? '').toLowerCase()));
-      const qs   = ((qbRes.data ?? []) as any[]).map(r => ({ ...r, table: 'study_question_bank' as const }));
-      const bks  = ((bookRes.data ?? []) as any[]).map(r => ({ ...r, table: 'study_books' as const }));
+      const qs = rawQbs.map(r => ({
+        ...r,
+        table: 'study_question_bank' as const,
+        batch_label: batchLabels[r.course_id] || null,
+        uploader_name: peopleMap[r.uploaded_by]?.full_name || null,
+      }));
+      const bks = rawBks.map(r => ({
+        ...r,
+        table: 'study_books' as const,
+        batch_label: batchLabels[r.course_id] || null,
+        uploader_name: peopleMap[r.added_by]?.full_name || null,
+      }));
+
+      // Collect distinct batches
+      const distinctBatches = Array.from(new Set(
+        [...noteEntries, ...slideEntries, ...qs, ...bks]
+          .map(e => e.batch_label)
+          .filter(Boolean) as string[]
+      )).sort();
+      setBatchOptions(distinctBatches.length > 1 ? ['All Batches', ...distinctBatches] : []);
+
       setMaterials(noteEntries);
       setSlides(slideEntries);
       setQuestions(qs);
@@ -377,11 +448,12 @@ export function CourseDetailScreen({ route, navigation }: any) {
   // Exam options for the questions filter
   const examOptions = ['All', ...Array.from(new Set(questions.map(q => q.exam).filter(Boolean) as string[]))];
 
-  // Derived list: search + exam filter + sort
+  // Derived list: search + exam filter + batch filter + sort
   let tabFiles = lists[tab];
   const q = query.trim().toLowerCase();
   if (q) tabFiles = tabFiles.filter(f => f.title.toLowerCase().includes(q));
   if (tab === 'questions' && examFilter !== 'All') tabFiles = tabFiles.filter(f => f.exam === examFilter);
+  if (batchFilter !== 'All') tabFiles = tabFiles.filter(f => f.batch_label === batchFilter);
   tabFiles = [...tabFiles].sort((a, b) =>
     sort === 'name'
       ? a.title.localeCompare(b.title)
@@ -435,14 +507,21 @@ export function CourseDetailScreen({ route, navigation }: any) {
         keyboardShouldPersistTaps="handled"
       >
         <Text style={[styles.title, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{course.name}</Text>
-        {!canUpload && (
+        {batchOptions.length > 1 ? (
+          <View style={[styles.readOnlyBadge, { backgroundColor: isDark ? 'rgba(45, 212, 191, 0.12)' : '#f0fdfa', borderColor: isDark ? 'rgba(45, 212, 191, 0.3)' : '#99f6e4' }]}>
+            <Feather name="layers" size={13} color={STUDY_COLOR} />
+            <Text style={[styles.readOnlyTxt, { color: STUDY_COLOR, fontFamily: FontFamily.jakartaBold }]}>
+              Compounding Knowledge Base · {batchOptions.length - 1} Batches Contributed
+            </Text>
+          </View>
+        ) : !canUpload ? (
           <View style={[styles.readOnlyBadge, { backgroundColor: C.surface2, borderColor: C.border }]}>
             <Feather name="book-open" size={13} color={C.textMuted} />
             <Text style={[styles.readOnlyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-              Open Department Library · Read-only access
+              Open Department Library
             </Text>
           </View>
-        )}
+        ) : null}
 
         {/* Marketplace cross-link - textbooks/notes on sale for this course */}
         {forSale.length > 0 && (
@@ -571,6 +650,25 @@ export function CourseDetailScreen({ route, navigation }: any) {
           )}
         </View>
 
+        {/* Batch filter (cross-intake knowledge inheritance) */}
+        {batchOptions.length > 1 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, marginTop: 10 }} contentContainerStyle={{ gap: 7 }}>
+            {batchOptions.map(b => {
+              const on = batchFilter === b;
+              return (
+                <TouchableOpacity
+                  key={b}
+                  style={[styles.examChip, on ? { backgroundColor: C.surface2, borderColor: STUDY_COLOR } : { backgroundColor: C.surface, borderColor: C.border }]}
+                  onPress={() => setBatchFilter(b)}
+                  activeOpacity={0.75}
+                >
+                  <Text style={[styles.examTxt, { color: on ? C.text : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{b}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        )}
+
         {/* Exam filter (questions only) */}
         {tab === 'questions' && examOptions.length > 1 && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, marginTop: 10 }} contentContainerStyle={{ gap: 7 }}>
@@ -621,6 +719,14 @@ export function CourseDetailScreen({ route, navigation }: any) {
                         <Text style={[styles.tagTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>{tagText}</Text>
                       </View>
                     ) : null}
+                    {f.batch_label ? (
+                      <View style={[styles.tagPill, { backgroundColor: isDark ? 'rgba(45, 212, 191, 0.15)' : '#f0fdfa' }]}>
+                        <Feather name="layers" size={9} color={STUDY_COLOR} />
+                        <Text style={[styles.tagTxt, { color: STUDY_COLOR, fontFamily: FontFamily.jakartaBold }]}>
+                          {f.batch_label}
+                        </Text>
+                      </View>
+                    ) : null}
                     {tab === 'questions' && f.verified ? (
                       <View style={[styles.tagPill, { backgroundColor: C.successBg }]}>
                         <Feather name="check" size={10} color={C.success} />
@@ -628,7 +734,7 @@ export function CourseDetailScreen({ route, navigation }: any) {
                       </View>
                     ) : null}
                     <Text style={[styles.fileSize, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                      {[tab === 'books' && f.author ? f.author : null, sizeStr, formatRelativeTime(f.created_at)].filter(Boolean).join(' · ')}
+                      {[f.uploader_name ? `By ${f.uploader_name}` : null, tab === 'books' && f.author ? f.author : null, sizeStr, formatRelativeTime(f.created_at)].filter(Boolean).join(' · ')}
                     </Text>
                   </View>
                 </View>

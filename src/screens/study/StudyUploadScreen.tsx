@@ -73,6 +73,7 @@ export function StudyUploadScreen({ route, navigation }: any) {
   const [pickedFile, setPickedFile] = useState<PickedFile | null>(null);
   const [sectionId, setSectionId] = useState<string | null>(null);
   const [intakeId, setIntakeId] = useState<string | null>(null);
+  const [targetCourseId, setTargetCourseId] = useState<string | null>(courseId ?? null);
   const [loading, setLoading] = useState(false);
 
   // Questions need the course's section; books are intake-scoped too.
@@ -80,17 +81,66 @@ export function StudyUploadScreen({ route, navigation }: any) {
     let active = true;
     (async () => {
       if (!courseId) return;
-      const { data: c } = await supabase.from('study_courses').select('section_id').eq('id', courseId).single();
-      if (!active) return;
-      if (c?.section_id) {
-        setSectionId(c.section_id);
-        const { data: s } = await supabase.from('study_sections').select('intake_id').eq('id', c.section_id).single();
-        if (!active) return;
-        if (s?.intake_id) setIntakeId(s.intake_id);
+      const { data: c } = await supabase.from('study_courses').select('id, section_id, code, name').eq('id', courseId).single();
+      if (!active || !c) return;
+
+      let resolvedCourse = c.id;
+      let resolvedSec = c.section_id;
+
+      if (user) {
+        const { data: directMem } = await supabase
+          .from('study_section_members')
+          .select('role')
+          .eq('section_id', c.section_id)
+          .eq('user_id', user.id)
+          .eq('status', 'approved')
+          .maybeSingle();
+
+        // If not in this section, check user's own section for junior batch inheritance
+        if (!directMem) {
+          const { data: myMem } = await supabase
+            .from('study_section_members')
+            .select('section_id')
+            .eq('user_id', user.id)
+            .eq('status', 'approved')
+            .maybeSingle();
+
+          if (myMem?.section_id) {
+            resolvedSec = myMem.section_id;
+            const { data: myCourse } = await supabase
+              .from('study_courses')
+              .select('id')
+              .eq('section_id', myMem.section_id)
+              .ilike('code', c.code)
+              .maybeSingle();
+
+            if (myCourse) {
+              resolvedCourse = myCourse.id;
+            } else {
+              const { data: newC } = await supabase
+                .from('study_courses')
+                .insert({
+                  section_id: myMem.section_id,
+                  code: c.code,
+                  name: c.name,
+                  created_by: user.id,
+                })
+                .select('id')
+                .maybeSingle();
+              if (newC) resolvedCourse = newC.id;
+            }
+          }
+        }
       }
+
+      setTargetCourseId(resolvedCourse);
+      setSectionId(resolvedSec);
+      const { data: s } = await supabase.from('study_sections').select('intake_id').eq('id', resolvedSec).single();
+      if (!active) return;
+      if (s?.intake_id) setIntakeId(s.intake_id);
     })();
     return () => { active = false; };
-  }, [courseId]);
+  }, [courseId, user]);
 
   // Questions need the resolved section_id, books need the resolved intake_id
   // (both NOT NULL in the DB) - block submit until the async lookup finishes.
@@ -145,12 +195,13 @@ export function StudyUploadScreen({ route, navigation }: any) {
         if (!up.success) throw new Error(up.error);
       }
 
+      const finalCourseId = targetCourseId || courseId;
       let insertError = null as any;
       if (fileType === 'questions') {
         // canSubmit guarantees these; the checks make it visible to the compiler.
         if (!sectionId || !storagePath) throw new Error(t.study2.couldNotUpload);
         ({ error: insertError } = await supabase.from('study_question_bank').insert({
-          course_id:    courseId,
+          course_id:    finalCourseId,
           section_id:   sectionId,
           exam,
           title:        name.trim(),
@@ -162,7 +213,7 @@ export function StudyUploadScreen({ route, navigation }: any) {
       } else if (fileType === 'books') {
         if (!intakeId) throw new Error(t.study2.couldNotUpload);
         ({ error: insertError } = await supabase.from('study_books').insert({
-          course_id:    courseId,
+          course_id:    finalCourseId,
           intake_id:    intakeId,
           title:        name.trim(),
           author:       author.trim() || null,
@@ -175,7 +226,7 @@ export function StudyUploadScreen({ route, navigation }: any) {
         if (!storagePath) throw new Error(t.study2.couldNotUpload);
         const resolvedType = fileType === 'slides' ? 'Lecture Slide' : materialType;
         ({ error: insertError } = await supabase.from('study_materials').insert({
-          course_id:    courseId,
+          course_id:    finalCourseId,
           type:         resolvedType,
           title:        name.trim(),
           storage_path: storagePath,

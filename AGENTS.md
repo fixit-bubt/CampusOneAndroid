@@ -2718,3 +2718,26 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - TypeScript Compilation: 0 errors across the entire codebase (`tsc --noEmit`).
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`).
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
+
+
+---
+
+### 60. Study Hub Semester Progression, Compounding Academic Archive & Cross-Batch Knowledge Base (/zero-slop, /code-review-and-quality, /performance-optimization)
+- **Class Representative (CR) Semester Promotion & Academic Lifecycle (`StudyHubScreen.tsx`):**
+  - Added dedicated "ACADEMIC SEMESTER LIFECYCLE" card inside Section Management (`manageTab === 'settings'`).
+  - Active semester display (`Current: Semester N · Active Term`) with intuitive explanation of the 4-month academic term rollover.
+  - "Advance Section to Semester N+1" action trigger opening a comprehensive safety confirmation modal (`advanceModalOpen`).
+  - Modal details the 4 core guarantees: existing materials safely archived, current members stay enrolled without needing to re-join, junior batches inherit archived materials, and a clean slate opens for the new semester's courses.
+- **Section Semester Archive Switcher & Persistence:**
+  - Integrated horizontal semester archive switcher chips (`Active: Semester N` vs `Semester 1 Archive`, `Semester 2 Archive`, etc.) in `renderMemberHome()`.
+  - When viewing an archived semester, an informational banner appears with an "Exit Archive" button.
+  - Section semester progression is persisted per section in cache (`study_section_prog_${sec.id}`), keeping active semester and archived courses preserved across app restarts and offline sessions.
+- **Compounding Academic Archive & Cross-Batch Inheritance (`CourseDetailScreen.tsx` & `StudyUploadScreen.tsx`):**
+  - **Cross-Batch Aggregation:** `CourseDetailScreen` aggregates sibling courses matching the course code across departments and intakes (`ilike('code', rawCode)`).
+  - Juniors (e.g. Intake 52 in Semester 1) automatically view all notes, CT questions, reference books, and lecture slides uploaded by senior batches (e.g. Intake 51), creating a compounding repository.
+  - Added intake and section attribution badges (`Intake 51 · Sec 2`) and horizontal batch filter chips (`All Batches`, `Intake 51`, etc.) so students can filter materials by batch or study together.
+  - **Junior Contribution Architecture:** In `StudyUploadScreen.tsx`, when a junior uploads to a course from another intake/archive, it automatically resolves or creates the course in their approved section to pass PostgreSQL RLS (`study_can_edit`), seamlessly linking into the unified course code view.
+- **Verification Evidence:**
+  - TypeScript Compilation: 0 errors across the entire codebase (`tsc --noEmit`).
+  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) in 41s.
+  - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
