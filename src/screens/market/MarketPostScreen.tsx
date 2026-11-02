@@ -564,9 +564,6 @@ export function MarketPostScreen({ route, navigation }: any) {
                   >
                     {meetupSpot || 'Select campus spot or Dhaka area...'}
                   </Text>
-                  <Text style={[styles.dropdownHint, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                    {meetupSpot ? 'Tap to change handover spot' : 'BUBT campus hubs, gates & commute points'}
-                  </Text>
                 </View>
               </TouchableOpacity>
               <View style={styles.dropdownRight}>

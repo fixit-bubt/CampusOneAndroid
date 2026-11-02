@@ -549,17 +549,6 @@ export function PostItemFormScreen({ route, navigation }: any) {
                     ? (isBn ? 'কোথায় হারিয়ে গেছে?' : 'Where was it lost?')
                     : (isBn ? 'কোথায় পাওয়া গেছে?' : 'Where was it found?'))}
                 </Text>
-                <Text
-                  style={[
-                    styles.dropdownSub,
-                    { color: C.textMuted, fontFamily: FontFamily.jakartaRegular },
-                  ]}
-                  numberOfLines={1}
-                >
-                  {loc
-                    ? (isBn ? 'স্থান বা রুম পরিবর্তন করতে ট্যাপ করুন' : 'Tap to change spot or room')
-                    : (isBn ? 'BUBT স্পট, রুম নম্বর বা ম্যাপ থেকে বেছে নিন' : 'BUBT spot, room number, or map')}
-                </Text>
               </View>
             </TouchableOpacity>
             <View style={styles.dropdownRightBtns}>

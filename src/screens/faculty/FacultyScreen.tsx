@@ -790,7 +790,7 @@ export function FacultyScreen({ navigation }: any) {
                     color={C.text}
                   />
                 </View>
-                <View style={{ flex: 1, minWidth: 0 }}>
+                <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
                   <Text
                     style={[
                       styles.pickerBarText,
@@ -801,9 +801,6 @@ export function FacultyScreen({ navigation }: any) {
                     ]}
                   >
                     {t.faculty2.allDepartments}
-                  </Text>
-                  <Text style={[styles.pickerBarSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                    All 13 BUBT academic departments
                   </Text>
                 </View>
                 {selectedDeptId === 'All' ? (
@@ -944,7 +941,7 @@ export function FacultyScreen({ navigation }: any) {
                     color={C.text}
                   />
                 </View>
-                <View style={{ flex: 1, minWidth: 0 }}>
+                <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
                   <Text
                     style={[
                       styles.pickerBarText,
@@ -955,9 +952,6 @@ export function FacultyScreen({ navigation }: any) {
                     ]}
                   >
                     {t.faculty2.allDomains}
-                  </Text>
-                  <Text style={[styles.pickerBarSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                    All publication topics & research areas
                   </Text>
                 </View>
                 {!interest ? (

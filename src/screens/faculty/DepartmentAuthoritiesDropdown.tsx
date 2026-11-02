@@ -129,12 +129,6 @@ export function DepartmentAuthoritiesDropdown({
           >
             Department Authorities
           </Text>
-          <Text
-            style={[styles.barSubtitle, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}
-            numberOfLines={1}
-          >
-            Chairman · Asst. Proctor · Dean
-          </Text>
         </View>
 
         <View style={styles.rightSlot}>
@@ -304,6 +298,7 @@ const styles = StyleSheet.create({
   barCenter: {
     flex: 1,
     minWidth: 0,
+    justifyContent: 'center',
   } as ViewStyle,
 
   barTitle: {

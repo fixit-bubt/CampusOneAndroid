@@ -729,9 +729,6 @@ export function RoutinesBrowseScreen({ route, navigation }: any) {
               <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                 All
               </Text>
-              <Text style={[styles.barSubtitle, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
-                Full departmental routine documents & circulars (Official PDF)
-              </Text>
             </View>
             <View style={[styles.actionTag, { backgroundColor: isDark ? 'rgba(91, 133, 247, 0.15)' : '#e0edff' }]}>
               <Text style={[styles.actionTagText, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
@@ -761,9 +758,6 @@ export function RoutinesBrowseScreen({ route, navigation }: any) {
             <View style={styles.barTextCol}>
               <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                 Choose
-              </Text>
-              <Text style={[styles.barSubtitle, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
-                Filter by specific Intake & Section timetable
               </Text>
             </View>
             <View style={[styles.actionTag, { backgroundColor: isDark ? 'rgba(52, 211, 153, 0.15)' : '#e6f7ef' }]}>

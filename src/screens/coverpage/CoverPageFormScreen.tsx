@@ -1095,12 +1095,9 @@ export function CoverPageFormScreen({ navigation }: any) {
                   <View style={styles.toolIcon}>
                     <AnimatedIcon family="feather" name="plus" size={32} color={C.text} />
                   </View>
-                  <View style={{ flex: 1 }}>
+                  <View style={{ flex: 1, justifyContent: 'center' }}>
                     <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                       Add Group Member
-                    </Text>
-                    <Text style={[styles.childDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
-                      Add up to 6 project teammates with ID
                     </Text>
                   </View>
                   <Feather name="chevron-right" size={17} color={C.textMuted} />
@@ -1110,12 +1107,9 @@ export function CoverPageFormScreen({ navigation }: any) {
                   <View style={styles.toolIcon}>
                     <Feather name="info" size={17} color={C.textMuted} />
                   </View>
-                  <View style={{ flex: 1 }}>
+                  <View style={{ flex: 1, justifyContent: 'center' }}>
                     <Text style={[styles.childTitle, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
                       Maximum Group Size Reached
-                    </Text>
-                    <Text style={[styles.childDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
-                      Limited to 6 members to fit standard single-page format
                     </Text>
                   </View>
                 </View>
