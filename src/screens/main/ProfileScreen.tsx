@@ -477,6 +477,24 @@ export function ProfileScreen({ navigation }: any) {
   const [accomplishments, setAccomplishments] = useState<AccomplishmentItem[]>([]);
   const [addSheetOpen, setAddSheetOpen] = useState(false);
 
+  const socialLinks = useMemo(() => {
+    if (!profile?.expertise) return null;
+    try {
+      const parsed = JSON.parse(profile.expertise);
+      if (typeof parsed === 'object' && parsed !== null) {
+        return {
+          facebook: parsed.facebook || '',
+          instagram: parsed.instagram || '',
+          telegram: parsed.telegram || '',
+          linkedin: parsed.linkedin || '',
+        };
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  }, [profile?.expertise]);
+
   const isStudent = role === 'student';
 
   const CACHE_CONTRIB_KEY = (uid: string) => `profile_contrib_${uid}`;
@@ -797,6 +815,82 @@ export function ProfileScreen({ navigation }: any) {
                   </Text>
                   <Text style={[styles.infoValue, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>
                     {profile.address}
+                  </Text>
+                </View>
+              </View>
+            </>
+          ) : null}
+
+          {socialLinks?.facebook ? (
+            <>
+              <View style={[styles.infoDivider, { backgroundColor: C.border }]} />
+              <View style={styles.infoRow}>
+                <View style={styles.infoIconBox}>
+                  <Feather name="facebook" size={18} color={C.textMuted} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.infoLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                    Facebook
+                  </Text>
+                  <Text style={[styles.infoValue, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>
+                    {socialLinks.facebook}
+                  </Text>
+                </View>
+              </View>
+            </>
+          ) : null}
+
+          {socialLinks?.instagram ? (
+            <>
+              <View style={[styles.infoDivider, { backgroundColor: C.border }]} />
+              <View style={styles.infoRow}>
+                <View style={styles.infoIconBox}>
+                  <Feather name="instagram" size={18} color={C.textMuted} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.infoLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                    Instagram
+                  </Text>
+                  <Text style={[styles.infoValue, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>
+                    {socialLinks.instagram}
+                  </Text>
+                </View>
+              </View>
+            </>
+          ) : null}
+
+          {socialLinks?.telegram ? (
+            <>
+              <View style={[styles.infoDivider, { backgroundColor: C.border }]} />
+              <View style={styles.infoRow}>
+                <View style={styles.infoIconBox}>
+                  <Feather name="send" size={18} color={C.textMuted} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.infoLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                    Telegram
+                  </Text>
+                  <Text style={[styles.infoValue, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>
+                    {socialLinks.telegram}
+                  </Text>
+                </View>
+              </View>
+            </>
+          ) : null}
+
+          {socialLinks?.linkedin ? (
+            <>
+              <View style={[styles.infoDivider, { backgroundColor: C.border }]} />
+              <View style={styles.infoRow}>
+                <View style={styles.infoIconBox}>
+                  <Feather name="globe" size={18} color={C.textMuted} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.infoLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                    LinkedIn / Portfolio
+                  </Text>
+                  <Text style={[styles.infoValue, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>
+                    {socialLinks.linkedin}
                   </Text>
                 </View>
               </View>
