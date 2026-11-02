@@ -2883,3 +2883,25 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`) in 43s.
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
   - Remote Git Sync: Clean commit and push to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.
+
+---
+
+### 66. Role-Aware Notification Settings Optimization (`NotifSettingsScreen.tsx`) (/zero-slop, /code-review-and-quality, /performance-optimization)
+- **Role-Scoped Category Filtering:**
+  - Resolved clutter in Notification Settings where staff accounts were exposed to irrelevant categories: Marketplace, Ride Share, Medical Center, and Prayer Times.
+  - Marketplace (`market`) and Ride Share (`ride`) are student peer-to-peer features not present in the staff interface.
+  - Medical Center (`medical`) and Prayer Times (`prayer`) are static campus directories that do not emit push notifications.
+  - Strict, role-scoped sector sets defined:
+    - `STAFF_NOTIF_SECTORS: SectorKey[] = ['reports', 'announce', 'blood', 'bus']`
+    - `ADMIN_NOTIF_SECTORS: SectorKey[] = ['reports', 'announce', 'events', 'clubs', 'jobs', 'blood', 'bus']`
+  - Memoized `visibleSectors` with `useMemo([role])`, confining staff notification preferences strictly to:
+    1. **Issue Reports (`reports`)**: Critical maintenance work orders assigned to staff and status changes.
+    2. **Announcements (`announce`)**: Official university circulars and emergency closures.
+    3. **Blood Donation (`blood`)**: Urgent campus blood requests and sensitivity filters (`Urgent Only`, `Urgent & Today`, `All`).
+    4. **Bus Schedule (`bus`)**: Bus route updates and transport delays for campus commuters.
+  - Enhanced category title rendering via `t.sectorTitles?.[s.id] ?? (t.notif?.sectorLabel ? t.notif.sectorLabel(s.id) : s.label)` ensuring consistent bilingual display in English and Bengali.
+- **Verification Evidence:**
+  - TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
+  - Native Release APK: Locally compiled via Gradle (`assembleRelease`).
+  - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
+  - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.
