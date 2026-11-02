@@ -184,11 +184,16 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
 - **Geometric Harmony:** Maintain consistent 2px stroke weight (`stroke: 2`), standard 24dp viewbox, and subtle round caps/joins.
 - **Zero AI-Looking Icons:** Never use AI-generated visual badges or clip-art styles. Icons must look razor-sharp, purposeful, and production-standard.
 - **Universal 32dp Monochrome Icon Standard (Anti-Clutter System):**
-  - **Zero Outer Boxes Everywhere:** Outer colored squircle boxes (ackgroundColor and colored borders) behind icons are strictly removed across the entire app. Icons float cleanly within their transparent layout slots (styles.iconBox, cardStyles.icon44, styles.thumb, styles.catIcon, card72IconBox, deptIconBox, arIconBox, searchResultIconBox, locationIconBox44, headerIconPill, spotIconWrap, locIconSquare, modalItemIconBox, otIconWrap, syncIconWrap). This covers all navigation lists, tool cards, modal pickers, dashboard cards, and deep interactive surfaces including Map & Navigation Modals (DirectionMapModal), Location Pickers & Search Results (LocationPickerModal, AreaPickerModal, CommuteAreaPickerModal), Meetup Location Pins (MarketDetailScreen, MarketPostScreen), Blood & Medical Hospital Rows (BloodRequestDetailScreen, BloodRequestScreen, MedicalScreen, DoctorDetailScreen), Bus Helper Avatars (BusDetailScreen), AI Chatbot Triggers & Avatars (ChatbotScreen, ChatbotHistoryScreen), and PDF Tools (ToolImagesScreen, ToolCompressScreen).
-  - **Universal 32dp Icon Metric:** All feature sector icons, tool cards, navigation destination rows, dashboard cards, modal item pickers, map navigation headers, and list items are scaled up to **32dp** (size={32} for primary list/card rows, size={28} for compact tool grids and modal item boxes, and size={24} for dense input triggers and search results). Centered within transparent slots, icons align harmoniously with 2-line title/subtitle text blocks (~40dp).
-  - **High-Contrast Monochrome Palette:** All navigation and sector icons render in crisp monochrome (C.text / White #f4f4f5 in OLED Dark Mode, Deep Slate #18181b in Light Mode) or Zinc (C.textMuted / C.text2 for subtle secondary chevrons/indicators). Arbitrary rainbow accent colors behind or on navigation icons are eliminated to match top-tier design systems (Linear, Raycast, iOS Settings, Nothing OS).
+  - **Zero Outer Boxes Everywhere:** Outer colored squircle boxes (`backgroundColor` fills and colored borders) behind icons are strictly removed across the entire app. Icons float cleanly within their transparent layout slots (`styles.iconBox`, `cardStyles.icon44`, `styles.thumb`, `styles.catIcon`, `styles.bar72`, `styles.childBar72`, `styles.deptBarTile`, `styles.toolCard`, `styles.card72IconBox`, `styles.deptIconBox`, `styles.searchResultIconBox`, `styles.locationIconBox44`, `styles.headerIconPill`, `styles.spotIconWrap`, `styles.locIconSquare`, `styles.modalItemIconBox`, `styles.botIconWrap`, `styles.suggestionIcon`, `styles.rowIcon`, `styles.groupIcon`, `styles.statIcon`, `styles.issueIcon`, `styles.fileIcon`, `styles.attachIcon`, `styles.officialLinkIconSquircle`, `styles.btnIconBox`, `styles.iconBtn`, `styles.syncIconWrap`, `pickerBarIconBox`, `mapTriggerIconWrap`, `settingIcon`, `docIdentityRow`, `largePdfIconBox`, `destIconWrap`). This covers all 77 interactive screens, modals, pickers, and sheets.
+  - **Standardized Hierarchy (Zero-Slop Metric System):**
+    - **Tier 1 (32dp Primary):** Primary list cards, feature sectors, modal selection bars, dropdown headers, tool cards, and category items (`size={32}`). Centered within transparent slots, icons align harmoniously with 2-line title/subtitle text blocks (~40dp).
+    - **Tier 2 (28dp Secondary):** Compact tool grids, category sheets, prompt suggestions (`size={28}`).
+    - **Tier 3 (24dp Inputs & Forms):** Search bar leading icons, contact/profile information rows, and form input leading triggers (`size={24}`).
+    - **Tier 4 (22dp Headers & Action Controls):** Back buttons (`TopBar`), bookmark, share, call, message, and external link buttons (`size={22}` to `size={24}`).
+    - **Tier 5 (36dp / 40dp Document & Hero Badges):** Master PDF document identities, offline indicators, and empty state illustrations (`size={36}` to `size={40}`).
+  - **High-Contrast Monochrome Palette:** All navigation and sector icons render in crisp monochrome (`C.text` / White `#f4f4f5` in OLED Dark Mode, Deep Slate `#18181b` in Light Mode) or Zinc (`C.textMuted` / `C.text2` for subtle secondary chevrons/indicators). Arbitrary rainbow accent colors behind or on navigation icons are eliminated to match top-tier design systems (Linear, Raycast, iOS Settings, Nothing OS).
   - **Automatic Theme Resolution & Contrast Guarantee:** `SectorIcon`, `Icon`, and `AnimatedIcon` internally resolve active theme colors via `useTheme()`. `SectorIcon` automatically falls back to the active system theme (`isDarkMode ? '#f4f4f5' : '#18181b'`) whenever `dark` is omitted, eliminating dark charcoal black-on-black invisibility bugs. `Icon` and `AnimatedIcon` automatically default omitted `color` to `C.text` instead of undefined (preventing vector icons from defaulting to hardcoded black).
-  - **Unified Brand Blue Switches (LiquidToggle / TactileSwitch):** All interactive toggle switches across the app (language settings, notification preferences, dark mode toggles, and feature settings) strictly use the unified Electric Brand Blue (#275EFE / C.brand) active track fill to maintain cohesive brand identity.
+  - **Unified Brand Blue Switches (LiquidToggle / TactileSwitch):** All interactive toggle switches across the app (language settings, notification preferences, dark mode toggles, and feature settings) strictly use the unified Electric Brand Blue (`#275EFE` / `C.brand`) active track fill to maintain cohesive brand identity.
 - **Universal Vector Icon Standard (Zero-Slop & Zero-Animation Architecture):**
   - **100% Pure Static Vector Rendering:** All icon animation overhead (`Animated.Value`, `Animated.spring`, `Animated.timing`, scale/rotation/translate transforms, loops, and touch spring responders) is completely stripped across `AnimatedIcon`, `SectorIcon`, `Icon`, and all consumer screens/modals.
   - **Performance Optimization:** Eliminates RenderThread bridge queuing, GPU hardware layer clipping, gesture responder interception conflicts, and memory allocations for animated values. Renders at instant 120 FPS on all Android devices.
@@ -2759,4 +2764,46 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
 - **Verification Evidence:**
   - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`) in 42s.
+  - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
+---
+
+### 62. Universal 32dp Monochrome Standard & Trapped Icon Boxes Removal Across 77 Files (/zero-slop, /design-taste-frontend, /code-review-and-quality, /ui-ux-pro-max)
+- **Comprehensive Codebase Audit & Decoupling:**
+  - Audited 223 TypeScript/TSX files and 1,268 icon occurrences. Systematically eliminated all colored squircle envelopes, background fills (`backgroundColor`), and borders (`borderRadius` / `borderWidth`) trapping icons across 77 files.
+  - Icons now float cleanly in transparent layout slots with harmonious visual balance against typography.
+- **5-Tier Icon Metric Implementation:**
+  - **Tier 1 (32dp Primary Cards & Lists):** Standardized across all navigation list items, dashboard cards, modal item pickers, and tool cards (`TopBar`, `FacultyScreen`, `FacultyProfileScreen`, `MedicalScreen`, `DoctorDetailScreen`, `LostFoundBrowseScreen`, `LostFoundDetailScreen`, `PostItemFormScreen`, `MarketScreen`, `MarketPostScreen`, `BloodScreen`, `BloodRequestScreen`, `RidesScreen`, `RidePostScreen`, `RideDetailScreen`, `StudyHubScreen`, `CourseDetailScreen`, `JobsBrowseScreen`, `EventsBrowseScreen`, `AnnouncementsScreen`, `PdfMakerScreen`, `ToolImagesScreen`, `ToolCompressScreen`, `ToolMergeScreen`, `ToolOrganizeScreen`, `CoverPageFormScreen`, `AdminDashboardScreen`, `StaffDashboardScreen`, `AssignedToMeScreen`, `ReportDetailScreen`, `MessagesHome`, `SettingsScreen`).
+  - **Tier 2 (28dp Secondary & Suggestions):** Compact tool cards and AI chatbot prompt suggestions (`ChatbotScreen`, `CourseDetailScreen`).
+  - **Tier 3 (24dp Inputs & Forms):** Search bar leading search icons and form input leading triggers across all screens (`DirectoryScreen`, `ManageFacultyScreen`, `StudentProfileScreen`, `EditProfileModal`, `ProfileScreen`, `CoverPageFormScreen`, `RoutinesBrowseScreen`, `AreaPickerModal`, `CommuteAreaPickerModal`, `LocationPickerModal`, `DirectionMapModal`, `StudyUploadScreen`).
+  - **Tier 4 (22dp Headers & Quick Actions):** Back arrow navigation buttons and header rightSlot action buttons (`TopBar`, `NotificationsScreen`, `MessagesHome`, `MessageThread`, `ChatbotScreen`, `ChatbotHistoryScreen`, `ClubDetailScreen`, `EventDetailScreen`, `JobDetailScreen`, `CampusPdfViewerModal`, `PageStudioModal`, `components.tsx`).
+  - **Tier 5 (36dp / 40dp Document & Hero Badges):** Master PDF identities, empty state badges, and offline indicators (`RoutinesBrowseScreen`, `LoadState`, `AnnexPortalScreen`, `BloodRequestDetailScreen`, `CampusPdfViewerModal`, `MarketScreen`).
+- **Elimination of Arbitrary Rainbow Colors:**
+  - Removed hardcoded colors (`#25D366`, `#10B981`, `#8B5CF6`, `#2563eb`, `#0284c7`, etc.) on navigation and sector icons. Standardized to high-contrast monochrome `C.text` (White `#f4f4f5` in OLED Dark Mode, Deep Slate `#18181b` in Light Mode) and neutral zinc `C.textMuted` / `C.text2`.
+- **100% Authentic Vector Icon Standard:**
+  - Guaranteed zero AI-generated clip art; all icons sourced strictly from human-designed vector collections (Feather, MaterialCommunityIcons, Ionicons).
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
+  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) in 41s.
+  - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da` with zero logcat startup crashes.
+
+---
+
+### 63. Study Hub Upload Permissions Enforcement & 58dp Unified Dropdown Bar Architecture (`StudyUploadScreen.tsx`, `CourseDetailScreen.tsx`) (/zero-slop, /security-and-hardening, /code-review-and-quality, /ui-ux-pro-max)
+- **Role-Based Upload Permission Enforcement (CR & Designated Editors Only):**
+  - Aligned mobile client logic with Supabase PostgreSQL RLS (`0046_study_hub.sql` and `0052_studyhub_upload_cr_editor.sql`).
+  - **In `CourseDetailScreen.tsx`:** Fixed upload permission evaluation. Previously evaluated `(myMemberships ?? []).length > 0`, which accidentally showed the `+` upload button to regular students (`role === 'member'`), causing database-level RLS insert rejections. Now strictly gates the `+` upload button so only Section CRs (`role === 'cr'`), designated Editors (`role === 'editor'`), and platform Admins can see the upload action. Regular students see the read-only `Open Department Library` badge.
+  - **In `StudyUploadScreen.tsx`:** Added proactive permission guard (`canUpload`) on mount. If a non-permitted user attempts to access the screen, a clear warning card is displayed (*"Upload is restricted to Section CRs and designated Editors. General students have view & download access only"*), and the upload submit button is disabled.
+- **58dp Dropdown Bar System (`StudyUploadScreen.tsx`):**
+  - Eliminated messy horizontal chip wraps (`examChip`) for Note Types, Exam Tags, and Book Kinds.
+  - Replaced with standard **58dp dropdown bars** (`dropdownBar`, `height: 58`, `borderRadius: 16`, `borderWidth: 1`) matching the exact geometry of input fields, file pickers, and upload buttons.
+  - Closed bar displays the currently selected option with its clean vector icon on the left, label text, and chevron toggle.
+  - Expanded dropdown menu renders each option as a full-width **58dp item** (`dropdownItem`, `height: 58`), featuring a 24dp monochrome vector icon floating in a 32dp transparent slot, label text, subtle active tint highlight, and brand checkmark (`check`).
+  - Options mapping:
+    - **Notes (`materials`)**: `Class Note` (`file-text`), `Assignment` (`clipboard`), `Reference` (`bookmark`), `Lab Manual` (`cpu`).
+    - **Questions (`questions`)**: `Midterm Exam` (`calendar`), `Final Exam` (`award`), `Class Test 1 (CT 1)` (`edit-2`), `Class Test 2 (CT 2)` (`edit-3`).
+    - **Books (`books`)**: `Textbook` (`book-open`), `Reference Book` (`bookmark`), `Course Syllabus` (`list`).
+    - **Slides (`slides`)**: 58dp indicator for `Lecture Slide` (`monitor`).
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
+  - Native Release APK: Locally compiled via Gradle (`assembleRelease`).
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.

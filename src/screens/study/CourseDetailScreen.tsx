@@ -199,10 +199,14 @@ export function CourseDetailScreen({ route, navigation }: any) {
             .eq('user_id', user.id)
             .eq('status', 'approved');
 
-          const isDirectCR = (myMemberships ?? []).some(m => m.section_id === currentCourse.section_id && (m.role === 'cr' || profile?.role === 'admin'));
-          setIsCR(isDirectCR || profile?.role === 'admin');
-          const isEditorOrCR = (myMemberships ?? []).some(m => (m.role === 'cr' || m.role === 'editor')) || profile?.role === 'admin';
-          setCanUpload(isEditorOrCR);
+          const directMembership = (myMemberships ?? []).find(m => m.section_id === currentCourse.section_id);
+          const isDirectCR = directMembership?.role === 'cr' || profile?.role === 'admin';
+          setIsCR(isDirectCR);
+
+          const isDirectPermitted = directMembership
+            ? (directMembership.role === 'cr' || directMembership.role === 'editor')
+            : (myMemberships ?? []).some(m => m.role === 'cr' || m.role === 'editor');
+          setCanUpload(isDirectPermitted || profile?.role === 'admin');
         } else {
           setIsCR(profile?.role === 'admin');
           setCanUpload(profile?.role === 'admin');
