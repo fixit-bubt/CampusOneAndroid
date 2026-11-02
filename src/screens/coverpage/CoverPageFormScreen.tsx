@@ -1354,7 +1354,7 @@ export function CoverPageFormScreen({ navigation }: any) {
                   <AnimatedIcon
                     family="feather"
                     name={docTypeIcon(item)}
-                    size={28}
+                    size={32}
                     color={C.text}
                   />
                 </View>
@@ -1380,7 +1380,7 @@ export function CoverPageFormScreen({ navigation }: any) {
       {/* Course Picker Sheet (Each item is a 72-size bar) */}
       <BottomSheet visible={courseModal} onClose={() => { setCourseModal(false); setCourseSearch(''); }} title="Select Course" C={C}>
         <View style={[styles.sBar, { backgroundColor: C.surface2, borderColor: C.border }]}>
-          <Feather name="search" size={18} color={C.textMuted} />
+          <Feather name="search" size={24} color={C.textMuted} />
           <TextInput
             style={[styles.sInput, { color: C.text, fontFamily: FontFamily.jakartaRegular }]}
             value={courseSearch}
@@ -1415,7 +1415,7 @@ export function CoverPageFormScreen({ navigation }: any) {
                 <AnimatedIcon
                   family="feather"
                   name="book-open"
-                  size={28}
+                  size={32}
                   color={C.text}
                 />
               </View>
@@ -1437,7 +1437,7 @@ export function CoverPageFormScreen({ navigation }: any) {
       {/* Faculty Picker Sheet (Each item is a 72-size bar with teacher avatar & routine short code) */}
       <BottomSheet visible={facultyModal} onClose={() => { setFacultyModal(false); setFacultySearch(''); }} title="Select Faculty / Teacher" C={C}>
         <View style={[styles.sBar, { backgroundColor: C.surface2, borderColor: C.border }]}>
-          <Feather name="search" size={18} color={C.textMuted} />
+          <Feather name="search" size={24} color={C.textMuted} />
           <TextInput
             style={[styles.sInput, { color: C.text, fontFamily: FontFamily.jakartaRegular }]}
             value={facultySearch}
@@ -1516,7 +1516,7 @@ export function CoverPageFormScreen({ navigation }: any) {
                 <AnimatedIcon
                   family="feather"
                   name={getDeptIcon(item.name)}
-                  size={28}
+                  size={32}
                   color={C.text}
                 />
               </View>
@@ -1610,7 +1610,7 @@ function Bar72({
       activeOpacity={0.75}
     >
       <View style={styles.toolIcon}>
-        <Feather name={icon} size={20} color={C.text2} />
+        <Feather name={icon} size={24} color={C.text2} />
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text style={[styles.barLabel, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
@@ -1668,7 +1668,7 @@ function InputBar72({
       ]}
     >
       <View style={styles.toolIcon}>
-        <Feather name={icon} size={20} color={C.text2} />
+        <Feather name={icon} size={24} color={C.text2} />
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text style={[styles.barLabel, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
@@ -1776,7 +1776,6 @@ const styles = StyleSheet.create({
   toolIcon: {
     width: 42,
     height: 42,
-    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,

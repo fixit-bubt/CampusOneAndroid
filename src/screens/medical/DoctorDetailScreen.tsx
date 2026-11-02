@@ -250,22 +250,11 @@ export function DoctorDetailScreen({ route, navigation }: any) {
             { backgroundColor: C.surface, borderColor: C.border },
           ]}
         >
-          <View
-            style={[
-              styles.thumb,
-              {
-                backgroundColor: isPsych
-                  ? isDark
-                    ? 'rgba(168, 85, 247, 0.16)'
-                    : 'rgba(147, 51, 234, 0.1)'
-                  : MED_BG,
-              },
-            ]}
-          >
+          <View style={styles.thumb}>
             <Icon
               name={isPsych ? 'heart' : 'medical'}
-              size={26}
-              color={isPsych ? '#a855f7' : MED_COLOR}
+              size={32}
+              color={C.text}
             />
           </View>
           <View style={{ flex: 1 }}>
@@ -303,19 +292,7 @@ export function DoctorDetailScreen({ route, navigation }: any) {
 
         {/* Live Availability Banner */}
         <View style={[styles.availBanner, { backgroundColor: duty.bg }]}>
-          <View
-            style={[
-              styles.availIcon,
-              {
-                backgroundColor:
-                  duty.badge === 'on_duty'
-                    ? C.success
-                    : duty.badge === 'on_leave'
-                    ? C.danger
-                    : C.border,
-              },
-            ]}
-          >
+          <View style={styles.availIcon}>
             <Icon
               name={
                 duty.badge === 'on_duty'
@@ -324,8 +301,8 @@ export function DoctorDetailScreen({ route, navigation }: any) {
                   ? 'alert-triangle'
                   : 'clock'
               }
-              size={20}
-              color={C.white}
+              size={28}
+              color={duty.color}
             />
           </View>
           <View style={{ flex: 1 }}>
@@ -362,13 +339,8 @@ export function DoctorDetailScreen({ route, navigation }: any) {
             ]}
           >
             <View style={styles.counselingTop}>
-              <View
-                style={[
-                  styles.counselingIconBox,
-                  { backgroundColor: isDark ? '#a855f7' : '#9333ea' },
-                ]}
-              >
-                <Icon name="heart" size={18} color={C.white} />
+              <View style={styles.counselingIconBox}>
+                <Icon name="heart" size={28} color={C.text} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text

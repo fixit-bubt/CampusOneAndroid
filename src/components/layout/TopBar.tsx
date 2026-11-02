@@ -84,13 +84,13 @@ export function TopBar({ profile, title, subtitle: customSubtitle, unread = 0, o
       ) : onBell ? (
         <TouchableOpacity
           onPress={onBell}
-          style={[styles.iconBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+          style={styles.iconBtn}
           activeOpacity={0.75}
           accessibilityLabel={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'}
           accessibilityRole="button"
-          hitSlop={4}
+          hitSlop={8}
         >
-          <Icon name="bell" size={19} color={C.text2} />
+          <Icon name="bell" size={22} color={C.text} />
           {unread > 0 && (
             <View style={[styles.badge, { backgroundColor: C.danger }]}>
               <Text style={styles.badgeTxt}>{unread > 9 ? '9+' : unread}</Text>
@@ -116,13 +116,13 @@ export function SubBar({ title, onBack, right, rightSlot }: SubBarProps) {
     <View style={[styles.subbar, { backgroundColor: C.surface, borderBottomColor: C.border, paddingHorizontal: Layout.screenPadding }]}>
       <TouchableOpacity
         onPress={onBack}
-        style={[styles.iconBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+        style={styles.iconBtn}
         hitSlop={8}
         activeOpacity={0.75}
         accessibilityLabel="Go back"
         accessibilityRole="button"
       >
-        <Icon name="arrowL" size={20} color={C.text} />
+        <Icon name="arrowL" size={24} color={C.text} />
       </TouchableOpacity>
       <Text style={[styles.subbarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
         {title}
@@ -213,8 +213,6 @@ const styles = StyleSheet.create({
   iconBtn: {
     width: 40,
     height: 40,
-    borderRadius: 14,
-    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,

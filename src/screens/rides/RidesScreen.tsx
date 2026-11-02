@@ -258,7 +258,7 @@ export function RidesScreen({ navigation }: any) {
       <View style={{ paddingHorizontal: Layout.screenPadding, marginBottom: 8 }}>
         <View style={[styles.searchBar, { backgroundColor: C.surface, borderColor: C.border }]}>
           <TouchableOpacity onPress={() => searchInputRef.current?.focus()}>
-            <Icon name="search" size={18} color={C.textMuted} />
+            <Icon name="search" size={24} color={C.textMuted} />
           </TouchableOpacity>
           <TextInput
             ref={searchInputRef}

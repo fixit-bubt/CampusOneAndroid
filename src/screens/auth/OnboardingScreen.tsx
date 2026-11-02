@@ -389,8 +389,6 @@ const styles = StyleSheet.create({
   modalItemIconBox: {
     width: 36,
     height: 36,
-    borderRadius: 10,
-    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,

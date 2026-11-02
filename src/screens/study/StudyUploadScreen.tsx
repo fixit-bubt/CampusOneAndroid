@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView, Platform, StyleSheet, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as DocumentPicker from 'expo-document-picker';
+import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
@@ -35,8 +36,148 @@ const ALLOWED_MIME_TYPES = [
 ];
 
 // Must match the DB CHECK constraints exactly.
-const NOTE_TYPES = ['Class Note', 'Assignment', 'Reference', 'Lab Manual'];
-const BOOK_KINDS = ['Textbook', 'Reference', 'Syllabus'];
+const NOTE_TYPE_OPTIONS = [
+  { value: 'Class Note', label: 'Class Note', icon: 'file-text' },
+  { value: 'Assignment', label: 'Assignment', icon: 'clipboard' },
+  { value: 'Reference', label: 'Reference', icon: 'bookmark' },
+  { value: 'Lab Manual', label: 'Lab Manual', icon: 'cpu' },
+];
+
+const BOOK_KIND_OPTIONS = [
+  { value: 'Textbook', label: 'Textbook', icon: 'book-open' },
+  { value: 'Reference', label: 'Reference Book', icon: 'bookmark' },
+  { value: 'Syllabus', label: 'Course Syllabus', icon: 'list' },
+];
+
+interface DropdownOption {
+  value: string;
+  label: string;
+  icon: string;
+}
+
+interface DropdownProps {
+  label: string;
+  value: string;
+  options: DropdownOption[];
+  isOpen: boolean;
+  onToggle: () => void;
+  onSelect: (val: string) => void;
+}
+
+function DropdownSelect({
+  label,
+  value,
+  options,
+  isOpen,
+  onToggle,
+  onSelect,
+}: DropdownProps) {
+  const { C, isDark } = useTheme();
+  const currentOpt = options.find(o => o.value === value) || options[0];
+
+  return (
+    <View style={styles.dropdownWrap}>
+      <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+        {label}
+      </Text>
+      <View
+        style={[
+          styles.dropdownContainer,
+          {
+            backgroundColor: C.surface,
+            borderColor: isOpen ? C.brand : C.border,
+          },
+        ]}
+      >
+        <TouchableOpacity
+          style={styles.dropdownBar}
+          onPress={onToggle}
+          activeOpacity={0.8}
+        >
+          <View style={styles.dropdownLeft}>
+            <View style={styles.iconSlot}>
+              <Feather name={currentOpt.icon as any} size={24} color={C.text} />
+            </View>
+            <Text
+              style={[
+                styles.dropdownValueTxt,
+                { color: C.text, fontFamily: FontFamily.jakartaBold },
+              ]}
+              numberOfLines={1}
+            >
+              {currentOpt.label}
+            </Text>
+          </View>
+          <Feather
+            name={isOpen ? 'chevron-up' : 'chevron-down'}
+            size={18}
+            color={isOpen ? C.brand : C.textMuted}
+          />
+        </TouchableOpacity>
+
+        {isOpen && (
+          <View
+            style={[
+              styles.dropdownMenu,
+              { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.border },
+            ]}
+          >
+            {options.map((opt, idx) => {
+              const isSelected = opt.value === value;
+              const isLast = idx === options.length - 1;
+              return (
+                <TouchableOpacity
+                  key={opt.value}
+                  style={[
+                    styles.dropdownItem,
+                    isSelected && {
+                      backgroundColor: isDark
+                        ? 'rgba(91, 133, 247, 0.12)'
+                        : 'rgba(39, 94, 254, 0.08)',
+                    },
+                    !isLast && {
+                      borderBottomWidth: StyleSheet.hairlineWidth,
+                      borderBottomColor: C.border,
+                    },
+                  ]}
+                  onPress={() => onSelect(opt.value)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.dropdownLeft}>
+                    <View style={styles.iconSlot}>
+                      <Feather
+                        name={opt.icon as any}
+                        size={24}
+                        color={isSelected ? C.brand : C.text}
+                      />
+                    </View>
+                    <Text
+                      style={[
+                        styles.dropdownItemTxt,
+                        {
+                          color: isSelected ? C.brand : C.text,
+                          fontFamily: isSelected
+                            ? FontFamily.jakartaBold
+                            : FontFamily.jakartaMedium,
+                        },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {opt.label}
+                    </Text>
+                  </View>
+                  {isSelected && (
+                    <Feather name="check" size={18} color={C.brand} />
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
+      </View>
+    </View>
+  );
+}
 
 // Lowercased file extension, used for the file-type icon + label on the course.
 function fileKindFrom(name: string): string {
@@ -57,10 +198,10 @@ export function StudyUploadScreen({ route, navigation }: any) {
     courseTitle?: string;
     initialTab?: 'materials' | 'questions' | 'books' | 'slides';
   };
-  const { C } = useTheme();
+  const { C, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const t = useT();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
 
   const toast = useToast();
   const [fileType, setFileType] = useState(initialTab ?? 'materials');
@@ -75,6 +216,8 @@ export function StudyUploadScreen({ route, navigation }: any) {
   const [intakeId, setIntakeId] = useState<string | null>(null);
   const [targetCourseId, setTargetCourseId] = useState<string | null>(courseId ?? null);
   const [loading, setLoading] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [canUpload, setCanUpload] = useState<boolean | null>(null);
 
   // Questions need the course's section; books are intake-scoped too.
   useEffect(() => {
@@ -96,14 +239,19 @@ export function StudyUploadScreen({ route, navigation }: any) {
           .eq('status', 'approved')
           .maybeSingle();
 
+        const isDirectPermitted = directMem?.role === 'cr' || directMem?.role === 'editor' || profile?.role === 'admin';
+
         // If not in this section, check user's own section for junior batch inheritance
         if (!directMem) {
           const { data: myMem } = await supabase
             .from('study_section_members')
-            .select('section_id')
+            .select('section_id, role')
             .eq('user_id', user.id)
             .eq('status', 'approved')
             .maybeSingle();
+
+          const isMyMemPermitted = myMem?.role === 'cr' || myMem?.role === 'editor' || profile?.role === 'admin';
+          if (active) setCanUpload(isMyMemPermitted);
 
           if (myMem?.section_id) {
             resolvedSec = myMem.section_id;
@@ -130,7 +278,11 @@ export function StudyUploadScreen({ route, navigation }: any) {
               if (newC) resolvedCourse = newC.id;
             }
           }
+        } else {
+          if (active) setCanUpload(isDirectPermitted);
         }
+      } else {
+        if (active) setCanUpload(profile?.role === 'admin');
       }
 
       setTargetCourseId(resolvedCourse);
@@ -140,11 +292,11 @@ export function StudyUploadScreen({ route, navigation }: any) {
       if (s?.intake_id) setIntakeId(s.intake_id);
     })();
     return () => { active = false; };
-  }, [courseId, user]);
+  }, [courseId, user, profile?.role]);
 
   // Questions need the resolved section_id, books need the resolved intake_id
   // (both NOT NULL in the DB) - block submit until the async lookup finishes.
-  const canSubmit = name.trim().length > 0 &&
+  const canSubmit = canUpload !== false && name.trim().length > 0 &&
     (fileType === 'books'
       ? ((pickedFile !== null || bookUrl.trim().length > 0) && !!intakeId)
       : fileType === 'questions'
@@ -263,83 +415,75 @@ export function StudyUploadScreen({ route, navigation }: any) {
           </Text>
         )}
 
+        {canUpload === false && (
+          <View style={[styles.permissionCard, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2', borderColor: isDark ? 'rgba(239, 68, 68, 0.25)' : '#fee2e2' }]}>
+            <Feather name="shield" size={18} color={C.danger} />
+            <Text style={[styles.permissionTxt, { color: C.danger, fontFamily: FontFamily.jakartaMedium }]}>
+              Upload is restricted to Section CRs and designated Editors. General students have view & download access only.
+            </Text>
+          </View>
+        )}
+
         {/* Section / File type */}
         <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.study2.section}</Text>
         <SegmentedTabs
           tabs={UPLOAD_TYPE_TABS}
           activeTab={fileType}
-          onTabChange={(id) => setFileType(id as any)}
+          onTabChange={(id) => {
+            setFileType(id as any);
+            setIsDropdownOpen(false);
+          }}
         />
 
         {/* Material type (materials only) - must match DB CHECK */}
         {fileType === 'materials' && (
-          <>
-            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>TYPE</Text>
-            <View style={styles.examRow}>
-              {NOTE_TYPES.map(mt => {
-                const on = materialType === mt;
-                return (
-                  <TouchableOpacity
-                    key={mt}
-                    style={[styles.examChip, on
-                      ? { backgroundColor: C.brand, borderColor: C.brand }
-                      : { backgroundColor: C.surface, borderColor: C.border }]}
-                    onPress={() => setMaterialType(mt)}
-                    activeOpacity={0.75}
-                  >
-                    <Text style={[styles.examTxt, { color: on ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>{mt}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </>
+          <DropdownSelect
+            label="TYPE"
+            value={materialType}
+            options={NOTE_TYPE_OPTIONS}
+            isOpen={isDropdownOpen}
+            onToggle={() => setIsDropdownOpen(prev => !prev)}
+            onSelect={(val) => {
+              setMaterialType(val);
+              setIsDropdownOpen(false);
+            }}
+          />
         )}
 
         {/* Exam tag (questions only) */}
         {fileType === 'questions' && (
-          <>
-            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.study2.exam}</Text>
-            <View style={styles.examRow}>
-              {['CT 1', 'CT 2', 'Midterm', 'Final'].map(e => {
-                const on = exam === e;
-                return (
-                  <TouchableOpacity
-                    key={e}
-                    style={[styles.examChip, on
-                      ? { backgroundColor: C.brand, borderColor: C.brand }
-                      : { backgroundColor: C.surface, borderColor: C.border }]}
-                    onPress={() => setExam(e)}
-                    activeOpacity={0.75}
-                  >
-                    <Text style={[styles.examTxt, { color: on ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>{e === 'Midterm' ? t.study2.midterm : e === 'Final' ? t.study2.final : e}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </>
+          <DropdownSelect
+            label={t.study2.exam || 'EXAM'}
+            value={exam}
+            options={[
+              { value: 'Midterm', label: t.study2.midterm ? `${t.study2.midterm} (Midterm)` : 'Midterm Exam', icon: 'calendar' },
+              { value: 'Final', label: t.study2.final ? `${t.study2.final} (Final)` : 'Final Exam', icon: 'award' },
+              { value: 'CT 1', label: 'Class Test 1 (CT 1)', icon: 'edit-2' },
+              { value: 'CT 2', label: 'Class Test 2 (CT 2)', icon: 'edit-3' },
+            ]}
+            isOpen={isDropdownOpen}
+            onToggle={() => setIsDropdownOpen(prev => !prev)}
+            onSelect={(val) => {
+              setExam(val);
+              setIsDropdownOpen(false);
+            }}
+          />
         )}
 
         {/* Book extras */}
         {fileType === 'books' && (
           <>
-            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>KIND</Text>
-            <View style={styles.examRow}>
-              {BOOK_KINDS.map(bk => {
-                const on = bookKind === bk;
-                return (
-                  <TouchableOpacity
-                    key={bk}
-                    style={[styles.examChip, on
-                      ? { backgroundColor: C.brand, borderColor: C.brand }
-                      : { backgroundColor: C.surface, borderColor: C.border }]}
-                    onPress={() => setBookKind(bk)}
-                    activeOpacity={0.75}
-                  >
-                    <Text style={[styles.examTxt, { color: on ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>{bk}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+            <DropdownSelect
+              label="KIND"
+              value={bookKind}
+              options={BOOK_KIND_OPTIONS}
+              isOpen={isDropdownOpen}
+              onToggle={() => setIsDropdownOpen(prev => !prev)}
+              onSelect={(val) => {
+                setBookKind(val);
+                setIsDropdownOpen(false);
+              }}
+            />
             <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.study2.authorOptional}</Text>
             <TextInput
               style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
@@ -361,6 +505,38 @@ export function StudyUploadScreen({ route, navigation }: any) {
           </>
         )}
 
+        {/* Slides indicator */}
+        {fileType === 'slides' && (
+          <View style={styles.dropdownWrap}>
+            <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+              TYPE
+            </Text>
+            <View
+              style={[
+                styles.dropdownContainer,
+                { backgroundColor: C.surface, borderColor: C.border },
+              ]}
+            >
+              <View style={styles.dropdownBar}>
+                <View style={styles.dropdownLeft}>
+                  <View style={styles.iconSlot}>
+                    <Feather name="monitor" size={24} color={C.text} />
+                  </View>
+                  <Text
+                    style={[
+                      styles.dropdownValueTxt,
+                      { color: C.text, fontFamily: FontFamily.jakartaBold },
+                    ]}
+                  >
+                    Lecture Slide
+                  </Text>
+                </View>
+                <Feather name="check" size={18} color={C.brand} />
+              </View>
+            </View>
+          </View>
+        )}
+
         {/* File picker */}
         <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
           {fileType === 'books' ? t.study2.fileOptionalIfLink : t.study2.file}
@@ -370,7 +546,7 @@ export function StudyUploadScreen({ route, navigation }: any) {
           onPress={pickFile}
           activeOpacity={0.75}
         >
-          <Icon name="layers" size={18} color={pickedFile ? C.brand : C.textMuted} />
+          <Icon name="layers" size={24} color={pickedFile ? C.brand : C.textMuted} />
           <Text style={[styles.filePickerTxt, { color: pickedFile ? C.brand : C.textMuted, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
             {pickedFile ? pickedFile.name : t.study2.chooseAFile}
           </Text>
@@ -416,6 +592,24 @@ const styles = StyleSheet.create({
     marginLeft: 2,
   } as any,
 
+  permissionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginTop: 6,
+    marginBottom: 14,
+  } as ViewStyle,
+
+  permissionTxt: {
+    fontSize: 13,
+    lineHeight: 18,
+    flex: 1,
+  } as any,
+
   label: {
     fontSize: 11,
     letterSpacing: 0.7,
@@ -424,9 +618,56 @@ const styles = StyleSheet.create({
     marginLeft: 2,
   } as any,
 
-  examRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 } as ViewStyle,
-  examChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, borderWidth: 1 } as ViewStyle,
-  examTxt: { fontSize: 12 } as any,
+  dropdownWrap: {
+    width: '100%',
+  } as ViewStyle,
+
+  dropdownContainer: {
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: 'hidden',
+  } as ViewStyle,
+
+  dropdownBar: {
+    height: 58,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+  } as ViewStyle,
+
+  dropdownLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  } as ViewStyle,
+
+  iconSlot: {
+    width: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  } as ViewStyle,
+
+  dropdownValueTxt: {
+    fontSize: 14.5,
+  } as any,
+
+  dropdownMenu: {
+    width: '100%',
+  } as ViewStyle,
+
+  dropdownItem: {
+    height: 58,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+  } as ViewStyle,
+
+  dropdownItemTxt: {
+    fontSize: 14.5,
+  } as any,
 
   input: {
     height: 58,

@@ -321,13 +321,13 @@ export function EditProfileModal({
           ]}
         >
           <TouchableOpacity
-            style={[styles.backBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+            style={styles.backBtn}
             onPress={onClose}
             hitSlop={8}
             activeOpacity={0.75}
             accessibilityLabel="Close"
           >
-            <Feather name="arrow-left" size={20} color={C.text} />
+            <Feather name="arrow-left" size={24} color={C.text} />
           </TouchableOpacity>
 
           <View style={styles.headerTitleWrap}>
@@ -582,7 +582,7 @@ export function EditProfileModal({
                   CONTACT PHONE
                 </Text>
                 <View style={[styles.inputBarWithIcon, { backgroundColor: C.surface, borderColor: C.border }]}>
-                  <Feather name="phone" size={22} color={phone ? C.brand : C.textMuted} style={styles.inputIcon} />
+                  <Feather name="phone" size={24} color={phone ? C.brand : C.textMuted} style={styles.inputIcon} />
                   <TextInput
                     style={[styles.textInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                     value={phone}
@@ -598,7 +598,7 @@ export function EditProfileModal({
                   WHATSAPP NUMBER
                 </Text>
                 <View style={[styles.inputBarWithIcon, { backgroundColor: C.surface, borderColor: C.border }]}>
-                  <Feather name="message-circle" size={22} color={whatsapp ? C.brand : C.textMuted} style={styles.inputIcon} />
+                  <Feather name="message-circle" size={24} color={whatsapp ? C.brand : C.textMuted} style={styles.inputIcon} />
                   <TextInput
                     style={[styles.textInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                     value={whatsapp}
@@ -614,7 +614,7 @@ export function EditProfileModal({
                   FACEBOOK PROFILE
                 </Text>
                 <View style={[styles.inputBarWithIcon, { backgroundColor: C.surface, borderColor: C.border }]}>
-                  <Feather name="facebook" size={22} color={facebook ? C.brand : C.textMuted} style={styles.inputIcon} />
+                  <Feather name="facebook" size={24} color={facebook ? C.brand : C.textMuted} style={styles.inputIcon} />
                   <TextInput
                     style={[styles.textInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                     value={facebook}
@@ -630,7 +630,7 @@ export function EditProfileModal({
                   INSTAGRAM HANDLE
                 </Text>
                 <View style={[styles.inputBarWithIcon, { backgroundColor: C.surface, borderColor: C.border }]}>
-                  <Feather name="instagram" size={22} color={instagram ? C.brand : C.textMuted} style={styles.inputIcon} />
+                  <Feather name="instagram" size={24} color={instagram ? C.brand : C.textMuted} style={styles.inputIcon} />
                   <TextInput
                     style={[styles.textInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                     value={instagram}
@@ -646,7 +646,7 @@ export function EditProfileModal({
                   TELEGRAM USERNAME
                 </Text>
                 <View style={[styles.inputBarWithIcon, { backgroundColor: C.surface, borderColor: C.border }]}>
-                  <Feather name="send" size={22} color={telegram ? C.brand : C.textMuted} style={styles.inputIcon} />
+                  <Feather name="send" size={24} color={telegram ? C.brand : C.textMuted} style={styles.inputIcon} />
                   <TextInput
                     style={[styles.textInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                     value={telegram}
@@ -662,7 +662,7 @@ export function EditProfileModal({
                   LINKEDIN / PORTFOLIO
                 </Text>
                 <View style={[styles.inputBarWithIcon, { backgroundColor: C.surface, borderColor: C.border }]}>
-                  <Feather name="globe" size={22} color={linkedin ? C.brand : C.textMuted} style={styles.inputIcon} />
+                  <Feather name="globe" size={24} color={linkedin ? C.brand : C.textMuted} style={styles.inputIcon} />
                   <TextInput
                     style={[styles.textInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                     value={linkedin}
@@ -678,7 +678,7 @@ export function EditProfileModal({
                   CAMPUS / PRESENT ADDRESS
                 </Text>
                 <View style={[styles.inputBarWithIcon, { backgroundColor: C.surface, borderColor: C.border }]}>
-                  <Feather name="map-pin" size={22} color={address ? C.brand : C.textMuted} style={styles.inputIcon} />
+                  <Feather name="map-pin" size={24} color={address ? C.brand : C.textMuted} style={styles.inputIcon} />
                   <TextInput
                     style={[styles.textInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                     value={address}
@@ -696,7 +696,7 @@ export function EditProfileModal({
                 {/* 1. Student Directory (58dp) */}
                 <View style={[styles.privacyBar58, { backgroundColor: C.surface, borderColor: C.border }]}>
                   <View style={styles.privacyBarLeft}>
-                    <Feather name="users" size={22} color={dirVisible ? C.brand : C.textMuted} style={{ marginRight: 12 }} />
+                    <Feather name="users" size={24} color={dirVisible ? C.brand : C.textMuted} style={{ marginRight: 12 }} />
                     <Text style={[styles.privacyBarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                       Show in Student Directory
                     </Text>
@@ -707,7 +707,7 @@ export function EditProfileModal({
                 {/* 2. WhatsApp Direct (58dp) */}
                 <View style={[styles.privacyBar58, { backgroundColor: C.surface, borderColor: C.border }]}>
                   <View style={styles.privacyBarLeft}>
-                    <Feather name="message-circle" size={22} color={showWhatsapp ? C.brand : C.textMuted} style={{ marginRight: 12 }} />
+                    <Feather name="message-circle" size={24} color={showWhatsapp ? C.brand : C.textMuted} style={{ marginRight: 12 }} />
                     <Text style={[styles.privacyBarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                       Show WhatsApp to Peers
                     </Text>
@@ -718,7 +718,7 @@ export function EditProfileModal({
                 {/* 3. Phone Number (58dp) */}
                 <View style={[styles.privacyBar58, { backgroundColor: C.surface, borderColor: C.border }]}>
                   <View style={styles.privacyBarLeft}>
-                    <Feather name="phone" size={22} color={showPhone ? C.brand : C.textMuted} style={{ marginRight: 12 }} />
+                    <Feather name="phone" size={24} color={showPhone ? C.brand : C.textMuted} style={{ marginRight: 12 }} />
                     <Text style={[styles.privacyBarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                       Show Phone Number
                     </Text>
@@ -729,7 +729,7 @@ export function EditProfileModal({
                 {/* 4. Social Media Links (58dp) */}
                 <View style={[styles.privacyBar58, { backgroundColor: C.surface, borderColor: C.border }]}>
                   <View style={styles.privacyBarLeft}>
-                    <Feather name="share-2" size={22} color={showSocials ? C.brand : C.textMuted} style={{ marginRight: 12 }} />
+                    <Feather name="share-2" size={24} color={showSocials ? C.brand : C.textMuted} style={{ marginRight: 12 }} />
                     <Text style={[styles.privacyBarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                       Show Social Media Links
                     </Text>
@@ -740,7 +740,7 @@ export function EditProfileModal({
                 {/* 5. Allow Direct Messages (58dp) */}
                 <View style={[styles.privacyBar58, { backgroundColor: C.surface, borderColor: C.border }]}>
                   <View style={styles.privacyBarLeft}>
-                    <Feather name="mail" size={22} color={allowDms ? C.brand : C.textMuted} style={{ marginRight: 12 }} />
+                    <Feather name="mail" size={24} color={allowDms ? C.brand : C.textMuted} style={{ marginRight: 12 }} />
                     <Text style={[styles.privacyBarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                       Allow Direct Messages
                     </Text>
@@ -1044,7 +1044,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,

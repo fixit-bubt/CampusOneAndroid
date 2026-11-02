@@ -580,13 +580,8 @@ export function MedicalScreen({ navigation }: any) {
                 { backgroundColor: C.surface2, borderColor: C.border },
               ]}
             >
-              <View
-                style={[
-                  styles.heroTabletIconBox,
-                  { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)' },
-                ]}
-              >
-                <AnimatedIcon family="feather" name="clock" size={14} color={C.text2} />
+              <View style={styles.heroTabletIconBox}>
+                <AnimatedIcon family="feather" name="clock" size={24} color={C.text} />
               </View>
               <View style={styles.heroTabletBody}>
                 <Text
@@ -621,13 +616,8 @@ export function MedicalScreen({ navigation }: any) {
               onPress={() => handleDialPhone(BUBT_CLINIC_INFO.phoneDirect)}
               activeOpacity={0.75}
             >
-              <View
-                style={[
-                  styles.heroTabletIconBox,
-                  { backgroundColor: `${MED_COLOR}25` },
-                ]}
-              >
-                <AnimatedIcon family="feather" name="phone-call" size={16} color={C.text} />
+              <View style={styles.heroTabletIconBox}>
+                <AnimatedIcon family="feather" name="phone-call" size={24} color={C.text} />
               </View>
               <View style={styles.heroTabletBody}>
                 <Text
@@ -685,7 +675,7 @@ export function MedicalScreen({ navigation }: any) {
                 { backgroundColor: C.surface, borderColor: C.border },
               ]}
             >
-              <Icon name="search" size={18} color={C.textMuted} />
+              <Icon name="search" size={24} color={C.textMuted} />
               <TextInput
                 style={[
                   styles.searchInput,
@@ -717,7 +707,7 @@ export function MedicalScreen({ navigation }: any) {
                 <AnimatedIcon
                   family={selectedFilterObj.iconFamily ?? 'mci'}
                   name={selectedFilterObj.icon}
-                  size={28}
+                  size={32}
                   color={C.text}
                 />
               </View>
@@ -806,19 +796,12 @@ export function MedicalScreen({ navigation }: any) {
                       }
                       activeOpacity={0.75}
                     >
-                      <View
-                        style={[
-                          styles.docThumb44,
-                          {
-                            backgroundColor: iconCfg.bg,
-                          },
-                        ]}
-                      >
+                      <View style={styles.docThumb44}>
                         <AnimatedIcon
                           family={iconCfg.family}
                           name={iconCfg.name}
-                          size={20}
-                          color={iconCfg.color}
+                          size={32}
+                          color={C.text}
                         />
                       </View>
 
@@ -952,19 +935,12 @@ export function MedicalScreen({ navigation }: any) {
                       { backgroundColor: C.surface, borderColor: C.border },
                     ]}
                   >
-                    <View
-                      style={[
-                        styles.srvIconBox44,
-                        {
-                          backgroundColor: srvCfg.bg,
-                        },
-                      ]}
-                    >
+                    <View style={styles.srvIconBox44}>
                       <AnimatedIcon
                         family={srvCfg.family}
                         name={srvCfg.name}
-                        size={20}
-                        color={srvCfg.color}
+                        size={32}
+                        color={C.text}
                       />
                     </View>
                     <View style={styles.srvBody72}>
@@ -1032,8 +1008,8 @@ export function MedicalScreen({ navigation }: any) {
                 <AnimatedIcon
                   family="mci"
                   name="pill"
-                  size={20}
-                  color={MED_COLOR}
+                  size={32}
+                  color={C.text}
                 />
               </View>
               <View style={styles.srvBody72}>
@@ -1074,7 +1050,7 @@ export function MedicalScreen({ navigation }: any) {
                     { backgroundColor: C.surface, borderColor: C.border, marginBottom: 10 },
                   ]}
                 >
-                  <Icon name="search" size={18} color={C.textMuted} />
+                  <Icon name="search" size={24} color={C.textMuted} />
                   <TextInput
                     style={[
                       styles.searchInput,
@@ -1104,7 +1080,7 @@ export function MedicalScreen({ navigation }: any) {
                 <View style={styles.medsList72}>
                   {filteredMeds.length === 0 ? (
                     <View style={styles.empty}>
-                      <Icon name="medical" size={26} color={C.textMuted} />
+                      <Icon name="medical" size={32} color={C.textMuted} />
                       <Text
                         style={[
                           styles.emptyTitle,
@@ -1130,12 +1106,12 @@ export function MedicalScreen({ navigation }: any) {
                           },
                         ]}
                       >
-                        <View style={[styles.medIndexBadge44, { backgroundColor: MED_BG }]}>
+                        <View style={styles.medIndexBadge44}>
                           <AnimatedIcon
                             family="mci"
                             name="pill"
-                            size={18}
-                            color={MED_COLOR}
+                            size={28}
+                            color={C.text}
                           />
                         </View>
                         <View style={styles.medBody72}>
@@ -1237,21 +1213,12 @@ export function MedicalScreen({ navigation }: any) {
                     onPress={() => handleDialPhone(cnt.phone)}
                     activeOpacity={0.75}
                   >
-                    <View
-                      style={[
-                        styles.hotlineIconBox,
-                        {
-                          backgroundColor: cnt.isNational
-                            ? C.danger
-                            : `${C.info}1e`,
-                        },
-                      ]}
-                    >
+                    <View style={styles.hotlineIconBox}>
                       <AnimatedIcon
                         family={iconFamily}
                         name={iconName}
-                        size={28}
-                        color={cnt.isNational ? C.white : C.info}
+                        size={32}
+                        color={C.text}
                       />
                     </View>
                     <View style={{ flex: 1, minWidth: 0 }}>
@@ -1312,7 +1279,7 @@ export function MedicalScreen({ navigation }: any) {
               activeOpacity={0.75}
             >
               <View style={styles.bloodBridgeIconTile}>
-                <AnimatedIcon family="feather" name="droplet" size={24} color={C.text} />
+                <AnimatedIcon family="feather" name="droplet" size={32} color={C.text} />
               </View>
               <View style={styles.bloodBridgeBody}>
                 <Text
@@ -1370,8 +1337,8 @@ export function MedicalScreen({ navigation }: any) {
                       <AnimatedIcon
                         family={hospCfg.family}
                         name={hospCfg.name}
-                        size={20}
-                        color={hospCfg.color}
+                        size={32}
+                        color={C.text}
                       />
                     </View>
 
@@ -1489,23 +1456,12 @@ export function MedicalScreen({ navigation }: any) {
                     }}
                     activeOpacity={0.75}
                   >
-                    <View
-                      style={[
-                        styles.pickerIconTile,
-                        {
-                          backgroundColor: isSelected
-                            ? optColor
-                            : isDark
-                            ? 'rgba(255,255,255,0.06)'
-                            : 'rgba(0,0,0,0.05)',
-                        },
-                      ]}
-                    >
+                    <View style={styles.pickerIconTile}>
                       <AnimatedIcon
                         family={opt.iconFamily ?? 'mci'}
                         name={opt.icon}
-                        size={18}
-                        color={isSelected ? C.white : optColor}
+                        size={32}
+                        color={C.text}
                       />
                     </View>
                     <View style={{ flex: 1, minWidth: 0 }}>

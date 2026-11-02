@@ -95,11 +95,11 @@ export function ResetPasswordScreen({ route, navigation }: Props) {
       <View style={[styles.subbar, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
         <TouchableOpacity
           onPress={() => (requesting ? navigation.goBack() : setStep('request'))}
-          style={[styles.iconBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+          style={styles.iconBtn}
           hitSlop={8}
           activeOpacity={0.75}
         >
-          <Icon name="arrowL" size={20} color={C.text} />
+          <Icon name="arrowL" size={24} color={C.text} />
         </TouchableOpacity>
         <Text style={[styles.subbarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
           {t.auth.resetTitle}
@@ -288,8 +288,8 @@ const styles = StyleSheet.create({
   iconBtn: {
     width: 38,
     height: 38,
-    borderRadius: 12,
-    borderWidth: 1,
+
+
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
@@ -347,7 +347,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 10,
-    borderWidth: 1,
+
   } as ViewStyle,
 
   chipText: {
@@ -367,8 +367,8 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: 12,
-    borderWidth: 1,
+
+
     marginTop: 14,
   } as ViewStyle,
 

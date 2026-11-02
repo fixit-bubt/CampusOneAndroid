@@ -597,11 +597,11 @@ export function CampusIssuesScreen({ navigation, route }: any) {
                   <View style={styles.actionsRightRow}>
                     {r.status === 'Open' && (
                       <TouchableOpacity
-                        style={[styles.deleteIconBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+                        style={styles.deleteIconBtn}
                         onPress={() => confirmDelete(r)}
-                        hitSlop={6}
+                        hitSlop={8}
                       >
-                        <Feather name="trash-2" size={14} color={C.danger} />
+                        <Feather name="trash-2" size={20} color={C.danger} />
                       </TouchableOpacity>
                     )}
                     {/* Premium Squircle View Details Button */}
@@ -907,8 +907,6 @@ const styles = StyleSheet.create({
   deleteIconBtn: {
     width: 36,
     height: 36,
-    borderRadius: 8,
-    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,

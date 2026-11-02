@@ -307,14 +307,14 @@ export function PageStudioModal({
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
         {/* Header */}
         <View style={[styles.header, { borderBottomColor: C.border, backgroundColor: C.surface }]}>
-          <TouchableOpacity onPress={onClose} style={[styles.iconBtn, { backgroundColor: C.surface2 }]}>
-            <Feather name="x" size={18} color={C.text} />
+          <TouchableOpacity onPress={onClose} style={styles.iconBtn}>
+            <Feather name="x" size={22} color={C.text} />
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
             {t.pdfmaker.images.studioTitle(target.index + 1)}
           </Text>
-          <TouchableOpacity onPress={handleRotate90} style={[styles.iconBtn, { backgroundColor: C.surface2 }]}>
-            <Feather name="rotate-cw" size={17} color={C.brand} />
+          <TouchableOpacity onPress={handleRotate90} style={styles.iconBtn}>
+            <Feather name="rotate-cw" size={22} color={C.text} />
           </TouchableOpacity>
         </View>
 

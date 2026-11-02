@@ -342,7 +342,7 @@ export function ManageFacultyScreen({ navigation }: any) {
 
         {/* Search */}
         <View style={[styles.searchBar, { backgroundColor: C.surface2, borderColor: C.border, marginTop: 12, marginBottom: 12 }]}>
-          <Icon name="search" size={18} color={C.textMuted} />
+          <Icon name="search" size={24} color={C.textMuted} />
           <TextInput
             style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
             placeholder={t.faculty2.searchPlaceholderExpanded}

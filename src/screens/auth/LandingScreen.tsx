@@ -104,8 +104,8 @@ export function LandingScreen({ navigation }: Props) {
             activeOpacity={0.82}
           >
             <View style={styles.btnActionLeft}>
-              <View style={[styles.btnIconBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}>
-                <Icon name="mail" size={18} color={C.brand} />
+              <View style={styles.btnIconBox}>
+                <Icon name="mail" size={24} color={C.text} />
               </View>
               <Text style={[styles.btnActionText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                 {t.landing.emailSignIn}
@@ -121,8 +121,8 @@ export function LandingScreen({ navigation }: Props) {
             activeOpacity={0.82}
           >
             <View style={styles.btnActionLeft}>
-              <View style={[styles.btnIconBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}>
-                <Icon name="userPlus" size={18} color={C.brand} />
+              <View style={styles.btnIconBox}>
+                <Icon name="userPlus" size={24} color={C.text} />
               </View>
               <Text style={[styles.btnActionText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                 Create Account
@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
   btnIconBox: {
     width: 36,
     height: 36,
-    borderRadius: 10,
+
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,

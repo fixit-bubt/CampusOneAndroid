@@ -460,8 +460,8 @@ export function BloodRequestDetailScreen({ route, navigation }: any) {
 
         {pledges.length === 0 ? (
           <View style={styles.empty}>
-            <View style={[styles.emptyIcon, { backgroundColor: C.surface2 }]}>
-              <Icon name="directory" size={26} color={C.textMuted} />
+            <View style={styles.emptyIcon}>
+              <Icon name="directory" size={40} color={C.textMuted} />
             </View>
             <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
               {t.blood2.noResponders}
@@ -694,6 +694,6 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   confirmTxt: { fontSize: 12.5 } as TextStyle,
   empty: { alignItems: 'center', paddingVertical: 40, gap: 12 } as ViewStyle,
-  emptyIcon: { width: 60, height: 60, borderRadius: 20, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
+  emptyIcon: { width: 60, height: 60, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
   emptySub: { fontSize: 13.5 } as TextStyle,
 });

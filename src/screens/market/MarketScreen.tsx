@@ -298,11 +298,11 @@ export function MarketScreen({ navigation }: any) {
         activeOpacity={0.8}
       >
         {/* Thumbnail Hero */}
-        <View style={[styles.cardThumb, { backgroundColor: isDark ? `${catMeta.fg}24` : `${catMeta.fg}14` }]}>
+        <View style={[styles.cardThumb, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.04)' : C.surface2 }]}>
           {item.photo_url ? (
             <Image source={{ uri: item.photo_url }} style={styles.cardImg} resizeMode="cover" />
           ) : (
-            <Feather name={catMeta.icon} size={36} color={catMeta.fg} />
+            <Feather name={catMeta.icon} size={36} color={C.text} />
           )}
 
           {/* Top Badges */}
@@ -536,7 +536,7 @@ export function MarketScreen({ navigation }: any) {
         {/* 5. Search Bar & Secondary Filter Trigger */}
         <View style={styles.searchRow}>
           <View style={[styles.searchBar, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <Icon name="search" size={18} color={C.textMuted} />
+            <Icon name="search" size={24} color={C.textMuted} />
             <TextInput
               style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
               placeholder={t.market2.searchItems}

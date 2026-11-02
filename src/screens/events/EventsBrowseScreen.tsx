@@ -150,7 +150,7 @@ function EventCard({
         <View style={[styles.fallbackBanner, { backgroundColor: bg }]}>
           <View style={styles.fallbackLeft}>
             <View style={styles.catIconCircle}>
-              <Icon name={CAT_ICON[e.category] ?? 'events'} size={24} color={C.text} />
+              <Icon name={CAT_ICON[e.category] ?? 'events'} size={32} color={C.text} />
             </View>
             <Text style={[styles.fallbackCatText, { color: fg, fontFamily: FontFamily.jakartaBold }]}>
               {e.category}
@@ -419,7 +419,7 @@ export function EventsBrowseScreen({ navigation }: any) {
       {/* Instant Search Bar */}
       <View style={[styles.searchBoxWrap, { paddingHorizontal: Layout.screenPadding }]}>
         <View style={[styles.searchBar, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <Feather name="search" size={18} color={C.textMuted} style={{ marginRight: 8 }} />
+          <Feather name="search" size={24} color={C.textMuted} style={{ marginRight: 8 }} />
           <TextInput
             style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
             placeholder="Search events, clubs, venues, or speakers..."
@@ -922,7 +922,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   } as ViewStyle,
   fallbackLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 } as ViewStyle,
-  catIconCircle: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
+  catIconCircle: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
   fallbackCatText: { fontSize: 12.5 } as any,
   cardBody: { padding: 14 } as ViewStyle,
   topBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 } as ViewStyle,

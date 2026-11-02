@@ -99,8 +99,8 @@ function NotifRow({ n, C, isDark, onPress, onAccept, onDecline, connUi }: {
 function Empty({ C }: { C: any }) {
   return (
     <View style={styles.empty}>
-      <View style={[styles.emptyIcon, { backgroundColor: C.surface2 }]}>
-        <Icon name="check" size={30} color={C.textMuted} />
+      <View style={styles.emptyIcon}>
+        <Icon name="check" size={32} color={C.textMuted} />
       </View>
       <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
         All clear
@@ -258,16 +258,16 @@ export function NotificationsScreen({ navigation }: any) {
           <View style={styles.subRight}>
             <TouchableOpacity
               onPress={handleMarkAll}
-              style={[styles.iconBtn, { backgroundColor: C.surface2, borderColor: C.border, opacity: unread ? 1 : 0.4 }]}
+              style={[styles.iconBtn, { opacity: unread ? 1 : 0.4 }]}
               disabled={unread === 0}
             >
-              <Icon name="checkAll" size={19} color={C.text2} />
+              <Icon name="checkAll" size={22} color={C.text} />
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.iconBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+              style={styles.iconBtn}
               onPress={() => navigation.navigate('NotifSettings')}
             >
-              <Icon name="sliders" size={19} color={C.text2} />
+              <Icon name="sliders" size={22} color={C.text} />
             </TouchableOpacity>
           </View>
         }

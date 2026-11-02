@@ -629,7 +629,7 @@ export function RoutinesBrowseScreen({ route, navigation }: any) {
           </View>
 
           <View style={[styles.searchBox, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <Feather name="search" size={17} color={C.textMuted} />
+            <Feather name="search" size={24} color={C.textMuted} />
             <TextInput
               style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
               placeholder="Search department by name or code…"
@@ -805,7 +805,7 @@ export function RoutinesBrowseScreen({ route, navigation }: any) {
               {/* Document Identity */}
               <View style={styles.docIdentityRow}>
                 <View style={styles.largePdfIconBox}>
-                  <Feather name="file-text" size={32} color={C.text} />
+                  <Feather name="file-text" size={36} color={C.text} />
                 </View>
                 <View style={{ flex: 1, marginLeft: 14 }}>
                   <Text style={[styles.masterDocTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
@@ -922,7 +922,7 @@ export function RoutinesBrowseScreen({ route, navigation }: any) {
                     ]}
                   >
                     <View style={styles.barIconBox}>
-                      <Feather name="file-text" size={32} color={C.text} />
+                      <Feather name="file-text" size={36} color={C.text} />
                     </View>
                     <View style={styles.barTextCol}>
                       <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -1636,8 +1636,6 @@ const styles = StyleSheet.create({
   largePdfIconBox: {
     width: 54,
     height: 54,
-    borderRadius: 16,
-    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },

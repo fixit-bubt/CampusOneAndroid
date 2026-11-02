@@ -452,8 +452,8 @@ export function RidePostScreen({ route, navigation }: any) {
                   <AnimatedIcon
                     family="feather"
                     name="navigation"
-                    size={20}
-                    color={from ? (isDark ? '#ffffff' : accentColor) : C.text2}
+                    size={32}
+                    color={C.text}
                   />
                 </View>
                 <View style={styles.dropdownInfo}>
@@ -551,8 +551,8 @@ export function RidePostScreen({ route, navigation }: any) {
                   <AnimatedIcon
                     family="feather"
                     name="map-pin"
-                    size={20}
-                    color={to ? (isDark ? '#ffffff' : accentColor) : C.text2}
+                    size={32}
+                    color={C.text}
                   />
                 </View>
                 <View style={styles.dropdownInfo}>
@@ -814,7 +814,7 @@ export function RidePostScreen({ route, navigation }: any) {
                   <View
                     style={styles.modalHeaderIcon}
                   >
-                    <Feather name="clock" size={24} color={C.text} />
+                    <Feather name="clock" size={32} color={C.text} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.modalTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -1078,7 +1078,6 @@ const styles = StyleSheet.create({
   dropdownIconBox: {
     width: 44,
     height: 44,
-    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
@@ -1153,7 +1152,6 @@ const styles = StyleSheet.create({
   pickerTriggerIconBox: {
     width: 38,
     height: 38,
-    borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -1237,7 +1235,6 @@ const styles = StyleSheet.create({
   modalHeaderIcon: {
     width: 38,
     height: 38,
-    borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
@@ -1389,7 +1386,6 @@ const styles = StyleSheet.create({
   mapTriggerIconWrap: {
     width: 36,
     height: 36,
-    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
@@ -1515,7 +1511,6 @@ const styles = StyleSheet.create({
   modalCardIconBox: {
     width: 38,
     height: 38,
-    borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,

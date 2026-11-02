@@ -201,7 +201,7 @@ export function ToolOrganizeScreen({ navigation }: any) {
               onPress={open}
               activeOpacity={0.8}
             >
-              <Feather name="grid" size={26} color={SectorColors.pdfmaker} />
+              <Feather name="grid" size={32} color={C.text} />
               <Text style={[styles.dropTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                 {t.pdfmaker.organize.open}
               </Text>

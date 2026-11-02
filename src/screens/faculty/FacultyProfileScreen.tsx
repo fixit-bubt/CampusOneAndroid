@@ -422,7 +422,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
           <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border, marginTop: 12 }]}>
             <View style={styles.cardHeaderRow}>
               <View style={styles.cardHeaderLeft}>
-                <AnimatedIcon family="feather" name="map-pin" size={16} color={FACULTY_ACCENT} />
+                <AnimatedIcon family="feather" name="map-pin" size={20} color={C.text} />
                 <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                   {t.faculty2.campusOfficeLocation}
                 </Text>
@@ -432,7 +432,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
                 onPress={() => copyLocation(locationString)}
                 activeOpacity={0.7}
               >
-                <Feather name="copy" size={12} color={C.text2} />
+                <Feather name="copy" size={14} color={C.text} />
                 <Text style={[styles.copyBtnTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>{t.faculty2.copy}</Text>
               </TouchableOpacity>
             </View>
@@ -456,7 +456,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
           <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border, marginTop: 12 }]}>
             <View style={styles.cardHeaderRow}>
               <View style={styles.cardHeaderLeft}>
-                <AnimatedIcon family="feather" name="clock" size={16} color={C.brand} />
+                <AnimatedIcon family="feather" name="clock" size={20} color={C.text} />
                 <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                   {t.faculty2.counselingHoursTitle}
                 </Text>
@@ -518,8 +518,8 @@ export function FacultyProfileScreen({ route, navigation }: any) {
               onPress={() => toggleSection(setExpandCourses)}
               activeOpacity={0.75}
             >
-              <View style={[styles.sectionIconTile, { backgroundColor: `${FACULTY_ACCENT}14` }]}>
-                <Feather name="layers" size={20} color={FACULTY_ACCENT} />
+              <View style={styles.sectionIconTile}>
+                <Feather name="layers" size={32} color={C.text} />
               </View>
               <View style={styles.sectionBarBody}>
                 <Text style={[styles.sectionBarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -543,8 +543,8 @@ export function FacultyProfileScreen({ route, navigation }: any) {
               <View style={styles.sectionExpandedContainer}>
                 {courses.map((c, i) => (
                   <View key={i} style={[styles.childBar58, { backgroundColor: C.surface2, borderColor: C.border, borderLeftColor: FACULTY_ACCENT, borderLeftWidth: 4.5 }]}>
-                    <View style={[styles.childBarIconTile, { backgroundColor: `${FACULTY_ACCENT}14` }]}>
-                      <Feather name="book" size={15} color={FACULTY_ACCENT} />
+                    <View style={styles.childBarIconTile}>
+                      <Feather name="book" size={24} color={C.text} />
                     </View>
                     <View style={styles.childBarCenter}>
                       <Text style={[styles.childBarTitle, { color: C.text, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
@@ -566,8 +566,8 @@ export function FacultyProfileScreen({ route, navigation }: any) {
               onPress={() => toggleSection(setExpandResearch)}
               activeOpacity={0.75}
             >
-              <View style={[styles.sectionIconTile, { backgroundColor: `${FACULTY_ACCENT}14` }]}>
-                <Feather name="book-open" size={20} color={FACULTY_ACCENT} />
+              <View style={styles.sectionIconTile}>
+                <Feather name="book-open" size={32} color={C.text} />
               </View>
               <View style={styles.sectionBarBody}>
                 <Text style={[styles.sectionBarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -599,8 +599,8 @@ export function FacultyProfileScreen({ route, navigation }: any) {
                         onPress={() => handleOpenDomain(area)}
                         activeOpacity={0.75}
                       >
-                        <View style={[styles.childBarIconTile, { backgroundColor: `${FACULTY_ACCENT}14` }]}>
-                          <Feather name="cpu" size={15} color={FACULTY_ACCENT} />
+                        <View style={styles.childBarIconTile}>
+                          <Feather name="cpu" size={24} color={C.text} />
                         </View>
                         <View style={styles.childBarCenter}>
                           <Text style={[styles.childBarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -686,23 +686,23 @@ export function FacultyProfileScreen({ route, navigation }: any) {
 
                           <View style={styles.pubFootRow}>
                             {cleanDoi ? (
-                              <View style={[styles.pubBadge, { backgroundColor: `${FACULTY_ACCENT}14` }]}>
-                                <Feather name="globe" size={11} color={FACULTY_ACCENT} />
-                                <Text style={[styles.pubBadgeTxt, { color: FACULTY_ACCENT, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                              <View style={[styles.pubBadge, { backgroundColor: C.surface2 }]}>
+                                <Feather name="globe" size={13} color={C.text2} />
+                                <Text style={[styles.pubBadgeTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                                   DOI: {cleanDoi}
                                 </Text>
                               </View>
                             ) : p.url ? (
-                              <View style={[styles.pubBadge, { backgroundColor: `${FACULTY_ACCENT}14` }]}>
-                                <Feather name="link" size={11} color={FACULTY_ACCENT} />
-                                <Text style={[styles.pubBadgeTxt, { color: FACULTY_ACCENT, fontFamily: FontFamily.jakartaBold }]}>
+                              <View style={[styles.pubBadge, { backgroundColor: C.surface2 }]}>
+                                <Feather name="link" size={13} color={C.text2} />
+                                <Text style={[styles.pubBadgeTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
                                   Official Publisher Link
                                 </Text>
                               </View>
                             ) : (
-                              <View style={[styles.pubBadge, { backgroundColor: `${C.brand}14` }]}>
-                                <Feather name="search" size={11} color={C.brand} />
-                                <Text style={[styles.pubBadgeTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+                              <View style={[styles.pubBadge, { backgroundColor: C.surface2 }]}>
+                                <Feather name="search" size={13} color={C.text2} />
+                                <Text style={[styles.pubBadgeTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
                                   Read Full Paper on Google Scholar
                                 </Text>
                               </View>
@@ -726,8 +726,8 @@ export function FacultyProfileScreen({ route, navigation }: any) {
               onPress={() => toggleSection(setExpandQuals)}
               activeOpacity={0.75}
             >
-              <View style={[styles.sectionIconTile, { backgroundColor: `${C.brand}14` }]}>
-                <Feather name="award" size={20} color={C.brand} />
+              <View style={styles.sectionIconTile}>
+                <Feather name="award" size={32} color={C.text} />
               </View>
               <View style={styles.sectionBarBody}>
                 <Text style={[styles.sectionBarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -751,8 +751,8 @@ export function FacultyProfileScreen({ route, navigation }: any) {
               <View style={styles.sectionExpandedContainer}>
                 {quals.map((qual, i) => (
                   <View key={i} style={[styles.childBar58, { backgroundColor: C.surface2, borderColor: C.border, borderLeftColor: C.brand, borderLeftWidth: 4.5 }]}>
-                    <View style={[styles.childBarIconTile, { backgroundColor: `${C.brand}14` }]}>
-                      <Feather name="check-circle" size={15} color={C.brand} />
+                    <View style={styles.childBarIconTile}>
+                      <Feather name="check-circle" size={24} color={C.text} />
                     </View>
                     <View style={styles.childBarCenter}>
                       <Text style={[styles.childBarTitle, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>
@@ -774,8 +774,8 @@ export function FacultyProfileScreen({ route, navigation }: any) {
               onPress={() => toggleSection(setExpandActivities)}
               activeOpacity={0.75}
             >
-              <View style={[styles.sectionIconTile, { backgroundColor: `${C.brand}14` }]}>
-                <Feather name="activity" size={20} color={C.brand} />
+              <View style={styles.sectionIconTile}>
+                <Feather name="activity" size={32} color={C.text} />
               </View>
               <View style={styles.sectionBarBody}>
                 <Text style={[styles.sectionBarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -799,8 +799,8 @@ export function FacultyProfileScreen({ route, navigation }: any) {
               <View style={styles.sectionExpandedContainer}>
                 {activities.map((act, i) => (
                   <View key={i} style={[styles.childBar58, { backgroundColor: C.surface2, borderColor: C.border, borderLeftColor: C.brand, borderLeftWidth: 4.5 }]}>
-                    <View style={[styles.childBarIconTile, { backgroundColor: `${C.brand}14` }]}>
-                      <Feather name="check" size={15} color={C.brand} />
+                    <View style={styles.childBarIconTile}>
+                      <Feather name="check" size={24} color={C.text} />
                     </View>
                     <View style={styles.childBarCenter}>
                       <Text style={[styles.childBarTitle, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>
@@ -811,8 +811,8 @@ export function FacultyProfileScreen({ route, navigation }: any) {
                 ))}
                 {member.industrial_experience ? (
                   <View style={[styles.childBar58, { backgroundColor: C.surface2, borderColor: C.border, borderLeftColor: FACULTY_ACCENT, borderLeftWidth: 4.5 }]}>
-                    <View style={[styles.childBarIconTile, { backgroundColor: `${FACULTY_ACCENT}14` }]}>
-                      <Feather name="briefcase" size={15} color={FACULTY_ACCENT} />
+                    <View style={styles.childBarIconTile}>
+                      <Feather name="briefcase" size={24} color={C.text} />
                     </View>
                     <View style={styles.childBarCenter}>
                       <Text style={[styles.childBarTitle, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>
@@ -835,7 +835,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
               activeOpacity={0.75}
             >
               <View style={styles.sectionIconTile}>
-                <Feather name="globe" size={28} color={C.text} />
+                <Feather name="globe" size={32} color={C.text} />
               </View>
               <View style={styles.sectionBarBody}>
                 <Text style={[styles.sectionBarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>

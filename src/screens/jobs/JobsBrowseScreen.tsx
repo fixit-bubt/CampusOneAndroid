@@ -448,7 +448,7 @@ export function JobsBrowseScreen({ navigation }: any) {
                 onPress={() => navigation.navigate('JobsModerate')}
                 activeOpacity={0.75}
               >
-                <Feather name="shield" size={19} color={C.text} />
+                <Feather name="shield" size={22} color={C.text} />
               </TouchableOpacity>
             )}
             {canPost && (
@@ -569,7 +569,7 @@ export function JobsBrowseScreen({ navigation }: any) {
       {mainTab !== 'my_applications' && (
         <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 8, paddingBottom: 4 }}>
           <View style={[styles.searchBar, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <Icon name="search" size={18} color={C.textMuted} />
+            <Icon name="search" size={24} color={C.textMuted} />
             <TextInput
               style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
               placeholder={t.jobs?.searchPlaceholder ?? 'Search title, company, skills, area...'}
@@ -885,13 +885,8 @@ export function JobsBrowseScreen({ navigation }: any) {
             <View style={styles.sheetHandle} />
             <View style={styles.modalHeader}>
               <View style={styles.modalHeaderLeft}>
-                <View
-                  style={[
-                    styles.modalHeaderIcon,
-                    { backgroundColor: isDark ? 'rgba(14, 156, 138, 0.2)' : 'rgba(14, 156, 138, 0.1)' },
-                  ]}
-                >
-                  <Feather name="briefcase" size={17} color={SectorColors.jobs} />
+                <View style={styles.modalHeaderIcon}>
+                  <Feather name="briefcase" size={32} color={C.text} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.modalTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -904,9 +899,9 @@ export function JobsBrowseScreen({ navigation }: any) {
               </View>
               <TouchableOpacity
                 onPress={() => setTypeModalVisible(false)}
-                style={[styles.modalCloseBtn, { backgroundColor: C.surface2 }]}
+                style={styles.modalCloseBtn}
               >
-                <Feather name="x" size={16} color={C.text} />
+                <Feather name="x" size={20} color={C.text} />
               </TouchableOpacity>
             </View>
 
@@ -1055,13 +1050,8 @@ export function JobsBrowseScreen({ navigation }: any) {
             <View style={styles.sheetHandle} />
             <View style={styles.modalHeader}>
               <View style={styles.modalHeaderLeft}>
-                <View
-                  style={[
-                    styles.modalHeaderIcon,
-                    { backgroundColor: isDark ? 'rgba(14, 156, 138, 0.2)' : 'rgba(14, 156, 138, 0.1)' },
-                  ]}
-                >
-                  <Feather name="book-open" size={17} color={SectorColors.jobs} />
+                <View style={styles.modalHeaderIcon}>
+                  <Feather name="book-open" size={32} color={C.text} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.modalTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -1074,9 +1064,9 @@ export function JobsBrowseScreen({ navigation }: any) {
               </View>
               <TouchableOpacity
                 onPress={() => setDeptModalVisible(false)}
-                style={[styles.modalCloseBtn, { backgroundColor: C.surface2 }]}
+                style={styles.modalCloseBtn}
               >
-                <Feather name="x" size={16} color={C.text} />
+                <Feather name="x" size={20} color={C.text} />
               </TouchableOpacity>
             </View>
 

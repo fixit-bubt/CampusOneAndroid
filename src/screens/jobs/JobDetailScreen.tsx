@@ -361,10 +361,10 @@ export function JobDetailScreen({ route, navigation }: any) {
         rightSlot={
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <TouchableOpacity style={styles.iconBtn} onPress={handleShare} activeOpacity={0.75}>
-              <Feather name="share-2" size={19} color={C.text} />
+              <Feather name="share-2" size={22} color={C.text} />
             </TouchableOpacity>
             <TouchableOpacity style={styles.iconBtn} onPress={handleToggleSave} activeOpacity={0.75}>
-              <Feather name="star" size={21} color={saved ? Accent.gold : C.text2} />
+              <Feather name="star" size={22} color={saved ? Accent.gold : C.text2} />
             </TouchableOpacity>
           </View>
         }

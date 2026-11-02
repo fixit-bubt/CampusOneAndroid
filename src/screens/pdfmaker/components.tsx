@@ -88,7 +88,7 @@ export function ResultPanel({
             onPress={onPreview}
             activeOpacity={0.82}
           >
-            <Feather name="eye" size={18} color={C.brand} />
+            <Feather name="eye" size={22} color={C.brand} />
             <Text style={[styles.actionRowText, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
               {t.pdfmaker.common.preview}
             </Text>
@@ -101,7 +101,7 @@ export function ResultPanel({
             onPress={onSaveDevice}
             activeOpacity={0.82}
           >
-            <Feather name="download" size={18} color={C.text} />
+            <Feather name="download" size={22} color={C.text} />
             <Text style={[styles.actionRowText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
               {t.pdfmaker.common.saveDevice}
             </Text>
@@ -113,7 +113,7 @@ export function ResultPanel({
           onPress={onShare}
           activeOpacity={0.85}
         >
-          <Feather name="share-2" size={18} color={C.white} />
+          <Feather name="share-2" size={22} color={C.white} />
           <Text style={[styles.actionRowText, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>
             {t.pdfmaker.common.share}
           </Text>
@@ -124,7 +124,7 @@ export function ResultPanel({
           onPress={onReset}
           activeOpacity={0.82}
         >
-          <Feather name="rotate-ccw" size={17} color={C.text2} />
+          <Feather name="rotate-ccw" size={22} color={C.text2} />
           <Text style={[styles.actionRowText, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
             {t.pdfmaker.common.startOver}
           </Text>
@@ -247,7 +247,7 @@ export function FileRow({
   return (
     <View style={[styles.fileRow, { backgroundColor: C.surface, borderColor: C.border }]}>
       <View style={styles.fileIcon}>
-        <Feather name={kind === 'pdf' ? 'file-text' : 'image'} size={28} color={C.text} />
+        <Feather name={kind === 'pdf' ? 'file-text' : 'image'} size={32} color={C.text} />
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text numberOfLines={1} style={[styles.fileName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{name}</Text>
@@ -362,7 +362,7 @@ const styles = StyleSheet.create({
   thumbBtns: { flexDirection: 'row', marginTop: 2 } as ViewStyle,
   tileBtn: { width: 26, height: 26, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
   fileRow: { flexDirection: 'row', alignItems: 'center', gap: 11, borderWidth: 1, borderRadius: 16, padding: 12, minHeight: 72 } as ViewStyle,
-  fileIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
+  fileIcon: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
   fileName: { fontSize: 14.5 },
   segment: { flexDirection: 'row', alignItems: 'center', height: 58, padding: 4, borderRadius: 16, borderWidth: 1, gap: 4 } as ViewStyle,
   segmentItem: { flex: 1, alignItems: 'center', justifyContent: 'center', height: '100%', borderRadius: 12 } as ViewStyle,

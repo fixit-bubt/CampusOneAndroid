@@ -139,11 +139,11 @@ export function RegisterScreen({ navigation }: Props) {
       <View style={[styles.subbar, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          style={[styles.iconBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+          style={styles.iconBtn}
           hitSlop={8}
           activeOpacity={0.75}
         >
-          <Icon name="arrowL" size={20} color={C.text} />
+          <Icon name="arrowL" size={24} color={C.text} />
         </TouchableOpacity>
         <Text style={[styles.subbarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
           Create Account
@@ -548,19 +548,11 @@ export function RegisterScreen({ navigation }: Props) {
                     activeOpacity={0.7}
                   >
                     <View style={styles.deptItemLeft}>
-                      <View
-                        style={[
-                          styles.deptIconBox,
-                          {
-                            backgroundColor: C.surface2,
-                            borderColor: C.border,
-                          },
-                        ]}
-                      >
+                      <View style={styles.deptIconBox}>
                         <Icon
                           name={item.icon}
-                          size={18}
-                          color={isSelected ? C.brand : C.text}
+                          size={28}
+                          color={C.text}
                         />
                       </View>
                       <Text
@@ -623,8 +615,8 @@ const styles = StyleSheet.create({
   iconBtn: {
     width: 38,
     height: 38,
-    borderRadius: 12,
-    borderWidth: 1,
+
+
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
@@ -709,7 +701,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 10,
-    borderWidth: 1,
+
   } as ViewStyle,
 
   chipText: {
@@ -735,8 +727,8 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: 12,
-    borderWidth: 1,
+
+
     marginTop: 14,
   } as ViewStyle,
 
@@ -847,8 +839,6 @@ const styles = StyleSheet.create({
   deptIconBox: {
     width: 36,
     height: 36,
-    borderRadius: 10,
-    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,

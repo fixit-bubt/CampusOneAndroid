@@ -197,7 +197,7 @@ export function ToolCompressScreen({ navigation }: any) {
               disabled={opening}
               activeOpacity={0.8}
             >
-              <Feather name="minimize-2" size={26} color={SectorColors.pdfmaker} />
+              <Feather name="minimize-2" size={32} color={C.text} />
               <Text style={[styles.dropTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                 {t.pdfmaker.compress.open}
               </Text>
@@ -213,7 +213,7 @@ export function ToolCompressScreen({ navigation }: any) {
           <>
             <View style={[styles.fileCard, { backgroundColor: C.surface, borderColor: C.border }]}>
               <View style={styles.fileIcon}>
-                <Feather name="file-text" size={24} color={C.text} />
+                <Feather name="file-text" size={32} color={C.text} />
               </View>
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text numberOfLines={1} style={[styles.fileName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -328,7 +328,7 @@ const styles = StyleSheet.create({
   dropTitle: { fontSize: 16 },
   dropHint: { fontSize: 12.5, textAlign: 'center', lineHeight: 18 },
   fileCard: { flexDirection: 'row', alignItems: 'center', gap: 11, borderWidth: 1, borderRadius: 14, padding: 11 } as ViewStyle,
-  fileIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
+  fileIcon: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
   fileName: { fontSize: 14 },
   meta: { fontSize: 12.5 },
   link: { fontSize: 13 },

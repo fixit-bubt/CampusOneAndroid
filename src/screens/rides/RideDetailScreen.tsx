@@ -1023,7 +1023,6 @@ const styles = StyleSheet.create({
   thumb: {
     width: 50,
     height: 50,
-    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -1112,7 +1111,6 @@ const styles = StyleSheet.create({
   microIconBox: {
     width: 22,
     height: 22,
-    borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
   },

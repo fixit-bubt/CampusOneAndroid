@@ -431,19 +431,12 @@ export function PostItemFormScreen({ route, navigation }: any) {
             onPress={() => setCatModalVisible(true)}
             activeOpacity={0.75}
           >
-            <View
-              style={[
-                styles.dropdownIconTile44,
-                {
-                  backgroundColor: cat ? LF_BG : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2),
-                },
-              ]}
-            >
+            <View style={styles.dropdownIconTile44}>
               <AnimatedIcon
                 family="feather"
                 name={selectedCatObj ? selectedCatObj.icon : 'inbox'}
-                size={20}
-                color={cat ? LF_COLOR : C.text2}
+                size={32}
+                color={C.text}
               />
             </View>
             <View style={styles.dropdownInfo}>
@@ -506,7 +499,7 @@ export function PostItemFormScreen({ route, navigation }: any) {
                     activeOpacity={0.75}
                   >
                     <View style={styles.matchIcon}>
-                      <Icon name={mc.icon} size={24} color={C.text} />
+                      <Icon name={mc.icon} size={32} color={C.text} />
                     </View>
                     <View style={{ flex: 1, minWidth: 0 }}>
                       <Text style={[styles.matchName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>{m.title}</Text>
@@ -541,20 +534,13 @@ export function PostItemFormScreen({ route, navigation }: any) {
               }}
               activeOpacity={0.75}
             >
-              <View
-                style={[
-                  styles.dropdownIconTile44,
-                  {
-                    backgroundColor: loc ? LF_BG : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2),
-                  },
-                ]}
-              >
+              <View style={styles.dropdownIconTile44}>
                 <AnimatedIcon
                   key={`loc-${loc}`}
                   family="feather"
                   name="map-pin"
-                  size={20}
-                  color={loc ? LF_COLOR : C.text2}
+                  size={32}
+                  color={C.text}
                 />
               </View>
               <View style={styles.dropdownInfo}>
@@ -819,21 +805,12 @@ export function PostItemFormScreen({ route, navigation }: any) {
                     }}
                     activeOpacity={0.75}
                   >
-                    <View
-                      style={[
-                        styles.dropdownIconTile44,
-                        {
-                          backgroundColor: isSelected
-                            ? (isDark ? 'rgba(217, 135, 11, 0.28)' : 'rgba(217, 135, 11, 0.16)')
-                            : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2),
-                        },
-                      ]}
-                    >
+                    <View style={styles.dropdownIconTile44}>
                       <AnimatedIcon
                         family="feather"
                         name={item.icon}
-                        size={20}
-                        color={isSelected ? LF_COLOR : C.text2}
+                        size={32}
+                        color={C.text}
                       />
                     </View>
                     <View style={styles.dropdownInfo}>
@@ -998,19 +975,12 @@ export function PostItemFormScreen({ route, navigation }: any) {
                 }}
                 activeOpacity={0.75}
               >
-                <View
-                  style={[
-                    styles.dropdownIconTile44,
-                    {
-                      backgroundColor: isDark ? 'rgba(217, 135, 11, 0.28)' : 'rgba(217, 135, 11, 0.18)',
-                    },
-                  ]}
-                >
+                <View style={styles.dropdownIconTile44}>
                   <AnimatedIcon
                     family="feather"
                     name="map"
-                    size={20}
-                    color={LF_COLOR}
+                    size={32}
+                    color={C.text}
                   />
                 </View>
                 <View style={styles.dropdownInfo}>
@@ -1065,21 +1035,12 @@ export function PostItemFormScreen({ route, navigation }: any) {
                       }}
                       activeOpacity={0.75}
                     >
-                      <View
-                        style={[
-                          styles.dropdownIconTile44,
-                          {
-                            backgroundColor: isSelected
-                              ? (isDark ? 'rgba(217, 135, 11, 0.28)' : 'rgba(217, 135, 11, 0.16)')
-                              : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2),
-                          },
-                        ]}
-                      >
+                      <View style={styles.dropdownIconTile44}>
                         <AnimatedIcon
                           family="feather"
                           name={hub.icon}
-                          size={20}
-                          color={isSelected ? LF_COLOR : C.text2}
+                          size={32}
+                          color={C.text}
                         />
                       </View>
                       <View style={styles.dropdownInfo}>
@@ -1395,7 +1356,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: 6,
   } as ViewStyle,
-  matchIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
+  matchIcon: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
   matchName: { fontSize: 13.5 } as TextStyle,
   matchLoc: { fontSize: 11.5, marginTop: 1 } as TextStyle,
 

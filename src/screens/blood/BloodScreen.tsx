@@ -578,7 +578,7 @@ export function BloodScreen({ route, navigation }: any) {
             onPress={() => searchInputRef.current?.focus()}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 8 }}
           >
-            <Feather name="search" size={18} color={C.textMuted} />
+            <Feather name="search" size={24} color={C.textMuted} />
           </TouchableOpacity>
           <TextInput
             ref={searchInputRef}
@@ -621,27 +621,12 @@ export function BloodScreen({ route, navigation }: any) {
             onPress={() => setAreaModalVisible(true)}
             activeOpacity={0.75}
           >
-            <View
-              style={[
-                styles.areaIconBox,
-                {
-                  backgroundColor: areaFilter !== 'All'
-                    ? pillBg(SectorColors.blood, isDark)
-                    : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2),
-                  borderColor: areaFilter !== 'All' ? SectorColors.blood : C.border,
-                  borderWidth: 1,
-                },
-              ]}
-            >
+            <View style={styles.areaIconBox}>
               <AnimatedIcon
                 family={isHospitalFilter ? 'mci' : 'feather'}
                 name={isHospitalFilter ? 'hospital-building' : 'map-pin'}
-                size={14}
-                color={
-                  areaFilter !== 'All'
-                    ? (isHospitalFilter && isDark ? '#ffffff' : SectorColors.blood)
-                    : C.text
-                }
+                size={24}
+                color={C.text}
               />
             </View>
 

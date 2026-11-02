@@ -290,7 +290,7 @@ export function StudentProfileScreen({ route, navigation }: any) {
               <View style={styles.badgeRow}>
                 {student.is_cr ? (
                   <View style={[styles.crBadge, { backgroundColor: '#fef3c7', borderColor: '#fde68a' }]}>
-                    <Icon name="award" size={12} color="#b45309" />
+                    <Icon name="award" size={14} color="#b45309" />
                     <Text style={[styles.crBadgeTxt, { color: '#b45309', fontFamily: FontFamily.jakartaBold }]}>
                       {t.directory2.classRep}
                     </Text>
@@ -299,7 +299,7 @@ export function StudentProfileScreen({ route, navigation }: any) {
 
                 {student.blood_group ? (
                   <View style={[styles.bloodBadge, { backgroundColor: '#fee2e2', borderColor: '#fca5a5' }]}>
-                    <Icon name="blood" size={11} color="#b91c1c" />
+                    <Icon name="blood" size={14} color="#b91c1c" />
                     <Text style={[styles.bloodBadgeTxt, { color: '#b91c1c', fontFamily: FontFamily.jakartaBold }]}>
                       {student.blood_group}
                     </Text>
@@ -348,8 +348,8 @@ export function StudentProfileScreen({ route, navigation }: any) {
               onPress={() => navigation.navigate('MessageThread', { kind: 'dm', id: student.id, title: student.full_name })}
               activeOpacity={0.75}
             >
-              <View style={[styles.actionIconBox, { backgroundColor: isDark ? 'rgba(91, 133, 247, 0.18)' : '#eff6ff' }]}>
-                <AnimatedIcon family="feather" name="message-circle" size={22} color={C.brand} />
+              <View style={styles.actionIconBox}>
+                <AnimatedIcon family="feather" name="message-circle" size={32} color={C.text} />
               </View>
               <View style={styles.actionCardContent}>
                 <Text style={[styles.actionCardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -369,8 +369,8 @@ export function StudentProfileScreen({ route, navigation }: any) {
                 onPress={() => handleWhatsApp(student.whatsapp!)}
                 activeOpacity={0.75}
               >
-                <View style={[styles.actionIconBox, { backgroundColor: isDark ? 'rgba(37, 211, 102, 0.18)' : '#f0fdf4' }]}>
-                  <AnimatedIcon family="feather" name="message-square" size={22} color="#25D366" />
+                <View style={styles.actionIconBox}>
+                  <AnimatedIcon family="feather" name="message-square" size={32} color={C.text} />
                 </View>
                 <View style={styles.actionCardContent}>
                   <Text style={[styles.actionCardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -391,8 +391,8 @@ export function StudentProfileScreen({ route, navigation }: any) {
                 onPress={() => handlePhoneCall(student.whatsapp!)}
                 activeOpacity={0.75}
               >
-                <View style={[styles.actionIconBox, { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.18)' : '#ecfdf5' }]}>
-                  <AnimatedIcon family="feather" name="phone-call" size={22} color="#10B981" />
+                <View style={styles.actionIconBox}>
+                  <AnimatedIcon family="feather" name="phone-call" size={32} color={C.text} />
                 </View>
                 <View style={styles.actionCardContent}>
                   <Text style={[styles.actionCardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -413,8 +413,8 @@ export function StudentProfileScreen({ route, navigation }: any) {
                 onPress={() => handleEmail(student.email!)}
                 activeOpacity={0.75}
               >
-                <View style={[styles.actionIconBox, { backgroundColor: isDark ? 'rgba(139, 92, 246, 0.18)' : '#f5f3ff' }]}>
-                  <AnimatedIcon family="feather" name="mail" size={22} color="#8B5CF6" />
+                <View style={styles.actionIconBox}>
+                  <AnimatedIcon family="feather" name="mail" size={32} color={C.text} />
                 </View>
                 <View style={styles.actionCardContent}>
                   <Text style={[styles.actionCardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -430,8 +430,8 @@ export function StudentProfileScreen({ route, navigation }: any) {
 
             {!student.whatsapp && !student.email && (
               <View style={[styles.actionCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-                <View style={[styles.actionIconBox, { backgroundColor: C.surface2 }]}>
-                  <AnimatedIcon family="feather" name="info" size={22} color={C.textMuted} />
+                <View style={styles.actionIconBox}>
+                  <AnimatedIcon family="feather" name="info" size={32} color={C.textMuted} />
                 </View>
                 <View style={styles.actionCardContent}>
                   <Text style={[styles.actionCardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -456,7 +456,7 @@ export function StudentProfileScreen({ route, navigation }: any) {
               onPress={confirmDisconnect}
               activeOpacity={0.75}
             >
-              <Icon name="trash" size={15} color={C.danger} />
+              <Icon name="trash" size={20} color={C.danger} />
               <Text style={[styles.disconnectTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
                 {t.directory2.disconnect}
               </Text>
@@ -468,8 +468,8 @@ export function StudentProfileScreen({ route, navigation }: any) {
             {student.connState === 'requested' && (
               <>
                 <View style={[styles.actionCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-                  <View style={[styles.actionIconBox, { backgroundColor: isDark ? 'rgba(245, 158, 11, 0.18)' : '#fef3c7' }]}>
-                    <AnimatedIcon family="feather" name="clock" size={22} color={isDark ? '#fbbf24' : '#d97706'} />
+                  <View style={styles.actionIconBox}>
+                    <AnimatedIcon family="feather" name="clock" size={32} color={C.text} />
                   </View>
                   <View style={styles.actionCardContent}>
                     <Text style={[styles.actionCardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -493,7 +493,7 @@ export function StudentProfileScreen({ route, navigation }: any) {
                   disabled={busy}
                   activeOpacity={0.75}
                 >
-                  <Icon name="x" size={16} color={C.danger} />
+                  <Icon name="x" size={20} color={C.danger} />
                   <Text style={[styles.actionControlBtnTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
                     {t.directory2.cancelRequest}
                   </Text>
@@ -504,8 +504,8 @@ export function StudentProfileScreen({ route, navigation }: any) {
             {student.connState === 'none' && (
               <>
                 <View style={[styles.actionCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-                  <View style={[styles.actionIconBox, { backgroundColor: isDark ? 'rgba(91, 133, 247, 0.18)' : '#eff6ff' }]}>
-                    <AnimatedIcon family="feather" name="shield" size={22} color={C.brand} />
+                  <View style={styles.actionIconBox}>
+                    <AnimatedIcon family="feather" name="shield" size={32} color={C.text} />
                   </View>
                   <View style={styles.actionCardContent}>
                     <Text style={[styles.actionCardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -523,7 +523,7 @@ export function StudentProfileScreen({ route, navigation }: any) {
                   disabled={busy}
                   activeOpacity={0.85}
                 >
-                  <AnimatedIcon family="feather" name="user-plus" size={18} color="#fff" />
+                  <AnimatedIcon family="feather" name="user-plus" size={20} color="#fff" />
                   <Text style={[styles.actionControlBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
                     {t.directory2.connect}
                   </Text>
@@ -534,8 +534,8 @@ export function StudentProfileScreen({ route, navigation }: any) {
             {student.connState === 'incoming' && (
               <>
                 <View style={[styles.actionCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-                  <View style={[styles.actionIconBox, { backgroundColor: isDark ? 'rgba(91, 133, 247, 0.18)' : '#eff6ff' }]}>
-                    <AnimatedIcon family="feather" name="user-check" size={22} color={C.brand} />
+                  <View style={styles.actionIconBox}>
+                    <AnimatedIcon family="feather" name="user-check" size={32} color={C.text} />
                   </View>
                   <View style={styles.actionCardContent}>
                     <Text style={[styles.actionCardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -554,7 +554,7 @@ export function StudentProfileScreen({ route, navigation }: any) {
                     disabled={busy}
                     activeOpacity={0.85}
                   >
-                    <Icon name="check" size={16} color="#fff" />
+                    <Icon name="check" size={20} color="#fff" />
                     <Text style={[styles.dualActionBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
                       {t.directory2.accept}
                     </Text>
@@ -565,7 +565,7 @@ export function StudentProfileScreen({ route, navigation }: any) {
                     disabled={busy}
                     activeOpacity={0.85}
                   >
-                    <Icon name="x" size={16} color={C.text} />
+                    <Icon name="x" size={20} color={C.text} />
                     <Text style={[styles.dualActionBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                       {t.directory2.decline}
                     </Text>

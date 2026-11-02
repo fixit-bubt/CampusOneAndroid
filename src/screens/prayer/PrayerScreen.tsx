@@ -380,7 +380,7 @@ export function PrayerScreen({ navigation }: any) {
               <View key={m.id}>
                 {i > 0 && <View style={[styles.divider, { backgroundColor: C.border }]} />}
                 <View style={styles.musRow}>
-                  <Feather name="map-pin" size={16} color={PRAYER_GREEN} />
+                  <Feather name="map-pin" size={20} color={C.text} />
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.musName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{m.name}</Text>
                     {m.floor_desc ? (

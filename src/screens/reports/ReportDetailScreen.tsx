@@ -412,7 +412,6 @@ const styles = StyleSheet.create({
   catIcon: {
     width: 44,
     height: 44,
-    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,

@@ -201,7 +201,8 @@ export function CourseDetailScreen({ route, navigation }: any) {
 
           const isDirectCR = (myMemberships ?? []).some(m => m.section_id === currentCourse.section_id && (m.role === 'cr' || profile?.role === 'admin'));
           setIsCR(isDirectCR || profile?.role === 'admin');
-          setCanUpload((myMemberships ?? []).length > 0 || profile?.role === 'admin');
+          const isEditorOrCR = (myMemberships ?? []).some(m => (m.role === 'cr' || m.role === 'editor')) || profile?.role === 'admin';
+          setCanUpload(isEditorOrCR);
         } else {
           setIsCR(profile?.role === 'admin');
           setCanUpload(profile?.role === 'admin');
@@ -895,7 +896,6 @@ const styles = StyleSheet.create({
   fileIcon44: {
     width: 44,
     height: 44,
-    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,

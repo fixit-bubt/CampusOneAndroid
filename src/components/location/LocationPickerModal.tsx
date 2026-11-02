@@ -944,7 +944,7 @@ export function LocationPickerModal({
             activeOpacity={0.8}
             accessibilityLabel="Close map"
           >
-            <Feather name="arrow-left" size={20} color={C.text} />
+            <Feather name="arrow-left" size={24} color={C.text} />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -955,7 +955,7 @@ export function LocationPickerModal({
             {searchLoading ? (
               <ActivityIndicator size="small" color={accentColor} style={styles.searchIcon} />
             ) : (
-              <Feather name="search" size={18} color={isSearching ? accentColor : C.textMuted} style={styles.searchIcon} />
+              <Feather name="search" size={24} color={C.textMuted} style={styles.searchIcon} />
             )}
             <TextInput
               ref={searchInputRef}

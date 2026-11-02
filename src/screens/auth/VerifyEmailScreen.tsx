@@ -85,11 +85,11 @@ export function VerifyEmailScreen({ route, navigation }: Props) {
       <View style={[styles.subbar, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          style={[styles.iconBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+          style={styles.iconBtn}
           hitSlop={8}
           activeOpacity={0.75}
         >
-          <Icon name="arrowL" size={20} color={C.text} />
+          <Icon name="arrowL" size={24} color={C.text} />
         </TouchableOpacity>
         <Text style={[styles.subbarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
           {t.auth.verifyTitle}
@@ -202,8 +202,8 @@ const styles = StyleSheet.create({
   iconBtn: {
     width: 38,
     height: 38,
-    borderRadius: 12,
-    borderWidth: 1,
+
+
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,

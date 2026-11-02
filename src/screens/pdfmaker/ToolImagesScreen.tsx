@@ -472,7 +472,7 @@ export function ToolImagesScreen({ navigation }: any) {
               onPress={pickFromLibrary}
               activeOpacity={0.8}
             >
-              <Feather name="image" size={26} color={SectorColors.pdfmaker} />
+              <Feather name="image" size={32} color={C.text} />
               <Text style={[styles.dropTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                 {t.pdfmaker.images.addPhotos}
               </Text>
@@ -486,7 +486,7 @@ export function ToolImagesScreen({ navigation }: any) {
               onPress={pickFromCamera}
               activeOpacity={0.8}
             >
-              <Feather name="camera" size={18} color={C.brand} />
+              <Feather name="camera" size={24} color={C.text} />
               <Text style={[styles.cameraActionText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                 {t.pdfmaker.images.camera}
               </Text>

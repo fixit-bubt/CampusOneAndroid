@@ -46,8 +46,8 @@ export function LoadError({ onRetry }: { onRetry: () => void }) {
   const t = useT();
   return (
     <View style={styles.errWrap}>
-      <View style={[styles.errIcon, { backgroundColor: C.surface2 }]}>
-        <Feather name="wifi-off" size={24} color={C.textMuted} />
+      <View style={styles.errIcon}>
+        <Feather name="wifi-off" size={40} color={C.textMuted} />
       </View>
       <Text style={[styles.errTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
         {t.common.loadingError}
@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
   thumb: { width: 44, height: 44, borderRadius: 12 } as ViewStyle,
   line: { height: 11, borderRadius: 6 } as ViewStyle,
   errWrap: { alignItems: 'center', paddingVertical: 48, gap: 14 } as ViewStyle,
-  errIcon: { width: 60, height: 60, borderRadius: 20, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
+  errIcon: { width: 60, height: 60, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
   errTxt: { fontSize: 13.5 } as any,
   retryBtn: { paddingHorizontal: 22, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
   retryTxt: { fontSize: 13.5, color: '#fff' } as any,

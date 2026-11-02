@@ -536,7 +536,7 @@ export function AnnouncementsScreen({ navigation }: any) {
                 onPress={() => navigation.navigate('AnnouncePost')}
                 activeOpacity={0.75}
               >
-                <Feather name="plus" size={21} color={C.text} />
+                <Feather name="plus" size={22} color={C.text} />
               </TouchableOpacity>
             )}
             <LogoMark size={28} shadow={false} />
@@ -556,7 +556,7 @@ export function AnnouncementsScreen({ navigation }: any) {
       {/* 2. Global Search Bar */}
       <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 6, paddingBottom: 6 }}>
         <View style={[styles.searchBar, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <Icon name="search" size={18} color={C.textMuted} />
+          <Icon name="search" size={24} color={C.textMuted} />
           <TextInput
             style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
             placeholder={t.announce2.searchPlaceholder}
@@ -761,14 +761,14 @@ export function AnnouncementsScreen({ navigation }: any) {
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setCategoryModalVisible(false)} />
           <View style={[styles.modalSheet, { backgroundColor: C.surface, borderColor: C.border }]}>
             <View style={styles.modalHeader}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Feather name="layers" size={17} color={C.brand} />
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <Feather name="layers" size={32} color={C.text} />
                 <Text style={[styles.modalTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                   {t.announce2.categoryDropdown}
                 </Text>
               </View>
               <TouchableOpacity onPress={() => setCategoryModalVisible(false)} hitSlop={8}>
-                <Feather name="x" size={18} color={C.textMuted} />
+                <Feather name="x" size={20} color={C.text} />
               </TouchableOpacity>
             </View>
 
@@ -794,20 +794,11 @@ export function AnnouncementsScreen({ navigation }: any) {
                       activeOpacity={0.75}
                     >
                       <View style={styles.pickerBarLeft}>
-                        <View
-                          style={[
-                            styles.pickerBarIconBox,
-                            {
-                              backgroundColor: active
-                                ? (isDark ? 'rgba(59, 130, 246, 0.25)' : '#dbeafe')
-                                : C.surface2,
-                            },
-                          ]}
-                        >
+                        <View style={styles.pickerBarIconBox}>
                           <Feather
                             name={cat.icon as any}
-                            size={18}
-                            color={active ? C.brand : C.textMuted}
+                            size={32}
+                            color={C.text}
                           />
                         </View>
                         <Text
@@ -849,14 +840,14 @@ export function AnnouncementsScreen({ navigation }: any) {
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setDeptModalVisible(false)} />
           <View style={[styles.modalSheet, { backgroundColor: C.surface, borderColor: C.border }]}>
             <View style={styles.modalHeader}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Feather name="shield" size={17} color={SectorColors.jobs} />
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <Feather name="shield" size={32} color={C.text} />
                 <Text style={[styles.modalTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                   {t.announce2.officeDropdown}
                 </Text>
               </View>
               <TouchableOpacity onPress={() => setDeptModalVisible(false)} hitSlop={8}>
-                <Feather name="x" size={18} color={C.textMuted} />
+                <Feather name="x" size={20} color={C.text} />
               </TouchableOpacity>
             </View>
 
@@ -882,20 +873,11 @@ export function AnnouncementsScreen({ navigation }: any) {
                       activeOpacity={0.75}
                     >
                       <View style={styles.pickerBarLeft}>
-                        <View
-                          style={[
-                            styles.pickerBarIconBox,
-                            {
-                              backgroundColor: active
-                                ? (isDark ? 'rgba(14, 156, 138, 0.25)' : '#cbf0e8')
-                                : C.surface2,
-                            },
-                          ]}
-                        >
+                        <View style={styles.pickerBarIconBox}>
                           <Feather
                             name={dept.id === 'ALL' ? 'grid' : dept.id === 'MY_DEPT' ? 'target' : 'shield'}
-                            size={18}
-                            color={active ? SectorColors.jobs : C.textMuted}
+                            size={32}
+                            color={C.text}
                           />
                         </View>
                         <Text

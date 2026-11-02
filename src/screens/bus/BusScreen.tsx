@@ -303,7 +303,7 @@ export function BusScreen({ navigation }: any) {
       {/* 58dp Search Bar */}
       <View style={[styles.searchWrapper, { paddingHorizontal: Layout.screenPadding, marginBottom: 8 }]}>
         <View style={[styles.searchBar, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <Icon name="search" size={18} color={C.textMuted} />
+          <Icon name="search" size={24} color={C.textMuted} />
           <TextInput
             style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
             placeholder={isBn ? 'রুট, স্টপেজ বা এলাকা খুঁজুন…' : 'Search route, stop, or area…'}

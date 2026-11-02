@@ -64,11 +64,11 @@ function LFCard({
       style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}
       activeOpacity={0.75}
     >
-      <View style={[styles.thumb, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : C.surface2 }]}>
+      <View style={[styles.thumb, !item.photo_url && { backgroundColor: 'transparent' }]}>
         {item.photo_url ? (
           <Image source={{ uri: item.photo_url }} style={styles.thumbImg} resizeMode="cover" />
         ) : (
-          <Icon name={CAT_ICON[item.category] ?? 'inbox'} size={24} color={LF_COLOR} />
+          <Icon name={CAT_ICON[item.category] ?? 'inbox'} size={32} color={C.text} />
         )}
       </View>
       <View style={styles.cardBody}>
@@ -364,7 +364,7 @@ export function LostFoundBrowseScreen({ navigation }: any) {
             onPress={() => searchInputRef.current?.focus()}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 8 }}
           >
-            <Feather name="search" size={18} color={C.textMuted} />
+            <Feather name="search" size={24} color={C.textMuted} />
           </TouchableOpacity>
           <TextInput
             ref={searchInputRef}
@@ -551,19 +551,8 @@ export function LostFoundBrowseScreen({ navigation }: any) {
                       onPress={() => setDraftStatus(s.id)}
                       activeOpacity={0.75}
                     >
-                      <View
-                        style={[
-                          styles.catOptionIcon,
-                          {
-                            backgroundColor: selected
-                              ? `${LF_COLOR}28`
-                              : isDark
-                              ? 'rgba(255,255,255,0.06)'
-                              : 'rgba(0,0,0,0.05)',
-                          },
-                        ]}
-                      >
-                        <Feather name={s.icon as any} size={18} color={selected ? LF_COLOR : C.text2} />
+                      <View style={styles.catOptionIcon}>
+                        <Feather name={s.icon as any} size={28} color={C.text} />
                       </View>
                       <View style={{ flex: 1, minWidth: 0 }}>
                         <Text
@@ -661,19 +650,8 @@ export function LostFoundBrowseScreen({ navigation }: any) {
                       onPress={() => setDraftCategory(cat.id)}
                       activeOpacity={0.75}
                     >
-                      <View
-                        style={[
-                          styles.catOptionIcon,
-                          {
-                            backgroundColor: selected
-                              ? `${LF_COLOR}28`
-                              : isDark
-                              ? 'rgba(255,255,255,0.06)'
-                              : 'rgba(0,0,0,0.05)',
-                          },
-                        ]}
-                      >
-                        <Icon name={cat.icon} size={18} color={selected ? LF_COLOR : C.text2} />
+                      <View style={styles.catOptionIcon}>
+                        <Icon name={cat.icon} size={28} color={C.text} />
                       </View>
                       <View style={{ flex: 1, minWidth: 0 }}>
                         <Text

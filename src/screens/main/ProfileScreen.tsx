@@ -756,7 +756,7 @@ export function ProfileScreen({ navigation }: any) {
           {/* Email */}
           <View style={styles.infoRow}>
             <View style={styles.infoIconBox}>
-              <Feather name="mail" size={18} color={C.textMuted} />
+              <Feather name="mail" size={24} color={C.textMuted} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.infoLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
@@ -773,7 +773,7 @@ export function ProfileScreen({ navigation }: any) {
           {/* Phone */}
           <View style={styles.infoRow}>
             <View style={styles.infoIconBox}>
-              <Feather name="phone" size={18} color={C.textMuted} />
+              <Feather name="phone" size={24} color={C.textMuted} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.infoLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
@@ -790,7 +790,7 @@ export function ProfileScreen({ navigation }: any) {
           {/* WhatsApp */}
           <View style={styles.infoRow}>
             <View style={styles.infoIconBox}>
-              <Feather name="message-circle" size={18} color={C.textMuted} />
+              <Feather name="message-circle" size={24} color={C.textMuted} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.infoLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
@@ -807,7 +807,7 @@ export function ProfileScreen({ navigation }: any) {
               <View style={[styles.infoDivider, { backgroundColor: C.border }]} />
               <View style={styles.infoRow}>
                 <View style={styles.infoIconBox}>
-                  <Feather name="map-pin" size={18} color={C.textMuted} />
+                  <Feather name="map-pin" size={24} color={C.textMuted} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.infoLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
@@ -826,7 +826,7 @@ export function ProfileScreen({ navigation }: any) {
               <View style={[styles.infoDivider, { backgroundColor: C.border }]} />
               <View style={styles.infoRow}>
                 <View style={styles.infoIconBox}>
-                  <Feather name="facebook" size={18} color={C.textMuted} />
+                  <Feather name="facebook" size={24} color={C.textMuted} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.infoLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
@@ -845,7 +845,7 @@ export function ProfileScreen({ navigation }: any) {
               <View style={[styles.infoDivider, { backgroundColor: C.border }]} />
               <View style={styles.infoRow}>
                 <View style={styles.infoIconBox}>
-                  <Feather name="instagram" size={18} color={C.textMuted} />
+                  <Feather name="instagram" size={24} color={C.textMuted} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.infoLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
@@ -864,7 +864,7 @@ export function ProfileScreen({ navigation }: any) {
               <View style={[styles.infoDivider, { backgroundColor: C.border }]} />
               <View style={styles.infoRow}>
                 <View style={styles.infoIconBox}>
-                  <Feather name="send" size={18} color={C.textMuted} />
+                  <Feather name="send" size={24} color={C.textMuted} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.infoLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
@@ -883,7 +883,7 @@ export function ProfileScreen({ navigation }: any) {
               <View style={[styles.infoDivider, { backgroundColor: C.border }]} />
               <View style={styles.infoRow}>
                 <View style={styles.infoIconBox}>
-                  <Feather name="globe" size={18} color={C.textMuted} />
+                  <Feather name="globe" size={24} color={C.textMuted} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.infoLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>

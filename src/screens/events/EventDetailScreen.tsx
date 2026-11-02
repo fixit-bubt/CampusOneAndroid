@@ -233,7 +233,7 @@ export function EventDetailScreen({ route, navigation }: any) {
         rightSlot={
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <TouchableOpacity onPress={handleToggleSave} hitSlop={8} activeOpacity={0.7} style={{ padding: 4 }}>
-              <Feather name={isSaved ? 'bookmark' : 'bookmark'} size={19} color={isSaved ? C.warn : C.text} />
+              <Feather name={isSaved ? 'bookmark' : 'bookmark'} size={22} color={isSaved ? C.warn : C.text} />
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => shareEventDetails(event)}
@@ -241,11 +241,11 @@ export function EventDetailScreen({ route, navigation }: any) {
               activeOpacity={0.7}
               style={{ padding: 4 }}
             >
-              <Feather name="share-2" size={18} color={C.text} />
+              <Feather name="share-2" size={22} color={C.text} />
             </TouchableOpacity>
             {canDelete && (
               <TouchableOpacity onPress={deleteEvent} hitSlop={8} activeOpacity={0.7} style={{ padding: 4 }}>
-                <Feather name="trash-2" size={18} color={C.danger} />
+                <Feather name="trash-2" size={22} color={C.danger} />
               </TouchableOpacity>
             )}
           </View>

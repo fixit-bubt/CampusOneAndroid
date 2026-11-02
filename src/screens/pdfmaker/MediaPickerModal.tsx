@@ -406,8 +406,8 @@ export function MediaPickerModal({
         {/* Permission Denied State */}
         {hasPermission === false ? (
           <View style={styles.centerBox}>
-            <View style={[styles.permIconCircle, { backgroundColor: C.surface2 }]}>
-              <Feather name="image" size={32} color={C.brand} />
+            <View style={styles.permIconCircle}>
+              <Feather name="image" size={32} color={C.text} />
             </View>
             <Text style={[styles.permTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
               Photo Access Needed

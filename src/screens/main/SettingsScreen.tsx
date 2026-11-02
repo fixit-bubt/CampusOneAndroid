@@ -490,7 +490,7 @@ export function SettingsScreen({ navigation }: any) {
         <View style={[styles.sheetContent, { backgroundColor: C.surface }]}>
           <View style={styles.sheetHeaderRow}>
             <View style={styles.sheetIconWrap}>
-              <AnimatedIcon name="hard-drive" family="feather" size={28} color="#0284c7" />
+              <AnimatedIcon name="hard-drive" family="feather" size={32} color={C.text} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
@@ -806,7 +806,6 @@ const styles = StyleSheet.create({
   cardIconWrap: {
     width: 44,
     height: 44,
-    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
@@ -842,7 +841,6 @@ const styles = StyleSheet.create({
   sheetIconWrap: {
     width: 44,
     height: 44,
-    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
@@ -905,7 +903,6 @@ const styles = StyleSheet.create({
   aboutIconWrap: {
     width: 56,
     height: 56,
-    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
@@ -934,7 +931,6 @@ const styles = StyleSheet.create({
   delIconWrap: {
     width: 48,
     height: 48,
-    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',

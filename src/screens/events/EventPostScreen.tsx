@@ -259,8 +259,8 @@ export function EventPostScreen({ navigation }: any) {
                   onPress={() => setCat(c.id)}
                   activeOpacity={0.75}
                 >
-                  <View style={[styles.catIcon, { backgroundColor: c.color + '22' }]}>
-                    <Icon name={c.icon} size={15} color={c.color} />
+                  <View style={styles.catIcon}>
+                    <Icon name={c.icon} size={20} color={on ? C.text : C.text2} />
                   </View>
                   <Text
                     style={[
@@ -536,7 +536,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
   } as ViewStyle,
-  catIcon: { width: 24, height: 24, borderRadius: 6, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
+  catIcon: { alignItems: 'center', justifyContent: 'center' } as ViewStyle,
   catLabel: { fontSize: 12.5 } as any,
   clubChip: {
     paddingHorizontal: 12,

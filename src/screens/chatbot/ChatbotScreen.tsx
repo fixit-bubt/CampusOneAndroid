@@ -248,17 +248,17 @@ export function ChatbotScreen({ navigation, route }: any) {
         rightSlot={
           <View style={styles.headerBtns}>
             <TouchableOpacity
-              style={[styles.headerBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+              style={styles.headerBtn}
               onPress={() => navigation.navigate('ChatbotHistory')}
             >
-              <Feather name="clock" size={16} color={C.text2} />
+              <Feather name="clock" size={22} color={C.text} />
             </TouchableOpacity>
             {conversationId && (
               <TouchableOpacity
-                style={[styles.headerBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+                style={styles.headerBtn}
                 onPress={confirmDelete}
               >
-                <Feather name="trash-2" size={16} color={C.text2} />
+                <Feather name="trash-2" size={22} color={C.text} />
               </TouchableOpacity>
             )}
           </View>
@@ -300,7 +300,7 @@ export function ChatbotScreen({ navigation, route }: any) {
                   activeOpacity={0.75}
                 >
                   <View style={styles.suggestionIcon}>
-                    <Feather name={s.icon as any} size={24} color={C.text} />
+                    <Feather name={s.icon as any} size={28} color={C.text} />
                   </View>
                   <Text style={[styles.suggestionTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>
                     {s.text}
@@ -388,16 +388,16 @@ const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 10 } as ViewStyle,
   emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20, paddingTop: 36, paddingBottom: 20 } as ViewStyle,
-  botIconWrap: { width: 64, height: 64, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 6 } as ViewStyle,
+  botIconWrap: { width: 64, height: 64, alignItems: 'center', justifyContent: 'center', marginBottom: 6 } as ViewStyle,
   emptyTitle: { fontSize: 18, marginTop: 4 } as TextStyle,
   emptyTxt: { fontSize: 13.5, textAlign: 'center', marginTop: 4, maxWidth: 280 } as TextStyle,
   suggestionsWrap: { width: '100%', gap: 9, marginTop: 26 } as ViewStyle,
   suggestionCard: { flexDirection: 'row', alignItems: 'center', gap: 11, padding: 13, borderRadius: 14, borderWidth: 1 } as ViewStyle,
-  suggestionIcon: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
+  suggestionIcon: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
   suggestionTxt: { flex: 1, fontSize: 13.5, lineHeight: 18 } as TextStyle,
 
   headerBtns: { flexDirection: 'row', gap: 8 } as ViewStyle,
-  headerBtn: { width: 36, height: 36, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
+  headerBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
 
   bubbleRow: { flexDirection: 'row', marginVertical: 3 } as ViewStyle,
   mineRow: { justifyContent: 'flex-end' } as ViewStyle,

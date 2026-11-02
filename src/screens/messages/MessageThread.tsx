@@ -355,12 +355,12 @@ export function MessageThread({ route, navigation }: any) {
       <View style={[styles.header, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          style={[styles.hIconBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+          style={styles.hIconBtn}
           hitSlop={8}
           activeOpacity={0.75}
           accessibilityLabel="Go back"
         >
-          <Feather name="arrow-left" size={20} color={C.text} />
+          <Feather name="arrow-left" size={24} color={C.text} />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -387,21 +387,21 @@ export function MessageThread({ route, navigation }: any) {
 
         <View style={styles.headerBtns}>
           <TouchableOpacity
-            style={[styles.hIconBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+            style={styles.hIconBtn}
             onPress={() => { setSearching(s => !s); setTerm(''); setResults(null); }}
             activeOpacity={0.75}
             accessibilityLabel="Search"
           >
-            <Feather name={searching ? 'x' : 'search'} size={18} color={C.text2} />
+            <Feather name={searching ? 'x' : 'search'} size={22} color={C.text} />
           </TouchableOpacity>
           {kind === 'dm' && (
             <TouchableOpacity
-              style={[styles.hIconBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+              style={styles.hIconBtn}
               onPress={() => setMenuOpen(true)}
               activeOpacity={0.75}
               accessibilityLabel="More options"
             >
-              <Feather name="more-vertical" size={18} color={C.text2} />
+              <Feather name="more-vertical" size={22} color={C.text} />
             </TouchableOpacity>
           )}
         </View>
@@ -410,7 +410,7 @@ export function MessageThread({ route, navigation }: any) {
       {/* In-Thread Search Input */}
       {searching && (
         <View style={[styles.searchBar, { backgroundColor: C.surface2, borderColor: C.border, marginHorizontal: Layout.screenPadding }]}>
-          <Feather name="search" size={17} color={C.textMuted} />
+          <Feather name="search" size={24} color={C.textMuted} />
           <TextInput
             style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
             placeholder={t.messages.searchTitle}
@@ -575,8 +575,6 @@ const styles = StyleSheet.create({
   hIconBtn: {
     width: 38,
     height: 38,
-    borderRadius: 13,
-    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,

@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
 
   list: { gap: 10 } as ViewStyle,
   card: { flexDirection: 'row', alignItems: 'center', gap: 11, borderRadius: 16, borderWidth: 1, padding: 13 } as ViewStyle,
-  catIcon: { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
+  catIcon: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
   cardBody: { flex: 1, minWidth: 0 } as ViewStyle,
   cardTitle: { fontSize: 14 } as TextStyle,
   cardMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 } as ViewStyle,

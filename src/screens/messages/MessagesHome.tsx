@@ -249,14 +249,14 @@ export function MessagesHome({ navigation }: any) {
         title={t.messages.title}
         right={
           <TouchableOpacity
-            style={[styles.iconBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+            style={styles.iconBtn}
             onPress={() => navigation.navigate('Directory')}
             activeOpacity={0.75}
             accessibilityLabel={t.messages.findStudents}
             accessibilityRole="button"
             hitSlop={4}
           >
-            <Feather name="user-plus" size={18} color={C.text2} />
+            <Feather name="user-plus" size={22} color={C.text} />
           </TouchableOpacity>
         }
       />
@@ -264,7 +264,7 @@ export function MessagesHome({ navigation }: any) {
       {/* Search Bar */}
       <View style={[styles.searchBoxWrap, { paddingHorizontal: Layout.screenPadding }]}>
         <View style={[styles.searchBar, { backgroundColor: C.surface2, borderColor: C.border }]}>
-          <Feather name="search" size={17} color={C.textMuted} />
+          <Feather name="search" size={24} color={C.textMuted} />
           <TextInput
             style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
             placeholder={t.messages.searchInbox ?? 'Search conversations…'}
@@ -438,8 +438,6 @@ const styles = StyleSheet.create({
   iconBtn: {
     width: 40,
     height: 40,
-    borderRadius: 14,
-    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
@@ -496,7 +494,7 @@ const styles = StyleSheet.create({
 
   divider: { height: StyleSheet.hairlineWidth, marginLeft: 68 } as ViewStyle,
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 } as ViewStyle,
-  groupIcon: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
+  groupIcon: { width: 46, height: 46, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
   rowBody: { flex: 1, minWidth: 0 } as ViewStyle,
   rowTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 } as ViewStyle,
   rowTitle: { fontSize: 14.5, flex: 1 } as TextStyle,

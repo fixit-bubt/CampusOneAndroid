@@ -297,7 +297,7 @@ export function CommuteAreaPickerModal({
             <View style={styles.header}>
               <View style={styles.headerLeft}>
                 <View style={styles.headerIcon}>
-                  <AnimatedIcon family="feather" name="map-pin" size={24} color={C.text} />
+                  <AnimatedIcon family="feather" name="map-pin" size={32} color={C.text} />
                 </View>
                 <View>
                   <Text style={[styles.headerTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -310,10 +310,10 @@ export function CommuteAreaPickerModal({
               </View>
               <TouchableOpacity
                 onPress={onClose}
-                style={[styles.closeBtn, { backgroundColor: C.surface2, borderColor: C.border, borderWidth: 1 }]}
+                style={styles.closeBtn}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <Feather name="x" size={16} color={C.text2} />
+                <Feather name="x" size={20} color={C.text} />
               </TouchableOpacity>
             </View>
 
@@ -349,7 +349,7 @@ export function CommuteAreaPickerModal({
                 onPress={() => searchInputRef.current?.focus()}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <AnimatedIcon family="feather" name="search" size={18} color={C.textMuted} />
+                <AnimatedIcon family="feather" name="search" size={24} color={C.textMuted} />
               </TouchableOpacity>
               <TextInput
                 ref={searchInputRef}
@@ -701,7 +701,6 @@ const styles = StyleSheet.create({
   mapTriggerIconWrap: {
     width: 38,
     height: 38,
-    borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,

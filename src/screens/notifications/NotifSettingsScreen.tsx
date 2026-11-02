@@ -515,7 +515,6 @@ const styles = StyleSheet.create({
   settingIcon: {
     width: 44,
     height: 44,
-    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,

@@ -169,8 +169,8 @@ export function FacultyDeptScreen({ route, navigation }: any) {
         {/* Dept header */}
         {dept && (
           <View style={styles.header}>
-            <View style={[styles.tile, { backgroundColor: `${FACULTY_ACCENT}14` }]}>
-              <AnimatedIcon family="feather" name={BRANCH_ICON[dept.branch] ?? 'book-open'} size={20} color={FACULTY_ACCENT} />
+            <View style={styles.tile}>
+              <AnimatedIcon family="feather" name={BRANCH_ICON[dept.branch] ?? 'book-open'} size={32} color={C.text} />
             </View>
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={[styles.deptName, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
@@ -202,7 +202,7 @@ export function FacultyDeptScreen({ route, navigation }: any) {
         {/* Search */}
         {roster.length > 4 && (
           <View style={[styles.searchBar, { backgroundColor: C.surface2, borderColor: C.border }]}>
-            <Icon name="search" size={18} color={C.textMuted} />
+            <Icon name="search" size={24} color={C.textMuted} />
             <TextInput
               style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
               placeholder={t.faculty2.searchInDept(shortDept(dept?.name) || t.faculty2.departmentFallback)}

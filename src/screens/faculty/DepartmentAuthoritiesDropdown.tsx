@@ -113,12 +113,12 @@ export function DepartmentAuthoritiesDropdown({
         onPress={toggle}
         activeOpacity={0.75}
       >
-        <View style={[styles.iconTile, { backgroundColor: `${FACULTY_ACCENT}14` }]}>
+        <View style={styles.iconTile}>
           <AnimatedIcon
             family="feather"
             name="shield"
-            size={22}
-            color={FACULTY_ACCENT}
+            size={32}
+            color={C.text}
           />
         </View>
 

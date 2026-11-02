@@ -61,8 +61,8 @@ export function PdfMakerScreen({ navigation }: any) {
               onPress={() => navigation.navigate(tool.route)}
               activeOpacity={0.75}
             >
-              <View style={[styles.tile, { backgroundColor: C.surface2 }]}>
-                <Feather name={tool.icon} size={20} color={SectorColors.pdfmaker} />
+              <View style={styles.tile}>
+                <Feather name={tool.icon} size={32} color={C.text} />
               </View>
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{title}</Text>
@@ -79,8 +79,8 @@ export function PdfMakerScreen({ navigation }: any) {
             onPress={runSmokeTest}
             activeOpacity={0.75}
           >
-            <View style={[styles.tile, { backgroundColor: C.surface2 }]}>
-              <Feather name="activity" size={20} color={C.textMuted} />
+            <View style={styles.tile}>
+              <Feather name="activity" size={32} color={C.text} />
             </View>
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>

@@ -462,14 +462,14 @@ export function DirectoryScreen({ route, navigation }: any) {
                 onPress={() => navigation.navigate('MessageThread', { kind: 'dm', id: s.id, title: s.full_name })}
                 activeOpacity={0.8}
               >
-                <AnimatedIcon family="feather" name="message-circle" size={14} color="#fff" />
+                <AnimatedIcon family="feather" name="message-circle" size={18} color="#fff" />
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.smallIconBtn, { backgroundColor: C.surface2, borderColor: C.border, borderWidth: 1 }]}
                 onPress={() => setContactStudent(s)}
                 activeOpacity={0.8}
               >
-                <AnimatedIcon family="feather" name="phone" size={14} color={C.text} />
+                <AnimatedIcon family="feather" name="phone" size={18} color={C.text} />
               </TouchableOpacity>
             </View>
           ) : s.connState === 'connected' ? (
@@ -509,7 +509,7 @@ export function DirectoryScreen({ route, navigation }: any) {
               disabled={isBusy}
               activeOpacity={0.85}
             >
-              <AnimatedIcon family="feather" name="user-plus" size={14} color="#fff" />
+              <AnimatedIcon family="feather" name="user-plus" size={16} color="#fff" />
               <Text style={[styles.connectTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
                 {t.directory2.connect}
               </Text>
@@ -530,7 +530,7 @@ export function DirectoryScreen({ route, navigation }: any) {
                 disabled={isBusy}
                 activeOpacity={0.85}
               >
-                <Icon name="check" size={14} color="#fff" />
+                <Icon name="check" size={16} color="#fff" />
                 <Text style={[styles.halfBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
                   {t.directory2.accept}
                 </Text>
@@ -541,7 +541,7 @@ export function DirectoryScreen({ route, navigation }: any) {
                 disabled={isBusy}
                 activeOpacity={0.85}
               >
-                <Icon name="x" size={14} color={C.text} />
+                <Icon name="x" size={16} color={C.text} />
                 <Text style={[styles.halfBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                   {t.directory2.decline}
                 </Text>
@@ -708,7 +708,7 @@ export function DirectoryScreen({ route, navigation }: any) {
 
               {/* Search Bar (Directly Above Results Feed) */}
               <View style={[styles.searchBar, { backgroundColor: C.surface2, borderColor: C.border }]}>
-                <Icon name="search" size={18} color={C.textMuted} />
+                <Icon name="search" size={24} color={C.textMuted} />
                 <TextInput
                   style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
                   placeholder={t.directory2.searchPlaceholderFull}
@@ -797,13 +797,8 @@ export function DirectoryScreen({ route, navigation }: any) {
 
             <View style={styles.modalHeader}>
               <View style={styles.modalHeaderLeft}>
-                <View
-                  style={[
-                    styles.modalHeaderIcon,
-                    { backgroundColor: isDark ? 'rgba(37, 99, 235, 0.2)' : 'rgba(37, 99, 235, 0.1)' },
-                  ]}
-                >
-                  <Feather name="grid" size={24} color={C.text} />
+                <View style={styles.modalHeaderIcon}>
+                  <Feather name="grid" size={32} color={C.text} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.modalTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>

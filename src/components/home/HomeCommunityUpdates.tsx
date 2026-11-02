@@ -469,10 +469,9 @@ export function HomeCommunityUpdates({ refreshTrigger }: HomeCommunityUpdatesPro
               <View
                 style={[
                   styles.thumbBox,
-                  {
-                    backgroundColor: C.surface2,
-                    borderColor: C.border,
-                  },
+                  item.imageSource && !failedImages[item.id]
+                    ? { backgroundColor: C.surface2, borderColor: C.border }
+                    : { backgroundColor: 'transparent', borderColor: 'transparent' },
                 ]}
               >
                 {item.imageSource && !failedImages[item.id] ? (

@@ -653,8 +653,8 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
                 ) : null}
               </View>
               <View style={styles.contactBtns}>
-                <View style={[styles.contactBtn, { backgroundColor: C.successBg }]}>
-                  <Icon name="phone" size={15} color={C.success} />
+                <View style={styles.contactBtn}>
+                  <Icon name="phone" size={20} color={C.text} />
                 </View>
               </View>
             </TouchableOpacity>
@@ -680,8 +680,8 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
                     onPress={() => navigation.push('LostFoundDetail', { itemId: m.id })}
                     activeOpacity={0.75}
                   >
-                    <View style={[styles.matchThumb, { backgroundColor: `${mfg}1e` }]}>
-                      <Icon name={CAT_ICON[m.category] ?? 'inbox'} size={28} color={C.text} />
+                    <View style={styles.matchThumb}>
+                      <Icon name={CAT_ICON[m.category] ?? 'inbox'} size={32} color={C.text} />
                     </View>
                     <View style={{ flex: 1, minWidth: 0 }}>
                       <Text style={[styles.matchTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>

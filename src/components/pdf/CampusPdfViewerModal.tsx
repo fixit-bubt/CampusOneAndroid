@@ -373,7 +373,7 @@ export function CampusPdfViewerModal({
                   style={styles.actionBtn}
                   activeOpacity={0.75}
                 >
-                  <Feather name="layers" size={19} color="#ffffff" />
+                  <Feather name="layers" size={22} color="#ffffff" />
                 </TouchableOpacity>
               )}
 
@@ -384,7 +384,7 @@ export function CampusPdfViewerModal({
                 activeOpacity={0.75}
                 disabled={sharing}
               >
-                <Feather name="share-2" size={19} color="#ffffff" />
+                <Feather name="share-2" size={22} color="#ffffff" />
               </TouchableOpacity>
 
               {isRemote && (
@@ -394,7 +394,7 @@ export function CampusPdfViewerModal({
                   style={styles.actionBtn}
                   activeOpacity={0.75}
                 >
-                  <Feather name="external-link" size={18} color="#ffffff" />
+                  <Feather name="external-link" size={22} color="#ffffff" />
                 </TouchableOpacity>
               )}
 
@@ -404,7 +404,7 @@ export function CampusPdfViewerModal({
                 style={styles.actionBtn}
                 activeOpacity={0.75}
               >
-                <Feather name="rotate-cw" size={18} color="#ffffff" />
+                <Feather name="rotate-cw" size={22} color="#ffffff" />
               </TouchableOpacity>
             </View>
           </View>
@@ -618,8 +618,8 @@ export function CampusPdfViewerModal({
           {errorMsg && (
             <View style={[styles.centerOverlay, { backgroundColor: isDark ? '#000000' : '#f8fafc' }]}>
               <View style={[styles.errorCard, { backgroundColor: isDark ? '#121212' : '#ffffff', borderColor: C.border }]}>
-                <View style={[styles.errorIconBox, { backgroundColor: C.dangerBg }]}>
-                  <Feather name="alert-triangle" size={28} color={C.danger} />
+                <View style={styles.errorIconBox}>
+                  <Feather name="alert-triangle" size={40} color={C.danger} />
                 </View>
                 <Text style={[styles.errorTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                   Could not load document
@@ -833,7 +833,6 @@ const styles = StyleSheet.create({
   errorIconBox: {
     width: 56,
     height: 56,
-    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 14,

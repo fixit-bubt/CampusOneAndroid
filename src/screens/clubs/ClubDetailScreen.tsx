@@ -231,10 +231,10 @@ export function ClubDetailScreen({ route, navigation }: any) {
             {canManageMembers && (
               <>
                 <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('ClubMembers', { clubId: club.id })} activeOpacity={0.75}>
-                  <Feather name="users" size={20} color={C.text} />
+                  <Feather name="users" size={22} color={C.text} />
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('ClubManage', { clubId: club.id })} activeOpacity={0.75}>
-                  <Feather name="sliders" size={20} color={C.text} />
+                  <Feather name="sliders" size={22} color={C.text} />
                 </TouchableOpacity>
               </>
             )}

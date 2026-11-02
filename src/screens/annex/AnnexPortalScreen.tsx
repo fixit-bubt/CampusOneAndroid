@@ -83,11 +83,11 @@ export function AnnexPortalScreen({ navigation }: any) {
         {navigation?.canGoBack?.() && (
           <TouchableOpacity
             onPress={handleBack}
-            style={[styles.iconBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+            style={styles.iconBtn}
             activeOpacity={0.75}
             hitSlop={8}
           >
-            <Icon name="arrowL" size={20} color={C.text} />
+            <Icon name="arrowL" size={24} color={C.text} />
           </TouchableOpacity>
         )}
         <View style={{ flex: 1 }}>
@@ -100,10 +100,10 @@ export function AnnexPortalScreen({ navigation }: any) {
         </View>
         <TouchableOpacity
           onPress={() => Linking.openURL(ANNEX_URL)}
-          style={[styles.iconBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+          style={styles.iconBtn}
           activeOpacity={0.75}
         >
-          <Icon name="annex" size={18} color={C.text2} />
+          <Icon name="annex" size={22} color={C.text} />
         </TouchableOpacity>
       </View>
 
@@ -115,8 +115,8 @@ export function AnnexPortalScreen({ navigation }: any) {
 
       {error ? (
         <View style={styles.offlineWrap}>
-          <View style={[styles.offlineIconBox, { backgroundColor: C.surface2 }]}>
-            <Feather name="wifi-off" size={30} color={C.textMuted} />
+          <View style={styles.offlineIconBox}>
+            <Feather name="wifi-off" size={40} color={C.textMuted} />
           </View>
           <Text style={[styles.offlineTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
             Portal Unavailable Offline
@@ -185,8 +185,8 @@ const styles = StyleSheet.create({
   iconBtn: {
     width: 38,
     height: 38,
-    borderRadius: 13,
-    borderWidth: 1,
+
+
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
   offlineIconBox: {
     width: 60,
     height: 60,
-    borderRadius: 20,
+
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,

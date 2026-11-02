@@ -255,7 +255,7 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
         {isOfficial && (
           <View style={[styles.officialBanner, { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.14)' : '#e0edff', borderColor: '#93c5fd' }]}>
             <View style={styles.officialBannerLeft}>
-              <Feather name="shield" size={16} color="#2563eb" />
+              <Feather name="shield" size={16} color={C.brand} />
               <View>
                 <Text style={[styles.officialBannerTitle, { color: '#1d4ed8', fontFamily: FontFamily.jakartaBold }]}>
                   {t.announce2.bubtOfficial}
@@ -271,7 +271,7 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
                 style={styles.openWebBtn}
                 activeOpacity={0.75}
               >
-                <Feather name="external-link" size={13} color="#2563eb" />
+                <Feather name="external-link" size={16} color={C.brand} />
               </TouchableOpacity>
             )}
           </View>
@@ -414,7 +414,7 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
         {item.attachment_url && (
           <View style={[styles.attachCard, { backgroundColor: C.surface, borderColor: C.border }]}>
             <View style={styles.attachIcon}>
-              <Feather name="file-text" size={28} color={C.text} />
+              <Feather name="file-text" size={32} color={C.text} />
             </View>
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text
@@ -472,7 +472,7 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
             activeOpacity={0.82}
           >
             <View style={styles.officialLinkIconSquircle}>
-              <Feather name="globe" size={28} color={C.text} />
+              <Feather name="globe" size={32} color={C.text} />
             </View>
             <View style={styles.officialLinkBody}>
               <View style={styles.officialLinkBadgeRow}>
@@ -494,8 +494,8 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
                 bubt.edu.bd · Verified university publication
               </Text>
             </View>
-            <View style={[styles.officialLinkArrowBtn, { backgroundColor: isDark ? C.surface2 : '#f1f5f9' }]}>
-              <Feather name="arrow-up-right" size={16} color="#2563eb" />
+            <View style={styles.officialLinkArrowBtn}>
+              <Feather name="arrow-up-right" size={20} color={C.brand} />
             </View>
           </TouchableOpacity>
         )}
@@ -942,7 +942,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginTop: 20,
   } as ViewStyle,
-  attachIcon: { width: 42, height: 42, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
+  attachIcon: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
   attachName: { fontSize: 13.5 } as any,
   attachMeta: { fontSize: 11, marginTop: 2 } as any,
   attachActions: { flexDirection: 'row', alignItems: 'center', gap: 8 } as ViewStyle,
@@ -974,7 +974,6 @@ const styles = StyleSheet.create({
   officialLinkIconSquircle: {
     width: 44,
     height: 44,
-    borderRadius: Radius.md,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
@@ -1008,7 +1007,6 @@ const styles = StyleSheet.create({
   officialLinkArrowBtn: {
     width: 32,
     height: 32,
-    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,

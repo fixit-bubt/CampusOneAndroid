@@ -449,7 +449,7 @@ export function BloodRequestScreen({ navigation }: any) {
                     key={`hosp-${hospital || area}`}
                     family="mci"
                     name={hospital ? 'hospital-building' : 'map-marker-radius'}
-                    size={28}
+                    size={32}
                     color={C.text}
                   />
                 </View>

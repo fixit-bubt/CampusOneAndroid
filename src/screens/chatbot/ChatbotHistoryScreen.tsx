@@ -61,10 +61,10 @@ export function ChatbotHistoryScreen({ navigation }: any) {
         onBack={() => navigation.goBack()}
         rightSlot={
           <TouchableOpacity
-            style={[styles.newBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+            style={styles.newBtn}
             onPress={() => navigation.replace('Chatbot')}
           >
-            <Feather name="edit" size={16} color={C.text2} />
+            <Feather name="edit" size={22} color={C.text} />
           </TouchableOpacity>
         }
       />
@@ -121,11 +121,11 @@ export function ChatbotHistoryScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
 
-  newBtn: { width: 36, height: 36, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
+  newBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
 
   divider: { height: StyleSheet.hairlineWidth, marginLeft: 58 } as ViewStyle,
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 } as ViewStyle,
-  rowIcon: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
+  rowIcon: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
   rowBody: { flex: 1, minWidth: 0 } as ViewStyle,
   rowTitle: { fontSize: 14.5 } as TextStyle,
   rowTime: { fontSize: 11.5, marginTop: 2 } as TextStyle,

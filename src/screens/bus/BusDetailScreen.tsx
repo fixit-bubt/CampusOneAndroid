@@ -150,7 +150,7 @@ export function BusDetailScreen({ route, navigation }: any) {
           style={styles.nextCard}
         >
           <View style={styles.nextIcon}>
-            <AnimatedIcon key={direction} family="feather" name="clock" size={24} color="#fff" />
+            <AnimatedIcon key={direction} family="feather" name="clock" size={32} color="#fff" />
           </View>
           <View style={{ flex: 1 }}>
             <View style={styles.heroRow}>
@@ -429,10 +429,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   } as ViewStyle,
   nextIcon: {
-    width: 46,
-    height: 46,
-    borderRadius: 13,
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'visible',
@@ -638,7 +636,6 @@ const styles = StyleSheet.create({
   synergyIcon: {
     width: 44,
     height: 44,
-    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,

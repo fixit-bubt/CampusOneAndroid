@@ -296,7 +296,6 @@ const cardStyles = StyleSheet.create({
   icon44: {
     width: 44,
     height: 44,
-    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -1852,8 +1851,8 @@ export function StudyHubScreen({ navigation }: any) {
   function renderPending() {
     return (
       <View style={[s.card, s.pendingCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-        <View style={[s.pendingIcon, { backgroundColor: C.warnBg }]}>
-          <Feather name="clock" size={28} color={C.warn} />
+        <View style={s.pendingIcon}>
+          <Feather name="clock" size={40} color={C.warn} />
         </View>
         <Text style={[s.pendingTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
           {t.study2.requestUnderReview}
@@ -3141,8 +3140,8 @@ export function StudyHubScreen({ navigation }: any) {
       <Modal visible={advanceModalOpen} animationType="fade" transparent onRequestClose={() => setAdvanceModalOpen(false)}>
         <View style={s.modalOverlay}>
           <View style={[s.modalBox, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <View style={[s.advIconCircle, { backgroundColor: isDark ? 'rgba(91,133,247,0.15)' : '#eff3ff', marginBottom: 14, alignSelf: 'center' }]}>
-              <Feather name="skip-forward" size={28} color={C.brand} />
+            <View style={[s.advIconCircle, { marginBottom: 14, alignSelf: 'center' }]}>
+              <Feather name="skip-forward" size={40} color={C.brand} />
             </View>
             <Text style={[s.modalTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold, marginBottom: 6 }]}>
               {`Advance to Semester ${activeSemester + 1}?`}
@@ -3305,7 +3304,7 @@ const s = StyleSheet.create({
 
   pendingCard: { alignItems: 'center', paddingVertical: 36, paddingHorizontal: 20 } as ViewStyle,
   pendingIcon: {
-    width: 64, height: 64, borderRadius: 20,
+    width: 64, height: 64,
     alignItems: 'center', justifyContent: 'center', marginBottom: 14,
   } as ViewStyle,
   pendingTitle: { fontSize: 17, letterSpacing: -0.2 } as any,
@@ -3354,7 +3353,7 @@ const s = StyleSheet.create({
     width: '100%', borderRadius: 20, borderWidth: 1, padding: 20,
   } as ViewStyle,
   advIconCircle: {
-    width: 64, height: 64, borderRadius: 32,
+    width: 64, height: 64,
     alignItems: 'center', justifyContent: 'center',
   } as ViewStyle,
   modalTitle: { fontSize: 18, textAlign: 'center', letterSpacing: -0.3 } as any,

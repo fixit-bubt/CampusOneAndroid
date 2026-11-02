@@ -82,12 +82,12 @@ export function ContactSheet({
               )}
             </View>
             <TouchableOpacity
-              style={[styles.closeIconBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+              style={styles.closeIconBtn}
               onPress={onClose}
               hitSlop={8}
               activeOpacity={0.75}
             >
-              <Feather name="x" size={16} color={C.textMuted} />
+              <Feather name="x" size={20} color={C.textMuted} />
             </TouchableOpacity>
           </View>
 
@@ -275,8 +275,6 @@ const styles = StyleSheet.create({
   closeIconBtn: {
     width: 32,
     height: 32,
-    borderRadius: 16,
-    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,

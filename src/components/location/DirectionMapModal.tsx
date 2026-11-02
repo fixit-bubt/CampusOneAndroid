@@ -683,7 +683,7 @@ export function DirectionMapModal({
             activeOpacity={0.8}
             accessibilityLabel="Close directions map"
           >
-            <Feather name="arrow-left" size={20} color={C.text} />
+            <Feather name="arrow-left" size={24} color={C.text} />
           </TouchableOpacity>
 
           <View style={[styles.headerCapsule, { backgroundColor: C.surface, borderColor: C.border }]}>
@@ -1153,7 +1153,6 @@ const styles = StyleSheet.create({
   destIconWrap: {
     width: 28,
     height: 28,
-    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,

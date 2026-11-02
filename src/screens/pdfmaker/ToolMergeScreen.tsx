@@ -186,7 +186,7 @@ export function ToolMergeScreen({ navigation }: any) {
               onPress={pick}
               activeOpacity={0.8}
             >
-              <Feather name="file-plus" size={26} color={SectorColors.pdfmaker} />
+              <Feather name="file-plus" size={32} color={C.text} />
               <Text style={[styles.dropTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                 {t.pdfmaker.merge.add}
               </Text>

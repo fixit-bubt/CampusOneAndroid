@@ -373,7 +373,7 @@ export function FacultyScreen({ navigation }: any) {
 
         {/* Global Search Bar (names, initial codes, rooms) */}
         <View style={[styles.searchBar, { backgroundColor: C.surface2, borderColor: C.border }]}>
-          <Icon name="search" size={18} color={C.textMuted} />
+          <Icon name="search" size={24} color={C.textMuted} />
           <TextInput
             style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
             placeholder={t.faculty2.searchPlaceholderExpanded}
@@ -458,8 +458,8 @@ export function FacultyScreen({ navigation }: any) {
                         onPress={() => navigation.navigate('FacultyDept', { deptId: d.id })}
                         activeOpacity={0.75}
                       >
-                        <View style={[styles.deptBarTile, { backgroundColor: `${FACULTY_ACCENT}12` }]}>
-                          <AnimatedIcon name={BRANCH_ICON[d.branch] ?? 'book-open'} size={20} color={FACULTY_ACCENT} />
+                        <View style={styles.deptBarTile}>
+                          <AnimatedIcon name={BRANCH_ICON[d.branch] ?? 'book-open'} size={32} color={C.text} />
                         </View>
                         <View style={{ flex: 1, minWidth: 0 }}>
                           <Text style={[styles.deptBarName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -504,7 +504,7 @@ export function FacultyScreen({ navigation }: any) {
               activeOpacity={0.75}
             >
               <View style={styles.dropdownIconTile}>
-                <AnimatedIcon name="layers" size={28} color={C.text} />
+                <AnimatedIcon name="layers" size={32} color={C.text} />
               </View>
               <View style={styles.dropdownBody}>
                 <Text style={[styles.dropdownLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
@@ -526,7 +526,7 @@ export function FacultyScreen({ navigation }: any) {
               activeOpacity={0.75}
             >
               <View style={styles.dropdownIconTile}>
-                <AnimatedIcon name="award" size={28} color={C.text} />
+                <AnimatedIcon name="award" size={32} color={C.text} />
               </View>
               <View style={styles.dropdownBody}>
                 <Text style={[styles.dropdownLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
@@ -606,7 +606,7 @@ export function FacultyScreen({ navigation }: any) {
               activeOpacity={0.75}
             >
               <View style={styles.dropdownIconTile}>
-                <AnimatedIcon name="layers" size={28} color={C.text} />
+                <AnimatedIcon name="layers" size={32} color={C.text} />
               </View>
               <View style={styles.dropdownBody}>
                 <Text style={[styles.dropdownLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
@@ -783,20 +783,11 @@ export function FacultyScreen({ navigation }: any) {
                 }}
                 activeOpacity={0.75}
               >
-                <View
-                  style={[
-                    styles.pickerIconTile,
-                    {
-                      backgroundColor: selectedDeptId === 'All'
-                        ? FACULTY_ACCENT
-                        : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)'),
-                    },
-                  ]}
-                >
+                <View style={styles.pickerIconTile}>
                   <AnimatedIcon
                     name="layers"
-                    size={18}
-                    color={selectedDeptId === 'All' ? '#fff' : FACULTY_ACCENT}
+                    size={32}
+                    color={C.text}
                   />
                 </View>
                 <View style={{ flex: 1, minWidth: 0 }}>
@@ -848,20 +839,11 @@ export function FacultyScreen({ navigation }: any) {
                     }}
                     activeOpacity={0.75}
                   >
-                    <View
-                      style={[
-                        styles.pickerIconTile,
-                        {
-                          backgroundColor: active
-                            ? FACULTY_ACCENT
-                            : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)'),
-                        },
-                      ]}
-                    >
+                    <View style={styles.pickerIconTile}>
                       <AnimatedIcon
                         name={BRANCH_ICON[d.branch] ?? 'book-open'}
-                        size={18}
-                        color={active ? '#fff' : FACULTY_ACCENT}
+                        size={32}
+                        color={C.text}
                       />
                     </View>
                     <View style={{ flex: 1, minWidth: 0 }}>
@@ -955,20 +937,11 @@ export function FacultyScreen({ navigation }: any) {
                 }}
                 activeOpacity={0.75}
               >
-                <View
-                  style={[
-                    styles.pickerIconTile,
-                    {
-                      backgroundColor: !interest
-                        ? FACULTY_ACCENT
-                        : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)'),
-                    },
-                  ]}
-                >
+                <View style={styles.pickerIconTile}>
                   <AnimatedIcon
                     name="award"
-                    size={18}
-                    color={!interest ? '#fff' : FACULTY_ACCENT}
+                    size={32}
+                    color={C.text}
                   />
                 </View>
                 <View style={{ flex: 1, minWidth: 0 }}>
@@ -1016,20 +989,11 @@ export function FacultyScreen({ navigation }: any) {
                     }}
                     activeOpacity={0.75}
                   >
-                    <View
-                      style={[
-                        styles.pickerIconTile,
-                        {
-                          backgroundColor: active
-                            ? FACULTY_ACCENT
-                            : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)'),
-                        },
-                      ]}
-                    >
+                    <View style={styles.pickerIconTile}>
                       <AnimatedIcon
                         name="bookmark"
-                        size={18}
-                        color={active ? '#fff' : FACULTY_ACCENT}
+                        size={32}
+                        color={C.text}
                       />
                     </View>
                     <View style={{ flex: 1, minWidth: 0 }}>

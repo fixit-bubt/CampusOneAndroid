@@ -344,7 +344,7 @@ export function MarketPostScreen({ route, navigation }: any) {
           >
             <View style={styles.pickerBarLeft}>
               <View style={styles.pickerIconBox}>
-                <Feather name={currentCategoryMeta.icon} size={24} color={C.text} />
+                <Feather name={currentCategoryMeta.icon} size={32} color={C.text} />
               </View>
               <Text style={[styles.pickerBarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                 {cat === 'Other' && customCat.trim() ? customCat : currentCategoryLabel}
@@ -543,14 +543,12 @@ export function MarketPostScreen({ route, navigation }: any) {
                 onPress={() => setLocationModalOpen(true)}
                 activeOpacity={0.75}
               >
-                <View
-                  style={styles.dropdownIconBox}
-                >
+                <View style={styles.dropdownIconBox}>
                   <AnimatedIcon
                     family="feather"
                     name="map-pin"
-                    size={22}
-                    color={meetupSpot ? MARKET_COLOR : C.text2}
+                    size={32}
+                    color={C.text}
                   />
                 </View>
                 <View style={styles.dropdownInfo}>
@@ -718,7 +716,7 @@ export function MarketPostScreen({ route, navigation }: any) {
             <View style={styles.modalHeader}>
               <View style={styles.modalHeaderLeft}>
                 <View style={styles.modalHeaderIcon}>
-                  <Feather name="grid" size={24} color={C.text} />
+                  <Feather name="grid" size={32} color={C.text} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.modalTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -810,7 +808,7 @@ export function MarketPostScreen({ route, navigation }: any) {
             <View style={styles.modalHeader}>
               <View style={styles.modalHeaderLeft}>
                 <View style={styles.modalHeaderIcon}>
-                  <Feather name="map-pin" size={24} color={C.text} />
+                  <Feather name="map-pin" size={32} color={C.text} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.modalTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -924,7 +922,7 @@ export function MarketPostScreen({ route, navigation }: any) {
                       activeOpacity={0.75}
                     >
                       <View style={styles.locIconBox}>
-                        <Feather name={spot.icon} size={24} color={C.text} />
+                        <Feather name={spot.icon} size={32} color={C.text} />
                       </View>
                       <View style={{ flex: 1 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -965,7 +963,7 @@ export function MarketPostScreen({ route, navigation }: any) {
                       activeOpacity={0.75}
                     >
                       <View style={styles.locIconBox}>
-                        <Feather name={area.icon as any} size={24} color={C.text} />
+                        <Feather name={area.icon as any} size={32} color={C.text} />
                       </View>
                       <View style={{ flex: 1 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
