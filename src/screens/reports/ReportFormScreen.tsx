@@ -42,13 +42,13 @@ interface CategoryOption {
 }
 
 const CATEGORIES: CategoryOption[] = [
-  { id: 'Electrical',        icon: 'bolt',     fg: '#f59e0b', label: 'Electrical',        desc: 'Fans, tube lights, switches, AC & wiring' },
-  { id: 'Plumbing',          icon: 'droplets', fg: '#0284c7', label: 'Plumbing',          desc: 'Water supply, leaking taps & washrooms' },
-  { id: 'Cleanliness',       icon: 'sparkles', fg: '#10b981', label: 'Cleanliness',       desc: 'Classroom waste, washroom hygiene & bins' },
-  { id: 'IT / Network',      icon: 'wifi',     fg: '#8b5cf6', label: 'IT / Network',      desc: 'Wi-Fi routers, projectors & lab PCs' },
-  { id: 'Furniture',         icon: 'box',      fg: '#f97316', label: 'Furniture',         desc: 'Benches, desks, chairs & whiteboards' },
-  { id: 'Safety / Security', icon: 'shield',   fg: '#ef4444', label: 'Safety / Security', desc: 'Broken doors, locks & physical hazards' },
-  { id: 'Other',             icon: 'sliders',  fg: '#64748b', label: 'Other',             desc: 'Other physical campus infrastructure' },
+  { id: 'Electrical', icon: 'bolt', fg: '#f59e0b', label: 'Electrical', desc: 'Fans, tube lights, switches, AC & wiring' },
+  { id: 'Plumbing', icon: 'droplets', fg: '#0284c7', label: 'Plumbing', desc: 'Water supply, leaking taps & washrooms' },
+  { id: 'Cleanliness', icon: 'sparkles', fg: '#10b981', label: 'Cleanliness', desc: 'Classroom waste, washroom hygiene & bins' },
+  { id: 'IT / Network', icon: 'wifi', fg: '#8b5cf6', label: 'IT / Network', desc: 'Wi-Fi routers, projectors & lab PCs' },
+  { id: 'Furniture', icon: 'box', fg: '#f97316', label: 'Furniture', desc: 'Benches, desks, chairs & whiteboards' },
+  { id: 'Safety / Security', icon: 'shield', fg: '#ef4444', label: 'Safety / Security', desc: 'Broken doors, locks & physical hazards' },
+  { id: 'Other', icon: 'sliders', fg: '#64748b', label: 'Other', desc: 'Other physical campus infrastructure' },
 ];
 
 const BUILDINGS = [
@@ -60,11 +60,11 @@ const BUILDINGS = [
 
 const FLOORS = [
   { id: 'Ground', label: 'Ground Floor' },
-  { id: '1st',    label: '1st Floor' },
-  { id: '2nd',    label: '2nd Floor' },
-  { id: '3rd',    label: '3rd Floor' },
-  { id: '4th',    label: '4th Floor' },
-  { id: '5th',    label: '5th Floor' },
+  { id: '1st', label: '1st Floor' },
+  { id: '2nd', label: '2nd Floor' },
+  { id: '3rd', label: '3rd Floor' },
+  { id: '4th', label: '4th Floor' },
+  { id: '5th', label: '5th Floor' },
 ];
 
 type PlaceType = 'Classroom' | 'Lab' | 'Washroom' | 'Library' | 'Corridor/Stairs' | 'Other';
@@ -76,12 +76,12 @@ interface PlaceOption {
 }
 
 const PLACES: PlaceOption[] = [
-  { id: 'Classroom',       label: 'Classroom',           icon: 'book-open' },
-  { id: 'Lab',             label: 'Computer / Science Lab', icon: 'cpu' },
-  { id: 'Washroom',        label: 'Washroom / Restroom',   icon: 'droplet' },
-  { id: 'Library',         label: 'Central Library',       icon: 'book' },
-  { id: 'Corridor/Stairs', label: 'Corridor / Stairs',     icon: 'compass' },
-  { id: 'Other',           label: 'Other Campus Area',     icon: 'grid' },
+  { id: 'Classroom', label: 'Classroom', icon: 'book-open' },
+  { id: 'Lab', label: 'Computer / Science Lab', icon: 'cpu' },
+  { id: 'Washroom', label: 'Washroom / Restroom', icon: 'droplet' },
+  { id: 'Library', label: 'Central Library', icon: 'book' },
+  { id: 'Corridor/Stairs', label: 'Corridor / Stairs', icon: 'compass' },
+  { id: 'Other', label: 'Other Campus Area', icon: 'grid' },
 ];
 
 export function ReportFormScreen({ route, navigation }: any) {
