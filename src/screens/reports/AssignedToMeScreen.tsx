@@ -1,7 +1,7 @@
 // Staff's full assigned-report list with search and status filters. Status
 // changes happen on the detail screen; this is the searchable overview the
 // dashboard links into.
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, memo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, FlatList, StyleSheet,
   RefreshControl, ActivityIndicator, type ViewStyle, type TextStyle,
@@ -17,6 +17,7 @@ import { supabase } from '../../lib/supabase';
 import { fetchPeople } from '../../services/peopleService';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
+import { getCacheSync, getCache, setCache, CacheKeys } from '../../services/cacheService';
 import type { Report } from '../../types/database';
 
 const STATUSES = ['All', 'Open', 'In Progress', 'Resolved'] as const;
@@ -44,7 +45,8 @@ function statusTone(C: any, status: string): { fg: string; bg: string } {
 
 function timeAgo(iso: string): string {
   const secs = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-  if (secs < 3600) return `${Math.max(1, Math.floor(secs / 60))}m ago`;
+  if (secs < 60) return 'just now';
+  if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
   if (secs < 86400) return `${Math.floor(secs / 3600)}h ago`;
   return `${Math.floor(secs / 86400)}d ago`;
 }
@@ -53,12 +55,70 @@ interface AssignedReport extends Report {
   reporter_name?: string;
 }
 
+const AssignedReportCard = memo(function AssignedReportCard({
+  r,
+  C,
+  statusLabel,
+  onPress,
+}: {
+  r: AssignedReport;
+  C: any;
+  statusLabel: string;
+  onPress: (id: string) => void;
+}) {
+  const cat = CATEGORY_ICON[r.category] ?? CATEGORY_ICON.Other;
+  const tone = statusTone(C, r.status);
+  const title = (r.description ?? '').split('\n')[0];
+  const code = r.code ?? ('RPT-' + r.id.replace(/\D/g, '').padStart(4, '0').slice(-4));
+
+  return (
+    <TouchableOpacity
+      style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}
+      onPress={() => onPress(r.id)}
+      activeOpacity={0.75}
+    >
+      <View style={styles.catIcon}>
+        <Icon name={cat.icon} size={32} color={C.text} />
+      </View>
+      <View style={styles.cardBody}>
+        <View style={styles.codeRow}>
+          <Text style={[styles.codeTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+            {code}
+          </Text>
+        </View>
+        <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+          {title}
+        </Text>
+        <View style={styles.cardMeta}>
+          <Icon name="pin" size={12} color={C.textMuted} />
+          <Text style={[styles.cardMetaTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+            {r.building}{r.room ? ` · ${r.room}` : ''}
+            {r.reporter_name ? ` · ${r.reporter_name}` : ''} · {timeAgo(r.created_at)}
+          </Text>
+        </View>
+      </View>
+      <View style={[styles.statusPill, { backgroundColor: tone.bg }]}>
+        <View style={[styles.statusDot, { backgroundColor: tone.fg }]} />
+        <Text style={[styles.statusTxt, { color: tone.fg, fontFamily: FontFamily.jakartaBold }]}>
+          {statusLabel}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+});
+
+const Separator = memo(function Separator() {
+  return <View style={styles.sep} />;
+});
+
 export function AssignedToMeScreen({ navigation }: any) {
   const { C } = useTheme();
   const { user } = useAuth();
   const t = useT();
-  const [reports, setReports] = useState<AssignedReport[]>([]);
-  const [loading, setLoading] = useState(true);
+
+  const cacheKey = CacheKeys.ASSIGNED_REPORTS(user?.id ?? 'anon');
+  const [reports, setReports] = useState<AssignedReport[]>(() => getCacheSync<AssignedReport[]>(cacheKey) ?? []);
+  const [loading, setLoading] = useState(() => (reports.length === 0));
   const [error, setError] = useState(false);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<StatusFilter>('All');
@@ -68,36 +128,46 @@ export function AssignedToMeScreen({ navigation }: any) {
     if (!user) return;
     setError(false);
     try {
+      // 1. Optimistic cache lookup
+      const cached = await getCache<AssignedReport[]>(cacheKey);
+      if (cached && cached.length > 0) {
+        setReports(cached);
+        setLoading(false);
+      }
+
+      // 2. Fresh fetch
       const { data, error: err } = await supabase
         .from('reports')
         .select('*')
         .eq('assigned_staff_id', user.id)
         .is('deleted_at', null)
         .order('created_at', { ascending: false });
+
       if (err) {
-        setError(true);
+        if (!cached || cached.length === 0) setError(true);
         return;
       }
+
       if (data) {
-        // profiles RLS is self/admin only, so staff resolve reporter names through
-        // the roster RPC instead of an embed.
         const people = await fetchPeople((data as any[]).map(r => r.reporter_id));
-        setReports(data.map((r: any) => ({ ...r, reporter_name: people[r.reporter_id]?.full_name })));
+        const mapped = data.map((r: any) => ({ ...r, reporter_name: people[r.reporter_id]?.full_name }));
+        setReports(mapped);
+        setCache(cacheKey, mapped);
       }
     } catch {
       setError(true);
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, cacheKey]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
-  async function onRefresh() {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await load();
     setRefreshing(false);
-  }
+  }, [load]);
 
   const counts = useMemo(() => {
     const m: Record<string, number> = { All: reports.length };
@@ -106,76 +176,103 @@ export function AssignedToMeScreen({ navigation }: any) {
   }, [reports]);
 
   const q = query.trim().toLowerCase();
-  const filtered = reports
-    .filter(r => filter === 'All' || r.status === filter)
-    .filter(r => {
-      if (!q) return true;
-      return [r.category, r.description, r.building, r.code]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase()
-        .includes(q);
-    });
+  const filtered = useMemo(() => {
+    return reports
+      .filter(r => filter === 'All' || r.status === filter)
+      .filter(r => {
+        if (!q) return true;
+        return [r.category, r.description, r.building, r.room, r.code, r.reporter_name]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase()
+          .includes(q);
+      });
+  }, [reports, filter, q]);
+
+  const handlePressCard = useCallback((id: string) => {
+    navigation.navigate('ReportDetail', { reportId: id });
+  }, [navigation]);
+
+  const renderItem = useCallback(({ item: r }: { item: AssignedReport }) => {
+    return (
+      <AssignedReportCard
+        r={r}
+        C={C}
+        statusLabel={t.status[r.status] ?? r.status}
+        onPress={handlePressCard}
+      />
+    );
+  }, [C, t.status, handlePressCard]);
+
+  const keyExtractor = useCallback((r: AssignedReport) => r.id, []);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar title={t.reports.assignedTitle} onBack={() => navigation.goBack()} />
 
+      {/* Fixed Search Bar to avoid layout thrashing on keystrokes */}
+      <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 6 }}>
+        <View style={[styles.searchBar, { backgroundColor: C.surface2, borderColor: C.border }]}>
+          <Icon name="search" size={18} color={C.textMuted} />
+          <TextInput
+            style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
+            placeholder={t.reports.searchPlaceholder}
+            placeholderTextColor={C.textMuted}
+            value={query}
+            onChangeText={setQuery}
+          />
+          {query.length > 0 && (
+            <TouchableOpacity onPress={() => setQuery('')} hitSlop={8}>
+              <Feather name="x" size={16} color={C.textMuted} />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Status filter chips */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.chips}
+          style={{ flexGrow: 0 }}
+        >
+          {STATUSES.map(s => {
+            const on = filter === s;
+            return (
+              <TouchableOpacity
+                key={s}
+                style={[styles.chip, on
+                  ? { backgroundColor: C.brand, borderColor: C.brand }
+                  : { backgroundColor: C.surface, borderColor: C.border }]}
+                onPress={() => setFilter(s)}
+                activeOpacity={0.75}
+              >
+                <Text style={[styles.chipTxt, { color: on ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                  {s === 'All' ? t.common.all : (t.status[s] ?? s)}
+                </Text>
+                <Text style={[styles.chipCount, { color: on ? 'rgba(255,255,255,0.75)' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                  {counts[s] ?? 0}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
+
       <FlatList
         data={filtered}
-        keyExtractor={r => r.id}
+        keyExtractor={keyExtractor}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
-        ItemSeparatorComponent={() => <View style={{ height: 11 }} />}
-        ListHeaderComponent={
-          <View>
-            {/* Search */}
-            <View style={[styles.searchBar, { backgroundColor: C.surface2, borderColor: C.border }]}>
-              <Icon name="search" size={18} color={C.textMuted} />
-              <TextInput
-                style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
-                placeholder={t.reports.searchPlaceholder}
-                placeholderTextColor={C.textMuted}
-                value={query}
-                onChangeText={setQuery}
-              />
-              {query.length > 0 && (
-                <TouchableOpacity onPress={() => setQuery('')} hitSlop={8}>
-                  <Feather name="x" size={16} color={C.textMuted} />
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {/* Status chips */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-              {STATUSES.map(s => {
-                const on = filter === s;
-                return (
-                  <TouchableOpacity
-                    key={s}
-                    style={[styles.chip, on
-                      ? { backgroundColor: C.brand, borderColor: C.brand }
-                      : { backgroundColor: C.surface, borderColor: C.border }]}
-                    onPress={() => setFilter(s)}
-                    activeOpacity={0.75}
-                  >
-                    <Text style={[styles.chipTxt, { color: on ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                      {s === 'All' ? t.common.all : (t.status[s] ?? s)}
-                    </Text>
-                    <Text style={[styles.chipCount, { color: on ? 'rgba(255,255,255,0.75)' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                      {counts[s] ?? 0}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-            <View style={{ height: 12 }} />
-          </View>
-        }
+        ItemSeparatorComponent={Separator}
+        renderItem={renderItem}
+        removeClippedSubviews={true}
+        initialNumToRender={8}
+        maxToRenderPerBatch={10}
+        windowSize={5}
         ListEmptyComponent={
-          loading ? (
+          loading && reports.length === 0 ? (
             <View style={{ paddingVertical: 40, alignItems: 'center', justifyContent: 'center' }}>
               <ActivityIndicator size="small" color={C.brand} />
             </View>
@@ -208,41 +305,7 @@ export function AssignedToMeScreen({ navigation }: any) {
             </View>
           )
         }
-        renderItem={({ item: r }) => {
-          const cat = CATEGORY_ICON[r.category] ?? CATEGORY_ICON.Other;
-          const tone = statusTone(C, r.status);
-          const title = (r.description ?? '').split('\n')[0];
-          return (
-            <TouchableOpacity
-              style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}
-              onPress={() => navigation.navigate('ReportDetail', { reportId: r.id })}
-              activeOpacity={0.75}
-            >
-              <View style={styles.catIcon}>
-                <Icon name={cat.icon} size={32} color={C.text} />
-              </View>
-              <View style={styles.cardBody}>
-                <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                  {title}
-                </Text>
-                <View style={styles.cardMeta}>
-                  <Icon name="pin" size={12} color={C.textMuted} />
-                  <Text style={[styles.cardMetaTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                    {r.building}{r.room ? ` · ${r.room}` : ''}
-                    {r.reporter_name ? `  ·  ${r.reporter_name}` : ''}  ·  {timeAgo(r.created_at)}
-                  </Text>
-                </View>
-              </View>
-              <View style={[styles.statusPill, { backgroundColor: tone.bg }]}>
-                <View style={[styles.statusDot, { backgroundColor: tone.fg }]} />
-                <Text style={[styles.statusTxt, { color: tone.fg, fontFamily: FontFamily.jakartaBold }]}>
-                  {t.status[r.status] ?? r.status}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          );
-        }}
-        ListFooterComponent={<View style={{ height: 16 }} />}
+        ListFooterComponent={<View style={{ height: 20 }} />}
       />
     </SafeAreaView>
   );
@@ -252,18 +315,20 @@ const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
   scroll: { paddingTop: 8, paddingBottom: 20 } as ViewStyle,
 
-  searchBar: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 16, height: 58, borderRadius: 16, borderWidth: 1, marginBottom: 10 } as ViewStyle,
+  searchBar: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 16, height: 54, borderRadius: 16, borderWidth: 1, marginBottom: 10 } as ViewStyle,
   searchInput: { flex: 1, fontSize: 14.5, paddingVertical: 0 } as TextStyle,
 
-  chips: { flexDirection: 'row', gap: 7, paddingBottom: 12 } as ViewStyle,
+  chips: { flexDirection: 'row', gap: 7, paddingBottom: 10 } as ViewStyle,
   chip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 11, paddingVertical: 7, borderRadius: 999, borderWidth: 1 } as ViewStyle,
   chipTxt: { fontSize: 12 } as TextStyle,
   chipCount: { fontSize: 10.5 } as TextStyle,
 
-  list: { gap: 10 } as ViewStyle,
+  sep: { height: 11 } as ViewStyle,
   card: { flexDirection: 'row', alignItems: 'center', gap: 11, borderRadius: 16, borderWidth: 1, padding: 13 } as ViewStyle,
   catIcon: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
   cardBody: { flex: 1, minWidth: 0 } as ViewStyle,
+  codeRow: { marginBottom: 2 } as ViewStyle,
+  codeTxt: { fontSize: 11, letterSpacing: 0.3 } as TextStyle,
   cardTitle: { fontSize: 14 } as TextStyle,
   cardMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 } as ViewStyle,
   cardMetaTxt: { fontSize: 11.5, flexShrink: 1 } as TextStyle,

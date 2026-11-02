@@ -39,7 +39,8 @@ export function BusDetailScreen({ route, navigation }: any) {
   const t = useT();
   const { lang } = useApp();
   const isBn = lang === 'bn';
-  const { id, initialDirection } = route.params ?? {};
+  const { id: paramId, initialDirection } = route.params ?? {};
+  const id = paramId ?? route.params?.routeId;
 
   const [busRoute, setBusRoute] = useState<BusRoute | null>(null);
   const [failed, setFailed] = useState(false);

@@ -23,9 +23,9 @@ const CAT_MAP: Record<string, { icon: string; fg: string }> = {
   'Plumbing':         { icon: 'droplets',fg: Accent.sky },
   'Cleanliness':      { icon: 'sparkles',fg: Accent.green },
   'IT / Network':     { icon: 'wifi',    fg: Accent.purple },
-  'Furniture':        { icon: 'chair',   fg: Accent.amber },
+  'Furniture':        { icon: 'box',     fg: Accent.amber },
   'Safety / Security':{ icon: 'shield',  fg: Accent.red },
-  'Other':            { icon: 'wrench',  fg: Accent.slate },
+  'Other':            { icon: 'sliders', fg: Accent.slate },
 };
 
 // Status tones from theme tokens (dark-mode aware via C)
@@ -344,7 +344,7 @@ export function ReportDetailScreen({ route, navigation }: any) {
         )}
 
         {/* Status update - admin: any status; staff: forward-only on own assigned */}
-        {canUpdateStatus && (
+        {canUpdateStatus && statusChoices.length > 0 && (
           <View style={styles.statusSection}>
             <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
               UPDATE STATUS

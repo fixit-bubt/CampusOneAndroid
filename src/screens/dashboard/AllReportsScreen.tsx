@@ -116,14 +116,14 @@ export function AllReportsScreen({ navigation }: any) {
     ? [...staff].sort((a, b) => Number(b.expertise === assignCat) - Number(a.expertise === assignCat))
     : staff;
 
-  if (profile && profile.role !== 'admin' && profile.role !== 'staff') {
+  if (profile && profile.role !== 'admin') {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
         <SubBar title="All Reports" onBack={() => navigation.goBack()} />
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 }}>
           <Text style={{ color: C.text, fontFamily: FontFamily.jakartaExtraBold, fontSize: 18, marginBottom: 8 }}>Access Denied</Text>
           <Text style={{ color: C.textMuted, fontFamily: FontFamily.jakartaMedium, fontSize: 14, textAlign: 'center' }}>
-            Only admins and staff can view all reports.
+            Only administrators can view and manage all campus reports.
           </Text>
         </View>
       </SafeAreaView>

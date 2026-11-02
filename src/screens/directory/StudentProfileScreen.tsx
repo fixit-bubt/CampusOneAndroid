@@ -62,7 +62,7 @@ export function StudentProfileScreen({ route, navigation }: any) {
   const { reload: reloadMessages } = useMessages();
 
   const initial: DirectoryStudent | undefined = route.params?.student;
-  const targetId: string | undefined = initial?.id ?? route.params?.studentId ?? route.params?.id;
+  const targetId: string | undefined = initial?.id ?? route.params?.studentId ?? route.params?.id ?? route.params?.userId;
 
   const [student, setStudent] = useState<DirectoryStudent | null>(initial ?? null);
   const [loading, setLoading] = useState<boolean>(!initial && !!targetId);

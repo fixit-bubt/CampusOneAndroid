@@ -160,6 +160,11 @@ export function EditProfileModal({
   const [pickedAvatar, setPickedAvatar] = useState<string | null>(null);
 
   const isStudent = (profile?.role ?? 'student') === 'student';
+  const editTabs: TabItem<EditTab>[] = React.useMemo(() => isStudent ? EDIT_TABS : [
+    { id: 'academic', label: 'Profile', icon: 'user' },
+    { id: 'contact',  label: 'Contact', icon: 'phone' },
+    { id: 'privacy',  label: 'Privacy', icon: 'shield' },
+  ], [isStudent]);
 
   useEffect(() => {
     if (visible && profile) {
@@ -253,12 +258,12 @@ export function EditProfileModal({
         whatsapp: whatsapp.trim(),
         phone: phone.trim(),
         address: address.trim(),
-        expertise: socialAndPrivacyPayload,
         allow_dms: allowDms,
         updated_at: new Date().toISOString(),
       };
 
       if (isStudent) {
+        payload.expertise = socialAndPrivacyPayload;
         payload.student_id = studentId.trim();
         payload.program = program.trim();
         payload.intake = intake.trim();
@@ -344,7 +349,7 @@ export function EditProfileModal({
         {/* 58dp Segmented Tabs Switcher with Smooth Animation */}
         <View style={styles.tabContainer}>
           <SegmentedTabs<EditTab>
-            tabs={EDIT_TABS}
+            tabs={editTabs}
             activeTab={activeTab}
             onTabChange={setActiveTab}
             size="md"
@@ -404,7 +409,34 @@ export function EditProfileModal({
                   />
                 </View>
 
-                {isStudent && (
+                {!isStudent ? (
+                  <>
+                    {profile?.expertise ? (
+                      <>
+                        <Text style={[styles.inputLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                          STAFF TRADE
+                        </Text>
+                        <View style={[styles.inputBar58, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                          <Text style={[styles.barText, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]}>
+                            {profile.expertise}
+                          </Text>
+                        </View>
+                      </>
+                    ) : null}
+                    <Text style={[styles.inputLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                      DEPARTMENT
+                    </Text>
+                    <View style={[styles.inputBar, { backgroundColor: C.surface, borderColor: C.border }]}>
+                      <TextInput
+                        style={[styles.textInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                        value={department}
+                        onChangeText={setDepartment}
+                        placeholder="e.g. Facilities & Maintenance"
+                        placeholderTextColor={C.textMuted}
+                      />
+                    </View>
+                  </>
+                ) : (
                   <>
                     {/* Student ID (58dp) */}
                     <Text style={[styles.inputLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>

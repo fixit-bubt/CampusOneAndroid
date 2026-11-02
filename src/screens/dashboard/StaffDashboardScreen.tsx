@@ -1,10 +1,11 @@
-import { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, memo } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
-  View, Text, TouchableOpacity, ScrollView, StyleSheet,
+  View, Text, TouchableOpacity, FlatList, StyleSheet,
   RefreshControl, Alert, ActivityIndicator, type ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { TopBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
@@ -18,6 +19,7 @@ import { fetchPeople } from '../../services/peopleService';
 import { useAuth } from '../../store/authStore';
 import { getUnreadNotificationCount } from '../../services/notificationsService';
 import { declineReport } from '../../services/reportsService';
+import { getCacheSync, getCache, setCache, CacheKeys } from '../../services/cacheService';
 
 const ISSUE_MAP: Record<string, { icon: string; fg: string }> = {
   electrical: { icon: 'bolt',     fg: Accent.gold },
@@ -61,6 +63,7 @@ function timeAgo(iso: string): string {
 
 interface Report {
   id: string;
+  code?: string;
   description: string;
   building: string;
   room: string;
@@ -75,7 +78,7 @@ interface Report {
 
 type FilterTab = 'all' | 'active' | 'resolved';
 
-function StatCard({ icon, num, label, C }: { icon: string; num: number; label: string; C: any }) {
+const StatCard = memo(function StatCard({ icon, num, label, C }: { icon: string; num: number; label: string; C: any }) {
   return (
     <View style={[styles.statCard, { backgroundColor: C.surface, borderColor: C.border }]}>
       <View style={styles.statIcon}>
@@ -85,32 +88,44 @@ function StatCard({ icon, num, label, C }: { icon: string; num: number; label: s
       <Text style={[styles.statLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{label}</Text>
     </View>
   );
-}
+});
 
-function ReportCard({
+const ReportCard = memo(function ReportCard({
   r,
   C,
+  statusLabel,
   onAdvance,
   onDecline,
   onPress,
 }: {
   r: Report;
   C: any;
+  statusLabel: string;
   onAdvance: (id: string, status: string) => void;
   onDecline: (id: string) => void;
-  onPress: () => void;
+  onPress: (id: string) => void;
 }) {
   const t = useT();
   const issueConf = ISSUE_MAP[issueKey(r.category)] ?? ISSUE_MAP.other;
   const statusConf = statusTone(C, r.status);
+  const code = r.code ?? ('RPT-' + r.id.replace(/\D/g, '').padStart(4, '0').slice(-4));
 
   return (
-    <View style={[styles.reportCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-      <TouchableOpacity style={styles.reportTop} onPress={onPress} activeOpacity={0.75}>
+    <TouchableOpacity
+      style={[styles.reportCard, { backgroundColor: C.surface, borderColor: C.border }]}
+      onPress={() => onPress(r.id)}
+      activeOpacity={0.78}
+    >
+      <View style={styles.reportTop}>
         <View style={styles.issueIcon}>
           <Icon name={issueConf.icon} size={32} color={C.text} />
         </View>
         <View style={styles.reportBody}>
+          <View style={styles.codeRow}>
+            <Text style={[styles.codeTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+              {code}
+            </Text>
+          </View>
           <Text style={[styles.reportTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
             {r.title}
           </Text>
@@ -124,10 +139,10 @@ function ReportCard({
         <View style={[styles.statusPill, { backgroundColor: statusConf.bg }]}>
           <View style={[styles.statusDot, { backgroundColor: statusConf.fg }]} />
           <Text style={[styles.statusTxt, { color: statusConf.fg, fontFamily: FontFamily.jakartaBold }]}>
-            {t.status[r.status] ?? r.status}
+            {statusLabel}
           </Text>
         </View>
-      </TouchableOpacity>
+      </View>
 
       <View style={styles.reportMeta}>
         {r.reporter_name ? (
@@ -146,7 +161,10 @@ function ReportCard({
       {r.status === 'Open' && (
         <TouchableOpacity
           style={[styles.actionBtn, { backgroundColor: C.brand }]}
-          onPress={() => onAdvance(r.id, 'In Progress')}
+          onPress={(e) => {
+            e.stopPropagation();
+            onAdvance(r.id, 'In Progress');
+          }}
           activeOpacity={0.8}
         >
           <Icon name="pulse" size={16} color="#ffffff" />
@@ -159,7 +177,10 @@ function ReportCard({
       {r.status === 'In Progress' && (
         <TouchableOpacity
           style={[styles.actionBtn, { backgroundColor: C.success }]}
-          onPress={() => onAdvance(r.id, 'Resolved')}
+          onPress={(e) => {
+            e.stopPropagation();
+            onAdvance(r.id, 'Resolved');
+          }}
           activeOpacity={0.8}
         >
           <Icon name="check" size={16} color="#ffffff" />
@@ -181,7 +202,10 @@ function ReportCard({
       {(r.status === 'Open' || r.status === 'In Progress') && (
         <TouchableOpacity
           style={[styles.declineBtn, { borderColor: C.border }]}
-          onPress={() => onDecline(r.id)}
+          onPress={(e) => {
+            e.stopPropagation();
+            onDecline(r.id);
+          }}
           activeOpacity={0.75}
         >
           <Icon name="x" size={14} color={C.textMuted} />
@@ -190,9 +214,13 @@ function ReportCard({
           </Text>
         </TouchableOpacity>
       )}
-    </View>
+    </TouchableOpacity>
   );
-}
+});
+
+const Separator = memo(function Separator() {
+  return <View style={{ height: 12 }} />;
+});
 
 export function StaffDashboardScreen({ navigation }: any) {
   const { C } = useTheme();
@@ -200,57 +228,85 @@ export function StaffDashboardScreen({ navigation }: any) {
   const t = useT();
   const toast = useToast();
   const { user, profile } = useAuth();
-  const [reports, setReports] = useState<Report[]>([]);
+
+  const cacheKey = CacheKeys.STAFF_REPORTS(user?.id ?? 'anon');
+  const [reports, setReports] = useState<Report[]>(() => getCacheSync<Report[]>(cacheKey) ?? []);
   const [filterTab, setFilterTab] = useState<FilterTab>('all');
   const [unread, setUnread] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => reports.length === 0);
+  const [error, setError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     if (!user?.id || (profile && profile.role !== 'staff' && profile.role !== 'admin')) return;
+    setError(false);
     try {
-      const { data } = await supabase
+      // 1. Optimistic cached data check
+      const cached = await getCache<Report[]>(cacheKey);
+      if (cached && cached.length > 0) {
+        setReports(cached);
+        setLoading(false);
+      }
+
+      // 2. Fresh network fetch
+      const { data, error: fetchErr } = await supabase
         .from('reports')
         .select('*')
         .eq('assigned_staff_id', user.id)
         .is('deleted_at', null)
         .order('created_at', { ascending: false })
         .limit(40);
+
+      if (fetchErr) {
+        if (!cached || cached.length === 0) setError(true);
+        return;
+      }
+
       if (data) {
         const people = await fetchPeople((data as any[]).map(r => r.reporter_id));
-        setReports(data.map((r: any) => ({
+        const mapped: Report[] = data.map((r: any) => ({
           ...r,
           reporter_name: people[r.reporter_id]?.full_name,
           title: r.description?.split('\n')[0] ?? '',
           location: [r.building, r.room].filter(Boolean).join(' · '),
-        })));
+        }));
+        setReports(mapped);
+        setCache(cacheKey, mapped);
       }
+
       const nRes = await getUnreadNotificationCount(user.id);
       if (nRes.ok) setUnread(nRes.data);
+    } catch {
+      setError(true);
     } finally {
       setLoading(false);
     }
-  }, [user?.id, profile]);
+  }, [user?.id, profile, cacheKey]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
-  async function onRefresh() {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await load();
     setRefreshing(false);
-  }
+  }, [load]);
 
-  async function advanceStatus(reportId: string, newStatus: string) {
-    const prevStatus = reports.find(r => r.id === reportId)?.status;
-    setReports(prev => prev.map(r => r.id === reportId ? { ...r, status: newStatus } : r));
-    const { error } = await supabase.from('reports').update({ status: newStatus }).eq('id', reportId);
-    if (error) {
-      setReports(prev => prev.map(r => r.id === reportId ? { ...r, status: prevStatus ?? r.status } : r));
-      toast({ type: 'error', title: t.common.error, message: error.message });
+  const advanceStatus = useCallback(async (reportId: string, newStatus: string) => {
+    setReports(prev => {
+      const updated = prev.map(r => r.id === reportId ? { ...r, status: newStatus } : r);
+      setCache(cacheKey, updated);
+      return updated;
+    });
+
+    const { error: err } = await supabase.from('reports').update({ status: newStatus }).eq('id', reportId);
+    if (err) {
+      // Revert on error
+      load();
+      toast({ type: 'error', title: t.common.error, message: err.message });
     }
-  }
+  }, [cacheKey, load, toast, t.common.error]);
 
-  function declineAssigned(reportId: string) {
+  const declineAssigned = useCallback((reportId: string) => {
     Alert.alert(t.dash.declineTitle, t.dash.declineBody, [
       { text: t.common.cancel, style: 'cancel' },
       {
@@ -258,11 +314,19 @@ export function StaffDashboardScreen({ navigation }: any) {
         onPress: async () => {
           const res = await declineReport(reportId);
           if (!res.ok) { Alert.alert(t.common.error, res.error); return; }
-          setReports(prev => prev.filter(r => r.id !== reportId));
+          setReports(prev => {
+            const filtered = prev.filter(r => r.id !== reportId);
+            setCache(cacheKey, filtered);
+            return filtered;
+          });
         },
       },
     ]);
-  }
+  }, [cacheKey, t.dash, t.common]);
+
+  const handlePressCard = useCallback((id: string) => {
+    navigation.navigate('ReportDetail', { reportId: id });
+  }, [navigation]);
 
   const activeReports = useMemo(() => reports.filter(r => r.status === 'In Progress' || r.status === 'Open'), [reports]);
   const inProgressReports = useMemo(() => reports.filter(r => r.status === 'In Progress'), [reports]);
@@ -280,6 +344,21 @@ export function StaffDashboardScreen({ navigation }: any) {
     { id: 'resolved', label: 'Done', count: resolvedReports.length },
   ], [reports.length, activeReports.length, resolvedReports.length]);
 
+  const renderItem = useCallback(({ item: r }: { item: Report }) => {
+    return (
+      <ReportCard
+        r={r}
+        C={C}
+        statusLabel={t.status[r.status] ?? r.status}
+        onAdvance={advanceStatus}
+        onDecline={declineAssigned}
+        onPress={handlePressCard}
+      />
+    );
+  }, [C, t.status, advanceStatus, declineAssigned, handlePressCard]);
+
+  const keyExtractor = useCallback((r: Report) => r.id, []);
+
   if (profile && profile.role !== 'staff' && profile.role !== 'admin') {
     return (
       <View style={[styles.safe, { backgroundColor: C.bg, paddingTop: insets.top, alignItems: 'center', justifyContent: 'center' }]}>
@@ -295,103 +374,118 @@ export function StaffDashboardScreen({ navigation }: any) {
         unread={unread}
         onBell={() => navigation.navigate('Notifications')}
       />
-      <ScrollView
+
+      <FlatList
+        data={displayedReports}
+        keyExtractor={keyExtractor}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
-      >
-        {/* Staff Hero Identity Card */}
-        <View style={[styles.heroCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <View style={styles.heroRow}>
-            <Avatar name={profile?.full_name || 'Staff'} uri={profile?.avatar_url} size="lg" />
-            <View style={styles.heroCol}>
-              <View style={styles.badgeRow}>
-                <View style={[styles.tradePill, { backgroundColor: C.brand + '18' }]}>
-                  <Icon name="wrench" size={12} color={C.brand} />
-                  <Text style={[styles.tradePillTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                    {profile?.expertise || profile?.department || 'Facilities & Maintenance'}
+        ItemSeparatorComponent={Separator}
+        renderItem={renderItem}
+        removeClippedSubviews={true}
+        initialNumToRender={6}
+        maxToRenderPerBatch={8}
+        windowSize={5}
+        ListHeaderComponent={
+          <View>
+            {/* Staff Hero Identity Card */}
+            <View style={[styles.heroCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+              <View style={styles.heroRow}>
+                <Avatar name={profile?.full_name || 'Staff'} uri={profile?.avatar_url} size="lg" />
+                <View style={styles.heroCol}>
+                  <View style={styles.badgeRow}>
+                    <View style={[styles.tradePill, { backgroundColor: C.brand + '18' }]}>
+                      <Icon name="wrench" size={12} color={C.brand} />
+                      <Text style={[styles.tradePillTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                        {profile?.expertise || profile?.department || 'Facilities & Maintenance'}
+                      </Text>
+                    </View>
+                    {activeReports.length > 0 && (
+                      <View style={[styles.activePill, { backgroundColor: C.warnBg }]}>
+                        <View style={[styles.activeDot, { backgroundColor: C.warn }]} />
+                        <Text style={[styles.activePillTxt, { color: C.warn, fontFamily: FontFamily.jakartaBold }]}>
+                          {activeReports.length} {t.dash.statOpen.toLowerCase()}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text style={[styles.heroName, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]} numberOfLines={1}>
+                    {profile?.full_name || 'Campus Maintenance Staff'}
+                  </Text>
+                  <Text style={[styles.heroSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                    {profile?.department ? `${profile.department} · Campus Maintenance` : 'BUBT Physical Plant & Maintenance'}
                   </Text>
                 </View>
-                {activeReports.length > 0 && (
-                  <View style={[styles.activePill, { backgroundColor: C.warnBg }]}>
-                    <View style={[styles.activeDot, { backgroundColor: C.warn }]} />
-                    <Text style={[styles.activePillTxt, { color: C.warn, fontFamily: FontFamily.jakartaBold }]}>
-                      {activeReports.length} {t.dash.statOpen.toLowerCase()}
-                    </Text>
-                  </View>
-                )}
               </View>
-              <Text style={[styles.heroName, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]} numberOfLines={1}>
-                {profile?.full_name || 'Campus Maintenance Staff'}
+            </View>
+
+            {/* 3 Stat Counters */}
+            <View style={styles.statRow}>
+              <StatCard icon="inbox" num={reports.length} label={t.dash.statAssigned} C={C} />
+              <StatCard icon="pulse" num={inProgressReports.length} label={t.dash.statInProgress} C={C} />
+              <StatCard icon="check" num={resolvedReports.length} label={t.dash.statResolved} C={C} />
+            </View>
+
+            {/* 58dp Segmented Filter Tabs */}
+            <View style={styles.tabWrap}>
+              <SegmentedTabs<FilterTab>
+                tabs={filterTabs}
+                activeTab={filterTab}
+                onTabChange={setFilterTab}
+                size="md"
+              />
+            </View>
+
+            {/* Section Header */}
+            <View style={styles.sectionRow}>
+              <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
+                {t.dash.assignedToMe}
               </Text>
-              <Text style={[styles.heroSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                {profile?.department ? `${profile.department} · Campus Maintenance` : 'BUBT Physical Plant & Maintenance'}
-              </Text>
+              <TouchableOpacity onPress={() => navigation.navigate('AssignedToMe')} activeOpacity={0.8}>
+                <Text style={[styles.seeAll, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+                  {t.common.seeAll}
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
-        </View>
-
-        {/* 3 Stat Counters */}
-        <View style={styles.statRow}>
-          <StatCard icon="inbox" num={reports.length} label={t.dash.statAssigned} C={C} />
-          <StatCard icon="pulse" num={inProgressReports.length} label={t.dash.statInProgress} C={C} />
-          <StatCard icon="check" num={resolvedReports.length} label={t.dash.statResolved} C={C} />
-        </View>
-
-        {/* 58dp Segmented Filter Tabs */}
-        <View style={styles.tabWrap}>
-          <SegmentedTabs<FilterTab>
-            tabs={filterTabs}
-            activeTab={filterTab}
-            onTabChange={setFilterTab}
-            size="md"
-          />
-        </View>
-
-        {/* Section Header */}
-        <View style={styles.sectionRow}>
-          <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
-            {t.dash.assignedToMe}
-          </Text>
-          <TouchableOpacity onPress={() => navigation.navigate('AssignedToMe')} activeOpacity={0.8}>
-            <Text style={[styles.seeAll, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
-              {t.common.seeAll}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Workorders List */}
-        {loading && reports.length === 0 ? (
-          <View style={{ paddingVertical: 36, alignItems: 'center', justifyContent: 'center' }}>
-            <ActivityIndicator size="small" color={C.brand} />
-          </View>
-        ) : displayedReports.length === 0 ? (
-          <View style={[styles.emptyCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <Icon name="check" size={32} color={C.textMuted} />
-            <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-              {t.dash.allClear}
-            </Text>
-            <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-              {filterTab === 'resolved' ? 'No resolved tickets in this view.' : t.dash.noReportsAssigned}
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.list}>
-            {displayedReports.map(r => (
-              <ReportCard
-                key={r.id}
-                r={r}
-                C={C}
-                onAdvance={advanceStatus}
-                onDecline={declineAssigned}
-                onPress={() => navigation.navigate('ReportDetail', { reportId: r.id })}
-              />
-            ))}
-          </View>
-        )}
-
-        <View style={{ height: 16 }} />
-      </ScrollView>
+        }
+        ListEmptyComponent={
+          loading && reports.length === 0 ? (
+            <View style={{ paddingVertical: 36, alignItems: 'center', justifyContent: 'center' }}>
+              <ActivityIndicator size="small" color={C.brand} />
+            </View>
+          ) : error && reports.length === 0 ? (
+            <View style={[styles.emptyCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+              <Feather name="alert-circle" size={32} color={C.danger} />
+              <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold, marginTop: 4 }]}>
+                {t.common.error}
+              </Text>
+              <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                Failed to load maintenance workorders. Please check your connection.
+              </Text>
+              <TouchableOpacity
+                style={{ backgroundColor: C.brand, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12, marginTop: 12 }}
+                onPress={load}
+                activeOpacity={0.85}
+              >
+                <Text style={{ color: C.white, fontFamily: FontFamily.jakartaBold, fontSize: 13 }}>{t.common.retry}</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={[styles.emptyCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+              <Icon name="check" size={32} color={C.textMuted} />
+              <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                {t.dash.allClear}
+              </Text>
+              <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                {filterTab === 'resolved' ? 'No resolved tickets in this view.' : t.dash.noReportsAssigned}
+              </Text>
+            </View>
+          )
+        }
+        ListFooterComponent={<View style={{ height: 24 }} />}
+      />
     </View>
   );
 }
@@ -511,9 +605,6 @@ const styles = StyleSheet.create({
   } as any,
 
   // Workorder Cards
-  list: {
-    gap: 12,
-  } as ViewStyle,
   reportCard: {
     padding: 16,
     borderRadius: 18,
@@ -534,6 +625,13 @@ const styles = StyleSheet.create({
   reportBody: {
     flex: 1,
   } as ViewStyle,
+  codeRow: {
+    marginBottom: 2,
+  } as ViewStyle,
+  codeTxt: {
+    fontSize: 11,
+    letterSpacing: 0.3,
+  } as any,
   reportTitle: {
     fontSize: 15,
   } as any,

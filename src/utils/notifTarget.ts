@@ -33,6 +33,9 @@ export async function resolveNotifTarget(
   }
   // Report + announcement notifications carry the CODE; detail screens want the UUID.
   if (refType === 'report' || refType === 'reports') {
+    if (refId.length === 36 && refId.includes('-')) {
+      return { screen: 'ReportDetail', params: { reportId: refId } };
+    }
     const { data } = await supabase.from('reports').select('id').eq('code', refId).maybeSingle();
     return data?.id ? { screen: 'ReportDetail', params: { reportId: data.id } } : null;
   }
