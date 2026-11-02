@@ -9,14 +9,12 @@ import { useTheme } from '../../hooks/useTheme';
 import { TopBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
-import { CollapsibleSection } from '../../components/ui/CollapsibleSection';
 import { useToast } from '../../components/ui/Toast';
-import { FontFamily, Layout, Accent, SectorColors } from '../../theme';
+import { FontFamily, Layout, Accent } from '../../theme';
 import { useT } from '../../i18n';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { getUnreadNotificationCount } from '../../services/notificationsService';
-import { CampusToday } from '../../components/CampusToday';
 
 const ISSUE_MAP: Record<string, { icon: string; fg: string }> = {
   electrical: { icon: 'bolt',     fg: Accent.gold },
@@ -143,17 +141,6 @@ function ReportCard({ r, C, onAssign }: { r: Report; C: any; onAssign: (r: Repor
   );
 }
 
-const MANAGE_TILES = [
-  { icon: 'layers',    fg: Accent.blue,           tk: 'manageAllReports',     route: 'AllReports',   sub: 'reports'    },
-  { icon: 'userPlus',  fg: Accent.green,          tk: 'manageStaffAdmins',    route: 'ManageStaff',  sub: 'staffadmin' },
-  { icon: 'directory', fg: Accent.purple,         tk: 'manageUsers',          route: 'ManageUsers',  sub: 'users'      },
-  { icon: 'announce',  fg: SectorColors.announce, tk: 'manageAnnouncements',  route: 'Announcements',sub: 'announce'   },
-  { icon: 'directory', fg: Accent.teal,           tk: 'manageFaculty',        route: 'ManageFaculty',sub: 'faculty'    },
-  { icon: 'study',     fg: SectorColors.study,    tk: 'manageStudyHub',       route: 'StudyHub',     sub: 'studyhub'   },
-  { icon: 'clubs',     fg: Accent.amber,          tk: 'manageClubs',          route: 'ManageClubs',  sub: 'clubs'      },
-  { icon: 'medical',   fg: SectorColors.medical,  tk: 'manageMedicalCenter',  route: 'Medical',      sub: 'medical'    },
-] as const;
-
 export function AdminDashboardScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
   const insets = useSafeAreaInsets();
@@ -252,7 +239,7 @@ export function AdminDashboardScreen({ navigation }: any) {
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} colors={[C.brand]} />}
       >
         <Text style={[styles.pageTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
           {t.dash.adminTitle}
@@ -288,43 +275,7 @@ export function AdminDashboardScreen({ navigation }: any) {
           </View>
         )}
 
-        {/* Manage rows */}
-        <CollapsibleSection title={t.dash.manage} icon="layers" accentColor={Accent.blue} defaultOpen={true}>
-          <View style={styles.manageList}>
-            {MANAGE_TILES.map((tile, i) => {
-              return (
-                <TouchableOpacity
-                  key={i}
-                  style={[
-                    styles.manageRow,
-                    {
-                      backgroundColor: C.surface,
-                      borderColor: C.border,
-                      borderLeftColor: tile.fg,
-                      borderLeftWidth: 4.5,
-                    },
-                  ]}
-                  onPress={() => navigation.navigate(tile.route)}
-                  activeOpacity={0.75}
-                >
-                  <View style={styles.manageIcon}>
-                    <Icon name={tile.icon} size={32} color={C.text} />
-                  </View>
-                  <View style={styles.manageInfo}>
-                    <Text style={[styles.manageLabel, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                      {t.dash[tile.tk] as string}
-                    </Text>
-                  </View>
-                  <Icon name="chevR" size={16} color={C.textMuted} />
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </CollapsibleSection>
-
-        <CampusToday navigation={navigation} />
-
-        <View style={{ height: 12 }} />
+        <View style={{ height: 16 }} />
       </ScrollView>
 
       {/* Assign modal */}
@@ -411,27 +362,6 @@ const styles = StyleSheet.create({
   actionTxt: { fontSize: 13 } as any,
   allClear: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderRadius: 14, borderWidth: 1 } as ViewStyle,
   allClearTxt: { fontSize: 14 } as any,
-  manageList: { gap: 8 } as ViewStyle,
-  manageRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 13,
-    height: 72,
-    paddingHorizontal: 14,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderLeftWidth: 4.5,
-  } as ViewStyle,
-  manageIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 11,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  } as ViewStyle,
-  manageInfo: { flex: 1 } as ViewStyle,
-  manageLabel: { fontSize: 14 } as any,
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' } as ViewStyle,
   sheet: { borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 36 } as ViewStyle,
   sheetTitle: { fontSize: 16, marginBottom: 12 } as any,

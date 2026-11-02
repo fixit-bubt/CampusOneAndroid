@@ -81,20 +81,18 @@ export function ExploreScreen({ navigation }: any) {
   const role = profile?.role;
   const isStudent = role === 'student';
   const isStaff = role === 'staff';
-  // Staff are maintenance crew - their panel is trimmed to maintenance-relevant
-  // sectors only (mirrors the web staff nav). Admin keeps everything but the
-  // student-only Lost & Found; students get the full grid. Student Directory
-  // is ALSO student-only - the backend (student_directory() RPC) is
-  // security-definer gated on the CALLER being role='student', so an
-  // admin/staff account always gets zero rows back no matter what. Showing
-  // the tile to them just leads to a permanently-empty screen with no
-  // explanation, so it's excluded here too (matches the web app's own nav,
-  // which never lists it for Admin/Staff either).
+  const isAdmin = role === 'admin';
+
+  // Admin excluded sectors: Student Directory (security-definer gated to students),
+  // Lost & Found (student claiming with proof), Cover Page generator (student assignment covers),
+  // and Class Routines (student class lecture schedules).
+  const ADMIN_EXCLUDED: SectorKey[] = ['directory', 'lostfound', 'coverpage', 'routines'];
+
   const sectors = isStaff
     ? SECTORS.filter((s) => STAFF_SECTORS.includes(s.id))
     : isStudent
       ? SECTORS
-      : SECTORS.filter((s) => s.id !== 'directory');
+      : SECTORS.filter((s) => !ADMIN_EXCLUDED.includes(s.id));
 
   // Pulls the role-filtered sectors in a group's own order (not SECTORS'
   // declaration order) - the group arrays already read in the order each
@@ -104,6 +102,7 @@ export function ExploreScreen({ navigation }: any) {
   function renderSectorRow(s: { id: SectorKey; en: string; dEn: string }, accentColor: string, index: number = 0, flatBorder: boolean = false) {
     const title = t.sectorTitles?.[s.id] ?? s.en;
     const itemColor = SectorColors[s.id] ?? accentColor;
+    const targetRoute = s.id === 'reports' && isAdmin ? 'AllReports' : SECTOR_ROUTE[s.id];
     return (
       <TouchableOpacity
         key={s.id}
@@ -116,7 +115,7 @@ export function ExploreScreen({ navigation }: any) {
             borderLeftWidth: flatBorder ? 1 : 4.5,
           },
         ]}
-        onPress={() => navigation.navigate(SECTOR_ROUTE[s.id])}
+        onPress={() => navigation.navigate(targetRoute)}
         activeOpacity={0.7}
       >
         <SectorIcon sector={s.id} size="md" dark={isDark} />
@@ -135,7 +134,7 @@ export function ExploreScreen({ navigation }: any) {
   const servicesSectors = pick(GROUP_SERVICES);
   const communitySectors = pick(GROUP_COMMUNITY);
   const showAcademics = !isStaff;
-  const academicsCount = academicsSectors.length + 2 + (isStudent ? 1 : 0);
+  const academicsCount = academicsSectors.length + (isStudent ? 3 : 0);
   const [openSection, setOpenSection] = useState<string | null>(null);
   const toggleSection = (id: string) => setOpenSection((prev) => (prev === id ? null : id));
 
@@ -242,53 +241,57 @@ export function ExploreScreen({ navigation }: any) {
           >
             {academicsSectors.map((s, idx) => renderSectorRow(s, SectorColors.study, idx))}
 
-            {/* Annex Portal - separate child bar */}
-            <TouchableOpacity
-              style={[
-                styles.childBar,
-                {
-                  backgroundColor: C.surface,
-                  borderColor: C.border,
-                  borderLeftColor: SectorColors.study,
-                },
-              ]}
-              onPress={() => navigation.navigate('Annex')}
-              activeOpacity={0.7}
-            >
-              <View style={styles.toolIcon}>
-                <AnimatedIcon family="feather" name="external-link" size={32} color={C.text} />
-              </View>
-              <View style={{ flex: 1, justifyContent: 'center' }}>
-                <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                  {t.tabs.annex}
-                </Text>
-              </View>
-              <Feather name="chevron-right" size={18} color={C.textMuted} />
-            </TouchableOpacity>
+            {/* Annex Portal - student-only */}
+            {isStudent && (
+              <TouchableOpacity
+                style={[
+                  styles.childBar,
+                  {
+                    backgroundColor: C.surface,
+                    borderColor: C.border,
+                    borderLeftColor: SectorColors.study,
+                  },
+                ]}
+                onPress={() => navigation.navigate('Annex')}
+                activeOpacity={0.7}
+              >
+                <View style={styles.toolIcon}>
+                  <AnimatedIcon family="feather" name="external-link" size={32} color={C.text} />
+                </View>
+                <View style={{ flex: 1, justifyContent: 'center' }}>
+                  <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                    {t.tabs.annex}
+                  </Text>
+                </View>
+                <Feather name="chevron-right" size={18} color={C.textMuted} />
+              </TouchableOpacity>
+            )}
 
-            {/* Tool: CGPA calculator - separate child bar */}
-            <TouchableOpacity
-              style={[
-                styles.childBar,
-                {
-                  backgroundColor: C.surface,
-                  borderColor: C.border,
-                  borderLeftColor: SectorColors.study,
-                },
-              ]}
-              onPress={() => navigation.navigate('Cgpa')}
-              activeOpacity={0.7}
-            >
-              <View style={styles.toolIcon}>
-                <AnimatedIcon family="feather" name="percent" size={32} color={C.text} />
-              </View>
-              <View style={{ flex: 1, justifyContent: 'center' }}>
-                <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                  {t.cgpa.title}
-                </Text>
-              </View>
-              <Feather name="chevron-right" size={18} color={C.textMuted} />
-            </TouchableOpacity>
+            {/* Tool: CGPA calculator - student-only */}
+            {isStudent && (
+              <TouchableOpacity
+                style={[
+                  styles.childBar,
+                  {
+                    backgroundColor: C.surface,
+                    borderColor: C.border,
+                    borderLeftColor: SectorColors.study,
+                  },
+                ]}
+                onPress={() => navigation.navigate('Cgpa')}
+                activeOpacity={0.7}
+              >
+                <View style={styles.toolIcon}>
+                  <AnimatedIcon family="feather" name="percent" size={32} color={C.text} />
+                </View>
+                <View style={{ flex: 1, justifyContent: 'center' }}>
+                  <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                    {t.cgpa.title}
+                  </Text>
+                </View>
+                <Feather name="chevron-right" size={18} color={C.textMuted} />
+              </TouchableOpacity>
+            )}
 
             {/* PDF Maker - student-only separate child bar */}
             {isStudent && (
