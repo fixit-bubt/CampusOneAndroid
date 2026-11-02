@@ -68,6 +68,27 @@ interface SyncLog {
   duration_ms?: number;
 }
 
+// BUBT Campus Buildings catalog
+const CAMPUS_BUILDINGS = [
+  { id: 'Building 1', label: 'Building 1', sub: 'Academic & Registrar Complex' },
+  { id: 'Building 2', label: 'Building 2', sub: 'Engineering & Applied Sciences Complex' },
+  { id: 'Building 3', label: 'Building 3', sub: 'Faculty of Business & Law Complex' },
+  { id: 'Building 4', label: 'Building 4', sub: 'Central Library, BBA & Admission Annex' },
+  { id: 'Other',      label: 'Other / Annex', sub: 'Off-Campus & Administrative Units' },
+];
+
+// Standard blood groups with donor descriptions
+const BLOOD_GROUPS = [
+  { id: 'A+',  label: 'A+',  sub: 'A Positive' },
+  { id: 'A-',  label: 'A-',  sub: 'A Negative' },
+  { id: 'B+',  label: 'B+',  sub: 'B Positive' },
+  { id: 'B-',  label: 'B-',  sub: 'B Negative' },
+  { id: 'O+',  label: 'O+',  sub: 'O Positive (Universal Donor)' },
+  { id: 'O-',  label: 'O-',  sub: 'O Negative (Rare Universal Donor)' },
+  { id: 'AB+', label: 'AB+', sub: 'AB Positive (Universal Recipient)' },
+  { id: 'AB-', label: 'AB-', sub: 'AB Negative' },
+];
+
 // Memoized teacher card for 120 FPS virtualized FlatList rendering
 const TeacherCard = React.memo(function TeacherCard({
   f,
@@ -148,10 +169,13 @@ export function ManageFacultyScreen({ navigation }: any) {
   const [selectedDeptId, setSelectedDeptId] = useState<string>('All');
   const [deptPickerVisible, setDeptPickerVisible] = useState(false);
   const [formDeptPickerVisible, setFormDeptPickerVisible] = useState(false);
+  const [bloodPickerVisible, setBloodPickerVisible] = useState(false);
+  const [buildingPickerVisible, setBuildingPickerVisible] = useState(false);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Full-page edit and create target
   const [target, setTarget] = useState<FacultyRow | null>(null);
   const [isNewTeacher, setIsNewTeacher] = useState(false);
 
@@ -168,7 +192,7 @@ export function ManageFacultyScreen({ navigation }: any) {
   const [phone, setPhone] = useState('');
   const [designation, setDesignation] = useState('');
   const [shortCode, setShortCode] = useState('');
-  const [building, setBuilding] = useState('');
+  const [building, setBuilding] = useState('Building 2');
   const [roomNumber, setRoomNumber] = useState('');
   const [floor, setFloor] = useState('');
   const [counselingHours, setCounselingHours] = useState('');
@@ -251,23 +275,31 @@ export function ManageFacultyScreen({ navigation }: any) {
     }
   }, [load]);
 
-  // Android back button handler
+  // Android hardware back button handler
   useEffect(() => {
     const onBackPress = () => {
       if (syncModalVisible) {
         setSyncModalVisible(false);
         return true;
       }
+      if (bloodPickerVisible) {
+        setBloodPickerVisible(false);
+        return true;
+      }
+      if (buildingPickerVisible) {
+        setBuildingPickerVisible(false);
+        return true;
+      }
       if (formDeptPickerVisible) {
         setFormDeptPickerVisible(false);
         return true;
       }
-      if (deptPickerVisible) {
-        setDeptPickerVisible(false);
-        return true;
-      }
       if (target) {
         setTarget(null);
+        return true;
+      }
+      if (deptPickerVisible) {
+        setDeptPickerVisible(false);
         return true;
       }
       if (query.length > 0) {
@@ -283,7 +315,7 @@ export function ManageFacultyScreen({ navigation }: any) {
 
     const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
     return () => sub.remove();
-  }, [syncModalVisible, formDeptPickerVisible, deptPickerVisible, target, query, selectedDeptId]);
+  }, [syncModalVisible, bloodPickerVisible, buildingPickerVisible, formDeptPickerVisible, target, deptPickerVisible, query, selectedDeptId]);
 
   function openEdit(f: FacultyRow) {
     setIsNewTeacher(false);
@@ -294,7 +326,7 @@ export function ManageFacultyScreen({ navigation }: any) {
     setPhone(f.phone ?? '');
     setDesignation(f.designation ?? '');
     setShortCode(f.short_code ?? '');
-    setBuilding(f.building ?? '');
+    setBuilding(f.building ?? 'Building 2');
     setRoomNumber(f.room_number ?? '');
     setFloor(f.floor ?? '');
     setCounselingHours(f.counseling_hours ?? '');
@@ -538,6 +570,18 @@ export function ManageFacultyScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
 
+        {/* Add Faculty Member 58dp Action Bar */}
+        <TouchableOpacity
+          style={[styles.addFacultyBar, { backgroundColor: SectorColors.faculty }]}
+          onPress={openCreate}
+          activeOpacity={0.85}
+        >
+          <Feather name="user-plus" size={18} color="#fff" />
+          <Text style={[styles.addFacultyBarTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+            {t.manage.addFacultyMember}
+          </Text>
+        </TouchableOpacity>
+
         {/* 58dp Department Dropdown Bar */}
         <TouchableOpacity
           style={[styles.dropdownBar, { backgroundColor: C.surface, borderColor: C.border }]}
@@ -627,16 +671,6 @@ export function ManageFacultyScreen({ navigation }: any) {
       <SubBar
         title={t.manage.manageFaculty}
         onBack={() => navigation.goBack()}
-        rightSlot={
-          <TouchableOpacity
-            style={[styles.addBtn, { backgroundColor: SectorColors.faculty }]}
-            onPress={openCreate}
-            activeOpacity={0.8}
-          >
-            <Feather name="plus" size={14} color="#fff" />
-            <Text style={[styles.addBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>Add</Text>
-          </TouchableOpacity>
-        }
       />
 
       <FlatList<FacultyRow>
@@ -670,7 +704,7 @@ export function ManageFacultyScreen({ navigation }: any) {
         }
       />
 
-      {/* Department Picker Bottom Sheet Modal */}
+      {/* Main Department Filter Bottom Sheet Modal */}
       <Modal
         visible={deptPickerVisible}
         transparent
@@ -914,6 +948,194 @@ export function ManageFacultyScreen({ navigation }: any) {
         </KeyboardAvoidingView>
       </Modal>
 
+      {/* Blood Group Picker Modal */}
+      <Modal
+        visible={bloodPickerVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setBloodPickerVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.modalOverlay}
+        >
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setBloodPickerVisible(false)}
+          />
+          <View style={[styles.sheetCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <View style={styles.sheetHandle}>
+              <View style={[styles.sheetHandleBar, { backgroundColor: C.border }]} />
+            </View>
+
+            <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              Select Blood Group
+            </Text>
+
+            <ScrollView
+              style={{ maxHeight: 420 }}
+              contentContainerStyle={{ paddingBottom: 10 }}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              {BLOOD_GROUPS.map((bg) => {
+                const active = bloodGroup === bg.id;
+                return (
+                  <TouchableOpacity
+                    key={bg.id}
+                    style={[
+                      styles.pickerBar,
+                      {
+                        backgroundColor: active
+                          ? (isDark ? 'rgba(239, 68, 68, 0.16)' : 'rgba(239, 68, 68, 0.08)')
+                          : C.surface2,
+                        borderColor: active ? C.danger : C.border,
+                      },
+                    ]}
+                    onPress={() => {
+                      setBloodGroup(bg.id);
+                      setBloodPickerVisible(false);
+                    }}
+                    activeOpacity={0.75}
+                  >
+                    <View style={styles.pickerIconTile}>
+                      <AnimatedIcon name="droplet" size={32} color={C.danger} />
+                    </View>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text
+                        style={[
+                          styles.pickerBarText,
+                          {
+                            color: active ? C.danger : C.text,
+                            fontFamily: FontFamily.jakartaBold,
+                          },
+                        ]}
+                      >
+                        {bg.label}
+                      </Text>
+                      <Text style={[styles.pickerBarSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                        {bg.sub}
+                      </Text>
+                    </View>
+                    {active ? (
+                      <View style={[styles.checkCircle, { backgroundColor: C.danger }]}>
+                        <Feather name="check" size={13} color="#fff" />
+                      </View>
+                    ) : (
+                      <View style={[styles.emptyCircle, { borderColor: C.border }]} />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            <TouchableOpacity
+              style={[styles.sheetCloseBtn, { borderColor: C.border }]}
+              onPress={() => setBloodPickerVisible(false)}
+            >
+              <Text style={[styles.sheetCloseTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                Close
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Campus Building Picker Modal */}
+      <Modal
+        visible={buildingPickerVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setBuildingPickerVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.modalOverlay}
+        >
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setBuildingPickerVisible(false)}
+          />
+          <View style={[styles.sheetCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <View style={styles.sheetHandle}>
+              <View style={[styles.sheetHandleBar, { backgroundColor: C.border }]} />
+            </View>
+
+            <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              Select Campus Building
+            </Text>
+
+            <ScrollView
+              style={{ maxHeight: 420 }}
+              contentContainerStyle={{ paddingBottom: 10 }}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              {CAMPUS_BUILDINGS.map((b) => {
+                const active = building === b.id;
+                return (
+                  <TouchableOpacity
+                    key={b.id}
+                    style={[
+                      styles.pickerBar,
+                      {
+                        backgroundColor: active
+                          ? (isDark ? 'rgba(79, 70, 229, 0.16)' : 'rgba(79, 70, 229, 0.08)')
+                          : C.surface2,
+                        borderColor: active ? SectorColors.faculty : C.border,
+                      },
+                    ]}
+                    onPress={() => {
+                      setBuilding(b.id);
+                      setBuildingPickerVisible(false);
+                    }}
+                    activeOpacity={0.75}
+                  >
+                    <View style={styles.pickerIconTile}>
+                      <AnimatedIcon name="home" size={32} color={C.text} />
+                    </View>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text
+                        style={[
+                          styles.pickerBarText,
+                          {
+                            color: active ? SectorColors.faculty : C.text,
+                            fontFamily: FontFamily.jakartaBold,
+                          },
+                        ]}
+                      >
+                        {b.label}
+                      </Text>
+                      <Text style={[styles.pickerBarSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                        {b.sub}
+                      </Text>
+                    </View>
+                    {active ? (
+                      <View style={[styles.checkCircle, { backgroundColor: SectorColors.faculty }]}>
+                        <Feather name="check" size={13} color="#fff" />
+                      </View>
+                    ) : (
+                      <View style={[styles.emptyCircle, { borderColor: C.border }]} />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            <TouchableOpacity
+              style={[styles.sheetCloseBtn, { borderColor: C.border }]}
+              onPress={() => setBuildingPickerVisible(false)}
+            >
+              <Text style={[styles.sheetCloseTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                Close
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
       {/* Sync Status Modal */}
       <Modal visible={syncModalVisible} transparent animationType="fade" onRequestClose={() => setSyncModalVisible(false)}>
         <View style={styles.syncOverlay}>
@@ -958,30 +1180,45 @@ export function ManageFacultyScreen({ navigation }: any) {
         </View>
       </Modal>
 
-      {/* Edit & Create Sheet */}
-      <Modal visible={!!target} transparent animationType="slide" onRequestClose={() => setTarget(null)}>
-        <KeyboardAvoidingView
-          style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
-          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setTarget(null)} />
-          <View style={[styles.sheet, { backgroundColor: C.surface }]}>
-            <View style={[styles.sheetHandleBar, { backgroundColor: C.border, alignSelf: 'center', marginBottom: 16 }]} />
-            <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-              <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-                {isNewTeacher ? t.manage.addFacultyMember : name || target?.name}
-              </Text>
+      {/* Full-Page Edit & Create Screen Modal */}
+      <Modal
+        visible={!!target}
+        animationType="slide"
+        presentationStyle="fullScreen"
+        onRequestClose={() => setTarget(null)}
+      >
+        <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
+          <SubBar
+            title={isNewTeacher ? t.manage.addFacultyMember : (name || target?.name || 'Edit Faculty')}
+            onBack={() => setTarget(null)}
+          />
 
+          <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          >
+            <ScrollView
+              contentContainerStyle={[styles.fullPageScroll, { paddingHorizontal: Layout.screenPadding }]}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              {/* Profile Photo Row */}
               <TouchableOpacity style={styles.photoRow} onPress={pickPhoto} activeOpacity={0.75}>
                 <Avatar uri={photoUri ?? target?.photo_url} name={name || target?.name} size="lg" />
-                <Text style={[styles.photoHint, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
-                  {photoUri ? t.manage.photoSelected : t.manage.changePhoto}
-                </Text>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={[styles.photoTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    Profile Photo
+                  </Text>
+                  <Text style={[styles.photoHint, { color: C.brand, fontFamily: FontFamily.jakartaSemiBold }]}>
+                    {photoUri ? t.manage.photoSelected : t.manage.changePhoto}
+                  </Text>
+                </View>
               </TouchableOpacity>
 
+              {/* Department Dropdown (58dp) */}
               <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>DEPARTMENT</Text>
               <TouchableOpacity
-                style={[styles.formDropdownBar, { backgroundColor: C.bg, borderColor: C.border }]}
+                style={[styles.formDropdownBar, { backgroundColor: C.surface, borderColor: C.border }]}
                 onPress={() => setFormDeptPickerVisible(true)}
                 activeOpacity={0.75}
               >
@@ -993,89 +1230,154 @@ export function ManageFacultyScreen({ navigation }: any) {
                   />
                 </View>
                 <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
-                  <Text style={[styles.formDropdownValue, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                  <Text style={[styles.formDropdownValue, { color: departmentId ? C.text : C.textMuted, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                     {shortDept(deptById[departmentId]?.name) || 'Select Department'}
                   </Text>
                 </View>
                 <Feather name="chevron-down" size={18} color={C.textMuted} />
               </TouchableOpacity>
 
+              {/* Full Name (58dp) */}
               <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>FULL NAME</Text>
               <TextInput
-                style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                value={name} onChangeText={setName} placeholder="Prof. Dr. / Md. ..." placeholderTextColor={C.textMuted}
+                style={[styles.field, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                value={name}
+                onChangeText={setName}
+                placeholder="Prof. Dr. / Md. ..."
+                placeholderTextColor={C.textMuted}
               />
 
+              {/* Routine Initial (58dp) & Blood Group Dropdown (58dp) */}
               <View style={{ flexDirection: 'row', gap: 10 }}>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>ROUTINE INITIAL</Text>
                   <TextInput
-                    style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                    value={shortCode} onChangeText={setShortCode} placeholder="DALM / SR" placeholderTextColor={C.textMuted}
+                    style={[styles.field, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                    value={shortCode}
+                    onChangeText={setShortCode}
+                    placeholder="DALM / SR"
+                    placeholderTextColor={C.textMuted}
                     autoCapitalize="characters"
                   />
                 </View>
 
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>BLOOD GROUP</Text>
-                  <TextInput
-                    style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                    value={bloodGroup} onChangeText={setBloodGroup} placeholder="A+ / B+ / AB+" placeholderTextColor={C.textMuted}
-                    autoCapitalize="characters"
-                  />
+                  <TouchableOpacity
+                    style={[styles.formDropdownBar, { backgroundColor: C.surface, borderColor: C.border }]}
+                    onPress={() => setBloodPickerVisible(true)}
+                    activeOpacity={0.75}
+                  >
+                    <View style={styles.formDropdownIconTile}>
+                      <AnimatedIcon name="droplet" size={20} color={C.danger} />
+                    </View>
+                    <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
+                      <Text style={[styles.formDropdownValue, { color: bloodGroup ? C.text : C.textMuted, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                        {bloodGroup || 'Select'}
+                      </Text>
+                    </View>
+                    <Feather name="chevron-down" size={16} color={C.textMuted} />
+                  </TouchableOpacity>
                 </View>
               </View>
 
+              {/* Designation (58dp) */}
               <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>DESIGNATION</Text>
               <TextInput
-                style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                value={designation} onChangeText={setDesignation} placeholder="Assistant Professor / Lecturer" placeholderTextColor={C.textMuted}
+                style={[styles.field, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                value={designation}
+                onChangeText={setDesignation}
+                placeholder="Assistant Professor / Lecturer"
+                placeholderTextColor={C.textMuted}
               />
 
-              <View style={{ flexDirection: 'row', gap: 10 }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>CAMPUS BUILDING</Text>
-                  <TextInput
-                    style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                    value={building} onChangeText={setBuilding} placeholder="Building 2" placeholderTextColor={C.textMuted}
-                  />
+              {/* Campus Building Dropdown (58dp) */}
+              <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>CAMPUS BUILDING</Text>
+              <TouchableOpacity
+                style={[styles.formDropdownBar, { backgroundColor: C.surface, borderColor: C.border }]}
+                onPress={() => setBuildingPickerVisible(true)}
+                activeOpacity={0.75}
+              >
+                <View style={styles.formDropdownIconTile}>
+                  <AnimatedIcon name="home" size={22} color={C.text} />
                 </View>
+                <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
+                  <Text style={[styles.formDropdownValue, { color: building ? C.text : C.textMuted, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                    {building || 'Select Campus Building'}
+                  </Text>
+                </View>
+                <Feather name="chevron-down" size={18} color={C.textMuted} />
+              </TouchableOpacity>
 
+              {/* Room Number (58dp) & Floor (58dp) */}
+              <View style={{ flexDirection: 'row', gap: 10 }}>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>ROOM NUMBER</Text>
                   <TextInput
-                    style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                    value={roomNumber} onChangeText={setRoomNumber} placeholder="405" placeholderTextColor={C.textMuted}
+                    style={[styles.field, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                    value={roomNumber}
+                    onChangeText={setRoomNumber}
+                    placeholder="405"
+                    placeholderTextColor={C.textMuted}
+                  />
+                </View>
+
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>FLOOR</Text>
+                  <TextInput
+                    style={[styles.field, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                    value={floor}
+                    onChangeText={setFloor}
+                    placeholder="4th Floor"
+                    placeholderTextColor={C.textMuted}
                   />
                 </View>
               </View>
 
+              {/* Counseling Hours (58dp) */}
               <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>COUNSELING HOURS (CH/TuH)</Text>
               <TextInput
-                style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                value={counselingHours} onChangeText={setCounselingHours} placeholder="Sun & Tue: 11:30 AM - 1:00 PM" placeholderTextColor={C.textMuted}
+                style={[styles.field, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                value={counselingHours}
+                onChangeText={setCounselingHours}
+                placeholder="Sun & Tue: 11:30 AM - 1:00 PM"
+                placeholderTextColor={C.textMuted}
               />
 
+              {/* Institutional Email (58dp) */}
               <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.emailLabel}</Text>
               <TextInput
-                style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                value={email} onChangeText={setEmail} placeholder="teacher@bubt.edu.bd" placeholderTextColor={C.textMuted}
-                autoCapitalize="none" keyboardType="email-address"
+                style={[styles.field, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                value={email}
+                onChangeText={setEmail}
+                placeholder="teacher@bubt.edu.bd"
+                placeholderTextColor={C.textMuted}
+                autoCapitalize="none"
+                keyboardType="email-address"
               />
 
+              {/* Phone / Mobile (58dp) */}
               <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.phoneLabel}</Text>
               <TextInput
-                style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                value={phone} onChangeText={setPhone} placeholder="+8801..." placeholderTextColor={C.textMuted}
+                style={[styles.field, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                value={phone}
+                onChangeText={setPhone}
+                placeholder="+8801..."
+                placeholderTextColor={C.textMuted}
                 keyboardType="phone-pad"
               />
 
+              {/* Research Interests (58dp) */}
               <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.researchInterestsLabel}</Text>
               <TextInput
-                style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                value={interests} onChangeText={setInterests} placeholder="AI, Machine Learning, IoT..." placeholderTextColor={C.textMuted}
+                style={[styles.field, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                value={interests}
+                onChangeText={setInterests}
+                placeholder="AI, Machine Learning, IoT..."
+                placeholderTextColor={C.textMuted}
               />
 
+              {/* Toggles */}
               <View style={styles.toggleRow}>
                 <Text style={[styles.toggleLbl, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>Accepting Paper Mentorship</Text>
                 <TactileSwitch value={isAcceptingResearch} onValueChange={setIsAcceptingResearch} />
@@ -1086,17 +1388,23 @@ export function ManageFacultyScreen({ navigation }: any) {
                 <TactileSwitch value={onLeave} onValueChange={setOnLeave} />
               </View>
 
+              {/* Save Button (58dp) */}
               <TouchableOpacity
                 style={[styles.saveBtn, { backgroundColor: SectorColors.faculty, opacity: saving ? 0.6 : 1 }]}
                 onPress={save}
                 disabled={saving}
                 activeOpacity={0.8}
               >
-                {saving
-                  ? <ActivityIndicator color="#fff" size="small" />
-                  : <Text style={[styles.saveTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>{isNewTeacher ? 'Create Faculty Member' : t.manage.saveChanges}</Text>}
+                {saving ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={[styles.saveTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                    {isNewTeacher ? 'Create Faculty Member' : t.manage.saveChanges}
+                  </Text>
+                )}
               </TouchableOpacity>
 
+              {/* Delete Button (58dp) */}
               {!isNewTeacher && target?.id && (
                 <TouchableOpacity
                   style={[styles.deleteBtn, { borderColor: C.border }]}
@@ -1111,10 +1419,10 @@ export function ManageFacultyScreen({ navigation }: any) {
                 </TouchableOpacity>
               )}
 
-              <View style={{ height: 20 }} />
+              <View style={{ height: 40 }} />
             </ScrollView>
-          </View>
-        </KeyboardAvoidingView>
+          </KeyboardAvoidingView>
+        </SafeAreaView>
       </Modal>
     </SafeAreaView>
   );
@@ -1124,17 +1432,6 @@ const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
   listContent: { paddingBottom: 28 } as ViewStyle,
-
-  addBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 12,
-    height: 34,
-    borderRadius: 10,
-    justifyContent: 'center',
-  } as ViewStyle,
-  addBtnTxt: { fontSize: 13 } as TextStyle,
 
   syncCard: {
     borderRadius: 16,
@@ -1165,6 +1462,20 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   } as ViewStyle,
   syncActionTxt: { fontSize: 14.5 } as TextStyle,
+
+  // Add Faculty Member 58dp Bar
+  addFacultyBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 9,
+    height: Layout.controlHeight,
+    borderRadius: 16,
+    marginBottom: 10,
+  } as ViewStyle,
+  addFacultyBarTxt: {
+    fontSize: 14.5,
+  } as TextStyle,
 
   // 58dp Dropdown Selector Bar
   dropdownBar: {
@@ -1386,48 +1697,74 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   sheetCloseTxt: { fontSize: 14 } as TextStyle,
 
-  // Add / Edit Sheet
-  sheet: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: Layout.screenPadding,
+  // Full Page Scroll & Forms (All 58dp Standard)
+  fullPageScroll: {
     paddingTop: 12,
-    paddingBottom: 30,
-    maxHeight: '90%',
+    paddingBottom: 40,
   } as ViewStyle,
-  photoRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 10 } as ViewStyle,
-  photoHint: { fontSize: 13 } as TextStyle,
-  fieldLabel: { fontSize: 10.5, letterSpacing: 0.7, marginTop: 11, marginBottom: 5 } as TextStyle,
-  field: { height: 44, borderRadius: 12, borderWidth: 1, paddingHorizontal: 13, fontSize: 13.5 } as TextStyle,
+  photoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingVertical: 10,
+    marginBottom: 6,
+  } as ViewStyle,
+  photoTitle: { fontSize: 15 } as TextStyle,
+  photoHint: { fontSize: 13, marginTop: 2 } as TextStyle,
+  fieldLabel: {
+    fontSize: 11,
+    letterSpacing: 0.7,
+    marginTop: 14,
+    marginBottom: 6,
+  } as TextStyle,
+  field: {
+    height: Layout.controlHeight,
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    fontSize: 14.5,
+  } as TextStyle,
   formDropdownBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    height: 48,
-    borderRadius: 12,
+    gap: 12,
+    height: Layout.controlHeight,
+    borderRadius: 16,
     borderWidth: 1,
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
   } as ViewStyle,
   formDropdownIconTile: {
-    width: 28,
-    height: 28,
+    width: 32,
+    height: 32,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
-  formDropdownValue: { fontSize: 13.5 } as TextStyle,
-  toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 } as ViewStyle,
-  toggleLbl: { fontSize: 13.5 } as TextStyle,
-  saveBtn: { height: Layout.controlHeight, borderRadius: Layout.controlRadius, alignItems: 'center', justifyContent: 'center', marginTop: 18 } as ViewStyle,
-  saveTxt: { fontSize: 14.5 } as TextStyle,
+  formDropdownValue: { fontSize: 14 } as TextStyle,
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    marginTop: 4,
+  } as ViewStyle,
+  toggleLbl: { fontSize: 14 } as TextStyle,
+  saveBtn: {
+    height: Layout.controlHeight,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 20,
+  } as ViewStyle,
+  saveTxt: { fontSize: 15 } as TextStyle,
   deleteBtn: {
     height: Layout.controlHeight,
-    borderRadius: Layout.controlRadius,
+    borderRadius: 16,
     borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    marginTop: 10,
+    marginTop: 12,
   } as ViewStyle,
   deleteTxt: { fontSize: 14.5 } as TextStyle,
 
@@ -1459,7 +1796,7 @@ const styles = StyleSheet.create({
   closeReportBtn: {
     width: '100%',
     height: Layout.controlHeight,
-    borderRadius: Layout.controlRadius,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
