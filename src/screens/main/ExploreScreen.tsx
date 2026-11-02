@@ -101,7 +101,7 @@ export function ExploreScreen({ navigation }: any) {
   // section should display in.
   const pick = (ids: SectorKey[]) => ids.map((id) => sectors.find((s) => s.id === id)).filter((s): s is typeof sectors[number] => !!s);
 
-  function renderSectorRow(s: { id: SectorKey; en: string; dEn: string }, accentColor: string, index: number = 0) {
+  function renderSectorRow(s: { id: SectorKey; en: string; dEn: string }, accentColor: string, index: number = 0, flatBorder: boolean = false) {
     const title = t.sectorTitles?.[s.id] ?? s.en;
     const itemColor = SectorColors[s.id] ?? accentColor;
     return (
@@ -112,7 +112,8 @@ export function ExploreScreen({ navigation }: any) {
           {
             backgroundColor: C.surface,
             borderColor: C.border,
-            borderLeftColor: itemColor,
+            borderLeftColor: flatBorder ? C.border : itemColor,
+            borderLeftWidth: flatBorder ? 1 : 4.5,
           },
         ]}
         onPress={() => navigation.navigate(SECTOR_ROUTE[s.id])}
@@ -156,7 +157,7 @@ export function ExploreScreen({ navigation }: any) {
           {STAFF_EXPLORE_SECTORS.map((secId, idx) => {
             const s = SECTORS.find((item) => item.id === secId);
             if (!s) return null;
-            return renderSectorRow(s, SectorColors[secId] || C.brand, idx);
+            return renderSectorRow(s, SectorColors[secId] || C.brand, idx, true);
           })}
 
           <View style={{ height: 20 }} />
