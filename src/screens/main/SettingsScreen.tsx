@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, Modal, KeyboardAvoidingView,
-  StyleSheet, ActivityIndicator, Share, Linking, AppState, type ViewStyle,
+  StyleSheet, ActivityIndicator, Share, Linking, AppState, Platform, NativeModules, type ViewStyle,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { TactileSwitch } from '../../components/ui/TactileSwitch';
@@ -179,6 +179,35 @@ export function SettingsScreen({ navigation }: any) {
       title: t.mainx.upToDateTitle,
       message: t.mainx.upToDateMsg,
     });
+  };
+
+  const [sharingApk, setSharingApk] = useState(false);
+  const [apkSize, setApkSize] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (Platform.OS === 'android' && NativeModules.ApkShare?.getApkInfo) {
+      NativeModules.ApkShare.getApkInfo()
+        .then((info: { formattedSize?: string }) => {
+          if (info?.formattedSize) setApkSize(info.formattedSize);
+        })
+        .catch(() => {});
+    }
+  }, []);
+
+  const handleShareApk = async () => {
+    if (sharingApk) return;
+    setSharingApk(true);
+    try {
+      if (Platform.OS === 'android' && NativeModules.ApkShare?.shareAppApk) {
+        await NativeModules.ApkShare.shareAppApk();
+      } else {
+        await Share.share({ message: t.mainx.shareAppMessage });
+      }
+    } catch {
+      await Share.share({ message: t.mainx.shareAppMessage });
+    } finally {
+      setSharingApk(false);
+    }
   };
 
   const handleDeleteAccount = useCallback(async () => {
@@ -416,8 +445,10 @@ export function SettingsScreen({ navigation }: any) {
           icon="share-2"
           iconColor={C.text}
           label={t.mainx.shareAppTitle}
+          sub={sharingApk ? t.mainx.shareAppPreparing : (apkSize ? `${t.mainx.shareAppSub} (${apkSize})` : t.mainx.shareAppSub)}
+          right={sharingApk ? <ActivityIndicator size="small" color={C.brand} /> : undefined}
           C={C}
-          onPress={() => Share.share({ message: t.mainx.shareAppMessage })}
+          onPress={handleShareApk}
         />
 
         <SettingCard

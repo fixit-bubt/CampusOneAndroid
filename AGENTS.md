@@ -2807,3 +2807,21 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`).
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
+
+---
+
+### 64. Direct Offline APK Sharing Architecture via Native FileProvider (`SettingsScreen.tsx`, `ApkShareModule.kt`) (/zero-slop, /performance-optimization, /code-review-and-quality)
+- **Direct Native APK Distribution for Students:**
+  - Integrated native `ApkShare` module enabling students to share the compiled `.apk` directly to peers via Android System Chooser (Bluetooth, Quick Share, Nearby Share, WhatsApp, Telegram, or Gmail) without requiring internet or web downloads.
+  - Dynamically calculates installed source package file size (`applicationInfo.sourceDir`) on mount via `getApkInfo()` and displays formatted size in the Settings sub-label (e.g. `(58.7 MB)`).
+  - Background asynchronous file caching into internal cache (`CampusOne.apk`) with timestamp check prevents redundant disk copies on repeated shares.
+  - Uses secure Android `FileProvider` (`com.bubt.campusone.SharingFileProvider`) with `FLAG_GRANT_READ_URI_PERMISSION` for zero-permission-leak native streaming.
+- **Graceful Web Fallback & Bilingual Feedback:**
+  - Automatically falls back to standard text sharing with the production web companion URL (`https://campusonebubt.vercel.app`) on non-Android platforms or chooser fallback.
+  - Localized bilingual keys (`shareAppSub`, `shareAppPreparing`, `shareAppMessage`) in `en.ts` and `bn.ts`.
+  - Displays inline `ActivityIndicator` spinner (`C.brand`) while cache copy and system chooser initialize.
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
+  - Native Release APK: Locally compiled via Gradle (`assembleRelease`).
+  - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
+
