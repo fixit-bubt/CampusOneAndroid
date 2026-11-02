@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
   Linking, AppState, type ViewStyle, type TextStyle,
@@ -41,6 +41,9 @@ const SECTORS: { id: SectorKey; label: string; desc: string }[] = [
   { id: 'coverpage', label: 'Cover Page',     desc: 'Assignment cover pages'     },
 ];
 
+const STAFF_NOTIF_SECTORS: SectorKey[] = ['reports', 'announce', 'blood', 'bus'];
+const ADMIN_NOTIF_SECTORS: SectorKey[] = ['reports', 'announce', 'events', 'clubs', 'jobs', 'blood', 'bus'];
+
 type SectorPref = { enabled: boolean; push: boolean; email: boolean; inapp: boolean };
 type ChanKey = 'push' | 'email' | 'inapp';
 
@@ -67,12 +70,15 @@ export function NotifSettingsScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
   const { user, profile } = useAuth();
   const role = profile?.role ?? 'student';
-  const visibleSectors =
-    role === 'staff'
-      ? SECTORS.filter(s => ['reports', 'announce', 'bus', 'prayer', 'medical', 'blood', 'market', 'ride'].includes(s.id))
-      : role === 'admin'
-        ? SECTORS.filter(s => s.id !== 'messages' && s.id !== 'directory' && s.id !== 'coverpage')
-        : SECTORS;
+  const visibleSectors = useMemo(() => {
+    if (role === 'staff') {
+      return STAFF_NOTIF_SECTORS.map(id => SECTORS.find(s => s.id === id)).filter((s): s is typeof SECTORS[number] => !!s);
+    }
+    if (role === 'admin') {
+      return ADMIN_NOTIF_SECTORS.map(id => SECTORS.find(s => s.id === id)).filter((s): s is typeof SECTORS[number] => !!s);
+    }
+    return SECTORS;
+  }, [role]);
   const t = useT();
   const [paused, setPaused] = useState(false);
   const [quiet, setQuiet] = useState(false);
@@ -363,7 +369,7 @@ export function NotifSettingsScreen({ navigation }: any) {
                 >
                   <SectorIcon sector={s.id} size="md" dark={isDark} />
                   <Text style={[styles.sectorTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                    {s.label}
+                    {t.sectorTitles?.[s.id] ?? (t.notif?.sectorLabel ? t.notif.sectorLabel(s.id) : s.label)}
                   </Text>
                 </TouchableOpacity>
                 <TactileSwitch
