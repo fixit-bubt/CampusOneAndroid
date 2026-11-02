@@ -25,7 +25,7 @@ import { fetchPeople } from '../../services/peopleService';
 import { formatFileSize, formatRelativeTime } from '../../utils/format';
 
 const STUDY_COLOR = SectorColors.study;
-const STUDY_BG    = `${SectorColors.study}1e`;
+const STUDY_BG = `${SectorColors.study}1e`;
 
 type Tab = 'materials' | 'questions' | 'books' | 'slides';
 type Sort = 'new' | 'name';
@@ -33,15 +33,15 @@ type Sort = 'new' | 'name';
 const TAB_LABELS: Record<Tab, string> = {
   materials: 'Notes',
   questions: 'Questions',
-  books:     'Books',
-  slides:    'Slides',
+  books: 'Books',
+  slides: 'Slides',
 };
 
 const CATEGORIES: { id: Tab; label: string; icon: keyof typeof Feather.glyphMap }[] = [
-  { id: 'materials', label: 'Notes',     icon: 'file-text' },
+  { id: 'materials', label: 'Notes', icon: 'file-text' },
   { id: 'questions', label: 'Questions', icon: 'help-circle' },
-  { id: 'books',     label: 'Books',     icon: 'book-open' },
-  { id: 'slides',    label: 'Slides',    icon: 'monitor' },
+  { id: 'books', label: 'Books', icon: 'book-open' },
+  { id: 'slides', label: 'Slides', icon: 'monitor' },
 ];
 
 const ITEM_TYPE: Record<Tab, 'material' | 'question' | 'book'> = {
@@ -462,9 +462,9 @@ export function CourseDetailScreen({ route, navigation }: any) {
   const emptyMsg = q
     ? t.study2.noMatches
     : tab === 'materials' ? 'No notes uploaded yet'
-    : tab === 'questions' ? t.study2.noQuestions
-    : tab === 'books' ? t.study2.noBooks
-    : 'No lecture slides uploaded yet';
+      : tab === 'questions' ? t.study2.noQuestions
+        : tab === 'books' ? t.study2.noBooks
+          : 'No lecture slides uploaded yet';
 
   return (
     <View style={[styles.safe, { backgroundColor: C.bg, paddingTop: insets.top }]}>
@@ -579,8 +579,8 @@ export function CourseDetailScreen({ route, navigation }: any) {
             <View style={styles.triggerLeft}>
               <Feather
                 name={CATEGORIES.find(c => c.id === tab)?.icon ?? 'file-text'}
-                size={20}
-                color={STUDY_COLOR}
+                size={28}
+                color={C.text}
                 style={{ marginRight: 10 }}
               />
               <Text style={[styles.triggerLabel, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -619,8 +619,8 @@ export function CourseDetailScreen({ route, navigation }: any) {
                     <View style={styles.itemLeft}>
                       <Feather
                         name={cat.icon}
-                        size={20}
-                        color={isSelected ? STUDY_COLOR : C.text2}
+                        size={28}
+                        color={C.text}
                         style={{ marginRight: 12 }}
                       />
                       <Text

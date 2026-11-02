@@ -2741,3 +2741,22 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - TypeScript Compilation: 0 errors across the entire codebase (`tsc --noEmit`).
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`) in 41s.
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
+
+
+---
+
+### 61. Study Hub Review, Bug Fixes & Architecture Hardening (/zero-slop, /code-review-and-quality, /performance-optimization, /ponytail)
+- **CR Semester Progression Implementation Finalized (`StudyHubScreen.tsx`):**
+  - Completed `handleAdvanceSemester` function: filters active courses, archives current semester to section progress cache (`study_section_prog_${sec.id}`), increments active semester, and notifies the user.
+  - Added cache restoration in `load()`: reads semester progression on initial mount to restore active semester and archive state instantly.
+  - Implemented `currentSemesterCourses` memo: automatically differentiates between viewing active semester courses vs browsing past semester archives.
+  - Integrated horizontal archive filter chips (`Sem N (Active)`, `Sem N-1 Archive`, etc.) and dismissible archive inspection banner in `renderMemberHome()`.
+  - Added 58dp confirmation modal (`advanceModalOpen`) with explicit safety guarantees: courses safely archived, members stay enrolled, junior batches inherit notes, and next semester begins fresh.
+  - Added "ACADEMIC SEMESTER LIFECYCLE" card inside Section Management settings for Class Representatives.
+  - Fixed empty-state messaging, search thresholds, and button visibility when viewing read-only archived semesters.
+- **Course Detail Screen Async Narrowing Hardening (`CourseDetailScreen.tsx`):**
+  - Resolved TypeScript TS18047 (`courseRes.data` possibly null after async fetch boundaries) by pinning `const currentCourse = courseRes.data` before sibling queries.
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
+  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) in 42s.
+  - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.

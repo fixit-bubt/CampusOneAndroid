@@ -820,6 +820,12 @@ export function StudyHubScreen({ navigation }: any) {
         setMySection(sec);
         const resolvedPersona: Persona = mem!.role === 'cr' ? 'cr' : 'member';
         setPersona(resolvedPersona);
+        // Load cached semester progression
+        const semProg = await getCache<{ semester: number; archives: { semester: number; courses: Course[] }[] }>(`study_section_prog_${sec.id}`);
+        if (semProg) {
+          setActiveSemester(semProg.semester ?? 1);
+          setArchivedSemesters(semProg.archives ?? []);
+        }
         const { data: coursesData } = await supabase
           .from('study_courses')
           .select('*, study_materials(id, type, file_kind), study_question_bank(id), study_books(id)')
@@ -1628,6 +1634,23 @@ export function StudyHubScreen({ navigation }: any) {
     return true;
   }
 
+  async function handleAdvanceSemester() {
+    if (!mySection) return;
+    const archivedIds = new Set(archivedSemesters.flatMap(a => a.courses.map(x => x.id)));
+    const currentActiveList = courses.filter(c => !archivedIds.has(c.id));
+    const newArchives = [
+      ...archivedSemesters.filter(a => a.semester !== activeSemester),
+      { semester: activeSemester, courses: currentActiveList },
+    ];
+    const nextSem = activeSemester + 1;
+    setActiveSemester(nextSem);
+    setArchivedSemesters(newArchives);
+    setViewingArchivedSem(null);
+    setAdvanceModalOpen(false);
+    await setCache(`study_section_prog_${mySection.id}`, { semester: nextSem, archives: newArchives });
+    flash(`Section advanced to Semester ${nextSem}. Semester ${activeSemester} archived.`);
+  }
+
   async function handleLeaveSection() {
     if (!mySection || !user) return;
     const cacheKey = `study_my_section_${user.id}`;
@@ -1689,10 +1712,19 @@ export function StudyHubScreen({ navigation }: any) {
   );
   const canAddCourse = persona === 'cr' || mySection?.role === 'editor' || isAdmin;
 
+  const currentSemesterCourses = useMemo(() => {
+    if (viewingArchivedSem !== null) {
+      return archivedSemesters.find(a => a.semester === viewingArchivedSem)?.courses ?? [];
+    }
+    if (archivedSemesters.length === 0) return courses;
+    const archivedIds = new Set(archivedSemesters.flatMap(a => a.courses.map(c => c.id)));
+    return courses.filter(c => !archivedIds.has(c.id));
+  }, [viewingArchivedSem, archivedSemesters, courses]);
+
   const homeTabs: TabItem<HomeTab>[] = useMemo(() => [
-    { id: 'courses', label: 'Courses', icon: 'book-open', count: courses.length },
+    { id: 'courses', label: 'Courses', icon: 'book-open', count: currentSemesterCourses.length },
     { id: 'archive', label: '12 Semesters', icon: 'layers' },
-  ], [courses.length]);
+  ], [currentSemesterCourses.length]);
 
   const manageTabs: TabItem<ManageTab>[] = useMemo(() => [
     { id: 'members', label: 'Members', icon: 'users', count: joinReqs.length + secMembers.length },
@@ -1701,14 +1733,14 @@ export function StudyHubScreen({ navigation }: any) {
 
   const filteredCourses = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return courses;
+    if (!q) return currentSemesterCourses;
     const cleanQ = q.replace(/[\s-_]/g, '');
-    return courses.filter(c => {
+    return currentSemesterCourses.filter(c => {
       const codeClean = (c.code || '').toLowerCase().replace(/[\s-_]/g, '');
       const nameLower = (c.name || '').toLowerCase();
       return codeClean.includes(cleanQ) || nameLower.includes(q);
     });
-  }, [courses, searchQuery]);
+  }, [currentSemesterCourses, searchQuery]);
 
   const filteredBrowseSections = useMemo(() => {
     const q = browseSearch.trim().toLowerCase();
@@ -1931,9 +1963,75 @@ export function StudyHubScreen({ navigation }: any) {
 
         {homeTab === 'courses' ? (
           <View>
+            {/* Archive semester switcher chips */}
+            {archivedSemesters.length > 0 && (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={{ marginBottom: 10 }}
+                contentContainerStyle={{ gap: 8, paddingRight: 4 }}
+              >
+                <TouchableOpacity
+                  style={[
+                    s.semFilterPill,
+                    {
+                      backgroundColor: viewingArchivedSem === null ? C.brand : C.surface,
+                      borderColor: viewingArchivedSem === null ? C.brand : C.border,
+                    },
+                  ]}
+                  onPress={() => setViewingArchivedSem(null)}
+                  activeOpacity={0.75}
+                >
+                  <Feather name="book-open" size={14} color={viewingArchivedSem === null ? '#fff' : C.textMuted} />
+                  <Text style={[s.semFilterTxt, { color: viewingArchivedSem === null ? '#fff' : C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    {`Sem ${activeSemester} (Active)`}
+                  </Text>
+                </TouchableOpacity>
+                {[...archivedSemesters].sort((a, b) => b.semester - a.semester).map(arch => (
+                  <TouchableOpacity
+                    key={arch.semester}
+                    style={[
+                      s.semFilterPill,
+                      {
+                        backgroundColor: viewingArchivedSem === arch.semester ? C.surface2 : C.surface,
+                        borderColor: viewingArchivedSem === arch.semester ? C.brand : C.border,
+                      },
+                    ]}
+                    onPress={() => setViewingArchivedSem(viewingArchivedSem === arch.semester ? null : arch.semester)}
+                    activeOpacity={0.75}
+                  >
+                    <Feather name="archive" size={14} color={viewingArchivedSem === arch.semester ? C.brand : C.textMuted} />
+                    <Text style={[s.semFilterTxt, { color: viewingArchivedSem === arch.semester ? C.brand : C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                      {`Sem ${arch.semester}`}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
+
+            {/* Archive view info banner */}
+            {viewingArchivedSem !== null && (
+              <View style={[s.archiveBanner, { backgroundColor: C.infoBg ?? C.surface2, borderColor: C.info ?? C.brand, borderWidth: 1, marginBottom: 10 }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+                    <Feather name="archive" size={16} color={C.info ?? C.brand} />
+                    <Text style={{ fontSize: 13, color: C.info ?? C.brand, fontFamily: FontFamily.jakartaBold, flex: 1 }}>
+                      {`Viewing Semester ${viewingArchivedSem} archive - read only`}
+                    </Text>
+                  </View>
+                  <TouchableOpacity onPress={() => setViewingArchivedSem(null)} hitSlop={10}>
+                    <Feather name="x" size={16} color={C.info ?? C.brand} />
+                  </TouchableOpacity>
+                </View>
+                <Text style={{ fontSize: 12, color: C.textMuted, fontFamily: FontFamily.jakartaMedium, marginTop: 4, lineHeight: 17 }}>
+                  These courses and materials are inherited by juniors from the previous batch.
+                </Text>
+              </View>
+            )}
+
             {/* Action Row */}
             <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
-              {canAddCourse && (
+              {canAddCourse && viewingArchivedSem === null && (
                 <TouchableOpacity
                   style={[s.ctrlBtn58, { backgroundColor: C.brand, flex: 1 }]}
                   onPress={() => setAddCourseOpen(true)}
@@ -1952,8 +2050,8 @@ export function StudyHubScreen({ navigation }: any) {
                     backgroundColor: C.surface,
                     borderColor: C.border,
                     borderWidth: 1,
-                    flex: canAddCourse ? 1 : undefined,
-                    width: canAddCourse ? undefined : '100%',
+                    flex: canAddCourse && viewingArchivedSem === null ? 1 : undefined,
+                    width: canAddCourse && viewingArchivedSem === null ? undefined : '100%',
                   },
                 ]}
                 onPress={openMyIntakeSections}
@@ -1987,9 +2085,9 @@ export function StudyHubScreen({ navigation }: any) {
             </TouchableOpacity>
 
             {/* Search Bar if courses > 2 */}
-            {courses.length > 2 && (
+            {currentSemesterCourses.length > 2 && (
               <View style={[s.searchBar58, { backgroundColor: C.surface, borderColor: C.border, marginBottom: 12 }]}>
-                <Feather name="search" size={18} color={C.textMuted} style={{ marginRight: 10 }} />
+                <Feather name="search" size={24} color={C.textMuted} style={{ marginRight: 10 }} />
                 <TextInput
                   style={[s.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                   value={searchQuery}
@@ -2005,18 +2103,20 @@ export function StudyHubScreen({ navigation }: any) {
               </View>
             )}
 
-            {courses.length === 0 ? (
+            {currentSemesterCourses.length === 0 ? (
               <View style={s.empty}>
                 <Feather name="book-open" size={32} color={C.textMuted} />
                 <Text style={[s.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                   {t.study2.noCoursesYet}
                 </Text>
                 <Text style={[s.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                  {canAddCourse
+                  {canAddCourse && viewingArchivedSem === null
                     ? 'Add courses to your section so classmates can upload study notes, CT questions and books.'
-                    : 'Your Class Representative will add courses here.'}
+                    : viewingArchivedSem !== null
+                      ? 'No courses were archived for this semester.'
+                      : 'Your Class Representative will add courses here.'}
                 </Text>
-                {canAddCourse && (
+                {canAddCourse && viewingArchivedSem === null && (
                   <TouchableOpacity
                     style={[s.ctrlBtn58, { backgroundColor: C.brand, paddingHorizontal: 24, marginTop: 14 }]}
                     onPress={() => setAddCourseOpen(true)}
@@ -2074,7 +2174,7 @@ export function StudyHubScreen({ navigation }: any) {
     return (
       <View>
         <View style={[s.searchBar58, { backgroundColor: C.surface, borderColor: C.border, marginBottom: 12 }]}>
-          <Feather name="search" size={18} color={C.textMuted} style={{ marginRight: 10 }} />
+          <Feather name="search" size={24} color={C.textMuted} style={{ marginRight: 10 }} />
           <TextInput
             style={[s.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
             value={browseSearch}
@@ -2396,6 +2496,41 @@ export function StudyHubScreen({ navigation }: any) {
                 </TouchableOpacity>
               )}
             </View>
+
+            {/* Semester Lifecycle — CR only */}
+            {persona === 'cr' && (
+              <View>
+                <Text style={[s.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold, marginTop: 22 }]}>
+                  ACADEMIC SEMESTER LIFECYCLE
+                </Text>
+                <View style={[s.card, { backgroundColor: C.surface, borderColor: C.border, padding: 16 }]}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                    <Feather name="layers" size={22} color={STUDY_COLOR} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 15, color: C.text, fontFamily: FontFamily.jakartaBold }}>
+                        {`Semester ${activeSemester} - Active Term`}
+                      </Text>
+                      <Text style={{ fontSize: 12.5, color: C.textMuted, fontFamily: FontFamily.jakartaMedium, marginTop: 2 }}>
+                        {archivedSemesters.length > 0 ? `${archivedSemesters.length} semester${archivedSemesters.length === 1 ? '' : 's'} archived` : 'No archived semesters yet'}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={{ fontSize: 12.5, color: C.textMuted, fontFamily: FontFamily.jakartaMedium, lineHeight: 18, marginBottom: 14 }}>
+                    When your 4-month semester ends, advance the section. Current courses are archived and visible to junior batches. New semester starts fresh.
+                  </Text>
+                  <TouchableOpacity
+                    style={[s.ctrlBtn58, { backgroundColor: STUDY_COLOR, width: '100%' }]}
+                    onPress={() => setAdvanceModalOpen(true)}
+                    activeOpacity={0.8}
+                  >
+                    <Feather name="skip-forward" size={16} color="#fff" />
+                    <Text style={[s.ctrlBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                      {`Advance Section to Semester ${activeSemester + 1}`}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
 
             {/* Danger Zone: Leave Section */}
             <Text style={[s.sectionLabel, { color: C.danger, fontFamily: FontFamily.jakartaExtraBold, marginTop: 22 }]}>
@@ -3001,6 +3136,53 @@ export function StudyHubScreen({ navigation }: any) {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      {/* CR: Advance semester confirmation */}
+      <Modal visible={advanceModalOpen} animationType="fade" transparent onRequestClose={() => setAdvanceModalOpen(false)}>
+        <View style={s.modalOverlay}>
+          <View style={[s.modalBox, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <View style={[s.advIconCircle, { backgroundColor: isDark ? 'rgba(91,133,247,0.15)' : '#eff3ff', marginBottom: 14, alignSelf: 'center' }]}>
+              <Feather name="skip-forward" size={28} color={C.brand} />
+            </View>
+            <Text style={[s.modalTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold, marginBottom: 6 }]}>
+              {`Advance to Semester ${activeSemester + 1}?`}
+            </Text>
+            <Text style={[s.modalSubtitle, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium, marginBottom: 16 }]}>
+              This will archive the current semester and start a fresh one.
+            </Text>
+            <View style={[s.advInfoBox, { backgroundColor: C.surface2, borderColor: C.border }]}>
+              {[
+                { icon: 'archive' as const, text: `Semester ${activeSemester} courses are safely archived, not deleted.` },
+                { icon: 'users' as const, text: 'All section members stay. No one is removed.' },
+                { icon: 'layers' as const, text: 'Junior batches can inherit and build on your archived notes.' },
+                { icon: 'plus-circle' as const, text: `Semester ${activeSemester + 1} starts fresh - add new courses.` },
+              ].map((item, i) => (
+                <View key={i} style={s.advInfoRow}>
+                  <Feather name={item.icon} size={14} color={C.brand} style={{ marginTop: 2 }} />
+                  <Text style={[s.advInfoTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{item.text}</Text>
+                </View>
+              ))}
+            </View>
+            <TouchableOpacity
+              style={[s.ctrlBtn58, { backgroundColor: C.brand, width: '100%', marginTop: 16 }]}
+              onPress={handleAdvanceSemester}
+              activeOpacity={0.8}
+            >
+              <Feather name="check" size={16} color="#fff" />
+              <Text style={[s.ctrlBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                {`Confirm - Advance to Semester ${activeSemester + 1}`}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[s.ctrlBtn58, { backgroundColor: C.surface2, width: '100%', marginTop: 8 }]}
+              onPress={() => setAdvanceModalOpen(false)}
+              activeOpacity={0.75}
+            >
+              <Text style={[s.ctrlBtnTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -3155,4 +3337,29 @@ const s = StyleSheet.create({
   empty: { alignItems: 'center', paddingTop: 40, paddingBottom: 20, gap: 8 } as ViewStyle,
   emptyTitle: { fontSize: 16 } as any,
   emptyTxt: { fontSize: 13.5, textAlign: 'center', lineHeight: 20, maxWidth: 300 } as any,
+
+  semFilterPill: {
+    height: 42, borderRadius: 12, flexDirection: 'row',
+    alignItems: 'center', gap: 6, paddingHorizontal: 12, borderWidth: 1,
+  } as ViewStyle,
+  semFilterTxt: { fontSize: 13 } as any,
+
+  archiveBanner: { padding: 14, borderRadius: 14 } as ViewStyle,
+
+  modalOverlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.65)',
+    justifyContent: 'center', padding: 20,
+  } as ViewStyle,
+  modalBox: {
+    width: '100%', borderRadius: 20, borderWidth: 1, padding: 20,
+  } as ViewStyle,
+  advIconCircle: {
+    width: 64, height: 64, borderRadius: 32,
+    alignItems: 'center', justifyContent: 'center',
+  } as ViewStyle,
+  modalTitle: { fontSize: 18, textAlign: 'center', letterSpacing: -0.3 } as any,
+  modalSubtitle: { fontSize: 13, textAlign: 'center', lineHeight: 18 } as any,
+  advInfoBox: { borderRadius: 14, borderWidth: 1, padding: 14, gap: 10 } as ViewStyle,
+  advInfoRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 } as ViewStyle,
+  advInfoTxt: { fontSize: 12.5, lineHeight: 18, flex: 1 } as any,
 });
