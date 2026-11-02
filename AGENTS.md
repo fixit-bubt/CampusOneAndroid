@@ -2846,7 +2846,7 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
 
 ---
 
-### 65. Staff Portal Full 0-to-100 Architecture, 120 FPS Performance & Bug Hardening (`StaffDashboardScreen.tsx`, `AssignedToMeScreen.tsx`, `EditProfileModal.tsx`, `ReportDetailScreen.tsx`, `AllReportsScreen.tsx`, `cacheService.ts`, `notifTarget.ts`) (/performance-optimization, /code-review-and-quality, /zero-slop)
+### 65. Staff Portal Full 0-to-100 Architecture, 120 FPS Performance, Settings Clean-Up & Bug Hardening (`StaffDashboardScreen.tsx`, `AssignedToMeScreen.tsx`, `SettingsScreen.tsx`, `EditProfileModal.tsx`, `ReportDetailScreen.tsx`, `AllReportsScreen.tsx`, `cacheService.ts`, `notifTarget.ts`) (/performance-optimization, /code-review-and-quality, /zero-slop)
 - **Critical Data Integrity Fix: Staff Trade Overwrite on Profile Save (`EditProfileModal.tsx`):**
   - Resolved fatal bug where `EditProfileModal` unconditionally wrote social media JSON (`socialAndPrivacyPayload`) to the `expertise` column of `profiles`.
   - For staff accounts, `expertise` represents their technical trade (`'Electrical'`, `'Plumbing'`, `'Cleanliness'`, `'IT / Network'`, `'Furniture'`, `'Safety / Security'`). Overwriting it corrupted trade matching in `AllReportsScreen` and displayed raw JSON strings across staff hero badges and admin views.
@@ -2868,8 +2868,13 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - **Notification UUID Direct Resolution:** `resolveNotifTarget` detects 36-char report UUIDs directly without failing on code-based queries, preventing deep-link drop back to notifications home.
   - **Admin Gate for AllReports:** Restricted `AllReportsScreen` to `profile?.role === 'admin'`, preventing staff from accessing unassignable ticket pools that violated Supabase RLS `reports_select` and `guard_report_update` triggers.
   - **Report Detail Polish:** Standardized category icons to canonical mappings (`Furniture` -> `box`, `Other` -> `sliders`) and eliminated dangling empty "UPDATE STATUS" header on resolved/closed tickets.
+- **Navigation Streamlining & Settings Clean-Up (`SettingsScreen.tsx`):**
+  - Removed duplicate role workspace shortcuts (`AdminDashboard` and `StaffDashboard`) from `SettingsScreen.tsx`.
+  - For staff accounts, the bottom tab `Home` already serves directly as `StaffDashboardScreen`. Having an additional "Staff Workspace" button inside Settings created a duplicate screen instance on the navigation stack, causing recursive navigation loops and back-button confusion.
+  - For admin accounts, `AdminDashboard` is directly accessible from the primary bottom tab dashboard.
+  - Eliminating the redundant shortcut cards keeps `SettingsScreen` focused strictly on personal account and application preferences while preventing redundant stack frames.
 - **Verification Evidence:**
   - TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
-  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) in 41s.
+  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) in 43s.
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
   - Remote Git Sync: Clean commit and push to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.
