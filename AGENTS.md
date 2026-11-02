@@ -2669,3 +2669,32 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`) in 41s.
   - Direct ADB Deployment: Streamed install and launched on physical phone `8734b5da`.
 
+
+---
+
+### 58. Campus Realtime Messaging Suite Overhaul (/zero-slop, /code-review-and-quality, /performance-optimization)
+- **Context-Grant DM Parity & Security Engine (`messagesService.ts` & `messagesStore.tsx`):**
+  - Resolved context-grant DM access barrier: students previously faced false "Conversation unavailable" blocks when opening DMs initiated from Marketplace listings, Blood donation pledges, or Campus Rides.
+  - Enhanced `fetchDmPartners` to query both accepted `connections` and active `dm_grants` (`gt('expires_at', now)`).
+  - Web parity: automatically derives all peer IDs from existing DM rows in `messages` (`m.kind === 'dm'`), ensuring any active conversation remains 100% reachable and subscribed in realtime even after initial grant expiration.
+  - Added robust parameter normalization in `MessageThread.tsx` (`route.params?.id ?? route.params?.peerId ?? route.params?.studentId`), eliminating blank crashes from Job post inquiries or directory links.
+- **Messages Home Inbox Upgrade (`MessagesHome.tsx`):**
+  - **Category Filter Tabs:** Added horizontal filter pills (`All`, `Direct`, `Clubs`, `Sections`) with dynamic unread badges on each pill.
+  - **Inbox Search Bar:** Added fast instant search filtering conversations by classmate name, club name, section label, or preview text.
+  - **Pull-to-Refresh:** Added native `RefreshControl` (`colors={[C.brand]}`) for instant inbox and unread synchronization.
+  - **Smart Timestamps:** Replaced generic social-feed times with messaging standards (`formatMessageTime`: today shows `3:45 PM`, yesterday shows `Yesterday`, within 7 days shows day name `Mon`, older shows date `14 Oct`).
+  - **Monochrome Anti-Clutter Icons:** Group icons for Clubs and Sections adhere strictly to the transparent 32dp monochrome standard.
+- **Message Thread Modernization (`MessageThread.tsx`):**
+  - **Day Dividers:** Added centered date headers (`Today`, `Yesterday`, formatted calendar dates) between messages from different days for clear conversation timelines.
+  - **Message Status Ticks:** Added sent (`check`) and sending (`clock`) indicators for outgoing bubbles.
+  - **Message Clustering in Group Chats:** Group consecutive messages from the same sender in club and section rooms, displaying sender name and avatar once per message cluster.
+  - **Interactive Header Navigation:** Tapping the chat header or avatar in a 1-on-1 DM navigates directly to `StudentProfile` with `{ studentId: id }`, while club headers open `ClubDetail`.
+  - **Copy to Clipboard:** Added "Copy text" action on message long-press via `expo-clipboard` with toast feedback.
+  - **Delete Confirmation Alert:** Added dedicated confirmation dialog before removing a message.
+  - **Bubble Shaping & Composer:** Directional corner radii (`borderBottomRightRadius: 4` for sent, `borderBottomLeftRadius: 4` for received), smooth multiline auto-expanding composer, and keyboard stability with Android `adjustResize`.
+- **Bilingual Support (`en.ts` & `bn.ts`):**
+  - Added localized strings for category tabs, copy feedback, delete confirmation, day labels, and search placeholders.
+- **Verification Evidence:**
+  - TypeScript Compilation: 0 errors across the entire codebase (`tsc --noEmit`).
+  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) in 41s.
+  - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.

@@ -124,16 +124,39 @@ export async function fetchBlocks(myId: string): Promise<ServiceResult<string[]>
   return { ok: true, data: ((data ?? []) as any[]).map(r => r.blocked_id) };
 }
 
-// Accepted connections → the set of people I can DM.
+// Accepted connections + active context grants → the set of people I can DM.
 export async function fetchDmPartners(myId: string): Promise<ServiceResult<string[]>> {
-  const { data, error } = await supabase
-    .from('connections')
-    .select('requester_id, addressee_id')
-    .eq('status', 'accepted')
-    .or(`requester_id.eq.${myId},addressee_id.eq.${myId}`);
-  if (error) return { ok: false, error: error.message };
-  const ids = ((data ?? []) as any[]).map(c => (c.requester_id === myId ? c.addressee_id : c.requester_id));
-  return { ok: true, data: Array.from(new Set(ids)) };
+  const [connsRes, grantsRes] = await Promise.all([
+    supabase
+      .from('connections')
+      .select('requester_id, addressee_id')
+      .eq('status', 'accepted')
+      .or(`requester_id.eq.${myId},addressee_id.eq.${myId}`),
+    (async () => {
+      try {
+        return await supabase
+          .from('dm_grants')
+          .select('peer_low, peer_high')
+          .gt('expires_at', new Date().toISOString())
+          .or(`peer_low.eq.${myId},peer_high.eq.${myId}`);
+      } catch {
+        return { data: null, error: null };
+      }
+    })(),
+  ]);
+
+  if (connsRes.error) return { ok: false, error: connsRes.error.message };
+  const ids = new Set<string>(
+    ((connsRes.data ?? []) as any[]).map(c => (c.requester_id === myId ? c.addressee_id : c.requester_id))
+  );
+
+  if (grantsRes && !grantsRes.error && grantsRes.data) {
+    for (const g of (grantsRes.data as any[])) {
+      ids.add(g.peer_low === myId ? g.peer_high : g.peer_low);
+    }
+  }
+
+  return { ok: true, data: Array.from(ids) };
 }
 
 // ---- per-conversation reads ----------------------------------------------

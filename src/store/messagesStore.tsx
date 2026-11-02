@@ -125,7 +125,17 @@ export function MessagesProvider({ children }: { children: React.ReactNode }) {
       }
       if (rRes.ok) { setReads(rRes.data); nextReads = rRes.data; }
       if (bRes.ok) { setBlocked(bRes.data); nextBlocked = bRes.data; }
-      if (pRes.ok) { setDmPartners(pRes.data); nextDm = pRes.data; }
+      if (pRes.ok) { nextDm = pRes.data; }
+      // Web parity: also include anyone I've exchanged DMs with
+      const partnerSet = new Set(nextDm);
+      for (const m of nextMessages) {
+        if (m.kind === 'dm') {
+          const peer = m.peerLow === myId ? m.peerHigh : m.peerLow;
+          if (peer) partnerSet.add(peer);
+        }
+      }
+      nextDm = Array.from(partnerSet);
+      setDmPartners(nextDm);
       if (clubRes.data) {
         nextClubs = (clubRes.data as any[])
           .map(r => r.clubs).filter(c => c && c.is_active !== false)
@@ -169,6 +179,17 @@ export function MessagesProvider({ children }: { children: React.ReactNode }) {
         setMessages(prev => {
           const merged = mergeMessages(prev, res.data);
           if (myId) {
+            setDmPartners(cur => {
+              const s = new Set(cur);
+              let changed = false;
+              for (const m of merged) {
+                if (m.kind === 'dm') {
+                  const peer = m.peerLow === myId ? m.peerHigh : m.peerLow;
+                  if (peer && !s.has(peer)) { s.add(peer); changed = true; }
+                }
+              }
+              return changed ? Array.from(s) : cur;
+            });
             getCache<any>(`messages_bundle_${myId}`).then(cached => {
               if (cached) setCache(`messages_bundle_${myId}`, { ...cached, messages: merged });
             });
