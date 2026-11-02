@@ -303,6 +303,7 @@ const cardStyles = StyleSheet.create({
   body: {
     flex: 1,
     minWidth: 0,
+    justifyContent: 'center',
   } as ViewStyle,
   title: {
     fontSize: 14.5,
@@ -1819,9 +1820,6 @@ export function StudyHubScreen({ navigation }: any) {
             <Text style={[cardStyles.title, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
               {t.study2.browsePublicSections}
             </Text>
-            <Text style={[cardStyles.sub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-              Explore open courses, notes, and questions across your department
-            </Text>
           </View>
           <Feather name="chevron-right" size={18} color={C.textMuted} />
         </TouchableOpacity>
@@ -1837,9 +1835,6 @@ export function StudyHubScreen({ navigation }: any) {
           <View style={cardStyles.body}>
             <Text style={[cardStyles.title, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
               {t.study2.requestToCreateSection}
-            </Text>
-            <Text style={[cardStyles.sub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-              Apply to become Class Representative and set up your section
             </Text>
           </View>
           <Feather name="chevron-right" size={18} color={C.textMuted} />

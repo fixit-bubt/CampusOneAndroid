@@ -174,10 +174,13 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
 - **Feature Sector Accents (`SectorColors`):** Use `SectorColors.<sector>` for feature tiles and icons (`reports`, `bus`, `study`, `medical`, `blood`, `ride`, `prayer`, `jobs`, `market`, `clubs`, `events`, `announce`, `lostfound`, `directory`, `faculty`, `pdfmaker`).
 - **Typography:** Bilingual support with `FontFamily.jakarta*` and `FontFamily.hind*` (matra-aware line height).
 
-### 5.2 Layout Rules: Full-Width Rows
-- **Navigation Lists:** Always use **full-width rows** (icon on left, title, subtitle/description below, chevron on right).
+### 5.2 Layout Rules: Full-Width Rows & Anti-Clutter Bar Standard
+- **Full-Width Rows & Clean Title Architecture:** Always use **full-width rows** (icon on left, bold title vertically centered, chevron on right).
 - **Prohibited:** Never use 2-column grid cards for navigation destinations, and **never mix grids and rows on the same screen**.
-- **Reference Layout:** `styles.toolCard` in `src/screens/main/ExploreScreen.tsx`.
+- **Removal of Redundant Subtitles (No-Slop Standard):** Subtitles and explanatory filler text (e.g. *"Lecture notes, syllabus, and study resources"*, *"Tap to select category"*, *"Electrical, plumbing, etc."*) are strictly removed across navigation menus, explore tools, PDF tools, cover page export bars, and form picker dropdowns. Titles are vertically centered with `justifyContent: 'center'`.
+- **Preservation of 72dp Bar Dimensions:** Never shrink the bar heights when removing subtitles. All primary navigation and dropdown bars strictly maintain their full 68-72dp height (`height: 72` / `styles.childBar72` / `styles.bar72` / `styles.dropdownBar72`), comfortable padding, and high touch target ergonomics.
+- **Dynamic Data Feeds (Protected):** Live database records (Bus routes/times, Ride seats/fares, Blood patient urgency/hospital, Marketplace prices, Student Directory details, Study Hub course materials) preserve their vital metadata lines.
+- **Reference Layout:** `styles.childBar` in `src/screens/main/ExploreScreen.tsx` and `styles.bar72` in `src/screens/routines/RoutinesBrowseScreen.tsx`.
 
 ### 5.3 Iconography Standards, Animated Icons & StatusBadge System
 - **Strict Human Sourcing:** When adding icons for new features, modules, settings, or dashboard cards, always source from verified, human-crafted icon collections (21st.dev icon families: Lucide, Tabler, Heroicons, Phosphor, Hugeicons, or native `@expo/vector-icons` Feather/MaterialCommunityIcons/Ionicons).

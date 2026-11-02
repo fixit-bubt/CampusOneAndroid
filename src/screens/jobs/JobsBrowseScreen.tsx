@@ -953,9 +953,6 @@ export function JobsBrowseScreen({ navigation }: any) {
                       >
                         {opt.label}
                       </Text>
-                      <Text style={[styles.card72Sub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                        {opt.subtitle}
-                      </Text>
                     </View>
                     <View style={styles.card72Right}>
                       <View
@@ -1129,9 +1126,6 @@ export function JobsBrowseScreen({ navigation }: any) {
                           </View>
                         )}
                       </View>
-                      <Text style={[styles.card72Sub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                        {dept.faculty}
-                      </Text>
                     </View>
                     <View style={styles.card72Right}>
                       <View

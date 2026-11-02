@@ -329,7 +329,7 @@ export function HomeFrequentTools({ refreshTrigger }: HomeFrequentToolsProps = {
                         <AnimatedIcon name={item.icon} size={32} color={C.text} />
                       </View>
 
-                      <View style={{ flex: 1 }}>
+                      <View style={{ flex: 1, justifyContent: 'center' }}>
                         <Text
                           style={[
                             styles.pickerItemTitle,
@@ -343,15 +343,6 @@ export function HomeFrequentTools({ refreshTrigger }: HomeFrequentToolsProps = {
                           numberOfLines={1}
                         >
                           {t.frequentTools?.titles?.[item.id] ?? item.title}
-                        </Text>
-                        <Text
-                          style={[
-                            styles.pickerItemSub,
-                            { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
-                          ]}
-                          numberOfLines={1}
-                        >
-                          {item.subtitle}
                         </Text>
                       </View>
 
@@ -583,7 +574,8 @@ const styles = StyleSheet.create({
   pickerItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
+    height: 68,
+    paddingHorizontal: 14,
     borderRadius: 14,
     borderWidth: 1,
     gap: 12,

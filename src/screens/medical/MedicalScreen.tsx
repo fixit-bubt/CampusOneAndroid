@@ -1464,7 +1464,7 @@ export function MedicalScreen({ navigation }: any) {
                         color={C.text}
                       />
                     </View>
-                    <View style={{ flex: 1, minWidth: 0 }}>
+                    <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
                       <Text
                         style={[
                           styles.pickerBarText,
@@ -1476,15 +1476,6 @@ export function MedicalScreen({ navigation }: any) {
                         numberOfLines={1}
                       >
                         {opt.label}
-                      </Text>
-                      <Text
-                        style={[
-                          styles.pickerBarSub,
-                          { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
-                        ]}
-                        numberOfLines={1}
-                      >
-                        {opt.sub}
                       </Text>
                     </View>
                     {isSelected ? (

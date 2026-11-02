@@ -1228,12 +1228,9 @@ export function CoverPageFormScreen({ navigation }: any) {
                 <View style={styles.toolIcon}>
                   <AnimatedIcon family="feather" name="eye" size={32} color={C.text} />
                 </View>
-                <View style={{ flex: 1 }}>
+                <View style={{ flex: 1, justifyContent: 'center' }}>
                   <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                     View Document
-                  </Text>
-                  <Text style={[styles.childDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                    Open full-screen interactive preview with zoom & pan
                   </Text>
                 </View>
                 <Feather name="chevron-right" size={17} color={C.textMuted} />
@@ -1256,12 +1253,9 @@ export function CoverPageFormScreen({ navigation }: any) {
                 <View style={styles.toolIcon}>
                   <AnimatedIcon family="feather" name="download" size={32} color={C.text} />
                 </View>
-                <View style={{ flex: 1 }}>
+                <View style={{ flex: 1, justifyContent: 'center' }}>
                   <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                     Save to Device / Download
-                  </Text>
-                  <Text style={[styles.childDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                    Save high-resolution PDF to phone Downloads
                   </Text>
                 </View>
                 <Feather name="chevron-right" size={17} color={C.textMuted} />
@@ -1284,12 +1278,9 @@ export function CoverPageFormScreen({ navigation }: any) {
                 <View style={styles.toolIcon}>
                   <AnimatedIcon family="feather" name="share-2" size={32} color={C.text} />
                 </View>
-                <View style={{ flex: 1 }}>
+                <View style={{ flex: 1, justifyContent: 'center' }}>
                   <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                     Share Cover Page
-                  </Text>
-                  <Text style={[styles.childDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                    Send via WhatsApp, Telegram, Google Drive
                   </Text>
                 </View>
                 <Feather name="chevron-right" size={17} color={C.textMuted} />
@@ -1312,12 +1303,9 @@ export function CoverPageFormScreen({ navigation }: any) {
                 <View style={styles.toolIcon}>
                   <AnimatedIcon family="feather" name="printer" size={32} color={C.text} />
                 </View>
-                <View style={{ flex: 1 }}>
+                <View style={{ flex: 1, justifyContent: 'center' }}>
                   <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                     Print Directly
-                  </Text>
-                  <Text style={[styles.childDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                    Send directly to wireless printer or campus xerox
                   </Text>
                 </View>
                 <Feather name="chevron-right" size={17} color={C.textMuted} />
@@ -1358,12 +1346,9 @@ export function CoverPageFormScreen({ navigation }: any) {
                     color={C.text}
                   />
                 </View>
-                <View style={{ flex: 1, minWidth: 0 }}>
+                <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
                   <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                     {docTypeLabel(item)}
-                  </Text>
-                  <Text style={[styles.childDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                    {docTypeDesc(item)}
                   </Text>
                 </View>
                 {isSel ? (

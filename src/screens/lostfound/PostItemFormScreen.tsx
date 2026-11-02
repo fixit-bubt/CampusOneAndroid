@@ -452,15 +452,6 @@ export function PostItemFormScreen({ route, navigation }: any) {
               >
                 {selectedCatObj ? (isBn ? selectedCatObj.labelBn : selectedCatObj.label) : (isBn ? 'ক্যাটাগরি নির্বাচন করুন' : 'Select Category...')}
               </Text>
-              <Text
-                style={[
-                  styles.dropdownSub,
-                  { color: C.textMuted, fontFamily: FontFamily.jakartaRegular },
-                ]}
-                numberOfLines={1}
-              >
-                {selectedCatObj ? (isBn ? selectedCatObj.subBn : selectedCatObj.sub) : (isBn ? 'আইটেম ক্যাটাগরি বেছে নিতে ট্যাপ করুন' : 'Tap to select item category')}
-              </Text>
             </View>
             <View style={styles.dropdownChevBox}>
               <Icon name="chevD" size={18} color={C.textMuted} />
@@ -825,15 +816,6 @@ export function PostItemFormScreen({ route, navigation }: any) {
                         numberOfLines={1}
                       >
                         {isBn ? item.labelBn : item.label}
-                      </Text>
-                      <Text
-                        style={[
-                          styles.optionSub,
-                          { color: C.textMuted, fontFamily: FontFamily.jakartaRegular },
-                        ]}
-                        numberOfLines={1}
-                      >
-                        {isBn ? item.subBn : item.sub}
                       </Text>
                     </View>
                     <View style={styles.dropdownChevBox}>

@@ -661,18 +661,6 @@ export function EventsBrowseScreen({ navigation }: any) {
                         >
                           {cat.label}
                         </Text>
-                        <Text
-                          style={[
-                            styles.pickerBarSub,
-                            {
-                              color: C.text3,
-                              fontFamily: FontFamily.jakartaMedium,
-                            },
-                          ]}
-                          numberOfLines={1}
-                        >
-                          {cat.desc ?? 'Campus events'}
-                        </Text>
                       </View>
 
                       <View style={[styles.catDivider, { backgroundColor: C.border }]} />

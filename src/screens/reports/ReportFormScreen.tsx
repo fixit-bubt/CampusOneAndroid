@@ -304,9 +304,6 @@ export function ReportFormScreen({ route, navigation }: any) {
               <Text style={[styles.bar72Title, { color: selectedCat ? C.text : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
                 {selectedCat ? selectedCat.label : 'Select Issue Category'}
               </Text>
-              <Text style={[styles.bar72Desc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                {selectedCat ? selectedCat.desc : 'Electrical, Plumbing, Cleanliness, IT, etc.'}
-              </Text>
             </View>
             <Feather name="chevron-down" size={18} color={C.textMuted} />
           </TouchableOpacity>
@@ -351,9 +348,6 @@ export function ReportFormScreen({ route, navigation }: any) {
               <Text style={[styles.bar72Title, { color: selectedBldg ? C.text : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
                 {selectedBldg ? selectedBldg.label : 'Select Building'}
               </Text>
-              <Text style={[styles.bar72Desc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                {selectedBldg ? selectedBldg.desc : 'Building 1, 2, 3 or 4'}
-              </Text>
             </View>
             <Feather name="chevron-down" size={18} color={C.textMuted} />
           </TouchableOpacity>
@@ -379,9 +373,6 @@ export function ReportFormScreen({ route, navigation }: any) {
               <Text style={[styles.bar72Title, { color: selectedFloor ? C.text : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
                 {selectedFloor ? selectedFloor.label : 'Select Floor'}
               </Text>
-              <Text style={[styles.bar72Desc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                {selectedFloor ? `${selectedFloor.label} level` : 'Ground floor through 5th floor'}
-              </Text>
             </View>
             <Feather name="chevron-down" size={18} color={C.textMuted} />
           </TouchableOpacity>
@@ -406,9 +397,6 @@ export function ReportFormScreen({ route, navigation }: any) {
             <View style={styles.bar72Body}>
               <Text style={[styles.bar72Title, { color: selectedPlace ? C.text : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
                 {selectedPlace ? selectedPlace.label : 'Select Space Type'}
-              </Text>
-              <Text style={[styles.bar72Desc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                {selectedPlace ? `Located in ${selectedPlace.label}` : 'Classroom, Lab, Washroom, Library, etc.'}
               </Text>
             </View>
             <Feather name="chevron-down" size={18} color={C.textMuted} />
@@ -492,9 +480,6 @@ export function ReportFormScreen({ route, navigation }: any) {
               <View style={styles.bar72Body}>
                 <Text style={[styles.bar72Title, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                   {t.reports2.addPhoto ?? 'Attach Photo Proof'}
-                </Text>
-                <Text style={[styles.bar72Desc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
-                  Optional evidence helps maintenance crews fix it faster
                 </Text>
               </View>
               <Feather name="plus" size={18} color={C.textMuted} />
@@ -592,12 +577,9 @@ export function ReportFormScreen({ route, navigation }: any) {
                 >
                   <View style={styles.modalRowLeft}>
                     <Icon name={c.icon} size={28} color={active ? C.brand : C.text} />
-                    <View style={{ flex: 1, minWidth: 0 }}>
+                    <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
                       <Text style={[styles.modalRowLabel, { color: active ? C.text : C.text2, fontFamily: FontFamily.jakartaBold }]}>
                         {c.label}
-                      </Text>
-                      <Text style={[styles.modalRowDesc, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                        {c.desc}
                       </Text>
                     </View>
                   </View>
@@ -805,6 +787,7 @@ const styles = StyleSheet.create({
   bar72Body: {
     flex: 1,
     minWidth: 0,
+    justifyContent: 'center',
   } as ViewStyle,
 
   bar72Title: {

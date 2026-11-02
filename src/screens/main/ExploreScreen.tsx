@@ -104,7 +104,6 @@ export function ExploreScreen({ navigation }: any) {
 
   function renderSectorRow(s: { id: SectorKey; en: string; dEn: string }, accentColor: string, index: number = 0) {
     const title = t.sectorTitles?.[s.id] ?? s.en;
-    const desc = t.sectorDescs?.[s.id] ?? s.dEn;
     const itemColor = SectorColors[s.id] ?? accentColor;
     return (
       <TouchableOpacity
@@ -121,12 +120,9 @@ export function ExploreScreen({ navigation }: any) {
         activeOpacity={0.7}
       >
         <SectorIcon sector={s.id} size="md" dark={isDark} />
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, justifyContent: 'center' }}>
           <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
             {title}
-          </Text>
-          <Text style={[styles.childDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-            {desc}
           </Text>
         </View>
         <Feather name="chevron-right" size={18} color={C.textMuted} />
@@ -172,12 +168,9 @@ export function ExploreScreen({ navigation }: any) {
             <View style={styles.toolIcon}>
               <AnimatedIcon family="feather" name="message-circle" size={32} color={C.text} />
             </View>
-            <View style={{ flex: 1 }}>
+            <View style={{ flex: 1, justifyContent: 'center' }}>
               <Text style={[styles.cellTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                 {t.chatbot?.title ?? 'AI Assistant'}
-              </Text>
-              <Text style={[styles.cellDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                {t.chatbot?.exploreDesc ?? 'Ask questions, get help with campus life'}
               </Text>
             </View>
             <Feather name="chevron-right" size={18} color={C.textMuted} />
@@ -194,12 +187,9 @@ export function ExploreScreen({ navigation }: any) {
             <View style={styles.toolIcon}>
               <AnimatedIcon family="feather" name="alert-triangle" size={32} color={C.text} />
             </View>
-            <View style={{ flex: 1 }}>
+            <View style={{ flex: 1, justifyContent: 'center' }}>
               <Text style={[styles.cellTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                 {t.campusIssues.exploreTitle}
-              </Text>
-              <Text style={[styles.cellDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                {t.campusIssues.exploreDesc}
               </Text>
             </View>
             <Feather name="chevron-right" size={18} color={C.textMuted} />
@@ -216,7 +206,6 @@ export function ExploreScreen({ navigation }: any) {
         {showAcademics && (
           <CollapsibleSection
             title={t.exploreGroups.academics}
-            subtitle={t.exploreGroups.academicsDesc}
             icon="study"
             accentColor={SectorColors.study}
             count={academicsCount}
@@ -242,12 +231,9 @@ export function ExploreScreen({ navigation }: any) {
               <View style={styles.toolIcon}>
                 <AnimatedIcon family="feather" name="external-link" size={32} color={C.text} />
               </View>
-              <View style={{ flex: 1 }}>
+              <View style={{ flex: 1, justifyContent: 'center' }}>
                 <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                   {t.tabs.annex}
-                </Text>
-                <Text style={[styles.childDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                  {t.tabs.annexDesc}
                 </Text>
               </View>
               <Feather name="chevron-right" size={18} color={C.textMuted} />
@@ -269,12 +255,9 @@ export function ExploreScreen({ navigation }: any) {
               <View style={styles.toolIcon}>
                 <AnimatedIcon family="feather" name="percent" size={32} color={C.text} />
               </View>
-              <View style={{ flex: 1 }}>
+              <View style={{ flex: 1, justifyContent: 'center' }}>
                 <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                   {t.cgpa.title}
-                </Text>
-                <Text style={[styles.childDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                  {t.cgpa.subtitle}
                 </Text>
               </View>
               <Feather name="chevron-right" size={18} color={C.textMuted} />
@@ -297,12 +280,9 @@ export function ExploreScreen({ navigation }: any) {
                 <View style={styles.toolIcon}>
                   <AnimatedIcon family="mci" name="file-pdf-box" size={32} color={C.text} />
                 </View>
-                <View style={{ flex: 1 }}>
+                <View style={{ flex: 1, justifyContent: 'center' }}>
                   <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                     {t.pdfmaker.title}
-                  </Text>
-                  <Text style={[styles.childDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                    {t.pdfmaker.exploreDesc}
                   </Text>
                 </View>
                 <Feather name="chevron-right" size={18} color={C.textMuted} />
@@ -314,7 +294,6 @@ export function ExploreScreen({ navigation }: any) {
         {campusLifeSectors.length > 0 && (
           <CollapsibleSection
             title={t.exploreGroups.campusLife}
-            subtitle={t.exploreGroups.campusLifeDesc}
             icon="events"
             accentColor={SectorColors.events}
             count={campusLifeSectors.length}
@@ -329,7 +308,6 @@ export function ExploreScreen({ navigation }: any) {
         {servicesSectors.length > 0 && (
           <CollapsibleSection
             title={t.exploreGroups.services}
-            subtitle={isStaff ? `${t.sectorTitles.medical}, ${t.sectorTitles.bus}` : t.exploreGroups.servicesDesc}
             icon="wrench"
             accentColor={SectorColors.reports}
             count={servicesSectors.length}
@@ -344,7 +322,6 @@ export function ExploreScreen({ navigation }: any) {
         {communitySectors.length > 0 && (
           <CollapsibleSection
             title={t.exploreGroups.community}
-            subtitle={t.exploreGroups.communityDesc}
             icon="market"
             accentColor={SectorColors.market}
             count={communitySectors.length}

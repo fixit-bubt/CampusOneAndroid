@@ -332,9 +332,6 @@ export function BloodRequestScreen({ navigation }: any) {
                 >
                   {currentReasonObj ? `${currentReasonObj.label} (${currentReasonObj.labelBn})` : 'Select case reason (e.g. Surgery, Dengue)...'}
                 </Text>
-                <Text style={[styles.dropdownHint, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                  {medicalReason ? 'Tap to change reason' : 'Helps donors know the emergency context'}
-                </Text>
               </View>
             </TouchableOpacity>
             <View style={styles.dropdownRight}>
@@ -391,9 +388,6 @@ export function BloodRequestScreen({ navigation }: any) {
                 numberOfLines={1}
               >
                 {currentAffObj ? `${currentAffObj.label} (${currentAffObj.labelBn})` : 'BUBT Student'}
-              </Text>
-              <Text style={[styles.dropdownHint, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                Campus connection or relationship to patient
               </Text>
             </View>
             <Feather name="chevron-down" size={18} color={C.textMuted} style={{ paddingLeft: 4 }} />
@@ -465,9 +459,6 @@ export function BloodRequestScreen({ navigation }: any) {
                     numberOfLines={1}
                   >
                     {hospital || area || 'Select hospital or location...'}
-                  </Text>
-                  <Text style={[styles.dropdownHint, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                    {area ? `${area} · Tap to change location` : '108 Dhaka hospitals & 144 areas'}
                   </Text>
                 </View>
               </TouchableOpacity>

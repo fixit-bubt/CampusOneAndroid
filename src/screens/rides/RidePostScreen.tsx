@@ -469,9 +469,6 @@ export function RidePostScreen({ route, navigation }: any) {
                   >
                     {from || (isOffer ? 'Select pickup hub or area…' : 'Select your location…')}
                   </Text>
-                  <Text style={[styles.dropdownHint, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                    {from ? `${from} · Tap to change` : 'Choose from 58 Dhaka commute hubs & GPS Map'}
-                  </Text>
                 </View>
               </TouchableOpacity>
               <View style={styles.dropdownRight}>
@@ -568,9 +565,6 @@ export function RidePostScreen({ route, navigation }: any) {
                   >
                     {to || 'Select destination hub or area…'}
                   </Text>
-                  <Text style={[styles.dropdownHint, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                    {to ? `${to} · Tap to change` : 'Choose from 58 Dhaka commute hubs & GPS Map'}
-                  </Text>
                 </View>
               </TouchableOpacity>
               <View style={styles.dropdownRight}>
@@ -635,9 +629,6 @@ export function RidePostScreen({ route, navigation }: any) {
               <View style={styles.dropdownInfo}>
                 <Text style={[styles.dropdownValue, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                   {formatTime(time)} · {getShiftLabel(time)}
-                </Text>
-                <Text style={[styles.dropdownHint, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                  {selectedDate === localToday() ? 'Today' : 'Tomorrow'} · BUBT Varsity Shift Schedule
                 </Text>
               </View>
             </View>

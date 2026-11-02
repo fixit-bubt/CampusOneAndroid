@@ -569,9 +569,6 @@ export function RoutinesBrowseScreen({ route, navigation }: any) {
               <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                 Routines
               </Text>
-              <Text style={[styles.barSubtitle, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
-                Weekly semester class schedules and room allocations
-              </Text>
             </View>
             <Feather name="chevron-right" size={20} color={C.textMuted} />
           </TouchableOpacity>
@@ -597,9 +594,6 @@ export function RoutinesBrowseScreen({ route, navigation }: any) {
             <View style={styles.barTextCol}>
               <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                 Exam Routine
-              </Text>
-              <Text style={[styles.barSubtitle, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
-                Mid-Term, Final, and Supplementary exam timetables
               </Text>
             </View>
             <Feather name="chevron-right" size={20} color={C.textMuted} />

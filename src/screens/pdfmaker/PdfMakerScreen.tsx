@@ -64,9 +64,8 @@ export function PdfMakerScreen({ navigation }: any) {
               <View style={styles.tile}>
                 <Feather name={tool.icon} size={32} color={C.text} />
               </View>
-              <View style={{ flex: 1, minWidth: 0 }}>
+              <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
                 <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{title}</Text>
-                <Text style={[styles.cardDesc, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>{blurb}</Text>
               </View>
               <Feather name="chevron-right" size={18} color={C.textMuted} />
             </TouchableOpacity>
@@ -102,7 +101,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
   scroll: { paddingTop: 10, gap: 11 } as ViewStyle,
   subtitle: { fontSize: 13.5, lineHeight: 19, marginBottom: 2 },
-  card: { flexDirection: 'row', alignItems: 'center', gap: 13, paddingHorizontal: 16, paddingVertical: 12, minHeight: 72, borderRadius: 16, borderWidth: 1 } as ViewStyle,
+  card: { flexDirection: 'row', alignItems: 'center', gap: 13, paddingHorizontal: 16, height: 72, borderRadius: 16, borderWidth: 1 } as ViewStyle,
   tile: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
   cardTitle: { fontSize: 15 },
   cardDesc: { fontSize: 12.5, marginTop: 1 },
