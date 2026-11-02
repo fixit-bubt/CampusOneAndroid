@@ -468,6 +468,10 @@ export const en = {
     deleteBody: 'This removes the report permanently. Continue?',
     view: 'View',
     filterStatus: 'Filter by Status',
+    reportIssuesTitle: 'Report Issues',
+    reportIssuesDesc: 'Report & track campus maintenance issues',
+    tabCampus: 'Campus',
+    tabMine: 'Mine',
     resultCount: (n: number) => `${n} report${n === 1 ? '' : 's'}`,
   },
 
@@ -2371,9 +2375,9 @@ You will be registered as an available ${group} donor.`,
   },
 
   campusIssues: {
-    title: 'Campus Issues',
-    exploreTitle: 'Campus Issues',
-    exploreDesc: "See what's affecting students",
+    title: 'Report Issues',
+    exploreTitle: 'Report Issues',
+    exploreDesc: 'Report & track campus maintenance issues',
     searchPlaceholder: 'Search issues',
     meToo: 'Me too',
     affected: (n: number) => `${n} ${n === 1 ? 'student' : 'students'} affected`,

@@ -188,7 +188,7 @@ export function ExploreScreen({ navigation }: any) {
         {isStudent && (
           <TouchableOpacity
             style={[styles.featuredCard, { backgroundColor: C.surface, borderColor: C.border }]}
-            onPress={() => navigation.navigate('CampusIssues')}
+            onPress={() => navigation.navigate('CampusIssues', { initialTab: 'Campus' })}
             activeOpacity={0.75}
           >
             <View style={styles.toolIcon}>

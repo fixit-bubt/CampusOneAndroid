@@ -1,8 +1,8 @@
-// Campus Issues board - anonymous student-facing feed of reports whose owners
-// opted them onto the board, with a "me too" vote. No reporter identity is ever
-// shown (the feed RPC never projects it) and cards don't deep-link to the
-// owner-only report detail.
-import { useState, useCallback, useMemo } from 'react';
+// Unified Report Issues screen - hosts both public Campus Board and personal
+// My Reports feeds in a single ultra-responsive view with 0ms in-memory tab
+// switching, 58dp controls, 4.5dp category stripes, 32dp monochrome static icons,
+// and premium squircle badges.
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import {
   Platform,
   Modal,
   Pressable,
+  Alert,
   type ViewStyle,
   type TextStyle,
 } from 'react-native';
@@ -20,17 +21,30 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
+import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { SkeletonList, LoadError } from '../../components/ui/LoadState';
-import { FontFamily, Layout, SectorColors } from '../../theme';
+import { LiquidToggle } from '../../components/ui/LiquidToggle';
+import { FontFamily, Layout } from '../../theme';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
-import { getCampusIssues, toggleReportVote, type CampusIssue } from '../../services/campusIssuesService';
+import { supabase } from '../../lib/supabase';
+import {
+  getCampusIssues,
+  toggleReportVote,
+  setReportBoardVisibility,
+  type CampusIssue,
+} from '../../services/campusIssuesService';
+import {
+  getCampusReports,
+  type CampusReport,
+} from '../../services/reportsService';
 
 const STATUSES = ['All', 'Open', 'In Progress', 'Resolved', 'Closed'] as const;
 type StatusFilter = (typeof STATUSES)[number];
+type TabKey = 'Campus' | 'Mine';
 
 const CATEGORY_MAP: Record<string, { icon: string; fg: string }> = {
   'Electrical':        { icon: 'bolt',     fg: '#f59e0b' },
@@ -42,12 +56,32 @@ const CATEGORY_MAP: Record<string, { icon: string; fg: string }> = {
   'Other':             { icon: 'sliders',  fg: '#64748b' },
 };
 
-function statusTone(C: any, status: string): { fg: string; bg: string } {
+function statusTone(C: any, status: string): { fg: string; bg: string; border: string } {
   switch (status) {
-    case 'In Progress': return { fg: C.info,      bg: C.infoBg };
-    case 'Resolved':    return { fg: C.success,   bg: C.successBg };
-    case 'Closed':      return { fg: C.textMuted, bg: C.surface2 };
-    default:            return { fg: C.warn,      bg: C.warnBg };
+    case 'In Progress':
+      return {
+        fg: '#38bdf8',
+        bg: 'rgba(56, 189, 248, 0.12)',
+        border: 'rgba(56, 189, 248, 0.32)',
+      };
+    case 'Resolved':
+      return {
+        fg: '#34d399',
+        bg: 'rgba(52, 211, 153, 0.12)',
+        border: 'rgba(52, 211, 153, 0.32)',
+      };
+    case 'Closed':
+      return {
+        fg: C.text3,
+        bg: C.surface2,
+        border: C.border,
+      };
+    default:
+      return {
+        fg: '#fbbf24',
+        bg: 'rgba(251, 191, 36, 0.12)',
+        border: 'rgba(251, 191, 36, 0.32)',
+      };
   }
 }
 
@@ -58,47 +92,102 @@ function timeAgo(iso: string): string {
   return `${Math.floor(secs / 86400)}d ago`;
 }
 
-export function CampusIssuesScreen({ navigation }: any) {
+export function CampusIssuesScreen({ navigation, route }: any) {
   const { C } = useTheme();
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
   const t = useT();
   const toast = useToast();
 
-  const [issues, setIssues] = useState<CampusIssue[]>([]);
-  const [loading, setLoading] = useState(true);
+  const initialTab: TabKey = route?.params?.initialTab === 'Mine' ? 'Mine' : 'Campus';
+  const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
+
+  useEffect(() => {
+    if (route?.params?.initialTab) {
+      setActiveTab(route.params.initialTab === 'Mine' ? 'Mine' : 'Campus');
+    }
+  }, [route?.params?.initialTab]);
+
+  const tabs: TabItem<TabKey>[] = useMemo(() => [
+    { id: 'Campus', label: t.reports?.tabCampus ?? 'Campus' },
+    { id: 'Mine', label: t.reports?.tabMine ?? 'Mine' },
+  ], [t]);
+
+  // Feed states
+  const [campusIssues, setCampusIssues] = useState<CampusIssue[]>([]);
+  const [campusLoading, setCampusLoading] = useState(true);
+  const [busyVoteIds, setBusyVoteIds] = useState<Set<string>>(new Set());
+
+  const [myReports, setMyReports] = useState<CampusReport[]>([]);
+  const [myReportsLoading, setMyReportsLoading] = useState(true);
+  const [boardMap, setBoardMap] = useState<Record<string, boolean>>({});
+
+  // Filter & modal states
   const [filter, setFilter] = useState<StatusFilter>('All');
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [busyIds, setBusyIds] = useState<Set<string>>(new Set());
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  // Data fetching
+  const loadCampus = useCallback(async () => {
     try {
       const res = await getCampusIssues();
       if (res.ok) {
-        setIssues(res.data);
-        setLoadError(null);
+        setCampusIssues(res.data);
       } else {
         setLoadError(res.error);
       }
     } finally {
-      setLoading(false);
+      setCampusLoading(false);
     }
   }, []);
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  const loadMine = useCallback(async () => {
+    if (!user) {
+      setMyReportsLoading(false);
+      return;
+    }
+    try {
+      const res = await getCampusReports();
+      if (res.ok) {
+        setMyReports(res.data);
+      } else {
+        setLoadError(res.error);
+      }
+      const { data: mine, error: mineErr } = await supabase
+        .from('reports')
+        .select('id, show_on_board')
+        .eq('reporter_id', user.id)
+        .is('deleted_at', null);
+      if (!mineErr && mine) {
+        setBoardMap(Object.fromEntries(mine.map(m => [m.id, m.show_on_board === true])));
+      }
+    } finally {
+      setMyReportsLoading(false);
+    }
+  }, [user]);
+
+  const loadAll = useCallback(async () => {
+    setLoadError(null);
+    await Promise.allSettled([loadCampus(), loadMine()]);
+  }, [loadCampus, loadMine]);
+
+  useFocusEffect(useCallback(() => {
+    loadAll();
+  }, [loadAll]));
 
   async function onRefresh() {
     setRefreshing(true);
-    await load();
+    await loadAll();
     setRefreshing(false);
   }
 
+  // "Me Too" voting handler (Campus tab)
   async function meToo(issue: CampusIssue) {
-    if (busyIds.has(issue.id)) return;
-    setBusyIds(prev => new Set(prev).add(issue.id));
+    if (busyVoteIds.has(issue.id)) return;
+    setBusyVoteIds(prev => new Set(prev).add(issue.id));
     const res = await toggleReportVote(issue.id);
-    setBusyIds(prev => {
+    setBusyVoteIds(prev => {
       const next = new Set(prev);
       next.delete(issue.id);
       return next;
@@ -107,246 +196,446 @@ export function CampusIssuesScreen({ navigation }: any) {
       toast({ type: 'error', title: t.common.error, message: res.error });
       return;
     }
-    setIssues(prev =>
+    setCampusIssues(prev =>
       prev.map(x =>
         x.id === issue.id ? { ...x, vote_count: res.data.vote_count, voted: res.data.voted } : x,
       ),
     );
   }
 
+  // Toggle "Show on Board" handler (Mine tab)
+  async function toggleBoard(r: CampusReport) {
+    const current = boardMap[r.id] === true;
+    const next = !current;
+    setBoardMap(prev => ({ ...prev, [r.id]: next }));
+    const res = await setReportBoardVisibility(r.id, next);
+    if (!res.ok) {
+      setBoardMap(prev => ({ ...prev, [r.id]: current }));
+      toast({ type: 'error', title: t.common.error, message: res.error });
+      return;
+    }
+    toast({
+      type: 'success',
+      title: t.campusIssues.visibilityUpdated,
+      message: next ? t.campusIssues.onBoard : t.campusIssues.hiddenFromBoard,
+    });
+    loadCampus();
+  }
+
+  // Delete personal report (Mine tab)
+  function confirmDelete(r: CampusReport) {
+    Alert.alert(t.reports.deleteTitle, t.reports.deleteBody, [
+      { text: t.common.cancel, style: 'cancel' },
+      {
+        text: t.common.delete,
+        style: 'destructive',
+        onPress: async () => {
+          const { error } = await supabase
+            .from('reports')
+            .update({ deleted_at: new Date().toISOString() })
+            .eq('id', r.id);
+          if (error) {
+            toast({ type: 'error', title: t.common.error, message: error.message });
+          } else {
+            setMyReports(prev => prev.filter(x => x.id !== r.id));
+            setCampusIssues(prev => prev.filter(x => x.id !== r.id));
+            toast({ type: 'success', title: t.common.done, message: 'Report removed' });
+          }
+        },
+      },
+    ]);
+  }
+
+  // Compute counts for active tab
   const counts = useMemo(() => {
-    const m: Record<string, number> = { All: issues.length };
-    issues.forEach(r => {
+    const list = activeTab === 'Campus' ? campusIssues : myReports;
+    const m: Record<string, number> = { All: list.length };
+    list.forEach(r => {
       m[r.status] = (m[r.status] || 0) + 1;
     });
     return m;
-  }, [issues]);
+  }, [activeTab, campusIssues, myReports]);
 
-  const filtered = useMemo(() => {
-    if (filter === 'All') return issues;
-    return issues.filter(r => r.status === filter);
-  }, [issues, filter]);
+  // Filtered datasets
+  const filteredCampus = useMemo(() => {
+    return campusIssues.filter(r => filter === 'All' || r.status === filter);
+  }, [campusIssues, filter]);
 
-  const scopeTabs: TabItem<'board' | 'mine'>[] = useMemo(() => [
-    {
-      id: 'board',
-      label: t.campusIssues.title ?? 'Campus Board',
-      count: issues.length > 0 ? issues.length : undefined,
-      color: C.brand,
-    },
-    {
-      id: 'mine',
-      label: t.reports.scopeMine ?? 'My Reports',
-      color: SectorColors.reports,
-    },
-  ], [t, issues.length, C.brand]);
+  const filteredMine = useMemo(() => {
+    return myReports.filter(r => filter === 'All' || r.status === filter);
+  }, [myReports, filter]);
 
-  function handleTabChange(tabId: 'board' | 'mine') {
-    if (tabId === 'mine') {
-      navigation.replace('MyReports');
-    }
-  }
-
-  const activeStatusLabel = filter === 'All' ? t.common.all ?? 'All Statuses' : (t.status[filter] ?? filter);
+  const isLoading = activeTab === 'Campus' ? campusLoading : myReportsLoading;
+  const currentCount = counts[filter] ?? 0;
+  const filterLabel = filter === 'All' ? t.common.all ?? 'All Statuses' : (t.status[filter] ?? filter);
 
   return (
     <View style={[styles.safe, { backgroundColor: C.bg, paddingTop: insets.top }]}>
+      {/* Permanent Header - Title never changes on tab switch */}
       <SubBar
-        title={t.campusIssues.title}
+        title={t.reports?.reportIssuesTitle ?? 'Report Issues'}
         onBack={() => navigation.goBack()}
       />
 
-      <FlatList
-        data={filtered}
-        keyExtractor={r => r.id}
-        initialNumToRender={6}
-        maxToRenderPerBatch={6}
-        windowSize={5}
-        removeClippedSubviews={Platform.OS === 'android'}
-        contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />
-        }
-        ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
-        ListHeaderComponent={
-          <View style={styles.headerArea}>
-            {/* 1. 58dp Dual Tab Switcher: Campus Board ↔ My Reports */}
-            <View style={{ marginBottom: 12 }}>
-              <SegmentedTabs
-                tabs={scopeTabs}
-                activeTab="board"
-                onTabChange={handleTabChange}
-              />
-            </View>
+      {/* 58dp Dual Tab Switcher - 0ms Instant Toggle */}
+      <View style={styles.tabContainer}>
+        <SegmentedTabs<TabKey>
+          tabs={tabs}
+          activeTab={activeTab}
+          onTabChange={tab => setActiveTab(tab)}
+        />
+      </View>
 
-            {/* 2. Full-Width 58dp Primary Action Button */}
-            <TouchableOpacity
-              style={[styles.fullActionBtn, { backgroundColor: C.brand }]}
-              onPress={() => navigation.navigate('ReportForm', {})}
-              activeOpacity={0.85}
-            >
-              <Feather name="plus-circle" size={19} color="#ffffff" />
-              <Text style={[styles.fullActionBtnTxt, { color: '#ffffff', fontFamily: FontFamily.jakartaBold }]}>
-                {t.reports2.reportAnIssue ?? 'Report an Issue'}
-              </Text>
-            </TouchableOpacity>
+      {/* 58dp Full-Width Action Bar */}
+      <View style={styles.actionContainer}>
+        <TouchableOpacity
+          style={[styles.actionBar58, { backgroundColor: C.brand }]}
+          onPress={() => navigation.navigate('ReportForm')}
+          activeOpacity={0.85}
+        >
+          <Feather name="plus" size={20} color="#ffffff" />
+          <Text style={[styles.actionBarTxt, { fontFamily: FontFamily.jakartaBold }]}>
+            {t.reports.newReport ?? 'Report an Issue'}
+          </Text>
+        </TouchableOpacity>
+      </View>
 
-            {/* 3. Full-Width 58dp Status Dropdown Bar */}
-            <TouchableOpacity
-              style={[
-                styles.dropdownBar58,
-                {
-                  backgroundColor: C.surface,
-                  borderColor: C.border,
-                },
-              ]}
-              onPress={() => setStatusModalOpen(true)}
-              activeOpacity={0.75}
-            >
-              <View style={styles.dropdownLeft}>
-                <Feather name="sliders" size={17} color={C.textMuted} />
-                <Text style={[styles.dropdownLabel, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                  {activeStatusLabel}
-                </Text>
-                <View style={[styles.countBadge, { backgroundColor: C.surface2 }]}>
-                  <Text style={[styles.countBadgeTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                    {counts[filter] ?? 0}
-                  </Text>
-                </View>
-              </View>
-              <Feather name="chevron-down" size={18} color={C.textMuted} />
-            </TouchableOpacity>
+      {/* 58dp Full-Width Status Dropdown Bar */}
+      <View style={styles.filterContainer}>
+        <TouchableOpacity
+          style={[styles.filterBar58, { backgroundColor: C.surface, borderColor: C.border }]}
+          onPress={() => setStatusModalOpen(true)}
+          activeOpacity={0.75}
+        >
+          <View style={styles.filterBarLeft}>
+            <Feather name="filter" size={17} color={C.brand} />
+            <Text style={[styles.filterBarTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              {`${t.reports.filterStatus ?? 'Status'}: ${filterLabel} (${currentCount})`}
+            </Text>
           </View>
-        }
-        ListEmptyComponent={
-          loading ? (
-            <SkeletonList rows={4} />
-          ) : loadError ? (
-            <LoadError onRetry={load} />
-          ) : (
+          <Feather name="chevron-down" size={18} color={C.textMuted} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Feed Container */}
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <SkeletonList rows={4} />
+        </View>
+      ) : loadError ? (
+        <View style={styles.errorContainer}>
+          <LoadError onRetry={loadAll} />
+        </View>
+      ) : activeTab === 'Campus' ? (
+        /* CAMPUS BOARD FEED */
+        <FlatList
+          data={filteredCampus}
+          keyExtractor={r => r.id}
+          initialNumToRender={8}
+          maxToRenderPerBatch={8}
+          windowSize={5}
+          removeClippedSubviews={Platform.OS === 'android'}
+          contentContainerStyle={styles.listContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={C.brand}
+              colors={[C.brand]}
+            />
+          }
+          ListEmptyComponent={
             <View style={[styles.emptyCard, { backgroundColor: C.surface, borderColor: C.border }]}>
               <View style={styles.emptyIconSlot}>
-                <Icon name="tool" size={32} color={C.textMuted} />
+                <Feather name="check-circle" size={32} color={C.textMuted} />
               </View>
               <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                 {t.campusIssues.emptyTitle ?? 'No issues on the board'}
               </Text>
-              <Text style={[styles.emptyBody, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+              <Text style={[styles.emptyBody, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
                 {t.campusIssues.emptyBody ?? 'When students share issues publicly, they show up here.'}
               </Text>
               <TouchableOpacity
                 style={[styles.emptyCtaBtn, { backgroundColor: C.brand }]}
-                onPress={() => navigation.navigate('ReportForm', {})}
+                onPress={() => navigation.navigate('ReportForm')}
                 activeOpacity={0.85}
               >
-                <Feather name="plus-circle" size={16} color="#ffffff" />
+                <Feather name="plus" size={16} color="#ffffff" />
                 <Text style={[styles.emptyCtaTxt, { color: '#ffffff', fontFamily: FontFamily.jakartaBold }]}>
-                  {t.reports2.reportAnIssue ?? 'Report an Issue'}
+                  {t.reports.newReport ?? 'Report an Issue'}
                 </Text>
               </TouchableOpacity>
             </View>
-          )
-        }
-        renderItem={({ item: r }) => {
-          const cat = CATEGORY_MAP[r.category] ?? CATEGORY_MAP.Other;
-          const tone = statusTone(C, r.status);
-          const hasVoted = Boolean(r.voted);
+          }
+          renderItem={({ item: r }) => {
+            const cat = CATEGORY_MAP[r.category] ?? CATEGORY_MAP['Other'];
+            const tone = statusTone(C, r.status);
+            const isBusy = busyVoteIds.has(r.id);
 
-          return (
-            <View
-              style={[
-                styles.issueCard,
-                {
-                  backgroundColor: C.surface,
-                  borderColor: C.border,
-                  borderLeftColor: cat.fg,
-                },
-              ]}
-            >
-              {/* Top Row: 32dp Category Icon + Meta + Status Pill */}
-              <View style={styles.cardHeaderRow}>
-                <View style={styles.iconSlot32}>
-                  <Icon name={cat.icon} size={32} color={C.text} />
-                </View>
-                <View style={styles.cardHeaderBody}>
-                  <Text style={[styles.categoryTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                    {r.category}
-                  </Text>
-                  <View style={styles.locationRow}>
-                    <Feather name="map-pin" size={11} color={C.textMuted} />
-                    <Text style={[styles.locationTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                      {r.building}{r.room ? ` · ${r.room}` : ''} · {timeAgo(r.created_at)}
-                    </Text>
+            return (
+              <View
+                style={[
+                  styles.card,
+                  {
+                    backgroundColor: C.surface,
+                    borderColor: C.border,
+                    borderLeftColor: cat.fg,
+                  },
+                ]}
+              >
+                {/* Card Top: Category Icon + Title + Premium Squircle Status Badge */}
+                <View style={styles.cardTop}>
+                  <View style={styles.catIconWrap}>
+                    <Icon name={cat.icon} size={32} color={C.text} />
                   </View>
-                </View>
-                <View style={[styles.statusPill, { backgroundColor: tone.bg }]}>
-                  <View style={[styles.statusDot, { backgroundColor: tone.fg }]} />
-                  <Text style={[styles.statusTxt, { color: tone.fg, fontFamily: FontFamily.jakartaBold }]}>
-                    {t.status[r.status] ?? r.status}
-                  </Text>
-                </View>
-              </View>
-
-              {/* Description */}
-              <Text style={[styles.descriptionTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={3}>
-                {r.description}
-              </Text>
-
-              {/* Footer: Affected count + Tactile Me Too button */}
-              <View style={[styles.cardFooterRow, { borderTopColor: C.border }]}>
-                <Text style={[styles.affectedTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                  {r.vote_count > 0 ? t.campusIssues.affected(r.vote_count) : t.campusIssues.beFirst}
-                </Text>
-                <TouchableOpacity
-                  style={[
-                    styles.voteBtn,
-                    hasVoted
-                      ? { backgroundColor: C.brand, borderColor: C.brand }
-                      : { backgroundColor: C.surface2, borderColor: C.border },
-                  ]}
-                  onPress={() => meToo(r)}
-                  disabled={busyIds.has(r.id)}
-                  activeOpacity={0.75}
-                >
-                  <Feather
-                    name="thumbs-up"
-                    size={14}
-                    color={hasVoted ? '#ffffff' : C.text2}
-                  />
-                  <Text
+                  <View style={styles.cardMetaCol}>
+                    <Text
+                      style={[styles.categoryTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}
+                      numberOfLines={1}
+                    >
+                      {r.category}
+                    </Text>
+                    <View style={styles.locationRow}>
+                      <Icon name="pin" size={12} color={C.textMuted} />
+                      <Text
+                        style={[styles.locationTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}
+                        numberOfLines={1}
+                      >
+                        {r.building}
+                        {r.room ? ` · ${r.room}` : ''} · {timeAgo(r.created_at)}
+                      </Text>
+                    </View>
+                  </View>
+                  {/* Premium Squircle Status Badge */}
+                  <View
                     style={[
-                      styles.voteBtnTxt,
+                      styles.statusBadge,
                       {
-                        color: hasVoted ? '#ffffff' : C.text2,
-                        fontFamily: FontFamily.jakartaBold,
+                        backgroundColor: tone.bg,
+                        borderColor: tone.border,
                       },
                     ]}
                   >
-                    {t.campusIssues.meToo}
+                    <View style={[styles.statusDot, { backgroundColor: tone.fg }]} />
+                    <Text
+                      style={[styles.statusTxt, { color: tone.fg, fontFamily: FontFamily.jakartaBold }]}
+                    >
+                      {t.status[r.status] ?? r.status}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Description */}
+                <Text
+                  style={[styles.descriptionTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                  numberOfLines={3}
+                >
+                  {r.description}
+                </Text>
+
+                {/* Card Footer: Affected Count + Premium Squircle Me Too Button */}
+                <View style={[styles.cardFooterRow, { borderTopColor: C.border }]}>
+                  <Text
+                    style={[styles.affectedTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}
+                    numberOfLines={1}
+                  >
+                    {r.vote_count > 0 ? t.campusIssues.affected(r.vote_count) : t.campusIssues.beFirst}
                   </Text>
-                  {r.vote_count > 0 && (
+                  <TouchableOpacity
+                    style={[
+                      styles.voteBtn,
+                      r.voted
+                        ? { backgroundColor: C.brand, borderColor: C.brand }
+                        : { backgroundColor: C.surface2, borderColor: C.border },
+                    ]}
+                    onPress={() => meToo(r)}
+                    disabled={isBusy}
+                    activeOpacity={0.8}
+                  >
+                    <Feather name="thumbs-up" size={13} color={r.voted ? '#ffffff' : C.text2} />
                     <Text
                       style={[
-                        styles.voteBtnCount,
-                        {
-                          color: hasVoted ? 'rgba(255,255,255,0.9)' : C.textMuted,
-                          fontFamily: FontFamily.jakartaBold,
-                        },
+                        styles.voteBtnTxt,
+                        { color: r.voted ? '#ffffff' : C.text2, fontFamily: FontFamily.jakartaBold },
                       ]}
                     >
-                      {r.vote_count}
+                      {t.campusIssues.meToo}
                     </Text>
-                  )}
-                </TouchableOpacity>
+                    {r.vote_count > 0 && (
+                      <Text
+                        style={[
+                          styles.voteBtnCount,
+                          {
+                            color: r.voted ? 'rgba(255,255,255,0.9)' : C.textMuted,
+                            fontFamily: FontFamily.jakartaBold,
+                          },
+                        ]}
+                      >
+                        {r.vote_count}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
               </View>
+            );
+          }}
+          ListFooterComponent={<View style={{ height: 28 }} />}
+        />
+      ) : (
+        /* MY REPORTS FEED */
+        <FlatList
+          data={filteredMine}
+          keyExtractor={r => r.id}
+          initialNumToRender={8}
+          maxToRenderPerBatch={8}
+          windowSize={5}
+          removeClippedSubviews={Platform.OS === 'android'}
+          contentContainerStyle={styles.listContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={C.brand}
+              colors={[C.brand]}
+            />
+          }
+          ListEmptyComponent={
+            <View style={[styles.emptyCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+              <View style={styles.emptyIconSlot}>
+                <Feather name="file-text" size={32} color={C.textMuted} />
+              </View>
+              <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                {t.reports.noReportsTitle ?? 'No reports submitted'}
+              </Text>
+              <Text style={[styles.emptyBody, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
+                {t.reports.noReportsBody ?? 'Track campus issues and maintenance requests you reported.'}
+              </Text>
+              <TouchableOpacity
+                style={[styles.emptyCtaBtn, { backgroundColor: C.brand }]}
+                onPress={() => navigation.navigate('ReportForm')}
+                activeOpacity={0.85}
+              >
+                <Feather name="plus" size={16} color="#ffffff" />
+                <Text style={[styles.emptyCtaTxt, { color: '#ffffff', fontFamily: FontFamily.jakartaBold }]}>
+                  {t.reports.newReport ?? 'Report an Issue'}
+                </Text>
+              </TouchableOpacity>
             </View>
-          );
-        }}
-        ListFooterComponent={<View style={{ height: 28 }} />}
-      />
+          }
+          renderItem={({ item: r }) => {
+            const cat = CATEGORY_MAP[r.category] ?? CATEGORY_MAP['Other'];
+            const tone = statusTone(C, r.status);
+            const isOnBoard = boardMap[r.id] === true;
 
-      {/* Full-Screen Status Dropdown Bottom Sheet Modal */}
+            return (
+              <View
+                style={[
+                  styles.card,
+                  {
+                    backgroundColor: C.surface,
+                    borderColor: C.border,
+                    borderLeftColor: cat.fg,
+                  },
+                ]}
+              >
+                {/* Card Top: Category Icon + Title + Premium Squircle Status Badge */}
+                <View style={styles.cardTop}>
+                  <View style={styles.catIconWrap}>
+                    <Icon name={cat.icon} size={32} color={C.text} />
+                  </View>
+                  <View style={styles.cardMetaCol}>
+                    <Text
+                      style={[styles.categoryTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}
+                      numberOfLines={1}
+                    >
+                      {r.category}
+                    </Text>
+                    <View style={styles.locationRow}>
+                      <Icon name="pin" size={12} color={C.textMuted} />
+                      <Text
+                        style={[styles.locationTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}
+                        numberOfLines={1}
+                      >
+                        {r.building}
+                        {r.room ? ` · ${r.room}` : ''} · {timeAgo(r.created_at)}
+                      </Text>
+                    </View>
+                  </View>
+                  {/* Premium Squircle Status Badge */}
+                  <View
+                    style={[
+                      styles.statusBadge,
+                      {
+                        backgroundColor: tone.bg,
+                        borderColor: tone.border,
+                      },
+                    ]}
+                  >
+                    <View style={[styles.statusDot, { backgroundColor: tone.fg }]} />
+                    <Text
+                      style={[styles.statusTxt, { color: tone.fg, fontFamily: FontFamily.jakartaBold }]}
+                    >
+                      {t.status[r.status] ?? r.status}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Description */}
+                <Text
+                  style={[styles.descriptionTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                  numberOfLines={3}
+                >
+                  {r.description}
+                </Text>
+
+                {/* Card Footer: Show on Board Toggle + View Details Action */}
+                <View style={[styles.cardFooterRow, { borderTopColor: C.border }]}>
+                  <View style={styles.boardToggleRow}>
+                    <Text
+                      style={[styles.boardToggleTxt, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}
+                    >
+                      {t.campusIssues.onBoard ?? 'On Board'}
+                    </Text>
+                    <LiquidToggle
+                      checked={isOnBoard}
+                      onCheckedChange={() => toggleBoard(r)}
+                      size="sm"
+                    />
+                  </View>
+
+                  <View style={styles.actionsRightRow}>
+                    {r.status === 'Open' && (
+                      <TouchableOpacity
+                        style={[styles.deleteIconBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+                        onPress={() => confirmDelete(r)}
+                        hitSlop={6}
+                      >
+                        <Feather name="trash-2" size={14} color={C.danger} />
+                      </TouchableOpacity>
+                    )}
+                    {/* Premium Squircle View Details Button */}
+                    <TouchableOpacity
+                      style={[styles.viewDetailsBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+                      onPress={() => navigation.navigate('ReportDetail', { reportId: r.id })}
+                      activeOpacity={0.75}
+                    >
+                      <Text
+                        style={[styles.viewDetailsTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}
+                      >
+                        {t.reports.view ?? 'View'}
+                      </Text>
+                      <Feather name="chevron-right" size={14} color={C.brand} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            );
+          }}
+          ListFooterComponent={<View style={{ height: 28 }} />}
+        />
+      )}
+
+      {/* 58dp Status Dropdown Bottom Sheet Modal */}
       <Modal
         visible={statusModalOpen}
         transparent
@@ -372,6 +661,7 @@ export function CampusIssuesScreen({ navigation }: any) {
               const active = filter === s;
               const count = counts[s] ?? 0;
               const label = s === 'All' ? t.common.all ?? 'All Statuses' : (t.status[s] ?? s);
+              const tone = s === 'All' ? { fg: C.brand } : statusTone(C, s);
 
               return (
                 <TouchableOpacity
@@ -379,7 +669,7 @@ export function CampusIssuesScreen({ navigation }: any) {
                   style={[
                     styles.modalRow58,
                     {
-                      backgroundColor: active ? (C.brand + '15') : C.surface2,
+                      backgroundColor: active ? C.surface2 : 'transparent',
                       borderColor: active ? C.brand : C.border,
                     },
                   ]}
@@ -390,12 +680,9 @@ export function CampusIssuesScreen({ navigation }: any) {
                   activeOpacity={0.75}
                 >
                   <View style={styles.modalRowLeft}>
-                    <View
-                      style={[
-                        styles.statusDotLg,
-                        { backgroundColor: s === 'All' ? C.brand : statusTone(C, s).fg },
-                      ]}
-                    />
+                    {s !== 'All' && (
+                      <View style={[styles.statusDotLg, { backgroundColor: tone.fg }]} />
+                    )}
                     <Text
                       style={[
                         styles.modalRowLabel,
@@ -408,8 +695,17 @@ export function CampusIssuesScreen({ navigation }: any) {
                       {label}
                     </Text>
                   </View>
+
                   <View style={styles.modalRowRight}>
-                    <Text style={[styles.modalRowCount, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                    <Text
+                      style={[
+                        styles.modalRowCount,
+                        {
+                          color: active ? C.brand : C.textMuted,
+                          fontFamily: FontFamily.jakartaBold,
+                        },
+                      ]}
+                    >
                       {count}
                     </Text>
                     {active && <Feather name="check" size={17} color={C.brand} style={{ marginLeft: 6 }} />}
@@ -429,31 +725,38 @@ const styles = StyleSheet.create({
     flex: 1,
   } as ViewStyle,
 
-  scroll: {
-    paddingTop: 8,
-    paddingBottom: 24,
+  tabContainer: {
+    paddingHorizontal: Layout.screenPadding,
+    paddingTop: 10,
+    paddingBottom: 6,
   } as ViewStyle,
 
-  headerArea: {
-    marginBottom: 12,
+  actionContainer: {
+    paddingHorizontal: Layout.screenPadding,
+    paddingVertical: 5,
   } as ViewStyle,
 
-  fullActionBtn: {
+  actionBar58: {
     height: 58,
     borderRadius: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 9,
-    marginBottom: 12,
+    gap: 8,
   } as ViewStyle,
 
-  fullActionBtnTxt: {
-    fontSize: 15,
-    letterSpacing: 0.2,
+  actionBarTxt: {
+    color: '#ffffff',
+    fontSize: 15.5,
   } as TextStyle,
 
-  dropdownBar58: {
+  filterContainer: {
+    paddingHorizontal: Layout.screenPadding,
+    paddingTop: 5,
+    paddingBottom: 10,
+  } as ViewStyle,
+
+  filterBar58: {
     height: 58,
     borderRadius: 16,
     borderWidth: 1,
@@ -461,64 +764,70 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 4,
   } as ViewStyle,
 
-  dropdownLeft: {
+  filterBarLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
   } as ViewStyle,
 
-  dropdownLabel: {
+  filterBarTxt: {
     fontSize: 14.5,
   } as TextStyle,
 
-  countBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 8,
+  loadingContainer: {
+    flex: 1,
+    paddingHorizontal: Layout.screenPadding,
+    paddingTop: 10,
   } as ViewStyle,
 
-  countBadgeTxt: {
-    fontSize: 11.5,
-  } as TextStyle,
+  errorContainer: {
+    flex: 1,
+    paddingHorizontal: Layout.screenPadding,
+    paddingTop: 20,
+  } as ViewStyle,
 
-  issueCard: {
+  listContent: {
+    paddingHorizontal: Layout.screenPadding,
+    paddingBottom: 24,
+  } as ViewStyle,
+
+  card: {
     borderRadius: 16,
     borderWidth: 1,
     borderLeftWidth: 4.5,
-    padding: 15,
+    padding: 14,
+    marginBottom: 12,
   } as ViewStyle,
 
-  cardHeaderRow: {
+  cardTop: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   } as ViewStyle,
 
-  iconSlot32: {
+  catIconWrap: {
     width: 32,
     height: 32,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
 
-  cardHeaderBody: {
+  cardMetaCol: {
     flex: 1,
     minWidth: 0,
   } as ViewStyle,
 
-  categoryTitle: {
+  categoryTxt: {
     fontSize: 14.5,
-    lineHeight: 19,
   } as TextStyle,
 
   locationRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginTop: 3,
+    marginTop: 2.5,
   } as ViewStyle,
 
   locationTxt: {
@@ -526,13 +835,15 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   } as TextStyle,
 
-  statusPill: {
+  // Premium Squircle Status Badge (borderRadius: 8)
+  statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 999,
+    gap: 5.5,
+    paddingHorizontal: 8.5,
+    paddingVertical: 4.5,
+    borderRadius: 8,
+    borderWidth: 1,
   } as ViewStyle,
 
   statusDot: {
@@ -543,6 +854,7 @@ const styles = StyleSheet.create({
 
   statusTxt: {
     fontSize: 11,
+    letterSpacing: 0.2,
   } as TextStyle,
 
   descriptionTxt: {
@@ -566,13 +878,14 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   } as TextStyle,
 
+  // Premium Squircle "Me Too" Button (borderRadius: 8)
   voteBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    height: 38,
-    paddingHorizontal: 14,
-    borderRadius: 999,
+    height: 36,
+    paddingHorizontal: 12,
+    borderRadius: 8,
     borderWidth: 1,
   } as ViewStyle,
 
@@ -581,6 +894,46 @@ const styles = StyleSheet.create({
   } as TextStyle,
 
   voteBtnCount: {
+    fontSize: 12.5,
+  } as TextStyle,
+
+  boardToggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  } as ViewStyle,
+
+  boardToggleTxt: {
+    fontSize: 12.5,
+  } as TextStyle,
+
+  actionsRightRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  } as ViewStyle,
+
+  deleteIconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+
+  // Premium Squircle "View Details" Button (borderRadius: 8)
+  viewDetailsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    height: 36,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+  } as ViewStyle,
+
+  viewDetailsTxt: {
     fontSize: 12.5,
   } as TextStyle,
 

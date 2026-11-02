@@ -469,6 +469,10 @@ export const bn: Dict = {
     deleteBody: 'রিপোর্টটি স্থায়ীভাবে মুছে যাবে। চালিয়ে যাবেন?',
     view: 'দেখুন',
     filterStatus: 'স্ট্যাটাস ফিল্টার',
+    reportIssuesTitle: 'সমস্যা রিপোর্ট',
+    reportIssuesDesc: 'ক্যাম্পাস রক্ষণাবেক্ষণ সমস্যা রিপোর্ট ও ট্র্যাক করুন',
+    tabCampus: 'ক্যাম্পাস',
+    tabMine: 'আমার',
     resultCount: (n: number) => `${n} টি রিপোর্ট`,
   },
 
@@ -2373,9 +2377,9 @@ export const bn: Dict = {
   },
 
   campusIssues: {
-    title: 'ক্যাম্পাস সমস্যা',
-    exploreTitle: 'ক্যাম্পাস সমস্যা',
-    exploreDesc: 'শিক্ষার্থীরা কী সমস্যায় পড়ছে দেখুন',
+    title: 'সমস্যা রিপোর্ট',
+    exploreTitle: 'সমস্যা রিপোর্ট',
+    exploreDesc: 'ক্যাম্পাস রক্ষণাবেক্ষণ সমস্যা রিপোর্ট ও ট্র্যাক করুন',
     searchPlaceholder: 'সমস্যা খুঁজুন',
     meToo: 'আমারও',
     affected: (n: number) => `${n} জন শিক্ষার্থী আক্রান্ত`,
