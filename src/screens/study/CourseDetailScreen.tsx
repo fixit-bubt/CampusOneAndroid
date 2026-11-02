@@ -12,7 +12,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
-import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
+import { CampusPdfViewerModal } from '../../components/pdf/CampusPdfViewerModal';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
@@ -35,6 +35,13 @@ const TAB_LABELS: Record<Tab, string> = {
   books:     'Books',
   slides:    'Slides',
 };
+
+const CATEGORIES: { id: Tab; label: string; icon: keyof typeof Feather.glyphMap }[] = [
+  { id: 'materials', label: 'Notes',     icon: 'file-text' },
+  { id: 'questions', label: 'Questions', icon: 'help-circle' },
+  { id: 'books',     label: 'Books',     icon: 'book-open' },
+  { id: 'slides',    label: 'Slides',    icon: 'monitor' },
+];
 
 const ITEM_TYPE: Record<Tab, 'material' | 'question' | 'book'> = {
   materials: 'material', questions: 'question', books: 'book', slides: 'material',
@@ -88,10 +95,17 @@ export function CourseDetailScreen({ route, navigation }: any) {
   const [isCR, setIsCR] = useState(false);
   const [canUpload, setCanUpload] = useState(false);
   const [tab, setTab] = useState<Tab>('materials');
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [openingId, setOpeningId] = useState<string | null>(null);
   const [forSale, setForSale] = useState<any[]>([]);
   const [isOffline, setIsOffline] = useState(false);
+
+  // In-app PDF Viewer
+  const [pdfModalVisible, setPdfModalVisible] = useState(false);
+  const [activePdfUrl, setActivePdfUrl] = useState<string | null>(null);
+  const [activePdfTitle, setActivePdfTitle] = useState('');
+  const [activePdfSubtitle, setActivePdfSubtitle] = useState('');
 
   // Controls
   const scrollRef = useRef<ScrollView>(null);
@@ -101,6 +115,7 @@ export function CourseDetailScreen({ route, navigation }: any) {
   const [examFilter, setExamFilter] = useState<string>('All');
 
   const toggleSearch = () => {
+    if (dropdownOpen) setDropdownOpen(false);
     setShowSearch(s => {
       const next = !s;
       if (next) {
@@ -231,6 +246,10 @@ export function CourseDetailScreen({ route, navigation }: any) {
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
+        if (dropdownOpen) {
+          setDropdownOpen(false);
+          return true;
+        }
         if (showSearch) {
           setShowSearch(false);
           setQuery('');
@@ -240,7 +259,7 @@ export function CourseDetailScreen({ route, navigation }: any) {
       };
       const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
       return () => sub.remove();
-    }, [showSearch])
+    }, [dropdownOpen, showSearch])
   );
 
   async function openEntry(f: Entry) {
@@ -249,7 +268,18 @@ export function CourseDetailScreen({ route, navigation }: any) {
       toast({ type: 'info', title: 'Offline Mode', message: 'Internet connection required to download or view remote files.' });
       return;
     }
-    if (f.url) { openInApp(f.url); return; }
+    const isPdf = (f.file_kind ?? '').toLowerCase() === 'pdf' || f.title.toLowerCase().endsWith('.pdf');
+    if (f.url) {
+      if (isPdf) {
+        setActivePdfUrl(f.url);
+        setActivePdfTitle(f.title);
+        setActivePdfSubtitle(`${course?.code ?? ''} · ${TAB_LABELS[tab]}`);
+        setPdfModalVisible(true);
+        return;
+      }
+      openInApp(f.url);
+      return;
+    }
     if (!f.storage_path) return;
     setOpeningId(f.id);
     const { data, error } = await supabase.storage
@@ -258,6 +288,13 @@ export function CourseDetailScreen({ route, navigation }: any) {
     setOpeningId(null);
     if (error || !data?.signedUrl) {
       toast({ type: 'error', title: t.common.error, message: error?.message ?? t.study2.couldNotOpenFile });
+      return;
+    }
+    if (isPdf) {
+      setActivePdfUrl(data.signedUrl);
+      setActivePdfTitle(f.title);
+      setActivePdfSubtitle(`${course?.code ?? ''} · ${TAB_LABELS[tab]}`);
+      setPdfModalVisible(true);
       return;
     }
     openInApp(data.signedUrl);
@@ -320,12 +357,6 @@ export function CourseDetailScreen({ route, navigation }: any) {
   const counts: Record<Tab, number> = {
     materials: materials.length, questions: questions.length, books: books.length, slides: slides.length,
   };
-  const studyTabs: TabItem<Tab>[] = useMemo(() => [
-    { id: 'materials', label: TAB_LABELS.materials, count: counts.materials > 0 ? counts.materials : undefined, accentColor: STUDY_COLOR },
-    { id: 'questions', label: TAB_LABELS.questions, count: counts.questions > 0 ? counts.questions : undefined, accentColor: STUDY_COLOR },
-    { id: 'books',     label: TAB_LABELS.books,     count: counts.books > 0 ? counts.books : undefined,         accentColor: STUDY_COLOR },
-    { id: 'slides',    label: TAB_LABELS.slides,    count: counts.slides > 0 ? counts.slides : undefined,       accentColor: STUDY_COLOR },
-  ], [counts.materials, counts.questions, counts.books, counts.slides]);
 
   if (!course) {
     return (
@@ -453,23 +484,91 @@ export function CourseDetailScreen({ route, navigation }: any) {
           />
         )}
 
-        {/* Tabs + sort */}
-        <View style={styles.tabsRow}>
-          <View style={{ flex: 1 }}>
-            <SegmentedTabs
-              tabs={studyTabs}
-              activeTab={tab}
-              onTabChange={tb => { setTab(tb); setExamFilter('All'); }}
-              size="sm"
-            />
-          </View>
+        {/* Category Dropdown (58 height bar) */}
+        <View style={styles.dropdownWrap}>
           <TouchableOpacity
-            style={[styles.sortBtn, { borderColor: C.border, backgroundColor: C.surface }]}
-            onPress={() => setSort(s => (s === 'new' ? 'name' : 'new'))}
+            style={[
+              styles.dropdownTrigger58,
+              {
+                backgroundColor: C.surface,
+                borderColor: dropdownOpen ? STUDY_COLOR : C.border,
+              },
+            ]}
+            onPress={() => setDropdownOpen(v => !v)}
             activeOpacity={0.75}
           >
-            <Feather name={sort === 'new' ? 'clock' : 'type'} size={18} color={C.text2} />
+            <View style={styles.triggerLeft}>
+              <Feather
+                name={CATEGORIES.find(c => c.id === tab)?.icon ?? 'file-text'}
+                size={20}
+                color={STUDY_COLOR}
+                style={{ marginRight: 10 }}
+              />
+              <Text style={[styles.triggerLabel, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                {TAB_LABELS[tab]}
+              </Text>
+              {counts[tab] > 0 && (
+                <View style={[styles.countBadge, { backgroundColor: C.surface2 }]}>
+                  <Text style={[styles.countTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                    {counts[tab]}
+                  </Text>
+                </View>
+              )}
+            </View>
+            <Feather name={dropdownOpen ? 'chevron-up' : 'chevron-down'} size={20} color={C.text2} />
           </TouchableOpacity>
+
+          {dropdownOpen && (
+            <View style={[styles.dropdownMenu, { backgroundColor: C.surface, borderColor: C.border }]}>
+              {CATEGORIES.map((cat, idx) => {
+                const isSelected = tab === cat.id;
+                return (
+                  <TouchableOpacity
+                    key={cat.id}
+                    style={[
+                      styles.dropdownItem58,
+                      isSelected && { backgroundColor: C.surface2 },
+                      idx < CATEGORIES.length - 1 && { borderBottomWidth: 1, borderBottomColor: C.border },
+                    ]}
+                    onPress={() => {
+                      setTab(cat.id);
+                      setExamFilter('All');
+                      setDropdownOpen(false);
+                    }}
+                    activeOpacity={0.75}
+                  >
+                    <View style={styles.itemLeft}>
+                      <Feather
+                        name={cat.icon}
+                        size={20}
+                        color={isSelected ? STUDY_COLOR : C.text2}
+                        style={{ marginRight: 12 }}
+                      />
+                      <Text
+                        style={[
+                          styles.itemLabel,
+                          {
+                            color: isSelected ? C.text : C.text2,
+                            fontFamily: isSelected ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                          },
+                        ]}
+                      >
+                        {cat.label}
+                      </Text>
+                      {counts[cat.id] > 0 && (
+                        <View style={[styles.countBadge, { backgroundColor: isSelected ? C.surface3 : C.surface2 }]}>
+                          <Text style={[styles.countTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                            {counts[cat.id]}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                    {isSelected && <Feather name="check" size={18} color={STUDY_COLOR} />}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
         </View>
 
         {/* Exam filter (questions only) */}
@@ -553,7 +652,7 @@ export function CourseDetailScreen({ route, navigation }: any) {
                   <TouchableOpacity style={styles.downloadBtn} onPress={() => openEntry(f)} activeOpacity={0.75} disabled={openingId === f.id}>
                     {openingId === f.id
                       ? <ActivityIndicator size="small" color={C.text2} />
-                      : <Feather name={isLink ? 'external-link' : 'download'} size={18} color={C.text2} />}
+                      : <Feather name={isLink ? 'external-link' : ((f.file_kind ?? '').toLowerCase() === 'pdf' || f.title.toLowerCase().endsWith('.pdf')) ? 'eye' : 'download'} size={18} color={C.text2} />}
                   </TouchableOpacity>
                 </View>
               </TouchableOpacity>
@@ -563,6 +662,17 @@ export function CourseDetailScreen({ route, navigation }: any) {
 
         <View style={{ height: 24 }} />
       </ScrollView>
+
+      {/* Universal In-App PDF Viewer Modal */}
+      <CampusPdfViewerModal
+        visible={pdfModalVisible}
+        onClose={() => setPdfModalVisible(false)}
+        title={activePdfTitle || course.name}
+        subtitle={activePdfSubtitle || `${course.code} · Study Hub`}
+        category={tab === 'materials' ? 'Course Notes' : tab === 'questions' ? 'Question Bank' : tab === 'books' ? 'Reference Book' : 'Lecture Slides'}
+        fileUrl={activePdfUrl}
+        fileName={activePdfTitle.toLowerCase().endsWith('.pdf') ? activePdfTitle : `${activePdfTitle}.pdf`}
+      />
     </View>
   );
 }
@@ -611,8 +721,55 @@ const styles = StyleSheet.create({
   forSalePrice: { fontSize: 13, marginTop: 2 } as any,
 
   search: { height: 58, borderRadius: 16, borderWidth: 1, paddingHorizontal: 16, fontSize: 14.5, marginTop: 12 } as any,
-  tabsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 12 } as ViewStyle,
-  sortBtn: { width: 58, height: 58, borderRadius: 16, borderWidth: 1, alignItems: 'center', justifyContent: 'center', flexShrink: 0 } as ViewStyle,
+  dropdownWrap: { marginTop: 12 } as ViewStyle,
+  dropdownTrigger58: {
+    height: 58,
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  } as ViewStyle,
+  triggerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  } as ViewStyle,
+  triggerLabel: {
+    fontSize: 15,
+    marginRight: 8,
+  } as any,
+  countBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+  } as ViewStyle,
+  countTxt: {
+    fontSize: 11.5,
+  } as any,
+  dropdownMenu: {
+    marginTop: 8,
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: 'hidden',
+  } as ViewStyle,
+  dropdownItem58: {
+    height: 58,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  } as ViewStyle,
+  itemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  } as ViewStyle,
+  itemLabel: {
+    fontSize: 15,
+    marginRight: 8,
+  } as any,
   examChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, borderWidth: 1 } as ViewStyle,
   examTxt: { fontSize: 12.5 } as any,
 

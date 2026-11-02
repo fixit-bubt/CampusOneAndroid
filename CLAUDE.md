@@ -2698,3 +2698,23 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - TypeScript Compilation: 0 errors across the entire codebase (`tsc --noEmit`).
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`) in 41s.
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
+
+---
+
+### 59. Study Hub Course Detail Dropdown & In-App PDF Reader Integration (/zero-slop, /code-review-and-quality, /performance-optimization)
+- **Elimination of Sort Toggle Button ("T" Button):**
+  - Removed the ambiguous 58x58dp Clock / "T" sort toggle button from `CourseDetailScreen.tsx` to eliminate visual clutter and accidental sort flips.
+  - Standardized file list ordering to sort by upload recency (`created_at` descending) by default.
+- **58dp Unified Category Dropdown System:**
+  - Replaced the horizontal `SegmentedTabs` row with a full-width **58dp dropdown bar** (`dropdownTrigger58`) matching the CampusOne standard geometry (`height: 58`, `borderRadius: 16`, `borderWidth: 1`).
+  - Closed trigger bar shows the current active category (Notes, Questions, Books, Slides) with its sector-themed icon (`SectorColors.study`), file count badge, and a directional toggle chevron.
+  - Smooth expansion menu (`dropdownMenu`) where each selectable option is rendered as a standard **58dp item** (`dropdownItem58`) with category icon, title, item count badge, and active checkmark.
+  - Auto-closes on option selection, hardware back press (`BackHandler` in `useFocusEffect`), or search activation.
+- **Native In-App PDF Viewer Integration (`CampusPdfViewerModal`):**
+  - Connected the universal `CampusPdfViewerModal` to `CourseDetailScreen.tsx`.
+  - Tapping any PDF note, CT question paper, reference book, or lecture slide (or the preview eye icon on the right) opens the document immediately in the native full-screen in-app reader with page indicator, zoom, search, and sharing - without forcing Chrome to download the file to the phone's storage.
+  - Non-PDF files (e.g. DOCX, ZIP) and external links continue to route safely via `openInApp`.
+- **Verification Evidence:**
+  - TypeScript Compilation: 0 errors across the entire codebase (`tsc --noEmit`).
+  - Native Release APK: Locally compiled via Gradle (`assembleRelease`).
+  - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
