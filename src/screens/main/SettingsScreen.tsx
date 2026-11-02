@@ -3,6 +3,7 @@ import {
   View, Text, TouchableOpacity, ScrollView, Modal, KeyboardAvoidingView,
   StyleSheet, ActivityIndicator, Share, Linking, AppState, type ViewStyle,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { TactileSwitch } from '../../components/ui/TactileSwitch';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
@@ -216,28 +217,89 @@ export function SettingsScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
       >
-        {/* Profile Card */}
+        {/* Standout Executive Profile Hero Banner (116dp) */}
         <TouchableOpacity
-          style={[styles.profileCard, { backgroundColor: C.surface, borderColor: C.border }]}
+          style={[
+            styles.profileCard,
+            {
+              borderColor: isDark ? 'rgba(91, 133, 247, 0.35)' : 'rgba(39, 94, 254, 0.25)',
+              backgroundColor: C.surface,
+            },
+          ]}
           onPress={() => navigation.navigate('Profile')}
-          activeOpacity={0.7}
+          activeOpacity={0.82}
         >
-          <Avatar uri={profile?.avatar_url} name={profile?.full_name} size="lg" />
+          <LinearGradient
+            colors={isDark ? ['#0b1a3d', '#121212'] : ['#eef3ff', '#ffffff']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+          {/* Subtle top rim highlight */}
+          <View style={[styles.profileCardRim, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(255, 255, 255, 0.8)' }]} />
+
+          {/* Avatar with brand accent ring and live status dot */}
+          <View style={[styles.avatarWrap, { borderColor: isDark ? '#5b85f7' : '#275EFE' }]}>
+            <Avatar uri={profile?.avatar_url} name={profile?.full_name} size="lg" />
+            <View style={[styles.avatarStatusDot, { backgroundColor: isDark ? '#34d399' : '#059669', borderColor: isDark ? '#0b1a3d' : '#ffffff' }]} />
+          </View>
+
+          {/* Info Column */}
           <View style={styles.profileInfo}>
-            <Text style={[styles.profileName, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]} numberOfLines={1}>
-              {profile?.full_name ?? t.mainx.campusMember}
-            </Text>
-            <Text style={[styles.profileMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-              {profile?.department ?? '-'}{profile?.intake ? t.mainx.intakePrefix(String(profile.intake)) : ''}
-            </Text>
-            <View style={[styles.rolePill, { backgroundColor: roleBg }]}>
-              <View style={[styles.roleDot, { backgroundColor: roleHex }]} />
-              <Text style={[styles.roleText, { color: roleHex, fontFamily: FontFamily.jakartaBold }]}>
-                {ROLE_LABEL[role] ?? role}
+            {/* Line 1: Name + Verified Student Badge */}
+            <View style={styles.nameRow}>
+              <Text style={[styles.profileName, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]} numberOfLines={1}>
+                {profile?.full_name ?? t.mainx.campusMember}
               </Text>
+              <View style={[styles.verifiedPill, { backgroundColor: isDark ? 'rgba(91, 133, 247, 0.18)' : '#e0eaff' }]}>
+                <Feather name="check" size={11} color={isDark ? '#5b85f7' : '#275EFE'} />
+              </View>
+            </View>
+
+            {/* Line 2: Student ID & Department / Program */}
+            <Text style={[styles.profileMeta, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+              {profile?.student_id ? `ID: ${profile.student_id}` : (profile?.department ?? 'BUBT Member')}
+              {profile?.department && profile?.student_id ? ` · ${profile.department}` : ''}
+              {profile?.program && !profile?.department ? ` · ${profile.program}` : ''}
+            </Text>
+
+            {/* Line 3: Academic Chips */}
+            <View style={styles.chipsRow}>
+              {profile?.intake ? (
+                <View style={[styles.chip, { backgroundColor: isDark ? '#1c1c1c' : '#f4f4f5', borderColor: C.border }]}>
+                  <Text style={[styles.chipTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    {`Intake ${profile.intake}`}
+                  </Text>
+                </View>
+              ) : null}
+              {profile?.section ? (
+                <View style={[styles.chip, { backgroundColor: isDark ? '#1c1c1c' : '#f4f4f5', borderColor: C.border }]}>
+                  <Text style={[styles.chipTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    {`Sec ${profile.section}`}
+                  </Text>
+                </View>
+              ) : null}
+              {profile?.blood_group ? (
+                <View style={[styles.chip, { backgroundColor: isDark ? 'rgba(248, 113, 113, 0.12)' : '#fef2f2', borderColor: isDark ? 'rgba(248, 113, 113, 0.25)' : '#fee2e2' }]}>
+                  <Text style={[styles.chipTxt, { color: isDark ? '#f87171' : '#dc2626', fontFamily: FontFamily.jakartaBold }]}>
+                    {profile.blood_group}
+                  </Text>
+                </View>
+              ) : null}
+              {role !== 'student' && (
+                <View style={[styles.chip, { backgroundColor: roleBg, borderColor: hexAlpha(roleHex, 0.3) }]}>
+                  <Text style={[styles.chipTxt, { color: roleHex, fontFamily: FontFamily.jakartaBold }]}>
+                    {ROLE_LABEL[role] ?? role}
+                  </Text>
+                </View>
+              )}
             </View>
           </View>
-          <Feather name="chevron-right" size={18} color={C.textMuted} />
+
+          {/* Chevron Affordance */}
+          <View style={[styles.chevronWrap, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}>
+            <Feather name="chevron-right" size={18} color={isDark ? '#f4f4f5' : '#18181b'} />
+          </View>
         </TouchableOpacity>
 
         {/* Role Workspace Quick Access (Staff / Admin) */}
@@ -640,20 +702,94 @@ const styles = StyleSheet.create({
   scroll: { paddingTop: 10, paddingBottom: 24 } as ViewStyle,
 
   profileCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 14,
-    height: 96, paddingHorizontal: 16, borderRadius: 18, borderWidth: 1, marginTop: 0,
-    justifyContent: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 13,
+    height: 116,
+    paddingHorizontal: 16,
+    borderRadius: 18,
+    borderWidth: 1.2,
+    marginTop: 0,
+    marginBottom: 10,
+    overflow: 'hidden',
+    position: 'relative',
+  } as ViewStyle,
+  profileCardRim: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 1,
+  } as ViewStyle,
+  avatarWrap: {
+    borderRadius: 34,
+    borderWidth: 2,
+    padding: 2,
+    position: 'relative',
+  } as ViewStyle,
+  avatarStatusDot: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 2,
   } as ViewStyle,
   profileInfo: { flex: 1, justifyContent: 'center' } as ViewStyle,
-  profileName: { fontSize: 17, lineHeight: 22, letterSpacing: -0.2 } as any,
-  profileMeta: { fontSize: 12, lineHeight: 16, marginTop: 2 } as any,
-  rolePill: {
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    height: 22, paddingHorizontal: 9, borderRadius: 11,
-    alignSelf: 'flex-start', marginTop: 5,
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   } as ViewStyle,
-  roleDot: { width: 6, height: 6, borderRadius: 3 } as ViewStyle,
-  roleText: { fontSize: 11.5, lineHeight: 15 } as any,
+  profileName: {
+    fontSize: 16.5,
+    lineHeight: 22,
+    letterSpacing: -0.2,
+    includeFontPadding: false,
+    maxWidth: '85%',
+  } as any,
+  verifiedPill: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  profileMeta: {
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 2,
+    letterSpacing: 0,
+    includeFontPadding: false,
+  } as any,
+  chipsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 6,
+    flexWrap: 'wrap',
+  } as ViewStyle,
+  chip: {
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: StyleSheet.hairlineWidth,
+  } as ViewStyle,
+  chipTxt: {
+    fontSize: 10.5,
+    lineHeight: 14,
+    letterSpacing: 0,
+    includeFontPadding: false,
+  } as any,
+  chevronWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  } as ViewStyle,
 
   sectionLabel: { fontSize: 11, letterSpacing: 0.2, marginTop: 20, marginBottom: 8, marginLeft: 4 } as any,
 
