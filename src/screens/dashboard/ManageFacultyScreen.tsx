@@ -1,10 +1,11 @@
 // Admin-only. Manage BUBT faculty directory: 1-tap live website crawler sync,
 // manual overrides for office rooms, building, floor, counseling hours,
 // teacher initial routine codes (DALM, SR), photos, and research flags.
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
+  View, Text, TextInput, TouchableOpacity, StyleSheet,
   Modal, ActivityIndicator, KeyboardAvoidingView, Platform,
+  FlatList, RefreshControl, BackHandler, Alert, ScrollView,
   type ViewStyle, type TextStyle,
 } from 'react-native';
 import { TactileSwitch } from '../../components/ui/TactileSwitch';
@@ -17,15 +18,19 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
-import { FontFamily, Layout, Accent, SectorColors } from '../../theme';
+import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
-import type { TablesUpdate, TablesInsert } from '../../types/supabase';
 import { useAuth } from '../../store/authStore';
 import { uploadFile } from '../../utils/storage';
 import { BUCKETS } from '../../constants/app';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
 import { formatRelativeTime } from '../../utils/format';
+import { getCache, setCache, CacheKeys } from '../../services/cacheService';
+import {
+  shortDept, BRANCH_ICON, sortFaculty,
+  type Department, type FacultyMember,
+} from '../faculty/facultyShared';
 
 interface FacultyRow {
   id: string;
@@ -44,7 +49,8 @@ interface FacultyRow {
   is_accepting_research: boolean;
   research_interests: string[] | null;
   on_leave: boolean;
-  departments?: { id: string; name: string } | null;
+  is_chairman?: boolean;
+  departments?: { id: string; name: string; branch?: string } | null;
 }
 
 interface SyncLog {
@@ -62,17 +68,90 @@ interface SyncLog {
   duration_ms?: number;
 }
 
-const shortDept = (name?: string | null) => (name ?? '').replace(/^Department of\s+/i, '');
+// Memoized teacher card for 120 FPS virtualized FlatList rendering
+const TeacherCard = React.memo(function TeacherCard({
+  f,
+  deptName,
+  onPress,
+  C,
+}: {
+  f: FacultyRow;
+  deptName?: string;
+  onPress: () => void;
+  C: any;
+}) {
+  return (
+    <TouchableOpacity
+      style={[styles.teacherBar, { backgroundColor: C.surface, borderColor: C.border }]}
+      onPress={onPress}
+      activeOpacity={0.75}
+    >
+      <View style={styles.barAvatarWrap}>
+        <Avatar uri={f.photo_url} name={f.name} size="md" />
+        {f.on_leave && (
+          <View style={[styles.leaveDot, { backgroundColor: C.warn, borderColor: C.surface }]} />
+        )}
+      </View>
+
+      <View style={styles.barBody}>
+        <View style={styles.barNameRow}>
+          <Text style={[styles.barName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+            {f.name}
+          </Text>
+          {f.short_code ? (
+            <View style={[styles.codeBadge, { backgroundColor: `${SectorColors.faculty}18` }]}>
+              <Text style={[styles.codeBadgeTxt, { color: SectorColors.faculty, fontFamily: FontFamily.jakartaExtraBold }]}>
+                {f.short_code}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+
+        <Text style={[styles.barDesig, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+          {f.designation}{deptName ? ` · ${shortDept(deptName)}` : ''}
+        </Text>
+
+        <View style={styles.barMetaRow}>
+          {f.room_number ? (
+            <View style={styles.metaLoc}>
+              <Icon name="pin" size={11} color={C.textMuted} />
+              <Text style={[styles.metaLocTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
+                {f.building ? `${f.building} · ` : ''}Rm {f.room_number}
+              </Text>
+            </View>
+          ) : null}
+          {!f.photo_url && (
+            <View style={[styles.noPhotoPill, { backgroundColor: C.warnBg }]}>
+              <Text style={[styles.noPhotoTxt, { color: C.warn, fontFamily: FontFamily.jakartaBold }]}>
+                No photo
+              </Text>
+            </View>
+          )}
+        </View>
+      </View>
+
+      <View style={styles.editAction}>
+        <Feather name="edit-2" size={16} color={C.textMuted} />
+      </View>
+    </TouchableOpacity>
+  );
+});
 
 export function ManageFacultyScreen({ navigation }: any) {
-  const { C } = useTheme();
+  const { C, isDark } = useTheme();
   const { profile } = useAuth();
   const t = useT();
   const toast = useToast();
 
   const [list, setList] = useState<FacultyRow[]>([]);
-  const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [selectedDeptId, setSelectedDeptId] = useState<string>('All');
+  const [deptPickerVisible, setDeptPickerVisible] = useState(false);
+  const [formDeptPickerVisible, setFormDeptPickerVisible] = useState(false);
   const [query, setQuery] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
   const [target, setTarget] = useState<FacultyRow | null>(null);
   const [isNewTeacher, setIsNewTeacher] = useState(false);
 
@@ -100,28 +179,111 @@ export function ManageFacultyScreen({ navigation }: any) {
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const load = useCallback(async () => {
-    const [facRes, deptRes, logRes] = await Promise.all([
-      supabase
-        .from('faculty')
-        .select('id, name, designation, department_id, email, phone, photo_url, short_code, room_number, building, floor, counseling_hours, blood_group, is_accepting_research, research_interests, on_leave, departments(id, name)')
-        .order('name'),
-      supabase.from('departments').select('id, name').order('name'),
-      supabase.from('crawler_audit_logs' as any).select('*').eq('feature', 'faculty').order('created_at', { ascending: false }).limit(1),
-    ]);
+  // Department quick map and count
+  const countByDept = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const f of list) {
+      if (f.department_id) {
+        counts[f.department_id] = (counts[f.department_id] || 0) + 1;
+      }
+    }
+    return counts;
+  }, [list]);
 
-    if (facRes.data) setList(facRes.data as any[]);
-    if (deptRes.data) setDepartments(deptRes.data as any[]);
-    if (logRes.data && logRes.data[0]) {
-      setLastSyncLog(logRes.data[0] as unknown as SyncLog);
-    } else {
-      // Fallback check to legacy table if no crawler log exists yet
-      const { data: legacyLog } = await supabase.from('faculty_sync_logs').select('*').order('started_at', { ascending: false }).limit(1);
-      if (legacyLog && legacyLog[0]) setLastSyncLog(legacyLog[0] as unknown as SyncLog);
+  const deptById = useMemo(() => {
+    const map: Record<string, Department> = {};
+    for (const d of departments) {
+      map[d.id] = d;
+    }
+    return map;
+  }, [departments]);
+
+  const load = useCallback(async () => {
+    // 1. Instant cache load for immediate screen render
+    const [cachedDepts, cachedFac] = await Promise.all([
+      getCache<Department[]>(CacheKeys.FACULTY_DEPTS),
+      getCache<FacultyRow[]>(CacheKeys.FACULTY_LIST),
+    ]);
+    if (cachedDepts && cachedDepts.length > 0) setDepartments(cachedDepts);
+    if (cachedFac && cachedFac.length > 0) {
+      setList(cachedFac);
+      setLoading(false);
+    }
+
+    // 2. Fresh fetch from Supabase
+    try {
+      const [facRes, deptRes, logRes] = await Promise.all([
+        supabase
+          .from('faculty')
+          .select('id, name, designation, department_id, email, phone, photo_url, short_code, room_number, building, floor, counseling_hours, blood_group, is_accepting_research, research_interests, on_leave, is_chairman, departments(id, name, branch)')
+          .order('name'),
+        supabase.from('departments').select('id, name, branch, dept_number, chairman').order('name'),
+        supabase.from('crawler_audit_logs' as any).select('*').eq('feature', 'faculty').order('created_at', { ascending: false }).limit(1),
+      ]);
+
+      if (facRes.data) {
+        setList(facRes.data as unknown as FacultyRow[]);
+        setCache(CacheKeys.FACULTY_LIST, facRes.data);
+      }
+      if (deptRes.data) {
+        setDepartments(deptRes.data as unknown as Department[]);
+        setCache(CacheKeys.FACULTY_DEPTS, deptRes.data);
+      }
+      if (logRes.data && logRes.data[0]) {
+        setLastSyncLog(logRes.data[0] as unknown as SyncLog);
+      } else {
+        const { data: legacyLog } = await supabase.from('faculty_sync_logs').select('*').order('started_at', { ascending: false }).limit(1);
+        if (legacyLog && legacyLog[0]) setLastSyncLog(legacyLog[0] as unknown as SyncLog);
+      }
+    } finally {
+      setLoading(false);
     }
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await load();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [load]);
+
+  // Android back button handler
+  useEffect(() => {
+    const onBackPress = () => {
+      if (syncModalVisible) {
+        setSyncModalVisible(false);
+        return true;
+      }
+      if (formDeptPickerVisible) {
+        setFormDeptPickerVisible(false);
+        return true;
+      }
+      if (deptPickerVisible) {
+        setDeptPickerVisible(false);
+        return true;
+      }
+      if (target) {
+        setTarget(null);
+        return true;
+      }
+      if (query.length > 0) {
+        setQuery('');
+        return true;
+      }
+      if (selectedDeptId !== 'All') {
+        setSelectedDeptId('All');
+        return true;
+      }
+      return false;
+    };
+
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => sub.remove();
+  }, [syncModalVisible, formDeptPickerVisible, deptPickerVisible, target, query, selectedDeptId]);
 
   function openEdit(f: FacultyRow) {
     setIsNewTeacher(false);
@@ -147,7 +309,7 @@ export function ManageFacultyScreen({ navigation }: any) {
     setIsNewTeacher(true);
     setTarget({} as any);
     setName('');
-    setDepartmentId(departments[0]?.id || '');
+    setDepartmentId(selectedDeptId !== 'All' ? selectedDeptId : (departments[0]?.id || ''));
     setEmail('');
     setPhone('');
     setDesignation('Lecturer');
@@ -253,61 +415,97 @@ export function ManageFacultyScreen({ navigation }: any) {
     }
   }
 
-  if (profile && profile.role !== 'admin') {
-    return (
-      <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-        <SubBar title={t.manage.manageFaculty} onBack={() => navigation.goBack()} />
-        <View style={styles.center}>
-          <Text style={{ color: C.text, fontFamily: FontFamily.jakartaExtraBold, fontSize: 18 }}>{t.manage.accessDenied}</Text>
-        </View>
-      </SafeAreaView>
+  function confirmDelete(f: FacultyRow) {
+    Alert.alert(
+      'Delete Teacher',
+      `Are you sure you want to remove ${f.name} from the directory?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            setSaving(true);
+            try {
+              const { error } = await supabase.from('faculty').delete().eq('id', f.id);
+              if (error) {
+                toast({ type: 'error', title: 'Delete Failed', message: error.message });
+                return;
+              }
+              toast({ type: 'success', title: 'Teacher Removed', message: `${f.name} deleted from directory` });
+              setTarget(null);
+              await load();
+            } finally {
+              setSaving(false);
+            }
+          },
+        },
+      ]
     );
   }
 
   const q = query.trim().toLowerCase();
   const cleanQ = q.replace(/[^a-z0-9]/g, '');
-  const filtered = q
-    ? list.filter(f => {
-        const textMatch = [f.name, f.designation, f.departments?.name, f.room_number]
-          .filter(Boolean)
-          .join(' ')
-          .toLowerCase()
-          .includes(q);
+  const words = useMemo(() => q.split(/[\s.]+/).filter(Boolean), [q]);
+
+  const filtered = useMemo(() => {
+    let res = list;
+    if (selectedDeptId !== 'All') {
+      res = res.filter(f => f.department_id === selectedDeptId);
+    }
+    if (q) {
+      res = res.filter(f => {
+        const lowerName = (f.name || '').toLowerCase();
+        const cleanName = lowerName.replace(/[^a-z0-9]/g, '');
+        const lowerCode = (f.short_code || '').toLowerCase();
+        const cleanCode = lowerCode.replace(/[^a-z0-9]/g, '');
+
+        const nameMatch = lowerName.includes(q) || (cleanQ.length > 0 && cleanName.includes(cleanQ));
+        const allWordsMatch = words.length > 1 && words.every(w => {
+          const cw = w.replace(/[^a-z0-9]/g, '');
+          return lowerName.includes(w) || cleanName.includes(cw) || lowerCode.includes(cw);
+        });
         const codeMatch = Boolean(
-          f.short_code &&
-          (f.short_code.toLowerCase().includes(q) ||
-            (cleanQ.length > 0 && f.short_code.toLowerCase().replace(/[^a-z0-9]/g, '').includes(cleanQ)))
+          cleanCode &&
+          cleanQ.length > 0 &&
+          (lowerCode.includes(q) || cleanCode.includes(cleanQ) || cleanQ.includes(cleanCode))
         );
-        return textMatch || codeMatch;
-      })
-    : list;
+        const desigMatch = (f.designation || '').toLowerCase().includes(q);
+        const roomMatch = Boolean(
+          (f.room_number && f.room_number.toLowerCase().includes(cleanQ || q)) ||
+          (f.building && f.building.toLowerCase().includes(q))
+        );
+        const deptName = deptById[f.department_id]?.name || f.departments?.name;
+        const deptMatch = Boolean(deptName && deptName.toLowerCase().includes(q));
 
-  return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-      <SubBar
-        title={t.manage.manageFaculty}
-        onBack={() => navigation.goBack()}
-        rightSlot={
-          <TouchableOpacity
-            style={[styles.addBtn, { backgroundColor: SectorColors.faculty }]}
-            onPress={openCreate}
-            activeOpacity={0.8}
-          >
-            <Feather name="plus" size={14} color="#fff" />
-            <Text style={[styles.addBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>Add</Text>
-          </TouchableOpacity>
-        }
-      />
+        return nameMatch || allWordsMatch || codeMatch || desigMatch || roomMatch || deptMatch;
+      });
+    }
+    return sortFaculty(res as unknown as FacultyMember[]) as unknown as FacultyRow[];
+  }, [list, selectedDeptId, q, cleanQ, words, deptById]);
 
-      <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
-        showsVerticalScrollIndicator={false}
-      >
+  if (profile && profile.role !== 'admin') {
+    return (
+      <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
+        <SubBar title={t.manage.manageFaculty} onBack={() => navigation.goBack()} />
+        <View style={styles.center}>
+          <Text style={{ color: C.text, fontFamily: FontFamily.jakartaExtraBold, fontSize: 18 }}>
+            {t.manage.accessDenied}
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const renderHeader = () => {
+    const selectedDept = selectedDeptId === 'All' ? null : deptById[selectedDeptId];
+    return (
+      <View style={{ paddingTop: 8 }}>
         {/* Live Website Automated Sync Card */}
         <View style={[styles.syncCard, { backgroundColor: C.surface, borderColor: C.border }]}>
           <View style={styles.syncCardTop}>
             <View style={styles.syncIconWrap}>
-              <AnimatedIcon family="feather" name="refresh-cw" size={32} color={C.text} />
+              <AnimatedIcon name="refresh-cw" size={32} color={C.text} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.syncTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -340,8 +538,30 @@ export function ManageFacultyScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
 
-        {/* Search */}
-        <View style={[styles.searchBar, { backgroundColor: C.surface2, borderColor: C.border, marginTop: 12, marginBottom: 12 }]}>
+        {/* 58dp Department Dropdown Bar */}
+        <TouchableOpacity
+          style={[styles.dropdownBar, { backgroundColor: C.surface, borderColor: C.border }]}
+          onPress={() => setDeptPickerVisible(true)}
+          activeOpacity={0.75}
+        >
+          <View style={styles.dropdownIconTile}>
+            <AnimatedIcon name="layers" size={32} color={C.text} />
+          </View>
+          <View style={styles.dropdownBody}>
+            <Text style={[styles.dropdownLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+              {t.faculty2.selectDepartment}
+            </Text>
+            <Text style={[styles.dropdownValue, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+              {selectedDeptId === 'All'
+                ? t.faculty2.allDepartments
+                : (shortDept(selectedDept?.name) || t.faculty2.allDepartments)}
+            </Text>
+          </View>
+          <Feather name="chevron-down" size={18} color={C.textMuted} />
+        </TouchableOpacity>
+
+        {/* 58dp Global Search Bar */}
+        <View style={[styles.searchBar, { backgroundColor: C.surface2, borderColor: C.border }]}>
           <Icon name="search" size={24} color={C.textMuted} />
           <TextInput
             style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
@@ -357,51 +577,342 @@ export function ManageFacultyScreen({ navigation }: any) {
           )}
         </View>
 
-        <Text style={[styles.listMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-          {filtered.length} TEACHER{filtered.length === 1 ? '' : 'S'}
-        </Text>
+        {/* Meta / Results Count Header */}
+        <View style={styles.resultsHead}>
+          <Text style={[styles.resultsTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+            {filtered.length} TEACHER{filtered.length === 1 ? '' : 'S'}
+            {selectedDeptId !== 'All' ? ` · ${shortDept(selectedDept?.name)}` : ''}
+          </Text>
+          {(selectedDeptId !== 'All' || query.length > 0) && (
+            <TouchableOpacity
+              onPress={() => {
+                setQuery('');
+                setSelectedDeptId('All');
+              }}
+              hitSlop={8}
+            >
+              <Text style={[styles.clearTxt, { color: SectorColors.faculty, fontFamily: FontFamily.jakartaBold }]}>
+                {t.faculty2.resetFilters}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    );
+  };
 
-        <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
-          {filtered.slice(0, 80).map((f, i) => (
-            <View key={f.id}>
-              {i > 0 && <View style={[styles.divider, { backgroundColor: C.border }]} />}
+  const renderEmpty = () => {
+    if (loading) {
+      return (
+        <View style={styles.empty}>
+          <ActivityIndicator size="large" color={SectorColors.faculty} />
+          <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+            Loading faculty directory…
+          </Text>
+        </View>
+      );
+    }
+    return (
+      <View style={styles.empty}>
+        <Feather name="search" size={28} color={C.textMuted} />
+        <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+          {t.faculty2.noMatchingTeachers}
+        </Text>
+      </View>
+    );
+  };
+
+  return (
+    <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
+      <SubBar
+        title={t.manage.manageFaculty}
+        onBack={() => navigation.goBack()}
+        rightSlot={
+          <TouchableOpacity
+            style={[styles.addBtn, { backgroundColor: SectorColors.faculty }]}
+            onPress={openCreate}
+            activeOpacity={0.8}
+          >
+            <Feather name="plus" size={14} color="#fff" />
+            <Text style={[styles.addBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>Add</Text>
+          </TouchableOpacity>
+        }
+      />
+
+      <FlatList<FacultyRow>
+        data={filtered}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <TeacherCard
+            f={item}
+            deptName={deptById[item.department_id]?.name}
+            onPress={() => openEdit(item)}
+            C={C}
+          />
+        )}
+        ListHeaderComponent={renderHeader}
+        ListEmptyComponent={renderEmpty}
+        initialNumToRender={12}
+        maxToRenderPerBatch={12}
+        windowSize={5}
+        removeClippedSubviews={Platform.OS === 'android'}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[styles.listContent, { paddingHorizontal: Layout.screenPadding }]}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={C.brand}
+            colors={[C.brand]}
+          />
+        }
+      />
+
+      {/* Department Picker Bottom Sheet Modal */}
+      <Modal
+        visible={deptPickerVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setDeptPickerVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.modalOverlay}
+        >
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setDeptPickerVisible(false)}
+          />
+          <View style={[styles.sheetCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <View style={styles.sheetHandle}>
+              <View style={[styles.sheetHandleBar, { backgroundColor: C.border }]} />
+            </View>
+
+            <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              {t.faculty2.selectDepartment}
+            </Text>
+
+            <ScrollView
+              style={{ maxHeight: 420 }}
+              contentContainerStyle={{ paddingBottom: 10 }}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              {/* All Departments Bar */}
               <TouchableOpacity
-                style={styles.row}
-                onPress={() => openEdit(f)}
-                activeOpacity={0.7}
+                style={[
+                  styles.pickerBar,
+                  {
+                    backgroundColor: selectedDeptId === 'All'
+                      ? (isDark ? 'rgba(79, 70, 229, 0.16)' : 'rgba(79, 70, 229, 0.08)')
+                      : C.surface2,
+                    borderColor: selectedDeptId === 'All' ? SectorColors.faculty : C.border,
+                  },
+                ]}
+                onPress={() => {
+                  setSelectedDeptId('All');
+                  setDeptPickerVisible(false);
+                }}
+                activeOpacity={0.75}
               >
-                <Avatar uri={f.photo_url} name={f.name} size="md" />
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Text style={[styles.name, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                      {f.name}
-                    </Text>
-                    {f.short_code ? (
-                      <View style={[styles.shortBadge, { backgroundColor: C.surface2 }]}>
-                        <Text style={[styles.shortBadgeTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
-                          {f.short_code}
-                        </Text>
-                      </View>
-                    ) : null}
-                  </View>
-                  <Text style={[styles.meta, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                    {f.designation} · {shortDept(f.departments?.name)}
-                    {f.room_number ? ` · Rm ${f.room_number}` : ''}
+                <View style={styles.pickerIconTile}>
+                  <AnimatedIcon name="layers" size={32} color={C.text} />
+                </View>
+                <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
+                  <Text
+                    style={[
+                      styles.pickerBarText,
+                      {
+                        color: selectedDeptId === 'All' ? SectorColors.faculty : C.text,
+                        fontFamily: FontFamily.jakartaBold,
+                      },
+                    ]}
+                  >
+                    {t.faculty2.allDepartments}
+                  </Text>
+                  <Text style={[styles.pickerBarSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                    All 13 departments · {list.length} teachers
                   </Text>
                 </View>
-
-                {!f.photo_url && (
-                  <View style={[styles.noPhoto, { backgroundColor: C.warnBg }]}>
-                    <Text style={[styles.noPhotoTxt, { color: C.warn, fontFamily: FontFamily.jakartaBold }]}>No photo</Text>
+                {selectedDeptId === 'All' ? (
+                  <View style={[styles.checkCircle, { backgroundColor: SectorColors.faculty }]}>
+                    <Feather name="check" size={13} color="#fff" />
                   </View>
+                ) : (
+                  <View style={[styles.emptyCircle, { borderColor: C.border }]} />
                 )}
-                <Feather name="edit-2" size={15} color={C.text2} />
               </TouchableOpacity>
+
+              {departments.map((d) => {
+                const count = countByDept[d.id] || 0;
+                const active = selectedDeptId === d.id;
+                return (
+                  <TouchableOpacity
+                    key={d.id}
+                    style={[
+                      styles.pickerBar,
+                      {
+                        backgroundColor: active
+                          ? (isDark ? 'rgba(79, 70, 229, 0.16)' : 'rgba(79, 70, 229, 0.08)')
+                          : C.surface2,
+                        borderColor: active ? SectorColors.faculty : C.border,
+                      },
+                    ]}
+                    onPress={() => {
+                      setSelectedDeptId(d.id);
+                      setDeptPickerVisible(false);
+                    }}
+                    activeOpacity={0.75}
+                  >
+                    <View style={styles.pickerIconTile}>
+                      <AnimatedIcon
+                        name={BRANCH_ICON[d.branch] ?? 'book-open'}
+                        size={32}
+                        color={C.text}
+                      />
+                    </View>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text
+                        style={[
+                          styles.pickerBarText,
+                          {
+                            color: active ? SectorColors.faculty : C.text,
+                            fontFamily: FontFamily.jakartaBold,
+                          },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {shortDept(d.name)}
+                      </Text>
+                      <Text style={[styles.pickerBarSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                        {d.branch} · {count} teachers
+                      </Text>
+                    </View>
+                    {active ? (
+                      <View style={[styles.checkCircle, { backgroundColor: SectorColors.faculty }]}>
+                        <Feather name="check" size={13} color="#fff" />
+                      </View>
+                    ) : (
+                      <View style={[styles.emptyCircle, { borderColor: C.border }]} />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            <TouchableOpacity
+              style={[styles.sheetCloseBtn, { borderColor: C.border }]}
+              onPress={() => setDeptPickerVisible(false)}
+            >
+              <Text style={[styles.sheetCloseTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                Close
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Form Department Picker Modal */}
+      <Modal
+        visible={formDeptPickerVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setFormDeptPickerVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.modalOverlay}
+        >
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setFormDeptPickerVisible(false)}
+          />
+          <View style={[styles.sheetCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <View style={styles.sheetHandle}>
+              <View style={[styles.sheetHandleBar, { backgroundColor: C.border }]} />
             </View>
-          ))}
-        </View>
-        <View style={{ height: 28 }} />
-      </ScrollView>
+
+            <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              {t.faculty2.selectDepartment}
+            </Text>
+
+            <ScrollView
+              style={{ maxHeight: 420 }}
+              contentContainerStyle={{ paddingBottom: 10 }}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              {departments.map((d) => {
+                const active = departmentId === d.id;
+                return (
+                  <TouchableOpacity
+                    key={d.id}
+                    style={[
+                      styles.pickerBar,
+                      {
+                        backgroundColor: active
+                          ? (isDark ? 'rgba(79, 70, 229, 0.16)' : 'rgba(79, 70, 229, 0.08)')
+                          : C.surface2,
+                        borderColor: active ? SectorColors.faculty : C.border,
+                      },
+                    ]}
+                    onPress={() => {
+                      setDepartmentId(d.id);
+                      setFormDeptPickerVisible(false);
+                    }}
+                    activeOpacity={0.75}
+                  >
+                    <View style={styles.pickerIconTile}>
+                      <AnimatedIcon
+                        name={BRANCH_ICON[d.branch] ?? 'book-open'}
+                        size={32}
+                        color={C.text}
+                      />
+                    </View>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text
+                        style={[
+                          styles.pickerBarText,
+                          {
+                            color: active ? SectorColors.faculty : C.text,
+                            fontFamily: FontFamily.jakartaBold,
+                          },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {shortDept(d.name)}
+                      </Text>
+                      <Text style={[styles.pickerBarSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                        {d.branch}
+                      </Text>
+                    </View>
+                    {active ? (
+                      <View style={[styles.checkCircle, { backgroundColor: SectorColors.faculty }]}>
+                        <Feather name="check" size={13} color="#fff" />
+                      </View>
+                    ) : (
+                      <View style={[styles.emptyCircle, { borderColor: C.border }]} />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            <TouchableOpacity
+              style={[styles.sheetCloseBtn, { borderColor: C.border }]}
+              onPress={() => setFormDeptPickerVisible(false)}
+            >
+              <Text style={[styles.sheetCloseTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                Close
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
 
       {/* Sync Status Modal */}
       <Modal visible={syncModalVisible} transparent animationType="fade" onRequestClose={() => setSyncModalVisible(false)}>
@@ -411,9 +922,9 @@ export function ManageFacultyScreen({ navigation }: any) {
               {syncing ? (
                 <ActivityIndicator color={SectorColors.faculty} size="large" />
               ) : syncResult?.error ? (
-                <AnimatedIcon family="feather" name="alert-triangle" size={28} color={C.danger} />
+                <AnimatedIcon name="alert-triangle" size={28} color={C.danger} />
               ) : (
-                <AnimatedIcon family="feather" name="check-circle" size={28} color={C.success} />
+                <AnimatedIcon name="check-circle" size={28} color={C.success} />
               )}
             </View>
 
@@ -449,10 +960,13 @@ export function ManageFacultyScreen({ navigation }: any) {
 
       {/* Edit & Create Sheet */}
       <Modal visible={!!target} transparent animationType="slide" onRequestClose={() => setTarget(null)}>
-        <KeyboardAvoidingView style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }} behavior="padding">
+        <KeyboardAvoidingView
+          style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
           <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setTarget(null)} />
           <View style={[styles.sheet, { backgroundColor: C.surface }]}>
-            <View style={[styles.sheetHandle, { backgroundColor: C.border }]} />
+            <View style={[styles.sheetHandleBar, { backgroundColor: C.border, alignSelf: 'center', marginBottom: 16 }]} />
             <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
               <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
                 {isNewTeacher ? t.manage.addFacultyMember : name || target?.name}
@@ -463,6 +977,27 @@ export function ManageFacultyScreen({ navigation }: any) {
                 <Text style={[styles.photoHint, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
                   {photoUri ? t.manage.photoSelected : t.manage.changePhoto}
                 </Text>
+              </TouchableOpacity>
+
+              <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>DEPARTMENT</Text>
+              <TouchableOpacity
+                style={[styles.formDropdownBar, { backgroundColor: C.bg, borderColor: C.border }]}
+                onPress={() => setFormDeptPickerVisible(true)}
+                activeOpacity={0.75}
+              >
+                <View style={styles.formDropdownIconTile}>
+                  <AnimatedIcon
+                    name={BRANCH_ICON[deptById[departmentId]?.branch ?? ''] ?? 'book-open'}
+                    size={24}
+                    color={C.text}
+                  />
+                </View>
+                <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
+                  <Text style={[styles.formDropdownValue, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                    {shortDept(deptById[departmentId]?.name) || 'Select Department'}
+                  </Text>
+                </View>
+                <Feather name="chevron-down" size={18} color={C.textMuted} />
               </TouchableOpacity>
 
               <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>FULL NAME</Text>
@@ -549,7 +1084,6 @@ export function ManageFacultyScreen({ navigation }: any) {
               <View style={styles.toggleRow}>
                 <Text style={[styles.toggleLbl, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>{t.manage.onLeave}</Text>
                 <TactileSwitch value={onLeave} onValueChange={setOnLeave} />
-
               </View>
 
               <TouchableOpacity
@@ -562,6 +1096,21 @@ export function ManageFacultyScreen({ navigation }: any) {
                   ? <ActivityIndicator color="#fff" size="small" />
                   : <Text style={[styles.saveTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>{isNewTeacher ? 'Create Faculty Member' : t.manage.saveChanges}</Text>}
               </TouchableOpacity>
+
+              {!isNewTeacher && target?.id && (
+                <TouchableOpacity
+                  style={[styles.deleteBtn, { borderColor: C.border }]}
+                  onPress={() => confirmDelete(target)}
+                  disabled={saving}
+                  activeOpacity={0.75}
+                >
+                  <Feather name="trash-2" size={16} color={C.danger} />
+                  <Text style={[styles.deleteTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
+                    Delete Teacher
+                  </Text>
+                </TouchableOpacity>
+              )}
+
               <View style={{ height: 20 }} />
             </ScrollView>
           </View>
@@ -574,22 +1123,24 @@ export function ManageFacultyScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
-  scroll: { paddingTop: 8, paddingBottom: 24 } as ViewStyle,
+  listContent: { paddingBottom: 28 } as ViewStyle,
 
   addBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 11,
-    paddingVertical: 6,
-    borderRadius: 8,
+    paddingHorizontal: 12,
+    height: 34,
+    borderRadius: 10,
+    justifyContent: 'center',
   } as ViewStyle,
-  addBtnTxt: { fontSize: 12.5 } as TextStyle,
+  addBtnTxt: { fontSize: 13 } as TextStyle,
 
   syncCard: {
     borderRadius: 16,
     borderWidth: 1,
     padding: 14,
+    marginBottom: 10,
   } as ViewStyle,
   syncCardTop: {
     flexDirection: 'row',
@@ -600,7 +1151,6 @@ const styles = StyleSheet.create({
   syncIconWrap: {
     width: 44,
     height: 44,
-    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
@@ -611,26 +1161,232 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 9,
-    height: 58,
+    height: Layout.controlHeight,
     borderRadius: 16,
   } as ViewStyle,
   syncActionTxt: { fontSize: 14.5 } as TextStyle,
 
-  searchBar: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 16, height: 58, borderRadius: 16, borderWidth: 1 } as ViewStyle,
+  // 58dp Dropdown Selector Bar
+  dropdownBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    height: Layout.controlHeight,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 10,
+  } as ViewStyle,
+  dropdownIconTile: {
+    width: 38,
+    height: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  dropdownBody: {
+    flex: 1,
+    minWidth: 0,
+  } as ViewStyle,
+  dropdownLabel: {
+    fontSize: 11,
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
+  } as TextStyle,
+  dropdownValue: {
+    fontSize: 13.5,
+    marginTop: 2,
+  } as TextStyle,
+
+  // 58dp Search Bar
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+    paddingHorizontal: 16,
+    height: Layout.controlHeight,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 12,
+  } as ViewStyle,
   searchInput: { flex: 1, fontSize: 14.5, paddingVertical: 0 } as TextStyle,
 
-  listMeta: { fontSize: 11, letterSpacing: 0.8, marginBottom: 8 } as TextStyle,
+  // Results meta header
+  resultsHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 2,
+    marginBottom: 10,
+    paddingHorizontal: 2,
+  } as ViewStyle,
+  resultsTxt: { fontSize: 11.5, letterSpacing: 0.8 } as TextStyle,
+  clearTxt: { fontSize: 12.5 } as TextStyle,
 
-  card: { borderRadius: 16, borderWidth: 1, overflow: 'hidden' } as ViewStyle,
-  divider: { height: StyleSheet.hairlineWidth } as ViewStyle,
-  row: { flexDirection: 'row', alignItems: 'center', minHeight: 72, gap: 13, padding: 14 } as ViewStyle,
-  name: { fontSize: 14 } as TextStyle,
-  shortBadge: { paddingHorizontal: 5, paddingVertical: 1.5, borderRadius: 5 } as ViewStyle,
-  shortBadgeTxt: { fontSize: 10 } as TextStyle,
-  meta: { fontSize: 11.5, marginTop: 2 } as TextStyle,
-  noPhoto: { paddingHorizontal: 7, paddingVertical: 3, borderRadius: 999, marginRight: 4 } as ViewStyle,
-  noPhotoTxt: { fontSize: 9.5 } as TextStyle,
+  // Universal 72dp Teacher Bar Card
+  teacherBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 13,
+    minHeight: 72,
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 8,
+  } as ViewStyle,
+  barAvatarWrap: {
+    position: 'relative',
+  } as ViewStyle,
+  leaveDot: {
+    position: 'absolute',
+    bottom: -1,
+    right: -1,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 1.5,
+  } as ViewStyle,
+  barBody: {
+    flex: 1,
+    minWidth: 0,
+  } as ViewStyle,
+  barNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  } as ViewStyle,
+  barName: {
+    fontSize: 14,
+    flexShrink: 1,
+  } as TextStyle,
+  codeBadge: {
+    paddingHorizontal: 5,
+    paddingVertical: 1.5,
+    borderRadius: 5,
+  } as ViewStyle,
+  codeBadgeTxt: {
+    fontSize: 10,
+  } as TextStyle,
+  barDesig: {
+    fontSize: 11.5,
+    marginTop: 2,
+  } as TextStyle,
+  barMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 4,
+  } as ViewStyle,
+  metaLoc: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  } as ViewStyle,
+  metaLocTxt: {
+    fontSize: 11,
+  } as TextStyle,
+  noPhotoPill: {
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 999,
+  } as ViewStyle,
+  noPhotoTxt: {
+    fontSize: 9.5,
+  } as TextStyle,
+  editAction: {
+    padding: 4,
+  } as ViewStyle,
 
+  empty: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 48,
+    gap: 10,
+  } as ViewStyle,
+  emptyTxt: {
+    fontSize: 13.5,
+    textAlign: 'center',
+  } as TextStyle,
+
+  // Bottom sheet modal styles
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  } as ViewStyle,
+  modalBackdrop: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  } as ViewStyle,
+  sheetCard: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderTopWidth: 1,
+    paddingHorizontal: Layout.screenPadding,
+    paddingBottom: Layout.screenPadding + 10,
+    maxHeight: '82%',
+  } as ViewStyle,
+  sheetHandle: {
+    alignItems: 'center',
+    paddingVertical: 10,
+  } as ViewStyle,
+  sheetHandleBar: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+  } as ViewStyle,
+  sheetTitle: {
+    fontSize: 17,
+    textAlign: 'center',
+    marginBottom: 14,
+  } as TextStyle,
+
+  // Universal 72dp Picker Bars
+  pickerBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 13,
+    minHeight: 72,
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 10,
+  } as ViewStyle,
+  pickerIconTile: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  pickerBarText: {
+    fontSize: 14,
+  } as TextStyle,
+  pickerBarSub: {
+    fontSize: 11.5,
+    marginTop: 2,
+  } as TextStyle,
+  checkCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  emptyCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1.5,
+  } as ViewStyle,
+  sheetCloseBtn: {
+    height: 48,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
+  } as ViewStyle,
+  sheetCloseTxt: { fontSize: 14 } as TextStyle,
+
+  // Add / Edit Sheet
   sheet: {
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
@@ -639,22 +1395,41 @@ const styles = StyleSheet.create({
     paddingBottom: 30,
     maxHeight: '90%',
   } as ViewStyle,
-  sheetHandle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginBottom: 16,
-  } as ViewStyle,
-  sheetTitle: { fontSize: 17, marginBottom: 12 } as TextStyle,
   photoRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 10 } as ViewStyle,
   photoHint: { fontSize: 13 } as TextStyle,
   fieldLabel: { fontSize: 10.5, letterSpacing: 0.7, marginTop: 11, marginBottom: 5 } as TextStyle,
   field: { height: 44, borderRadius: 12, borderWidth: 1, paddingHorizontal: 13, fontSize: 13.5 } as TextStyle,
+  formDropdownBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+  } as ViewStyle,
+  formDropdownIconTile: {
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  formDropdownValue: { fontSize: 13.5 } as TextStyle,
   toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 } as ViewStyle,
   toggleLbl: { fontSize: 13.5 } as TextStyle,
   saveBtn: { height: Layout.controlHeight, borderRadius: Layout.controlRadius, alignItems: 'center', justifyContent: 'center', marginTop: 18 } as ViewStyle,
   saveTxt: { fontSize: 14.5 } as TextStyle,
+  deleteBtn: {
+    height: Layout.controlHeight,
+    borderRadius: Layout.controlRadius,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 10,
+  } as ViewStyle,
+  deleteTxt: { fontSize: 14.5 } as TextStyle,
 
   syncOverlay: {
     flex: 1,

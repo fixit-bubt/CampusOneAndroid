@@ -101,7 +101,11 @@ export function ExploreScreen({ navigation }: any) {
 
   function renderSectorRow(s: { id: SectorKey; en: string; dEn: string }, accentColor: string, index: number = 0, flatBorder: boolean = false) {
     const title = t.sectorTitles?.[s.id] ?? s.en;
-    const targetRoute = s.id === 'reports' && isAdmin ? 'AllReports' : SECTOR_ROUTE[s.id];
+    const targetRoute =
+      s.id === 'reports' && isAdmin ? 'AllReports' :
+      s.id === 'faculty' && isAdmin ? 'ManageFaculty' :
+      s.id === 'clubs' && isAdmin ? 'ManageClubs' :
+      SECTOR_ROUTE[s.id];
     return (
       <TouchableOpacity
         key={s.id}
