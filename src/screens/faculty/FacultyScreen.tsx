@@ -426,9 +426,6 @@ export function FacultyScreen({ navigation }: any) {
                         <Text style={[styles.categorySubtitle, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
                           {t.faculty2.departmentsCount(catDepts.length)} · {catTeacherCount} teachers
                         </Text>
-                        <Text style={[styles.categoryDesc, { color: C.text2, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
-                          {cat.description}
-                        </Text>
                       </View>
                       <Icon name="chevR" size={17} color={C.textMuted} />
                     </TouchableOpacity>
@@ -506,10 +503,7 @@ export function FacultyScreen({ navigation }: any) {
               <View style={styles.dropdownIconTile}>
                 <AnimatedIcon name="layers" size={32} color={C.text} />
               </View>
-              <View style={styles.dropdownBody}>
-                <Text style={[styles.dropdownLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                  {t.faculty2.selectDepartment}
-                </Text>
+              <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
                 <Text style={[styles.dropdownValue, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                   {selectedDeptId === 'All'
                     ? t.faculty2.allDepartments
@@ -528,10 +522,7 @@ export function FacultyScreen({ navigation }: any) {
               <View style={styles.dropdownIconTile}>
                 <AnimatedIcon name="award" size={32} color={C.text} />
               </View>
-              <View style={styles.dropdownBody}>
-                <Text style={[styles.dropdownLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                  {t.faculty2.selectDomain}
-                </Text>
+              <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
                 <Text style={[styles.dropdownValue, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                   {interest ? interest : t.faculty2.allDomains}
                 </Text>
@@ -608,10 +599,7 @@ export function FacultyScreen({ navigation }: any) {
               <View style={styles.dropdownIconTile}>
                 <AnimatedIcon name="layers" size={32} color={C.text} />
               </View>
-              <View style={styles.dropdownBody}>
-                <Text style={[styles.dropdownLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                  {t.faculty2.selectDepartment}
-                </Text>
+              <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
                 <Text style={[styles.dropdownValue, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                   {selectedDeptId === 'All'
                     ? t.faculty2.allDepartments
@@ -843,7 +831,7 @@ export function FacultyScreen({ navigation }: any) {
                         color={C.text}
                       />
                     </View>
-                    <View style={{ flex: 1, minWidth: 0 }}>
+                    <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
                       <Text
                         style={[
                           styles.pickerBarText,
@@ -855,9 +843,6 @@ export function FacultyScreen({ navigation }: any) {
                         numberOfLines={1}
                       >
                         {shortDept(d.name)}
-                      </Text>
-                      <Text style={[styles.pickerBarSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                        {d.branch} · {count} {mode === 'mentors' ? 'mentors' : 'teachers'}
                       </Text>
                     </View>
                     {active ? (
@@ -990,7 +975,7 @@ export function FacultyScreen({ navigation }: any) {
                         color={C.text}
                       />
                     </View>
-                    <View style={{ flex: 1, minWidth: 0 }}>
+                    <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
                       <Text
                         style={[
                           styles.pickerBarText,
@@ -1002,9 +987,6 @@ export function FacultyScreen({ navigation }: any) {
                         numberOfLines={1}
                       >
                         {it.label}
-                      </Text>
-                      <Text style={[styles.pickerBarSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                        {it.n} research mentor{it.n === 1 ? '' : 's'}
                       </Text>
                     </View>
                     {active ? (
@@ -1219,8 +1201,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   } as TextStyle,
   dropdownValue: {
-    fontSize: 13.5,
-    marginTop: 2,
+    fontSize: 14,
   } as TextStyle,
 
   // Banner card
