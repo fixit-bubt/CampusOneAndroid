@@ -2922,3 +2922,26 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore.
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
   - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.
+
+---
+
+### 68. Faculty Directory Anti-Clutter Deep Dive, 58dp Dropdown Architecture & Subtitle Filler Elimination (`FacultyScreen.tsx`, `ManageFacultyScreen.tsx`) (/zero-slop, /code-review-and-quality, /performance-optimization)
+- **Elimination of Redundant Sub-Text Filler Across Faculty Screens:**
+  - In `FacultyScreen.tsx` (Student Faculty Directory):
+    - Removed `cat.description` from Level 1 Faculty Category cards (eliminating cluttered third-line summaries like *"CSE, EEE, Civil, Textile & Data Science"*, *"Management, Accounting, Marketing & Finance"*, *"Economics, Mathematics & Statistics"*). Category cards now render clean, high-contrast 2-line blocks: Title (`cat.name`) + Department/Teacher Count metadata (`4 departments · 150 teachers`).
+    - Stripped redundant uppercase sub-labels (`styles.dropdownLabel`: *"SELECT DEPARTMENT"*, *"SELECT DOMAIN"*) from all 3 dropdown selector bars across Tab 2 (Research Mentors) and Tab 3 (My Teachers). Replaced with vertically centered single-line active values (`justifyContent: 'center'`) in universal 58dp bars (`Layout.controlHeight = 58`), matching the design system standard.
+    - Stripped `pickerBarSub` (`{d.branch} · {count} teachers` and `{it.n} research mentors`) from Department Picker and Publication Domain Picker modal bars. Vertically centered titles (`justifyContent: 'center'`) inside universal 72dp modal bars (`minHeight: 72`).
+    - Cleaned `dropdownValue` typography by removing obsolete `marginTop: 2`.
+  - In `ManageFacultyScreen.tsx` (Admin Faculty Management):
+    - Replaced cramped partial bottom sheet with full-page edit/add modal canvas (`presentationStyle="fullScreen"`, `SafeAreaView`, `SubBar` with back arrow `<-` and title).
+    - Standardized every input, dropdown bar, and button to 58dp (`Layout.controlHeight = 58`, `borderRadius: 16`).
+    - Added dedicated 58dp Designation dropdown bar and modal picker with standard BUBT academic ranks (`Professor`, `Associate Professor`, `Assistant Professor`, `Senior Lecturer`, `Lecturer`, `Teaching Assistant`, `Demonstrator`, `Adjunct / Visiting Faculty`).
+    - Replaced raw text inputs with 58dp Campus Building and Blood Group dropdown bars.
+    - Removed red tint (`C.danger`) and highlight boxes from blood droplet icon (converted to high-contrast monochrome `C.text`).
+    - Stripped redundant sub-text from Blood Group, Building, Designation, and Department pickers; titles are cleanly vertically centered.
+    - Simplified counseling hours label to clean `COUNSELING HOURS` (removing acronym filler `(CH/TuH)`).
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
+  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore.
+  - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
+  - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.
