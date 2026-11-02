@@ -101,7 +101,6 @@ export function ExploreScreen({ navigation }: any) {
 
   function renderSectorRow(s: { id: SectorKey; en: string; dEn: string }, accentColor: string, index: number = 0, flatBorder: boolean = false) {
     const title = t.sectorTitles?.[s.id] ?? s.en;
-    const itemColor = SectorColors[s.id] ?? accentColor;
     const targetRoute = s.id === 'reports' && isAdmin ? 'AllReports' : SECTOR_ROUTE[s.id];
     return (
       <TouchableOpacity
@@ -111,7 +110,7 @@ export function ExploreScreen({ navigation }: any) {
           {
             backgroundColor: C.surface,
             borderColor: C.border,
-            borderLeftColor: flatBorder ? C.border : itemColor,
+            borderLeftColor: flatBorder ? C.border : C.brand,
             borderLeftWidth: flatBorder ? 1 : 4.5,
           },
         ]}
@@ -233,13 +232,13 @@ export function ExploreScreen({ navigation }: any) {
           <CollapsibleSection
             title={t.exploreGroups.academics}
             icon="study"
-            accentColor={SectorColors.study}
+            accentColor={C.brand}
             count={academicsCount}
             countLabel={t.exploreGroups.toolsLabel}
             open={openSection === 'academics'}
             onToggle={() => toggleSection('academics')}
           >
-            {academicsSectors.map((s, idx) => renderSectorRow(s, SectorColors.study, idx))}
+            {academicsSectors.map((s, idx) => renderSectorRow(s, C.brand, idx))}
 
             {/* Annex Portal - student-only */}
             {isStudent && (
@@ -249,7 +248,7 @@ export function ExploreScreen({ navigation }: any) {
                   {
                     backgroundColor: C.surface,
                     borderColor: C.border,
-                    borderLeftColor: SectorColors.study,
+                    borderLeftColor: C.brand,
                   },
                 ]}
                 onPress={() => navigation.navigate('Annex')}
@@ -275,7 +274,7 @@ export function ExploreScreen({ navigation }: any) {
                   {
                     backgroundColor: C.surface,
                     borderColor: C.border,
-                    borderLeftColor: SectorColors.study,
+                    borderLeftColor: C.brand,
                   },
                 ]}
                 onPress={() => navigation.navigate('Cgpa')}
@@ -301,7 +300,7 @@ export function ExploreScreen({ navigation }: any) {
                   {
                     backgroundColor: C.surface,
                     borderColor: C.border,
-                    borderLeftColor: SectorColors.pdfmaker ?? SectorColors.study,
+                    borderLeftColor: C.brand,
                   },
                 ]}
                 onPress={() => navigation.navigate('PdfMaker')}
@@ -325,13 +324,13 @@ export function ExploreScreen({ navigation }: any) {
           <CollapsibleSection
             title={t.exploreGroups.campusLife}
             icon="events"
-            accentColor={SectorColors.events}
+            accentColor={C.brand}
             count={campusLifeSectors.length}
             countLabel={t.exploreGroups.toolsLabel}
             open={openSection === 'campusLife'}
             onToggle={() => toggleSection('campusLife')}
           >
-            {campusLifeSectors.map((s, idx) => renderSectorRow(s, SectorColors.events, idx))}
+            {campusLifeSectors.map((s, idx) => renderSectorRow(s, C.brand, idx))}
           </CollapsibleSection>
         )}
 
@@ -339,13 +338,13 @@ export function ExploreScreen({ navigation }: any) {
           <CollapsibleSection
             title={t.exploreGroups.services}
             icon="wrench"
-            accentColor={SectorColors.reports}
+            accentColor={C.brand}
             count={servicesSectors.length}
             countLabel={t.exploreGroups.toolsLabel}
             open={openSection === 'services'}
             onToggle={() => toggleSection('services')}
           >
-            {servicesSectors.map((s, idx) => renderSectorRow(s, SectorColors.reports, idx))}
+            {servicesSectors.map((s, idx) => renderSectorRow(s, C.brand, idx))}
           </CollapsibleSection>
         )}
 
@@ -353,13 +352,13 @@ export function ExploreScreen({ navigation }: any) {
           <CollapsibleSection
             title={t.exploreGroups.community}
             icon="market"
-            accentColor={SectorColors.market}
+            accentColor={C.brand}
             count={communitySectors.length}
             countLabel={t.exploreGroups.toolsLabel}
             open={openSection === 'community'}
             onToggle={() => toggleSection('community')}
           >
-            {communitySectors.map((s, idx) => renderSectorRow(s, SectorColors.market, idx))}
+            {communitySectors.map((s, idx) => renderSectorRow(s, C.brand, idx))}
           </CollapsibleSection>
         )}
 
