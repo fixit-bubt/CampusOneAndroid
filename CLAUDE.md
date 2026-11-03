@@ -3904,3 +3904,22 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with local release keystore (`BUILD SUCCESSFUL in 41s`).
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da` (`Performing Streamed Install -> Success`).
   - Clean Runtime Verification: Verified `adb logcat` with 0 JavascriptExceptions and clean `Running "main"` initialization.
+
+---
+
+### 98. Ultra Clean Option 1 Standard, Modal-Embedded Detail Inputs & Zero Tech-Jargon Form Polish (`JobPostScreen.tsx`, `JobDetailScreen.tsx`, `JobsModerateScreen.tsx`, `i18n/en.ts`, `i18n/bn.ts`) (/performance-optimization, /code-review-and-quality)
+- **Zero Tech Jargon & Option 1 Ultra Clean Standard:**
+  - Completely purged amateur programming jargon (`React`, `Node.js`, `Git`, `Backend Intern`), corporate placeholders (`BrainStation-23`), and clunky `"e.g."` dummy examples across all job circular forms and language bundles.
+  - Standardized all form fields across `JobPostScreen` (Company, Role Title, Skills, Deadline, Description, Requirements, Email, Link), `JobDetailScreen` (Phone, Cover Note), and `JobsModerateScreen` (Removal reason) to Option 1 Ultra Clean: `placeholder=""` with zero gray text clutter.
+- **Embedded Modal Detail Inputs (Secondary Input Elimination):**
+  - **Location & Area (`LocationModalSheet`):** The redundant secondary input box underneath the Location bar on the main form was completely eliminated. The 58dp Location bar triggers a specialized bottom-sheet modal containing the Dhaka zone selection bars (26dp icons) plus an optional embedded specific building/room input. The main screen 58dp bar cleanly displays the composite location (e.g. `Mirpur (Near BUBT) · Campus 2, Room 402` or `Mirpur (Near BUBT)`).
+  - **Compensation & Salary (`CompensationModalSheet`):** The pop-under salary input box that previously appeared below the Compensation bar when 'Paid' was picked was completely eliminated from the main form. The 58dp Compensation bar triggers a bottom-sheet modal with compensation models (`Paid Monthly`, `Hourly Rate`, `Stipend`, `Unpaid / Volunteer`, `Negotiable`). When a paid model is picked, salary amount is entered directly inside the modal. The main 58dp bar cleanly reflects the full compensation (e.g. `Paid (Monthly / Contract) · ৳8,000 / month`).
+- **Deadline Preset Chip Clutter Removed:**
+  - Completely stripped floating `+7 Days`, `+14 Days`, `+30 Days` chip buttons below the deadline field. The deadline is a clean, uniform 58dp input.
+- **Performance & Architecture Optimization:**
+  - Local state encapsulation in modal sheets: typing specific location or salary amount lives inside the modal draft state, completely preventing expensive parent form re-renders during text entry.
+  - Modals use `KeyboardAvoidingView` to ensure input accessibility across all Android device heights.
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
+  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with local release keystore (`BUILD SUCCESSFUL in 46s`).
+  - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da` (`Performing Streamed Install -> Success`).

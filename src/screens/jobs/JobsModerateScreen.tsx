@@ -349,7 +349,7 @@ export function JobsModerateScreen({ navigation }: any) {
               ]}
               value={removeReason}
               onChangeText={setRemoveReason}
-              placeholder="State why this listing is being removed..."
+              placeholder=""
               placeholderTextColor={C.textMuted}
               multiline
               textAlignVertical="top"

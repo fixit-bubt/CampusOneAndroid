@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView,
-  StyleSheet, ActivityIndicator, Modal, type ViewStyle, type TextStyle,
+  StyleSheet, ActivityIndicator, Modal, Platform, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as DocumentPicker from 'expo-document-picker';
@@ -191,6 +191,266 @@ function PickerModalSheet<T extends string | number>({
   );
 }
 
+interface CompensationModalProps {
+  visible: boolean;
+  selectedType: NonNullable<Job['compensation_type']>;
+  salary: string;
+  onSave: (type: NonNullable<Job['compensation_type']>, salary: string) => void;
+  onClose: () => void;
+  C: any;
+}
+
+function CompensationModalSheet({
+  visible,
+  selectedType,
+  salary,
+  onSave,
+  onClose,
+  C,
+}: CompensationModalProps) {
+  const [draftType, setDraftType] = useState(selectedType);
+  const [draftSalary, setDraftSalary] = useState(salary);
+
+  useEffect(() => {
+    if (visible) {
+      setDraftType(selectedType);
+      setDraftSalary(salary);
+    }
+  }, [visible, selectedType, salary]);
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView
+        style={styles.pickerBackdrop}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <TouchableOpacity style={styles.pickerOverlay} activeOpacity={1} onPress={onClose} />
+        <View style={[styles.pickerSheet, { backgroundColor: C.surface, borderColor: C.border, maxHeight: '85%' }]}>
+          <View style={styles.sheetHandle} />
+          <View style={styles.pickerHeaderRow}>
+            <Text style={[styles.pickerTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+              Compensation Model
+            </Text>
+            <TouchableOpacity onPress={onClose} hitSlop={8}>
+              <Feather name="x" size={20} color={C.textMuted} />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ gap: 8, paddingBottom: 20 }}
+          >
+            {COMPENSATION_OPTIONS.map((opt) => {
+              const isSelected = draftType === opt.id;
+              return (
+                <TouchableOpacity
+                  key={String(opt.id)}
+                  style={[
+                    styles.optionBar58,
+                    {
+                      backgroundColor: isSelected ? C.surface2 : C.surface,
+                      borderColor: isSelected ? C.brand : C.border,
+                    },
+                  ]}
+                  onPress={() => setDraftType(opt.id)}
+                  activeOpacity={0.75}
+                >
+                  <View style={styles.barIconSlot}>
+                    <Feather
+                      name={opt.icon ?? 'dollar-sign'}
+                      size={26}
+                      color={isSelected ? C.brand : C.text}
+                    />
+                  </View>
+                  <View style={{ flex: 1, justifyContent: 'center' }}>
+                    <Text
+                      style={[
+                        styles.barTxt,
+                        {
+                          color: isSelected ? C.brand : C.text,
+                          fontFamily: isSelected ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                        },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {opt.label}
+                    </Text>
+                  </View>
+                  {isSelected && (
+                    <Feather name="check" size={20} color={C.brand} style={{ marginLeft: 6 }} />
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+
+            {(draftType === 'paid' || draftType === 'conveyance') && (
+              <View style={{ marginTop: 6 }}>
+                <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 8 }]}>
+                  SALARY / AMOUNT DETAILS (OPTIONAL)
+                </Text>
+                <TextInput
+                  style={[
+                    styles.input54,
+                    { backgroundColor: C.surface2, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium },
+                  ]}
+                  value={draftSalary}
+                  onChangeText={setDraftSalary}
+                  placeholder=""
+                  placeholderTextColor={C.textMuted}
+                />
+              </View>
+            )}
+
+            <TouchableOpacity
+              style={[styles.submitBtn, { backgroundColor: C.brand, height: 58, borderRadius: 16, marginTop: 14 }]}
+              onPress={() => {
+                onSave(draftType, draftSalary);
+                onClose();
+              }}
+              activeOpacity={0.8}
+            >
+              <Feather name="check" size={20} color="#fff" />
+              <Text style={[styles.submitText, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                Confirm Compensation
+              </Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
+interface LocationModalProps {
+  visible: boolean;
+  selectedArea: string;
+  specificLocation: string;
+  onSave: (area: string, specific: string) => void;
+  onClose: () => void;
+  C: any;
+}
+
+function LocationModalSheet({
+  visible,
+  selectedArea,
+  specificLocation,
+  onSave,
+  onClose,
+  C,
+}: LocationModalProps) {
+  const [draftArea, setDraftArea] = useState(selectedArea);
+  const [draftSpecific, setDraftSpecific] = useState(specificLocation);
+
+  useEffect(() => {
+    if (visible) {
+      setDraftArea(selectedArea);
+      setDraftSpecific(specificLocation);
+    }
+  }, [visible, selectedArea, specificLocation]);
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView
+        style={styles.pickerBackdrop}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <TouchableOpacity style={styles.pickerOverlay} activeOpacity={1} onPress={onClose} />
+        <View style={[styles.pickerSheet, { backgroundColor: C.surface, borderColor: C.border, maxHeight: '85%' }]}>
+          <View style={styles.sheetHandle} />
+          <View style={styles.pickerHeaderRow}>
+            <Text style={[styles.pickerTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+              Location & Area
+            </Text>
+            <TouchableOpacity onPress={onClose} hitSlop={8}>
+              <Feather name="x" size={20} color={C.textMuted} />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ gap: 8, paddingBottom: 20 }}
+          >
+            {AREA_OPTIONS.map((opt) => {
+              const isSelected = draftArea === opt.id;
+              return (
+                <TouchableOpacity
+                  key={String(opt.id)}
+                  style={[
+                    styles.optionBar58,
+                    {
+                      backgroundColor: isSelected ? C.surface2 : C.surface,
+                      borderColor: isSelected ? C.brand : C.border,
+                    },
+                  ]}
+                  onPress={() => setDraftArea(opt.id)}
+                  activeOpacity={0.75}
+                >
+                  <View style={styles.barIconSlot}>
+                    <Feather
+                      name={opt.icon ?? 'map-pin'}
+                      size={26}
+                      color={isSelected ? C.brand : C.text}
+                    />
+                  </View>
+                  <View style={{ flex: 1, justifyContent: 'center' }}>
+                    <Text
+                      style={[
+                        styles.barTxt,
+                        {
+                          color: isSelected ? C.brand : C.text,
+                          fontFamily: isSelected ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                        },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {opt.label}
+                    </Text>
+                  </View>
+                  {isSelected && (
+                    <Feather name="check" size={20} color={C.brand} style={{ marginLeft: 6 }} />
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+
+            <View style={{ marginTop: 6 }}>
+              <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 8 }]}>
+                SPECIFIC BUILDING, ROOM OR ROAD (OPTIONAL)
+              </Text>
+              <TextInput
+                style={[
+                  styles.input54,
+                  { backgroundColor: C.surface2, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium },
+                ]}
+                value={draftSpecific}
+                onChangeText={setDraftSpecific}
+                placeholder=""
+                placeholderTextColor={C.textMuted}
+              />
+            </View>
+
+            <TouchableOpacity
+              style={[styles.submitBtn, { backgroundColor: C.brand, height: 58, borderRadius: 16, marginTop: 14 }]}
+              onPress={() => {
+                onSave(draftArea, draftSpecific);
+                onClose();
+              }}
+              activeOpacity={0.8}
+            >
+              <Feather name="check" size={20} color="#fff" />
+              <Text style={[styles.submitText, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                Confirm Location
+              </Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
 export function JobPostScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
   const t = useT();
@@ -203,8 +463,8 @@ export function JobPostScreen({ navigation }: any) {
   const [workMode, setWorkMode] = useState<Job['work_mode']>('onsite');
   const [departmentCode, setDepartmentCode] = useState('ALL');
   const [compensationType, setCompensationType] = useState<NonNullable<Job['compensation_type']>>('paid');
-  const [location, setLocation] = useState('Mirpur (Near BUBT)');
   const [areaName, setAreaName] = useState('Mirpur (Near BUBT)');
+  const [specificLocation, setSpecificLocation] = useState('');
   const [salary, setSalary] = useState('');
   const [minSemester, setMinSemester] = useState(1);
   const [isAlumniReferral, setIsAlumniReferral] = useState(false);
@@ -339,19 +599,23 @@ export function JobPostScreen({ navigation }: any) {
       if (compensationType === 'paid') {
         effectiveStipend = salary.trim() || 'Paid';
       } else if (compensationType === 'conveyance') {
-        effectiveStipend = 'Conveyance Only';
+        effectiveStipend = salary.trim() || 'Conveyance Only';
       } else if (compensationType === 'unpaid') {
         effectiveStipend = 'Unpaid';
       } else if (compensationType === 'negotiable') {
         effectiveStipend = 'Negotiable';
       }
 
+      const effectiveLocation = specificLocation.trim()
+        ? `${areaName.trim()} · ${specificLocation.trim()}`
+        : (areaName.trim() || 'Mirpur (Near BUBT)');
+
       const { error } = await supabase.from('jobs').insert({
         company:         company.trim(),
         title:           role.trim(),
         job_type:        jobType,
         work_mode:       workMode,
-        location:        location.trim() || (areaName ? areaName : 'Dhaka'),
+        location:        effectiveLocation,
         stipend:         effectiveStipend,
         deadline:        deadline.trim() || dhakaToday,
         description:     desc.trim(),
@@ -431,7 +695,7 @@ export function JobPostScreen({ navigation }: any) {
             style={[styles.input54, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
             value={company}
             onChangeText={setCompany}
-            placeholder={t.jobs2.companyPlaceholder}
+            placeholder=""
             placeholderTextColor={C.textMuted}
           />
 
@@ -443,7 +707,7 @@ export function JobPostScreen({ navigation }: any) {
             style={[styles.input54, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
             value={role}
             onChangeText={setRole}
-            placeholder={t.jobs2.roleTitlePlaceholder}
+            placeholder=""
             placeholderTextColor={C.textMuted}
           />
 
@@ -520,22 +784,12 @@ export function JobPostScreen({ navigation }: any) {
               <Feather name={selectedComp.icon ?? 'dollar-sign'} size={28} color={C.text} />
             </View>
             <View style={{ flex: 1, justifyContent: 'center' }}>
-              <Text style={[styles.barTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                {selectedComp.label}
+              <Text style={[styles.barTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                {salary.trim() ? `${selectedComp.label} · ${salary.trim()}` : selectedComp.label}
               </Text>
             </View>
             <Feather name="chevron-down" size={20} color={C.textMuted} />
           </TouchableOpacity>
-
-          {compensationType === 'paid' && (
-            <TextInput
-              style={[styles.input54, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium, marginTop: 8 }]}
-              value={salary}
-              onChangeText={setSalary}
-              placeholder="e.g. ৳8,000 / month or ৳5,000 / course"
-              placeholderTextColor={C.textMuted}
-            />
-          )}
 
           {/* 5. Location / Area Dropdown Bar (Height 58dp) */}
           <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
@@ -550,20 +804,14 @@ export function JobPostScreen({ navigation }: any) {
               <Feather name="map-pin" size={28} color={C.text} />
             </View>
             <View style={{ flex: 1, justifyContent: 'center' }}>
-              <Text style={[styles.barTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                {areaName || location || 'Select Area'}
+              <Text style={[styles.barTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                {specificLocation.trim()
+                  ? `${areaName} · ${specificLocation.trim()}`
+                  : (areaName || 'Select Area')}
               </Text>
             </View>
             <Feather name="chevron-down" size={20} color={C.textMuted} />
           </TouchableOpacity>
-
-          <TextInput
-            style={[styles.input54, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium, marginTop: 8 }]}
-            value={location}
-            onChangeText={setLocation}
-            placeholder="Specific road, building, or room (optional)"
-            placeholderTextColor={C.textMuted}
-          />
 
           {/* 6. Minimum Semester Dropdown Bar (Height 58dp) */}
           <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
@@ -620,7 +868,7 @@ export function JobPostScreen({ navigation }: any) {
             style={[styles.input54, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
             value={skillsInput}
             onChangeText={setSkillsInput}
-            placeholder="e.g. React, Node.js, Git OR Class 9-10 Math, Physics"
+            placeholder=""
             placeholderTextColor={C.textMuted}
           />
 
@@ -632,29 +880,9 @@ export function JobPostScreen({ navigation }: any) {
             style={[styles.input54, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
             value={deadline}
             onChangeText={setDeadline}
-            placeholder="YYYY-MM-DD"
+            placeholder=""
             placeholderTextColor={C.textMuted}
           />
-
-          {/* Quick Deadline Presets */}
-          <View style={styles.presetRow}>
-            {[
-              { label: '+7 Days', days: 7 },
-              { label: '+14 Days', days: 14 },
-              { label: '+30 Days', days: 30 },
-            ].map(p => (
-              <TouchableOpacity
-                key={p.days}
-                style={[styles.presetChip, { backgroundColor: C.surface2, borderColor: C.border }]}
-                onPress={() => setDeadline(addDhakaDays(p.days))}
-                activeOpacity={0.75}
-              >
-                <Text style={[styles.presetTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                  {p.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
 
           {/* Description */}
           <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
@@ -664,7 +892,7 @@ export function JobPostScreen({ navigation }: any) {
             style={[styles.textarea, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
             value={desc}
             onChangeText={setDesc}
-            placeholder={t.jobs2.descriptionPlaceholder}
+            placeholder=""
             placeholderTextColor={C.textMuted}
             multiline
             textAlignVertical="top"
@@ -678,7 +906,7 @@ export function JobPostScreen({ navigation }: any) {
             style={[styles.input54, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
             value={requirements}
             onChangeText={setRequirements}
-            placeholder={t.jobs2.requirementsPlaceholder}
+            placeholder=""
             placeholderTextColor={C.textMuted}
           />
 
@@ -697,7 +925,7 @@ export function JobPostScreen({ navigation }: any) {
               style={[styles.input54, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium, marginTop: 10 }]}
               value={applyValue}
               onChangeText={setApplyValue}
-              placeholder={t.jobs2.applyEmailPlaceholder}
+              placeholder=""
               placeholderTextColor={C.textMuted}
               autoCapitalize="none"
               keyboardType="email-address"
@@ -709,7 +937,7 @@ export function JobPostScreen({ navigation }: any) {
               style={[styles.input54, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium, marginTop: 10 }]}
               value={applyValue}
               onChangeText={setApplyValue}
-              placeholder={t.jobs2.applyLinkPlaceholder}
+              placeholder=""
               placeholderTextColor={C.textMuted}
               autoCapitalize="none"
               keyboardType="url"
@@ -807,26 +1035,25 @@ export function JobPostScreen({ navigation }: any) {
         C={C}
       />
 
-      <PickerModalSheet
+      <CompensationModalSheet
         visible={compPickerOpen}
-        title="Select Compensation Model"
-        options={COMPENSATION_OPTIONS}
-        selectedId={compensationType}
-        onSelect={(id) => setCompensationType(id as NonNullable<Job['compensation_type']>)}
+        selectedType={compensationType}
+        salary={salary}
+        onSave={(type, sal) => {
+          setCompensationType(type);
+          setSalary(sal);
+        }}
         onClose={() => setCompPickerOpen(false)}
         C={C}
       />
 
-      <PickerModalSheet
+      <LocationModalSheet
         visible={locationPickerOpen}
-        title="Select Location / Area"
-        options={AREA_OPTIONS}
-        selectedId={areaName}
-        onSelect={(id) => {
-          setAreaName(id as string);
-          if (!location || location === 'Mirpur (Near BUBT)' || location === 'Dhaka') {
-            setLocation(id as string);
-          }
+        selectedArea={areaName}
+        specificLocation={specificLocation}
+        onSave={(area, spec) => {
+          setAreaName(area);
+          setSpecificLocation(spec);
         }}
         onClose={() => setLocationPickerOpen(false)}
         C={C}
@@ -898,28 +1125,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   } as ViewStyle,
 
-  presetRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 8,
-  } as ViewStyle,
-
-  presetChip: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-    borderWidth: 1,
-  } as ViewStyle,
-
-  presetTxt: {
-    fontSize: 11.5,
-  } as any,
-
   textarea: {
     minHeight: 100,
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
-    padding: 13,
+    padding: 14,
     fontSize: 14.5,
     lineHeight: 22,
   } as any,
