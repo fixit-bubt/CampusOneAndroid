@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet, Image,
-  RefreshControl, Alert, ActivityIndicator, type ViewStyle,
+  RefreshControl, Alert, ActivityIndicator, Modal, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -10,6 +10,7 @@ import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
+import { Feather } from '@expo/vector-icons';
 import { FontFamily, Layout, Radius, Accent, pillBg } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { personName } from '../../services/peopleService';
@@ -45,7 +46,20 @@ function formatDate(iso: string): string {
   return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
-const STATUS_OPTIONS: Report['status'][] = ['Open', 'In Progress', 'Resolved', 'Rejected', 'Closed'];
+interface StatusAction {
+  status: Report['status'];
+  label: string;
+  desc: string;
+  icon: string;
+  tone: string;
+}
+
+interface StaffCandidate {
+  id: string;
+  full_name: string;
+  department: string;
+  expertise?: string | null;
+}
 
 export function ReportDetailScreen({ route, navigation }: any) {
   const { reportId: paramReportId, report: initReport } = (route.params ?? {}) as { reportId?: string; report?: Report };
@@ -61,6 +75,10 @@ export function ReportDetailScreen({ route, navigation }: any) {
   const [reporterName, setReporterName] = useState<string>('');
   const [refreshing, setRefreshing] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [statusModalOpen, setStatusModalOpen] = useState(false);
+  const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [staffList, setStaffList] = useState<StaffCandidate[]>([]);
+  const [assigningStaff, setAssigningStaff] = useState(false);
 
   const reportId = report?.id ?? paramReportId ?? '';
 
@@ -68,27 +86,25 @@ export function ReportDetailScreen({ route, navigation }: any) {
   const cat = report ? (CAT_MAP[report.category] ?? { icon: 'wrench', fg: Accent.slate }) : { icon: 'wrench', fg: Accent.slate };
   const statusStyle = report ? (statusTone(C, report.status)) : { text: Accent.slate, bg: pillBg(Accent.slate, isDark) };
   const isMine = report?.reporter_id === user?.id;
-  // Admin moderates any report; staff can only work reports assigned to them,
-  // and only advance forward (no reject/close).
+
+  // Admin moderates reports & assigns staff; assigned staff technician executes work.
   const isAdmin = profile?.role === 'admin';
   const isAssignedStaff = profile?.role === 'staff' && !!report?.assigned_staff_id && report.assigned_staff_id === user?.id;
   const canUpdateStatus = isAdmin || isAssignedStaff;
-  // Staff may only advance forward, one step at a time (DB guard enforces
-  // Open->In Progress and In Progress->Resolved only).
-  const staffChoices: Report['status'][] =
-    report?.status === 'Open' ? ['In Progress'] :
-    report?.status === 'In Progress' ? ['Resolved'] : [];
-  const statusChoices: Report['status'][] = isAdmin ? STATUS_OPTIONS : staffChoices;
 
   const load = useCallback(async () => {
     if (!reportId) return;
-    const [evRes, rptData] = await Promise.all([
+    const [evRes, rptData, staffRes] = await Promise.all([
       supabase.from('report_events').select('*').eq('report_id', reportId).order('created_at', { ascending: true }),
       supabase.from('reports').select('*').eq('id', reportId).maybeSingle(),
+      isAdmin
+        ? supabase.from('profiles').select('id, full_name, department, expertise').eq('role', 'staff').limit(100)
+        : Promise.resolve({ data: null }),
     ]);
     if (evRes.data) setEvents(evRes.data as ReportEvent[]);
+    if (staffRes?.data) setStaffList(staffRes.data as StaffCandidate[]);
 
-    let currentReport: any = rptData.data;
+    let currentReport: any = rptData?.data;
     if (!currentReport) {
       // Viewer isn't the owner/assignee/admin (RLS hides the row) - open it
       // read-only via the campus feed RPC so any student can view it.
@@ -109,7 +125,7 @@ export function ReportDetailScreen({ route, navigation }: any) {
       const name = await personName(currentReport.assigned_staff_id);
       if (name) setAssigneeName(name);
     }
-  }, [reportId]);
+  }, [reportId, isAdmin]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -117,6 +133,106 @@ export function ReportDetailScreen({ route, navigation }: any) {
     setRefreshing(true);
     await load();
     setRefreshing(false);
+  }
+
+  // Strict role-appropriate status action list:
+  // Admin: Triage & lifecycle (Reject, Close, Reopen, or direct Resolve override). Admin NEVER sets 'In Progress'.
+  // Staff: Technician execution only ('Start Work' advances Open -> In Progress; 'Mark Resolved' advances In Progress -> Resolved).
+  const availableActions = useMemo<StatusAction[]>(() => {
+    if (!report) return [];
+    const list: StatusAction[] = [];
+
+    if (isAdmin) {
+      // 1. Direct Resolve (Admin Override / Verification)
+      if (report.status !== 'Resolved') {
+        list.push({
+          status: 'Resolved',
+          label: 'Mark Resolved',
+          desc: 'Verify repairs and complete ticket',
+          icon: 'check-circle',
+          tone: C.success,
+        });
+      }
+      // 2. Reject Report
+      if (report.status !== 'Rejected') {
+        list.push({
+          status: 'Rejected',
+          label: 'Reject Report',
+          desc: 'Mark as invalid, spam, or duplicate issue',
+          icon: 'slash',
+          tone: C.danger,
+        });
+      }
+      // 3. Close Ticket
+      if (report.status !== 'Closed') {
+        list.push({
+          status: 'Closed',
+          label: 'Close Ticket',
+          desc: 'Archive this report ticket',
+          icon: 'lock',
+          tone: C.textMuted,
+        });
+      }
+      // 4. Reopen Ticket (if closed, rejected, or resolved)
+      if (report.status === 'Resolved' || report.status === 'Closed' || report.status === 'Rejected') {
+        list.push({
+          status: 'Open',
+          label: 'Reopen Ticket',
+          desc: 'Return ticket to open triage pool',
+          icon: 'rotate-ccw',
+          tone: C.warn,
+        });
+      }
+    } else if (isAssignedStaff) {
+      // Assigned Technician Actions
+      if (report.status === 'Open') {
+        list.push({
+          status: 'In Progress',
+          label: 'Start Work',
+          desc: 'Begin repairs and update status to In Progress',
+          icon: 'play',
+          tone: C.brand,
+        });
+      } else if (report.status === 'In Progress') {
+        list.push({
+          status: 'Resolved',
+          label: 'Mark Resolved',
+          desc: 'All repairs completed and issue is resolved',
+          icon: 'check-circle',
+          tone: C.success,
+        });
+      }
+    }
+
+    return list;
+  }, [report, isAdmin, isAssignedStaff, C]);
+
+  // Ranked staff by expertise match with report category
+  const rankedStaff = useMemo(() => {
+    if (!report?.category) return staffList;
+    return [...staffList].sort(
+      (a, b) => Number(b.expertise === report.category) - Number(a.expertise === report.category)
+    );
+  }, [staffList, report?.category]);
+
+  async function handleAssignStaff(staffId: string) {
+    if (!report) return;
+    setAssigningStaff(true);
+    const { error } = await supabase
+      .from('reports')
+      .update({ assigned_staff_id: staffId })
+      .eq('id', report.id);
+    setAssigningStaff(false);
+    if (error) {
+      toast({ type: 'error', title: t.common.error, message: error.message });
+      return;
+    }
+    const staff = staffList.find(s => s.id === staffId);
+    setAssigneeName(staff?.full_name ?? 'Staff');
+    setReport(prev => prev ? { ...prev, assigned_staff_id: staffId } : prev);
+    setAssignModalOpen(false);
+    toast({ type: 'success', title: 'Staff Assigned', message: `Assigned to ${staff?.full_name ?? 'Staff'}` });
+    load();
   }
 
   async function handleStatusUpdate(newStatus: Report['status']) {
@@ -129,6 +245,7 @@ export function ReportDetailScreen({ route, navigation }: any) {
       return;
     }
     setReport(prev => prev ? { ...prev, status: newStatus } : prev);
+    toast({ type: 'success', title: 'Status Updated', message: `Report marked as ${newStatus}` });
     // Refresh so the timeline picks up the report_events row a DB trigger may add.
     load();
   }
@@ -258,11 +375,20 @@ export function ReportDetailScreen({ route, navigation }: any) {
                 </Text>
               </View>
             </View>
-            {assigneeName && (
+            {assigneeName ? (
               <View style={styles.personCol}>
-                <Text style={[styles.personLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                  Assigned to
-                </Text>
+                <View style={styles.personHeaderRow}>
+                  <Text style={[styles.personLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium, marginBottom: 0 }]}>
+                    Assigned to
+                  </Text>
+                  {isAdmin && (
+                    <TouchableOpacity onPress={() => setAssignModalOpen(true)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                      <Text style={[styles.reassignActionTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+                        Reassign
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
                 <View style={styles.personInfo}>
                   <Avatar name={assigneeName} size="xs" />
                   <Text style={[styles.personName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -270,7 +396,23 @@ export function ReportDetailScreen({ route, navigation }: any) {
                   </Text>
                 </View>
               </View>
-            )}
+            ) : isAdmin ? (
+              <View style={styles.personCol}>
+                <Text style={[styles.personLabel, { color: C.warn, fontFamily: FontFamily.jakartaMedium }]}>
+                  Unassigned
+                </Text>
+                <TouchableOpacity
+                  style={[styles.assignQuickBtn, { backgroundColor: C.brand + '14', borderColor: C.brand }]}
+                  onPress={() => setAssignModalOpen(true)}
+                  activeOpacity={0.75}
+                >
+                  <Feather name="user-plus" size={13} color={C.brand} />
+                  <Text style={[styles.assignQuickTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+                    Assign Staff
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ) : null}
           </View>
         </View>
 
@@ -314,8 +456,8 @@ export function ReportDetailScreen({ route, navigation }: any) {
         </Text>
         <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14 }]}>
           <View style={styles.catIcon}>
-                  <Icon name={cat.icon} size={32} color={C.text} />
-                </View>
+            <Icon name={cat.icon} size={32} color={C.text} />
+          </View>
           <Text style={[{ color: C.text, fontFamily: FontFamily.jakartaBold, fontSize: 14.5 }]}>
             {report.category}
           </Text>
@@ -343,38 +485,41 @@ export function ReportDetailScreen({ route, navigation }: any) {
           </View>
         )}
 
-        {/* Status update - admin: any status; staff: forward-only on own assigned */}
-        {canUpdateStatus && statusChoices.length > 0 && (
+        {/* Status update - 58dp Dropdown Button Standard */}
+        {canUpdateStatus && availableActions.length > 0 && (
           <View style={styles.statusSection}>
             <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
-              UPDATE STATUS
+              {isAdmin ? 'ADMIN ACTIONS' : 'UPDATE STATUS'}
             </Text>
-            <View style={styles.statusBtns}>
-              {statusChoices.map(s => {
-                const tone = statusTone(C, s);
-                const isActive = report.status === s;
-                return (
-                  <TouchableOpacity
-                    key={s}
-                    style={[
-                      styles.statusOptBtn,
-                      { backgroundColor: isActive ? tone.bg : C.surface, borderColor: isActive ? tone.text : C.border },
-                    ]}
-                    onPress={() => !isActive && handleStatusUpdate(s)}
-                    activeOpacity={isActive ? 1 : 0.75}
-                    disabled={updatingStatus}
-                  >
-                    {updatingStatus && isActive ? (
-                      <ActivityIndicator size="small" color={tone.text} />
-                    ) : (
-                      <Text style={[styles.statusOptTxt, { color: isActive ? tone.text : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                        {s}
-                      </Text>
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+            <TouchableOpacity
+              style={[
+                styles.dropdownBar58,
+                {
+                  backgroundColor: C.surface,
+                  borderColor: C.border,
+                },
+              ]}
+              onPress={() => setStatusModalOpen(true)}
+              activeOpacity={0.75}
+              disabled={updatingStatus}
+            >
+              <View style={styles.dropdownBarLeft}>
+                <View style={[styles.statusDot, { backgroundColor: statusStyle.text }]} />
+                <View style={styles.dropdownBarTexts}>
+                  <Text style={[styles.dropdownBarSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                    {isAdmin ? 'CHANGE STATUS OR LIFECYCLE' : 'TECHNICIAN PROGRESS'}
+                  </Text>
+                  <Text style={[styles.dropdownBarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                    Current: {t.status[report.status] ?? report.status}
+                  </Text>
+                </View>
+              </View>
+              {updatingStatus ? (
+                <ActivityIndicator size="small" color={C.brand} />
+              ) : (
+                <Feather name="chevron-down" size={18} color={C.textMuted} />
+              )}
+            </TouchableOpacity>
           </View>
         )}
 
@@ -394,6 +539,159 @@ export function ReportDetailScreen({ route, navigation }: any) {
 
         <View style={{ height: 28 }} />
       </ScrollView>
+
+      {/* 58dp Status Action Bottom Sheet Modal */}
+      <Modal
+        visible={statusModalOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setStatusModalOpen(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalBackdrop}
+          activeOpacity={1}
+          onPress={() => setStatusModalOpen(false)}
+        >
+          <TouchableOpacity
+            activeOpacity={1}
+            style={[styles.modalSheet, { backgroundColor: C.surface, borderColor: C.border }]}
+          >
+            <View style={styles.modalHeader}>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={[styles.modalTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+                  {isAdmin ? 'Administrative Actions' : 'Update Progress'}
+                </Text>
+                <Text style={[styles.modalSubtitle, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                  {isAdmin ? 'Select ticket lifecycle state' : 'Advance work on this assigned report'}
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={styles.modalCloseBtn}
+                onPress={() => setStatusModalOpen(false)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Feather name="x" size={20} color={C.textMuted} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalOptions}>
+              {availableActions.map((opt) => (
+                <TouchableOpacity
+                  key={opt.status}
+                  style={[styles.modalRow58, { backgroundColor: C.surface2, borderColor: C.border }]}
+                  onPress={() => {
+                    setStatusModalOpen(false);
+                    handleStatusUpdate(opt.status);
+                  }}
+                  activeOpacity={0.75}
+                >
+                  <View style={styles.modalRowLeft}>
+                    <View style={[styles.modalRowIconBox, { backgroundColor: opt.tone + '18' }]}>
+                      <Feather name={opt.icon as any} size={18} color={opt.tone} />
+                    </View>
+                    <View style={styles.modalRowTexts}>
+                      <Text style={[styles.modalRowTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                        {opt.label}
+                      </Text>
+                      <Text style={[styles.modalRowDesc, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                        {opt.desc}
+                      </Text>
+                    </View>
+                  </View>
+                  <Feather name="chevron-right" size={16} color={C.textMuted} />
+                </TouchableOpacity>
+              ))}
+            </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Staff Assignment Bottom Sheet Modal for Admin */}
+      {isAdmin && (
+        <Modal
+          visible={assignModalOpen}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setAssignModalOpen(false)}
+        >
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setAssignModalOpen(false)}
+          >
+            <TouchableOpacity
+              activeOpacity={1}
+              style={[styles.modalSheet, { backgroundColor: C.surface, borderColor: C.border, maxHeight: '80%' }]}
+            >
+              <View style={styles.modalHeader}>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={[styles.modalTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+                    {assigneeName ? 'Reassign Staff' : 'Assign Maintenance Staff'}
+                  </Text>
+                  <Text style={[styles.modalSubtitle, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                    Select a technician for {report.category}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.modalCloseBtn}
+                  onPress={() => setAssignModalOpen(false)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Feather name="x" size={20} color={C.textMuted} />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 360 }}>
+                {rankedStaff.map((s) => {
+                  const isMatch = s.expertise === report.category;
+                  const isCurrent = report.assigned_staff_id === s.id;
+                  return (
+                    <TouchableOpacity
+                      key={s.id}
+                      style={[
+                        styles.modalRow58,
+                        {
+                          backgroundColor: isCurrent ? (C.brand + '14') : C.surface2,
+                          borderColor: isCurrent ? C.brand : C.border,
+                        },
+                      ]}
+                      onPress={() => handleAssignStaff(s.id)}
+                      activeOpacity={0.75}
+                      disabled={assigningStaff}
+                    >
+                      <View style={styles.modalRowLeft}>
+                        <Avatar name={s.full_name} size="sm" />
+                        <View style={styles.modalRowTexts}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            <Text style={[styles.modalRowTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                              {s.full_name}
+                            </Text>
+                            {isMatch && (
+                              <View style={[styles.matchBadge, { backgroundColor: C.successBg }]}>
+                                <Text style={[styles.matchBadgeTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
+                                  Match
+                                </Text>
+                              </View>
+                            )}
+                          </View>
+                          <Text style={[styles.modalRowDesc, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                            {s.expertise ?? s.department ?? 'Staff'}
+                          </Text>
+                        </View>
+                      </View>
+                      {isCurrent ? (
+                        <Feather name="check" size={18} color={C.brand} />
+                      ) : (
+                        <Feather name="chevron-right" size={16} color={C.textMuted} />
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </Modal>
+      )}
     </SafeAreaView>
   );
 }
@@ -464,6 +762,17 @@ const styles = StyleSheet.create({
 
   personCol: { flex: 1 } as ViewStyle,
 
+  personHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  } as ViewStyle,
+
+  reassignActionTxt: {
+    fontSize: 11,
+  } as TextStyle,
+
   personLabel: {
     fontSize: 11,
     letterSpacing: 0.3,
@@ -477,6 +786,22 @@ const styles = StyleSheet.create({
   } as ViewStyle,
 
   personName: { fontSize: 13 } as any,
+
+  assignQuickBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    height: 32,
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    marginTop: 2,
+  } as ViewStyle,
+
+  assignQuickTxt: {
+    fontSize: 12,
+  } as TextStyle,
 
   sectionLabel: {
     fontSize: 11,
@@ -546,16 +871,119 @@ const styles = StyleSheet.create({
 
   actionText: { fontSize: 14 } as any,
 
+  // 58dp Dropdown Bar Standard
   statusSection: { marginTop: 18 } as ViewStyle,
-  statusBtns: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 } as ViewStyle,
-  statusOptBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    minWidth: 80,
+  dropdownBar58: {
+    height: 58,
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 6,
+  } as ViewStyle,
+  dropdownBarLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+    minWidth: 0,
+  } as ViewStyle,
+  statusDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  } as ViewStyle,
+  dropdownBarTexts: {
+    flex: 1,
+    minWidth: 0,
+  } as ViewStyle,
+  dropdownBarSub: {
+    fontSize: 10.5,
+    letterSpacing: 0.5,
+  } as TextStyle,
+  dropdownBarTitle: {
+    fontSize: 14,
+    marginTop: 1,
+  } as TextStyle,
+
+  // Bottom Sheet Modal
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    justifyContent: 'flex-end',
+  } as ViewStyle,
+  modalSheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderTopWidth: 1,
+    paddingHorizontal: 18,
+    paddingTop: 18,
+    paddingBottom: 28,
+  } as ViewStyle,
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    paddingHorizontal: 2,
+  } as ViewStyle,
+  modalTitle: {
+    fontSize: 17,
+  } as TextStyle,
+  modalSubtitle: {
+    fontSize: 12,
+    marginTop: 2,
+  } as TextStyle,
+  modalCloseBtn: {
+    padding: 6,
+    marginLeft: 8,
+  } as ViewStyle,
+  modalOptions: {
+    gap: 8,
+  } as ViewStyle,
+  modalRow58: {
+    height: 58,
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  } as ViewStyle,
+  modalRowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+    minWidth: 0,
+  } as ViewStyle,
+  modalRowIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
-  statusOptTxt: { fontSize: 13 } as any,
+  modalRowTexts: {
+    flex: 1,
+    minWidth: 0,
+  } as ViewStyle,
+  modalRowTitle: {
+    fontSize: 14,
+  } as TextStyle,
+  modalRowDesc: {
+    fontSize: 11.5,
+    marginTop: 1,
+  } as TextStyle,
+  matchBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  } as ViewStyle,
+  matchBadgeTxt: {
+    fontSize: 10,
+  } as TextStyle,
 });

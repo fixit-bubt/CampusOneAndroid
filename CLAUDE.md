@@ -2999,3 +2999,36 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore in 22s.
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
   - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.
+
+
+---
+
+### 71. Admin Home Deduplication & 58dp Status Dropdown Revamp (`AdminDashboardScreen.tsx`, `ReportDetailScreen.tsx`) (/code-review-and-quality, /performance-optimization)
+- **Elimination of Duplicate UI (Small Tablets Removal):**
+  - Removed duplicate `SegmentedTabs` from `AdminDashboardScreen.tsx` that previously duplicated the exact same 3 states (Unassigned, In Progress, Resolved) directly underneath the 3 Stat Cards.
+  - Converted `StatCard` into an interactive touchable filter card (`isSelected`, active brand border `1.5dp`, subtle active tint `C.brand + '14'`, and active text/icon styling). Tapping any of the 3 stat cards switches the filter tab immediately.
+  - Reduced screen clutter, saved vertical viewport space, and eliminated redundant control layers on Admin Home.
+- **58dp Dropdown Button & Status Modal Sheet Standard:**
+  - Replaced cramped, wrapped status pill buttons on `ReportDetailScreen.tsx` with a standard 58dp dropdown button (`height: 58`, `borderRadius: 16`, `borderWidth: 1`, `paddingHorizontal: 16`).
+  - Dropdown button displays active status dot, section subtitle (`ADMIN ACTIONS` vs `UPDATE STATUS`), current status label (`Current: {status}`), and trailing `chevron-down` vector icon.
+  - Tapping opens a sleek bottom sheet modal with 58dp action rows (`height: 58`, `borderRadius: 14`, `borderWidth: 1`, `paddingHorizontal: 16`) providing rich context, vector icons, and descriptions.
+- **Strict Role-Appropriate Status Separation:**
+  - **Admin Actions:** Focused purely on ticket lifecycle:
+    - `Mark Resolved`: Admin resolution override and repair verification (`check-circle`, `C.success`).
+    - `Reject Report`: Mark spam, invalid, or duplicate issue (`slash`, `C.danger`).
+    - `Close Ticket`: Archive completed or obsolete ticket (`lock`, `C.textMuted`).
+    - `Reopen Ticket`: Return terminal tickets (`Resolved`, `Closed`, `Rejected`) back to the open triage pool (`rotate-ccw`, `C.warn`).
+    - Admin is strictly blocked from setting `In Progress` (technician-exclusive action).
+  - **Staff Technician Actions:** Forward-only maintenance workflow:
+    - `Open` -> `Start Work` (`In Progress` via `play`, `C.brand`).
+    - `In Progress` -> `Mark Resolved` (`Resolved` via `check-circle`, `C.success`).
+- **In-Screen Staff Assignment & Reassignment for Admin:**
+  - Enhanced the Reported by / Assigned to card in `ReportDetailScreen.tsx`.
+  - If a report is unassigned, Admin sees a direct `Assign Staff` action button.
+  - If already assigned, Admin sees a direct `Reassign` action button next to the assignee name.
+  - Tapping opens a staff selection bottom sheet modal ranked by trade expertise match with the report category, with instant assignment that does not prematurely advance ticket progress.
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
+  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore in 46s.
+  - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
+  - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.
