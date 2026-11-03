@@ -297,6 +297,23 @@ export function ClubDetailScreen({ route, navigation }: any) {
           </TouchableOpacity>
         )}
 
+        {/* Dedicated 58dp Create Post Bar for President, VP, and Editor (Above Feed & Centered) */}
+        {canPost && (
+          <TouchableOpacity
+            style={[
+              styles.bar58Center,
+              { backgroundColor: C.surface, borderColor: C.border, marginTop: 14 },
+            ]}
+            onPress={() => navigation.navigate('ClubPost', { clubId: club.id, clubName: club.name })}
+            activeOpacity={0.75}
+          >
+            <Feather name="plus-circle" size={24} color={C.text} />
+            <Text style={[styles.barTitleCenter, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              Create Club Post
+            </Text>
+          </TouchableOpacity>
+        )}
+
         {/* Tabs */}
         <View style={{ marginTop: 14 }}>
           <SegmentedTabs<Tab>
@@ -309,23 +326,6 @@ export function ClubDetailScreen({ route, navigation }: any) {
         {/* Tab content */}
         {tab === 'feed' ? (
           <View style={styles.feedList}>
-            {/* Dedicated 58dp Create Post Bar for President, VP, and Editor */}
-            {canPost && (
-              <TouchableOpacity
-                style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border }]}
-                onPress={() => navigation.navigate('ClubPost', { clubId: club.id, clubName: club.name })}
-                activeOpacity={0.75}
-              >
-                <View style={styles.barLeft}>
-                  <Feather name="plus-circle" size={28} color={C.text} />
-                  <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                    Create Club Post
-                  </Text>
-                </View>
-                <Feather name="chevron-right" size={20} color={C.textMuted} />
-              </TouchableOpacity>
-            )}
-
             {posts.length === 0 ? (
               <View style={styles.empty}>
                 <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
@@ -408,6 +408,19 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
   scroll: { paddingTop: 12, paddingBottom: 20 } as ViewStyle,
 
+  bar58Center: {
+    height: 58,
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  } as ViewStyle,
+  barTitleCenter: {
+    fontSize: 15,
+  } as TextStyle,
   bar58: {
     height: 58,
     borderRadius: 16,
