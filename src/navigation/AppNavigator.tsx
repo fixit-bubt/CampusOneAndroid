@@ -34,6 +34,8 @@ import { ClubsScreen }             from '../screens/clubs/ClubsScreen';
 import { ClubDetailScreen }        from '../screens/clubs/ClubDetailScreen';
 import { ClubManageScreen }        from '../screens/clubs/ClubManageScreen';
 import { ClubMembersScreen }       from '../screens/clubs/ClubMembersScreen';
+import { ClubAddMemberScreen }      from '../screens/clubs/ClubAddMemberScreen';
+import { ClubPostDetailScreen }     from '../screens/clubs/ClubPostDetailScreen';
 import { ManageClubsScreen }       from '../screens/dashboard/ManageClubsScreen';
 import { StudyHubScreen }          from '../screens/study/StudyHubScreen';
 import { CourseDetailScreen }      from '../screens/study/CourseDetailScreen';
@@ -148,6 +150,8 @@ export function AppNavigator() {
       <Stack.Screen name="ClubDetail"     component={ClubDetailScreen} />
       <Stack.Screen name="ClubManage"     component={ClubManageScreen} />
       <Stack.Screen name="ClubMembers"    component={ClubMembersScreen} />
+      <Stack.Screen name="ClubAddMember"  component={ClubAddMemberScreen} />
+      <Stack.Screen name="ClubPostDetail" component={ClubPostDetailScreen} />
       <Stack.Screen name="ManageClubs"    component={ManageClubsScreen} />
 
       {/* Study */}

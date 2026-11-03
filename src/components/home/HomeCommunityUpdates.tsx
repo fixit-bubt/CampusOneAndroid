@@ -303,7 +303,7 @@ export function HomeCommunityUpdates({ refreshTrigger }: HomeCommunityUpdatesPro
     }
   }, []);
 
-  // 1. Instant sync of read IDs when screen is focused (returning from announcements or switching tabs)
+  // 1. Instant sync of read IDs and fresh data when screen is focused
   useFocusEffect(
     useCallback(() => {
       let active = true;
@@ -313,10 +313,11 @@ export function HomeCommunityUpdates({ refreshTrigger }: HomeCommunityUpdatesPro
           setReadIds(new Set(cachedReads));
         }
       });
+      loadData();
       return () => {
         active = false;
       };
-    }, [user?.id])
+    }, [user?.id, loadData])
   );
 
   // 2. Real-time in-app broadcast listener (instant 0ms update when notice read anywhere)
@@ -343,6 +344,9 @@ export function HomeCommunityUpdates({ refreshTrigger }: HomeCommunityUpdatesPro
     const channel = supabase
       .channel('home_community_live')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, () => {
+        loadData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'club_posts' }, () => {
         loadData();
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'announcement_reads' }, (payload: any) => {

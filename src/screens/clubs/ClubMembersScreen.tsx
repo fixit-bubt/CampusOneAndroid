@@ -47,9 +47,6 @@ export function ClubMembersScreen({ route, navigation }: any) {
   const [requests, setRequests] = useState<JoinReq[]>([]);
   const membersRef = useRef<Member[]>([]);
   membersRef.current = members;
-  const [addOpen, setAddOpen] = useState(false);
-  const [query, setQuery] = useState('');
-  const [results, setResults] = useState<{ id: string; full_name: string; avatar_url: string | null }[]>([]);
   const [roleTarget, setRoleTarget] = useState<Member | null>(null);
   const toast = useToast();
 
@@ -79,34 +76,7 @@ export function ClubMembersScreen({ route, navigation }: any) {
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
-  // Student search for the add sheet - exclude existing members client-side.
-  useEffect(() => {
-    const q = query.trim();
-    if (!addOpen || q.length < 2) { setResults([]); return; }
-    const timer = setTimeout(async () => {
-      const people = await loadPeople();
-      const memberIds = new Set(membersRef.current.map(m => m.user_id));
-      const needle = q.toLowerCase();
-      setResults(
-        Object.values(people)
-          .filter(p => p.role === 'student' && !memberIds.has(p.id) && p.full_name.toLowerCase().includes(needle))
-          .slice(0, 12)
-          .map(p => ({ id: p.id, full_name: p.full_name, avatar_url: p.avatar_url })),
-      );
-    }, 250);
-    return () => clearTimeout(timer);
-  }, [query, addOpen]);
 
-  async function addMember(userId: string) {
-    const { error } = await supabase
-      .from('club_members')
-      .insert({ club_id: clubId, user_id: userId, role: 'member', added_by: user?.id });
-    if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
-    setQuery('');
-    setAddOpen(false);
-    toast({ type: 'success', title: 'Member Added', message: 'Student enrolled in club roster.' });
-    await load();
-  }
 
   async function setRole(m: Member, role: string) {
     const { error } = await supabase.from('club_members').update({ role }).eq('id', m.id);
@@ -150,32 +120,36 @@ export function ClubMembersScreen({ route, navigation }: any) {
   }
 
   const myRole = members.find(m => m.user_id === user?.id)?.role ?? null;
-  const canManage = myRole === 'president' || myRole === 'vp' || profile?.role === 'admin';
-  const canSetRole = myRole === 'president' || profile?.role === 'admin';
+  const canManage = myRole === 'president' || myRole === 'vp';
+  const canSetRole = myRole === 'president';
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar
         title={t.clubs.members}
         onBack={() => navigation.goBack()}
-        rightSlot={canManage ? (
-          <TouchableOpacity
-            style={[styles.addBtn, { backgroundColor: C.brand }]}
-            onPress={() => setAddOpen(true)}
-            activeOpacity={0.8}
-          >
-            <Feather name="user-plus" size={13} color={C.white} />
-            <Text style={[styles.addBtnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>
-              {t.clubs.addMembers}
-            </Text>
-          </TouchableOpacity>
-        ) : undefined}
       />
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
       >
+        {/* Dedicated 58dp Add Club Member Bar for President & VP */}
+        {canManage && (
+          <TouchableOpacity
+            style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border, marginBottom: 14 }]}
+            onPress={() => navigation.navigate('ClubAddMember', { clubId, clubName: route.params?.clubName })}
+            activeOpacity={0.75}
+          >
+            <View style={styles.barLeft}>
+              <Feather name="user-plus" size={28} color={C.text} />
+              <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                Add Club Member
+              </Text>
+            </View>
+            <Feather name="chevron-right" size={20} color={C.textMuted} />
+          </TouchableOpacity>
+        )}
         {requests.length > 0 && (
           <View style={{ marginBottom: 16 }}>
             <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
@@ -246,60 +220,7 @@ export function ClubMembersScreen({ route, navigation }: any) {
         <View style={{ height: 16 }} />
       </ScrollView>
 
-      {/* Add Member Sheet (Universal 58dp Search Bar) */}
-      <Modal visible={addOpen} transparent animationType="slide" onRequestClose={() => setAddOpen(false)}>
-        <KeyboardAvoidingView style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }} behavior="padding">
-          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setAddOpen(false)} />
-          <View style={[styles.sheet, { backgroundColor: C.surface }]}>
-            <View style={styles.sheetHandle} />
-            <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-              {t.clubs.addMembers}
-            </Text>
 
-            <View style={[styles.bar58, { backgroundColor: C.bg, borderColor: C.border, marginTop: 12, marginBottom: 12 }]}>
-              <Icon name="search" size={20} color={C.textMuted} />
-              <TextInput
-                style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                placeholder={t.common.search + ' students...'}
-                placeholderTextColor={C.textMuted}
-                value={query}
-                onChangeText={setQuery}
-                autoFocus
-              />
-              {query.length > 0 && (
-                <TouchableOpacity onPress={() => setQuery('')} hitSlop={8} activeOpacity={0.7}>
-                  <Feather name="x-circle" size={18} color={C.textMuted} />
-                </TouchableOpacity>
-              )}
-            </View>
-
-            <ScrollView style={{ maxHeight: 320 }} keyboardShouldPersistTaps="handled">
-              {results.map(r => (
-                <TouchableOpacity
-                  key={r.id}
-                  style={[styles.resultRow, { backgroundColor: C.bg, borderColor: C.border }]}
-                  onPress={() => addMember(r.id)}
-                  activeOpacity={0.7}
-                >
-                  <Avatar uri={r.avatar_url} name={r.full_name} size="sm" />
-                  <Text style={[styles.name, { color: C.text, fontFamily: FontFamily.jakartaBold, flex: 1 }]} numberOfLines={1}>
-                    {r.full_name}
-                  </Text>
-                  <View style={[styles.addPill, { backgroundColor: C.brand }]}>
-                    <Feather name="plus" size={14} color={C.white} />
-                    <Text style={[styles.addPillTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>Add</Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-              {query.trim().length >= 2 && results.length === 0 && (
-                <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                  {t.common.noResults}
-                </Text>
-              )}
-            </ScrollView>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
 
       {/* Role Picker Sheet (Universal 58dp Option Bars) */}
       <Modal visible={!!roleTarget} transparent animationType="slide" onRequestClose={() => setRoleTarget(null)}>
@@ -335,7 +256,7 @@ export function ClubMembersScreen({ route, navigation }: any) {
                       style={[
                         styles.name,
                         {
-                          color: isSelected ? C.brand : C.text,
+                          color: C.text,
                           fontFamily: isSelected ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
                           textTransform: 'capitalize',
                         },
@@ -343,7 +264,7 @@ export function ClubMembersScreen({ route, navigation }: any) {
                     >
                       {t.clubs.roleLabels[r] ?? r}
                     </Text>
-                    {isSelected && <Feather name="check" size={18} color={C.brand} />}
+                    {isSelected && <Feather name="check" size={18} color={C.text} />}
                   </TouchableOpacity>
                 );
               })}
@@ -387,7 +308,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
   } as ViewStyle,
+  barLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  } as ViewStyle,
+  barTitle: {
+    fontSize: 14,
+    flexShrink: 1,
+  } as TextStyle,
   dropdownBar: {
     justifyContent: 'space-between',
   } as ViewStyle,

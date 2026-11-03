@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet, Image,
-  ActivityIndicator, Alert, type ViewStyle,
+  ActivityIndicator, Alert, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -168,9 +168,9 @@ export function ClubDetailScreen({ route, navigation }: any) {
   // admin who isn't a member of this club gets zero posts back and any
   // post insert/update/pin is rejected, so post actions must not be gated
   // on isAdmin or the buttons just fail.
-  const canManageMembers = myRole === 'president' || myRole === 'vp' || isAdmin;
+  const canManageMembers = myRole === 'president' || myRole === 'vp';
   const canManagePosts = myRole === 'president' || myRole === 'vp';
-  const canPost = canManagePosts || myRole === 'editor';
+  const canPost = myRole === 'president' || myRole === 'vp' || myRole === 'editor';
   const isMember = !!myRole;
 
   function leaveClub() {
@@ -214,23 +214,14 @@ export function ClubDetailScreen({ route, navigation }: any) {
       <SubBar
         title={club.name}
         onBack={() => navigation.goBack()}
-        rightSlot={(canManageMembers || canPost) ? (
+        rightSlot={canManageMembers ? (
           <View style={styles.rightRow}>
-            {canManageMembers && (
-              <>
-                <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('ClubMembers', { clubId: club.id })} activeOpacity={0.75}>
-                  <Feather name="users" size={22} color={C.text} />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('ClubManage', { clubId: club.id })} activeOpacity={0.75}>
-                  <Feather name="sliders" size={22} color={C.text} />
-                </TouchableOpacity>
-              </>
-            )}
-            {canPost && (
-              <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('ClubPost', { clubId: club.id, clubName: club.name })} activeOpacity={0.75}>
-                <Feather name="plus" size={22} color={C.text} />
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('ClubMembers', { clubId: club.id, clubName: club.name })} activeOpacity={0.75}>
+              <Feather name="users" size={22} color={C.text} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('ClubManage', { clubId: club.id })} activeOpacity={0.75}>
+              <Feather name="sliders" size={22} color={C.text} />
+            </TouchableOpacity>
           </View>
         ) : undefined}
       />
@@ -318,62 +309,67 @@ export function ClubDetailScreen({ route, navigation }: any) {
         {/* Tab content */}
         {tab === 'feed' ? (
           <View style={styles.feedList}>
+            {/* Dedicated 58dp Create Post Bar for President, VP, and Editor */}
+            {canPost && (
+              <TouchableOpacity
+                style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border }]}
+                onPress={() => navigation.navigate('ClubPost', { clubId: club.id, clubName: club.name })}
+                activeOpacity={0.75}
+              >
+                <View style={styles.barLeft}>
+                  <Feather name="plus-circle" size={28} color={C.text} />
+                  <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    Create Club Post
+                  </Text>
+                </View>
+                <Feather name="chevron-right" size={20} color={C.textMuted} />
+              </TouchableOpacity>
+            )}
+
             {posts.length === 0 ? (
               <View style={styles.empty}>
                 <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
                   {isMember ? t.clubs2.noPosts : t.clubs2.noPostsNotMember}
                 </Text>
               </View>
-            ) : posts.map(p => {
-              const canModeratePost = canManagePosts;
-              const canDeletePost = canManagePosts || p.author_id === user?.id;
-              return (
-                <View
+            ) : (
+              posts.map((p) => (
+                <TouchableOpacity
                   key={p.id}
-                  style={[styles.postCard, {
-                    backgroundColor: C.surface,
-                    borderColor: p.is_pinned ? Accent.amber : C.border,
-                  }]}
+                  style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border }]}
+                  onPress={() =>
+                    navigation.navigate('ClubPostDetail', {
+                      postId: p.id,
+                      clubId: club.id,
+                      clubName: club.name,
+                      canModerate: canManagePosts,
+                    })
+                  }
+                  activeOpacity={0.75}
                 >
+                  <View style={styles.barLeft}>
+                    <Feather
+                      name={p.is_pinned ? 'bookmark' : 'file-text'}
+                      size={28}
+                      color={C.text}
+                    />
+                    <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
+                      <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                        {p.title || 'Club Update'}
+                      </Text>
+                    </View>
+                  </View>
                   {p.is_pinned && (
-                    <View style={styles.pinnedRow}>
-                      <Feather name="bookmark" size={11} color={Accent.amber} />
-                      <Text style={[styles.pinnedTxt, { color: Accent.amber, fontFamily: FontFamily.jakartaBold }]}>
-                        {t.clubs.pinned}
+                    <View style={[styles.pinnedBadge, { backgroundColor: C.surface2 }]}>
+                      <Text style={[styles.pinnedBadgeTxt, { color: Accent.amber, fontFamily: FontFamily.jakartaBold }]}>
+                        Pinned
                       </Text>
                     </View>
                   )}
-                  <View style={styles.postHeader}>
-                    <Avatar name={(p as any).profiles?.full_name} size="sm" />
-                    <View style={{ flex: 1, minWidth: 0 }}>
-                      <Text style={[styles.postAuthor, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                        {(p as any).profiles?.full_name ?? t.clubs2.memberFallback}
-                      </Text>
-                      <Text style={[styles.postTime, { color: C.textMuted, fontFamily: FontFamily.jakartaSemiBold }]}>
-                        {timeAgo(p.created_at)}
-                      </Text>
-                    </View>
-                    {canModeratePost && (
-                      <TouchableOpacity onPress={() => togglePin(p)} hitSlop={8} activeOpacity={0.7}>
-                        <Feather name="bookmark" size={16} color={p.is_pinned ? Accent.amber : C.textMuted} />
-                      </TouchableOpacity>
-                    )}
-                    {canDeletePost && (
-                      <TouchableOpacity onPress={() => deletePost(p)} hitSlop={8} activeOpacity={0.7} style={{ marginLeft: 12 }}>
-                        <Feather name="trash-2" size={15} color={C.danger} />
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                  {p.title ? (
-                    <Text style={[styles.postTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{p.title}</Text>
-                  ) : null}
-                  <Text style={[styles.postBody, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>{p.body}</Text>
-                  {p.image_url ? (
-                    <Image source={{ uri: p.image_url }} style={styles.postImage} resizeMode="cover" />
-                  ) : null}
-                </View>
-              );
-            })}
+                  <Feather name="chevron-right" size={20} color={C.textMuted} />
+                </TouchableOpacity>
+              ))
+            )}
           </View>
         ) : (
           <View style={[styles.membersCard, { backgroundColor: C.surface, borderColor: C.border }]}>
@@ -411,6 +407,35 @@ const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
   scroll: { paddingTop: 12, paddingBottom: 20 } as ViewStyle,
+
+  bar58: {
+    height: 58,
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  } as ViewStyle,
+  barLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  } as ViewStyle,
+  barTitle: {
+    fontSize: 14,
+    flexShrink: 1,
+  } as TextStyle,
+  pinnedBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    marginRight: 4,
+  } as ViewStyle,
+  pinnedBadgeTxt: {
+    fontSize: 11,
+  } as TextStyle,
 
   headerCard: { flexDirection: 'row', alignItems: 'center', gap: 13, padding: 14, borderRadius: 16, borderWidth: 1 } as ViewStyle,
   thumb: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center', flexShrink: 0 } as ViewStyle,

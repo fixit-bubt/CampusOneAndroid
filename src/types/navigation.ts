@@ -50,12 +50,14 @@ export type AppStackParams = {
   EventPost:    undefined;
 
   // Clubs
-  Clubs:       undefined;
-  ClubDetail:  { clubId: string };
-  ClubPost:    { clubId: string; clubName: string };
-  ClubManage:  { clubId: string };
-  ClubMembers: { clubId: string };
-  ManageClubs: undefined;
+  Clubs:          undefined;
+  ClubDetail:     { clubId: string };
+  ClubPost:       { clubId: string; clubName: string };
+  ClubPostDetail: { postId: string; clubId: string; clubName?: string; canModerate?: boolean };
+  ClubAddMember:  { clubId: string; clubName?: string };
+  ClubManage:     { clubId: string };
+  ClubMembers:    { clubId: string; clubName?: string };
+  ManageClubs:    undefined;
 
   // Jobs
   JobsBrowse:   undefined;

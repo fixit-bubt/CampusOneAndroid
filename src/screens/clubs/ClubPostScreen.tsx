@@ -63,6 +63,19 @@ export function ClubPostScreen({ route, navigation }: any) {
     if (!canSubmit || !user || loading || uploading) return;
     setLoading(true);
     try {
+      // Guard: Only president, vp, and editor can post
+      const { data: mem } = await supabase
+        .from('club_members')
+        .select('role')
+        .eq('club_id', clubId)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (!mem || !['president', 'vp', 'editor'].includes(mem.role)) {
+        toast({ type: 'error', title: 'Unauthorized', message: 'Only club officers can publish posts.' });
+        return;
+      }
+
       const { error } = await supabase.from('club_posts').insert({
         club_id:   clubId,
         author_id: user.id,
