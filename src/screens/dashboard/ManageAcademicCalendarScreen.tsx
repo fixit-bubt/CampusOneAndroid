@@ -14,8 +14,10 @@ import {
   KeyboardAvoidingView,
   Platform,
   Share,
+  type ViewStyle,
+  type TextStyle,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
@@ -25,10 +27,13 @@ import { useToast } from '../../components/ui/Toast';
 import { SubBar } from '../../components/layout/TopBar';
 import { CampusPdfViewerModal } from '../../components/pdf/CampusPdfViewerModal';
 import { FontFamily, Radius } from '../../theme';
+import { formatRelativeTime } from '../../utils/format';
 import {
   fetchAcademicCalendars,
   uploadAcademicCalendar,
   deleteAcademicCalendar,
+  triggerCalendarSync,
+  getLastCalendarSyncTime,
   type CalendarFileType,
 } from '../../services/academicCalendarService';
 import type { AcademicCalendarDoc } from '../../constants/academicCalendar';
@@ -40,7 +45,8 @@ interface SelectedFile {
   type: CalendarFileType;
 }
 
-const CalendarBar58 = memo(function CalendarBar58({
+// 72dp Published Calendar Bar
+const CalendarBar72 = memo(function CalendarBar72({
   item,
   onOpen,
   onDelete,
@@ -58,7 +64,7 @@ const CalendarBar58 = memo(function CalendarBar58({
   return (
     <TouchableOpacity
       style={[
-        styles.bar58,
+        styles.bar72,
         {
           backgroundColor: C.surface,
           borderColor: C.border,
@@ -72,7 +78,7 @@ const CalendarBar58 = memo(function CalendarBar58({
         <Feather name={iconName} size={32} color={C.text} />
       </View>
 
-      {/* Middle Title & Metadata Block */}
+      {/* Middle Title & Term Metadata */}
       <View style={styles.barTextCol}>
         <View style={styles.titleRow}>
           <Text
@@ -82,7 +88,7 @@ const CalendarBar58 = memo(function CalendarBar58({
             {item.title}
           </Text>
           {item.is_active && (
-            <View style={[styles.activeBadge, { backgroundColor: C.brand + '20' }]}>
+            <View style={[styles.activeBadge, { backgroundColor: C.brand + '20', borderColor: C.brand + '50' }]}>
               <Text style={[styles.activeBadgeTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
                 ACTIVE
               </Text>
@@ -101,21 +107,23 @@ const CalendarBar58 = memo(function CalendarBar58({
       {/* Action Controls */}
       <View style={styles.actionRow}>
         <TouchableOpacity
-          style={styles.actionBtn}
+          style={[styles.actionBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
           onPress={() => onOpen(item)}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           activeOpacity={0.7}
+          accessibilityLabel="Preview document"
         >
-          <Feather name="eye" size={20} color={C.textMuted} />
+          <Feather name="eye" size={18} color={C.textMuted} />
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.actionBtn}
+          style={[styles.actionBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
           onPress={() => onDelete(item)}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           activeOpacity={0.7}
+          accessibilityLabel="Delete document"
         >
-          <Feather name="trash-2" size={20} color={C.danger} />
+          <Feather name="trash-2" size={18} color={C.danger} />
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
@@ -132,6 +140,8 @@ export function ManageAcademicCalendarScreen({ navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
 
   // Form states
   const [selectedFile, setSelectedFile] = useState<SelectedFile | null>(null);
@@ -144,8 +154,14 @@ export function ManageAcademicCalendarScreen({ navigation }: any) {
 
   const loadData = useCallback(async () => {
     try {
-      const docs = await fetchAcademicCalendars();
+      const [docs, syncTime] = await Promise.all([
+        fetchAcademicCalendars(),
+        getLastCalendarSyncTime(),
+      ]);
       setCalendars(docs);
+      if (syncTime) {
+        setLastSyncTime(formatRelativeTime(syncTime));
+      }
     } catch {
       toast({ type: 'error', title: 'Error', message: 'Failed to load published calendars' });
     } finally {
@@ -162,6 +178,33 @@ export function ManageAcademicCalendarScreen({ navigation }: any) {
     setRefreshing(true);
     loadData();
   }, [loadData]);
+
+  // Crawler Sync Trigger
+  const handleSyncCrawler = async () => {
+    if (syncing) return;
+    setSyncing(true);
+    toast({
+      type: 'info',
+      title: 'Crawler Syncing',
+      message: 'Checking BUBT website for latest academic calendar circulars...',
+    });
+
+    try {
+      const res = await triggerCalendarSync(true);
+      if (res.success) {
+        toast({
+          type: 'success',
+          title: 'Sync Complete',
+          message: res.message || 'Academic calendars synchronized successfully.',
+        });
+        await loadData();
+      } else {
+        toast({ type: 'error', title: 'Sync Failed', message: res.error || 'Could not reach BUBT website' });
+      }
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   // Pick PDF via document picker
   const handlePickPdf = async () => {
@@ -308,7 +351,7 @@ export function ManageAcademicCalendarScreen({ navigation }: any) {
   };
 
   return (
-    <View style={[styles.root, { backgroundColor: C.bg }]}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]} edges={['top', 'left', 'right']}>
       {/* SubBar with Back Navigation */}
       <SubBar
         title="Manage Academic Calendar"
@@ -345,10 +388,10 @@ export function ManageAcademicCalendarScreen({ navigation }: any) {
                 ADD NEW ACADEMIC CALENDAR
               </Text>
 
-              {/* Bar 1: File Selection Bar (Upload PDF or Photo) */}
+              {/* Bar 1: File Selection Bar (Upload PDF or Photo) - 72dp Height */}
               <TouchableOpacity
                 style={[
-                  styles.fileUploadBar,
+                  styles.fileUploadBar72,
                   {
                     backgroundColor: C.surface,
                     borderColor: selectedFile ? C.brand : C.border,
@@ -371,7 +414,7 @@ export function ManageAcademicCalendarScreen({ navigation }: any) {
                     style={[
                       styles.uploadTitle,
                       {
-                        color: selectedFile ? C.text : C.text,
+                        color: C.text,
                         fontFamily: FontFamily.jakartaBold,
                       },
                     ]}
@@ -405,10 +448,10 @@ export function ManageAcademicCalendarScreen({ navigation }: any) {
                 )}
               </TouchableOpacity>
 
-              {/* Bar 2: Calendar Name Input Bar */}
+              {/* Bar 2: Calendar Name Input Bar - 60dp Height */}
               <View
                 style={[
-                  styles.inputBar54,
+                  styles.inputBar60,
                   {
                     backgroundColor: C.surface,
                     borderColor: C.border,
@@ -437,7 +480,7 @@ export function ManageAcademicCalendarScreen({ navigation }: any) {
               {/* Bar 3: Primary Publish Action Button */}
               <TouchableOpacity
                 style={[
-                  styles.publishBtn50,
+                  styles.publishBtn52,
                   {
                     backgroundColor: C.brand,
                     opacity: uploading ? 0.7 : 1,
@@ -464,6 +507,43 @@ export function ManageAcademicCalendarScreen({ navigation }: any) {
                 )}
               </TouchableOpacity>
 
+              {/* Crawler Sync Card (Matches Study Hub & Notice Board Design) */}
+              <View style={[styles.syncCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+                <View style={styles.syncCardTop}>
+                  <View style={styles.syncIconWrap}>
+                    <Feather name="refresh-cw" size={28} color={C.text} />
+                  </View>
+                  <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
+                    <Text style={[styles.syncTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                      BUBT Calendar Sync
+                    </Text>
+                    <Text style={[styles.syncSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
+                      {lastSyncTime
+                        ? `Last sync: ${lastSyncTime}`
+                        : 'Sync latest official academic calendars from BUBT'}
+                    </Text>
+                  </View>
+                </View>
+
+                <TouchableOpacity
+                  style={[styles.syncActionBtn, { backgroundColor: C.brand }]}
+                  onPress={handleSyncCrawler}
+                  disabled={syncing}
+                  activeOpacity={0.85}
+                >
+                  {syncing ? (
+                    <ActivityIndicator color="#fff" size="small" />
+                  ) : (
+                    <>
+                      <Feather name="globe" size={18} color="#fff" />
+                      <Text style={[styles.syncActionTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                        Sync from BUBT Website
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+
               {/* Section Divider & Header for List */}
               <View style={styles.listSectionHeaderRow}>
                 <Text
@@ -478,7 +558,7 @@ export function ManageAcademicCalendarScreen({ navigation }: any) {
             </View>
           }
           renderItem={({ item }) => (
-            <CalendarBar58
+            <CalendarBar72
               item={item}
               onOpen={handleOpenDoc}
               onDelete={handleDeleteDoc}
@@ -540,7 +620,7 @@ export function ManageAcademicCalendarScreen({ navigation }: any) {
             </Text>
 
             <TouchableOpacity
-              style={[styles.sheetOptionBar58, { borderColor: C.border }]}
+              style={[styles.sheetOptionBar72, { borderColor: C.border }]}
               onPress={handlePickPdf}
               activeOpacity={0.75}
             >
@@ -559,7 +639,7 @@ export function ManageAcademicCalendarScreen({ navigation }: any) {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.sheetOptionBar58, { borderColor: C.border }]}
+              style={[styles.sheetOptionBar72, { borderColor: C.border }]}
               onPress={handlePickPhoto}
               activeOpacity={0.75}
             >
@@ -646,245 +726,292 @@ export function ManageAcademicCalendarScreen({ navigation }: any) {
           </View>
         </Modal>
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
+  safe: {
     flex: 1,
-  },
+  } as ViewStyle,
   scrollContent: {
     paddingHorizontal: 16,
     paddingTop: 12,
-  },
+  } as ViewStyle,
   formContainer: {
     marginBottom: 8,
-  },
+  } as ViewStyle,
   sectionHeader: {
     fontSize: 12,
     letterSpacing: 0.6,
     marginBottom: 8,
     marginTop: 4,
-  },
-  // Bar 1: File Upload Bar
-  fileUploadBar: {
-    height: 64,
+  } as TextStyle,
+
+  // Bar 1: File Upload Bar (72dp Height)
+  fileUploadBar72: {
+    height: 72,
     borderRadius: Radius.lg,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 14,
     marginBottom: 10,
-  },
+  } as ViewStyle,
   iconSlot32: {
     width: 36,
     height: 36,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
-  },
+  } as ViewStyle,
   uploadInfoCol: {
     flex: 1,
+    minWidth: 0,
     justifyContent: 'center',
-  },
+  } as ViewStyle,
   uploadTitle: {
-    fontSize: 14,
-    lineHeight: 19,
-  },
+    fontSize: 14.5,
+    lineHeight: 20,
+  } as TextStyle,
   uploadSub: {
     fontSize: 12,
     lineHeight: 16,
-    marginTop: 1,
-  },
+    marginTop: 2,
+  } as TextStyle,
   clearBtn: {
     padding: 6,
-  },
-  // Bar 2: Name Input Bar
-  inputBar54: {
-    height: 54,
+  } as ViewStyle,
+
+  // Bar 2: Name Input Bar (60dp Height)
+  inputBar60: {
+    height: 60,
     borderRadius: Radius.lg,
     borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 14,
     marginBottom: 12,
-  },
+  } as ViewStyle,
   inputLeadingIcon: {
-    width: 28,
+    width: 32,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 8,
-  },
+  } as ViewStyle,
   textInput: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 14.5,
     padding: 0,
-  },
-  // Bar 3: Primary Publish Button
-  publishBtn50: {
-    height: 50,
+  } as TextStyle,
+
+  // Bar 3: Primary Publish Button (52dp Height)
+  publishBtn52: {
+    height: 52,
     borderRadius: Radius.lg,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 18,
-  },
+    marginBottom: 14,
+  } as ViewStyle,
   publishBtnRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-  },
+  } as ViewStyle,
   publishBtnTxt: {
-    fontSize: 14,
-  },
-  listSectionHeaderRow: {
-    marginTop: 6,
-    marginBottom: 2,
-  },
-  // 58dp Bar Component
-  bar58: {
-    height: 58,
+    fontSize: 14.5,
+  } as TextStyle,
+
+  // BUBT Crawler Sync Card (Matches ManageAnnouncementsScreen)
+  syncCard: {
     borderRadius: Radius.lg,
     borderWidth: 1,
+    padding: 14,
+    marginBottom: 14,
+  } as ViewStyle,
+  syncCardTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    marginBottom: 8,
-  },
-  barTextCol: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  barTitle: {
-    fontSize: 14,
-    lineHeight: 18,
-  },
-  barSubtitle: {
-    fontSize: 11.5,
-    lineHeight: 15,
-    marginTop: 1,
-  },
-  activeBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: 6,
-  },
-  activeBadgeTxt: {
-    fontSize: 9.5,
-    letterSpacing: 0.3,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  actionBtn: {
+    gap: 12,
+    marginBottom: 12,
+  } as ViewStyle,
+  syncIconWrap: {
     width: 36,
     height: 36,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  loadingBox: {
-    paddingVertical: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyCard: {
-    paddingVertical: 36,
-    paddingHorizontal: 20,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 8,
-    gap: 8,
-  },
-  emptyTitle: {
-    fontSize: 15,
-    marginTop: 4,
-  },
-  emptySub: {
+  } as ViewStyle,
+  syncTitle: {
+    fontSize: 14.5,
+  } as TextStyle,
+  syncSub: {
     fontSize: 12,
-    textAlign: 'center',
-    maxWidth: 260,
-  },
-  // Modal Sheet
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.65)',
-    justifyContent: 'flex-end',
-  },
-  pickerSheet: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    borderTopWidth: 1,
-    padding: 20,
-    paddingBottom: 36,
-    gap: 10,
-  },
-  sheetTitle: {
-    fontSize: 16,
-    marginBottom: 6,
-  },
-  sheetOptionBar58: {
-    height: 58,
+    marginTop: 2,
+  } as TextStyle,
+  syncActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 9,
+    height: 48,
+    borderRadius: Radius.md,
+  } as ViewStyle,
+  syncActionTxt: {
+    fontSize: 14,
+  } as TextStyle,
+
+  listSectionHeaderRow: {
+    marginTop: 6,
+    marginBottom: 4,
+  } as ViewStyle,
+
+  // 72dp Bar Component (Standardized 72dp Height)
+  bar72: {
+    height: 72,
     borderRadius: Radius.lg,
     borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 14,
-  },
+    marginBottom: 10,
+  } as ViewStyle,
+  barTextCol: {
+    flex: 1,
+    minWidth: 0,
+    justifyContent: 'center',
+    paddingRight: 8,
+  } as ViewStyle,
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  } as ViewStyle,
+  barTitle: {
+    flexShrink: 1,
+    fontSize: 14.5,
+    lineHeight: 20,
+  } as TextStyle,
+  barSubtitle: {
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 2,
+  } as TextStyle,
+  activeBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 6,
+    borderWidth: 1,
+  } as ViewStyle,
+  activeBadgeTxt: {
+    fontSize: 9.5,
+    letterSpacing: 0.4,
+  } as TextStyle,
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  } as ViewStyle,
+  actionBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+
+  loadingBox: {
+    paddingVertical: 40,
+    alignItems: 'center',
+  } as ViewStyle,
+  emptyCard: {
+    padding: 32,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 8,
+  } as ViewStyle,
+  emptyTitle: {
+    fontSize: 15,
+    marginTop: 4,
+  } as TextStyle,
+  emptySub: {
+    fontSize: 12.5,
+    textAlign: 'center',
+  } as TextStyle,
+
+  // Modal Sheet Styles
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'flex-end',
+  } as ViewStyle,
+  pickerSheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderTopWidth: 1,
+    padding: 20,
+    paddingBottom: 36,
+    gap: 12,
+  } as ViewStyle,
+  sheetTitle: {
+    fontSize: 17,
+    textAlign: 'center',
+    marginBottom: 8,
+  } as TextStyle,
+  sheetOptionBar72: {
+    height: 72,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+  } as ViewStyle,
   cancelBtn: {
-    height: 48,
+    height: 50,
     borderRadius: Radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 4,
-  },
+  } as ViewStyle,
   cancelBtnTxt: {
-    fontSize: 14,
-  },
-  // Photo Viewer Modal
+    fontSize: 14.5,
+  } as TextStyle,
+
+  // Photo Viewer Fullscreen
   photoViewerContainer: {
     flex: 1,
     backgroundColor: '#000000',
-  },
+  } as ViewStyle,
   photoHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingBottom: 12,
-  },
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+  } as ViewStyle,
   photoCloseBtn: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+    padding: 8,
+  } as ViewStyle,
+  photoShareBtn: {
+    padding: 8,
+  } as ViewStyle,
   photoTitle: {
     flex: 1,
     color: '#ffffff',
-    fontSize: 14,
-    marginHorizontal: 12,
-  },
-  photoShareBtn: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+    fontSize: 15,
+    textAlign: 'center',
+    marginHorizontal: 8,
+  } as TextStyle,
   photoBody: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
+  } as ViewStyle,
   photoImage: {
     width: '100%',
     height: '100%',
-  },
+  } as any,
 });

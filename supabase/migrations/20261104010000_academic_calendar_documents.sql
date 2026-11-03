@@ -24,3 +24,4 @@ values
   ('Summer 2026 Academic Calendar', 'Official BUBT Academic Calendar for Summer 2026 Semester', '2026-05-06', 'https://campusonebubt.vercel.app/bubt-academic-calendar-summer-2026.pdf', 'pdf', 'Summer 2026', false, 'general'),
   ('Spring 2026 Academic Calendar', 'Official BUBT Academic Calendar for Spring 2026 Semester', '2026-01-10', 'https://campusonebubt.vercel.app/bubt-academic-calendar-summer-2026.pdf', 'pdf', 'Spring 2026', false, 'general')
 on conflict do nothing;
+

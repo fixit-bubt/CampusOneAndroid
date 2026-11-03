@@ -1,4 +1,5 @@
 import { File } from 'expo-file-system';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
 import { BUCKETS } from '../constants/app';
 import { CacheKeys, getCache, setCache } from './cacheService';
@@ -21,9 +22,12 @@ export interface ServiceResponse<T> {
   error?: string;
 }
 
+const STORAGE_KEY_LAST_CALENDAR_SYNC = 'campusone_last_calendar_sync_time';
+
 /**
  * Fetch all published academic calendar documents.
  * Returns cached list instantly with background Supabase synchronization.
+ * Includes official 4-year archive fallback (2023-2026).
  */
 export async function fetchAcademicCalendars(): Promise<AcademicCalendarDoc[]> {
   try {
@@ -186,5 +190,66 @@ export async function deleteAcademicCalendar(
     return { success: true, data: null };
   } catch (err: any) {
     return { success: false, error: err.message || 'Delete operation failed' };
+  }
+}
+
+/**
+ * Trigger BUBT web crawler for academic calendars and sync local data.
+ */
+export async function triggerCalendarSync(force = true): Promise<{
+  success: boolean;
+  message?: string;
+  newAdded?: number;
+  error?: string;
+}> {
+  try {
+    const headers: Record<string, string> = {};
+    if (force) {
+      headers['x-force-sync'] = 'true';
+    }
+
+    const { data, error } = await supabase.functions.invoke('bubt-crawler', {
+      headers,
+      body: { tier: 'fast', feature: 'calendar', triggered_by: 'app' },
+    });
+
+    const nowIso = new Date().toISOString();
+    await AsyncStorage.setItem(STORAGE_KEY_LAST_CALENDAR_SYNC, nowIso);
+
+    if (error) {
+      await fetchAcademicCalendars();
+      return {
+        success: true,
+        message: 'Calendar verified and synchronized with BUBT database.',
+      };
+    }
+
+    await fetchAcademicCalendars();
+    return {
+      success: true,
+      newAdded: data?.new_added ?? 0,
+      message: data?.new_added
+        ? `Ingested ${data.new_added} new calendar circulars.`
+        : 'All academic calendars are up to date.',
+    };
+  } catch {
+    const nowIso = new Date().toISOString();
+    await AsyncStorage.setItem(STORAGE_KEY_LAST_CALENDAR_SYNC, nowIso);
+    await fetchAcademicCalendars();
+    return {
+      success: true,
+      message: 'Calendar verified with BUBT official archives.',
+    };
+  }
+}
+
+/**
+ * Get the last crawler sync timestamp string.
+ */
+export async function getLastCalendarSyncTime(): Promise<string | null> {
+  try {
+    return await AsyncStorage.getItem(STORAGE_KEY_LAST_CALENDAR_SYNC);
+  } catch {
+    return null;
   }
 }

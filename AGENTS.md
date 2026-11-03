@@ -3683,3 +3683,27 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with local release keystore (`BUILD SUCCESSFUL in 46s`).
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da` (`Performing Streamed Install -> Success`).
+
+
+---
+
+### 99. Academic Calendar 72dp Anti-Clutter Upgrade, TopBar Safe Area Insets, BUBT Crawler Sync Bar & 4-Year Official Archive (`ManageAcademicCalendarScreen.tsx`, `AcademicCalendarScreen.tsx`, `academicCalendarService.ts`, `academicCalendar.ts`, `20261104020000_seed_4_years_academic_calendars.sql`) (/zero-slop, /performance-optimization, /code-review-and-quality)
+- **TopBar Android Status Bar Overlap Fix:**
+  - Wrapped both `ManageAcademicCalendarScreen.tsx` and `AcademicCalendarScreen.tsx` in `<SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]} edges={['top', 'left', 'right']}>`.
+  - Fixes the bug where the SubBar and title overlapped the Android system status bar (clock, battery, and notification indicators).
+- **Universal 72dp Bar Standard & 32dp Monochrome Vector Icons (`CalendarBar72`):**
+  - Upgraded upload trigger bar (`fileUploadBar72`), modal selection bars (`sheetOptionBar72`), and all published calendar list items to full **72dp height** (`height: 72`, `Radius.lg`, `backgroundColor: C.surface`, `borderColor: C.border`, `paddingHorizontal: 14`).
+  - Rendered enlarged **32dp monochrome vector icons** (`file-text` for PDF, `image` for photo) without outer colored squircle boxes.
+  - Implemented anti-collision text formatting: `barTextCol` with `flex: 1`, `minWidth: 0`, and `barTitle` with `flexShrink: 1` preventing title truncation collisions with `ACTIVE` badges and right-side action buttons (`eye`, `trash-2`).
+- **BUBT Crawler Sync Bar:**
+  - Added official BUBT Calendar Crawler Sync Card on `ManageAcademicCalendarScreen.tsx` (matching Notice Board and Study Hub patterns).
+  - Wired to `triggerCalendarSync()` which invokes the `bubt-crawler` Supabase Edge Function with live loading spinner, timestamp tracking (`getLastCalendarSyncTime()`), and toast notification.
+- **Admin Hero Card Removal on Student Screen:**
+  - Conditionally rendered `{!isAdmin && featuredCalendar && (...)}` on `AcademicCalendarScreen.tsx` to completely remove the large `LATEST OFFICIAL CALENDAR` hero card when administrators view the screen, keeping the admin experience streamlined and focused.
+- **4-Year Official BUBT Academic Calendar Archive (2023-2026):**
+  - Seeded 12 full semesters of official BUBT circular documents (`Fall 2026`, `Summer 2026`, `Spring 2026`, `Fall 2025`, `Summer 2025`, `Spring 2025`, `Fall 2024`, `Summer 2024`, `Spring 2024`, `Fall 2023`, `Summer 2023`, `Spring 2023`) in remote Supabase migration `20261104020000_seed_4_years_academic_calendars.sql` and `OFFICIAL_CALENDAR_DOCS` constants.
+  - Resolves the issue where BUBT website crawlers only scan recent 4-5 months of circulars, providing students and faculty with a complete historical archive.
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
+  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with local release keystore.
+  - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.

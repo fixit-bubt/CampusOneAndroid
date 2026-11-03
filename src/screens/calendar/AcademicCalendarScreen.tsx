@@ -10,8 +10,10 @@ import {
   Image,
   RefreshControl,
   Share,
+  type ViewStyle,
+  type TextStyle,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
@@ -20,13 +22,11 @@ import { useToast } from '../../components/ui/Toast';
 import { SubBar } from '../../components/layout/TopBar';
 import { CampusPdfViewerModal } from '../../components/pdf/CampusPdfViewerModal';
 import { FontFamily, Radius } from '../../theme';
-import {
-  fetchAcademicCalendars,
-} from '../../services/academicCalendarService';
+import { fetchAcademicCalendars } from '../../services/academicCalendarService';
 import type { AcademicCalendarDoc } from '../../constants/academicCalendar';
 
-// 58dp Calendar Semester Bar
-const CalendarBar58 = memo(function CalendarBar58({
+// 72dp Calendar Semester Bar
+const CalendarBar72 = memo(function CalendarBar72({
   item,
   onPress,
   C,
@@ -42,7 +42,7 @@ const CalendarBar58 = memo(function CalendarBar58({
   return (
     <TouchableOpacity
       style={[
-        styles.bar58,
+        styles.bar72,
         {
           backgroundColor: C.surface,
           borderColor: C.border,
@@ -66,7 +66,7 @@ const CalendarBar58 = memo(function CalendarBar58({
             {item.title}
           </Text>
           {item.is_active && (
-            <View style={[styles.activeBadge, { backgroundColor: C.brand + '20' }]}>
+            <View style={[styles.activeBadge, { backgroundColor: C.brand + '20', borderColor: C.brand + '50' }]}>
               <Text style={[styles.activeBadgeTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
                 ACTIVE
               </Text>
@@ -82,7 +82,7 @@ const CalendarBar58 = memo(function CalendarBar58({
         </Text>
       </View>
 
-      <Feather name="chevron-right" size={18} color={C.textMuted} />
+      <Feather name="chevron-right" size={20} color={C.textMuted} />
     </TouchableOpacity>
   );
 });
@@ -153,7 +153,7 @@ export function AcademicCalendarScreen({ navigation }: any) {
   };
 
   return (
-    <View style={[styles.root, { backgroundColor: C.bg }]}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]} edges={['top', 'left', 'right']}>
       {/* SubBar with Back Navigation and Admin Action */}
       <SubBar
         title="Academic Calendar"
@@ -166,6 +166,7 @@ export function AcademicCalendarScreen({ navigation }: any) {
                 style={styles.headerBtn}
                 hitSlop={8}
                 activeOpacity={0.75}
+                accessibilityLabel="Manage academic calendars"
               >
                 <Feather name="settings" size={20} color={C.text} />
               </TouchableOpacity>
@@ -176,6 +177,7 @@ export function AcademicCalendarScreen({ navigation }: any) {
                 style={styles.headerBtn}
                 hitSlop={8}
                 activeOpacity={0.75}
+                accessibilityLabel="Share active calendar"
               >
                 <Feather name="share-2" size={20} color={C.text} />
               </TouchableOpacity>
@@ -229,8 +231,8 @@ export function AcademicCalendarScreen({ navigation }: any) {
               </TouchableOpacity>
             )}
 
-            {/* Featured Active Calendar Hero Card */}
-            {featuredCalendar && (
+            {/* Featured Active Calendar Hero Card (Hidden for Admins) */}
+            {!isAdmin && featuredCalendar && (
               <View
                 style={[
                   styles.heroCard,
@@ -304,21 +306,21 @@ export function AcademicCalendarScreen({ navigation }: any) {
               </View>
             )}
 
-            {/* Section Header for All Semesters */}
+            {/* Section Header */}
             <View style={styles.sectionHeaderRow}>
               <Text
                 style={[
-                  styles.sectionHeader,
+                  styles.sectionHeaderTxt,
                   { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold },
                 ]}
               >
-                ALL SEMESTER CALENDARS
+                ALL SEMESTER CALENDARS ({calendars.length})
               </Text>
             </View>
           </View>
         }
         renderItem={({ item }) => (
-          <CalendarBar58
+          <CalendarBar72
             item={item}
             onPress={handleOpenCalendar}
             C={C}
@@ -336,14 +338,14 @@ export function AcademicCalendarScreen({ navigation }: any) {
                 { backgroundColor: C.surface, borderColor: C.border },
               ]}
             >
-              <Feather name="calendar" size={36} color={C.textMuted} />
+              <Feather name="calendar" size={40} color={C.textMuted} />
               <Text
                 style={[
                   styles.emptyTitle,
                   { color: C.text, fontFamily: FontFamily.jakartaBold },
                 ]}
               >
-                No Calendars Available
+                No Academic Calendars Found
               </Text>
               <Text
                 style={[
@@ -351,7 +353,7 @@ export function AcademicCalendarScreen({ navigation }: any) {
                   { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
                 ]}
               >
-                The academic calendar will appear here once published by the university.
+                Official semester schedules will appear here once published.
               </Text>
             </View>
           )
@@ -415,205 +417,208 @@ export function AcademicCalendarScreen({ navigation }: any) {
           </View>
         </Modal>
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
+  safe: {
     flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-  },
-  headerBlock: {
-    marginBottom: 8,
-  },
+  } as ViewStyle,
   headerBtn: {
     width: 36,
     height: 36,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  // Admin shortcut banner
+  } as ViewStyle,
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+  } as ViewStyle,
+  headerBlock: {
+    marginBottom: 8,
+  } as ViewStyle,
+
+  // Admin Strip
   adminStrip: {
-    height: 48,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 14,
+    height: 48,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
     marginBottom: 12,
-  },
+  } as ViewStyle,
   adminStripLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
+  } as ViewStyle,
   adminStripTxt: {
-    fontSize: 13,
-  },
-  // Hero Featured Card
+    fontSize: 13.5,
+  } as TextStyle,
+
+  // Hero Card
   heroCard: {
-    borderRadius: Radius.xl,
+    borderRadius: Radius.lg,
     borderWidth: 1,
     padding: 18,
     marginBottom: 16,
-  },
+  } as ViewStyle,
   heroTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 10,
-  },
+  } as ViewStyle,
   heroPill: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 8,
-  },
+    borderRadius: 6,
+  } as ViewStyle,
   heroPillTxt: {
-    fontSize: 10.5,
-    letterSpacing: 0.4,
-  },
+    fontSize: 10,
+    letterSpacing: 0.5,
+  } as TextStyle,
   heroTypeTxt: {
-    fontSize: 12,
-  },
+    fontSize: 11.5,
+  } as TextStyle,
   heroTitle: {
-    fontSize: 18,
-    lineHeight: 24,
-    marginBottom: 4,
-  },
+    fontSize: 19,
+    lineHeight: 25,
+    marginBottom: 6,
+  } as TextStyle,
   heroSub: {
     fontSize: 12.5,
-    lineHeight: 17,
     marginBottom: 14,
-  },
+  } as TextStyle,
   heroOpenBtn: {
     height: 46,
-    borderRadius: Radius.lg,
+    borderRadius: Radius.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-  },
+  } as ViewStyle,
   heroOpenBtnTxt: {
     fontSize: 14,
-  },
+  } as TextStyle,
+
+  // Section Header
   sectionHeaderRow: {
     marginTop: 4,
     marginBottom: 8,
-  },
-  sectionHeader: {
+  } as ViewStyle,
+  sectionHeaderTxt: {
     fontSize: 12,
     letterSpacing: 0.6,
-  },
-  // 58dp Bar
-  bar58: {
-    height: 58,
+  } as TextStyle,
+
+  // 72dp Bar Item
+  bar72: {
+    height: 72,
     borderRadius: Radius.lg,
     borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 14,
-    marginBottom: 8,
-  },
+    marginBottom: 10,
+  } as ViewStyle,
   iconSlot32: {
     width: 36,
     height: 36,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
-  },
+  } as ViewStyle,
   barTextCol: {
     flex: 1,
+    minWidth: 0,
     justifyContent: 'center',
-  },
+    paddingRight: 8,
+  } as ViewStyle,
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-  },
+    gap: 8,
+  } as ViewStyle,
   barTitle: {
-    fontSize: 14,
-    lineHeight: 18,
-  },
+    flexShrink: 1,
+    fontSize: 14.5,
+    lineHeight: 20,
+  } as TextStyle,
   barSubtitle: {
-    fontSize: 11.5,
-    lineHeight: 15,
-    marginTop: 1,
-  },
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 2,
+  } as TextStyle,
   activeBadge: {
     paddingHorizontal: 6,
-    paddingVertical: 1,
+    paddingVertical: 1.5,
     borderRadius: 6,
-  },
+    borderWidth: 1,
+  } as ViewStyle,
   activeBadgeTxt: {
     fontSize: 9.5,
-    letterSpacing: 0.3,
-  },
+    letterSpacing: 0.4,
+  } as TextStyle,
+
   loadingBox: {
-    paddingVertical: 36,
+    paddingVertical: 40,
     alignItems: 'center',
-    justifyContent: 'center',
-  },
+  } as ViewStyle,
   emptyCard: {
-    paddingVertical: 36,
-    paddingHorizontal: 20,
+    padding: 32,
     borderRadius: Radius.lg,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 8,
     gap: 8,
-  },
+    marginTop: 12,
+  } as ViewStyle,
   emptyTitle: {
     fontSize: 15,
     marginTop: 4,
-  },
+  } as TextStyle,
   emptySub: {
-    fontSize: 12,
+    fontSize: 12.5,
     textAlign: 'center',
-    maxWidth: 260,
-  },
-  // Photo Viewer Modal
+  } as TextStyle,
+
+  // Fullscreen Photo Viewer Modal
   photoViewerContainer: {
     flex: 1,
     backgroundColor: '#000000',
-  },
+  } as ViewStyle,
   photoHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingBottom: 12,
-  },
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+  } as ViewStyle,
   photoCloseBtn: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+    padding: 8,
+  } as ViewStyle,
+  photoShareBtn: {
+    padding: 8,
+  } as ViewStyle,
   photoTitle: {
     flex: 1,
     color: '#ffffff',
-    fontSize: 14,
-    marginHorizontal: 12,
-  },
-  photoShareBtn: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+    fontSize: 15,
+    textAlign: 'center',
+    marginHorizontal: 8,
+  } as TextStyle,
   photoBody: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
+  } as ViewStyle,
   photoImage: {
     width: '100%',
     height: '100%',
-  },
+  } as any,
 });
