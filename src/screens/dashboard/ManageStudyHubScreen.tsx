@@ -81,7 +81,7 @@ function timeAgo(iso: string): string {
 const shortDept = (name = '') => name.replace(/^Department of\s+/i, '');
 
 export function ManageStudyHubScreen({ navigation }: any) {
-  const { C } = useTheme();
+  const { C, isDark } = useTheme();
   const { profile } = useAuth();
   const t = useT();
   const toast = useToast();
@@ -89,6 +89,7 @@ export function ManageStudyHubScreen({ navigation }: any) {
   const [activeTab, setActiveTab] = useState<'catalogue' | 'pending'>('catalogue');
   const [departments, setDepartments] = useState<Department[]>([]);
   const [activeDeptId, setActiveDeptId] = useState<string>('');
+  const [deptPickerVisible, setDeptPickerVisible] = useState(false);
   const [intakes, setIntakes] = useState<Intake[]>([]);
   const [expandedIntakeId, setExpandedIntakeId] = useState<string | null>(null);
   const [sectionsByIntake, setSectionsByIntake] = useState<Record<string, Section[]>>({});
@@ -117,6 +118,8 @@ export function ManageStudyHubScreen({ navigation }: any) {
   const [rejectTarget, setRejectTarget] = useState<SectionRequest | null>(null);
   const [rejectNote, setRejectNote] = useState('');
   const [processingId, setProcessingId] = useState<string | null>(null);
+
+  const activeDept = departments.find(d => d.id === activeDeptId);
 
   const loadDepartments = useCallback(async () => {
     const { data } = await supabase
@@ -513,8 +516,8 @@ export function ManageStudyHubScreen({ navigation }: any) {
         <SegmentedTabs
           size="md"
           tabs={[
-            { id: 'catalogue', label: t.study2?.catalogue ?? 'Catalogue', icon: 'book' },
-            { id: 'pending', label: 'Pending Requests', icon: 'clock', count: pendingRequests.length },
+            { id: 'catalogue', label: t.study2?.catalogue ?? 'Catalogue' },
+            { id: 'pending', label: 'Pending Requests', count: pendingRequests.length },
           ]}
           activeTab={activeTab}
           onTabChange={setActiveTab}
@@ -528,44 +531,27 @@ export function ManageStudyHubScreen({ navigation }: any) {
       >
         {activeTab === 'catalogue' ? (
           <>
-            {/* Department chips */}
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.deptScroll}
+            {/* 58dp Department Dropdown Bar */}
+            <TouchableOpacity
+              style={[styles.deptDropdownBar58, { backgroundColor: C.surface, borderColor: C.border }]}
+              onPress={() => setDeptPickerVisible(true)}
+              activeOpacity={0.75}
             >
-              {departments.map(d => {
-                const isSelected = d.id === activeDeptId;
-                return (
-                  <TouchableOpacity
-                    key={d.id}
-                    style={[
-                      styles.deptChip,
-                      {
-                        backgroundColor: isSelected ? C.brand : C.surface,
-                        borderColor: isSelected ? C.brand : C.border,
-                      },
-                    ]}
-                    onPress={() => setActiveDeptId(d.id)}
-                    activeOpacity={0.75}
-                  >
-                    <Text
-                      style={[
-                        styles.deptChipTxt,
-                        {
-                          color: isSelected ? '#fff' : C.text,
-                          fontFamily: FontFamily.jakartaBold,
-                        },
-                      ]}
-                    >
-                      {shortDept(d.name)}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
+              <View style={styles.iconSlot32}>
+                <Feather name="layers" size={20} color={C.brand} />
+              </View>
+              <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
+                <Text
+                  style={[styles.deptDropdownTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}
+                  numberOfLines={1}
+                >
+                  {activeDept ? shortDept(activeDept.name) : (t.faculty2?.selectDepartment ?? 'Select Department')}
+                </Text>
+              </View>
+              <Feather name="chevron-down" size={18} color={C.textMuted} />
+            </TouchableOpacity>
 
-            {/* 58dp Add Intake Full-Width Bar */}
+            {/* 58dp Add Intake Full-Width Bar (Centered Text) */}
             <TouchableOpacity
               style={[
                 styles.addIntakeBar58,
@@ -578,13 +564,10 @@ export function ManageStudyHubScreen({ navigation }: any) {
               }}
               activeOpacity={0.75}
             >
-              <View style={styles.iconSlot32}>
-                <Feather name="plus-circle" size={20} color={C.brand} />
-              </View>
+              <Feather name="plus" size={18} color={C.brand} />
               <Text style={[styles.addIntakeBarTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                 {t.study2?.addIntake ?? 'Add Intake'}
               </Text>
-              <Feather name="chevron-right" size={18} color={C.textMuted} style={{ marginLeft: 'auto' }} />
             </TouchableOpacity>
 
             {loading && intakes.length === 0 ? (
@@ -1034,6 +1017,90 @@ export function ManageStudyHubScreen({ navigation }: any) {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      {/* Department Picker Bottom Sheet */}
+      <Modal
+        visible={deptPickerVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setDeptPickerVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.overlay}
+        >
+          <TouchableOpacity
+            style={{ flex: 1 }}
+            activeOpacity={1}
+            onPress={() => setDeptPickerVisible(false)}
+          />
+          <View style={[styles.sheet, { backgroundColor: C.surface, maxHeight: '80%' }]}>
+            <View style={[styles.sheetHandle, { backgroundColor: C.border }]} />
+            <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+              {t.faculty2?.selectDepartment ?? 'Select Department'}
+            </Text>
+
+            <ScrollView
+              style={{ maxHeight: 420 }}
+              contentContainerStyle={{ paddingBottom: 16, gap: 8 }}
+              showsVerticalScrollIndicator={false}
+            >
+              {departments.map((d) => {
+                const isSelected = activeDeptId === d.id;
+                return (
+                  <TouchableOpacity
+                    key={d.id}
+                    style={[
+                      styles.deptPickerItem,
+                      {
+                        backgroundColor: isSelected
+                          ? (isDark ? 'rgba(91, 133, 247, 0.15)' : 'rgba(91, 133, 247, 0.08)')
+                          : C.surface2,
+                        borderColor: isSelected ? C.brand : C.border,
+                      },
+                    ]}
+                    onPress={() => {
+                      setActiveDeptId(d.id);
+                      setDeptPickerVisible(false);
+                    }}
+                    activeOpacity={0.75}
+                  >
+                    <View style={styles.iconSlot32}>
+                      <Feather name="book-open" size={18} color={isSelected ? C.brand : C.textMuted} />
+                    </View>
+                    <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
+                      <Text
+                        style={[
+                          styles.deptPickerItemTxt,
+                          {
+                            color: isSelected ? C.brand : C.text,
+                            fontFamily: isSelected ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                          },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {shortDept(d.name)}
+                      </Text>
+                      {d.dept_number ? (
+                        <Text style={[styles.deptPickerItemSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                          Dept #{d.dept_number}
+                        </Text>
+                      ) : null}
+                    </View>
+                    {isSelected ? (
+                      <View style={[styles.deptCheckCircle, { backgroundColor: C.brand }]}>
+                        <Feather name="check" size={12} color="#fff" />
+                      </View>
+                    ) : (
+                      <View style={[styles.deptEmptyCircle, { borderColor: C.border }]} />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1043,7 +1110,7 @@ const styles = StyleSheet.create({
   scroll: { paddingTop: 6, paddingBottom: 24 } as ViewStyle,
   centerBox: { paddingVertical: 40, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
 
-  addIntakeBar58: {
+  deptDropdownBar58: {
     height: 58,
     borderRadius: 16,
     borderWidth: 1,
@@ -1051,24 +1118,57 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     gap: 12,
-    marginTop: 4,
+    marginTop: 2,
+    marginBottom: 8,
+  } as ViewStyle,
+  deptDropdownTxt: {
+    fontSize: 14.5,
+  } as any,
+
+  addIntakeBar58: {
+    height: 58,
+    borderRadius: 16,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    gap: 8,
     marginBottom: 10,
   } as ViewStyle,
   addIntakeBarTxt: {
     fontSize: 14.5,
   } as any,
 
-  deptScroll: {
-    gap: 8,
-    paddingBottom: 8,
-  } as ViewStyle,
-  deptChip: {
-    paddingHorizontal: 13,
-    paddingVertical: 7,
-    borderRadius: 20,
+  deptPickerItem: {
+    height: 58,
+    borderRadius: 14,
     borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    gap: 12,
   } as ViewStyle,
-  deptChipTxt: { fontSize: 12.5 } as any,
+  deptPickerItemTxt: {
+    fontSize: 14,
+  } as any,
+  deptPickerItemSub: {
+    fontSize: 11.5,
+    marginTop: 1,
+  } as any,
+  deptCheckCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  deptEmptyCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1.5,
+  } as ViewStyle,
 
   emptyBox: {
     padding: 24,

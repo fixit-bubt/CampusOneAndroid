@@ -10,7 +10,6 @@ import { TopBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { Feather } from '@expo/vector-icons';
-import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { useToast } from '../../components/ui/Toast';
 import { FontFamily, Layout, Accent } from '../../theme';
 import { useT } from '../../i18n';
@@ -95,21 +94,39 @@ const StatCard = memo(function StatCard({
   icon,
   num,
   label,
+  isSelected,
+  onPress,
   C,
 }: {
   icon: string;
   num: number;
   label: string;
+  isSelected?: boolean;
+  onPress?: () => void;
   C: any;
 }) {
   return (
-    <View style={[styles.statCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+    <TouchableOpacity
+      style={[
+        styles.statCard,
+        {
+          backgroundColor: isSelected ? (C.brand + '14') : C.surface,
+          borderColor: isSelected ? C.brand : C.border,
+          borderWidth: isSelected ? 1.5 : 1,
+        },
+      ]}
+      onPress={onPress}
+      disabled={!onPress}
+      activeOpacity={0.75}
+    >
       <View style={styles.statIcon}>
-        <Icon name={icon} size={32} color={C.text} />
+        <Icon name={icon} size={32} color={isSelected ? C.brand : C.text} />
       </View>
-      <Text style={[styles.statNum, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{num}</Text>
-      <Text style={[styles.statLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{label}</Text>
-    </View>
+      <Text style={[styles.statNum, { color: isSelected ? C.brand : C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{num}</Text>
+      <Text style={[styles.statLabel, { color: isSelected ? C.brand : C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+        {label}
+      </Text>
+    </TouchableOpacity>
   );
 });
 
@@ -414,12 +431,6 @@ export function AdminDashboardScreen({ navigation }: any) {
     return reports;
   }, [reports, filterTab]);
 
-  // Strictly 3 tabs: never going beyond 3
-  const filterTabs: TabItem<FilterTab>[] = useMemo(() => [
-    { id: 'unassigned', label: t.dash.statUnassigned, count: stats.unassigned },
-    { id: 'active',     label: t.dash.statInProgress, count: stats.active },
-    { id: 'done',       label: t.dash.statResolved,   count: stats.resolved },
-  ], [t.dash, stats.unassigned, stats.active, stats.resolved]);
 
   const renderItem = useCallback(({ item: r }: { item: Report }) => {
     return (
@@ -510,20 +521,31 @@ export function AdminDashboardScreen({ navigation }: any) {
               </View>
             </View>
 
-            {/* Exactly 3 Stat Counters: Balanced Single Row */}
+            {/* Interactive 3-Stat Counters: Tap to filter */}
             <View style={styles.statRow}>
-              <StatCard icon="userPlus" num={stats.unassigned} label={t.dash.statUnassigned} C={C} />
-              <StatCard icon="pulse"    num={stats.active}     label={t.dash.statInProgress} C={C} />
-              <StatCard icon="check"    num={stats.resolved}   label={t.dash.statResolved}   C={C} />
-            </View>
-
-            {/* 58dp Segmented Filter Tabs: Strictly 3 Tabs */}
-            <View style={styles.tabWrap}>
-              <SegmentedTabs<FilterTab>
-                tabs={filterTabs}
-                activeTab={filterTab}
-                onTabChange={setFilterTab}
-                size="md"
+              <StatCard
+                icon="userPlus"
+                num={stats.unassigned}
+                label={t.dash.statUnassigned}
+                isSelected={filterTab === 'unassigned'}
+                onPress={() => setFilterTab('unassigned')}
+                C={C}
+              />
+              <StatCard
+                icon="pulse"
+                num={stats.active}
+                label={t.dash.statInProgress}
+                isSelected={filterTab === 'active'}
+                onPress={() => setFilterTab('active')}
+                C={C}
+              />
+              <StatCard
+                icon="check"
+                num={stats.resolved}
+                label={t.dash.statResolved}
+                isSelected={filterTab === 'done'}
+                onPress={() => setFilterTab('done')}
+                C={C}
               />
             </View>
 
@@ -739,10 +761,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   } as any,
 
-  // 58dp Filter Tabs
-  tabWrap: {
-    marginBottom: 12,
-  } as ViewStyle,
 
   // Section Header
   sectionRow: {

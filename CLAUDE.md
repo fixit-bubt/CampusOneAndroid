@@ -2989,12 +2989,13 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - **Section Deletion:** Added destructive action with confirmation prompt backed by the `study_sections_admin_delete` RLS policy.
   - **Admin Workorder Assignment Progress Decoupling:** In `AdminDashboardScreen.tsx`, fixed assignment logic so assigning a technician does not artificially advance report status to `'In Progress'`. Technicians advance progress via `'Start Work'` on their Staff Dashboard. Synchronized `AdminStats` property names (`active` instead of `inProgress`) with SQL queries.
 - **UI/UX & Design Integrity (58dp Bar Standard):**
-  - **58dp SegmentedTabs:** Configured `SegmentedTabs` with `size="md"` (`height: 58`), providing a generous, tactile switcher between Catalogue and Pending Requests.
-  - **58dp Full-Width Add Intake Bar:** Moved Add Intake action out of the SubBar right slot down into a full-width 58dp action bar (`addIntakeBar58`) directly beneath the department chips with 32dp transparent vector icon slot (`plus-circle`), bold typography, and trailing chevron.
+  - **58dp SegmentedTabs:** Configured `SegmentedTabs` with `size="md"` (`height: 58`), and removed tab icons from `Catalogue` and `Pending Requests` for a clean, text-first modern tab design.
+  - **58dp Department Dropdown Bar & Picker Modal:** Replaced the horizontal department chip scroll with a full-width 58dp dropdown bar (`deptDropdownBar58`) displaying the selected department (CSE, Civil Engineering, Accounting, etc.) with a layers vector icon and chevron. Tapping opens a dedicated department picker bottom sheet with instant selection.
+  - **58dp Centered Add Intake Bar:** Styled `addIntakeBar58` with centered `plus` icon and `{t.study2?.addIntake ?? 'Add Intake'}` text (`justifyContent: 'center'`, `gap: 8`), removing the trailing chevron for a balanced look.
   - Clean `SubBar` with unencumbered title and back navigation.
   - High touch targets (>= 48dp), zero colored squircle boxes behind icons, crisp monochrome vector icons.
 - **Verification Evidence:**
   - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
-  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore in 21s.
+  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore in 22s.
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
   - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.
