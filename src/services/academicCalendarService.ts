@@ -34,7 +34,7 @@ export async function fetchAcademicCalendars(): Promise<AcademicCalendarDoc[]> {
     const { data, error } = await (supabase.from('academic_calendar' as any) as any)
       .select('id, title, description, file_url, file_type, semester, is_active, event_date, created_at')
       .not('file_url', 'is', null)
-      .order('created_at', { ascending: false });
+      .order('event_date', { ascending: false });
 
     if (error || !data || data.length === 0) {
       const cached = await getCache<AcademicCalendarDoc[]>(CacheKeys.ACADEMIC_CALENDAR);

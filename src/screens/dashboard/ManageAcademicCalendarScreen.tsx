@@ -143,6 +143,9 @@ export function ManageAcademicCalendarScreen({ navigation }: any) {
   const [syncing, setSyncing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
 
+  // 72dp Add Calendar Container Accordion state
+  const [isAddOpen, setIsAddOpen] = useState(false);
+
   // Form states
   const [selectedFile, setSelectedFile] = useState<SelectedFile | null>(null);
   const [calendarTitle, setCalendarTitle] = useState('');
@@ -296,6 +299,7 @@ export function ManageAcademicCalendarScreen({ navigation }: any) {
       toast({ type: 'success', title: 'Success', message: 'Academic calendar published successfully' });
       setSelectedFile(null);
       setCalendarTitle('');
+      setIsAddOpen(false); // Collapse cleanly after publish
       loadData();
     } catch (err: any) {
       Alert.alert('Publish Error', err.message || 'Failed to publish academic calendar.');
@@ -379,133 +383,173 @@ export function ManageAcademicCalendarScreen({ navigation }: any) {
           }
           ListHeaderComponent={
             <View style={styles.formContainer}>
-              <Text
-                style={[
-                  styles.sectionHeader,
-                  { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold },
-                ]}
-              >
-                ADD NEW ACADEMIC CALENDAR
-              </Text>
-
-              {/* Bar 1: File Selection Bar (Upload PDF or Photo) - 72dp Height */}
-              <TouchableOpacity
-                style={[
-                  styles.fileUploadBar72,
-                  {
-                    backgroundColor: C.surface,
-                    borderColor: selectedFile ? C.brand : C.border,
-                    borderWidth: selectedFile ? 1.5 : 1,
-                  },
-                ]}
-                onPress={() => setFilePickerModalVisible(true)}
-                activeOpacity={0.75}
-              >
-                <View style={styles.iconSlot32}>
-                  <Feather
-                    name={selectedFile ? (selectedFile.type === 'image' ? 'image' : 'file-text') : 'upload-cloud'}
-                    size={32}
-                    color={selectedFile ? C.brand : C.text}
-                  />
-                </View>
-
-                <View style={styles.uploadInfoCol}>
-                  <Text
-                    style={[
-                      styles.uploadTitle,
-                      {
-                        color: C.text,
-                        fontFamily: FontFamily.jakartaBold,
-                      },
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {selectedFile ? selectedFile.name : 'Tap to select PDF or Photo'}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.uploadSub,
-                      { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {selectedFile
-                      ? `${selectedFile.type.toUpperCase()} · Ready to upload`
-                      : 'Choose official circular from device files or gallery'}
-                  </Text>
-                </View>
-
-                {selectedFile ? (
-                  <TouchableOpacity
-                    style={styles.clearBtn}
-                    onPress={() => setSelectedFile(null)}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  >
-                    <Feather name="x" size={18} color={C.textMuted} />
-                  </TouchableOpacity>
-                ) : (
-                  <Feather name="chevron-right" size={20} color={C.textMuted} />
-                )}
-              </TouchableOpacity>
-
-              {/* Bar 2: Calendar Name Input Bar - 60dp Height */}
+              {/* 72dp Add Calendar Container Bar - Housed inside single 72-size bar */}
               <View
                 style={[
-                  styles.inputBar60,
+                  styles.addContainerCard,
                   {
                     backgroundColor: C.surface,
-                    borderColor: C.border,
+                    borderColor: isAddOpen ? C.brand + '55' : C.border,
                   },
                 ]}
               >
-                <View style={styles.inputLeadingIcon}>
-                  <Feather name="calendar" size={22} color={C.textMuted} />
-                </View>
-                <TextInput
-                  style={[
-                    styles.textInput,
-                    {
-                      color: C.text,
-                      fontFamily: FontFamily.jakartaSemiBold,
-                    },
-                  ]}
-                  value={calendarTitle}
-                  onChangeText={setCalendarTitle}
-                  placeholder="Calendar Title (e.g. Fall 2026 Academic Calendar)"
-                  placeholderTextColor={C.textMuted}
-                  editable={!uploading}
-                />
-              </View>
+                <TouchableOpacity
+                  style={styles.addHeaderBar72}
+                  onPress={() => setIsAddOpen((prev) => !prev)}
+                  activeOpacity={0.75}
+                  accessibilityRole="button"
+                  accessibilityLabel="Add New Academic Calendar"
+                >
+                  <View style={styles.iconSlot32}>
+                    <Feather
+                      name={isAddOpen ? 'minus-circle' : 'plus-circle'}
+                      size={32}
+                      color={C.brand}
+                    />
+                  </View>
 
-              {/* Bar 3: Primary Publish Action Button */}
-              <TouchableOpacity
-                style={[
-                  styles.publishBtn52,
-                  {
-                    backgroundColor: C.brand,
-                    opacity: uploading ? 0.7 : 1,
-                  },
-                ]}
-                onPress={handlePublish}
-                disabled={uploading}
-                activeOpacity={0.8}
-              >
-                {uploading ? (
-                  <ActivityIndicator size="small" color="#ffffff" />
-                ) : (
-                  <View style={styles.publishBtnRow}>
-                    <Feather name="upload" size={18} color="#ffffff" style={{ marginRight: 8 }} />
+                  <View style={styles.barTextCol}>
                     <Text
-                      style={[
-                        styles.publishBtnTxt,
-                        { color: '#ffffff', fontFamily: FontFamily.jakartaBold },
-                      ]}
+                      style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}
+                      numberOfLines={1}
                     >
-                      Publish Academic Calendar
+                      Add New Academic Calendar
+                    </Text>
+                    <Text
+                      style={[styles.barSubtitle, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}
+                      numberOfLines={1}
+                    >
+                      {selectedFile
+                        ? `${selectedFile.name} (Ready)`
+                        : 'Tap to upload official PDF or circular photo'}
                     </Text>
                   </View>
+
+                  <Feather
+                    name={isAddOpen ? 'chevron-up' : 'chevron-down'}
+                    size={22}
+                    color={C.textMuted}
+                  />
+                </TouchableOpacity>
+
+                {/* The 3 Bars Moved Inside the 72dp Container */}
+                {isAddOpen && (
+                  <View style={styles.addExpandedBody}>
+                    {/* Inner Bar 1: File Selection Bar (Upload PDF or Photo) - 72dp */}
+                    <TouchableOpacity
+                      style={[
+                        styles.fileUploadBar72,
+                        {
+                          backgroundColor: C.surface2,
+                          borderColor: selectedFile ? C.brand : C.border,
+                          borderWidth: selectedFile ? 1.5 : 1,
+                        },
+                      ]}
+                      onPress={() => setFilePickerModalVisible(true)}
+                      activeOpacity={0.75}
+                    >
+                      <View style={styles.iconSlot32}>
+                        <Feather
+                          name={selectedFile ? (selectedFile.type === 'image' ? 'image' : 'file-text') : 'upload-cloud'}
+                          size={32}
+                          color={selectedFile ? C.brand : C.text}
+                        />
+                      </View>
+
+                      <View style={styles.uploadInfoCol}>
+                        <Text
+                          style={[
+                            styles.uploadTitle,
+                            { color: C.text, fontFamily: FontFamily.jakartaBold },
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {selectedFile ? selectedFile.name : 'Tap to select PDF or Photo'}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.uploadSub,
+                            { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {selectedFile
+                            ? `${selectedFile.type.toUpperCase()} · Ready to upload`
+                            : 'Choose official circular from device files or gallery'}
+                        </Text>
+                      </View>
+
+                      {selectedFile ? (
+                        <TouchableOpacity
+                          style={styles.clearBtn}
+                          onPress={() => setSelectedFile(null)}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
+                          <Feather name="x" size={18} color={C.textMuted} />
+                        </TouchableOpacity>
+                      ) : (
+                        <Feather name="chevron-right" size={20} color={C.textMuted} />
+                      )}
+                    </TouchableOpacity>
+
+                    {/* Inner Bar 2: Calendar Name Input Bar - 60dp */}
+                    <View
+                      style={[
+                        styles.inputBar60,
+                        {
+                          backgroundColor: C.surface2,
+                          borderColor: C.border,
+                        },
+                      ]}
+                    >
+                      <View style={styles.inputLeadingIcon}>
+                        <Feather name="calendar" size={22} color={C.textMuted} />
+                      </View>
+                      <TextInput
+                        style={[
+                          styles.textInput,
+                          { color: C.text, fontFamily: FontFamily.jakartaSemiBold },
+                        ]}
+                        value={calendarTitle}
+                        onChangeText={setCalendarTitle}
+                        placeholder="Calendar Title (e.g. Fall 2026 Academic Calendar)"
+                        placeholderTextColor={C.textMuted}
+                        editable={!uploading}
+                      />
+                    </View>
+
+                    {/* Inner Bar 3: Primary Publish Action Button */}
+                    <TouchableOpacity
+                      style={[
+                        styles.publishBtn52,
+                        {
+                          backgroundColor: C.brand,
+                          opacity: uploading ? 0.7 : 1,
+                        },
+                      ]}
+                      onPress={handlePublish}
+                      disabled={uploading}
+                      activeOpacity={0.8}
+                    >
+                      {uploading ? (
+                        <ActivityIndicator size="small" color="#ffffff" />
+                      ) : (
+                        <View style={styles.publishBtnRow}>
+                          <Feather name="upload" size={18} color="#ffffff" style={{ marginRight: 8 }} />
+                          <Text
+                            style={[
+                              styles.publishBtnTxt,
+                              { color: '#ffffff', fontFamily: FontFamily.jakartaBold },
+                            ]}
+                          >
+                            Publish Academic Calendar
+                          </Text>
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  </View>
                 )}
-              </TouchableOpacity>
+              </View>
 
               {/* Crawler Sync Card (Matches Study Hub & Notice Board Design) */}
               <View style={[styles.syncCard, { backgroundColor: C.surface, borderColor: C.border }]}>
@@ -748,10 +792,31 @@ const styles = StyleSheet.create({
     marginTop: 4,
   } as TextStyle,
 
-  // Bar 1: File Upload Bar (72dp Height)
+  // 72dp Add Calendar Container Card
+  addContainerCard: {
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    overflow: 'hidden',
+    marginBottom: 12,
+  } as ViewStyle,
+  addHeaderBar72: {
+    height: 72,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+  } as ViewStyle,
+  addExpandedBody: {
+    paddingHorizontal: 14,
+    paddingBottom: 14,
+    paddingTop: 6,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(255, 255, 255, 0.08)',
+  } as ViewStyle,
+
+  // Inner Bar 1: File Upload Bar (72dp Height)
   fileUploadBar72: {
     height: 72,
-    borderRadius: Radius.lg,
+    borderRadius: Radius.md,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 14,
@@ -782,10 +847,10 @@ const styles = StyleSheet.create({
     padding: 6,
   } as ViewStyle,
 
-  // Bar 2: Name Input Bar (60dp Height)
+  // Inner Bar 2: Name Input Bar (60dp Height)
   inputBar60: {
     height: 60,
-    borderRadius: Radius.lg,
+    borderRadius: Radius.md,
     borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
@@ -804,13 +869,12 @@ const styles = StyleSheet.create({
     padding: 0,
   } as TextStyle,
 
-  // Bar 3: Primary Publish Button (52dp Height)
+  // Inner Bar 3: Primary Publish Button (52dp Height)
   publishBtn52: {
     height: 52,
-    borderRadius: Radius.lg,
+    borderRadius: Radius.md,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 14,
   } as ViewStyle,
   publishBtnRow: {
     flexDirection: 'row',
@@ -860,7 +924,7 @@ const styles = StyleSheet.create({
   } as TextStyle,
 
   listSectionHeaderRow: {
-    marginTop: 6,
+    marginTop: 4,
     marginBottom: 4,
   } as ViewStyle,
 
