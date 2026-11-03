@@ -3466,3 +3466,20 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Strict TypeScript Compilation: Passed with 0 errors (`tsc --noEmit`).
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with local release keystore (`BUILD SUCCESSFUL in 43s`).
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da` (`Performing Streamed Install -> Success`).
+
+---
+
+### 89. Student Clubs Screen Infinite Loading Guard & Member Query Decoupling (`ClubsScreen.tsx`) (/zero-slop, /performance-optimization, /systematic-debugging)
+- **Root-Cause Analysis of Infinite Loading Spinner (`ClubsScreen.tsx`):**
+  - In `ClubsScreen.tsx`, the primary catalog query performed:
+    `supabase.from('clubs').select('id, name, tagline, category, is_active, club_members!left(role, user_id)').eq('is_active', true).order('name').limit(60)`
+  - Under Postgres RLS policies, `public.club_members` is accessible only to authenticated users or restricted by member scopes. When guest sessions or certain caller tokens query the table or when the embedded relation fails, PostgREST returns a `42501 permission denied for table club_members` error.
+  - In addition, the query block lacked a structured `finally { setLoading(false); }` clause. When any network or permission error occurred, early returns bypassed `setLoading(false)`, leaving the UI in an unrecoverable infinite spinning state.
+- **Architectural Resolution & Performance Decoupling:**
+  - **Decoupled Public Catalog from Member Scopes:** The primary `clubs` query now fetches exclusively from the public `clubs` table (`select('id, name, tagline, category, is_active')`), which is 100% public to both `anon` and `authenticated` roles without RLS friction.
+  - **Conditional User Role Fetch:** If and only if an authenticated user session exists (`user?.id`), a lightweight targeted query fetches their memberships: `supabase.from('club_members').select('club_id, role').eq('user_id', user.id)`. For guest or unauthenticated users, it resolves immediately with an empty array.
+  - **Resilient Fallback & Guaranteed Spinner Dismissal:** The entire operation is enclosed within a robust `try / catch / finally` structure. Regardless of network dropouts, cache state, or RPC errors, `setLoading(false)` is guaranteed to execute in `finally`, eliminating stuck loading spinners permanently.
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
+  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with local release keystore (`BUILD SUCCESSFUL in 47s`).
+  - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da` (`Performing Streamed Install -> Success`).
