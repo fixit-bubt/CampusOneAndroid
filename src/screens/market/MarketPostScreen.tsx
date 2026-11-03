@@ -517,7 +517,7 @@ export function MarketPostScreen({ route, navigation }: any) {
                 style={[styles.innerInput58, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                 value={meetupSpot}
                 onChangeText={setMeetupSpot}
-                placeholder="Enter custom handover or meetup spot..."
+                placeholder="Meetup spot on campus..."
                 placeholderTextColor={C.textMuted}
                 autoFocus
               />

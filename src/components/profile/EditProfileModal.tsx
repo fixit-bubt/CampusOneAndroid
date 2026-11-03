@@ -404,7 +404,7 @@ export function EditProfileModal({
                     style={[styles.textInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                     value={fullName}
                     onChangeText={setFullName}
-                    placeholder="e.g. Shahriar Rahman"
+                    placeholder="Full name"
                     placeholderTextColor={C.textMuted}
                   />
                 </View>
@@ -431,7 +431,7 @@ export function EditProfileModal({
                         style={[styles.textInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                         value={department}
                         onChangeText={setDepartment}
-                        placeholder="e.g. Facilities & Maintenance"
+                        placeholder="Department name"
                         placeholderTextColor={C.textMuted}
                       />
                     </View>
@@ -447,7 +447,7 @@ export function EditProfileModal({
                         style={[styles.textInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                         value={studentId}
                         onChangeText={setStudentId}
-                        placeholder="e.g. 21225103112"
+                        placeholder="Student ID"
                         placeholderTextColor={C.textMuted}
                         keyboardType="number-pad"
                       />
@@ -485,7 +485,7 @@ export function EditProfileModal({
                           ]}
                           numberOfLines={1}
                         >
-                          {department ? `${department} · Department` : 'Select Department (e.g. CSE)'}
+                          {department ? `${department} · Department` : 'Select Department'}
                         </Text>
                       </View>
                       <Feather name="chevron-down" size={18} color={C.textMuted} />
@@ -523,7 +523,7 @@ export function EditProfileModal({
                           ]}
                           numberOfLines={1}
                         >
-                          {program || 'Select Academic Program (e.g. B.Sc. in CSE)'}
+                          {program || 'Select Academic Program'}
                         </Text>
                       </View>
                       <Feather name="chevron-down" size={18} color={C.textMuted} />
@@ -540,7 +540,7 @@ export function EditProfileModal({
                             style={[styles.textInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                             value={intake}
                             onChangeText={setIntake}
-                            placeholder="e.g. 48"
+                            placeholder="Intake"
                             placeholderTextColor={C.textMuted}
                             keyboardType="number-pad"
                           />
@@ -556,7 +556,7 @@ export function EditProfileModal({
                             style={[styles.textInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                             value={section}
                             onChangeText={setSection}
-                            placeholder="e.g. 3"
+                            placeholder="Section"
                             placeholderTextColor={C.textMuted}
                             keyboardType="number-pad"
                           />
@@ -596,7 +596,7 @@ export function EditProfileModal({
                           ]}
                           numberOfLines={1}
                         >
-                          {bloodGroup ? `${bloodGroup} Blood Group` : 'Select Blood Type (e.g. O+)'}
+                          {bloodGroup ? `${bloodGroup} Blood Group` : 'Select Blood Group'}
                         </Text>
                       </View>
                       <Feather name="chevron-down" size={18} color={C.textMuted} />
@@ -619,7 +619,7 @@ export function EditProfileModal({
                     style={[styles.textInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                     value={phone}
                     onChangeText={setPhone}
-                    placeholder="e.g. +880 1712-345678"
+                    placeholder="+880 1..."
                     placeholderTextColor={C.textMuted}
                     keyboardType="phone-pad"
                   />
@@ -635,7 +635,7 @@ export function EditProfileModal({
                     style={[styles.textInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                     value={whatsapp}
                     onChangeText={setWhatsapp}
-                    placeholder="e.g. 01712345678"
+                    placeholder="017..."
                     placeholderTextColor={C.textMuted}
                     keyboardType="phone-pad"
                   />
@@ -651,7 +651,7 @@ export function EditProfileModal({
                     style={[styles.textInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                     value={facebook}
                     onChangeText={setFacebook}
-                    placeholder="e.g. fb.com/username or username"
+                    placeholder="Username or profile link"
                     placeholderTextColor={C.textMuted}
                     autoCapitalize="none"
                   />
@@ -667,7 +667,7 @@ export function EditProfileModal({
                     style={[styles.textInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                     value={instagram}
                     onChangeText={setInstagram}
-                    placeholder="e.g. @yourhandle"
+                    placeholder="@username"
                     placeholderTextColor={C.textMuted}
                     autoCapitalize="none"
                   />
@@ -683,7 +683,7 @@ export function EditProfileModal({
                     style={[styles.textInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                     value={telegram}
                     onChangeText={setTelegram}
-                    placeholder="e.g. @telegram_user"
+                    placeholder="@username"
                     placeholderTextColor={C.textMuted}
                     autoCapitalize="none"
                   />
@@ -699,7 +699,7 @@ export function EditProfileModal({
                     style={[styles.textInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                     value={linkedin}
                     onChangeText={setLinkedin}
-                    placeholder="e.g. linkedin.com/in/username"
+                    placeholder="Profile link"
                     placeholderTextColor={C.textMuted}
                     autoCapitalize="none"
                   />
@@ -715,7 +715,7 @@ export function EditProfileModal({
                     style={[styles.textInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                     value={address}
                     onChangeText={setAddress}
-                    placeholder="e.g. Mirpur-2, Dhaka"
+                    placeholder="Living area, city"
                     placeholderTextColor={C.textMuted}
                   />
                 </View>

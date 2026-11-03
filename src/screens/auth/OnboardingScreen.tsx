@@ -95,19 +95,19 @@ export function OnboardingScreen() {
           </Text>
 
           <Field C={C} label="STUDENT ID" required value={studentId} onChange={setStudentId}
-            placeholder="e.g. 20234208032" keyboardType="number-pad" />
+            placeholder="Student ID" keyboardType="number-pad" />
 
           <PickerField C={C} label="DEPARTMENT" required value={department}
             placeholder="Select department" onPress={() => setDeptModal(true)} />
 
-          <Field C={C} label="PROGRAM" value={program} onChange={setProgram} placeholder="e.g. B.Sc. in CSE" />
+          <Field C={C} label="PROGRAM" value={program} onChange={setProgram} placeholder="Academic Program" />
 
           <View style={styles.row}>
             <View style={{ flex: 1 }}>
-              <Field C={C} label="INTAKE" required value={intake} onChange={setIntake} placeholder="e.g. 50" />
+              <Field C={C} label="INTAKE" required value={intake} onChange={setIntake} placeholder="Intake" />
             </View>
             <View style={{ flex: 1 }}>
-              <Field C={C} label="SECTION" required value={section} onChange={setSection} placeholder="e.g. 1" />
+              <Field C={C} label="SECTION" required value={section} onChange={setSection} placeholder="Section" />
             </View>
           </View>
 
@@ -115,10 +115,10 @@ export function OnboardingScreen() {
             placeholder="Select blood group" onPress={() => setBloodModal(true)} />
 
           <Field C={C} label="PHONE" value={phone} onChange={setPhone}
-            placeholder="e.g. 01XXXXXXXXX" keyboardType="phone-pad" />
+            placeholder="01XXXXXXXXX" keyboardType="phone-pad" />
 
           <Field C={C} label="PRESENT ADDRESS" value={address} onChange={setAddress}
-            placeholder="e.g. Mirpur, Dhaka" />
+            placeholder="Living area, city" />
 
           {!!err && (
             <Text style={[styles.err, { color: C.danger, fontFamily: FontFamily.jakartaMedium }]}>{err}</Text>

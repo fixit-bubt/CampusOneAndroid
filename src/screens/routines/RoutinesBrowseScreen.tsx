@@ -626,7 +626,7 @@ export function RoutinesBrowseScreen({ route, navigation }: any) {
             <Feather name="search" size={24} color={C.textMuted} />
             <TextInput
               style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-              placeholder="Search department by name or code…"
+              placeholder="Search department…"
               placeholderTextColor={C.textMuted}
               value={deptSearch}
               onChangeText={setDeptSearch}

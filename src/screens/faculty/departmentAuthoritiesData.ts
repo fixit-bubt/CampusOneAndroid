@@ -6,7 +6,7 @@ export type AuthorityRoleType = 'chairman' | 'proctor' | 'dean';
 
 export interface DepartmentAuthority {
   roleType: AuthorityRoleType;
-  roleTitle: string; // e.g. "Department Chairman", "Assistant Proctor", "Faculty Dean"
+  roleTitle: string; // "Department Chairman", "Assistant Proctor", "Faculty Dean"
   badgeLabel: string;
   name: string;
   designation: string;

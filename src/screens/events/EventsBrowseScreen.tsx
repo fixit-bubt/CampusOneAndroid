@@ -422,7 +422,7 @@ export function EventsBrowseScreen({ navigation }: any) {
           <Feather name="search" size={24} color={C.textMuted} style={{ marginRight: 8 }} />
           <TextInput
             style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-            placeholder="Search events, clubs, venues, or speakers..."
+            placeholder="Search events..."
             placeholderTextColor={C.textMuted}
             value={search}
             onChangeText={setSearch}

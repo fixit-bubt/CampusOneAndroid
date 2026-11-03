@@ -420,7 +420,7 @@ export function RidePostScreen({ route, navigation }: any) {
                 style={[styles.customInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                 value={from}
                 onChangeText={setFrom}
-                placeholder={isOffer ? 'Enter custom pickup landmark...' : 'Enter your current location...'}
+                placeholder={isOffer ? 'Pickup landmark...' : 'Current location...'}
                 placeholderTextColor={C.textMuted}
                 autoFocus
               />
@@ -516,7 +516,7 @@ export function RidePostScreen({ route, navigation }: any) {
                 style={[styles.customInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                 value={to}
                 onChangeText={setTo}
-                placeholder="Enter custom destination landmark..."
+                placeholder="Destination landmark..."
                 placeholderTextColor={C.textMuted}
                 autoFocus
               />
@@ -714,7 +714,7 @@ export function RidePostScreen({ route, navigation }: any) {
               style={[styles.customInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
               value={notes}
               onChangeText={setNotes}
-              placeholder={isOffer ? 'e.g. Opposite Sony Cinema Gate 2, Rainkhola' : 'e.g. Waiting at footbridge, carrying bag'}
+              placeholder={isOffer ? 'Landmark or pickup point' : 'Pickup note or identifier'}
               placeholderTextColor={C.textMuted}
             />
             {notes.length > 0 && (

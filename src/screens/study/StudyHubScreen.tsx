@@ -359,7 +359,7 @@ function AddCourseSheet({
             style={[sheetStyles.input, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
             value={code}
             onChangeText={setCode}
-            placeholder="e.g. CSE 205"
+            placeholder="Course code"
             placeholderTextColor={C.textMuted}
             autoCapitalize="characters"
             editable={!submitting}
@@ -372,7 +372,7 @@ function AddCourseSheet({
             style={[sheetStyles.input, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
             value={name}
             onChangeText={setName}
-            placeholder="e.g. Data Structures & Algorithms"
+            placeholder="Course name"
             placeholderTextColor={C.textMuted}
             editable={!submitting}
           />

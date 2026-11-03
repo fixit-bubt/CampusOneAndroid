@@ -286,7 +286,7 @@ export function BloodRequestScreen({ navigation }: any) {
               style={[styles.innerInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
               value={patientName}
               onChangeText={setPatientName}
-              placeholder="e.g. Sadia Sultana, Md. Karim"
+              placeholder="Patient name"
               placeholderTextColor={C.textMuted}
             />
           </View>
@@ -330,7 +330,7 @@ export function BloodRequestScreen({ navigation }: any) {
                   ]}
                   numberOfLines={1}
                 >
-                  {currentReasonObj ? `${currentReasonObj.label} (${currentReasonObj.labelBn})` : 'Select case reason (e.g. Surgery, Dengue)...'}
+                  {currentReasonObj ? `${currentReasonObj.label} (${currentReasonObj.labelBn})` : 'Select case reason...'}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -418,7 +418,7 @@ export function BloodRequestScreen({ navigation }: any) {
                 setHospital(val);
                 setArea(val);
               }}
-              placeholder="Enter hospital, clinic, or location (e.g. DMCH, Mirpur-2)..."
+              placeholder="Hospital, clinic, or location..."
               placeholderTextColor={C.textMuted}
               autoFocus
             />

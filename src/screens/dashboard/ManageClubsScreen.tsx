@@ -294,7 +294,7 @@ export function ManageClubsScreen({ navigation }: any) {
           <Icon name="search" size={20} color={C.textMuted} />
           <TextInput
             style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-            placeholder="Search clubs, categories, or presidents..."
+            placeholder="Search clubs..."
             placeholderTextColor={C.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -502,7 +502,7 @@ export function ManageClubsScreen({ navigation }: any) {
                 ]}
                 value={newName}
                 onChangeText={setNewName}
-                placeholder="e.g. BUBT Robotics Club"
+                placeholder="Club name"
                 placeholderTextColor={C.textMuted}
                 autoFocus
               />
@@ -519,7 +519,7 @@ export function ManageClubsScreen({ navigation }: any) {
                 ]}
                 value={newTagline}
                 onChangeText={setNewTagline}
-                placeholder="One-line summary for campus directory"
+                placeholder="Club tagline or summary"
                 placeholderTextColor={C.textMuted}
               />
 
@@ -732,7 +732,7 @@ export function ManageClubsScreen({ navigation }: any) {
               <Icon name="search" size={20} color={C.textMuted} />
               <TextInput
                 style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                placeholder="Search students by name, ID, intake..."
+                placeholder="Search students..."
                 placeholderTextColor={C.textMuted}
                 value={studentQuery}
                 onChangeText={setStudentQuery}

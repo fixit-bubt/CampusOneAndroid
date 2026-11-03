@@ -205,7 +205,7 @@ export function ManageMarketScreen({ navigation }: any) {
             </View>
             <TextInput
               style={[styles.searchInputTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-              placeholder="Search by title, code (L-xxx), or student..."
+              placeholder="Search listings..."
               placeholderTextColor={C.textMuted}
               value={searchQuery}
               onChangeText={setSearchQuery}

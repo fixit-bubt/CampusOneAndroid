@@ -489,7 +489,7 @@ export function StudyUploadScreen({ route, navigation }: any) {
               style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
               value={author}
               onChangeText={setAuthor}
-              placeholder="e.g. Thomas H. Cormen"
+              placeholder={t.study2.authorPlaceholder ?? "Author or instructor"}
               placeholderTextColor={C.textMuted}
             />
             <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.study2.linkInsteadOfFile}</Text>

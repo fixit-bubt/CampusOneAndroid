@@ -354,7 +354,7 @@ export function CommuteAreaPickerModal({
               <TextInput
                 ref={searchInputRef}
                 style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                placeholder="Search area (e.g. Mirpur, Dhanmondi, Sony)…"
+                placeholder="Search area…"
                 placeholderTextColor={C.textMuted}
                 value={search}
                 onChangeText={setSearch}

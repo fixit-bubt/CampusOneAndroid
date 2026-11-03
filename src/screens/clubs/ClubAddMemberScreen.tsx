@@ -191,7 +191,7 @@ export function ClubAddMemberScreen({ route, navigation }: any) {
           <Feather name="search" size={20} color={C.textMuted} />
           <TextInput
             style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-            placeholder="Search students by name or intake..."
+            placeholder="Search students..."
             placeholderTextColor={C.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}

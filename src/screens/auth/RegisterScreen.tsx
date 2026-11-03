@@ -195,7 +195,7 @@ export function RegisterScreen({ navigation }: Props) {
               onChangeText={setName}
               onFocus={() => setFocusedField('name')}
               onBlur={() => setFocusedField(null)}
-              placeholder="e.g. Farhan Ahmed"
+              placeholder="Full Name"
               placeholderTextColor={C.textMuted}
               autoCapitalize="words"
             />
@@ -223,7 +223,7 @@ export function RegisterScreen({ navigation }: Props) {
               onChangeText={setStudentId}
               onFocus={() => setFocusedField('studentId')}
               onBlur={() => setFocusedField(null)}
-              placeholder="e.g. 20214103001"
+              placeholder="Student ID"
               placeholderTextColor={C.textMuted}
               keyboardType="number-pad"
             />
@@ -288,7 +288,7 @@ export function RegisterScreen({ navigation }: Props) {
                   onChangeText={setIntake}
                   onFocus={() => setFocusedField('intake')}
                   onBlur={() => setFocusedField(null)}
-                  placeholder="e.g. 50"
+                  placeholder="Intake"
                   placeholderTextColor={C.textMuted}
                   keyboardType="number-pad"
                 />
@@ -318,7 +318,7 @@ export function RegisterScreen({ navigation }: Props) {
                   onChangeText={setSection}
                   onFocus={() => setFocusedField('section')}
                   onBlur={() => setFocusedField(null)}
-                  placeholder="e.g. 02"
+                  placeholder="Section"
                   placeholderTextColor={C.textMuted}
                   keyboardType="number-pad"
                 />

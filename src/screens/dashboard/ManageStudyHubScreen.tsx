@@ -1121,7 +1121,7 @@ export function ManageStudyHubScreen({ navigation }: any) {
                   value={intakeNumInput}
                   onChangeText={val => setIntakeNumInput(val.replace(/\D/g, ''))}
                   keyboardType="numeric"
-                  placeholder="e.g. 52"
+                  placeholder="Intake number"
                   placeholderTextColor={C.textMuted}
                 />
               </View>
@@ -1137,7 +1137,7 @@ export function ManageStudyHubScreen({ navigation }: any) {
                   style={[styles.inputBarTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                   value={intakeYearsInput}
                   onChangeText={setIntakeYearsInput}
-                  placeholder="e.g. 2023 - 2027"
+                  placeholder="2023 - 2027"
                   placeholderTextColor={C.textMuted}
                 />
               </View>
@@ -1222,7 +1222,7 @@ export function ManageStudyHubScreen({ navigation }: any) {
                   style={[styles.rejectNoteTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                   value={rejectNote}
                   onChangeText={setRejectNote}
-                  placeholder="e.g. This section already exists in the catalogue."
+                  placeholder="Reason for rejection"
                   placeholderTextColor={C.textMuted}
                   multiline
                 />
@@ -1376,7 +1376,7 @@ export function ManageStudyHubScreen({ navigation }: any) {
                   value={secNumInput}
                   onChangeText={val => setSecNumInput(val.replace(/\D/g, ''))}
                   keyboardType="numeric"
-                  placeholder="e.g. 1"
+                  placeholder="Section number"
                   placeholderTextColor={C.textMuted}
                 />
               </View>

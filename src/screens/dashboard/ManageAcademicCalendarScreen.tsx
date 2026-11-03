@@ -502,7 +502,7 @@ export function ManageAcademicCalendarScreen({ navigation }: any) {
                         ]}
                         value={calendarTitle}
                         onChangeText={setCalendarTitle}
-                        placeholder="Calendar Title (e.g. Fall 2026 Academic Calendar)"
+                        placeholder="Calendar Title"
                         placeholderTextColor={C.textMuted}
                         editable={!uploading}
                       />

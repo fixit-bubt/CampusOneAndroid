@@ -133,6 +133,17 @@ export function EventPostScreen({ navigation }: any) {
     setEventDate(dt.toISOString().split('T')[0]);
   }
 
+  if (canCreate === null) {
+    return (
+      <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
+        <SubBar title={t.events2.postAnEvent ?? "Post an Event"} onBack={() => navigation.goBack()} />
+        <View style={[styles.centerPad, { justifyContent: 'center', alignItems: 'center' }]}>
+          <ActivityIndicator size="small" color={C.brand} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   if (canCreate === false) {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -356,7 +367,7 @@ export function EventPostScreen({ navigation }: any) {
             style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
             value={organizer}
             onChangeText={setOrganizer}
-            placeholder="e.g. BUBT IT Club, Cultural Club"
+            placeholder="Organizing club or department"
             placeholderTextColor={C.textMuted}
           />
 
@@ -368,7 +379,7 @@ export function EventPostScreen({ navigation }: any) {
             style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
             value={location}
             onChangeText={setLocation}
-            placeholder="e.g. Campus Auditorium, Building 1"
+            placeholder="Venue or auditorium"
             placeholderTextColor={C.textMuted}
           />
 
@@ -431,7 +442,7 @@ export function EventPostScreen({ navigation }: any) {
             style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
             value={capacity}
             onChangeText={setCapacity}
-            placeholder="e.g. 150 (Leave blank for unlimited)"
+            placeholder="Capacity (optional)"
             placeholderTextColor={C.textMuted}
             keyboardType="numeric"
           />
@@ -448,7 +459,7 @@ export function EventPostScreen({ navigation }: any) {
             ]}
             value={desc}
             onChangeText={setDesc}
-            placeholder="Outline schedule, special guests, requirements..."
+            placeholder="Event details and schedule..."
             placeholderTextColor={C.textMuted}
             multiline
             numberOfLines={4}

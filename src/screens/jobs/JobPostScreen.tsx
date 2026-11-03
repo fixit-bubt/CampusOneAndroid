@@ -297,7 +297,7 @@ function CompensationModalSheet({
                   ]}
                   value={draftSalary}
                   onChangeText={setDraftSalary}
-                  placeholder={t.jobs2?.salaryPlaceholder ?? 'Amount or pay details'}
+                  placeholder={t.jobs2?.salaryPlaceholder ?? 'Salary or stipend'}
                   placeholderTextColor={C.textMuted}
                 />
               </View>
@@ -428,7 +428,7 @@ function LocationModalSheet({
                 ]}
                 value={draftSpecific}
                 onChangeText={setDraftSpecific}
-                placeholder={t.jobs2?.locationPlaceholder ?? 'Building, room, or road (optional)'}
+                placeholder={t.jobs2?.locationPlaceholder ?? 'Location (optional)'}
                 placeholderTextColor={C.textMuted}
               />
             </View>
@@ -697,7 +697,7 @@ export function JobPostScreen({ navigation }: any) {
             style={[styles.input54, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
             value={company}
             onChangeText={setCompany}
-            placeholder={t.jobs2?.companyPlaceholder ?? 'Company or organization'}
+            placeholder={t.jobs2?.companyPlaceholder ?? 'Company name'}
             placeholderTextColor={C.textMuted}
           />
 
@@ -709,7 +709,7 @@ export function JobPostScreen({ navigation }: any) {
             style={[styles.input54, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
             value={role}
             onChangeText={setRole}
-            placeholder={t.jobs2?.roleTitlePlaceholder ?? 'Job title or role'}
+            placeholder={t.jobs2?.roleTitlePlaceholder ?? 'Job title'}
             placeholderTextColor={C.textMuted}
           />
 
@@ -870,7 +870,7 @@ export function JobPostScreen({ navigation }: any) {
             style={[styles.input54, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
             value={skillsInput}
             onChangeText={setSkillsInput}
-            placeholder={t.jobs2?.requirementsPlaceholder ?? 'Required skills or subjects'}
+            placeholder={t.jobs2?.requirementsPlaceholder ?? 'Required skills'}
             placeholderTextColor={C.textMuted}
           />
 
@@ -894,7 +894,7 @@ export function JobPostScreen({ navigation }: any) {
             style={[styles.textarea, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
             value={desc}
             onChangeText={setDesc}
-            placeholder={t.jobs2?.descriptionPlaceholder ?? 'Job description and duties'}
+            placeholder={t.jobs2?.descriptionPlaceholder ?? 'Job description'}
             placeholderTextColor={C.textMuted}
             multiline
             textAlignVertical="top"
@@ -908,7 +908,7 @@ export function JobPostScreen({ navigation }: any) {
             style={[styles.input54, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
             value={requirements}
             onChangeText={setRequirements}
-            placeholder={t.jobs2?.requirementsPlaceholder ?? 'Qualifications or criteria'}
+            placeholder={t.jobs2?.requirementsPlaceholder ?? 'Qualifications'}
             placeholderTextColor={C.textMuted}
           />
 
@@ -927,7 +927,7 @@ export function JobPostScreen({ navigation }: any) {
               style={[styles.input54, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium, marginTop: 10 }]}
               value={applyValue}
               onChangeText={setApplyValue}
-              placeholder={t.jobs2?.applyEmailPlaceholder ?? 'Application email address'}
+              placeholder={t.jobs2?.applyEmailPlaceholder ?? 'Application email'}
               placeholderTextColor={C.textMuted}
               autoCapitalize="none"
               keyboardType="email-address"
@@ -939,7 +939,7 @@ export function JobPostScreen({ navigation }: any) {
               style={[styles.input54, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium, marginTop: 10 }]}
               value={applyValue}
               onChangeText={setApplyValue}
-              placeholder={t.jobs2?.applyLinkPlaceholder ?? 'Application link (URL)'}
+              placeholder={t.jobs2?.applyLinkPlaceholder ?? 'Application link'}
               placeholderTextColor={C.textMuted}
               autoCapitalize="none"
               keyboardType="url"

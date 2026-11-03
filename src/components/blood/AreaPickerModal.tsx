@@ -568,7 +568,7 @@ export function AreaPickerModal({
               <TextInput
                 ref={searchInputRef}
                 style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                placeholder="Search hospital or area (e.g. DMCH, Mirpur, Square)..."
+                placeholder="Search hospital or area..."
                 placeholderTextColor={C.textMuted}
                 value={search}
                 onChangeText={setSearch}

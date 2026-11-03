@@ -230,7 +230,7 @@ export function ClubsScreen({ navigation }: any) {
           <Icon name="search" size={20} color={C.textMuted} />
           <TextInput
             style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-            placeholder="Search clubs, robotics, debate, tech..."
+            placeholder="Search clubs..."
             placeholderTextColor={C.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}

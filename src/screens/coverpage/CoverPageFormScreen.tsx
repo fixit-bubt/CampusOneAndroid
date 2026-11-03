@@ -813,7 +813,7 @@ export function CoverPageFormScreen({ navigation }: any) {
                 icon="search"
                 label="AUTOFILL COURSE"
                 value={courseCode ? `${courseCode} · ${courseTitle}` : ''}
-                placeholder="Tap to search & autofill course..."
+                placeholder="Search & autofill course..."
                 onPress={() => setCourseModal(true)}
                 statValue={courseCode ? courseCode.split(' ')[0] : 'CRS'}
                 statLabel={courseCode ? 'ACTIVE' : 'AUTOFILL'}
@@ -824,7 +824,7 @@ export function CoverPageFormScreen({ navigation }: any) {
                 label="COURSE CODE"
                 value={courseCode}
                 onChange={setCourseCode}
-                placeholder="e.g. CSE 111"
+                placeholder="Course code"
                 C={C}
               />
               <InputBar72
@@ -832,7 +832,7 @@ export function CoverPageFormScreen({ navigation }: any) {
                 label="COURSE TITLE"
                 value={courseTitle}
                 onChange={setCourseTitle}
-                placeholder="e.g. Structured Programming Language"
+                placeholder="Course title"
                 C={C}
               />
             </>
@@ -851,14 +851,14 @@ export function CoverPageFormScreen({ navigation }: any) {
                 label={docType === 'project_report' ? 'PROJECT TITLE' : 'INTERNSHIP TOPIC'}
                 value={reportTitle}
                 onChange={setReportTitle}
-                placeholder={docType === 'project_report' ? 'Enter project report title' : 'Enter internship topic'}
+                placeholder={docType === 'project_report' ? 'Project report title' : 'Internship topic'}
                 C={C}
               />
               <Bar72
                 icon="search"
                 label="OPTIONAL COURSE AUTOFILL"
                 value={courseCode ? `${courseCode} · ${courseTitle}` : ''}
-                placeholder="Tap to autofill course (optional)..."
+                placeholder="Autofill course (optional)..."
                 onPress={() => setCourseModal(true)}
                 statValue={courseCode ? courseCode.split(' ')[0] : 'CRS'}
                 statLabel={courseCode ? 'ACTIVE' : 'AUTOFILL'}
@@ -887,7 +887,7 @@ export function CoverPageFormScreen({ navigation }: any) {
                     label="COMPANY / ORGANIZATION NAME"
                     value={company}
                     onChange={setCompany}
-                    placeholder="e.g. Grameenphone Ltd."
+                    placeholder="Company or organization"
                     C={C}
                   />
                   <InputBar72
@@ -895,7 +895,7 @@ export function CoverPageFormScreen({ navigation }: any) {
                     label="DURATION"
                     value={duration}
                     onChange={setDuration}
-                    placeholder="e.g. 3 Months (Jan 2026 - Mar 2026)"
+                    placeholder="Duration (Jan - Mar 2026)"
                     C={C}
                   />
                 </>
@@ -916,7 +916,7 @@ export function CoverPageFormScreen({ navigation }: any) {
                 label="NUMBER OF TABLE ROWS"
                 value={indexRows}
                 onChange={setIndexRows}
-                placeholder="e.g. 15 (default is 15 rows)"
+                placeholder="Rows (default: 15)"
                 keyboardType="numeric"
                 C={C}
               />
@@ -936,7 +936,7 @@ export function CoverPageFormScreen({ navigation }: any) {
                 label="ASSIGNMENT NO"
                 value={assignmentNo}
                 onChange={setAssignmentNo}
-                placeholder="e.g. 01 or 02"
+                placeholder="Assignment number"
                 C={C}
               />
               <InputBar72
@@ -944,7 +944,7 @@ export function CoverPageFormScreen({ navigation }: any) {
                 label="ASSIGNMENT TOPIC"
                 value={experimentName}
                 onChange={setExperimentName}
-                placeholder="e.g. Memory Management & Pointers (optional)"
+                placeholder="Assignment topic (optional)"
                 C={C}
               />
             </>
@@ -971,7 +971,7 @@ export function CoverPageFormScreen({ navigation }: any) {
                 label="EXPERIMENT NO"
                 value={assignmentNo}
                 onChange={setAssignmentNo}
-                placeholder="e.g. 01 or 03"
+                placeholder="Experiment number"
                 C={C}
               />
               <InputBar72
@@ -979,7 +979,7 @@ export function CoverPageFormScreen({ navigation }: any) {
                 label="EXPERIMENT NAME"
                 value={experimentName}
                 onChange={setExperimentName}
-                placeholder="e.g. Study of Logic Gates and Implementation"
+                placeholder="Experiment topic"
                 C={C}
               />
             </>
@@ -996,7 +996,7 @@ export function CoverPageFormScreen({ navigation }: any) {
             label="STUDENT FULL NAME"
             value={studentName}
             onChange={setStudentName}
-            placeholder="Student Name (or leave blank to write with pen)"
+            placeholder="Student name"
             C={C}
           />
           <InputBar72
@@ -1004,7 +1004,7 @@ export function CoverPageFormScreen({ navigation }: any) {
             label="STUDENT ID"
             value={studentId}
             onChange={setStudentId}
-            placeholder="e.g. 22235103199"
+            placeholder="Student ID"
             C={C}
           />
           <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -1014,7 +1014,7 @@ export function CoverPageFormScreen({ navigation }: any) {
                 label="INTAKE"
                 value={intake}
                 onChange={setIntake}
-                placeholder="e.g. 51"
+                placeholder="Intake"
                 C={C}
               />
             </View>
@@ -1024,7 +1024,7 @@ export function CoverPageFormScreen({ navigation }: any) {
                 label="SECTION"
                 value={section}
                 onChange={setSection}
-                placeholder="e.g. 02"
+                placeholder="Section"
                 C={C}
               />
             </View>
@@ -1129,7 +1129,7 @@ export function CoverPageFormScreen({ navigation }: any) {
                 icon="user-check"
                 label="TEACHER / SUPERVISOR"
                 value={teacherName ? `${teacherName} ${teacherDesig ? `(${teacherDesig})` : ''}` : ''}
-                placeholder="Tap to select teacher from directory..."
+                placeholder="Select teacher..."
                 onPress={() => setFacultyModal(true)}
                 statValue={teacherName ? 'FAC' : 'DIR'}
                 statLabel={teacherName ? 'ACTIVE' : 'AUTOFILL'}
@@ -1147,7 +1147,7 @@ export function CoverPageFormScreen({ navigation }: any) {
                 icon="bookmark"
                 label="DESIGNATION"
                 value={teacherDesig}
-                placeholder="Select Designation (e.g. Assistant Professor)..."
+                placeholder="Select designation..."
                 onPress={() => setDesigModal(true)}
                 statValue="ROLE"
                 statLabel="SELECT"
@@ -1158,7 +1158,7 @@ export function CoverPageFormScreen({ navigation }: any) {
                 label="TEACHER DEPARTMENT"
                 value={teacherDept}
                 onChange={setTeacherDept}
-                placeholder="e.g. Computer Science and Engineering"
+                placeholder="Department name"
                 C={C}
               />
             </>
@@ -1364,7 +1364,7 @@ export function CoverPageFormScreen({ navigation }: any) {
             style={[styles.sInput, { color: C.text, fontFamily: FontFamily.jakartaRegular }]}
             value={courseSearch}
             onChangeText={setCourseSearch}
-            placeholder="Search course code or title..."
+            placeholder="Search course..."
             placeholderTextColor={C.textMuted}
           />
           {courseSearch.length > 0 && (
@@ -1421,7 +1421,7 @@ export function CoverPageFormScreen({ navigation }: any) {
             style={[styles.sInput, { color: C.text, fontFamily: FontFamily.jakartaRegular }]}
             value={facultySearch}
             onChangeText={setFacultySearch}
-            placeholder="Search by teacher name or short code..."
+            placeholder="Search teacher or code..."
             placeholderTextColor={C.textMuted}
           />
           {facultySearch.length > 0 && (

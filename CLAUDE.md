@@ -4127,3 +4127,49 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Strict TypeScript Compilation: Passed with 0 errors across all files (`npx tsc --noEmit`).
   - Native Local Release Build: Compiled locally via Gradle (`assembleRelease`) with release keystore in 42s.
   - Physical Device Deployment: Installed and verified on physical USB-connected Android phone (`8734b5da`).
+
+---
+
+### 108. Campus Events Administration Command Center, Strict 58dp Dropdowns, 3-Tab Filter & Student Permission Tightening (`ManageEventsScreen.tsx`, `EventPostScreen.tsx`, `ExploreScreen.tsx`, `AppNavigator.tsx`, `navigation.ts`, `en.ts`, `bn.ts`) (/zero-slop, /performance-optimization, /code-review-and-quality)
+- **Student Permission Tightening (`EventPostScreen.tsx`):**
+  - Resolved loading state vulnerability where `canCreate === null` prematurely rendered the entire event creation form to students before async Supabase permission checks completed.
+  - Added clean loading barrier (`ActivityIndicator`) while verifying `can_create_events` policy permissions, ensuring unauthorized students are strictly presented with the access denial screen without leaking form inputs.
+- **Direct Admin Routing from Explore (`ExploreScreen.tsx`):**
+  - Added direct admin routing `s.id === 'events' && isAdmin ? 'ManageEvents' : ...` in `ExploreScreen.tsx`.
+  - Administrators tapping Events route directly to the new `ManageEventsScreen.tsx` command center, while students continue routing directly to `EventsBrowseScreen.tsx`.
+- **Dedicated Events Administration Command Center (`ManageEventsScreen.tsx`):**
+  - **Strict 58dp Search Bar (`searchBar58`):** 58dp height, 16dp radius, 20dp vector search icon in transparent 32dp slot (`iconSlot32`), searching titles, organizers, clubs, and venues.
+  - **Strict 58dp Dropdown Category Bar (`bar58`):** 58dp height, 16dp radius, opening a separate 58dp modal sheet with 28dp monochrome vector icons (`book-open`, `music`, `activity`, `users`, `briefcase`, `layers`) with zero color-box clutter.
+  - **Option A (3-Tab Switcher, `tabsRow58`):** 58dp height, 16dp radius, 3 spacious tabs: `All Events`, `Upcoming` (including Ongoing/Today and future), and `Past` (Ended) with real-time live count pills.
+  - **Centered 52dp Create Event Action Bar (`createBar52`):** 52dp height, 14dp radius, centered 20dp vector `plus-circle` icon and bold title routing to `EventPost`.
+  - **Strict 58dp BUBT Events Crawler Sync Bar:** Real-time crawler sync trigger invoking `triggerBubtEventsSync(true)` with loading indicator and toast feedback.
+  - **Optimized Event Management Cards (`EventAdminCard`):** Memoized list card showing category pill, official/club badge, live status dot (Ongoing/Today/Upcoming/Ended), organizer/club, date & time, venue, attendee headcount, secondary "View Details" button, and destructive "Delete Event" button with confirmation alert.
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors across all files (`npx.cmd tsc --noEmit`).
+  - Native Local Release Build: Compiled via Gradle (`assembleRelease`) with release keystore.
+
+
+
+---
+
+### 109. Full-App Microcopy & Anti-Slop Audit: Eradication of "e.g." / "যেমন", Verbose Placeholders, Boundary Overflow Prevention, and Multi-Axis Quality Gate (`AreaPickerModal.tsx`, `EditProfileModal.tsx`, `CommuteAreaPickerModal.tsx`, `OnboardingScreen.tsx`, `RegisterScreen.tsx`, `BloodRequestScreen.tsx`, `CoverPageFormScreen.tsx`, `CreateStaffAdminScreen.tsx`, `ManageAcademicCalendarScreen.tsx`, `ManageClubsScreen.tsx`, `ManageMarketScreen.tsx`, `ManageStudyHubScreen.tsx`, `EventPostScreen.tsx`, `EventsBrowseScreen.tsx`, `FacultyProfileScreen.tsx`, `JobPostScreen.tsx`, `PostItemFormScreen.tsx`, `ProfileScreen.tsx`, `MarketPostScreen.tsx`, `MedicalScreen.tsx`, `ReportFormScreen.tsx`, `RidePostScreen.tsx`, `RoutinesBrowseScreen.tsx`, `StudyHubScreen.tsx`, `StudyUploadScreen.tsx`, `ManageEventsScreen.tsx`, `en.ts`, `bn.ts`) (/code-review-and-quality, /performance-optimization, /zero-slop)
+- **Universal Eradication of "e.g." / "যেমন" Across All Layers:**
+  - Audited 150+ occurrences of "e.g.", "(e.g.", "eg", and "যেমন" across all student, staff, and admin modules.
+  - Replaced artificial and prompt-like placeholder formatting with crisp, authentic, human microcopy (e.g. `Full Name`, `Student ID`, `Course code`, `Notice title`, `Department`, `Event title`, `Venue`, `Pickup location`, `Meetup spot on campus`).
+- **Boundary Overflow Prevention & Concise Text Standard:**
+  - Replaced overly long, wrapping, and clipping placeholders across 360-390dp screens with concise labels:
+    - Area & Commute Modals: `"Search hospital or area (e.g. DMCH, Mirpur, Square)..."` -> `"Search hospital or area..."`, `"Search area…"`
+    - Medical: `"Search medicine or symptom (e.g. Napa, Antacid)..."` -> `"Search medicine or symptom..."`, status notes -> `"Reason or status note"`
+    - Campus Directory & Faculty: `"Search students by name, intake, section, blood..."` -> `"Search students by name, intake, section..."`, `"Search name, code, or room..."`
+    - Cover Page Generator: Removed all 14 verbose "e.g." inputs across course codes, topics, supervisors, designations, student details, and index table rows.
+    - Jobs: Refined salary, location, description, and application link placeholders to compact professional defaults.
+    - Campus Maintenance & Reports: `"e.g. Fan 2 not working in Classroom 402"` -> `"Problem title"`, `"Room Number"`, `"Location detail"`.
+    - Rides & Study Hub: Standardized pickup points, landmarks, course titles, intake, and section placeholders.
+- **Zero UI Layout Breakage Guarantee:**
+  - Preserved 100% of existing bar dimensions (`72dp` / `58dp`), margins, paddings, vector icon layouts, and event handlers.
+- **1:1 Bilingual Localization Parity:**
+  - Synchronously updated `src/i18n/en.ts` and `src/i18n/bn.ts` to ensure 100% parity across English and Bengali interfaces.
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`cmd.exe /c npx tsc --noEmit`).
+  - Native Local Release Build: Compiled locally via Gradle (`gradlew assembleRelease`) with local release keystore.
+  - Physical Device Deployment: Installed and verified on physical USB-connected Android phone (`8734b5da`).

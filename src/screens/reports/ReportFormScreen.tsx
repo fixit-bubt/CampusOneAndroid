@@ -317,7 +317,7 @@ export function ReportFormScreen({ route, navigation }: any) {
               style={[styles.input58, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
               value={title}
               onChangeText={setTitle}
-              placeholder={t.reports2.titlePlaceholder ?? 'e.g. Fan 2 not working in Classroom 402'}
+              placeholder={t.reports2.titlePlaceholder ?? 'Problem title'}
               placeholderTextColor={C.textMuted}
             />
           </View>
@@ -409,7 +409,7 @@ export function ReportFormScreen({ route, navigation }: any) {
                 style={[styles.input58, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                 value={roomNo}
                 onChangeText={setRoomNo}
-                placeholder={t.reports2.locRoomPlaceholder ?? 'Room Number (e.g. 402, Lab 3)'}
+                placeholder={t.reports2.locRoomPlaceholder ?? 'Room Number'}
                 placeholderTextColor={C.textMuted}
                 keyboardType="numbers-and-punctuation"
               />
@@ -432,7 +432,7 @@ export function ReportFormScreen({ route, navigation }: any) {
                 style={[styles.input58, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                 value={locNote}
                 onChangeText={setLocNote}
-                placeholder={t.reports2.locDetailPlaceholder ?? 'Extra location detail (e.g. near south stairs)'}
+                placeholder={t.reports2.locDetailPlaceholder ?? 'Location detail'}
                 placeholderTextColor={C.textMuted}
               />
             </View>

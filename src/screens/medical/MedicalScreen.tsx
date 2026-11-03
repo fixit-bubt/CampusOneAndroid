@@ -1058,8 +1058,8 @@ export function MedicalScreen({ navigation }: any) {
                     ]}
                     placeholder={
                       isBn
-                        ? 'ওষুধ বা লক্ষণ খুঁজুন (যেমন প্যারাসিটামল, গ্যাস্ট্রিক)...'
-                        : 'Search medicine or symptom (e.g. Napa, Antacid)...'
+                        ? 'ওষুধ বা লক্ষণ খুঁজুন...'
+                        : 'Search medicine or symptom...'
                     }
                     placeholderTextColor={C.textMuted}
                     value={medSearchQuery}
@@ -1607,7 +1607,7 @@ export function MedicalScreen({ navigation }: any) {
                           fontFamily: FontFamily.jakartaMedium,
                         },
                       ]}
-                      placeholder="e.g. In faculty seminar until 1:00 PM"
+                      placeholder="Reason or status note"
                       placeholderTextColor={C.textMuted}
                       value={editLeaveNote}
                       onChangeText={setEditLeaveNote}

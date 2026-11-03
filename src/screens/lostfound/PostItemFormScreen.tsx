@@ -899,7 +899,7 @@ export function PostItemFormScreen({ route, navigation }: any) {
                   ]}
                   value={locInputText}
                   onChangeText={setLocInputText}
-                  placeholder={isBn ? 'রুম নম্বর লিখুন (যেমন: Room 402, B2)' : 'Enter room or spot (e.g. Room 402, B2)'}
+                  placeholder={isBn ? 'রুম বা নির্দিষ্ট স্থান' : 'Room or spot'}
                   placeholderTextColor={C.textMuted}
                 />
                 <TouchableOpacity

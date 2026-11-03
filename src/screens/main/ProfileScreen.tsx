@@ -280,7 +280,7 @@ function AddSheet({
               style={[sheetStyles.input, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
               value={title}
               onChangeText={setTitle}
-              placeholder="e.g. Dean's Honor List - Spring 2026"
+              placeholder={t.mainx.titlePlaceholder ?? "Award or Certificate Title"}
               placeholderTextColor={C.textMuted}
             />
           </View>
@@ -293,7 +293,7 @@ function AddSheet({
               style={[sheetStyles.input, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
               value={org}
               onChangeText={setOrg}
-              placeholder="e.g. Faculty of Engineering · BUBT"
+              placeholder={t.mainx.orgPlaceholder ?? "Issuing Organization"}
               placeholderTextColor={C.textMuted}
             />
           </View>

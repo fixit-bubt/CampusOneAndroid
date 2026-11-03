@@ -883,7 +883,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
           </View>
         )}
 
-        {/* Departmental WordPress Profile (e.g. eee.bubt.edu.bd) */}
+        {/* Departmental WordPress Profile */}
         {member.departmental_profile_url ? (
           <TouchableOpacity
             style={[styles.officialLink, { borderColor: `${FACULTY_ACCENT}50`, backgroundColor: `${FACULTY_ACCENT}10` }]}

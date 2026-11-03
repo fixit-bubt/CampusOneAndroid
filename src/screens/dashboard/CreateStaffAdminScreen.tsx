@@ -238,7 +238,7 @@ export function CreateStaffAdminScreen({ navigation }: any) {
               style={[styles.inputTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
               value={name}
               onChangeText={setName}
-              placeholder="e.g. Engr. Tanvir Ahmed"
+              placeholder="Full Name"
               placeholderTextColor={C.textMuted}
               autoCapitalize="words"
             />

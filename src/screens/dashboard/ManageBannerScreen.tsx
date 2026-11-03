@@ -684,7 +684,7 @@ export function ManageBannerScreen({ navigation }: any) {
               style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
               value={search}
               onChangeText={setSearch}
-              placeholder="Search by title, department, or venue..."
+              placeholder="Search notices..."
               placeholderTextColor={C.textMuted}
             />
             {search.length > 0 && (

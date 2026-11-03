@@ -307,7 +307,7 @@ export function ManageAnnouncementsScreen({ navigation }: any) {
           style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
           value={search}
           onChangeText={setSearch}
-          placeholder="Search notices by title, code or dept..."
+          placeholder="Search notices..."
           placeholderTextColor={C.textMuted}
         />
         {search.length > 0 && (
