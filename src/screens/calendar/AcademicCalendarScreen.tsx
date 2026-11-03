@@ -159,30 +159,17 @@ export function AcademicCalendarScreen({ navigation }: any) {
         title="Academic Calendar"
         onBack={() => navigation.goBack()}
         rightSlot={
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            {isAdmin && (
-              <TouchableOpacity
-                onPress={() => navigation.navigate('ManageAcademicCalendar')}
-                style={styles.headerBtn}
-                hitSlop={8}
-                activeOpacity={0.75}
-                accessibilityLabel="Manage academic calendars"
-              >
-                <Feather name="settings" size={20} color={C.text} />
-              </TouchableOpacity>
-            )}
-            {featuredCalendar && (
-              <TouchableOpacity
-                onPress={() => handleShareCalendar(featuredCalendar)}
-                style={styles.headerBtn}
-                hitSlop={8}
-                activeOpacity={0.75}
-                accessibilityLabel="Share active calendar"
-              >
-                <Feather name="share-2" size={20} color={C.text} />
-              </TouchableOpacity>
-            )}
-          </View>
+          featuredCalendar ? (
+            <TouchableOpacity
+              onPress={() => handleShareCalendar(featuredCalendar)}
+              style={styles.headerBtn}
+              hitSlop={8}
+              activeOpacity={0.75}
+              accessibilityLabel="Share active calendar"
+            >
+              <Feather name="share-2" size={20} color={C.text} />
+            </TouchableOpacity>
+          ) : undefined
         }
       />
 
@@ -203,31 +190,45 @@ export function AcademicCalendarScreen({ navigation }: any) {
         }
         ListHeaderComponent={
           <View style={styles.headerBlock}>
-            {/* Admin Management Strip Shortcut */}
+            {/* Admin Management 72dp Bar Shortcut */}
             {isAdmin && (
               <TouchableOpacity
                 style={[
-                  styles.adminStrip,
+                  styles.adminBar72,
                   {
                     backgroundColor: C.surface,
-                    borderColor: C.brand + '40',
+                    borderColor: C.brand + '45',
                   },
                 ]}
                 onPress={() => navigation.navigate('ManageAcademicCalendar')}
                 activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel="Admin: Upload / Manage Calendars"
               >
-                <View style={styles.adminStripLeft}>
-                  <Feather name="shield" size={18} color={C.brand} style={{ marginRight: 8 }} />
+                <View style={styles.iconSlot32}>
+                  <Feather name="shield" size={32} color={C.brand} />
+                </View>
+                <View style={styles.barTextCol}>
                   <Text
                     style={[
-                      styles.adminStripTxt,
+                      styles.barTitle,
                       { color: C.text, fontFamily: FontFamily.jakartaBold },
                     ]}
+                    numberOfLines={1}
                   >
                     Admin: Upload / Manage Calendars
                   </Text>
+                  <Text
+                    style={[
+                      styles.barSubtitle,
+                      { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    Upload circular PDF/photo & run crawler sync
+                  </Text>
                 </View>
-                <Feather name="chevron-right" size={16} color={C.brand} />
+                <Feather name="chevron-right" size={20} color={C.brand} />
               </TouchableOpacity>
             )}
 
@@ -439,24 +440,16 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   } as ViewStyle,
 
-  // Admin Strip
-  adminStrip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 14,
-    height: 48,
+  // Admin 72dp Bar
+  adminBar72: {
+    height: 72,
     borderRadius: Radius.lg,
     borderWidth: 1,
-    marginBottom: 12,
-  } as ViewStyle,
-  adminStripLeft: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 14,
+    marginBottom: 12,
   } as ViewStyle,
-  adminStripTxt: {
-    fontSize: 13.5,
-  } as TextStyle,
 
   // Hero Card
   heroCard: {

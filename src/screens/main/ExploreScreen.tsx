@@ -241,7 +241,7 @@ export function ExploreScreen({ navigation }: any) {
             title={t.dash.manage ?? 'ADMINISTRATION'}
             icon="shield"
             accentColor={C.brand}
-            count={10}
+            count={9}
             countLabel={t.exploreGroups.toolsLabel}
             open={openSection === 'administration' || openSection === null}
             onToggle={() => toggleSection('administration')}
@@ -411,27 +411,6 @@ export function ExploreScreen({ navigation }: any) {
               <View style={{ flex: 1, justifyContent: 'center' }}>
                 <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                   Dashboard Banner Slides
-                </Text>
-              </View>
-              <Feather name="chevron-right" size={18} color={C.textMuted} />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.childBar,
-                {
-                  backgroundColor: C.surface,
-                  borderColor: C.border,
-                  borderLeftColor: C.brand,
-                },
-              ]}
-              onPress={() => navigation.navigate('ManageAcademicCalendar')}
-              activeOpacity={0.7}
-            >
-              <SectorIcon sector="calendar" size="md" dark={isDark} />
-              <View style={{ flex: 1, justifyContent: 'center' }}>
-                <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                  Academic Calendar
                 </Text>
               </View>
               <Feather name="chevron-right" size={18} color={C.textMuted} />

@@ -3765,3 +3765,21 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
   - Remote Supabase Database: Successfully applied migration, verified 12 sorted distinct rows via database query.
   - Web Deployment: Committed and pushed to `CampusOneWeb` on `main`.
+
+
+---
+
+### 102. Administration Explore Deduplication, TopBar Header Polish & 72dp Admin Management Bar (`ExploreScreen.tsx`, `AcademicCalendarScreen.tsx`) (/zero-slop, /performance-optimization, /code-review-and-quality)
+- **Explore Administration Deduplication (`ExploreScreen.tsx`):**
+  - Removed duplicate "Academic Calendar" bar from the Administration collapsible section, updating `count={9}`.
+  - Retained "Academic Calendar" under the Academics section so all students, faculty, and administrators have immediate, intuitive access.
+- **TopBar Header Polish (`AcademicCalendarScreen.tsx`):**
+  - Removed the redundant settings gear icon button from `SubBar`'s right slot on `AcademicCalendarScreen.tsx`, keeping the header clean and reserved for document sharing when an active calendar is loaded.
+- **72dp Admin Management Bar Upgrade (`AcademicCalendarScreen.tsx`):**
+  - Upgraded the "Admin: Upload / Manage Calendars" shortcut strip from 48dp to the full **72dp standard bar** (`adminBar72`).
+  - Rendered enlarged **32dp monochrome vector shield icon** (`Feather name="shield" size={32} color={C.brand}`) within transparent slot.
+  - Added clean 2-line title and subtitle (*"Admin: Upload / Manage Calendars"*, *"Upload circular PDF/photo & run crawler sync"*) with right-aligned brand chevron.
+- **Verification Evidence:**
+  - TypeScript Compilation: 0 errors (`npx tsc --noEmit`).
+  - Native Local Release Build: Locally compiled via Gradle (`assembleRelease`).
+  - Physical Device Deployment: Installed and verified on physical USB device `8734b5da`.
