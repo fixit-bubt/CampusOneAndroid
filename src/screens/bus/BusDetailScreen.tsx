@@ -9,6 +9,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
 import { useApp } from '../../store/appStore';
+import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
@@ -16,6 +17,7 @@ import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { FontFamily, Layout, SectorColors, darken } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { getCache, CacheKeys } from '../../services/cacheService';
+import { BusRouteEditorModal } from './BusRouteEditorModal';
 import {
   nowDhakaMinutes,
   minutesToHHMM,
@@ -36,6 +38,9 @@ function cleanWhatsAppPhone(phone?: string | null): string {
 
 export function BusDetailScreen({ route, navigation }: any) {
   const { C } = useTheme();
+  const { profile } = useAuth();
+  const isAdmin = profile?.role === 'admin';
+  const [editorOpen, setEditorOpen] = useState(false);
   const t = useT();
   const { lang } = useApp();
   const isBn = lang === 'bn';
@@ -128,6 +133,18 @@ export function BusDetailScreen({ route, navigation }: any) {
       <SubBar
         title={busRoute.name}
         onBack={() => navigation.goBack()}
+        rightSlot={
+          isAdmin ? (
+            <TouchableOpacity
+              onPress={() => setEditorOpen(true)}
+              hitSlop={8}
+              activeOpacity={0.7}
+              style={{ padding: 4 }}
+            >
+              <Feather name="edit-2" size={18} color={C.text} />
+            </TouchableOpacity>
+          ) : null
+        }
       />
 
       <ScrollView
@@ -412,6 +429,16 @@ export function BusDetailScreen({ route, navigation }: any) {
 
         <View style={{ height: 30 }} />
       </ScrollView>
+
+      {isAdmin && (
+        <BusRouteEditorModal
+          visible={editorOpen}
+          route={busRoute}
+          onClose={() => setEditorOpen(false)}
+          onSaveSuccess={(updated) => setBusRoute(updated)}
+          onDeleteSuccess={() => navigation.goBack()}
+        />
+      )}
     </SafeAreaView>
   );
 }

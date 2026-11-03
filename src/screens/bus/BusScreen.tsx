@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import {
-  View, Text, TouchableOpacity, TextInput, Modal, ScrollView,
-  StyleSheet, RefreshControl, KeyboardAvoidingView, Linking, ActivityIndicator, type ViewStyle,
+  View, Text, TouchableOpacity, TextInput, ScrollView,
+  StyleSheet, RefreshControl, Linking, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -30,24 +30,10 @@ import {
   dhakaWeekday,
 } from '../../utils/transitPrayer';
 import type { BusRoute } from '../../types/database';
+import { BusRouteEditorModal } from './BusRouteEditorModal';
 
 const BUS_COLOR = SectorColors.bus;
 const BUS_BG    = `${SectorColors.bus}1e`;
-
-interface RouteForm {
-  id: string | null;
-  name: string;
-  area: string;
-  bus_no: string;
-  helper_name: string;
-  helper_phone: string;
-  stops: string;
-  to_departures: string;
-  from_departures: string;
-}
-
-const csv = (a: string[] | null | undefined) => (a ?? []).join(', ');
-const uncsv = (s: string) => s.split(',').map(x => x.trim()).filter(Boolean);
 
 export function BusScreen({ navigation }: any) {
   const { C } = useTheme();
@@ -70,8 +56,8 @@ export function BusScreen({ navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
-  const [form, setForm] = useState<RouteForm | null>(null);
-  const [saving, setSaving] = useState(false);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [selectedRoute, setSelectedRoute] = useState<BusRoute | null>(null);
   const [busPdfUrl, setBusPdfUrl] = useState<string | null>(null);
 
   const directionTabs: TabItem<'to' | 'from'>[] = useMemo(
@@ -97,9 +83,14 @@ export function BusScreen({ navigation }: any) {
       if (cachedSaved) setSavedIds(new Set(cachedSaved));
     }
 
+    let query = supabase.from('bus_routes').select('*').order('name').limit(100);
+    if (!isAdmin) {
+      query = query.eq('active', true);
+    }
+
     const [routesRes, savedRes] = await Promise.all([
-      supabase.from('bus_routes').select('*').eq('active', true).order('name').limit(50),
-      supabase.from('saved_bus_routes').select('route_id').eq('user_id', user?.id ?? '').limit(50),
+      query,
+      supabase.from('saved_bus_routes').select('route_id').eq('user_id', user?.id ?? '').limit(100),
     ]);
 
     // Fetch dynamic bus schedule PDF url from app_config if available
@@ -136,7 +127,7 @@ export function BusScreen({ navigation }: any) {
       if (user?.id) setCache(CacheKeys.SAVED_BUS_ROUTES(user.id), ids);
     }
     setLoading(false);
-  }, [user?.id]);
+  }, [user?.id, isAdmin]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -160,56 +151,8 @@ export function BusScreen({ navigation }: any) {
   }
 
   function openEditor(r?: BusRoute) {
-    setForm(r ? {
-      id: r.id,
-      name: r.name ?? '',
-      area: r.area ?? '',
-      bus_no: r.bus_no ?? '',
-      helper_name: r.helper_name ?? '',
-      helper_phone: r.helper_phone ?? '',
-      stops: csv(r.stops),
-      to_departures: csv(r.to_departures),
-      from_departures: csv(r.from_departures),
-    } : {
-      id: null, name: '', area: '', bus_no: '', helper_name: '', helper_phone: '',
-      stops: '', to_departures: '', from_departures: '',
-    });
-  }
-
-  async function saveRoute() {
-    if (!form || !form.name.trim() || saving) return;
-    setSaving(true);
-    const row = {
-      name: form.name.trim(),
-      area: form.area.trim() || '',
-      bus_no: form.bus_no.trim() || null,
-      helper_name: form.helper_name.trim() || null,
-      helper_phone: form.helper_phone.trim() || null,
-      stops: uncsv(form.stops),
-      to_departures: uncsv(form.to_departures),
-      from_departures: uncsv(form.from_departures),
-      active: true,
-    };
-    if (form.id) {
-      const { error } = await supabase.from('bus_routes').update(row).eq('id', form.id);
-      if (error) {
-        setSaving(false);
-        toast({ type: 'error', title: t.common.error, message: error.message });
-        return;
-      }
-    } else {
-      const slug = form.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
-      const id = slug || `br-${Date.now().toString(36)}`;
-      const { error } = await supabase.from('bus_routes').insert({ id, ...row });
-      if (error) {
-        setSaving(false);
-        toast({ type: 'error', title: t.common.error, message: error.message });
-        return;
-      }
-    }
-    setSaving(false);
-    setForm(null);
-    load();
+    setSelectedRoute(r ?? null);
+    setEditorOpen(true);
   }
 
   function getDeparture(r: BusRoute) {
@@ -269,30 +212,50 @@ export function BusScreen({ navigation }: any) {
       <SubBar
         title={t.bus2.scheduleTitle}
         onBack={() => navigation.goBack()}
-        rightSlot={(
-          <View style={styles.headerActions}>
-            {busPdfUrl ? (
-              <TouchableOpacity
-                style={[styles.pdfBtn, { borderColor: C.border }]}
-                onPress={() => openUrl(busPdfUrl)}
-                accessibilityLabel={isBn ? 'অফিসিয়াল বাস রুট শিডিউল পিডিএফ' : 'Official Bus Schedule PDF'}
-                activeOpacity={0.7}
-              >
-                <Feather name="file-text" size={13} color={C.text2} />
-                <Text style={[styles.pdfTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>PDF</Text>
-              </TouchableOpacity>
-            ) : null}
-            {isAdmin && (
-              <TouchableOpacity onPress={() => openEditor()} hitSlop={8} activeOpacity={0.7}>
-                <Feather name="plus-circle" size={20} color={BUS_COLOR} />
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
+        rightSlot={
+          busPdfUrl ? (
+            <TouchableOpacity
+              style={[styles.pdfBtn, { borderColor: C.border }]}
+              onPress={() => openUrl(busPdfUrl)}
+              accessibilityLabel={isBn ? 'অফিসিয়াল বাস রুট শিডিউল পিডিএফ' : 'Official Bus Schedule PDF'}
+              activeOpacity={0.7}
+            >
+              <Feather name="file-text" size={13} color={C.text2} />
+              <Text style={[styles.pdfTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>PDF</Text>
+            </TouchableOpacity>
+          ) : null
+        }
       />
 
+      {/* 52dp Admin Add Bus Route Bar */}
+      {isAdmin && (
+        <View style={{ paddingHorizontal: Layout.screenPadding, marginTop: 4, marginBottom: 8 }}>
+          <TouchableOpacity
+            style={[
+              styles.addBusBar52,
+              {
+                backgroundColor: C.surface,
+                borderColor: C.border,
+              },
+            ]}
+            onPress={() => openEditor()}
+            activeOpacity={0.75}
+          >
+            <View style={styles.addBusBarLeft}>
+              <View style={styles.addBusIconSlot}>
+                <Feather name="plus-circle" size={24} color={C.text} />
+              </View>
+              <Text style={[styles.addBusBarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                {t.bus2.addBusBar}
+              </Text>
+            </View>
+            <Feather name="chevron-right" size={20} color={C.textMuted} />
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* 58dp Direction Switcher */}
-      <View style={{ paddingHorizontal: Layout.screenPadding, marginTop: 4, marginBottom: 8 }}>
+      <View style={{ paddingHorizontal: Layout.screenPadding, marginTop: isAdmin ? 0 : 4, marginBottom: 8 }}>
         <SegmentedTabs<'to' | 'from'>
           tabs={directionTabs}
           activeTab={direction}
@@ -442,6 +405,13 @@ export function BusScreen({ navigation }: any) {
                           </Text>
                         </View>
                       )}
+                      {!r.active && (
+                        <View style={[styles.suspendedBadge, { backgroundColor: `${C.warn}1a`, borderColor: C.warn }]}>
+                          <Text style={[styles.suspendedTxt, { color: C.warn, fontFamily: FontFamily.jakartaBold }]}>
+                            {isBn ? 'স্থগিত' : 'Suspended'}
+                          </Text>
+                        </View>
+                      )}
                     </View>
 
                     <Text style={[styles.cardStops, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
@@ -468,14 +438,24 @@ export function BusScreen({ navigation }: any) {
                       </View>
                     </View>
                   </View>
-                  {isAdmin && (
-                    <TouchableOpacity onPress={() => openEditor(r)} hitSlop={8} activeOpacity={0.7}>
-                      <Feather name="edit-2" size={16} color={C.textMuted} />
+                  <View style={styles.cardActions}>
+                    {isAdmin && (
+                      <TouchableOpacity
+                        style={[styles.adminEditBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+                        onPress={() => openEditor(r)}
+                        hitSlop={8}
+                        activeOpacity={0.7}
+                      >
+                        <Feather name="edit-2" size={13} color={C.text} />
+                        <Text style={[styles.adminEditTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                          {isBn ? 'এডিট' : 'Edit'}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                    <TouchableOpacity onPress={() => toggleSave(r.id)} hitSlop={8} activeOpacity={0.7}>
+                      <Feather name="star" size={18} color={isSaved ? BUS_COLOR : C.textMuted} />
                     </TouchableOpacity>
-                  )}
-                  <TouchableOpacity onPress={() => toggleSave(r.id)} hitSlop={8} activeOpacity={0.7}>
-                    <Feather name="star" size={18} color={isSaved ? BUS_COLOR : C.textMuted} />
-                  </TouchableOpacity>
+                  </View>
                 </TouchableOpacity>
               );
             })}
@@ -533,50 +513,31 @@ export function BusScreen({ navigation }: any) {
         <View style={{ height: 20 }} />
       </ScrollView>
 
-      {/* Admin: add/edit route modal */}
-      <Modal visible={!!form} transparent animationType="slide" onRequestClose={() => setForm(null)}>
-        <KeyboardAvoidingView style={styles.overlay} behavior="padding">
-          <TouchableOpacity style={{ flex: 1 }} onPress={() => setForm(null)} />
-          <View style={[styles.sheet, { backgroundColor: C.surface, paddingBottom: Math.max(insets.bottom + 16, 36) }]}>
-            <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-              {form?.id ? t.bus2.editRoute : t.bus2.addRoute}
-            </Text>
-            <ScrollView style={{ maxHeight: 420 }} keyboardShouldPersistTaps="handled">
-              {([
-                ['name', t.bus2.fieldName],
-                ['area', t.bus2.fieldArea],
-                ['bus_no', t.bus2.fieldBusNo],
-                ['helper_name', t.bus2.fieldHelperName],
-                ['helper_phone', t.bus2.fieldHelperPhone],
-                ['stops', t.bus2.fieldStops],
-                ['to_departures', t.bus2.fieldToTimes],
-                ['from_departures', t.bus2.fieldFromTimes],
-              ] as [keyof RouteForm, string][]).map(([key, label]) => (
-                <TextInput
-                  key={key}
-                  style={[styles.sheetInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                  value={(form?.[key] as string) ?? ''}
-                  onChangeText={val => setForm(f => f ? { ...f, [key]: val } : f)}
-                  placeholder={label}
-                  placeholderTextColor={C.textMuted}
-                />
-              ))}
-            </ScrollView>
-            <TouchableOpacity
-              style={[styles.sheetBtn, { backgroundColor: BUS_COLOR, opacity: form?.name.trim() && !saving ? 1 : 0.5 }]}
-              onPress={saveRoute}
-              disabled={!form?.name.trim() || saving}
-              activeOpacity={0.8}
-            >
-              {saving ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <Text style={[styles.sheetBtnTxt, { fontFamily: FontFamily.jakartaBold }]}>{t.bus2.saveRoute}</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
+      {/* Admin: Full-page add/edit route modal */}
+      <BusRouteEditorModal
+        visible={editorOpen}
+        route={selectedRoute}
+        onClose={() => {
+          setEditorOpen(false);
+          setSelectedRoute(null);
+        }}
+        onSaveSuccess={(savedRoute) => {
+          setRoutes((prev) => {
+            const exists = prev.some((r) => r.id === savedRoute.id);
+            if (exists) {
+              return prev.map((r) => (r.id === savedRoute.id ? savedRoute : r));
+            }
+            return [...prev, savedRoute].sort((a, b) => a.name.localeCompare(b.name));
+          });
+          load();
+        }}
+        onDeleteSuccess={(deletedId) => {
+          setRoutes((prev) => prev.filter((r) => r.id !== deletedId));
+          load();
+        }}
+        currentPdfUrl={busPdfUrl}
+        onPdfUrlUpdated={(newPdf) => setBusPdfUrl(newPdf)}
+      />
     </SafeAreaView>
   );
 }
@@ -801,34 +762,56 @@ const styles = StyleSheet.create({
     fontSize: 12.5,
   } as any,
 
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  } as ViewStyle,
-  sheet: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 22,
-    paddingBottom: 36,
-  } as ViewStyle,
-  sheetTitle: { fontSize: 17, marginBottom: 12 } as any,
-  sheetInput: {
-    height: Layout.controlHeight,
-    borderRadius: Layout.controlRadius,
+  addBusBar52: {
+    height: 52,
+    borderRadius: 14,
     borderWidth: 1,
     paddingHorizontal: 14,
-    fontSize: 14,
-    marginBottom: 10,
-  } as any,
-  sheetBtn: {
-    height: Layout.controlHeight,
-    borderRadius: Layout.controlRadius,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  } as ViewStyle,
+  addBusBarLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  } as ViewStyle,
+  addBusIconSlot: {
+    width: 28,
+    height: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 6,
   } as ViewStyle,
-  sheetBtnTxt: { color: '#fff', fontSize: 15 } as any,
+  addBusBarTitle: {
+    fontSize: 14.5,
+  } as TextStyle,
+
+  cardActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  } as ViewStyle,
+  adminEditBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+  } as ViewStyle,
+  adminEditTxt: {
+    fontSize: 11.5,
+  } as TextStyle,
+  suspendedBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 5,
+    borderWidth: 1,
+  } as ViewStyle,
+  suspendedTxt: {
+    fontSize: 10,
+  } as TextStyle,
 
   headerActions: {
     flexDirection: 'row',
