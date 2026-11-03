@@ -3483,3 +3483,24 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with local release keystore (`BUILD SUCCESSFUL in 47s`).
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da` (`Performing Streamed Install -> Success`).
+
+
+---
+
+### 90. Club Officer Governance, 58dp Feed Bars, Full-Page Roster Enrollment & Home Realtime Feed (`ClubDetailScreen.tsx`, `ClubMembersScreen.tsx`, `ClubAddMemberScreen.tsx`, `ClubPostDetailScreen.tsx`, `ClubPostScreen.tsx`, `HomeCommunityUpdates.tsx`) (/zero-slop, /performance-optimization, /code-review-and-quality)
+- **Architectural Access Control & Officer Governance:**
+  - **Admin Boundary Enforcement:** Enforced strict separation of administration vs student club autonomy. University administrators govern presidency transitions in the admin panel, while regular club enrollment and member rosters are student-led by the elected **President** and **Vice President**.
+  - **Strict Officer Posting Guard:** Club posting is restricted exclusively to **President**, **Vice President**, and **Editor** (`canPost = myRole === 'president' || myRole === 'vp' || myRole === 'editor'`). Blocked administrators and general students from posting. Double-guarded on submit in `ClubPostScreen.tsx`.
+- **UI/UX 58dp Ergonomics & Top Bar De-cluttering:**
+  - **Relocated Post Action:** Stripped the `+` icon from `SubBar` rightSlot in `ClubDetailScreen.tsx`. Integrated a dedicated 58dp full-width "Create Club Post" bar above the feed (`height: 58`, 28dp vector icon `plus-circle`, bold title, chevron right) visible exclusively to authorized officers.
+  - **Universal 58dp Feed Post Bars:** Refactored club feed posts from expanded vertical cards into standard 58dp bars (`height: 58`, 28dp vector icon `file-text` / `bookmark`, single-line truncated title, optional pinned badge, chevron right).
+  - **Dedicated Full-Page Post Detail Screen (`ClubPostDetailScreen.tsx`):** Tapping any 58dp feed post navigates to a full-page view featuring author avatar, name, club affiliation, time-ago metadata, high-resolution image attachment, full body text, and officer controls (Pin/Unpin, Delete with confirmation alert).
+  - **Full-Page Student Member Enrollment (`ClubAddMemberScreen.tsx`):** Relocated "Add Member" from `SubBar` to a dedicated 58dp bar in `ClubMembersScreen.tsx`. Tapping it launches a full-page enrollment view with a 58dp search bar, 58dp department dropdown (All, CSE, EEE, BBA, Law, English, Civil, Textile, Economics with 28dp monochrome vector icons), and live student roster with instant enrollment.
+- **Home Screen Realtime & Focus Feed Sync (`HomeCommunityUpdates.tsx`):**
+  - Added `public.club_posts` table listener to the active Supabase realtime channel (`home_community_live`) so new club announcements broadcast live to all students without app restart.
+  - Added `useFocusEffect` sync in `HomeCommunityUpdates.tsx` so navigating back to the Home tab automatically refreshes community updates.
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
+  - Unit Tests: 18 test suites passed, 140/140 tests passing (`npm test`).
+  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with local release keystore (`BUILD SUCCESSFUL in 48s`).
+  - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da` (`Performing Streamed Install -> Success`).
