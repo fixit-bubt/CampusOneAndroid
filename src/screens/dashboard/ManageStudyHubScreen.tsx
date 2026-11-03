@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView, StyleSheet,
   Modal, Alert, RefreshControl, ActivityIndicator, KeyboardAvoidingView,
-  Platform, type ViewStyle,
+  Platform, BackHandler, type ViewStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -13,7 +13,7 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { SegmentedTabs } from '../../components/ui/SegmentedTabs';
-import { FontFamily, Layout } from '../../theme';
+import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
@@ -71,6 +71,8 @@ interface StudentOption {
   student_id?: string | null;
 }
 
+type DrillLevel = 'intakes' | 'sections' | 'section_room';
+
 function timeAgo(iso: string): string {
   const secs = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
   if (secs < 60) return 'just now';
@@ -107,7 +109,12 @@ export function ManageStudyHubScreen({ navigation }: any) {
   const [activeDeptId, setActiveDeptId] = useState<string>('');
   const [deptPickerVisible, setDeptPickerVisible] = useState(false);
   const [intakes, setIntakes] = useState<Intake[]>([]);
-  const [expandedIntakeId, setExpandedIntakeId] = useState<string | null>(null);
+
+  // Multi-Page Drill-Down State Machine
+  const [drillLevel, setDrillLevel] = useState<DrillLevel>('intakes');
+  const [selectedIntake, setSelectedIntake] = useState<Intake | null>(null);
+  const [selectedSection, setSelectedSection] = useState<Section | null>(null);
+
   const [sectionsByIntake, setSectionsByIntake] = useState<Record<string, Section[]>>({});
   const [loadingSections, setLoadingSections] = useState<Record<string, boolean>>({});
   const [pendingRequests, setPendingRequests] = useState<SectionRequest[]>([]);
@@ -125,7 +132,7 @@ export function ManageStudyHubScreen({ navigation }: any) {
   const [secNumInput, setSecNumInput] = useState('');
   const [submittingSection, setSubmittingSection] = useState(false);
 
-  // Assign CR sheet
+  // Full-Page Assign CR
   const [assignTargetSection, setAssignTargetSection] = useState<{ id: string; number: number; intakeNum: number } | null>(null);
   const [crSearch, setCrSearch] = useState('');
   const [studentResults, setStudentResults] = useState<StudentOption[]>([]);
@@ -136,9 +143,44 @@ export function ManageStudyHubScreen({ navigation }: any) {
   const [rejectNote, setRejectNote] = useState('');
   const [processingId, setProcessingId] = useState<string | null>(null);
 
-  const activeDept = departments.find(d => d.id === activeDeptId);
-  const targetIntakeForSection = intakes.find(i => i.id === addSectionIntakeId);
+  const activeDept = useMemo(() => departments.find(d => d.id === activeDeptId), [departments, activeDeptId]);
+  const targetIntakeForSection = useMemo(() => intakes.find(i => i.id === addSectionIntakeId) ?? selectedIntake, [intakes, addSectionIntakeId, selectedIntake]);
 
+  // Keep selectedSection synchronized when sectionsByIntake updates
+  useEffect(() => {
+    if (selectedSection && selectedIntake) {
+      const currentList = sectionsByIntake[selectedIntake.id];
+      if (currentList) {
+        const fresh = currentList.find(s => s.id === selectedSection.id);
+        if (fresh) setSelectedSection(fresh);
+      }
+    }
+  }, [sectionsByIntake, selectedIntake]);
+
+  // Hardware Back Button Handler for seamless Android navigation
+  useEffect(() => {
+    const backAction = () => {
+      if (assignTargetSection) {
+        setAssignTargetSection(null);
+        return true;
+      }
+      if (drillLevel === 'section_room') {
+        setDrillLevel('sections');
+        return true;
+      }
+      if (drillLevel === 'sections') {
+        setDrillLevel('intakes');
+        setSelectedIntake(null);
+        return true;
+      }
+      return false;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+    return () => backHandler.remove();
+  }, [assignTargetSection, drillLevel]);
+
+  // Load Departments without activeDeptId in dependency array to break re-render loops
   const loadDepartments = useCallback(async () => {
     const { data } = await supabase
       .from('departments')
@@ -146,11 +188,9 @@ export function ManageStudyHubScreen({ navigation }: any) {
       .order('name');
     if (data && data.length > 0) {
       setDepartments(data as Department[]);
-      if (!activeDeptId) {
-        setActiveDeptId(data[0].id);
-      }
+      setActiveDeptId(prev => prev || data[0].id);
     }
-  }, [activeDeptId]);
+  }, []);
 
   const loadIntakes = useCallback(async (deptId: string) => {
     if (!deptId) return;
@@ -247,15 +287,18 @@ export function ManageStudyHubScreen({ navigation }: any) {
 
   useEffect(() => {
     if (activeDeptId) {
-      setExpandedIntakeId(null);
+      setDrillLevel('intakes');
+      setSelectedIntake(null);
+      setSelectedSection(null);
       loadIntakes(activeDeptId);
     }
   }, [activeDeptId, loadIntakes]);
 
-  // Debounced student search for CR assignment
+  // Scoped student search for CR assignment (strictly filtered to target intake, zero cross-intake dump)
   useEffect(() => {
     if (!assignTargetSection) {
       setStudentResults([]);
+      setSearchLoading(false);
       return;
     }
     const q = crSearch.trim();
@@ -265,16 +308,17 @@ export function ManageStudyHubScreen({ navigation }: any) {
       let queryBuilder = supabase
         .from('profiles')
         .select('id, full_name, avatar_url, department, intake, student_id')
-        .eq('role', 'student');
+        .eq('role', 'student')
+        .eq('intake', String(assignTargetSection.intakeNum));
 
-      if (q.length >= 2) {
+      if (q.length > 0) {
         queryBuilder = queryBuilder.or(`full_name.ilike.%${q}%,student_id.ilike.%${q}%`);
       }
 
-      const { data } = await queryBuilder.order('full_name').limit(15);
+      const { data } = await queryBuilder.order('full_name').limit(25);
       setStudentResults((data ?? []) as StudentOption[]);
       setSearchLoading(false);
-    }, q.length >= 2 ? 250 : 0);
+    }, q.length > 0 ? 250 : 0);
 
     return () => clearTimeout(timer);
   }, [crSearch, assignTargetSection]);
@@ -286,8 +330,8 @@ export function ManageStudyHubScreen({ navigation }: any) {
       activeDeptId ? loadIntakes(activeDeptId) : Promise.resolve(),
       loadPendingRequests(),
     ]);
-    if (expandedIntakeId) {
-      await loadSections(expandedIntakeId);
+    if (selectedIntake) {
+      await loadSections(selectedIntake.id);
     }
     setRefreshing(false);
   }
@@ -332,7 +376,8 @@ export function ManageStudyHubScreen({ navigation }: any) {
   }
 
   async function handleAddSection() {
-    if (!addSectionIntakeId) return;
+    const targetIntakeId = addSectionIntakeId || selectedIntake?.id;
+    if (!targetIntakeId) return;
     const num = parseInt(secNumInput, 10);
     if (!Number.isInteger(num) || num <= 0) {
       toast({ type: 'error', title: 'Invalid', message: 'Enter a valid section number.' });
@@ -342,7 +387,7 @@ export function ManageStudyHubScreen({ navigation }: any) {
     setSubmittingSection(true);
     try {
       const { error } = await supabase.from('study_sections').insert({
-        intake_id: addSectionIntakeId,
+        intake_id: targetIntakeId,
         number: num,
       });
       if (error) {
@@ -354,11 +399,9 @@ export function ManageStudyHubScreen({ navigation }: any) {
         return;
       }
       toast({ type: 'success', title: 'Section added', message: `Section ${num}` });
-      const currentIntake = addSectionIntakeId;
       setAddSectionIntakeId(null);
       setSecNumInput('');
-      setExpandedIntakeId(currentIntake);
-      await loadSections(currentIntake);
+      await loadSections(targetIntakeId);
     } finally {
       setSubmittingSection(false);
     }
@@ -390,8 +433,10 @@ export function ManageStudyHubScreen({ navigation }: any) {
               delete next[intakeId];
               return next;
             });
-            if (expandedIntakeId === intakeId) {
-              setExpandedIntakeId(null);
+            if (selectedIntake?.id === intakeId) {
+              setSelectedIntake(null);
+              setSelectedSection(null);
+              setDrillLevel('intakes');
             }
           },
         },
@@ -425,8 +470,8 @@ export function ManageStudyHubScreen({ navigation }: any) {
     toast({ type: 'success', title: 'CR assigned', message: student.full_name });
     setAssignTargetSection(null);
     setCrSearch('');
-    if (expandedIntakeId) {
-      await loadSections(expandedIntakeId);
+    if (selectedIntake) {
+      await loadSections(selectedIntake.id);
     }
   }
 
@@ -450,8 +495,8 @@ export function ManageStudyHubScreen({ navigation }: any) {
               return;
             }
             toast({ type: 'success', title: 'CR removed', message: cr.full_name });
-            if (expandedIntakeId) {
-              await loadSections(expandedIntakeId);
+            if (selectedIntake) {
+              await loadSections(selectedIntake.id);
             }
           },
         },
@@ -478,13 +523,17 @@ export function ManageStudyHubScreen({ navigation }: any) {
               toast({ type: 'error', title: 'Error', message: error.message });
               return;
             }
-            toast({ type: 'success', title: 'Section deleted' });
-            if (expandedIntakeId) {
+            toast({ type: 'success', title: 'Section deleted', message: `Section ${secNum}` });
+            if (selectedIntake) {
               setSectionsByIntake(prev => ({
                 ...prev,
-                [expandedIntakeId]: (prev[expandedIntakeId] ?? []).filter(s => s.id !== secId),
+                [selectedIntake.id]: (prev[selectedIntake.id] ?? []).filter(s => s.id !== secId),
               }));
-              await loadSections(expandedIntakeId);
+              await loadSections(selectedIntake.id);
+            }
+            if (selectedSection?.id === secId) {
+              setSelectedSection(null);
+              setDrillLevel('sections');
             }
           },
         },
@@ -518,8 +567,8 @@ export function ManageStudyHubScreen({ navigation }: any) {
 
       if (activeDeptId === req.department_id) {
         await loadIntakes(activeDeptId);
-        if (expandedIntakeId) {
-          await loadSections(expandedIntakeId);
+        if (selectedIntake) {
+          await loadSections(selectedIntake.id);
         }
       }
     } finally {
@@ -568,6 +617,317 @@ export function ManageStudyHubScreen({ navigation }: any) {
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // PAGE 3: INSIDE SECTION ROOM (58dp Codes Bar & 58dp CR Bar & 58dp Add CR)
+  // ---------------------------------------------------------------------------
+  if (drillLevel === 'section_room' && selectedIntake && selectedSection) {
+    return (
+      <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
+        <SubBar
+          title={`Section ${selectedSection.number}`}
+          onBack={() => {
+            setSelectedSection(null);
+            setDrillLevel('sections');
+          }}
+          right={
+            <TouchableOpacity
+              onPress={() => confirmDeleteSection(selectedSection.id, selectedSection.number)}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              style={styles.headerActionBtn}
+              activeOpacity={0.7}
+            >
+              <Feather name="trash-2" size={17} color={C.danger} />
+            </TouchableOpacity>
+          }
+        />
+
+        <ScrollView
+          contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Room Header Context Pill */}
+          <View style={[styles.deptContextPill, { backgroundColor: C.surface, borderColor: C.border, marginBottom: 14 }]}>
+            <View style={styles.iconSlot32}>
+              <Feather name="layers" size={26} color={C.brand} />
+            </View>
+            <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
+              <Text style={[styles.deptContextLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                SECTION DETAILS
+              </Text>
+              <Text style={[styles.deptContextName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                {shortDept(activeDept?.name)} · Intake {selectedIntake.number} · Section {selectedSection.number}
+              </Text>
+            </View>
+          </View>
+
+          <Text style={[styles.sectionHeading, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+            JOIN CODE (58 SIZE BAR)
+          </Text>
+
+          {/* 1. 58dp Join Code Bar with 1-Tap Copy */}
+          <View style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <View style={styles.iconSlot32}>
+              <Feather name="key" size={24} color={SectorColors.study} />
+            </View>
+            <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
+              <Text style={[styles.barLabelTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                SECTION JOIN CODE
+              </Text>
+              <Text style={[styles.barCodeTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                {selectedSection.join_code ?? 'None'}
+              </Text>
+            </View>
+            {selectedSection.join_code ? (
+              <TouchableOpacity
+                style={[styles.copyBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+                onPress={() => copyJoinCode(selectedSection.join_code)}
+                activeOpacity={0.75}
+              >
+                <Feather name="copy" size={13} color={C.text} />
+                <Text style={[styles.copyBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  Copy
+                </Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+
+          <Text style={[styles.sectionHeading, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 14 }]}>
+            CLASS REPRESENTATIVE (58 SIZE BARS)
+          </Text>
+
+          {/* 2. Active CR Bars (58dp each with avatar & remove button) */}
+          {selectedSection.crs.length === 0 ? (
+            <View style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border }]}>
+              <View style={styles.iconSlot32}>
+                <Feather name="user-x" size={24} color={C.textMuted} />
+              </View>
+              <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
+                <Text style={[styles.barTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  No CR Assigned
+                </Text>
+                <Text style={[styles.barSubTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                  Tap below to appoint a class representative
+                </Text>
+              </View>
+            </View>
+          ) : (
+            selectedSection.crs.map(cr => (
+              <View key={cr.id} style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border, marginBottom: 8 }]}>
+                <Avatar name={cr.full_name} uri={cr.avatar_url} size="sm" />
+                <View style={{ flex: 1, minWidth: 0, justifyContent: 'center', marginLeft: 10 }}>
+                  <Text style={[styles.barTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                    {cr.full_name}
+                  </Text>
+                  <Text style={[styles.barSubTxt, { color: C.brand, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                    Active Class Representative
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={[styles.removeCrBtn, { backgroundColor: C.dangerBg }]}
+                  onPress={() => confirmRemoveCr(cr, selectedSection.number)}
+                  activeOpacity={0.75}
+                >
+                  <Feather name="user-minus" size={13} color={C.danger} />
+                  <Text style={[styles.removeCrBtnTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
+                    Remove
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ))
+          )}
+
+          {/* 3. Add CR Bar (58dp — opens Page 4 Full Page) */}
+          <TouchableOpacity
+            style={[styles.bar58, styles.bar58Dashed, { backgroundColor: C.surface2, borderColor: C.brand }]}
+            onPress={() => {
+              setCrSearch('');
+              setAssignTargetSection({
+                id: selectedSection.id,
+                number: selectedSection.number,
+                intakeNum: selectedIntake.number,
+              });
+            }}
+            activeOpacity={0.75}
+          >
+            <View style={styles.iconSlot32}>
+              <Feather name="user-plus" size={24} color={C.brand} />
+            </View>
+            <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
+              <Text style={[styles.barTitleTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+                {selectedSection.crs.length > 0 ? '+ Add Co-CR' : '+ Assign Class Representative'}
+              </Text>
+              <Text style={[styles.barSubTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                Search students in Intake {selectedIntake.number}
+              </Text>
+            </View>
+            <Feather name="chevron-right" size={18} color={C.brand} />
+          </TouchableOpacity>
+
+          <Text style={[styles.sectionHeading, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 14 }]}>
+            SECTION CONTROLS (58 SIZE BAR)
+          </Text>
+
+          {/* 4. Delete Section Bar (58dp) */}
+          <TouchableOpacity
+            style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border }]}
+            onPress={() => confirmDeleteSection(selectedSection.id, selectedSection.number)}
+            activeOpacity={0.75}
+          >
+            <View style={styles.iconSlot32}>
+              <Feather name="trash-2" size={24} color={C.danger} />
+            </View>
+            <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
+              <Text style={[styles.barTitleTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
+                Delete Section {selectedSection.number}
+              </Text>
+              <Text style={[styles.barSubTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                Permanently delete this section room
+              </Text>
+            </View>
+            <View style={[styles.badgePill, { backgroundColor: C.dangerBg }]}>
+              <Text style={[styles.badgePillTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
+                Destructive
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </ScrollView>
+
+        {/* Dedicated Full Page Assign CR Modal */}
+        {renderAssignCrModal()}
+      </SafeAreaView>
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // PAGE 2: INTAKE SECTIONS FULL PAGE (Top 58dp "+ Add Section" & 58dp Section Bars)
+  // ---------------------------------------------------------------------------
+  if (drillLevel === 'sections' && selectedIntake) {
+    const sections = sectionsByIntake[selectedIntake.id] ?? [];
+    const isSectionsLoading = loadingSections[selectedIntake.id];
+
+    return (
+      <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
+        <SubBar
+          title={`Intake ${selectedIntake.number}`}
+          onBack={() => {
+            setSelectedIntake(null);
+            setDrillLevel('intakes');
+          }}
+          right={
+            <TouchableOpacity
+              onPress={() => confirmDeleteIntake(selectedIntake.id, selectedIntake.number)}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              style={styles.headerActionBtn}
+              activeOpacity={0.7}
+            >
+              <Feather name="trash-2" size={17} color={C.danger} />
+            </TouchableOpacity>
+          }
+        />
+
+        <ScrollView
+          contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={async () => {
+                setRefreshing(true);
+                await loadSections(selectedIntake.id);
+                setRefreshing(false);
+              }}
+              tintColor={C.brand}
+              colors={[C.brand]}
+            />
+          }
+        >
+          {/* TOP BUTTON BAR 58 SIZE: SAYS "ADD SECTION" (EXACT USER SPEC) */}
+          <TouchableOpacity
+            style={[styles.topAddSectionBar58, { backgroundColor: C.surface, borderColor: C.brand }]}
+            onPress={() => {
+              setSecNumInput('');
+              setAddSectionIntakeId(selectedIntake.id);
+            }}
+            activeOpacity={0.75}
+          >
+            <Feather name="plus-circle" size={20} color={C.brand} />
+            <Text style={[styles.topAddSectionTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              Add Section to Intake {selectedIntake.number}
+            </Text>
+          </TouchableOpacity>
+
+          <Text style={[styles.sectionHeading, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 12 }]}>
+            SECTIONS IN INTAKE {selectedIntake.number} (TAP TO MANAGE)
+          </Text>
+
+          {isSectionsLoading && sections.length === 0 ? (
+            <View style={styles.centerBox}>
+              <ActivityIndicator size="small" color={C.brand} />
+            </View>
+          ) : sections.length === 0 ? (
+            <View style={[styles.emptyBox, { backgroundColor: C.surface, borderColor: C.border, marginTop: 8 }]}>
+              <Icon name="study" size={32} color={C.textMuted} />
+              <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                No sections in Intake {selectedIntake.number}
+              </Text>
+              <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                Tap "+ Add Section" above to create Section 1.
+              </Text>
+            </View>
+          ) : (
+            <View style={{ gap: 9 }}>
+              {sections.map(sec => {
+                const crNames = sec.crs.map(c => c.full_name).join(', ');
+                return (
+                  <TouchableOpacity
+                    key={sec.id}
+                    style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border }]}
+                    onPress={() => {
+                      setSelectedSection(sec);
+                      setDrillLevel('section_room');
+                    }}
+                    activeOpacity={0.75}
+                  >
+                    <View style={styles.iconSlot32}>
+                      <Feather name="grid" size={24} color={C.text} />
+                    </View>
+                    <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Text style={[styles.barTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                          Section {sec.number}
+                        </Text>
+                        {sec.join_code ? (
+                          <View style={[styles.inlineCodePill, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                            <Text style={[styles.inlineCodeTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                              {sec.join_code}
+                            </Text>
+                          </View>
+                        ) : null}
+                      </View>
+                      <Text style={[styles.barSubTxt, { color: crNames ? C.textMuted : C.warn, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                        {crNames ? `CR: ${crNames}` : 'No CR Assigned'}
+                      </Text>
+                    </View>
+                    <Feather name="chevron-right" size={18} color={C.textMuted} />
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+        </ScrollView>
+
+        {/* Add Section Sheet */}
+        {renderAddSectionModal()}
+
+        {/* Dedicated Full Page Assign CR Modal */}
+        {renderAssignCrModal()}
+      </SafeAreaView>
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // PAGE 1: INTAKES LIST (Clicking Intake opens Page 2)
+  // ---------------------------------------------------------------------------
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar
@@ -596,30 +956,27 @@ export function ManageStudyHubScreen({ navigation }: any) {
           <>
             {/* 58dp Department Dropdown Bar */}
             <TouchableOpacity
-              style={[styles.deptDropdownBar58, { backgroundColor: C.surface, borderColor: C.border }]}
+              style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border, marginBottom: 8 }]}
               onPress={() => setDeptPickerVisible(true)}
               activeOpacity={0.75}
             >
               <View style={styles.iconSlot32}>
-                <Feather name={getDeptIcon(activeDept?.name ?? '')} size={32} color={C.text} />
+                <Feather name={getDeptIcon(activeDept?.name ?? '')} size={28} color={C.text} />
               </View>
               <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
-                <Text
-                  style={[styles.deptDropdownTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}
-                  numberOfLines={1}
-                >
+                <Text style={[styles.barLabelTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                  DEPARTMENT
+                </Text>
+                <Text style={[styles.barTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                   {activeDept ? shortDept(activeDept.name) : (t.faculty2?.selectDepartment ?? 'Select Department')}
                 </Text>
               </View>
               <Feather name="chevron-down" size={18} color={C.textMuted} />
             </TouchableOpacity>
 
-            {/* 58dp Add Intake Full-Width Bar (Centered Text) */}
+            {/* 58dp Add Intake Bar */}
             <TouchableOpacity
-              style={[
-                styles.addIntakeBar58,
-                { backgroundColor: C.surface, borderColor: C.border },
-              ]}
+              style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border, justifyContent: 'center', gap: 8, marginBottom: 10 }]}
               onPress={() => {
                 setIntakeNumInput('');
                 setIntakeYearsInput('');
@@ -628,10 +985,14 @@ export function ManageStudyHubScreen({ navigation }: any) {
               activeOpacity={0.75}
             >
               <Feather name="plus" size={18} color={C.brand} />
-              <Text style={[styles.addIntakeBarTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              <Text style={[styles.barTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                 {t.study2?.addIntake ?? 'Add Intake'}
               </Text>
             </TouchableOpacity>
+
+            <Text style={[styles.sectionHeading, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+              SELECT INTAKE (TAP TO OPEN PAGE)
+            </Text>
 
             {loading && intakes.length === 0 ? (
               <View style={styles.centerBox}>
@@ -648,155 +1009,42 @@ export function ManageStudyHubScreen({ navigation }: any) {
                 </Text>
               </View>
             ) : (
-              <View style={{ gap: 10, marginTop: 4 }}>
+              <View style={{ gap: 9 }}>
                 {intakes.map(ik => {
-                  const isOpen = expandedIntakeId === ik.id;
-                  const sections = sectionsByIntake[ik.id] ?? [];
-
+                  const secCount = sectionsByIntake[ik.id]?.length;
                   return (
-                    <View key={ik.id} style={[styles.intakeCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-                      {/* 72dp Intake Bar with Delete Action */}
-                      <View style={styles.intakeBar72Wrapper}>
-                        <TouchableOpacity
-                          style={styles.intakeBar72Main}
-                          onPress={() => {
-                            if (isOpen) {
-                              setExpandedIntakeId(null);
-                            } else {
-                              setExpandedIntakeId(ik.id);
-                              if (!sectionsByIntake[ik.id] && !loadingSections[ik.id]) {
-                                loadSections(ik.id);
-                              }
-                            }
-                          }}
-                          activeOpacity={0.75}
-                        >
-                          <View style={styles.iconSlot32}>
-                            <Icon name="study" size={32} color={C.text} />
-                          </View>
-                          <View style={{ flex: 1, justifyContent: 'center' }}>
-                            <Text style={[styles.intakeTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                              Intake {ik.number}
-                            </Text>
-                            <Text style={[styles.intakeSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                              {ik.years ?? 'No year set'} · {ik.is_public ? (t.study2?.public ?? 'Public') : (t.study2?.private ?? 'Private')}
-                            </Text>
-                          </View>
-                          <Feather name={isOpen ? 'chevron-up' : 'chevron-down'} size={18} color={C.textMuted} />
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                          style={styles.intakeDeleteBtn}
-                          onPress={() => confirmDeleteIntake(ik.id, ik.number)}
-                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                          activeOpacity={0.7}
-                        >
-                          <Feather name="trash-2" size={16} color={C.danger} />
-                        </TouchableOpacity>
+                    <TouchableOpacity
+                      key={ik.id}
+                      style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border }]}
+                      onPress={() => {
+                        setSelectedIntake(ik);
+                        setDrillLevel('sections');
+                        loadSections(ik.id);
+                      }}
+                      activeOpacity={0.75}
+                    >
+                      <View style={styles.iconSlot32}>
+                        <Icon name="study" size={28} color={C.text} />
                       </View>
-
-                      {/* Expanded Section List */}
-                      {isOpen && (
-                        <View style={[styles.sectionArea, { borderTopColor: C.border }]}>
-                          {loadingSections[ik.id] ? (
-                            <View style={{ paddingVertical: 18, alignItems: 'center', justifyContent: 'center' }}>
-                              <ActivityIndicator size="small" color={C.brand} />
+                      <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <Text style={[styles.barTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                            Intake {ik.number}
+                          </Text>
+                          {secCount !== undefined ? (
+                            <View style={[styles.inlineCodePill, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                              <Text style={[styles.inlineCodeTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+                                {secCount} {secCount === 1 ? 'Sec' : 'Secs'}
+                              </Text>
                             </View>
-                          ) : sections.length === 0 ? (
-                            <Text style={[styles.noSectionsTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                              No sections added yet in Intake {ik.number}.
-                            </Text>
-                          ) : (
-                            sections.map(sec => (
-                              <View key={sec.id} style={[styles.secRow, { backgroundColor: C.bg, borderColor: C.border }]}>
-                                {/* Top info: Sec Number + Join Code + Delete */}
-                                <View style={styles.secHeader}>
-                                  <Text style={[styles.secTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                                    Section {sec.number}
-                                  </Text>
-                                  {sec.join_code && (
-                                    <TouchableOpacity
-                                      style={[styles.codePill, { backgroundColor: C.surface2, borderColor: C.border }]}
-                                      onPress={() => copyJoinCode(sec.join_code)}
-                                      activeOpacity={0.75}
-                                    >
-                                      <Text style={[styles.codeTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                                        {sec.join_code}
-                                      </Text>
-                                      <Feather name="copy" size={11} color={C.textMuted} />
-                                    </TouchableOpacity>
-                                  )}
-                                  <TouchableOpacity
-                                    style={styles.trashBtn}
-                                    onPress={() => confirmDeleteSection(sec.id, sec.number)}
-                                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                                    activeOpacity={0.75}
-                                  >
-                                    <Feather name="trash-2" size={15} color={C.danger} />
-                                  </TouchableOpacity>
-                                </View>
-
-                                {/* CRs line */}
-                                <View style={styles.crWrap}>
-                                  <Text style={[styles.crLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                                    CR:
-                                  </Text>
-                                  {sec.crs.length === 0 ? (
-                                    <Text style={[styles.noCrTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                                      None assigned
-                                    </Text>
-                                  ) : (
-                                    sec.crs.map(cr => (
-                                      <View key={cr.id} style={[styles.crBadge, { backgroundColor: C.surface, borderColor: C.border }]}>
-                                        <Avatar name={cr.full_name} uri={cr.avatar_url} size="xs" />
-                                        <Text style={[styles.crBadgeTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                                          {cr.full_name}
-                                        </Text>
-                                        <TouchableOpacity
-                                          onPress={() => confirmRemoveCr(cr, sec.number)}
-                                          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                                        >
-                                          <Feather name="x" size={12} color={C.danger} />
-                                        </TouchableOpacity>
-                                      </View>
-                                    ))
-                                  )}
-
-                                  <TouchableOpacity
-                                    style={[styles.assignCrBtn, { backgroundColor: C.infoBg }]}
-                                    onPress={() => {
-                                      setCrSearch('');
-                                      setAssignTargetSection({ id: sec.id, number: sec.number, intakeNum: ik.number });
-                                    }}
-                                    activeOpacity={0.75}
-                                  >
-                                    <Feather name="user-plus" size={12} color={C.info} />
-                                    <Text style={[styles.assignCrBtnTxt, { color: C.info, fontFamily: FontFamily.jakartaBold }]}>
-                                      {sec.crs.length > 0 ? '+ Add CR' : '+ Assign CR'}
-                                    </Text>
-                                  </TouchableOpacity>
-                                </View>
-                              </View>
-                            ))
-                          )}
-
-                          {/* Add section button */}
-                          <TouchableOpacity
-                            style={[styles.addSecBtn, { backgroundColor: C.bg, borderColor: C.border }]}
-                            onPress={() => {
-                              setSecNumInput('');
-                              setAddSectionIntakeId(ik.id);
-                            }}
-                            activeOpacity={0.75}
-                          >
-                            <Feather name="plus" size={14} color={C.text} />
-                            <Text style={[styles.addSecBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                              Add Section to Intake {ik.number}
-                            </Text>
-                          </TouchableOpacity>
+                          ) : null}
                         </View>
-                      )}
-                    </View>
+                        <Text style={[styles.barSubTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                          {ik.years ?? 'No year set'} · {ik.is_public ? (t.study2?.public ?? 'Public') : (t.study2?.private ?? 'Private')}
+                        </Text>
+                      </View>
+                      <Feather name="chevron-right" size={18} color={C.textMuted} />
+                    </TouchableOpacity>
                   );
                 })}
               </View>
@@ -889,7 +1137,7 @@ export function ManageStudyHubScreen({ navigation }: any) {
         <View style={{ height: 28 }} />
       </ScrollView>
 
-      {/* Add Intake Sheet */}
+      {/* Add Intake Modal Sheet */}
       <Modal
         visible={addIntakeOpen}
         animationType="slide"
@@ -906,7 +1154,6 @@ export function ManageStudyHubScreen({ navigation }: any) {
           <View style={[styles.sheet, { backgroundColor: C.surface, maxHeight: '85%' }]}>
             <View style={[styles.sheetHandle, { backgroundColor: C.border }]} />
 
-            {/* Header with Title and Close Button */}
             <View style={styles.sheetHeaderRow}>
               <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold, marginBottom: 0 }]}>
                 {t.study2?.addIntake ?? 'Add Intake'}
@@ -923,14 +1170,12 @@ export function ManageStudyHubScreen({ navigation }: any) {
             <ScrollView
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
-              bounces={false}
               contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 12, 24) }}
             >
-              {/* Department Context Pill */}
               {activeDept && (
                 <View style={[styles.deptContextPill, { backgroundColor: C.surface2, borderColor: C.border }]}>
                   <View style={styles.iconSlot32}>
-                    <Feather name={getDeptIcon(activeDept.name)} size={32} color={C.text} />
+                    <Feather name={getDeptIcon(activeDept.name)} size={28} color={C.text} />
                   </View>
                   <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
                     <Text style={[styles.deptContextLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
@@ -943,13 +1188,12 @@ export function ManageStudyHubScreen({ navigation }: any) {
                 </View>
               )}
 
-              {/* Intake Number Field */}
               <Text style={[styles.modalFieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
                 {t.study2?.intakeNumber ?? 'INTAKE NUMBER'}
               </Text>
               <View style={[styles.inputBar58, { backgroundColor: C.surface2, borderColor: C.border }]}>
                 <View style={styles.iconSlot32}>
-                  <Feather name="hash" size={28} color={C.text} />
+                  <Feather name="hash" size={24} color={C.text} />
                 </View>
                 <TextInput
                   style={[styles.inputBarTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}
@@ -961,13 +1205,12 @@ export function ManageStudyHubScreen({ navigation }: any) {
                 />
               </View>
 
-              {/* Academic Years Field (Optional) */}
               <Text style={[styles.modalFieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
                 {t.study2?.yearsOptional ?? 'YEARS (OPTIONAL)'}
               </Text>
               <View style={[styles.inputBar58, { backgroundColor: C.surface2, borderColor: C.border }]}>
                 <View style={styles.iconSlot32}>
-                  <Feather name="calendar" size={28} color={C.text} />
+                  <Feather name="calendar" size={24} color={C.text} />
                 </View>
                 <TextInput
                   style={[styles.inputBarTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
@@ -978,7 +1221,6 @@ export function ManageStudyHubScreen({ navigation }: any) {
                 />
               </View>
 
-              {/* 58dp Primary Create Button */}
               <TouchableOpacity
                 style={[
                   styles.primaryBtn58,
@@ -1008,222 +1250,10 @@ export function ManageStudyHubScreen({ navigation }: any) {
       </Modal>
 
       {/* Add Section Sheet */}
-      <Modal
-        visible={!!addSectionIntakeId}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setAddSectionIntakeId(null)}
-        statusBarTranslucent
-      >
-        <KeyboardAvoidingView
-          style={styles.overlay}
-          behavior="padding"
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-        >
-          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setAddSectionIntakeId(null)} />
-          <View style={[styles.sheet, { backgroundColor: C.surface, maxHeight: '85%' }]}>
-            <View style={[styles.sheetHandle, { backgroundColor: C.border }]} />
+      {renderAddSectionModal()}
 
-            {/* Header with Title and Close Button */}
-            <View style={styles.sheetHeaderRow}>
-              <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold, marginBottom: 0 }]}>
-                {t.study2?.addSection ?? 'Add Section'}
-              </Text>
-              <TouchableOpacity
-                style={[styles.sheetCloseBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
-                onPress={() => setAddSectionIntakeId(null)}
-                activeOpacity={0.75}
-              >
-                <Feather name="x" size={18} color={C.text} />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
-              bounces={false}
-              contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 12, 24) }}
-            >
-              {/* Department & Intake Context Pill */}
-              {(activeDept || targetIntakeForSection) && (
-                <View style={[styles.deptContextPill, { backgroundColor: C.surface2, borderColor: C.border }]}>
-                  <View style={styles.iconSlot32}>
-                    <Feather name={getDeptIcon(activeDept?.name ?? '')} size={32} color={C.text} />
-                  </View>
-                  <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
-                    <Text style={[styles.deptContextLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                      TARGET INTAKE
-                    </Text>
-                    <Text style={[styles.deptContextName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                      {activeDept ? shortDept(activeDept.name) : 'Department'}{targetIntakeForSection ? ` · Intake ${targetIntakeForSection.number}` : ''}
-                    </Text>
-                  </View>
-                </View>
-              )}
-
-              {/* Section Number Field */}
-              <Text style={[styles.modalFieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                {t.study2?.sectionNumber ?? 'SECTION NUMBER'}
-              </Text>
-              <View style={[styles.inputBar58, { backgroundColor: C.surface2, borderColor: C.border }]}>
-                <View style={styles.iconSlot32}>
-                  <Feather name="hash" size={28} color={C.text} />
-                </View>
-                <TextInput
-                  style={[styles.inputBarTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}
-                  value={secNumInput}
-                  onChangeText={val => setSecNumInput(val.replace(/\D/g, ''))}
-                  keyboardType="numeric"
-                  placeholder="e.g. 1"
-                  placeholderTextColor={C.textMuted}
-                />
-              </View>
-
-              {/* 58dp Primary Button */}
-              <TouchableOpacity
-                style={[
-                  styles.primaryBtn58,
-                  {
-                    backgroundColor: C.brand,
-                    opacity: secNumInput.trim() && !submittingSection ? 1 : 0.6,
-                  },
-                ]}
-                onPress={handleAddSection}
-                disabled={!secNumInput.trim() || submittingSection}
-                activeOpacity={0.8}
-              >
-                {submittingSection ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <>
-                    <Feather name="plus" size={20} color="#fff" />
-                    <Text style={[styles.primaryBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
-                      {t.study2?.addSection ?? 'Add Section'}
-                    </Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            </ScrollView>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-
-      {/* Assign CR Sheet */}
-      <Modal
-        visible={!!assignTargetSection}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setAssignTargetSection(null)}
-        statusBarTranslucent
-      >
-        <KeyboardAvoidingView
-          style={styles.overlay}
-          behavior="padding"
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-        >
-          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setAssignTargetSection(null)} />
-          <View style={[styles.sheet, { backgroundColor: C.surface, maxHeight: '85%' }]}>
-            <View style={[styles.sheetHandle, { backgroundColor: C.border }]} />
-
-            {/* Header with Title and Close Button */}
-            <View style={styles.sheetHeaderRow}>
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold, marginBottom: 0 }]} numberOfLines={1}>
-                  Assign Class Representative
-                </Text>
-              </View>
-              <TouchableOpacity
-                style={[styles.sheetCloseBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
-                onPress={() => setAssignTargetSection(null)}
-                activeOpacity={0.75}
-              >
-                <Feather name="x" size={18} color={C.text} />
-              </TouchableOpacity>
-            </View>
-
-            {/* Target Section Context Pill */}
-            {assignTargetSection && (
-              <View style={[styles.deptContextPill, { backgroundColor: C.surface2, borderColor: C.border }]}>
-                <View style={styles.iconSlot32}>
-                  <Feather name="award" size={28} color={C.text} />
-                </View>
-                <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
-                  <Text style={[styles.deptContextLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                    ASSIGNING CR FOR
-                  </Text>
-                  <Text style={[styles.deptContextName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                    {activeDept ? shortDept(activeDept.name) : 'Department'} · Intake {assignTargetSection.intakeNum} · Section {assignTargetSection.number}
-                  </Text>
-                </View>
-              </View>
-            )}
-
-            {/* 58dp Search Bar */}
-            <View style={[styles.inputBar58, { backgroundColor: C.surface2, borderColor: C.border, marginBottom: 8 }]}>
-              <View style={styles.iconSlot32}>
-                <Feather name="search" size={24} color={C.text} />
-              </View>
-              <TextInput
-                style={[styles.inputBarTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                value={crSearch}
-                onChangeText={setCrSearch}
-                placeholder="Search by student name or ID…"
-                placeholderTextColor={C.textMuted}
-                autoCapitalize="none"
-              />
-              {crSearch.length > 0 && (
-                <TouchableOpacity onPress={() => setCrSearch('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                  <Feather name="x-circle" size={18} color={C.textMuted} />
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {searchLoading ? (
-              <View style={{ paddingVertical: 28, alignItems: 'center' }}>
-                <ActivityIndicator size="small" color={C.brand} />
-              </View>
-            ) : studentResults.length === 0 ? (
-              <View style={{ paddingVertical: 28, alignItems: 'center' }}>
-                <Text style={{ color: C.textMuted, fontFamily: FontFamily.jakartaMedium, fontSize: 13 }}>
-                  No students found.
-                </Text>
-              </View>
-            ) : (
-              <ScrollView
-                style={{ maxHeight: 340 }}
-                keyboardShouldPersistTaps="handled"
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 12, 20) }}
-              >
-                {studentResults.map(st => (
-                  <TouchableOpacity
-                    key={st.id}
-                    style={[styles.studentRow, { borderBottomColor: C.border }]}
-                    onPress={() => handleAssignCr(st)}
-                    activeOpacity={0.75}
-                  >
-                    <Avatar uri={st.avatar_url} name={st.full_name} size="md" />
-                    <View style={{ flex: 1, minWidth: 0 }}>
-                      <Text style={[styles.studentName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                        {st.full_name}
-                      </Text>
-                      <Text style={[styles.studentMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                        {st.student_id ? `ID: ${st.student_id} · ` : ''}{st.department ?? 'Student'}{st.intake ? ` · Intake ${st.intake}` : ''}
-                      </Text>
-                    </View>
-                    <View style={[styles.assignPill, { backgroundColor: isDark ? 'rgba(91, 133, 247, 0.15)' : 'rgba(91, 133, 247, 0.1)' }]}>
-                      <Feather name="user-check" size={14} color={C.brand} />
-                      <Text style={[styles.assignPillTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
-                        Assign
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            )}
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
+      {/* Dedicated Full Page Assign CR Modal */}
+      {renderAssignCrModal()}
 
       {/* Reject Request Sheet */}
       <Modal
@@ -1242,7 +1272,6 @@ export function ManageStudyHubScreen({ navigation }: any) {
           <View style={[styles.sheet, { backgroundColor: C.surface, maxHeight: '85%' }]}>
             <View style={[styles.sheetHandle, { backgroundColor: C.border }]} />
 
-            {/* Header with Title and Close Button */}
             <View style={styles.sheetHeaderRow}>
               <Text style={[styles.sheetTitle, { color: C.danger, fontFamily: FontFamily.jakartaExtraBold, marginBottom: 0 }]}>
                 Reject Section Request
@@ -1359,7 +1388,7 @@ export function ManageStudyHubScreen({ navigation }: any) {
                     activeOpacity={0.75}
                   >
                     <View style={styles.iconSlot32}>
-                      <Feather name={getDeptIcon(d.name)} size={32} color={isSelected ? C.brand : C.text} />
+                      <Feather name={getDeptIcon(d.name)} size={28} color={isSelected ? C.brand : C.text} />
                     </View>
                     <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
                       <Text
@@ -1396,14 +1425,249 @@ export function ManageStudyHubScreen({ navigation }: any) {
       </Modal>
     </SafeAreaView>
   );
+
+  // ---------------------------------------------------------------------------
+  // HELPER MODAL: ADD SECTION MODAL
+  // ---------------------------------------------------------------------------
+  function renderAddSectionModal() {
+    return (
+      <Modal
+        visible={!!addSectionIntakeId}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setAddSectionIntakeId(null)}
+        statusBarTranslucent
+      >
+        <KeyboardAvoidingView
+          style={styles.overlay}
+          behavior="padding"
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        >
+          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setAddSectionIntakeId(null)} />
+          <View style={[styles.sheet, { backgroundColor: C.surface, maxHeight: '85%' }]}>
+            <View style={[styles.sheetHandle, { backgroundColor: C.border }]} />
+
+            <View style={styles.sheetHeaderRow}>
+              <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold, marginBottom: 0 }]}>
+                {t.study2?.addSection ?? 'Add Section'}
+              </Text>
+              <TouchableOpacity
+                style={[styles.sheetCloseBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+                onPress={() => setAddSectionIntakeId(null)}
+                activeOpacity={0.75}
+              >
+                <Feather name="x" size={18} color={C.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 12, 24) }}
+            >
+              {(activeDept || targetIntakeForSection) && (
+                <View style={[styles.deptContextPill, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                  <View style={styles.iconSlot32}>
+                    <Feather name={getDeptIcon(activeDept?.name ?? '')} size={28} color={C.text} />
+                  </View>
+                  <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
+                    <Text style={[styles.deptContextLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                      TARGET INTAKE
+                    </Text>
+                    <Text style={[styles.deptContextName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                      {activeDept ? shortDept(activeDept.name) : 'Department'}{targetIntakeForSection ? ` · Intake ${targetIntakeForSection.number}` : ''}
+                    </Text>
+                  </View>
+                </View>
+              )}
+
+              <Text style={[styles.modalFieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                {t.study2?.sectionNumber ?? 'SECTION NUMBER'}
+              </Text>
+              <View style={[styles.inputBar58, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                <View style={styles.iconSlot32}>
+                  <Feather name="hash" size={24} color={C.text} />
+                </View>
+                <TextInput
+                  style={[styles.inputBarTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}
+                  value={secNumInput}
+                  onChangeText={val => setSecNumInput(val.replace(/\D/g, ''))}
+                  keyboardType="numeric"
+                  placeholder="e.g. 1"
+                  placeholderTextColor={C.textMuted}
+                />
+              </View>
+
+              <TouchableOpacity
+                style={[
+                  styles.primaryBtn58,
+                  {
+                    backgroundColor: C.brand,
+                    opacity: secNumInput.trim() && !submittingSection ? 1 : 0.6,
+                  },
+                ]}
+                onPress={handleAddSection}
+                disabled={!secNumInput.trim() || submittingSection}
+                activeOpacity={0.8}
+              >
+                {submittingSection ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <>
+                    <Feather name="plus" size={20} color="#fff" />
+                    <Text style={[styles.primaryBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                      {t.study2?.addSection ?? 'Add Section'}
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // HELPER MODAL: DEDICATED FULL-PAGE ASSIGN CR (PAGE 4)
+  // ---------------------------------------------------------------------------
+  function renderAssignCrModal() {
+    return (
+      <Modal
+        visible={!!assignTargetSection}
+        animationType="slide"
+        presentationStyle="fullScreen"
+        onRequestClose={() => setAssignTargetSection(null)}
+        statusBarTranslucent
+      >
+        <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
+          <SubBar
+            title="Assign CR"
+            onBack={() => setAssignTargetSection(null)}
+          />
+
+          {/* Context Banner */}
+          {assignTargetSection && (
+            <View style={{ paddingHorizontal: Layout.screenPadding, marginTop: 4, marginBottom: 8 }}>
+              <View style={[styles.deptContextPill, { backgroundColor: C.surface, borderColor: C.border, marginVertical: 0 }]}>
+                <View style={styles.iconSlot32}>
+                  <Feather name="award" size={26} color={C.brand} />
+                </View>
+                <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
+                  <Text style={[styles.deptContextLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                    ASSIGNING CR FOR
+                  </Text>
+                  <Text style={[styles.deptContextName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                    {activeDept ? shortDept(activeDept.name) : 'Dept'} · Intake {assignTargetSection.intakeNum} · Section {assignTargetSection.number}
+                  </Text>
+                </View>
+                <View style={[styles.badgePill, { backgroundColor: isDark ? 'rgba(91, 133, 247, 0.15)' : 'rgba(91, 133, 247, 0.1)' }]}>
+                  <Text style={[styles.badgePillTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+                    Scoped
+                  </Text>
+                </View>
+              </View>
+            </View>
+          )}
+
+          {/* 52dp Search Bar strictly scoped to target intake */}
+          <View style={{ paddingHorizontal: Layout.screenPadding, marginBottom: 10 }}>
+            <View style={[styles.searchBar52, { backgroundColor: C.surface, borderColor: C.border }]}>
+              <Feather name="search" size={20} color={C.textMuted} />
+              <TextInput
+                style={[styles.searchBarTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                value={crSearch}
+                onChangeText={setCrSearch}
+                placeholder={assignTargetSection ? `Search student in Intake ${assignTargetSection.intakeNum}…` : 'Search students…'}
+                placeholderTextColor={C.textMuted}
+                autoCapitalize="none"
+              />
+              {crSearch.length > 0 && (
+                <TouchableOpacity onPress={() => setCrSearch('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Feather name="x-circle" size={18} color={C.textMuted} />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+
+          <View style={{ paddingHorizontal: Layout.screenPadding, marginBottom: 6, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text style={[styles.sectionHeading, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+              CANDIDATES IN INTAKE {assignTargetSection?.intakeNum}
+            </Text>
+          </View>
+
+          {/* Student Candidate List */}
+          {searchLoading ? (
+            <View style={styles.centerBox}>
+              <ActivityIndicator size="small" color={C.brand} />
+            </View>
+          ) : studentResults.length === 0 ? (
+            <View style={[styles.emptyBox, { backgroundColor: C.surface, borderColor: C.border, marginHorizontal: Layout.screenPadding, marginTop: 8 }]}>
+              <Feather name="users" size={32} color={C.textMuted} />
+              <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                No students found in Intake {assignTargetSection?.intakeNum}
+              </Text>
+              <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                Only registered students belonging to Intake {assignTargetSection?.intakeNum} can be assigned.
+              </Text>
+            </View>
+          ) : (
+            <ScrollView
+              contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              <View style={{ gap: 8 }}>
+                {studentResults.map(st => (
+                  <View
+                    key={st.id}
+                    style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border }]}
+                  >
+                    <Avatar uri={st.avatar_url} name={st.full_name} size="sm" />
+                    <View style={{ flex: 1, minWidth: 0, justifyContent: 'center', marginLeft: 10 }}>
+                      <Text style={[styles.barTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                        {st.full_name}
+                      </Text>
+                      <Text style={[styles.barSubTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                        {st.student_id ? `ID: ${st.student_id} · ` : ''}{st.department ?? 'Student'} · Intake {st.intake ?? assignTargetSection?.intakeNum}
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      style={[styles.assignPillBtn, { backgroundColor: C.brand }]}
+                      onPress={() => handleAssignCr(st)}
+                      activeOpacity={0.8}
+                    >
+                      <Feather name="check" size={13} color="#fff" />
+                      <Text style={[styles.assignPillBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                        Assign
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            </ScrollView>
+          )}
+        </SafeAreaView>
+      </Modal>
+    );
+  }
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
-  scroll: { paddingTop: 6, paddingBottom: 24 } as ViewStyle,
+  scroll: { paddingTop: 6, paddingBottom: 28 } as ViewStyle,
   centerBox: { paddingVertical: 40, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
 
-  deptDropdownBar58: {
+  headerActionBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+
+  // Universal 58dp Bar Standard
+  bar58: {
     height: 58,
     borderRadius: 16,
     borderWidth: 1,
@@ -1411,27 +1675,199 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     gap: 12,
-    marginTop: 2,
-    marginBottom: 8,
   } as ViewStyle,
-  deptDropdownTxt: {
+  bar58Dashed: {
+    borderStyle: 'dashed',
+    marginTop: 8,
+  } as ViewStyle,
+  barLabelTxt: {
+    fontSize: 10,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  } as any,
+  barTitleTxt: {
     fontSize: 14.5,
   } as any,
+  barCodeTxt: {
+    fontSize: 15,
+    letterSpacing: 1.5,
+  } as any,
+  barSubTxt: {
+    fontSize: 11.5,
+    marginTop: 1.5,
+  } as any,
 
-  addIntakeBar58: {
+  // Top 58dp Add Section Button Bar (User Spec: prominent top bar)
+  topAddSectionBar58: {
     height: 58,
     borderRadius: 16,
-    borderWidth: 1,
+    borderWidth: 1.5,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 16,
-    gap: 8,
-    marginBottom: 10,
+    gap: 9,
+    marginBottom: 6,
   } as ViewStyle,
-  addIntakeBarTxt: {
-    fontSize: 14.5,
+  topAddSectionTxt: {
+    fontSize: 15,
   } as any,
+
+  iconSlot32: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  } as ViewStyle,
+
+  sectionHeading: {
+    fontSize: 10.5,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    paddingHorizontal: 4,
+    paddingTop: 4,
+    marginBottom: 8,
+  } as any,
+
+  inlineCodePill: {
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+  } as ViewStyle,
+  inlineCodeTxt: {
+    fontSize: 10.5,
+    letterSpacing: 0.3,
+  } as any,
+
+  copyBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4.5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+  } as ViewStyle,
+  copyBtnTxt: {
+    fontSize: 11.5,
+  } as any,
+
+  removeCrBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+  } as ViewStyle,
+  removeCrBtnTxt: {
+    fontSize: 11.5,
+  } as any,
+
+  badgePill: {
+    paddingHorizontal: 8,
+    paddingVertical: 3.5,
+    borderRadius: 8,
+  } as ViewStyle,
+  badgePillTxt: {
+    fontSize: 10.5,
+  } as any,
+
+  assignPillBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+  } as ViewStyle,
+  assignPillBtnTxt: {
+    fontSize: 12,
+  } as any,
+
+  searchBar52: {
+    height: 52,
+    borderRadius: 14,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    gap: 10,
+  } as ViewStyle,
+  searchBarTxt: {
+    flex: 1,
+    fontSize: 13.5,
+    paddingVertical: 0,
+  } as any,
+
+  deptContextPill: {
+    height: 52,
+    borderRadius: 14,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    gap: 12,
+    marginVertical: 10,
+  } as ViewStyle,
+  deptContextLabel: {
+    fontSize: 9.5,
+    letterSpacing: 0.6,
+  } as any,
+  deptContextName: {
+    fontSize: 13,
+    marginTop: 1,
+  } as any,
+
+  inputBar58: {
+    height: 58,
+    borderRadius: 14,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    gap: 10,
+    marginBottom: 12,
+  } as ViewStyle,
+  inputBarTxt: {
+    flex: 1,
+    fontSize: 14,
+    paddingVertical: 0,
+  } as any,
+
+  primaryBtn58: {
+    height: 58,
+    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 8,
+  } as ViewStyle,
+  primaryBtnTxt: {
+    fontSize: 15,
+  } as any,
+
+  modalFieldLabel: {
+    fontSize: 10.5,
+    letterSpacing: 0.8,
+    marginBottom: 6,
+    paddingHorizontal: 2,
+  } as any,
+
+  emptyBox: {
+    padding: 24,
+    borderRadius: 16,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
+    gap: 8,
+  } as ViewStyle,
+  emptyTitle: { fontSize: 15, textAlign: 'center' } as any,
+  emptySub: { fontSize: 12.5, textAlign: 'center' } as any,
 
   deptPickerItem: {
     height: 58,
@@ -1463,128 +1899,55 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
   } as ViewStyle,
 
-  emptyBox: {
-    padding: 24,
-    borderRadius: 16,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 10,
-    gap: 8,
-  } as ViewStyle,
-  emptyTitle: { fontSize: 15, textAlign: 'center' } as any,
-  emptySub: { fontSize: 12.5, textAlign: 'center' } as any,
-
-  intakeCard: {
-    borderRadius: 16,
-    borderWidth: 1,
-    overflow: 'hidden',
-  } as ViewStyle,
-
-  intakeBar72Wrapper: {
-    height: 72,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingRight: 6,
-  } as ViewStyle,
-  intakeBar72Main: {
+  /* Sheets & Modals */
+  overlay: {
     flex: 1,
-    height: 72,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    justifyContent: 'flex-end',
+  } as ViewStyle,
+  sheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: Layout.screenPadding,
+    paddingTop: 12,
+  } as ViewStyle,
+  sheetHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 14,
+  } as ViewStyle,
+  sheetHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    gap: 13,
+    justifyContent: 'space-between',
+    marginBottom: 10,
   } as ViewStyle,
-  intakeDeleteBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  } as ViewStyle,
-  iconSlot32: {
+  sheetTitle: {
+    fontSize: 17,
+  } as any,
+  sheetCloseBtn: {
     width: 32,
     height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    flexShrink: 0,
-  } as ViewStyle,
-  intakeTitle: { fontSize: 15.5, lineHeight: 21 } as any,
-  intakeSub: { fontSize: 12, marginTop: 2 } as any,
-
-  sectionArea: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    padding: 12,
-    gap: 9,
-  } as ViewStyle,
-  noSectionsTxt: { fontSize: 12.5, paddingVertical: 6 } as any,
-
-  secRow: {
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 12,
-    gap: 9,
-  } as ViewStyle,
-  secHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  } as ViewStyle,
-  secTitle: { fontSize: 14.5, flex: 1 } as any,
-  codePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    borderWidth: 1,
-  } as ViewStyle,
-  codeTxt: { fontSize: 11, letterSpacing: 0.5 } as any,
-  trashBtn: {
-    padding: 5,
   } as ViewStyle,
 
-  crWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    gap: 6,
-  } as ViewStyle,
-  crLabel: { fontSize: 11 } as any,
-  noCrTxt: { fontSize: 12, fontStyle: 'italic' } as any,
-  crBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 3.5,
+  rejectNoteBox: {
+    height: 80,
     borderRadius: 14,
     borderWidth: 1,
-    maxWidth: '75%',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   } as ViewStyle,
-  crBadgeTxt: { fontSize: 11.5 } as any,
-  assignCrBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    borderRadius: 12,
-  } as ViewStyle,
-  assignCrBtnTxt: { fontSize: 11 } as any,
-
-  addSecBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    height: 44,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginTop: 4,
-  } as ViewStyle,
-  addSecBtnTxt: { fontSize: 13 } as any,
+  rejectNoteTxt: {
+    flex: 1,
+    fontSize: 13,
+    textAlignVertical: 'top',
+  } as any,
 
   /* Pending requests */
   requestCard: {
@@ -1599,186 +1962,37 @@ const styles = StyleSheet.create({
     gap: 11,
   } as ViewStyle,
   reqName: { fontSize: 14.5 } as any,
-  reqMeta: { fontSize: 12, marginTop: 2 } as any,
-  reqTime: { fontSize: 11, flexShrink: 0 } as any,
+  reqMeta: { fontSize: 11.5, marginTop: 1.5 } as any,
+  reqTime: { fontSize: 10.5 } as any,
   reasonBox: {
-    padding: 10,
+    padding: 9,
     borderRadius: 10,
     borderWidth: 1,
   } as ViewStyle,
-  reasonTxt: { fontSize: 12, lineHeight: 17 } as any,
+  reasonTxt: { fontSize: 12, fontStyle: 'italic' } as any,
   reqActions: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 9,
-    marginTop: 4,
+    gap: 8,
+    marginTop: 2,
   } as ViewStyle,
   rejectBtn: {
     flex: 1,
+    height: 38,
+    borderRadius: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    height: 44,
-    borderRadius: 12,
+    gap: 5,
   } as ViewStyle,
-  rejectBtnTxt: { fontSize: 13.5 } as any,
+  rejectBtnTxt: { fontSize: 12.5 } as any,
   approveBtn: {
     flex: 1,
+    height: 38,
+    borderRadius: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    height: 44,
-    borderRadius: 12,
+    gap: 5,
   } as ViewStyle,
-  approveBtnTxt: { fontSize: 13.5 } as any,
-
-  /* Sheets & Modals */
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  } as ViewStyle,
-  sheet: {
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
-    padding: 20,
-    paddingBottom: 36,
-  } as ViewStyle,
-  sheetHandle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginBottom: 16,
-  } as ViewStyle,
-  sheetTitle: {
-    fontSize: 17,
-    marginBottom: 14,
-  } as any,
-  rejectTargetSub: {
-    fontSize: 12.5,
-    marginBottom: 12,
-  } as any,
-  fieldLabel: {
-    fontSize: 11,
-    letterSpacing: 0.8,
-    marginBottom: 6,
-  } as any,
-  input: {
-    height: 46,
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingHorizontal: 13,
-    fontSize: 14,
-    marginBottom: 14,
-  } as any,
-  submitBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 7,
-    height: 48,
-    borderRadius: 12,
-    marginTop: 4,
-  } as ViewStyle,
-  submitBtnTxt: { fontSize: 14 } as any,
-
-  sheetHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 14,
-  } as ViewStyle,
-  sheetCloseBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  } as ViewStyle,
-  deptContextPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    paddingHorizontal: 16,
-    height: 58,
-    borderRadius: 16,
-    borderWidth: 1,
-    marginBottom: 16,
-  } as ViewStyle,
-  deptContextLabel: {
-    fontSize: 10,
-    letterSpacing: 0.8,
-  } as any,
-  deptContextName: {
-    fontSize: 14.5,
-    marginTop: 1,
-  } as any,
-  modalFieldLabel: {
-    fontSize: 11,
-    letterSpacing: 0.8,
-    marginBottom: 6,
-  } as any,
-  inputBar58: {
-    height: 58,
-    borderRadius: 16,
-    borderWidth: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    gap: 10,
-    marginBottom: 14,
-  } as ViewStyle,
-  inputBarTxt: {
-    flex: 1,
-    fontSize: 15,
-    paddingVertical: 0,
-  } as any,
-  primaryBtn58: {
-    height: 58,
-    borderRadius: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginTop: 6,
-  } as ViewStyle,
-  primaryBtnTxt: {
-    fontSize: 15,
-  } as any,
-
-  studentRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 11,
-    paddingVertical: 11,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  } as ViewStyle,
-  studentName: { fontSize: 14 } as any,
-  studentMeta: { fontSize: 12, marginTop: 2 } as any,
-  assignPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-  } as ViewStyle,
-  assignPillTxt: {
-    fontSize: 12,
-  } as any,
-  rejectNoteBox: {
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 12,
-    minHeight: 80,
-  } as ViewStyle,
-  rejectNoteTxt: {
-    fontSize: 14,
-    minHeight: 60,
-    textAlignVertical: 'top',
-  } as any,
+  approveBtnTxt: { fontSize: 12.5 } as any,
 });

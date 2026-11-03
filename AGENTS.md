@@ -3185,3 +3185,28 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore (`BUILD SUCCESSFUL in 52s`).
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
   - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.
+
+
+---
+
+### 78. Study Hub Multi-Page 58dp Drill-Down Architecture & Scoped CR Search Engine (`ManageStudyHubScreen.tsx`) (/zero-slop, /performance-optimization, /code-review-and-quality)
+- **Multi-Page Drill-Down Architecture (Zero Lag & Zero Slop):**
+  - Replaced the monolithic, laggy in-place accordion with a clean state machine (`drillLevel: 'intakes' | 'sections' | 'section_room'`) and dedicated full-screen views:
+    - **Page 1 (Intakes List):** 58dp Department Bar, 58dp Add Intake Bar, and clean 58dp Intake Bars with right chevron. Tapping an intake (e.g. Intake 52) immediately navigates to its dedicated full-page section view with 0 re-render lag.
+    - **Page 2 (Intake Sections Full Page):** Dedicated top SubBar with hardware back button support, top prominent 58dp button bar (`+ Add Section to Intake {number}`), and separate 58dp bars for each section (`Section 1`, `Section 2`) displaying join code pill and active CR name.
+    - **Page 3 (Section Room):** Dedicated SubBar with back navigation, prominent 58dp Join Code Bar with 1-tap copy action, 58dp active CR member bar(s) with avatar and remove action, 58dp Add CR Bar (`+ Add Co-CR` / `+ Assign Class Representative`), and 58dp destructive Delete Section Bar.
+    - **Page 4 (Dedicated Full-Screen Assign CR):** Full-screen `<SafeAreaView>` modal with header SubBar, target context pill (`Dept · Intake · Section`), 52dp search input, and 58dp candidate rows with 1-tap "Assign" buttons.
+- **Root-Cause Resolution of Student Search Dump Bug:**
+  - Resolved the bug where opening Add CR dumped arbitrary students from across the entire university (cross-department / cross-intake).
+  - Constrained student queries strictly to `.eq('role', 'student').eq('intake', String(assignTargetSection.intakeNum))` with debounced name/ID search, guaranteeing only genuine intake peers can be assigned.
+- **Re-render Loop Elimination (`loadDepartments`):**
+  - Stripped `activeDeptId` from `loadDepartments` dependency array and used functional state updater `setActiveDeptId(prev => prev || data[0].id)`, stopping infinite re-render loops and UI stutter.
+- **Hardware Back Button Ergonomics:**
+  - Integrated `BackHandler` listener to smoothly pop drill-down views step-by-step (`assignTargetSection` -> `section_room` -> `sections` -> `intakes` -> exit to Dashboard).
+- **Universal 58dp Layout Standard:**
+  - All interactive bars, inputs, action buttons, and candidate items strictly maintain 58dp height (`styles.bar58`, `styles.topAddSectionBar58`, `styles.inputBar58`, `styles.primaryBtn58`) with 32dp monochrome vector icons.
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
+  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore (`BUILD SUCCESSFUL in 42s`).
+  - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
+  - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.
