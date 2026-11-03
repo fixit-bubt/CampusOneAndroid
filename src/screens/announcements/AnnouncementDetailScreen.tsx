@@ -309,50 +309,111 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
 
         {/* Admin Executive Action Strip */}
         {profile?.role === 'admin' && (
-          <View style={[styles.adminStrip, { backgroundColor: C.surface, borderColor: C.brand }]}>
+          <View style={[styles.adminStrip, { backgroundColor: C.surface, borderColor: C.border }]}>
             <View style={styles.adminStripHeader}>
-              <View style={[styles.adminBadge, { backgroundColor: C.brand + '18' }]}>
-                <Feather name="shield" size={11} color={C.brand} />
-                <Text style={[styles.adminBadgeTxt, { color: C.brand }]}>Admin Controls</Text>
+              <View style={styles.adminHeaderLeft}>
+                <Feather name="shield" size={13} color={C.text2} />
+                <Text style={[styles.adminHeaderTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                  ADMIN CONTROLS
+                </Text>
               </View>
-              <TouchableOpacity onPress={handleDeleteNotice} hitSlop={8} style={styles.adminDeleteBtn}>
-                <Feather name="trash-2" size={13} color={C.danger} />
-                <Text style={[styles.adminDeleteTxt, { color: C.danger }]}>Delete Notice</Text>
-              </TouchableOpacity>
             </View>
 
             <View style={styles.adminBtnRow}>
+              {/* 1. Banner Tab */}
               <TouchableOpacity
                 style={[
                   styles.adminToggleBtn,
                   {
-                    backgroundColor: item.in_banner ? (isDark ? 'rgba(59, 130, 246, 0.2)' : '#e0edff') : C.surface2,
-                    borderColor: item.in_banner ? C.brand : C.border,
+                    backgroundColor: item.in_banner
+                      ? (isDark ? '#27272a' : '#e4e4e7')
+                      : C.surface2,
+                    borderColor: item.in_banner
+                      ? (isDark ? '#52525b' : '#a1a1aa')
+                      : C.border,
                   },
                 ]}
                 onPress={handleToggleBanner}
                 activeOpacity={0.8}
               >
-                <Feather name="image" size={13} color={item.in_banner ? C.brand : C.textMuted} />
-                <Text style={[styles.adminToggleTxt, { color: item.in_banner ? C.brand : C.text }]}>
+                <Feather
+                  name={item.in_banner ? 'check' : 'image'}
+                  size={14}
+                  color={item.in_banner ? C.text : C.textMuted}
+                />
+                <Text
+                  style={[
+                    styles.adminToggleTxt,
+                    {
+                      color: item.in_banner ? C.text : C.textMuted,
+                      fontFamily: item.in_banner ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                    },
+                  ]}
+                  numberOfLines={1}
+                >
                   {item.in_banner ? 'In Banner' : '+ Banner'}
                 </Text>
               </TouchableOpacity>
 
+              {/* 2. Pin Tab */}
               <TouchableOpacity
                 style={[
                   styles.adminToggleBtn,
                   {
-                    backgroundColor: item.pinned ? (isDark ? 'rgba(245, 158, 11, 0.2)' : '#fef3c7') : C.surface2,
-                    borderColor: item.pinned ? Accent.gold : C.border,
+                    backgroundColor: item.pinned
+                      ? (isDark ? '#27272a' : '#e4e4e7')
+                      : C.surface2,
+                    borderColor: item.pinned
+                      ? (isDark ? '#52525b' : '#a1a1aa')
+                      : C.border,
                   },
                 ]}
                 onPress={handleTogglePin}
                 activeOpacity={0.8}
               >
-                <Icon name="pin" size={12} color={item.pinned ? Accent.gold : C.textMuted} />
-                <Text style={[styles.adminToggleTxt, { color: item.pinned ? Accent.gold : C.text }]}>
+                <Icon
+                  name="pin"
+                  size={14}
+                  color={item.pinned ? C.text : C.textMuted}
+                />
+                <Text
+                  style={[
+                    styles.adminToggleTxt,
+                    {
+                      color: item.pinned ? C.text : C.textMuted,
+                      fontFamily: item.pinned ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                    },
+                  ]}
+                  numberOfLines={1}
+                >
                   {item.pinned ? 'Pinned' : 'Pin'}
+                </Text>
+              </TouchableOpacity>
+
+              {/* 3. Delete Tab */}
+              <TouchableOpacity
+                style={[
+                  styles.adminToggleBtn,
+                  {
+                    backgroundColor: C.surface2,
+                    borderColor: C.border,
+                  },
+                ]}
+                onPress={handleDeleteNotice}
+                activeOpacity={0.8}
+              >
+                <Feather name="trash-2" size={14} color={C.textMuted} />
+                <Text
+                  style={[
+                    styles.adminToggleTxt,
+                    {
+                      color: C.textMuted,
+                      fontFamily: FontFamily.jakartaMedium,
+                    },
+                  ]}
+                  numberOfLines={1}
+                >
+                  Delete
                 </Text>
               </TouchableOpacity>
             </View>
@@ -941,58 +1002,45 @@ const styles = StyleSheet.create({
   officialBannerTitle: { fontSize: 13 } as any,
   officialBannerCode: { fontSize: 11, marginTop: 1 } as any,
   adminStrip: {
-    padding: 12,
-    borderRadius: Radius.lg,
+    padding: 14,
+    borderRadius: 16,
     borderWidth: 1,
     marginBottom: 14,
-    gap: 8,
+    gap: 10,
   } as ViewStyle,
   adminStripHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginBottom: 2,
   } as ViewStyle,
-  adminBadge: {
+  adminHeaderLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 7,
-    paddingVertical: 2.5,
-    borderRadius: Radius.full,
+    gap: 6,
   } as ViewStyle,
-  adminBadgeTxt: {
-    fontFamily: FontFamily.jakartaBold,
-    fontSize: 10.5,
-  } as any,
-  adminDeleteBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  } as ViewStyle,
-  adminDeleteTxt: {
-    fontFamily: FontFamily.jakartaBold,
+  adminHeaderTxt: {
     fontSize: 11,
+    letterSpacing: 0.8,
   } as any,
   adminBtnRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
   } as ViewStyle,
   adminToggleBtn: {
     flex: 1,
+    height: 50,
+    borderRadius: 12,
+    borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 7,
-    paddingHorizontal: 8,
-    borderRadius: Radius.md,
-    borderWidth: 1,
+    paddingHorizontal: 4,
   } as ViewStyle,
   adminToggleTxt: {
-    fontFamily: FontFamily.jakartaBold,
-    fontSize: 11.5,
+    fontSize: 12,
   } as any,
   openWebBtn: { padding: 4 } as ViewStyle,
 

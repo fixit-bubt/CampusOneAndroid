@@ -3324,3 +3324,30 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore (`BUILD SUCCESSFUL in 44s`).
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched cleanly on physical phone `8734b5da`. Logcat verified `ReactNativeJS: Running "main"`.
   - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.
+
+
+---
+
+### 84. Admin Announcement Controls Monochrome Redesign & 50dp Tab Standardization (`AnnouncementDetailScreen.tsx`, `ManageAnnouncementsScreen.tsx`) (/zero-slop, /code-review-and-quality, /performance-optimization)
+- **Elimination of 100% Color Clutter on Admin Controls:**
+  - Removed the glowing blue outer border (`borderColor: C.brand` -> `borderColor: C.border`) on the `adminStrip` container.
+  - Removed the blue pill background (`C.brand + '18'`) and blue text on the "Admin Controls" header, converting it to a clean, subtle uppercase header in neutral Zinc (`C.text2`, `letterSpacing: 0.8`).
+  - Purged the red color (`C.danger`) from the Delete Notice button.
+  - Purged the bright gold/orange color (`Accent.gold`) from the Pinned button active state.
+  - Purged the electric blue color (`C.brand`) from the In Banner button active state.
+- **Unified 50dp 3-Tab Architecture (`styles.adminToggleBtn`):**
+  - Restructured the controls from an asymmetrical layout (where Delete was an isolated red link in the top right) into a unified 3-tab row:
+    - **Tab 1: Banner** (`+ Banner` / `In Banner` with Feather `image` / `check`).
+    - **Tab 2: Pin** (`Pin` / `Pinned` with Icon `pin`).
+    - **Tab 3: Delete** (`Delete` with Feather `trash-2`).
+  - Standardized all 3 tabs to generous, ergonomic 50dp touch targets (`height: 50, borderRadius: 12, borderWidth: 1`).
+- **High-Contrast Monochrome Active & Inactive Palette:**
+  - **Active State (`In Banner` or `Pinned`):** Solid Zinc surface (`#27272a` in dark mode / `#e4e4e7` in light mode), neutral Zinc border (`#52525b` / `#a1a1aa`), and crisp high-contrast text & icons (`C.text` / White in dark mode).
+  - **Inactive State:** Clean neutral surface (`C.surface2`), neutral border (`C.border`), and muted text & icons (`C.textMuted`).
+- **Parity with Manage Announcements Screen:**
+  - Synchronized notice card bottom action buttons in `ManageAnnouncementsScreen.tsx` to use the same pure monochrome Zinc active palette, eliminating color clutter across the entire administrative announcements workflow.
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors (`tsc --noEmit`).
+  - Unit Tests: 18 test suites passed, 140 tests passed (`npm test`).
+  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore (`BUILD SUCCESSFUL in 45s`).
+  - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`. Logcat verified `ReactNativeJS: Running "main"`.

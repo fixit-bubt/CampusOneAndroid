@@ -420,9 +420,11 @@ export function ManageAnnouncementsScreen({ navigation }: any) {
                     styles.actionBtn,
                     {
                       backgroundColor: item.in_banner
-                        ? (isDark ? 'rgba(255, 255, 255, 0.08)' : '#f4f4f5')
+                        ? (isDark ? '#27272a' : '#e4e4e7')
                         : C.surface2,
-                      borderColor: item.in_banner ? C.border2 : C.border,
+                      borderColor: item.in_banner
+                        ? (isDark ? '#52525b' : '#a1a1aa')
+                        : C.border,
                     },
                   ]}
                   onPress={(e) => {
@@ -435,7 +437,7 @@ export function ManageAnnouncementsScreen({ navigation }: any) {
                   <Feather
                     name={item.in_banner ? 'check' : 'image'}
                     size={13}
-                    color={item.in_banner ? C.brand : C.textMuted}
+                    color={item.in_banner ? C.text : C.textMuted}
                   />
                   <Text
                     style={[
@@ -453,9 +455,11 @@ export function ManageAnnouncementsScreen({ navigation }: any) {
                     styles.actionBtn,
                     {
                       backgroundColor: item.pinned
-                        ? (isDark ? 'rgba(255, 255, 255, 0.08)' : '#f4f4f5')
+                        ? (isDark ? '#27272a' : '#e4e4e7')
                         : C.surface2,
-                      borderColor: item.pinned ? C.border2 : C.border,
+                      borderColor: item.pinned
+                        ? (isDark ? '#52525b' : '#a1a1aa')
+                        : C.border,
                     },
                   ]}
                   onPress={(e) => {
@@ -468,7 +472,7 @@ export function ManageAnnouncementsScreen({ navigation }: any) {
                   <Icon
                     name="pin"
                     size={12}
-                    color={item.pinned ? Accent.gold : C.textMuted}
+                    color={item.pinned ? C.text : C.textMuted}
                   />
                   <Text
                     style={[
