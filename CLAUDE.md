@@ -3,7 +3,9 @@
 This document is the single, authoritative reference for any AI agent or developer working on the **CampusOne** project. It synthesizes all project memory, live code patterns, database schemas, environment constraints, and developer preferences.
 
 > [!IMPORTANT]
+>
 > ### STRICT BUILD & TESTING RULE: LOCAL ANDROID SDK & GRADLE ONLY (NO EXPO GO / NO METRO / NO EAS)
+>
 > - **NEVER suggest or run `npx expo start`, Expo Go, or Metro bundler for testing.**
 > - **NEVER use EAS Cloud builds.**
 > - **Testing & Building is 100% Native via Local Android SDK & Gradle:**
@@ -43,21 +45,25 @@ This document is the single, authoritative reference for any AI agent or develop
 ## 2. Repositories, Environments & Backend Reference
 
 ### 2.1 Git Remotes
+
 - **Target Repo (Active):** `https://github.com/fixit-bubt/CampusOneAndroid.git` (branch: `main`)
 - **Stale Repos (DO NOT TOUCH):** `nawyajmorshed/CampusOne`, `fixit-bubt/CampusOne`
 - **STRICT PROHIBITION:** Never touch or push to any repository containing `evergreen`, `evergreenweb`, or personal non-CampusOne repositories.
 
 ### 2.2 Supabase Backend
+
 - **Project Ref:** `xhgpxvyqrufbbuivttmi` (Dashboard name: `fixit-campus`, Region: `ap-south-1`)
 - **API URL:** `https://xhgpxvyqrufbbuivttmi.supabase.co`
 - **Anon Key:** Configured in `src/lib/supabase.ts` (safe for client bundle)
 - **MCP Database Changes:** Allowed via project-scoped `.mcp.json`. Always verify the project ref is `xhgpxvyqrufbbuivttmi` before running any DDL or migration.
 
 ### 2.3 Working Directories
+
 - **React Native Project Root:** `c:\Users\dracu\Desktop\CampusOne\CampusOne`
 - **Outer Wrapper / Workspace:** `c:\Users\dracu\Desktop\CampusOne` (contains Capstone Thesis Word document and backup files)
 
 ### 2.4 Model Context Protocol (MCP) & Design Tooling
+
 - **Config Locations:**
   - Global: `~/.gemini/config/mcp_config.json`
   - Workspace: `.mcp.json` in workspace root and `CampusOne/.mcp.json`
@@ -70,7 +76,9 @@ This document is the single, authoritative reference for any AI agent or develop
   - **Brand Identity System:** `brandkit` skill (`~/.gemini/config/skills/brandkit`) standardizes palettes, typography tokens, logo rules, and marketing mockups.
 
 ### 2.5 Master Team Account Transition & Infrastructure Roadmap
+
 The project is consolidating all third-party services and infrastructure under the dedicated team master account **`campusone2026@gmail.com`**:
+
 1. **Supabase (Completed):**
    - Transferred ownership to `campusone2026@gmail.com` under organization `campusone`.
    - Project display name renamed to `campusone` (ref: `xhgpxvyqrufbbuivttmi`).
@@ -107,12 +115,15 @@ The project is consolidating all third-party services and infrastructure under t
 ## 3. Critical Non-Negotiable Rules & Workflow
 
 ### 3.1 Git Commits & Author Attribution
+
 1. **NO AI Footprint:** NEVER add `Co-Authored-By: Claude`, `Co-Authored-By: Antigravity`, or any AI/Anthropic/Google trailer in commit messages.
 2. **Commit Author:** Commits must reflect ONLY the user as author.
 3. **Commit Cadence:** Commit and push after each completed, reviewed feature/screen increment. Do not batch multiple unrelated features into massive commits.
 
 ### 3.2 Code Craft & "No AI Tells"
+
 The app is graded and reviewed by university teachers who actively check for AI-generated code and copy.
+
 1. **NO AI Header Comments:** Do not write comments like `// Matches design...`, `// Web parity: ...`, `// Showcase`, `// Real devs...`.
 2. **NO Box-Drawing Banners:** Avoid ASCII separators like `// ───── Section ─────`.
 3. **NO Em-Dashes in UI Copy:** Never use `—` in user-visible UI microcopy; use `-`, `,`, or `.` instead. (Middle-dots `·` for metadata separators and `…` for search placeholders are acceptable).
@@ -120,12 +131,14 @@ The app is graded and reviewed by university teachers who actively check for AI-
 5. **NO AI-Made Icons / Slop:** Never use AI-generated icon illustrations, cheesy 3D glyphs, or cartoon clipart for feature tiles, buttons, or navigation. All icons must strictly come from established, human-designed vector icon libraries (vetted collections from 21st.dev like Lucide, Tabler, Heroicons, Phosphor, Hugeicons, or native `@expo/vector-icons` Feather). They must look clean, balanced, and authentic so teachers/evaluators never see "AI-made" graphics.
 
 ### 3.3 User Communication Style
+
 1. **Non-Technical & Click-by-Click:** The user prefers clear, numbered, step-by-step guidance for external dashboards (Google AI Studio, Supabase, Android settings).
 2. **Plain English First:** Explain "what it does" in simple terms before diving into technical details.
 3. **Typo Tolerance:** The user frequently types shorthand and colloquial typos (`naw` → now, `lick` → like, `loock` → look, `dose` → does, `stuff` → staff). Read intent generously.
 4. **Iterative UI Polish:** Ship a solid first pass, test on device, and welcome incremental refinements.
 
 ### 3.4 STRICT Build & Deployment Mandate (Android SDK & Gradle ONLY — NEVER Expo Go / EAS)
+
 1. **Zero Expo Dev Server / Zero Expo Go:** Do NOT suggest `npx expo start`, Expo Go, scanning QR codes, or running debug servers. The user builds native Android APKs with the local Android SDK and tests on a physical phone.
 2. **Local Gradle Native Build:** The app is compiled locally using Gradle (`cd android; .\gradlew assembleRelease`).
 3. **Release Keystore Dependency:** Google Sign-In is pinned exclusively to the release keystore's SHA-1 fingerprint (`campusone-release.keystore`, alias `campusone`, password `campusone2026`). Debug builds fail with `DEVELOPER_ERROR`. All real device testing MUST be done using the locally compiled, signed release APK.
@@ -134,6 +147,7 @@ The app is graded and reviewed by university teachers who actively check for AI-
    - Local SDK Path: `C:\Users\dracu\Android\sdk` (NDK `27.1.12297006`).
    - ADB Path: `C:\Users\dracu\Android\sdk\platform-tools\adb.exe`.
 5. **Exact Build & Deploy Sequence:**
+
    ```powershell
    cd android
    .\gradlew assembleRelease
@@ -147,7 +161,7 @@ The app is graded and reviewed by university teachers who actively check for AI-
 ## 4. Tech Stack & Dependencies
 
 | Layer | Technology | Details |
-|---|---|---|
+| --- | --- | --- |
 | **Framework** | React Native 0.85.3 (uses Expo modules, but built strictly via Android SDK & Gradle — NO Expo Go / NO EAS) | TypeScript 6, React 19.2.3 |
 | **Build System** | Native Gradle + Android SDK (NDK 27.1.12297006) | `gradlew assembleRelease` using local release keystore |
 | **Testing Method** | Direct ADB install to USB physical Android device (`8734b5da`) | No Expo Go, no emulators |
@@ -167,6 +181,7 @@ The app is graded and reviewed by university teachers who actively check for AI-
 All visual styles must strictly flow from `src/theme/`. **Never hardcode hex colors, arbitrary spacing, or font families in screen components.**
 
 ### 5.1 Tokens & Imports
+
 - **Import Location:** `import { useTheme } from '../hooks/useTheme'; import { SectorColors, FontFamily, FontSize, Spacing, Radius, Layout } from '../theme';`
 - **Dynamic Semantic Colors (`C.*`):** `C.bg`, `C.surface`, `C.border`, `C.text`, `C.textMuted`, `C.brand`, `C.success`, `C.warn`, `C.danger` (`#f87171` dark / `#d63d35` light).
 - **Web Parity OLED Dark Theme:** True pitch-black foundation (`bg: '#000000'`), neutral dark surfaces (`surface: '#121212'`, `surface2: '#1c1c1c'`, `surface3: '#262626'`), neutral borders (`border: '#262626'`, `border2: '#383838'`), neutral Zinc text (`text: '#f4f4f5'`, `text2: '#a1a1aa'`, `text3: '#71717a'`), electric blue brand (`brand: '#5b85f7'`), and Tailwind semantics (`success: '#34d399'`, `warn: '#fbbf24'`, `danger: '#f87171'`). Zero blue/navy tint on surfaces.
@@ -175,6 +190,7 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
 - **Typography:** Bilingual support with `FontFamily.jakarta*` and `FontFamily.hind*` (matra-aware line height).
 
 ### 5.2 Layout Rules: Full-Width Rows & Anti-Clutter Bar Standard
+
 - **Full-Width Rows & Clean Title Architecture:** Always use **full-width rows** (icon on left, bold title vertically centered, chevron on right).
 - **Prohibited:** Never use 2-column grid cards for navigation destinations, and **never mix grids and rows on the same screen**.
 - **Removal of Redundant Subtitles (No-Slop Standard):** Subtitles and explanatory filler text (e.g. *"Lecture notes, syllabus, and study resources"*, *"Tap to select category"*, *"Electrical, plumbing, etc."*) are strictly removed across navigation menus, explore tools, PDF tools, cover page export bars, and form picker dropdowns. Titles are vertically centered with `justifyContent: 'center'`.
@@ -183,6 +199,7 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
 - **Reference Layout:** `styles.childBar` in `src/screens/main/ExploreScreen.tsx` and `styles.bar72` in `src/screens/routines/RoutinesBrowseScreen.tsx`.
 
 ### 5.3 Iconography Standards, Animated Icons & StatusBadge System
+
 - **Strict Human Sourcing:** When adding icons for new features, modules, settings, or dashboard cards, always source from verified, human-crafted icon collections (21st.dev icon families: Lucide, Tabler, Heroicons, Phosphor, Hugeicons, or native `@expo/vector-icons` Feather/MaterialCommunityIcons/Ionicons).
 - **Geometric Harmony:** Maintain consistent 2px stroke weight (`stroke: 2`), standard 24dp viewbox, and subtle round caps/joins.
 - **Zero AI-Looking Icons:** Never use AI-generated visual badges or clip-art styles. Icons must look razor-sharp, purposeful, and production-standard.
@@ -238,6 +255,7 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
   - **Full Backwards Compatibility:** `TactileSwitch` re-exports `LiquidToggle`, supporting both `checked` / `value` and `onCheckedChange` / `onValueChange` across all screens.
 
 ### 5.4 Universal 58dp Control Bar & SegmentedTabs Standard
+
 - **App-Wide Standard:** All segmented tab controls, feed switchers, search bars, dropdown triggers, and primary action/submit buttons across the app MUST strictly adhere to the universal **58dp fixed outer height** standard (`height: 58`, `borderRadius: 16`, horizontal screen padding alignment `Layout.screenPadding = 16dp`) for visual, structural, and ergonomic consistency.
 - **Strict Geometric Symmetry:** Every tab has equal width (`flex: 1` / `100% / tabs.length`) so tabs never look mismatched or uneven based on word length.
 - **Strict Button Count Range (Max 3, Min 2):** Never use 4 buttons in a segmented tab bar. 4 buttons squeeze touch targets down to ~80dp and cause text truncation on mobile. All segmented bars must strictly have 2 or 3 tabs. Move secondary views (e.g. "My Rides") to header buttons or sub-bars.
@@ -304,6 +322,7 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
 - **PDF Maker Suite Standardization (58dp):** All 4 PDF Maker tools (`ToolCompressScreen`, `ToolMergeScreen`, `ToolImagesScreen`, `ToolOrganizeScreen`) `cta` buttons are standardized to `height: 58, borderRadius: 16`. In `components.tsx`, `primaryBtn` (Share), `secondaryBtn` (Start Over), and `SegmentToggle` track are standardized to `height: 58, borderRadius: 16`.
 
 ### 5.5 Universal 72dp Content Card & Row Standard (Reference: `DESIGN.md`)
+
 - **The 58 / 72 Dual System:** Controls, switchers, search bars, and CTAs adhere to the **58dp** standard (`Layout.controlHeight = 58`), while all content cards, list rows, and feed items adhere to the **72dp** standard (`height: 72` or `padding: 14` + `44dp` icon/avatar = `72dp`).
 - **Blood Donation Module (`BloodScreen.tsx`, `BloodRequestScreen.tsx`, `BloodRequestDetailScreen.tsx`, `DonorRegisterScreen.tsx`, `AreaPickerModal.tsx`):**
   - **Universal 58dp Control Standard:** Top Emergency Request Blood button (`actBtn`), search bar (`searchBar`), location trigger (`areaPickerTrigger`), segmented tabs (`SegmentedTabs.tsx`), form submission buttons (`submitBtn`), request card action CTAs (`cardActionBtn` — *"I Can Help"*, *"Call Requester"*, *"Manage Responses"*), and full-width Urgency segmented tabs bar (`Urgent | Today | Week`) all standardized to exactly `height: 58, borderRadius: 16`.
@@ -417,12 +436,14 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
   - Replaces all legacy React Native `<Switch>` components across all 16 toggle locations in the app (Settings, Notifications, Profile, Marketplace, Study Hub, Medical, and Announcements).
 
 ### 5.6 Universal 60dp Header Standard (`TopBar.tsx` & `SubBar`)
+
 - **Root Tab Header (`TopBar`):** Standardized to **60dp fixed height** (`styles.topbar`, `height: 60`). Clean, clutter-free single title or brandmark vertically centered beside the 32dp `LogoMark` with zero secondary subtitle clutter beneath across all tabs and dashboards.
   - On `HomeScreen`, `AdminDashboardScreen`, and `StaffDashboardScreen`: Renders the primary CampusOne brandmark (`Campus` in `C.text`, `One` in `#34d399` dark / `#059669` light) with dynamic role badge pill (`ADMIN` / `STAFF`: `paddingHorizontal: 6`, `paddingVertical: 2`, `borderRadius: 6`).
   - On other root tabs (`StudyHubScreen`, `MessagesHome`, `ExploreScreen`, `SettingsScreen`): Renders the authentic 32×32 dp vector `LogoMark` on the left, paired with an 18.5px extra-bold title (`FontFamily.jakartaExtraBold`, `lineHeight: 28`, `letterSpacing: 0`, `includeFontPadding: false`) beside it with zero redundant subtitles, ensuring Bengali vowel diacritics (such as ি in স্টাডি হাব) have vertical headroom and never get clipped or truncated with ellipsis (`...`).
 - **Child Sub-Screen Header (`SubBar`):** Standardized to **60dp fixed height** (upgraded from legacy 54dp for 100% height parity). Features strict bilateral symmetry: 40×40 dp tactile icon button on the left (20px left arrow), centered title with single-line clamping (`subbarTitle`: `fontSize: 16.5 px`, `lineHeight: 24 px`, `letterSpacing: 0`, `includeFontPadding: false`), and a dedicated 40×40 dp box on the right housing a 28×28 dp `LogoMark` (or custom action slot). Applied automatically across all ~40 child sub-screens that import `SubBar`.
 
 ### 5.7 Bilingual Parity, Matra Protection & Clean Settings Standard (Option A)
+
 - **Zero Screen Dropdown Shift:** Toggling between English and Bengali must NEVER cause vertical jumping, card expansion, or screen dropdown shifts.
 - **TopBar Bengali Headroom & Cluster Safety:** TopBar and SubBar enforce `letterSpacing: 0` and unclipped line heights (`lineHeight: 28` / `24`) so complex Indic conjuncts and top matras are never sliced by Android hardware canvas layers or prematurely truncated with ellipsis.
 - **Option A Clean Settings Standard:** Setting items in `SettingsScreen.tsx` and category toggles in `NotifSettingsScreen.tsx` are standardized to sleek single-line rows (`[Icon] [Title] [Chevron / Switch]`) with zero redundant subtitle clutter. `cardLabel` uses `fontSize: 15.5`, `lineHeight: 22`, `letterSpacing: 0`, and `includeFontPadding: false`.
@@ -442,6 +463,7 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
 - **100% Localization Coverage:** Matching keys in `src/i18n/bn.ts` and `src/i18n/en.ts` for all sectors, shortcuts, status strips, community updates, settings items, and role workspaces (Admin Dashboard / Staff Workspace) with zero English leakage.
 
 ### 5.8 Master Dhaka Locations, Native Geocoding & Map System (`dhakaMasterLocations.ts`, `LocationPickerModal.tsx`, `dhakaHospitalCoords.ts`, `locationService.ts`)
+
 - **Unified Master Dhaka Locations Catalog (`src/constants/dhakaMasterLocations.ts`):**
   - **516 Verified Ground-Truth Locations:** Authentic coordinates spanning Dhaka City & suburbs, strictly validated within the official metropolitan bounding box (`23.50 <= lat <= 24.15` and `90.15 <= lon <= 90.65`). Zero fake/hallucinated places. Includes exact parent hubs for Mirpur (`23.8078, 90.3582`), Gazipur (`23.9999, 90.4203`), and Bauniabadh (`23.8210, 90.3700`).
   - **Comprehensive Coverage:**
@@ -474,6 +496,7 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
   - Seamlessly leveraged across `RidePostScreen`, `MarketPostScreen`, and `PostItemFormScreen` via `LocationPickerModal`.
 
 ### 5.9 Universal Single Direction Map Architecture (`DirectionMapModal.tsx`)
+
 - **Single Map Mandate Across CampusOne:** All mapping and route direction features in the mobile application are unified into one single high-performance component (`src/components/location/DirectionMapModal.tsx`). Ad-hoc, duplicate map modals for individual features have been permanently eliminated.
 - **Underlying Map Engine:** Powered by MapLibre GL JS v4.7.1 running inside a hardware-accelerated `react-native-webview` with zero-cost OpenFreeMap vector tiles. Automatically adapts to dark and light modes (`https://tiles.openfreemap.org/styles/dark` vs `https://tiles.openfreemap.org/styles/liberty`).
 - **OSRM Road Routing:** Fetches true turn-by-turn road geometry, road distance, and travel duration via OSRM (`router.project-osrm.org`), rendering a dual-layer polyline (8px dark drop casing + 5.5px electric blue `#2563eb` road line).
@@ -493,6 +516,7 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
   - `src/screens/lostfound/LostFoundDetailScreen.tsx`: Opens `DirectionMapModal` with `SectorColors.lostfound` when tapping item location.
 
 ### 5.10 Student Marketplace Architecture & Native Camera Permissions (`MarketPostScreen.tsx`, `MarketDetailScreen.tsx`, `marketService.ts`)
+
 - **Android Manifest & Native Permissions:** Android requires `<uses-permission android:name="android.permission.CAMERA"/>` and `<uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>` (Android 13+) in `AndroidManifest.xml` alongside `expo-image-picker` in `app.json` for camera/photo operations. Without native manifest declarations, OS-level permission requests fail silently.
 - **Deferred Upload & Instant Preview Pattern:** `MarketPostScreen.tsx` stores the picked image URI locally first, enabling immediate 0ms photo preview and user removal. Network upload to the Supabase `photos` bucket (`uploadPhoto(photoUri, 'marketplace', user.id)`) is deferred until form submission, preventing orphaned storage files and RLS errors.
 - **Universal 72dp Handover Location Standard:** Replaced stacked duplicate inputs with the Universal 72dp Dropdown Card standard (`minHeight: 72`, `dropdownIconBox: 44x44`, sector highlight, clear `X` button) paired with a toggle between "Choose from list" (campus hubs and Dhaka commute zones) and "Type custom".
@@ -506,16 +530,20 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
 Expo SDK 56 enforces Android 15 edge-to-edge mode. This breaks two standard React Native conventions:
 
 ### 6.1 Android `singleTask` RAM Persistence & Clean ADB Installation
+
 - When an app is configured with `android:launchMode="singleTask"` in `AndroidManifest.xml` (Expo default), running `adb install -r` updates the APK file on disk, but running `adb shell am start` merely brings the **existing running process forward from RAM** without reloading the newly packaged JavaScript bundle.
 - **The Rule:** Always force-stop the app process before testing new APK builds:
+
   ```bash
   adb -s <device_id> shell am force-stop com.bubt.campusone
   adb -s <device_id> install -r android/app/build/outputs/apk/release/app-release.apk
   adb -s <device_id> shell am start -n com.bubt.campusone/.MainActivity
   ```
+
 - Verify the process restarted by inspecting `adb shell "ps -A | grep bubt"` for a newly allocated PID.
 
 ### 6.2 Keyboard Handling & KeyboardAvoidingView across Android & iOS
+
 - **`app.json` Configuration:** `"softwareKeyboardLayoutMode": "resize"` is explicitly configured in `expo.android`.
 - **The `behavior="height"` Trap:** In React Native's `KeyboardAvoidingView.js`, `behavior="height"` forcibly sets `flex: 0` and recalculates an explicit height. In Android 15 edge-to-edge mode (Expo SDK 56), this collapses flex containers, zeros offsets, and causes the soft keyboard to obstruct search boxes and inputs.
 - **The Standard Rule:** ALWAYS use `behavior="padding"` across all screens on both iOS and Android. It maintains `flex: 1` and applies `paddingBottom: keyboardHeight` smoothly.
@@ -523,13 +551,16 @@ Expo SDK 56 enforces Android 15 edge-to-edge mode. This breaks two standard Reac
 - **Scroll & Touch Ergonomics:** Lists and scroll containers (`FlatList`, `ScrollView`) must configure `keyboardShouldPersistTaps="handled"` and `keyboardDismissMode="on-drag"` so search result taps are never swallowed by an open keyboard.
 
 ### 6.2 Inverted FlatList Empty States
+
 - **Old Broken Pattern:** Wrapping `ListEmptyComponent` in `transform: [{ scaleY: -1 }]` renders upside-down or mirrored text on modern React Native Fabric architecture.
 - **Rule:** Never use `ListEmptyComponent` on an inverted `FlatList`. Conditionally render the empty state as a separate sibling component outside the list:
+
   ```tsx
   {data.length === 0 ? <EmptyView /> : <FlatList inverted data={data} ... />}
   ```
 
 ### 6.3 WebView Transparent Background Bleed
+
 - Modern Android WebViews render `rgba(0,0,0,0)` transparently if the target webpage (such as BUBT's Annex portal) lacks an explicit background color.
 - **Rule:** Always set explicit opaque `backgroundColor: '#fff'` on the `WebView` component (`style={{ backgroundColor: '#fff' }}`), preventing the app's dark theme from bleeding through.
 
@@ -551,7 +582,7 @@ The live Supabase database (`xhgpxvyqrufbbuivttmi`) is the single source of trut
 ### 8.1 Ground-Truth Table Names & Columns
 
 | Domain | Table Name (DO NOT GUESS) | Key Columns & Gotchas |
-|---|---|---|
+| --- | --- | --- |
 | **Marketplace** | `listings` (NOT `marketplace`) | Status: `'Available'` / `'Sold'`. Contact reveal via `listing_contact(p_code)` RPC. Upload to `photos` bucket (`marketplace/{user_id}/`). |
 | **Rides** | `rides` (NOT `ride_shares`) | Columns: `origin`, `destination`, `date`, `time`, `seats_total`, `fare`, `driver_id`, `code`. Contact via `ride_contact(p_code, p_target)`. Call `delete_expired_rides()` before fetch. |
 | **Blood Donors** | `donors` (NOT `blood_donors`) | Columns: `user_id`, `blood_group`, `area`, `last_donated`, `alert_urgency` (`'urgent_only'`, `'today_plus'`, `'all'`). No phone column (phone is in `profiles.whatsapp`). Contact via `donor_contact(p_user_id)` RPC. 90/120-day wait enforced. |
@@ -564,21 +595,26 @@ The live Supabase database (`xhgpxvyqrufbbuivttmi`) is the single source of trut
 | **Account Deletion** | `delete_own_account()` RPC | SECURITY DEFINER. Removes dependent records and caller from `auth.users` (cascading to `profiles`). Revoked from anon; authenticated only. |
 
 ### 8.2 Profiles RLS & Display Names
+
 - `profiles` RLS policy (`profiles_select_self_admin_or_matched`) returns **ONLY the caller's own row** (or admin/matched lost-and-found counterpart).
 - **Rule:** Never query `.from('profiles').select(...)` or embed `profiles!user_id(full_name)` for other users — it silently returns `null` or blank names.
 - **Solution:** Always use `peopleService.ts` (`fetchPeople` / `loadPeople` / `personName`), backed by the cached SECURITY DEFINER RPC `directory_profiles()`.
 
 ### 8.3 Security Definer Functions
+
 - In Supabase, default ACLs grant `anon` execute permissions on functions created by `postgres`.
 - **Rule:** Every new `SECURITY DEFINER` function must explicitly revoke anon permissions:
+
   ```sql
   REVOKE EXECUTE ON FUNCTION public.my_function(...) FROM public, anon;
   GRANT EXECUTE ON FUNCTION public.my_function(...) TO authenticated;
   ```
 
 ### 8.4 Supabase JS v2 Mutations
+
 - Supabase JS v2 **never throws errors automatically**.
 - **Rule:** Always check and handle errors explicitly:
+
   ```typescript
   const { data, error } = await supabase.from('table').insert({...});
   if (error) {
@@ -586,10 +622,13 @@ The live Supabase database (`xhgpxvyqrufbbuivttmi`) is the single source of trut
     return;
   }
   ```
+
 - Always implement loading, empty, and retry states. Never silently swallow errors.
 
 ### 8.5 Refresh on Focus
+
 - Screens fetching dynamic data must refresh when focused to prevent stale lists after edits/inserts:
+
   ```typescript
   useFocusEffect(
     useCallback(() => {
@@ -603,11 +642,13 @@ The live Supabase database (`xhgpxvyqrufbbuivttmi`) is the single source of trut
 ## 9. Role System & Navigation Architecture
 
 ### 9.1 Role Hierarchy & Policy
+
 - **Roles:** `'student'` | `'staff'` | `'admin'`
 - **Role Promotion Rule:** Students are **NEVER promoted to staff or admin** in the app. Students may only be elevated to **CR** (`study_section_members.role = 'cr'`) or **Club President** (`club_set_president` RPC).
 - The `ManageUsersScreen` role toggle only switches `Staff ↔ Admin`.
 
 ### 9.2 Bottom Navigation Structure
+
 - **Home:** Role-adaptive tab:
   - Admin → `AdminDashboardScreen`
   - Staff → `StaffDashboardScreen`
@@ -618,9 +659,11 @@ The live Supabase database (`xhgpxvyqrufbbuivttmi`) is the single source of trut
 - **Settings:** Profile, preferences, language toggle, notification settings.
 
 ### 9.3 Student Onboarding Gate
+
 In `RootNavigator.tsx`, students who have not completed onboarding (`!profile?.student_id`) are redirected to `OnboardingScreen` before reaching the main app.
 
 ### 9.4 Role Resolution & Auth State Integrity (Anti-Flash Architecture)
+
 - **Profile Load Race Elimination:** In `authStore.ts`, `SET_SESSION` resets `profileLoaded: false` and `profile: null` on any new session or account switch. `SET_PROFILE` only marks `profileLoaded: true` when `profile !== null`. On sign-out, state is cleanly cleared via `SIGN_OUT`.
 - **Pre-Navigation Role Await:** `signIn()` proactively awaits `fetchProfile(userId)` before resolving, ensuring the caller stays in busy/loading state until the role is resolved.
 - **Navigator Gate:** `RootNavigator.tsx` blocks on `if (loading || (session && (!profileLoaded || !profile)))` with a clean splash/loader, guaranteeing `AppNavigator` never mounts before the user's role is confirmed.
@@ -633,6 +676,7 @@ In `RootNavigator.tsx`, students who have not completed onboarding (`!profile?.s
 ## 10. Specialized Features
 
 ### 10.1 AI Chatbot
+
 - **Service:** `src/services/chatbotService.ts` → `src/screens/chatbot/ChatbotScreen.tsx`
 - **Edge Function:** `supabase/functions/chat/index.ts`
 - **Model:** Google Gemini (`gemini-flash-lite-latest`), API key securely stored in Supabase secrets.
@@ -641,6 +685,7 @@ In `RootNavigator.tsx`, students who have not completed onboarding (`!profile?.s
 - **Security:** Validates caller's JWT directly in the Edge Function; student-only restriction enforced server-side.
 
 ### 10.2 PDF Maker
+
 - **Location:** `src/screens/pdfmaker/`
 - **Architecture:** 100% on-device native `pdf-lib` for document generation + hidden offscreen WebView running vendored `pdf.js` (`assets/pdfjs/*.txt`) for rasterizing page thumbnails.
 - **Capabilities:** Photos to PDF, PDF Merge, Organize/Reorder Pages, Compress.
@@ -649,7 +694,7 @@ In `RootNavigator.tsx`, students who have not completed onboarding (`!profile?.s
   - **Column/Row Onset Boundary Detection:** `findDocumentQuad` replaces block density thresholding with per-column and per-row paper onset scanning (10th percentile for top/left and 90th percentile for bottom/right), capturing tilted notebook boundaries at the exact physical edge and preventing top headers ("Chapter 1", "Class 1") and margin text from being clipped.
   - **Zero Top-Inset Homography Warp:** `warpQuadToCanvas` applies 0% vertical inset to top coordinates (`y: rawQ[0].y`, `y: rawQ[1].y`) with subtle 0.2% side/bottom insets, guaranteeing headers 2mm from the edge remain 100% visible.
   - **Notch-Free Corner & Perimeter Masking:** Completely eliminates artificial rectangular bounding boxes (e.g. 14% corner cutouts). Restricts outer perimeter masking to true desk/void (`isWarmDesk || isThumbSkin || blum < 35` top/right, `blum < 120` bottom/left) and uses standard 4.5% corner triangles (`blum < 45` top, `blum < 85` bottom) with strict ruled red line protection, ensuring margin lines remain straight and continuous.
-  - **Natural Local Illumination Tracking:** Grid background estimation (`cell = max(14, max(W, H)/140)`) samples the 95th percentile per cell (`bgR[gi] = Math.max(60, ...)`) without artificially forcing shaded corner cells to 0 or substituting bright center values. Under illumination division ($dr = (r 	imes 255) / illR$), shaded corner paper naturally normalizes to $\ge 205$ and snaps to pure white `#FFFFFF`.
+  - **Natural Local Illumination Tracking:** Grid background estimation (`cell = max(14, max(W, H)/140)`) samples the 95th percentile per cell (`bgR[gi] = Math.max(60, ...)`) without artificially forcing shaded corner cells to 0 or substituting bright center values. Under illumination division ($dr = (r  imes 255) / illR$), shaded corner paper naturally normalizes to $\ge 205$ and snaps to pure white `#FFFFFF`.
   - **CamScanner-Parity S-Curve LUT ($bp = 65, wp = 205$, power $1.65$):** Snaps pen ink cores to solid jet-black ($\le 6$) while cleanly locking paper fields to `#FFFFFF` without washing out strokes or creating dark corner blobs.
 - **Progressive In-App PDF Viewer (Single-Load Lock):**
   - **Concurrency & Duplicate Load Lock:** `CampusPdfViewerModal` implements a single-send hash lock (`sentPayloadRef`), and `viewerHtml.ts` tracks a monotonic `loadId` generation counter. Multiple rapid-fire load triggers (`initViewer`, `viewerReady`, `onLoadEnd`) are coalesced into a single authoritative load, eliminating ghost duplicate placeholder cards and phantom white pages.
@@ -658,6 +703,7 @@ In `RootNavigator.tsx`, students who have not completed onboarding (`!profile?.s
   - **Loading Shimmer Indicator:** `.page-placeholder` cards display a centered geometric spinner animation while rasterizing.
 
 ### 10.3 BUBT Cover Page Generator
+
 - **Location:** `src/screens/coverpage/CoverPageFormScreen.tsx`
 - **Standardized 72dp Layout:** All document type selectors, course fields, assignment/lab inputs, student info, and faculty dropdown bars are strictly standardized to 72dp (`height: 72`, `paddingHorizontal: 14`, `borderRadius: 16`, `borderWidth: 1`, 42×42 neutral icon box) matching the signature Academics card design from `ExploreScreen.tsx`. Features a clean 1px border with zero side color stripes, a right-side 1px vertical divider (`verticalDivider`), and a stat column (`statVal` and `statSub`).
 - **72dp Dropdown Sheets & Tri-Fold Dismissal:** Bottom sheets for Document Type, Course, Faculty, Program, and Designation render each selectable option as a distinct, comfortable 72dp bar with animated vector icons. Modals dismiss seamlessly via:
@@ -679,6 +725,7 @@ In `RootNavigator.tsx`, students who have not completed onboarding (`!profile?.s
 - **Zero-Block Instant PDF Generation:** Removed all field-level blocking. If a student leaves fields blank, the engine fills them with clean academic blanks (`____________________`), enabling students to print blank official university cover pages for handwriting.
 
 ### 10.4 Direct FCM Push Notifications & 360 Pipeline
+
 - **Firebase Project:** `campusone-511812`
 - **Mechanism:** Trigger on `notifications` table (`trg_push_on_notification`) -> `pg_net` HTTP post -> `send-push` Edge Function -> Google Service Account OAuth -> FCM v1.
 - **Emergency Channel:** Android native channel `emergency_blood` (`AndroidImportance.MAX`, double-pulse vibration `[0, 500, 200, 500]`, heads-up lockscreen banner). FCM messages with `sector === 'blood'` are routed directly to this channel.
@@ -687,7 +734,9 @@ In `RootNavigator.tsx`, students who have not completed onboarding (`!profile?.s
 - **Universal Notice Routing:** `notify_new_announcement()` classifies all central university administrative bodies (`Office of the Registrar`, `Controller of Examinations`, `Office of the Vice Chancellor`, `Proctor Office`, `Library`, `Medical Center`, `Accounts Office`, `Career Guidance & Placement Office`) as universal circulars, and safely falls back to notifying students with unassigned/null departments.
 - **Deduplicated Triggers:** Single authoritative trigger `trg_notify_connection_event` handles connection requests and acceptances without duplicate inserts or double pushes.
 - **Exact Unread Count Service:** `getUnreadNotificationCount()` in `notificationsService.ts` replaces the 20-item capped array filter with an exact database count (`count: 'exact', head: true`).
+
 ### 10.5 Universal In-App PDF Viewer & Anti-Skin-Flash Architecture
+
 - **Locations:** `src/screens/announcements/AnnouncementDetailScreen.tsx` & `src/components/pdf/CampusPdfViewerModal.tsx`
 - **Zero-Download In-App Streaming:** Remote university notices, exam routines, and academic circulars stream directly inside the app using embedded Google Docs Viewer (`docs.google.com/gview?embedded=true&url=...`) without saving files to device storage or navigating away from the app.
 - **Anti-Skin-Flash Architecture (Eliminating the Google Drive Skin):**
@@ -712,15 +761,19 @@ In `RootNavigator.tsx`, students who have not completed onboarding (`!profile?.s
 - **Local Android SDK & NDK:** Configured via `android/local.properties` (`sdk.dir=C:/Users/dracu/Android/sdk`). NDK version is `27.1.12297006`.
 - **Google Sign-In Dependency:** Google Sign-In is registered against the **release keystore's SHA-1 fingerprint**. Debug builds (`npx expo run:android`) fail Google Sign-In with `DEVELOPER_ERROR`. Real testing must use the release APK.
 - **Build Release APK Locally (No EAS required):**
+
   ```bash
   cd android
   .\gradlew assembleRelease
   ```
+
 - **Build Release Android App Bundle (.aab) for Google Play Submission:**
+
   ```bash
   cd android
   .\gradlew bundleRelease
   ```
+
   Standard output: `android/app/build/outputs/bundle/release/app-release.aab`
 - **Google Play Compliance & Legal Infrastructure:**
   - **Account Context:** Personal Account ID `6137426018535669538` (`nawyaj morshed`).
@@ -738,6 +791,7 @@ In `RootNavigator.tsx`, students who have not completed onboarding (`!profile?.s
   - Quick-access root copy: `CampusOne-release.apk`.
 - **Install & Launch on Real Device via ADB:**
   - Connected device ID: `8734b5da` (physical Android device).
+
   ```powershell
   # 1. Force stop running process (prevents singleTask RAM caching)
   & "C:\Users\dracu\Android\sdk\platform-tools\adb.exe" -s 8734b5da shell am force-stop com.bubt.campusone
@@ -748,6 +802,7 @@ In `RootNavigator.tsx`, students who have not completed onboarding (`!profile?.s
   # 3. Launch the MainActivity cleanly
   & "C:\Users\dracu\Android\sdk\platform-tools\adb.exe" -s 8734b5da shell am start -n com.bubt.campusone/.MainActivity
   ```
+
 - **Stale Path / Gradle Cache Gotcha:** If Gradle ever reports a missing directory referencing an old machine path (e.g. `C:\Users\Administrator\...`), remove `android/.gradle`, `android/build`, and `android/app/build`, verify `local.properties`, run `.\gradlew --stop`, and rebuild.
 
 ---
@@ -766,6 +821,7 @@ In `RootNavigator.tsx`, students who have not completed onboarding (`!profile?.s
 The mobile and web applications are actively pitched and presented to BUBT administration, department heads, and academic review committees. The following design and implementation patterns are strictly mandatory across all screens:
 
 ### 13.1 Native Direct Contact Flow (`ContactSheet.tsx`)
+
 - **Prohibition:** NEVER display raw, un-dialable system dialogs (`Alert.alert("Name", "+880...")`) for phone numbers.
 - **Pattern:** Use `ContactSheet` from `src/components/ui/ContactSheet.tsx`.
 - **Capabilities:**
@@ -781,6 +837,7 @@ The mobile and web applications are actively pitched and presented to BUBT admin
   - `LostFoundDetailScreen.tsx`: Triggered upon approved claim contact unlock (`claim_contact`).
 
 ### 13.2 Visual Media Pipeline & Upload Storage Control
+
 - **Automated Compression Engine (`src/utils/imageCompress.ts`):**
   - Powered by `expo-image-manipulator` (`SaveFormat.JPEG`) with aspect-ratio preserving downscaling and EXIF normalization.
   - Presets:
@@ -794,43 +851,51 @@ The mobile and web applications are actively pitched and presented to BUBT admin
   - `uploadPhoto`: Auto-resolves preset by folder (`avatars` -> `avatar`, `chatbot` -> `compact`, `routines` -> `document`, else `standard`).
   - `uploadProof`: Auto-compresses claim proof photos with `standard` preset.
   - Pre-Upload Size Guards: Rejects documents exceeding `MAX_FILE_SIZE_MB` (10MB) and images exceeding `MAX_IMAGE_SIZE_MB` (5MB).
- - **Lost & Found Photos:**
-   - `LostFoundBrowseScreen.tsx`: Render 52×52 rounded cover thumbnail with category icon fallback.
-   - `LostFoundDetailScreen.tsx`: Render 190dp hero image card with anchored status badge (`Lost` in crimson / `Found` in emerald).
-   - `PostItemFormScreen.tsx`: Support image picking via `expo-image-picker`, preview thumbnail with Change/Remove actions, and upload to public `photos` bucket via `uploadPhoto(uri, 'lostfound', user.id)`.
+- **Lost & Found Photos:**
+  - `LostFoundBrowseScreen.tsx`: Render 52×52 rounded cover thumbnail with category icon fallback.
+  - `LostFoundDetailScreen.tsx`: Render 190dp hero image card with anchored status badge (`Lost` in crimson / `Found` in emerald).
+  - `PostItemFormScreen.tsx`: Support image picking via `expo-image-picker`, preview thumbnail with Change/Remove actions, and upload to public `photos` bucket via `uploadPhoto(uri, 'lostfound', user.id)`.
 
 ### 13.3 Home Live Status Carousel (`CampusToday.tsx`)
+
 - Replaced cramped 2-column flex-wrapped grid with a horizontal snap carousel (210dp card width, 13.5px bold title, 11.5px subtitle, sector accent pill).
 - Surfaces next bus to campus, next prayer azan, latest campus announcement, upcoming event, open jobs count, and urgent blood requests.
 
 ### 13.4 Real-World Logistics & Time Display
+
 - **12-Hour Bus Departures:** Always format military time (e.g. `13:30`) to human 12-hour AM/PM format (e.g. `01:30 PM`) using `format12Hour` helper. Always safeguard route stops (`(r.stops ?? []).length`).
 - **Dynamic Ramadan Detection:** In `PrayerScreen.tsx`, never hardcode fasting banners. Use `isRamadanNow()` checking Hijri calendar month 9 via `Intl.DateTimeFormat('en-u-ca-islamic-umalqura')`.
 
 ### 13.5 AI Assistant Onboarding (`ChatbotScreen.tsx`)
+
 - Never present an empty blank screen. Present 4 varsity-focused starter prompt chips (Bus routes, prayer times, CGPA calculation, campus jobs) that pre-fill the composer on tap.
 
 ### 13.6 Navigation & Dashboard Layout Integrity
+
 - Strictly enforce AGENTS.md Rule 5.2 (full-width rows with left icon, bold title, and right chevron).
 - In `AdminDashboardScreen.tsx`, all 7 management destinations use full-width rows to prevent orphaned cards.
 
 ### 13.7 Theme-Aware Dark Mode Tokens (`pillBg`)
+
 - Never use hardcoded light pastel constants (`Accent.tealBg = #e4f5f4`, `greenBg = #e8f8f0`, `grayBg = #f0f2f6`) on cards or badges in dark mode.
 - Use `pillBg(fgHex, isDark)` from `src/theme/colors.ts`, generating `${fgHex}2e` on dark and `${fgHex}18` on light.
 
 ### 13.8 Unified Blood Group Matrix Grid & Emergency Hero Action (`BloodScreen.tsx`)
+
 - **Prominent Emergency Hero Bar:** `Request blood` is rendered as a full-width high-priority emergency action bar directly below `SubBar` for instant life-saving triage access.
 - **Symmetrical 8-Box Grid on Both Tabs:** Both 'Requests' and 'Donors' tabs share the exact same 4×2 interactive blood group matrix card (`A+`, `A-`, `B+`, `B-`, `O+`, `O-`, `AB+`, `AB-`).
 - **Zero Horizontal Chip Scrollbars:** Completely eliminated messy horizontal scrolling carousels.
 - **Live Emergency Counts:** Displays live counts of active requests and available donors per blood group; tapping any cell toggles filtering with a clear active filter indicator and empty state reset button.
 
 ### 13.9 Blood Donation Search & Dhaka Area Architecture (`BloodScreen.tsx`, `AreaPickerModal.tsx`)
+
 - **Native Touch Focus & No Nested Touchables:** The unified search bar uses a native `<View style={styles.searchBar}>` with `flex: 1` and `height: 42`, containing a touchable search icon, full-height `TextInput`, and instant clear button. Never wrap `TextInput` inside an outer `TouchableOpacity` on Android, which intercepts responder focus.
 - **Dhaka Area Filter Trigger:** Split into two discrete, non-nested touch targets (`styles.areaPickerBtn` and `styles.areaClearBtn`), completely avoiding React Native Android nested touch responder bugs (`stopPropagation` failures).
 - **Search Auto-Reset & Dismiss Controls:** `AreaPickerModal` auto-resets its search input upon opening (`visible` hook), supports `returnKeyType="search"`, and enables `keyboardDismissMode="on-drag"`.
 - **Form Area Picker vs Filter Picker:** `AreaPickerModal` supports `allowAll={false}` for registration/request forms (`BloodRequestScreen`, `DonorRegisterScreen`) to prevent users from accidentally selecting "All Areas" as a physical address, while keeping `allowAll={true}` on `BloodScreen` for filtering.
 
 ### 13.10 Student Home Dashboard: Frequently Used Tools & Community Updates (`HomeScreen.tsx`)
+
 - **Frequently Used Academic Tools (`HomeFrequentTools.tsx`):**
   - Replaced the standalone Lost & Found action card on Home with a 4-square grid row:
     1. Study Hub (`StudyHub`, `SectorColors.study`)
@@ -847,6 +912,7 @@ The mobile and web applications are actively pitched and presented to BUBT admin
 - **Role Scoping:** `CampusToday` is retained on `AdminDashboardScreen` for triage overview. On `StaffDashboardScreen`, `CampusToday` (transit/prayer/clinic mini-grid) and blood banners are completely removed to keep Staff Home 100% focused on maintenance workorders and task progression; campus life services remain directly accessible via the `Explore` tab. Lost & Found remains 100% accessible in the `Explore` tab.
 
 ### 13.11 Student Directory Architecture & Peer Discovery (`DirectoryScreen.tsx` & `StudentProfileScreen.tsx`)
+
 - **Segmented Discovery Track Switcher:** Full-width segmented track (`C.surface2`, `borderRadius: 14`, `padding: 3`) with native spring sliding indicator physics (`Animated.spring`, `tension: 68`, `friction: 10`, `useNativeDriver: true`) matching `LostFoundBrowseScreen.tsx`. Features three dedicated discovery scopes:
   - `All Students`: University-wide student roster with live total count badge.
   - `Connections`: Mutual accepted peer network with one-tap chat and phone actions.
@@ -884,6 +950,7 @@ The mobile and web applications are actively pitched and presented to BUBT admin
   - Sibling web app equipped with Department filter select dropdown, Classmates toggle, CR & Blood badges, and modal Disconnect action. Verified via `vite build`.
 
 ### 13.12 Blood Donation Notification System & Life-Saving Dispatch Loop (`BloodScreen.tsx`, `DonorRegisterScreen.tsx`, `NotifSettingsScreen.tsx`)
+
 - **Emergency Priority Architecture:**
   - Android native channel `emergency_blood` configured with `AndroidImportance.MAX`, bypasses DND in emergency contexts, displays full heads-up banner on lockscreen, and features a distinct emergency double-pulse vibration pattern (`[0, 500, 200, 500]`).
   - Edge function `send-push` (`supabase/functions/send-push/index.ts`) automatically maps all notifications with `sector === 'blood'` to `channelId: 'emergency_blood'`.
@@ -923,6 +990,7 @@ The mobile and web applications are actively pitched and presented to BUBT admin
 ## 14. Official Logo & Brand Assets (Google Play Ready)
 
 ### 14.1 Visual Brand Identity
+
 - **Mark:** Royal blue squircle container (`#0D3ECF` to `#1B52F8` gradient) featuring a unified C1 monogram:
   - Sweeping 3D beveled letter "C".
   - Upright numeral "1" embedded in center space.
@@ -931,6 +999,7 @@ The mobile and web applications are actively pitched and presented to BUBT admin
 - **Zero AI / Generic Icon Tells:** All generic `@expo/vector-icons` `school` hats and placeholder icons are strictly purged. The official mark is used universally.
 
 ### 14.2 Asset Registry & Directory Locations
+
 - **Master App Icon:** `assets/icon.png` (1024×1024 transparent PNG).
 - **Google Play Console Upload:** `assets/playstore-icon.png` & `assets/playstore-icon-full.png` (512×512 PNG, formatted to official Google Play store requirements).
 - **Android Adaptive Icon Layers:**
@@ -945,13 +1014,16 @@ The mobile and web applications are actively pitched and presented to BUBT admin
   - Background colors: `values/colors.xml` (`splashscreen_background`, `iconBackground` set to `#ffffff`).
 
 ### 14.3 In-App UI Components
+
 - `src/components/ui/Logo.tsx`: `LogoMark` renders `assets/logo-mark.png` with dynamic `size` and elevation `shadow`. Also exports `LogoFull` and `LogoText`.
 - `Brand` component in `LandingScreen.tsx` wraps `LogoMark`, automatically providing the new logo to `LandingScreen`, `LoginScreen`, `RegisterScreen`, `OnboardingScreen`, `ResetPasswordScreen`, `VerifyEmailScreen`, and `TopBar`.
 
 ---
 
 ## 15. Memory Synchronization Mandate
+
 Whenever the user instructs to "update memorys", the agent MUST synchronously update ALL memory references across both projects:
+
 1. `CampusOne/AGENTS.md` & `CampusOne/CampusOne/AGENTS.md`
 2. `CampusOne/CLAUDE.md` & `CampusOne/CampusOne/CLAUDE.md`
 3. `fixit-campus/AGENTS.md`, `fixit-campus/agent.md`, and `fixit-campus/CLAUDE.md`
@@ -961,10 +1033,12 @@ Whenever the user instructs to "update memorys", the agent MUST synchronously up
 ## 16. Google Play Store Readiness & Institutional Audit Standards
 
 ### 16.1 AndroidManifest Permissions & Queries
+
 - **Forbidden Unused Permissions:** `RECORD_AUDIO` and `SYSTEM_ALERT_WINDOW` must never be present in `android/app/src/main/AndroidManifest.xml`. Google Play Console flags them as high-risk policy violations for campus companion apps.
 - **Intent Queries:** `<queries>` block in `AndroidManifest.xml` must declare `intent.action.DIAL` (`tel:`) and `intent.action.SENDTO` (`mailto:`) for deterministic external resolution on Android 11+ (API 30+).
 
 ### 16.2 Academic Scrutiny & Brand Consistency
+
 - **Varsity Code Identifier:** `UNIVERSITY_NAME = 'BUBT'` in `src/constants/app.ts` (strictly never placeholder or other varsity codes like `'DIU'`).
 - **Exported Document Footers:** Generated PDFs and cover pages must output `Generated by CampusOne` in `CoverPageFormScreen.tsx`.
 - **Zero AI Tells:** 0 em-dashes `—` in user-facing microcopy/i18n; no ASCII box-drawing comments (`// ───`); no AI header comments (`// Matches design...`).
@@ -975,6 +1049,7 @@ Whenever the user instructs to "update memorys", the agent MUST synchronously up
 ## 17. Navigation & Screen Information Architecture (Explore & Tools Placement)
 
 ### 17.1 Home Screen Integrity (`HomeScreen.tsx`)
+
 - **Zero Redundant Clutter:** Notifications belong strictly in the dedicated top-right **Bell Icon** (with live unread badge count) linking to `NotificationsScreen`. Redundant legacy notification banners and large repetitive list cards are eliminated from the Home screen.
 - **Home Screen Flow (Student):**
   1. TopBar (Varsity LogoMark insignia, CampusOne brand text, role-aware subtitle / badge, and single Notification Bell with live unread badge).
@@ -991,6 +1066,7 @@ Whenever the user instructs to "update memorys", the agent MUST synchronously up
 - **Zero Misplaced Tool Promos:** Document tools (PDF Maker, Cover Page Generator) remain organized in Explore -> Academics and are not dumped on the Home screen.
 
 ### 17.2 Settings & Notification Architecture (`SettingsScreen.tsx` & `NotifSettingsScreen.tsx`)
+
 - **Standalone Card Layout:** Settings items are structured as independent floating cards (`borderRadius: 16`, `borderWidth: 1`, `marginBottom: 10`, `padding: 14`) with tinted squircle icons, bold titles, and subtitles. Monolithic grouped tables and hairline dividers are strictly forbidden.
 - **Data & Cache Manager:** Dedicated card backed by `storageService.ts` that calculates temporary working file cache (PDF Maker thumbnails & working files, people roster memory cache), safely purges cache without de-authenticating the user, and provides 1-tap navigation to Android system App Info via `Linking.openSettings()`.
 - **Optimized Sync:** Battery-optimized background sync toggle persisted in `app.optSync` storage.
@@ -1008,6 +1084,7 @@ Whenever the user instructs to "update memorys", the agent MUST synchronously up
 - **Zero Utility Dumps:** Utility tools or document generators (e.g. Cover Page Generator) remain organized in Explore -> Academics and are not dumped in Settings.
 
 ### 17.3 Explore Screen Categories & Accordion UX (`ExploreScreen.tsx` & `CollapsibleSection.tsx`)
+
 - **Categorization & Hierarchy:** High-level grouping matches the web sidebar:
   - **Featured & Quick Access:** AI Assistant and Campus Issues separated at the top with a dedicated section eyebrow and right navigation chevrons.
   - **Campus Directory Categories:** Academics, Campus Life, Services, and Community under a dedicated section eyebrow.
@@ -1031,6 +1108,7 @@ Whenever the user instructs to "update memorys", the agent MUST synchronously up
 ## 18. Admin & Staff Operations Architecture (Full Audit Reference)
 
 ### 18.1 Staff Workflow & Dispatch Mechanics
+
 - **Staff Home Routing:** Role `'staff'` lands directly on `StaffDashboardScreen.tsx` with live workload counters (`Assigned`, `In Progress`, `Resolved`).
 - **Staff Hero Identity Card:** Displays the staff member's avatar, verified name, department & trade badge (e.g. `Electrical & Mechanical`), and live active workorder pill badge.
 - **58dp Segmented Filter Tabs:** High-ergonomics 3-tab switcher (`All`, `Active`, `Done`) providing immediate 1-tap filtering across assigned workorders.
@@ -1042,6 +1120,7 @@ Whenever the user instructs to "update memorys", the agent MUST synchronously up
 - **Flat 72dp Explore Screen for Staff:** On `ExploreScreen.tsx`, staff accounts bypass all collapsible accordion dropdown folders (`CAMPUS LIFE`, `SERVICES`, `COMMUNITY`). Instead, the 5 vital campus life services (`Announcements`, `Prayer Times`, `Medical Center`, `Bus Schedule`, `Blood Donation`) are presented as direct, open, full-width 72dp bars with 32dp monochrome vector icons and clean, uniform 1px borders (`borderWidth: 1, borderColor: C.border`, with 4.5dp child stripes stripped since they are standalone primary bars). Issue reporting (`reports`) is strictly excluded from Staff Explore since staff resolve issues rather than filing complaints.
 
 ### 18.2 Administrator Operations & Security Rules
+
 - **Admin Home Routing & Clean Command Center:** Role `'admin'` lands on `AdminDashboardScreen.tsx` as a focused triage command center. Legacy accordion Manage rows and `CampusToday` mini-widgets are cleanly stripped from Admin Home to eliminate clutter and keep focus strictly on triage counters (`Open`, `Unassigned`, `In Progress`, `Resolved`) and pending maintenance ticket assignment (`Needs Assignment`).
 - **Role-Aware Explorer Scoping (`ExploreScreen.tsx`):**
   - **Student Clutter Stripped for Admin:** Student-only features are completely excluded when `role === 'admin'`: Assignment Cover Page Generator (`coverpage`), CGPA Calculator (`Cgpa`), BUBT Annex Student Results Portal (`Annex`), Student Class Lecture Routines (`routines`), and Peer-to-Peer Lost & Found item claiming (`lostfound`).
@@ -1097,19 +1176,23 @@ Whenever the user instructs to "update memorys", the agent MUST synchronously up
 ## 20. Blood Donation Life-Saving Engine & Clinical Architecture
 
 ### 20.1 Clinical Standards & Safety
+
 - **Gender-Aware Medical Cooldown (WHO Standard):** Enforces a 90-day recovery window for male donors and a 120-day recovery window for female donors to preserve iron reserves and prevent microcytic anemia (`DONATION_WAIT_DAYS_MALE = 90`, `DONATION_WAIT_DAYS_FEMALE = 120` in `src/utils/blood.ts`).
 - **Zero-Migration Gender Storage:** Donor gender preference is persisted via `AsyncStorage` (`@donor_gender_${user.id}`), keeping the client fully type-safe without modifying the live database schema.
 
 ### 20.2 Native Recharged Push Alarms (`bloodReminder.ts`)
+
 - **AlarmManager Integration:** Automatically schedules on-device notifications via `expo-notifications` (`scheduleNotificationAsync`) using `BLOOD_RECHARGE_NOTIFICATION_ID`.
 - **Zero Backend Cost:** Operates 100% on-device, incurring $0 in backend compute or FCM costs, and triggers deterministically even when offline.
 - **Trigger Points:** Armed upon donor registration/profile update and whenever the donor marks donation via `markDonatedToday()`.
 
 ### 20.3 Personal Donation & Lives Saved Impact Tracker
+
 - **Lifetime Recognition:** Backed by `blood_pledges.fulfilled_at` counted in `getBloodFeed()` (`myDonationCount`).
 - **UI Presentation:** Displays an impact badge (`🏅 X donations recorded · Up to Y lives impacted`) on the donor status card, celebrating lifetime contribution (1 whole blood unit impacts up to 3 lives).
 
 ### 20.4 Dhaka 45+ Areas Catalog & Searchable Area Sheet (`dhakaAreas.ts` & `AreaPickerModal.tsx`)
+
 - **Master Area Catalog:** Complete dictionary of 45+ Dhaka neighborhoods and medical hubs categorized into 6 zones (`Mirpur & Campus`, `Medical Hubs`, `North Dhaka`, `Central & West Dhaka`, `East Dhaka`, `South & Old Dhaka`, and `Suburbs`).
 - **Elimination of Endless Sliding:** Solves the 40-chip horizontal swipe problem by keeping 5 high-frequency campus hubs (`All`, `Mirpur`, `DMCH`, `Kurmitola`, `Dhanmondi`, `Uttara`) and providing an `[ 📍 All Areas (45+) ▾ ]` button.
 - **Searchable Bottom Sheet Modal:** Tapping `All Areas` opens `AreaPickerModal` with instant search as you type, zone grouping, real-time live donor/request count pills, custom landmark support, and 1-tap clear.
@@ -1118,17 +1201,20 @@ Whenever the user instructs to "update memorys", the agent MUST synchronously up
 - **Unified Registration & Posting:** `DonorRegisterScreen.tsx` and `BloodRequestScreen.tsx` feature a 1-tap `[ 📍 Select from Dhaka Areas ]` picker to guarantee zero spelling errors.
 
 ### 20.5 Dengue Platelet Mode (Apheresis)
+
 - **Clinical Apheresis Protocol:** Platelet donors replenish cells within 72 hours, allowing safe donation every 14 days.
 - **Request Tagging:** `BloodRequestScreen.tsx` provides a dedicated `Dengue Platelet (Apheresis)` toggle, tagging the request with `[Platelets]`.
 - **Feed UI:** Displays an amber `⚡ Platelet Emergency` badge on matching requests.
 
 ### 20.6 Targeted Cross-Compatibility Notification Engine
+
 - **Migration:** `supabase/migrations/20261010000000_blood_compatibility_notifications.sql`.
 - **Compatibility Function:** `compatible_donor_groups(p_group)` maps clinical recipient blood groups to eligible donor types (e.g. A+ receives from A+, A-, O+, O-; AB+ receives from all 8 groups; O- receives only O-).
 - **Trigger:** `trg_notify_blood_request` alerts all compatible, currently-eligible donors, factoring in the 14-day recovery window for platelet requests.
 - **SecOps Compliance:** Explicitly revokes anon execution permissions on all database functions.
 
 ### 20.7 UI Ergonomics, Filter Non-Collapsing & Blood Group Immutability
+
 - **Non-Collapsing Filter Chips:** All horizontal filter chips (`groupChip`, `areaChip`) use `flexShrink: 0` and explicit padding. This prevents Android Yoga flexbox from collapsing chips into ellipses (`...`) or dashes (`-`).
 - **Interactive Available Donors Grid:** On the Donors tab, the 8-cell `Available Donors` summary card doubles as the blood group filter. Tapping any blood type highlights it and filters the roster, eliminating redundant horizontal chip rows.
 - **Blood Group Immutability & Permanent Lock:** In `DonorRegisterScreen.tsx`, once a student registers their blood group, the blood type is locked as a verified badge (`O+ Verified · Permanent`). Registered donors can only update their Area and WhatsApp contact number, preventing accidental or dangerous blood type alteration.
@@ -1136,6 +1222,7 @@ Whenever the user instructs to "update memorys", the agent MUST synchronously up
 - **Automatic 90/120-Day Cooldown Display:** Eligibility is derived automatically from `last_donated` (`Eligible` green badge vs `Eligible in Xd` countdown). Donors do not need to manually edit anything to become eligible. When eligible, a 1-tap `I donated today` action resets the recovery clock and arms the recharged reminder.
 
 ### 20.8 360° Forensic Audit, Security Hardening & Web Parity
+
 - **IDOR Remediation (`donor_contact` RPC):**
   - Patched security vulnerability where `donor_contact(p_user_id)` exposed contact details without verifying donor registry status. Added strict inner join on `public.donors` so non-donors' numbers cannot be harvested.
   - Returns `table(name text, whatsapp text)` ensuring full schema parity with the web client.
@@ -1163,19 +1250,23 @@ Whenever the user instructs to "update memorys", the agent MUST synchronously up
 ## 21. Full-App Offline Caching & Stale-While-Revalidate (SWR) Architecture
 
 ### 21.1 Offline Engine Core (`src/services/cacheService.ts`)
+
 - **Dual-Layer Architecture:** Fast in-memory RAM cache backed by persistent `@react-native-async-storage/async-storage` (v2.2.0). Zero external npm dependencies added.
 - **Cache Contract:** `getCache<T>(key, maxAgeMs?)` returns stale data instantly while background queries fetch the latest network records. `setCache<T>(key, data)` writes synchronously to memory and asynchronously to disk.
 - **Eviction & Safety:** JSON parsing failures or disk errors fail silently to `null` without crashing the render tree.
 
 ### 21.2 Cold-Start & Auth Gate Unlocking
+
 - **Profile Offline Persistence:** In `authStore.ts`, profiles are cached under `@c1_profile_${userId}` on every successful fetch. On cold boots without internet, the app reads the cached profile, avoiding the `profileError` screen lock in `RootNavigator.tsx`.
 - **People Roster Persistence:** In `peopleService.ts`, the directory profiles roster is cached to `@c1_people_roster`. Display names across rides, listings, reports, and blood requests resolve instantly instead of showing blank initials when offline.
 
 ### 21.3 Offline UI Feedback (`OfflineBanner.tsx`)
+
 - Non-intrusive status strip rendered across feeds when data is served from local cache during network outages.
 - Clear, polite indication that cached information is displayed and will automatically refresh when internet connection resumes.
 
 ### 21.4 Feature-Level SWR & Offline Protection
+
 - **Academic & Reference:** Bus schedules, prayer times, class routines, academic calendar, faculty roster, and medical center directory load instantly from cache and work in signal-dead zones (such as campus basements and transit buses).
 - **Feeds & Communities:** Announcements, campus events, active clubs, student jobs, and home status strips load from cache instantly.
 - **Peer-to-Peer Services:** Market listings, ride shares, lost and found items, and blood donor requests display cached feeds. Action mutations (contact reveal RPCs, seat booking, claim posting, pledges) are safely guarded with warning toasts when offline.
@@ -1187,11 +1278,13 @@ Whenever the user instructs to "update memorys", the agent MUST synchronously up
 ## 22. Lost & Found Varsity Architecture & Ergonomics
 
 ### 22.1 Hero Action Bar & Header Ergonomics (`LostFoundBrowseScreen.tsx`)
+
 - **Prohibition:** Eliminates cramped corner `[+]` icon from `SubBar.rightSlot`.
 - **Hero Action Bar:** Positioned directly below the header in the primary thumb strike zone. 44dp height, `borderRadius: 12`, `SectorColors.lostfound` (`#c77d1a`) background, 13.5px bold white text with `plus-circle` icon: `"+ Report Lost or Found Item"`.
 - **Role Scoping:** Only displayed for students (`isStudent`), matching campus permission rules.
 
 ### 22.2 Unified Segmented Track Switcher & Native Spring Animation (`LostFoundBrowseScreen.tsx`)
+
 - **Native Spring Animated Indicator:** Floating surface pill with subtle elevation and accent border that glides smoothly across the track under the user's finger using native 60fps driver (`Animated.spring`).
 - **Dynamic Thematic Color Identity per Tab:**
   - `All`: Sector Amber (`#c77d1a`) text and soft badge tint.
@@ -1201,6 +1294,7 @@ Whenever the user instructs to "update memorys", the agent MUST synchronously up
 - **Live Badge Counters:** Real-time dynamic count chips per tab tracking active items with themed colors.
 
 ### 22.3 Unified Single-Row Search & Bottom Sheet Filter Modal (`LostFoundBrowseScreen.tsx`)
+
 - **Zero Loose Chips Clutter:** Completely eliminates cluttered horizontal scrolling category chips and loose status pills from the main feed screen.
 - **Single 44dp Row:** Search input on the left (`flex: 1`, search icon, full-height `TextInput`, instant clear `✕`) paired side-by-side with a prominent 44dp `Filters` button on the right (`minWidth: 96`, `flexShrink: 0`, matching `BloodScreen` search + area trigger architecture).
 - **Active Filter Pill:** When filters are active (e.g. `category !== 'All'` or `status !== 'Open'`), the filter button highlights in sector amber (`${SectorColors.lostfound}18`), displays a filter count badge (e.g. `1`), and opens the modal to adjust or reset.
@@ -1211,10 +1305,12 @@ Whenever the user instructs to "update memorys", the agent MUST synchronously up
 - **Feed Direct Placement:** The item card feed begins immediately beneath the single search/filter row with clean visual hierarchy.
 
 ### 22.4 Full-Screen Photo Viewer (`LostFoundDetailScreen.tsx`)
+
 - **Tap-to-View Modal:** Tapping the 190dp hero image card opens a full-screen image modal (`rgba(0,0,0,0.94)` background, close button `✕`, title header, and `resizeMode="contain"` uncropped view), allowing students to inspect fine details like student ID numbers, serial codes, marks, or room numbers.
 - **Zoom Hint Badge:** Anchored `Tap to view full photo` pill with `maximize-2` icon on the hero banner.
 
 ### 22.5 Post Item Form Ergonomics (`PostItemFormScreen.tsx`)
+
 - **High-Contrast Type Selector:** Soft crimson tint for `Lost` (`C.dangerBg`, border `C.danger`) and soft emerald tint for `Found` (`C.successBg`, border `C.success`).
 - **Symmetrical 2×2 Category Grid:** Balanced 2-column cards with squircle icon boxes and active borders.
 - **Camera & Gallery Photo Picker:** Action sheet supporting both direct camera capture (`takePhotoWithCamera`) and media library selection (`pickFromGallery`).
@@ -1223,6 +1319,7 @@ Whenever the user instructs to "update memorys", the agent MUST synchronously up
 - **Dynamic Action Button:** Dynamic type-aware colors and labels (`Post Lost Report` in crimson vs `Post Found Item` in emerald).
 
 ### 22.6 Complete 360-Degree Bug Audit & Robustness Hardening
+
 - **Unicode Indic / Bengali Pre-Post Matching (`lostFoundMatch.ts`):**
   - Uses `/[^\p{L}\p{M}\p{N}]+/u` token splitting to support Indic script without severing vowel marks (`\p{M}`) from base consonants (`\p{L}`).
   - Lowered minimum token length threshold to >= 2 characters to match short terms (e.g., "ID", "বই").
@@ -1252,23 +1349,29 @@ Whenever the user instructs to "update memorys", the agent MUST synchronously up
 ## 23. Native Spring Animated Segmented Track Pattern
 
 ### 23.1 Design Principles & Visual Standard
+
 Segmented tab switcher tracks are used throughout CampusOne to toggle between core data feeds (e.g. Lost & Found tabs, Blood Requests vs Donors, Job types, Routine categories). To eliminate static transitions and give every tab its own distinctive institutional personality:
+
 - **Zero-Latency Sliding Pill:** An elevated floating indicator glides fluidly beneath active options with physical spring dynamics (`Animated.spring`).
 - **Dynamic Thematic Color Identity:** Rather than a uniform monochrome highlight, each tab defines its own semantic foreground and soft background tint (e.g. Danger Crimson for requests/lost, Success Emerald for recovered/donors/open, Violet for personal/my posts, Sector Accents for general feeds).
 - **Responsive Geometry:** Automatically adapts to 2, 3, or 4 tab segments using layout callbacks (`onLayout`).
 
 ### 23.2 Mathematical Specification & Spring Physics
+
 - **Track Padding:** `TRACK_PADDING = 3`
 - **Inner Track Width:** `innerTrackWidth = Math.max(0, trackWidth - TRACK_PADDING * 2)`
 - **Dynamic Segment Width:** `tabWidth = innerTrackWidth > 0 ? innerTrackWidth / N : 0` (where `N` is the number of tabs)
 - **Native Translation:**
+
   ```tsx
   const translateX = animIndex.interpolate({
     inputRange: [0, 1, ..., N - 1],
     outputRange: [0, tabWidth, ..., tabWidth * (N - 1)],
   });
   ```
+
 - **Physics Calibration:**
+
   ```tsx
   Animated.spring(animIndex, {
     toValue: activeIndex,
@@ -1277,15 +1380,18 @@ Segmented tab switcher tracks are used throughout CampusOne to toggle between co
     useNativeDriver: true,
   }).start();
   ```
+
 - **Elevated Indicator Design Tokens:**
   - `position: 'absolute'`, `top: 3`, `left: 3`, `bottom: 3`
   - `borderRadius: 11`, `borderWidth: 1.5`, `elevation: 2`
   - `shadowColor: '#000'`, `shadowOffset: { width: 0, height: 1.5 }`, `shadowOpacity: 0.12`, `shadowRadius: 3`
-  - `backgroundColor: C.surface`, `borderColor: isDark ? `${cfg.fg}55` : `${cfg.fg}35``
+  - `backgroundColor: C.surface`, `borderColor: isDark ?`${cfg.fg}55` : `${cfg.fg}35``
 - **Badge Counters:** Live count badges dynamically light up in the active tab's soft background tint (`${cfg.fg}18` or `rgba(..., 0.18)`) and text color (`cfg.fg`). Inactive badges render subtle neutral borders/surfaces.
 
 ### 23.3 Comprehensive CampusOne Segmented Track Catalog
+
 The following screens contain segmented control bars slated for this animated pattern:
+
 1. **Lost & Found (`LostFoundBrowseScreen.tsx`):** `All` (Sector Amber) · `Lost` (Crimson) · `Found` (Emerald) · `My Posts` (Violet) [Implemented].
 2. **Blood Donation (`BloodScreen.tsx`):** `Requests` (Blood Crimson `#d63d35`) vs `Donors` (Medical Emerald `#16a34a`) [Implemented].
 3. **Home Community Updates (`HomeCommunityUpdates.tsx`):** `All` (Brand Blue `#2563eb`) · `Notices` (Announce Orange `#ea580c`) · `Clubs` (Emerald `#059669`) · `Events` (Violet `#8b5cf6`) [Implemented].
@@ -1305,6 +1411,7 @@ The following screens contain segmented control bars slated for this animated pa
 ## 24. Student Directory Architecture & Bug-Hunting Hardening
 
 ### 24.1 Architecture & Core Components
+
 - **Screens:** `DirectoryScreen.tsx`, `StudentProfileScreen.tsx` (Mobile) and `StudentDirectory.jsx` (Web).
 - **Services:** `connectionsService.ts`, `peopleService.ts` (Mobile) and `store.jsx` (Web).
 - **Database Functions & Triggers:**
@@ -1315,6 +1422,7 @@ The following screens contain segmented control bars slated for this animated pa
   - `connections_delete` RLS: Allows mutual deletion when `status IN ('pending', 'accepted')`.
 
 ### 24.2 360° Hardening & Bug Fixes
+
 1. **Dynamic Route Param Integration:** `DirectoryScreen` accepts `route.params.tab` and `route.params.initialTab`, automatically switching to the requested tab with spring animation on notification press or deep link.
 2. **Notification Deep Link Targeting:** `notifTarget.ts` routes `connection_request` directly to `{ tab: 'requests' }` and `connection_accepted` to `{ tab: 'connections' }`.
 3. **Requests Tab Priority Sorting:** Urgent incoming connection requests (`connState === 'incoming'`) always sort to the top of the Requests tab ahead of pending outgoing requests.
@@ -1329,6 +1437,7 @@ The following screens contain segmented control bars slated for this animated pa
 ## 25. Campus Rides (Ride Share) Modernization & Polish
 
 ### 25.1 Architecture & Core Components
+
 - **Screens & Components:** `RidesScreen.tsx`, `RideDetailScreen.tsx`, `RidePostScreen.tsx`, `CampusToday.tsx` (Mobile) and `Rides.jsx`, `store.jsx` (Web).
 - **Database Migrations:**
   - `20261012000000_rides_enhancements.sql`: Mutual cancellation RLS (`ride_req_delete`), admin select (`ride_req_select`), notification triggers (`trg_notify_ride_request_event`, `trg_notify_ride_cancelled`).
@@ -1336,6 +1445,7 @@ The following screens contain segmented control bars slated for this animated pa
   - `20261012000002_rides_rickshaw_and_request.sql`: Adds `'Rickshaw'` to `rides_vehicle_check` and introduces `post_type text NOT NULL DEFAULT 'offer' CHECK (post_type IN ('offer', 'request'))` with index `idx_rides_post_type`.
 
 ### 25.2 Key Features & Enhancements
+
 1. **Hero Action Bar (Option 1):** Single prominent full-width `[+ Post a Campus Ride]` button (`SectorColors.ride`, 44dp height) matching `LostFoundBrowseScreen` and `BloodScreen` 1:1. Tapping it opens the post screen where the student picks Offer or Request via the animated slider.
 2. **Animated Segmented Track Bar (Browse & Post Screens):**
    - **Browse Screen (`RidesScreen.tsx`):**
@@ -1364,6 +1474,7 @@ The following screens contain segmented control bars slated for this animated pa
 ## 26. Student Marketplace Modernization, Performance & Full-Fledged Overhaul
 
 ### 26.1 Architecture & Core Components
+
 - **Screens & Components:** `MarketScreen.tsx`, `MarketDetailScreen.tsx`, `MarketPostScreen.tsx` (Mobile).
 - **Services:** `marketService.ts` (saved listings / wishlist in `@c1_saved_listings`, `openListingDmThread`, `updateListingStatus`, `deleteListingRow`), `cacheService.ts` (`CacheKeys.MARKET_LISTINGS`), `peopleService.ts` (`fetchPeople`).
 - **Database Migrations:**
@@ -1377,6 +1488,7 @@ The following screens contain segmented control bars slated for this animated pa
     - Performance composite indexes: `idx_listings_feed`, `idx_listings_category`, `idx_listings_course_code`, and `idx_listings_meetup_spot`.
 
 ### 26.2 Key Features & Enhancements
+
 1. **Prominent Hero Action Bar & Header Decluttering:**
    - Dedicated full-width 44dp emerald action bar (`[ + Sell an Item ]`) positioned directly below the header with `plus-circle` icon, matching `BloodScreen` and `RidesScreen`.
    - Removed cramped sell buttons from the top `SubBar`, keeping navigation standard and uncluttered.
@@ -1478,6 +1590,7 @@ The Jobs & Internships module (`JobsBrowseScreen.tsx`, `JobDetailScreen.tsx`, `J
 ## 27. Blood Donation Module: UI Architecture, 2-Tab Dual Pane System & Animation Standards
 
 ### 27.1 2-Tab Dual Pane Architecture (`AreaPickerModal.tsx`)
+
 - **Removal of "All" Tab:** Replaced the previous 3-tab layout (`All`, `Hospitals`, `Areas`) with an institutional 50/50 dual-tab bar (`Hospitals` vs `Areas`). Eliminates jumbled mixing of institutions and residential neighborhoods.
 - **Permanent 0ms Tab Switching Fix (Pre-Mounted Dual Tab Panes):**
   - Both tab lists (`FlatList` for Hospitals and `FlatList` for Areas) remain mounted in memory using Yoga's `display: 'flex'` and `display: 'none'`.
@@ -1488,22 +1601,27 @@ The Jobs & Internships module (`JobsBrowseScreen.tsx`, `JobDetailScreen.tsx`, `J
 - **Filter Reset Option:** When `allowAll` is true (in `BloodScreen.tsx`), an `AllOptionRow` ("All Dhaka Locations / সমগ্র ঢাকা") sits at the top of the list allowing students to clear location filters back to all of Dhaka.
 
 ### 27.2 Standardized Animation & Spring Physics
+
 - **Universal Damped Spring:** Aligned all sliding indicators across `AreaPickerModal`, `BloodScreen` (`Requests` vs `Donors`), and `BloodRequestScreen` (`Urgency` selector) with the golden critically-damped spring formula:
+
   ```ts
   tension: 68,
   friction: 10,
   useNativeDriver: true
   ```
+
   Guarantees smooth glides with zero bouncing or wobble.
 - **Zero Bouncy Scales on Buttons:** Removed underdamped spring scale transforms (`friction: 4, tension: 130/140`) on blood group cells. Taps respond instantly with crisp native touch highlights (`activeOpacity: 0.7`), matching Ride Share and Marketplace.
 
 ### 27.3 Patient & Clinical Details Redesign (`BloodRequestScreen.tsx`)
+
 - **Decluttering:** Completely removed messy cabin, ward, and bed number text inputs.
 - **Card-Style Dropdowns:** Replaced cluttered chip grids with clean dropdown selector cards opening dedicated modal bottom sheets:
   - **Case Reason / Requirement:** Curated categories (*Emergency Surgery*, *Dengue / Low Platelets*, *Road Accident / Trauma*, *Childbirth / C-Section*, *Thalassemia*, *ICU Critical Care*, *Routine / Other*). Automatically switches on platelet mode if Dengue is selected.
   - **Patient Affiliation:** Curated categories (*BUBT Student*, *Faculty / Staff*, *Family Member*, *General Patient*).
 
 ### 27.4 Blood Request Card Redesign & Multi-Bag Donor Pledge Architecture (`BloodScreen.tsx` & `BloodRequestDetailScreen.tsx`)
+
 - **Metadata Decomposition (`parseBloodRequestMeta` in `src/utils/blood.ts`):**
   - Parses composite `patient` string (`"${patientName} · ${medicalReason} (${affiliation})"`) into distinct typed fields: `patientName`, `medicalReason`, `affiliation`, `isPlatelet`, and `unitCount`.
   - Cleans up trailing parentheses, supports `[Platelets]` tags, and handles plain patient names gracefully.
@@ -1532,6 +1650,7 @@ The Jobs & Internships module (`JobsBrowseScreen.tsx`, `JobDetailScreen.tsx`, `J
   - Requesters can view all responding donors, check 90-day eligibility, tap the phone icon to open `ContactSheet` for 1-tap call/WhatsApp, and confirm donation.
 
 ### 27.5 Universal 90-Day Standard & Donor Form Streamlining (`DonorRegisterScreen.tsx`)
+
 - **Removal of Gender / Recovery Interval Confusion:**
   - Completely removed the previous `RECOVERY INTERVAL (WHO STANDARD)` gender toggle and WHO female anemia disclaimer text.
   - Standardized on the universal 90-day (3-month) donation interval across all campus donors.
@@ -1542,6 +1661,7 @@ The Jobs & Internships module (`JobsBrowseScreen.tsx`, `JobDetailScreen.tsx`, `J
   - Added quick-action date helper pills (`Today` and `Clear`) for the optional Last Donated date field.
 
 ### 27.6 Master Hospital Database & Live In-App Hospital Navigation Standard (`HospitalMapModal.tsx`, `dhakaHospitalCoords.ts`, `dhakaAreas.ts`)
+
 - **100% Comprehensive Dhaka Hospital & Area Audit:**
   - Audited all 108 hospitals in `src/constants/dhakaAreas.ts` and mapped every single one to survey-verified latitude/longitude coordinates in `src/constants/dhakaHospitalCoords.ts`.
   - Audited and established centroids for all 144 residential areas and neighborhoods across all zones of Dhaka in `DHAKA_AREA_CENTERS`.
@@ -1576,6 +1696,7 @@ The Jobs & Internships module (`JobsBrowseScreen.tsx`, `JobDetailScreen.tsx`, `J
 ## 28. Home Screen Ergonomics, Status Strips & Shortcut Customization Architecture
 
 ### 28.1 Status Strips Sizing & Institutional Presence (`HomeStatusStrips.tsx`)
+
 - **Explore Card Parity:** Scaled the four live glance strips (**Reports**, **Bus**, **Prayer**, and **Blood**) from their previous compact slim bars (`paddingVertical: 9`, `borderRadius: 8`) to full-height cards (`paddingVertical: 13`, `paddingHorizontal: 12`, `borderRadius: 16`, `gap: 10`).
 - **Typography & Metric Readability:**
   - Left title pill widened to 88dp with 14.5px extra bold text and 14px Feather chevrons.
@@ -1585,6 +1706,7 @@ The Jobs & Internships module (`JobsBrowseScreen.tsx`, `JobDetailScreen.tsx`, `J
   - Transit and Azan progress tracks widened to 48dp with 4dp height.
 
 ### 28.2 User-Configurable Quick Shortcuts (`HomeFrequentTools.tsx`)
+
 - **Customizable 4-Shortcut Grid:** Students can personalize which 4 features appear in the "Frequently Used" row instead of being locked to static defaults.
 - **Campus Feature Catalog (`ALL_TOOLS`):** Supports selection from 19 campus features including Study Hub, Routines, Cover Page, CGPA Calc, Bus, Prayer, Blood, Marketplace, Campus Rides, Lost & Found, Clubs, Events, Announcements, Student Jobs, Student Directory, Faculty, Academic Calendar, PDF Maker, and Issue Reports.
 - **Customization Modal Sheet:**
@@ -1595,6 +1717,7 @@ The Jobs & Internships module (`JobsBrowseScreen.tsx`, `JobDetailScreen.tsx`, `J
 - **Local Persistence:** Selections are cached per-user in `AsyncStorage` via `@campusone_frequent_tools_${userId}` and load instantly on mount with zero flicker.
 
 ### 28.3 Community Updates Segmented Switcher Polish (`HomeCommunityUpdates.tsx`)
+
 - **Touch Target & Height:** Enlarged the segmented filter tab switcher (`All`, `Notices`, `Clubs`, `Events`) from ~36dp to standard 48dp ergonomics (`paddingVertical: 10`, `borderRadius: 16`, `padding: 4`, `TRACK_PADDING = 4`).
 - **Tactile Scale:** Feather tab icons increased from 12px to 13.5px, label typography from 12px to 13px bold, and count badges expanded with comfortable horizontal padding (`paddingHorizontal: 6`, `minWidth: 19`).
 
@@ -1605,12 +1728,14 @@ The Jobs & Internships module (`JobsBrowseScreen.tsx`, `JobDetailScreen.tsx`, `J
 An exhaustive multi-agent audit spanning Security/SecOps, Logic/QA, and Performance/UI identified and remediated 42 issues across three tiers:
 
 ### 29.1 Tier 1: Critical Security, Storage & Edge Function Hardening
+
 - **Edge Function Fail-Closed Verification (`send-push`):** Hardened against missing service account secrets or project configurations, returning 500 fail-closed immediately. Enforced internal authorization verification to block unauthorized direct HTTP triggers.
 - **Private Storage Bucket RLS (`job-circulars`):** Created policy `job-circulars: applicant or poster resume read` restricting read access for uploaded applicant resumes (`resumes/{user_id}/*`) strictly to the applicant, admins, and the verified poster of the job applied to (`job_applications.student_id` & `jobs.posted_by`).
 - **Encrypted Session Profile Caching (`authStore.ts`):** Replaced unencrypted `AsyncStorage` caching of active user profiles with hardware-backed `SecureStore` (`c1_profile_${uid}`). Cached profiles are loaded synchronously at boot to prevent UI flashes while maintaining zero cleartext exposure on-disk.
 - **Mutation Error Feedback:** Audited all Supabase JS v2 mutations across all screens (`StudyUploadScreen`, `RidesScreen`, `ListingFormScreen`, `MarketplaceScreen`, `BloodRequestScreen`, `JobDetailScreen`) to ensure every `error` response is caught and reported to users via toast rather than failing silently.
 
 ### 29.2 Tier 2: Database Policies, Synchronization, Dhaka Time & List Virtualization
+
 - **Attributive Spoofing Prevention:** Locked down `study_materials` and `study_question_bank` inserts via migration `20261017000000_tier2_security_hardening.sql` requiring `uploaded_by = auth.uid()` and verified section membership.
 - **Privacy-Preserving Contact Reveal (`ride_contact`):** Hardened `ride_contact` RPC to honor `profiles.show_whatsapp` preferences across both offering drivers and requesting passengers, while allowing resolution by both ride code and ride UUID.
 - **Public RPC Probe Prevention:** Revoked `anon` execute permissions on `email_is_registered(text)` to eliminate unauthenticated email enumeration vectors.
@@ -1619,6 +1744,7 @@ An exhaustive multi-agent audit spanning Security/SecOps, Logic/QA, and Performa
 - **Inverted FlatList Empty States:** Replaced all inverted `ListEmptyComponent` instances with standalone non-inverted empty state views to eliminate upside-down rendering bugs on Fabric architecture.
 
 ### 29.3 Tier 3: UI Tokens, Typography & Async Lifecycle Guards
+
 - **Strict Theme Token Adherence:** Eliminated hardcoded hex color values across screens, standardizing on semantic `C.*` and `SectorColors.*` tokens.
 - **Copy Typography Compliance:** Removed all forbidden em-dashes (`—`) in user-visible UI copy across screens, replacing them with `-` or `,`.
 - **Async Component Lifecycle Protection:** Added unmounted-state guards and cleanup returns across asynchronous fetching hooks and realtime channel subscriptions to eliminate unmounted state update memory warnings.
@@ -1630,6 +1756,7 @@ An exhaustive multi-agent audit spanning Security/SecOps, Logic/QA, and Performa
 The Faculty directory is modernized into an institutional tool providing automated freshness, campus office wayfinding, live consultation tracking, and research paper mentorship discovery.
 
 ### 30.1 Live Cloud Crawler & Automated Schedule (`sync-faculty` Edge Function & `pg_cron`)
+
 - **Automated Web Crawler:** Cloud Edge Function `supabase/functions/sync-faculty/index.ts` extracts `window.academicHierarchy` from `bubt.edu.bd`, systematically traversing all 13 BUBT academic departments.
 - **Roster & Metadata Extraction:** Parses official teacher routine initial codes (`/profile/{code}`), high-resolution portraits, academic designations, official emails, room locations, blood groups, and Scopus profile URLs.
 - **SSL Resilience:** Gracefully handles legacy department subdomains (e.g. `cse.bubt.edu.bd`) without failing the overall crawl.
@@ -1638,6 +1765,7 @@ The Faculty directory is modernized into an institutional tool providing automat
 - **Admin In-App Trigger:** 1-tap manual sync button on `ManageFacultyScreen.tsx` with live progress modal and detailed diff report.
 
 ### 30.2 Database Schema Enhancements (`20261018000000_faculty_360_enhancements.sql`)
+
 - **Columns Added to `faculty`:**
   - `short_code` (TEXT): Official teacher routine initial code (e.g. `DALM`, `SR`, `SAM`).
   - `room_number` (TEXT): Faculty room number (e.g. `402`, `601`).
@@ -1649,10 +1777,12 @@ The Faculty directory is modernized into an institutional tool providing automat
   - `is_accepting_research` (BOOLEAN): Flag indicating faculty openness to student research paper guidance.
 
 ### 30.3 Campus Office Locator & Routine Initial Search
+
 - **Routine Initial Search:** Search bars in `FacultyScreen.tsx`, `FacultyDeptScreen.tsx`, and `ManageFacultyScreen.tsx` match routine initial codes, enabling students to instantly look up teacher details directly from their class routine sheet.
 - **Campus Office Card:** `FacultyProfileScreen.tsx` highlights building, room number, and floor with a 1-tap copy button for fast wayfinding.
 
 ### 30.4 Real-Time Counseling Hours Tracker (Dhaka UTC+6)
+
 - **Live Status Calculation (`getCounselingStatus` in `facultyShared.tsx`):** Parses weekly slots against Dhaka local time (UTC+6).
 - **Presence Indicators:**
   - Active counseling: Emerald badge (`Counseling now (Xm left)` / `Counseling available now`) with avatar presence indicator dot.
@@ -1660,15 +1790,18 @@ The Faculty directory is modernized into an institutional tool providing automat
   - Scheduled slots: Clean list view with calendar icons on `FacultyProfileScreen.tsx`.
 
 ### 30.5 Research Paper Mentorship & Co-Author Discovery
+
 - **Varsity Context:** BUBT centrally assigns Capstone/Thesis supervisors, but students independently seek faculty co-authors and mentors for research paper publishing, IEEE conferences, and journal submissions.
 - **Research Mentors Tab:** Segmented filter isolating faculty members open to paper publication guidance (`is_accepting_research = true`), with publication domain chips.
 - **Draft Paper Proposal Modal:** Formats a structured academic email populated with student name, intake, and section from the caller's CampusOne profile, launching the native email client with subject and body pre-filled.
 
 ### 30.6 Design System & Institutional Standards
+
 - **High-Density Institutional Cards (`FacultyCard` & `TeacherBar`):** Displays avatar, presence dot, initial code badge, designation, office location, counseling status pill, research pills, and direct `ContactSheet` launcher.
 - **Bilingual Internationalization:** Full translation key parity in `src/i18n/en.ts` and `src/i18n/bn.ts` (`faculty2` and `manage` namespaces).
 
 ### 30.7 Faculty Categories Drilling Hierarchy (`FacultyScreen.tsx` & `FacultyDeptScreen.tsx`)
+
 - **Level 1 (Faculty Categories):** Full-width bars representing the 5 official BUBT Faculties:
   - *Faculty of Engineering & Applied Sciences* (`cpu`, CSE, EEE, Civil, Textile, Data Science)
   - *Faculty of Business* (`briefcase`, Management, Accounting, Marketing, Finance)
@@ -1680,6 +1813,7 @@ The Faculty directory is modernized into an institutional tool providing automat
 - **Level 3 (Department Roster):** `FacultyDeptScreen.tsx` renders faculty members as compact `TeacherBar`s. Tapping opens `FacultyProfileScreen.tsx` for full dossier, contact options, and counseling schedules.
 
 ### 30.8 Dropdown Selector Bars, Bottom Sheet Bars & Tab Performance
+
 - **Dropdown Selector Bars:** Full-width institutional selector bars for Department and Publication Domain in both *Research Mentors* and *My Teachers* tabs.
 - **Modal Bar Layout:** Inside both *Select Department* and *Select Publication Domain* bottom sheets, items are rendered as distinct, rounded bars (`styles.pickerBar`) with icon tiles, bold titles, subtitle counts, and checkmark indicators (replacing flat list rows).
 - **Tab Switching Zero-Lag Windowing:** Renders an initial slice of 25 mentors (`INITIAL_RENDER_LIMIT = 25`) with a "Show more" button, and decouples research domain aggregation from active mode. Tab switching runs at 60fps without JS thread frame drops.
@@ -1692,6 +1826,7 @@ The Faculty directory is modernized into an institutional tool providing automat
 The Campus Announcements architecture is transformed from a manual posting board into an automated, real-time varsity circulars intelligence engine.
 
 ### 31.1 Automated BUBT Crawler & Sync Engine (`sync-notices` & `pg_cron`)
+
 - **Direct Website Ingestion:** Cloud Edge Function `supabase/functions/sync-notices/index.ts` fetches `https://www.bubt.edu.bd/notice`, extracting the server-embedded `notices: [...]` array (1,500+ circular archive) via regex parsing.
 - **Attachment & Archive Resolution:**
   - Modern PDFs (`.pdf`): saved to `attachment_url` pointing directly to BUBT's public CDN (`https://www.bubt.edu.bd/storage/notices/...`). Zero Supabase storage usage.
@@ -1708,6 +1843,7 @@ The Campus Announcements architecture is transformed from a manual posting board
 - **In-App Triggers:** Pull-to-refresh on `AnnouncementsScreen.tsx` and header sync button trigger immediate live sync with toast feedback.
 
 ### 31.2 Database Schema & Targeting (`20261019000000_announcements_360_sync.sql`)
+
 - **Columns on `announcements`:**
   - `source`: `'bubt_official'` vs `'manual'`.
   - `category`: BUBT notice category name (`Exam related`, `Offday`, `Semester`, `Class Related`, `General`, `Tender`).
@@ -1726,6 +1862,7 @@ The Campus Announcements architecture is transformed from a manual posting board
     - Department-specific notices (e.g. CSE project defense or Civil lab notice) -> targets only students in matching departments (`profiles.department`), eliminating notification fatigue.
 
 ### 31.3 UI/UX Design System & Feed Architecture (`AnnouncementsScreen.tsx` & `AnnouncementDetailScreen.tsx`)
+
 - **3-Segment Animated Switcher:** `All`, `Urgent`, and `Saved` tabs featuring the identical native spring sliding indicator as `HomeCommunityUpdates.tsx` (`innerTrackWidth / 3`, `tension: 68`, `friction: 10`), dynamic badge counters, and font auto-scaling (`adjustsFontSizeToFit`, `minimumFontScale: 0.85`) to guarantee no text spills outside on mobile screens.
 - **Dual Dropdown Selectors with Distinct Bar Sheets:** Category and Department dropdown buttons on the main screen open modal bottom sheets where options are styled as distinct, rounded bars (`pickerBar`) with icon squircles, bold titles, and checkmark indicators.
 - **Synchronized Scoped Counts:** Tab badge counters are derived dynamically from the active department and category scope, ensuring badge counts and list results are always 100% consistent.
@@ -1743,6 +1880,7 @@ The Campus Announcements architecture is transformed from a manual posting board
 - **Bilingual Support:** Complete localization parity in `src/i18n/en.ts` and `src/i18n/bn.ts` under the `announce2` namespace.
 
 ### 31.4 Performance Hardening, Edge-to-Edge PDF Viewer & Security Architecture
+
 - **60 FPS Virtualized List & Stable Memoization (`AnnouncementsScreen.tsx`):**
   - Replaced un-virtualized `<ScrollView>` with an optimized `<FlatList>` (`initialNumToRender: 8`, `maxToRenderPerBatch: 10`, `windowSize: 7`, `removeClippedSubviews: Platform.OS === 'android'`).
   - Wrapped `AnnouncementCard` in `React.memo` and stabilized row callbacks (`handleToggleSave`, `deleteAnnouncement`, `handlePressCard`, `renderCard`) via `useCallback` to prevent cascading re-renders during live search filtering and tab changes.
@@ -1771,6 +1909,7 @@ The Campus Announcements architecture is transformed from a manual posting board
 ## 32. Events 360 & Automated BUBT Event Sync Architecture
 
 ### 32.1 Automated BUBT Official Event Crawler (`sync-events`)
+
 - **Portal Endpoint:** `https://www.bubt.edu.bd/news` serves as BUBT's primary public event hub for academic research weeks, club committee meetings, conferences, seminars, farewell receptions, and sports tournaments.
 - **Engine Execution:** Supabase Edge Function `sync-events` parses event articles, extracting high-resolution promotional flyers from `https://www.bubt.edu.bd/storage/news/...`, titles, dates, descriptions, and article URLs.
 - **Auto-Categorization:** Maps keywords to standard campus categories: `Academic`, `Cultural`, `Sports`, `Club`, or `Career`.
@@ -1779,6 +1918,7 @@ The Campus Announcements architecture is transformed from a manual posting board
 - **Audit Logging:** Every sync run is logged in `event_sync_logs` with duration, total scanned, new additions, and error tracking.
 
 ### 32.2 4-Tier Real-Time Status & Dhaka Time Engine (`eventsService.ts`)
+
 - **Real-Time Statuses:**
   - `Ongoing` (Live / In Progress): Displays green pulsing badge when current time is between event start and end time.
   - `Today`: Amber badge showing countdown (e.g. `Starts in 2h`).
@@ -1787,11 +1927,14 @@ The Campus Announcements architecture is transformed from a manual posting board
 - **Calculation Precision:** Uses `Asia/Dhaka` timezone date/time conversions to ensure midnight transitions match Bangladesh Standard Time (UTC+6).
 
 ### 32.3 Digital BUBT Event Pass & Student Utilities
+
 - **Personalized Entry Pass:** Modal on `EventDetailScreen` generates a varsity-branded admission ticket featuring Student Name, Student ID, Intake, Event Title, Date, Venue, and verifiable QR token (`PASS-EVT-***-***`) for door check-in at BUBT Auditorium or Hall.
 - **One-Tap Event Bookmarks:** Backed by `event_bookmarks` table and atomic `toggle_event_bookmark(p_event_id)` RPC with instant optimistic updates and dedicated "Saved" tab on `EventsBrowseScreen`.
 - **Flyer Poster Integration:** Full cover image resolution for both synced news flyers and mobile-uploaded posters via `BUCKETS.photos` (`events/{user_id}/*`).
 - **Native Sharing:** One-tap OS share sheet formatting campus event title, schedule, venue, and official link.
+
 ### 32.4 Universal Banner Resolver, Resilient Fallbacks & Dhaka Time Integrity
+
 - **Universal Banner Resolver (`resolveBannerSource`):** Supports bundled local varsity assets (`hackathon-2026.jpg`, `blood-drive.jpg`, etc.), remote web URLs (`http://`, `https://`), relative web seed paths (`https://campus-theta.vercel.app/*`), BUBT storage paths (`storage/*`, `notices/*`), and upload paths (`uploads/*`). Handles null/undefined inputs seamlessly with resilient category fallback headers on load failure.
 - **Strict Dhaka Time Date Arithmetic:** Event presets calculate dates via `Date.UTC` arithmetic on `localToday()`, preventing UTC midnight off-by-one errors.
 - **Soft-Delete Filtering:** Home community feed query enforces `.is('deleted_at', null)` to strictly hide removed events.
@@ -1801,6 +1944,7 @@ The Campus Announcements architecture is transformed from a manual posting board
 ## 33. BUBT Medical Unit 360 & Campus Health Architecture
 
 ### 33.1 Official BUBT Facility & Campus Context
+
 - **Official Identity:** Managed under BUBT's **Health & Community Development** department (**BUBT Medical Unit**).
 - **Location:** **Room No. 205, 1st Floor, Building 3**, BUBT Main Campus (Rupnagar, Mirpur-2, Dhaka-1216).
 - **Direct Contact:** Intercom **Ext. 112** (`+8801741129235`) · Official Email: `medical@bubt.edu.bd` · Counseling Email: `moujuliet@bubt.edu.bd`.
@@ -1808,6 +1952,7 @@ The Campus Announcements architecture is transformed from a manual posting board
 - **Walk-in Triage Policy:** All consultations, vital sign checks, and basic dispensary medicines are completely free of charge upon presenting a valid BUBT Student or Employee ID card.
 
 ### 33.2 Database Schema Enhancements & Official Roster
+
 - **Migration `20261021000000_bubt_medical_unit_enhancements.sql`:**
   - Added `qualifications`, `phone`, `email`, `role_type` (`'doctor'`, `'psychologist'`, `'nurse'`, `'staff'`), `is_on_leave`, and `leave_note` to `public.doctors`.
 - **Authentic BUBT Personnel:**
@@ -1818,17 +1963,20 @@ The Campus Announcements architecture is transformed from a manual posting board
   - Visiting consultant doctors (`d1`–`d6`) retain specialized clinic hours with credentials and intercom extensions.
 
 ### 33.3 3-Tab Medical Hub (`MedicalScreen.tsx` & `DoctorDetailScreen.tsx`)
+
 - **Universal `SegmentedTabs`:**
   1. **Doctors & Staff (`staff`):** Real-time search across names, specialties, rooms, and qualifications; filter chips (`All`, `Doctors`, `Mental Health`, `On Duty Today`); smart duty status engine calculating `on_duty` (with live countdown e.g. `Ends in 1h 25m`), `starting_soon`, `off_duty`, and `on_leave` (with custom absence note).
   2. **Clinic Services & Dispensary (`services`):** Documents 8 core on-campus medical capabilities (Doctor Consultation, Mental Health Counseling, Vitals Monitoring, Blood Glucose Screening, Emergency First Aid, Asthma Nebulization, Wound Dressing, Wheelchair/Stretcher Support) and 7 free over-the-counter dispensary medicines (Paracetamol, ORS, Antacids/Omeprazole, Antihistamines, Antispasmodics, Burn Cream, Povidone-Iodine).
   3. **Emergency & Nearby Hospitals (`emergency`):** 1-tap rapid dialers for BUBT Medical Desk (Ext. 112), National Emergency (`999`), and Campus Security; curated directory of 5 nearby Mirpur 24/7 hospitals (National Heart Foundation, Delta Medical College, Mirpur General, Kidney Foundation, Dhaka Dental College) with distances, hotlines, and Google Maps navigation links.
 
 ### 33.4 Mental Health, Admin Controls & Ecosystem Sync
+
 - **Confidential Psychological Support:** Dedicated highlight card on `DoctorDetailScreen` for Campus Psychologist **Mou Juliet Rebeiro** with a 1-tap `Request Confidential Session` mailto action.
 - **In-App Admin Management:** Added `manageMedicalCenter` tile to `AdminDashboardScreen` and an inline admin quick-edit modal on `MedicalScreen` to toggle `is_on_leave`, set leave notes, and update room locations.
 - **`CampusToday` Live Widget:** Displays the currently on-duty doctor or `"BUBT Medical Unit Open · Room 205, Bldg 3"` on the Home feed during operating hours.
 
 ### 33.5 58/72dp Layout Standards, Tablet Capsules & Dynamic Animated Iconography
+
 - **Dual Medicine Tablet Pills (`heroTabletsContainer`, `heroTablet`):**
   - Replaced the bottom hero stack with two 52dp medicine-capsule-shaped pills (`height: 52`, `borderRadius: 16`, `borderWidth: 1`).
   - **Schedule Tablet:** Displays official hours (`9:00 AM - 5:00 PM (Sun-Thu)`) with an entrance-animated clock icon.
@@ -1855,6 +2003,7 @@ The Campus Announcements architecture is transformed from a manual posting board
 ## 34. BUBT Campus Shuttle Bus 360 & Transit Architecture
 
 ### 34.1 Official BUBT Transport Intelligence & Campus Context
+
 - **Fleet Launch:** Dedicated institutional shuttle bus service officially launched on **July 8, 2025**, inaugurated by Vice-Chancellor Prof. Dr. A B M Shawkat Ali and BUBT Trust.
 - **Service Policy:** **100% Free** campus transportation for registered students, faculty, and administrative staff. Boarding strictly requires presenting a valid physical **BUBT Student ID Card**.
 - **Core Corridors:**
@@ -1869,12 +2018,14 @@ The Campus Announcements architecture is transformed from a manual posting board
 - **Transport Desk Support:** Direct line to the BUBT One Stop Service / Transport Division at `01810033740` (`medical@bubt.edu.bd` / `02-4803-6351`).
 
 ### 34.2 Database Schema & Remote Supabase Migration
+
 - **Migration `20261022000000_bus_schedule_enhancements.sql`:**
   - Granted `SELECT` on `public.bus_routes` to `anon` and `authenticated`, enabling guest/unauthenticated students to read route details, helper phone numbers, and timetable schedules without 42501 permission errors.
   - Added RLS policy `bus_routes_anon_select` (`active = true`).
   - Upserted accurate records for all 6 active BUBT shuttle lines with complete stop lists, leg intervals (`leg_mins`), to-campus morning departures, and from-campus afternoon departures.
 
 ### 34.3 Mobile UI/UX & Design System Integration (`BusScreen.tsx` & `BusDetailScreen.tsx`)
+
 - **Universal 58dp Standard:**
   - **Direction Switcher:** 58dp `SegmentedTabs` (`To Campus` | `From Campus`) with native spring indicator animation. Auto-selects direction by Dhaka local hour (<12:00 -> *To Campus*, >=12:00 -> *From Campus*).
   - **Search Bar:** 58dp fixed height (`height: 58`, `borderRadius: 16`, `borderWidth: 1`, `paddingHorizontal: 16`), searching route title, area, bus number, and all intermediate stops with visual *"Stops at [Stop Name]"* matching badge.
@@ -1901,6 +2052,7 @@ The Campus Announcements architecture is transformed from a manual posting board
 ## 35. Automated BUBT Notice Synchronization & Faculty Directory Crawler
 
 ### 35.1 Official Notice Synchronization Engine (`sync-notices`)
+
 - **Root Cause & Architectural Fix:**
   - Notice 1634 ("Notice on Rescheduling of Classes Suspended on October 22, 2026") and 40 preceding circulars were previously failing to sync due to a PostgREST key-mismatch error: `PGRST102 (All object keys must match)`.
   - The upsert array conditionally included `id` only for pre-existing records (`...(existing?.id ? { id: existing.id } : {})`), violating PostgREST's requirement that all objects in a batch payload have identical key sets.
@@ -1910,6 +2062,7 @@ The Campus Announcements architecture is transformed from a manual posting board
   - **Live Verification:** Edge Function successfully verified in production, syncing 300 scanned notices, adding 41 new notices, and updating 259 notices in under 8 seconds. Notice 1634 (`BUBT-N-1634`) confirmed in `public.announcements`.
 
 ### 35.2 Scalable Faculty Directory Crawler & Routine Short-Code Engine (`sync-faculty`)
+
 - **Root Cause & Architectural Fix:**
   - 81% of faculty records (339 teachers) were previously missing their routine short codes (`short_code`), causing timetable lookups and search-by-initial to fail.
   - Missing new faculty onboarding (e.g., Shaila Shaznin `SSN` in CSE).
@@ -1921,6 +2074,7 @@ The Campus Announcements architecture is transformed from a manual posting board
   - **Live Verification:** 403 out of 476 faculty members now have verified short codes populated in `public.faculty`.
 
 ### 35.3 Modern Canonical BUBT Profile Link Architecture
+
 - **Elimination of Broken Subdomains & 404s:**
   - 107 legacy CSE profile links pointed to the dead server `https://cse.bubt.edu.bd/facultydetails/<id>/` (503 Service Unavailable / expired SSL).
   - 312 other links pointed to old numeric patterns (`/department/<num>/faculty/profile/<numeric_id>`) returning 404 Not Found.
@@ -1932,6 +2086,7 @@ The Campus Announcements architecture is transformed from a manual posting board
   - The "View official profile on bubt.edu.bd" action now computes `effectiveProfileUrl`, ensuring users are never exposed to broken or offline web pages.
 
 ### 35.4 Multi-Agent Faculty Audit, 58dp Ergonomics & Fuzzy Initial Search
+
 - **58dp Fixed Height & Control Bar Compliance:**
   - Standardized `dropdownBar` in `FacultyScreen.tsx` to `Layout.controlHeight = 58` and `Layout.controlRadius = 16`.
   - Standardized `sheetCloseBtn` in `FacultyScreen.tsx` to `Layout.controlHeight = 58` and `Layout.controlRadius = 16`.
@@ -1949,12 +2104,14 @@ The Campus Announcements architecture is transformed from a manual posting board
 ## 36. Interactive Vector Map, GPS & Location Architecture
 
 ### 36.1 Architectural Overview & High-Resolution Vector Engine
+
 - **Engine Implementation:** Combines high-resolution **OpenFreeMap Vector GL Styles** (`https://tiles.openfreemap.org/styles/liberty` for light, `https://tiles.openfreemap.org/styles/dark` for dark) within a hardware-accelerated **MapLibre GL engine** embedded via `react-native-webview` (v13.16.1) combined with native device geolocation (`expo-location`).
 - **Hardware-Accelerated Retina Vector Rendering:** Renders vector geometry directly on the mobile GPU at native device pixel ratio, completely eliminating blurry 256px raster tiles, pixelated street labels, and stretched roads.
 - **Native Dark Vector Theme:** In dark theme, loads the dedicated OpenFreeMap Dark vector style with deep dark surfaces and vibrant street accents, eliminating CSS canvas color inversion filters.
 - **Geographic Boundary & Drift Guard:** Restricts panning and zooming to Bangladesh coordinates (`minZoom: 10, maxZoom: 20`, `maxBounds: [[88.0, 20.5], [92.8, 26.7]]`), preventing map drift into the ocean or foreign territories.
 
 ### 36.2 Core Services & Components
+
 1. **`src/services/locationService.ts`:**
    - **Device GPS Retrieval:** `getCurrentUserCoordinates()` requests foreground permission and retrieves device position via `Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })`.
    - **BUBT Permanent Campus Exact Calibration:** Calibrated `BUBT_COORDS` to official Permanent Campus grounds at `(23.8119, 90.3572)` on the east side of Rupnagar Road inside the block bounded between Road 5 and Road 9 (OSM Way `976260677`, Rupnagar, Mirpur-2). Subtext standardized to `'Permanent Campus · Road 9 & 5, Rupnagar'`. Added distinct landmark entries for BUBT Main Campus, BUBT Building 4 (BBA & Admission on Road 6: `23.8098, 90.3567`), BUBT Building 2 & 3 (Road 10: `23.8122, 90.3572`), Super Hostel-04 (`23.8112, 90.3562`), and Follow Fashion (`23.8106, 90.3560`). Distinct coordinates for Banani 11 and Jatra Biroti.
@@ -1983,6 +2140,7 @@ The Campus Announcements architecture is transformed from a manual posting board
    - **Universal 58dp Primary CTA:** Standardized "Confirm Location" button (`height: 58, borderRadius: 16`).
 
 ### 36.3 App-Wide Feature Integration
+
 - **Campus Rides (`RidePostScreen.tsx`):** Map trigger buttons on pickup and destination bars and commute area sheet.
 - **Student Marketplace (`MarketPostScreen.tsx`):** 58dp map trigger card in handover location sheet.
 - **Blood Donation (`AreaPickerModal.tsx`):** Sibling modal integration allowing donors and requesters to pinpoint hospitals and areas on the map. Explicitly resets `setMapPickerOpen(false)` upon location confirmation.
@@ -1992,6 +2150,7 @@ The Campus Announcements architecture is transformed from a manual posting board
 ---
 
 ## 37. Universal Tactile Squish Switch Architecture (`src/components/ui/TactileSwitch.tsx`)
+
 - **21st.dev Component Source:** Inspired by `kuratlielia/switch` (`https://21st.dev/@kuratlielia/components/switch`).
 - **Zero-Crash Native Architecture:**
   - Converted entirely to `useNativeDriver: true` for all animated nodes (`posAnim`, `flightScale`, `pressScale`).
@@ -2018,6 +2177,7 @@ The Campus Announcements architecture is transformed from a manual posting board
 The Explore screen organizes campus features into 4 top-level directory categories (`Academics`, `Campus Life`, `Services`, `Community`) using an accordion hierarchy inspired by the Home screen's **Campus Pulse** layout:
 
 ### 38.1 Category Header Standard (Campus Pulse Metric Block)
+
 - **2-Line Text Hierarchy:** Category cards feature a bold 14.5px title (`FontFamily.jakartaBold`) and an 11.5px medium subtitle (`FontFamily.jakartaMedium`), completely eliminating dead center whitespace:
   - **Academics:** *Notes, routines, annex & tools* (Cyan `#2ba0c9`)
   - **Campus Life:** *Clubs, events, prayer & jobs* (Rose `#e0568a`)
@@ -2031,11 +2191,13 @@ The Explore screen organizes campus features into 4 top-level directory categori
 - **Backward Compatibility:** `AdminDashboardScreen.tsx` continues to use `CollapsibleSection` seamlessly without `subtitle` or `count`, gracefully skipping the vertical divider and stat column.
 
 ### 38.2 Full-Width Child Bars with Unified Brand Blue Left Spine (`styles.childBar`)
+
 - **Grid Alignment:** Full width matching parent cards (`marginLeft: 0`), aligned with `Layout.screenPadding = 16 dp`.
 - **Unified Brand Blue Left Spine:** A clean `4.5 dp` left border (`borderLeftWidth: 4.5`, `borderLeftColor: C.brand`). All sub-bars and child dropdown rows strictly use the unified Electric Brand Blue (`#5b85f7` in OLED Dark Mode / `C.brand`), replacing rainbow multi-colors with a cohesive, professional visual hierarchy. When users scroll through an open category, the left spine acts as an instant location anchor ("Know Where We Are").
 - **Vector Logos:** Each child displays its authentic 42×42dp vector logo (`SectorIcon` size="md" or `toolIcon`).
 
 ### 38.3 120 FPS Native RenderThread Physics
+
 - **Tactile Spring Bounce on Toggle:** Parent category icons and chevrons use `AnimatedIcon` with `animation={isOpen ? 'spring' : 'entrance'}` (rubberband pop from `1.0 -> 1.22 -> 1.0`).
 - **Staggered Cascade Entrance:** All child icons animate in with `animation="entrance"` (`0.85 -> 1.18 -> 1.0`) and a 35ms staggered cascade delay (`delay={index * 35}`), creating a smooth ripple effect as the accordion unfolds.
 - **RenderThread Canvas Clipping Safety:** Bounding boxes declare `overflow: 'visible'` with centered alignment to ensure transforms never get sliced by Android hardware canvas layers.
@@ -2047,6 +2209,7 @@ The Explore screen organizes campus features into 4 top-level directory categori
 The campus ride-sharing module features an Uber-grade connected route timeline, zero-latency master location lookup, and an in-app vector map:
 
 ### 39.1 Distinct Role & Vehicle Iconography Standard (`StatusBadge.tsx`)
+
 - **Zero-Duplicate Icon Rule:** Replaced the legacy `car-side` icon for ride offers with `steering` (MaterialCommunityIcons steering wheel), clearly distinguishing drivers from passengers and vehicles.
 - **Role Variants:**
   - `Offer` (Driver): `steering` (MaterialCommunityIcons, steering wheel in Indigo/Slate).
@@ -2059,6 +2222,7 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
   - Eliminates duplicate car glyphs (e.g. `[ 🛞 Offers ] [ 🛺 CNG ]` instead of duplicate cars).
 
 ### 39.2 Uber Connected Route Timeline & Zero-Clipping Ergonomics (`RideDetailScreen.tsx`)
+
 - **Connected Visual Spine:**
   - 🟢 **Pickup Point:** Circular beacon with emerald dot and zone subtitle (e.g., `Permanent Campus · Rupnagar, Mirpur 2`).
   - 📍 **Meeting Landmark:** Compact callout attached along the route spine with inline label and note text (e.g., `MEETING SPOT: Gate 1 near Cafeteria`).
@@ -2068,6 +2232,7 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 - **Decluttered Header:** Removed internal database codes (`RD-xxx`) from user-facing hero badges; consolidated departure time and pricing.
 
 ### 39.3 In-App Interactive Route Map Modal (`RideRouteMapModal.tsx`)
+
 - **Full Parity with HospitalMapModal:** Upgraded `RideRouteMapModal.tsx` to match the exact same engine and visual design standards as Blood Donation's `HospitalMapModal`:
   - **Live Road Routing via OSRM:** Fetches turn-by-turn road geometry coordinates, driving distance (meters), and duration (seconds) via `https://router.project-osrm.org/route/v1/driving/...`, replacing straight-line approximations with true street-following navigation.
   - **Triple-Layer Highway Polyline:** Renders an 8.5px dark casing layer (`#081738` / `#1e3a8a`), 5.5px core electric blue road line (`#275efe`), and a 1.6px white dashed inner trail (`line-dasharray: [2, 3]`) simulating live Google Maps traffic flow.
@@ -2078,6 +2243,7 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
   - **Bottom Route Details & 58dp Primary Action:** Shows Pickup, Meeting Point, Drop-off, estimated drive time and distance (`~28 min (20.2 km) driving route`), and a universal 58dp button to launch turn-by-turn Google Maps navigation.
 
 ### 39.4 Universal 58dp & 72dp Bar Standard Alignment
+
 - Departure Time selector standardized to 72dp Dropdown Card (`height: 72`, `borderRadius: 16`, 44×44 icon box).
 - Stepper, Fare, Meeting Point, Search, and Action Buttons strictly standardized to the Universal 58dp height standard (`height: 58`, `borderRadius: 16`).
 
@@ -2086,6 +2252,7 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 ## 40. Universal Direction Map Live GPS Bridge & Google Maps Search Preview Architecture
 
 ### 40.1 Live GPS Dynamic Bridge (`DirectionMapModal.tsx`)
+
 - **Resolved Static BUBT Anchor:** Previously, while awaiting phone GPS satellite fix (500ms–2000ms), the MapLibre WebView initialized with BUBT Campus fallback (`23.8119, 90.3572`). Due to Android WebView prop caching, the blue pulsing dot remained on BUBT even after device GPS resolved.
 - **Two-Way JavaScript Bridge Synchronization:**
   - MapLibre dispatches `MAP_READY` via `window.ReactNativeWebView.postMessage`.
@@ -2099,6 +2266,7 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
   - **Lost & Found:** Item claim/found spot directions (`LostFoundDetailScreen.tsx`).
 
 ### 40.2 Google Maps Search Preview Architecture (`LocationPickerModal.tsx`)
+
 - **Live Search Distance & Real-Time Travel Mode Estimates:**
   - Eagerly detects user GPS coordinates on modal mount.
   - Search results display real-time user-relative distance (`📍 Mirpur 10 · 2.1 km away`).
@@ -2109,16 +2277,19 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
     - 🚶 Walking duration (`~38 min`)
 
 ### 40.3 Full-Bleed Edge-to-Edge Direction Map & Floating 58dp Frosted Top Bar Standard (`DirectionMapModal.tsx`)
+
 - **Full-Bleed Presentation:** Upgraded modal to `presentationStyle="fullScreen"` and `statusBarTranslucent`, allowing the MapLibre vector map to flow edge-to-edge behind the Android status bar and navigation bar with zero black box header clipping.
 - **Floating 58dp Frosted Back Button (`styles.frostedCloseBtn`):** `58 × 58 dp`, `borderRadius: 16 dp`, 1px border, backdrop-blur effect with subtle elevation shadow, housing a centered `arrow-left` icon.
 - **Floating 58dp Route Header Capsule (`styles.headerCapsule`):** `height: 58 dp`, `borderRadius: 16 dp`, 1px border, backdrop-blur effect with origin icon pill (`38 × 38 dp`), bold route title, and subtitle, positioned at `top: insets.top + 12 dp` with standard `Layout.screenPadding = 16 dp`.
 - **1-Tap Google Maps Navigation CTA Preserved:** The blue primary CTA button (*"Start Live Directions in Google Maps"*) is 100% preserved in the bottom sheet, launching turn-by-turn navigation in the native Google Maps app.
 
 ### 40.4 Live GPS Auto-Center on Modal Launch (`LocationPickerModal.tsx`)
+
 - **Auto-Center on User Location:** When opened without `initialCoords` (fresh pick), queries `getCurrentUserCoordinates()`, sets `userGpsCoords`, reverse-geocodes the user's real standing location, and flies the camera directly to their GPS coordinates (`16.5` zoom).
 - **Eliminated BUBT Jump Bug:** Fixes the previous issue where a 350ms timer forcibly flew the camera to BUBT Campus even when the user had live GPS. BUBT Campus is now strictly a fallback if GPS is disabled or permissions are denied.
 
 ### 40.5 Universal 72dp Handover Location & Category Picker Standard (`MarketPostScreen.tsx`)
+
 - **Strict 72dp Standardization (`styles.locCard`, `styles.modalItemCard`):** Both Handover location cards and Category picker cards enforce `height: 72`, `borderRadius: 16`, `paddingHorizontal: 14`, `44 × 44 dp` icon box (`borderRadius: 14 dp`), and `18 px` Feather icons.
 - **Interactive Map & GPS Trigger Card (`styles.mapTriggerCard72`):** Standardized to `height: 72`, `borderRadius: 16`, `44 × 44 dp` icon box, matching the 72dp card row standard.
 - **Multi-Line Text Truncation Safety:** Enforces `numberOfLines={1}` across title, subtitle, and Bengali annotations. Completely eliminates uneven card heights where 1-line and 2-line descriptions produced inconsistent card heights ("some are littel and some are big").
@@ -2128,6 +2299,7 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 ## 41. Campus Bus Weekend Transit Logic & Lost & Found Claim Lifecycle Architecture
 
 ### 41.1 Campus Bus Weekend Departure & Transport Desk Localization (`BusScreen.tsx`, `transitPrayer.ts`)
+
 - **Deterministic Weekend Transit Schedules:** Enhanced `nextDeparture()` in `src/utils/transitPrayer.ts` to account for university weekend operations (BUBT operates Saturday to Thursday, Friday closed):
   - On **Thursday evening** after all buses departed, calculates Saturday morning first bus (+48h) with `nextDayLabel: 'Sat'`.
   - On **Friday**, calculates Saturday morning first bus (+24h) with `nextDayLabel: 'Sat'`.
@@ -2137,6 +2309,7 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 - **Admin Bus Route Management:** Admin modal form inputs localized (`t.bus2.fieldName`, `fieldArea`, etc.) with `ActivityIndicator` loading state and disabled state on the save button to prevent double-submissions.
 
 ### 41.2 Lost & Found Claim Withdrawal & Form 58dp Standard (`LostFoundDetailScreen.tsx`, `PostItemFormScreen.tsx`)
+
 - **Claim Withdrawal Action:** Claimants who submitted a claim that is still in `Pending` review status can now withdraw it directly from `LostFoundDetailScreen.tsx` with a dedicated `Withdraw` button (`handleWithdrawClaim`). Deletes the pending claim from `claim_requests` and invalidates cache.
 - **Universal 58dp Form Standard:** All text inputs, textareas, and category selector cards in `PostItemFormScreen.tsx` standardized to the Universal 58dp Standard (`height: 58`, `borderRadius: 16`, `paddingHorizontal: 16`).
 - **Defensive Storage File Cleanup:** Automatically removes uploaded photos via `deleteFile(BUCKETS.photos, ...)` on image change or transaction error rollback, preventing orphaned storage bloat in Supabase.
@@ -2146,12 +2319,14 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 ## 42. Minimalist De-Cluttering & Theme Unification (Medical & Lost and Found)
 
 ### 42.1 Medical Screen Minimal Monochromatic Palette (`MedicalScreen.tsx`)
+
 - **Eliminated Multi-Color Clutter:** Replaced discordant rainbow colors across doctor roles, clinical services, nearby emergency hospitals, and dispensary medicines with unified BUBT Medical Crimson (`MED_COLOR` = `SectorColors.medical` `#e2483d`, `MED_BG` = `${SectorColors.medical}1e`).
 - **Icon Variety Preserved:** Maintained distinct vector glyphs (`heart`, `needle`, `award`, `stethoscope`, `activity`, `shield`, `droplet`, `tooth-outline`) and smooth 120 FPS native transforms (`spring`, `pulse`, `bounce`, `entrance`) while unifying icon background and foreground tokens.
 - **Roster Filter Dropdown & Sheet:** All 4 options (`all`, `doctors`, `psychologist`, `today`) standardized to `MED_COLOR` and `MED_BG`. Selected state in the 72dp dropdown card and bottom sheet modal highlights cleanly in Medical Crimson.
 - **Dispensary & Medicine Rows:** Dispensary accordion trigger and medicine row pill badges unified to `MED_BG` and `MED_COLOR`. Doctor subtitles reset to clean `C.textMuted`.
 
 ### 42.2 Lost & Found Filter & Card Minimal Gold Palette (`LostFoundBrowseScreen.tsx`)
+
 - **Eliminated Filter Modal Rainbow Collages:** Replaced individual saturated color fills (blue for Personal/All, amber for Electronics/Open, green for Documents/Resolved, slate for Other) with the unified warm amber/gold Lost & Found identity (`LF_COLOR` = `SectorColors.lostfound` `#c77d1a`, `LF_BG` = `${SectorColors.lostfound}18`).
 - **Clean Inactive States:** Filter options display on neutral dark-glass surfaces (`C.surface2`, `C.border`, `C.text2`) and gracefully highlight with `LF_BG` and `LF_COLOR` on selection.
 - **Top Segmented Tab Switcher:** Cleaned up the 'Mine' tab from arbitrary purple (`#8B5CF6`) to `LF_COLOR`.
@@ -2162,10 +2337,12 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 ## 43. Lost & Found 72dp Dropdown & Unified Map Architecture (`PostItemFormScreen.tsx`)
 
 ### 43.1 Universal 72dp Category Dropdown Standard
+
 - **Outer Dropdown Card (`styles.dropdownCard72`):** Standardized to strict `height: 72`, `borderRadius: 16`, with `44×44dp` icon box (`styles.dropdownIconTile44`, `borderRadius: 14`), animated icon bouncy entrance (`AnimatedIcon`), dynamic category title and subtitle, and dropdown chevron.
 - **Inside Bottom Sheet Modal (`catModalVisible`):** Each category option card (`optionCard72`) is strictly `height: 72`, `borderRadius: 16`, with a `44×44dp` icon box, bilingual category label and examples, and gold checkmark badge when selected. Tapping selects the category and automatically closes the sheet.
 
 ### 43.2 Unified Map & Multi-Tier Location Selector Architecture
+
 - **Outer Location Card (`styles.dropdownCard72`):** Standardized to `height: 72`, `borderRadius: 16`. Displays type-aware placeholder ("Where was it lost?" / "Where was it found?"), clear button (`clearPill32`), and a dedicated 36dp mini map shortcut button (`mapMiniBtn36`) allowing 1-tap jump to the interactive map.
 - **Inside Location Bottom Sheet Modal (`locModalVisible`):**
   1. **Custom Spot / Room TextInput:** Universal 58dp fixed outer height standard (`styles.locInputRow58`, `height: 58`), featuring a 58dp TextInput and 58dp "Set" button (`locSetBtn`) with check icon for instant room entry (e.g. "Room 402, B2").
@@ -2174,6 +2351,7 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 - **Unified Location Picker Callback:** When a location is picked on the MapLibre map or reverse-geocoded via GPS, the address updates seamlessly across `loc` and `locInputText`.
 
 ### 43.3 Physical Device Verification & Backend Parity
+
 - **Native Release Build:** Compiled locally via Android SDK & Gradle (`cd android && .\gradlew assembleRelease` in 38s).
 - **Physical Device ADB Deployment:** Successfully installed and verified on physical USB device `8734b5da` (`com.bubt.campusone`).
 - **Supabase Backend Parity:** Fully compatible with `lost_found_items` on Supabase project `xhgpxvyqrufbbuivttmi`, preserving category constraints and reverse-geocoded location addresses without requiring database migrations.
@@ -2183,6 +2361,7 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 ## 44. Universal BUBT Ingestion & Crawler Hub (`bubt-crawler`)
 
 ### 44.1 The "Map Pattern" Crawler Architecture
+
 - **Unified Ingestion Engine:** Replaced fragmented, brittle crawlers (`sync-notices`, `sync-events`, `sync-faculty`) with a single, universal crawler engine `bubt-crawler` (`supabase/functions/bubt-crawler/`) that feeds all campus features:
   - **Notices (`public.announcements`):** Strict 4-month (120-day) active semester window, PDF circular attachments (`storage/notices/`, `uploads/`), department mapping, and priority classification.
   - **Events (`public.events`):** News & campus event extraction with semantic DOM traversal, venue detection, banner flyers, and automatic club profile linking.
@@ -2195,6 +2374,7 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 - **Firebase Push Decoupling:** Decoupled crawler bulk database writes from row-by-row push notifications to prevent cascading trigger storms (which previously queued 5,000 simultaneous `pg_net` calls and froze the database).
 
 ### 44.2 Two-Tier 24/7 Scheduling Blueprint
+
 - **Tier 1 (Fast Cycle — Every 30 Minutes, 24/7):**
   - Scheduled via `pg_cron`: `'*/30 * * * *'` calling `bubt-crawler?tier=fast`.
   - Runs Notices (4-month window) + Events + Routines + Calendar in parallel.
@@ -2205,6 +2385,7 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 - **Unified Telemetry (`public.crawler_audit_logs`):** Replaced scattered log tables with a single audit table tracking feature, duration, items scanned, added, updated, and unchanged.
 
 ### 44.3 Universal Ingestion Hub Forensic Hardening (20 Bug Fixes)
+
 - **Routines UUID Crash Resolved:** `published_by` in `adapters/routines.ts` strictly takes a valid UUID from `systemAdminId` or `null` (matching the `uuid REFERENCES auth.users(id)` column). Added `routines_content_hash_key` unique constraint for deterministic deduplication.
 - **BUBT Official Department Numeric ID Alignment (`core/parser.ts`):** Realigned all numeric IDs to match official BUBT ground truth:
   - `27` & `39`: Computer Science & Engineering / Data Science (`CSE`)
@@ -2236,6 +2417,7 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 ## 45. Zero-Frame Synchronous Cache Hydration, Anti-Stutter & Empty-State Hardening
 
 ### 45.1 Root Causes of UI Stutter & Default-State Flashing
+
 1. **Destructive Key Unmounting in Parent Containers:**
    - In `HomeScreen.tsx`, dynamic keys (`key={`banner-${refreshKey}`}`, `key={`strips-${refreshKey}`}`, and `key={`news-${refreshKey}`}`) were assigned to child components. On pull-to-refresh or data reload, incrementing `refreshKey` forced React to unmount and destroy all three child components, wiping internal state, timers, and active tabs.
 2. **Asynchronous Preference Hydration Race Condition:**
@@ -2248,6 +2430,7 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
    - In `AcademicCalendarScreen.tsx`, switching months updated `yearMonth` immediately while leaving the `events` array populated with the previous month's data. Because day numbers were extracted using `split('-')[2]` without verifying month prefixes, previous month events momentarily rendered on the new month's grid cells before the network query resolved.
 
 ### 45.2 Universal Architectural Solutions Standardized
+
 1. **Non-Destructive `refreshTrigger` Prop Standard:**
    - Completely eliminated changing `key={...}` props from `HomeScreen.tsx`.
    - Child components (`HomeHeroBanner`, `HomeStatusStrips`, `HomeFrequentTools`, `HomeCommunityUpdates`) accept `refreshTrigger?: number` and trigger background data refetches via `useEffect` without unmounting. Active slide indexes, customized strips, and active tabs remain 100% stable during pull-to-refresh.
@@ -2255,14 +2438,17 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
    - Added synchronous cache accessors in `cacheService.ts`: `getCacheSync<T>(key: string): T | null` and `hasCacheSync(key: string): boolean`.
    - Implemented module-level in-memory caches (`inMemorySelectedStrips`, `inMemoryFrequentTools`, `inMemoryCalendar`, `inMemoryOptSync`) that persist across component remounts and tab switches.
    - Component state initializes synchronously:
+
      ```tsx
      const [selectedStrips, setSelectedStrips] = useState<StatusStripId[]>(
        () => inMemorySelectedStrips[uid] ?? DEFAULT_STATUS_STRIP_IDS
      );
      ```
+
    - Eliminates 100% of frame-1 default state flashes.
 3. **Universal Loading Guards on `ListEmptyComponent`:**
    - Standardized across `AnnouncementsScreen`, `RoutinesBrowseScreen`, `CampusIssuesScreen`, `MyReportsScreen`, `AssignedToMeScreen`, `NotificationsScreen`, and `MessagesHome`:
+
      ```tsx
      ListEmptyComponent={
        loading ? (
@@ -2274,12 +2460,14 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
        )
      }
      ```
+
    - Prevents flashing "No notices found", "No routines", or "All clear" during initial network fetches.
 4. **Month-Keyed Calendar Cache & Strict Date Prefix Isolation:**
    - `AcademicCalendarScreen.tsx` keys events by month (`${year}_${month}`) in an in-memory dictionary `eventsByMonth` and `inMemoryCalendar`.
    - `eventsByDate` day mapping strictly enforces `ev.event_date.startsWith(curPrefix)`, completely preventing stale events from leaking into adjacent months during rapid month switching.
 
 ### 45.3 BUBT Crawler Automated Jobs & Recruitment Adapter
+
 - **Standalone & Fast-Cycle Recruitment Ingestion:** Added `supabase/functions/bubt-crawler/adapters/jobs.ts` to automatically extract career circulars, lecturer recruitments, and faculty openings from BUBT notice streams into `public.jobs`.
 - **Crawler Registry Integration:** Wired into `index.ts` with dedicated `feature=jobs` target and integrated into Tier-1 fast-cycle background runs.
 
@@ -2288,6 +2476,7 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 ## 46. Auth Suite Standard & 58dp Universal Controls
 
 ### 46.1 Scope & Architecture
+
 - **Universal 58dp Control Height:** Every input box, picker row, primary action button, and modal selection tile across `LandingScreen`, `LoginScreen`, `RegisterScreen`, `VerifyEmailScreen`, `ResetPasswordScreen`, and `OnboardingScreen` strictly adheres to `height: Layout.controlHeight` (58dp) and `borderRadius: Layout.controlRadius` (16dp).
 - **Landing Screen Elevated Curve & Layout:**
   - Hero flex set to 0.28 (~180dp minHeight), moving the curved bottom card (`flex: 0.72`, `marginTop: -20`, `borderTopLeftRadius: 28`, `borderTopRightRadius: 28`) higher up the viewport.
@@ -2307,6 +2496,7 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 ## 47. Interactive Personalized Routine 360 & Exam Grid System
 
 ### 47.1 Architecture, Bar Standards & 3-Tab Structure
+
 - **Visual Timetable Grid:** Formatted as an authentic visual timetable matching the official BUBT departmental paper routine format:
   - 7 Days along the left (`SAT`, `SUN`, `MON`, `TUE`, `WED`, `THR`, `FRI`) with pinned sticky column.
   - 6 Standard BUBT Time Slots along the top (`08:15 AM to 09:45 AM`, `09:45 AM to 11:15 AM`, `11:15 AM to 12:45 PM`, `01:15 PM to 02:45 PM`, `02:45 PM to 04:15 PM`, `04:15 PM to 05:45 PM`).
@@ -2321,6 +2511,7 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 - **Empty-State Guard:** When a section has no scheduled classes, renders a clean branded empty state card with calendar icon and `[ Choose Another Section ]` action instead of an empty grid of 42 blank cells.
 
 ### 47.2 Personalization, Normalization & Retake Course Merger
+
 - **Department Normalization (`normalizeDeptCode`):** Intelligently maps long department names (e.g. `"Department of Computer Science & Engineering"`) to canonical code (`"CSE"`), ensuring queries never return empty due to string mismatches.
 - **Retake & Improvement Merger (`user_custom_routine_slots`):** Senior students taking retake courses from junior intakes (e.g. `PHY 101` from Intake 57 Section 4 while in Intake 51 Section 2) add them via `+ Retake`, merging both schedules into one unified weekly timetable.
 - **Time Overlap & Clash Detection:**
@@ -2329,6 +2520,7 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
   - Tapping opens the Conflict Resolver Modal displaying all overlapping courses and teacher details.
 
 ### 47.3 Faculty Short-Code Linkage & Room Decoder
+
 - **Instant Faculty Lookup:** Tapping any `FC: <CODE>` cell resolves against `public.faculty.short_code`, displaying teacher photo, full name, designation, office desk room, official email, phone, and counseling hours for that day.
 - **4-Digit BUBT Room Decoder:** Intelligently decodes BUBT 4-digit room numbers:
   - 1st digit = Building (`2xxx` -> Building 2: Martyr Sujan Mahmud Building, `3xxx` -> Building 3: Martyr Tahmid Abdullah Building, `5xxx` -> Campus 2).
@@ -2340,6 +2532,7 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 ## 48. Study Hub & Academic Library 1:1 Web Parity Architecture
 
 ### 48.1 Scope & Problem Diagnosis
+
 - **Context & Discrepancy:** Sibling web app (`CampusOneWeb`) and mobile app share the same Supabase database. In Web, navigating to Semester 1 under Computer Science & Engineering (CSE) shows all senior and current intakes (Intake 53 Current, Intake 52 Completed · Now Sem 2, Intake 51 Completed · Now Sem 3). Mobile was previously falling back to `departments[0]` (Accounting / Civil, max intake 55) because the student membership query omitted `department_id`, leaving `mySection.department_id` empty.
 - **Root-Cause Resolution:**
   1. Updated `study_section_members` query to select `study_intakes(number, is_public, department_id, departments(id, name, dept_number))`.
@@ -2351,6 +2544,7 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
   3. Added cold-start fallback in `openSemester` that queries `departments` table immediately if local cache is still empty.
 
 ### 48.2 Semester Archive & Intake Navigation
+
 - **Dynamic Seniority Calculation:**
   - `currentSem = Math.max(1, (maxIntake - intake.number) + 1)`
   - `isCompleted = currentSem > selectedSemester.num`
@@ -2364,8 +2558,10 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
   - Iconography: Standardized to vector right arrow (`Feather name="arrow-right"` size 18).
 
 ### 48.3 Dual-Origin Section Room Navigation Guard
+
 - **Problem:** Tapping a section from "Browse Public Sections" after previously opening an intake in the Semester Archive left `selectedIntake` in memory. Pressing Back from the section room incorrectly routed to the old intake rather than back to Browse.
 - **Solution:** Added `sectionOrigin` state (`'intake' | 'browse'`). `openSectionRoom(section, origin)` records the entry point. `handleBack()` checks:
+
   ```ts
   if (sub === 'section') {
     if (sectionOrigin === 'intake' && selectedIntake) {
@@ -2376,9 +2572,11 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
     return true;
   }
   ```
+
   Guarantees 100% symmetric back navigation whether using on-screen SubBar back buttons or Android hardware back gestures.
 
 ### 48.4 Hook Ordering & Storage Signed URL Reliability
+
 - **React Hook Rules Compliance (`CourseDetailScreen.tsx`):**
   - Moved `studyTabs` `useMemo` above all early `if (!course) return` guards, preventing runtime `Rendered more hooks than during the previous render` crashes.
 - **Storage Signed URL Expiration:**
@@ -2389,6 +2587,7 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 ## 49. Academic Calendar Radar Upgrade, Semester Roadmap Ribbon & Dual-Mode Visuals
 
 ### 49.1 Multi-Semester Engine & Automatic Active Term Resolution (`academicCalendar.ts`)
+
 - **Semester Config Architecture (`SemesterConfig`):** Bundles structured terms with start/end boundaries, examination windows, and circular URLs:
   - **Fall 2026 (Active):** 05 Sep 2026 to 31 Jan 2027 (Midterms: 05 Nov - 14 Nov 2026; Finals: 07 Jan - 16 Jan 2027; 26 official events including Durga Puja, Victory Day, and tuition installments).
   - **Summer 2026 (Archived):** 06 May 2026 to 17 Sep 2026 (41 official events transcribed from Registrar circular).
@@ -2396,6 +2595,7 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 - **Top Header Semester Picker:** 1-tap pill modal allows seamless switching between active and past semesters with instant cache hydration.
 
 ### 49.2 Master Semester Roadmap Ribbon (Visual Gantt Bar)
+
 - **4-Segment Term Progress Bar:** Visually splits the 14-week term into distinct colored blocks:
   - Pre-Midterm Classes (Weeks 1-7, Blue Accent)
   - Midterm Examination Phase (Weeks 8, Amber Accent)
@@ -2404,6 +2604,7 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 - **Interactive "You Are Here" Pointer:** Floating pin indicating current term percentage completion and week count (`Week X of 14 · X% Done`).
 
 ### 49.3 Dual Visual Radar Cards (Instant At-A-Glance Answers)
+
 - **Upcoming Exam Radar (Amber Accent):**
   - Scans for next upcoming examination block (Midterms or Finals).
   - Displays countdown (`Starts in X days`, `Starts Tomorrow`, or `Ongoing`).
@@ -2413,11 +2614,13 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
   - Duration pill (`N Days Off`) and countdown badge (`Starts in X days` / `Starts Tomorrow`).
 
 ### 49.4 Floating Multi-Day Event Bars & Weekend Shading (Grid Mode)
+
 - **Floating Capsule Bars:** Continuous horizontal capsule bars span across days in the monthly grid with rounded start/end caps and flat connectors, displaying event titles directly inside the bar.
 - **Weekend Shading:** Friday and Saturday columns feature soft off-day styling so university off-days stand out naturally.
 - **Zero-Empty Helper Banner:** Displays a smart helper with 1-tap jump to the active semester schedule if an off-term month is selected.
 
 ### 49.5 Chronological Timeline Mode & 58dp Dual-Tab Control
+
 - **Dual View Modes (`grid` vs `timeline`):** Segmented pill toggle switches between the 7-day monthly calendar and a vertical chronological roadmap feed with status badges (`Completed`, `Ongoing Today`, `Starts Tomorrow`, `In X days`).
 - **58dp Dual-Tab Control (`SegmentedTabs`):** Full feature parity between `tabCalendar` (Interactive Radar) and `tabPdf` (Official Registrar Circular streaming via `CampusPdfViewerModal` with provenance verification and key deadlines summary).
 - **1-Tap Google Calendar Sync & Routines Jump:** Direct `openUrl` integration with Google Calendar TEMPLATE URLs and cross-linking to `RoutinesBrowseScreen`.
@@ -2427,6 +2630,7 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 ## 50. Smart Hybrid PDF Viewing Architecture & Universal URL Normalizer
 
 ### 50.1 Smart Hybrid Viewing Engine (`CampusPdfViewerModal.tsx`)
+
 - **Remote Web PDF Streaming (Mode A):**
   - Used for Notices (`AnnouncementDetailScreen`), Routines (`RoutinesBrowseScreen`), and Academic Calendar (`AcademicCalendarScreen`).
   - Streams web documents in-app using Google Docs Viewer embed (`https://docs.google.com/gview?embedded=true&url=...`).
@@ -2439,6 +2643,7 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
   - Interactive page scrubber pill and modal jump navigation for multi-page generated documents.
 
 ### 50.2 Universal PDF URL Normalizer (`src/utils/pdfUrl.ts`)
+
 - **Relative Path Resolution:** Automatically detects and prefixes official base paths for relative paths stored in the database:
   - `notices/*` and `storage/*` → `https://www.bubt.edu.bd/storage/*`
   - `uploads/*` → `https://www.bubt.edu.bd/uploads/*`
@@ -2447,16 +2652,19 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 - **Local Scheme Protection:** Preserves `file://`, `content://`, `/data/`, and `/storage/emulated/` untouched for offline generated cover pages and scanned documents.
 
 ### 50.3 Cache Hardening & Routine Streaming (`pdfViewerService.ts` & `RoutinesBrowseScreen.tsx`)
+
 - **Corrupt File Eviction:** `pruneNoticesCache()` automatically detects and unlinks any 0-byte files left by aborted network streams before cache validation.
 - **Normalized Fallback:** `prepareDocumentForViewer()` normalizes input URLs before hashing, downloading, or fetching.
 - **Routines Screen Normalization:** `RoutinesBrowseScreen.tsx` wraps `activeDocument?.file_url` with `normalizePdfUrl` to resolve relative departmental circulars and live web routines.
 
 ### 50.4 Native `startInLoadingState` & Dedicated Notice In-App Viewer
+
 - **The Infinite Loading Bug Fix:** Using manual React `loading` states with `onLoadStart` / `onLoadEnd` on Android WebView triggers infinite loading loops because Google Docs Viewer emits multiple internal subframe navigation events, resetting `loading = true` without firing top-level `onLoadEnd`.
 - **WebView Native Loading Handshake:** Switched to native `startInLoadingState={true}` with `renderLoading={() => <LoadingOverlay />}`, allowing the WebView runtime to dismiss the loading view immediately once initial rendering begins.
 - **Dedicated Notice Modal (`AnnouncementDetailScreen.tsx`):** Restored the dedicated in-app preview modal featuring clean header actions (close, external-link, download) and edge-to-edge Google Docs streaming with custom dark/light theme CSS.
 
 ### 50.5 Zero-Offset Sizing & Right-Side Cutoff Elimination
+
 - **Root Cause of Right-Edge Crop:** Google Docs Viewer's internal rendering layout (`.ndfHFb-c4YZDc-cYSp0e-Oz6c3e`, `.ndfHFb-c4YZDc-qwU8Me-b0t70b-haAclf`, etc.) uses default `box-sizing: content-box` with absolute positioning and inline left offsets (`left: ~20px`). Forcing `width: 100% !important` without resetting `left: 0` and clearing parent padding displaced the document ~20px to the right, pushing the right border of tables, columns, and schedules off-screen.
 - **Universal Box-Sizing & Margin/Padding Reset:** Injected `*, *::before, *::after { box-sizing: border-box !important; }` and reset all viewer container classes (`ndfHFb-c4YZDc`, `s2gQvd`, `cYSp0e`, `Oz6c3e`, `qwU8Me-b0t70b-haAclf`, `zTETae`, `bC7sje`, `c3fl2b`, `div[role="document"]`) to `width: 100% !important; max-width: 100% !important; min-width: 0 !important; margin: 0 !important; padding: 0 !important; left: 0 !important; right: 0 !important;`.
 - **System Display Scale Protection (`textZoom={100}`):** Configured `<WebView textZoom={100}>` across `AnnouncementDetailScreen.tsx` and `CampusPdfViewerModal.tsx` so Android system-level accessibility font and display magnifications do not expand WebView text and canvas dimensions beyond viewport bounds.
@@ -2467,12 +2675,14 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 ## 51. Unified Map, Navigation & Master Location Architecture
 
 ### 51.1 Root Cause Diagnosis & Architectural Overhaul
+
 - **The "Ibn Sina Hijacking" Defect:** In `dhakaHospitalCoords.ts`, hospital entries contained overly broad generic area names in their keyword lists (e.g. `mirpur-10`, `mirpur-2`, `rupnagar`, `shiyalbari`, `commerce college`). Because `resolveHospitalLocation` was called before landmark lookups and used substring matching without word boundaries, every search or post in Mirpur, Rupnagar, or Commerce College road was falsely identified as "Ibn Sina Center (Mirpur-10)" and pinned to Mirpur-10 roundabout coordinates (`23.8071, 90.3686`).
 - **Complete Keyword Sanitization:** Purged all 45 generic area names from all 108 hospitals in `dhakaHospitalCoords.ts` (0 bad keywords remaining). Hospital matching now exclusively matches actual hospital names, health complexes, and diagnostic center aliases.
 - **Bilingual Bengali Ground Truth:** Added comprehensive Bengali area mappings to `DHAKA_AREA_CENTERS` (e.g., `'মগবাজার'`, `'মিরপুর'`, `'মিরপুর-২'`, `'রুপনগর'`, `'উত্তরা'`) and enhanced keyword boundary matching to support Bengali Unicode scripts (`[\u0980-\u09FF]`).
 - **Master Location Catalog (`src/constants/dhakaMasterLocations.ts`):** Centralized ground truth repository containing 513 verified places: 111 hospitals, 34 universities, 55 landmarks, 254 areas, and 65 transit hubs. Lookups prioritize exact name matching, then prefix/boundary matching, before hospital resolution.
 
 ### 51.2 Coordinate Persistence Across All Database Entities
+
 - **Schema Migration (`20261027000000_add_coordinates_to_map_features.sql`):** Added explicit GPS coordinate columns to remote Supabase DB (`xhgpxvyqrufbbuivttmi`):
   - `blood_requests`: `latitude double precision`, `longitude double precision`
   - `rides`: `origin_lat double precision`, `origin_lng double precision`, `dest_lat double precision`, `dest_lng double precision`
@@ -2485,11 +2695,13 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
   - `PostItemFormScreen.tsx`: Captures `locCoords` from map pin or presets and persists `latitude`, `longitude` into `lost_found_items`.
 
 ### 51.3 Navigation & Direction Synchronization
+
 - **Exact Numeric Origin & Destination Handoff:** In `DirectionMapModal.tsx`, both `origin` and `destination` query parameters passed to external Google Maps intents always construct URLs using exact numeric coordinates when available (`https://www.google.com/maps/dir/?api=1&origin=${originParam}&destination=${query}&travelmode=${mode}`), completely bypassing fuzzy search engine re-interpretation.
 - **Clean Reverse Geocoding (`locationService.ts`):** `reverseGeocodeCoords` snaps to verified master landmarks within 70m. For unlisted coordinates, it formats clean, recognizable street/area descriptions (`road + cityArea`, e.g., "Outer Circular Road, Moghbazar") and filters out noisy private clinic/ATM nodes (e.g. "Shefali Chowdhury").
 - **Detail Screen Integration:** `BloodScreen.tsx`, `RideDetailScreen.tsx`, `MarketDetailScreen.tsx`, and `LostFoundDetailScreen.tsx` read persisted database coordinates first, passing them directly to distance estimators and `DirectionMapModal`.
 
 ### 51.4 Full-Review Coordinate Handoff & Edge-to-Edge Parity
+
 - **Location Picker Re-Center Persistence:** `RidePostScreen.tsx`, `MarketPostScreen.tsx`, and `PostItemFormScreen.tsx` pass `initialCoords` to `<LocationPickerModal>` so re-opening the map modal retains and centers directly on the user's previously placed pin instead of resetting to default.
 - **RidePostScreen Map Selection Bridge:** Fixed a missing state connection in `RidePostScreen.tsx` where picking from `LocationPickerModal` was updating the address string but not calling `setFromCoords(place.coords)` / `setToCoords(place.coords)`. Now fully synchronized.
 - **Comprehensive Fallback Resolution:** All feature post and detail screens (`BloodRequestScreen`, `BloodScreen`, `RidePostScreen`, `RideDetailScreen`, `MarketPostScreen`, `MarketDetailScreen`, `PostItemFormScreen`, `LostFoundDetailScreen`, `CommuteAreaPickerModal`, `AreaPickerModal`) prioritize `coords` -> `findMasterLocationByName` -> `resolveHospitalLocation` -> `BUBT_COORDS`, ensuring 100% accurate resolution even if places are entered as plain text in custom modes.
@@ -2500,16 +2712,17 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 ## 52. Clean-Room 5-Stage Pro Document Scanner & PDF Studio Architecture (V4 — CamScanner Parity)
 
 ### 52.1 Store-Safe Clean-Room Mathematical Pipeline (`src/services/pdf/engineHtml.ts`)
+
 - **100% Store-Safe Implementation:** Built from first-principles mathematical equations in TypeScript/JavaScript Canvas (`engineHtml.ts`) with zero third-party native `.so` binaries, zero proprietary neural network weights, and zero third-party brand/symbol references, ensuring full Google Play Store & Apple App Store compliance, 16 KB page-size compatibility on Android 15+, and 100% offline privacy.
 - **Stage 1 - Dual-Class Outermost Paper Boundary Detection (V8) & 3000px Perspective Homography (`findDocumentQuad` + `warpQuadToCanvas`):**
   - **Per-Column / Per-Row Onset Edge Scanning:** Scans inward up to 35% on top/bottom and 20% on left/right. For each column or row in the quadrant, identifies the first pixel classified as `isPaper`, sorts onsets, and selects the 10th percentile (top/left) or 90th percentile (bottom/right). Completely eliminates tilted page header cutoff (preserving "Chapter 1", "Class 1", and dates) while stripping desk margins.
   - **Zero Top-Inset Homography Warp:** Pinned top corner coordinates (`y: rawQ[0].y`, `y: rawQ[1].y`) with subtle 0.2% side and bottom insets (`inset = 0.002`), ensuring text near the notebook edge is never truncated.
   - **8-Parameter Projective Homography:** Homography warp with perspective foreshortening recovery (`Math.min(1.14, Math.sqrt(wMax / wMin))`) and bilinear normalization to 3000px HD (`minTarget = Math.min(cap, 3000)`).
 - **Stage 2 - Notch-Free Perimeter Masking & Natural Local Illumination Grid (`enhanceDocumentCanvas`):**
-  - **Elimination of Artificial Rectangular Cutouts:** Removed hard-coded $14\% 	imes 14\%$ corner bounding boxes that produced 90-degree margin cutouts. Outer perimeter masking uses minimal margins (`mLeft = 1.2%`, `mRight = 0.8%`, `mTop = 0.6%`, `mBot = 0.8%`) and standard 4.5% corner triangles (`cW_std = 4.5%`, `cH_std = 4.0%`) with strict thresholds (`blum < 45` top, `blum < 85` bottom, `isWarmDesk`, `isThumbSkin`) and red margin line protection (`br >= 180 && (br - bg) >= 22`), preserving smooth, straight margins and right-edge formulas ("which is in echelon form").
-  - **Natural Local Illumination Tracking:** Grid background estimation (`cell = max(14, max(W, H)/140)`) samples the 95th percentile per cell (`bgR[gi] = Math.max(60, ...)`) without artificially forcing shaded corner cells to 0 or substituting bright center values. Under illumination division ($dr = (r 	imes 255) / illR$), shaded corner paper naturally normalizes to $\ge 205$ and snaps to pure white `#FFFFFF`.
+  - **Elimination of Artificial Rectangular Cutouts:** Removed hard-coded $14\%  imes 14\%$ corner bounding boxes that produced 90-degree margin cutouts. Outer perimeter masking uses minimal margins (`mLeft = 1.2%`, `mRight = 0.8%`, `mTop = 0.6%`, `mBot = 0.8%`) and standard 4.5% corner triangles (`cW_std = 4.5%`, `cH_std = 4.0%`) with strict thresholds (`blum < 45` top, `blum < 85` bottom, `isWarmDesk`, `isThumbSkin`) and red margin line protection (`br >= 180 && (br - bg) >= 22`), preserving smooth, straight margins and right-edge formulas ("which is in echelon form").
+  - **Natural Local Illumination Tracking:** Grid background estimation (`cell = max(14, max(W, H)/140)`) samples the 95th percentile per cell (`bgR[gi] = Math.max(60, ...)`) without artificially forcing shaded corner cells to 0 or substituting bright center values. Under illumination division ($dr = (r  imes 255) / illR$), shaded corner paper naturally normalizes to $\ge 205$ and snaps to pure white `#FFFFFF`.
 - **Stage 3 - CamScanner-Grade Deep Ink S-Curve (Gamma 1.65), Pure Paper Snap & Back-Page Bleed Erasure:**
-  - Uses an S-curve contrast transfer function: $t^{1.65} 	imes 255$ where $t = 	ext{clamp}((L - bp) / (wp - bp), 0, 1)$ (`bp = 65, wp = 205` in `magic` mode). Pen ink ($L \le 65$) maps to deep jet-black ($0..6$), while ambient paper and faint back-page bleed-through ($L \ge 205$) snap to pure white (`#FFFFFF`), providing bold, thick handwriting without washed-out strokes.
+  - Uses an S-curve contrast transfer function: $t^{1.65}  imes 255$ where $t =  ext{clamp}((L - bp) / (wp - bp), 0, 1)$ (`bp = 65, wp = 205` in `magic` mode). Pen ink ($L \le 65$) maps to deep jet-black ($0..6$), while ambient paper and faint back-page bleed-through ($L \ge 205$) snap to pure white (`#FFFFFF`), providing bold, thick handwriting without washed-out strokes.
 - **Stage 4 - Constrained Pink/Red Margin Line Protection & Targeted Ink Chroma Boost:**
   - Tightened pink/red ruled notebook margin line detection (`dr >= 200 && rgDiff >= 28 && (dr >= db + 24) && nLum >= 165 && nLum <= 248`) to protect genuine red margins from white-point clipping.
   - Integer chroma boost `(3 * C - lum) >> 1` is applied strictly to verified colored pen ink (`isColoredInk = isColor && (chroma >= 25 && nLum < 225)`), leaving paper fields untouched. Fixed green channel clamping (`ng = 255`).
@@ -2518,6 +2731,7 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
   - Broadened final white-point snap in sharpening pass (`(fr >= 244 && fg >= 244 && fb >= 244 && diff >= -4 && cSpan <= 24) || (fr >= 252 && fg >= 252 && fb >= 252)`), ensuring unsharp halos never re-tint the clean white paper background.
 
 ### 52.2 Pro Scanner Features & Interactive Page Studio (`ToolImagesScreen.tsx` & `PageStudioModal.tsx`)
+
 - **6 Scanner Enhance Modes:** `Magic Pro`, `Bleed Eraser`, `Clear B&W`, `Board / Slide`, `Grayscale`, and `Original`.
 - **3 Scan Page Modes (`ScanPageMode`):**
   - `single` (**Single Page**): 1 photo per full A4 page (`DEFAULT_LAYOUT_MODE = 'borderless'`), with `stampAcademic` defaulting to `false` so scans fill the clean A4 sheet without forced footer text unless toggled on.
@@ -2537,6 +2751,7 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
   - Upgraded `IMAGE_PRESETS` (`high: 3000px @ 0.88`, `balanced: 2480px @ 0.84`, `compact: 1754px @ 0.72`, `DEFAULT_PRESET = 'high'`) with optional `< 5 MB` and `< 2 MB` target size enforcement.
 
 ### 52.3 CamScanner-Parity Numbered In-App Media Picker & Page Sequence System (`MediaPickerModal.tsx`)
+
 - **CamScanner Reverse-Engineered Architecture:** Rebuilt `MediaPickerModal.tsx` following deep reverse-engineering of CamScanner's `CustomGalleryActivity` and `GalleryPreviewActivity`.
 - **Session-Clustered Natural Alphanumeric Sort:** Solves the root cause of scrambled pages. When photos share identical timestamps (e.g. WhatsApp media imports all timestamped to the exact same second) or were taken during a continuous study session (<= 5 min window), raw MediaStore `ORDER BY datetaken DESC` produces arbitrary SQLite ROWID ordering. The reverse-engineered engine groups photos into session clusters:
   - **Between Sessions:** Ordered chronologically (newest session first by default).
@@ -2562,6 +2777,7 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 - **Academic Footer Margin Separation:** Enforced a 28pt footer reservation with 6pt bottom padding in `layoutDocumentPage` and `drawAcademicOverlays`, guaranteeing that optional footer stamps never overlap bottom mathematical formulas or handwriting.
 
 ### 52.4 PDF Maker Deep Audit & Hardening Fixes
+
 - **SAF Chunked Stream Copy & OOM Elimination (`pdfFiles.ts`):** Replaced monolithic full-file base64 buffer reads in `savePdfToDevice` with safe storage streaming. Standard assignment PDFs (up to 15 MB) write directly with mode `"w"`, universally supported across all Android DocumentProviders. Compilations exceeding 15 MB use 3 MB chunks (divisible by 3 for Base64 bit integrity) with automatic single-pass fallback if the provider does not support `"wa"` append mode, completely eliminating out-of-memory heap exhaustion.
 - **Cross-Album Selection & Preview Synchronization (`MediaPickerModal.tsx`):** Added dual preview modes (`all` vs `selected`) that dynamically decouple folder-level paging from multi-album selection queues, guaranteeing that tapping "Preview" and bottom thumbnail strip items accurately navigates to selected photos across any number of photo albums. Added boundary clamps and automatic modal closure if all selected items are unselected from inside preview mode.
 - **Corner Drag Tracking & Floating Magnifier Loupe (`PageStudioModal.tsx`):** Eliminated touch snapping jumps with drag-offset delta tracking, and added a 2.4x floating circular crosshair Magnifier Loupe (`zIndex: 999`) positioned above the user's thumb to allow pixel-perfect perspective alignment on notebook and desk edges without fingertip occlusion.
@@ -2574,7 +2790,9 @@ The campus ride-sharing module features an Uber-grade connected route timeline, 
 ## 53. Routines & Examination System Architecture (Step Wizard Navigation, 72-Size Bars & Authentic Curriculum)
 
 ### 53.1 Architectural Hierarchy & 4-Step Wizard Structure (`RoutinesBrowseScreen.tsx`)
+
 The routine module is designed as an intuitive, step-based navigation wizard utilizing universal **72-size bars (`bar72`)** across all selection states, while seamlessly supporting instant personal routine deep linking from the Home status strip:
+
 1. **Step 1: Routine Types (`types`):**
    - Two 72dp **`bar72`** destinations:
      - **Routines (Class Timetables):** Calendar icon, left accent in `SectorColors.study`.
@@ -2600,6 +2818,7 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
    - **Examination Timetable:** Sorted chronologically by ISO exam date (`exam_date`) and shift (`Shift 1` 09:30-11:30 AM / `Shift 2` 01:30-03:30 PM), displaying course details, room, building, student seat roll ranges (`Roll: 001 - 045`), and invigilator codes.
 
 ### 53.2 Authentic BUBT Curriculum Seeds (`20261028030000_authentic_curriculum_routine_slots.sql` & `20261028040000_seed_math_routines.sql`)
+
 - **Eliminated Fake/Duplicated Courses:** Seeded 540 authentic routine slots and 480 exam slots matching the exact BUBT syllabus by intake standing across all 9 academic departments:
   - **CSE:**
     - Intake 57 (Sem 1): `CSE 101`, `CSE 102` (Lab), `ENG 101`, `MAT 101`, `PHY 101`
@@ -2614,6 +2833,7 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - **Master Routine Documents:** Verified public URLs for all 9 departments for both Class and Exam routine categories.
 
 ### 53.3 Home Screen & Navigation Deep Link Integration
+
 - `HomeStatusStrips.tsx` dynamically passes `{ initialTab: 'my_routine' }`, `{ subSchedule: 'class' }` (when tapping Timetable), or `{ subSchedule: 'exam' }` (when tapping Exams).
 - `RoutinesBrowseScreen.tsx` listens to route parameters and directly enters Step 4B (`choose`) with the student's personal profile defaults, while full back navigation (`choose` -> `options` -> `departments` -> `types`) is completely preserved.### 54. BUBT Crawler Schema Parity & Cover Page Generator Faculty Linking Resolution
 - **Crawler Database Parity (`bubt-crawler` Edge Function):**
@@ -2624,20 +2844,22 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Discovered that legacy column-level permissions on `public.faculty` denied the `anon` role from reading newly added columns (`short_code`, `email`, `phone`, `room_number`, `building`, `floor`, etc.).
   - `public.courses` also lacked `SELECT` permissions for `anon`.
   - Executed database permission grant:
+
     ```sql
     GRANT SELECT ON public.faculty TO anon, authenticated;
     GRANT SELECT ON public.courses TO anon, authenticated;
     GRANT SELECT ON public.departments TO anon, authenticated;
     ```
+
 - **Cover Page Generator Faculty Linking (`CoverPageFormScreen.tsx`):**
   - Upgraded `filteredFaculty` and `filteredCourses` with normalized punctuation-insensitive and multi-word token search (`cleanName.includes(cleanQ)`, `allWordsMatch`, and clean short code comparison). Resolved the disappearing search result bug when typing dots or initials (e.g. `Md. A` -> `Md. As`).
   - Decoupled faculty list loading from department sync with `.limit(1000)` and robust fallback mappings.
   - Verified selection autofill for Teacher Name, Designation, Department, and Cover Page PDF compilation.
 
-
 ---
 
 ### 55. Universal Sub-Bar Left Accent Stripe System (`borderLeftWidth: 4.5`)
+
 - **Visual Hierarchy & Anti-Confusion Standard:** Whenever a parent/main bar expands or contains child sub-items, all child sub-bars must feature a prominent 4.5dp left accent stripe (`borderLeftWidth: 4.5`, `borderLeftColor: <sectorColor>`).
 - **Core Problem Solved:** Eliminates visual confusion where child items look like separate top-level bars. Users immediately recognize sub-bars as belonging inside the expanded category.
 - **Audited & Restored Components:**
@@ -2653,6 +2875,7 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
 ---
 
 ### 56. Master Engineering Audit & Triple-Axis Optimization Standard (/zero-slop, /performance-optimization, /code-review-and-quality)
+
 - **Zero-Slop UI & Typography Standard:**
   - 100% elimination of emojis across both UI components and internal source code comments (0 emojis across entire `src/`).
   - Elimination of em-dashes in user-facing UI copy (e.g. `StudyHubScreen.tsx`), standardizing on middle-dots (`·`) and hyphens (`-`).
@@ -2674,6 +2897,7 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
 ---
 
 ### 57. Unified "Report Issues" Hub & Premium Squircle System (/zero-slop, /code-review-and-quality, /performance-optimization)
+
 - **Unified Screen Architecture & Zero-Lag Switching (`CampusIssuesScreen.tsx` & `MyReportsScreen.tsx`):**
   - Completely unified the public Campus Board feed and personal My Reports tracker into a single ultra-responsive screen.
   - Eliminated `navigation.replace` screen recreation lag, enabling instant **0ms in-memory tab switching** (`[ Campus ]` vs `[ Mine ]`) with zero re-mount flicker, zero lag, and 120 FPS frame consistency.
@@ -2698,10 +2922,10 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`) in 41s.
   - Direct ADB Deployment: Streamed install and launched on physical phone `8734b5da`.
 
-
 ---
 
 ### 58. Campus Realtime Messaging Suite Overhaul (/zero-slop, /code-review-and-quality, /performance-optimization)
+
 - **Context-Grant DM Parity & Security Engine (`messagesService.ts` & `messagesStore.tsx`):**
   - Resolved context-grant DM access barrier: students previously faced false "Conversation unavailable" blocks when opening DMs initiated from Marketplace listings, Blood donation pledges, or Campus Rides.
   - Enhanced `fetchDmPartners` to query both accepted `connections` and active `dm_grants` (`gt('expires_at', now)`).
@@ -2731,6 +2955,7 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
 ---
 
 ### 59. Study Hub Course Detail Dropdown & In-App PDF Reader Integration (/zero-slop, /code-review-and-quality, /performance-optimization)
+
 - **Elimination of Sort Toggle Button ("T" Button):**
   - Removed the ambiguous 58x58dp Clock / "T" sort toggle button from `CourseDetailScreen.tsx` to eliminate visual clutter and accidental sort flips.
   - Standardized file list ordering to sort by upload recency (`created_at` descending) by default.
@@ -2748,10 +2973,10 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`).
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
 
-
 ---
 
 ### 60. Study Hub Semester Progression, Compounding Academic Archive & Cross-Batch Knowledge Base (/zero-slop, /code-review-and-quality, /performance-optimization)
+
 - **Class Representative (CR) Semester Promotion & Academic Lifecycle (`StudyHubScreen.tsx`):**
   - Added dedicated "ACADEMIC SEMESTER LIFECYCLE" card inside Section Management (`manageTab === 'settings'`).
   - Active semester display (`Current: Semester N · Active Term`) with intuitive explanation of the 4-month academic term rollover.
@@ -2771,10 +2996,10 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`) in 41s.
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
 
-
 ---
 
 ### 61. Study Hub Review, Bug Fixes & Architecture Hardening (/zero-slop, /code-review-and-quality, /performance-optimization, /ponytail)
+
 - **CR Semester Progression Implementation Finalized (`StudyHubScreen.tsx`):**
   - Completed `handleAdvanceSemester` function: filters active courses, archives current semester to section progress cache (`study_section_prog_${sec.id}`), increments active semester, and notifies the user.
   - Added cache restoration in `load()`: reads semester progression on initial mount to restore active semester and archive state instantly.
@@ -2789,9 +3014,11 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`) in 42s.
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
+
 ---
 
 ### 62. Universal 32dp Monochrome Standard & Trapped Icon Boxes Removal Across 77 Files (/zero-slop, /design-taste-frontend, /code-review-and-quality, /ui-ux-pro-max)
+
 - **Comprehensive Codebase Audit & Decoupling:**
   - Audited 223 TypeScript/TSX files and 1,268 icon occurrences. Systematically eliminated all colored squircle envelopes, background fills (`backgroundColor`), and borders (`borderRadius` / `borderWidth`) trapping icons across 77 files.
   - Icons now float cleanly in transparent layout slots with harmonious visual balance against typography.
@@ -2813,6 +3040,7 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
 ---
 
 ### 63. Study Hub Upload Permissions Enforcement & 58dp Unified Dropdown Bar Architecture (`StudyUploadScreen.tsx`, `CourseDetailScreen.tsx`) (/zero-slop, /security-and-hardening, /code-review-and-quality, /ui-ux-pro-max)
+
 - **Role-Based Upload Permission Enforcement (CR & Designated Editors Only):**
   - Aligned mobile client logic with Supabase PostgreSQL RLS (`0046_study_hub.sql` and `0052_studyhub_upload_cr_editor.sql`).
   - **In `CourseDetailScreen.tsx`:** Fixed upload permission evaluation. Previously evaluated `(myMemberships ?? []).length > 0`, which accidentally showed the `+` upload button to regular students (`role === 'member'`), causing database-level RLS insert rejections. Now strictly gates the `+` upload button so only Section CRs (`role === 'cr'`), designated Editors (`role === 'editor'`), and platform Admins can see the upload action. Regular students see the read-only `Open Department Library` badge.
@@ -2835,6 +3063,7 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
 ---
 
 ### 64. Direct Offline APK Sharing Architecture via Native FileProvider (`SettingsScreen.tsx`, `ApkShareModule.kt`) (/zero-slop, /performance-optimization, /code-review-and-quality)
+
 - **Direct Native APK Distribution for Students:**
   - Integrated native `ApkShare` module enabling students to share the compiled `.apk` directly to peers via Android System Chooser (Bluetooth, Quick Share, Nearby Share, WhatsApp, Telegram, or Gmail) without requiring internet or web downloads.
   - Dynamically calculates installed source package file size (`applicationInfo.sourceDir`) on mount via `getApkInfo()` and displays formatted size in the Settings sub-label (e.g. `(58.7 MB)`).
@@ -2852,6 +3081,7 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
 ---
 
 ### 65. Staff Portal Full 0-to-100 Architecture, 120 FPS Performance, Settings Clean-Up & Bug Hardening (`StaffDashboardScreen.tsx`, `AssignedToMeScreen.tsx`, `SettingsScreen.tsx`, `EditProfileModal.tsx`, `ReportDetailScreen.tsx`, `AllReportsScreen.tsx`, `cacheService.ts`, `notifTarget.ts`) (/performance-optimization, /code-review-and-quality, /zero-slop)
+
 - **Critical Data Integrity Fix: Staff Trade Overwrite on Profile Save (`EditProfileModal.tsx`):**
   - Resolved fatal bug where `EditProfileModal` unconditionally wrote social media JSON (`socialAndPrivacyPayload`) to the `expertise` column of `profiles`.
   - For staff accounts, `expertise` represents their technical trade (`'Electrical'`, `'Plumbing'`, `'Cleanliness'`, `'IT / Network'`, `'Furniture'`, `'Safety / Security'`). Overwriting it corrupted trade matching in `AllReportsScreen` and displayed raw JSON strings across staff hero badges and admin views.
@@ -2865,7 +3095,7 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Replaced false "All clear" empty state on network drop with an explicit error card and connection retry button.
   - **In `AssignedToMeScreen.tsx`:** Decoupled search input and status chips above `FlatList` to prevent complete list header destruction on every keystroke. Added `removeClippedSubviews`, memoized `AssignedReportCard`, and expanded search query to match across category, description, building, room, ticket code, and reporter name.
 - **Zero-Latency Instant Cold-Start Cache (`cacheService.ts`):**
-  - Added `STAFF_REPORTS: (uid: string) => `staff_reports_${uid}`` and `ASSIGNED_REPORTS: (uid: string) => `assigned_reports_${uid}`` to `CacheKeys`.
+  - Added `STAFF_REPORTS: (uid: string) =>`staff_reports_${uid}`` and `ASSIGNED_REPORTS: (uid: string) => `assigned_reports_${uid}`` to `CacheKeys`.
   - Screens instantly mount from memory/AsyncStorage cache via `getCacheSync` (0ms startup latency) before background SWR network refresh.
 - **Route & Deep Linking Hardening (`BusDetailScreen.tsx`, `StudentProfileScreen.tsx`, `notifTarget.ts`, `AllReportsScreen.tsx`):**
   - **BusDetail Deep Links:** Added fallback `const id = paramId ?? route.params?.routeId;` resolving deep link format `campusone://bus/:routeId`.
@@ -2887,6 +3117,7 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
 ---
 
 ### 66. Role-Aware Notification Settings Optimization (`NotifSettingsScreen.tsx`) (/zero-slop, /code-review-and-quality, /performance-optimization)
+
 - **Role-Scoped Category Filtering:**
   - Resolved clutter in Notification Settings where staff accounts were exposed to irrelevant categories: Marketplace, Ride Share, Medical Center, and Prayer Times.
   - Marketplace (`market`) and Ride Share (`ride`) are student peer-to-peer features not present in the staff interface.
@@ -2909,6 +3140,7 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
 ---
 
 ### 67. Anti-Clutter & Subtitle Filler Removal Across Staff & Settings Screens (`NotifSettingsScreen.tsx`, `SettingsScreen.tsx`) (/zero-slop, /code-review-and-quality, /performance-optimization)
+
 - **Elimination of Explanatory Sub-text & Instructional Filler:**
   - In `NotifSettingsScreen.tsx`:
     - Removed `pageSubtitle` (`t.notif.prefsSubtitle`: *"Manage your notification preferences. Turn off what you don't need."*).
@@ -2926,6 +3158,7 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
 ---
 
 ### 68. Faculty Directory Anti-Clutter Deep Dive, 58dp Dropdown Architecture & Subtitle Filler Elimination (`FacultyScreen.tsx`, `ManageFacultyScreen.tsx`) (/zero-slop, /code-review-and-quality, /performance-optimization)
+
 - **Elimination of Redundant Sub-Text Filler Across Faculty Screens:**
   - In `FacultyScreen.tsx` (Student Faculty Directory):
     - Removed `cat.description` from Level 1 Faculty Category cards (eliminating cluttered third-line summaries like *"CSE, EEE, Civil, Textile & Data Science"*, *"Management, Accounting, Marketing & Finance"*, *"Economics, Mathematics & Statistics"*). Category cards now render clean, high-contrast 2-line blocks: Title (`cat.name`) + Department/Teacher Count metadata (`4 departments · 150 teachers`).
@@ -2949,6 +3182,7 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
 ---
 
 ### 69. Staff Portal & Workorder Deep Audit, Dead Code Elimination, Cache Unification & Push Notification Trigger (`StaffDashboardScreen.tsx`, `AssignedToMeScreen.tsx`, `AppNavigator.tsx`, `navigation.ts`, `cacheService.ts`, `Icon.tsx`, `20261103000000_notify_staff_assignment.sql`) (/code-review-and-quality, /performance-optimization, /zero-slop)
+
 - **Dead Code & Orphaned File Cleanup:**
   - Deleted unlinked orphaned screen `ManageStaffScreen.tsx` (366 lines), resolving duplicate and uncalled admin staff management code.
   - Removed 25 obsolete AI-generated logo proposal image/svg assets in `assets/logo-proposals/` (~3 MB dead space), removing unreferenced legacy assets.
@@ -2970,9 +3204,11 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore in 44s.
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
   - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.
+
 ---
 
 ### 70. Study Hub Admin Panel Deep Audit, Full Parity & UI Standardization (`ManageStudyHubScreen.tsx`, `AdminDashboardScreen.tsx`, `AppNavigator.tsx`, `BottomTabNavigator.tsx`, `ExploreScreen.tsx`) (/code-review-and-quality, /performance-optimization)
+
 - **Architectural Decoupling & Dedicated Screen Creation:**
   - Created dedicated `ManageStudyHubScreen.tsx` in `src/screens/dashboard/`, separating administrative catalogue and CR moderation completely from the student room (`StudyHubScreen.tsx`).
   - Added native navigation integration: registered `ManageStudyHub` in `AppNavigator.tsx` and `types/navigation.ts`.
@@ -3000,10 +3236,10 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
   - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.
 
-
 ---
 
 ### 71. Admin Home Deduplication & 58dp Status Dropdown Revamp (`AdminDashboardScreen.tsx`, `ReportDetailScreen.tsx`) (/code-review-and-quality, /performance-optimization)
+
 - **Elimination of Duplicate UI (Small Tablets Removal):**
   - Removed duplicate `SegmentedTabs` from `AdminDashboardScreen.tsx` that previously duplicated the exact same 3 states (Unassigned, In Progress, Resolved) directly underneath the 3 Stat Cards.
   - Converted `StatCard` into an interactive touchable filter card (`isSelected`, active brand border `1.5dp`, subtle active tint `C.brand + '14'`, and active text/icon styling). Tapping any of the 3 stat cards switches the filter tab immediately.
@@ -3036,6 +3272,7 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
 ---
 
 ### 72. Study Hub Admin Panel Department Icon Standardization & 58dp Picker Items (`ManageStudyHubScreen.tsx`) (/code-review-and-quality, /performance-optimization)
+
 - **Department-Specific Vector Icon Architecture:**
   - Implemented `getDeptIcon(name: string)` mapping university departments to their dedicated human-crafted vector icons:
     - Computer Science & Engineering -> `cpu`
@@ -3067,6 +3304,7 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
 ---
 
 ### 73. Administrator Actions 58dp Dropdown & 32dp Monochrome Modal Sheet (`ReportDetailScreen.tsx`) (/code-review-and-quality, /performance-optimization)
+
 - **Universal 32dp Monochrome Icon Standard:**
   - Standardized all Administrator Action modal sheet items to floating **32dp** monochrome icons (`Icon name={opt.icon} size={32} color={C.text}`) within transparent `iconSlot32` layouts, completely eliminating size-18 icons and outer colored squircle boxes.
   - Sourced icons exclusively from the core system `Icon` component: `check` (Mark Resolved), `close` (Reject Report), `lock` (Close Ticket), `rotate-ccw` (Reopen Ticket), and `play` (Start Work).
@@ -3085,6 +3323,7 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
 ---
 
 ### 74. Standard 58dp Admin Metric Cards & Standard 58dp Location Bar (AdminDashboardScreen.tsx, ReportDetailScreen.tsx) (/zero-slop, /performance-optimization, /code-review-and-quality)
+
 - **Standard 58dp Metric Cards Architecture (AdminDashboardScreen.tsx):**
   - Upgraded the 3 interactive filter counters (Unassigned, In Progress, Resolved) to strict 58dp metric cards (height: 58, orderRadius: 16, orderWidth: 1, paddingHorizontal: 8, gap: 2), replacing the old bulky ~110dp vertical stat boxes.
   - Formatted each card with large bold count (ontSize: 18, lineHeight: 22, FontFamily.jakartaExtraBold) and crisp status label (ontSize: 11, lineHeight: 14, FontFamily.jakartaBold), saving over 52dp of vertical screen space so reports appear immediately without scrolling.
@@ -3099,14 +3338,15 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Consolidated top metadata into a clean row featuring a Category pill (categoryPill, height: 32, orderRadius: 16) alongside the status badge (statusPill).
   - Completely eliminated the duplicate CATEGORY section card at the bottom of the screen, removing visual clutter and redundant database rendering.
 - **Verification Evidence:**
-  - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (	sc --noEmit).
+  - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase ( sc --noEmit).
   - Native Release APK: Locally compiled via Gradle (ssembleRelease) with release keystore in 47s.
   - Direct ADB Deployment: Streamed install (db install -r) and launched on physical phone 8734b5da.
-  - Remote Git Sync: Pushed to https://github.com/fixit-bubt/CampusOneAndroid.git on main with 0 AI footprint.
+  - Remote Git Sync: Pushed to <https://github.com/fixit-bubt/CampusOneAndroid.git> on main with 0 AI footprint.
 
 ---
 
 ### 75. Deep Audit & Multi-Screen Hardening across Maintenance & Dashboard Systems (/zero-slop, /code-review-and-quality, /performance-optimization)
+
 - **Gesture Responder Crash Prevention (`AdminDashboardScreen.tsx`, `StaffDashboardScreen.tsx`):**
   - Safely replaced raw `e.stopPropagation()` calls with optional chaining `e?.stopPropagation?.()`. In React Native Android, `GestureResponderEvent` objects lack DOM `stopPropagation()`, which previously caused unhandled runtime exceptions when tapping assign/advance action buttons.
 - **Staff Dashboard 58dp Metrics & Tab Deduplication (`StaffDashboardScreen.tsx`):**
@@ -3124,10 +3364,10 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
   - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.
 
-
 ---
 
 ### 76. Study Hub Admin Panel Deep Audit & Full 58dp Zero-Slop Architecture (`ManageStudyHubScreen.tsx`) (/zero-slop, /performance-optimization, /code-review-and-quality)
+
 - **Section Expansion Race Condition & False Empty State Elimination:**
   - Added dedicated `loadingSections: Record<string, boolean>` tracking to eliminate the jarring 500ms flash of false "No sections added yet" state when an intake was expanded.
   - While sections are querying from Supabase, a sleek `ActivityIndicator` renders cleanly; empty messages only appear when query resolution confirms 0 sections.
@@ -3159,6 +3399,7 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
 ---
 
 ### 77. Symmetrical 32dp Badges, 58dp Spring-Animated SegmentedTabs & Full-Page Staff Assignment Architecture (`ReportDetailScreen.tsx`, `AdminDashboardScreen.tsx`, `AllReportsScreen.tsx`, `tradeMatcher.ts`) (/performance-optimization, /code-review-and-quality)
+
 - **Standardized Symmetrical 32dp Badges in 58dp Header Bar (`ReportDetailScreen.tsx`):**
   - Resolved the asymmetrical box mismatch by enclosing the category and status badges within a standardized 58dp status header bar (`statusHeaderBar58`, `height: 58`, `borderRadius: 16`, `borderWidth: 1`, `paddingHorizontal: 12`, `backgroundColor: C.surface`, `borderColor: C.border`).
   - Standardized both `categoryPill32` (with trade icon + category name) and `statusPill32` (with 6dp status dot + status label) to strict `height: 32`, `borderRadius: 16`, `borderWidth: 1`, and `paddingHorizontal: 12`.
@@ -3186,10 +3427,10 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
   - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.
 
-
 ---
 
 ### 78. Study Hub Multi-Page 58dp Drill-Down Architecture & Scoped CR Search Engine (`ManageStudyHubScreen.tsx`) (/zero-slop, /performance-optimization, /code-review-and-quality)
+
 - **Multi-Page Drill-Down Architecture (Zero Lag & Zero Slop):**
   - Replaced the monolithic, laggy in-place accordion with a clean state machine (`drillLevel: 'intakes' | 'sections' | 'section_room'`) and dedicated full-screen views:
     - **Page 1 (Intakes List):** 58dp Department Bar, 58dp Add Intake Bar, and clean 58dp Intake Bars with right chevron. Tapping an intake (e.g. Intake 52) immediately navigates to its dedicated full-page section view with 0 re-render lag.
@@ -3211,10 +3452,10 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
   - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.
 
-
 ---
 
 ### 80. Study Hub Admin Clean Title Architecture, Strict 58dp Monochrome Refinement & Section Creation Permission Fix (`ManageStudyHubScreen.tsx`) (/zero-slop, /performance-optimization, /code-review-and-quality)
+
 - **Database Column Privilege Resolution (`study_sections` Add Section Error):**
   - **Root Cause:** Migration `0061_study_hub_security_fixes.sql:22` ran `revoke select (join_code) on public.study_sections from authenticated;`. When executing `study_sections.insert()` without specifying columns to return, PostgREST requests `RETURNING *`. PostgreSQL threw `permission denied for column join_code of relation study_sections`, breaking section creation.
   - **Resolution:** Implemented client-side 6-character alphanumeric code generator (`generateJoinCode()`) and restricted the PostgREST return selection strictly to non-restricted columns `.select('id, intake_id, number')`.
@@ -3236,10 +3477,10 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
   - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.
 
-
 ---
 
 ### 81. Club Detail Fatal Crash Resolution, Student Profile Club Badges & Modernized Admin Manage Clubs Screen (`ManageClubsScreen.tsx`, `ClubDetailScreen.tsx`, `StudentProfileScreen.tsx`) (/zero-slop, /performance-optimization, /code-review-and-quality)
+
 - **Club Detail Fatal Crash Root-Cause Fix (`ClubDetailScreen.tsx`):**
   - **Root Cause Identified via ADB Logcat:** `Rendered more hooks than during the previous render` in `updateWorkInProgressHook` at `updateMemo` in `ClubDetailScreen`. `useMemo` for `CLUB_TABS` was declared *after* the early return guard `if (!club) return <ActivityIndicator />`. When club data finished loading from Supabase, the second render executed the extra hook, causing a fatal React Native exception and terminating the app process immediately on Android.
   - **Resolution:** Re-ordered all hooks unconditionally at top of component.
@@ -3261,10 +3502,10 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore (`BUILD SUCCESSFUL in 47s`).
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched cleanly on physical phone `8734b5da`.
 
-
 ---
 
 ### 82. Manage Clubs 58dp Dropdown Architecture, Stat Box Removal & Full-Page Modal Creation (`ManageClubsScreen.tsx`) (/zero-slop, /performance-optimization, /code-review-and-quality)
+
 - **Removal of Redundant Stat Summary Boxes:**
   - Completely purged the 4 stat metric boxes (`Total`, `Active`, `Inactive`, and `Members`) from `ManageClubsScreen`, eliminating visual clutter and providing an uncluttered management workflow.
 - **Header Action Bar Repositioning:**
@@ -3286,10 +3527,10 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
   - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.
 
-
 ---
 
 ### 83. Admin Announcements System Overhaul, Universal 58dp Bar Standard & Notice Anti-Clutter Redesign (`ManageAnnouncementsScreen.tsx`) (/zero-slop, /performance-optimization, /code-review-and-quality)
+
 - **Removal of Cluttered Top Stats & Header Button:**
   - Removed top-right `Post` button from `SubBar`.
   - Removed top `statsRow` metric boxes (`Total`, `In Banner`, `Scraped`), eliminating horizontal clutter and box-heavy UI.
@@ -3325,10 +3566,10 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched cleanly on physical phone `8734b5da`. Logcat verified `ReactNativeJS: Running "main"`.
   - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.
 
-
 ---
 
 ### 84. Admin Announcement Controls Monochrome Redesign & 50dp Tab Standardization (`AnnouncementDetailScreen.tsx`, `ManageAnnouncementsScreen.tsx`) (/zero-slop, /code-review-and-quality, /performance-optimization)
+
 - **Elimination of 100% Color Clutter on Admin Controls:**
   - Removed the glowing blue outer border (`borderColor: C.brand` -> `borderColor: C.border`) on the `adminStrip` container.
   - Removed the blue pill background (`C.brand + '18'`) and blue text on the "Admin Controls" header, converting it to a clean, subtle uppercase header in neutral Zinc (`C.text2`, `letterSpacing: 0.8`).
@@ -3352,10 +3593,10 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore (`BUILD SUCCESSFUL in 45s`).
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`. Logcat verified `ReactNativeJS: Running "main"`.
 
-
 ---
 
 ### 83. Complete Student Clubs Modernization, Roster 58dp Refinement & Official 19 BUBT Clubs Database Seeding (`ClubsScreen.tsx`, `ClubManageScreen.tsx`, `ClubMembersScreen.tsx`, `20261103020000_seed_official_bubt_clubs.sql`) (/zero-slop, /performance-optimization, /code-review-and-quality)
+
 - **Student Clubs Directory Upgrade (`ClubsScreen.tsx`):**
   - **Universal 58dp Search Bar (`styles.bar58`):** Added a 58dp search bar with instant debounced/memoized filtering by club name, tagline, or category with a one-tap clear button.
   - **58dp Category Filter Dropdown Bar:** Replaced old single-column list dumping with a 58dp category selector dropdown bar opening a bottom sheet with 58dp option bars across all 5 official categories (`All`, `Tech`, `Cultural`, `Sports`, `Professional`, `Social`).
@@ -3381,50 +3622,28 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
   - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.
 
-
+---
 ---
 
-### 85. Dashboard Banner Admin Overhaul, Student Home Preview Fix & Clubs Hero Carousel Integration (`ManageBannerScreen.tsx`, `announcementService.ts`, `20261103030000_clubs_hero_banner_curation.sql`) (/zero-slop, /performance-optimization, /code-review-and-quality)
-- **Student Home Preview Fix (`ManageBannerScreen.tsx`):**
-  - **Eliminated Pitch-Black Preview Bug:** When notices or candidates lacked uploaded images, the preview rendered as a pitch-black box. Resolved by integrating `expo-linear-gradient` (`['rgba(0,0,0,0.20)', 'rgba(0,0,0,0.50)', 'rgba(0,0,0,0.92)']`) with intelligent varsity background fallbacks (`BANNERS_MAP['convocation-2026.jpg']` for Notices, `hackathon-2026.jpg` for Events, `blood-drive.jpg` for Clubs).
-  - **1:1 Visual Parity with Student Home Banner:** Overlaid title (14.5sp, bold, 2-line clamp), subtitle (12sp, regular), and slot indicator badge on top of the gradient. Added pagination line indicator bars below the preview matching `HomeHeroBanner.tsx`.
-- **Clubs Integration into Home Hero Banner Pool:**
-  - **Database Migration (`20261103030000_clubs_hero_banner_curation.sql`):** Added `in_banner` (boolean) and `banner_order` (integer) to `public.clubs`, partial index on active banner clubs, PostgreSQL RPC `set_club_banner(uuid, boolean, integer)`, and upgraded `reorder_banner_items(jsonb)` to support `'club'` alongside `'announcement'` and `'event'`.
-  - **Service Layer Expansion (`announcementService.ts`):** Expanded `BannerSlide.type` to `'Event' | 'Notice' | 'Club'`. Updated `fetchCuratedBannerSlides()` to fetch active curated clubs and navigate to `ClubDetail` with `{ clubId: c.id }`. Added `updateClubBannerStatus()`, and updated `saveBannerOrder()` and `fetchAdminBannerPool()`.
-- **Candidate Filter Refactoring & Anti-Clutter Zero-Color Standard:**
-  - **Student-Facing Candidate Tabs:** Replaced technical developer tabs (`manual`, `scraped`) with natural campus categories matching the student home page: `All`, `Announcements`, `Events`, and `Clubs` with live count badges.
-  - **Pure Monochrome Zinc Palette:** Eliminated all color clutter (blue borders, red icons, yellow pills). Active filter tabs, slot pills, and candidate `+ Add` buttons strictly use high-contrast monochrome Zinc (`#27272a` in dark mode, `#18181b` in light mode). Action controls and trash buttons use subtle monochrome icons (`C.textMuted`).
-- **Verification Evidence:**
-  - Strict TypeScript Compilation: Passed with 0 errors (`tsc --noEmit`).
-  - Unit Tests: 18 test suites passed, 140 tests passed (`npm test`).
-  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore (`BUILD SUCCESSFUL in 45s`).
-  - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`. Logcat verified `ReactNativeJS: Running "main"`.
-  - Remote Database Push: Successfully pushed migration `20261103030000_clubs_hero_banner_curation.sql` to remote Supabase (`xhgpxvyqrufbbuivttmi`).
-
-
----
-
-### 84. Clubs Universal Monochrome Refinement, Symmetrical 2-Button Action Bar & Full-Page Appoint President Architecture (`ManageClubsScreen.tsx`, `ClubsScreen.tsx`) (/zero-slop, /performance-optimization, /code-review-and-quality)
-- **Zero-Color Monochrome Standard:**
-  - Completely purged all rainbow category accent colors (`Accent.purple`, `Accent.pink`, `Accent.teal`, etc.) and colored dot chips across `ManageClubsScreen.tsx` and `ClubsScreen.tsx`.
-  - Upgraded all category pills, active filter bars, and sheets to the high-contrast monochrome design system (`C.surface`, `C.surface2`, `C.border`, `C.text`, `C.text2`).
-- **Symmetrical 2-Button Action Bar Standard:**
-  - Removed the `Roster` and `Deactivate / Reactivate` action buttons and deleted the colored active/inactive status dot and badge.
-  - Symmetrically balanced the action bar across the full card width with strictly **2 equal-sized buttons** (`flex: 1`, `height: 44, borderRadius: 12`):
-    - **President:** One-tap appointment launcher with monochrome `user-check` vector icon.
-    - **Edit:** Direct management portal (`ClubManageScreen`) with monochrome `edit-2` vector icon.
-- **Big Monochrome Category Dropdown Bar:**
-  - Upgraded the Category Filter Dropdown Bar to a full-width 58dp bar (`height: 58, borderRadius: 16, borderWidth: 1`) rendered in clean monochrome with 20dp vector icons.
-- **Full-Page Appoint President Modal with 58dp Department Dropdown Bar:**
-  - Tapping "President" launches a dedicated full-page modal (`Modal animationType="slide"`) featuring:
-    - Target club header banner (`targetClubBanner`) displaying current club identity and incumbent president.
-    - 58dp Student Search Bar (`styles.bar58`) with real-time text query filter and one-tap clear button.
-    - **58dp Department Dropdown Bar (`styles.bar58`, `styles.dropdownBar`):** Displays active department icon, title, student count pill, and chevron, opening a bottom sheet with 58dp option bars across all 9 BUBT departments (`All`, `CSE`, `EEE`, `BBA`, `Law`, `English`, `Civil`, `Textile`, `Economics`).
-    - **58dp Student Roster List (`FlatList`):** Renders students with avatar, bold full name, formatted meta subtitle (`Department · Intake · Student ID`), and 1-tap "Appoint" button with alert confirmation before atomic RPC execution.
-- **Human-Designed Vector Icons in Create Club Category Sheet:**
-  - Replaced all colored dot chips with clean 20dp vector icons from vetted libraries (21st.dev / Feather: `cpu` for Tech, `music` for Cultural, `activity` for Sports, `briefcase` for Professional, `users` for Social) inside 58dp option bars.
+### 85. Dashboard Banner Admin Overhaul, Guaranteed Varsity Preview & 58dp Dropdown Navigation Architecture (`ManageBannerScreen.tsx`, `announcementService.ts`, `20261103030000_clubs_hero_banner_curation.sql`) (/zero-slop, /performance-optimization, /code-review-and-quality)
+- **Guaranteed Non-Black Student Home Preview (`ManageBannerScreen.tsx`):**
+  - **Eliminated Black Box Bug at Architectural Level:** Previous attempts failed because network images that 404 or circulars without photos left the container transparent over a pitch-black card. Fixed by unconditionally mounting a local varsity asset backdrop (`previewBgFallback`, using `BANNERS_MAP['convocation-2026.jpg']` for Notices, `hackathon-2026.jpg` for Events, and `blood-drive.jpg` for Clubs) at `StyleSheet.absoluteFill` before overlaying custom imagery.
+  - **Nested LinearGradient Structure:** Wrapped text, slot badge (`Slot #X · Type`), and a new "Tap to View" hint pill directly inside the `LinearGradient` (`['rgba(0,0,0,0.15)', 'rgba(0,0,0,0.50)', 'rgba(0,0,0,0.92)']`), guaranteeing 100% text contrast and preventing Android native layer clipping.
+  - **1-Tap Admin Preview Verification:** Tapping the preview card directly opens the item in its native detail screen (`AnnouncementDetail`, `EventDetail`, or `ClubDetail`).
+- **58dp Category Dropdown Bar & Modal Sheet Architecture:**
+  - Standardized the candidate category selector below the search bar into a full-width **58dp dropdown bar** (`styles.dropdownBar58`, `height: 58, borderRadius: 16`) displaying active category icon, title with live count, and chevron.
+  - Tapping opens a bottom sheet modal with **58dp selection option bars** across:
+    - `All Candidates` (`layers` icon, total count)
+    - `BUBT Announcements` (`file-text` icon, count)
+    - `Campus Events` (`calendar` icon, count)
+    - `Student Clubs & Communities` (`users` icon, count of official 19 BUBT clubs)
+- **Tap to Open & Verify News/Announcements/Clubs:**
+  - Tapping any Active Slide card or Candidate Pool bar now navigates directly to `AnnouncementDetail`, `EventDetail`, or `ClubDetail` with complete params, allowing administrators to verify authenticity, dates, attachments, and contents before or while featuring them on the student home banner.
+- **Clubs Hero Carousel Integration & Registry Sourcing:**
+  - Database Migration `20261103030000_clubs_hero_banner_curation.sql` adds `in_banner` and `banner_order` to `public.clubs`, RPCs `set_club_banner` and `reorder_banner_items`.
+  - Explains the ~20 club candidate pool: sourced directly from the official 19 BUBT university clubs seeded in the database.
 - **Verification Evidence:**
   - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
-  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore (`BUILD SUCCESSFUL in 52s`).
-  - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
-  - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.
+  - Unit Tests: 18 test suites passed, 140/140 tests passing (`npm test`).
+  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore (`BUILD SUCCESSFUL in 45s`).
+  - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`. Logcat verified clean startup (`ReactNativeJS: Running "main"`).

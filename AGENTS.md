@@ -3382,49 +3382,28 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.
 
 
+-
 ---
 
-### 85. Dashboard Banner Admin Overhaul, Student Home Preview Fix & Clubs Hero Carousel Integration (`ManageBannerScreen.tsx`, `announcementService.ts`, `20261103030000_clubs_hero_banner_curation.sql`) (/zero-slop, /performance-optimization, /code-review-and-quality)
-- **Student Home Preview Fix (`ManageBannerScreen.tsx`):**
-  - **Eliminated Pitch-Black Preview Bug:** When notices or candidates lacked uploaded images, the preview rendered as a pitch-black box. Resolved by integrating `expo-linear-gradient` (`['rgba(0,0,0,0.20)', 'rgba(0,0,0,0.50)', 'rgba(0,0,0,0.92)']`) with intelligent varsity background fallbacks (`BANNERS_MAP['convocation-2026.jpg']` for Notices, `hackathon-2026.jpg` for Events, `blood-drive.jpg` for Clubs).
-  - **1:1 Visual Parity with Student Home Banner:** Overlaid title (14.5sp, bold, 2-line clamp), subtitle (12sp, regular), and slot indicator badge on top of the gradient. Added pagination line indicator bars below the preview matching `HomeHeroBanner.tsx`.
-- **Clubs Integration into Home Hero Banner Pool:**
-  - **Database Migration (`20261103030000_clubs_hero_banner_curation.sql`):** Added `in_banner` (boolean) and `banner_order` (integer) to `public.clubs`, partial index on active banner clubs, PostgreSQL RPC `set_club_banner(uuid, boolean, integer)`, and upgraded `reorder_banner_items(jsonb)` to support `'club'` alongside `'announcement'` and `'event'`.
-  - **Service Layer Expansion (`announcementService.ts`):** Expanded `BannerSlide.type` to `'Event' | 'Notice' | 'Club'`. Updated `fetchCuratedBannerSlides()` to fetch active curated clubs and navigate to `ClubDetail` with `{ clubId: c.id }`. Added `updateClubBannerStatus()`, and updated `saveBannerOrder()` and `fetchAdminBannerPool()`.
-- **Candidate Filter Refactoring & Anti-Clutter Zero-Color Standard:**
-  - **Student-Facing Candidate Tabs:** Replaced technical developer tabs (`manual`, `scraped`) with natural campus categories matching the student home page: `All`, `Announcements`, `Events`, and `Clubs` with live count badges.
-  - **Pure Monochrome Zinc Palette:** Eliminated all color clutter (blue borders, red icons, yellow pills). Active filter tabs, slot pills, and candidate `+ Add` buttons strictly use high-contrast monochrome Zinc (`#27272a` in dark mode, `#18181b` in light mode). Action controls and trash buttons use subtle monochrome icons (`C.textMuted`).
-- **Verification Evidence:**
-  - Strict TypeScript Compilation: Passed with 0 errors (`tsc --noEmit`).
-  - Unit Tests: 18 test suites passed, 140 tests passed (`npm test`).
-  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore (`BUILD SUCCESSFUL in 45s`).
-  - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`. Logcat verified `ReactNativeJS: Running "main"`.
-  - Remote Database Push: Successfully pushed migration `20261103030000_clubs_hero_banner_curation.sql` to remote Supabase (`xhgpxvyqrufbbuivttmi`).
-
-
----
-
-### 84. Clubs Universal Monochrome Refinement, Symmetrical 2-Button Action Bar & Full-Page Appoint President Architecture (`ManageClubsScreen.tsx`, `ClubsScreen.tsx`) (/zero-slop, /performance-optimization, /code-review-and-quality)
-- **Zero-Color Monochrome Standard:**
-  - Completely purged all rainbow category accent colors (`Accent.purple`, `Accent.pink`, `Accent.teal`, etc.) and colored dot chips across `ManageClubsScreen.tsx` and `ClubsScreen.tsx`.
-  - Upgraded all category pills, active filter bars, and sheets to the high-contrast monochrome design system (`C.surface`, `C.surface2`, `C.border`, `C.text`, `C.text2`).
-- **Symmetrical 2-Button Action Bar Standard:**
-  - Removed the `Roster` and `Deactivate / Reactivate` action buttons and deleted the colored active/inactive status dot and badge.
-  - Symmetrically balanced the action bar across the full card width with strictly **2 equal-sized buttons** (`flex: 1`, `height: 44, borderRadius: 12`):
-    - **President:** One-tap appointment launcher with monochrome `user-check` vector icon.
-    - **Edit:** Direct management portal (`ClubManageScreen`) with monochrome `edit-2` vector icon.
-- **Big Monochrome Category Dropdown Bar:**
-  - Upgraded the Category Filter Dropdown Bar to a full-width 58dp bar (`height: 58, borderRadius: 16, borderWidth: 1`) rendered in clean monochrome with 20dp vector icons.
-- **Full-Page Appoint President Modal with 58dp Department Dropdown Bar:**
-  - Tapping "President" launches a dedicated full-page modal (`Modal animationType="slide"`) featuring:
-    - Target club header banner (`targetClubBanner`) displaying current club identity and incumbent president.
-    - 58dp Student Search Bar (`styles.bar58`) with real-time text query filter and one-tap clear button.
-    - **58dp Department Dropdown Bar (`styles.bar58`, `styles.dropdownBar`):** Displays active department icon, title, student count pill, and chevron, opening a bottom sheet with 58dp option bars across all 9 BUBT departments (`All`, `CSE`, `EEE`, `BBA`, `Law`, `English`, `Civil`, `Textile`, `Economics`).
-    - **58dp Student Roster List (`FlatList`):** Renders students with avatar, bold full name, formatted meta subtitle (`Department · Intake · Student ID`), and 1-tap "Appoint" button with alert confirmation before atomic RPC execution.
-- **Human-Designed Vector Icons in Create Club Category Sheet:**
-  - Replaced all colored dot chips with clean 20dp vector icons from vetted libraries (21st.dev / Feather: `cpu` for Tech, `music` for Cultural, `activity` for Sports, `briefcase` for Professional, `users` for Social) inside 58dp option bars.
+### 85. Dashboard Banner Admin Overhaul, Guaranteed Varsity Preview & 58dp Dropdown Navigation Architecture (`ManageBannerScreen.tsx`, `announcementService.ts`, `20261103030000_clubs_hero_banner_curation.sql`) (/zero-slop, /performance-optimization, /code-review-and-quality)
+- **Guaranteed Non-Black Student Home Preview (`ManageBannerScreen.tsx`):**
+  - **Eliminated Black Box Bug at Architectural Level:** Previous attempts failed because network images that 404 or circulars without photos left the container transparent over a pitch-black card. Fixed by unconditionally mounting a local varsity asset backdrop (`previewBgFallback`, using `BANNERS_MAP['convocation-2026.jpg']` for Notices, `hackathon-2026.jpg` for Events, and `blood-drive.jpg` for Clubs) at `StyleSheet.absoluteFill` before overlaying custom imagery.
+  - **Nested LinearGradient Structure:** Wrapped text, slot badge (`Slot #X · Type`), and a new "Tap to View" hint pill directly inside the `LinearGradient` (`['rgba(0,0,0,0.15)', 'rgba(0,0,0,0.50)', 'rgba(0,0,0,0.92)']`), guaranteeing 100% text contrast and preventing Android native layer clipping.
+  - **1-Tap Admin Preview Verification:** Tapping the preview card directly opens the item in its native detail screen (`AnnouncementDetail`, `EventDetail`, or `ClubDetail`).
+- **58dp Category Dropdown Bar & Modal Sheet Architecture:**
+  - Standardized the candidate category selector below the search bar into a full-width **58dp dropdown bar** (`styles.dropdownBar58`, `height: 58, borderRadius: 16`) displaying active category icon, title with live count, and chevron.
+  - Tapping opens a bottom sheet modal with **58dp selection option bars** across:
+    - `All Candidates` (`layers` icon, total count)
+    - `BUBT Announcements` (`file-text` icon, count)
+    - `Campus Events` (`calendar` icon, count)
+    - `Student Clubs & Communities` (`users` icon, count of official 19 BUBT clubs)
+- **Tap to Open & Verify News/Announcements/Clubs:**
+  - Tapping any Active Slide card or Candidate Pool bar now navigates directly to `AnnouncementDetail`, `EventDetail`, or `ClubDetail` with complete params, allowing administrators to verify authenticity, dates, attachments, and contents before or while featuring them on the student home banner.
+- **Clubs Hero Carousel Integration & Registry Sourcing:**
+  - Database Migration `20261103030000_clubs_hero_banner_curation.sql` adds `in_banner` and `banner_order` to `public.clubs`, RPCs `set_club_banner` and `reorder_banner_items`.
+  - Explains the ~20 club candidate pool: sourced directly from the official 19 BUBT university clubs seeded in the database.
 - **Verification Evidence:**
   - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
-  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore (`BUILD SUCCESSFUL in 52s`).
-  - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
-  - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.
+  - Unit Tests: 18 test suites passed, 140/140 tests passing (`npm test`).
+  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore (`BUILD SUCCESSFUL in 45s`).
+  - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`. Logcat verified clean startup (`ReactNativeJS: Running "main"`).

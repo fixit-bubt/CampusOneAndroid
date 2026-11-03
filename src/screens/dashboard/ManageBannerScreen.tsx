@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Image,
   Alert,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -42,6 +43,7 @@ export function ManageBannerScreen({ navigation }: any) {
   const [previewIdx, setPreviewIdx] = useState(0);
   const [search, setSearch] = useState('');
   const [candidateTab, setCandidateTab] = useState<'all' | 'announcements' | 'events' | 'clubs'>('all');
+  const [filterSheetVisible, setFilterSheetVisible] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
@@ -70,6 +72,25 @@ export function ManageBannerScreen({ navigation }: any) {
   const activeSourceIds = useMemo(() => {
     return new Set(activeSlides.map((s) => s.sourceId));
   }, [activeSlides]);
+
+  const handleOpenDetail = (item: {
+    type: 'Notice' | 'Event' | 'Club';
+    id: string;
+    sourceId?: string;
+    route?: string;
+    params?: any;
+  }) => {
+    const targetId = item.sourceId || item.id;
+    if (item.type === 'Notice') {
+      navigation.navigate('AnnouncementDetail', { announcementId: targetId });
+    } else if (item.type === 'Event') {
+      navigation.navigate('EventDetail', { eventId: targetId });
+    } else if (item.type === 'Club') {
+      navigation.navigate('ClubDetail', { clubId: targetId });
+    } else if (item.route) {
+      navigation.navigate(item.route, item.params);
+    }
+  };
 
   const handleMove = async (index: number, direction: -1 | 1) => {
     const targetIdx = index + direction;
@@ -169,7 +190,7 @@ export function ManageBannerScreen({ navigation }: any) {
         type: 'Notice',
         title: candidate.title,
         subtitle: candidate.raw.department ? `${candidate.raw.department} Department` : 'BUBT Notice',
-        imageUri: candidate.image || undefined,
+        imageUri: candidate.image,
         route: 'AnnouncementDetail',
         params: { announcementId: candidate.id },
         bannerOrder: nextOrder,
@@ -182,7 +203,7 @@ export function ManageBannerScreen({ navigation }: any) {
         type: 'Event',
         title: candidate.title,
         subtitle: `${candidate.raw.venue || 'Campus'}${candidate.raw.time ? ` · ${candidate.raw.time}` : ''}`,
-        imageUri: candidate.image || undefined,
+        imageUri: candidate.image,
         route: 'EventDetail',
         params: { eventId: candidate.id },
         bannerOrder: nextOrder,
@@ -195,7 +216,7 @@ export function ManageBannerScreen({ navigation }: any) {
         type: 'Club',
         title: candidate.title,
         subtitle: `${candidate.raw.category || 'Official Club'} · BUBT`,
-        imageUri: candidate.image || undefined,
+        imageUri: candidate.image,
         route: 'ClubDetail',
         params: { clubId: candidate.id },
         bannerOrder: nextOrder,
@@ -332,15 +353,14 @@ export function ManageBannerScreen({ navigation }: any) {
 
   const activePreview = activeSlides[previewIdx] || activeSlides[0] || null;
   const resolvedPreviewSource = activePreview ? resolveBannerSource(activePreview.imageUri, activePreview.localImage) : null;
-  const previewSource = resolvedPreviewSource || (
-    activePreview
-      ? (activePreview.type === 'Event'
-          ? BANNERS_MAP['hackathon-2026.jpg']
-          : activePreview.type === 'Club'
-          ? BANNERS_MAP['blood-drive.jpg']
-          : BANNERS_MAP['convocation-2026.jpg'])
-      : null
-  );
+  const fallbackPreviewSource = activePreview
+    ? (activePreview.type === 'Event'
+        ? BANNERS_MAP['hackathon-2026.jpg']
+        : activePreview.type === 'Club'
+        ? BANNERS_MAP['blood-drive.jpg']
+        : BANNERS_MAP['convocation-2026.jpg'])
+    : BANNERS_MAP['convocation-2026.jpg'];
+  const previewSource = resolvedPreviewSource || fallbackPreviewSource;
 
   if (profile?.role !== 'admin') {
     return (
@@ -357,12 +377,23 @@ export function ManageBannerScreen({ navigation }: any) {
     );
   }
 
-  const candidateTabs = [
-    { key: 'all', label: 'All', count: candidateCounts.all },
-    { key: 'announcements', label: 'Announcements', count: candidateCounts.announcements },
-    { key: 'events', label: 'Events', count: candidateCounts.events },
-    { key: 'clubs', label: 'Clubs', count: candidateCounts.clubs },
-  ] as const;
+  const categoryLabel =
+    candidateTab === 'all'
+      ? `All Candidates (${candidateCounts.all})`
+      : candidateTab === 'announcements'
+      ? `Announcements (${candidateCounts.announcements})`
+      : candidateTab === 'events'
+      ? `Campus Events (${candidateCounts.events})`
+      : `Student Clubs (${candidateCounts.clubs})`;
+
+  const categoryIcon =
+    candidateTab === 'all'
+      ? 'layers'
+      : candidateTab === 'announcements'
+      ? 'file-text'
+      : candidateTab === 'events'
+      ? 'calendar'
+      : 'users';
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -402,25 +433,53 @@ export function ManageBannerScreen({ navigation }: any) {
           </View>
 
           {activePreview ? (
-            <View style={styles.previewCard}>
-              {previewSource && (
-                <Image source={previewSource} style={styles.previewImage} resizeMode="cover" />
-              )}
-              <LinearGradient
-                colors={['rgba(0,0,0,0.20)', 'rgba(0,0,0,0.50)', 'rgba(0,0,0,0.92)']}
-                locations={[0, 0.45, 1]}
-                style={StyleSheet.absoluteFill}
+            <TouchableOpacity
+              activeOpacity={0.92}
+              onPress={() => handleOpenDetail(activePreview)}
+              style={styles.previewCard}
+            >
+              {/* Unconditional local varsity fallback */}
+              <Image
+                source={fallbackPreviewSource}
+                style={styles.previewBgFallback}
+                resizeMode="cover"
               />
-              <View style={styles.previewScrim}>
-                <View style={styles.previewBadgeRow}>
-                  <View style={[styles.typeBadge, { backgroundColor: isDark ? '#27272a' : '#18181b', borderColor: isDark ? '#3f3f46' : '#27272a' }]}>
+
+              {/* Custom Image Overlay */}
+              {resolvedPreviewSource && (
+                <Image
+                  source={resolvedPreviewSource}
+                  style={styles.previewImage}
+                  resizeMode="cover"
+                />
+              )}
+
+              {/* Scrim Gradient with Nested Content on Top */}
+              <LinearGradient
+                colors={['rgba(0,0,0,0.15)', 'rgba(0,0,0,0.50)', 'rgba(0,0,0,0.92)']}
+                locations={[0, 0.40, 1]}
+                style={styles.previewGradient}
+              >
+                <View style={styles.previewTopRow}>
+                  <View style={[styles.typeBadge, { backgroundColor: isDark ? 'rgba(39,39,42,0.85)' : 'rgba(24,24,27,0.85)', borderColor: isDark ? '#3f3f46' : '#27272a' }]}>
                     <Text style={styles.typeBadgeTxt}>Slot #{previewIdx + 1} · {activePreview.type}</Text>
                   </View>
+                  <View style={styles.tapToViewPill}>
+                    <Feather name="external-link" size={11} color="rgba(255,255,255,0.85)" />
+                    <Text style={styles.tapToViewTxt}>Tap to View</Text>
+                  </View>
                 </View>
-                <Text style={styles.previewTitle} numberOfLines={2}>{activePreview.title}</Text>
-                <Text style={styles.previewSub} numberOfLines={1}>{activePreview.subtitle}</Text>
-              </View>
-            </View>
+
+                <View style={styles.previewBottomContent}>
+                  <Text style={styles.previewTitle} numberOfLines={2}>
+                    {activePreview.title}
+                  </Text>
+                  <Text style={styles.previewSub} numberOfLines={1}>
+                    {activePreview.subtitle}
+                  </Text>
+                </View>
+              </LinearGradient>
+            </TouchableOpacity>
           ) : (
             <View style={[styles.emptyPreviewCard, { backgroundColor: C.surface2, borderColor: C.border }]}>
               <Feather name="alert-circle" size={24} color={C.textMuted} />
@@ -445,13 +504,13 @@ export function ManageBannerScreen({ navigation }: any) {
                       isActive
                         ? [styles.indicatorActive, { backgroundColor: isDark ? '#ffffff' : '#18181b' }]
                         : [
-                            styles.indicatorInactive,
-                            {
-                              backgroundColor: isDark
-                                ? 'rgba(255, 255, 255, 0.35)'
-                                : 'rgba(15, 26, 46, 0.22)',
-                            },
-                          ],
+                          styles.indicatorInactive,
+                          {
+                            backgroundColor: isDark
+                              ? 'rgba(255, 255, 255, 0.35)'
+                              : 'rgba(15, 26, 46, 0.22)',
+                          },
+                        ],
                     ]}
                   />
                 );
@@ -510,8 +569,8 @@ export function ManageBannerScreen({ navigation }: any) {
                 slide.type === 'Event'
                   ? BANNERS_MAP['hackathon-2026.jpg']
                   : slide.type === 'Club'
-                  ? BANNERS_MAP['blood-drive.jpg']
-                  : BANNERS_MAP['convocation-2026.jpg']
+                    ? BANNERS_MAP['blood-drive.jpg']
+                    : BANNERS_MAP['convocation-2026.jpg']
               );
               const isFirst = index === 0;
               const isLast = index === activeSlides.length - 1;
@@ -545,10 +604,21 @@ export function ManageBannerScreen({ navigation }: any) {
                     </View>
                   </TouchableOpacity>
 
-                  <View style={styles.activeSlideInfo}>
+                  <TouchableOpacity
+                    style={styles.activeSlideInfo}
+                    onPress={() => {
+                      setPreviewIdx(index);
+                      handleOpenDetail(slide);
+                    }}
+                    activeOpacity={0.7}
+                  >
                     <View style={styles.badgeRowTiny}>
                       <View style={[styles.typePillTiny, { backgroundColor: C.surface2 }]}>
                         <Text style={[styles.typePillTxtTiny, { color: C.text2 }]}>{slide.type}</Text>
+                      </View>
+                      <View style={styles.openHintRow}>
+                        <Feather name="external-link" size={10} color={C.textMuted} />
+                        <Text style={[styles.openHintTxt, { color: C.textMuted }]}>Open</Text>
                       </View>
                     </View>
                     <Text style={[styles.activeSlideTitle, { color: C.text }]} numberOfLines={1}>
@@ -557,7 +627,7 @@ export function ManageBannerScreen({ navigation }: any) {
                     <Text style={[styles.activeSlideSub, { color: C.textMuted }]} numberOfLines={1}>
                       {slide.subtitle}
                     </Text>
-                  </View>
+                  </TouchableOpacity>
 
                   {/* Actions: Move Up, Move Down, Delete */}
                   <View style={styles.activeSlideActions}>
@@ -606,8 +676,8 @@ export function ManageBannerScreen({ navigation }: any) {
           </Text>
 
           {/* Search Bar */}
-          <View style={[styles.searchBox, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <Feather name="search" size={16} color={C.textMuted} />
+          <View style={[styles.searchBox58, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <Feather name="search" size={18} color={C.textMuted} />
             <TextInput
               style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
               value={search}
@@ -617,43 +687,31 @@ export function ManageBannerScreen({ navigation }: any) {
             />
             {search.length > 0 && (
               <TouchableOpacity onPress={() => setSearch('')} hitSlop={8}>
-                <Feather name="x" size={16} color={C.textMuted} />
+                <Feather name="x" size={18} color={C.textMuted} />
               </TouchableOpacity>
             )}
           </View>
 
-          {/* Candidate Filter Tabs: All, Announcements, Events, Clubs */}
-          <View style={styles.filterRow}>
-            {candidateTabs.map((tab) => {
-              const isActive = candidateTab === tab.key;
-              return (
-                <TouchableOpacity
-                  key={tab.key}
-                  onPress={() => setCandidateTab(tab.key)}
-                  style={[
-                    styles.filterTabPill,
-                    {
-                      backgroundColor: isActive ? (isDark ? '#27272a' : '#18181b') : C.surface,
-                      borderColor: isActive ? (isDark ? '#3f3f46' : '#27272a') : C.border,
-                    },
-                  ]}
-                  activeOpacity={0.8}
-                >
-                  <Text
-                    style={[
-                      styles.filterTabTxt,
-                      {
-                        color: isActive ? '#ffffff' : C.textMuted,
-                        fontFamily: FontFamily.jakartaBold,
-                      },
-                    ]}
-                  >
-                    {tab.label} ({tab.count})
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+          {/* Universal 58dp Category Dropdown Bar */}
+          <TouchableOpacity
+            style={[
+              styles.dropdownBar58,
+              {
+                backgroundColor: C.surface,
+                borderColor: C.border,
+              },
+            ]}
+            onPress={() => setFilterSheetVisible(true)}
+            activeOpacity={0.8}
+          >
+            <View style={styles.barLeft}>
+              <Feather name={categoryIcon as any} size={20} color={C.text} />
+              <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                {categoryLabel}
+              </Text>
+            </View>
+            <Feather name="chevron-down" size={18} color={C.textMuted} />
+          </TouchableOpacity>
 
           {/* Candidates List */}
           {filteredCandidates.length === 0 ? (
@@ -671,8 +729,8 @@ export function ManageBannerScreen({ navigation }: any) {
                 item.type === 'Event'
                   ? BANNERS_MAP['hackathon-2026.jpg']
                   : item.type === 'Club'
-                  ? BANNERS_MAP['blood-drive.jpg']
-                  : null
+                    ? BANNERS_MAP['blood-drive.jpg']
+                    : null
               );
 
               return (
@@ -680,7 +738,11 @@ export function ManageBannerScreen({ navigation }: any) {
                   key={`${item.type}-${item.id}`}
                   style={[styles.candidateCard, { backgroundColor: C.surface, borderColor: C.border }]}
                 >
-                  <View style={styles.candidateThumbWrap}>
+                  <TouchableOpacity
+                    style={styles.candidateThumbWrap}
+                    onPress={() => handleOpenDetail(item)}
+                    activeOpacity={0.8}
+                  >
                     {src ? (
                       <Image source={src} style={styles.candidateThumb} resizeMode="cover" />
                     ) : (
@@ -692,9 +754,13 @@ export function ManageBannerScreen({ navigation }: any) {
                         />
                       </View>
                     )}
-                  </View>
+                  </TouchableOpacity>
 
-                  <View style={styles.candidateInfo}>
+                  <TouchableOpacity
+                    style={styles.candidateInfo}
+                    onPress={() => handleOpenDetail(item)}
+                    activeOpacity={0.7}
+                  >
                     <View style={styles.badgeRowTiny}>
                       <View style={[styles.typePillTiny, { backgroundColor: C.surface2 }]}>
                         <Text style={[styles.typePillTxtTiny, { color: C.text2 }]}>{item.type}</Text>
@@ -704,6 +770,10 @@ export function ManageBannerScreen({ navigation }: any) {
                           <Text style={[styles.typePillTxtTiny, { color: C.textMuted }]}>{item.priority}</Text>
                         </View>
                       )}
+                      <View style={styles.openHintRow}>
+                        <Feather name="external-link" size={10} color={C.textMuted} />
+                        <Text style={[styles.openHintTxt, { color: C.textMuted }]}>Open to verify</Text>
+                      </View>
                     </View>
                     <Text style={[styles.candidateTitle, { color: C.text }]} numberOfLines={2}>
                       {item.title}
@@ -711,7 +781,7 @@ export function ManageBannerScreen({ navigation }: any) {
                     <Text style={[styles.candidateSub, { color: C.textMuted }]} numberOfLines={1}>
                       {item.subtitle}
                     </Text>
-                  </View>
+                  </TouchableOpacity>
 
                   <TouchableOpacity
                     style={[
@@ -744,6 +814,80 @@ export function ManageBannerScreen({ navigation }: any) {
 
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* 58dp Dropdown Category Filter Bottom Sheet */}
+      <Modal
+        visible={filterSheetVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setFilterSheetVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setFilterSheetVisible(false)}
+        >
+          <View
+            style={[
+              styles.bottomSheet,
+              { backgroundColor: C.surface, borderColor: C.border },
+            ]}
+            onStartShouldSetResponder={() => true}
+          >
+            <View style={[styles.sheetHandle, { backgroundColor: isDark ? '#3f3f46' : '#d4d4d8' }]} />
+            <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              Candidate Category Filter
+            </Text>
+            <Text style={[styles.sheetSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+              Choose items to browse and feature on the student home carousel
+            </Text>
+
+            <View style={{ gap: 8, marginTop: 14 }}>
+              {[
+                { key: 'all', label: 'All Candidates', icon: 'layers', count: candidateCounts.all },
+                { key: 'announcements', label: 'BUBT Announcements', icon: 'file-text', count: candidateCounts.announcements },
+                { key: 'events', label: 'Campus Events', icon: 'calendar', count: candidateCounts.events },
+                { key: 'clubs', label: 'Student Clubs & Communities', icon: 'users', count: candidateCounts.clubs },
+              ].map((item) => {
+                const isSelected = candidateTab === item.key;
+                return (
+                  <TouchableOpacity
+                    key={item.key}
+                    style={[
+                      styles.sheetOptionBar58,
+                      {
+                        backgroundColor: isSelected ? (isDark ? '#27272a' : '#f4f4f5') : C.surface,
+                        borderColor: isSelected ? (isDark ? '#3f3f46' : '#27272a') : C.border,
+                      },
+                    ]}
+                    onPress={() => {
+                      setCandidateTab(item.key as any);
+                      setFilterSheetVisible(false);
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.barLeft}>
+                      <Feather name={item.icon as any} size={20} color={C.text} />
+                      <Text
+                        style={[
+                          styles.sheetOptionTxt,
+                          {
+                            color: C.text,
+                            fontFamily: isSelected ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                          },
+                        ]}
+                      >
+                        {item.label} ({item.count})
+                      </Text>
+                    </View>
+                    {isSelected && <Feather name="check" size={18} color={C.text} />}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -801,24 +945,48 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   previewCard: {
-    height: 156,
-    borderRadius: 14,
+    height: 168,
+    borderRadius: 16,
     overflow: 'hidden',
     position: 'relative',
-    backgroundColor: '#000000',
-    justifyContent: 'flex-end',
+    backgroundColor: '#18181b',
   },
-  previewImage: {
+  previewBgFallback: {
     ...StyleSheet.absoluteFill as any,
     width: '100%',
     height: '100%',
   },
-  previewScrim: {
-    padding: 14,
-    zIndex: 10,
+  previewImage: {
+    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    height: '100%',
   },
-  previewBadgeRow: {
-    marginBottom: 4,
+  previewGradient: {
+    ...StyleSheet.absoluteFill as any,
+    justifyContent: 'space-between',
+    padding: 14,
+  },
+  previewTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  tapToViewPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: Radius.full,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  tapToViewTxt: {
+    color: '#ffffff',
+    fontFamily: FontFamily.jakartaMedium,
+    fontSize: 10.5,
+  },
+  previewBottomContent: {
+    gap: 3,
   },
   typeBadge: {
     alignSelf: 'flex-start',
@@ -835,14 +1003,13 @@ const styles = StyleSheet.create({
   previewTitle: {
     color: '#ffffff',
     fontFamily: FontFamily.jakartaBold,
-    fontSize: 14.5,
-    lineHeight: 19,
+    fontSize: 15,
+    lineHeight: 20,
   },
   previewSub: {
     color: 'rgba(255,255,255,0.85)',
     fontFamily: FontFamily.jakartaRegular,
     fontSize: 12,
-    marginTop: 3,
   },
   emptyPreviewCard: {
     height: 110,
@@ -949,6 +1116,7 @@ const styles = StyleSheet.create({
   },
   badgeRowTiny: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 6,
   },
   typePillTiny: {
@@ -959,6 +1127,15 @@ const styles = StyleSheet.create({
   typePillTxtTiny: {
     fontSize: 9.5,
     fontFamily: FontFamily.jakartaBold,
+  },
+  openHintRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  openHintTxt: {
+    fontSize: 10,
+    fontFamily: FontFamily.jakartaMedium,
   },
   activeSlideTitle: {
     fontFamily: FontFamily.jakartaBold,
@@ -1007,36 +1184,40 @@ const styles = StyleSheet.create({
   candidateSection: {
     marginTop: 24,
   },
-  searchBox: {
+  searchBox58: {
+    height: 58,
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingHorizontal: 14,
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    height: 48,
+    gap: 10,
     marginTop: 10,
-    gap: 8,
   },
   searchInput: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 14,
     padding: 0,
   },
-  filterRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    marginTop: 10,
-    marginBottom: 12,
-  },
-  filterTabPill: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: Radius.full,
+  dropdownBar58: {
+    height: 58,
+    borderRadius: 16,
     borderWidth: 1,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 10,
+    marginBottom: 14,
   },
-  filterTabTxt: {
-    fontSize: 11.5,
+  barLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  barTitle: {
+    fontSize: 14.5,
   },
   emptyPoolCard: {
     padding: 20,
@@ -1095,5 +1276,44 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontFamily: FontFamily.jakartaBold,
     fontSize: 11.5,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    justifyContent: 'flex-end',
+  },
+  bottomSheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderTopWidth: 1,
+    paddingHorizontal: 18,
+    paddingTop: 12,
+    paddingBottom: 32,
+  },
+  sheetHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  sheetTitle: {
+    fontSize: 17,
+  },
+  sheetSub: {
+    fontSize: 12.5,
+    marginTop: 2,
+  },
+  sheetOptionBar58: {
+    height: 58,
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  sheetOptionTxt: {
+    fontSize: 14,
   },
 });
