@@ -68,6 +68,7 @@ interface StudentOption {
   avatar_url: string | null;
   department?: string | null;
   intake?: string | number | null;
+  student_id?: string | null;
 }
 
 function timeAgo(iso: string): string {
@@ -108,6 +109,7 @@ export function ManageStudyHubScreen({ navigation }: any) {
   const [intakes, setIntakes] = useState<Intake[]>([]);
   const [expandedIntakeId, setExpandedIntakeId] = useState<string | null>(null);
   const [sectionsByIntake, setSectionsByIntake] = useState<Record<string, Section[]>>({});
+  const [loadingSections, setLoadingSections] = useState<Record<string, boolean>>({});
   const [pendingRequests, setPendingRequests] = useState<SectionRequest[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -135,6 +137,7 @@ export function ManageStudyHubScreen({ navigation }: any) {
   const [processingId, setProcessingId] = useState<string | null>(null);
 
   const activeDept = departments.find(d => d.id === activeDeptId);
+  const targetIntakeForSection = intakes.find(i => i.id === addSectionIntakeId);
 
   const loadDepartments = useCallback(async () => {
     const { data } = await supabase
@@ -160,45 +163,50 @@ export function ManageStudyHubScreen({ navigation }: any) {
   }, []);
 
   const loadSections = useCallback(async (intakeId: string) => {
-    const { data: secsData } = await supabase
-      .from('study_sections')
-      .select('id, intake_id, number, join_code, is_public')
-      .eq('intake_id', intakeId)
-      .order('number');
+    setLoadingSections(prev => ({ ...prev, [intakeId]: true }));
+    try {
+      const { data: secsData } = await supabase
+        .from('study_sections')
+        .select('id, intake_id, number, join_code, is_public')
+        .eq('intake_id', intakeId)
+        .order('number');
 
-    if (!secsData || secsData.length === 0) {
-      setSectionsByIntake(prev => ({ ...prev, [intakeId]: [] }));
-      return;
-    }
-
-    const secIds = secsData.map(s => s.id);
-    const { data: memsData } = await supabase
-      .from('study_section_members')
-      .select('id, section_id, user_id, profiles:profiles!user_id(full_name, avatar_url)')
-      .in('section_id', secIds)
-      .eq('role', 'cr')
-      .eq('status', 'approved');
-
-    const crMap: Record<string, CrMember[]> = {};
-    secIds.forEach(id => { crMap[id] = []; });
-
-    (memsData ?? []).forEach((m: any) => {
-      if (crMap[m.section_id]) {
-        crMap[m.section_id].push({
-          id: m.id,
-          user_id: m.user_id,
-          full_name: m.profiles?.full_name ?? 'Unknown',
-          avatar_url: m.profiles?.avatar_url ?? null,
-        });
+      if (!secsData || secsData.length === 0) {
+        setSectionsByIntake(prev => ({ ...prev, [intakeId]: [] }));
+        return;
       }
-    });
 
-    const populated: Section[] = secsData.map(s => ({
-      ...s,
-      crs: crMap[s.id] ?? [],
-    }));
+      const secIds = secsData.map(s => s.id);
+      const { data: memsData } = await supabase
+        .from('study_section_members')
+        .select('id, section_id, user_id, profiles:profiles!user_id(full_name, avatar_url)')
+        .in('section_id', secIds)
+        .eq('role', 'cr')
+        .eq('status', 'approved');
 
-    setSectionsByIntake(prev => ({ ...prev, [intakeId]: populated }));
+      const crMap: Record<string, CrMember[]> = {};
+      secIds.forEach(id => { crMap[id] = []; });
+
+      (memsData ?? []).forEach((m: any) => {
+        if (crMap[m.section_id]) {
+          crMap[m.section_id].push({
+            id: m.id,
+            user_id: m.user_id,
+            full_name: m.profiles?.full_name ?? 'Unknown',
+            avatar_url: m.profiles?.avatar_url ?? null,
+          });
+        }
+      });
+
+      const populated: Section[] = secsData.map(s => ({
+        ...s,
+        crs: crMap[s.id] ?? [],
+      }));
+
+      setSectionsByIntake(prev => ({ ...prev, [intakeId]: populated }));
+    } finally {
+      setLoadingSections(prev => ({ ...prev, [intakeId]: false }));
+    }
   }, []);
 
   const loadPendingRequests = useCallback(async () => {
@@ -256,11 +264,11 @@ export function ManageStudyHubScreen({ navigation }: any) {
     const timer = setTimeout(async () => {
       let queryBuilder = supabase
         .from('profiles')
-        .select('id, full_name, avatar_url, department, intake')
+        .select('id, full_name, avatar_url, department, intake, student_id')
         .eq('role', 'student');
 
       if (q.length >= 2) {
-        queryBuilder = queryBuilder.ilike('full_name', `%${q}%`);
+        queryBuilder = queryBuilder.or(`full_name.ilike.%${q}%,student_id.ilike.%${q}%`);
       }
 
       const { data } = await queryBuilder.order('full_name').limit(15);
@@ -349,10 +357,46 @@ export function ManageStudyHubScreen({ navigation }: any) {
       const currentIntake = addSectionIntakeId;
       setAddSectionIntakeId(null);
       setSecNumInput('');
+      setExpandedIntakeId(currentIntake);
       await loadSections(currentIntake);
     } finally {
       setSubmittingSection(false);
     }
+  }
+
+  function confirmDeleteIntake(intakeId: string, intakeNum: number) {
+    Alert.alert(
+      `Delete Intake ${intakeNum}?`,
+      'This will permanently delete this intake and all associated sections and class materials.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            const { error } = await supabase
+              .from('study_intakes')
+              .delete()
+              .eq('id', intakeId);
+
+            if (error) {
+              toast({ type: 'error', title: 'Error', message: error.message });
+              return;
+            }
+            toast({ type: 'success', title: 'Intake deleted', message: `Intake ${intakeNum}` });
+            setIntakes(prev => prev.filter(i => i.id !== intakeId));
+            setSectionsByIntake(prev => {
+              const next = { ...prev };
+              delete next[intakeId];
+              return next;
+            });
+            if (expandedIntakeId === intakeId) {
+              setExpandedIntakeId(null);
+            }
+          },
+        },
+      ]
+    );
   }
 
   async function handleAssignCr(student: StudentOption) {
@@ -436,6 +480,10 @@ export function ManageStudyHubScreen({ navigation }: any) {
             }
             toast({ type: 'success', title: 'Section deleted' });
             if (expandedIntakeId) {
+              setSectionsByIntake(prev => ({
+                ...prev,
+                [expandedIntakeId]: (prev[expandedIntakeId] ?? []).filter(s => s.id !== secId),
+              }));
               await loadSections(expandedIntakeId);
             }
           },
@@ -468,7 +516,7 @@ export function ManageStudyHubScreen({ navigation }: any) {
 
       setPendingRequests(prev => prev.filter(r => r.id !== req.id));
 
-      if (activeDeptId) {
+      if (activeDeptId === req.department_id) {
         await loadIntakes(activeDeptId);
         if (expandedIntakeId) {
           await loadSections(expandedIntakeId);
@@ -607,39 +655,54 @@ export function ManageStudyHubScreen({ navigation }: any) {
 
                   return (
                     <View key={ik.id} style={[styles.intakeCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-                      {/* 72dp Intake Bar */}
-                      <TouchableOpacity
-                        style={styles.intakeBar72}
-                        onPress={() => {
-                          if (isOpen) {
-                            setExpandedIntakeId(null);
-                          } else {
-                            setExpandedIntakeId(ik.id);
-                            if (!sectionsByIntake[ik.id]) {
-                              loadSections(ik.id);
+                      {/* 72dp Intake Bar with Delete Action */}
+                      <View style={styles.intakeBar72Wrapper}>
+                        <TouchableOpacity
+                          style={styles.intakeBar72Main}
+                          onPress={() => {
+                            if (isOpen) {
+                              setExpandedIntakeId(null);
+                            } else {
+                              setExpandedIntakeId(ik.id);
+                              if (!sectionsByIntake[ik.id] && !loadingSections[ik.id]) {
+                                loadSections(ik.id);
+                              }
                             }
-                          }
-                        }}
-                        activeOpacity={0.75}
-                      >
-                        <View style={styles.iconSlot32}>
-                          <Icon name="study" size={32} color={C.text} />
-                        </View>
-                        <View style={{ flex: 1, justifyContent: 'center' }}>
-                          <Text style={[styles.intakeTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                            Intake {ik.number}
-                          </Text>
-                          <Text style={[styles.intakeSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                            {ik.years ?? 'No year set'} · {ik.is_public ? (t.study2?.public ?? 'Public') : (t.study2?.private ?? 'Private')}
-                          </Text>
-                        </View>
-                        <Feather name={isOpen ? 'chevron-up' : 'chevron-down'} size={18} color={C.textMuted} />
-                      </TouchableOpacity>
+                          }}
+                          activeOpacity={0.75}
+                        >
+                          <View style={styles.iconSlot32}>
+                            <Icon name="study" size={32} color={C.text} />
+                          </View>
+                          <View style={{ flex: 1, justifyContent: 'center' }}>
+                            <Text style={[styles.intakeTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                              Intake {ik.number}
+                            </Text>
+                            <Text style={[styles.intakeSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                              {ik.years ?? 'No year set'} · {ik.is_public ? (t.study2?.public ?? 'Public') : (t.study2?.private ?? 'Private')}
+                            </Text>
+                          </View>
+                          <Feather name={isOpen ? 'chevron-up' : 'chevron-down'} size={18} color={C.textMuted} />
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          style={styles.intakeDeleteBtn}
+                          onPress={() => confirmDeleteIntake(ik.id, ik.number)}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          activeOpacity={0.7}
+                        >
+                          <Feather name="trash-2" size={16} color={C.danger} />
+                        </TouchableOpacity>
+                      </View>
 
                       {/* Expanded Section List */}
                       {isOpen && (
                         <View style={[styles.sectionArea, { borderTopColor: C.border }]}>
-                          {sections.length === 0 ? (
+                          {loadingSections[ik.id] ? (
+                            <View style={{ paddingVertical: 18, alignItems: 'center', justifyContent: 'center' }}>
+                              <ActivityIndicator size="small" color={C.brand} />
+                            </View>
+                          ) : sections.length === 0 ? (
                             <Text style={[styles.noSectionsTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
                               No sections added yet in Intake {ik.number}.
                             </Text>
@@ -666,6 +729,7 @@ export function ManageStudyHubScreen({ navigation }: any) {
                                   <TouchableOpacity
                                     style={styles.trashBtn}
                                     onPress={() => confirmDeleteSection(sec.id, sec.number)}
+                                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                                     activeOpacity={0.75}
                                   >
                                     <Feather name="trash-2" size={15} color={C.danger} />
@@ -944,78 +1008,193 @@ export function ManageStudyHubScreen({ navigation }: any) {
       </Modal>
 
       {/* Add Section Sheet */}
-      <Modal visible={!!addSectionIntakeId} animationType="slide" transparent onRequestClose={() => setAddSectionIntakeId(null)}>
-        <KeyboardAvoidingView style={styles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <TouchableOpacity style={{ flex: 1 }} onPress={() => setAddSectionIntakeId(null)} />
-          <View style={[styles.sheet, { backgroundColor: C.surface }]}>
+      <Modal
+        visible={!!addSectionIntakeId}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setAddSectionIntakeId(null)}
+        statusBarTranslucent
+      >
+        <KeyboardAvoidingView
+          style={styles.overlay}
+          behavior="padding"
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        >
+          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setAddSectionIntakeId(null)} />
+          <View style={[styles.sheet, { backgroundColor: C.surface, maxHeight: '85%' }]}>
             <View style={[styles.sheetHandle, { backgroundColor: C.border }]} />
-            <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-              {t.study2?.addSection ?? 'Add Section'}
-            </Text>
 
-            <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-              {t.study2?.sectionNumber ?? 'SECTION NUMBER'}
-            </Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-              value={secNumInput}
-              onChangeText={val => setSecNumInput(val.replace(/\D/g, ''))}
-              keyboardType="numeric"
-              placeholder="e.g. 1"
-              placeholderTextColor={C.textMuted}
-            />
+            {/* Header with Title and Close Button */}
+            <View style={styles.sheetHeaderRow}>
+              <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold, marginBottom: 0 }]}>
+                {t.study2?.addSection ?? 'Add Section'}
+              </Text>
+              <TouchableOpacity
+                style={[styles.sheetCloseBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+                onPress={() => setAddSectionIntakeId(null)}
+                activeOpacity={0.75}
+              >
+                <Feather name="x" size={18} color={C.text} />
+              </TouchableOpacity>
+            </View>
 
-            <TouchableOpacity
-              style={[styles.submitBtn, { backgroundColor: C.brand }]}
-              onPress={handleAddSection}
-              disabled={submittingSection}
-              activeOpacity={0.8}
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+              bounces={false}
+              contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 12, 24) }}
             >
-              {submittingSection ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <>
-                  <Feather name="plus" size={16} color="#fff" />
-                  <Text style={[styles.submitBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
-                    {t.study2?.addSection ?? 'Add Section'}
-                  </Text>
-                </>
+              {/* Department & Intake Context Pill */}
+              {(activeDept || targetIntakeForSection) && (
+                <View style={[styles.deptContextPill, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                  <View style={styles.iconSlot32}>
+                    <Feather name={getDeptIcon(activeDept?.name ?? '')} size={32} color={C.text} />
+                  </View>
+                  <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
+                    <Text style={[styles.deptContextLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                      TARGET INTAKE
+                    </Text>
+                    <Text style={[styles.deptContextName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                      {activeDept ? shortDept(activeDept.name) : 'Department'}{targetIntakeForSection ? ` · Intake ${targetIntakeForSection.number}` : ''}
+                    </Text>
+                  </View>
+                </View>
               )}
-            </TouchableOpacity>
+
+              {/* Section Number Field */}
+              <Text style={[styles.modalFieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                {t.study2?.sectionNumber ?? 'SECTION NUMBER'}
+              </Text>
+              <View style={[styles.inputBar58, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                <View style={styles.iconSlot32}>
+                  <Feather name="hash" size={28} color={C.text} />
+                </View>
+                <TextInput
+                  style={[styles.inputBarTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}
+                  value={secNumInput}
+                  onChangeText={val => setSecNumInput(val.replace(/\D/g, ''))}
+                  keyboardType="numeric"
+                  placeholder="e.g. 1"
+                  placeholderTextColor={C.textMuted}
+                />
+              </View>
+
+              {/* 58dp Primary Button */}
+              <TouchableOpacity
+                style={[
+                  styles.primaryBtn58,
+                  {
+                    backgroundColor: C.brand,
+                    opacity: secNumInput.trim() && !submittingSection ? 1 : 0.6,
+                  },
+                ]}
+                onPress={handleAddSection}
+                disabled={!secNumInput.trim() || submittingSection}
+                activeOpacity={0.8}
+              >
+                {submittingSection ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <>
+                    <Feather name="plus" size={20} color="#fff" />
+                    <Text style={[styles.primaryBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                      {t.study2?.addSection ?? 'Add Section'}
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
           </View>
         </KeyboardAvoidingView>
       </Modal>
 
       {/* Assign CR Sheet */}
-      <Modal visible={!!assignTargetSection} animationType="slide" transparent onRequestClose={() => setAssignTargetSection(null)}>
-        <KeyboardAvoidingView style={styles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <TouchableOpacity style={{ flex: 1 }} onPress={() => setAssignTargetSection(null)} />
-          <View style={[styles.sheet, { backgroundColor: C.surface, maxHeight: '80%' }]}>
+      <Modal
+        visible={!!assignTargetSection}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setAssignTargetSection(null)}
+        statusBarTranslucent
+      >
+        <KeyboardAvoidingView
+          style={styles.overlay}
+          behavior="padding"
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        >
+          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setAssignTargetSection(null)} />
+          <View style={[styles.sheet, { backgroundColor: C.surface, maxHeight: '85%' }]}>
             <View style={[styles.sheetHandle, { backgroundColor: C.border }]} />
-            <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-              {assignTargetSection ? `Assign CR — Intake ${assignTargetSection.intakeNum} · Sec ${assignTargetSection.number}` : 'Assign CR'}
-            </Text>
 
-            <TextInput
-              style={[styles.input, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-              value={crSearch}
-              onChangeText={setCrSearch}
-              placeholder={t.study2?.searchStudents ?? 'Search students…'}
-              placeholderTextColor={C.textMuted}
-            />
+            {/* Header with Title and Close Button */}
+            <View style={styles.sheetHeaderRow}>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold, marginBottom: 0 }]} numberOfLines={1}>
+                  Assign Class Representative
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.sheetCloseBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+                onPress={() => setAssignTargetSection(null)}
+                activeOpacity={0.75}
+              >
+                <Feather name="x" size={18} color={C.text} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Target Section Context Pill */}
+            {assignTargetSection && (
+              <View style={[styles.deptContextPill, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                <View style={styles.iconSlot32}>
+                  <Feather name="award" size={28} color={C.text} />
+                </View>
+                <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
+                  <Text style={[styles.deptContextLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                    ASSIGNING CR FOR
+                  </Text>
+                  <Text style={[styles.deptContextName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                    {activeDept ? shortDept(activeDept.name) : 'Department'} · Intake {assignTargetSection.intakeNum} · Section {assignTargetSection.number}
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            {/* 58dp Search Bar */}
+            <View style={[styles.inputBar58, { backgroundColor: C.surface2, borderColor: C.border, marginBottom: 8 }]}>
+              <View style={styles.iconSlot32}>
+                <Feather name="search" size={24} color={C.text} />
+              </View>
+              <TextInput
+                style={[styles.inputBarTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                value={crSearch}
+                onChangeText={setCrSearch}
+                placeholder="Search by student name or ID…"
+                placeholderTextColor={C.textMuted}
+                autoCapitalize="none"
+              />
+              {crSearch.length > 0 && (
+                <TouchableOpacity onPress={() => setCrSearch('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Feather name="x-circle" size={18} color={C.textMuted} />
+                </TouchableOpacity>
+              )}
+            </View>
 
             {searchLoading ? (
-              <View style={{ paddingVertical: 24, alignItems: 'center' }}>
+              <View style={{ paddingVertical: 28, alignItems: 'center' }}>
                 <ActivityIndicator size="small" color={C.brand} />
               </View>
             ) : studentResults.length === 0 ? (
-              <View style={{ paddingVertical: 24, alignItems: 'center' }}>
+              <View style={{ paddingVertical: 28, alignItems: 'center' }}>
                 <Text style={{ color: C.textMuted, fontFamily: FontFamily.jakartaMedium, fontSize: 13 }}>
                   No students found.
                 </Text>
               </View>
             ) : (
-              <ScrollView style={{ marginTop: 8 }} keyboardShouldPersistTaps="handled">
+              <ScrollView
+                style={{ maxHeight: 340 }}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 12, 20) }}
+              >
                 {studentResults.map(st => (
                   <TouchableOpacity
                     key={st.id}
@@ -1023,16 +1202,21 @@ export function ManageStudyHubScreen({ navigation }: any) {
                     onPress={() => handleAssignCr(st)}
                     activeOpacity={0.75}
                   >
-                    <Avatar uri={st.avatar_url} name={st.full_name} size="sm" />
+                    <Avatar uri={st.avatar_url} name={st.full_name} size="md" />
                     <View style={{ flex: 1, minWidth: 0 }}>
                       <Text style={[styles.studentName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                         {st.full_name}
                       </Text>
                       <Text style={[styles.studentMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                        {st.department ?? 'Student'}{st.intake ? ` · Intake ${st.intake}` : ''}
+                        {st.student_id ? `ID: ${st.student_id} · ` : ''}{st.department ?? 'Student'}{st.intake ? ` · Intake ${st.intake}` : ''}
                       </Text>
                     </View>
-                    <Feather name="user-check" size={17} color={C.brand} />
+                    <View style={[styles.assignPill, { backgroundColor: isDark ? 'rgba(91, 133, 247, 0.15)' : 'rgba(91, 133, 247, 0.1)' }]}>
+                      <Feather name="user-check" size={14} color={C.brand} />
+                      <Text style={[styles.assignPillTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+                        Assign
+                      </Text>
+                    </View>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -1042,57 +1226,87 @@ export function ManageStudyHubScreen({ navigation }: any) {
       </Modal>
 
       {/* Reject Request Sheet */}
-      <Modal visible={!!rejectTarget} animationType="slide" transparent onRequestClose={() => setRejectTarget(null)}>
-        <KeyboardAvoidingView style={styles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <TouchableOpacity style={{ flex: 1 }} onPress={() => setRejectTarget(null)} />
-          <View style={[styles.sheet, { backgroundColor: C.surface }]}>
+      <Modal
+        visible={!!rejectTarget}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setRejectTarget(null)}
+        statusBarTranslucent
+      >
+        <KeyboardAvoidingView
+          style={styles.overlay}
+          behavior="padding"
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        >
+          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setRejectTarget(null)} />
+          <View style={[styles.sheet, { backgroundColor: C.surface, maxHeight: '85%' }]}>
             <View style={[styles.sheetHandle, { backgroundColor: C.border }]} />
-            <Text style={[styles.sheetTitle, { color: C.danger, fontFamily: FontFamily.jakartaExtraBold }]}>
-              Reject Section Request
-            </Text>
-            {rejectTarget && (
-              <Text style={[styles.rejectTargetSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                {rejectTarget.requester_name} — Intake {rejectTarget.intake_number} · Section {rejectTarget.section_number}
+
+            {/* Header with Title and Close Button */}
+            <View style={styles.sheetHeaderRow}>
+              <Text style={[styles.sheetTitle, { color: C.danger, fontFamily: FontFamily.jakartaExtraBold, marginBottom: 0 }]}>
+                Reject Section Request
               </Text>
-            )}
+              <TouchableOpacity
+                style={[styles.sheetCloseBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+                onPress={() => setRejectTarget(null)}
+                activeOpacity={0.75}
+              >
+                <Feather name="x" size={18} color={C.text} />
+              </TouchableOpacity>
+            </View>
 
-            <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-              NOTE FOR STUDENT (OPTIONAL)
-            </Text>
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  backgroundColor: C.bg,
-                  borderColor: C.border,
-                  color: C.text,
-                  fontFamily: FontFamily.jakartaMedium,
-                  height: 72,
-                  textAlignVertical: 'top',
-                  paddingTop: 10,
-                },
-              ]}
-              value={rejectNote}
-              onChangeText={setRejectNote}
-              placeholder="e.g. This section already exists in the catalogue."
-              placeholderTextColor={C.textMuted}
-              multiline
-            />
-
-            <TouchableOpacity
-              style={[styles.submitBtn, { backgroundColor: C.danger }]}
-              onPress={handleRejectRequest}
-              disabled={processingId === rejectTarget?.id}
-              activeOpacity={0.8}
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 12, 24) }}
             >
-              {processingId === rejectTarget?.id ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <Text style={[styles.submitBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
-                  Confirm Rejection
-                </Text>
+              {rejectTarget && (
+                <View style={[styles.deptContextPill, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                  <Avatar uri={rejectTarget.requester_avatar} name={rejectTarget.requester_name} size="sm" />
+                  <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
+                    <Text style={[styles.deptContextLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                      STUDENT REQUEST
+                    </Text>
+                    <Text style={[styles.deptContextName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                      {rejectTarget.requester_name} · Intake {rejectTarget.intake_number} · Sec {rejectTarget.section_number}
+                    </Text>
+                  </View>
+                </View>
               )}
-            </TouchableOpacity>
+
+              <Text style={[styles.modalFieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                NOTE FOR STUDENT (OPTIONAL)
+              </Text>
+              <View style={[styles.rejectNoteBox, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                <TextInput
+                  style={[styles.rejectNoteTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                  value={rejectNote}
+                  onChangeText={setRejectNote}
+                  placeholder="e.g. This section already exists in the catalogue."
+                  placeholderTextColor={C.textMuted}
+                  multiline
+                />
+              </View>
+
+              <TouchableOpacity
+                style={[styles.primaryBtn58, { backgroundColor: C.danger, marginTop: 14 }]}
+                onPress={handleRejectRequest}
+                disabled={processingId === rejectTarget?.id}
+                activeOpacity={0.8}
+              >
+                {processingId === rejectTarget?.id ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <>
+                    <Feather name="x" size={18} color="#fff" />
+                    <Text style={[styles.primaryBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                      Confirm Rejection
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
           </View>
         </KeyboardAvoidingView>
       </Modal>
@@ -1267,12 +1481,26 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   } as ViewStyle,
 
-  intakeBar72: {
+  intakeBar72Wrapper: {
+    height: 72,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingRight: 6,
+  } as ViewStyle,
+  intakeBar72Main: {
+    flex: 1,
     height: 72,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 14,
     gap: 13,
+  } as ViewStyle,
+  intakeDeleteBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   } as ViewStyle,
   iconSlot32: {
     width: 32,
@@ -1391,20 +1619,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    height: 40,
-    borderRadius: 10,
+    height: 44,
+    borderRadius: 12,
   } as ViewStyle,
-  rejectBtnTxt: { fontSize: 13 } as any,
+  rejectBtnTxt: { fontSize: 13.5 } as any,
   approveBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    height: 40,
-    borderRadius: 10,
+    height: 44,
+    borderRadius: 12,
   } as ViewStyle,
-  approveBtnTxt: { fontSize: 13 } as any,
+  approveBtnTxt: { fontSize: 13.5 } as any,
 
   /* Sheets & Modals */
   overlay: {
@@ -1531,4 +1759,26 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   studentName: { fontSize: 14 } as any,
   studentMeta: { fontSize: 12, marginTop: 2 } as any,
+  assignPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+  } as ViewStyle,
+  assignPillTxt: {
+    fontSize: 12,
+  } as any,
+  rejectNoteBox: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 12,
+    minHeight: 80,
+  } as ViewStyle,
+  rejectNoteTxt: {
+    fontSize: 14,
+    minHeight: 60,
+    textAlignVertical: 'top',
+  } as any,
 });

@@ -268,12 +268,40 @@ export function ReportDetailScreen({ route, navigation }: any) {
     ]);
   }
 
-  if (loadingReport || !report) {
+  if (loadingReport) {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
         <SubBar title={t.reports2.report} onBack={() => navigation.goBack()} />
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator color={C.brand} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!report) {
+    return (
+      <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
+        <SubBar title={t.reports2.report} onBack={() => navigation.goBack()} />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 }}>
+          <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center', marginBottom: 16, borderWidth: 1, borderColor: C.border }}>
+            <Icon name="alert" size={28} color={C.textMuted} />
+          </View>
+          <Text style={{ color: C.text, fontSize: 17, fontFamily: FontFamily.jakartaExtraBold, marginBottom: 8, textAlign: 'center' }}>
+            Report Not Found
+          </Text>
+          <Text style={{ color: C.textMuted, fontSize: 13, fontFamily: FontFamily.jakartaMedium, textAlign: 'center', marginBottom: 20 }}>
+            This maintenance report may have been removed or is no longer accessible.
+          </Text>
+          <TouchableOpacity
+            style={{ height: 48, paddingHorizontal: 24, borderRadius: 14, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' }}
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.8}
+          >
+            <Text style={{ color: '#ffffff', fontFamily: FontFamily.jakartaBold, fontSize: 14 }}>
+              {t.common.back || 'Go Back'}
+            </Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );

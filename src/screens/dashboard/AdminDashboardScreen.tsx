@@ -201,7 +201,7 @@ const ReportCard = memo(function ReportCard({
         <TouchableOpacity
           style={[styles.actionBtn, { backgroundColor: C.brand }]}
           onPress={(e) => {
-            e.stopPropagation();
+            e?.stopPropagation?.();
             onAssign(r);
           }}
           activeOpacity={0.8}
@@ -217,7 +217,7 @@ const ReportCard = memo(function ReportCard({
         <TouchableOpacity
           style={[styles.reassignBtn, { borderColor: C.border }]}
           onPress={(e) => {
-            e.stopPropagation();
+            e?.stopPropagation?.();
             onAssign(r);
           }}
           activeOpacity={0.8}

@@ -3103,3 +3103,23 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Native Release APK: Locally compiled via Gradle (ssembleRelease) with release keystore in 47s.
   - Direct ADB Deployment: Streamed install (db install -r) and launched on physical phone 8734b5da.
   - Remote Git Sync: Pushed to https://github.com/fixit-bubt/CampusOneAndroid.git on main with 0 AI footprint.
+
+---
+
+### 75. Deep Audit & Multi-Screen Hardening across Maintenance & Dashboard Systems (/zero-slop, /code-review-and-quality, /performance-optimization)
+- **Gesture Responder Crash Prevention (`AdminDashboardScreen.tsx`, `StaffDashboardScreen.tsx`):**
+  - Safely replaced raw `e.stopPropagation()` calls with optional chaining `e?.stopPropagation?.()`. In React Native Android, `GestureResponderEvent` objects lack DOM `stopPropagation()`, which previously caused unhandled runtime exceptions when tapping assign/advance action buttons.
+- **Staff Dashboard 58dp Metrics & Tab Deduplication (`StaffDashboardScreen.tsx`):**
+  - Unified Staff Dashboard with Admin Dashboard by upgrading the 3 static, bulky ~110dp stat boxes to standard interactive **58dp Metric Cards** (`height: 58`, `borderRadius: 16`, `borderWidth: 1`).
+  - Completely eliminated the duplicate `SegmentedTabs` component rendered directly underneath, eliminating redundant state rendering and saving over 110dp of vertical viewport real estate.
+- **Report Lifecycle Integrity in All Reports (`AllReportsScreen.tsx`):**
+  - Fixed an architectural bug in `assignReport` where assigning a staff technician was forcefully overwriting `status: 'In Progress'`, bypassing the staff technician's explicit "Start Work" progression. Assignment now updates `assigned_staff_id` exclusively.
+  - Wrapped the staff assignment modal list in a `<ScrollView style={{ maxHeight: 360 }}>` with `showsVerticalScrollIndicator={false}`, preventing modal clipping and touch unreachability when more than 4 staff members exist.
+- **4-UI-State Compliance & Not Found Handling (`ReportDetailScreen.tsx`):**
+  - Eliminated infinite activity indicator hanging when viewing deleted or un-queried reports by decoupling the `loadingReport` spinner from the `!report` state.
+  - Implemented a clean, user-friendly "Report Not Found" state with an actionable "Go Back" button.
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
+  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore in 50s.
+  - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
+  - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.

@@ -89,12 +89,11 @@ export function AllReportsScreen({ navigation }: any) {
   async function assignReport(reportId: string, staffId: string) {
     const { error } = await supabase.from('reports').update({
       assigned_staff_id: staffId,
-      status: 'In Progress',
     }).eq('id', reportId);
     if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
     // Only apply the optimistic mutation after a confirmed write.
     setReports(prev => prev.map(r =>
-      r.id === reportId ? { ...r, assigned_staff_id: staffId, status: 'In Progress' } : r
+      r.id === reportId ? { ...r, assigned_staff_id: staffId } : r
     ));
     setAssignTarget(null);
   }
@@ -314,6 +313,7 @@ export function AllReportsScreen({ navigation }: any) {
           <Text style={[styles.sheetSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
             {assignTarget?.description.split('\n')[0]}{assignTarget?.category ? ` · ${t.dash.needsOnly(assignTarget.category)}` : ''}
           </Text>
+          <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 360 }}>
           {staffRanked.map((s, i) => {
             const match = !!assignCat && s.expertise === assignCat;
             return (
@@ -348,6 +348,7 @@ export function AllReportsScreen({ navigation }: any) {
               No staff members found
             </Text>
           )}
+          </ScrollView>
         </View>
       </Modal>
     </SafeAreaView>

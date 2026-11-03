@@ -77,15 +77,43 @@ interface Report {
 
 type FilterTab = 'all' | 'active' | 'resolved';
 
-const StatCard = memo(function StatCard({ icon, num, label, C }: { icon: string; num: number; label: string; C: any }) {
+const StatCard = memo(function StatCard({
+  num,
+  label,
+  isSelected,
+  onPress,
+  C,
+}: {
+  num: number;
+  label: string;
+  isSelected?: boolean;
+  onPress?: () => void;
+  C: any;
+}) {
   return (
-    <View style={[styles.statCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-      <View style={styles.statIcon}>
-        <Icon name={icon} size={32} color={C.text} />
-      </View>
-      <Text style={[styles.statNum, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{num}</Text>
-      <Text style={[styles.statLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{label}</Text>
-    </View>
+    <TouchableOpacity
+      style={[
+        styles.statCard,
+        {
+          backgroundColor: isSelected ? (C.brand + '14') : C.surface,
+          borderColor: isSelected ? C.brand : C.border,
+          borderWidth: isSelected ? 1.5 : 1,
+        },
+      ]}
+      onPress={onPress}
+      disabled={!onPress}
+      activeOpacity={0.75}
+    >
+      <Text style={[styles.statNum, { color: isSelected ? C.brand : C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{num}</Text>
+      <Text
+        style={[styles.statLabel, { color: isSelected ? C.brand : C.textMuted, fontFamily: FontFamily.jakartaBold }]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.8}
+      >
+        {label}
+      </Text>
+    </TouchableOpacity>
   );
 });
 
@@ -161,7 +189,7 @@ const ReportCard = memo(function ReportCard({
         <TouchableOpacity
           style={[styles.actionBtn, { backgroundColor: C.brand }]}
           onPress={(e) => {
-            e.stopPropagation();
+            e?.stopPropagation?.();
             onAdvance(r.id, 'In Progress');
           }}
           activeOpacity={0.8}
@@ -177,7 +205,7 @@ const ReportCard = memo(function ReportCard({
         <TouchableOpacity
           style={[styles.actionBtn, { backgroundColor: C.success }]}
           onPress={(e) => {
-            e.stopPropagation();
+            e?.stopPropagation?.();
             onAdvance(r.id, 'Resolved');
           }}
           activeOpacity={0.8}
@@ -202,7 +230,7 @@ const ReportCard = memo(function ReportCard({
         <TouchableOpacity
           style={[styles.declineBtn, { borderColor: C.border }]}
           onPress={(e) => {
-            e.stopPropagation();
+            e?.stopPropagation?.();
             onDecline(r.id);
           }}
           activeOpacity={0.75}
@@ -419,20 +447,28 @@ export function StaffDashboardScreen({ navigation }: any) {
               </View>
             </View>
 
-            {/* 3 Stat Counters */}
+            {/* 3 Interactive 58dp Metric Filter Cards */}
             <View style={styles.statRow}>
-              <StatCard icon="inbox" num={reports.length} label={t.dash.statAssigned} C={C} />
-              <StatCard icon="pulse" num={inProgressReports.length} label={t.dash.statInProgress} C={C} />
-              <StatCard icon="check" num={resolvedReports.length} label={t.dash.statResolved} C={C} />
-            </View>
-
-            {/* 58dp Segmented Filter Tabs */}
-            <View style={styles.tabWrap}>
-              <SegmentedTabs<FilterTab>
-                tabs={filterTabs}
-                activeTab={filterTab}
-                onTabChange={setFilterTab}
-                size="md"
+              <StatCard
+                num={reports.length}
+                label={t.dash.statAssigned}
+                isSelected={filterTab === 'all'}
+                onPress={() => setFilterTab('all')}
+                C={C}
+              />
+              <StatCard
+                num={inProgressReports.length}
+                label={t.dash.statInProgress}
+                isSelected={filterTab === 'active'}
+                onPress={() => setFilterTab('active')}
+                C={C}
+              />
+              <StatCard
+                num={resolvedReports.length}
+                label={t.dash.statResolved}
+                isSelected={filterTab === 'resolved'}
+                onPress={() => setFilterTab('resolved')}
+                C={C}
               />
             </View>
 
@@ -560,25 +596,21 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   statCard: {
     flex: 1,
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 8,
+    height: 58,
     borderRadius: 16,
     borderWidth: 1,
-    gap: 4,
-  } as ViewStyle,
-  statIcon: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    gap: 2,
   } as ViewStyle,
   statNum: {
-    fontSize: 22,
-    lineHeight: 28,
+    fontSize: 18,
+    lineHeight: 22,
   } as any,
   statLabel: {
     fontSize: 11,
+    lineHeight: 14,
     textAlign: 'center',
   } as any,
 
