@@ -153,7 +153,7 @@ export function AcademicCalendarScreen({ navigation }: any) {
   };
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]} edges={['top', 'left', 'right']}>
+    <View style={[styles.safe, { backgroundColor: C.bg, paddingTop: insets.top }]}>
       {/* SubBar with Back Navigation and Admin Action */}
       <SubBar
         title="Academic Calendar"
@@ -418,7 +418,7 @@ export function AcademicCalendarScreen({ navigation }: any) {
           </View>
         </Modal>
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 

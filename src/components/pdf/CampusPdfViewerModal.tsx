@@ -109,15 +109,8 @@ export function CampusPdfViewerModal({
       setLoading(true);
       setErrorMsg(null);
 
-      // Mode A: Remote Web URL (Notices, Routines, Academic Calendar) -> In-App Google Docs Embed
-      if (isRemote) {
-        setLoadingMessage('Streaming document…');
-        // Remote mode renders via direct webview URL; no heavy local cache download needed
-        return;
-      }
-
-      // Mode B: Local File (Cover Page Generator, PDF Maker scans) -> On-Device Local pdf.js Engine
-      setLoadingMessage(category ? `Preparing ${category}…` : 'Preparing document…');
+      // Local on-device pdf.js engine (Supports local files + fast-cached remote web documents)
+      setLoadingMessage(category ? `Preparing ${category}…` : 'Loading document…');
       const env = await prepareViewerEnvironment(isDark);
       setEngineDirUri(env.engineDirUri);
       setHtmlUri(env.htmlUri);
@@ -133,10 +126,16 @@ export function CampusPdfViewerModal({
 
     } catch (err: any) {
       console.warn('PDF Viewer init error:', err);
+      // Fallback: If downloading to local cache failed and it's a remote URL, allow Google Docs streaming fallback
+      if (isRemote && googleDocsViewerUrl) {
+        setHtmlUri(null);
+        setLoadingMessage('Streaming document…');
+        return;
+      }
       setErrorMsg(err.message || 'Could not load official PDF document.');
       setLoading(false);
     }
-  }, [normalizedUrl, isRemote, fileName, category, isDark, sendDocumentToWebView]);
+  }, [normalizedUrl, isRemote, googleDocsViewerUrl, fileName, category, isDark, sendDocumentToWebView]);
 
   useEffect(() => {
     if (visible && normalizedUrl) {
@@ -414,10 +413,11 @@ export function CampusPdfViewerModal({
             2. BODY: HYBRID STREAMING / NATIVE PDF CANVAS
            ========================================================================= */}
         <View style={styles.viewerWrapper}>
-          {/* Mode A: Remote Web PDF streaming inside the app via Google Docs Viewer */}
-          {isRemote && googleDocsViewerUrl && !errorMsg && (
+          {/* Mode A: Remote Web PDF streaming fallback if local engine unavailable */}
+          {!htmlUri && isRemote && googleDocsViewerUrl && !errorMsg && (
             <View style={StyleSheet.absoluteFill}>
               <WebView
+                key={`gdocs-${normalizedUrl}`}
                 ref={webRef}
                 source={{ uri: googleDocsViewerUrl }}
                 style={[styles.webView, { backgroundColor: isDark ? '#000000' : '#f1f5f9', opacity: loading ? 0 : 1 }]}
@@ -566,10 +566,11 @@ export function CampusPdfViewerModal({
             </View>
           )}
 
-          {/* Mode B: Local File rendering on-device via pdf.js (Cover Page & PDF Maker) */}
-          {!isRemote && htmlUri && !errorMsg && (
+          {/* Mode B: On-device local pdf.js engine (Primary for local & cached remote documents) */}
+          {htmlUri && !errorMsg && (
             <View style={StyleSheet.absoluteFill}>
               <WebView
+                key={`local-${normalizedUrl || htmlUri}`}
                 ref={webRef}
                 source={{ uri: htmlUri }}
                 style={[styles.webView, { backgroundColor: isDark ? '#000000' : '#f1f5f9' }]}

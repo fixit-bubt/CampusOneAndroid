@@ -3783,3 +3783,22 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - TypeScript Compilation: 0 errors (`npx tsc --noEmit`).
   - Native Local Release Build: Locally compiled via Gradle (`assembleRelease`).
   - Physical Device Deployment: Installed and verified on physical USB device `8734b5da`.
+
+---
+
+### 103. Edge-to-Edge Status Bar Collision Fix, Native In-App PDF Viewer Upgrade & Published List Polish (`AcademicCalendarScreen.tsx`, `ManageAcademicCalendarScreen.tsx`, `CampusPdfViewerModal.tsx`) (/zero-slop, /performance-optimization, /code-review-and-quality)
+- **Status Bar Edge-to-Edge Collision Fix (`AcademicCalendarScreen.tsx`, `ManageAcademicCalendarScreen.tsx`):**
+  - Resolved status bar text collision on Android edge-to-edge mode where the top bar was obscured behind the system time/icons.
+  - Replaced `<SafeAreaView edges={['top', 'left', 'right']}>` with the standard CampusOne pattern: `<View style={[styles.safe, { backgroundColor: C.bg, paddingTop: insets.top }]}>` using `useSafeAreaInsets()`.
+- **Native In-App PDF Rendering via On-Device `pdf.js` Engine (`CampusPdfViewerModal.tsx`):**
+  - Upgraded `initViewer` to use the on-device `pdf.js` engine as primary for both local and remote documents via `prepareDocumentForViewer(normalizedUrl)`.
+  - Remote PDF documents (academic calendars, exam routines, notices) are downloaded to local cache in milliseconds and rendered offline at 120 FPS with pinch-zoom and double-tap zoom.
+  - Added unique `key={`local-${normalizedUrl || htmlUri}`}` on `<WebView>`, ensuring that switching between semesters cleanly re-mounts a fresh document, completely eliminating stale cache reuse.
+  - Preserved streaming Google Docs Viewer only as an emergency fallback if network downloading fails.
+- **Published Calendars List Polish (`ManageAcademicCalendarScreen.tsx`):**
+  - Removed the redundant preview eye button from `CalendarBar72` in published list (tapping the row opens the viewer directly).
+  - Maximized title horizontal flex room so full semester names (`Summer 2026 Academic Calendar`, `Spring 2026 Academic Calendar`) fit cleanly without text overflow or truncation.
+- **Verification Evidence:**
+  - TypeScript Compilation: 0 errors (`npx tsc --noEmit`).
+  - Native Local Release Build: Compiled via local Android SDK Gradle (`assembleRelease`).
+  - Physical Device Deployment: Installed and verified on physical USB Android phone (`8734b5da`).

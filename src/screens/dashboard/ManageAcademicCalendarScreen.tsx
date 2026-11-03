@@ -108,16 +108,6 @@ const CalendarBar72 = memo(function CalendarBar72({
       <View style={styles.actionRow}>
         <TouchableOpacity
           style={[styles.actionBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
-          onPress={() => onOpen(item)}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          activeOpacity={0.7}
-          accessibilityLabel="Preview document"
-        >
-          <Feather name="eye" size={18} color={C.textMuted} />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.actionBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
           onPress={() => onDelete(item)}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           activeOpacity={0.7}
@@ -355,7 +345,7 @@ export function ManageAcademicCalendarScreen({ navigation }: any) {
   };
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]} edges={['top', 'left', 'right']}>
+    <View style={[styles.safe, { backgroundColor: C.bg, paddingTop: insets.top }]}>
       {/* SubBar with Back Navigation */}
       <SubBar
         title="Manage Academic Calendar"
@@ -770,7 +760,7 @@ export function ManageAcademicCalendarScreen({ navigation }: any) {
           </View>
         </Modal>
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
