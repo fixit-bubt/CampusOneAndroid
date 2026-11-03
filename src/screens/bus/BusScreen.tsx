@@ -241,15 +241,10 @@ export function BusScreen({ navigation }: any) {
             onPress={() => openEditor()}
             activeOpacity={0.75}
           >
-            <View style={styles.addBusBarLeft}>
-              <View style={styles.addBusIconSlot}>
-                <Feather name="plus-circle" size={24} color={C.text} />
-              </View>
-              <Text style={[styles.addBusBarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                {t.bus2.addBusBar}
-              </Text>
-            </View>
-            <Feather name="chevron-right" size={20} color={C.textMuted} />
+            <Feather name="plus-circle" size={20} color={C.text} />
+            <Text style={[styles.addBusBarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              {t.bus2.addBusBar}
+            </Text>
           </TouchableOpacity>
         </View>
       )}
@@ -767,21 +762,11 @@ const styles = StyleSheet.create({
     height: 52,
     borderRadius: 14,
     borderWidth: 1,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  } as ViewStyle,
-  addBusBarLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  } as ViewStyle,
-  addBusIconSlot: {
-    width: 28,
-    height: 28,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 8,
   } as ViewStyle,
   addBusBarTitle: {
     fontSize: 14.5,

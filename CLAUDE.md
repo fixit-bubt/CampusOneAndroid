@@ -4042,3 +4042,25 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - TypeScript Compilation: 0 errors (`npx tsc --noEmit`).
   - Native Local Release Build: Compiled via local Android SDK Gradle (`assembleRelease`).
   - Physical Device Deployment: Installed and verified on physical USB Android phone (`8734b5da`).
+
+---
+
+### 104. Bus Schedule Architecture Revamp, 52dp Centered Admin Bar, 58dp Dropdown Bars & Monochrome Studio Standard (`BusScreen.tsx`, `BusRouteEditorModal.tsx`, `ExploreScreen.tsx`, `en.ts`, `bn.ts`) (/zero-slop, /performance-optimization, /code-review-and-quality)
+- **52dp Centered Admin Add Bus Bar (`BusScreen.tsx`):**
+  - Moved the add bus route trigger from the top bar into the main layout as a dedicated 52dp bar (`styles.addBusBar52`, `height: 52`, `borderRadius: 14`).
+  - Centered both the 20dp monochrome vector icon (`plus-circle`) and title text (`t.bus2.addBusBar`) horizontally and vertically (`justifyContent: 'center'`, `alignItems: 'center'`, `gap: 8`), providing a balanced, zero-slop primary action button for administrators.
+- **58dp Dropdown Bars Architecture (`BusRouteEditorModal.tsx`):**
+  - Re-architected Operating Days, Route Stops, and Departure Schedules into standard 58dp dropdown bars (`height: 58`, `borderRadius: 16`, `borderWidth: 1`).
+  - Rendered enlarged **32dp monochrome vector icons** (`calendar`, `map-pin`, `clock`) in transparent slots with smooth toggle chevrons.
+  - All inner interactive option rows, input fields, and stop item rows strictly maintain the **58dp dimension standard** (`height: 58`, `borderRadius: 16`).
+- **Zero-Slop Studio Monochrome Theme Standard:**
+  - Completely stripped decorative rainbow colors and tinted fills (`${BUS_COLOR}1c`, `${C.brand}24`, `${C.warn}1a`, cyan badges).
+  - Standardized next departure cards, stop pills, time badges, and status indicators to use high-contrast studio tokens (`C.surface2`, `C.border`, `C.text`, `C.textMuted`).
+  - Resolved route card text overlap by placing route titles on their own line (`numberOfLines={1}`) and cleanly wrapping badges and metadata on `cardMetaRow`.
+- **Elimination of "e.g." AI Tells & Administration Deduplication:**
+  - Removed all instances of `(e.g. ...)`, `(যেমন: ...)`, and placeholder ellipses across English and Bengali dictionaries (`en.ts`, `bn.ts`).
+  - Eliminated the duplicate Bus Schedule entry from the Administration section in `ExploreScreen.tsx`, preserving the canonical tool under Campus Services.
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`npx tsc --noEmit`).
+  - Native Local Release Build: Locally compiled via Gradle (`assembleRelease`) with release keystore.
+  - Physical Device Deployment: Installed and verified on physical USB Android phone (`8734b5da`).
